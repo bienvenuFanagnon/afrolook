@@ -1,5 +1,6 @@
 ﻿// recent_posts_provider.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
@@ -128,7 +129,7 @@ class RecentPostsProvider extends ChangeNotifier {
           break;
       }
 
-      final snapshot = await query.get();
+      final snapshot = await query.getM('recent_posts_provider.dart:131');
 
       if (snapshot.docs.isNotEmpty && _lastDocument == null) {
         _lastDocument = snapshot.docs.last;
@@ -200,7 +201,7 @@ class RecentPostsProvider extends ChangeNotifier {
           .startAfterDocument(_lastDocument!)
           .limit(_limit);
 
-      final snapshot = await query.get();
+      final snapshot = await query.getM('recent_posts_provider.dart:203');
 
       if (snapshot.docs.isNotEmpty) {
         _lastDocument = snapshot.docs.last;

@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import '../../../services/follow_service.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'dart:math';
@@ -88,7 +89,7 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
         final userSnap = await FirebaseFirestore.instance
             .collection('Users')
             .doc(myId)
-            .get()
+            .getM('feed_end_discovery_section.dart:91')
             .timeout(const Duration(seconds: 10));
         final freshIds = List<String>.from(userSnap.data()?['canauxSuivisIds'] ?? []);
         subscribedCanalIds = Set<String>.from(freshIds);
@@ -129,7 +130,7 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
             .collection('Users')
             .where('mainCategory', isEqualTo: pageType)
             .limit(50)
-            .get()
+            .getM('feed_end_discovery_section.dart:132')
             .timeout(const Duration(seconds: 15));
       } else {
         // orderBy abonnes seul = index single-field automatique, limite haute pour plus de variété
@@ -137,7 +138,7 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
             .collection('Users')
             .orderBy('abonnes', descending: true)
             .limit(50)
-            .get()
+            .getM('feed_end_discovery_section.dart:140')
             .timeout(const Duration(seconds: 15));
       }
     } catch (_) {
@@ -169,7 +170,7 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
             .collection('Canaux')
             .where('mainCategory', isEqualTo: pageType)
             .limit(40)
-            .get()
+            .getM('feed_end_discovery_section.dart:172')
             .timeout(const Duration(seconds: 15));
       } else {
         // orderBy suivi seul = index single-field automatique
@@ -177,7 +178,7 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
             .collection('Canaux')
             .orderBy('suivi', descending: true)
             .limit(40)
-            .get()
+            .getM('feed_end_discovery_section.dart:180')
             .timeout(const Duration(seconds: 15));
       }
     } catch (_) {

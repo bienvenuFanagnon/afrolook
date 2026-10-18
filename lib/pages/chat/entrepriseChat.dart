@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/models/chatmodels/message.dart';
@@ -88,7 +89,7 @@ class _EntrepriseMyChatState extends State<EntrepriseMyChat> {
     // Définissez la requête
     var friendsStream = FirebaseFirestore.instance.collection('Messages').where('chat_id', isEqualTo: widget.chat.docId!)
         .orderBy('createdAt', descending: false)
-        .snapshots();
+        .snapshotsM('entrepriseChat.dart:91');
 
 // Obtenez la liste des utilisateurs
     //List<DocumentSnapshot> users = await usersQuery.sget();

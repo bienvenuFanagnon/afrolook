@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -196,10 +197,10 @@ Future<void> _runNotificationCheck(
             .where('receiverBy', isEqualTo: userId)
             .where('message_state', isEqualTo: 'NONLU')
             .where('is_valide', isEqualTo: true)
-            .limit(1).get();
+            .limit(1).getM('workManagerService.dart:199');
         final senderId = snap.docs.firstOrNull?.data()['send_by'] as String?;
         if (senderId != null) {
-          final doc = await firestore.collection('Users').doc(senderId).get();
+          final doc = await firestore.collection('Users').doc(senderId).getM('workManagerService.dart:202');
           imageUrl = doc.data()?['imageUrl'] as String?;
         }
       } catch (_) {}
@@ -222,7 +223,7 @@ Future<void> _runNotificationCheck(
       try {
         final snap = await firestore.collection('GroupChats')
             .where('member_ids', arrayContains: userId)
-            .limit(1).get();
+            .limit(1).getM('workManagerService.dart:225');
         imageUrl = snap.docs.firstOrNull?.data()['image_url'] as String?;
       } catch (_) {}
       await _showCategoryNotification(
@@ -245,10 +246,10 @@ Future<void> _runNotificationCheck(
         final snap = await firestore.collection('Invitations')
             .where('receiver_id', isEqualTo: userId)
             .where('status', isEqualTo: 'ENCOURS')
-            .limit(1).get();
+            .limit(1).getM('workManagerService.dart:248');
         final senderId = snap.docs.firstOrNull?.data()['sender_id'] as String?;
         if (senderId != null) {
-          final doc = await firestore.collection('Users').doc(senderId).get();
+          final doc = await firestore.collection('Users').doc(senderId).getM('workManagerService.dart:251');
           imageUrl = doc.data()?['imageUrl'] as String?;
         }
       } catch (_) {}
@@ -272,7 +273,7 @@ Future<void> _runNotificationCheck(
         final snap = await firestore.collection('Notifications')
             .where('receiver_id', isEqualTo: userId)
             .where('is_open', isEqualTo: false)
-            .limit(10).get();
+            .limit(10).getM('workManagerService.dart:275');
         for (final doc in snap.docs) {
           final type = (doc.data()['type'] as String?) ?? '';
           if (_datingTypes.contains(type)) {
@@ -303,7 +304,7 @@ Future<void> _runNotificationCheck(
         final snap = await firestore.collection('Notifications')
             .where('receiver_id', isEqualTo: userId)
             .where('is_open', isEqualTo: false)
-            .limit(10).get();
+            .limit(10).getM('workManagerService.dart:306');
         for (final doc in snap.docs) {
           final type = (doc.data()['type'] as String?) ?? '';
           if (!_datingTypes.contains(type)) {
@@ -354,13 +355,13 @@ Future<void> _runDebugNotificationPreview(
         .where('receiverBy', isEqualTo: userId)
         .where('is_valide', isEqualTo: true)
         .limit(5)
-        .get();
+        .getM('workManagerService.dart:357');
     if (msgs.docs.isNotEmpty) {
       String? imageUrl;
       try {
         final senderId = msgs.docs.first.data()['send_by'] as String?;
         if (senderId != null) {
-          final senderDoc = await firestore.collection('Users').doc(senderId).get();
+          final senderDoc = await firestore.collection('Users').doc(senderId).getM('workManagerService.dart:363');
           imageUrl = senderDoc.data()?['imageUrl'] as String?;
         }
       } catch (_) {}
@@ -382,7 +383,7 @@ Future<void> _runDebugNotificationPreview(
         .collection('GroupChats')
         .where('member_ids', arrayContains: userId)
         .limit(5)
-        .get();
+        .getM('workManagerService.dart:385');
     if (groups.docs.isNotEmpty) {
       final firstGroupData = groups.docs.first.data();
       final imageUrl = firstGroupData['image_url'] as String?;
@@ -404,7 +405,7 @@ Future<void> _runDebugNotificationPreview(
         .collection('Notifications')
         .where('receiver_id', isEqualTo: userId)
         .limit(5)
-        .get();
+        .getM('workManagerService.dart:407');
 
     int dating = 0, app = 0;
     String? datingImageUrl, appImageUrl;
@@ -449,13 +450,13 @@ Future<void> _runDebugNotificationPreview(
         .collection('Invitations')
         .where('receiver_id', isEqualTo: userId)
         .limit(5)
-        .get();
+        .getM('workManagerService.dart:452');
     if (invits.docs.isNotEmpty) {
       String? imageUrl;
       try {
         final senderId = invits.docs.first.data()['sender_id'] as String?;
         if (senderId != null) {
-          final senderDoc = await firestore.collection('Users').doc(senderId).get();
+          final senderDoc = await firestore.collection('Users').doc(senderId).getM('workManagerService.dart:458');
           imageUrl = senderDoc.data()?['imageUrl'] as String?;
         }
       } catch (_) {}
@@ -505,7 +506,7 @@ Future<({String? pseudo, String? imageUrl, String? userId})?> _fetchRandomActive
         .collection('Posts')
         .where('status', isEqualTo: 'VALIDE')
         .limit(60)
-        .get();
+        .getM('workManagerService.dart:508');
 
     final creatorIds = postsSnap.docs
         .map((d) => (d.data()['user_id'] as String?) ?? '')
@@ -518,7 +519,7 @@ Future<({String? pseudo, String? imageUrl, String? userId})?> _fetchRandomActive
     creatorIds.shuffle();
     final pickedId = creatorIds.first;
 
-    final creatorDoc = await db.collection('Users').doc(pickedId).get();
+    final creatorDoc = await db.collection('Users').doc(pickedId).getM('workManagerService.dart:521');
     final data = creatorDoc.data();
     if (data == null) return null;
 
@@ -539,7 +540,7 @@ Future<({String? name, String? imageUrl, String? canalId})?> _fetchRandomActiveC
   String userId,
 ) async {
   try {
-    final canalsSnap = await db.collection('Canaux').limit(80).get();
+    final canalsSnap = await db.collection('Canaux').limit(80).getM('workManagerService.dart:542');
 
     final all = canalsSnap.docs.where((doc) => doc.data().isNotEmpty).toList();
     if (all.isEmpty) return null;
@@ -638,7 +639,7 @@ Future<int> _countUnreadDirectMessages(
         .where('message_state', isEqualTo: 'NONLU')
         .where('is_valide', isEqualTo: true)
         .limit(50)
-        .get();
+        .getM('workManagerService.dart:641');
     return snap.docs.length;
   } catch (e) {
     debugPrint('❌ WM countDirectMessages: $e');
@@ -658,7 +659,7 @@ Future<int> _countUnreadGroupMessages(
         .collection('GroupChats')
         .where('member_ids', arrayContains: userId)
         .limit(30)
-        .get();
+        .getM('workManagerService.dart:661');
 
     int active = 0;
     for (final doc in snap.docs) {
@@ -684,7 +685,7 @@ Future<int> _countPendingInvitations(
         .where('receiver_id', isEqualTo: userId)
         .where('status', isEqualTo: 'ENCOURS')
         .limit(50)
-        .get();
+        .getM('workManagerService.dart:687');
     return snap.docs.length;
   } catch (e) {
     debugPrint('❌ WM countInvitations: $e');
@@ -703,7 +704,7 @@ Future<Map<String, int>> _countUnreadNotifications(
         .where('receiver_id', isEqualTo: userId)
         .where('is_open', isEqualTo: false)
         .limit(100)
-        .get();
+        .getM('workManagerService.dart:706');
 
     int dating = 0;
     int app    = 0;
@@ -888,7 +889,7 @@ Future<void> initializeCanalFields() async {
   final firestore = FirebaseFirestore.instance;
   try {
     printVm('🚀 Démarrage initialisation des champs des canaux...');
-    final canals = await firestore.collection('Canaux').get();
+    final canals = await firestore.collection('Canaux').getM('workManagerService.dart:891');
     int updatedCount = 0;
     for (final doc in canals.docs) {
       final canalData = doc.data();

@@ -1,6 +1,7 @@
 // Écoutes (streams) de chaque titre, en direct : les sons d'artistes (champ streamCount du son) et les musiques gratuites
 // d'Afrolook (MusicStudioStats). Tout widget qui montre un titre affiche son nombre d'écoutes avec [StreamsText].
 
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -36,7 +37,7 @@ class StreamCounts {
     _refs[key] = (_refs[key] ?? 0) + 1;
     if (_subs.containsKey(key)) return;
     try {
-      _subs[key] = FirebaseFirestore.instance.collection('artist_sounds').doc(t.id).snapshots().listen((d) {
+      _subs[key] = FirebaseFirestore.instance.collection('artist_sounds').doc(t.id).snapshotsM('stream_counts.dart:39').listen((d) {
         if (d.exists) _set(key, (d.data()?['streamCount'] as num?)?.toInt() ?? 0);
       }, onError: (_) {});
     } catch (_) {
@@ -59,7 +60,7 @@ class StreamCounts {
   static void _startStudio() {
     if (_studioSub != null) return;
     try {
-      _studioSub = FirebaseFirestore.instance.collection('MusicStudioStats').snapshots().listen((s) {
+      _studioSub = FirebaseFirestore.instance.collection('MusicStudioStats').snapshotsM('stream_counts.dart:62').listen((s) {
         final m = {...counts.value};
         for (final d in s.docs) {
           m['music_free:${d.id}'] = (d.data()['streamCount'] as num?)?.toInt() ?? 0;

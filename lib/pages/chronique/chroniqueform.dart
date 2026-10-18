@@ -3,7 +3,11 @@
 import 'dart:async';
 
 import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
 import 'dart:io';
@@ -15,6 +19,9 @@ import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/chroniqueProvider.dart';
 import '../../theme/app_colors.dart';
+import 'chronique_music.dart';
+import 'chronique_overlay_text.dart';
+import 'chronique_music_sheet.dart';
 import '../studio/studio_entry_page.dart';
 import '../studio/studio_models.dart';
 
@@ -29,6 +36,7 @@ class Chronique {
   String? textContent;
   String? mediaUrl;
   String? coverImageUrl; // Pochette pour audio, image de fond pour texte
+  String? posterUrl; // Aperçu d'une vidéo, tiré à la création (affiché avant que la vidéo soit prête)
   String? backgroundColor;
   String? templateId; // Template Studio utilisé
   int duration; // en secondes
@@ -47,6 +55,27 @@ class Chronique {
   int? audioStartMs; // début du clip audio (trim)
   int? audioEndMs;   // fin du clip audio (trim)
 
+  // Dernier commentaire, recopié ici pour l'afficher sans lire la liste des commentaires
+  String? lastCommentPseudo;
+  String? lastCommentText;
+
+  // Musique de la chronique (texte, image, vidéo) : extrait de 5 à 30 s lu en boucle pendant l'affichage
+  String? musicKind; // 'free' | 'artist'
+  String? musicId;
+  String? musicTitle;
+  String? musicArtist;
+  String? musicUrl; // extrait public (jamais l'original)
+  int? musicStartMs;
+  int? musicEndMs;
+  double musicVolume = 0.7;
+  bool videoSoundKept = false; // vidéo : le son d'origine est gardé et mélangé à la musique (sinon la musique le remplace)
+
+  // Texte posé sur une image ou une vidéo : centre du texte (0 à 1) dans l'écran, choisi par l'auteur
+  double? textX;
+  double? textY;
+
+  bool get hasMusic => (musicUrl ?? '').isNotEmpty;
+
   Chronique({
     this.id,
     required this.userId,
@@ -56,6 +85,7 @@ class Chronique {
     this.textContent,
     this.mediaUrl,
     this.coverImageUrl,
+    this.posterUrl,
     this.backgroundColor,
     this.templateId,
     this.duration = 0,
@@ -73,6 +103,19 @@ class Chronique {
     this.totalReactions = 0,
     this.audioStartMs,
     this.audioEndMs,
+    this.lastCommentPseudo,
+    this.lastCommentText,
+    this.musicKind,
+    this.musicId,
+    this.musicTitle,
+    this.musicArtist,
+    this.musicUrl,
+    this.musicStartMs,
+    this.musicEndMs,
+    this.musicVolume = 0.7,
+    this.videoSoundKept = false,
+    this.textX,
+    this.textY,
   });
 
   // Convertir en Map pour Firestore
@@ -85,6 +128,7 @@ class Chronique {
       'textContent': textContent,
       'mediaUrl': mediaUrl,
       'coverImageUrl': coverImageUrl,
+      'posterUrl': posterUrl,
       'backgroundColor': backgroundColor,
       'templateId': templateId,
       'duration': duration,
@@ -102,6 +146,20 @@ class Chronique {
       'totalReactions': totalReactions,
       'audioStartMs': audioStartMs,
       'audioEndMs': audioEndMs,
+      if (lastCommentText != null) 'lastCommentPseudo': lastCommentPseudo,
+      if (lastCommentText != null) 'lastCommentText': lastCommentText,
+      if (textX != null && textY != null) ...{'textX': textX, 'textY': textY},
+      if (hasMusic) ...{
+        'musicKind': musicKind,
+        'musicId': musicId,
+        'musicTitle': musicTitle,
+        'musicArtist': musicArtist,
+        'musicUrl': musicUrl,
+        'musicStartMs': musicStartMs,
+        'musicEndMs': musicEndMs,
+        'musicVolume': musicVolume,
+        'videoSoundKept': videoSoundKept,
+      },
     };
   }
 
@@ -116,6 +174,7 @@ class Chronique {
       textContent: map['textContent'],
       mediaUrl: map['mediaUrl'],
       coverImageUrl: map['coverImageUrl'],
+      posterUrl: map['posterUrl'],
       backgroundColor: map['backgroundColor'],
       templateId: map['templateId'],
       duration: map['duration'] ?? 0,
@@ -133,6 +192,19 @@ class Chronique {
       totalReactions: map['totalReactions'] ?? 0,
       audioStartMs: map['audioStartMs'],
       audioEndMs: map['audioEndMs'],
+      lastCommentPseudo: map['lastCommentPseudo'],
+      lastCommentText: map['lastCommentText'],
+      musicKind: map['musicKind'],
+      musicId: map['musicId'],
+      musicTitle: map['musicTitle'],
+      musicArtist: map['musicArtist'],
+      musicUrl: map['musicUrl'],
+      musicStartMs: (map['musicStartMs'] as num?)?.toInt(),
+      musicEndMs: (map['musicEndMs'] as num?)?.toInt(),
+      musicVolume: (map['musicVolume'] as num?)?.toDouble() ?? 0.7,
+      videoSoundKept: map['videoSoundKept'] == true,
+      textX: (map['textX'] as num?)?.toDouble(),
+      textY: (map['textY'] as num?)?.toDouble(),
     );
   }
 
@@ -221,7 +293,10 @@ class ChroniqueMessage {
 }
 
 class AddChroniquePage extends StatefulWidget {
-  AddChroniquePage({this.initialImage, this.initialText, this.beforePublish});
+  AddChroniquePage({this.initialImage, this.initialText, this.beforePublish, this.initialType});
+
+  /// Ouvre le formulaire directement sur ce type (raccourcis de la liste vide).
+  final ChroniqueType? initialType;
 
   /// Studio Cartes : la carte (image Story) est déjà prête ; la chronique suit les MÊMES règles qu'une chronique image.
   final File? initialImage;
@@ -245,6 +320,10 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
   String? _templateId;   // Template Studio utilisé
   int? _audioStartMs;    // trim audio — début
   int? _audioEndMs;      // trim audio — fin
+  ChroniqueMusic? _music; // musique de la chronique (texte, image, vidéo)
+  double _overlayX = kOverlayDefaultX; // place du texte sur l'image ou la vidéo
+  double _overlayY = kOverlayDefaultY;
+  static const int _maxTextLength = 1000;
   VideoPlayerController? _videoController;
   bool _isUploading = false;
   double _uploadProgress = 0.0;
@@ -276,6 +355,7 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialType != null && widget.initialImage == null) _selectedType = widget.initialType!;
     if (widget.initialImage != null) {
       _selectedType = ChroniqueType.IMAGE;
       _selectedMedia = widget.initialImage;
@@ -287,6 +367,8 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
 
   @override
   void dispose() {
+    _audioRecTimer?.cancel();
+    _audioRecorder?.dispose();
     _textController.dispose();
     _videoController?.dispose();
     super.dispose();
@@ -513,6 +595,9 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
         templateId: _templateId,
         audioStartMs: _audioStartMs,
         audioEndMs: _audioEndMs,
+        music: _selectedType == ChroniqueType.AUDIO ? null : _music,
+        textX: _overlayX,
+        textY: _overlayY,
         onProgress: (progress) {
           setState(() => _uploadProgress = progress);
         },
@@ -634,6 +719,11 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
             if (_selectedType == ChroniqueType.IMAGE || _selectedType == ChroniqueType.VIDEO) _buildMediaContent(colors),
             if (_selectedType == ChroniqueType.AUDIO) _buildAudioContent(colors),
 
+            if (_selectedType != ChroniqueType.AUDIO) ...[
+              const SizedBox(height: 16),
+              _buildMusicRow(colors),
+            ],
+
             const SizedBox(height: 24),
 
             // Barre de progression
@@ -706,6 +796,55 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
     );
   }
 
+  Future<void> _pickMusic() async {
+    final m = await showChroniqueMusicSheet(context, isVideo: _selectedType == ChroniqueType.VIDEO);
+    if (m != null && mounted) setState(() => _music = m);
+  }
+
+  Widget _buildMusicRow(AppColors colors) {
+    final m = _music;
+    return GestureDetector(
+      onTap: _pickMusic,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: m == null ? colors.surface : colors.primary.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: m == null ? colors.border : colors.primary),
+        ),
+        child: Row(children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(color: colors.surfaceVariant, borderRadius: BorderRadius.circular(11)),
+            child: Icon(Icons.music_note_rounded, color: colors.primary, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(m == null ? 'Ajouter une musique' : m.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 14)),
+              const SizedBox(height: 2),
+              Text(
+                m == null ? 'Un artiste, Afrolook ou votre téléphone · 5 à 30 s' : '${m.artist} · ${(m.clipMs / 1000).round()} s · ${m.coins > 0 ? '${m.coins} pièces' : 'gratuite'}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: colors.textSecondary, fontSize: 12),
+              ),
+            ]),
+          ),
+          if (m != null)
+            IconButton(
+              tooltip: 'Retirer la musique',
+              onPressed: () => setState(() => _music = null),
+              icon: Icon(Icons.close_rounded, color: colors.textSecondary, size: 20),
+            )
+          else
+            Icon(Icons.chevron_right_rounded, color: colors.textSecondary),
+        ]),
+      ),
+    );
+  }
+
   Widget _buildTextContent(AppColors colors) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -720,10 +859,12 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
           child: TextField(
             controller: _textController,
             maxLines: 5,
+            maxLength: _maxTextLength,
             style: TextStyle(color: colors.textPrimary, fontSize: 15),
             decoration: InputDecoration(
               hintText: 'Écrivez votre chronique...',
               hintStyle: TextStyle(color: colors.textPrimary.withOpacity(0.35)),
+              counterStyle: TextStyle(color: colors.textSecondary, fontSize: 11),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.all(16),
             ),
@@ -825,14 +966,30 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
             aspectRatio: 9 / 16,
             child: _selectedMedia == null
                 ? _buildMediaPlaceholder(colors)
-                : _selectedType == ChroniqueType.IMAGE
-                    ? Image.file(_selectedMedia!, fit: BoxFit.cover)
-                    : (_videoController != null && _videoController!.value.isInitialized
-                        ? VideoPlayer(_videoController!)
-                        : Container(
-                            color: colors.surfaceVariant,
-                            child: Center(child: CircularProgressIndicator(color: colors.primary)),
-                          )),
+                : Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (_selectedType == ChroniqueType.IMAGE)
+                        Image.file(_selectedMedia!, fit: BoxFit.cover)
+                      else if (_videoController != null && _videoController!.value.isInitialized)
+                        VideoPlayer(_videoController!)
+                      else
+                        Container(
+                          color: colors.surfaceVariant,
+                          child: Center(child: CircularProgressIndicator(color: colors.primary)),
+                        ),
+                      // Le texte tapé apparaît sur l'image : on le fait glisser où l'on veut
+                      ChroniqueOverlayText(
+                        text: _textController.text,
+                        x: _overlayX,
+                        y: _overlayY,
+                        onMove: (nx, ny) => setState(() {
+                          _overlayX = nx;
+                          _overlayY = ny;
+                        }),
+                      ),
+                    ],
+                  ),
           ),
         ),
         const SizedBox(height: 16),
@@ -876,7 +1033,7 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
             maxLength: 100,
             style: TextStyle(color: colors.textPrimary, fontSize: 14),
             decoration: InputDecoration(
-              hintText: 'Description (optionnelle)',
+              hintText: 'Texte sur la chronique (optionnel)',
               hintStyle: TextStyle(color: colors.textPrimary.withOpacity(0.35)),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -884,6 +1041,15 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
             ),
           ),
         ),
+        if (_selectedMedia != null && _textController.text.trim().isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(children: [
+              Icon(Icons.open_with_rounded, size: 14, color: colors.textPrimary.withOpacity(0.5)),
+              const SizedBox(width: 6),
+              Expanded(child: Text('Glissez le texte sur l\'image pour le placer où vous voulez.', style: TextStyle(color: colors.textPrimary.withOpacity(0.55), fontSize: 11.5))),
+            ]),
+          ),
       ],
     );
   }
@@ -939,6 +1105,95 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
     );
   }
 
+  // ── Audio : enregistrer sa voix ou choisir un fichier, directement ici (le Studio reste dans la barre du haut) ──
+
+  static const int _maxAudioMs = 60000;
+  AudioRecorder? _audioRecorder;
+  bool _audioRecording = false;
+  int _audioRecMs = 0;
+  Timer? _audioRecTimer;
+
+  String _fmtMs(int ms) {
+    final s = (ms / 1000).round();
+    return '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _startAudioRecord() async {
+    _audioRecorder ??= AudioRecorder();
+    try {
+      if (!await _audioRecorder!.hasPermission()) {
+        _showErrorDialog('Autorisez le micro pour enregistrer votre voix.');
+        return;
+      }
+      final dir = await getTemporaryDirectory();
+      await _audioRecorder!.start(const RecordConfig(encoder: AudioEncoder.aacLc), path: '${dir.path}/chr_audio_${DateTime.now().millisecondsSinceEpoch}.m4a');
+      setState(() {
+        _audioRecording = true;
+        _audioRecMs = 0;
+      });
+      _audioRecTimer = Timer.periodic(const Duration(milliseconds: 250), (t) {
+        if (!mounted) return t.cancel();
+        setState(() => _audioRecMs += 250);
+        if (_audioRecMs >= _maxAudioMs) _stopAudioRecord();
+      });
+    } catch (_) {
+      _showErrorDialog('Enregistrement impossible.');
+    }
+  }
+
+  Future<void> _stopAudioRecord() async {
+    _audioRecTimer?.cancel();
+    final ms = _audioRecMs;
+    String? path;
+    try {
+      path = await _audioRecorder?.stop();
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() => _audioRecording = false);
+    if (path == null || ms < 2000) {
+      if (ms < 2000) _showErrorDialog('Enregistrement trop court (2 secondes au moins).');
+      return;
+    }
+    setState(() {
+      _selectedType = ChroniqueType.AUDIO;
+      _selectedMedia = File(path!);
+      _audioStartMs = 0;
+      _audioEndMs = ms.clamp(0, _maxAudioMs);
+    });
+  }
+
+  Future<void> _pickAudioFile() async {
+    try {
+      final r = await FilePicker.platform.pickFiles(type: FileType.audio, allowMultiple: false);
+      final path = r?.files.firstOrNull?.path;
+      if (path == null) return;
+      final file = File(path);
+      if (await file.length() > 20 * 1024 * 1024) {
+        _showErrorDialog('Le fichier audio ne doit pas dépasser 20 Mo.');
+        return;
+      }
+      final probe = AudioPlayer();
+      await probe.setSource(DeviceFileSource(path));
+      final d = await probe.getDuration();
+      await probe.dispose();
+      final ms = d?.inMilliseconds ?? 0;
+      if (ms < 2000) {
+        _showErrorDialog('Fichier audio illisible ou trop court.');
+        return;
+      }
+      if (!mounted) return;
+      setState(() {
+        _selectedType = ChroniqueType.AUDIO;
+        _selectedMedia = file;
+        _audioStartMs = 0;
+        _audioEndMs = ms.clamp(0, _maxAudioMs);
+        if (_textController.text.trim().isEmpty) _textController.text = path.split('/').last.replaceAll(RegExp(r'\.[A-Za-z0-9]+$'), '');
+      });
+    } catch (_) {
+      _showErrorDialog('Fichier audio illisible.');
+    }
+  }
+
   Widget _buildAudioContent(AppColors colors) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -953,36 +1208,48 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
             border: Border.all(color: colors.border),
           ),
           child: _selectedMedia == null
-              ? GestureDetector(
-                  onTap: _openStudio,
-                  child: Column(
-                    children: [
-                      Icon(Icons.mic_none_rounded, size: 48, color: colors.textPrimary.withOpacity(0.3)),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Utiliser le Studio pour ajouter un audio',
-                        style: TextStyle(color: colors.textPrimary.withOpacity(0.5), fontSize: 13),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: colors.primary.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(99),
-                          border: Border.all(color: colors.primary.withOpacity(0.4)),
+              ? Column(
+                  children: [
+                    Icon(_audioRecording ? Icons.graphic_eq_rounded : Icons.mic_none_rounded, size: 48, color: _audioRecording ? Colors.redAccent : colors.textPrimary.withOpacity(0.35)),
+                    const SizedBox(height: 10),
+                    Text(
+                      _audioRecording ? 'Enregistrement… ${_fmtMs(_audioRecMs)} / 1:00' : 'Enregistrez votre voix ou choisissez un fichier audio',
+                      style: TextStyle(color: colors.textPrimary.withOpacity(_audioRecording ? 0.9 : 0.55), fontSize: 13, fontWeight: _audioRecording ? FontWeight.w800 : FontWeight.w500),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: _audioRecording ? _stopAudioRecord : _startAudioRecord,
+                            icon: Icon(_audioRecording ? Icons.stop_rounded : Icons.mic_rounded, size: 18),
+                            label: Text(_audioRecording ? 'Arrêter' : 'Enregistrer', style: const TextStyle(fontWeight: FontWeight.w800)),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: _audioRecording ? Colors.redAccent : colors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                          ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.auto_awesome, size: 14, color: colors.primary),
-                            const SizedBox(width: 6),
-                            Text('Ouvrir le Studio', style: TextStyle(color: colors.primary, fontSize: 12, fontWeight: FontWeight.w700)),
-                          ],
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _audioRecording ? null : _pickAudioFile,
+                            icon: const Icon(Icons.audio_file_rounded, size: 18),
+                            label: const Text('Un fichier', style: TextStyle(fontWeight: FontWeight.w700)),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: colors.textPrimary,
+                              side: BorderSide(color: colors.border),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                  ],
                 )
               : Row(
                   children: [

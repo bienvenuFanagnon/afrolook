@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import '../../widgets/music/music_overlay.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/pages/home/homeWidget.dart';
@@ -418,7 +419,7 @@ class _PostVideosState extends State<OnlyPostVideo> with WidgetsBindingObserver,
               onPressed: () async {
                 try {
                   CollectionReference userCollect = FirebaseFirestore.instance.collection('Users');
-                  QuerySnapshot querySnapshotUser = await userCollect.where("id", isEqualTo: userSendCadeau.id!).get();
+                  QuerySnapshot querySnapshotUser = await userCollect.where("id", isEqualTo: userSendCadeau.id!).getM('video_details.dart:421');
 
                   List<UserData> listUsers = querySnapshotUser.docs.map(
                         (doc) => UserData.fromJson(doc.data() as Map<String, dynamic>),
@@ -514,7 +515,7 @@ class _PostVideosState extends State<OnlyPostVideo> with WidgetsBindingObserver,
 
                     try {
                       CollectionReference userCollect = FirebaseFirestore.instance.collection('Users');
-                      QuerySnapshot querySnapshotUser = await userCollect.where("id", isEqualTo: userSendCadeau.id!).get();
+                      QuerySnapshot querySnapshotUser = await userCollect.where("id", isEqualTo: userSendCadeau.id!).getM('video_details.dart:517');
 
                       List<UserData> listUsers = querySnapshotUser.docs.map(
                             (doc) => UserData.fromJson(doc.data() as Map<String, dynamic>),
@@ -1031,7 +1032,7 @@ class _PostVideosState extends State<OnlyPostVideo> with WidgetsBindingObserver,
                                                       CollectionReference userCollect =
                                                       FirebaseFirestore.instance.collection('Users');
                                                       // Get docs from collection reference
-                                                      QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: datas[index].user!.id!).get();
+                                                      QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: datas[index].user!.id!).getM('video_details.dart:1034');
                                                       // Afficher la liste
                                                       List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
                                                           UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();

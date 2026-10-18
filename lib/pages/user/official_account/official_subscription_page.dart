@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:flutter/material.dart';
 import '../../../utils/platform_guard.dart';
 import '../../../services/coin_checkout.dart';
@@ -41,7 +42,7 @@ class _OfficialSubscriptionPageState extends State<OfficialSubscriptionPage> {
     final balanceSnap = await FirebaseFirestore.instance
         .collection('Users')
         .doc(userId)
-        .get();
+        .getM('official_subscription_page.dart:44');
     if (!mounted) return;
     setState(() {
       _sub = sub;

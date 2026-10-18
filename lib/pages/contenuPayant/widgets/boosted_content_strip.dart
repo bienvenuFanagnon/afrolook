@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/contenuPayant/content_detail_page.dart';
 import 'package:afrotok/providers/authProvider.dart';
@@ -23,7 +24,7 @@ class BoostedContentStripWidget extends StatelessWidget {
               isGreaterThan: DateTime.now().millisecondsSinceEpoch)
           .orderBy('boostEndDate', descending: true)
           .limit(10)
-          .snapshots(),
+          .snapshotsM('boosted_content_strip.dart:26'),
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const SizedBox.shrink();

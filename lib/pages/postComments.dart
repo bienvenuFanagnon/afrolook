@@ -1,4 +1,4 @@
-import '../ads/ad_positions.dart';
+import 'package:afrotok/services/read_meter.dart';
 import '../ads/ad_slot.dart';
 import 'package:afrotok/pages/canaux/detailsCanal.dart';
 import '../l10n/tr.dart';
@@ -33,6 +33,7 @@ import 'dart:ui' as ui;
 
 import 'coins/post_gifts_list.dart';
 import '../services/comment_coins.dart';
+import '../services/comments_prefetch.dart';
 import '../widgets/post_coins_earned.dart';
 import 'pub/afrolook_inline_ad.dart';
 import '../services/stickers/sticker_models.dart';
@@ -82,7 +83,10 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
   bool _hasMoreComments = true;
 
   DocumentSnapshot? _lastCommentDocument;
-  final int _commentsPageSize = 3;
+  final int _commentsPageSize = CommentsPrefetch.pageSize;
+  // Page suivante lue en avance : « Voir plus » l'affiche aussitôt, puis la suivante se prépare
+  Future<CommentPage>? _readAhead;
+  String? _readAheadAfterId;
 
   final Map<String, bool> _commentExpanded = {};
   final Map<String, bool> _replyExpanded = {};
@@ -123,12 +127,23 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     userProvider = Provider.of<UserProvider>(context, listen: false);
     postProvider = Provider.of<PostProvider>(context, listen: false);
 
-    if (widget.initialComments.isNotEmpty) {
-      comments = List.from(widget.initialComments);
+    final postId = widget.post.id;
+    final cached = postId == null ? null : CommentsPrefetch.instance.peek(postId);
+    if (cached != null) {
+      // Premiers commentaires déjà prêts (cherchés quand le post s'est affiché) : affichage immédiat, sans attente
+      comments = List.from(cached.comments);
+      _lastCommentDocument = cached.last;
+      _hasMoreComments = cached.hasMore;
       _loadUserDataForInitialComments();
+      _startReadAhead();
+    } else {
+      if (widget.initialComments.isNotEmpty) {
+        comments = List.from(widget.initialComments);
+        _loadUserDataForInitialComments();
+      }
+      _loadInitialComments();
     }
     _loadUsers();
-    _loadInitialComments();
     _ensureCanalLoaded();
     _loadTopGifters();
     _loadStickerGifts();
@@ -233,7 +248,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
           .collection('CommentGifts')
           .where('postId', isEqualTo: widget.post.id)
           .limit(300)
-          .get();
+          .getM('postComments.dart:250');
       final docs = snap.docs.where((d) => (d.data()['stickerId'] ?? '').toString().isNotEmpty).toList()
         ..sort((a, b) {
           final x = (a.data()['createdAt'] as num?) ?? 0;
@@ -374,7 +389,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
   void _ensureCanalLoaded() {
     final canalId = widget.post.canal_id;
     if (canalId == null || canalId.isEmpty || widget.post.canal != null) return;
-    FirebaseFirestore.instance.collection('Canaux').doc(canalId).get().then((doc) {
+    FirebaseFirestore.instance.collection('Canaux').doc(canalId).getM('postComments.dart:391').then((doc) {
       if (doc.exists && mounted) {
         setState(() => widget.post.canal = Canal.fromJson(doc.data()!));
       }
@@ -386,18 +401,20 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     setState(() => users = usersList);
   }
 
-  Future<void> _loadInitialComments() async {
+  Future<void> _loadInitialComments({bool refresh = false}) async {
     if (_isLoading) return;
+    if (refresh && widget.post.id != null) CommentsPrefetch.instance.invalidate(widget.post.id!);
     setState(() {
       _isLoading = true;
-      if (comments.isEmpty) comments.clear();
+      if (refresh) comments = [];
       _lastCommentDocument = null;
       _hasMoreComments = true;
+      _readAhead = null;
     });
     try {
       await _loadCommentsBatch();
     } catch (e) {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -405,75 +422,78 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     if (_isLoadingMore || !_hasMoreComments) return;
     setState(() => _isLoadingMore = true);
     try {
-      await _loadCommentsBatch();
+      // Les commentaires déjà affichés (reçus avant la page) peuvent remplir une page entière : on enchaîne jusqu'à en trouver de nouveaux
+      for (var tries = 0; tries < 4 && _hasMoreComments; tries++) {
+        final added = await _loadCommentsBatch();
+        if (added > 0) break;
+      }
     } catch (_) {
     } finally {
-      setState(() => _isLoadingMore = false);
+      if (mounted) setState(() => _isLoadingMore = false);
     }
   }
 
-  Future<void> _loadCommentsBatch() async {
-    Query query = FirebaseFirestore.instance
-        .collection('PostComments')
-        .where("post_id", isEqualTo: widget.post.id)
-        .orderBy('created_at', descending: true)
-        .limit(_commentsPageSize);
+  /// Lit en avance la page qui suivra, pour que « Voir plus » soit instantané.
+  void _startReadAhead() {
+    final postId = widget.post.id;
+    final after = _lastCommentDocument;
+    if (postId == null || after == null || !_hasMoreComments) return;
+    _readAheadAfterId = after.id;
+    final f = CommentsPrefetch.instance.loadPage(postId, after: after, limit: _commentsPageSize);
+    f.then((_) {}, onError: (_) {});
+    _readAhead = f;
+  }
 
-    if (_lastCommentDocument != null) {
-      query = query.startAfterDocument(_lastCommentDocument!);
+  /// Charge une page de commentaires ; renvoie combien de nouveaux commentaires ont été ajoutés à la liste.
+  Future<int> _loadCommentsBatch() async {
+    final postId = widget.post.id;
+    if (postId == null) {
+      if (mounted) setState(() { _hasMoreComments = false; _isLoading = false; });
+      return 0;
     }
+    CommentPage page;
+    final ahead = _readAhead;
+    if (ahead != null && _lastCommentDocument != null && _readAheadAfterId == _lastCommentDocument!.id) {
+      _readAhead = null;
+      try {
+        page = await ahead;
+      } catch (_) {
+        page = await CommentsPrefetch.instance.loadPage(postId, after: _lastCommentDocument, limit: _commentsPageSize);
+      }
+    } else {
+      page = await CommentsPrefetch.instance.loadPage(postId, after: _lastCommentDocument, limit: _commentsPageSize);
+    }
+    if (!mounted) return 0;
 
-    final querySnapshot = await query.get();
-
-    if (querySnapshot.docs.isEmpty) {
+    if (page.comments.isEmpty) {
       setState(() {
         _hasMoreComments = false;
         _isLoading = false;
       });
-      return;
+      return 0;
     }
 
-    _lastCommentDocument = querySnapshot.docs.last;
+    _lastCommentDocument = page.last;
 
-    List<PostComment> newComments = querySnapshot.docs
-        .map((doc) => PostComment.fromJson(doc.data() as Map<String, dynamic>))
-        .toList();
-
-    // Charger toutes les données utilisateurs en parallèle
-    final userFutures = newComments.map((c) => _loadUserData(c.user_id ?? '')).toList();
-    final usersData = await Future.wait(userFutures);
-    for (int i = 0; i < newComments.length; i++) {
-      newComments[i].user = usersData[i];
-    }
-
-    // Dédupliquer avec les commentaires déjà affichés (preloaded)
+    // Dédupliquer avec les commentaires déjà affichés (reçus avant la page)
     final existingIds = comments.map((c) => c.id).toSet();
-    final deduplicated = newComments.where((c) => !existingIds.contains(c.id)).toList();
+    final deduplicated = page.comments.where((c) => !existingIds.contains(c.id)).toList();
 
     setState(() {
       comments.addAll(deduplicated);
+      _hasMoreComments = page.hasMore;
       _isLoading = false;
     });
+    _startReadAhead();
+    return deduplicated.length;
   }
 
-  Future<UserData?> _loadUserData(String userId) async {
-    if (userId.isEmpty) return null;
-    try {
-      final doc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
-      if (doc.exists) return UserData.fromJson(doc.data()!);
-    } catch (_) {}
-    return null;
-  }
+  Future<UserData?> _loadUserData(String userId) => CommentsPrefetch.instance.user(userId);
 
   Future<void> _loadUserDataForInitialComments() async {
-    final futures = comments.map((c) => _loadUserData(c.user_id ?? '')).toList();
-    final loaded = await Future.wait(futures);
+    await CommentsPrefetch.instance.fillAuthors(comments);
     if (!mounted) return;
-    setState(() {
-      for (int i = 0; i < comments.length; i++) {
-        if (comments[i].user == null) comments[i].user = loaded[i];
-      }
-    });
+    setState(() {});
   }
 
   String formatNumber(int number) {
@@ -685,7 +705,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
       final snapshot = await firestore
           .collection('PostGifts')
           .where('postId', isEqualTo: widget.post.id!)
-          .get();
+          .getM('postComments.dart:707');
 
       final Map<String, _GifterEntry> byUser = {};
       for (var doc in snapshot.docs) {
@@ -718,7 +738,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
       for (var entry in sorted.take(10)) {
         try {
           final userDoc =
-              await firestore.collection('Users').doc(entry.senderId).get();
+              await firestore.collection('Users').doc(entry.senderId).getM('postComments.dart:740');
           if (userDoc.exists) entry.userData = UserData.fromJson(userDoc.data()!);
         } catch (_) {}
       }
@@ -1579,10 +1599,10 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
               (canalName != null && postCanal.titre == canalName))) {
         canal = postCanal;
       } else if (canalId != null && canalId.isNotEmpty) {
-        final d = await FirebaseFirestore.instance.collection('Canaux').doc(canalId).get();
+        final d = await FirebaseFirestore.instance.collection('Canaux').doc(canalId).getM('postComments.dart:1601');
         if (d.exists) canal = Canal.fromJson(d.data()!);
       } else if (canalName != null && canalName.isNotEmpty) {
-        final q = await FirebaseFirestore.instance.collection('Canaux').where('titre', isEqualTo: canalName).limit(1).get();
+        final q = await FirebaseFirestore.instance.collection('Canaux').where('titre', isEqualTo: canalName).limit(1).getM('postComments.dart:1604');
         if (q.docs.isNotEmpty) canal = Canal.fromJson(q.docs.first.data());
       }
       if (canal != null && mounted) {
@@ -1598,7 +1618,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     try {
       var u = user;
       if (u == null && userId != null && userId.isNotEmpty) {
-        final d = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+        final d = await FirebaseFirestore.instance.collection('Users').doc(userId).getM('postComments.dart:1620');
         if (d.exists) u = UserData.fromJson(d.data()!);
       }
       if (u != null && mounted) {
@@ -2170,6 +2190,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
 
   void _addCommentLocally(PostComment newComment) {
     setState(() => comments.insert(0, newComment));
+    if (widget.post.id != null) CommentsPrefetch.instance.addLocal(widget.post.id!, newComment);
   }
 
   void _updateCommentLocally(PostComment updatedComment) {
@@ -2228,6 +2249,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     try {
       await FirebaseFirestore.instance.collection('PostComments').doc(comment.id).delete();
       setState(() => comments.removeWhere((c) => c.id == comment.id));
+      if (widget.post.id != null) CommentsPrefetch.instance.invalidate(widget.post.id!);
       await FirebaseFirestore.instance
           .collection("Posts")
           .doc(widget.post.id)
@@ -2254,7 +2276,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
       final doc = await FirebaseFirestore.instance
           .collection('PostComments')
           .doc(parentComment.id)
-          .get();
+          .getM('postComments.dart:2278');
 
       if (!doc.exists) throw Exception('Commentaire parent non trouve');
 
@@ -2344,7 +2366,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
         actions: [
           IconButton(
             icon: Icon(Icons.refresh_rounded, color: _colors.textSecondary, size: 20),
-            onPressed: _loadInitialComments,
+            onPressed: () => _loadInitialComments(refresh: true),
           ),
         ],
         bottom: PreferredSize(
@@ -2402,8 +2424,8 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                   SliverPadding(
                     padding: const EdgeInsets.only(top: 8),
                     sliver: Builder(builder: (_) {
-                      // Une pub après le 6e commentaire, puis tous les 12 ; liste plus courte : une pub en fin de liste
-                      final adAfter = AdPositions.after(comments.length, first: 6, every: 12).toSet();
+                      // Une pub en haut de la page, puis une après le 3e commentaire, ensuite toutes les 10 (rien avant : pas de pub collée à 2 commentaires)
+                      final adAfter = <int>{for (var i = 2; i < comments.length; i += 10) i};
                       final entries = <int>[
                         for (var i = 0; i < comments.length; i++) ...[i, if (adAfter.contains(i)) -1]
                       ];

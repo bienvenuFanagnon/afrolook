@@ -1,4 +1,5 @@
 // ad_config_service.dart — config tarifaire centralisée (Firestore)
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AdDuration {
@@ -47,7 +48,7 @@ class AdConfigService {
       final doc = await FirebaseFirestore.instance
           .collection(_collection)
           .doc(_docId)
-          .get();
+          .getM('ad_config_service.dart:50');
       if (doc.exists && doc.data()?['durations'] != null) {
         final list = (doc.data()!['durations'] as List)
             .map((e) => AdDuration.fromJson(e as Map<String, dynamic>))

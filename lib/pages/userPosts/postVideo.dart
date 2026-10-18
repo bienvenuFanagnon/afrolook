@@ -1,4 +1,5 @@
-﻿import 'package:afrotok/models/model_data.dart';
+﻿import '../../services/media_shrink.dart';
+import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:camera/camera.dart';
 import 'package:fluttertagger/fluttertagger.dart';
@@ -255,7 +256,7 @@ body: SingleChildScrollView(
                                   'post_media/${Path.basename(File(videoFile.path).path)}');
 
                               UploadTask uploadTask = storageReference
-                                  .putFile(File(videoFile.path)!);
+                                  .putFile(await MediaShrink.file(File(videoFile.path)!));
                               uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
                                 setState(() {
                                   _uploadProgress =

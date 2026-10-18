@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/feed/sections/card_feed_invite.dart';
 import 'package:afrotok/widgets/feed/sections/defi_feed_card.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
@@ -23,6 +24,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 import '../../providers/sound_provider.dart';
 import '../../services/utils/abonnement_utils.dart';
 import '../auth/authTest/Screens/updateUserData.dart';
+import '../chronique/chronique_widgets.dart';
 import '../chronique/chroniqueform.dart';
 import '../component/showUserDetails.dart';
 import '../../providers/afroshop/authAfroshopProvider.dart';
@@ -655,7 +657,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         final userDoc = await FirebaseFirestore.instance
             .collection('Users')
             .doc(userId)
-            .get();
+            .getM('HomeConstPost.dart:659');
         final _rawUnread = (userDoc.data()?['unreadPosts'] as Map<String, dynamic>?) ?? {};
         authProvider.loginUserData.unreadPosts = UserData.parseUnreadTimestamps(_rawUnread);
         authProvider.loginUserData.repostMeta = UserData.parseUnreadRepostMeta(_rawUnread);
@@ -2111,7 +2113,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       final userDoc = await FirebaseFirestore.instance
           .collection('Users')
           .doc(userId)
-          .get();
+          .getM('HomeConstPost.dart:2115');
       final _rawUnread = (userDoc.data()?['unreadPosts'] as Map<String, dynamic>?) ?? {};
       authProvider.loginUserData.unreadPosts = UserData.parseUnreadTimestamps(_rawUnread);
       authProvider.loginUserData.repostMeta = UserData.parseUnreadRepostMeta(_rawUnread);
@@ -2287,7 +2289,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         query = query.where("available_countries", arrayContains: countryCode);
       }
       query = query.limit((limit * 1.5).ceil());
-      final snapshot = await query.get();
+      final snapshot = await query.getM('HomeConstPost.dart:2291');
       final tempEvents = <Post>[];
       for (final doc in snapshot.docs) {
         if (tempEvents.length >= limit) break;
@@ -2639,7 +2641,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           .collection('Posts')
           .orderBy('created_at', descending: true)
           .limit(limit * 4)
-          .get();
+          .getM('HomeConstPost.dart:2643');
 
       for (final doc in snap.docs) {
         try {
@@ -2673,7 +2675,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           .orderBy('created_at', descending: true)
           .startAfterDocument(_recentLastDoc!)
           .limit(limit * 3)
-          .get();
+          .getM('HomeConstPost.dart:2677');
 
       for (final doc in snap.docs) {
         try {
@@ -2971,7 +2973,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           final doc = await FirebaseFirestore.instance
               .collection('Users')
               .doc(userId)
-              .get();
+              .getM('HomeConstPost.dart:2975');
           final raw = doc.data()?['newPostsByCreator'] as Map<String, dynamic>? ?? {};
           freshCounts = Map<String, int>.fromEntries(
             raw.entries
@@ -3098,10 +3100,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       if (validChroniques != null) {
         // Résultat réel reçu : mettre à jour (même si vide = toutes expirées)
         setState(() => _chroniques = validChroniques!);
-        if (validChroniques.isNotEmpty) {
-          await _loadChroniqueUserDataInBackground(validChroniques);
-        }
+        // Les anneaux affichent la photo et le pseudo enregistrés dans la chronique : plus de lecture « Users » à attendre
         _saveFeedToCache();
+        _precacheChroniqueImages(validChroniques);
       }
       // Si null (timeout) : on garde _chroniques tel quel
     } catch (e) {
@@ -3111,43 +3112,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     }
   }
 
-  Future<void> _loadChroniqueUserDataInBackground(List<Chronique> chroniques) async {
-    try {
-      final userIds = chroniques
-          .map((c) => c.userId)
-          .toSet()
-          .where((id) => !_userDataCache.containsKey(id))
-          .toList();
-
-      if (userIds.isEmpty) return;
-
-      // Firestore whereIn supporte au maximum 30 ids par requête -> on chunk
-      const chunkSize = 30;
-      for (var i = 0; i < userIds.length; i += chunkSize) {
-        final chunk = userIds.sublist(
-          i,
-          (i + chunkSize > userIds.length) ? userIds.length : i + chunkSize,
-        );
-
-        final snapshot = await _firestore
-            .collection('Users')
-            .where(FieldPath.documentId, whereIn: chunk)
-            .get();
-
-        for (final doc in snapshot.docs) {
-          final userData = UserData.fromJson(doc.data());
-          _userDataCache[doc.id] = userData;
-          _userVerificationStatus[doc.id] = userData.isVerify ?? false;
-        }
-      }
-
-      // Mettre à jour l'UI si nécessaire
-      if (mounted) {
-        setState(() {});
-      }
-    } catch (e) {
-      printVm('❌ Erreur chargement données chroniques: $e');
-    }
+  /// Les images des premiers anneaux sont téléchargées dès la réponse du serveur : elles sont déjà là quand les anneaux se dessinent.
+  void _precacheChroniqueImages(List<Chronique> chroniques) {
+    if (!mounted) return;
+    precacheChroniqueImages(context, chroniques.take(6).toList());
   }
 
   // ===========================================================================
@@ -3428,40 +3396,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   Widget _buildFilterChips() {
     final colors = AppColors.of(context);
-    // Bouton "Nouvelle chronique" injecté dans la barre de filtre quand pas encore de chroniques
-    final List<Widget> trailing = _chroniques.isEmpty && !_isLoadingChroniques
-        ? [
-            GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => AddChroniquePage()),
-              ).then((_) {
-                if (!mounted) return;
-                setState(() => _hasStartedLoadChroniques = false);
-                _loadChroniquesInBackground();
-              }),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: colors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: colors.primary.withOpacity(0.4)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.add_circle_outline, size: 14, color: colors.primary),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Nouvelle chronique',
-                      style: TextStyle(color: colors.primary, fontSize: 11, fontWeight: FontWeight.w600),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ]
-        : [];
+    final List<Widget> trailing = [];
 
     return FeedFilterBar(
       currentFilter: _currentFilter,
@@ -3478,59 +3413,13 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   // ===========================================================================
 
   Widget _buildChroniquesSection() {
-    if (_isLoadingChroniques) {
-      // Skeleton stories — même hauteur que ChroniqueSectionComponent
-      return SizedBox(
-        height: 120,
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: 5,
-          itemBuilder: (_, __) => Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 62,
-                  height: 62,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  width: 50,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-    if (_chroniques.isEmpty) {
-      // Bouton affiché dans la barre de filtre (_buildFilterChips), pas ici
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        ChroniqueSectionComponent(
-          videoThumbnails: _videoThumbnails,
-          userVerificationStatus: _userVerificationStatus,
-          userDataCache: _userDataCache,
-          isLoadingChroniques: _isLoadingChroniques,
-          groupedChroniques: _groupChroniquesByUser(_chroniques),
-        ),
-      ],
+    // Le bloc gère lui-même le chargement (anneaux en attente) et l'absence de chronique (invitation à publier)
+    return ChroniqueSectionComponent(
+      videoThumbnails: _videoThumbnails,
+      userVerificationStatus: _userVerificationStatus,
+      userDataCache: _userDataCache,
+      isLoadingChroniques: _isLoadingChroniques && _chroniques.isEmpty,
+      groupedChroniques: _groupChroniquesByUser(_chroniques),
     );
   }
 
@@ -4030,7 +3919,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                         final userId = authProvider.loginUserData.id;
                         if (userId != null) {
                           try {
-                            final doc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+                            final doc = await FirebaseFirestore.instance.collection('Users').doc(userId).getM('HomeConstPost.dart:3921');
                             final _rawUnread = (doc.data()?['unreadPosts'] as Map<String, dynamic>?) ?? {};
                             authProvider.loginUserData.unreadPosts = UserData.parseUnreadTimestamps(_rawUnread);
                             authProvider.loginUserData.repostMeta = UserData.parseUnreadRepostMeta(_rawUnread);

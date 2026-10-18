@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -41,7 +42,7 @@ class _InfluencerRequestsPageState extends State<InfluencerRequestsPage>
         .collection('InfluenceurRequests')
         .where('status', isEqualTo: status)
         .orderBy('createdAt', descending: true)
-        .snapshots();
+        .snapshotsM('influencer_requests_page.dart:44');
   }
 
   Future<void> _processRequest(

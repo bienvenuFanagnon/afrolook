@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -33,7 +34,7 @@ class _AdminCanalDetailPageState extends State<AdminCanalDetailPage> {
     if (ownerId == null || ownerId.isEmpty || _ownerLoadedFor == ownerId) return;
     _ownerLoadedFor = ownerId;
     try {
-      final u = await FirebaseFirestore.instance.collection('Users').doc(ownerId).get();
+      final u = await FirebaseFirestore.instance.collection('Users').doc(ownerId).getM('admin_canal_detail_page.dart:36');
       if (mounted) setState(() => _ownerPseudo = u.data()?['pseudo'] as String?);
     } catch (_) {}
   }
@@ -203,7 +204,7 @@ class _AdminCanalDetailPageState extends State<AdminCanalDetailPage> {
         title: const Text('Gestion du canal', style: TextStyle(fontWeight: FontWeight.w700)),
       ),
       body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: FirebaseFirestore.instance.collection('Canaux').doc(widget.canalId).snapshots(),
+        stream: FirebaseFirestore.instance.collection('Canaux').doc(widget.canalId).snapshotsM('admin_canal_detail_page.dart:206'),
         builder: (context, snap) {
           if (snap.hasError) return Center(child: Text('Erreur : ${snap.error}', style: TextStyle(color: c.danger)));
           if (!snap.hasData) return const Center(child: CircularProgressIndicator());

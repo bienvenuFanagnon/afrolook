@@ -1,10 +1,13 @@
-﻿import 'dart:math';
+import 'package:afrotok/services/read_meter.dart';
+import 'dart:math';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:video_player/video_player.dart';
 
 import '../models/model_data.dart';
+import '../utils/media_cdn.dart';
 import 'media_cache_service.dart';
 
 /// Service singleton qui pré-initialise les contrôleurs vidéo des pubs actives.
@@ -13,6 +16,9 @@ class AdPreloadService {
   static final AdPreloadService _instance = AdPreloadService._();
   static AdPreloadService get instance => _instance;
   AdPreloadService._();
+
+  /// Vidéos de pub prêtes à jouer en mémoire (au-delà, simple mise en cache sur le disque).
+  static const int maxControllers = 4;
 
   final Map<String, VideoPlayerController> _controllers = {};
   final Map<String, Advertisement> _ads = {};
@@ -30,7 +36,7 @@ class AdPreloadService {
           .collection('Advertisements')
           .where('status', isEqualTo: 'active')
           .limit(10)
-          .get();
+          .getM('ad_preload_service.dart:38');
 
       for (final doc in snap.docs) {
         final ad = Advertisement.fromJson(doc.data());
@@ -41,7 +47,7 @@ class AdPreloadService {
         final postDoc = await FirebaseFirestore.instance
             .collection('Posts')
             .doc(ad.postId)
-            .get();
+            .getM('ad_preload_service.dart:49');
         if (!postDoc.exists) continue;
 
         final postData = postDoc.data()!;
@@ -51,7 +57,15 @@ class AdPreloadService {
         final type = postData['type'] as String?;
         _ads[doc.id] = ad;
 
-        if (type == 'VIDEO') {
+        // Image de la pub (ou aperçu de la vidéo) déjà sur le téléphone avant qu'on arrive à l'emplacement
+        final images = (postData['images'] is List) ? List<String>.from(postData['images']) : const <String>[];
+        final still = type == 'VIDEO' ? (postData['thumbnail'] as String? ?? '') : (images.isNotEmpty ? images.first : mediaUrl);
+        if (still.isNotEmpty) DefaultCacheManager().downloadFile(MediaCdn.url(still)).then((_) {}, onError: (_) {});
+
+        // Seules les premières vidéos sont préparées en mémoire (un décodeur par vidéo) ; les autres sont mises en cache disque
+        if (type == 'VIDEO' && _controllers.length >= maxControllers) {
+          MediaCacheService.prefetchVideo(mediaUrl);
+        } else if (type == 'VIDEO') {
           try {
             final ctrl = await MediaCacheService.videoController(mediaUrl);
             await ctrl.initialize();

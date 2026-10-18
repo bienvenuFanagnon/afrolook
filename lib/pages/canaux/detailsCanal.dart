@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/coins/coin_recharge_screen.dart';
 import 'package:afrotok/providers/coin_gift_provider.dart';
 import 'package:afrotok/widgets/name_tag.dart';
@@ -105,7 +106,7 @@ class _CanalDetailsState extends State<CanalDetails> {
     if (canalId == null || canalId.isEmpty) return;
     // Toujours recharger depuis Firestore pour avoir les données complètes et à jour
     try {
-      final doc = await firestore.collection('Canaux').doc(canalId).get()
+      final doc = await firestore.collection('Canaux').doc(canalId).getM('detailsCanal.dart:108')
           .timeout(const Duration(seconds: 8));
       if (!doc.exists || !mounted) return;
       final full = Canal.fromJson(doc.data()!);
@@ -233,7 +234,7 @@ class _CanalDetailsState extends State<CanalDetails> {
     final ownerId = widget.canal.userId;
     if (ownerId == null || ownerId.isEmpty || widget.canal.user != null) return;
     try {
-      final doc = await firestore.collection('Users').doc(ownerId).get();
+      final doc = await firestore.collection('Users').doc(ownerId).getM('detailsCanal.dart:236');
       if (!doc.exists || !mounted) return;
       setState(() => widget.canal.user = UserData.fromJson(doc.data()!)..id = doc.id);
     } catch (e) {
@@ -439,7 +440,7 @@ class _CanalDetailsState extends State<CanalDetails> {
           .collection('CanalNames')
           .where('name', isEqualTo: widget.canal.titre)
           .limit(1)
-          .get();
+          .getM('detailsCanal.dart:442');
       for (final doc in namesSnap.docs) {
         await doc.reference.delete();
       }
@@ -468,7 +469,7 @@ class _CanalDetailsState extends State<CanalDetails> {
   Future<void> _deleteBatchQuery(Query<Map<String, dynamic>> query) async {
     const batchSize = 400;
     while (true) {
-      final snap = await query.limit(batchSize).get();
+      final snap = await query.limit(batchSize).getM('detailsCanal.dart:471');
       if (snap.docs.isEmpty) break;
       final batch = firestore.batch();
       for (final doc in snap.docs) {

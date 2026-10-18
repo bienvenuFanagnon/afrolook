@@ -1,4 +1,5 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/read_meter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 class MassNotificationService {
@@ -57,7 +58,7 @@ class MassNotificationService {
         query = query.startAfterDocument(lastDoc);
       }
 
-      final snapshot = await query.get();
+      final snapshot = await query.getM('massNotificationService.dart:60');
       final subscriberIds = snapshot.docs.map((doc) => doc.id).toList();
 
       if (subscriberIds.isNotEmpty) {

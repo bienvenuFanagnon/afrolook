@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 
@@ -37,13 +38,16 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
 
   // Groupes accordion (mode TOUS)
   static const _txGroups = {
-    'Gains':       ['DEPOT', 'DEPOTADMIN', 'GAIN', 'GAIN_PIECES', 'CADEAU_PIECES_RECU'],
-    'Dépenses':    ['DEPENSE', 'ACHAT_PIECES', 'CADEAU_PIECES', 'LIKE_PIECES'],
+    // Un achat de pièces (carte, Mobile Money, Google Play, App Store) est une recharge : il va avec les dépôts, pas avec les dépenses.
+    'Dépôts':      ['DEPOT', 'DEPOTADMIN', 'ACHAT_PIECES'],
+    'Gains':       ['GAIN', 'GAIN_PIECES', 'CADEAU_PIECES_RECU'],
+    'Dépenses':    ['DEPENSE', 'CADEAU_PIECES', 'LIKE_PIECES'],
     'Retraits':    ['RETRAIT', 'RETRAITADMIN'],
     'Conversions': ['CONVERSION_PIECES'],
     'Autres':      <String>[],
   };
   static const _txGroupColors = {
+    'Dépôts':      Color(0xFF2196F3),
     'Gains':       Color(0xFF4CAF50),
     'Dépenses':    Color(0xFFF44336),
     'Retraits':    Color(0xFFFF9800),
@@ -138,14 +142,14 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
         if (entry.key == 'Autres') continue;
         final types = entry.value;
         if (types.isEmpty) { counts[entry.key] = 0; continue; }
-        final snap = await base.where("type", whereIn: types).count().get();
+        final snap = await base.where("type", whereIn: types).count().getM('adminprofil.dart:144');
         final c = snap.count ?? 0;
         counts[entry.key] = c;
         knownTotal += c;
       }
 
       // Autres = total - groupes connus
-      final totalSnap = await base.count().get();
+      final totalSnap = await base.count().getM('adminprofil.dart:151');
       counts['Autres'] = ((totalSnap.count ?? 0) - knownTotal).clamp(0, 999999);
 
       if (mounted) setState(() => _txGroupCounts.addAll(counts));
@@ -175,7 +179,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
       Query query = _buildBaseQuery();
       query = query.limit(_pageSize);
 
-      final snapshot = await query.get();
+      final snapshot = await query.getM('adminprofil.dart:181');
       printVm("📊 Nombre de documents reçus: ${snapshot.docs.length}");
 
       _allDocs = snapshot.docs;
@@ -220,7 +224,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
       Query query = _buildBaseQuery();
       query = query.startAfterDocument(_lastDocument!).limit(_pageSize);
 
-      final snapshot = await query.get();
+      final snapshot = await query.getM('adminprofil.dart:226');
       printVm("📊 Nouveaux documents reçus: ${snapshot.docs.length}");
 
       if (snapshot.docs.isNotEmpty) {
@@ -320,7 +324,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
           .collection("Users")
           .where("email", isEqualTo: _emailController.text.trim())
           .limit(1)
-          .get();
+          .getM('adminprofil.dart:326');
 
       if (userQuery.docs.isNotEmpty) {
         final userId = userQuery.docs.first.id;
@@ -822,7 +826,9 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
     // Unité réelle du montant (pièces ou FCFA), y compris les achats payés en pièces
     final String amountDisplay = _amountLabel(transaction);
 
-    final prefix = isDepot || isGain ? "+ " : "- ";
+    // Un achat de pièces ajoute des pièces au solde : « + »
+    final isCredit = isDepot || isGain || transaction.type == 'ACHAT_PIECES';
+    final prefix = isCredit ? "+ " : "- ";
 
     return Card(
       color: AdminPalette.card,
@@ -843,14 +849,19 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              '$prefix$amountDisplay',
-              style: TextStyle(
-                color: isDepot || isGain ? Colors.green : Colors.orange,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+            Expanded(
+              child: Text(
+                '$prefix$amountDisplay',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: isCredit ? Colors.green : Colors.orange,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
+            const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
@@ -909,7 +920,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
         final userDoc = await FirebaseFirestore.instance
             .collection("Users")
             .doc(transaction.user_id)
-            .get();
+            .getM('adminprofil.dart:922');
 
         if (userDoc.exists) {
           userData = UserData.fromJson(userDoc.data()!);
@@ -947,7 +958,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
               _buildDetailItem("Type", _formatTransactionType(transaction.type)),
               _buildDetailItem("Montant", _amountLabel(transaction)),
               if (transaction.netEstimate != null)
-                _buildDetailItem("Net estimé (après la part d'Apple)",
+                _buildDetailItem(transaction.paymentMethod == 'Carte bancaire' ? 'Net estimé (après les frais FeexPay)' : "Net estimé (après la part ${transaction.paymentMethod == 'Google Play' ? 'de Google' : "d'Apple"})",
                     '${NumberFormat('#,##0.00', 'fr').format(transaction.netEstimate)} ${transaction.currency ?? ''}'),
               if ((transaction.beneficiaryPseudo ?? '').isNotEmpty)
                 _buildDetailItem("Bénéficiaire", '@${transaction.beneficiaryPseudo}'),
@@ -1264,7 +1275,7 @@ class _StatChip extends StatelessWidget {
 //         .collection("Users")
 //         .where("email", isEqualTo: _emailController.text.trim())
 //         .limit(1)
-//         .get();
+//         .getM('adminprofil.dart:1277');
 //
 //     if (userQuery.docs.isNotEmpty) {
 //       final userData = UserData.fromJson(userQuery.docs.first.data());
@@ -1313,7 +1324,7 @@ class _StatChip extends StatelessWidget {
 //       return Stream.value([]);
 //     }
 //
-//     return query.snapshots().map((snapshot) {
+//     return query.snapshotsM('adminprofil.dart:1326').map((snapshot) {
 //       List<TransactionSolde> transactions = snapshot.docs.map((e) {
 //         final data = e.data() as Map<String, dynamic>;
 //         data['id'] = e.id;
@@ -1354,7 +1365,7 @@ class _StatChip extends StatelessWidget {
 //         .collection("Users")
 //         .where("email", isEqualTo: _selectedUserEmail)
 //         .limit(1)
-//         .snapshots()
+//         .snapshotsM('adminprofil.dart:1367')
 //         .asyncMap((userSnapshot) async {
 //       if (userSnapshot.docs.isEmpty) return [];
 //
@@ -1365,7 +1376,7 @@ class _StatChip extends StatelessWidget {
 //           .collection("TransactionSoldes")
 //           .where("user_id", isEqualTo: userId)
 //           .orderBy("createdAt", descending: true)
-//           .get();
+//           .getM('adminprofil.dart:1378');
 //
 //       List<TransactionSolde> transactions = transactionsSnapshot.docs.map((e) {
 //         final data = e.data() as Map<String, dynamic>;
@@ -1412,7 +1423,7 @@ class _StatChip extends StatelessWidget {
 //       final userDoc = await FirebaseFirestore.instance
 //           .collection("Users")
 //           .doc(transaction.user_id)
-//           .get();
+//           .getM('adminprofil.dart:1425');
 //
 //       if (userDoc.exists) {
 //         userData = UserData.fromJson(userDoc.data()!);
@@ -1933,7 +1944,7 @@ class _StatChip extends StatelessWidget {
 //     return StreamBuilder<QuerySnapshot>(
 //       stream: FirebaseFirestore.instance
 //           .collection("TransactionSoldes")
-//           .snapshots(),
+//           .snapshotsM('adminprofil.dart:1946'),
 //       builder: (context, snapshot) {
 //         if (!snapshot.hasData) {
 //           return SizedBox.shrink();

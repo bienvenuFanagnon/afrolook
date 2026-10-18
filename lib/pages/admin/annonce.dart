@@ -1,4 +1,5 @@
-﻿import 'package:afrotok/layout/centered_content.dart';
+﻿import '../../services/media_shrink.dart';
+import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -203,7 +204,7 @@ class _NewAppInfoState extends State<NewAppAnnonce> {
                                     'post_media/${Path.basename(File(_image.path).path)}');
 
                                 UploadTask uploadTask = storageReference
-                                    .putFile(File(_image.path)!);
+                                    .putFile(await MediaShrink.file(File(_image.path)!));
                                 await uploadTask.whenComplete(() async {
                                   await storageReference
                                       .getDownloadURL()

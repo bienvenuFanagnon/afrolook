@@ -1,4 +1,5 @@
-﻿import 'dart:io';
+import 'package:afrotok/services/read_meter.dart';
+import 'dart:io';
 import 'dart:math';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -72,7 +73,7 @@ class _RecentVIPContentWidgetState extends State<RecentVIPContentWidget> {
             .where('contentType', isEqualTo: type.toString().split('.').last)
             .where('isSeries', isEqualTo: false)
             .limit(6)
-            .get();
+            .getM('recent_vip_content_widget.dart:75');
         final docs = snap.docs..shuffle(rng);
         return docs
             .take(2)

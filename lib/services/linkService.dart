@@ -1,4 +1,5 @@
 ﻿// app_link_service.dart
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 import 'package:afrotok/pages/contenuPayant/contentDetailsEbook.dart';
 import 'package:afrotok/pages/home/homeScreen.dart';
@@ -447,7 +448,7 @@ class AppLinkService {
           .collection('GroupChats')
           .where('join_code', isEqualTo: joinCode)
           .limit(1)
-          .get();
+          .getM('linkService.dart:450');
 
       if (snap.docs.isEmpty) {
         dismissLoading();
@@ -478,7 +479,7 @@ class AppLinkService {
       // Vérifier que le proprio est encore actif
       final ownerId = groupData['owner_id'] as String?;
       if (ownerId != null) {
-        final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(ownerId).get();
+        final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(ownerId).getM('linkService.dart:481');
         final ownerData = ownerDoc.data();
         if (ownerData != null) {
           final ab = AfrolookAbonnement.fromJson(ownerData['abonnement'] as Map<String, dynamic>? ?? {});
@@ -592,7 +593,7 @@ class AppLinkService {
       // Vérifier la limite de membres (Premium owner : 100 max, Gold : illimité)
       final ownerId = groupData['owner_id'] as String? ?? '';
       if (ownerId.isNotEmpty) {
-        final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(ownerId).get();
+        final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(ownerId).getM('linkService.dart:595');
         if (ownerDoc.exists) {
           final ownerAbJson = ownerDoc.data()?['abonnement'] as Map<String, dynamic>?;
           final ownerAb = ownerAbJson != null ? AfrolookAbonnement.fromJson(ownerAbJson) : null;
@@ -681,7 +682,7 @@ class AppLinkService {
       final userDoc = await FirebaseFirestore.instance
           .collection('Users')
           .doc(userId)
-          .get();
+          .getM('linkService.dart:684');
 
       if (userDoc.exists) {
         // Convertir les données Firebase en objet UserData
@@ -704,7 +705,7 @@ class AppLinkService {
       final contentDoc = await FirebaseFirestore.instance
           .collection('ContentPaies')
           .doc(contentId)
-          .get();
+          .getM('linkService.dart:707');
 
       if (contentDoc.exists) {
         // Convertir les données Firebase en objet ContentPaie
@@ -740,7 +741,7 @@ class AppLinkService {
       final liveDoc = await FirebaseFirestore.instance
           .collection('lives')
           .doc(liveId)
-          .get();
+          .getM('linkService.dart:743');
 
       if (!liveDoc.exists) {
         // Live non trouvé
@@ -842,7 +843,7 @@ class AppLinkService {
       final articleDoc = await FirebaseFirestore.instance
           .collection('Articles')
           .doc(articleId)
-          .get();
+          .getM('linkService.dart:845');
 
       if (articleDoc.exists) {
         // Convertir en objet Article (à adapter selon votre classe Article)
@@ -871,7 +872,7 @@ class AppLinkService {
       final serviceDoc = await FirebaseFirestore.instance
           .collection('Services')
           .doc(serviceId)
-          .get();
+          .getM('linkService.dart:874');
 
       if (serviceDoc.exists) {
         // Convertir en objet Service (à adapter selon votre classe Service)
@@ -896,7 +897,7 @@ class AppLinkService {
       final userDoc = await FirebaseFirestore.instance
           .collection('Users')
           .doc(userId)
-          .get();
+          .getM('linkService.dart:899');
 
       if (userDoc.exists) {
         return UserData.fromJson(userDoc.data() as Map<String, dynamic>);

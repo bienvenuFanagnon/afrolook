@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/authProvider.dart';
 import 'ad_config.dart';
 import 'ad_gate.dart';
+import 'admob_native_pool.dart';
 import 'admob_service.dart';
 import 'admob_widgets.dart';
 import 'music_ads.dart';
@@ -99,6 +100,17 @@ class _AdSlotState extends State<AdSlot> {
     // (désactivé, pas encore chargé, comptes neufs, pas de bloc d'annonce) ou ne charge pas.
     if (admobOk) return _Mode.admob;
     return ownAvailable ? _Mode.own : _Mode.none;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Une pub native de plus se prépare dès qu'un emplacement apparaît : le suivant s'affichera sans attente
+    if (_type == 'native') {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) AdmobNativePool.warmUpWhenReady(context, context.read<UserAuthProvider>().loginUserData);
+      });
+    }
   }
 
   void _onAdmobFailed() {

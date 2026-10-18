@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -89,7 +90,7 @@ class _FlameLeaderboardState extends State<FlameLeaderboard> {
           .where('bestCommentStreak', isGreaterThan: 0)
           .orderBy('bestCommentStreak', descending: true)
           .limit(100)
-          .get();
+          .getM('flame_leaderboard.dart:92');
 
       final entries = snap.docs.map((d) {
         final data = d.data();
@@ -148,7 +149,7 @@ class _FlameLeaderboardState extends State<FlameLeaderboard> {
       final snap = await FirebaseFirestore.instance
           .collection('Users')
           .doc(userId)
-          .get();
+          .getM('flame_leaderboard.dart:151');
       if (!snap.exists || !ctx.mounted) return;
       final user = UserData.fromJson(snap.data()!);
       final size = MediaQuery.of(ctx).size;

@@ -1,6 +1,7 @@
 // File d'attente de la musique d'Afrolook : suivant, précédent, aléatoire, préchargement, fin d'extrait gratuit.
 // Un seul lecteur dans toute l'application (SoundPreview) ; ce fichier décide QUOI jouer ensuite et prévient l'interface.
 
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 import 'dart:math';
 
@@ -12,6 +13,7 @@ import 'package:flutter/foundation.dart';
 import '../pages/studio/artist_marketplace.dart';
 import '../pages/studio/artist_sound_common.dart';
 import '../pages/studio/montage/montage_music.dart';
+import 'music_head.dart';
 import 'music_voice.dart';
 import 'offline_music_service.dart';
 
@@ -169,11 +171,13 @@ class MusicQueue {
 
   static void _watchOwned(User? u) {
     if (u?.uid == _ownedUid) return;
+    final previous = _ownedUid;
     _ownedUid = u?.uid;
+    if (previous != null && u?.uid != previous) unawaited(MusicHead.purgeAll()); // déconnexion ou autre compte : plus rien de l'ancien
     _ownedSub?.cancel();
     ownedIds.value = <String>{};
     if (u == null) return;
-    _ownedSub = FirebaseFirestore.instance.collection('MusicLibrary').where('uid', isEqualTo: u.uid).snapshots().listen((s) {
+    _ownedSub = FirebaseFirestore.instance.collection('MusicLibrary').where('uid', isEqualTo: u.uid).snapshotsM('music_queue.dart:179').listen((s) {
       ownedIds.value = {for (final d in s.docs) '${d.data()['soundId']}'};
     }, onError: (_) {});
   }
@@ -253,6 +257,20 @@ class MusicQueue {
         err = await OfflineMusic.play(t.id, title: t.title, key: t.key).timeout(const Duration(seconds: 20), onTimeout: () => 'Lecture trop longue à démarrer. Réessaie.');
         ok = err == null;
       } else {
+        // Démarrage éclair : le début du titre complet est déjà sur l'appareil (voir MusicHead), le son part sans attendre le serveur
+        if (canFull && MusicHead.supported) {
+          final head = await MusicHead.read(t.id);
+          if (head != null && gen == _gen) {
+            previewMode.value = false;
+            ok = await SoundPreview.playHead(t.key, head, () => fetchFullListenUrl(t.id), meta: _meta(t, 'Titre complet'));
+            if (ok) {
+              if (gen != _gen) return false;
+              loading.value = false;
+              _warmUpcoming();
+              return true;
+            }
+          }
+        }
         String? url = t.previewUrl;
         var full = false;
         if (url == null && t.studio != null) url = await MontageMusicPlayer.urlOf(MontageMusic.free(t.studio!)).timeout(const Duration(seconds: 6), onTimeout: () => null);
@@ -275,9 +293,18 @@ class MusicQueue {
       if (gen == _gen) loading.value = false;
     }
     if (gen != _gen) return false;
-    if (!ok) error.value = err ?? 'Impossible de lire ce titre. Vérifie ta connexion et réessaie.';
+    if (!ok) error.value = err ?? _failMessage();
     if (ok) _warmUpcoming();
     return ok;
+  }
+
+  /// Message d'échec : la raison technique (format non lu par l'iPhone, lecteur…) est ajoutée en petit pour nous aider à comprendre.
+  static String _failMessage() {
+    final why = SoundPreview.lastError;
+    final base = 'Impossible de lire ce titre. Vérifie ta connexion et réessaie.';
+    if (why == null || why.isEmpty) return base;
+    if (why.contains('non pris en charge')) return 'Ce titre est dans un format que l’iPhone et l’iPad ne lisent pas ($why).';
+    return '$base [${why.length > 90 ? why.substring(0, 90) : why}]';
   }
 
   static NowPlaying _meta(MusicTrack t, String subtitle) =>
@@ -432,6 +459,7 @@ class MusicQueue {
     for (final i in ids) {
       if (i == _index) continue;
       final t = _queue[i];
+      _warmHead(t);
       final u = t.previewUrl;
       if (u != null && u.isNotEmpty) {
         unawaited(MusicCache.warm(u));
@@ -443,9 +471,21 @@ class MusicQueue {
     }
   }
 
+  /// Début du titre complet gardé d'avance (chiffré, privé) pour un premier « Lecture » instantané. Seulement si la personne a le droit
+  /// d'écouter ce titre en entier, et pas s'il est déjà téléchargé hors ligne.
+  static void _warmHead(MusicTrack t) {
+    if (!MusicHead.supported || !t.isArtist) return;
+    if (!(isOwned(t) || t.isMine || (t.sound?.isFree ?? false))) return;
+    if (OfflineMusic.has(t.id)) return;
+    MusicHead.prefetch(t.id, fetchFullListenUrl);
+  }
+
   /// Préchargement des premiers titres d'une liste affichée (pour un départ immédiat au toucher).
   static final Set<String> _warmed = {};
   static void warmList(Iterable<MusicTrack> tracks, {int max = 8}) {
+    for (final t in tracks.take(4)) {
+      _warmHead(t);
+    }
     final fresh = <String>[];
     for (final t in tracks.take(max)) {
       final u = t.previewUrl;

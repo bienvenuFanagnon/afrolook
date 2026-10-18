@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -76,7 +77,7 @@ class EncryptionService {
         final otherDoc = await FirebaseFirestore.instance
             .collection('UserKeys')
             .doc(otherUserId)
-            .get();
+            .getM('encryption_service.dart:79');
         otherPublicB64 = otherDoc.data()?['public_key'] as String?;
         if (otherPublicB64 != null) break;
 

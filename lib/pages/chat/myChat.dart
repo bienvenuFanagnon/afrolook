@@ -1,3 +1,7 @@
+import 'package:afrotok/services/read_meter.dart';
+import '../../services/media_shrink.dart';
+import '../../services/chat_request.dart';
+import '../chronique/chroniquedetails.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
@@ -256,6 +260,13 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       if (streakVal != _streak && mounted) {
         setState(() => _streak = streakVal);
       }
+      // Demande de discussion acceptée ou refusée (depuis cette page, la page Invitations ou le serveur)
+      if (chat.requestStatus != widget.chat.requestStatus && mounted) {
+        setState(() {
+          widget.chat.requestStatus = chat.requestStatus;
+          widget.chat.requestFrom = chat.requestFrom;
+        });
+      }
     });
 
     // Scroll vers le bas après initialisation
@@ -308,7 +319,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
           .orderBy('createdAt', descending: false)
           .where('createdAt', isLessThan: oldest.createdAt)
           .limitToLast(_pageSize)
-          .get();
+          .getM('myChat.dart:321');
 
       final older = snapshot.docs.map((doc) => Message.fromJson(doc.data())).toList();
       await _decryptMessages(older);
@@ -402,7 +413,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
 
   Future<void> _loadEphemeralSettings() async {
     try {
-      final doc = await _firestore.collection('Chats').doc(widget.chat.id).get();
+      final doc = await _firestore.collection('Chats').doc(widget.chat.id).getM('myChat.dart:415');
       final dur = (doc.data()?['ephemeral_duration'] as int?) ?? 0;
       if (mounted) {
         setState(() => _ephemeralDuration = dur);
@@ -554,7 +565,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         .where('is_valide', isEqualTo: true)
         .orderBy('createdAt', descending: false)
         .limitToLast(_pageSize)
-        .snapshots()
+        .snapshotsM('myChat.dart:567')
         .asyncMap((snapshot) async {
       final messages = snapshot.docs.map((doc) => Message.fromJson(doc.data())).toList();
       await _decryptMessages(messages);
@@ -699,7 +710,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     try {
       final today = DateTime.now();
       final todayStr = '${today.year}-${today.month}-${today.day}';
-      final doc = await _firestore.collection('Chats').doc(widget.chat.id).get();
+      final doc = await _firestore.collection('Chats').doc(widget.chat.id).getM('myChat.dart:712');
       final data = doc.data();
       if (data == null) return;
       final lastDate = data['lastStreakDate'] as String?;
@@ -848,7 +859,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       final ext = file.name.split('.').last.toLowerCase();
       final ref = FirebaseStorage.instance.ref().child(
           'chat_images/${file.name}_${DateTime.now().millisecondsSinceEpoch}');
-      final snap = await ref.putData(bytes, SettableMetadata(contentType: 'image/$ext'));
+      final snap = await ref.putData(await MediaShrink.bytes(bytes), SettableMetadata(contentType: 'image/$ext'));
       final fileURL = await snap.ref.getDownloadURL();
 
       final reply = ReplyMessage(
@@ -893,7 +904,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       final Uint8List bytes = await file.readAsBytes();
       final ref = FirebaseStorage.instance.ref().child(
           'chat_videos/${file.name}_${DateTime.now().millisecondsSinceEpoch}');
-      final snap = await ref.putData(bytes, SettableMetadata(contentType: 'video/mp4'));
+      final snap = await ref.putData(await MediaShrink.bytes(bytes), SettableMetadata(contentType: 'video/mp4'));
       final fileURL = await snap.ref.getDownloadURL();
 
       final reply = ReplyMessage(
@@ -1009,7 +1020,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       for (final img in _multiImages) {
         final ref = FirebaseStorage.instance.ref().child(
             'chat_images/${p.basename(img.path)}_${DateTime.now().millisecondsSinceEpoch}');
-        final snap = await ref.putFile(img);
+        final snap = await ref.putFile(await MediaShrink.file(img));
         urls.add(await snap.ref.getDownloadURL());
       }
 
@@ -1193,7 +1204,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
           'chat_images/${p.basename(_image!.path)}_${DateTime.now().millisecondsSinceEpoch}'
       );
 
-      UploadTask uploadTask = storageReference.putFile(_image!);
+      UploadTask uploadTask = storageReference.putFile(await MediaShrink.file(_image!));
       TaskSnapshot snapshot = await uploadTask;
       String fileURL = await snapshot.ref.getDownloadURL();
 
@@ -1270,7 +1281,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
           'chat_audio/audio_${DateTime.now().millisecondsSinceEpoch}.m4a'
       );
 
-      UploadTask uploadTask = storageReference.putFile(File(audioPath));
+      UploadTask uploadTask = storageReference.putFile(await MediaShrink.file(File(audioPath)));
       TaskSnapshot snapshot = await uploadTask;
       String fileURL = await snapshot.ref.getDownloadURL();
 
@@ -1407,7 +1418,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
           : widget.chat.senderId!;
 
       // Si le destinataire est activement dans CE chat → pas de notif
-      final chatDoc = await _firestore.collection('Chats').doc(widget.chat.id).get();
+      final chatDoc = await _firestore.collection('Chats').doc(widget.chat.id).getM('myChat.dart:1420');
       final activeViewers = List<String>.from(chatDoc.data()?['activeViewers'] ?? []);
       if (activeViewers.contains(receiverId)) return;
 
@@ -1630,6 +1641,12 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         actionLabel = 'Voir le produit';
         typeColor = isMe ? Colors.white70 : _colors.primary;
         break;
+      case 'chronique':
+        icon = Icons.auto_stories_rounded;
+        typeLabel = 'Chronique';
+        actionLabel = 'Voir la chronique';
+        typeColor = isMe ? Colors.white70 : _colors.primary;
+        break;
       case 'vip':
         icon = Icons.star_rounded;
         typeLabel = 'Contenu VIP';
@@ -1739,7 +1756,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
 
   Future<void> _openSharedItem(String messageId) async {
     try {
-      final doc = await _firestore.collection('Messages').doc(messageId).get();
+      final doc = await _firestore.collection('Messages').doc(messageId).getM('myChat.dart:1758');
       if (!doc.exists || !mounted) return;
       final data = doc.data()!;
       final itemType = data['item_type'] as String? ?? '';
@@ -1750,14 +1767,17 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         case 'product':
           Navigator.push(context, MaterialPageRoute(builder: (_) => ProduitDetail(productId: itemId)));
           break;
+        case 'chronique':
+          Navigator.push(context, MaterialPageRoute(builder: (_) => ChroniqueDetailPage(initialChroniqueId: itemId)));
+          break;
         case 'vip':
-          final contentDoc = await _firestore.collection('ContentPaie').doc(itemId).get();
+          final contentDoc = await _firestore.collection('ContentPaie').doc(itemId).getM('myChat.dart:1773');
           if (!contentDoc.exists || !mounted) return;
           final content = ContentPaie.fromJson(contentDoc.data()!);
           Navigator.push(context, MaterialPageRoute(builder: (_) => ContentDetailScreen(content: content)));
           break;
         case 'live':
-          final liveDoc = await _firestore.collection('lives').doc(itemId).get();
+          final liveDoc = await _firestore.collection('lives').doc(itemId).getM('myChat.dart:1779');
           if (!liveDoc.exists || !mounted) return;
           final live = PostLive.fromMap(liveDoc.data()!);
           if (live.isLive) {
@@ -1781,14 +1801,14 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
 
   Future<void> _openSharedPost(String messageId) async {
     try {
-      final msgDoc = await _firestore.collection('Messages').doc(messageId).get();
+      final msgDoc = await _firestore.collection('Messages').doc(messageId).getM('myChat.dart:1803');
       if (!msgDoc.exists || !mounted) return;
       final data = msgDoc.data()!;
       final postId = data['post_id'] as String?;
       final dataType = data['post_data_type'] as String? ?? 'IMAGE';
       if (postId == null || postId.isEmpty) return;
 
-      final postDoc = await _firestore.collection('Posts').doc(postId).get();
+      final postDoc = await _firestore.collection('Posts').doc(postId).getM('myChat.dart:1810');
       if (!postDoc.exists || !mounted) return;
       final post = Post.fromJson(postDoc.data()!);
 
@@ -2286,8 +2306,8 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
 
     try {
       final results = await Future.wait([
-        _firestore.collection('BlockedUsers').doc(blockByMe).get(),
-        _firestore.collection('BlockedUsers').doc(blockByOther).get(),
+        _firestore.collection('BlockedUsers').doc(blockByMe).getM('myChat.dart:2308'),
+        _firestore.collection('BlockedUsers').doc(blockByOther).getM('myChat.dart:2309'),
       ]);
 
       if (!mounted) return;
@@ -2303,7 +2323,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   Future<void> _loadMyPrivacySettings() async {
     final myId = _authProvider.loginUserData.id!;
     try {
-      final doc = await _firestore.collection('Users').doc(myId).get();
+      final doc = await _firestore.collection('Users').doc(myId).getM('myChat.dart:2325');
       final privacy = (doc.data()?['privacySettings'] as Map<String, dynamic>?) ?? {};
       if (mounted) setState(() => _hideReadReceipts = privacy['hideReadReceipts'] == true);
     } catch (e) {
@@ -2615,6 +2635,90 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         ],
       ),
     );
+  }
+
+  // ── Demande de discussion (réponse à une chronique) ──────────────────────────
+
+  bool _requestBusy = false;
+
+  /// Barre du bas pendant une demande : accepter ou refuser pour le destinataire, attente ou refus pour la personne qui a écrit.
+  /// null = discussion normale (la saisie habituelle s'affiche).
+  Widget? _buildRequestBar() {
+    final chat = widget.chat;
+    final myId = _authProvider.loginUserData.id;
+    final pending = ChatRequestService.isPending(chat);
+    final refused = ChatRequestService.isRefused(chat);
+    if (!pending && !refused) return null;
+    final pseudo = chat.receiver?.pseudo ?? chat.chatFriend?.pseudo ?? 'cette personne';
+    final mine = ChatRequestService.iAmRequester(chat, myId);
+
+    Widget box(List<Widget> children) => Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+          decoration: BoxDecoration(color: _colors.background, border: Border(top: BorderSide(color: _colors.border.withOpacity(0.3)))),
+          child: SafeArea(top: false, child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: children)),
+        );
+
+    if (mine) {
+      return box([
+        Row(children: [
+          Icon(refused ? Icons.block_rounded : Icons.hourglass_top_rounded, color: _colors.textSecondary, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              refused
+                  ? '@$pseudo a refusé votre invitation. Vous pourrez réessayer dans 7 jours.'
+                  : 'En attente de la réponse de @$pseudo. Vous pourrez continuer la discussion dès qu\'elle sera acceptée.',
+              style: TextStyle(color: _colors.textSecondary, fontSize: 13, height: 1.3),
+            ),
+          ),
+        ]),
+      ]);
+    }
+    if (refused) return null;
+    return box([
+      Text('@$pseudo veut discuter avec vous', style: TextStyle(color: _colors.textPrimary, fontSize: 14.5, fontWeight: FontWeight.w800)),
+      const SizedBox(height: 3),
+      Text('Si vous acceptez, vous pourrez vous écrire librement. Sinon, rien ne lui sera envoyé.', style: TextStyle(color: _colors.textSecondary, fontSize: 12.5, height: 1.3)),
+      const SizedBox(height: 12),
+      Row(children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: _requestBusy ? null : _refuseRequest,
+            style: OutlinedButton.styleFrom(foregroundColor: _colors.textSecondary, side: BorderSide(color: _colors.border), padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+            child: const Text('Refuser', style: TextStyle(fontWeight: FontWeight.w700)),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: FilledButton(
+            onPressed: _requestBusy ? null : _acceptRequest,
+            style: FilledButton.styleFrom(backgroundColor: _colors.primary, foregroundColor: _colors.onPrimary, padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+            child: _requestBusy ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Accepter', style: TextStyle(fontWeight: FontWeight.w800)),
+          ),
+        ),
+      ]),
+    ]);
+  }
+
+  Future<void> _acceptRequest() async {
+    setState(() => _requestBusy = true);
+    final ok = await ChatRequestService.accept(context, widget.chat);
+    if (!mounted) return;
+    setState(() => _requestBusy = false);
+    if (!ok) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Action impossible. Réessayez.')));
+  }
+
+  Future<void> _refuseRequest() async {
+    setState(() => _requestBusy = true);
+    final ok = await ChatRequestService.refuse(context, widget.chat);
+    if (!mounted) return;
+    setState(() => _requestBusy = false);
+    if (ok) {
+      Navigator.of(context).maybePop();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Action impossible. Réessayez.')));
+    }
   }
 
   // ── Input bar complète ──────────────────────────────────────────────────────
@@ -3596,7 +3700,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
           _buildBlockBanner(),
           (_isBlockedByMe || _isBlockedByOther)
               ? _buildBlockedInputBar()
-              : _buildMessageInput(),
+              : (_buildRequestBar() ?? _buildMessageInput()),
         ],
         ),
         ),

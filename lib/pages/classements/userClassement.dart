@@ -1,4 +1,5 @@
-﻿import 'package:afrotok/widgets/pseudo_tag.dart';
+import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -56,7 +57,7 @@ class _UserClassementState extends State<UserClassement> {
           .collection('Users')
           .orderBy('totalPoints', descending: true)
           .limit(10)
-          .get();
+          .getM('userClassement.dart:59');
 
       final List<UserData> fetchedUsers = [];
 

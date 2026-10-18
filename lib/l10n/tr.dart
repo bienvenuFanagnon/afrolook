@@ -11,6 +11,7 @@ import 'tr_money.dart';
 import 'tr_rewards.dart';
 import 'tr_social.dart';
 import 'tr_templates.dart';
+import 'tr_card.dart';
 import 'tr_tuto.dart';
 
 /// Traduction à partir du texte français (utilisée pour les écrans qui
@@ -22,7 +23,7 @@ import 'tr_tuto.dart';
 /// Les dictionnaires sont rangés par zone (tr_menu.dart, tr_money.dart…),
 /// avec pour chaque texte français ses traductions en, es, de, ar, pt, zh, sw.
 /// Repli : langue demandée → anglais → texte français.
-const List<Map<String, Map<String, String>>> _dictionaries = [kTrMenu, kTrMoney, kTrCanaux, kTrTuto, kTrSocial, kTrRewards, kTrQuiz, kTrQuizChallenge, kTrEtude, kTrDefi, kTrTemplates];
+const List<Map<String, Map<String, String>>> _dictionaries = [kTrMenu, kTrMoney, kTrCanaux, kTrTuto, kTrSocial, kTrRewards, kTrQuiz, kTrQuizChallenge, kTrEtude, kTrDefi, kTrTemplates, kTrCard];
 
 final Map<String, Map<String, String>> _all = {
   for (final d in _dictionaries) ...d,

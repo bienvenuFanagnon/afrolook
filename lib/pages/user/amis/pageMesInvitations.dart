@@ -1,4 +1,5 @@
-﻿import 'package:afrotok/widgets/pseudo_tag.dart';
+import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'dart:async';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
@@ -156,7 +157,7 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
         query = query.startAfterDocument(_lastDocument!);
       }
 
-      final snapshot = await query.get();
+      final snapshot = await query.getM('pageMesInvitations.dart:159');
 
       if (snapshot.docs.isEmpty) {
         setState(() {
@@ -180,7 +181,7 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
               .collection('Users')
               .where('id', isEqualTo: invitation.senderId)
               .limit(1)
-              .get();
+              .getM('pageMesInvitations.dart:183');
 
           if (userSnapshot.docs.isNotEmpty) {
             invitation.inviteUser = UserData.fromJson(
@@ -415,6 +416,32 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
     );
   }
 
+  /// Réponse à une chronique : miniature de la chronique et message de la personne (l'invitation est le premier message).
+  Widget _chroniqueQuote(Invitation invitation) {
+    final text = (invitation.message ?? '').trim();
+    if ((invitation.chroniqueId ?? '').isEmpty) return const SizedBox.shrink();
+    final thumb = invitation.chroniqueThumb ?? '';
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(color: _colors.background.withOpacity(0.5), borderRadius: BorderRadius.circular(16), border: Border(left: BorderSide(color: _colors.primary, width: 3))),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if (thumb.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: ClipRRect(borderRadius: BorderRadius.circular(8), child: CachedNetworkImage(imageUrl: thumb, width: 42, height: 54, fit: BoxFit.cover, memCacheWidth: 120, errorWidget: (_, __, ___) => const SizedBox(width: 42, height: 54))),
+          ),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('En réponse à votre chronique', style: TextStyle(color: _colors.textSecondary, fontSize: 11, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 3),
+            Text(text.isEmpty ? '…' : text, style: TextStyle(color: _colors.textPrimary, fontSize: 13, height: 1.3)),
+          ]),
+        ),
+      ]),
+    );
+  }
+
   Widget _buildInvitationCard(Invitation invitation) {
     final user = invitation.inviteUser!;
     final invitationId = invitation.id!;
@@ -467,7 +494,10 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
               }
             },
             borderRadius: BorderRadius.circular(24),
-            child: Padding(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
               padding: const EdgeInsets.all(16),
               child: Row(
                 children: [
@@ -716,6 +746,9 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
                   ),
                 ],
               ),
+            ),
+                _chroniqueQuote(invitation),
+              ],
             ),
           ),
         ),

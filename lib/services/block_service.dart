@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -30,7 +31,7 @@ class BlockService extends ChangeNotifier {
     _sub = FirebaseFirestore.instance
         .collection('BlockedUsers')
         .where('blockedBy', isEqualTo: uid)
-        .snapshots()
+        .snapshotsM('block_service.dart:33')
         .listen((snap) {
       _blocked
         ..clear()

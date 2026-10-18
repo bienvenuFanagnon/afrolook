@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'dart:async';
@@ -102,7 +103,7 @@ class _DashboardContentScreenState extends State<DashboardContentScreen>
       final doc = await FirebaseFirestore.instance
           .collection('ContentPaies')
           .doc(contentId)
-          .get();
+          .getM('TableauDeBord.dart:105');
       if (!doc.exists || !mounted) return;
       final content = ContentPaie.fromJson({...doc.data()!, 'id': doc.id});
       Navigator.push(context,
@@ -139,7 +140,7 @@ class _DashboardContentScreenState extends State<DashboardContentScreen>
       final doc = await FirebaseFirestore.instance
           .collection('ContentPaies')
           .doc(contentId)
-          .get();
+          .getM('TableauDeBord.dart:142');
       if (!doc.exists) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -188,7 +189,7 @@ class _DashboardContentScreenState extends State<DashboardContentScreen>
             .where('pseudo', isGreaterThanOrEqualTo: pseudo)
             .where('pseudo', isLessThan: pseudo + '')
             .limit(20)
-            .get();
+            .getM('TableauDeBord.dart:191');
         if (!snap.docs.isEmpty) {
           final ids = snap.docs.map((d) => d.id).toList();
           if (mounted) setState(() {
@@ -202,7 +203,7 @@ class _DashboardContentScreenState extends State<DashboardContentScreen>
             .collection('Users')
             .where('email', isEqualTo: pseudo)
             .limit(5)
-            .get();
+            .getM('TableauDeBord.dart:205');
         if (mounted) {
           setState(() {
             _searchQuery = '';
@@ -445,7 +446,7 @@ class _DashboardContentScreenState extends State<DashboardContentScreen>
           ),
         ],
         body: StreamBuilder<QuerySnapshot>(
-          stream: _query.snapshots(),
+          stream: _query.snapshotsM('TableauDeBord.dart:448'),
           builder: (context, snap) {
             if (snap.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());

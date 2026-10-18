@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -252,7 +253,7 @@ class EtudeService {
   Future<List<EtudeTrack>> catalog({bool force = false}) async {
     final at = _catalogAt;
     if (!force && at != null && _catalog.isNotEmpty && DateTime.now().difference(at).inMinutes < 10) return _catalog;
-    final snap = await FirebaseFirestore.instance.collection('EtudeCatalog').get();
+    final snap = await FirebaseFirestore.instance.collection('EtudeCatalog').getM('etude_service.dart:255');
     _catalog = snap.docs.map((d) => EtudeTrack.fromMap(d.data())).toList()..sort((a, b) => a.order.compareTo(b.order));
     _catalogAt = DateTime.now();
     return _catalog;

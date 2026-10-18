@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/widgets.dart';
@@ -26,7 +27,7 @@ class FollowersCountService {
 
   Future<int?> _fetch(String userId) async {
     try {
-      final doc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+      final doc = await FirebaseFirestore.instance.collection('Users').doc(userId).getM('followers_count_service.dart:29');
       final data = doc.data();
       if (data == null) return null;
       final counter = (data['abonnes'] as num?)?.toInt() ?? 0;

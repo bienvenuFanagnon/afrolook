@@ -1,4 +1,5 @@
-﻿import 'package:afrotok/widgets/name_tag.dart';
+import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/widgets/safe_network_avatar.dart';
 import 'package:flutter/gestures.dart';
@@ -194,7 +195,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
     final userId = authProvider.loginUserData.id;
     if (userId == null || widget.initialVibe == null) return;
 
-    final postDoc = await _firestore.collection('Posts').doc(widget.initialVibe!.id).get();
+    final postDoc = await _firestore.collection('Posts').doc(widget.initialVibe!.id).getM('vibesPage.dart:197');
     if (postDoc.exists) {
       final data = postDoc.data();
       final usersFavorite = List<String>.from(data?['users_favorite_id'] ?? []);
@@ -489,7 +490,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
         .orderBy("created_at")
         .limit(30);
 
-    final snapshot = await query.get();
+    final snapshot = await query.getM('vibesPage.dart:492');
     if (snapshot.docs.isEmpty) return [];
 
     List<Post> validOldVibes = [];
@@ -603,13 +604,13 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
   Future<void> _loadPostRelations(Post post) async {
     if (post.user_id != null && post.user == null) {
       try {
-        final userDoc = await _firestore.collection('Users').doc(post.user_id).get();
+        final userDoc = await _firestore.collection('Users').doc(post.user_id).getM('vibesPage.dart:606');
         if (userDoc.exists) post.user = UserData.fromJson(userDoc.data()!);
       } catch (e) { printVm('Erreur chargement user: $e'); }
     }
     if (post.canal_id != null && post.canal_id!.isNotEmpty && post.canal == null) {
       try {
-        final canalDoc = await _firestore.collection('Canaux').doc(post.canal_id).get();
+        final canalDoc = await _firestore.collection('Canaux').doc(post.canal_id).getM('vibesPage.dart:612');
         if (canalDoc.exists) post.canal = Canal.fromJson(canalDoc.data()!);
       } catch (e) { printVm('Erreur chargement canal: $e'); }
     }
@@ -661,7 +662,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
             .where('status', isEqualTo: PostStatus.VALIDE.name)
             .orderBy(field, descending: descending)
             .limit(fetchLimit)
-            .get();
+            .getM('vibesPage.dart:664');
         return snap.docs.map((doc) {
           final p = Post.fromJson(doc.data());
           p.id = doc.id;
@@ -676,7 +677,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
             .where('typeTabbar', isEqualTo: "VIBE")
             .where('status', isEqualTo: PostStatus.VALIDE.name)
             .limit(50)
-            .get();
+            .getM('vibesPage.dart:679');
         List<Post> posts = snap.docs.map((doc) {
           final p = Post.fromJson(doc.data());
           p.id = doc.id;
@@ -709,7 +710,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
 
   void _subscribeToPostUpdates(Post post) {
     if (post.id == null || _postSubscriptions.containsKey(post.id)) return;
-    final subscription = _firestore.collection('Posts').doc(post.id).snapshots().listen((snapshot) {
+    final subscription = _firestore.collection('Posts').doc(post.id).snapshotsM('vibesPage.dart:712').listen((snapshot) {
       if (snapshot.exists && mounted) {
         final updatedPost = Post.fromJson(snapshot.data() as Map<String, dynamic>);
         setState(() {

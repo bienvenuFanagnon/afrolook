@@ -1,5 +1,14 @@
 ﻿// pages/chronique/chronique_detail_page.dart
 
+import 'package:afrotok/services/read_meter.dart';
+import '../../utils/media_cdn.dart';
+import 'dart:async';
+import '../../widgets/video_poster_image.dart';
+import 'chronique_comments_sheet.dart';
+import 'chronique_reply_sheet.dart';
+import 'chronique_overlay_text.dart';
+import 'chronique_text_view.dart';
+import 'chronique_widgets.dart';
 import '../../widgets/music/music_overlay.dart';
 import '../pub/ad_actions.dart';
 import '../../ads/ad_gate.dart';
@@ -131,7 +140,7 @@ class ChroniqueDetailPage extends StatefulWidget {
   State<ChroniqueDetailPage> createState() => _ChroniqueDetailPageState();
 }
 
-class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTickerProviderStateMixin, MusicSuspendMixin {
+class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerProviderStateMixin, MusicSuspendMixin {
   late PageController _pageController;
   int _currentPage = 0;
   VideoPlayerController? _videoController;
@@ -145,8 +154,12 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
   Timer? _storyTimer;
   double _storyProgress = 0.0; // 0.0 → 1.0 pour la slide courante
   static const int _timerIntervalMs = 50; // résolution 50ms
-  final TextEditingController _messageController = TextEditingController();
-  final ScrollController _messageScrollController = ScrollController();
+  AudioPlayer? _musicPlayer; // musique de la chronique affichée
+  bool _musicMuted = false;
+  int _sheetOpen = 0; // panneaux ouverts (commentaires, réponse) : le minuteur attend
+  bool _held = false; // geste sur un texte long : le minuteur attend
+  Timer? _holdTimer;
+  late final AnimationController _vinylController = AnimationController(vsync: this, duration: const Duration(seconds: 6))..repeat();
   UserData? _chroniqueOwner;
   late UserAuthProvider authProvider ;
   late ChroniqueProvider chroniqueProvider ;
@@ -181,8 +194,6 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
   Map<String, bool> _likesMap = {};
   Map<String, int> _likesCountMap = {};
 
-  bool _showMessages = true;
-  final int _maxMessageLength = 30;
 
   // État pour la slide pub courante
   bool _isShowingAd = false;
@@ -276,7 +287,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
           newLastDocument = await FirebaseFirestore.instance
               .collection('chroniques')
               .doc(result.last.id)
-              .get();
+              .getM('chroniquedetails.dart:289');
         }
 
         setState(() {
@@ -355,7 +366,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
           newLastDocument = await FirebaseFirestore.instance
               .collection('chroniques')
               .doc(result.last.id)
-              .get();
+              .getM('chroniquedetails.dart:368');
         }
 
         setState(() {
@@ -395,11 +406,21 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
   void _loadChroniqueOwner() async {
     if (_allChroniques.isEmpty) return;
     final currentChronique = _allChroniques[_currentPage];
-    final userDoc = await FirebaseFirestore.instance.collection('Users').doc(currentChronique.userId).get();
-    if (userDoc.exists) {
-      setState(() => _chroniqueOwner = UserData.fromJson(userDoc.data()!));
+    // Un profil n'est lu qu'une fois par ouverture de l'application (la coche « vérifié » change rarement)
+    final cached = _ownerCache[currentChronique.userId];
+    if (cached != null) {
+      if (mounted) setState(() => _chroniqueOwner = cached);
+      return;
+    }
+    final userDoc = await FirebaseFirestore.instance.collection('Users').doc(currentChronique.userId).getM('chroniquedetails.dart:414');
+    if (userDoc.exists && mounted) {
+      final owner = UserData.fromJson(userDoc.data()!);
+      _ownerCache[currentChronique.userId] = owner;
+      setState(() => _chroniqueOwner = owner);
     }
   }
+
+  static final Map<String, UserData> _ownerCache = {};
 
   void _initializeCurrentMedia() async {
     if (_allChroniques.isEmpty) return;
@@ -442,14 +463,35 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
       _videoController = ctrl;
       await _videoController!.initialize();
       if (!mounted) return;
+      if (currentChronique.hasMusic) await _videoController!.setVolume(currentChronique.videoSoundKept ? 1.0 : 0.0);
       _videoController!.play();
       _videoController!.setLooping(true);
       setState(() => _isVideoInitialized = true);
     }
 
+    unawaited(_startMusic(currentChronique));
+
     _markAsViewed(currentChronique);
     _updateCurrentLikeStatus(currentChronique);
     _startStoryTimer(currentChronique);
+    _prefetchNext();
+  }
+
+  /// La chronique suivante est préparée pendant qu'on regarde celle-ci : vidéo en cache disque, image dans le cache d'images.
+  void _prefetchNext() {
+    final next = _currentPage + 1;
+    if (next >= _allChroniques.length) return;
+    final c = _allChroniques[next];
+    final url = c.mediaUrl;
+    if (url == null || url.isEmpty) return;
+    if (c.type == ChroniqueType.VIDEO) {
+      MediaCacheService.prefetchVideo(url);
+      if ((c.posterUrl ?? '').isNotEmpty && mounted) {
+        precacheImage(CachedNetworkImageProvider(MediaCdn.url(c.posterUrl)), context).catchError((_) {});
+      }
+    } else if (c.type == ChroniqueType.IMAGE && mounted) {
+      precacheImage(CachedNetworkImageProvider(url), context).catchError((_) {});
+    }
   }
 
   // ── Timer story ────────────────────────────────────────────────────────────
@@ -471,8 +513,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
     final int durationMs;
     switch (chronique.type) {
       case ChroniqueType.TEXT:
-        final charCount = (chronique.textContent ?? '').length;
-        durationMs = (charCount * 60 + 3000).clamp(4000, 12000);
+        durationMs = chroniqueTextDurationMs((chronique.textContent ?? '').length);
         break;
       case ChroniqueType.IMAGE:
         durationMs = 5000;
@@ -496,6 +537,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
 
     _storyTimer = Timer.periodic(Duration(milliseconds: _timerIntervalMs), (t) {
       if (!mounted) { t.cancel(); return; }
+      if (_held || _sheetOpen > 0) return; // geste sur le texte, panneau ouvert : on attend
       setState(() => _storyProgress = (_storyProgress + increment).clamp(0.0, 1.0));
       if (_storyProgress >= 1.0) {
         t.cancel();
@@ -594,77 +636,8 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
       }
     }
   }
-  void _likeMessage(ChroniqueMessage message) async {
-    final currentChronique = _allChroniques[_currentPage];
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    final chroniqueProvider = Provider.of<ChroniqueProvider>(context, listen: false);
-
-    try {
-      await chroniqueProvider.likeMessage(message.id!, authProvider.loginUserData.id!);
-      if (message.userId != authProvider.loginUserData.id!) {
-        await _sendCommentLikeNotification(authProvider, currentChronique, message);
-      }
-    } catch (e) {
-      printVm('Erreur like message: $e');
-    }
-  }
-
-  void _sendMessage() async {
-    if (_messageController.text.trim().isEmpty) return;
-    if (_messageController.text.length > _maxMessageLength) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Message trop long (max $_maxMessageLength caractères)'), backgroundColor: Colors.orange),
-      );
-      return;
-    }
-
-    final currentChronique = _allChroniques[_currentPage];
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    final chroniqueProvider = Provider.of<ChroniqueProvider>(context, listen: false);
-
-    try {
-      await chroniqueProvider.addMessage(
-        chroniqueId: currentChronique.id!,
-        userId: authProvider.loginUserData.id!,
-        userPseudo: authProvider.loginUserData.pseudo!,
-        userImageUrl: authProvider.loginUserData.imageUrl!,
-        message: _messageController.text.trim(),
-      );
-      _messageController.clear();
-    } catch (e) {
-      printVm('Erreur envoi message: $e');
-    }
-  }
-
-  void _deleteMessage(ChroniqueMessage message, Chronique chronique) async {
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    final chroniqueProvider = Provider.of<ChroniqueProvider>(context, listen: false);
-    bool canDelete = authProvider.loginUserData.id == message.userId || authProvider.loginUserData.id == chronique.userId;
-
-    if (!canDelete) return;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.black,
-        title: Text('Supprimer', style: TextStyle(color: Color(0xFFFFD700))),
-        content: Text('Supprimer ce commentaire ?', style: TextStyle(color: Colors.white)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler', style: TextStyle(color: Colors.grey))),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await chroniqueProvider.deleteMessage(chronique.id!, message.id!);
-            },
-            child: Text('Supprimer', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<void> _sendNotification(UserAuthProvider authProvider, Chronique chronique, String message, String type) async {
-    final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(chronique.userId).get();
+    final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(chronique.userId).getM('chroniquedetails.dart:639');
     if (ownerDoc.exists && ownerDoc.data()!['oneIgnalUserid'] != null) {
       await authProvider.sendNotification(
         appName: '@${authProvider.loginUserData.pseudo!}',
@@ -681,51 +654,39 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
     }
   }
 
-  Future<void> _sendCommentLikeNotification(UserAuthProvider authProvider, Chronique chronique, ChroniqueMessage message) async {
-    final commentOwnerDoc = await FirebaseFirestore.instance.collection('Users').doc(message.userId).get();
-    if (commentOwnerDoc.exists && commentOwnerDoc.data()!['oneIgnalUserid'] != null) {
-      await authProvider.sendNotification(
-        appName: '@${authProvider.loginUserData.pseudo!}',
-        userIds: [commentOwnerDoc.data()!['oneIgnalUserid']],
-        smallImage: authProvider.loginUserData.imageUrl!,
-        send_user_id: authProvider.loginUserData.id!,
-        recever_user_id: message.userId,
-        message: '🙏 a aimé votre commentaire',
-        type_notif: 'COMMENT_LIKE',
-        post_id: chronique.id!,
-        post_type: 'CHRONIQUE',
-        chat_id: '',
-      );
-    }
-  }
-
   void _deleteChronique(Chronique chronique) async {
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    final chroniqueProvider = Provider.of<ChroniqueProvider>(context, listen: false);
-    bool canDelete = authProvider.loginUserData.id == chronique.userId || authProvider.loginUserData.role == 'ADM';
-
-    if (!canDelete) return;
-
-    showDialog(
+    final me = authProvider.loginUserData;
+    final isMine = me.id == chronique.userId;
+    if (!isMine && me.role != 'ADM') return;
+    final ok = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.black,
-        title: Text('Supprimer', style: TextStyle(color: Color(0xFFFFD700))),
-        content: Text('Supprimer cette chronique ?', style: TextStyle(color: Colors.white)),
+      builder: (ctx) => AlertDialog(
+        title: Text(isMine ? 'Supprimer ma chronique ?' : 'Supprimer cette chronique ?'),
+        content: Text(isMine
+            ? 'Elle disparaîtra pour tout le monde, avec ses commentaires et sa musique.'
+            : 'Suppression en tant qu\'administrateur : la chronique de @${chronique.userPseudo} disparaîtra pour tout le monde, avec ses commentaires.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler', style: TextStyle(color: Colors.grey))),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              await chroniqueProvider.deleteChronique(chronique.id!, chronique.mediaUrl ?? '');
-              setState(() => _allChroniques.removeWhere((c) => c.id == chronique.id));
-              if (_allChroniques.isEmpty) Navigator.pop(context);
-            },
-            child: Text('Supprimer', style: TextStyle(color: Colors.red)),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Supprimer', style: TextStyle(color: Colors.red))),
         ],
       ),
     );
+    if (ok != true || !mounted) return;
+    try {
+      await chroniqueProvider.deleteChronique(chronique.id!, chronique.mediaUrl ?? '', userId: chronique.userId, posterUrl: chronique.posterUrl, voiceUrl: chronique.musicKind == 'voice' ? chronique.musicUrl : null);
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Suppression impossible. Réessayez.')));
+      return;
+    }
+    if (!mounted) return;
+    await _stopMusic();
+    setState(() => _allChroniques.removeWhere((c) => c.id == chronique.id));
+    if (_allChroniques.isEmpty) {
+      Navigator.pop(context);
+    } else {
+      _currentPage = _currentPage.clamp(0, _allChroniques.length - 1);
+      _initializeCurrentMedia();
+    }
   }
 
   void _showFullScreenImage(String imageUrl) {
@@ -795,190 +756,8 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
     });
   }
 
-  Widget _buildMessageBubble(ChroniqueMessage message, Chronique chronique) {
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    bool isMessageOwner = authProvider.loginUserData.id == message.userId;
-    bool isChroniqueOwner = authProvider.loginUserData.id == chronique.userId;
-    bool canInteract = isChroniqueOwner && !isMessageOwner;
-
-    return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection('chronique_messages').doc(message.id!).snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return _buildMessageContent(message, chronique, canInteract, isMessageOwner, 0, false);
-        }
-        final data = snapshot.data!.data() as Map<String, dynamic>?;
-        final likeCount = data?['likeCount'] ?? 0;
-        final likers = List<String>.from(data?['likers'] ?? []);
-        final isLiked = likers.contains(authProvider.loginUserData.id!);
-        return _buildMessageContent(message, chronique, canInteract, isMessageOwner, likeCount, isLiked);
-      },
-    );
-  }
-
-  Widget _buildMessageContent(ChroniqueMessage message, Chronique chronique, bool canInteract, bool isMessageOwner, int likeCount, bool isLiked) {
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    final isChroniqueOwner = authProvider.loginUserData.id == chronique.userId;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onLongPress: () {
-          final canDelete = authProvider.loginUserData.id == message.userId ||
-              authProvider.loginUserData.id == chronique.userId ||
-              authProvider.loginUserData.role == 'ADM';
-          if (canDelete) {
-            _showDeleteMessageDialog(message, chronique);
-          }
-        },
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          margin: EdgeInsets.symmetric(vertical: 2, horizontal: 4),
-          padding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.3), // 🔥 Blanc transparent à 10%
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withOpacity(0.15), width: 0.5), // 🔥 Bordure très légère
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              GestureDetector(
-                onTap: () => _showUserProfile(message.userId),
-                child: CircleAvatar(onBackgroundImageError: (_, __) {}, 
-                  radius: 14,
-                  backgroundImage: CachedNetworkImageProvider(message.userImageUrl),
-                ),
-              ),
-              SizedBox(width: 10),
-              Flexible(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    GestureDetector(
-                      onTap: () => _showUserProfile(message.userId),
-                      child: PseudoTag(label: '@${message.userPseudo}',
-                        style: TextStyle(
-                          color: isMessageOwner ? Colors.blue : Color(0xFFFFD700),
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        )),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      message.message,
-                      style: TextStyle(color: Colors.white, fontSize: 12),
-                      softWrap: true,
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(width: 10),
-              _buildMessageLikeButton(message, likeCount, isLiked, isChroniqueOwner, isMessageOwner),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-// 🔥 Nouvelle méthode pour afficher le dialogue de suppression
-  void _showDeleteMessageDialog(ChroniqueMessage message, Chronique chronique) {
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-
-    bool canDelete = authProvider.loginUserData.id == message.userId ||
-        authProvider.loginUserData.id == chronique.userId ||
-        authProvider.loginUserData.role == 'ADM';
-
-    if (!canDelete) return;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(Icons.delete_outline, color: Colors.red, size: 24),
-            SizedBox(width: 8),
-            Text(
-              'Supprimer le message',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        content: Text(
-          'Êtes-vous sûr de vouloir supprimer ce message ?',
-          style: TextStyle(color: Colors.grey[300]),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Annuler', style: TextStyle(color: Colors.grey[500])),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              final chroniqueProvider = Provider.of<ChroniqueProvider>(context, listen: false);
-              await chroniqueProvider.deleteMessage(chronique.id!, message.id!);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Message supprimé'),
-                  backgroundColor: Colors.green,
-                  duration: Duration(seconds: 1),
-                ),
-              );
-            },
-            child: Text('Supprimer', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-  }
-  Widget _buildMessageLikeButton(ChroniqueMessage message, int likeCount, bool isLiked, bool isChroniqueOwner, bool isMessageOwner) {
-    // Seul le propriétaire de la chronique peut liker les messages des autres
-    final canLike = isChroniqueOwner && !isMessageOwner;
-
-    return GestureDetector(
-      onTap: () {
-        if (canLike && !isLiked) {
-          _likeMessage(message);
-        }
-      },
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: canLike ? Colors.red.withOpacity(0.2) : Colors.grey.withOpacity(0.1), // 🔥 Fond rouge pour le bouton like
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              isLiked ? Icons.favorite : Icons.favorite_border,
-              color: isLiked ? Colors.red : (canLike ? Colors.red : Colors.grey.withOpacity(0.5)), // 🔥 Rouge pour le like
-              size: 14,
-            ),
-            if (likeCount > 0) ...[
-              SizedBox(width: 4),
-              Text(
-                '$likeCount',
-                style: TextStyle(
-                  color: isLiked ? Colors.red : (canLike ? Colors.red : Colors.grey),
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
   void _showUserProfile(String userId) async {
-    final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+    final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).getM('chroniquedetails.dart:759');
     if (userDoc.exists) {
       showUserDetailsModalDialog(UserData.fromJson(userDoc.data()!), MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, context);
     }
@@ -1004,7 +783,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
           .collection('Advertisements')
           .where('status', isEqualTo: 'active')
           .limit(5)
-          .get();
+          .getM('chroniquedetails.dart:785');
 
       final ads = <Advertisement>[];
       final futures = <Future<void>>[];
@@ -1016,7 +795,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
 
         if (ad.postId != null) {
           futures.add(
-            FirebaseFirestore.instance.collection('Posts').doc(ad.postId).get().then((postDoc) {
+            FirebaseFirestore.instance.collection('Posts').doc(ad.postId).getM('chroniquedetails.dart:797').then((postDoc) {
               if (!postDoc.exists) return;
               final post = Post.fromJson(postDoc.data()!);
               post.id = postDoc.id;
@@ -1091,7 +870,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
       final fs = FirebaseFirestore.instance;
       switch (ad.ownerType) {
         case 'canal':
-          final doc = await fs.collection('Canaux').doc(id).get();
+          final doc = await fs.collection('Canaux').doc(id).getM('chroniquedetails.dart:872');
           if (!doc.exists || !context.mounted) return;
           final data = Map<String, dynamic>.from(doc.data()!)..['id'] = doc.id;
           Navigator.push(context, MaterialPageRoute(
@@ -1109,7 +888,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
           ));
           break;
         default:
-          final doc = await fs.collection('Users').doc(id).get();
+          final doc = await fs.collection('Users').doc(id).getM('chroniquedetails.dart:890');
           if (!doc.exists || !context.mounted) return;
           final data = Map<String, dynamic>.from(doc.data()!)..['id'] = doc.id;
           Navigator.push(context, MaterialPageRoute(
@@ -1435,7 +1214,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
         (post.url_media ?? '').contains('.mp4') ||
         (post.url_media ?? '').contains('.mov'));
 
-    final actionBottomOffset = _showMessages ? 280.0 : 120.0;
+    final actionBottomOffset = 120.0;
 
     return Stack(
       fit: StackFit.expand,
@@ -1790,6 +1569,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
                   // Page pub : on ne touche pas à _currentPage (garder le dernier index chronique valide)
                   _videoController?.pause();
                   _audioPlayer?.pause();
+                  unawaited(_stopMusic());
                   final item = _displayItems[virtualIndex];
                   // La pub avance toute seule, comme une chronique (5 s ; une vidéo : sa durée, voir _initializeAdVideo)
                   _startAdTimer(_adImageMs);
@@ -1855,9 +1635,9 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
             _buildProgressIndicator(),
             if (_isShowingAd) _buildAdProgress(),
             if (!_isShowingAd) ...[
-              _buildUserProfile(currentChronique),
-              _buildBottomBar(currentChronique),
-              _buildLikeSection(),
+              _buildStatsPill(currentChronique),
+              _buildMusicPill(currentChronique),
+              _buildBottomRow(currentChronique),
               _buildHeartAnimation(),
             ] else if (_currentDisplayAd != null)
               _buildAdActionsOverlay(_currentDisplayAd!),
@@ -1868,34 +1648,6 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
                 right: 0,
                 child: Center(child: CircularProgressIndicator(color: Color(0xFFFFD700))),
               ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(Chronique chronique) {
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    bool canDelete = authProvider.loginUserData.id == chronique.userId || authProvider.loginUserData.role == 'ADM';
-
-    return Positioned(
-      top: 0,
-      left: 0,
-      right: 0,
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.black.withOpacity(0.8), Colors.transparent]),
-        ),
-        child: Row(
-          children: [
-            IconButton(icon: Icon(Icons.close, color: Colors.white, size: 24), onPressed: () => Navigator.pop(context)),
-            Spacer(),
-            IconButton(
-              icon: Icon(Icons.add_circle, color: Color(0xFFFFD700), size: 22),
-              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => AddChroniquePage())),
-            ),
-            if (canDelete) IconButton(icon: Icon(Icons.delete, color: Colors.red, size: 22), onPressed: () => _deleteChronique(chronique)),
           ],
         ),
       ),
@@ -1960,7 +1712,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
                 alignment: Alignment.centerLeft,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFD700),
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -1972,174 +1724,368 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
     );
   }
 
-  Widget _buildUserProfile(Chronique chronique) {
-    final likesCount = chronique.likeCount ?? 0;
+  // ── Nouveau décor du lecteur : en-tête, pastille de chiffres, rangée du bas, musique ─────────────
 
+  String _ago(Timestamp t) {
+    final d = DateTime.now().difference(t.toDate());
+    if (d.inMinutes < 1) return 'à l\'instant';
+    if (d.inMinutes < 60) return 'il y a ${d.inMinutes} min';
+    if (d.inHours < 24) return 'il y a ${d.inHours} h';
+    return 'il y a ${d.inDays} j';
+  }
+
+  Widget _glassIcon(IconData icon, VoidCallback onTap, {String? tip}) {
+    return Tooltip(
+      message: tip ?? '',
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(color: Colors.black.withValues(alpha: .4), shape: BoxShape.circle),
+          child: Icon(icon, color: Colors.white, size: 18),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(Chronique chronique) {
+    final me = authProvider.loginUserData;
+    final isMine = me.id == chronique.userId;
+    final isAdmin = me.role == 'ADM';
     return Positioned(
-      top: 20,
-      left: 16,
+      top: 0,
+      left: 0,
+      right: 0,
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.6),
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            GestureDetector(
-              onTap: () => _showUserProfile(chronique.userId),
-              child: CircleAvatar(onBackgroundImageError: (_, __) {}, 
-                radius: 16,
-                backgroundImage: CachedNetworkImageProvider(chronique.userImageUrl),
+        padding: const EdgeInsets.fromLTRB(12, 22, 10, 26),
+        decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.black.withValues(alpha: .7), Colors.transparent])),
+        child: Row(children: [
+          if (!_isShowingAd)
+            Expanded(
+              child: GestureDetector(
+                onTap: () => _showUserProfile(chronique.userId),
+                behavior: HitTestBehavior.opaque,
+                child: Row(children: [
+                  Container(
+                    decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
+                    child: ChroniqueAvatar(imageUrl: chronique.userImageUrl, name: chronique.userPseudo, size: 34),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Row(children: [
+                        Flexible(child: PseudoTag(label: isMine ? 'Moi · @${chronique.userPseudo}' : '@${chronique.userPseudo}', style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                        if (_chroniqueOwner?.isVerify == true) ...[const SizedBox(width: 4), const Icon(Icons.verified, color: Color(0xFF2D8CFF), size: 14)],
+                      ]),
+                      Text(_ago(chronique.createdAt), style: TextStyle(color: Colors.white.withValues(alpha: .8), fontSize: 10.5)),
+                    ]),
+                  ),
+                ]),
               ),
-            ),
-            SizedBox(width: 8),
-            GestureDetector(
-              onTap: () => _showUserProfile(chronique.userId),
-              child: PseudoTag(label: '@${chronique.userPseudo}', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-            ),
-            if (_chroniqueOwner?.isVerify == true) ...[
-              SizedBox(width: 4),
-              Icon(Icons.verified, color: Colors.blue, size: 14),
-            ],
-            SizedBox(width: 12),
-            _buildStatItem(Icons.favorite, '$likesCount', 14),
-            SizedBox(width: 8),
-            _buildStatItem(Icons.remove_red_eye, '${chronique.viewCount}', 14),
-            SizedBox(width: 8),
-            _buildStatItem(Icons.timer, _getTimeLeft(chronique.expiresAt), 14),
+            )
+          else
+            const Spacer(),
+          if (!_isShowingAd && chronique.hasMusic && chronique.type != ChroniqueType.AUDIO) ...[
+            _glassIcon(_musicMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded, _toggleMusicMute, tip: _musicMuted ? 'Activer le son' : 'Couper la musique'),
+            const SizedBox(width: 8),
           ],
-        ),
+          if (!_isShowingAd) ...[
+            _menu(chronique, isMine, isAdmin),
+            const SizedBox(width: 8),
+          ],
+          _glassIcon(Icons.close_rounded, () => Navigator.pop(context), tip: 'Fermer'),
+        ]),
       ),
     );
   }
 
-  Widget _buildBottomBar(Chronique currentChronique) {
-    return Positioned(
-      bottom: 15,
-      left: 8,
-      right: 8,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Bouton masquer/afficher à gauche
-          Row(
-            children: [
-              GestureDetector(
-                onTap: () => setState(() => _showMessages = !_showMessages),
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(_showMessages ? Icons.visibility_off : Icons.visibility, color: Colors.white, size: 16),
-                      SizedBox(width: 4),
-                      Text(_showMessages ? 'Masquer' : 'Afficher', style: TextStyle(color: Colors.white, fontSize: 11)),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 8),
-          // Messages
-          if (_showMessages)
-            Container(
-              height: 150,
-              child: StreamBuilder<List<ChroniqueMessage>>(
-                stream: Provider.of<ChroniqueProvider>(context).getChroniqueMessages(currentChronique.id!),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData || snapshot.data!.isEmpty) return SizedBox();
-                  return ListView.builder(
-                    controller: _messageScrollController,
-                    padding: EdgeInsets.all(4),
-                    itemCount: snapshot.data!.length,
-                    itemBuilder: (context, index) => _buildMessageBubble(snapshot.data![index], currentChronique),
-                  );
-                },
-              ),
+  /// Menu « ⋯ » : ajouter une chronique, commentaires, réponse privée, profil, suppression (créateur ou administrateur).
+  Widget _menu(Chronique c, bool isMine, bool isAdmin) {
+    PopupMenuItem<String> item(String v, IconData icon, String label, {String? sub, bool danger = false}) => PopupMenuItem<String>(
+          value: v,
+          child: Row(children: [
+            Icon(icon, size: 18, color: danger ? const Color(0xFFFF5C5C) : Colors.white70),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                Text(label, style: TextStyle(color: danger ? const Color(0xFFFF5C5C) : Colors.white, fontWeight: FontWeight.w600, fontSize: 13.5)),
+                if (sub != null) Text(sub, style: const TextStyle(color: Colors.white54, fontSize: 11)),
+              ]),
             ),
-          SizedBox(height: 8),
-          // Champ de saisie
-          Container(
-            height: 40,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: TextField(
-                      controller: _messageController,
-                      maxLength: _maxMessageLength,
-                      style: TextStyle(color: Colors.white, fontSize: 12),
-                      decoration: InputDecoration(
-                        hintText: 'Message (max $_maxMessageLength)...',
-                        hintStyle: TextStyle(color: Colors.grey, fontSize: 11),
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        counterText: '',
-                      ),
-                      onSubmitted: (_) => _sendMessage(),
-                    ),
-                  ),
-                ),
-                SizedBox(width: 8),
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(color: Color(0xFFFFD700), shape: BoxShape.circle),
-                  child: IconButton(
-                    icon: Icon(Icons.send, color: Colors.black, size: 16),
-                    onPressed: _sendMessage,
-                    padding: EdgeInsets.zero,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+          ]),
+        );
+    return PopupMenuButton<String>(
+      tooltip: 'Plus',
+      color: const Color(0xFF1B1B1B),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      offset: const Offset(0, 44),
+      onSelected: (v) {
+        switch (v) {
+          case 'add':
+            Navigator.push(context, MaterialPageRoute(builder: (_) => AddChroniquePage()));
+            break;
+          case 'comments':
+            _openComments(c);
+            break;
+          case 'reply':
+            _openReply(c);
+            break;
+          case 'profile':
+            _showUserProfile(c.userId);
+            break;
+          case 'delete':
+            _deleteChronique(c);
+            break;
+        }
+      },
+      itemBuilder: (_) => [
+        item('add', Icons.add_rounded, 'Ajouter une chronique'),
+        item('comments', Icons.chat_bubble_outline_rounded, 'Voir les commentaires', sub: '${c.commentCount} commentaire${c.commentCount > 1 ? 's' : ''}'),
+        if (!isMine) item('reply', Icons.mail_outline_rounded, 'Répondre en privé'),
+        if (!isMine) item('profile', Icons.person_outline_rounded, 'Voir le profil'),
+        if (isMine || isAdmin) item('delete', Icons.delete_outline_rounded, isMine ? 'Supprimer ma chronique' : 'Supprimer (administrateur)', sub: 'Média, musique et commentaires retirés', danger: true),
+      ],
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(color: Colors.black.withValues(alpha: .4), shape: BoxShape.circle),
+        child: const Icon(Icons.more_horiz_rounded, color: Colors.white, size: 20),
       ),
     );
   }
 
-  Widget _buildLikeSection() {
-    if (_allChroniques.isEmpty) return SizedBox();
-    final currentChronique = _allChroniques[_currentPage];
-    final likesCount = currentChronique.likeCount ?? 0;
-
+  /// Pastille de chiffres : vues, j'aime, temps restant.
+  Widget _buildStatsPill(Chronique c) {
+    Widget stat(IconData i, String t) => Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(i, color: Colors.white, size: 12),
+          const SizedBox(width: 4),
+          Text(t, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+        ]);
     return Positioned(
-      bottom: 70,
-      right: 16,
-      child: Column(
-        children: [
-          GestureDetector(
-            onTap: _likeCurrentChronique,
+      top: 84,
+      left: 14,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(color: Colors.black.withValues(alpha: .42), borderRadius: BorderRadius.circular(99)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          stat(Icons.remove_red_eye_rounded, chroniqueCount(c.viewCount)),
+          const SizedBox(width: 12),
+          stat(Icons.favorite_rounded, chroniqueCount(c.likeCount)),
+          const SizedBox(width: 12),
+          stat(Icons.hourglass_bottom_rounded, _getTimeLeft(c.expiresAt)),
+        ]),
+      ),
+    );
+  }
+
+  Widget _buildMusicPill(Chronique c) {
+    if (!c.hasMusic || c.type == ChroniqueType.AUDIO) return const SizedBox.shrink();
+    final isMine = authProvider.loginUserData.id == c.userId;
+    return Positioned(
+      left: 14,
+      right: 14,
+      bottom: isMine ? 92 : 76,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(10, 8, 12, 8),
+        decoration: BoxDecoration(color: Colors.black.withValues(alpha: .5), borderRadius: BorderRadius.circular(16)),
+        child: Row(children: [
+          RotationTransition(
+            turns: _vinylController,
             child: Container(
-              width: 50,
-              height: 50,
-              decoration: BoxDecoration(color: Colors.black.withOpacity(0.7), shape: BoxShape.circle),
-              child: Center(
-                child: Icon(_hasLikedCurrent ? Icons.favorite : Icons.favorite_border, color: _hasLikedCurrent ? Colors.red : Colors.white, size: 28),
-              ),
+              width: 36,
+              height: 36,
+              decoration: const BoxDecoration(shape: BoxShape.circle, gradient: RadialGradient(colors: [Color(0xFF111111), Color(0xFF111111), kRingGreen, kRingGreen, Color(0xFF111111)], stops: [0, .18, .19, .3, .31])),
             ),
           ),
-          SizedBox(height: 4),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(color: Colors.black.withOpacity(0.7), borderRadius: BorderRadius.circular(20)),
-            child: Text('$likesCount', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+              Text(c.musicTitle ?? 'Musique', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12.5)),
+              Text('${c.musicArtist ?? ''} · extrait ${((c.musicEndMs ?? 0) - (c.musicStartMs ?? 0)) ~/ 1000} s', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 10.5)),
+            ]),
           ),
-        ],
+          GestureDetector(
+            onTap: _toggleMusicMute,
+            child: Icon(_musicMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded, color: Colors.white, size: 20),
+          ),
+        ]),
       ),
     );
+  }
+
+  Widget _buildBottomRow(Chronique c) {
+    final isMine = authProvider.loginUserData.id == c.userId;
+    if (isMine) {
+      Widget tile(String n, String label, {VoidCallback? onTap}) => Expanded(
+            child: GestureDetector(
+              onTap: onTap,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(color: Colors.white.withValues(alpha: .14), borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.white.withValues(alpha: .2))),
+                child: Column(children: [
+                  Text(n, style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800)),
+                  Text(label, style: const TextStyle(color: Colors.white70, fontSize: 9.5, fontWeight: FontWeight.w700, letterSpacing: .5)),
+                ]),
+              ),
+            ),
+          );
+      return Positioned(
+        left: 14,
+        right: 14,
+        bottom: 18,
+        child: Row(children: [
+          tile(chroniqueCount(c.viewCount), 'VUES'),
+          const SizedBox(width: 8),
+          tile(chroniqueCount(c.likeCount), 'J\'AIME'),
+          const SizedBox(width: 8),
+          tile(chroniqueCount(c.commentCount), 'COMMENTAIRES', onTap: () => _openComments(c)),
+        ]),
+      );
+    }
+    final liked = _hasLikedCurrent;
+    return Positioned(
+      left: 14,
+      right: 14,
+      bottom: 18,
+      child: Row(children: [
+        Expanded(
+          child: GestureDetector(
+            onTap: () => _openComments(c),
+            child: Container(
+              height: 46,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: .14), borderRadius: BorderRadius.circular(99), border: Border.all(color: Colors.white.withValues(alpha: .22))),
+              child: Row(children: [
+                const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 17),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    const Text('Ajouter un commentaire', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                    if ((c.lastCommentText ?? '').isNotEmpty)
+                      Text('@${c.lastCommentPseudo ?? ''} : ${c.lastCommentText}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                  ]),
+                ),
+                if (c.commentCount > 0)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(color: Colors.white.withValues(alpha: .18), borderRadius: BorderRadius.circular(99)),
+                    child: Text(chroniqueCount(c.commentCount), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
+                  ),
+              ]),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        _roundAction(liked ? Icons.favorite_rounded : Icons.favorite_border_rounded, _likeCurrentChronique, color: liked ? const Color(0xFFFF4D6A) : Colors.white, badge: chroniqueCount(c.likeCount)),
+        const SizedBox(width: 8),
+        _roundAction(Icons.mail_outline_rounded, () => _openReply(c)),
+      ]),
+    );
+  }
+
+  Widget _roundAction(IconData icon, VoidCallback onTap, {Color color = Colors.white, String? badge}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        width: 48,
+        height: 48,
+        child: Stack(clipBehavior: Clip.none, children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(color: Colors.white.withValues(alpha: .14), shape: BoxShape.circle, border: Border.all(color: Colors.white.withValues(alpha: .22))),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          if (badge != null)
+            Positioned(
+              right: -4,
+              bottom: -2,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                constraints: const BoxConstraints(minWidth: 20),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(99)),
+                child: Text(badge, textAlign: TextAlign.center, style: const TextStyle(color: Color(0xFF111111), fontSize: 9.5, fontWeight: FontWeight.w800)),
+              ),
+            ),
+        ]),
+      ),
+    );
+  }
+
+  // ── Panneaux (commentaires, réponse privée) : la chronique se met en pause pendant qu'ils sont ouverts ──
+
+  Future<void> _holdWhile(Future<void> Function() open) async {
+    _sheetOpen++;
+    final wasPlaying = _videoController?.value.isPlaying == true;
+    if (wasPlaying) await _videoController?.pause();
+    try {
+      await open();
+    } finally {
+      _sheetOpen--;
+      if (mounted && wasPlaying && _sheetOpen == 0) _videoController?.play();
+    }
+  }
+
+  Future<void> _openComments(Chronique c) => _holdWhile(() => showChroniqueComments(
+        context,
+        chronique: c,
+        onChanged: (delta, pseudo, text) {
+          if (!mounted) return;
+          setState(() {
+            c.commentCount = (c.commentCount + delta).clamp(0, 1 << 30);
+            c.lastCommentPseudo = pseudo;
+            c.lastCommentText = text;
+          });
+        },
+      ));
+
+  Future<void> _openReply(Chronique c) => _holdWhile(() => showChroniqueReply(context, c));
+
+  /// Un geste sur le texte long : le minuteur attend 2 secondes de calme avant de reprendre.
+  void _pauseStoryBriefly() {
+    _held = true;
+    _holdTimer?.cancel();
+    _holdTimer = Timer(const Duration(seconds: 2), () => _held = false);
+  }
+
+  // ── Musique de la chronique ────────────────────────────────────────────────
+
+  Future<void> _stopMusic() async {
+    final p = _musicPlayer;
+    _musicPlayer = null;
+    try {
+      await p?.stop();
+      await p?.dispose();
+    } catch (_) {}
+  }
+
+  Future<void> _startMusic(Chronique c) async {
+    await _stopMusic();
+    if (!c.hasMusic || c.type == ChroniqueType.AUDIO) return;
+    final player = AudioPlayer();
+    _musicPlayer = player;
+    final start = c.musicStartMs ?? 0;
+    final end = c.musicEndMs ?? 0;
+    try {
+      await player.setReleaseMode(ReleaseMode.loop);
+      await player.setVolume(_musicMuted ? 0 : c.musicVolume);
+      player.onPositionChanged.listen((pos) {
+        if (end > start && pos.inMilliseconds >= end) player.seek(Duration(milliseconds: start));
+      });
+      await player.setSourceUrl(MediaCdn.url(c.musicUrl));
+      if (start > 0) await player.seek(Duration(milliseconds: start));
+      if (_musicPlayer == player && mounted) await player.resume();
+    } catch (e) {
+      printVm('Musique de chronique indisponible : $e');
+    }
+  }
+
+  void _toggleMusicMute() {
+    setState(() => _musicMuted = !_musicMuted);
+    final c = _allChroniques.isEmpty ? null : _allChroniques[_currentPage];
+    _musicPlayer?.setVolume(_musicMuted ? 0 : (c?.musicVolume ?? .7));
   }
 
   Widget _buildHeartAnimation() {
@@ -2169,33 +2115,29 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
   }
 
   Widget _buildChroniqueContent(Chronique chronique) {
-    return Container(margin: EdgeInsets.symmetric(horizontal: 10, vertical: 10), child: _buildMainContent(chronique));
+    return Container(color: Colors.black, child: _buildMainContent(chronique));
   }
 
   Widget _buildMainContent(Chronique chronique) {
     switch (chronique.type) {
       case ChroniqueType.TEXT:
-        return Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: BoxDecoration(color: Color(int.parse(chronique.backgroundColor!, radix: 16)), borderRadius: BorderRadius.circular(15)),
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Text(chronique.textContent!, style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
-            ),
-          ),
-        );
+        return ChroniqueTextView(chronique: chronique, onTouch: _pauseStoryBriefly);
 
       case ChroniqueType.IMAGE:
         return ClipRRect(
           borderRadius: BorderRadius.circular(15),
-          child: CachedNetworkImage(
-            imageUrl: chronique.mediaUrl!,
-            fit: BoxFit.contain,
-            width: double.infinity,
-            height: double.infinity,
-            placeholder: (context, url) => Container(color: Colors.grey[800], child: Center(child: CircularProgressIndicator(color: Color(0xFFFFD700)))),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              CachedNetworkImage(
+                imageUrl: chronique.mediaUrl!,
+                fit: BoxFit.contain,
+                width: double.infinity,
+                height: double.infinity,
+                placeholder: (context, url) => Container(color: Colors.grey[800], child: Center(child: CircularProgressIndicator(color: Color(0xFFFFD700)))),
+              ),
+              _overlayTextOf(chronique),
+            ],
           ),
         );
 
@@ -2207,7 +2149,23 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
               if (_videoController != null && _isVideoInitialized)
                 AspectRatio(aspectRatio: _videoController!.value.aspectRatio, child: VideoPlayer(_videoController!)),
               if (!_isVideoInitialized)
-                Container(color: Colors.grey[800], child: Center(child: CircularProgressIndicator(color: Color(0xFFFFD700)))),
+                Positioned.fill(
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // L'aperçu reste affiché jusqu'à ce que la vidéo soit prête et lancée
+                      VideoPosterImage(
+                        cacheKey: 'chronique_${chronique.id}',
+                        posterUrl: chronique.posterUrl,
+                        videoUrl: chronique.mediaUrl,
+                        fit: BoxFit.contain,
+                        placeholder: Container(color: Colors.grey[800]),
+                      ),
+                      Center(child: CircularProgressIndicator(color: Color(0xFFFFD700))),
+                    ],
+                  ),
+                ),
+              _overlayTextOf(chronique),
               Center(
                 child: IconButton(
                   icon: Icon(_videoController?.value.isPlaying == true ? Icons.pause_circle_filled : Icons.play_circle_filled, color: Colors.white.withOpacity(0.7), size: 50),
@@ -2228,6 +2186,13 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
       case ChroniqueType.AUDIO:
         return _buildAudioContent(chronique);
     }
+  }
+
+  /// Texte que l'auteur a posé sur son image ou sa vidéo, à l'endroit qu'il a choisi.
+  Widget _overlayTextOf(Chronique c) {
+    final t = (c.textContent ?? '').trim();
+    if (t.isEmpty) return const SizedBox.shrink();
+    return Positioned.fill(child: ChroniqueOverlayText(text: t, x: c.textX ?? kOverlayDefaultX, y: c.textY ?? kOverlayDefaultY));
   }
 
   Widget _buildAudioContent(Chronique chronique) {
@@ -2371,8 +2336,10 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with SingleTi
     _audioPlayer?.stop();
     _audioPlayer?.dispose();
     _adVideoController?.dispose();
-    _messageController.dispose();
-    _messageScrollController.dispose();
+    _holdTimer?.cancel();
+    _vinylController.dispose();
+    _musicPlayer?.stop();
+    _musicPlayer?.dispose();
     _heartAnimationController.dispose();
     super.dispose();
   }

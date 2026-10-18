@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import '../../../services/follow_service.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'dart:math';
@@ -74,7 +75,7 @@ class _FeedSportDiscoverySectionState
         .where('interests', arrayContainsAny: _sportInterestCodes)
         .orderBy('creatorScore', descending: true)
         .limit(30)
-        .get();
+        .getM('feed_sport_discovery_section.dart:77');
 
     final all = snap.docs
         .map((d) {
@@ -100,7 +101,7 @@ class _FeedSportDiscoverySectionState
         .where('categories', arrayContains: 'SPORT')
         .orderBy('canalScore', descending: true)
         .limit(20)
-        .get();
+        .getM('feed_sport_discovery_section.dart:103');
 
     final all = snap.docs
         .map((d) {

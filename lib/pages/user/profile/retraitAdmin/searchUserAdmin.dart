@@ -1,5 +1,6 @@
 ﻿// pages/admin/user_search_page.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/user/profile/retraitAdmin/userAllDetails.dart';
 import 'package:flutter/material.dart';
@@ -84,7 +85,7 @@ class _UserSearchPageState extends State<UserSearchPage> {
           .orderBy('createdAt', descending: true)
           .limit(_selectedLimit);
 
-      QuerySnapshot snapshot = await query.get();
+      QuerySnapshot snapshot = await query.getM('searchUserAdmin.dart:87');
 
       _lastDocument = snapshot.docs.isNotEmpty ? snapshot.docs.last : null;
       _hasMoreData = snapshot.docs.length == _selectedLimit;
@@ -123,7 +124,7 @@ class _UserSearchPageState extends State<UserSearchPage> {
           .startAfterDocument(_lastDocument!)
           .limit(_selectedLimit);
 
-      QuerySnapshot snapshot = await query.get();
+      QuerySnapshot snapshot = await query.getM('searchUserAdmin.dart:126');
 
       if (snapshot.docs.isNotEmpty) {
         _lastDocument = snapshot.docs.last;
@@ -174,7 +175,7 @@ class _UserSearchPageState extends State<UserSearchPage> {
             .collection('Users')
             .where('email', isEqualTo: query.toLowerCase())
             .limit(50)
-            .get();
+            .getM('searchUserAdmin.dart:177');
       } else {
         // Recherche par pseudo (recherche partielle avec bornes)
         snapshot = await _firestore
@@ -182,7 +183,7 @@ class _UserSearchPageState extends State<UserSearchPage> {
             .where('pseudo', isGreaterThanOrEqualTo: query)
             .where('pseudo', isLessThan: query + 'z')
             .limit(50)
-            .get();
+            .getM('searchUserAdmin.dart:185');
       }
 
       final results = snapshot.docs.map((doc) {

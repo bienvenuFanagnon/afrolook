@@ -1,4 +1,5 @@
-﻿import 'dart:math';
+﻿import '../../services/media_shrink.dart';
+import 'dart:math';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import '../../models/model_data.dart';
@@ -84,7 +85,7 @@ async {
           .child('thumbnails')
           .child('$postId.jpg');
 
-      UploadTask uploadTask = ref.putFile(file);
+      UploadTask uploadTask = ref.putFile(await MediaShrink.file(file));
       TaskSnapshot snapshot = await uploadTask;
       String downloadUrl = await snapshot.ref.getDownloadURL();
 

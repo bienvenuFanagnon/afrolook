@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import '../../services/follow_service.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'dart:async';
@@ -83,7 +84,7 @@ class _CreatorCanalSearchPageState extends State<CreatorCanalSearchPage> {
           .collection('Users')
           .orderBy('creatorScore', descending: true)
           .limit(30)
-          .get();
+          .getM('creator_canal_search_page.dart:86');
       final creators = cSnap.docs
           .map((d) { try { return UserData.fromJson(d.data())..id = d.id; } catch (_) { return null; } })
           .whereType<UserData>()
@@ -95,7 +96,7 @@ class _CreatorCanalSearchPageState extends State<CreatorCanalSearchPage> {
           .collection('Canaux')
           .orderBy('canalScore', descending: true)
           .limit(20)
-          .get();
+          .getM('creator_canal_search_page.dart:98');
       final canaux = kSnap.docs
           .map((d) { try { return Canal.fromJson(d.data())..id = d.id; } catch (_) { return null; } })
           .whereType<Canal>()
@@ -107,7 +108,7 @@ class _CreatorCanalSearchPageState extends State<CreatorCanalSearchPage> {
       // Canaux mis en avant par l'administration (non expirés) : toujours en tête
       final popular = <Canal>[];
       try {
-        final pSnap = await FirebaseFirestore.instance.collection('Canaux').where('isPopular', isEqualTo: true).limit(10).get();
+        final pSnap = await FirebaseFirestore.instance.collection('Canaux').where('isPopular', isEqualTo: true).limit(10).getM('creator_canal_search_page.dart:110');
         final nowMs = DateTime.now().millisecondsSinceEpoch;
         for (final d in pSnap.docs) {
           final data = d.data();
@@ -154,7 +155,7 @@ class _CreatorCanalSearchPageState extends State<CreatorCanalSearchPage> {
           .where('pseudo', isGreaterThanOrEqualTo: q)
           .where('pseudo', isLessThan: '${q}z')
           .limit(8)
-          .get();
+          .getM('creator_canal_search_page.dart:157');
       final users = userSnap.docs
           .map((d) { try { return UserData.fromJson(d.data())..id = d.id; } catch (_) { return null; } })
           .whereType<UserData>()
@@ -165,7 +166,7 @@ class _CreatorCanalSearchPageState extends State<CreatorCanalSearchPage> {
           .where('titre', isGreaterThanOrEqualTo: q)
           .where('titre', isLessThan: '${q}z')
           .limit(6)
-          .get();
+          .getM('creator_canal_search_page.dart:168');
       final canaux = canalSnap.docs
           .map((d) { try { return Canal.fromJson(d.data())..id = d.id; } catch (_) { return null; } })
           .whereType<Canal>()

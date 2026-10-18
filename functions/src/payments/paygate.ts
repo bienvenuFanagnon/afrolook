@@ -1,6 +1,7 @@
 import { onRequest } from "firebase-functions/v2/https";
 import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../shared/firebase";
+import { logPayment } from "./paymentLog";
 import { generateDepositNumber } from "../shared/deposit_utils";
 
 export const processAfrolookPaygatePayment = onRequest(
@@ -19,6 +20,7 @@ export const processAfrolookPaygatePayment = onRequest(
       const expectedSecret = process.env.PAYGATE_WEBHOOK_SECRET;
       if (!expectedSecret || authHeader !== `Bearer ${expectedSecret}`) {
         console.error("PayGate webhook: secret invalide");
+        await logPayment({ provider: "paygate", step: "webhook", ok: false, code: "401", message: "Secret du webhook invalide (tentative non autorisée ou secret mal configuré)" });
         res.status(401).json({ success: false, error: "Non autorisé" });
         return;
       }
@@ -190,6 +192,7 @@ export const processAfrolookPaygatePayment = onRequest(
       });
 
       console.log("Transaction AfroLook traitée avec succès - Frais appliqués");
+      await logPayment({ provider: "paygate", step: "credit", ok: true, uid: userId, amount: amountWithoutFees, currency: "XOF", reference: paygateReference });
       res.status(200).json({
         success: true,
         data: {
@@ -206,6 +209,7 @@ export const processAfrolookPaygatePayment = onRequest(
 
     } catch (error) {
       console.error("Erreur traitement callback AfroLook:", error);
+      await logPayment({ provider: "paygate", step: "webhook", ok: false, message: error });
       res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : String(error),

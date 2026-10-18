@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -70,7 +71,7 @@ class _ActiveCreatorsSectionWidgetState extends State<ActiveCreatorsSectionWidge
       Map<String, int> freshCounts = {};
       Map<String, int> freshCanalCounts = {};
       try {
-        final doc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+        final doc = await FirebaseFirestore.instance.collection('Users').doc(userId).getM('active_creators_section_widget.dart:73');
         final rawCreator = doc.data()?['newPostsByCreator'] as Map<String, dynamic>? ?? {};
         freshCounts = Map<String, int>.fromEntries(
           rawCreator.entries

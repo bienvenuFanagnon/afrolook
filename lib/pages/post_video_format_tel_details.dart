@@ -1,3 +1,5 @@
+import 'package:afrotok/services/read_meter.dart';
+import '../services/comments_prefetch.dart';
 import 'package:afrotok/widgets/studio/post_template_try.dart';
 import '../widgets/music/music_overlay.dart';
 import 'defi/defi_boost.dart';
@@ -388,7 +390,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
           .orderBy("created_at")
           .limit(30); // on prend large pour filtrer ensuite
 
-      final snapshot = await query.get();
+      final snapshot = await query.getM('post_video_format_tel_details.dart:392');
 
       if (snapshot.docs.isEmpty) {
         printVm("⚠️ Aucune vidéo trouvée dans cette période");
@@ -439,7 +441,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     final userId = authProvider.loginUserData.id;
     if (userId == null) return;
 
-    final postDoc = await _firestore.collection('Posts').doc(widget.initialPost!.id).get();
+    final postDoc = await _firestore.collection('Posts').doc(widget.initialPost!.id).getM('post_video_format_tel_details.dart:443');
     if (!mounted) return;
     if (postDoc.exists) {
       final data = postDoc.data();
@@ -1098,7 +1100,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
           .collection('Articles')
           .where('status', isEqualTo: 'ACTIF')
           .limit(20)
-          .get();
+          .getM('post_video_format_tel_details.dart:1102');
       if (!mounted) return;
       setState(() {
         _promoArticles = snap.docs
@@ -1174,7 +1176,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
     if (needUserFetch) {
       try {
-        final userDoc = await _firestore.collection('Users').doc(post.user_id).get();
+        final userDoc = await _firestore.collection('Users').doc(post.user_id).getM('post_video_format_tel_details.dart:1178');
         if (userDoc.exists) {
           post.user = UserData.fromJson(userDoc.data()!);
           printVm('⏱️ [DETAILS-CARD] id=$postId — user fetch complet — ${_sw.elapsedMilliseconds}ms');
@@ -1184,7 +1186,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
     if (needCanalFetch) {
       try {
-        final canalDoc = await _firestore.collection('Canaux').doc(post.canal_id).get();
+        final canalDoc = await _firestore.collection('Canaux').doc(post.canal_id).getM('post_video_format_tel_details.dart:1188');
         if (canalDoc.exists) {
           post.canal = Canal.fromJson(canalDoc.data()!);
           printVm('⏱️ [DETAILS-CARD] id=$postId — canal fetch complet — ${_sw.elapsedMilliseconds}ms');
@@ -1216,7 +1218,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
             .where(FieldPath.documentId, whereIn: batch)
             .where('dataType', isEqualTo: PostDataType.VIDEO.name)
             .where('status', isEqualTo: PostStatus.VALIDE.name)
-            .get();
+            .getM('post_video_format_tel_details.dart:1220');
         for (final doc in snap.docs) {
           final p = Post.fromJson(doc.data() as Map<String, dynamic>);
           p.id = doc.id;
@@ -1314,7 +1316,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
                                         final userId = authProvider.loginUserData.id;
                                         if (userId != null) {
                                           try {
-                                            final doc = await _firestore.collection('Users').doc(userId).get();
+                                            final doc = await _firestore.collection('Users').doc(userId).getM('post_video_format_tel_details.dart:1318');
                                             final _rawUnread = (doc.data()?['unreadPosts'] as Map<String, dynamic>?) ?? {};
                                             authProvider.loginUserData.unreadPosts = UserData.parseUnreadTimestamps(_rawUnread);
                                             authProvider.loginUserData.repostMeta = UserData.parseUnreadRepostMeta(_rawUnread);
@@ -1481,7 +1483,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
             .where('status', isEqualTo: PostStatus.VALIDE.name)
             .orderBy(field, descending: descending)
             .limit(fetchLimit)
-            .get();
+            .getM('post_video_format_tel_details.dart:1485');
         return snap.docs.map((doc) {
           final p = Post.fromJson(doc.data());
           p.id = doc.id;
@@ -1495,7 +1497,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
             .where('dataType', isEqualTo: PostDataType.VIDEO.name)
             .where('status', isEqualTo: PostStatus.VALIDE.name)
             .limit(50)
-            .get();
+            .getM('post_video_format_tel_details.dart:1499');
         List<Post> posts = snap.docs.map((doc) {
           final p = Post.fromJson(doc.data());
           p.id = doc.id;
@@ -1571,7 +1573,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
             .where('status', isEqualTo: PostStatus.VALIDE.name)
             .orderBy(field, descending: descending)
             .limit(fetchLimit)
-            .get();
+            .getM('post_video_format_tel_details.dart:1575');
         return snap.docs.map((doc) {
           final p = Post.fromJson(doc.data());
           p.id = doc.id;
@@ -1585,7 +1587,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
             .where('dataType', isEqualTo: PostDataType.VIDEO.name)
             .where('status', isEqualTo: PostStatus.VALIDE.name)
             .limit(50)
-            .get();
+            .getM('post_video_format_tel_details.dart:1589');
         List<Post> posts = snap.docs.map((doc) {
           final p = Post.fromJson(doc.data());
           p.id = doc.id;
@@ -1631,7 +1633,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   void _subscribeToPostUpdates(Post post) {
     if (post.id == null || _postSubscriptions.containsKey(post.id)) return;
     _initPostLikeState(post);
-    final subscription = _firestore.collection('Posts').doc(post.id).snapshots().listen((snapshot) {
+    final subscription = _firestore.collection('Posts').doc(post.id).snapshotsM('post_video_format_tel_details.dart:1635').listen((snapshot) {
       if (snapshot.exists && mounted) {
         // Inclure snapshot.id pour que updatedPost.id ne soit jamais null
         final updatedPost = Post.fromJson({'id': snapshot.id, ...snapshot.data() as Map<String, dynamic>});
@@ -2487,7 +2489,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     final now = DateTime.now();
     final startOfDay = DateTime(now.year, now.month, now.day).millisecondsSinceEpoch;
     final endOfDay = startOfDay + const Duration(days: 1).inMilliseconds;
-    final query = await _firestore.collection('post_supports').where('postId', isEqualTo: postId).where('userId', isEqualTo: userId).where('supportedAt', isGreaterThanOrEqualTo: startOfDay).where('supportedAt', isLessThan: endOfDay).limit(1).get();
+    final query = await _firestore.collection('post_supports').where('postId', isEqualTo: postId).where('userId', isEqualTo: userId).where('supportedAt', isGreaterThanOrEqualTo: startOfDay).where('supportedAt', isLessThan: endOfDay).limit(1).getM('post_video_format_tel_details.dart:2491');
     return query.docs.isNotEmpty;
   }
 
@@ -2850,19 +2852,11 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     final postId = post.id;
     if (postId == null) return;
     try {
-      final snap = await _firestore
-          .collection('PostComments')
-          .where('post_id', isEqualTo: postId)
-          .orderBy('created_at', descending: true)
-          .limit(5)
-          .get();
-      if (snap.docs.isNotEmpty && mounted) {
+      // Cache partagé : une seule lecture (5 commentaires, auteurs des 3 premiers) pour tous les écrans, prête avant l'ouverture des commentaires
+      final page = await CommentsPrefetch.instance.first(postId);
+      if (page.comments.isNotEmpty && mounted) {
         setState(() {
-          _preloadedComments = snap.docs.map((doc) {
-            final data = Map<String, dynamic>.from(doc.data());
-            data['id'] = doc.id;
-            return PostComment.fromJson(data);
-          }).toList();
+          _preloadedComments = List.of(page.comments);
         });
       }
     } catch (_) {}
@@ -2919,6 +2913,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       if (success && mounted) {
         setState(() {
           _preloadedComments.insert(0, comment);
+            CommentsPrefetch.instance.addLocal(comment.post_id ?? '', comment);
           post.comments = (post.comments ?? 0) + 1;
         });
         _addLiveComment();
@@ -3335,7 +3330,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
           .where('postId', isEqualTo: post.id)
           .where('status', isEqualTo: 'active')
           .limit(1)
-          .get();
+          .getM('post_video_format_tel_details.dart:3332');
       Advertisement? ad;
       if (snap.docs.isNotEmpty) {
         ad = Advertisement.fromJson(snap.docs.first.data());

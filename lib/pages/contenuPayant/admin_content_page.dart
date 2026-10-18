@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/contenuPayant/content_detail_page.dart';
 import 'package:afrotok/pages/contenuPayant/widgets/boost_modal.dart';
@@ -169,7 +170,7 @@ class _ContentsTabState extends State<_ContentsTab> {
         ),
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
-            stream: _buildQuery().snapshots(),
+            stream: _buildQuery().snapshotsM('admin_content_page.dart:172'),
             builder: (context, snap) {
               if (!snap.hasData) {
                 return const Center(child: CircularProgressIndicator());
@@ -522,7 +523,7 @@ class _CommentsTab extends StatelessWidget {
           .collection('ContentComments')
           .orderBy('createdAt', descending: true)
           .limit(100)
-          .snapshots(),
+          .snapshotsM('admin_content_page.dart:525'),
       builder: (context, snap) {
         if (!snap.hasData) {
           return const Center(child: CircularProgressIndicator());
@@ -667,7 +668,7 @@ class _StatsTab extends StatelessWidget {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('ContentPaies')
-          .snapshots(),
+          .snapshotsM('admin_content_page.dart:670'),
       builder: (context, snap) {
         if (!snap.hasData) {
           return const Center(child: CircularProgressIndicator());

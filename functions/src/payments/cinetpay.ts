@@ -3,6 +3,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import axios from "axios";
 import * as crypto from "crypto";
 import { db } from "../shared/firebase";
+import { logPayment } from "./paymentLog";
 import { formatCinetpayDate, generateDepositNumber } from "../shared/deposit_utils";
 
 // Interface pour les données d'appel
@@ -178,6 +179,7 @@ export const initiateAfrolookDeposit = onCall(
         console.error("Erreur CinetPay (non-axios):", err);
       }
 
+      await logPayment({ provider: "cinetpay", step: "initiate", ok: false, uid: request.auth?.uid, message: errorMessage });
       await pendingTransactionRef.update({
         status: "failed",
         error: errorMessage,
@@ -237,6 +239,7 @@ export const afrolookDepositCallback = onRequest(
 
       if (!isSuccess) {
         console.log("Paiement échoué - mise à jour du statut seulement");
+        await logPayment({ provider: "cinetpay", step: "webhook", ok: false, reference: String(transactionId), code: String(payload.cpm_result ?? ""), message: payload.cpm_error_message || "Paiement refusé ou non confirmé" });
         await db.collection("pending_afrolook_deposits").doc(transactionId).update({
           status: "failed",
           processedAt: FieldValue.serverTimestamp(),
@@ -342,9 +345,11 @@ export const afrolookDepositCallback = onRequest(
         });
       });
 
+      await logPayment({ provider: "cinetpay", step: "credit", ok: true, reference: String(transactionId) });
       res.status(200).send("OK");
     } catch (error) {
       console.error("Erreur de traitement afrolookDepositCallback:", error);
+      await logPayment({ provider: "cinetpay", step: "webhook", ok: false, message: error });
       res.status(500).json({ error: "Erreur interne" });
     }
   }

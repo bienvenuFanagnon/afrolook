@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:typed_data';
 
@@ -62,7 +63,7 @@ class CardEntry {
     UserData? author = post.user;
     if (author == null && (post.user_id ?? '').isNotEmpty) {
       try {
-        final d = await FirebaseFirestore.instance.collection('Users').doc(post.user_id).get();
+        final d = await FirebaseFirestore.instance.collection('Users').doc(post.user_id).getM('card_entry.dart:65');
         if (d.exists) author = UserData.fromJson({...d.data()!, 'id': d.id});
       } catch (_) {}
     }

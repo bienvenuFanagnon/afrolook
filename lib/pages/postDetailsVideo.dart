@@ -1,3 +1,6 @@
+import 'package:afrotok/services/read_meter.dart';
+import '../services/comments_prefetch.dart';
+import '../services/media_shrink.dart';
 import 'package:afrotok/widgets/studio/post_template_try.dart';
 import '../widgets/music/music_overlay.dart';
 import 'defi/defi_boost.dart';
@@ -232,7 +235,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     // Suivi en direct du post : pièces reçues, likes, commentaires… restent à jour
     final _livePid = widget.initialPost.id;
     if (_livePid != null && _livePid.isNotEmpty) {
-      _postSubscription = _firestore.collection('Posts').doc(_livePid).snapshots().listen((snap) {
+      _postSubscription = _firestore.collection('Posts').doc(_livePid).snapshotsM('postDetailsVideo.dart:237').listen((snap) {
         final data = snap.data();
         if (!snap.exists || data == null || !mounted) return;
         final fresh = Post.fromJson({'id': snap.id, ...data});
@@ -672,7 +675,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
       final fileName = 'thumbnails/thumb_${post.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final ref = FirebaseStorage.instance.ref().child(fileName);
       final bytes = await XFile(thumbnailFile).readAsBytes();
-      final snapshot = await ref.putData(bytes);
+      final snapshot = await ref.putData(await MediaShrink.bytes(bytes));
       final downloadUrl = await snapshot.ref.getDownloadURL();
 
       // Mettre à jour Firestore
@@ -708,7 +711,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
       final adDoc = await _firestore
           .collection('Advertisements')
           .doc(_currentPost.advertisementId)
-          .get();
+          .getM('postDetailsVideo.dart:713');
       if (adDoc.exists) {
         final ad = Advertisement.fromJson(adDoc.data()!);
         ad.id = adDoc.id;
@@ -750,7 +753,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
           .collection('Advertisements')
           .where('postId', isEqualTo: _currentPost.id)
           .limit(1)
-          .get();
+          .getM('postDetailsVideo.dart:755');
       if (snap.docs.isNotEmpty && mounted) {
         final ad = Advertisement.fromJson(snap.docs.first.data());
         ad.id = snap.docs.first.id;
@@ -874,14 +877,14 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     if (_currentPost.user_id == null) return;
     setState(() => _isLoadingUser = true);
     try {
-      final userDoc = await _firestore.collection('Users').doc(_currentPost.user_id).get();
+      final userDoc = await _firestore.collection('Users').doc(_currentPost.user_id).getM('postDetailsVideo.dart:879');
       if (userDoc.exists) {
         _currentUser = UserData.fromJson(userDoc.data()!);
         _currentPost.user = _currentUser;
       }
       if (_currentPost.canal_id != null && _currentPost.canal_id!.isNotEmpty) {
         setState(() => _isLoadingCanal = true);
-        final canalDoc = await _firestore.collection('Canaux').doc(_currentPost.canal_id).get();
+        final canalDoc = await _firestore.collection('Canaux').doc(_currentPost.canal_id).getM('postDetailsVideo.dart:886');
         if (canalDoc.exists) {
           _currentCanal = Canal.fromJson(canalDoc.data()!);
           _currentPost.canal = _currentCanal;
@@ -899,7 +902,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     final userId = authProvider.loginUserData.id;
     if (userId == null) return;
     try {
-      final postDoc = await _firestore.collection('Posts').doc(_currentPost.id).get();
+      final postDoc = await _firestore.collection('Posts').doc(_currentPost.id).getM('postDetailsVideo.dart:904');
       if (postDoc.exists) {
         final favorites = List<String>.from(postDoc.data()?['users_favorite_id'] ?? []);
         setState(() => _isFavorite = favorites.contains(userId));
@@ -1101,7 +1104,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
       final fs = FirebaseFirestore.instance;
       switch (ownerType) {
         case 'canal':
-          final doc = await fs.collection('Canaux').doc(ownerId).get();
+          final doc = await fs.collection('Canaux').doc(ownerId).getM('postDetailsVideo.dart:1106');
           if (!doc.exists || !ctx.mounted) return;
           final data = Map<String, dynamic>.from(doc.data()!);
           data['id'] = doc.id;
@@ -1111,7 +1114,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
           break;
         case 'user':
         default:
-          final doc = await fs.collection('Users').doc(ownerId).get();
+          final doc = await fs.collection('Users').doc(ownerId).getM('postDetailsVideo.dart:1116');
           if (!doc.exists || !ctx.mounted) return;
           final data = Map<String, dynamic>.from(doc.data()!);
           data['id'] = doc.id;
@@ -1253,7 +1256,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
           addPointsForAction(UserAction.like);
           addPointsForOtherUserAction(_currentPost.user_id!, UserAction.autre);
           final nowMicro = DateTime.now().microsecondsSinceEpoch;
-          final userDoc = await _firestore.collection('Users').doc(_currentPost.user_id).get();
+          final userDoc = await _firestore.collection('Users').doc(_currentPost.user_id).getM('postDetailsVideo.dart:1258');
           final lastNotif = userDoc.data()?['lastNotificationTime'] ?? 0;
           if (nowMicro - lastNotif >= 20 * 60 * 1000000) {
             await authProvider.sendNotification(
@@ -1908,19 +1911,11 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     final postId = _currentPost.id;
     if (postId == null) return;
     try {
-      final snap = await _firestore
-          .collection('PostComments')
-          .where('post_id', isEqualTo: postId)
-          .orderBy('created_at', descending: true)
-          .limit(10)
-          .get();
-      if (snap.docs.isNotEmpty && mounted) {
+      // Cache partagé : une seule lecture (5 commentaires, auteurs des 3 premiers) pour tous les écrans, prête avant l'ouverture des commentaires
+      final page = await CommentsPrefetch.instance.first(postId);
+      if (page.comments.isNotEmpty && mounted) {
         setState(() {
-          _preloadedComments = snap.docs.map((doc) {
-            final data = Map<String, dynamic>.from(doc.data());
-            data['id'] = doc.id;
-            return PostComment.fromJson(data);
-          }).toList();
+          _preloadedComments = List.of(page.comments);
         });
       }
     } catch (_) {}
@@ -2048,6 +2043,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
       if (success && mounted) {
         setState(() {
           _preloadedComments.insert(0, comment);
+            CommentsPrefetch.instance.addLocal(comment.post_id ?? '', comment);
           _currentPost.comments = (_currentPost.comments ?? 0) + 1;
         });
         authProvider.incrementPostTotalInteractions(
@@ -2279,7 +2275,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     final now = DateTime.now();
     final start = DateTime(now.year, now.month, now.day).millisecondsSinceEpoch;
     final end = start + Duration(days: 1).inMilliseconds;
-    final query = await _firestore.collection('post_supports').where('postId', isEqualTo: _currentPost.id).where('userId', isEqualTo: authProvider.loginUserData.id).where('supportedAt', isGreaterThanOrEqualTo: start).where('supportedAt', isLessThan: end).get();
+    final query = await _firestore.collection('post_supports').where('postId', isEqualTo: _currentPost.id).where('userId', isEqualTo: authProvider.loginUserData.id).where('supportedAt', isGreaterThanOrEqualTo: start).where('supportedAt', isLessThan: end).getM('postDetailsVideo.dart:2277');
     return query.docs.isNotEmpty;
   }
 

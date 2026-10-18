@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
@@ -35,6 +36,8 @@ import '../../../models/model_data.dart';
 import '../../../services/utils/abonnement_utils.dart';
 
 import '../../../providers/authProvider.dart';
+import '../../../providers/userProvider.dart';
+import '../amis/pageMesInvitations.dart';
 import '../../../providers/gold_groups_provider.dart';
 
 import '../../../theme/app_colors.dart';
@@ -285,7 +288,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     _groupsStreamSub = FirebaseFirestore.instance
         .collection('GroupChats')
         .where('member_ids', arrayContains: myId)
-        .snapshots()
+        .snapshotsM('listUserConv.dart:290')
         .listen((snap) {
       _memberGroups = snap.docs.map((d) => d.data()).toList();
       _mergeAndSetGroups();
@@ -298,7 +301,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     _ownedGroupsStreamSub = FirebaseFirestore.instance
         .collection('GroupChats')
         .where('owner_id', isEqualTo: myId)
-        .snapshots()
+        .snapshotsM('listUserConv.dart:303')
         .listen((snap) {
       _ownedGroups = snap.docs.map((d) => d.data()).toList();
       _mergeAndSetGroups();
@@ -313,7 +316,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       final snap = await FirebaseFirestore.instance
           .collection('GroupChats')
           .where('member_ids', arrayContains: myId)
-          .get();
+          .getM('listUserConv.dart:318');
       // Met à jour _memberGroups et passe par _mergeAndSetGroups pour ne pas
       // écraser les _ownedGroups (groupes propriétaire non dans member_ids)
       _memberGroups = snap.docs.map((d) => d.data()).toList();
@@ -339,7 +342,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           .collection('GroupChats')
           .where('join_code', isEqualTo: trimmed)
           .limit(1)
-          .get();
+          .getM('listUserConv.dart:344');
 
       if (snap.docs.isEmpty) {
         if (mounted) setState(() { _codeSearchError = 'Aucun groupe trouvé pour ce code.'; _codeSearching = false; });
@@ -364,7 +367,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       // Vérifier que le propriétaire est toujours Gold
       final ownerId = groupData['owner_id'] as String?;
       if (ownerId != null) {
-        final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(ownerId).get();
+        final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(ownerId).getM('listUserConv.dart:369');
         final ab = ownerDoc.data()?['abonnement'] as Map<String, dynamic>?;
         if (ab == null || ab['type'] != 'gold') {
           if (mounted) setState(() { _codeSearchError = 'Le propriétaire de ce groupe n\'est plus Gold.'; _codeSearching = false; });
@@ -402,7 +405,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     final ownerId = groupData['owner_id'] as String? ?? '';
     if (ownerId.isNotEmpty) {
       try {
-        final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(ownerId).get();
+        final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(ownerId).getM('listUserConv.dart:407');
         if (ownerDoc.exists) {
           final ownerAbJson = ownerDoc.data()?['abonnement'] as Map<String, dynamic>?;
           final ownerAb = ownerAbJson != null ? AfrolookAbonnement.fromJson(ownerAbJson) : null;
@@ -533,7 +536,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     try {
       final uid = authProvider.loginUserData.id;
       if (uid == null) return;
-      final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).get();
+      final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).getM('listUserConv.dart:538');
       final privacy = (doc.data()?['privacySettings'] as Map<String, dynamic>?) ?? {};
       final isPremium = authProvider.loginUserData.abonnement?.estPremium == true;
       if (isPremium && privacy['biometricLock'] == true) {
@@ -572,7 +575,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         .where("type", isEqualTo: ChatType.USER.name)
         .orderBy('updated_at', descending: true)
         .limit(50)
-        .snapshots()
+        .snapshotsM('listUserConv.dart:577')
         .asyncMap(_processChatsSnapshot);
   }
 
@@ -584,6 +587,8 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     final otherIds = <String>{};
     for (final doc in snapshot.docs) {
       final chat = Chat.fromJson(doc.data() as Map<String, dynamic>);
+      // Demande refusée : disparaît de la liste de la personne qui l'a refusée (l'autre voit « refusée » dans la discussion)
+      if (chat.requestStatus == 'refused' && chat.requestFrom != null && chat.requestFrom != myId) continue;
       chats.add(chat);
       final oid = myId == chat.receiverId ? chat.senderId : chat.receiverId;
       if (oid != null) otherIds.add(oid);
@@ -600,7 +605,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           final snap = await FirebaseFirestore.instance
               .collection('Users')
               .where(FieldPath.documentId, whereIn: chunk)
-              .get();
+              .getM('listUserConv.dart:607');
           for (final d in snap.docs) {
             final data = Map<String, dynamic>.from(d.data() as Map<String, dynamic>);
             data['id'] = d.id;
@@ -647,7 +652,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       Filter('sendBy', isEqualTo: authProvider.loginUserData.id!),
     ))
         .where('is_valide', isEqualTo: true)
-        .snapshots()
+        .snapshotsM('listUserConv.dart:654')
         .listen((snapshot) {
       if (!mounted) return;
 
@@ -1089,6 +1094,41 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   }
 
   /// Contenu de la liste des conversations (mobile + panneau gauche desktop).
+  /// Bannière « N invitations en attente » : un appui ouvre la page Invitations (accepter ou refuser). Le compteur est celui de l'accueil, déjà à jour.
+  Widget _buildInvitationsBanner() {
+    final n = context.read<UserProvider>().countInvitations;
+    if (n <= 0) return const SizedBox.shrink();
+    return GestureDetector(
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (ctx) => MesInvitationsPage(context: ctx))).then((_) {
+        if (mounted) setState(() {});
+      }),
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(12, 4, 12, 8),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        decoration: BoxDecoration(
+          color: _colors.primary.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: _colors.primary.withOpacity(0.35)),
+        ),
+        child: Row(children: [
+          Icon(Icons.mail_rounded, color: _colors.primary, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text('$n invitation${n > 1 ? 's' : ''} en attente', style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 13.5)),
+          ),
+          Text('Voir', style: TextStyle(color: _colors.primary, fontWeight: FontWeight.w800, fontSize: 13)),
+          Icon(Icons.chevron_right_rounded, color: _colors.primary, size: 18),
+        ]),
+      ),
+    );
+  }
+
+  /// Aperçu d'une conversation : « Demande · … » quand quelqu'un vous a écrit depuis une chronique et que vous n'avez pas encore répondu à l'invitation.
+  String _previewOf(Chat chat, String text) {
+    final me = authProvider.loginUserData.id;
+    return chat.requestStatus == 'pending' && chat.requestFrom != null && chat.requestFrom != me ? 'Demande · $text' : text;
+  }
+
   Widget _buildChatListContent() {
     return Column(
       children: [
@@ -1103,6 +1143,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           ),
         if (!_isSearching) _buildFilterPills(),
         if (!_isSearching) _buildHeader(),
+        if (!_isSearching) _buildInvitationsBanner(),
         Expanded(
           child: _isSearching
               ? _buildSearchResults()
@@ -1894,7 +1935,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           .collection('Messages')
           .where('receiverBy', isEqualTo: userId)
           .where('message_state', isEqualTo: MessageState.NONLU.name)
-          .get();
+          .getM('listUserConv.dart:1937');
 
       final batch = firestore.batch();
       for (final doc in directSnap.docs) {
@@ -1905,7 +1946,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       final groupSnap = await firestore
           .collection('GroupChats')
           .where('member_ids', arrayContains: userId)
-          .get();
+          .getM('listUserConv.dart:1948');
 
       for (final doc in groupSnap.docs) {
         final data = doc.data() as Map<String, dynamic>;
@@ -2110,9 +2151,9 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         onTap: () => _openChat(chat),
         child: ConversationList(
           name: "@${chat.chatFriend?.pseudo ?? _l10n.convDefaultUser}",
-          messageText: lastMessage != null
+          messageText: _previewOf(chat, lastMessage != null
               ? _getMessagePreview(lastMessage)
-              : (chat.lastMessage?.isNotEmpty == true ? chat.lastMessage! : _l10n.convNoMessage),
+              : (chat.lastMessage?.isNotEmpty == true ? chat.lastMessage! : _l10n.convNoMessage)),
           imageUrl: chat.chatFriend?.imageUrl ?? '',
           time: _formatTime(chat.updatedAt),
           isMessageRead: unreadCount == 0,
@@ -2327,9 +2368,9 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
             onTap: () => _openChat(chat),
             child: ConversationList(
               name: "@${chat.chatFriend?.pseudo ?? _l10n.convDefaultUser}",
-              messageText: lastMessage != null
+              messageText: _previewOf(chat, lastMessage != null
                   ? _getMessagePreview(lastMessage)
-                  : (chat.lastMessage?.isNotEmpty == true ? chat.lastMessage! : _l10n.convNoMessage),
+                  : (chat.lastMessage?.isNotEmpty == true ? chat.lastMessage! : _l10n.convNoMessage)),
               imageUrl: chat.chatFriend?.imageUrl ?? '',
               time: _formatTime(chat.updatedAt),
               isMessageRead: unreadCount == 0,

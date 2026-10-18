@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/feed/sections/card_feed_invite.dart';
 import 'package:afrotok/widgets/feed/sections/defi_feed_card.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
@@ -1862,7 +1863,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     if (userId == null || userId.isEmpty) return;
     await flushSeenPostsAndCleanMemory(userId, authProvider.loginUserData);
     try {
-      final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+      final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).getM('homeSportPost.dart:1865');
       final _rawUnread = (userDoc.data()?['unreadPosts'] as Map<String, dynamic>?) ?? {};
       authProvider.loginUserData.unreadPosts = UserData.parseUnreadTimestamps(_rawUnread);
       authProvider.loginUserData.repostMeta = UserData.parseUnreadRepostMeta(_rawUnread);
@@ -2386,7 +2387,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         final snapshot = await _firestore
             .collection('Users')
             .where(FieldPath.documentId, whereIn: chunk)
-            .get();
+            .getM('homeSportPost.dart:2389');
 
         for (final doc in snapshot.docs) {
           final userData = UserData.fromJson(doc.data());
@@ -2750,7 +2751,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         .orderBy("created_at")
         .limit(30); // on prend large pour filtrer ensuite
 
-    final snapshot = await query.get();
+    final snapshot = await query.getM('homeSportPost.dart:2753');
 
     if (snapshot.docs.isEmpty) {
       printVm("⚠️ Aucun post trouvé dans cette période");
@@ -3133,7 +3134,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                             final doc = await FirebaseFirestore.instance
                                 .collection('Users')
                                 .doc(userId)
-                                .get();
+                                .getM('homeSportPost.dart:3136');
                             final _rawUnread = (doc.data()?['unreadPosts'] as Map<String, dynamic>?) ?? {};
                             authProvider.loginUserData.unreadPosts = UserData.parseUnreadTimestamps(_rawUnread);
                             authProvider.loginUserData.repostMeta = UserData.parseUnreadRepostMeta(_rawUnread);

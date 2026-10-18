@@ -234,6 +234,11 @@ class Invitation {
   UserData? inviteUser;
   final DocumentReference? reference;
 
+  // Invitation née d'une réponse privée à une chronique (écrite par le serveur, jamais réécrite par l'application)
+  String? chroniqueId;
+  String? chroniqueThumb;
+  String? chroniqueType;
+
   Invitation(
       {this.reference,
       this.id,
@@ -258,6 +263,9 @@ class Invitation {
     receiverId = json['receiver_id'];
     createdAt = json['created_at'];
     updatedAt = json['updated_at'];
+    chroniqueId = json['chronique_id'] as String?;
+    chroniqueThumb = json['chronique_thumb'] as String?;
+    chroniqueType = json['chronique_type'] as String?;
 
     inviteUser = json['user_invite'] != null
         ? new UserData.fromJson(json['user_invite'])
@@ -2911,8 +2919,8 @@ class TransactionSolde {
   int? coins;             // pièces reçues
   double? amountPaid;     // montant réellement payé
   String? currency;       // XOF, USD, EUR…
-  String? paymentMethod;  // Dépôt FCFA, Gains à retirer, App Store
-  double? netEstimate;    // net estimé après la part d'Apple
+  String? paymentMethod;  // Dépôt FCFA, Gains à retirer, App Store, Google Play
+  double? netEstimate;    // net estimé après la part de la boutique (Apple ou Google)
   String? beneficiaryPseudo;
 
   TransactionSolde();
@@ -3613,6 +3621,13 @@ class Chat {
   String? send_sending;
   String? receiver_sending;
   int? streak;
+
+  /// Demande de discussion (réponse à une chronique) : null = discussion normale, 'pending' = en attente d'acceptation,
+  /// 'accepted' ou 'refused'. [requestFrom] est la personne qui a écrit en premier.
+  String? requestStatus;
+  String? requestFrom;
+  String? requestInvitationId;
+
   UserData? sender;
   Post? post;
   EntrepriseData? entreprise;
@@ -3654,6 +3669,9 @@ class Chat {
     receiver_sending =
         json["receiver_sending"] == null ? "" : json["receiver_sending"];
     streak = json['streak'] as int?;
+    requestStatus = json['request_status'] as String?;
+    requestFrom = json['request_from'] as String?;
+    requestInvitationId = json['request_invitation_id'] as String?;
     receiverId = json['receiver_id'];
     lastMessage = json['last_message'];
     type = json['type'];
@@ -3700,6 +3718,10 @@ class Chat {
     data['my_msg_not_read'] = this.my_msg_not_read;
     data['your_msg_not_read'] = this.your_msg_not_read;
     data['lastMessageIsRead'] = this.lastMessageIsRead;
+    // Écrits seulement s'ils existent : une mise à jour complète d'un chat ordinaire ne doit jamais effacer l'état d'une demande
+    if (requestStatus != null) data['request_status'] = requestStatus;
+    if (requestFrom != null) data['request_from'] = requestFrom;
+    if (requestInvitationId != null) data['request_invitation_id'] = requestInvitationId;
     /*
     if (this.sender != null) {
       data['sender'] = this.sender!.toJson();

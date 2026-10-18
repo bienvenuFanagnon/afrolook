@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/link_preview_card.dart';
 import '../../../services/followers_count_service.dart';
 import '../../../utils/count_format.dart';
@@ -137,7 +138,7 @@ class _PostViewState extends State<PostView>
       Filter('docId',
           isEqualTo: '${amigo.id}${authProvider.loginUserData.id}'),
     ))
-        .snapshots();
+        .snapshotsM('postView.dart:140');
 
 // Obtenez la liste des utilisateurs
     //List<DocumentSnapshot> users = await usersQuery.sget();
@@ -199,7 +200,7 @@ class _PostViewState extends State<PostView>
       CollectionReference messageCollect =
       await FirebaseFirestore.instance.collection('Messages');
       QuerySnapshot querySnapshotMessage =
-      await messageCollect.where("chat_id", isEqualTo: usersChat.id!).get();
+      await messageCollect.where("chat_id", isEqualTo: usersChat.id!).getM('postView.dart:202');
       // Afficher la liste
       List<Message> messageList = querySnapshotMessage.docs
           .map((doc) => Message.fromJson(doc.data() as Map<String, dynamic>))
@@ -218,9 +219,9 @@ class _PostViewState extends State<PostView>
       /////////////ami//////////
       /*
       CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-      QuerySnapshot querySnapshotUserSender = await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.friendId?'${amigo.friendId}':'${amigo.currentUserId}').get();
+      QuerySnapshot querySnapshotUserSender = await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.friendId?'${amigo.friendId}':'${amigo.currentUserId}').getM('postView.dart:221');
       // Afficher la liste
-      QuerySnapshot querySnapshotUserReceiver= await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.friendId?'${amigo.currentUserId}':'${amigo.friendId}').get();
+      QuerySnapshot querySnapshotUserReceiver= await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.friendId?'${amigo.currentUserId}':'${amigo.friendId}').getM('postView.dart:223');
 
 
       List<UserData> receiverUserList = querySnapshotUserReceiver.docs.map((doc) =>
@@ -249,7 +250,7 @@ class _PostViewState extends State<PostView>
       Filter('docId',
           isEqualTo: '${authProvider.loginUserData!.id}${post.id}'),
     ))
-        .snapshots();
+        .snapshotsM('postView.dart:252');
 
 // Obtenez la liste des utilisateurs
     //List<DocumentSnapshot> users = await usersQuery.sget();
@@ -313,7 +314,7 @@ class _PostViewState extends State<PostView>
       CollectionReference messageCollect =
       await FirebaseFirestore.instance.collection('Messages');
       QuerySnapshot querySnapshotMessage =
-      await messageCollect.where("chat_id", isEqualTo: usersChat.id!).get();
+      await messageCollect.where("chat_id", isEqualTo: usersChat.id!).getM('postView.dart:316');
       // Afficher la liste
       List<Message> messageList = querySnapshotMessage.docs
           .map((doc) => Message.fromJson(doc.data() as Map<String, dynamic>))
@@ -337,14 +338,14 @@ class _PostViewState extends State<PostView>
           isEqualTo: authProvider.loginUserData.id == amigo.id!
               ? '${amigo.id}'
               : '${authProvider.loginUserData!.id}')
-          .get();
+          .getM('postView.dart:340');
       // Afficher la liste
       QuerySnapshot querySnapshotUserReceiver = await friendCollect
           .where("id",
           isEqualTo: authProvider.loginUserData.id == amigo.id
               ? '${authProvider.loginUserData!.id}'
               : '${amigo.id}')
-          .get();
+          .getM('postView.dart:347');
 
       List<UserData> receiverUserList = querySnapshotUserReceiver.docs
           .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
@@ -361,7 +362,7 @@ class _PostViewState extends State<PostView>
       await FirebaseFirestore.instance.collection('Entreprises');
       QuerySnapshot querySnapshotentreprise = await entrepriseCollect
           .where("id", isEqualTo: '${post.entreprise_id}')
-          .get();
+          .getM('postView.dart:364');
       List<EntrepriseData> entrepriseList = querySnapshotentreprise.docs
           .map((doc) =>
           EntrepriseData.fromJson(doc.data() as Map<String, dynamic>))
@@ -754,7 +755,7 @@ class _PostViewState extends State<PostView>
       Filter('docId',
           isEqualTo: '${authProvider.loginUserData.id!}${amigo.id}'),
     ))
-        .snapshots();
+        .snapshotsM('postView.dart:757');
 
 // Obtenez la liste des utilisateurs
     //List<DocumentSnapshot> users = await usersQuery.sget();
@@ -825,7 +826,7 @@ class _PostViewState extends State<PostView>
       CollectionReference messageCollect =
       await FirebaseFirestore.instance.collection('Messages');
       QuerySnapshot querySnapshotMessage =
-      await messageCollect.where("chat_id", isEqualTo: usersChat.id!).get();
+      await messageCollect.where("chat_id", isEqualTo: usersChat.id!).getM('postView.dart:828');
       // Afficher la liste
       List<Message> messageList = querySnapshotMessage.docs
           .map((doc) => Message.fromJson(doc.data() as Map<String, dynamic>))
@@ -849,14 +850,14 @@ class _PostViewState extends State<PostView>
           isEqualTo: authProvider.loginUserData.id == amigo.id
               ? '${amigo.id}'
               : '${authProvider.loginUserData.id!}')
-          .get();
+          .getM('postView.dart:852');
       // Afficher la liste
       QuerySnapshot querySnapshotUserReceiver = await friendCollect
           .where("id",
           isEqualTo: authProvider.loginUserData.id == amigo.id
               ? '${authProvider.loginUserData.id!}'
               : '${amigo.id}')
-          .get();
+          .getM('postView.dart:859');
 
       List<UserData> receiverUserList = querySnapshotUserReceiver.docs
           .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
@@ -1695,7 +1696,7 @@ class _PostViewState extends State<PostView>
                                   await userCollect
                                       .where("id",
                                       isEqualTo: post.user!.id!)
-                                      .get();
+                                      .getM('postView.dart:1698');
                                   // Afficher la liste
                                   List<UserData> listUsers = querySnapshotUser
                                       .docs
@@ -1852,7 +1853,7 @@ class _PostViewState extends State<PostView>
                                   await userCollect
                                       .where("id",
                                       isEqualTo: post.user!.id!)
-                                      .get();
+                                      .getM('postView.dart:1855');
                                   // Afficher la liste
                                   List<UserData> listUsers = querySnapshotUser
                                       .docs
@@ -2769,7 +2770,7 @@ class _PostViewState extends State<PostView>
                                 await userCollect
                                     .where("id",
                                     isEqualTo: post.user!.id!)
-                                    .get();
+                                    .getM('postView.dart:2772');
                                 // Afficher la liste
                                 List<UserData> listUsers = querySnapshotUser
                                     .docs
@@ -2962,7 +2963,7 @@ class _PostViewState extends State<PostView>
                         //             await userCollect
                         //                 .where("id",
                         //                     isEqualTo: post.user!.id!)
-                        //                 .get();
+                        //                 .getM('postView.dart:2965');
                         //         // Afficher la liste
                         //         List<UserData> listUsers = querySnapshotUser
                         //             .docs
@@ -3484,7 +3485,7 @@ class _PostViewState extends State<PostView>
     ))
         .where("type", isEqualTo: ChatType.USER.name)
         .orderBy('updated_at', descending: true)
-        .snapshots();
+        .snapshotsM('postView.dart:3487');
 
 // Obtenez la liste des utilisateurs
     //List<DocumentSnapshot> users = await usersQuery.sget();
@@ -3501,7 +3502,7 @@ class _PostViewState extends State<PostView>
             authProvider.loginUserData.id == chatDoc["receiver_id"]
                 ? chatDoc["sender_id"]
                 : chatDoc["receiver_id"]!)
-            .get();
+            .getM('postView.dart:3504');
         // Afficher la liste
         List<UserData> userList = querySnapshotUser.docs
             .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))

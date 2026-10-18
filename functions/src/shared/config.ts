@@ -1,5 +1,8 @@
 // Configuration email
-export const EMAIL_FROM = "Afrolook Media <contact@afrolookmedia.com>";
+// Le serveur d'envoi (LWS) n'accepte que l'adresse du compte SMTP comme expéditeur : contact@afrolookmedia.com était refusé (553 5.7.1).
+// Les réponses des destinataires partent vers contact@afrolookmedia.com (EMAIL_REPLY_TO).
+export const EMAIL_FROM = `"Afrolook Media" <${process.env.SMTP_USER ?? "contact@afrolookmedia.com"}>`;
+export const EMAIL_REPLY_TO = "Afrolook Media <contact@afrolookmedia.com>";
 export const APP_DOMAIN = "afrolookmedia.com";
 export const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.afrotok.afrotok";
 

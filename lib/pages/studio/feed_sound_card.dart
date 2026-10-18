@@ -5,6 +5,7 @@
 // Un toucher sur « lecture » lance la file : le lecteur flottant prend le relais, avec suivant et aléatoire.
 // Aucune carte n'apparaît s'il n'y a pas de titre proposé dans le pays de la personne.
 
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:math' as math;
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -36,7 +37,7 @@ class _FeedSounds {
         .where('status', isEqualTo: 'validated')
         .orderBy('validatedAt', descending: true)
         .limit(60)
-        .get()
+        .getM('feed_sound_card.dart:39')
         .then((s) => [for (final d in s.docs) ArtistSound.fromMap(d.data(), d.id)].where((x) => x.previewUrl != null).toList())
         .catchError((_) => <ArtistSound>[]);
   }

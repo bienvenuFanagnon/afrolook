@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -76,14 +77,14 @@ class _GenericShareSheetState extends State<GenericShareSheet>
           .where('type', isEqualTo: ChatType.USER.name)
           .orderBy('updated_at', descending: true)
           .limit(20)
-          .get();
+          .getM('generic_share_sheet.dart:79');
 
       final chats = <Chat>[];
       for (final doc in snap.docs) {
         final chat = Chat.fromJson(doc.data());
         final otherId = chat.senderId == myId ? chat.receiverId : chat.senderId;
         if (otherId != null) {
-          final userDoc = await FirebaseFirestore.instance.collection('Users').doc(otherId).get();
+          final userDoc = await FirebaseFirestore.instance.collection('Users').doc(otherId).getM('generic_share_sheet.dart:86');
           if (userDoc.exists) chat.chatFriend = UserData.fromJson(userDoc.data()!);
         }
         chats.add(chat);
@@ -100,7 +101,7 @@ class _GenericShareSheetState extends State<GenericShareSheet>
       final snap = await FirebaseFirestore.instance
           .collection('GroupChats')
           .where('member_ids', arrayContains: myId)
-          .get();
+          .getM('generic_share_sheet.dart:103');
 
       final sorted = snap.docs.map((d) => {'id': d.id, ...d.data()}).toList()
         ..sort((a, b) {
@@ -179,7 +180,7 @@ class _GenericShareSheetState extends State<GenericShareSheet>
           .doc(groupId)
           .collection('members')
           .doc(myId)
-          .get();
+          .getM('generic_share_sheet.dart:182');
       final role = memberDoc.data()?['role'] as String? ?? 'member';
       final groupData = await GroupPermissionUtils.loadGroupData(groupId);
       final canShare = GroupPermissionUtils.canShare(
@@ -206,7 +207,7 @@ class _GenericShareSheetState extends State<GenericShareSheet>
 
     // Charger le rôle pour l'identité d'envoi (owner/admin → groupe, sinon personnel)
     final memberDoc2 = await FirebaseFirestore.instance
-        .collection('GroupChats').doc(groupId).collection('members').doc(myId).get();
+        .collection('GroupChats').doc(groupId).collection('members').doc(myId).getM('generic_share_sheet.dart:209');
     final senderRole = memberDoc2.data()?['role'] as String? ?? 'member';
     final isOwnerOrAdmin = senderRole == 'owner' || senderRole == 'admin';
 

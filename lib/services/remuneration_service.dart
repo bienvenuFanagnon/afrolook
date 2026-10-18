@@ -1,6 +1,7 @@
 ﻿// services/remuneration_service.dart
 
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -31,7 +32,7 @@ class RemunerationService {
           .collection('RemunerationConfigs')
           .where('estActif', isEqualTo: true)
           .limit(1)
-          .get();
+          .getM('remuneration_service.dart:34');
 
       if (snapshot.docs.isNotEmpty) {
         var data = snapshot.docs.first.data() as Map<String, dynamic>;
@@ -68,7 +69,7 @@ class RemunerationService {
           .where('postId', isEqualTo: post.id)
           .orderBy('dateEncaissement', descending: true)
           .limit(1)
-          .get();
+          .getM('remuneration_service.dart:71');
 
       // Nombre de paliers déjà payés pour ce post
       int paliersDejaPayes = 0;
@@ -120,7 +121,7 @@ class RemunerationService {
           .where('created_at', isGreaterThanOrEqualTo: timestampLimite)
           .where('vues', isGreaterThanOrEqualTo: seuilVuesMinimum)
           .orderBy('created_at', descending: true)
-          .get();
+          .getM('remuneration_service.dart:123');
 
       List<Post> posts = [];
       for (var doc in postsSnapshot.docs) {
@@ -202,7 +203,7 @@ class RemunerationService {
           .where('type', isEqualTo: 'ENCAISSEMENT_POST')
           .where('createdAt', isGreaterThanOrEqualTo: timestampLimite)
           .limit(1)
-          .get();
+          .getM('remuneration_service.dart:205');
 
       return transactions.docs.isNotEmpty;
     } catch (e) {
@@ -331,7 +332,7 @@ class RemunerationService {
           .where('type', isEqualTo: 'ENCAISSEMENT_POST')
           .orderBy('createdAt', descending: true)
           .limit(20)
-          .get();
+          .getM('remuneration_service.dart:334');
 
       return snapshot.docs.map((doc) {
         var data = doc.data() as Map<String, dynamic>;

@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -77,7 +78,7 @@ class _CommissionsAdminPageState extends State<CommissionsAdminPage> {
           .collection('CommissionsDaily')
           .where('date', isGreaterThanOrEqualTo: _key(start))
           .where('date', isLessThanOrEqualTo: _key(now))
-          .get();
+          .getM('commissions_admin_page.dart:80');
       final totals = <String, int>{};
       var salesCoins = 0, salesCount = 0;
       final amounts = <String, double>{}, net = <String, double>{};

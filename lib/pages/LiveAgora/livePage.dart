@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import '../../widgets/music/music_overlay.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
@@ -374,7 +375,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     if (currentUserId == null) return;
 
     try {
-      final liveDoc = await _firestore.collection('lives').doc(widget.liveId).get();
+      final liveDoc = await _firestore.collection('lives').doc(widget.liveId).getM('livePage.dart:377');
       if (liveDoc.exists) {
         final data = liveDoc.data()!;
         final userWatchTime = Map<String, dynamic>.from(data['userWatchTime'] ?? {});
@@ -925,7 +926,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         .collection('live_likes')
         .where('liveId', isEqualTo: widget.liveId)
         .orderBy('timestamp', descending: false)
-        .snapshots()
+        .snapshotsM('livePage.dart:928')
         .listen((snapshot) {
       for (var doc in snapshot.docChanges) {
         if (doc.type == DocumentChangeType.added) {
@@ -1031,7 +1032,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   // ==================== GESTION FIREBASE STREAM ====================
 
   void _setupFirestoreListeners() {
-    _liveSubscription = _firestore.collection('lives').doc(widget.liveId).snapshots().listen((snapshot) {
+    _liveSubscription = _firestore.collection('lives').doc(widget.liveId).snapshotsM('livePage.dart:1034').listen((snapshot) {
       if (snapshot.exists) {
         final data = snapshot.data()!;
         if (data['isLive'] == false && !_endHandled) {
@@ -1086,7 +1087,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         .where('liveId', isEqualTo: widget.liveId)
         .orderBy('timestamp', descending: true)
         .limit(50)
-        .snapshots()
+        .snapshotsM('livePage.dart:1089')
         .listen((snapshot) {
       setState(() {
         _comments = snapshot.docs.map((doc) => LiveComment.fromMap(doc.data())).toList();
@@ -1096,7 +1097,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     _usersSubscription = _firestore
         .collection('lives')
         .doc(widget.liveId)
-        .snapshots()
+        .snapshotsM('livePage.dart:1099')
         .listen((snapshot) {
       if (snapshot.exists) {
         final data = snapshot.data()!;
@@ -1113,7 +1114,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     _typingSubscription = _firestore
         .collection('live_typing')
         .where('liveId', isEqualTo: widget.liveId)
-        .snapshots()
+        .snapshotsM('livePage.dart:1116')
         .listen((snapshot) {
       Map<String, dynamic> newTypingUsers = {};
       for (var doc in snapshot.docs) {
@@ -1152,7 +1153,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
   Future<void> _fetchHostData() async {
     try {
-      final hostDoc = await _firestore.collection('Users').doc(widget.postLive.hostId).get();
+      final hostDoc = await _firestore.collection('Users').doc(widget.postLive.hostId).getM('livePage.dart:1155');
       if (hostDoc.exists) {
         setState(() {
           _hostData = UserData.fromJson(hostDoc.data()!);
@@ -1176,7 +1177,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       List<UserData> users = [];
 
       for (final userId in allUserIds) {
-        final userDoc = await _firestore.collection('Users').doc(userId).get();
+        final userDoc = await _firestore.collection('Users').doc(userId).getM('livePage.dart:1179');
         if (userDoc.exists) {
           users.add(UserData.fromJson(userDoc.data()!));
         }
@@ -2112,7 +2113,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   Future<void> _showUserDetailsById(String userId) async {
     try {
       // Récupérer les données de l'utilisateur depuis Firestore
-      final userDoc = await _firestore.collection('Users').doc(userId).get();
+      final userDoc = await _firestore.collection('Users').doc(userId).getM('livePage.dart:2115');
 
       if (userDoc.exists) {
         // Convertir les données en UserData

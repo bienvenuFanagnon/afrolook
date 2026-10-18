@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/authProvider.dart' show UserAuthProvider;
@@ -48,7 +49,7 @@ class _CreatorPromoCodesPageState extends State<CreatorPromoCodesPage> {
             .where('creatorId', isEqualTo: uid)
             .where('contentId', isEqualTo: widget.content.id)
             .orderBy('createdAt', descending: true)
-            .snapshots(),
+            .snapshotsM('creator_promo_codes_page.dart:51'),
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
             return Center(
@@ -604,7 +605,7 @@ class _CreatePromoSheetState extends State<_CreatePromoSheet> {
           .where('contentId', isEqualTo: widget.content.id)
           .where('code', isEqualTo: code)
           .limit(1)
-          .get();
+          .getM('creator_promo_codes_page.dart:607');
 
       if (existing.docs.isNotEmpty) {
         setState(() {

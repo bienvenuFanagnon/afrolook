@@ -1,5 +1,6 @@
 ﻿// lib/pages/dating/dating_conversations_page.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -42,7 +43,7 @@ class _DatingConversationsPageState extends State<DatingConversationsPage> {
           .where('userId', isEqualTo: _currentUserId)
           .where('isActive', isEqualTo: true)
           .limit(1)
-          .get();
+          .getM('dating_conversations_page.dart:45');
 
       if (snapshot.docs.isNotEmpty) {
         final subscription = snapshot.docs.first;
@@ -595,7 +596,7 @@ class _DatingConversationsPageState extends State<DatingConversationsPage> {
           .collection('dating_profiles')
           .where('userId', isEqualTo: userId)
           .limit(1)
-          .get();
+          .getM('dating_conversations_page.dart:598');
       if (snapshot.docs.isNotEmpty) {
         return DatingProfile.fromJson(snapshot.docs.first.data());
       }
@@ -609,7 +610,7 @@ class _DatingConversationsPageState extends State<DatingConversationsPage> {
     return FirebaseFirestore.instance
         .collection('dating_conversations')
         .where('userId1', isEqualTo: userId)
-        .snapshots()
+        .snapshotsM('dating_conversations_page.dart:612')
         .map((snapshot) => snapshot.docs
         .map((doc) => DatingConversation.fromJson(doc.data()))
         .toList())
@@ -617,7 +618,7 @@ class _DatingConversationsPageState extends State<DatingConversationsPage> {
       final snapshot2 = await FirebaseFirestore.instance
           .collection('dating_conversations')
           .where('userId2', isEqualTo: userId)
-          .get();
+          .getM('dating_conversations_page.dart:620');
 
       final otherConversations = snapshot2.docs
           .map((doc) => DatingConversation.fromJson(doc.data()))

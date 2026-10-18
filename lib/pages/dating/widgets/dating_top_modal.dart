@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/theme/app_colors.dart';
@@ -182,7 +183,7 @@ Future<List<DatingProfile>> _fetchTopProfiles() async {
         .where('isActive', isEqualTo: true)
         .orderBy('popularityScore', descending: true)
         .limit(10);
-    final snapshot = await query.get();
+    final snapshot = await query.getM('dating_top_modal.dart:185');
     final profiles = snapshot.docs
         .map((doc) => DatingProfile.fromJson(doc.data()))
         .toList();

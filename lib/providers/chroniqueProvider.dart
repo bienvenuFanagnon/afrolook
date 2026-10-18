@@ -1,5 +1,11 @@
 ﻿// providers/chronique_provider.dart
 
+import 'package:afrotok/services/read_meter.dart';
+import '../services/chronique_first_page.dart';
+import '../services/media_shrink.dart';
+import '../services/video_poster.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import '../pages/chronique/chronique_music.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -8,6 +14,10 @@ import 'package:video_player/video_player.dart';
 import 'dart:io';
 import '../pages/chronique/chroniqueform.dart';
 class ChroniqueProvider with ChangeNotifier {
+  /// Longueur maximale d'un commentaire public.
+  static const int maxCommentLength = 120;
+  static const int commentsPageSize = 20;
+
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
@@ -24,11 +34,15 @@ class ChroniqueProvider with ChangeNotifier {
     String? templateId,
     int? audioStartMs,
     int? audioEndMs,
+    ChroniqueMusic? music,
+    double? textX,
+    double? textY,
     required Function(double) onProgress,
   }) async {
     try {
       String? mediaUrl;
       String? coverImageUrl;
+      String? posterUrl;
       double? fileSize;
       int duration = 0;
 
@@ -39,8 +53,12 @@ class ChroniqueProvider with ChangeNotifier {
 
         if (type == ChroniqueType.VIDEO) {
           duration = await _getVideoDuration(mediaFile);
+          // Aperçu tiré de la vidéo encore sur le téléphone : tout le monde l'affiche tout de suite (quelques Ko), sans toucher à la vidéo
+          posterUrl = await _uploadPoster(mediaFile);
         } else if (type == ChroniqueType.IMAGE) {
           duration = 5;
+          // Miniature de 480 px : les rangées et les cartes ne téléchargent plus l'image entière
+          posterUrl = await _uploadImageThumb(mediaFile);
         } else if (type == ChroniqueType.AUDIO) {
           duration = await _getAudioDuration(mediaFile);
         }
@@ -57,6 +75,26 @@ class ChroniqueProvider with ChangeNotifier {
         );
       }
 
+      // Identifiant choisi d'avance : le paiement de la musique est lié à cette chronique (une seule fois, côté serveur)
+      final ref = _firestore.collection('chroniques').doc();
+      var musicArtist = music?.artist;
+      var musicUrl = music?.url;
+      if (music != null && music.isVoice && music.localPath != null) {
+        // Ma voix : l'enregistrement part avec la chronique (gratuit)
+        musicUrl = await _uploadMedia(File(music.localPath!), (_) {}, folder: 'chronique_voices');
+        musicArtist = 'Ma voix';
+      }
+      if (music != null && music.isArtist && type != ChroniqueType.AUDIO) {
+        try {
+          final r = (await FirebaseFunctions.instance.httpsCallable('chroniqueMusicCharge').call({'soundId': music.id, 'chroniqueId': ref.id})).data as Map;
+          musicUrl = (r['previewUrl'] as String?) ?? musicUrl;
+          final a = (r['artist'] as String?) ?? '';
+          if (a.isNotEmpty) musicArtist = '@$a';
+        } on FirebaseFunctionsException catch (e) {
+          throw Exception(e.code == 'resource-exhausted' ? 'Solde de pièces insuffisant pour cette musique.' : (e.message ?? 'Musique indisponible.'));
+        }
+      }
+
       final chronique = Chronique(
         userId: userId,
         userPseudo: userPseudo,
@@ -65,6 +103,7 @@ class ChroniqueProvider with ChangeNotifier {
         textContent: textContent,
         mediaUrl: mediaUrl,
         coverImageUrl: coverImageUrl,
+        posterUrl: posterUrl,
         backgroundColor: backgroundColor,
         templateId: templateId,
         duration: duration,
@@ -81,9 +120,21 @@ class ChroniqueProvider with ChangeNotifier {
         totalReactions: 0,
         audioStartMs: audioStartMs,
         audioEndMs: audioEndMs,
+        musicKind: music?.kind,
+        musicId: music?.id,
+        musicTitle: music?.title,
+        musicArtist: musicArtist,
+        musicUrl: musicUrl,
+        musicStartMs: music?.startMs,
+        musicEndMs: music?.endMs,
+        musicVolume: music?.volume ?? 0.7,
+        videoSoundKept: music?.keepVideoSound ?? false,
+        textX: (type == ChroniqueType.IMAGE || type == ChroniqueType.VIDEO) && (textContent ?? '').trim().isNotEmpty ? textX : null,
+        textY: (type == ChroniqueType.IMAGE || type == ChroniqueType.VIDEO) && (textContent ?? '').trim().isNotEmpty ? textY : null,
       );
 
-      await _firestore.collection('chroniques').add(chronique.toMap());
+      await ref.set(chronique.toMap());
+      ChroniqueFirstPage.clear();
       await _updateUserChroniqueCount(userId);
 
       return mediaUrl;
@@ -94,7 +145,7 @@ class ChroniqueProvider with ChangeNotifier {
 
   Future<int> getLikesCount(String chroniqueId) async {
     try {
-      final doc = await _firestore.collection('chroniques').doc(chroniqueId).get();
+      final doc = await _firestore.collection('chroniques').doc(chroniqueId).getM('chroniqueProvider.dart:147');
       if (doc.exists) {
         final data = doc.data()!;
         int likeCount = data['likeCount'] ?? 0;
@@ -117,7 +168,7 @@ class ChroniqueProvider with ChangeNotifier {
       final ext = file.path.split('.').last.toLowerCase();
       final fileName = '$folder/${DateTime.now().millisecondsSinceEpoch}.$ext';
       final storageRef = _storage.ref().child(fileName);
-      final uploadTask = storageRef.putFile(file);
+      final uploadTask = storageRef.putFile(await MediaShrink.file(file));
 
       uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
         final progress = snapshot.bytesTransferred / snapshot.totalBytes;
@@ -128,6 +179,30 @@ class ChroniqueProvider with ChangeNotifier {
       return await snapshot.ref.getDownloadURL();
     } catch (error) {
       throw Exception('Erreur upload média: $error');
+    }
+  }
+
+  /// Aperçu de la vidéo envoyé en même temps qu'elle ; sans aperçu, la chronique se publie quand même (les appareils le tireront eux-mêmes).
+  Future<String?> _uploadPoster(File video) async {
+    try {
+      final poster = await VideoPoster.fromFile(video);
+      if (poster == null) return null;
+      return await _uploadMedia(poster, (_) {}, folder: 'chronique_posters');
+    } catch (e) {
+      printVm('Aperçu chronique non envoyé: $e');
+      return null;
+    }
+  }
+
+  /// Miniature d'une image envoyée en même temps qu'elle ; sans miniature, la chronique se publie quand même (l'image entière sert d'aperçu).
+  Future<String?> _uploadImageThumb(File image) async {
+    try {
+      final thumb = await MediaShrink.thumbnail(image);
+      if (thumb == null) return null;
+      return await _uploadMedia(thumb, (_) {}, folder: 'chronique_posters');
+    } catch (e) {
+      printVm('Miniature chronique non envoyée: $e');
+      return null;
     }
   }
 
@@ -159,7 +234,7 @@ class ChroniqueProvider with ChangeNotifier {
   }
 
   Future<void> _updateUserChroniqueCount(String userId) async {
-    final userDoc = await _firestore.collection('users').doc(userId).get();
+    final userDoc = await _firestore.collection('users').doc(userId).getM('chroniqueProvider.dart:236');
     if (userDoc.exists) {
       int currentCount = userDoc.data()?['activeChroniquesCount'] ?? 0;
       await _firestore.collection('users').doc(userId).update({
@@ -171,7 +246,7 @@ class ChroniqueProvider with ChangeNotifier {
 
   Future<void> _decrementUserChroniqueCount(String userId) async {
     try {
-      final userDoc = await _firestore.collection('users').doc(userId).get();
+      final userDoc = await _firestore.collection('users').doc(userId).getM('chroniqueProvider.dart:248');
       if (userDoc.exists) {
         int currentCount = userDoc.data()?['activeChroniquesCount'] ?? 0;
         if (currentCount > 0) {
@@ -191,7 +266,7 @@ class ChroniqueProvider with ChangeNotifier {
           .collection('chroniques')
           .where('userId', isEqualTo: userId)
           .where('expiresAt', isGreaterThan: Timestamp.now())
-          .get();
+          .getM('chroniqueProvider.dart:268');
       return snapshot.docs.length;
     } catch (error) {
       throw Exception('Erreur comptage chroniques: $error');
@@ -204,7 +279,7 @@ class ChroniqueProvider with ChangeNotifier {
         .where('expiresAt', isGreaterThan: Timestamp.now())
         .orderBy('expiresAt', descending: false)
         .limit(10)
-        .snapshots()
+        .snapshotsM('chroniqueProvider.dart:281')
         .map((snapshot) => snapshot.docs
         .map((doc) => Chronique.fromMap(doc.data(), doc.id))
         .toList());
@@ -216,7 +291,7 @@ class ChroniqueProvider with ChangeNotifier {
         .where('userId', isEqualTo: userId)
         .where('expiresAt', isGreaterThan: Timestamp.now())
         .orderBy('createdAt', descending: true)
-        .snapshots()
+        .snapshotsM('chroniqueProvider.dart:293')
         .map((snapshot) => snapshot.docs
         .map((doc) => Chronique.fromMap(doc.data(), doc.id))
         .toList());
@@ -238,7 +313,7 @@ class ChroniqueProvider with ChangeNotifier {
         query = query.startAfterDocument(lastDocument);
       }
 
-      final snapshot = await query.get();
+      final snapshot = await query.getM('chroniqueProvider.dart:315');
 
       if (snapshot.docs.isEmpty) return [];
 
@@ -251,10 +326,26 @@ class ChroniqueProvider with ChangeNotifier {
     }
   }
 
+  /// Une page de chroniques actives (les plus récentes d'abord), avec le curseur de la page suivante : pas de lecture en plus pour le retrouver.
+  Future<({List<Chronique> items, DocumentSnapshot? last, bool hasMore})> getChroniquesPage({required int limit, DocumentSnapshot? after}) async {
+    Query<Map<String, dynamic>> q = _firestore
+        .collection('chroniques')
+        .where('expiresAt', isGreaterThan: Timestamp.now())
+        .orderBy('createdAt', descending: true) // même requête (et même index) que getActiveChroniquesBatch
+        .limit(limit);
+    if (after != null) q = q.startAfterDocument(after);
+    final snap = await q.getM('chroniqueProvider.dart:336');
+    return (
+      items: [for (final d in snap.docs) Chronique.fromMap(d.data(), d.id)],
+      last: snap.docs.isEmpty ? null : snap.docs.last,
+      hasMore: snap.docs.length >= limit,
+    );
+  }
+
   // 🔥 NOUVELLE MÉTHODE : Obtenir une chronique par son ID
   Future<Chronique?> getChroniqueById(String chroniqueId) async {
     try {
-      final doc = await _firestore.collection('chroniques').doc(chroniqueId).get();
+      final doc = await _firestore.collection('chroniques').doc(chroniqueId).getM('chroniqueProvider.dart:347');
       if (doc.exists) {
         return Chronique.fromMap(doc.data() as Map<String, dynamic>, doc.id);
       }
@@ -322,24 +413,56 @@ class ChroniqueProvider with ChangeNotifier {
     }
   }
 
-  Future<void> deleteChronique(String chroniqueId, String mediaUrl) async {
+  /// Supprime la chronique, son média et son aperçu, ses commentaires (200 au plus) et décrémente le compteur de son auteur.
+  Future<void> deleteChronique(String chroniqueId, String mediaUrl, {String? userId, String? posterUrl, String? voiceUrl}) async {
     try {
-      if (mediaUrl.isNotEmpty) {
+      for (final url in [mediaUrl, posterUrl ?? '', voiceUrl ?? '']) {
+        if (url.isEmpty) continue;
         try {
-          await _storage.refFromURL(mediaUrl).delete();
+          await _storage.refFromURL(url).delete();
         } catch (e) {
           printVm('Erreur suppression média: $e');
         }
       }
+      try {
+        final msgs = await _firestore.collection('chronique_messages').where('chroniqueId', isEqualTo: chroniqueId).limit(200).getM('chroniqueProvider.dart:427');
+        if (msgs.docs.isNotEmpty) {
+          final batch = _firestore.batch();
+          for (final d in msgs.docs) {
+            batch.delete(d.reference);
+          }
+          await batch.commit();
+        }
+      } catch (e) {
+        printVm('Erreur suppression commentaires: $e');
+      }
       await _firestore.collection('chroniques').doc(chroniqueId).delete();
+      ChroniqueFirstPage.clear();
+      if (userId != null) await _decrementUserChroniqueCount(userId);
     } catch (error) {
       throw Exception('Erreur suppression chronique: $error');
     }
   }
 
+  /// Une page de commentaires (du plus récent au plus ancien), lue à la demande : plus d'écoute en direct de toute la liste.
+  Future<({List<ChroniqueMessage> items, DocumentSnapshot? last, bool hasMore})> getMessagesPage(String chroniqueId, {DocumentSnapshot? after}) async {
+    Query<Map<String, dynamic>> q = _firestore
+        .collection('chronique_messages')
+        .where('chroniqueId', isEqualTo: chroniqueId)
+        .orderBy('createdAt', descending: true)
+        .limit(commentsPageSize);
+    if (after != null) q = q.startAfterDocument(after);
+    final snap = await q.getM('chroniqueProvider.dart:454');
+    return (
+      items: [for (final d in snap.docs) ChroniqueMessage.fromMap(d.data(), d.id)],
+      last: snap.docs.isEmpty ? null : snap.docs.last,
+      hasMore: snap.docs.length >= commentsPageSize,
+    );
+  }
+
   Future<bool> hasLiked(String chroniqueId, String userId) async {
     try {
-      final doc = await _firestore.collection('chroniques').doc(chroniqueId).get();
+      final doc = await _firestore.collection('chroniques').doc(chroniqueId).getM('chroniqueProvider.dart:464');
       if (doc.exists) {
         List<String> likers = List<String>.from(doc.data()?['likers'] ?? []);
         return likers.contains(userId);
@@ -352,7 +475,7 @@ class ChroniqueProvider with ChangeNotifier {
 
   Future<bool> hasLoved(String chroniqueId, String userId) async {
     try {
-      final doc = await _firestore.collection('chroniques').doc(chroniqueId).get();
+      final doc = await _firestore.collection('chroniques').doc(chroniqueId).getM('chroniqueProvider.dart:477');
       if (doc.exists) {
         List<String> lovers = List<String>.from(doc.data()?['lovers'] ?? []);
         return lovers.contains(userId);
@@ -368,7 +491,7 @@ class ChroniqueProvider with ChangeNotifier {
       final snapshot = await _firestore
           .collection('chroniques')
           .where('expiresAt', isLessThan: Timestamp.now())
-          .get();
+          .getM('chroniqueProvider.dart:493');
 
       for (var doc in snapshot.docs) {
         final chronique = Chronique.fromMap(doc.data(), doc.id);
@@ -392,7 +515,7 @@ class ChroniqueProvider with ChangeNotifier {
       final snapshot = await _firestore
           .collection('chroniques')
           .where('userId', isEqualTo: userId)
-          .get();
+          .getM('chroniqueProvider.dart:517');
 
       int totalChroniques = snapshot.docs.length;
       int totalViews = 0;
@@ -419,6 +542,9 @@ class ChroniqueProvider with ChangeNotifier {
   Future<void> deleteMessage(String chroniqueId, String messageId) async {
     try {
       await _firestore.collection('chronique_messages').doc(messageId).delete();
+      try {
+        await _firestore.collection('chroniques').doc(chroniqueId).update({'commentCount': FieldValue.increment(-1)});
+      } catch (_) {}
       notifyListeners();
     } catch (error) {
       throw Exception('Erreur suppression message: $error');
@@ -456,7 +582,7 @@ class ChroniqueProvider with ChangeNotifier {
 
   Future<bool> hasLikedMessage(String messageId, String userId) async {
     try {
-      final doc = await _firestore.collection('chronique_messages').doc(messageId).get();
+      final doc = await _firestore.collection('chronique_messages').doc(messageId).getM('chroniqueProvider.dart:584');
       if (doc.exists) {
         final data = doc.data()!;
         List<String> likers = List<String>.from(data['likers'] ?? []);
@@ -477,8 +603,8 @@ class ChroniqueProvider with ChangeNotifier {
     required String message,
   }) async {
     try {
-      if (message.length > 20) {
-        throw Exception('Le message ne doit pas dépasser 20 caractères');
+      if (message.length > maxCommentLength) {
+        throw Exception('Le commentaire ne doit pas dépasser $maxCommentLength caractères');
       }
 
       final chroniqueMessage = ChroniqueMessage(
@@ -499,6 +625,9 @@ class ChroniqueProvider with ChangeNotifier {
         final chroniqueRef = _firestore.collection('chroniques').doc(chroniqueId);
         transaction.update(chroniqueRef, {
           'commentCount': FieldValue.increment(1),
+          // Dernier commentaire recopié dans la chronique : aperçu affiché sans lire la liste des commentaires
+          'lastCommentPseudo': userPseudo,
+          'lastCommentText': message,
         });
       });
     } catch (error) {
@@ -511,7 +640,7 @@ class ChroniqueProvider with ChangeNotifier {
         .collection('chronique_messages')
         .where('chroniqueId', isEqualTo: chroniqueId)
         .orderBy('createdAt', descending: true)
-        .snapshots()
+        .snapshotsM('chroniqueProvider.dart:642')
         .map((snapshot) {
       return snapshot.docs
           .map((doc) => ChroniqueMessage.fromMap(doc.data(), doc.id))
@@ -616,7 +745,7 @@ class ChroniqueProvider with ChangeNotifier {
 // // Dans ChroniqueProvider
 //   Future<int> getLikesCount(String chroniqueId) async {
 //     try {
-//       final doc = await _firestore.collection('chroniques').doc(chroniqueId).get();
+//       final doc = await _firestore.collection('chroniques').doc(chroniqueId).getM('chroniqueProvider.dart:747');
 //
 //       if (doc.exists) {
 //         final data = doc.data()!;
@@ -670,7 +799,7 @@ class ChroniqueProvider with ChangeNotifier {
 //
 //   // Mettre à jour le compteur de chroniques utilisateur
 //   Future<void> _updateUserChroniqueCount(String userId) async {
-//     final userDoc = await _firestore.collection('users').doc(userId).get();
+//     final userDoc = await _firestore.collection('users').doc(userId).getM('chroniqueProvider.dart:801');
 //     if (userDoc.exists) {
 //       int currentCount = userDoc.data()?['activeChroniquesCount'] ?? 0;
 //       await _firestore.collection('users').doc(userId).update({
@@ -687,7 +816,7 @@ class ChroniqueProvider with ChangeNotifier {
 //           .collection('chroniques')
 //           .where('userId', isEqualTo: userId)
 //           .where('expiresAt', isGreaterThan: Timestamp.now())
-//           .get();
+//           .getM('chroniqueProvider.dart:818');
 //
 //       return snapshot.docs.length;
 //     } catch (error) {
@@ -701,7 +830,7 @@ class ChroniqueProvider with ChangeNotifier {
 //         .collection('chroniques')
 //         .where('expiresAt', isGreaterThan: Timestamp.now())
 //         .orderBy('expiresAt', descending: false).limit(10)
-//         .snapshots()
+//         .snapshotsM('chroniqueProvider.dart:832')
 //         .map((snapshot) => snapshot.docs
 //         .map((doc) => Chronique.fromMap(doc.data(), doc.id))
 //         .toList());
@@ -714,7 +843,7 @@ class ChroniqueProvider with ChangeNotifier {
 //         .where('userId', isEqualTo: userId)
 //         .where('expiresAt', isGreaterThan: Timestamp.now())
 //         .orderBy('createdAt', descending: true)
-//         .snapshots()
+//         .snapshotsM('chroniqueProvider.dart:845')
 //         .map((snapshot) => snapshot.docs
 //         .map((doc) => Chronique.fromMap(doc.data(), doc.id))
 //         .toList());
@@ -798,7 +927,7 @@ class ChroniqueProvider with ChangeNotifier {
 //   // Vérifier si l'utilisateur a déjà liké
 //   Future<bool> hasLiked(String chroniqueId, String userId) async {
 //     try {
-//       final doc = await _firestore.collection('chroniques').doc(chroniqueId).get();
+//       final doc = await _firestore.collection('chroniques').doc(chroniqueId).getM('chroniqueProvider.dart:929');
 //       if (doc.exists) {
 //         List<String> likers = List<String>.from(doc.data()?['likers'] ?? []);
 //         return likers.contains(userId);
@@ -812,7 +941,7 @@ class ChroniqueProvider with ChangeNotifier {
 //   // Vérifier si l'utilisateur a déjà loved
 //   Future<bool> hasLoved(String chroniqueId, String userId) async {
 //     try {
-//       final doc = await _firestore.collection('chroniques').doc(chroniqueId).get();
+//       final doc = await _firestore.collection('chroniques').doc(chroniqueId).getM('chroniqueProvider.dart:943');
 //       if (doc.exists) {
 //         List<String> lovers = List<String>.from(doc.data()?['lovers'] ?? []);
 //         return lovers.contains(userId);
@@ -829,7 +958,7 @@ class ChroniqueProvider with ChangeNotifier {
 //       final snapshot = await _firestore
 //           .collection('chroniques')
 //           .where('expiresAt', isLessThan: Timestamp.now())
-//           .get();
+//           .getM('chroniqueProvider.dart:960');
 //
 //       for (var doc in snapshot.docs) {
 //         final chronique = Chronique.fromMap(doc.data(), doc.id);
@@ -853,7 +982,7 @@ class ChroniqueProvider with ChangeNotifier {
 //   // Décrémenter le compteur de chroniques utilisateur
 //   Future<void> _decrementUserChroniqueCount(String userId) async {
 //     try {
-//       final userDoc = await _firestore.collection('users').doc(userId).get();
+//       final userDoc = await _firestore.collection('users').doc(userId).getM('chroniqueProvider.dart:984');
 //       if (userDoc.exists) {
 //         int currentCount = userDoc.data()?['activeChroniquesCount'] ?? 0;
 //         if (currentCount > 0) {
@@ -873,7 +1002,7 @@ class ChroniqueProvider with ChangeNotifier {
 //       final snapshot = await _firestore
 //           .collection('chroniques')
 //           .where('userId', isEqualTo: userId)
-//           .get();
+//           .getM('chroniqueProvider.dart:1004');
 //
 //       int totalChroniques = snapshot.docs.length;
 //       int totalViews = 0;
@@ -945,7 +1074,7 @@ class ChroniqueProvider with ChangeNotifier {
 //       final doc = await _firestore
 //           .collection('chronique_messages')
 //           .doc(messageId)
-//           .get();
+//           .getM('chroniqueProvider.dart:1076');
 //
 //       if (doc.exists) {
 //         final data = doc.data()!;
@@ -1083,7 +1212,7 @@ class ChroniqueProvider with ChangeNotifier {
 // //           .doc(chroniqueId)
 // //           .collection('messages')
 // //           .doc(messageId)
-// //           .get();
+// //           .getM('chroniqueProvider.dart:1214');
 // //
 // //       if (doc.exists) {
 // //         final data = doc.data()!;
@@ -1103,7 +1232,7 @@ class ChroniqueProvider with ChangeNotifier {
 //         .collection('chronique_messages')
 //         .where('chroniqueId', isEqualTo: chroniqueId)
 //         .orderBy('createdAt', descending: true)
-//         .snapshots()
+//         .snapshotsM('chroniqueProvider.dart:1234')
 //         .map((snapshot) {
 //       return snapshot.docs
 //           .map((doc) => ChroniqueMessage.fromMap(doc.data(), doc.id))
@@ -1128,7 +1257,7 @@ class ChroniqueProvider with ChangeNotifier {
 //         query = query.startAfterDocument(lastDocument);
 //       }
 //
-//       final snapshot = await query.get();
+//       final snapshot = await query.getM('chroniqueProvider.dart:1259');
 //
 //       if (snapshot.docs.isEmpty) return [];
 //

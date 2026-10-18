@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../models/official_account/official_account_enums.dart';
@@ -40,7 +41,7 @@ class OfficialAccountService {
         .where('userId', isEqualTo: userId)
         .orderBy('createdAt', descending: true)
         .limit(1)
-        .get();
+        .getM('official_account_service.dart:43');
     if (snap.docs.isEmpty) return null;
     final doc = snap.docs.first;
     return OfficialAccountRequest.fromMap(doc.data(), doc.id);
@@ -52,7 +53,7 @@ class OfficialAccountService {
           .where('userId', isEqualTo: userId)
           .orderBy('createdAt', descending: true)
           .limit(1)
-          .snapshots()
+          .snapshotsM('official_account_service.dart:55')
           .map((snap) {
         if (snap.docs.isEmpty) return null;
         final doc = snap.docs.first;
@@ -67,7 +68,7 @@ class OfficialAccountService {
       _col
           .where('status', isEqualTo: status.id)
           .orderBy('createdAt', descending: true)
-          .snapshots()
+          .snapshotsM('official_account_service.dart:70')
           .map((snap) => snap.docs
               .map((d) => OfficialAccountRequest.fromMap(d.data(), d.id))
               .toList());
@@ -82,7 +83,7 @@ class OfficialAccountService {
     if (category != null) q = q.where('category', isEqualTo: category.id);
     return q
         .orderBy('createdAt', descending: true)
-        .snapshots()
+        .snapshotsM('official_account_service.dart:85')
         .map((snap) => snap.docs
             .map((d) => OfficialAccountRequest.fromMap(d.data(), d.id))
             .toList());
@@ -227,7 +228,7 @@ class OfficialAccountService {
         .collection('Users')
         .where('officialNameSlug', isEqualTo: slug)
         .limit(1)
-        .get();
+        .getM('official_account_service.dart:230');
     if (usersSnap.docs.isNotEmpty) return false;
 
     // 2. Demandes en cours
@@ -235,7 +236,7 @@ class OfficialAccountService {
         .where('officialNameSlug', isEqualTo: slug)
         .where('status', whereIn: ['pending', 'underReview', 'approved'])
         .limit(1)
-        .get();
+        .getM('official_account_service.dart:238');
     return reqSnap.docs.isEmpty;
   }
 
@@ -305,7 +306,7 @@ class OfficialAccountService {
 
   /// Retourne l'abonnement en cours d'un utilisateur (snapshot unique).
   Future<OfficialSubscription?> getSubscription(String userId) async {
-    final snap = await _db.collection('Users').doc(userId).get();
+    final snap = await _db.collection('Users').doc(userId).getM('official_account_service.dart:308');
     final data = snap.data()?['officialSubscription'];
     if (data == null) return null;
     return OfficialSubscription.fromJson(Map<String, dynamic>.from(data as Map));

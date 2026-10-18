@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'dart:async';
 
@@ -315,7 +316,7 @@ class _AfroVideoThreadsState extends State<AfroVideoThreads> {
       Filter('docId', isEqualTo:  '${post.id}${authProvider.loginUserData!.id}'),
       Filter('docId', isEqualTo:  '${authProvider.loginUserData!.id}${post.id}'),
 
-    )).snapshots();
+    )).snapshotsM('afrolookVideoThread.dart:318');
 
 // Obtenez la liste des utilisateurs
     //List<DocumentSnapshot> users = await usersQuery.sget();
@@ -376,7 +377,7 @@ class _AfroVideoThreadsState extends State<AfroVideoThreads> {
 
       });
       CollectionReference messageCollect = await FirebaseFirestore.instance.collection('Messages');
-      QuerySnapshot querySnapshotMessage = await messageCollect.where("chat_id",isEqualTo:usersChat.id!).get();
+      QuerySnapshot querySnapshotMessage = await messageCollect.where("chat_id",isEqualTo:usersChat.id!).getM('afrolookVideoThread.dart:379');
       // Afficher la liste
       List<Message> messageList = querySnapshotMessage.docs.map((doc) =>
           Message.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -394,9 +395,9 @@ class _AfroVideoThreadsState extends State<AfroVideoThreads> {
 
       /////////////ami//////////
       CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-      QuerySnapshot querySnapshotUserSender = await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.id!?'${amigo.id}':'${authProvider.loginUserData!.id}').get();
+      QuerySnapshot querySnapshotUserSender = await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.id!?'${amigo.id}':'${authProvider.loginUserData!.id}').getM('afrolookVideoThread.dart:397');
       // Afficher la liste
-      QuerySnapshot querySnapshotUserReceiver= await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.id?'${authProvider.loginUserData!.id}':'${amigo.id}').get();
+      QuerySnapshot querySnapshotUserReceiver= await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.id?'${authProvider.loginUserData!.id}':'${amigo.id}').getM('afrolookVideoThread.dart:399');
 
 
       List<UserData> receiverUserList = querySnapshotUserReceiver.docs.map((doc) =>
@@ -409,7 +410,7 @@ class _AfroVideoThreadsState extends State<AfroVideoThreads> {
 
       /////////////entreprise//////////
       CollectionReference entrepriseCollect = await FirebaseFirestore.instance.collection('Entreprises');
-      QuerySnapshot querySnapshotentreprise = await entrepriseCollect.where("id",isEqualTo:'${post.entreprise_id}').get();
+      QuerySnapshot querySnapshotentreprise = await entrepriseCollect.where("id",isEqualTo:'${post.entreprise_id}').getM('afrolookVideoThread.dart:412');
       List<EntrepriseData> entrepriseList = querySnapshotentreprise.docs.map((doc) =>
           EntrepriseData.fromJson(doc.data() as Map<String, dynamic>)).toList();
       usersChat.entreprise=entrepriseList.first;

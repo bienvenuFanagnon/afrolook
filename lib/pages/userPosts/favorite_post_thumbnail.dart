@@ -1,4 +1,5 @@
-﻿import 'package:afrotok/widgets/pseudo_tag.dart';
+import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -77,7 +78,7 @@ class _FavoritePostThumbnailWidgetState extends State<FavoritePostThumbnailWidge
     });
 
     try {
-      final userDoc = await _firestore.collection('Users').doc(widget.post.user_id!).get();
+      final userDoc = await _firestore.collection('Users').doc(widget.post.user_id!).getM('favorite_post_thumbnail.dart:80');
       if (userDoc.exists) {
         setState(() {
           _currentUser = UserData.fromJson(userDoc.data() as Map<String, dynamic>);

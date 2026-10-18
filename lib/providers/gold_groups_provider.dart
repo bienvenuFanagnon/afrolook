@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -26,7 +27,7 @@ class GoldGroupsProvider extends ChangeNotifier {
         .where('is_official', isEqualTo: true)
         .where('is_frozen', isEqualTo: false)
         .limit(20)
-        .snapshots()
+        .snapshotsM('gold_groups_provider.dart:29')
         .listen((snap) {
       _officialGroups = snap.docs.map((d) => d.data()).toList();
       _rebuildGroups();
@@ -69,7 +70,7 @@ class GoldGroupsProvider extends ChangeNotifier {
           .collection('Users')
           .where('abonnement.type', isEqualTo: 'gold')
           .limit(50)
-          .get();
+          .getM('gold_groups_provider.dart:72');
 
       final now = DateTime.now();
       final goldUserIds = usersSnap.docs.where((d) {
@@ -89,7 +90,7 @@ class GoldGroupsProvider extends ChangeNotifier {
             .where('owner_id', whereIn: goldUserIds.take(10).toList())
             .where('is_frozen', isEqualTo: false)
             .limit(20)
-            .get();
+            .getM('gold_groups_provider.dart:92');
         for (final doc in groupsSnap.docs) {
           if (!officialIds.contains(doc.id)) _goldUserGroups.add(doc.data());
         }

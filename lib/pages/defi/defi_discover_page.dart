@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../models/model_data.dart';
@@ -45,7 +46,7 @@ class _DefiDiscoverPageState extends State<DefiDiscoverPage> {
           .where('type', isEqualTo: PostType.DEFI.name)
           .orderBy('created_at', descending: true)
           .limit(_pageSize)
-          .get();
+          .getM('defi_discover_page.dart:48');
 
       final posts = snap.docs.map((d) => Post.fromJson(d.data())).toList();
       if (mounted) {
@@ -71,7 +72,7 @@ class _DefiDiscoverPageState extends State<DefiDiscoverPage> {
           .orderBy('created_at', descending: true)
           .startAfterDocument(_lastDoc!)
           .limit(_pageSize)
-          .get();
+          .getM('defi_discover_page.dart:74');
 
       final posts = snap.docs.map((d) => Post.fromJson(d.data())).toList();
       if (mounted) {

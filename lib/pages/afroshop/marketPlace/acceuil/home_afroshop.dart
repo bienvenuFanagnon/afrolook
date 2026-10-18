@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:afrotok/pages/afroshop/marketPlace/acceuil/produit_details.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -333,7 +334,7 @@ class _HomePageState extends State<HomeAfroshopPage>
         query = query.startAfterDocument(_lastDocument!);
       }
 
-      final snapshot = await query.get();
+      final snapshot = await query.getM('home_afroshop.dart:336');
 
       if (snapshot.docs.isNotEmpty) {
         _lastDocument = snapshot.docs.last;

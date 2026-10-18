@@ -1,5 +1,6 @@
 ﻿
 
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -40,7 +41,7 @@ class CategorieProduitProvider extends ChangeNotifier {
       // .where("id",isNotEqualTo: currentUserId)
        .orderBy('createdAt', descending: false)
       //   .limit(10)
-          .get();
+          .getM('categorie_produits_provider.dart:43');
 
       // Afficher la liste
       listCategorie = querySnapshotUser.docs.map((doc) =>
@@ -74,14 +75,14 @@ class CategorieProduitProvider extends ChangeNotifier {
         .where("disponible", isEqualTo: true)
         .orderBy('createdAt', descending: true)
         .limit(100)
-        .snapshots();
+        .snapshotsM('categorie_produits_provider.dart:77');
 
     await for (var snapshot in articleStream) {
       for (var doc in snapshot.docs) {
         ArticleData article = ArticleData.fromJson(doc.data() as Map<String, dynamic>);
 
         // Récupérer les infos de l'utilisateur associé
-        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.user_id).get();
+        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.user_id).getM('categorie_produits_provider.dart:84');
         UserData user = UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
         article.user = user;
 
@@ -103,13 +104,13 @@ class CategorieProduitProvider extends ChangeNotifier {
           .where("user_id",isEqualTo: user_id)
           .orderBy('createdAt', descending: true)
           .limit(100)
-          .get();
+          .getM('categorie_produits_provider.dart:106');
 
       // Afficher la liste
       listArticles = querySnapshotUser.docs.map((doc) =>
           ArticleData.fromJson(doc.data() as Map<String, dynamic>)).toList();
       for (var article in listArticles) {
-        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.user_id).get();
+        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.user_id).getM('categorie_produits_provider.dart:112');
         UserData user=UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
         printVm(' article user ${user.toJson()}');
 
@@ -157,7 +158,7 @@ class CategorieProduitProvider extends ChangeNotifier {
           .where("booster", isEqualTo: 1)
           .where("isBoosted", isEqualTo: true)
           .where("boostEndDate", isGreaterThan: now) // Seulement les boosts actifs
-          .get();
+          .getM('categorie_produits_provider.dart:160');
 
       List<ArticleData> activeBoostedArticles = boostedQuery.docs.map((doc) {
         final article = ArticleData.fromJson(doc.data() as Map<String, dynamic>);
@@ -296,7 +297,7 @@ class CategorieProduitProvider extends ChangeNotifier {
           .orderBy('vues', descending: true)
           .orderBy('jaime', descending: true)
           .limit(limit * 3) // Prendre plus pour mieux filtrer
-          .get();
+          .getM('categorie_produits_provider.dart:299');
 
       List<ArticleData> popularArticles = popularQuery.docs.map((doc) {
         final article = ArticleData.fromJson(doc.data() as Map<String, dynamic>);
@@ -342,7 +343,7 @@ class CategorieProduitProvider extends ChangeNotifier {
           .where("booster", isEqualTo: 1)
           .where("isBoosted", isEqualTo: true)
           .where("boostEndDate", isGreaterThan: now)
-          .get();
+          .getM('categorie_produits_provider.dart:345');
 
       List<ArticleData> boostedArticles = boostedQuery.docs.map((doc) {
         final article = ArticleData.fromJson(doc.data() as Map<String, dynamic>);
@@ -390,13 +391,13 @@ class CategorieProduitProvider extends ChangeNotifier {
        .where("dispo_annonce_afrolook",isEqualTo: true)
           .orderBy('createdAt', descending: true)
       //   .limit(10)
-          .get();
+          .getM('categorie_produits_provider.dart:393');
 
       // Afficher la liste
       listArticles = querySnapshotUser.docs.map((doc) =>
           ArticleData.fromJson(doc.data() as Map<String, dynamic>)).toList();
       for (var article in listArticles) {
-        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.user_id).get();
+        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.user_id).getM('categorie_produits_provider.dart:399');
         UserData user=UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
         printVm(' article user ${user.toJson()}');
 
@@ -440,7 +441,7 @@ class CategorieProduitProvider extends ChangeNotifier {
          // .where("titre",isNotEqualTo: currentUserId)
             .orderBy('createdAt', descending: true)
         //   .limit(10)
-            .get();
+            .getM('categorie_produits_provider.dart:443');
       } else{
          querySnapshotUser = await userCollect
              .where("disponible",isEqualTo: true)
@@ -448,7 +449,7 @@ class CategorieProduitProvider extends ChangeNotifier {
              .where("categorie_id",isEqualTo: categorie_id)
            // .orderBy('createdAt', descending: true)
         //   .limit(10)
-            .get();
+            .getM('categorie_produits_provider.dart:451');
       }
 
 
@@ -459,7 +460,7 @@ class CategorieProduitProvider extends ChangeNotifier {
 
         if (element.titre!.toLowerCase().contains(titre.toLowerCase())) {
 
-            DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(element.user_id).get();
+            DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(element.user_id).getM('categorie_produits_provider.dart:462');
             UserData user=UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
             printVm(' article user ${user.toJson()}');
 
@@ -509,7 +510,7 @@ class CategorieProduitProvider extends ChangeNotifier {
         // .where("titre",isNotEqualTo: currentUserId)
             .orderBy('createdAt', descending: true)
         //   .limit(10)
-            .get();
+            .getM('categorie_produits_provider.dart:512');
       } else{
         querySnapshotUser = await userCollect
             .where("disponible",isEqualTo: true)
@@ -518,7 +519,7 @@ class CategorieProduitProvider extends ChangeNotifier {
             .where("categorie_id",isEqualTo: categorie_id)
         // .orderBy('createdAt', descending: true)
         //   .limit(10)
-            .get();
+            .getM('categorie_produits_provider.dart:521');
       }
 
 
@@ -528,7 +529,7 @@ class CategorieProduitProvider extends ChangeNotifier {
       listArticles.forEach((element) async {
         if (element.titre!.toLowerCase().contains(titre.toLowerCase())) {
 
-            DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(element.user_id).get();
+            DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(element.user_id).getM('categorie_produits_provider.dart:531');
             UserData user=UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
             printVm(' article user ${user.toJson()}');
 
@@ -565,14 +566,14 @@ class CategorieProduitProvider extends ChangeNotifier {
         .where("disponible", isEqualTo: true)
         .where("categorie_id", isEqualTo: categorie_id)
         .orderBy('createdAt', descending: true)
-        .snapshots();
+        .snapshotsM('categorie_produits_provider.dart:568');
 
     await for (var snapshot in articleStream) {
       for (var doc in snapshot.docs) {
         ArticleData article = ArticleData.fromJson(doc.data() as Map<String, dynamic>);
 
         // Récupérer les infos de l'utilisateur associé
-        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.user_id).get();
+        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.user_id).getM('categorie_produits_provider.dart:575');
         UserData user = UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
         article.user = user;
 
@@ -595,7 +596,7 @@ class CategorieProduitProvider extends ChangeNotifier {
           .where("categorie_id",isEqualTo: categorie_id)
           .orderBy('createdAt', descending: true)
       //   .limit(10)
-          .get();
+          .getM('categorie_produits_provider.dart:598');
 
       // Afficher la liste
       listArticles = querySnapshotUser.docs.map((doc) =>
@@ -606,7 +607,7 @@ class CategorieProduitProvider extends ChangeNotifier {
       // teams.shuffle();
 
       for (var article in listArticles) {
-        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.user_id).get();
+        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.user_id).getM('categorie_produits_provider.dart:609');
         UserData user=UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
         printVm(' article user ${user.toJson()}');
 
@@ -639,7 +640,7 @@ class CategorieProduitProvider extends ChangeNotifier {
           .where("categorie_id",isEqualTo: categorie_id)
           .orderBy('createdAt', descending: true)
       //   .limit(10)
-          .get();
+          .getM('categorie_produits_provider.dart:642');
 
       // Afficher la liste
       listArticles = querySnapshotUser.docs.map((doc) =>
@@ -650,7 +651,7 @@ class CategorieProduitProvider extends ChangeNotifier {
       // teams.shuffle();
 
       for (var article in listArticles) {
-        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.user_id).get();
+        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.user_id).getM('categorie_produits_provider.dart:653');
         UserData user=UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
         printVm(' article user ${user.toJson()}');
 
@@ -697,7 +698,7 @@ class CategorieProduitProvider extends ChangeNotifier {
     QuerySnapshot querySnapshot = await collectionRef
        // .where("disponible",isEqualTo: true)
 
-        .where("id",isEqualTo: id!).get()
+        .where("id",isEqualTo: id!).getM('categorie_produits_provider.dart:700')
         .then((value){
       printVm("ArticleData by id");
 
@@ -710,7 +711,7 @@ class CategorieProduitProvider extends ChangeNotifier {
     list = querySnapshot.docs.map((doc) =>
         ArticleData.fromJson(doc.data() as Map<String, dynamic>)).toList();
     for (var article in list) {
-      DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.user_id).get();
+      DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.user_id).getM('categorie_produits_provider.dart:713');
       UserData user=UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
       printVm(' article user ${user.toJson()}');
 
@@ -732,7 +733,7 @@ class CategorieProduitProvider extends ChangeNotifier {
      // Get docs from collection reference
      QuerySnapshot querySnapshotUser = await userCollect
 
-         .get();
+         .getM('categorie_produits_provider.dart:735');
 
      // Afficher la liste
      listcode = querySnapshotUser.docs.map((doc) =>
@@ -774,7 +775,7 @@ class CategorieProduitProvider extends ChangeNotifier {
     // Get docs from collection reference
     QuerySnapshot querySnapshot = await collectionRef.where("user_client_id",isEqualTo: user_id!)
       //  .where("article_id",isEqualTo: article_id!)
-        .get()
+        .getM('categorie_produits_provider.dart:777')
         .then((value){
       printVm("Commandes by id");
 
@@ -824,7 +825,7 @@ class CategorieProduitProvider extends ChangeNotifier {
     // Get docs from collection reference
     QuerySnapshot querySnapshot = await collectionRef.where("user_magasin_id",isEqualTo: user_id!)
     //  .where("article_id",isEqualTo: article_id!)
-        .get()
+        .getM('categorie_produits_provider.dart:827')
         .then((value){
       printVm("Commandes by id");
 
@@ -875,7 +876,7 @@ class CategorieProduitProvider extends ChangeNotifier {
     // Get docs from collection reference
     QuerySnapshot querySnapshot = await collectionRef.where("code",isEqualTo: code!)
     //  .where("article_id",isEqualTo: article_id!)
-        .get()
+        .getM('categorie_produits_provider.dart:878')
         .then((value){
       printVm("Commandes by id");
 
@@ -959,7 +960,7 @@ class CategorieProduitProvider extends ChangeNotifier {
     // Get docs from collection reference
     QuerySnapshot querySnapshot = await collectionRef.where("user_client_id",isEqualTo: user_id!).
     where("article_id",isEqualTo: article_id!)
-        .get()
+        .getM('categorie_produits_provider.dart:962')
         .then((value){
       printVm("Commandes by id");
 
@@ -983,7 +984,7 @@ class CategorieProduitProvider extends ChangeNotifier {
     CollectionReference collectionRef =
     FirebaseFirestore.instance.collection('Commandes');
     // Get docs from collection reference
-    QuerySnapshot querySnapshot = await collectionRef.where("code",isEqualTo: code!).get()
+    QuerySnapshot querySnapshot = await collectionRef.where("code",isEqualTo: code!).getM('categorie_produits_provider.dart:986')
         .then((value){
       printVm("Commandes by code");
 

@@ -2,6 +2,7 @@
 // Tout le monde voit une playlist et son contenu ; l'accès (ajout à la bibliothèque) est gratuit ou payant selon le créateur.
 // Les titres payants d'artistes y sont permis mais signalés : acheter la playlist ne donne pas le titre complet des titres payants.
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -94,14 +95,14 @@ class MusicPlaylists {
       .where('status', isEqualTo: 'active')
       .orderBy('updatedAt', descending: true)
       .limit(60)
-      .snapshots()
+      .snapshotsM('music_playlists.dart:97')
       .map((s) => [for (final d in s.docs) MusicPlaylist.fromMap(d.data(), d.id)]);
 
   /// Mes playlists.
   static Stream<List<MusicPlaylist>> mine() {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return const Stream.empty();
-    return _db.collection('MusicPlaylists').where('ownerId', isEqualTo: uid).where('status', isEqualTo: 'active').snapshots().map((s) {
+    return _db.collection('MusicPlaylists').where('ownerId', isEqualTo: uid).where('status', isEqualTo: 'active').snapshotsM('music_playlists.dart:104').map((s) {
       final l = [for (final d in s.docs) MusicPlaylist.fromMap(d.data(), d.id)];
       l.sort((a, b) => b.title.compareTo(a.title) * -1);
       return l;
@@ -112,7 +113,7 @@ class MusicPlaylists {
   static Stream<List<({String id, String title, int price})>> library() {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return const Stream.empty();
-    return _db.collection('MusicPlaylistLibrary').where('uid', isEqualTo: uid).snapshots().map((s) {
+    return _db.collection('MusicPlaylistLibrary').where('uid', isEqualTo: uid).snapshotsM('music_playlists.dart:115').map((s) {
       final d = s.docs.map((x) => x.data()).toList()..sort((a, b) => ((b['createdAt'] as num?) ?? 0).compareTo((a['createdAt'] as num?) ?? 0));
       return [for (final x in d) (id: '${x['playlistId']}', title: '${x['title'] ?? 'Playlist'}', price: (x['price'] as num?)?.toInt() ?? 0)];
     });
@@ -121,12 +122,12 @@ class MusicPlaylists {
   static Stream<bool> inLibrary(String playlistId) {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return Stream.value(false);
-    return _db.collection('MusicPlaylistLibrary').doc('${uid}_$playlistId').snapshots().map((d) => d.exists);
+    return _db.collection('MusicPlaylistLibrary').doc('${uid}_$playlistId').snapshotsM('music_playlists.dart:124').map((d) => d.exists);
   }
 
   static Future<MusicPlaylist?> get(String id) async {
     try {
-      final d = await _db.collection('MusicPlaylists').doc(id).get();
+      final d = await _db.collection('MusicPlaylists').doc(id).getM('music_playlists.dart:129');
       return d.exists ? MusicPlaylist.fromMap(d.data()!, d.id) : null;
     } catch (_) {
       return null;
@@ -146,7 +147,7 @@ class MusicPlaylists {
     for (var i = 0; i < soundIds.length; i += 10) {
       await Future.wait(soundIds.skip(i).take(10).map((id) async {
         try {
-          final d = await _db.collection('artist_sounds').doc(id).get();
+          final d = await _db.collection('artist_sounds').doc(id).getM('music_playlists.dart:149');
           if (d.exists && d.data()!['status'] == 'validated') {
             final s = ArtistSound.fromMap(d.data()!, d.id);
             if (s.previewUrl != null) byId['a:$id'] = MusicTrack.fromSound(s);

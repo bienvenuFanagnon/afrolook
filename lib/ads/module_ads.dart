@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
@@ -43,7 +44,7 @@ class ModuleAds {
     final at = _offerAt;
     if (_offer != null && at != null && DateTime.now().difference(at).inMinutes < 15) return _offer!;
     try {
-      final d = (await FirebaseFirestore.instance.collection('AppConfig').doc('modules').get()).data() ?? {};
+      final d = (await FirebaseFirestore.instance.collection('AppConfig').doc('modules').getM('module_ads.dart:46')).data() ?? {};
       _offer = ModuleAdFreeOffer(
         price: (d['adFreePrice'] as num?)?.toInt() ?? 500,
         days: (d['adFreeDays'] as num?)?.toInt() ?? 30,

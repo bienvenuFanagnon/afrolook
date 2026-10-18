@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -129,7 +130,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
 
       // Vérifier si l'utilisateur a déjà liké
       if (article!.user != null && article!.user!.id != null) {
-        final userDoc = await firestore.collection('Users').doc(authProvider.loginUserData.id).get();
+        final userDoc = await firestore.collection('Users').doc(authProvider.loginUserData.id).getM('produit_details.dart:132');
         final userData = userDoc.data();
         if (userData != null && userData['articles_likes'] != null) {
           final articlesLikes = List<String>.from(userData['articles_likes'] ?? []);
@@ -244,7 +245,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
           final userCollect = firestore.collection('Users');
           final querySnapshotUser = await userCollect
               .where("id", isEqualTo: article!.user!.id!)
-              .get();
+              .getM('produit_details.dart:247');
 
           final listUsers = querySnapshotUser.docs
               .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
@@ -348,7 +349,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
           final userCollect = firestore.collection('Users');
           final querySnapshotUser = await userCollect
               .where("id", isEqualTo: article!.user!.id!)
-              .get();
+              .getM('produit_details.dart:351');
 
           final listUsers = querySnapshotUser.docs
               .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
@@ -519,7 +520,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
     if (article == null) return;
 
     // Vérifications en temps réel avec Firestore
-    final userDoc = await firestore.collection('Users').doc(authProvider.loginUserData.id!).get();
+    final userDoc = await firestore.collection('Users').doc(authProvider.loginUserData.id!).getM('produit_details.dart:522');
     if (!userDoc.exists) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Utilisateur non trouvé")),
@@ -530,7 +531,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
     final userData = UserData.fromJson(userDoc.data()!);
 
     final entrepriseDoc = entrepriseData?.id != null
-        ? await firestore.collection('Entreprises').doc(entrepriseData!.id!).get()
+        ? await firestore.collection('Entreprises').doc(entrepriseData!.id!).getM('produit_details.dart:533')
         : null;
 
     final entrepriseDataReal = entrepriseDoc?.exists == true
@@ -2615,7 +2616,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
 //                           await userCollect
 //                               .where("id",
 //                               isEqualTo: widget.article.user!.id!)
-//                               .get();
+//                               .getM('produit_details.dart:2618');
 //                           // Afficher la liste
 //                           List<UserData> listUsers = querySnapshotUser
 //                               .docs
@@ -2817,7 +2818,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
 //               await userCollect
 //                   .where("id",
 //                   isEqualTo: widget.article.user!.id!)
-//                   .get();
+//                   .getM('produit_details.dart:2820');
 //               // Afficher la liste
 //               List<UserData> listUsers = querySnapshotUser
 //                   .docs

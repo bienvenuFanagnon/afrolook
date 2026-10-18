@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/layout/centered_content.dart';
@@ -127,7 +128,7 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
 
   Future<void> _loadUserData() async {
     try {
-      final doc = await _db.collection('Users').doc(widget.userId).get();
+      final doc = await _db.collection('Users').doc(widget.userId).getM('userTransactionListe.dart:130');
       if (doc.exists) setState(() => _userData = UserData.fromJson(doc.data()!));
     } catch (e) { printVm('UserTx user load error: $e'); }
     setState(() => _isLoadingUser = false);
@@ -141,7 +142,7 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
           .collection('TransactionSoldes')
           .where('user_id', isEqualTo: widget.userId)
           .orderBy('createdAt', descending: true)
-          .get();
+          .getM('userTransactionListe.dart:144');
       _allTx = snap.docs.map((d) {
         final data = d.data();
         data['id'] = d.id;
@@ -848,7 +849,7 @@ class _TxDetailSheet extends StatelessWidget {
         _Row(context.tr('Montant'),     '$amount $unit'),
         if (TxAmount.paidLabel(tx) != null) _Row(context.tr('Payé'), TxAmount.paidLabel(tx)!.replaceFirst(context.tr('payé '), '')),
         if (tx.netEstimate != null)
-          _Row(context.tr('Net estimé'), context.tr('{a} {b} (après Apple)', {'a': tx.netEstimate!.toStringAsFixed(2), 'b': tx.currency ?? ''})),
+          _Row(context.tr('Net estimé'), context.tr(tx.paymentMethod == 'Carte bancaire' ? '{a} {b} (après frais bancaires)' : tx.paymentMethod == 'Google Play' ? '{a} {b} (après Google)' : '{a} {b} (après Apple)', {'a': tx.netEstimate!.toStringAsFixed(2), 'b': tx.currency ?? ''})),
         if ((tx.beneficiaryPseudo ?? '').isNotEmpty) _Row(context.tr('Bénéficiaire'), '@${tx.beneficiaryPseudo}'),
         if ((tx.frais ?? 0) > 0)
           _Row(context.tr('Frais'), '${tx.frais!.toStringAsFixed(2)} FCFA'),

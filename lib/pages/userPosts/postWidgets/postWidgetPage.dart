@@ -1,3 +1,5 @@
+import 'package:afrotok/services/read_meter.dart';
+import '../../../services/comments_prefetch.dart';
 import '../../../widgets/studio/post_template_try.dart';
 import '../../defi/defi_boost.dart';
 import 'package:afrotok/widgets/link_preview_card.dart';
@@ -266,7 +268,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         .where('supportedAt', isGreaterThanOrEqualTo: startOfDay)
         .where('supportedAt', isLessThan: endOfDay)
         .limit(1)
-        .get();
+        .getM('postWidgetPage.dart:270');
 
     return query.docs.isNotEmpty;
   }
@@ -289,7 +291,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     try {
       final postRef = FirebaseFirestore.instance.collection('Posts').doc(postId);
 
-      final postDoc = await postRef.get();
+      final postDoc = await postRef.getM('postWidgetPage.dart:293');
 
       if (!postDoc.exists) return;
 
@@ -680,7 +682,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     }
     setState(() { _isPreviewPlaying = true; _showPreviewCta = false; });
     try {
-      final ctrl = VideoPlayerController.networkUrl(Uri.parse(url));
+      final ctrl = VideoPlayerController.networkUrl(Uri.parse(_optimizeUrl(url)));
       _previewController = ctrl;
       await ctrl.initialize();
       if (!mounted) return;
@@ -895,7 +897,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     }
 
     try {
-      final userDoc = await firestore.collection('Users').doc(widget.post.user_id!).get();
+      final userDoc = await firestore.collection('Users').doc(widget.post.user_id!).getM('postWidgetPage.dart:899');
       if (userDoc.exists && mounted) {
         setState(() {
           _currentUser = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
@@ -922,7 +924,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     }
 
     try {
-      final canalDoc = await firestore.collection('Canaux').doc(widget.post.canal_id!).get();
+      final canalDoc = await firestore.collection('Canaux').doc(widget.post.canal_id!).getM('postWidgetPage.dart:926');
       if (canalDoc.exists && mounted) {
         final canalData = canalDoc.data() as Map<String, dynamic>;
         setState(() {
@@ -1139,7 +1141,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     await firestore.collection('Notifications').doc(notificationId).set(notification.toJson());
 
     // 2. Récupérer le token OneSignal du créateur
-    final creatorDoc = await firestore.collection('Users').doc(creatorId).get();
+    final creatorDoc = await firestore.collection('Users').doc(creatorId).getM('postWidgetPage.dart:1143');
     final creatorToken = creatorDoc.data()?['oneIgnalUserid'] as String?;
     if (creatorToken != null && creatorToken.isNotEmpty) {
       await authProvider.sendNotification(
@@ -2575,7 +2577,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         FirebaseFirestore.instance
             .collection('Posts')
             .doc(post.defiResponseToPostId)
-            .get()
+            .getM('postWidgetPage.dart:2579')
             .then((doc) {
           if (doc.exists && mounted) {
             final defiPost = Post.fromJson(doc.data()!);
@@ -2897,21 +2899,15 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   Future<void> _loadLastComment() async {
     final postId = widget.post.id;
     if (postId == null || _isLoadingComment) return;
+    // Aucun commentaire annoncé : inutile de lire Firestore pour rien (une lecture par post affiché)
+    if ((widget.post.comments ?? 0) <= 0) return;
     setState(() => _isLoadingComment = true);
     try {
-      final snap = await firestore
-          .collection('PostComments')
-          .where('post_id', isEqualTo: postId)
-          .orderBy('created_at', descending: true)
-          .limit(10)
-          .get();
-      if (snap.docs.isNotEmpty && mounted) {
+      // Cache partagé : une seule lecture (5 commentaires, auteurs des 3 premiers) pour tous les écrans, prête avant l'ouverture des commentaires
+      final page = await CommentsPrefetch.instance.first(postId);
+      if (page.comments.isNotEmpty && mounted) {
         setState(() {
-          _preloadedComments = snap.docs.map((doc) {
-            final data = Map<String, dynamic>.from(doc.data());
-            data['id'] = doc.id;
-            return PostComment.fromJson(data);
-          }).toList();
+          _preloadedComments = List.of(page.comments);
         });
       }
     } catch (_) {}
@@ -2953,6 +2949,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         if (mounted) {
           setState(() {
             _preloadedComments.insert(0, comment);
+            CommentsPrefetch.instance.addLocal(comment.post_id ?? '', comment);
             _localCommentsCount++;
           });
         }
@@ -3625,7 +3622,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
 // Extraire la logique des notifications dans une méthode séparée
   Future<void> _sendLikeNotifications() async {
     final currentTimeMicroseconds = DateTime.now().microsecondsSinceEpoch;
-    final userDoc = await firestore.collection('Users').doc(widget.post.user_id!).get();
+    final userDoc = await firestore.collection('Users').doc(widget.post.user_id!).getM('postWidgetPage.dart:3624');
 
     if (userDoc.exists) {
       final userData = userDoc.data();
@@ -3724,7 +3721,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
     );
 
     // Notification avec contrôle 20 minutes — en arrière plan
-    firestore.collection('Users').doc(widget.post.user_id!).get().then((userDoc) async {
+    firestore.collection('Users').doc(widget.post.user_id!).getM('postWidgetPage.dart:3723').then((userDoc) async {
       if (!mounted || !userDoc.exists) return;
       final nowMicro = DateTime.now().microsecondsSinceEpoch;
       final lastNotif = (userDoc.data()?['lastNotificationTime'] ?? 0) as int;
@@ -3807,7 +3804,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   Future<void> _refreshPostStats() async {
     if (widget.post.id == null || !mounted) return;
     try {
-      final doc = await FirebaseFirestore.instance.collection('Posts').doc(widget.post.id).get();
+      final doc = await FirebaseFirestore.instance.collection('Posts').doc(widget.post.id).getM('postWidgetPage.dart:3806');
       if (doc.exists && mounted) {
         final fresh = Post.fromJson(doc.data()!);
         setState(() {
@@ -3864,7 +3861,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         // On attend la fin de la génération avant de continuer
         await checkAndGenerateThumbnail(
           postId: widget.post.id!,
-          videoUrl: widget.post.url_media!,
+          videoUrl: _optimizeUrl(widget.post.url_media!),
           currentThumbnail: widget.post.thumbnail,
         );
       }

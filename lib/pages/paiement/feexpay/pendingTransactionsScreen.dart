@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -96,7 +97,7 @@ class _PendingTransactionsScreenState extends State<PendingTransactionsScreen>
           .where('userId', isEqualTo: _currentUserId)
           .where('status', whereIn: ['pending', 'processing', 'failed'])
           .orderBy('createdAt', descending: true)
-          .snapshots(),
+          .snapshotsM('pendingTransactionsScreen.dart:99'),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return Center(child: Text(context.tr('Erreur: {a}', {'a': snapshot.error})));

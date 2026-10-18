@@ -1,3 +1,4 @@
+import '../../../services/media_shrink.dart';
 import '../../../services/template_link.dart';
 import 'package:afrotok/widgets/monetized_post_option.dart';
 import 'package:afrotok/ads/rewards_service.dart';
@@ -1562,7 +1563,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
           final file = File('${tempDir.path}/$uniqueFileName.jpg');
           await file.writeAsBytes(_selectedImages[i]);
 
-          await storageReference.putFile(file);
+          await storageReference.putFile(await MediaShrink.file(file));
           String fileURL = await storageReference.getDownloadURL();
           imageUrls.add(fileURL);
         }

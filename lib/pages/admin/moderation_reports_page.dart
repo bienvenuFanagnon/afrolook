@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -25,7 +26,7 @@ class _ModerationReportsPageState extends State<ModerationReportsPage> {
       .collection('ModerationReports')
       .where('status', isEqualTo: _showResolved ? 'resolved' : 'pending')
       .limit(200)
-      .snapshots();
+      .snapshotsM('moderation_reports_page.dart:28');
 
   @override
   Widget build(BuildContext context) {
@@ -166,7 +167,7 @@ class _ModerationReportsPageState extends State<ModerationReportsPage> {
   }
 
   Future<void> _openPost(String postId) async {
-    final doc = await _db.collection('Posts').doc(postId).get();
+    final doc = await _db.collection('Posts').doc(postId).getM('moderation_reports_page.dart:169');
     if (!mounted) return;
     if (!doc.exists) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Publication déjà supprimée.')));
@@ -176,7 +177,7 @@ class _ModerationReportsPageState extends State<ModerationReportsPage> {
   }
 
   Future<void> _openProfile(String userId) async {
-    final doc = await _db.collection('Users').doc(userId).get();
+    final doc = await _db.collection('Users').doc(userId).getM('moderation_reports_page.dart:179');
     if (!mounted) return;
     if (!doc.exists) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Compte introuvable.')));

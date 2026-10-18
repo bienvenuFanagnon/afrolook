@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/widgets/safe_network_avatar.dart';
 import 'package:afrotok/layout/centered_content.dart';
@@ -62,8 +63,8 @@ class _CanalListPageByUserState extends State<CanalListPageByUser> {
 
       // Les deux requêtes en parallèle (avant : l'une après l'autre)
       final results = await Future.wait([
-        canaux.where('userId', isEqualTo: uid).orderBy('updatedAt', descending: true).limit(50).get(),
-        canaux.where('adminIds', arrayContains: uid).orderBy('updatedAt', descending: true).limit(50).get(),
+        canaux.where('userId', isEqualTo: uid).orderBy('updatedAt', descending: true).limit(50).getM('listCanauxByUser.dart:65'),
+        canaux.where('adminIds', arrayContains: uid).orderBy('updatedAt', descending: true).limit(50).getM('listCanauxByUser.dart:66'),
       ]);
 
       // Mes canaux : je suis le créateur, pas besoin de relire ma fiche
@@ -97,7 +98,7 @@ class _CanalListPageByUserState extends State<CanalListPageByUser> {
     final ids = canals.map((c) => c.userId).whereType<String>().where((id) => id.isNotEmpty).toSet().toList();
     if (ids.isEmpty) return;
     try {
-      final docs = await Future.wait(ids.map((id) => firestore.collection('Users').doc(id).get()));
+      final docs = await Future.wait(ids.map((id) => firestore.collection('Users').doc(id).getM('listCanauxByUser.dart:100')));
       final byId = <String, UserData>{
         for (final d in docs)
           if (d.exists) d.id: UserData.fromJson(d.data()!),

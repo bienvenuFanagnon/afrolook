@@ -1,5 +1,6 @@
 ﻿// admin_email_screen.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
@@ -155,7 +156,7 @@ class _AdminEmailScreenState extends State<AdminEmailScreen> {
         }
       }
 
-      final snapshot = await query.get();
+      final snapshot = await query.getM('admin_email_screen.dart:158');
 
       if (snapshot.docs.isEmpty) {
         setState(() => _hasMore = false);
@@ -206,7 +207,7 @@ class _AdminEmailScreenState extends State<AdminEmailScreen> {
       final postsSnapshot = await FirebaseFirestore.instance
           .collection('Posts')
           .where('user_id', isEqualTo: user['id'])
-          .get();
+          .getM('admin_email_screen.dart:209');
 
       int newLikesCount = 0;
       for (var postDoc in postsSnapshot.docs) {

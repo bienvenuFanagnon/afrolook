@@ -1,4 +1,5 @@
-﻿import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/read_meter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/models/model_data.dart';
@@ -83,7 +84,7 @@ class FeedInteractionService {
   // 🔄 Mettre à jour le score d'un post
   static Future<void> _updatePostScore(String postId) async {
     try {
-      final doc = await _firestore.collection('Posts').doc(postId).get();
+      final doc = await _firestore.collection('Posts').doc(postId).getM('feed_interaction_service.dart:86');
       if (doc.exists) {
         final post = Post.fromJson(doc.data() as Map<String, dynamic>);
         post.id = postId;

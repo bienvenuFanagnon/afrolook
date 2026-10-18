@@ -1,4 +1,5 @@
-﻿import '../../../services/follow_service.dart';
+import 'package:afrotok/services/read_meter.dart';
+import '../../../services/follow_service.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/widgets/profile_like_section.dart';
 import 'dart:math';
@@ -92,8 +93,8 @@ class _OtherUserPageState extends State<OtherUserPage> {
     if (widget.otherUser.id == null) return;
     try {
       final results = await Future.wait([
-        FirebaseFirestore.instance.collection('Users').doc(widget.otherUser.id).get(),
-        FirebaseFirestore.instance.collection('Canaux').where('usersSuiviId', arrayContains: widget.otherUser.id).count().get(),
+        FirebaseFirestore.instance.collection('Users').doc(widget.otherUser.id).getM('otherUser.dart:95'),
+        FirebaseFirestore.instance.collection('Canaux').where('usersSuiviId', arrayContains: widget.otherUser.id).count().getM('otherUser.dart:96'),
       ]);
       final userDoc = results[0] as DocumentSnapshot;
       final canalCount = results[1] as AggregateQuerySnapshot;
@@ -175,7 +176,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
           .where('compteUserId', isEqualTo: currentUserId)
           .where('abonneUserId', isEqualTo: userToUnfollow.id)
           .limit(1)
-          .get();
+          .getM('otherUser.dart:178');
 
       for (var doc in querySnapshot.docs) {
         await doc.reference.delete();
@@ -214,7 +215,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
       final docSnapshot = await FirebaseFirestore.instance
           .collection('Users')
           .doc(widget.otherUser.id)
-          .get();
+          .getM('otherUser.dart:217');
 
       if (docSnapshot.exists && mounted) {
         final updatedUser = UserData.fromJson(docSnapshot.data()!);
@@ -554,7 +555,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
           .orderBy('created_at', descending: true)
           .limit(_postsPerPage);
 
-      final snapshot = await query.get();
+      final snapshot = await query.getM('otherUser.dart:557');
 
       final filteredPosts = snapshot.docs
           .map((doc) => Post.fromJson({'id': doc.id, ...doc.data()}))
@@ -593,7 +594,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
         query = query.where('dataType', isEqualTo: _selectedFilter);
       }
 
-      final snapshot = await query.get();
+      final snapshot = await query.getM('otherUser.dart:596');
 
       if (snapshot.docs.isNotEmpty) {
         final filteredPosts = snapshot.docs
@@ -658,7 +659,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
           .where('isAdvertisement', isEqualTo: true)
           .orderBy('created_at', descending: true)
           .limit(_postsPerPage)
-          .get();
+          .getM('otherUser.dart:661');
 
       final posts = snapshot.docs
           .map((doc) => Post.fromJson({'id': doc.id, ...doc.data()}))
@@ -688,7 +689,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
           .orderBy('created_at', descending: true)
           .startAfterDocument(_adsLastDocument!)
           .limit(_postsPerPage)
-          .get();
+          .getM('otherUser.dart:691');
 
       if (snapshot.docs.isNotEmpty) {
         final newPosts = snapshot.docs
@@ -720,7 +721,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
         final snap = await _firestore
             .collection('Advertisements')
             .where(FieldPath.documentId, whereIn: batch)
-            .get();
+            .getM('otherUser.dart:723');
         for (final doc in snap.docs) {
           _adsData[doc.id] =
               Advertisement.fromJson({'id': doc.id, ...doc.data()});

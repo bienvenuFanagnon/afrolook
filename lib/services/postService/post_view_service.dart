@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import '../../models/model_data.dart';
@@ -44,7 +45,7 @@ class PostViewService {
     // Vérifier si le viewer est abonné à l'auteur
     bool isSubscriber = false;
     try {
-      final viewerDoc = await _firestore.collection('Users').doc(viewerUserId).get();
+      final viewerDoc = await _firestore.collection('Users').doc(viewerUserId).getM('post_view_service.dart:47');
       final followingIds =
           (viewerDoc.data()?['followingIds'] as List<dynamic>?)?.cast<String>() ?? [];
       isSubscriber = followingIds.contains(authorId);
@@ -78,7 +79,7 @@ class PostViewService {
   /// Idempotent grâce au flag postViewsMigrationDone.
   static Future<void> migrateUserPostViews(String userId) async {
     try {
-      final userDoc = await _firestore.collection('Users').doc(userId).get();
+      final userDoc = await _firestore.collection('Users').doc(userId).getM('post_view_service.dart:81');
       if (!userDoc.exists) return;
       final data = userDoc.data()!;
       if (data['postViewsMigrationDone'] == true) return;
@@ -140,7 +141,7 @@ class PostViewService {
         .collection('Posts')
         .where('user_id', isEqualTo: userId)
         .where('type', isEqualTo: PostType.POST.name)
-        .get();
+        .getM('post_view_service.dart:143');
 
     final Map<String, int> monthly = {};
 

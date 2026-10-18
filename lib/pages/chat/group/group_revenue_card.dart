@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -34,7 +35,7 @@ class _GroupRevenueCardState extends State<GroupRevenueCard> {
           .where('user_id', isEqualTo: widget.ownerId)
           .where('purchaseKind', isEqualTo: 'group')
           .where('purchaseRefId', isEqualTo: widget.groupId)
-          .get();
+          .getM('group_revenue_card.dart:37');
       var coins = 0, n = 0;
       for (final d in snap.docs) {
         final t = d.data();

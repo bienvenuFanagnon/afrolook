@@ -1,4 +1,5 @@
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/services/followers_count_service.dart';
 import 'package:afrotok/utils/count_format.dart';
@@ -158,7 +159,7 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
       Filter('docId', isEqualTo:  '${amigo.id}${authProvider.loginUserData.id!}'),
       Filter('docId', isEqualTo:  '${authProvider.loginUserData.id!}${amigo.id}'),
 
-    )).snapshots();
+    )).snapshotsM('detailsOtherUser.dart:161');
 
 // Obtenez la liste des utilisateurs
     //List<DocumentSnapshot> users = await usersQuery.sget();
@@ -218,7 +219,7 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
 
       });
       CollectionReference messageCollect = await FirebaseFirestore.instance.collection('Messages');
-      QuerySnapshot querySnapshotMessage = await messageCollect.where("chat_id",isEqualTo:usersChat.id!).get();
+      QuerySnapshot querySnapshotMessage = await messageCollect.where("chat_id",isEqualTo:usersChat.id!).getM('detailsOtherUser.dart:221');
       // Afficher la liste
       List<Message> messageList = querySnapshotMessage.docs.map((doc) =>
           Message.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -236,9 +237,9 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
 
       /////////////ami//////////
       CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-      QuerySnapshot querySnapshotUserSender = await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.id?'${amigo.id}':'${authProvider.loginUserData.id!}').get();
+      QuerySnapshot querySnapshotUserSender = await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.id?'${amigo.id}':'${authProvider.loginUserData.id!}').getM('detailsOtherUser.dart:239');
       // Afficher la liste
-      QuerySnapshot querySnapshotUserReceiver= await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.id?'${authProvider.loginUserData.id!}':'${amigo.id}').get();
+      QuerySnapshot querySnapshotUserReceiver= await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.id?'${authProvider.loginUserData.id!}':'${amigo.id}').getM('detailsOtherUser.dart:241');
 
 
       List<UserData> receiverUserList = querySnapshotUserReceiver.docs.map((doc) =>
@@ -434,7 +435,7 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
                             onPressed: () async {
                               getChatsData(widget.user).then((chat) async {
                                 CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Messages');
-                                QuerySnapshot querySnapshotUser = await friendCollect.where("chat_id",isEqualTo:chat.docId).get();
+                                QuerySnapshot querySnapshotUser = await friendCollect.where("chat_id",isEqualTo:chat.docId).getM('detailsOtherUser.dart:437');
                                 // Afficher la liste
                                 List<Message> messages = querySnapshotUser.docs.map((doc) =>
                                     Message.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -925,7 +926,7 @@ class _UserProfileModalState extends State<UserProfileModal> {
         '${authProvider.loginUserData.id!}${amigo.id}'
       ]);
 
-      var querySnapshot = await friendsQuery.get();
+      var querySnapshot = await friendsQuery.getM('detailsOtherUser.dart:928');
 
       if (querySnapshot.docs.isEmpty) {
         String chatId = FirebaseFirestore.instance.collection('Chats').doc().id;

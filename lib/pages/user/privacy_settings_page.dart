@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
@@ -39,7 +40,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
   Future<void> _loadSettings() async {
     final uid = _authProvider.loginUserData.id!;
     try {
-      final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).get();
+      final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).getM('privacy_settings_page.dart:42');
       final privacy = (doc.data()?['privacySettings'] as Map<String, dynamic>?) ?? {};
       if (!mounted) return;
       setState(() {

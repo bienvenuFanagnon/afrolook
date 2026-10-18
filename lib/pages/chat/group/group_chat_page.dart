@@ -1,3 +1,5 @@
+import 'package:afrotok/services/read_meter.dart';
+import '../../../services/media_shrink.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
@@ -233,16 +235,16 @@ class _GroupChatPageState extends State<GroupChatPage> {
     try {
       final myId = _auth.loginUserData.id!;
       final isAppAdmin = _auth.loginUserData.role == 'ADM';
-      final groupDoc = await _firestore.collection('GroupChats').doc(widget.groupId).get();
+      final groupDoc = await _firestore.collection('GroupChats').doc(widget.groupId).getM('group_chat_page.dart:237');
       final data = groupDoc.data() ?? {};
-      final userDoc = await _firestore.collection('Users').doc(myId).get();
+      final userDoc = await _firestore.collection('Users').doc(myId).getM('group_chat_page.dart:239');
       final mutedGroups = (userDoc.data()?['muted_groups'] as List<dynamic>? ?? []).cast<String>();
       final memberDoc = await _firestore
           .collection('GroupChats')
           .doc(widget.groupId)
           .collection('members')
           .doc(myId)
-          .get();
+          .getM('group_chat_page.dart:246');
       final role = memberDoc.data()?['role'] as String? ?? 'member';
       final perms = (memberDoc.data()?['permissions'] as Map<String, dynamic>?) ?? {};
       if (mounted) {
@@ -301,7 +303,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
       return;
     }
     try {
-      final ownerDoc = await _firestore.collection('Users').doc(ownerId).get();
+      final ownerDoc = await _firestore.collection('Users').doc(ownerId).getM('group_chat_page.dart:305');
       final ownerData = ownerDoc.data() ?? {};
       final abonnementJson = ownerData['abonnement'] as Map<String, dynamic>?;
 
@@ -799,7 +801,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
         .where('group_id', isEqualTo: widget.groupId)
         .orderBy('createdAt', descending: false)
         .limit(150)
-        .snapshots()
+        .snapshotsM('group_chat_page.dart:803')
         .listen((snap) {
       if (mounted) {
         final myId = _auth.loginUserData.id ?? '';
@@ -899,7 +901,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
   Future<void> _showSenderProfile(String userId) async {
     if (userId.isEmpty) return;
     try {
-      final doc = await _firestore.collection('Users').doc(userId).get();
+      final doc = await _firestore.collection('Users').doc(userId).getM('group_chat_page.dart:903');
       if (!doc.exists || !mounted) return;
       final user = UserData.fromJson(doc.data()!);
       final size = MediaQuery.of(context).size;
@@ -914,7 +916,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
           .doc(widget.groupId)
           .collection('members')
           .where('role', whereIn: ['admin', 'owner'])
-          .get();
+          .getM('group_chat_page.dart:918');
       if (!mounted) return;
       setState(() {
         _groupAdminIds
@@ -933,7 +935,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
       _firestore
           .collection('Users')
           .where(FieldPath.documentId, whereIn: chunk)
-          .get()
+          .getM('group_chat_page.dart:937')
           .then((snap) {
         if (!mounted) return;
         setState(() {
@@ -1076,7 +1078,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
       final ref = FirebaseStorage.instance
           .ref()
           .child('group_images/${widget.groupId}/$msgId.jpg');
-      await ref.putData(bytes);
+      await ref.putData(await MediaShrink.bytes(bytes));
       final url = await ref.getDownloadURL();
 
       await _firestore.collection('GroupMessages').doc(msgId).set({
@@ -1157,7 +1159,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
           final ref = FirebaseStorage.instance
               .ref()
               .child('group_images/${widget.groupId}/${msgId}_${e.key}.jpg');
-          await ref.putData(bytes);
+          await ref.putData(await MediaShrink.bytes(bytes));
           return await ref.getDownloadURL();
         }),
       );
@@ -1290,7 +1292,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
       final ref = FirebaseStorage.instance
           .ref()
           .child('group_videos/${widget.groupId}/$msgId.mp4');
-      await ref.putData(bytes);
+      await ref.putData(await MediaShrink.bytes(bytes));
       final url = await ref.getDownloadURL();
 
       await _firestore.collection('GroupMessages').doc(msgId).set({
@@ -1501,7 +1503,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
           .collection('GroupChats')
           .doc(widget.groupId)
           .collection('reads')
-          .get();
+          .getM('group_chat_page.dart:1505');
 
       final allReaders = <Map<String, dynamic>>[];
       for (final doc in snap.docs) {
@@ -1936,7 +1938,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
                 .collection('GroupChats')
                 .doc(widget.groupId)
                 .collection('members')
-                .get(),
+                .getM('group_chat_page.dart:1940'),
             builder: (_, snap) {
               if (snap.connectionState == ConnectionState.waiting) {
                 return const SizedBox(height: 80, child: Center(child: CircularProgressIndicator(strokeWidth: 2)));
@@ -3812,7 +3814,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
         break;
       case 'vip':
         try {
-          final doc = await _firestore.collection('ContentPaie').doc(itemId).get();
+          final doc = await _firestore.collection('ContentPaie').doc(itemId).getM('group_chat_page.dart:3816');
           if (!doc.exists || !mounted) return;
           final content = ContentPaie.fromJson(doc.data()!);
           Navigator.push(context, MaterialPageRoute(
@@ -3822,7 +3824,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
         break;
       case 'live':
         try {
-          final doc = await _firestore.collection('lives').doc(itemId).get();
+          final doc = await _firestore.collection('lives').doc(itemId).getM('group_chat_page.dart:3826');
           if (!doc.exists || !mounted) return;
           final live = PostLive.fromMap(doc.data()!);
           if (live.isLive) {
@@ -3846,7 +3848,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
 
   Future<void> _openSharedPost(String postId, {String dataType = 'IMAGE'}) async {
     try {
-      final doc = await _firestore.collection('Posts').doc(postId).get();
+      final doc = await _firestore.collection('Posts').doc(postId).getM('group_chat_page.dart:3850');
       if (!doc.exists || !mounted) return;
       final post = Post.fromJson(doc.data()!);
       final type = post.dataType ?? dataType;
@@ -4484,7 +4486,7 @@ class _GroupChatSharedVideoWidgetState extends State<_GroupChatSharedVideoWidget
 
   Future<void> _fetchUrl() async {
     try {
-      final doc = await FirebaseFirestore.instance.collection('Posts').doc(widget.postId).get();
+      final doc = await FirebaseFirestore.instance.collection('Posts').doc(widget.postId).getM('group_chat_page.dart:4488');
       if (!mounted) return;
       final url = doc.data()?['url_media'] as String?;
       if (url != null && url.isNotEmpty) {

@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -301,7 +302,7 @@ class ContesService {
 
   Future<ContesCatalog> _loadCatalog() async {
     final fs = FirebaseFirestore.instance;
-    final meta = await fs.collection('ContesIndex').doc('meta').get();
+    final meta = await fs.collection('ContesIndex').doc('meta').getM('contes_service.dart:304');
     final m = meta.data() ?? {};
     final chunks = (m['chunks'] as num?)?.toInt() ?? 0;
     final collections = ((m['collections'] as List?) ?? const []).map((e) {
@@ -318,7 +319,7 @@ class ContesService {
       );
     }).toList()
       ..sort((a, b) => a.order.compareTo(b.order));
-    final docs = await Future.wait([for (var i = 0; i < chunks; i++) fs.collection('ContesIndex').doc('c$i').get()]);
+    final docs = await Future.wait([for (var i = 0; i < chunks; i++) fs.collection('ContesIndex').doc('c$i').getM('contes_service.dart:321')]);
     final cards = <ConteCard>[];
     for (final d in docs) {
       for (final raw in ((d.data()?['cards'] as List?) ?? const [])) {

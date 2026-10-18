@@ -1,3 +1,5 @@
+import 'package:afrotok/services/read_meter.dart';
+import '../../../services/media_shrink.dart';
 import 'package:afrotok/widgets/monetized_post_option.dart';
 import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -1479,7 +1481,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
                     .where('status', isEqualTo: 'validated')
                     .orderBy('validatedAt', descending: true)
                     .limit(30)
-                    .snapshots(),
+                    .snapshotsM('userPostAudioTab.dart:1483'),
                 builder: (_, snap) {
                   if (!snap.hasData) return Center(child: CircularProgressIndicator(color: _c.primary));
                   final docs = snap.data!.docs;
@@ -1951,7 +1953,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
       },
     );
 
-    await storageReference.putFile(_audioFile!, metadata);
+    await storageReference.putFile(await MediaShrink.file(_audioFile!), metadata);
     return await storageReference.getDownloadURL();
   }
 
@@ -1963,7 +1965,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
         .ref()
         .child('post_images/$uniqueFileName.jpg');
 
-    await storageReference.putFile(_coverImage!);
+    await storageReference.putFile(await MediaShrink.file(_coverImage!));
     return await storageReference.getDownloadURL();
   }
 

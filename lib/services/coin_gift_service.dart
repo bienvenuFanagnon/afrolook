@@ -1,5 +1,6 @@
 
 
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:math';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -200,7 +201,7 @@ class CoinGiftService {
     int quantity = 1,
     VoidCallback? onSuccess,
   }) async {
-    final receiverDoc = await firestore.collection('Users').doc(receiverId).get();
+    final receiverDoc = await firestore.collection('Users').doc(receiverId).getM('coin_gift_service.dart:203');
     final receiverOneSignalId = receiverDoc.data()?['oneIgnalUserid'] ?? '';
 
     try {

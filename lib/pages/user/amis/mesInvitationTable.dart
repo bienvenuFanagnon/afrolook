@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/utils/count_format.dart';
 import 'dart:async';
@@ -169,7 +170,7 @@ class _MesInvitationsState extends State<MesInvitations> {
         .collection('Invitations')
         .where('receiver_id', isEqualTo: authProvider.loginUserData.id!)
         .where('status', isEqualTo: InvitationStatus.ENCOURS.name)
-        .snapshots();
+        .snapshotsM('mesInvitationTable.dart:172');
 
     await for (var invitationsSnapshot in invitationsStream) {
       final all = invitationsSnapshot.docs

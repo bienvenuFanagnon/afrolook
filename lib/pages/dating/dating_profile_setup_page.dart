@@ -1,5 +1,6 @@
 ﻿// lib/pages/creator/creator_profile_page.dart
 
+import '../../services/media_shrink.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/dating/dating_entry_page.dart';
 import 'package:csc_picker_plus/csc_picker_plus.dart';
@@ -254,10 +255,10 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
         if (kIsWeb) {
           // Web: utiliser les bytes
           final bytes = await file.readAsBytes();
-          await ref.putData(bytes);
+          await ref.putData(await MediaShrink.bytes(bytes));
         } else {
           // Mobile: utiliser File
-          await ref.putFile(File(file.path));
+          await ref.putFile(await MediaShrink.file(File(file.path)));
         }
 
         final url = await ref.getDownloadURL();
@@ -274,7 +275,7 @@ class _DatingProfileSetupPageState extends State<DatingProfileSetupPage>
             .child('dating_profiles')
             .child(fileName);
 
-        await ref.putData(bytes);
+        await ref.putData(await MediaShrink.bytes(bytes));
         final url = await ref.getDownloadURL();
         uploadedUrls.add(url);
         printVm("✅ Image web uploadée: $url");

@@ -16,6 +16,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../shared/firebase";
 import { queueModerationReport } from "../moderation/moderation";
+import { shouldPropagate } from "./scorePropagation";
 
 // ─── Recalcul en temps réel à chaque love ou commentaire ────────────────────
 
@@ -48,7 +49,10 @@ export const recalculateScoresOnInteraction = onDocumentUpdated(
     // Éviter une boucle infinie : ne pas mettre à jour si les valeurs sont déjà correctes
     if ((after.postScore ?? 0) === score && (after.rawScore ?? 0) === raw) return;
 
-    await event.data!.after.ref.update({ rawScore: raw, postScore: score });
+    // Le score du post est toujours tenu à jour ; celui du créateur / du canal (30 à 60 lectures) seulement si l'écart est visible
+    const propagate = shouldPropagate(after.propagatedScore, score);
+    await event.data!.after.ref.update(propagate ? { rawScore: raw, postScore: score, propagatedScore: score } : { rawScore: raw, postScore: score });
+    if (!propagate) return;
 
     // Propager vers creatorScore
     const uid = after.user_id as string | undefined;

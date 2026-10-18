@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/widgets/safe_network_avatar.dart';
 import 'package:flutter/material.dart';
@@ -110,7 +111,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
           .where(searchField, isGreaterThanOrEqualTo: searchQuery)
           .where(searchField, isLessThanOrEqualTo: '$searchQuery\uf8ff')
           .limit(20)
-          .get();
+          .getM('canal_manage_admins.dart:113');
 
       final users = querySnapshot.docs
           .map((doc) => UserData.fromJson(doc.data()))
@@ -339,7 +340,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
 
     try {
       final List<Future<UserData?>> futures = userIds.map((id) async {
-        final doc = await _firestore.collection('Users').doc(id).get();
+        final doc = await _firestore.collection('Users').doc(id).getM('canal_manage_admins.dart:342');
         if (doc.exists) {
           return UserData.fromJson(doc.data()!);
         }

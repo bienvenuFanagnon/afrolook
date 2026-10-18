@@ -1,5 +1,6 @@
 ﻿// lib/pages/admin/dating/admin_dating_profiles_page.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
@@ -86,16 +87,16 @@ class _AdminDatingProfilesPageState extends State<AdminDatingProfilesPage>
       final subsCol = _firestore.collection('user_dating_subscriptions');
 
       final results = await Future.wait([
-        profilesCol.count().get(),
-        profilesCol.where('isActive', isEqualTo: true).count().get(),
-        profilesCol.where('isVerified', isEqualTo: true).count().get(),
-        profilesCol.where('verificationRequested', isEqualTo: true).count().get(),
-        profilesCol.where('isProfileComplete', isEqualTo: true).count().get(),
-        profilesCol.where('sexe', isEqualTo: 'homme').count().get(),
-        profilesCol.where('sexe', isEqualTo: 'femme').count().get(),
-        subsCol.where('isActive', isEqualTo: true).where('planCode', isEqualTo: 'gratuit').count().get(),
-        subsCol.where('isActive', isEqualTo: true).where('planCode', isEqualTo: 'plus').count().get(),
-        subsCol.where('isActive', isEqualTo: true).where('planCode', isEqualTo: 'gold').count().get(),
+        profilesCol.count().getM('admin_dating_profiles_page.dart:89'),
+        profilesCol.where('isActive', isEqualTo: true).count().getM('admin_dating_profiles_page.dart:90'),
+        profilesCol.where('isVerified', isEqualTo: true).count().getM('admin_dating_profiles_page.dart:91'),
+        profilesCol.where('verificationRequested', isEqualTo: true).count().getM('admin_dating_profiles_page.dart:92'),
+        profilesCol.where('isProfileComplete', isEqualTo: true).count().getM('admin_dating_profiles_page.dart:93'),
+        profilesCol.where('sexe', isEqualTo: 'homme').count().getM('admin_dating_profiles_page.dart:94'),
+        profilesCol.where('sexe', isEqualTo: 'femme').count().getM('admin_dating_profiles_page.dart:95'),
+        subsCol.where('isActive', isEqualTo: true).where('planCode', isEqualTo: 'gratuit').count().getM('admin_dating_profiles_page.dart:96'),
+        subsCol.where('isActive', isEqualTo: true).where('planCode', isEqualTo: 'plus').count().getM('admin_dating_profiles_page.dart:97'),
+        subsCol.where('isActive', isEqualTo: true).where('planCode', isEqualTo: 'gold').count().getM('admin_dating_profiles_page.dart:98'),
       ]);
 
       final total = results[0].count ?? 0;
@@ -132,7 +133,7 @@ class _AdminDatingProfilesPageState extends State<AdminDatingProfilesPage>
       final snapshot = await _firestore
           .collection('dating_profiles')
           .where('verificationRequested', isEqualTo: true)
-          .get();
+          .getM('admin_dating_profiles_page.dart:135');
 
       final profiles = snapshot.docs
           .map((doc) => DatingProfile.fromJson(doc.data()))
@@ -249,7 +250,7 @@ class _AdminDatingProfilesPageState extends State<AdminDatingProfilesPage>
         query = query.startAfterDocument(_lastDocument!);
       }
 
-      final snapshot = await query.limit(20).get();
+      final snapshot = await query.limit(20).getM('admin_dating_profiles_page.dart:252');
 
       if (snapshot.docs.isEmpty) {
         setState(() {

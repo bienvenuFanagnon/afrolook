@@ -1,3 +1,5 @@
+import 'package:afrotok/services/read_meter.dart';
+import '../../../services/media_shrink.dart';
 import 'package:afrotok/services/account_gate.dart';
 import 'package:afrotok/services/creation_fee.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
@@ -72,7 +74,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
           .where('type', isEqualTo: 'USER')
           .orderBy('updated_at', descending: true)
           .limit(50)
-          .get();
+          .getM('create_group_page.dart:76');
 
       final friends = <UserData>[];
       final seen = <String>{};
@@ -86,7 +88,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
         final userDoc = await FirebaseFirestore.instance
             .collection('Users')
             .doc(otherId)
-            .get();
+            .getM('create_group_page.dart:90');
         if (userDoc.exists) {
           friends.add(UserData.fromJson(userDoc.data()!));
         }
@@ -147,7 +149,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
         .collection('GroupChats')
         .where('name', isEqualTo: name)
         .limit(1)
-        .get();
+        .getM('create_group_page.dart:151');
     if (!mounted) return;
     if (nameSnap.docs.isNotEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -171,7 +173,7 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
       String? imageUrl;
       if (_groupImageBytes != null) {
         final ref = FirebaseStorage.instance.ref().child('group_images/$groupId.jpg');
-        await ref.putData(_groupImageBytes!);
+        await ref.putData(await MediaShrink.bytes(_groupImageBytes!));
         imageUrl = await ref.getDownloadURL();
       }
 

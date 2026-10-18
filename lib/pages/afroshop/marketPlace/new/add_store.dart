@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:flutter/cupertino.dart';
@@ -111,7 +111,7 @@ class _AddStoreState extends State<AddStore> {
                       'images_article/${Path.basename(File(_image.path).path)}');
 
                   UploadTask uploadTask = storageReference
-                      .putFile(File(_image.path)!);
+                      .putFile(await MediaShrink.file(File(_image.path)!));
                   await uploadTask.whenComplete(() async {
                     await storageReference
                         .getDownloadURL()

@@ -1,5 +1,6 @@
 ﻿// providers/coin_gift_provider.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -35,7 +36,7 @@ class CoinGiftUserProvider with ChangeNotifier {
 
   // Rafraîchir le solde
   Future<void> refreshBalance(String userId) async {
-    final doc = await _firestore.collection('Users').doc(userId).get();
+    final doc = await _firestore.collection('Users').doc(userId).getM('coin_gift_provider.dart:38');
     if (doc.exists) {
       final updatedUser = UserData.fromJson(doc.data() as Map<String, dynamic>);
       _currentUser = updatedUser;
@@ -54,7 +55,7 @@ class CoinGiftUserProvider with ChangeNotifier {
           .collection('PostGifts')
           .where('postId', isEqualTo: postId)
           .orderBy('createdAt', descending: true)
-          .get();
+          .getM('coin_gift_provider.dart:57');
 
       return snapshot.docs
           .map((doc) => PostGift.fromJson(doc.data()))
@@ -70,7 +71,7 @@ class CoinGiftUserProvider with ChangeNotifier {
     final snapshot = await _firestore
         .collection('PostGifts')
         .where('postId', isEqualTo: postId)
-        .get();
+        .getM('coin_gift_provider.dart:73');
 
     final Map<String, PostGift> aggregated = {};
 
@@ -98,7 +99,7 @@ class CoinGiftUserProvider with ChangeNotifier {
         .collection('PostGifts')
         .where('postId', isEqualTo: postId)
         .orderBy('createdAt', descending: true)
-        .snapshots()
+        .snapshotsM('coin_gift_provider.dart:101')
         .map((snapshot) => snapshot.docs
         .map((doc) => PostGift.fromJson(doc.data()))
         .toList());
@@ -283,7 +284,7 @@ class CoinGiftUserProvider with ChangeNotifier {
 //
 //   // Rafraîchir le solde et mettre à jour l'utilisateur dans authProvider
 //   Future<void> refreshBalance(String userId) async {
-//     final doc = await _firestore.collection('Users').doc(userId).get();
+//     final doc = await _firestore.collection('Users').doc(userId).getM('coin_gift_provider.dart:286');
 //     if (doc.exists) {
 //       final updatedUser = UserData.fromJson(doc.data() as Map<String, dynamic>);
 //       _currentUser = updatedUser;
@@ -435,7 +436,7 @@ class CoinGiftUserProvider with ChangeNotifier {
 //     final snapshot = await _firestore
 //         .collection('PostGifts')
 //         .where('postId', isEqualTo: postId)
-//         .get();
+//         .getM('coin_gift_provider.dart:438');
 //
 //     // Grouper par type de cadeau (icône + label)
 //     final Map<String, PostGift> aggregated = {};
@@ -464,7 +465,7 @@ class CoinGiftUserProvider with ChangeNotifier {
 //         .collection('PostGifts')
 //         .where('postId', isEqualTo: postId)
 //         .orderBy('createdAt', descending: true)
-//         .snapshots()
+//         .snapshotsM('coin_gift_provider.dart:467')
 //         .map((snapshot) => snapshot.docs
 //         .map((doc) => PostGift.fromJson(doc.data()))
 //         .toList());

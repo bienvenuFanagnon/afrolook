@@ -1,6 +1,7 @@
 // Favoris de la page Musique : un cœur sur n'importe quel titre (musique gratuite d'Afrolook ou son d'artiste).
 // Collection MusicFavorites/{uid}_{kind}_{id} : chaque personne lit et écrit seulement les siens (règles Firestore).
 
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -24,7 +25,7 @@ class MusicFavorites {
     if (_uid == u && _sub != null) return;
     _sub?.cancel();
     _uid = u;
-    _sub = FirebaseFirestore.instance.collection('MusicFavorites').where('uid', isEqualTo: u).snapshots().listen((s) {
+    _sub = FirebaseFirestore.instance.collection('MusicFavorites').where('uid', isEqualTo: u).snapshotsM('music_favorites.dart:27').listen((s) {
       keys.value = {for (final d in s.docs) '${d.data()['kind']}:${d.data()['id']}'};
     }, onError: (_) {});
   }

@@ -1,4 +1,5 @@
-﻿import 'dart:async';
+import 'package:afrotok/services/read_meter.dart';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
@@ -704,7 +705,7 @@ class _MyAppState extends State<MyApp> {
 //     CollectionReference postCollect = await FirebaseFirestore.instance.collection('Posts');
 //     QuerySnapshot querySnapshotPost = await postCollect
 //         .where("id", isEqualTo: '${post_id}')
-//         .get();
+//         .getM('main.dart:707');
 //
 //     List<Post> postList = querySnapshotPost.docs.map((doc) =>
 //         Post.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -717,7 +718,7 @@ class _MyAppState extends State<MyApp> {
 //     CollectionReference postCollect = await FirebaseFirestore.instance.collection('Posts');
 //     QuerySnapshot querySnapshotPost = await postCollect
 //         .where("id", isEqualTo: '${post_id}')
-//         .get();
+//         .getM('main.dart:720');
 //
 //     List<Post> postList = querySnapshotPost.docs.map((doc) =>
 //         Post.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -773,7 +774,7 @@ class _MyAppState extends State<MyApp> {
 //             final chatDoc = await FirebaseFirestore.instance
 //                 .collection('Chats')
 //                 .doc(chatId)
-//                 .get();
+//                 .getM('main.dart:776');
 //
 //             if (!chatDoc.exists) return;
 //
@@ -782,7 +783,7 @@ class _MyAppState extends State<MyApp> {
 //             final userDoc = await FirebaseFirestore.instance
 //                 .collection('Users')
 //                 .doc(sendUserId)
-//                 .get();
+//                 .getM('main.dart:785');
 //
 //             if (userDoc.exists) {
 //               chat.chatFriend = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
@@ -794,7 +795,7 @@ class _MyAppState extends State<MyApp> {
 //                 .where('chat_id', isEqualTo: chatId)
 //                 .orderBy('createdAt', descending: true)
 //                 .limit(50)
-//                 .get();
+//                 .getM('main.dart:797');
 //
 //             chat.messages = messagesSnapshot.docs
 //                 .map((doc) => Message.fromJson(doc.data() as Map<String, dynamic>))

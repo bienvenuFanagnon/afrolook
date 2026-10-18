@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/services/postService/view_earnings_filter.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
@@ -107,7 +108,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
       // Mode lecture admin : charger les données de l'utilisateur ciblé depuis Firestore
       setState(() => _isLoadingViewedUser = true);
       try {
-        final snap = await _firestore.collection('Users').doc(widget.userId).get();
+        final snap = await _firestore.collection('Users').doc(widget.userId).getM('mes_gains_post_page.dart:110');
         if (snap.exists && mounted) {
           final data = Map<String, dynamic>.from(snap.data()!);
           data['id'] = snap.id;
@@ -143,7 +144,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
     }
     // Lire postViewsMonthlyPostIds directement depuis Firestore (source fiable des mois)
     try {
-      final snap = await _firestore.collection('Users').doc(widget.userId).get();
+      final snap = await _firestore.collection('Users').doc(widget.userId).getM('mes_gains_post_page.dart:146');
       if (snap.exists && mounted) {
         final raw = snap.data()?['postViewsMonthlyPostIds'] as Map<String, dynamic>?;
         setState(() {
@@ -173,7 +174,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
           .where('type', isEqualTo: 'ENCAISSEMENT_VUES_POST')
           .orderBy('createdAt', descending: true)
           .limit(20)
-          .get();
+          .getM('mes_gains_post_page.dart:176');
       _history = snap.docs.map((d) {
         final data = d.data();
         data['id'] = d.id;
@@ -942,7 +943,7 @@ class _MonthPostsSheetState extends State<_MonthPostsSheet> {
   }
 
   Future<void> _loadInitial() async {
-    final userDoc = await widget.firestore.collection('Users').doc(widget.userId).get();
+    final userDoc = await widget.firestore.collection('Users').doc(widget.userId).getM('mes_gains_post_page.dart:945');
     final data = userDoc.data() ?? {};
 
     // Vues par post (source de vérité pour l'affichage)
@@ -971,7 +972,7 @@ class _MonthPostsSheetState extends State<_MonthPostsSheet> {
       final snap = await widget.firestore
           .collection('Posts')
           .where(FieldPath.documentId, whereIn: sub)
-          .get();
+          .getM('mes_gains_post_page.dart:974');
       newPosts.addAll(snap.docs.map((d) {
         final data = Map<String, dynamic>.from(d.data());
         data['id'] = d.id;

@@ -1,4 +1,5 @@
-﻿import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -486,7 +487,7 @@ Future<void> showInterestsOnboardingModal(BuildContext context) async {
   if (prefs.getBool(_kPrefInterestsOnboardingShown) ?? false) return;
 
   // Vérification Firestore directe pour éviter la race condition au démarrage
-  final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).get();
+  final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).getM('widgetGlobal.dart:489');
   if (!doc.exists) return;
   final firestoreInterests = (doc.data()?['interests'] as List<dynamic>?)
           ?.map((e) => e.toString())
@@ -712,7 +713,7 @@ Future<void> showCreatorCategoryOnboardingModal(BuildContext context) async {
   if (prefs.getBool(_kPrefCreatorCategoryOnboardingShown) ?? false) return;
 
   // Vérification Firestore pour éviter race condition au démarrage
-  final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).get();
+  final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).getM('widgetGlobal.dart:715');
   if (!doc.exists) return;
   final firestoreCategory = doc.data()?['mainCategory'] as String?;
   if (firestoreCategory != null && firestoreCategory.isNotEmpty) {

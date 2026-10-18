@@ -1,4 +1,5 @@
-﻿import 'package:shared_preferences/shared_preferences.dart';
+import 'package:afrotok/services/read_meter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -63,7 +64,7 @@ class SessionUserFirebaseService {
       final userDoc = await FirebaseFirestore.instance
           .collection('Users')
           .doc(userId)
-          .get();
+          .getM('session_service.dart:66');
 
       if (!userDoc.exists) return true;
 

@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import '../services/follow_service.dart';
 import 'dart:async';
 import 'dart:developer';
@@ -102,7 +103,7 @@ class UserAuthProvider extends ChangeNotifier {
           .where('isActive', isEqualTo: true)
           .orderBy('popularityScore', descending: true)
           .limit(5)
-          .get();
+          .getM('authProvider.dart:105');
 
       final profiles = query.docs
           .map((doc) => DatingProfile.fromJson(doc.data()))
@@ -157,7 +158,7 @@ class UserAuthProvider extends ChangeNotifier {
           .collection('Advertisements')
           .where('status', isEqualTo: 'active')
           .where('endDate', isGreaterThan: now)
-          .get();
+          .getM('authProvider.dart:160');
 
       if (adsSnapshot.docs.isEmpty) {
         _advertisements = [];
@@ -187,7 +188,7 @@ class UserAuthProvider extends ChangeNotifier {
       if (adsWithPost.isNotEmpty) {
         final postFutures = adsWithPost.map((entry) {
           final ad = Advertisement.fromJson(entry['adData'] as Map<String, dynamic>);
-          return _firestore.collection('Posts').doc(ad.postId).get();
+          return _firestore.collection('Posts').doc(ad.postId).getM('authProvider.dart:190');
         }).toList();
         final postDocs = await Future.wait(postFutures);
         for (int i = 0; i < postDocs.length; i++) {
@@ -236,7 +237,7 @@ class UserAuthProvider extends ChangeNotifier {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return;
     try {
-      final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).get();
+      final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).getM('authProvider.dart:239');
       if (doc.exists) {
         loginUserData = UserData.fromJson(doc.data()!);
         notifyListeners();
@@ -257,7 +258,7 @@ class UserAuthProvider extends ChangeNotifier {
       final userDoc = await FirebaseFirestore.instance
           .collection('Users')
           .doc(loginUserData.id!)
-          .get();
+          .getM('authProvider.dart:260');
 
       if (!userDoc.exists) {
         printVm('❌ Utilisateur non trouvé dans Firestore');
@@ -442,7 +443,7 @@ class UserAuthProvider extends ChangeNotifier {
       final doc = await _firestore
           .collection('Posts')
           .doc(postId)
-          .get();
+          .getM('authProvider.dart:445');
 
       if (!doc.exists) return;
 
@@ -516,7 +517,7 @@ class UserAuthProvider extends ChangeNotifier {
     final firestore = FirebaseFirestore.instance;
 
     // 1️⃣ Récupérer l'utilisateur via son ID
-    final userDoc = await firestore.collection('Users').doc(userId).get();
+    final userDoc = await firestore.collection('Users').doc(userId).getM('authProvider.dart:519');
 
     if (!userDoc.exists) {
       printVm("⚠️ Utilisateur introuvable avec cet ID");
@@ -536,7 +537,7 @@ class UserAuthProvider extends ChangeNotifier {
         .collection('Users')
         .where('code_parrainage', isEqualTo: codeParrain)
         .limit(1)
-        .get();
+        .getM('authProvider.dart:539');
 
     if (query.docs.isEmpty) {
       printVm("⚠️ Aucun parrain trouvé avec ce code");
@@ -594,7 +595,7 @@ class UserAuthProvider extends ChangeNotifier {
         .collection('Users')
         .where('code_parrainage', isEqualTo: codeParrainage)
         .limit(1)
-        .get();
+        .getM('authProvider.dart:597');
 
     if (query.docs.isEmpty) {
       printVm("⚠️ Aucun parrain trouvé avec ce code");
@@ -651,7 +652,7 @@ class UserAuthProvider extends ChangeNotifier {
         .collection('Users')
         .where('code_parrainage', isEqualTo: codeParrainage)
         .limit(1)
-        .get();
+        .getM('authProvider.dart:654');
 
     if (query.docs.isEmpty) {
       printVm("⚠️ Aucun parrain trouvé avec ce code");
@@ -706,7 +707,7 @@ class UserAuthProvider extends ChangeNotifier {
 
   Future<void> checkAndCleanViewedPosts(String userId) async {
     try {
-      final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).get();
+      final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).getM('authProvider.dart:709');
 
       if (userDoc.exists) {
         final userData = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
@@ -734,7 +735,7 @@ class UserAuthProvider extends ChangeNotifier {
   }
   Future<void> fetchUserData() async {
     if (_auth.currentUser != null) {
-      final userDoc = await _firestore.collection('Users').doc(_auth.currentUser!.uid).get();
+      final userDoc = await _firestore.collection('Users').doc(_auth.currentUser!.uid).getM('authProvider.dart:737');
       if (userDoc.exists) {
         _userData = UserData.fromJson(userDoc.data()!);
       }
@@ -745,7 +746,7 @@ class UserAuthProvider extends ChangeNotifier {
 
   Future<void> _fetchAvailableUsers() async {
     try {
-      final usersSnapshot = await _firestore.collection('Users').get();
+      final usersSnapshot = await _firestore.collection('Users').getM('authProvider.dart:748');
       _availableUsers = usersSnapshot.docs
           .map((doc) => UserData.fromJson(doc.data()))
           .where((user) => user.id != _auth.currentUser?.uid)
@@ -1130,7 +1131,7 @@ class UserAuthProvider extends ChangeNotifier {
 
         .orderBy('created_at', descending: true)
 
-        .snapshots();
+        .snapshotsM('authProvider.dart:1133');
     List<NotificationData> notifications = [];
     //  UserData userData=UserData();
     await for (var snapshot in postStream) {
@@ -1154,7 +1155,7 @@ class UserAuthProvider extends ChangeNotifier {
         .where("receiver_id", isEqualTo: user_id)
         .orderBy('created_at', descending: true)
         .limit(12)                              // 🔥 Limite à 12 résultats
-        .snapshots();
+        .snapshotsM('authProvider.dart:1157');
 
     await for (var snapshot in postStream) {
       List<NotificationData> notifications = [];
@@ -1205,7 +1206,7 @@ class UserAuthProvider extends ChangeNotifier {
           .collection('Users')
           .where("id", isEqualTo: id)
           .limit(1)
-          .get();
+          .getM('authProvider.dart:1208');
 
       if (userSnapshot.docs.isEmpty) {
         loginUserNotFound = true;
@@ -1260,7 +1261,7 @@ class UserAuthProvider extends ChangeNotifier {
   }
 
   Future<void> _refreshUserData(DocumentReference ref) async {
-    final updatedDoc = await ref.get();
+    final updatedDoc = await ref.getM('authProvider.dart:1263');
     loginUserData = UserData.fromJson(updatedDoc.data() as Map<String, dynamic>)
       ..friends = loginUserData?.friends;
   }
@@ -1274,7 +1275,7 @@ class UserAuthProvider extends ChangeNotifier {
     FirebaseFirestore.instance.collection('Users');
     // Get docs from collection reference
     QuerySnapshot querySnapshot = await collectionRef.where(
-        "id", isEqualTo: id!).get()
+        "id", isEqualTo: id!).getM('authProvider.dart:1277')
         .then((value) {
       printVm(value);
       return value;
@@ -1310,7 +1311,7 @@ class UserAuthProvider extends ChangeNotifier {
         Filter('current_user_id', isEqualTo: loginUserData.id!),
         Filter('friend_id', isEqualTo: loginUserData.id!),
 
-      )).get();
+      )).getM('authProvider.dart:1313');
 
       loginUserData.friends = friendSnapshot.docs.map((doc) =>
           Friends.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -1384,7 +1385,7 @@ class UserAuthProvider extends ChangeNotifier {
     FirebaseFirestore.instance.collection('Users');
     // Get docs from collection reference
     QuerySnapshot querySnapshot = await collectionRef.where(
-        "id", isEqualTo: id!).get()
+        "id", isEqualTo: id!).getM('authProvider.dart:1387')
         .then((value) {
       printVm(value);
       return value;
@@ -1495,7 +1496,7 @@ class UserAuthProvider extends ChangeNotifier {
     CollectionReference collectionRef =
     FirebaseFirestore.instance.collection('Users');
     // Get docs from collection reference
-    QuerySnapshot querySnapshot = await collectionRef.get().then((value) {
+    QuerySnapshot querySnapshot = await collectionRef.getM('authProvider.dart:1498').then((value) {
       return value;
     }).catchError((onError) {});
 
@@ -1750,7 +1751,7 @@ class UserAuthProvider extends ChangeNotifier {
       final postDoc = await FirebaseFirestore.instance
           .collection('Posts')
           .doc(postId)
-          .get();
+          .getM('authProvider.dart:1753');
 
       if (!postDoc.exists) {
         printVm('❌ [notifySubscribers] Post $postId introuvable');
@@ -1764,7 +1765,7 @@ class UserAuthProvider extends ChangeNotifier {
       final actionUserDoc = await FirebaseFirestore.instance
           .collection('Users')
           .doc(actionUserId)
-          .get();
+          .getM('authProvider.dart:1767');
 
       if (!actionUserDoc.exists) {
         printVm('❌ [notifySubscribers] Utilisateur action $actionUserId introuvable');
@@ -1790,7 +1791,7 @@ class UserAuthProvider extends ChangeNotifier {
         final canalDoc = await FirebaseFirestore.instance
             .collection('Canaux')
             .doc(canalId)
-            .get();
+            .getM('authProvider.dart:1793');
         if (canalDoc.exists) {
           ownerName = '#${canalDoc.data()!['titre'] ?? "Canal"}';
         } else {
@@ -1800,7 +1801,7 @@ class UserAuthProvider extends ChangeNotifier {
         final postOwnerDoc = await FirebaseFirestore.instance
             .collection('Users')
             .doc(postOwnerId)
-            .get();
+            .getM('authProvider.dart:1803');
         if (postOwnerDoc.exists) {
           ownerName = '@${postOwnerDoc.data()!['pseudo'] ?? 'Utilisateur'}';
         } else {
@@ -1855,7 +1856,7 @@ class UserAuthProvider extends ChangeNotifier {
         final usersBatch = await FirebaseFirestore.instance
             .collection('Users')
             .where('id', whereIn: batchIds)
-            .get();
+            .getM('authProvider.dart:1858');
 
         final List<String> oneSignalIds = [];
 
@@ -1960,7 +1961,7 @@ if(actionType == 'comment'){
   //     final actionUserDoc = await FirebaseFirestore.instance
   //         .collection('Users')
   //         .doc(actionUserId)
-  //         .get();
+  //         .getM('authProvider.dart:1963');
   //
   //     if (!actionUserDoc.exists) return;
   //
@@ -1972,7 +1973,7 @@ if(actionType == 'comment'){
   //     final postOwnerDoc = await FirebaseFirestore.instance
   //         .collection('Users')
   //         .doc(postOwnerId)
-  //         .get();
+  //         .getM('authProvider.dart:1975');
   //
   //     if (!postOwnerDoc.exists) return;
   //
@@ -2027,7 +2028,7 @@ if(actionType == 'comment'){
   //       final usersBatch = await FirebaseFirestore.instance
   //           .collection('Users')
   //           .where('id', whereIn: batchIds)
-  //           .get();
+  //           .getM('authProvider.dart:2030');
   //
   //       final List<String> oneSignalIds = [];
   //       final List<String> oneSignalUserIds = []; // Pour stocker les IDs des users avec OneSignal
@@ -2267,7 +2268,7 @@ if(actionType == 'comment'){
   }
 // Récupère tous les utilisateurs (réservé à l'admin)
   Future<List<UserData>> getAllUsers() async {
-    final snapshot = await FirebaseFirestore.instance.collection('Users').get();
+    final snapshot = await FirebaseFirestore.instance.collection('Users').getM('authProvider.dart:2270');
     return snapshot.docs.map((doc) => UserData.fromJson(doc.data())).toList();
   }
 
@@ -2281,7 +2282,7 @@ if(actionType == 'comment'){
       final snapshot = await FirebaseFirestore.instance
           .collection('Users')
           .where(FieldPath.documentId, whereIn: chunk)
-          .get();
+          .getM('authProvider.dart:2284');
 
       users.addAll(snapshot.docs.map((doc) => UserData.fromJson(doc.data())));
     }
@@ -2575,7 +2576,7 @@ if(actionType == 'comment'){
     FirebaseFirestore.instance.collection('Users');
     // Get docs from collection reference
     QuerySnapshot querySnapshot = await collectionRef.where(
-        "numero_de_telephone", isEqualTo: phone!).get()
+        "numero_de_telephone", isEqualTo: phone!).getM('authProvider.dart:2578')
         .then((value) {
       printVm(value);
       return value;
@@ -2613,7 +2614,7 @@ if(actionType == 'comment'){
     FirebaseFirestore.instance.collection('User_Ia_Compte');
     // Get docs from collection reference
     QuerySnapshot querySnapshot = await collectionRef.where(
-        "userId", isEqualTo: user_id!).get()
+        "userId", isEqualTo: user_id!).getM('authProvider.dart:2616')
         .then((value) {
       printVm(value);
       return value;
@@ -2681,7 +2682,7 @@ if(actionType == 'comment'){
         Filter('current_user_id', isEqualTo: loginUserData.id!),
         Filter('friend_id', isEqualTo: loginUserData.id!),
 
-      )).get();
+      )).getM('authProvider.dart:2684');
 
       loginUserData.friends = friendSnapshot.docs.map((doc) =>
           Friends.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -2719,7 +2720,7 @@ if(actionType == 'comment'){
         Filter('current_user_id', isEqualTo: loginUserData.id!),
         Filter('friend_id', isEqualTo: loginUserData.id!),
 
-      )).get();
+      )).getM('authProvider.dart:2722');
 
       loginUserData.friends = friendSnapshot.docs.map((doc) =>
           Friends.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -3274,7 +3275,7 @@ if(actionType == 'comment'){
     return FirebaseFirestore.instance
         .collection('Users')
         .doc(uid)
-        .snapshots()
+        .snapshotsM('authProvider.dart:3277')
         .map((doc) => UserData.fromJson(doc.data()!));
   }
 
@@ -3285,7 +3286,7 @@ if(actionType == 'comment'){
     return FirebaseFirestore.instance
         .collection("AppData")
         .doc(documentId)
-        .snapshots()
+        .snapshotsM('authProvider.dart:3288')
         .map((documentSnapshot) {
       if (documentSnapshot.exists) {
         final data = documentSnapshot.data() as Map<String, dynamic>;
@@ -3371,8 +3372,8 @@ Future<void> addPointsForAction(UserAction action) async {
   int pointsToAdd = ActionPoints.getPoints(action);
 
   // 3. Récupérer les données actuelles
-  final userSnapshot = await userRef.get();
-  final appSnapshot = await appRef.get();
+  final userSnapshot = await userRef.getM('authProvider.dart:3374');
+  final appSnapshot = await appRef.getM('authProvider.dart:3375');
 
   int oldUserPoints = (userSnapshot.data() as Map?)?["totalPoints"] ?? 0;
   int oldAppPoints = (appSnapshot.data() as Map?)?["appTotalPoints"] ?? 0;
@@ -3408,8 +3409,8 @@ Future<void> addPointsForOtherUserAction(String userid,UserAction action) async 
   int pointsToAdd = ActionPoints.getPoints(action);
 
   // 3. Récupérer les données actuelles
-  final userSnapshot = await userRef.get();
-  final appSnapshot = await appRef.get();
+  final userSnapshot = await userRef.getM('authProvider.dart:3411');
+  final appSnapshot = await appRef.getM('authProvider.dart:3412');
 
   int oldUserPoints = (userSnapshot.data() as Map?)?["totalPoints"] ?? 0;
   int oldAppPoints = (appSnapshot.data() as Map?)?["appTotalPoints"] ?? 0;

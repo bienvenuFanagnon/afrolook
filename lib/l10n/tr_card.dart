@@ -1,0 +1,21 @@
+// Traductions : achat de pièces par carte bancaire, version web (voir tr.dart).
+const Map<String, Map<String, String>> kTrCard = {
+  'Payer par carte bancaire': {'en': 'Pay by bank card'},
+  'Visa, Mastercard · paiement sécurisé en dollars · pièces ajoutées tout de suite': {'en': 'Visa, Mastercard · secure payment in US dollars · coins added instantly'},
+  'Paiement sécurisé par FeexPay (3-D Secure). Tes données de carte ne passent jamais par Afrolook.': {'en': 'Secure payment by FeexPay (3-D Secure). Your card details never go through Afrolook.'},
+  'Choisis ton pack': {'en': 'Choose your pack'},
+  'Prix en dollars US, frais bancaires et de conversion inclus ({p} %). Équivalent en FCFA indicatif.': {'en': 'Price in US dollars, bank and conversion fees included ({p} %). FCFA equivalent is indicative.'},
+  'Informations de facturation': {'en': 'Billing details'},
+  'Téléphone (avec indicatif)': {'en': 'Phone (with country code)'},
+  'Code postal': {'en': 'Postal code'},
+  "J'accepte que ce paiement international soit débité en dollars US. Les pièces achetées ne sont pas convertibles en argent et ne sont pas remboursables une fois utilisées.": {'en': 'I agree this international payment is charged in US dollars. Purchased coins cannot be converted to cash and are not refundable once used.'},
+  'Payer {a} \$': {'en': 'Pay {a} \$'},
+  'Tu seras redirigé vers la page de paiement sécurisée, puis ramené sur Afrolook. Tes pièces sont ajoutées dès la confirmation.': {'en': 'You will be redirected to the secure payment page, then brought back to Afrolook. Your coins are added as soon as the payment is confirmed.'},
+  'Renseigne ton nom, ta ville, ton code postal, ton pays et ton téléphone.': {'en': 'Enter your name, city, postal code, country and phone number.'},
+  'Accepte les conditions pour continuer.': {'en': 'Accept the terms to continue.'},
+  'Le paiement par carte a échoué. Réessaie.': {'en': 'The card payment failed. Please try again.'},
+  'Le paiement par carte est momentanément indisponible. Utilise le Mobile Money.': {'en': 'Card payment is temporarily unavailable. Use Mobile Money.'},
+  'Paiement confirmé : {n} pièces ajoutées à ton compte.': {'en': 'Payment confirmed: {n} coins added to your account.'},
+  "Le paiement par carte n'a pas abouti. Tu n'as pas été débité.": {'en': 'The card payment did not go through. You have not been charged.'},
+  '{a} {b} (après frais bancaires)': {'en': '{a} {b} (after card fees)'},
+};

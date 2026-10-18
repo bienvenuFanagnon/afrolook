@@ -1,4 +1,5 @@
-﻿import '../../theme/app_colors.dart';
+import 'package:afrotok/services/read_meter.dart';
+import '../../theme/app_colors.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
@@ -161,7 +162,7 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
         CollectionReference userCollect = FirebaseFirestore.instance.collection('Users');
         QuerySnapshot querySnapshotUser = await userCollect
             .where("id", isEqualTo: widget.data.user!.id!)
-            .get();
+            .getM('detailsUserService.dart:164');
 
         List<UserData> listUsers = querySnapshotUser.docs
             .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))

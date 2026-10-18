@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -134,7 +135,7 @@ class _FlameStreakBannerState extends State<FlameStreakBanner>
           .where('bestCommentStreak', isGreaterThan: 0)
           .orderBy('bestCommentStreak', descending: true)
           .limit(5)
-          .get();
+          .getM('flame_streak_banner.dart:137');
       if (!mounted) return;
       setState(() {
         _topUsers = snap.docs.map((d) {

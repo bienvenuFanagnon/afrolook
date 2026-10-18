@@ -2,8 +2,9 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../shared/firebase";
-import { EMAIL_FROM } from "../shared/config";
+import { EMAIL_FROM, EMAIL_REPLY_TO } from "../shared/config";
 import { emailTransporter } from "../shared/email_utils";
+import { notifyAdmins } from "../shared/admin_notify";
 import { lockFieldsAfterChange } from "../shared/coin_locks";
 import { dayKey, num } from "./coinShares";
 
@@ -154,7 +155,9 @@ export const onPurchaseOrDepositNotify = onDocumentWritten(
         `Acheteur : @${user.pseudo ?? "?"} (${user.email ?? "e-mail inconnu"})`,
         `Pièces achetées : ${fmt(coins)}`,
         `Montant payé : ${amount}`,
-        ...(t.netEstimate !== undefined ? [`Net estimé après Apple (70 %) : ${fmt(num(t.netEstimate))} ${t.currency ?? ""}`] : []),
+        ...(t.netEstimate !== undefined ? [String(t.paymentMethod ?? "").includes("Carte")
+          ? `Net estimé après les frais FeexPay : ${fmt(num(t.netEstimate))} ${t.currency ?? ""}`
+          : `Net estimé après la part de ${String(t.paymentMethod ?? "").includes("Google") ? "Google" : "Apple"} (estimation à 70 %) : ${fmt(num(t.netEstimate))} ${t.currency ?? ""}`] : []),
         `Moyen de paiement : ${t.paymentMethod ?? t.methode_paiement ?? "?"}`,
         ...(t.beneficiaryId && t.beneficiaryId !== t.user_id ? [`Bénéficiaire : @${t.beneficiaryPseudo ?? t.beneficiaryId}`] : []),
         `Date : ${date}`,
@@ -173,8 +176,14 @@ export const onPurchaseOrDepositNotify = onDocumentWritten(
       );
     }
 
+    // Notification dans l'application + push aux administrateurs (en plus de l'e-mail, même si l'e-mail échoue)
+    const pushText = type === "ACHAT_PIECES"
+      ? `🪙 @${user.pseudo ?? "?"} a acheté ${fmt(num(t.coins) || num(t.montant))} pièces — ${t.amountPaid !== undefined ? `${fmt(num(t.amountPaid))} ${t.currency ?? ""}`.trim() : "montant inconnu"} · ${t.paymentMethod ?? t.methode_paiement ?? "?"}`
+      : `💰 @${user.pseudo ?? "?"} a rechargé ${fmt(num(t.montant))} FCFA par ${t.methode_paiement ?? "Mobile Money"}`;
+    await notifyAdmins({ title: type === "ACHAT_PIECES" ? "Achat de pièces" : "Dépôt Mobile Money", message: pushText, fromUserId: t.user_id, refId: after.id });
+
     try {
-      await emailTransporter.sendMail({ from: EMAIL_FROM, to: PURCHASE_ALERT_EMAILS, subject, text: lines.join("\n") });
+      await emailTransporter.sendMail({ from: EMAIL_FROM, replyTo: EMAIL_REPLY_TO, to: PURCHASE_ALERT_EMAILS, subject, text: lines.join("\n") });
     } catch (err) {
       console.error("[onPurchaseOrDepositNotify] e-mail non envoyé :", err);
       // Pas de nouvelle tentative automatique (éviterait une boucle si le SMTP est en panne)

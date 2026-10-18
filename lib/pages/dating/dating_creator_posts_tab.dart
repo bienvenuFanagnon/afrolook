@@ -1,5 +1,6 @@
 ﻿// lib/pages/dating/dating_creator_posts_tab.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -83,7 +84,7 @@ class _DatingCreatorPostsPageState extends State<DatingCreatorPostsPage> {
           .where('userId', isEqualTo: _currentUserId)
           .where('isCreatorActive', isEqualTo: true)
           .limit(1)
-          .get();
+          .getM('dating_creator_posts_tab.dart:86');
       if (snapshot.docs.isNotEmpty) {
         _myCreatorProfile = CreatorProfile.fromJson(snapshot.docs.first.data());
         setState(() => _isCreator = true);
@@ -106,7 +107,7 @@ class _DatingCreatorPostsPageState extends State<DatingCreatorPostsPage> {
           .collection('creator_subscriptions')
           .where('userId', isEqualTo: _currentUserId)
           .where('isActive', isEqualTo: true)
-          .get();
+          .getM('dating_creator_posts_tab.dart:109');
       for (var doc in snapshot.docs) {
         _subscriptionCache[doc['creatorId']] = true;
       }
@@ -146,7 +147,7 @@ class _DatingCreatorPostsPageState extends State<DatingCreatorPostsPage> {
         printVm('📄 Pagination après document: ${_lastDocument!.id}');
       }
 
-      final snapshot = await query.limit(_batchSize).get();
+      final snapshot = await query.limit(_batchSize).getM('dating_creator_posts_tab.dart:149');
       printVm('📊 Nombre de documents trouvés: ${snapshot.docs.length}');
 
       if (snapshot.docs.isEmpty) {
@@ -585,7 +586,7 @@ class _DatingCreatorPostsPageState extends State<DatingCreatorPostsPage> {
   }
 
   Future<CreatorProfile?> _getCreatorProfile(String creatorId) async {
-    final doc = await _firestore.collection('creator_profiles').doc(creatorId).get();
+    final doc = await _firestore.collection('creator_profiles').doc(creatorId).getM('dating_creator_posts_tab.dart:588');
     if (doc.exists) return CreatorProfile.fromJson(doc.data()!);
     return null;
   }

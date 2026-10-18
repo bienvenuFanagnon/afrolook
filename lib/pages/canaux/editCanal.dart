@@ -1,3 +1,5 @@
+import 'package:afrotok/services/read_meter.dart';
+import '../../services/media_shrink.dart';
 import 'package:afrotok/widgets/name_preview.dart';
 import 'package:afrotok/utils/pseudo_format.dart';
 import 'dart:io';
@@ -778,7 +780,7 @@ class _EditCanalState extends State<EditCanal> {
           Reference storageReferenceProfile = FirebaseStorage.instance
               .ref()
               .child('canal_media/${Path.basename(File(imageProfile!.path).path)}');
-          UploadTask uploadTaskProfile = storageReferenceProfile.putFile(File(imageProfile!.path));
+          UploadTask uploadTaskProfile = storageReferenceProfile.putFile(await MediaShrink.file(File(imageProfile!.path)));
           await uploadTaskProfile.whenComplete(() async {
             await storageReferenceProfile.getDownloadURL().then((fileURL) {
               widget.canal.urlImage = fileURL;
@@ -791,7 +793,7 @@ class _EditCanalState extends State<EditCanal> {
           Reference storageReferenceCouverture = FirebaseStorage.instance
               .ref()
               .child('canal_media/${Path.basename(File(imageCouverture!.path).path)}');
-          UploadTask uploadTaskCouverture = storageReferenceCouverture.putFile(File(imageCouverture!.path));
+          UploadTask uploadTaskCouverture = storageReferenceCouverture.putFile(await MediaShrink.file(File(imageCouverture!.path)));
           await uploadTaskCouverture.whenComplete(() async {
             await storageReferenceCouverture.getDownloadURL().then((fileURL) {
               widget.canal.urlCouverture = fileURL;
@@ -806,7 +808,7 @@ class _EditCanalState extends State<EditCanal> {
           if (newTitle != normalizePseudo(oldTitle)) {
             // Nom réellement changé : il doit rester unique
             final dup = await FirebaseFirestore.instance.collection('CanalNames')
-                .where('name', whereIn: [newTitle, newTitle.replaceAll('.', '_')]).limit(1).get();
+                .where('name', whereIn: [newTitle, newTitle.replaceAll('.', '_')]).limit(1).getM('editCanal.dart:810');
             if (dup.docs.isNotEmpty) {
               ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Le titre existe déjà'))));
               setState(() => onTapUpdate = false);
@@ -814,7 +816,7 @@ class _EditCanalState extends State<EditCanal> {
             }
           }
           // Mise à jour de l'annuaire des noms
-          final old = await FirebaseFirestore.instance.collection('CanalNames').where('name', isEqualTo: oldTitle).limit(1).get();
+          final old = await FirebaseFirestore.instance.collection('CanalNames').where('name', isEqualTo: oldTitle).limit(1).getM('editCanal.dart:818');
           if (old.docs.isNotEmpty) {
             await old.docs.first.reference.update({'name': newTitle});
           } else {

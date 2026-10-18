@@ -1,3 +1,4 @@
+import '../../../services/media_shrink.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -1419,7 +1420,7 @@ class _StepIdentityState extends State<_StepIdentity> {
     try {
       final ref = FirebaseStorage.instance
           .ref('id_documents/${DateTime.now().millisecondsSinceEpoch}_${file.name}');
-      await ref.putFile(File(path));
+      await ref.putFile(await MediaShrink.file(File(path)));
       final url = await ref.getDownloadURL();
       widget.onDocumentUploaded(url);
     } catch (e) {

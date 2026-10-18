@@ -1,3 +1,5 @@
+import 'package:afrotok/services/read_meter.dart';
+import '../../services/media_shrink.dart';
 import 'package:afrotok/services/account_gate.dart';
 import '../../utils/platform_guard.dart';
 import 'dart:async';
@@ -81,7 +83,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
           .where('hostId', isEqualTo: user.uid)
           .where('isLive', isEqualTo: true)
           .limit(1)
-          .get();
+          .getM('create_live_page.dart:85');
       if (snap.docs.isEmpty || !mounted) return;
       final doc = snap.docs.first;
       final data = doc.data();
@@ -1667,7 +1669,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
       final ref = FirebaseStorage.instance
           .ref()
           .child('live_covers/${_auth.currentUser!.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg');
-      await ref.putFile(_coverImageFile!);
+      await ref.putFile(await MediaShrink.file(_coverImageFile!));
       final url = await ref.getDownloadURL();
       if (mounted) setState(() => _coverImageUrl = url);
     } catch (_) {} finally {
@@ -1782,7 +1784,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
           .where('hostId', isEqualTo: user.uid)
           .where('isLive', isEqualTo: true)
           .limit(1)
-          .get();
+          .getM('create_live_page.dart:1786');
 
       if (activeLiveQuery.docs.isNotEmpty) {
         final existingLiveId = activeLiveQuery.docs.first.id;
@@ -2433,7 +2435,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
 //           .where('hostId', isEqualTo: user.uid)
 //           .where('isLive', isEqualTo: true)
 //           .limit(1)
-//           .get();
+//           .getM('create_live_page.dart:2437');
 //
 //       if (activeLiveQuery.docs.isNotEmpty) {
 //         // L'utilisateur a déjà un live actif

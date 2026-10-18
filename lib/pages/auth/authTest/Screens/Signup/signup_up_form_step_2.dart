@@ -1,3 +1,5 @@
+import 'package:afrotok/services/read_meter.dart';
+import '../../../../../services/media_shrink.dart';
 import 'package:afrotok/widgets/language_selector.dart';
 import 'package:afrotok/services/auth/google_auth_service.dart';
 import 'package:afrotok/services/sessions/session_service.dart';
@@ -305,7 +307,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
     CollectionReference users = firestore.collection("Users");
     QuerySnapshot snapshot = await users
         .where("code_parrainage", isEqualTo: codeParrain)
-        .get();
+        .getM('signup_up_form_step_2.dart:309');
     final list = snapshot.docs.map((doc) =>
         UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
 
@@ -379,8 +381,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
 
       if (kIsWeb) {
         // Pour le web : upload avec les bytes
-        uploadTask = storageReference.putData(
-          _imageBytes!,
+        uploadTask = storageReference.putData(await MediaShrink.bytes(_imageBytes!),
           SettableMetadata(
             contentType: 'image/jpeg',
             customMetadata: {'pickedFileName': _imageFileName ?? 'web_image.jpg'},
@@ -388,8 +389,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
         );
       } else {
         // Pour mobile : upload avec le fichier
-        uploadTask = storageReference.putFile(
-          _imageFile!,
+        uploadTask = storageReference.putFile(await MediaShrink.file(_imageFile!),
           SettableMetadata(contentType: 'image/jpeg'),
         );
       }
@@ -639,7 +639,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
   // Rejoindre automatiquement tous les groupes officiels à la création du compte
   Future<void> _autoJoinOfficialGroups(String userId) async {
     try {
-      final userDoc = await firestore.collection('Users').doc(userId).get();
+      final userDoc = await firestore.collection('Users').doc(userId).getM('signup_up_form_step_2.dart:641');
       final ud = userDoc.data();
       final now = DateTime.now().millisecondsSinceEpoch;
 
@@ -647,7 +647,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
           .collection('GroupChats')
           .where('is_official', isEqualTo: true)
           .where('is_frozen', isEqualTo: false)
-          .get();
+          .getM('signup_up_form_step_2.dart:649');
 
       for (final groupDoc in groupsSnap.docs) {
         try {
@@ -1415,7 +1415,7 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
 //     QuerySnapshot snapshot = await users
 //         .where(
 //         "code_parrainage", isEqualTo: codeParrain)
-//         .get();
+//         .getM('signup_up_form_step_2.dart:1417');
 //     final list = snapshot.docs.map((doc) =>
 //         UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
 //     bool existe= list.any((e) => e.codeParrainage==codeParrain);

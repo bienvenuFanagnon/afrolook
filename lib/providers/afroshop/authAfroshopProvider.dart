@@ -1,6 +1,7 @@
 ﻿
 
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:io';
 import 'package:afrotok/models/model_data.dart';
@@ -99,7 +100,7 @@ class UserShopAuthProvider extends ChangeNotifier {
     CollectionReference collectionRef =
     FirebaseFirestore.instance.collection('UsersShop');
     // Get docs from collection reference
-    QuerySnapshot querySnapshot = await collectionRef.where("phone",isEqualTo: phone!).get()
+    QuerySnapshot querySnapshot = await collectionRef.where("phone",isEqualTo: phone!).getM('authAfroshopProvider.dart:102')
         .then((value){
       printVm("user by phone");
 
@@ -124,7 +125,7 @@ class UserShopAuthProvider extends ChangeNotifier {
     CollectionReference collectionRef =
     FirebaseFirestore.instance.collection('UsersShop');
     // Get docs from collection reference
-    QuerySnapshot querySnapshot = await collectionRef.where("phone",isNotEqualTo: phone!).get()
+    QuerySnapshot querySnapshot = await collectionRef.where("phone",isNotEqualTo: phone!).getM('authAfroshopProvider.dart:127')
         .then((value){
       printVm("user by phone");
 
@@ -152,7 +153,7 @@ class UserShopAuthProvider extends ChangeNotifier {
     // Get docs from collection reference
     QuerySnapshot querySnapshot = await collectionRef.where("phone",isNotEqualTo: phone!)
 
-        .get()
+        .getM('authAfroshopProvider.dart:155')
         .then((value){
       printVm("user by phone");
 
@@ -182,7 +183,7 @@ class UserShopAuthProvider extends ChangeNotifier {
     CollectionReference collectionRef =
     FirebaseFirestore.instance.collection('UsersShop');
     // Get docs from collection reference
-    QuerySnapshot querySnapshot = await collectionRef.where("id",isEqualTo: id!).get()
+    QuerySnapshot querySnapshot = await collectionRef.where("id",isEqualTo: id!).getM('authAfroshopProvider.dart:185')
         .then((value){
       printVm("user by phone");
 

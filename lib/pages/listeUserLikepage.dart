@@ -1,5 +1,6 @@
 ﻿// pages/users/users_list_page.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:async';
@@ -157,7 +158,7 @@ class _UsersListPageState extends State<UsersListPage> with AutomaticKeepAliveCl
         query = query.startAfterDocument(lastDocument);
       }
 
-      final snapshot = await query.get();
+      final snapshot = await query.getM('listeUserLikepage.dart:160');
 
       if (snapshot.docs.isEmpty) {
         // Recycler quand on arrive en fin de liste
@@ -241,7 +242,7 @@ class _UsersListPageState extends State<UsersListPage> with AutomaticKeepAliveCl
           .where('pseudo', isEqualTo: searchQuery)
           .where('isBlocked', isEqualTo: false)
           .limit(5)
-          .get();
+          .getM('listeUserLikepage.dart:244');
 
       List<UserData> exactResults = exactSnapshot.docs
           .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
@@ -256,7 +257,7 @@ class _UsersListPageState extends State<UsersListPage> with AutomaticKeepAliveCl
             .where('pseudo', isLessThanOrEqualTo: searchQuery + '\uf8ff')
             .where('isBlocked', isEqualTo: false)
             .limit(20)
-            .get();
+            .getM('listeUserLikepage.dart:259');
 
         List<UserData> partialResults = partialSnapshot.docs
             .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
@@ -310,7 +311,7 @@ class _UsersListPageState extends State<UsersListPage> with AutomaticKeepAliveCl
         query = query.startAfterDocument(_lastDocument!);
       }
 
-      final snapshot = await query.get();
+      final snapshot = await query.getM('listeUserLikepage.dart:313');
 
       if (snapshot.docs.isEmpty) {
         setState(() {

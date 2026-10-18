@@ -1,4 +1,5 @@
-﻿import 'dart:math';
+import 'package:afrotok/services/read_meter.dart';
+import 'dart:math';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -167,7 +168,7 @@ class MixedTikTokVideoService {
     try {
       printVm('🎯 Préparation des IDs de vidéos avec filtre: ${filter?.label}');
 
-      final userDoc = await firestore.collection('Users').doc(currentUserId).get();
+      final userDoc = await firestore.collection('Users').doc(currentUserId).getM('mixed_feedvideo_service.dart:170');
       if (!userDoc.exists) return;
 
       final userData = userDoc.data()!;
@@ -318,7 +319,7 @@ class MixedTikTokVideoService {
           .where('type', whereIn: [PostType.POST.name, PostType.CHALLENGEPARTICIPATION.name])
           .orderBy('created_at', descending: true)
           .limit(limit)
-          .get();
+          .getM('mixed_feedvideo_service.dart:321');
 
       return snapshot.docs.map((doc) => doc.id).toList();
     } catch (e) {
@@ -337,7 +338,7 @@ class MixedTikTokVideoService {
           .where('feedScore', isLessThan: maxScore)
           .orderBy('feedScore', descending: minScore > 0.5)
           .limit(limit)
-          .get();
+          .getM('mixed_feedvideo_service.dart:340');
 
       return snapshot.docs.map((doc) => doc.id).toList();
     } catch (e) {
@@ -354,7 +355,7 @@ class MixedTikTokVideoService {
           .where('type', isEqualTo: type)
           .orderBy('created_at', descending: true)
           .limit(limit)
-          .get();
+          .getM('mixed_feedvideo_service.dart:357');
 
       return snapshot.docs.map((doc) => doc.id).toList();
     } catch (e) {
@@ -375,7 +376,7 @@ class MixedTikTokVideoService {
         final snapshot = await firestore
             .collection('Posts')
             .where(FieldPath.documentId, whereIn: batchIds)
-            .get();
+            .getM('mixed_feedvideo_service.dart:378');
 
         final batchVideos = snapshot.docs.map((doc) {
           try {

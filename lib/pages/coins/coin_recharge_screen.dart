@@ -1,6 +1,8 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/coins/apple_coin_store_view.dart';
 import 'package:afrotok/pages/coins/play_coin_store_view.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../widgets/coin_balances_row.dart';
@@ -11,6 +13,7 @@ import '../../providers/authProvider.dart';
 import '../../providers/coin_gift_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../paiement/newDepot.dart';
+import 'card_coin_page.dart';
 import '../../theme/app_colors.dart';
 import '../../utils/payment_region.dart';
 import '../../utils/platform_guard.dart';
@@ -63,7 +66,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
           .collection('Users')
           .where('email', isEqualTo: email)
           .limit(1)
-          .get();
+          .getM('coin_recharge_screen.dart:68');
       if (query.docs.isEmpty) {
         setState(() { _isSearching = false; _userFound = false; });
         _showErrorDialog(context.tr('Aucun utilisateur trouvé avec cet email'));
@@ -147,6 +150,11 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
               ],
               _buildBalanceHeader(colors, user, soldeDepot, soldePrincipal),
               const SizedBox(height: 14),
+              // Carte bancaire : uniquement sur le site web (jamais dans les applications Android / iPhone)
+              if (kIsWeb) ...[
+                _buildCardTile(colors),
+                const SizedBox(height: 14),
+              ],
               _buildBalanceSelector(colors, soldeDepot, soldePrincipal),
               const SizedBox(height: 12),
               _buildBeneficiaryToggle(colors),
@@ -165,6 +173,36 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
         ),
       ),
           if (_isLoading) _buildProcessingOverlay(colors),
+        ]),
+      ),
+    );
+  }
+
+  /// Accès à l'achat par carte bancaire (web uniquement).
+  Widget _buildCardTile(AppColors colors) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: () => CardCoinPage.open(context),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: colors.primary.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: colors.primary.withOpacity(0.5)),
+        ),
+        child: Row(children: [
+          Icon(Icons.credit_card_rounded, color: colors.primary, size: 26),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(context.tr('Payer par carte bancaire'),
+                  style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 14.5)),
+              const SizedBox(height: 2),
+              Text(context.tr('Visa, Mastercard · paiement sécurisé en dollars · pièces ajoutées tout de suite'),
+                  style: TextStyle(color: colors.textSecondary, fontSize: 12, height: 1.3)),
+            ]),
+          ),
+          Icon(Icons.chevron_right_rounded, color: colors.primary),
         ]),
       ),
     );

@@ -25,6 +25,13 @@ export * from "./payments/coinConversion";
 export * from "./payments/coinPayments";
 export * from "./payments/coinInteractions";
 export * from "./payments/coinPurchase";
+export { r2MirrorSweep } from "./media/r2Mirror";
+export { chroniqueReplyInvite, onInvitationAnswered } from "./chroniques/chroniqueReply";
+export { chroniqueMusicCharge } from "./chroniques/chroniqueMusic";
+export { chroniqueExpiryCleanup } from "./chroniques/chroniqueCleanup";
+export { readStatsReport } from "./monitoring/readStats";
+export { cardCoinQuote, cardCoinStart, cardCoinStatus, cardCoinReconcile, cardCoinAdminConfig, cardCoinAdminChargeback } from "./payments/feexpayCard";
+export { paymentReport, paymentWatchdog } from "./payments/paymentLog";
 
 export * from "./payments/appleIap";
 export * from "./payments/googlePlayIap";

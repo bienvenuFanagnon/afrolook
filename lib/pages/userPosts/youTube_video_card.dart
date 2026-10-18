@@ -1,3 +1,8 @@
+import 'package:afrotok/services/read_meter.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../utils/media_cdn.dart';
+import '../../services/comments_prefetch.dart';
+import '../../services/media_shrink.dart';
 import '../../widgets/studio/post_template_try.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'package:flutter/services.dart';
@@ -586,6 +591,19 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     _hasRecordedInteraction = lastDate == today;
   }
 
+  /// Aperçu de la vidéo : image mise en cache sur le téléphone et servie par le CDN (plus de re-téléchargement à chaque affichage).
+  Widget _posterImage({required double width, required double height, required Widget fallback}) {
+    return CachedNetworkImage(
+      imageUrl: MediaCdn.url(_thumbnailUrl),
+      fit: BoxFit.cover,
+      width: width,
+      height: height,
+      fadeInDuration: const Duration(milliseconds: 100),
+      placeholder: (_, __) => fallback,
+      errorWidget: (_, __, ___) => fallback,
+    );
+  }
+
   Future<void> _generateAndUploadThumbnail() async {
     // VideoThumbnail + dart:io File indisponibles sur Flutter Web
     if (kIsWeb) return;
@@ -610,7 +628,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       final fileName = 'thumbnails/thumb_${widget.post.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final ref = FirebaseStorage.instance.ref().child(fileName);
       final bytes = await XFile(thumbnailFile).readAsBytes();
-      final uploadTask = ref.putData(bytes);
+      final uploadTask = ref.putData(await MediaShrink.bytes(bytes));
       final snapshot = await uploadTask;
       final downloadUrl = await snapshot.ref.getDownloadURL();
 
@@ -687,7 +705,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         final canalDoc = await _firestore
             .collection('Canaux')
             .doc(widget.post.canal_id)
-            .get();
+            .getM('youTube_video_card.dart:707');
         if (canalDoc.exists) {
           _creatorCanal = Canal.fromJson(canalDoc.data() as Map<String, dynamic>);
           widget.post.canal = _creatorCanal;
@@ -709,7 +727,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         final userDoc = await _firestore
             .collection('Users')
             .doc(widget.post.user_id)
-            .get();
+            .getM('youTube_video_card.dart:729');
         if (userDoc.exists) {
           _creatorUser = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
           widget.post.user = _creatorUser;
@@ -1114,7 +1132,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
   Future<void> _sendLikeNotifications() async {
     final currentTimeMicroseconds = DateTime.now().microsecondsSinceEpoch;
-    final userDoc = await _firestore.collection('Users').doc(widget.post.user_id!).get();
+    final userDoc = await _firestore.collection('Users').doc(widget.post.user_id!).getM('youTube_video_card.dart:1134');
 
     if (userDoc.exists) {
       final lastNotificationTime = userDoc.data()?['lastNotificationTime'] ?? 0;
@@ -1886,14 +1904,14 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                   ? Container(height: h * 0.38, width: double.infinity, color: colors.shimmerBase,
                   child: const Center(child: CircularProgressIndicator()))
                   : _thumbnailUrl != null
-                  ? Image.network(_thumbnailUrl!, fit: BoxFit.cover, height: h * 0.38, width: double.infinity,
-                  errorBuilder: (context, error, stackTrace) => Container(height: h * 0.38, width: double.infinity, color: colors.shimmerBase,
+                  ? _posterImage(height: h * 0.38, width: double.infinity, fallback: Container(height: h * 0.38, width: double.infinity, color: colors.shimmerBase,
                       child: Icon(Icons.videocam, size: 50, color: colors.textSecondary)))
                   : Container(height: h * 0.38, width: double.infinity, color: colors.shimmerBase,
                   child: Icon(Icons.videocam, size: 50, color: colors.textSecondary)),
             ),
+            // L'aperçu reste visible pendant que la vidéo se prépare : voile léger + petit indicateur
             if (_isVideoLoading)
-              Container(height: h * 0.38, width: double.infinity, color: Colors.black.withOpacity(0.7),
+              Container(height: h * 0.38, width: double.infinity, color: Colors.black.withOpacity(0.18),
                   child: Center(child: CircularProgressIndicator(color: colors.primary))),
             // Verrou canal privé — s'affiche après 10s de lecture
             if (_showCanalLockCta)
@@ -1960,16 +1978,14 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                         ),
                       )
                     : _thumbnailUrl != null
-                        ? Image.network(_thumbnailUrl!, fit: BoxFit.cover,
-                            width: pW, height: pH,
-                            errorBuilder: (_, __, ___) => Icon(
+                        ? _posterImage(width: pW, height: pH, fallback: Icon(
                                 Icons.videocam, size: 40, color: colors.textSecondary))
                         : Center(child: Icon(Icons.videocam,
                             size: 40, color: colors.textSecondary)),
               ),
               if (_isVideoLoading)
                 Container(
-                  color: Colors.black.withOpacity(0.5),
+                  color: Colors.black.withOpacity(0.15),
                   child: Center(child: CircularProgressIndicator(color: colors.primary)),
                 ),
               if (_showCanalLockCta) _buildCanalLockOverlay(colors),
@@ -2082,12 +2098,10 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
               child: const Center(child: CircularProgressIndicator()),
             )
           : _thumbnailUrl != null
-          ? Image.network(
-              _thumbnailUrl!,
-              fit: BoxFit.cover,
+          ? _posterImage(
               height: videoHeight,
               width: videoW,
-              errorBuilder: (context, error, stackTrace) => Container(
+              fallback: Container(
                 height: videoHeight,
                 width: videoW,
                 color: colors.shimmerBase,
@@ -2116,7 +2130,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
               Container(
                 height: videoHeight,
                 width: videoW,
-                color: Colors.black.withOpacity(0.7),
+                color: Colors.black.withOpacity(0.18),
                 child: Center(child: CircularProgressIndicator(color: colors.primary)),
               ),
             // --- Verrou canal privé — s'affiche après 10s de lecture ---
@@ -2278,7 +2292,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         FirebaseFirestore.instance
             .collection('Posts')
             .doc(post.defiResponseToPostId)
-            .get()
+            .getM('youTube_video_card.dart:2294')
             .then((doc) {
           if (doc.exists && mounted) {
             final defiPost = Post.fromJson(doc.data()!);
@@ -2520,21 +2534,15 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   Future<void> _loadLastComment() async {
     final postId = widget.post.id;
     if (postId == null || _isLoadingComment) return;
+    // Aucun commentaire annoncé : inutile de lire Firestore pour rien (une lecture par post affiché)
+    if ((widget.post.comments ?? 0) <= 0) return;
     setState(() => _isLoadingComment = true);
     try {
-      final snap = await _firestore
-          .collection('PostComments')
-          .where('post_id', isEqualTo: postId)
-          .orderBy('created_at', descending: true)
-          .limit(5)
-          .get();
-      if (snap.docs.isNotEmpty && mounted) {
+      // Cache partagé : une seule lecture (5 commentaires, auteurs des 3 premiers) pour tous les écrans, prête avant l'ouverture des commentaires
+      final page = await CommentsPrefetch.instance.first(postId);
+      if (page.comments.isNotEmpty && mounted) {
         setState(() {
-          _preloadedComments = snap.docs.map((doc) {
-            final data = Map<String, dynamic>.from(doc.data());
-            data['id'] = doc.id;
-            return PostComment.fromJson(data);
-          }).toList();
+          _preloadedComments = List.of(page.comments);
         });
       }
     } catch (_) {}
@@ -2592,6 +2600,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         if (mounted) {
           setState(() {
             _preloadedComments.insert(0, comment);
+            CommentsPrefetch.instance.addLocal(comment.post_id ?? '', comment);
             _localCommentsCount++;
             _localInteractionsCount++;
           });

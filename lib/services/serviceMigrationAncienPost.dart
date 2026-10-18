@@ -1,5 +1,6 @@
 ﻿// Créez un nouveau fichier migration_service.dart
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -16,7 +17,7 @@ class MigrationAncienPostService {
       final snapshot = await firestore
           .collection('Posts')
           .where("status", isNotEqualTo: "SUPPRIMER")
-          .get();
+          .getM('serviceMigrationAncienPost.dart:19');
 
       printVm('📊 Nombre de posts à migrer: ${snapshot.docs.length}');
 
@@ -106,7 +107,7 @@ class MigrationAncienPostService {
       final snapshot = await firestore
           .collection('Posts')
           .where("status", isNotEqualTo: "SUPPRIMER")
-          .get();
+          .getM('serviceMigrationAncienPost.dart:109');
 
       printVm('📊 Nombre total de posts: ${snapshot.docs.length}');
 
@@ -175,7 +176,7 @@ class MigrationAncienPostService {
   static Future<void> migrateSinglePost(String postId) async {
     try {
       final docRef = firestore.collection('Posts').doc(postId);
-      final doc = await docRef.get();
+      final doc = await docRef.getM('serviceMigrationAncienPost.dart:178');
 
       if (doc.exists) {
         final data = doc.data()!;
@@ -206,7 +207,7 @@ class MigrationAncienPostService {
           .collection('Posts')
           .where("status", isNotEqualTo: "SUPPRIMER")
           .limit(50)
-          .get();
+          .getM('serviceMigrationAncienPost.dart:209');
 
       int migrated = 0;
       int total = snapshot.docs.length;
@@ -238,7 +239,7 @@ class MigrationAncienPostService {
 Future<void> migrateDatingProfilesToLowercase() async {
   final firestore = FirebaseFirestore.instance;
   printVm('🔍 Migration: Récupération de tous les profils dating...');
-  final snapshot = await firestore.collection('dating_profiles').get();
+  final snapshot = await firestore.collection('dating_profiles').getM('serviceMigrationAncienPost.dart:241');
   final totalDocs = snapshot.docs.length;
   printVm('📊 ${totalDocs} profils trouvés.');
 
@@ -304,7 +305,7 @@ Future<void> migrateInitialDatingProfilesForMen() async {
     final usersSnapshot = await FirebaseFirestore.instance
         .collection('Users')
         .where('genre', isEqualTo: 'Homme')
-        .get();
+        .getM('serviceMigrationAncienPost.dart:307');
 
     printVm('📊 Total des utilisateurs trouvés: ${usersSnapshot.docs.length}');
 
@@ -325,7 +326,7 @@ Future<void> migrateInitialDatingProfilesForMen() async {
             .collection('dating_profiles')
             .where('userId', isEqualTo: userData.id)
             .limit(1)
-            .get();
+            .getM('serviceMigrationAncienPost.dart:328');
 
         if (existingProfile.docs.isNotEmpty) {
           printVm('⚠️ Profil dating déjà existant pour cet utilisateur - Ignoré');
@@ -350,19 +351,19 @@ Future<void> migrateInitialDatingProfilesForMen() async {
             .collection('dating_likes')
             .where('toUserId', isEqualTo: userId)
             .count()
-            .get();
+            .getM('serviceMigrationAncienPost.dart:353');
 
         final coupsCount = await FirebaseFirestore.instance
             .collection('dating_coup_de_coeurs')
             .where('toUserId', isEqualTo: userId)
             .count()
-            .get();
+            .getM('serviceMigrationAncienPost.dart:359');
 
         final connectionsCount = await FirebaseFirestore.instance
             .collection('dating_connections')
             .where('userId1', isEqualTo: userId)
             .count()
-            .get();
+            .getM('serviceMigrationAncienPost.dart:365');
 
         // Calcul du score: 1 point par like, 2 points par coup de cœur, 3 points par connexion
         final popularityScore = (likesCount.count! * 1) + (coupsCount.count! * 2) + (connectionsCount.count! * 3);
@@ -442,7 +443,7 @@ Future<void> migrateInitialDatingProfiles() async {
     final usersSnapshot = await FirebaseFirestore.instance
         .collection('Users')
         .where('genre', isEqualTo: 'Femme')
-        .get();
+        .getM('serviceMigrationAncienPost.dart:445');
 
     printVm('📊 Total des utilisateurs trouvés: ${usersSnapshot.docs.length}');
 
@@ -463,7 +464,7 @@ Future<void> migrateInitialDatingProfiles() async {
             .collection('dating_profiles')
             .where('userId', isEqualTo: userData.id)
             .limit(1)
-            .get();
+            .getM('serviceMigrationAncienPost.dart:466');
 
         if (existingProfile.docs.isNotEmpty) {
           printVm('⚠️ Profil dating déjà existant pour cet utilisateur - Ignoré');
@@ -488,19 +489,19 @@ Future<void> migrateInitialDatingProfiles() async {
             .collection('dating_likes')
             .where('toUserId', isEqualTo: userId)
             .count()
-            .get();
+            .getM('serviceMigrationAncienPost.dart:491');
 
         final coupsCount = await FirebaseFirestore.instance
             .collection('dating_coup_de_coeurs')
             .where('toUserId', isEqualTo: userId)
             .count()
-            .get();
+            .getM('serviceMigrationAncienPost.dart:497');
 
         final connectionsCount = await FirebaseFirestore.instance
             .collection('dating_connections')
             .where('userId1', isEqualTo: userId)
             .count()
-            .get();
+            .getM('serviceMigrationAncienPost.dart:503');
 
         // Calcul du score: 1 point par like, 2 points par coup de cœur, 3 points par connexion
         final popularityScore = (likesCount.count! * 1) + (coupsCount.count! * 2) + (connectionsCount.count! * 3);

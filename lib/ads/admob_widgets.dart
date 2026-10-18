@@ -6,6 +6,7 @@ import '../providers/authProvider.dart';
 import '../theme/app_colors.dart';
 import 'ad_config.dart';
 import 'ad_gate.dart';
+import 'admob_native_pool.dart';
 import 'admob_service.dart';
 
 /// Bannière adaptative (fixe, en bas des pages de détail) ou grand format 300×250.
@@ -115,6 +116,19 @@ class _AdmobNativeWidgetState extends State<AdmobNativeWidget> {
     super.dispose();
   }
 
+  /// Une pub déjà chargée d'avance (réservoir) : affichée dès la première image, sans attendre le réseau.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_started || widget.onPaid != null || widget.unitKey != 'native') return;
+    final pooled = AdmobNativePool.take(small: widget.small, brightness: Theme.of(context).brightness);
+    if (pooled != null) {
+      _started = true;
+      _ad = pooled;
+      _loaded = true;
+    }
+  }
+
   void _load(AppColors colors) {
     if (_started) return;
     _started = true;
@@ -123,11 +137,6 @@ class _AdmobNativeWidgetState extends State<AdmobNativeWidget> {
       widget.onFailed?.call();
       return;
     }
-    NativeTemplateTextStyle ts(Color c, {bool bold = false, double size = 13}) => NativeTemplateTextStyle(
-          textColor: c,
-          style: bold ? NativeTemplateFontStyle.bold : NativeTemplateFontStyle.normal,
-          size: size,
-        );
     final ad = NativeAd(
       adUnitId: unit,
       request: AdmobService.request(),
@@ -143,20 +152,7 @@ class _AdmobNativeWidgetState extends State<AdmobNativeWidget> {
           widget.onFailed?.call();
         },
       ),
-      nativeTemplateStyle: NativeTemplateStyle(
-        templateType: widget.small ? TemplateType.small : TemplateType.medium,
-        mainBackgroundColor: colors.surface,
-        cornerRadius: 12,
-        callToActionTextStyle: NativeTemplateTextStyle(
-          textColor: colors.onPrimary,
-          backgroundColor: colors.primary,
-          style: NativeTemplateFontStyle.bold,
-          size: 13,
-        ),
-        primaryTextStyle: ts(colors.textPrimary, bold: true, size: 14),
-        secondaryTextStyle: ts(colors.textSecondary, size: 12),
-        tertiaryTextStyle: ts(colors.textSecondary, size: 11),
-      ),
+      nativeTemplateStyle: AdmobNativePool.nativeStyle(colors, small: widget.small),
     );
     _ad = ad;
     ad.load();

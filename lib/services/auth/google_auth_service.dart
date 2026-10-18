@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -54,7 +55,7 @@ class GoogleAuthService {
 
   /// Le profil Afrolook existe-t-il déjà pour ce compte ?
   static Future<bool> hasProfile(String uid) async {
-    final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).get();
+    final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).getM('google_auth_service.dart:57');
     return doc.exists;
   }
 

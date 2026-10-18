@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -63,7 +64,7 @@ class StickerService {
         .collection('Stickers')
         .where('packId', isEqualTo: kOfficialStickerPackId)
         .where('status', isEqualTo: 'active')
-        .get();
+        .getM('sticker_service.dart:66');
     final items = snap.docs.map(StickerItem.fromFirestore).where((s) => s.url.isNotEmpty).toList()
       ..sort((a, b) => a.order.compareTo(b.order));
     _officialCache = items;
@@ -73,7 +74,7 @@ class StickerService {
   /// Le pack officiel lui-même (pour son nom localisé), null si absent.
   Future<StickerPack?> loadOfficialPack() async {
     try {
-      final doc = await _db.collection('StickerPacks').doc(kOfficialStickerPackId).get();
+      final doc = await _db.collection('StickerPacks').doc(kOfficialStickerPackId).getM('sticker_service.dart:76');
       return doc.exists ? StickerPack.fromFirestore(doc) : null;
     } catch (_) {
       return null;
@@ -139,10 +140,10 @@ class StickerService {
           .collection('StickerRecents')
           .orderBy('lastUsedAt', descending: true)
           .limit(12)
-          .get();
+          .getM('sticker_service.dart:142');
       final docs = await Future.wait(snap.docs.map((r) async {
         final mine = (r.data()['source'] ?? 'pack') == 'mine';
-        final d = await _db.collection(mine ? 'UserStickers' : 'Stickers').doc(r.id).get();
+        final d = await _db.collection(mine ? 'UserStickers' : 'Stickers').doc(r.id).getM('sticker_service.dart:145');
         if (!d.exists) return null;
         return mine ? StickerItem.fromUserSticker(d) : StickerItem.fromFirestore(d);
       }));
@@ -180,7 +181,7 @@ class StickerService {
         .where('status', isEqualTo: 'active')
         .where('kind', whereIn: const ['creator', 'world'])
         .limit(limit)
-        .get();
+        .getM('sticker_service.dart:183');
     final packs = snap.docs.map(StickerPack.fromFirestore).toList()
       ..sort((a, b) => a.order != b.order ? a.order.compareTo(b.order) : b.salesCount.compareTo(a.salesCount));
     return packs;
@@ -193,14 +194,14 @@ class StickerService {
         .where('status', isEqualTo: 'active')
         .where('kind', isEqualTo: 'creator')
         .limit(limit)
-        .get();
+        .getM('sticker_service.dart:196');
     return snap.docs.map(StickerPack.fromFirestore).toList()..sort((a, b) => b.salesCount.compareTo(a.salesCount));
   }
 
   /// Identifiants des packs achetés par l'utilisateur (`StickerOwnership`).
   Future<Set<String>> loadOwnedPackIds(String uid) async {
     try {
-      final snap = await _db.collection('StickerOwnership').where('userId', isEqualTo: uid).limit(200).get();
+      final snap = await _db.collection('StickerOwnership').where('userId', isEqualTo: uid).limit(200).getM('sticker_service.dart:203');
       return {
         for (final d in snap.docs)
           if ((d.data()['packId'] ?? '').toString().isNotEmpty) d.data()['packId'].toString(),
@@ -213,7 +214,7 @@ class StickerService {
 
   /// Packs (actifs) correspondant à ces identifiants.
   Future<List<StickerPack>> loadPacksByIds(Iterable<String> ids) async {
-    final docs = await Future.wait(ids.toSet().map((id) => _db.collection('StickerPacks').doc(id).get()));
+    final docs = await Future.wait(ids.toSet().map((id) => _db.collection('StickerPacks').doc(id).getM('sticker_service.dart:216')));
     return [
       for (final d in docs)
         if (d.exists) StickerPack.fromFirestore(d),
@@ -226,7 +227,7 @@ class StickerService {
         .collection('Stickers')
         .where('packId', isEqualTo: packId)
         .where('status', isEqualTo: 'active')
-        .get();
+        .getM('sticker_service.dart:229');
     return snap.docs.map(StickerItem.fromFirestore).where((s) => s.url.isNotEmpty).toList()
       ..sort((a, b) => a.order.compareTo(b.order));
   }
@@ -241,7 +242,7 @@ class StickerService {
             .where('packId', isEqualTo: packId)
             .where('status', isEqualTo: 'active')
             .limit(12)
-            .get();
+            .getM('sticker_service.dart:244');
         final list = snap.docs.map(StickerItem.fromFirestore).where((s) => s.thumbUrl.isNotEmpty).toList()
           ..sort((a, b) => a.order.compareTo(b.order));
         return list.take(4).toList();
@@ -261,7 +262,7 @@ class StickerService {
     final missing = wanted.where((id) => !_creatorCache.containsKey(id) && id != 'afrolook').toList();
     await Future.wait(missing.map((id) async {
       try {
-        final d = await _db.collection('Users').doc(id).get();
+        final d = await _db.collection('Users').doc(id).getM('sticker_service.dart:264');
         final m = d.data() ?? const <String, dynamic>{};
         _creatorCache[id] = StickerCreatorInfo(
           id: id,
@@ -293,7 +294,7 @@ class StickerService {
 
   /// Stickers-cadeaux : `giftPriceCoins > 0`, statut actif, pack actif. Un seul filtre d'inégalité (pas d'index composite).
   Future<List<StickerItem>> loadGiftStickers({int limit = 200}) async {
-    final snap = await _db.collection('Stickers').where('giftPriceCoins', isGreaterThan: 0).limit(limit).get();
+    final snap = await _db.collection('Stickers').where('giftPriceCoins', isGreaterThan: 0).limit(limit).getM('sticker_service.dart:296');
     final items = snap.docs
         .map(StickerItem.fromFirestore)
         .where((s) => s.status == 'active' && s.url.isNotEmpty)
@@ -341,7 +342,7 @@ class StickerService {
         .where('ownerId', isEqualTo: uid)
         .where('status', isEqualTo: 'active')
         .limit(60)
-        .get();
+        .getM('sticker_service.dart:344');
     final docs = snap.docs.toList()
       ..sort((a, b) {
         final x = (a.data()['createdAt'] is num) ? (a.data()['createdAt'] as num) : 0;

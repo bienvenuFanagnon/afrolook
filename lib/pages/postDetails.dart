@@ -1,3 +1,5 @@
+import 'package:afrotok/services/read_meter.dart';
+import '../services/comments_prefetch.dart';
 import 'package:afrotok/widgets/studio/post_template_try.dart';
 import 'defi/defi_boost.dart';
 import 'pub/ad_actions.dart';
@@ -156,7 +158,7 @@ class _DetailsPostState extends State<DetailsPost>
   Future<void> _checkIfFavorite() async {
     try {
       final postDoc =
-          await firestore.collection('Posts').doc(widget.post.id).get();
+          await firestore.collection('Posts').doc(widget.post.id).getM('postDetails.dart:160');
       if (postDoc.exists) {
         final data = postDoc.data() as Map<String, dynamic>;
         final favorites = List<String>.from(data['users_favorite_id'] ?? []);
@@ -537,7 +539,7 @@ class _DetailsPostState extends State<DetailsPost>
         .where('supportedAt', isGreaterThanOrEqualTo: startOfDay)
         .where('supportedAt', isLessThan: endOfDay)
         .limit(1)
-        .get();
+        .getM('postDetails.dart:541');
 
     return query.docs.isNotEmpty;
   }
@@ -891,7 +893,7 @@ class _DetailsPostState extends State<DetailsPost>
     );
     await firestore.collection('Notifications').doc(notificationId).set(notification.toJson());
 
-    final creatorDoc = await firestore.collection('Users').doc(creatorId).get();
+    final creatorDoc = await firestore.collection('Users').doc(creatorId).getM('postDetails.dart:895');
     final creatorToken = creatorDoc.data()?['oneIgnalUserid'] as String?;
     if (creatorToken != null && creatorToken.isNotEmpty) {
       await authProvider.sendNotification(
@@ -917,7 +919,7 @@ class _DetailsPostState extends State<DetailsPost>
       final adDoc = await firestore
           .collection('Advertisements')
           .doc(widget.post.advertisementId)
-          .get();
+          .getM('postDetails.dart:921');
 
       if (adDoc.exists) {
         setState(() {
@@ -941,7 +943,7 @@ class _DetailsPostState extends State<DetailsPost>
           .collection('Advertisements')
           .where('postId', isEqualTo: widget.post.id)
           .limit(1)
-          .get();
+          .getM('postDetails.dart:945');
       if (snap.docs.isNotEmpty) {
         setState(() => _ownerAdForPost = Advertisement.fromJson(snap.docs.first.data()));
       }
@@ -2089,7 +2091,7 @@ class _DetailsPostState extends State<DetailsPost>
     _loadPostRelations();
 
     // Initialiser le stream pour les mises à jour en temps réel
-    _postStream = firestore.collection('Posts').doc(widget.post.id).snapshots();
+    _postStream = firestore.collection('Posts').doc(widget.post.id).snapshotsM('postDetails.dart:2093');
 
     // Charger le challenge si c'est un look challenge
     // Vérifier si l'utilisateur a déjà voté
@@ -2346,7 +2348,7 @@ class _DetailsPostState extends State<DetailsPost>
       final userDoc = await FirebaseFirestore.instance
           .collection('Users')
           .doc(post.user_id)
-          .get();
+          .getM('postDetails.dart:2350');
 
       if (userDoc.exists) {
         post.user = UserData.fromJson(userDoc.data()!);
@@ -2357,7 +2359,7 @@ class _DetailsPostState extends State<DetailsPost>
         final canalDoc = await FirebaseFirestore.instance
             .collection('Canaux')
             .doc(post.canal_id)
-            .get();
+            .getM('postDetails.dart:2361');
         if (canalDoc.exists) {
           post.canal = Canal.fromJson(canalDoc.data()!);
         }
@@ -2720,7 +2722,7 @@ class _DetailsPostState extends State<DetailsPost>
       final targetUser = widget.post.user;
 
       // Récupérer le propriétaire du post
-      final userDoc = await firestore.collection('Users').doc(widget.post.user_id!).get();
+      final userDoc = await firestore.collection('Users').doc(widget.post.user_id!).getM('postDetails.dart:2724');
       if (userDoc.exists) {
         final userData = userDoc.data();
         final lastNotificationTime = (userData?['lastNotificationTime'] ?? 0) as int;
@@ -2887,7 +2889,7 @@ class _DetailsPostState extends State<DetailsPost>
           FeedInteractionService.onPostLoved(widget.post, userId);
           final nowMicro = DateTime.now().microsecondsSinceEpoch;
           final targetUser = widget.post.user;
-          final userDoc = await firestore.collection('Users').doc(widget.post.user_id!).get();
+          final userDoc = await firestore.collection('Users').doc(widget.post.user_id!).getM('postDetails.dart:2891');
           if (userDoc.exists) {
             final lastNotif = (userDoc.data()?['lastNotificationTime'] ?? 0) as int;
             const twentyMin = 20 * 60 * 1000 * 1000;
@@ -4500,19 +4502,11 @@ class _DetailsPostState extends State<DetailsPost>
     final postId = widget.post.id;
     if (postId == null) return;
     try {
-      final snap = await firestore
-          .collection('PostComments')
-          .where('post_id', isEqualTo: postId)
-          .orderBy('created_at', descending: true)
-          .limit(10)
-          .get();
-      if (snap.docs.isNotEmpty && mounted) {
+      // Cache partagé : une seule lecture (5 commentaires, auteurs des 3 premiers) pour tous les écrans, prête avant l'ouverture des commentaires
+      final page = await CommentsPrefetch.instance.first(postId);
+      if (page.comments.isNotEmpty && mounted) {
         setState(() {
-          _preloadedComments = snap.docs.map((doc) {
-            final data = Map<String, dynamic>.from(doc.data());
-            data['id'] = doc.id;
-            return PostComment.fromJson(data);
-          }).toList();
+          _preloadedComments = List.of(page.comments);
         });
       }
     } catch (_) {}
@@ -4625,7 +4619,7 @@ class _DetailsPostState extends State<DetailsPost>
       // Canal peut ne pas être chargé encore (async initState) — on le charge si besoin
       if (canal == null && canalId != null && canalId.isNotEmpty) {
         try {
-          final doc = await FirebaseFirestore.instance.collection('Canaux').doc(canalId).get();
+          final doc = await FirebaseFirestore.instance.collection('Canaux').doc(canalId).getM('postDetails.dart:4621');
           if (doc.exists) {
             canal = Canal.fromJson(doc.data()!);
             if (mounted) setState(() => widget.post.canal = canal);
@@ -4669,6 +4663,7 @@ class _DetailsPostState extends State<DetailsPost>
       if (success && mounted) {
         setState(() {
           _preloadedComments.insert(0, comment);
+            CommentsPrefetch.instance.addLocal(comment.post_id ?? '', comment);
           widget.post.comments = (widget.post.comments ?? 0) + 1;
         });
         authProvider.incrementPostTotalInteractions(
@@ -5010,7 +5005,7 @@ class _DetailsPostState extends State<DetailsPost>
                 _postStream = firestore
                     .collection('Posts')
                     .doc(widget.post.id)
-                    .snapshots();
+                    .snapshotsM('postDetails.dart:5007');
               });
             },
           ),
@@ -5138,7 +5133,7 @@ class _DetailsPostState extends State<DetailsPost>
                       //                     .collection('Users')
                       //                     .doc(updatedPost
                       //                         .users_cadeau_id![index])
-                      //                     .get(),
+                      //                     .getM('postDetails.dart:5135'),
                       //                 builder: (context, snapshot) {
                       //                   if (snapshot.hasData &&
                       //                       snapshot.data!.exists) {

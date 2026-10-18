@@ -4,6 +4,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import axios from "axios";
 import * as crypto from "crypto";
 import { db } from "../shared/firebase";
+import { withPaymentLog } from "./paymentLog";
 import { appAccountTokenFor, lockFieldsAfterChange } from "../shared/coin_locks";
 import { recordCoinSale } from "./coinPurchase";
 
@@ -103,7 +104,7 @@ async function acknowledge(productId: string, purchaseToken: string): Promise<vo
  */
 export const verifyGooglePlayPurchase = onCall(
   { secrets: [GOOGLE_PLAY_SERVICE_ACCOUNT], timeoutSeconds: 30, memory: "256MiB" },
-  async (request) => {
+  withPaymentLog("google_play", async (request) => {
     if (!request.auth) throw new HttpsError("unauthenticated", "Authentification requise.");
     const uid = request.auth.uid;
     const data = request.data as { productId?: unknown; purchaseToken?: unknown };
@@ -194,5 +195,5 @@ export const verifyGooglePlayPurchase = onCall(
 
     if (purchase.acknowledgementState !== 1) await acknowledge(productId, purchaseToken);
     return result;
-  }
+  })
 );

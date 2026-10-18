@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -80,7 +81,7 @@ class AdActions {
 
   static Future<void> _openDefi(String postId) async {
     try {
-      final snap = await FirebaseFirestore.instance.collection('Posts').doc(postId).get();
+      final snap = await FirebaseFirestore.instance.collection('Posts').doc(postId).getM('ad_actions.dart:83');
       if (!snap.exists) return;
       final post = Post.fromJson({...snap.data()!, 'id': snap.id});
       NavigationService().navigatorKey.currentState?.push(

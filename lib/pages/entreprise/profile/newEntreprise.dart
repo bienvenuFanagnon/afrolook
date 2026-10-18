@@ -1,4 +1,6 @@
-﻿import 'dart:io';
+import 'package:afrotok/services/read_meter.dart';
+import '../../../services/media_shrink.dart';
+import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/models/model_data.dart';
@@ -56,7 +58,7 @@ class _NewEntrepriseState extends State<NewEntreprise> {
 
     // Récupérer la liste des utilisateurs
     CollectionReference pseudos = firestore.collection("EntrepriseNames");
-    QuerySnapshot snapshot = await pseudos.get();
+    QuerySnapshot snapshot = await pseudos.getM('newEntreprise.dart:60');
     final list = snapshot.docs.map((doc) =>
         UserPseudo.fromJson(doc.data() as Map<String, dynamic>)).toList();
     bool existe= list.any((e) => e.name!.toLowerCase()==nom.toLowerCase());
@@ -212,7 +214,7 @@ class _NewEntrepriseState extends State<NewEntreprise> {
                                     'post_media/${Path.basename(File(imageProfile!.path).path)}');
 
                                 UploadTask uploadTask = storageReference
-                                    .putFile(File(imageProfile!.path)!);
+                                    .putFile(await MediaShrink.file(File(imageProfile!.path)!));
                                 await uploadTask.whenComplete(() async {
                                   await storageReference
                                       .getDownloadURL()

@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'contes_admin_page.dart';
 import 'etude_admin_page.dart';
 import 'package:afrotok/layout/centered_content.dart';
@@ -26,8 +27,10 @@ import 'influencer_requests_page.dart';
 import 'moderation_reports_page.dart';
 import 'official_accounts_page.dart';
 import 'payment_methods_admin_page.dart';
+import 'payment_logs_admin_page.dart';
 import 'remuneration_admin_page.dart';
 import 'quiz_admin_page.dart';
+import 'read_meter_page.dart';
 import 'stickers/admin_stickers_page.dart';
 import 'pseudo_migration_page.dart';
 import '../intro/tutos/tuto_scene_card.dart';
@@ -93,11 +96,11 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       for (final p in ['ios', 'android']) {
         final q = _db.collection('Users').where('platform', isEqualTo: p);
         final r = await Future.wait([
-          q.count().get(),
-          q.where('last_time_active', isGreaterThanOrEqualTo: startOfDay).count().get(),
-          q.where('last_time_active', isGreaterThanOrEqualTo: since(7)).count().get(),
-          q.where('last_time_active', isGreaterThanOrEqualTo: since(30)).count().get(),
-          q.where('last_time_active', isGreaterThanOrEqualTo: since(90)).count().get(),
+          q.count().getM('admin_dashboard_page.dart:97'),
+          q.where('last_time_active', isGreaterThanOrEqualTo: startOfDay).count().getM('admin_dashboard_page.dart:98'),
+          q.where('last_time_active', isGreaterThanOrEqualTo: since(7)).count().getM('admin_dashboard_page.dart:99'),
+          q.where('last_time_active', isGreaterThanOrEqualTo: since(30)).count().getM('admin_dashboard_page.dart:100'),
+          q.where('last_time_active', isGreaterThanOrEqualTo: since(90)).count().getM('admin_dashboard_page.dart:101'),
         ]);
         out[p] = [for (final x in r) x.count ?? 0];
       }
@@ -124,27 +127,27 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
       final retraits = _db.collection('TransactionRetraits');
       final counts = await Future.wait([
-        _db.collection('Users').count().get(), // 0
+        _db.collection('Users').count().getM('admin_dashboard_page.dart:128'), // 0
         _db.collection('Users')
             .where('createdAt', isGreaterThanOrEqualTo: startOfDay)
             .where('createdAt', isLessThanOrEqualTo: endOfDay)
             .count()
-            .get(), // 1
-        _db.collection('OfficialAccountRequests').where('status', isEqualTo: 'pending').count().get(), // 2
-        _db.collection('OfficialAccountRequests').where('status', isEqualTo: 'approved').count().get(), // 3
-        _db.collection('InfluenceurRequests').where('status', isEqualTo: 'pending').count().get(), // 4
-        _db.collection('TransactionSoldes').where('createdAt', isGreaterThanOrEqualTo: startOfMonth).count().get(), // 5
-        _db.collection('Users').where('last_time_active', isGreaterThanOrEqualTo: startOfDay).count().get(), // 6
-        _db.collection('Users').where('last_time_active', isGreaterThanOrEqualTo: since(7)).count().get(), // 7
-        _db.collection('Users').where('last_time_active', isGreaterThanOrEqualTo: since(30)).count().get(), // 8
-        _db.collection('Users').where('last_time_active', isGreaterThanOrEqualTo: since(90)).count().get(), // 9
-        _db.collection('ModerationReports').where('status', isEqualTo: 'pending').count().get(), // 10
-        _db.collection('Advertisements').where('status', isEqualTo: 'pending').count().get(), // 11
-        retraits.count().get(), // 12
-        retraits.where('statut', isEqualTo: 'EN_ATTENTE').count().get(), // 13
-        retraits.where('statut', isEqualTo: 'VALIDER').count().get(), // 14
-        retraits.where('statut', isEqualTo: 'ANNULE').count().get(), // 15
-        _db.collection('StickerPacks').where('status', isEqualTo: 'pending').count().get(), // 16
+            .getM('admin_dashboard_page.dart:133'), // 1
+        _db.collection('OfficialAccountRequests').where('status', isEqualTo: 'pending').count().getM('admin_dashboard_page.dart:134'), // 2
+        _db.collection('OfficialAccountRequests').where('status', isEqualTo: 'approved').count().getM('admin_dashboard_page.dart:135'), // 3
+        _db.collection('InfluenceurRequests').where('status', isEqualTo: 'pending').count().getM('admin_dashboard_page.dart:136'), // 4
+        _db.collection('TransactionSoldes').where('createdAt', isGreaterThanOrEqualTo: startOfMonth).count().getM('admin_dashboard_page.dart:137'), // 5
+        _db.collection('Users').where('last_time_active', isGreaterThanOrEqualTo: startOfDay).count().getM('admin_dashboard_page.dart:138'), // 6
+        _db.collection('Users').where('last_time_active', isGreaterThanOrEqualTo: since(7)).count().getM('admin_dashboard_page.dart:139'), // 7
+        _db.collection('Users').where('last_time_active', isGreaterThanOrEqualTo: since(30)).count().getM('admin_dashboard_page.dart:140'), // 8
+        _db.collection('Users').where('last_time_active', isGreaterThanOrEqualTo: since(90)).count().getM('admin_dashboard_page.dart:141'), // 9
+        _db.collection('ModerationReports').where('status', isEqualTo: 'pending').count().getM('admin_dashboard_page.dart:142'), // 10
+        _db.collection('Advertisements').where('status', isEqualTo: 'pending').count().getM('admin_dashboard_page.dart:143'), // 11
+        retraits.count().getM('admin_dashboard_page.dart:144'), // 12
+        retraits.where('statut', isEqualTo: 'EN_ATTENTE').count().getM('admin_dashboard_page.dart:145'), // 13
+        retraits.where('statut', isEqualTo: 'VALIDER').count().getM('admin_dashboard_page.dart:146'), // 14
+        retraits.where('statut', isEqualTo: 'ANNULE').count().getM('admin_dashboard_page.dart:147'), // 15
+        _db.collection('StickerPacks').where('status', isEqualTo: 'pending').count().getM('admin_dashboard_page.dart:148'), // 16
       ]);
 
       final appData = await context.read<UserAuthProvider>().getAppDataStream().first;
@@ -154,7 +157,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           .collection('OfficialAccountRequests')
           .orderBy('updatedAt', descending: true)
           .limit(5)
-          .get();
+          .getM('admin_dashboard_page.dart:158');
       final events = recentSnap.docs.map((d) {
         final data = d.data();
         return _RecentEvent(
@@ -562,6 +565,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       _Module(Icons.favorite_rounded, 'Afrolove', const Color(0xFFD6204A), 0, AdminDatingProfilesPage()),
       _Module(Icons.mail_rounded, 'Emailing', c.textSecondary, 0, AdminEmailScreen()),
       _Module(Icons.payment_rounded, 'Moyens de paiement', c.primary, 0, const PaymentMethodsAdminPage()),
+      _Module(Icons.monitor_heart_rounded, 'Suivi des paiements', c.danger, 0, const PaymentLogsAdminPage()),
       _Module(Icons.groups_rounded, 'Groupe Afrolook', c.info, 0, const AfrolookGroupMigrationPage()),
       _Module(Icons.school_rounded, 'Tutoriels', c.supportAccent, 0, const TutoListPage(showAll: true)),
       _Module(Icons.alternate_email_rounded, 'Pseudos', c.info, 0, const PseudoMigrationPage()),
@@ -569,6 +573,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       _Module(Icons.emoji_emotions_rounded, 'Stickers', c.warning, _stickersPending, const AdminStickersPage()),
       _Module(Icons.tag_rounded, 'Noms de canaux', c.primary, 0, const PseudoMigrationPage(canaux: true)),
       _Module(Icons.library_music_rounded, 'Sons artistes', const Color(0xFF9B59B6), 0, const AdminArtistSoundsPage()),
+      _Module(Icons.speed_rounded, 'Mesure des lectures', c.warning, 0, const ReadMeterPage()),
     ];
     return GridView.count(
       crossAxisCount: 3,

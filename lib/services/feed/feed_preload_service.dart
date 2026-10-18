@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/model_data.dart';
 
@@ -108,7 +109,7 @@ class FeedPreloadService {
               .where('created_at', isGreaterThan: sinceUs)
               .orderBy('created_at', descending: true)
               .limit(50)
-              .get();
+              .getM('feed_preload_service.dart:111');
           for (final doc in snap.docs) {
             if (addedIds.contains(doc.id)) continue;
             if (viewedSet.contains(doc.id)) continue;
@@ -154,7 +155,7 @@ class FeedPreloadService {
             .where('createdAt', isGreaterThan: sinceUs)
             .orderBy('createdAt', descending: true)
             .limit(30)
-            .get();
+            .getM('feed_preload_service.dart:157');
         for (final doc in snap.docs) {
           if (addedIds.contains(doc.id)) continue;
           if (viewedSet.contains(doc.id)) continue;

@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 
 import 'package:afrotok/models/model_data.dart';
@@ -79,7 +80,7 @@ class _MidrollAdCardState extends State<MidrollAdCard> {
       final fs = FirebaseFirestore.instance;
       switch (ownerType) {
         case 'canal':
-          final doc = await fs.collection('Canaux').doc(ownerId).get();
+          final doc = await fs.collection('Canaux').doc(ownerId).getM('midroll_ad_card.dart:82');
           if (!doc.exists) return;
           final data = Map<String, dynamic>.from(doc.data()!);
           data['id'] = doc.id;
@@ -89,7 +90,7 @@ class _MidrollAdCardState extends State<MidrollAdCard> {
           break;
         case 'user':
         default:
-          final doc = await fs.collection('Users').doc(ownerId).get();
+          final doc = await fs.collection('Users').doc(ownerId).getM('midroll_ad_card.dart:92');
           if (!doc.exists) return;
           final data = Map<String, dynamic>.from(doc.data()!);
           data['id'] = doc.id;

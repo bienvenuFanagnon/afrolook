@@ -1,4 +1,5 @@
-﻿import 'dart:async';
+import 'package:afrotok/services/read_meter.dart';
+import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:flutter/foundation.dart';
@@ -269,7 +270,7 @@ class NavigationService {
       final postDoc = await FirebaseFirestore.instance
           .collection('Posts')
           .doc(postId)
-          .get();
+          .getM('navigation_service.dart:272');
 
       if (!postDoc.exists) {
         Navigator.pop(context);
@@ -316,7 +317,7 @@ class NavigationService {
       final chatDoc = await FirebaseFirestore.instance
           .collection('Chats')
           .doc(chatId)
-          .get();
+          .getM('navigation_service.dart:319');
 
       if (!chatDoc.exists) {
         Navigator.pop(context);
@@ -328,7 +329,7 @@ class NavigationService {
       final userDoc = await FirebaseFirestore.instance
           .collection('Users')
           .doc(sendUserId)
-          .get();
+          .getM('navigation_service.dart:331');
 
       if (userDoc.exists) {
         chat.chatFriend = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
@@ -340,7 +341,7 @@ class NavigationService {
           .where('chat_id', isEqualTo: chatId)
           .orderBy('createdAt', descending: true)
           .limit(50)
-          .get();
+          .getM('navigation_service.dart:343');
 
       chat.messages = messagesSnapshot.docs
           .map((doc) => Message.fromJson(doc.data() as Map<String, dynamic>))

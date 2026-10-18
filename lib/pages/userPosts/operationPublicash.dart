@@ -1,4 +1,5 @@
 
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/userPosts/postWidgets/postWidgetPage.dart';
 import 'package:afrotok/providers/authProvider.dart';
@@ -25,7 +26,7 @@ Future<bool> processPublicashTransaction({
     UserData userSendCadeau =authProvider.loginUserData;
     // Récupérer l'utilisateur depuis Firestore
     CollectionReference userCollect = FirebaseFirestore.instance.collection('Users');
-    QuerySnapshot querySnapshotUser = await userCollect.where("id", isEqualTo: userSendCadeau.id!).get();
+    QuerySnapshot querySnapshotUser = await userCollect.where("id", isEqualTo: userSendCadeau.id!).getM('operationPublicash.dart:28');
 
     // Convertir les documents en objets UserData
     List<UserData> listUsers = querySnapshotUser.docs

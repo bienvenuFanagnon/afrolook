@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -89,7 +90,7 @@ class _ExampleCardState extends State<ExampleCard> {
       Filter('docId', isEqualTo:  '${amigo.id}${authProvider.loginUserData.id!}'),
       Filter('docId', isEqualTo:  '${authProvider.loginUserData.id!}${amigo.id}'),
 
-    )).snapshots();
+    )).snapshotsM('card_exemple.dart:92');
 
 // Obtenez la liste des utilisateurs
     //List<DocumentSnapshot> users = await usersQuery.sget();
@@ -149,7 +150,7 @@ class _ExampleCardState extends State<ExampleCard> {
 
       });
       CollectionReference messageCollect = await FirebaseFirestore.instance.collection('Messages');
-      QuerySnapshot querySnapshotMessage = await messageCollect.where("chat_id",isEqualTo:usersChat.id!).get();
+      QuerySnapshot querySnapshotMessage = await messageCollect.where("chat_id",isEqualTo:usersChat.id!).getM('card_exemple.dart:152');
       // Afficher la liste
       List<Message> messageList = querySnapshotMessage.docs.map((doc) =>
           Message.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -167,9 +168,9 @@ class _ExampleCardState extends State<ExampleCard> {
 
       /////////////ami//////////
       CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-      QuerySnapshot querySnapshotUserSender = await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.id?'${amigo.id}':'${authProvider.loginUserData.id!}').get();
+      QuerySnapshot querySnapshotUserSender = await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.id?'${amigo.id}':'${authProvider.loginUserData.id!}').getM('card_exemple.dart:170');
       // Afficher la liste
-      QuerySnapshot querySnapshotUserReceiver= await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.id?'${authProvider.loginUserData.id!}':'${amigo.id}').get();
+      QuerySnapshot querySnapshotUserReceiver= await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.id?'${authProvider.loginUserData.id!}':'${amigo.id}').getM('card_exemple.dart:172');
 
 
       List<UserData> receiverUserList = querySnapshotUserReceiver.docs.map((doc) =>
@@ -215,7 +216,7 @@ class _ExampleCardState extends State<ExampleCard> {
             CollectionReference userCollect =
             FirebaseFirestore.instance.collection('Users');
             // Get docs from collection reference
-            QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: widget.cardUser!.id!).get();
+            QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: widget.cardUser!.id!).getM('card_exemple.dart:218');
             // Afficher la liste
             List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
                 UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -373,7 +374,7 @@ class _ExampleCardState extends State<ExampleCard> {
                                           onPressed: () async {
                                             getChatsData(widget.cardUser).then((chat) async {
                                               CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Messages');
-                                              QuerySnapshot querySnapshotUser = await friendCollect.where("chat_id",isEqualTo:chat.docId).get();
+                                              QuerySnapshot querySnapshotUser = await friendCollect.where("chat_id",isEqualTo:chat.docId).getM('card_exemple.dart:376');
                                               // Afficher la liste
                                               List<Message> messages = querySnapshotUser.docs.map((doc) =>
                                                   Message.fromJson(doc.data() as Map<String, dynamic>)).toList();
@@ -670,7 +671,7 @@ class _ExampleCardState extends State<ExampleCard> {
                                 //   CollectionReference userCollect =
                                 //   FirebaseFirestore.instance.collection('Users');
                                 //   // Get docs from collection reference
-                                //   QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: widget.cardUser!.id!).get();
+                                //   QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: widget.cardUser!.id!).getM('card_exemple.dart:673');
                                 //   // Afficher la liste
                                 //   List<UserData>  listUsers = querySnapshotUser.docs.map((doc) =>
                                 //       UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();

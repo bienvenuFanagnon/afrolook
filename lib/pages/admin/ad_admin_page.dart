@@ -1,3 +1,4 @@
+import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/ads/ad_config.dart';
 import 'package:afrotok/ads/ad_gate.dart';
 import 'package:afrotok/ads/admob_service.dart';
@@ -33,7 +34,7 @@ class _AdAdminPageState extends State<AdAdminPage> {
   Future<void> _loadStats() async {
     try {
       final day = DateTime.now().toUtc().toIso8601String().substring(0, 10).replaceAll('-', '');
-      final doc = await FirebaseFirestore.instance.collection('AdRewardStats').doc(day).get();
+      final doc = await FirebaseFirestore.instance.collection('AdRewardStats').doc(day).getM('ad_admin_page.dart:36');
       if (mounted) setState(() => _todayStats = doc.data() ?? {});
     } catch (_) {}
   }

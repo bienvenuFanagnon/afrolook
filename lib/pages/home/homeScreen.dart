@@ -1,4 +1,5 @@
-import '../cards/card_milestone.dart';
+import 'package:afrotok/services/read_meter.dart';
+import '../coins/card_coin_page.dart';
 import 'package:afrotok/pages/cards/card_events.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
@@ -18,6 +19,7 @@ import 'package:afrotok/pages/weekly_top/weekly_top_posts_page.dart';
 import 'package:afrotok/pages/weekly_top/weekly_top_commentators_page.dart';
 import 'package:afrotok/pages/weekly_top/weekly_top_creators_page.dart';
 import 'package:afrotok/ads/rewards_service.dart';
+import 'package:afrotok/ads/admob_native_pool.dart';
 import 'package:afrotok/pages/rewards/rewards_page.dart';
 import 'package:afrotok/pages/quiz/quiz_home_page.dart';
 import 'package:afrotok/pages/music/music_page.dart';
@@ -369,7 +371,7 @@ class _MyHomePageState extends State<MyHomePage>
         .where('is_open', isEqualTo: false)
         .orderBy('createdAt', descending: true)
         .limit(100) // pastille « 99+ » : inutile de relire des milliers de notifications à chaque ouverture (coût Firestore)
-        .snapshots()
+        .snapshotsM('homeScreen.dart:373')
         .listen((snapshot) {
       if (!mounted) return;
       const datingTypes = {'DATING_LIKE', 'DATING_MATCH', 'DATING_SUPER_LIKE', 'DATING_MESSAGE'};
@@ -763,27 +765,42 @@ class _MyHomePageState extends State<MyHomePage>
 
 
   Stream<int> getNbrInvitation() async* {
-    List<Invitation> invitations = [];
     var invitationsStream = FirebaseFirestore.instance
         .collection('Invitations')
         .where('receiver_id', isEqualTo: authProvider.loginUserData.id!)
         .where('status', isEqualTo: "${InvitationStatus.ENCOURS.name}")
-        .snapshots();
+        .limit(100) // pastille : inutile de relire davantage
+        .snapshotsM('homeScreen.dart:772');
 
     await for (var invitationsSnapshot in invitationsStream) {
-      for (var invitationDoc in invitationsSnapshot.docs) {
-        //userData=userList.first;
-
-        Invitation invitation;
-
-        invitation = Invitation.fromJson(invitationDoc.data());
-        //  invitation.inviteUser=userList.first;
-        invitations.add(invitation);
-
-        userProvider.countInvitations = invitations.length;
-      }
-      yield invitations.length;
+      final n = invitationsSnapshot.docs.length;
+      userProvider.countInvitations = n;
+      yield n;
     }
+  }
+
+  // Un seul abonnement pour tout l'écran d'accueil. Avant, chaque reconstruction de la barre de navigation créait de nouveaux
+  // abonnements (messages non lus + tous les groupes de la personne) : autant de lectures Firestore facturées en plus.
+  Stream<int>? _invitationsShared;
+  StreamSubscription<int>? _invitationsKeepAlive;
+  int _lastInvitations = 0;
+  Stream<int> sharedInvitationsStream() {
+    return _invitationsShared ??= () {
+      final s = getNbrInvitation().asBroadcastStream();
+      _invitationsKeepAlive = s.listen((v) => _lastInvitations = v);
+      return s;
+    }();
+  }
+
+  Stream<int>? _messagesShared;
+  StreamSubscription<int>? _messagesKeepAlive;
+  int _lastMessages = 0;
+  Stream<int> sharedMessagesStream() {
+    return _messagesShared ??= () {
+      final s = getNbrMessageNonLu().asBroadcastStream();
+      _messagesKeepAlive = s.listen((v) => _lastMessages = v);
+      return s;
+    }();
   }
 
   Stream<int> getNbrMessageNonLu() {
@@ -796,7 +813,8 @@ class _MyHomePageState extends State<MyHomePage>
         .collection('Messages')
         .where('receiverBy', isEqualTo: userId)
         .where('message_state', isEqualTo: MessageState.NONLU.name)
-        .snapshots()
+        .limit(100) // pastille « 99+ » : inutile de relire des milliers de messages non lus à chaque ouverture
+        .snapshotsM('homeScreen.dart:816')
         .listen((snap) {
       directCount = snap.docs.length;
       printVm("messages directs non lus: $directCount");
@@ -806,7 +824,7 @@ class _MyHomePageState extends State<MyHomePage>
     final groupSub = FirebaseFirestore.instance
         .collection('GroupChats')
         .where('member_ids', arrayContains: userId)
-        .snapshots()
+        .snapshotsM('homeScreen.dart:826')
         .listen((snap) {
       groupCount = 0;
       for (final doc in snap.docs) {
@@ -855,7 +873,7 @@ class _MyHomePageState extends State<MyHomePage>
     ))
         .where("type", isEqualTo: ChatType.USER.name)
         .orderBy('updated_at', descending: true)
-        .snapshots();
+        .snapshotsM('homeScreen.dart:875');
 
 // Obtenez la liste des utilisateurs
     //List<DocumentSnapshot> users = await usersQuery.sget();
@@ -872,7 +890,7 @@ class _MyHomePageState extends State<MyHomePage>
             authProvider.loginUserData.id == chatDoc["receiver_id"]
                 ? chatDoc["sender_id"]
                 : chatDoc["receiver_id"]!)
-            .get();
+            .getM('homeScreen.dart:892');
         // Afficher la liste
         List<UserData> userList = querySnapshotUser.docs
             .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
@@ -1011,6 +1029,8 @@ class _MyHomePageState extends State<MyHomePage>
     CurrencyService.instance.setCountry(authProvider.loginUserData.countryData?['countryCode']);
     // Devise choisie par la personne (compte, sinon ce téléphone)
     CurrencyService.instance.loadOverride(serverValue: authProvider.loginUserData.displayCurrency);
+    // Mesure des lectures Firestore par écran (diagnostic temporaire) : envoi groupé toutes les 10 minutes.
+    ReadMeter.instance.start();
     // Utilisateurs bloqués : leurs contenus sont masqués immédiatement dans le fil.
     BlockService.instance.start();
     _headerCtrl = AnimationController(
@@ -1028,6 +1048,8 @@ class _MyHomePageState extends State<MyHomePage>
     // 🔥 Lancer la présence automatique dès l'accès à la Home
     _loadVersionInfo();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Pubs AdMob du fil chargées d'avance : prêtes avant qu'on arrive à leur emplacement
+      AdmobNativePool.warmUpWhenReady(context, authProvider.loginUserData);
       _handleInitialDestination();
       // Gestion des notifications à chaud (app déjà ouverte)
       // Décalé de 3s pour laisser les posts charger sans concurrence Firestore
@@ -1048,11 +1070,12 @@ class _MyHomePageState extends State<MyHomePage>
       Future.delayed(const Duration(seconds: 9), () {
         if (mounted) CardEvents.maybeShow(context);
       });
-      // Cap d'abonnés franchi (100, 500, 1 000…) : proposition de la carte de remerciement, une fois par cap
-      Future.delayed(const Duration(seconds: 30), () {
-        if (mounted) CardMilestone.maybeShow(context);
-      });
-
+      // Web : retour de la page de paiement par carte → annonce du résultat (pièces créditées ou paiement échoué)
+      if (kIsWeb) {
+        Future.delayed(const Duration(seconds: 3), () {
+          if (mounted) CardCoinPage.resume(context);
+        });
+      }
       // Préchargement des groupes Gold/officiels pour la liste des groupes
       context.read<GoldGroupsProvider>().load();
     });
@@ -1159,7 +1182,7 @@ class _MyHomePageState extends State<MyHomePage>
       case 'creator':
         final userId = data['userId'] as String?;
         if (userId != null && userId.isNotEmpty) {
-          FirebaseFirestore.instance.collection('Users').doc(userId).get().then((doc) {
+          FirebaseFirestore.instance.collection('Users').doc(userId).getM('homeScreen.dart:1182').then((doc) {
             if (!mounted || !doc.exists) return;
             final user = UserData.fromJson(doc.data()!);
             Navigator.push(context, MaterialPageRoute(builder: (_) => OtherUserPage(otherUser: user)));
@@ -1169,7 +1192,7 @@ class _MyHomePageState extends State<MyHomePage>
       case 'canal':
         final canalId = data['canalId'] as String?;
         if (canalId != null && canalId.isNotEmpty) {
-          FirebaseFirestore.instance.collection('Canaux').doc(canalId).get().then((doc) {
+          FirebaseFirestore.instance.collection('Canaux').doc(canalId).getM('homeScreen.dart:1192').then((doc) {
             if (!mounted || !doc.exists) return;
             final canal = Canal.fromJson({...doc.data()!, 'id': doc.id});
             Navigator.push(context, MaterialPageRoute(builder: (_) => CanalDetails(canal: canal)));
@@ -1232,7 +1255,7 @@ class _MyHomePageState extends State<MyHomePage>
       case 'creator':
         if (dest.creatorId != null) {
           _navigateViaNotifications(() {
-            FirebaseFirestore.instance.collection('Users').doc(dest.creatorId).get().then((doc) {
+            FirebaseFirestore.instance.collection('Users').doc(dest.creatorId).getM('homeScreen.dart:1255').then((doc) {
               if (!mounted || !doc.exists) return;
               final user = UserData.fromJson(doc.data()!);
               Navigator.push(context, MaterialPageRoute(builder: (_) => OtherUserPage(otherUser: user)));
@@ -1322,7 +1345,7 @@ class _MyHomePageState extends State<MyHomePage>
       final doc = await FirebaseFirestore.instance
           .collection('lives')
           .doc(liveId)
-          .get();
+          .getM('homeScreen.dart:1345');
       if (!mounted) return;
       if (!doc.exists) {
         Navigator.pushNamed(context, '/list_live');
@@ -1437,6 +1460,8 @@ class _MyHomePageState extends State<MyHomePage>
   @override
   void dispose() {
     _liveNavSub?.cancel();
+    _invitationsKeepAlive?.cancel();
+    _messagesKeepAlive?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _headerCtrl.dispose();
     // 🔥 Très important : Arrêter le timer à la destruction de la page
@@ -1631,7 +1656,8 @@ class _MyHomePageState extends State<MyHomePage>
                         GestureDetector(
                           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MesInvitationsPage(context: context))),
                           child: StreamBuilder<int>(
-                            stream: getNbrInvitation(),
+                            stream: sharedInvitationsStream(),
+                            initialData: _lastInvitations,
                             builder: (context, snap) {
                               int n = snap.hasData ? snap.data! : 0;
                               return _navItemWithLabel(
@@ -1648,7 +1674,8 @@ class _MyHomePageState extends State<MyHomePage>
                         GestureDetector(
                           onTap: () => Navigator.pushNamed(context, '/list_users_chat'),
                           child: StreamBuilder<int>(
-                            stream: getNbrMessageNonLu(),
+                            stream: sharedMessagesStream(),
+                            initialData: _lastMessages,
                             builder: (context, snap) {
                               int n = snap.hasData ? snap.data! : 0;
                               return _navItemWithLabel(
@@ -1845,7 +1872,8 @@ class _MyHomePageState extends State<MyHomePage>
                 Navigator.push(context, MaterialPageRoute(builder: (_) => MesInvitationsPage(context: context)));
               },
               child: StreamBuilder<int>(
-                stream: getNbrInvitation(),
+                stream: sharedInvitationsStream(),
+                            initialData: _lastInvitations,
                 builder: (context, snapshot) {
                   int invitationCount = snapshot.hasData ? snapshot.data! : 0;
                   return Column(
@@ -1873,7 +1901,8 @@ class _MyHomePageState extends State<MyHomePage>
             GestureDetector(
               onTap: () => Navigator.pushNamed(context, '/list_users_chat'),
               child: StreamBuilder<int>(
-                stream: getNbrMessageNonLu(),
+                stream: sharedMessagesStream(),
+                            initialData: _lastMessages,
                 builder: (context, snapshot) {
                   int messageCount = snapshot.hasData ? snapshot.data! : 0;
                   return Column(
@@ -2315,7 +2344,8 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
                   // Invitations
                   StreamBuilder<int>(
-                    stream: getNbrInvitation(),
+                    stream: sharedInvitationsStream(),
+                            initialData: _lastInvitations,
                     builder: (context, snap) => _sidebarItem(
                       context: context,
                       icon: Icons.group_outlined,
@@ -2328,7 +2358,8 @@ class _MyHomePageState extends State<MyHomePage>
                   ),
                   // Messages
                   StreamBuilder<int>(
-                    stream: getNbrMessageNonLu(),
+                    stream: sharedMessagesStream(),
+                            initialData: _lastMessages,
                     builder: (context, snap) => _sidebarItem(
                       context: context,
                       icon: Icons.chat_bubble_outline,
