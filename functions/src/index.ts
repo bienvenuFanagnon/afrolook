@@ -29,6 +29,7 @@ export { r2MirrorSweep } from "./media/r2Mirror";
 export { chroniqueReplyInvite, onInvitationAnswered } from "./chroniques/chroniqueReply";
 export { chroniqueMusicCharge } from "./chroniques/chroniqueMusic";
 export { chroniqueExpiryCleanup } from "./chroniques/chroniqueCleanup";
+export { readStatsReport } from "./monitoring/readStats";
 export { cardCoinQuote, cardCoinStart, cardCoinStatus, cardCoinReconcile, cardCoinAdminConfig, cardCoinAdminChargeback } from "./payments/feexpayCard";
 export { paymentReport, paymentWatchdog } from "./payments/paymentLog";
 
