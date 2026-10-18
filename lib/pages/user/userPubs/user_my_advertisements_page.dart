@@ -1,4 +1,5 @@
 // user_my_advertisements_page.dart — refonte UI session 48
+import '../../../services/ad_delete.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/theme/app_colors.dart';
@@ -196,7 +197,7 @@ class _UserMyAdvertisementsPageState extends State<UserMyAdvertisementsPage> {
         title: Text('Supprimer cette publicité ?',
             style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold)),
         content: Text(
-          'Cette action est irréversible. Le post associé sera également supprimé.',
+          'Cette action est irréversible. Seule la publicité est supprimée : ton post reste publié.',
           style: TextStyle(color: _colors.textSecondary),
         ),
         actions: [
@@ -208,16 +209,8 @@ class _UserMyAdvertisementsPageState extends State<UserMyAdvertisementsPage> {
             onPressed: () async {
               Navigator.pop(context);
               try {
-                await FirebaseFirestore.instance
-                    .collection('Advertisements')
-                    .doc(ad.id)
-                    .delete();
-                if (ad.postId != null && ad.postId!.isNotEmpty) {
-                  await FirebaseFirestore.instance
-                      .collection('Posts')
-                      .doc(ad.postId)
-                      .delete();
-                }
+                // Supprime la publicité seulement : le post relié reste publié
+                await AdDeletion.delete(ad);
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                     content: const Text('Publicité supprimée'),

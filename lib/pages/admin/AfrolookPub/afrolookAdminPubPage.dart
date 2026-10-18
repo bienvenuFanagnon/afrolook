@@ -1,4 +1,5 @@
 // afrolookAdminPubPage.dart — dashboard admin v2
+import '../../../services/ad_delete.dart';
 import 'package:afrotok/pages/pub/ad_route_picker.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/models/model_data.dart';
@@ -316,7 +317,7 @@ class _AdvertisementManagementPageState
         title: Text('Supprimer cette publicité ?',
             style: TextStyle(
                 color: _colors.textPrimary, fontWeight: FontWeight.bold)),
-        content: Text('Action irréversible.',
+        content: Text("Action irréversible. Seule la publicité est supprimée : le post relié reste publié.",
             style: TextStyle(color: _colors.textSecondary)),
         actions: [
           TextButton(
@@ -328,16 +329,8 @@ class _AdvertisementManagementPageState
             onPressed: () async {
               Navigator.pop(context);
               try {
-                await FirebaseFirestore.instance
-                    .collection('Advertisements')
-                    .doc(ad.id)
-                    .delete();
-                if (ad.postId != null && ad.postId!.isNotEmpty) {
-                  await FirebaseFirestore.instance
-                      .collection('Posts')
-                      .doc(ad.postId)
-                      .delete();
-                }
+                // Supprime la publicité seulement : le post relié reste publié
+                await AdDeletion.delete(ad);
                 if (mounted) {
                   setState(() {
                     _selectedAd = null;

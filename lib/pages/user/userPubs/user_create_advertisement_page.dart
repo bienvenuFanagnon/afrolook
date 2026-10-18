@@ -460,6 +460,8 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
         // Mettre à jour le post existant
         await FirebaseFirestore.instance.collection('Posts').doc(postId).update({
           'isAdvertisement': true,
+          // Description d'origine gardée : remise en place si la publicité est supprimée (le post, lui, reste publié)
+          'boostBackup': {'description': widget.existingPost!.description ?? ''},
           'description': _descriptionController.text.trim(),
           'availableCountries': targetCountries,
           'updatedAt': now,
