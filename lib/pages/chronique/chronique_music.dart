@@ -14,7 +14,24 @@ class ChroniqueMusic {
     this.volume = 0.7,
     this.keepVideoSound = false,
     this.coins = 0,
+    this.localPath,
   });
+
+  /// Ma voix : enregistrement (ou fichier) de la personne, envoyé avec la chronique à la publication. Gratuit.
+  factory ChroniqueMusic.voice({required String localPath, required int durationMs}) {
+    final dur = durationMs > 0 ? durationMs : 30000;
+    return ChroniqueMusic(
+      kind: 'voice',
+      id: 'voice',
+      title: 'Ma voix',
+      artist: 'Enregistrement personnel',
+      url: '',
+      startMs: 0,
+      endMs: dur < maxClipMs ? dur : maxClipMs,
+      durationMs: dur,
+      localPath: localPath,
+    );
+  }
 
   /// À partir du choix dans la liste des musiques (gratuites d'Afrolook ou sons d'artistes) et de l'adresse de l'extrait.
   factory ChroniqueMusic.from(MontageMusic m, String url) {
@@ -51,7 +68,11 @@ class ChroniqueMusic {
   /// Prix d'utilisation en pièces (0 : gratuit). Payé à la publication.
   final int coins;
 
+  /// Fichier local à envoyer à la publication (ma voix) ; null pour les musiques déjà en ligne.
+  final String? localPath;
+
   bool get isArtist => kind == 'artist';
+  bool get isVoice => kind == 'voice';
   int get clipMs => endMs - startMs;
 
   /// Remet début et fin dans les limites : 5 s au moins, 30 s au plus, sans dépasser la durée de l'extrait.

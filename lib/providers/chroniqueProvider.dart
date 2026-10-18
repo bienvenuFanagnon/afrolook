@@ -73,6 +73,11 @@ class ChroniqueProvider with ChangeNotifier {
       final ref = _firestore.collection('chroniques').doc();
       var musicArtist = music?.artist;
       var musicUrl = music?.url;
+      if (music != null && music.isVoice && music.localPath != null) {
+        // Ma voix : l'enregistrement part avec la chronique (gratuit)
+        musicUrl = await _uploadMedia(File(music.localPath!), (_) {}, folder: 'chronique_voices');
+        musicArtist = 'Ma voix';
+      }
       if (music != null && music.isArtist && type != ChroniqueType.AUDIO) {
         try {
           final r = (await FirebaseFunctions.instance.httpsCallable('chroniqueMusicCharge').call({'soundId': music.id, 'chroniqueId': ref.id})).data as Map;
@@ -388,9 +393,9 @@ class ChroniqueProvider with ChangeNotifier {
   }
 
   /// Supprime la chronique, son média et son aperçu, ses commentaires (200 au plus) et décrémente le compteur de son auteur.
-  Future<void> deleteChronique(String chroniqueId, String mediaUrl, {String? userId, String? posterUrl}) async {
+  Future<void> deleteChronique(String chroniqueId, String mediaUrl, {String? userId, String? posterUrl, String? voiceUrl}) async {
     try {
-      for (final url in [mediaUrl, posterUrl ?? '']) {
+      for (final url in [mediaUrl, posterUrl ?? '', voiceUrl ?? '']) {
         if (url.isEmpty) continue;
         try {
           await _storage.refFromURL(url).delete();

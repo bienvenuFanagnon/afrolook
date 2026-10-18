@@ -3,7 +3,11 @@
 import 'dart:async';
 
 import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
 import 'dart:io';
@@ -15,7 +19,6 @@ import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/chroniqueProvider.dart';
 import '../../theme/app_colors.dart';
-import '../studio/montage/montage_music.dart';
 import 'chronique_music.dart';
 import 'chronique_music_sheet.dart';
 import '../studio/studio_entry_page.dart';
@@ -352,6 +355,8 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
 
   @override
   void dispose() {
+    _audioRecTimer?.cancel();
+    _audioRecorder?.dispose();
     _textController.dispose();
     _videoController?.dispose();
     super.dispose();
@@ -778,22 +783,8 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
   }
 
   Future<void> _pickMusic() async {
-    final pick = await showMontageMusicPicker(context, current: null, onArtistCta: () => openArtistSpace(context));
-    if (pick == null || !mounted) return;
-    final src = pick.music;
-    if (src == null) {
-      setState(() => _music = null);
-      return;
-    }
-    final url = src.url ?? await MontageMusicPlayer.urlOf(src);
-    if (!mounted) return;
-    if (url == null || url.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cette musique est indisponible pour le moment.')));
-      return;
-    }
-    final cm = ChroniqueMusic.from(src, url);
-    final ok = await showChroniqueMusicOptions(context, src, cm, isVideo: _selectedType == ChroniqueType.VIDEO);
-    if (ok == true && mounted) setState(() => _music = cm);
+    final m = await showChroniqueMusicSheet(context, isVideo: _selectedType == ChroniqueType.VIDEO);
+    if (m != null && mounted) setState(() => _music = m);
   }
 
   Widget _buildMusicRow(AppColors colors) {
@@ -820,7 +811,7 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
               Text(m == null ? 'Ajouter une musique' : m.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 14)),
               const SizedBox(height: 2),
               Text(
-                m == null ? 'Gratuite ou d\'un artiste, 5 à 30 secondes' : '${m.artist} · ${(m.clipMs / 1000).round()} s · ${m.coins > 0 ? '${m.coins} pièces' : 'gratuite'}',
+                m == null ? 'Un artiste, Afrolook ou votre téléphone · 5 à 30 s' : '${m.artist} · ${(m.clipMs / 1000).round()} s · ${m.coins > 0 ? '${m.coins} pièces' : 'gratuite'}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(color: colors.textSecondary, fontSize: 12),
@@ -1075,6 +1066,95 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
     );
   }
 
+  // ── Audio : enregistrer sa voix ou choisir un fichier, directement ici (le Studio reste dans la barre du haut) ──
+
+  static const int _maxAudioMs = 60000;
+  AudioRecorder? _audioRecorder;
+  bool _audioRecording = false;
+  int _audioRecMs = 0;
+  Timer? _audioRecTimer;
+
+  String _fmtMs(int ms) {
+    final s = (ms / 1000).round();
+    return '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _startAudioRecord() async {
+    _audioRecorder ??= AudioRecorder();
+    try {
+      if (!await _audioRecorder!.hasPermission()) {
+        _showErrorDialog('Autorisez le micro pour enregistrer votre voix.');
+        return;
+      }
+      final dir = await getTemporaryDirectory();
+      await _audioRecorder!.start(const RecordConfig(encoder: AudioEncoder.aacLc), path: '${dir.path}/chr_audio_${DateTime.now().millisecondsSinceEpoch}.m4a');
+      setState(() {
+        _audioRecording = true;
+        _audioRecMs = 0;
+      });
+      _audioRecTimer = Timer.periodic(const Duration(milliseconds: 250), (t) {
+        if (!mounted) return t.cancel();
+        setState(() => _audioRecMs += 250);
+        if (_audioRecMs >= _maxAudioMs) _stopAudioRecord();
+      });
+    } catch (_) {
+      _showErrorDialog('Enregistrement impossible.');
+    }
+  }
+
+  Future<void> _stopAudioRecord() async {
+    _audioRecTimer?.cancel();
+    final ms = _audioRecMs;
+    String? path;
+    try {
+      path = await _audioRecorder?.stop();
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() => _audioRecording = false);
+    if (path == null || ms < 2000) {
+      if (ms < 2000) _showErrorDialog('Enregistrement trop court (2 secondes au moins).');
+      return;
+    }
+    setState(() {
+      _selectedType = ChroniqueType.AUDIO;
+      _selectedMedia = File(path!);
+      _audioStartMs = 0;
+      _audioEndMs = ms.clamp(0, _maxAudioMs);
+    });
+  }
+
+  Future<void> _pickAudioFile() async {
+    try {
+      final r = await FilePicker.platform.pickFiles(type: FileType.audio, allowMultiple: false);
+      final path = r?.files.firstOrNull?.path;
+      if (path == null) return;
+      final file = File(path);
+      if (await file.length() > 20 * 1024 * 1024) {
+        _showErrorDialog('Le fichier audio ne doit pas dépasser 20 Mo.');
+        return;
+      }
+      final probe = AudioPlayer();
+      await probe.setSource(DeviceFileSource(path));
+      final d = await probe.getDuration();
+      await probe.dispose();
+      final ms = d?.inMilliseconds ?? 0;
+      if (ms < 2000) {
+        _showErrorDialog('Fichier audio illisible ou trop court.');
+        return;
+      }
+      if (!mounted) return;
+      setState(() {
+        _selectedType = ChroniqueType.AUDIO;
+        _selectedMedia = file;
+        _audioStartMs = 0;
+        _audioEndMs = ms.clamp(0, _maxAudioMs);
+        if (_textController.text.trim().isEmpty) _textController.text = path.split('/').last.replaceAll(RegExp(r'\.[A-Za-z0-9]+$'), '');
+      });
+    } catch (_) {
+      _showErrorDialog('Fichier audio illisible.');
+    }
+  }
+
   Widget _buildAudioContent(AppColors colors) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1089,36 +1169,48 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
             border: Border.all(color: colors.border),
           ),
           child: _selectedMedia == null
-              ? GestureDetector(
-                  onTap: _openStudio,
-                  child: Column(
-                    children: [
-                      Icon(Icons.mic_none_rounded, size: 48, color: colors.textPrimary.withOpacity(0.3)),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Utiliser le Studio pour ajouter un audio',
-                        style: TextStyle(color: colors.textPrimary.withOpacity(0.5), fontSize: 13),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: colors.primary.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(99),
-                          border: Border.all(color: colors.primary.withOpacity(0.4)),
+              ? Column(
+                  children: [
+                    Icon(_audioRecording ? Icons.graphic_eq_rounded : Icons.mic_none_rounded, size: 48, color: _audioRecording ? Colors.redAccent : colors.textPrimary.withOpacity(0.35)),
+                    const SizedBox(height: 10),
+                    Text(
+                      _audioRecording ? 'Enregistrement… ${_fmtMs(_audioRecMs)} / 1:00' : 'Enregistrez votre voix ou choisissez un fichier audio',
+                      style: TextStyle(color: colors.textPrimary.withOpacity(_audioRecording ? 0.9 : 0.55), fontSize: 13, fontWeight: _audioRecording ? FontWeight.w800 : FontWeight.w500),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FilledButton.icon(
+                            onPressed: _audioRecording ? _stopAudioRecord : _startAudioRecord,
+                            icon: Icon(_audioRecording ? Icons.stop_rounded : Icons.mic_rounded, size: 18),
+                            label: Text(_audioRecording ? 'Arrêter' : 'Enregistrer', style: const TextStyle(fontWeight: FontWeight.w800)),
+                            style: FilledButton.styleFrom(
+                              backgroundColor: _audioRecording ? Colors.redAccent : colors.primary,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                          ),
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.auto_awesome, size: 14, color: colors.primary),
-                            const SizedBox(width: 6),
-                            Text('Ouvrir le Studio', style: TextStyle(color: colors.primary, fontSize: 12, fontWeight: FontWeight.w700)),
-                          ],
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _audioRecording ? null : _pickAudioFile,
+                            icon: const Icon(Icons.audio_file_rounded, size: 18),
+                            label: const Text('Un fichier', style: TextStyle(fontWeight: FontWeight.w700)),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: colors.textPrimary,
+                              side: BorderSide(color: colors.border),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                  ],
                 )
               : Row(
                   children: [

@@ -156,6 +156,9 @@ class MontageMusicPlayer {
   }
 }
 
+/// Sons d'artistes validés (une lecture, gardée 10 minutes) : partagée avec la musique des chroniques.
+Future<QuerySnapshot> loadArtistSoundsSnapshot() => _MusicSheetState._loadArtists();
+
 /// Choix de la musique : pistes gratuites, sons des artistes, ou aucune. Renvoie null si on ferme sans choisir,
 /// et un [MusicPick] sinon (music == null : « Sans musique »).
 class MusicPick {

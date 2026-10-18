@@ -89,6 +89,16 @@ void main() {
   group('musique d\'une chronique', () {
     ChroniqueMusic music({int duration = 30000}) => ChroniqueMusic(kind: 'free', id: 'afrobeat', title: 'Afrobeat', artist: 'Musique Afrolook', url: 'https://example.com/a.m4a', startMs: 0, endMs: duration, durationMs: duration);
 
+    test('ma voix : fichier local, gratuit, extrait de 30 s au plus', () {
+      final v = ChroniqueMusic.voice(localPath: '/tmp/voix.m4a', durationMs: 45000);
+      expect(v.isVoice, isTrue);
+      expect(v.isArtist, isFalse);
+      expect(v.coins, 0);
+      expect(v.localPath, '/tmp/voix.m4a');
+      expect(v.clipMs, 30000);
+      expect(ChroniqueMusic.voice(localPath: 'x', durationMs: 8000).clipMs, 8000);
+    });
+
     test('l\'extrait reste entre 5 et 30 secondes et dans la durée du titre', () {
       final m = music(duration: 60000)..startMs = 10000..endMs = 12000;
       m.clamp();

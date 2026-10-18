@@ -671,7 +671,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
     );
     if (ok != true || !mounted) return;
     try {
-      await chroniqueProvider.deleteChronique(chronique.id!, chronique.mediaUrl ?? '', userId: chronique.userId, posterUrl: chronique.posterUrl);
+      await chroniqueProvider.deleteChronique(chronique.id!, chronique.mediaUrl ?? '', userId: chronique.userId, posterUrl: chronique.posterUrl, voiceUrl: chronique.musicKind == 'voice' ? chronique.musicUrl : null);
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Suppression impossible. Réessayez.')));
       return;

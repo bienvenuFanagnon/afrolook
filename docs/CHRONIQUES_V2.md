@@ -15,9 +15,18 @@ pas de bouton partage ; suppression par l'administrateur avec confirmation (sans
 - **Création** : ligne « Musique » (texte, image, vidéo), réglage de l'extrait (5 à 30 s), volume, garder ou remplacer le son de la vidéo.
 
 ## Musique
-Choix dans la liste existante du Studio (gratuites d'Afrolook, sons d'artistes). La chronique garde l'adresse de l'**extrait public** (jamais l'original), le début, la fin, le volume.
-Paiement à la publication par la fonction `chroniqueMusicCharge` (une seule fois par chronique, 60 % pour l'artiste, gratuit pour ses propres sons et les sons gratuits).
-La musique est lue en boucle par le lecteur ; la musique globale de l'application se met en pause pendant la chronique.
+Feuille unique « Choisir une musique » (`chronique_music_sheet.dart`), conforme à la maquette validée :
+- **Quatre onglets** : Gratuites (musiques d'Afrolook), Artistes (sons d'artistes validés), Ma bibliothèque (titres achetés), Ma voix (enregistrer, 30 s au plus).
+- **Recherche** sur les trois premiers onglets (titre, artiste, style) ; la liste des artistes porte sur les 100 sons validés les plus récents.
+- **Depuis mon téléphone** : bouton en haut de la feuille (fichier audio de 20 Mo au plus, 3 s au moins).
+- Chaque ligne s'écoute avant le choix et porte son prix. **Mêmes règles que partout pour les sons d'artistes** : gratuit = rien à payer ; payant = prix d'utilisation
+  (60 % pour l'artiste) débité à la publication ; ses propres sons sont gratuits.
+- Onde avec fenêtre de l'extrait (5 à 30 s), volume, et pour une vidéo « garder le son de la vidéo » (mélange) ou le remplacer.
+La chronique garde l'adresse de l'**extrait public** (jamais l'original). Ma voix et les fichiers du téléphone sont envoyés avec la chronique (`chronique_voices/`) et supprimés avec elle.
+Paiement par la fonction `chroniqueMusicCharge` (une seule fois par chronique). La lecture se fait en boucle dans le lecteur ; la musique globale se met en pause.
+
+**Chronique de type Audio** : on enregistre sa voix (1 minute au plus) ou on choisit un fichier directement dans le formulaire, sans passer par le Studio
+(le bouton Studio reste dans la barre du haut pour ceux qui veulent y préparer un contenu).
 
 ## Réponse privée : demande de discussion temporaire (comme TikTok)
 - Déjà amis : le message part dans la discussion, avec la chronique citée (message `link_share`, type `chronique`).

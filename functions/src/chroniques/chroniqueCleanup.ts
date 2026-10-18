@@ -18,9 +18,9 @@ export const chroniqueExpiryCleanup = onSchedule({ schedule: "every 60 minutes",
   for (const doc of snap.docs) {
     const c = doc.data();
     try {
-      for (const field of ["mediaUrl", "posterUrl", "coverImageUrl"]) {
+      for (const field of ["mediaUrl", "posterUrl", "coverImageUrl", "musicUrl"]) {
         const path = storagePathFromUrl(String(c[field] ?? ""));
-        if (path && /^(chroniques|chronique_posters|chronique_covers)\//.test(path)) await bucket.file(path).delete({ ignoreNotFound: true }).catch(() => undefined);
+        if (path && /^(chroniques|chronique_posters|chronique_covers|chronique_voices)\//.test(path)) await bucket.file(path).delete({ ignoreNotFound: true }).catch(() => undefined);
       }
       const msgs = await db.collection("chronique_messages").where("chroniqueId", "==", doc.id).limit(400).get();
       if (!msgs.empty) {
