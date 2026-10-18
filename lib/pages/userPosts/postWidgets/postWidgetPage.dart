@@ -1,3 +1,4 @@
+import '../../../services/comments_prefetch.dart';
 import '../../../widgets/studio/post_template_try.dart';
 import '../../defi/defi_boost.dart';
 import 'package:afrotok/widgets/link_preview_card.dart';
@@ -2897,21 +2898,15 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   Future<void> _loadLastComment() async {
     final postId = widget.post.id;
     if (postId == null || _isLoadingComment) return;
+    // Aucun commentaire annoncé : inutile de lire Firestore pour rien (une lecture par post affiché)
+    if ((widget.post.comments ?? 0) <= 0) return;
     setState(() => _isLoadingComment = true);
     try {
-      final snap = await firestore
-          .collection('PostComments')
-          .where('post_id', isEqualTo: postId)
-          .orderBy('created_at', descending: true)
-          .limit(10)
-          .get();
-      if (snap.docs.isNotEmpty && mounted) {
+      // Cache partagé : une seule lecture (5 commentaires, auteurs des 3 premiers) pour tous les écrans, prête avant l'ouverture des commentaires
+      final page = await CommentsPrefetch.instance.first(postId);
+      if (page.comments.isNotEmpty && mounted) {
         setState(() {
-          _preloadedComments = snap.docs.map((doc) {
-            final data = Map<String, dynamic>.from(doc.data());
-            data['id'] = doc.id;
-            return PostComment.fromJson(data);
-          }).toList();
+          _preloadedComments = List.of(page.comments);
         });
       }
     } catch (_) {}
@@ -2953,6 +2948,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
         if (mounted) {
           setState(() {
             _preloadedComments.insert(0, comment);
+            CommentsPrefetch.instance.addLocal(comment.post_id ?? '', comment);
             _localCommentsCount++;
           });
         }

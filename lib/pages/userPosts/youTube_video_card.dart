@@ -1,3 +1,4 @@
+import '../../services/comments_prefetch.dart';
 import '../../services/media_shrink.dart';
 import '../../widgets/studio/post_template_try.dart';
 import 'package:afrotok/widgets/name_tag.dart';
@@ -2521,21 +2522,15 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   Future<void> _loadLastComment() async {
     final postId = widget.post.id;
     if (postId == null || _isLoadingComment) return;
+    // Aucun commentaire annoncé : inutile de lire Firestore pour rien (une lecture par post affiché)
+    if ((widget.post.comments ?? 0) <= 0) return;
     setState(() => _isLoadingComment = true);
     try {
-      final snap = await _firestore
-          .collection('PostComments')
-          .where('post_id', isEqualTo: postId)
-          .orderBy('created_at', descending: true)
-          .limit(5)
-          .get();
-      if (snap.docs.isNotEmpty && mounted) {
+      // Cache partagé : une seule lecture (5 commentaires, auteurs des 3 premiers) pour tous les écrans, prête avant l'ouverture des commentaires
+      final page = await CommentsPrefetch.instance.first(postId);
+      if (page.comments.isNotEmpty && mounted) {
         setState(() {
-          _preloadedComments = snap.docs.map((doc) {
-            final data = Map<String, dynamic>.from(doc.data());
-            data['id'] = doc.id;
-            return PostComment.fromJson(data);
-          }).toList();
+          _preloadedComments = List.of(page.comments);
         });
       }
     } catch (_) {}
@@ -2593,6 +2588,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         if (mounted) {
           setState(() {
             _preloadedComments.insert(0, comment);
+            CommentsPrefetch.instance.addLocal(comment.post_id ?? '', comment);
             _localCommentsCount++;
             _localInteractionsCount++;
           });

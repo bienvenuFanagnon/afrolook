@@ -1,3 +1,4 @@
+import '../services/comments_prefetch.dart';
 import '../services/media_shrink.dart';
 import 'package:afrotok/widgets/studio/post_template_try.dart';
 import '../widgets/music/music_overlay.dart';
@@ -1909,19 +1910,11 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     final postId = _currentPost.id;
     if (postId == null) return;
     try {
-      final snap = await _firestore
-          .collection('PostComments')
-          .where('post_id', isEqualTo: postId)
-          .orderBy('created_at', descending: true)
-          .limit(10)
-          .get();
-      if (snap.docs.isNotEmpty && mounted) {
+      // Cache partagé : une seule lecture (5 commentaires, auteurs des 3 premiers) pour tous les écrans, prête avant l'ouverture des commentaires
+      final page = await CommentsPrefetch.instance.first(postId);
+      if (page.comments.isNotEmpty && mounted) {
         setState(() {
-          _preloadedComments = snap.docs.map((doc) {
-            final data = Map<String, dynamic>.from(doc.data());
-            data['id'] = doc.id;
-            return PostComment.fromJson(data);
-          }).toList();
+          _preloadedComments = List.of(page.comments);
         });
       }
     } catch (_) {}
@@ -2049,6 +2042,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
       if (success && mounted) {
         setState(() {
           _preloadedComments.insert(0, comment);
+            CommentsPrefetch.instance.addLocal(comment.post_id ?? '', comment);
           _currentPost.comments = (_currentPost.comments ?? 0) + 1;
         });
         authProvider.incrementPostTotalInteractions(
