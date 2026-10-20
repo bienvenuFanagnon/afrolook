@@ -920,3 +920,50 @@ body[data-view=creations] #main>.wrap>.eyebrow,body[data-view=creations] #main>.
   .fixacts .btn{min-width:0;padding:11px 8px;font-size:13.5px;gap:6px}
 }
 .hero .choose,.hero .hsearch,.hero .hero-stats,.hero .tsaver,.hline{max-width:640px}
+/* ── Favoris et commandes personnalisées ── */
+.chead{display:flex;align-items:center;justify-content:space-between;gap:6px;min-width:0}
+.chead>.code,.chead>code{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fav{flex:none;width:32px;height:32px;display:grid;place-items:center;border:0;border-radius:50%;background:none;color:var(--faint);cursor:pointer;padding:0;-webkit-tap-highlight-color:transparent}
+.fav .ic{width:19px;height:19px;transition:transform .15s}
+.fav:hover{color:var(--txt)}
+.fav[aria-pressed=true]{color:#ff4d6d}.fav[aria-pressed=true] .ic{fill:currentColor}
+.fav:active .ic{transform:scale(.85)}
+.fav.big{width:42px;height:42px;border:1px solid var(--line2)}.fav.big .ic{width:22px;height:22px}
+.fh1{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.fh1 h1{min-width:0}
+.libtoast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);opacity:0;pointer-events:none;z-index:120;background:#1c1c20;border:1px solid var(--line2);color:var(--txt);border-radius:999px;padding:10px 16px;font-size:13.5px;font-weight:700;transition:opacity .2s,transform .2s;white-space:nowrap;max-width:calc(100vw - 32px);overflow:hidden;text-overflow:ellipsis}
+.libtoast.on{opacity:1;transform:translate(-50%,0)}
+@media (min-width:720px){.libtoast{bottom:28px}}
+.minelink{display:inline-flex;align-items:center;gap:6px;color:var(--acc2);font-weight:700;font-size:13.5px;margin:-4px 0 12px}.minelink .ic{color:#ff4d6d;fill:#ff4d6d;width:16px;height:16px}
+.home-favs{margin-top:6px}
+/* bloc « Personnaliser » de la fiche */
+.perso{margin:12px 0}
+.perso-open{width:100%}
+.perso-vers{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px}.perso-vers b{font-size:12.5px;color:var(--mut);margin-right:4px}
+.perso-box{border:1px solid var(--line2);border-radius:18px;background:var(--card);padding:14px;display:flex;flex-direction:column;gap:10px}
+.perso-h{display:flex;align-items:center;justify-content:space-between}.perso-h b{display:flex;align-items:center;gap:6px}
+.perso-x{width:32px;height:32px;border-radius:50%;border:0;background:var(--line);color:var(--txt);font-size:18px;cursor:pointer}
+.perso-box label{display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--mut);font-weight:600}
+.perso-box textarea,.perso-box input{background:#0d0e10;border:1px solid var(--line2);border-radius:13px;color:var(--txt);padding:11px 12px;font:inherit;font-size:14.5px;width:100%;min-width:0;resize:vertical}
+.perso-box #ps-text{font:13px/1.5 var(--mono)}
+.perso-box .hint{margin:0;font-weight:500}
+.perso-reset{align-self:flex-start;border:0;background:none;color:var(--acc2);font:600 13px var(--f);cursor:pointer;padding:0}
+.perso-acts{display:flex;flex-direction:column;gap:8px}.perso-acts .btn{width:100%}
+@media (min-width:720px){.perso-acts{flex-direction:row;flex-wrap:wrap}.perso-acts .btn{width:auto;flex:1 1 auto}}
+/* page « Mes commandes » */
+.mtabs2{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:5px;margin:4px 0 14px}
+.mtabs2 button{display:flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:12px;background:none;color:var(--mut);font:700 14px var(--f);padding:10px 6px;cursor:pointer;min-width:0}
+.mtabs2 button[aria-selected=true]{background:var(--card);color:var(--txt);box-shadow:inset 0 0 0 1px var(--line2)}
+.mtabs2 i{font-style:normal;font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
+.mine-sync a{color:var(--acc2);font-weight:700}
+.mine-empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:34px 16px;border:1px dashed var(--line2);border-radius:18px;color:var(--mut)}
+.mine-empty>.ic{width:34px;height:34px;color:var(--faint)}.mine-empty p{max-width:36ch;margin:0}
+.ccards{display:flex;flex-direction:column;gap:10px}
+.ccard{display:flex;gap:12px;border:1px solid var(--line);border-radius:18px;background:var(--card);padding:12px;min-width:0}
+.ccard-img{flex:none;width:76px}.ccard-img img{width:76px;height:96px;object-fit:cover;border-radius:12px;display:block}
+.ccard-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.ccard-b>b{font-size:15.5px}.ccard-b small{color:var(--faint);font-size:12px}.ccard-b small a{color:var(--acc2);font-family:var(--mono)}
+.ccard-t{color:var(--mut)!important}
+.ccard-p{margin:4px 0 6px;font:12px/1.45 var(--mono);color:var(--mut);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+.ccard .acts{display:flex;flex-wrap:wrap;gap:6px}.ccard .acts .btn{flex:1 1 auto;min-width:0;padding:8px 10px;font-size:12.5px}
+.btn.warn{background:rgba(255,69,58,.18);color:#ff6b61}
+.mtabs2 button{white-space:nowrap;font-size:13.5px}.mtabs2 .ic{width:17px;height:17px}

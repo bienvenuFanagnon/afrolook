@@ -876,6 +876,29 @@ async function saveBrandProfile(u, b) {
   return profile;
 }
 
+// ── Bibliothèque de l'utilisateur : favoris et commandes personnalisées (texte retouché + « touches » pour Générer ici) ──
+// Rangée dans StudioUsers/{uid} (champs libFavs, libCustoms) : le navigateur garde sa copie, le compte la retrouve sur tous les appareils.
+const LIB = { favs: 300, customs: 60, name: 60, text: 3000, touch: 200 };
+const SLUG_RE = /^[a-z0-9-]{2,48}$/;
+function cleanLib(b) {
+  const favs = [...new Set((Array.isArray(b.favs) ? b.favs : []).filter((x) => typeof x === 'string' && SLUG_RE.test(x)))].slice(0, LIB.favs);
+  const seen = new Set();
+  const customs = (Array.isArray(b.customs) ? b.customs : []).filter((c) => c && typeof c === 'object' && SLUG_RE.test(c.slug || '') && /^[a-z0-9]{6,24}$/.test(c.id || '') && !seen.has(c.id) && seen.add(c.id))
+    .slice(0, LIB.customs)
+    .map((c) => ({ id: c.id, slug: c.slug, name: clean(c.name, LIB.name), text: String(c.text == null ? '' : c.text).replace(/[\u0000-\u0009\u000b-\u001f<>]/g, ' ').trim().slice(0, LIB.text), touch: clean(c.touch, LIB.touch), at: Math.max(0, Math.trunc(Number(c.at)) || 0) }));
+  return { favs, customs };
+}
+async function getLibrary(u) {
+  const doc = await db().collection('StudioUsers').doc(u.uid).get();
+  const d = doc.exists ? doc.data() : {};
+  return { favs: d.libFavs || [], customs: d.libCustoms || [], at: d.libAt ? d.libAt.toMillis() : 0 };
+}
+async function saveLibrary(u, b) {
+  const lib = cleanLib(b);
+  await db().collection('StudioUsers').doc(u.uid).set({ libFavs: lib.favs, libCustoms: lib.customs, libAt: FieldValue.serverTimestamp() }, { merge: true });
+  return { ok: true, favs: lib.favs.length, customs: lib.customs.length };
+}
+
 async function logGenError(type, code, uid, extra) {
   try {
     await db().collection('GenErrors').add({
@@ -888,4 +911,4 @@ async function logGenError(type, code, uid, extra) {
   } catch (_) { /* silencieux */ }
 }
 
-module.exports = { adminChargeback, feexSnapshot, quoteCard, referrals, attachReferrer, referralReward, ensureRefCode, grant, evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, history, regen, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST, spendCredits, addCredits, bump, day, db, clean, GEMINI_API_KEY, VIDEO_COST, VIDEO_LIMITS, callGemini, getBrandProfile, saveBrandProfile, myOrders, adminOrders, adminUserDetail, logGenError };
+module.exports = { getLibrary, saveLibrary, adminChargeback, feexSnapshot, quoteCard, referrals, attachReferrer, referralReward, ensureRefCode, grant, evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, history, regen, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST, spendCredits, addCredits, bump, day, db, clean, GEMINI_API_KEY, VIDEO_COST, VIDEO_LIMITS, callGemini, getBrandProfile, saveBrandProfile, myOrders, adminOrders, adminUserDetail, logGenError };

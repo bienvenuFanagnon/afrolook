@@ -281,8 +281,8 @@
   }
   // ── Vues du Studio : l'onglet du bas choisit la vue (#account = Compte, #creations = Mes créations, sinon Générer) ──
   var A = L === 'en'
-    ? { balance: 'Balance', recharge: 'Top up', per: '1 poster = {n} credits', gen: 'Create a poster', genS: 'From your photo', crea: 'My creations', creaS: 'Images created on the site', earn: 'Earn credits', earnS: 'Refer your friends', txn: 'My purchases', txnS: 'Receipts and payments', nopub: 'No ads', nopubS: '30 days without advertising', nopubOn: 'Active until {d}', install: 'Install the app', installS: 'On your home screen, like a real app', hub: 'Admin hub', hubS: 'Only visible to you', out: 'Sign out', more: 'More', acc: 'Account', loginT: 'Sign in', loginP: 'With your Google account: your credits, your creations and your referral link follow you on all your devices.', creaLogin: 'Sign in to find your creations.', creaFilm: 'My films', creaFilmS: 'Film Studio' }
-    : { balance: 'Solde', recharge: 'Recharger', per: '1 affiche = {n} crédits', gen: 'Générer une affiche', genS: 'À partir de votre photo', crea: 'Mes créations', creaS: 'Images créées sur le site', earn: 'Gagner des crédits', earnS: 'Parrainez vos amis', txn: 'Mes achats', txnS: 'Reçus et paiements', nopub: 'Sans pub', nopubS: '30 jours sans publicité', nopubOn: 'Actif jusqu’au {d}', install: 'Installer l’application', installS: 'Sur l’écran d’accueil, comme une vraie app', hub: 'Hub admin', hubS: 'Visible seulement par vous', out: 'Se déconnecter', more: 'Plus', acc: 'Compte', loginT: 'Connectez-vous', loginP: 'Avec votre compte Google : vos crédits, vos créations et votre lien de parrainage vous suivent sur tous vos appareils.', creaLogin: 'Connectez-vous pour retrouver vos créations.', creaFilm: 'Mes films', creaFilmS: 'Studio Film' };
+    ? { balance: 'Balance', recharge: 'Top up', per: '1 poster = {n} credits', gen: 'Create a poster', genS: 'From your photo', crea: 'My creations', creaS: 'Images created on the site', earn: 'Earn credits', earnS: 'Refer your friends', txn: 'My purchases', txnS: 'Receipts and payments', nopub: 'No ads', nopubS: '30 days without advertising', nopubOn: 'Active until {d}', install: 'Install the app', installS: 'On your home screen, like a real app', hub: 'Admin hub', hubS: 'Only visible to you', out: 'Sign out', more: 'More', acc: 'Account', loginT: 'Sign in', loginP: 'With your Google account: your credits, your creations and your referral link follow you on all your devices.', creaLogin: 'Sign in to find your creations.', creaFilm: 'My films', creaFilmS: 'Film Studio', mine: 'My commands', mineS: 'Favorites and custom commands' }
+    : { balance: 'Solde', recharge: 'Recharger', per: '1 affiche = {n} crédits', gen: 'Générer une affiche', genS: 'À partir de votre photo', crea: 'Mes créations', creaS: 'Images créées sur le site', earn: 'Gagner des crédits', earnS: 'Parrainez vos amis', txn: 'Mes achats', txnS: 'Reçus et paiements', nopub: 'Sans pub', nopubS: '30 jours sans publicité', nopubOn: 'Actif jusqu’au {d}', install: 'Installer l’application', installS: 'Sur l’écran d’accueil, comme une vraie app', hub: 'Hub admin', hubS: 'Visible seulement par vous', out: 'Se déconnecter', more: 'Plus', acc: 'Compte', loginT: 'Connectez-vous', loginP: 'Avec votre compte Google : vos crédits, vos créations et votre lien de parrainage vous suivent sur tous vos appareils.', creaLogin: 'Connectez-vous pour retrouver vos créations.', creaFilm: 'Mes films', creaFilmS: 'Studio Film', mine: 'Mes commandes', mineS: 'Favoris et commandes personnalisées' };
   function view() { return location.hash === '#account' ? 'account' : location.hash === '#creations' ? 'creations' : 'gen'; }
   function postersOf(n) { return Math.floor((n || 0) / GC()); }
   function balText(n) { var p = postersOf(n); return p + ' ' + (L === 'en' ? (p === 1 ? 'poster' : 'posters') : (p === 1 ? 'affiche' : 'affiches')); }
@@ -311,6 +311,7 @@
         accRow(location.pathname, 'sparkle', A.gen, A.genS, ' data-view="gen"') +
         accRow(location.pathname + '#creations', 'image', A.crea, A.creaS, '') +
         accRow(L === 'en' ? '/en/film-studio/' : '/studio-film/', 'film', A.creaFilm, A.creaFilmS, '') +
+        accRow(L === 'en' ? '/en/my-commands/' : '/mes-commandes/', 'heart', A.mine, A.mineS, '') +
         accRow(refUrl(), 'gift', A.earn, A.earnS, '') +
         accRow('', 'receipt', A.txn, A.txnS, ' id="s-txn"') +
         accRow('', 'bolt', A.nopub, until, state.adFreeUntil ? '' : ' data-nopub') +
@@ -797,6 +798,7 @@
 
   // ── démarrage ──
   saleLoad();
+  try { var tch = JSON.parse(sessionStorage.getItem('sa_touch') || 'null'); sessionStorage.removeItem('sa_touch'); if (tch && tch.slug === slug && tch.touch) state.stagingInstruction = String(tch.touch).slice(0, 200); } catch (e) {}
   import('/js/auth.js');
   fetch('/api/config').then(function (r) { return r.json(); }).then(function (c) { state.cfg = c; applyCost(c.genCost || 6); try { localStorage.setItem('sa_gc', String(c.genCost || 6)); } catch (e) {} if (state.user && !state.checking) render(); maybePass(); }).catch(function () {});
   document.addEventListener('sa:auth', function (e) {

@@ -301,7 +301,7 @@
       : '<div class="poster" style="--x:' + esc(r.x) + ';--y:' + esc(r.y) + ';--r:' + esc(r.r) + '"><span class="tag">' + esc(r.cat) + '</span><span class="shape"></span><b>' + esc(r.poster) + '</b><small>' + esc(r.code) + '</small></div>';
     var href = (lang === 'en' ? '/en/c/' : '/c/') + r.slug + '/';
     var gen = r.can ? '<a class="btn pri copy" href="' + (lang === 'en' ? '/en/generate/' : '/generer/') + '?c=' + r.slug + '" data-try="' + r.slug + '">' + genLbl() + '</a>' : '';
-    return '<article class="rc" data-slug="' + r.slug + '" data-search="' + esc(r.code) + '"><a class="rp" href="' + href + '" aria-label="' + esc(r.title) + '">' + poster + '</a><div class="rb"><code>' + esc(r.code) + '</code><span class="rt">' + esc(r.title) + '</span><span class="cnt" title="' + esc(cw(r.copies) + ' · ' + tw(r.tries)) + '">' + label([r.copies, r.tries], false) + '</span><div class="acts">' + gen + '<button class="btn ' + (r.can ? 'gl' : 'pri') + ' copy" type="button" data-copy="#pp-' + r.slug + '" data-slug="' + r.slug + '">' + copyLbl() + '</button></div><pre id="pp-' + r.slug + '" hidden>' + esc(r.full) + '</pre></div></article>';
+    return '<article class="rc" data-slug="' + r.slug + '" data-search="' + esc(r.code) + '"><a class="rp" href="' + href + '" aria-label="' + esc(r.title) + '">' + poster + '</a><div class="rb"><div class="chead"><code>' + esc(r.code) + '</code><button class="fav" type="button" data-fav="' + r.slug + '" aria-pressed="false" aria-label="' + (lang === 'fr' ? 'Ajouter aux favoris' : 'Add to favorites') + '">' + window.saIcon('heart') + '</button></div><span class="rt">' + esc(r.title) + '</span><span class="cnt" title="' + esc(cw(r.copies) + ' · ' + tw(r.tries)) + '">' + label([r.copies, r.tries], false) + '</span><div class="acts">' + gen + '<button class="btn ' + (r.can ? 'gl' : 'pri') + ' copy" type="button" data-copy="#pp-' + r.slug + '" data-slug="' + r.slug + '">' + copyLbl() + '</button></div><pre id="pp-' + r.slug + '" hidden>' + esc(r.full) + '</pre></div></article>';
   }
   // « À la une » : les commandes les plus utilisées (copie = 1 point, essai « Générer ici » = 10 points), mélangées entre catégories :
   // d'abord la meilleure de Mode, Pub produit et Beauté, puis le reste par score avec au plus 2 par catégorie ; la sélection éditoriale complète jusqu'à 10.
@@ -318,6 +318,7 @@
     var have = {}; picked.forEach(function (r) { have[r.slug] = 1; });
     var base = Array.prototype.filter.call(rail.children, function (c) { return c.dataset.slug && !have[c.dataset.slug]; });
     rail.innerHTML = picked.map(railCard).join('');
+    if (window.saLib) window.saLib.paint(rail);
     base.slice(0, Math.max(0, 10 - picked.length)).forEach(function (c) { rail.appendChild(c); });
     Array.prototype.forEach.call(rail.querySelectorAll('.rc'), function (c) { show(c.querySelector('.cnt'), c.dataset.slug, false); });
   }
@@ -368,6 +369,7 @@
       showHeroStats(d.globalPv || 0, d.globalCopies || 0);
     }
   }).catch(function () {});
+  window.saPopRefresh = function () { cards = document.querySelectorAll('.card[data-slug], .rc[data-slug]'); paint(); sortList(counts); };
 })();
 
 // Publicité : les emplacements restent masqués tant que l'administration n'a pas activé la publicité (réglages lus via /api/config).
