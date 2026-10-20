@@ -1,3 +1,4 @@
+import 'package:afrotok/services/chronique_first_page.dart';
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
@@ -147,6 +148,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
   @override
   void initState() {
     super.initState();
+    ChroniqueFirstPage.changes.addListener(_onChroniquesChanged);
 
     // Initialiser le type de post
     _selectedPostType = widget.type.toUpperCase();
@@ -174,6 +176,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
     _starController.dispose();
     _unlikeController.dispose();
     WidgetsBinding.instance.removeObserver(this);
+    ChroniqueFirstPage.changes.removeListener(_onChroniquesChanged);
     super.dispose();
   }
 
@@ -1515,6 +1518,12 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
     }
   }
 
+  /// Une chronique vient d'être publiée ou supprimée : on relit les anneaux.
+  void _onChroniquesChanged() {
+    if (!mounted) return;
+    _loadChroniquesInBackground();
+  }
+
   Future<void> _loadChroniquesInBackground() async {
     if (_isLoadingChroniques) return;
 
@@ -2615,6 +2624,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
   }
 
   Future<void> _refreshData() async {
+    _onChroniquesChanged(); // les chroniques aussi sont relues à l'actualisation
     _backgroundLoadTimer?.cancel();
 
     setState(() {

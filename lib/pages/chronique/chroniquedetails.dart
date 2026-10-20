@@ -12,10 +12,12 @@ import 'chronique_widgets.dart';
 import '../../widgets/music/music_overlay.dart';
 import '../pub/ad_actions.dart';
 import '../../ads/ad_gate.dart';
+import '../../ads/ad_banner.dart';
 import '../../ads/admob_widgets.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/services/media_cache_service.dart';
+import 'package:afrotok/services/ad_preload_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -920,8 +922,9 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
     final soundProvider = Provider.of<SoundProvider>(context, listen: false);
 
     // Réutiliser le contrôleur préchargé si disponible
-    final preloaded = VideoPreloadManager.claimController(post.id ?? '');
-    if (preloaded != null) {
+    final preloaded = VideoPreloadManager.claimController(post.id ?? '') ??
+        (ad.id != null ? AdPreloadService.instance.claimController(ad.id!) : null);
+    if (preloaded != null && preloaded.value.isInitialized) {
       preloaded.setVolume(_adVideoMuted ? 0.0 : (soundProvider.isMuted ? 0.0 : 1.0));
       preloaded.setLooping(true);
       preloaded.play();
@@ -932,7 +935,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
           ? VideoPreloadManager.urlResolver!(post.url_media!)
           : post.url_media!;
       try {
-        final controller = await MediaCacheService.videoController(url);
+        final controller = await MediaCacheService.adVideoController(post.url_media!, networkUrl: url);
         await controller.initialize();
         if (!mounted || _currentAdId != ad.id) {
           controller.dispose();
@@ -987,25 +990,31 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
     } catch (_) {}
   }
 
-  /// Liste mixte Chronique + Advertisement pour le PageView.
-  /// Pub après la 1ère, 3ème, 6ème, 9ème chronique… (positions 1,3,6,9 en base-1).
-  /// S'arrête quand toutes les pubs sont affichées — pas de cycle.
+  /// Liste mixte Chronique + pub pour le PageView.
   ///
-  /// AdMob d'abord : à chaque emplacement (après la 1re, puis toutes les 3 chroniques) on met un bloc AdMob si
-  /// AdMob peut s'afficher pour ce compte ; sinon, la pub Afrolook suivante (sans cycle). Si le bloc AdMob ne
-  /// charge pas, la slide montre une pub Afrolook de repli, ou passe toute seule à la suite.
+  /// Rythme : jamais deux pubs d'affilée et jamais trop de pubs. Une pub après la 2e chronique regardée, puis une toutes les 4 chroniques
+  /// (après la 2e, la 6e, la 10e, la 14e…), 4 au plus par ouverture. S'il n'y a qu'une chronique, la pub passe après elle (une seule).
+  /// Cas : 1 chronique → [c, pub] ; 2 → [c, c, pub] ; 3 → [c, c, pub, c] ; 5 → [c, c, pub, c, c] ; 7 → [c, c, pub, c, c, c, pub, c] ;
+  /// 10 → 3 pubs (après la 2e, la 6e et la 10e).
+  ///
+  /// À chaque emplacement le réseau d'abord (Appodeal / AdMob) si le compte peut en voir ; sinon la pub Afrolook suivante (sans cycle).
+  /// Si le bloc du réseau ne charge pas, la slide montre une pub Afrolook de repli, ou passe toute seule à la suite.
+  static const int _maxAdsPerSession = 4;
+
   List<dynamic> get _displayItems {
     final ads = _shuffledAds.isNotEmpty ? _shuffledAds : _activeAds;
     final user = authProvider.loginUserData;
     final admob = AdGate.canShowType(user, 'banner');
     if (ads.isEmpty && !admob) return _allChroniques;
     final result = <dynamic>[];
+    final n = _allChroniques.length;
     int adCursor = 0;
     int slotOrdinal = 0;
-    for (int i = 0; i < _allChroniques.length; i++) {
+    for (int i = 0; i < n; i++) {
       result.add(_allChroniques[i]);
-      final isAdSlot = i == 0 || (i >= 2 && (i - 2) % 3 == 0);
-      if (!isAdSlot) continue;
+      final seen = i + 1; // chroniques regardées jusqu'ici
+      final isAdSlot = n == 1 || seen == 2 || (seen > 2 && (seen - 2) % 4 == 0);
+      if (!isAdSlot || slotOrdinal + adCursor >= _maxAdsPerSession) continue;
       if (admob) {
         result.add(_AdmobSlot(slotOrdinal, ads.isEmpty ? null : ads[slotOrdinal % ads.length]));
         slotOrdinal++;
@@ -1054,7 +1063,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
               child: const Text('Publicité', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: .8)),
             ),
             const SizedBox(height: 10),
-            AdmobBannerWidget(
+            AdBanner(
               key: ValueKey('chronique_admob_${slot.ordinal}'),
               mrec: true,
               onFailed: () {

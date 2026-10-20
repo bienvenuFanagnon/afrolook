@@ -1,3 +1,4 @@
+import 'package:afrotok/services/chronique_first_page.dart';
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/feed/sections/card_feed_invite.dart';
 import 'package:afrotok/widgets/feed/sections/defi_feed_card.dart';
@@ -316,6 +317,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   @override
   void initState() {
     super.initState();
+    ChroniqueFirstPage.changes.addListener(_onChroniquesChanged);
     MonetizationReminder.due('home').then((v) {
       if (mounted && v) setState(() => _showTutoReminder = true);
     });
@@ -384,6 +386,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     WidgetsBinding.instance.removeObserver(this);
     MediaPlaybackManager.dispose();
     _markSeenPostsInFirestore();
+    ChroniqueFirstPage.changes.removeListener(_onChroniquesChanged);
     super.dispose();
   }
 
@@ -3082,6 +3085,13 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     }
   }
 
+  /// Une chronique vient d'être publiée ou supprimée : on relit les anneaux.
+  void _onChroniquesChanged() {
+    if (!mounted) return;
+    _hasStartedLoadChroniques = false;
+    _loadChroniquesInBackground();
+  }
+
   Future<void> _loadChroniquesInBackground() async {
     if (_hasStartedLoadChroniques) return;
     _hasStartedLoadChroniques = true;
@@ -4568,6 +4578,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   Future<void> _refreshData() async {
     // Arrêter le chargement background pendant le refresh
     _backgroundLoadTimer?.cancel();
+    _onChroniquesChanged(); // les chroniques aussi sont relues à l'actualisation
 
     setState(() {
       _isLoadingPosts = true;

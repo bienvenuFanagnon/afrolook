@@ -1,4 +1,5 @@
 import 'package:afrotok/services/read_meter.dart';
+import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -38,6 +39,7 @@ class AdPreloadService {
           .limit(10)
           .getM('ad_preload_service.dart:38');
 
+      final videoUrls = <String>[];
       for (final doc in snap.docs) {
         final ad = Advertisement.fromJson(doc.data());
         ad.id = doc.id;
@@ -62,12 +64,13 @@ class AdPreloadService {
         final still = type == 'VIDEO' ? (postData['thumbnail'] as String? ?? '') : (images.isNotEmpty ? images.first : mediaUrl);
         if (still.isNotEmpty) DefaultCacheManager().downloadFile(MediaCdn.url(still)).then((_) {}, onError: (_) {});
 
-        // Seules les premières vidéos sont préparées en mémoire (un décodeur par vidéo) ; les autres sont mises en cache disque
+        // Seules les premières vidéos sont préparées en mémoire (un décodeur par vidéo) ; toutes sont téléchargées dans le cache dédié
+        if (type == 'VIDEO') videoUrls.add(mediaUrl);
         if (type == 'VIDEO' && _controllers.length >= maxControllers) {
-          MediaCacheService.prefetchVideo(mediaUrl);
+          // pas de décodeur de plus : le fichier est téléchargé plus bas
         } else if (type == 'VIDEO') {
           try {
-            final ctrl = await MediaCacheService.videoController(mediaUrl);
+            final ctrl = await MediaCacheService.adVideoController(mediaUrl);
             await ctrl.initialize();
             await ctrl.setVolume(0);
             await ctrl.setLooping(true);
@@ -76,9 +79,24 @@ class AdPreloadService {
         }
       }
       _isLoaded = true;
+      unawaited(MediaCacheService.prefetchAdVideos(videoUrls));
     } catch (e) {
       printVm('AdPreloadService.preload error: $e');
     }
+  }
+
+  /// Télécharge sur le téléphone les vidéos des pubs déjà connues (liste du fournisseur d'authentification : chargée avant même que l'on ouvre
+  /// les chroniques ou le fil). Appelée à chaque (re)chargement des pubs ; sans effet pour les images.
+  static void prefetchFromAds(List<Map<String, dynamic>> ads) {
+    final urls = <String>[];
+    for (final e in ads) {
+      final post = e['post'];
+      if (post is! Map) continue;
+      final url = (post['url_media'] ?? '').toString();
+      final isVideo = post['type'] == 'VIDEO' || url.contains('.mp4') || url.contains('.mov');
+      if (isVideo && url.isNotEmpty) urls.add(url);
+    }
+    if (urls.isNotEmpty) unawaited(MediaCacheService.prefetchAdVideos(urls));
   }
 
   /// Retourne le contrôleur vidéo pré-initialisé pour une pub donnée (ou null).

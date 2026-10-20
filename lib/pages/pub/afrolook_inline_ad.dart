@@ -171,7 +171,7 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
       }
 
       // 2. Fallback : cache disque (file) si dispo, sinon réseau + mise en cache bg
-      final ctrl = await MediaCacheService.videoController(cdnUrl);
+      final ctrl = await MediaCacheService.adVideoController(post.url_media!, networkUrl: cdnUrl);
       _adVideoController = ctrl;
       await ctrl.initialize();
       await ctrl.setVolume(0);

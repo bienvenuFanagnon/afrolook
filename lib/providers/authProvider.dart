@@ -54,7 +54,7 @@ class UserAuthProvider extends ChangeNotifier {
   String _kLastDatingWidgetShown = "last_dating_widget_shown";
 
   // late String? userId = "";
-  late int app_version_code = 249;
+  late int app_version_code = 262;
   late String loginText = "";
   late UserService userService = UserService();
   final _deeplynks = Deeplynks();
@@ -141,6 +141,7 @@ class UserAuthProvider extends ChangeNotifier {
           notifyListeners();
           await AdRotationService.instance.init();
           AdRotationService.instance.onAdsReloaded();
+          AdPreloadService.prefetchFromAds(_advertisements);
           AdPreloadService.instance.preload();
           printVm('📦 [Pub] session $sessionCount/$_kAdRefreshEvery — cache local (${list.length} pubs, re-shuffled) [${_swAds.elapsedMilliseconds}ms]');
           return;
@@ -219,6 +220,7 @@ class UserAuthProvider extends ChangeNotifier {
       await AdRotationService.instance.init();
       AdRotationService.instance.onAdsReloaded();
       AdPreloadService.instance.invalidate();
+      AdPreloadService.prefetchFromAds(_advertisements);
       AdPreloadService.instance.preload();
       printVm('✅ [Pub] ${tempAds.length} pubs chargées depuis Firestore [${_swAds.elapsedMilliseconds}ms]');
     } catch (e) {

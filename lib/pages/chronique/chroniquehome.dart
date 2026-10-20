@@ -47,6 +47,7 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> with SingleTicker
   @override
   void initState() {
     super.initState();
+    ChroniqueFirstPage.changes.addListener(_onChroniquesChanged);
     _scroll.addListener(() {
       if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 300) _loadMore();
     });
@@ -72,14 +73,20 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> with SingleTicker
 
   @override
   void dispose() {
+    ChroniqueFirstPage.changes.removeListener(_onChroniquesChanged);
     _scroll.dispose();
     _search.dispose();
     _spin.dispose();
     super.dispose();
   }
 
+  /// Une chronique vient d'être publiée ou supprimée : la liste est relue depuis le début.
+  void _onChroniquesChanged() {
+    if (mounted) _loadMore(reset: true);
+  }
+
   Future<void> _loadMore({bool reset = false}) async {
-    if (_loading || (!_hasMore && !reset)) return;
+    if ((_loading && !reset) || (!_hasMore && !reset)) return;
     setState(() {
       _loading = true;
       _error = false;

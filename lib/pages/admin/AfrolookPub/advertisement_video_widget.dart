@@ -15,6 +15,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../providers/authProvider.dart';
 import '../../../services/ad_preload_service.dart';
+import '../../../services/media_cache_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../postComments.dart';
 import '../../userPosts/video_preload_manager.dart';
@@ -92,7 +93,7 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
       // 3. Initialisation fraîche
       if (ctrl == null) {
         final optimizedUrl = authProvider.convertToCdnUrl(url, authProvider.appDefaultData);
-        ctrl = VideoPlayerController.networkUrl(Uri.parse(optimizedUrl));
+        ctrl = await MediaCacheService.adVideoController(url, networkUrl: optimizedUrl);
         await ctrl.initialize();
       }
 

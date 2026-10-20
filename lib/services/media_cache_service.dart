@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:video_player/video_player.dart';
@@ -11,6 +12,17 @@ class _VideoCacheManager extends CacheManager {
       : super(Config(_key,
             stalePeriod: const Duration(days: 7),
             maxNrOfCacheObjects: 30));
+}
+
+// ─── Cache des vidéos de PUB : à part du cache général (un défilement de vidéos du fil ne les efface plus) ───
+class _AdVideoCacheManager extends CacheManager {
+  static const _key = 'afrolook_ad_video_cache';
+  static final _AdVideoCacheManager _instance = _AdVideoCacheManager._();
+  factory _AdVideoCacheManager() => _instance;
+  _AdVideoCacheManager._()
+      : super(Config(_key,
+            stalePeriod: const Duration(days: 5),
+            maxNrOfCacheObjects: 14));
 }
 
 // ─── Cache audio : 500 fichiers max, expiration 14 jours ─────────────────────
@@ -35,6 +47,52 @@ class MediaCacheService {
 
   static final _videoMgr = _VideoCacheManager();
   static final _audioMgr = _AudioCacheManager();
+  static final _adVideoMgr = _AdVideoCacheManager();
+
+  // ── Vidéos de pub ──────────────────────────────────────────────────────────
+  // Clé de cache = adresse d'ORIGINE de la vidéo du post (`post.url_media`), la même partout : le préchargement, la liste des chroniques,
+  // les emplacements du fil et la page admin retrouvent ainsi le même fichier (avant, chacun cherchait sous une adresse différente :
+  // CDN ou Firebase, et la vidéo était rechargée à chaque fois).
+
+  static final Set<String> _adDownloading = <String>{};
+
+  /// Télécharge les vidéos de pub en arrière-plan (3 à la fois au plus), pour qu'elles s'ouvrent instantanément depuis le téléphone.
+  static Future<void> prefetchAdVideos(Iterable<String> rawUrls) async {
+    final queue = rawUrls.where((u) => u.isNotEmpty).toSet().toList();
+    Future<void> worker() async {
+      while (queue.isNotEmpty) {
+        final url = queue.removeAt(0);
+        if (!_adDownloading.add(url)) continue;
+        try {
+          if (await _adVideoMgr.getFileFromCache(url) == null) await _adVideoMgr.downloadFile(url, key: url);
+        } catch (_) {/* sera retenté à la prochaine ouverture */} finally {
+          _adDownloading.remove(url);
+        }
+      }
+    }
+
+    await Future.wait([for (var i = 0; i < 3; i++) worker()]);
+  }
+
+  /// Vidéo déjà sur le téléphone ?
+  static Future<bool> hasAdVideo(String rawUrl) async {
+    try {
+      return await _adVideoMgr.getFileFromCache(rawUrl) != null;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Lecteur d'une vidéo de pub : fichier local s'il est là (instantané), sinon réseau ([networkUrl] ou l'adresse d'origine) + mise en
+  /// cache en arrière-plan pour la fois suivante. À initialiser ensuite comme d'habitude.
+  static Future<VideoPlayerController> adVideoController(String rawUrl, {String? networkUrl}) async {
+    try {
+      final cached = await _adVideoMgr.getFileFromCache(rawUrl);
+      if (cached != null) return VideoPlayerController.file(cached.file);
+    } catch (_) {}
+    unawaited(prefetchAdVideos([rawUrl]));
+    return VideoPlayerController.networkUrl(Uri.parse(networkUrl ?? rawUrl));
+  }
 
   // ── Vidéo ──────────────────────────────────────────────────────────────────
 

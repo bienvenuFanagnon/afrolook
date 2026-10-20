@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 
 import '../pages/chronique/chroniqueform.dart';
 
@@ -14,6 +15,10 @@ class ChroniqueFirstPage {
   static DocumentSnapshot? _last;
   static bool _hasMore = false;
   static DateTime? _at;
+
+  /// Augmente à chaque publication ou suppression : l'accueil et la page « Chroniques » l'écoutent pour relire leur liste
+  /// (sans cela, une chronique publiée n'apparaissait qu'au redémarrage de l'application).
+  static final ValueNotifier<int> changes = ValueNotifier<int>(0);
 
   static void save(List<Chronique> items, DocumentSnapshot? last, {required bool hasMore}) {
     _items = List.unmodifiable(items);
@@ -36,5 +41,6 @@ class ChroniqueFirstPage {
     _items = const [];
     _last = null;
     _at = null;
+    changes.value++;
   }
 }

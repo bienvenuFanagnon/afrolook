@@ -1,3 +1,4 @@
+import 'package:afrotok/services/chronique_first_page.dart';
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/feed/sections/card_feed_invite.dart';
 import 'package:afrotok/widgets/feed/sections/defi_feed_card.dart';
@@ -262,6 +263,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   @override
   void initState() {
     super.initState();
+    ChroniqueFirstPage.changes.addListener(_onChroniquesChanged);
     MonetizationReminder.due('sport').then((v) {
       if (mounted && v) setState(() => _showTutoReminder = true);
     });
@@ -375,6 +377,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     _unlikeController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     MediaPlaybackManager.dispose();
+    ChroniqueFirstPage.changes.removeListener(_onChroniquesChanged);
     super.dispose();
   }
 
@@ -2349,6 +2352,12 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     }
   }
 
+  /// Une chronique vient d'être publiée ou supprimée : on relit les anneaux.
+  void _onChroniquesChanged() {
+    if (!mounted) return;
+    _loadChroniquesInBackground();
+  }
+
   Future<void> _loadChroniquesInBackground() async {
     if (_isLoadingChroniques) return;
     setState(() => _isLoadingChroniques = true);
@@ -3702,6 +3711,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   }
 
   Future<void> _refreshData() async {
+    _onChroniquesChanged(); // les chroniques aussi sont relues à l'actualisation
     _backgroundLoadTimer?.cancel();
 
     setState(() {
