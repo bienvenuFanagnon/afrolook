@@ -826,3 +826,97 @@ textarea.film-input{resize:vertical;min-height:110px}
   .refstrip b{flex:1 1 calc(100% - 40px);min-width:0}
   .refstrip i{flex:1 1 100%;padding-left:34px;white-space:normal}
 }
+/* ── Navigation d'application (téléphone) : barre d'onglets en bas, en-tête allégé ── */
+.tabbar{display:none}
+@media (max-width:719px){
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:50;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));background:rgba(8,8,10,.94);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--line);padding:6px 2px calc(6px + env(safe-area-inset-bottom,0px))}
+  .tabbar a{display:flex;flex-direction:column;align-items:center;gap:3px;padding:5px 0 3px;color:var(--faint);font-size:10.5px;font-weight:700;letter-spacing:.01em;min-width:0;-webkit-tap-highlight-color:transparent}
+  .tabbar a span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .tabbar .ic{width:23px;height:23px}
+  .tabbar a.on{color:var(--txt)}.tabbar a.on .ic{color:var(--acc)}
+  .tabbar a[data-tab=gen] .ic{width:38px;height:30px;padding:5px 9px;border-radius:12px;background:var(--acc);color:#fff;margin-top:-2px}
+  .tabbar a[data-tab=gen]{color:var(--txt)}
+  body{padding-bottom:calc(66px + env(safe-area-inset-bottom,0px))}
+  .ft{padding-bottom:24px}
+  .hd .menubtn,.hd .hpro,.hd nav{display:none!important}
+  .mnav{display:none!important}
+  #wa-toast{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+}
+.smodal .sheet{animation:sheetup .28s ease-out}
+@keyframes sheetup{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.smodal .sheet{animation:none}}
+/* Solde : pilule cliquable dans l'en-tête */
+.hd-bal-wrap #hd-bal{cursor:pointer}
+/* ── Écran Compte (liste verticale) ── */
+.acc{display:flex;flex-direction:column;gap:14px;margin:6px 0 18px}
+.acc-id{display:flex;align-items:center;gap:12px}
+.acc-av{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--acc),#7a5cff);display:grid;place-items:center;font-weight:800;font-size:20px;color:#fff;flex:none;overflow:hidden}
+.acc-av img{width:100%;height:100%;object-fit:cover}
+.acc-id b{display:block;font-size:17px}.acc-id small{color:var(--faint);font-size:12.5px;word-break:break-all}
+.acc-bal{border:1px solid var(--line2);border-radius:18px;padding:16px;background:linear-gradient(135deg,rgba(41,151,255,.16),rgba(41,151,255,.03));display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.acc-bal div{flex:1 1 160px;min-width:0}.acc-bal small{display:block;color:var(--mut);font-size:12.5px}
+.acc-bal b{display:block;font-size:26px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.acc-bal .btn{flex:none}
+.acc-list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--card)}
+.acc-list>a,.acc-list>button{display:flex;align-items:center;gap:12px;padding:14px;border:0;border-bottom:1px solid var(--line);background:none;color:var(--txt);font:inherit;text-align:left;cursor:pointer;width:100%}
+.acc-list>:last-child{border-bottom:0}
+.acc-list .ic{width:22px;height:22px;color:var(--mut);flex:none}
+.acc-list span{flex:1;min-width:0}.acc-list span b{display:block;font-size:15px;font-weight:700}.acc-list span small{display:block;color:var(--faint);font-size:12px;margin-top:1px}
+.acc-list i{font-style:normal;color:var(--faint);font-size:18px}
+.acc-list .out{color:#ff6b61}.acc-list .out .ic{color:#ff6b61}
+.acc-h{margin:8px 0 -4px;font:700 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+/* Barre de solde compacte au-dessus du Studio */
+.sbar2{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px 12px;margin:12px 0}
+.sbar2 div{flex:1;min-width:0}.sbar2 small{display:block;color:var(--faint);font-size:11.5px}.sbar2 b{font-size:16px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sbar2 .btn{flex:none;font-size:13px;padding:9px 13px}
+/* Pastille de solde de l'en-tête (toucher = recharger) */
+.hd-pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line2);background:rgba(255,255,255,.06);color:var(--txt);border-radius:999px;padding:6px 10px 6px 8px;font:700 13px var(--f);cursor:pointer;white-space:nowrap;font-variant-numeric:tabular-nums}
+.hd-pill .ic{width:17px;height:17px}.hd-pill .ic:first-child{color:#f5c542}.hd-pill .ic:last-child{color:var(--acc);margin-left:-1px}
+@media (max-width:719px){body.signed .hd .hlogin{display:none}.hd-pill{font-size:12.5px;padding:6px 9px 6px 7px}}
+body[data-view=account] #main>.wrap>.eyebrow,body[data-view=account] #main>.wrap>h1,body[data-view=account] #main>.wrap>.best-line,
+body[data-view=creations] #main>.wrap>.eyebrow,body[data-view=creations] #main>.wrap>h1,body[data-view=creations] #main>.wrap>.best-line{display:none}
+.acc .vh{margin:4px 0 0;font-size:26px;letter-spacing:-.03em}
+.stools{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));overflow:visible}.stools .stool{min-width:0;padding:10px 6px}
+/* ── Accueil : phrase claire, ligne qui alterne, 2 choix, recherche, statistiques ── */
+.hero .eyebrow{margin-bottom:8px}
+.hero h1.big{margin-bottom:6px;text-wrap:balance}
+.hline{margin:0 0 12px;min-height:2.7em;font-size:clamp(17px,4.6vw,22px);font-weight:700;line-height:1.3;color:var(--acc2)}
+.choose{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:4px 0 12px}
+.choice{display:flex;flex-direction:column;gap:8px;padding:14px 13px;border-radius:18px;border:1px solid var(--line2);background:var(--card);min-width:0}
+.choice .ic{width:26px;height:26px}
+.choice b{display:block;font-size:16px;line-height:1.2}.choice small{display:block;color:var(--mut);font-size:12px;margin-top:3px;line-height:1.35}
+.ch-copy .ic{color:var(--ok)}
+.ch-gen{background:linear-gradient(140deg,var(--acc),#1a5fd6);border-color:transparent}.ch-gen small{color:rgba(255,255,255,.85)}.ch-gen .ic{color:#fff}
+.choice:active{transform:scale(.98)}
+.hsearch{display:flex;align-items:center;gap:8px;border:1px solid var(--line2);border-radius:16px;background:#0d0e10;padding:6px 6px 6px 12px;margin:0 0 14px}
+.hsearch>.ic{color:var(--faint);width:20px;height:20px}
+.hsearch input{flex:1;min-width:0;border:0;background:none;padding:8px 0;font-size:15px;outline:none}
+.hsearch .btn{flex:none}
+.hero-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 14px}
+.hero-stats .hstat{flex-direction:column;align-items:flex-start;gap:2px;padding:12px 13px;border:1px solid var(--line);border-radius:16px;background:var(--bg2)}
+.hero-stats .hstat-n{font-size:clamp(22px,6.4vw,30px);letter-spacing:-.02em}
+.hero-stats .hstat-lbl{display:flex;align-items:center;gap:6px;white-space:normal}
+/* « Gagnez du temps » */
+.tsaver{border:1px solid rgba(245,197,66,.45);background:linear-gradient(135deg,rgba(245,197,66,.13),rgba(245,197,66,.03));border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px;margin:0 0 16px}
+.tsaver-t{display:flex;gap:10px;align-items:flex-start}.tsaver-t>.ic{color:#f5c542;width:24px;height:24px;margin-top:1px}
+.tsaver b{display:block;font-size:16px}.tsaver p{margin:2px 0 0;color:var(--mut);font-size:13px;line-height:1.45}
+.tsaver-row{display:flex;gap:8px}
+.tsaver input{flex:1;min-width:0;background:#0d0e10;border:1px solid var(--line2);border-radius:13px;color:var(--txt);padding:11px 12px;font-size:15px}
+.tsaver .btn{flex:none}
+.fbody .tsaver{margin:14px 0}
+/* Boutons à 2 gestes : icône, libellé, petite mention (prix ou « gratuit ») ; jamais de débordement */
+.btn>small{font-size:.8em;font-weight:600;opacity:.82;margin-left:-3px;white-space:nowrap}
+.btn>.ic{width:1.1em;height:1.1em}
+.btn>span{white-space:nowrap}
+.card .acts,.rc .acts{display:flex;flex-direction:column;align-items:stretch;gap:6px}
+.card .acts .btn,.rc .acts .btn{width:100%;min-width:0;padding:9px 10px;font-size:13px;gap:6px}
+@media (min-width:720px){.card .acts,.rc .acts{flex-direction:row;flex-wrap:wrap}.card .acts .btn,.rc .acts .btn{flex:1 1 auto;width:auto}}
+/* Fiche : boutons empilés sur téléphone, barre des 2 gestes collée au-dessus des onglets */
+.fixacts{display:none}
+@media (max-width:719px){
+  .cmd .acts.big{flex-direction:column;align-items:stretch}.cmd .acts.big .btn{width:100%}
+  .fixacts{position:fixed;left:0;right:0;bottom:calc(62px + env(safe-area-inset-bottom,0px));z-index:49;display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:8px;padding:8px 12px;background:rgba(8,8,10,.94);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line)}
+  .fixacts[hidden]{display:none}
+  .fixacts .btn{min-width:0;padding:11px 8px;font-size:13.5px;gap:6px}
+}
+.hero .choose,.hero .hsearch,.hero .hero-stats,.hero .tsaver,.hline{max-width:640px}

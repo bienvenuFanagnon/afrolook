@@ -279,9 +279,54 @@
       navigator.share(data).then(function () { try { window.saTrack && window.saTrack('share', { n: 'native' }); } catch (e) {} }, function (e) { if (e && e.name !== 'AbortError') flash(btn, T.shareFail); });
     });
   }
+  // ── Vues du Studio : l'onglet du bas choisit la vue (#account = Compte, #creations = Mes créations, sinon Générer) ──
+  var A = L === 'en'
+    ? { balance: 'Balance', recharge: 'Top up', per: '1 poster = {n} credits', gen: 'Create a poster', genS: 'From your photo', crea: 'My creations', creaS: 'Images created on the site', earn: 'Earn credits', earnS: 'Refer your friends', txn: 'My purchases', txnS: 'Receipts and payments', nopub: 'No ads', nopubS: '30 days without advertising', nopubOn: 'Active until {d}', install: 'Install the app', installS: 'On your home screen, like a real app', hub: 'Admin hub', hubS: 'Only visible to you', out: 'Sign out', more: 'More', acc: 'Account', loginT: 'Sign in', loginP: 'With your Google account: your credits, your creations and your referral link follow you on all your devices.', creaLogin: 'Sign in to find your creations.', creaFilm: 'My films', creaFilmS: 'Film Studio' }
+    : { balance: 'Solde', recharge: 'Recharger', per: '1 affiche = {n} crédits', gen: 'Générer une affiche', genS: 'À partir de votre photo', crea: 'Mes créations', creaS: 'Images créées sur le site', earn: 'Gagner des crédits', earnS: 'Parrainez vos amis', txn: 'Mes achats', txnS: 'Reçus et paiements', nopub: 'Sans pub', nopubS: '30 jours sans publicité', nopubOn: 'Actif jusqu’au {d}', install: 'Installer l’application', installS: 'Sur l’écran d’accueil, comme une vraie app', hub: 'Hub admin', hubS: 'Visible seulement par vous', out: 'Se déconnecter', more: 'Plus', acc: 'Compte', loginT: 'Connectez-vous', loginP: 'Avec votre compte Google : vos crédits, vos créations et votre lien de parrainage vous suivent sur tous vos appareils.', creaLogin: 'Connectez-vous pour retrouver vos créations.', creaFilm: 'Mes films', creaFilmS: 'Studio Film' };
+  function view() { return location.hash === '#account' ? 'account' : location.hash === '#creations' ? 'creations' : 'gen'; }
+  function postersOf(n) { return Math.floor((n || 0) / GC()); }
+  function balText(n) { var p = postersOf(n); return p + ' ' + (L === 'en' ? (p === 1 ? 'poster' : 'posters') : (p === 1 ? 'affiche' : 'affiches')); }
+  function credText(n) { return fmt(n) + ' ' + (n === 1 ? T.credit : T.credits); }
+  function setBal(n) { var e = document.getElementById('s-bal'); if (e) e.textContent = balText(n); var c = document.getElementById('s-cred'); if (c) c.textContent = credText(n); }
   function bar() {
-    return '<div class="sbar" id="account"><div><small>' + T.hello + ', ' + esc((state.user.displayName || '').split(' ')[0] || state.user.email) + '</small><b id="s-bal">' + state.credits + ' ' + (state.credits === 1 ? T.credit : T.credits) + '</b>' + (state.adFreeUntil ? '<small class="okline">' + T.noAdsUntil.replace('{d}', new Date(state.adFreeUntil).toLocaleDateString(L === 'en' ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long' })) + '</small>' : '') + '</div><div class="acts"><button class="btn pri sm" type="button" id="s-buy">' + T.buy + '</button><a class="btn gl sm" href="' + refUrl() + '">' + window.saIcon('gift') + ' ' + T.refShort + '</a><button class="btn gl sm" type="button" id="s-txn">' + (L === 'en' ? 'My purchases' : 'Mes achats') + '</button>' + (state.user.email === 'jorbienvenu@gmail.com' ? '<a class="btn gl sm" href="/admin/">Hub</a>' : '') + '<button class="btn gl sm" type="button" data-logout>' + T.logout + '</button></div></div>';
+    return '<div class="sbar2" id="sbar"><div><small>' + A.balance + '</small><b id="s-bal">' + balText(state.credits) + '</b> <small id="s-cred">' + credText(state.credits) + '</small></div><button class="btn pri" type="button" id="s-buy">' + window.saIcon('plus') + ' ' + A.recharge + '</button></div>';
   }
+  function accRow(href, ic, title, sub, attrs, cls) {
+    var inner = window.saIcon(ic) + '<span><b>' + title + '</b>' + (sub ? '<small>' + sub + '</small>' : '') + '</span><i aria-hidden="true">›</i>';
+    return href ? '<a href="' + href + '"' + (cls ? ' class="' + cls + '"' : '') + (attrs || '') + '>' + inner + '</a>' : '<button type="button"' + (cls ? ' class="' + cls + '"' : '') + (attrs || '') + '>' + inner + '</button>';
+  }
+  function moreLinks() {
+    var links = []; try { links = JSON.parse(root.dataset.more || '[]'); } catch (e) {}
+    var other = root.dataset.other ? [[root.dataset.other, L === 'en' ? 'Français' : 'English', 'globe']] : [];
+    return '<p class="acc-h">' + A.more + '</p><div class="acc-list">' + links.map(function (x) { return accRow(x[0], x[2] || 'book', esc(x[1]), '', ''); }).concat(other.map(function (x) { return accRow(x[0], x[2], x[1], '', ' data-lang-switch="' + (L === 'en' ? 'fr' : 'en') + '"'); })).join('') + '</div>';
+  }
+  function accountView() {
+    var u = state.user, name = u.displayName || u.email || '', ini = (name.trim()[0] || '?').toUpperCase();
+    var pwa = window.saPwa, canInstall = pwa && !pwa.installed() && pwa.available();
+    var until = state.adFreeUntil ? A.nopubOn.replace('{d}', new Date(state.adFreeUntil).toLocaleDateString(L === 'en' ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long' })) : A.nopubS;
+    return '<section class="acc" id="account"><h2 class="vh">' + A.acc + '</h2>' +
+      '<div class="acc-id"><span class="acc-av">' + (u.photoURL ? '<img src="' + esc(u.photoURL) + '" alt="" referrerpolicy="no-referrer">' : esc(ini)) + '</span><div><b>' + esc(name) + '</b><small>' + esc(u.email || '') + '</small></div></div>' +
+      '<div class="acc-bal"><div><small>' + A.balance + '</small><b id="s-bal">' + balText(state.credits) + '</b><small><span id="s-cred">' + credText(state.credits) + '</span> · ' + A.per.replace('{n}', GC()) + '</small></div><button class="btn pri" type="button" id="s-buy">' + window.saIcon('plus') + ' ' + A.recharge + '</button></div>' +
+      '<div class="acc-list">' +
+        accRow(location.pathname, 'sparkle', A.gen, A.genS, ' data-view="gen"') +
+        accRow(location.pathname + '#creations', 'image', A.crea, A.creaS, '') +
+        accRow(L === 'en' ? '/en/film-studio/' : '/studio-film/', 'film', A.creaFilm, A.creaFilmS, '') +
+        accRow(refUrl(), 'gift', A.earn, A.earnS, '') +
+        accRow('', 'receipt', A.txn, A.txnS, ' id="s-txn"') +
+        accRow('', 'bolt', A.nopub, until, state.adFreeUntil ? '' : ' data-nopub') +
+        (canInstall ? accRow('', 'download', A.install, A.installS, ' data-install-app') : '') +
+        (window.saNotif && window.saNotif.supported() ? accRow('', 'bell', window.saNotif.T.row, window.saNotif.status(), ' data-notif-settings') : '') +
+        (u.email === 'jorbienvenu@gmail.com' ? accRow('/admin/', 'chart', A.hub, A.hubS, '') : '') +
+        accRow('', 'logout', A.out, '', ' data-logout', 'out') +
+      '</div>' + moreLinks() + '</section>';
+  }
+  function guestView(v) {
+    return '<section class="acc" id="account"><h2 class="vh">' + (v === 'creations' ? A.crea : A.acc) + '</h2><div class="sbox"><p class="lead">' + (v === 'creations' ? A.creaLogin : A.loginP) + '</p><div class="refpitch"><b>' + window.saIcon('gift') + ' ' + T.pitchT + '</b><ol><li>' + T.pitch1 + '</li><li>' + T.pitch2 + '</li><li>' + T.pitch3 + '</li></ol></div><button class="btn pri big" type="button" data-login>' + T.login + '</button><p class="hint">' + T.loginNote + '</p><p class="fmsg" id="auth-msg" role="status" aria-live="polite"></p></div>' + (v === 'account' ? moreLinks() : '') + '</section>';
+  }
+  function creationsView() {
+    return bar() + '<section class="acc"><h2 class="vh">' + A.crea + '</h2><div id="s-hist" class="shist">' + (hist.busy || !hist.items.length ? '<span class="spin" aria-label="…"></span>' : '') + '</div></section>';
+  }
+  window.addEventListener('hashchange', function () { if (state.checking) return; render(); try { window.scrollTo(0, 0); } catch (e) {} });
 
   // ── Historique des transactions ───────────────────────────────────────────
   var txnCursor = null, txnLoading = false;
@@ -342,10 +387,7 @@
       ? '<button class="stool' + (isVideo ? ' on' : '') + '" type="button" data-mode="video"><span class="stool-ic">' + window.saIcon('video') + '</span><b>' + (L === 'en' ? 'Video' : 'Vidéo') + '</b><small>Motion design</small></button>'
       : '<a class="stool" href="' + genPath + '?mode=video"><span class="stool-ic">' + window.saIcon('video') + '</span><b>' + (L === 'en' ? 'Video' : 'Vidéo') + '</b><small>Motion design</small></a>';
     var filmItem = '<a class="stool" href="' + filmPath + '"><span class="stool-ic">' + window.saIcon('film') + '</span><b>Film</b><small>' + (L === 'en' ? 'Scenario' : 'Scénario') + '</small></a>';
-    var histCount = hist.items.length ? hist.items.length + (L === 'en' ? ' items' : '') : (L === 'en' ? 'My images' : 'Mes images');
-    if (hist.items.length && L !== 'en') histCount = hist.items.length + ' créations';
-    var histItem = '<button class="stool" type="button" id="s-hist-btn"><span class="stool-ic">' + window.saIcon('clock') + '</span><b>' + (L === 'en' ? 'History' : 'Historique') + '</b><small>' + histCount + '</small></button>';
-    return '<nav class="stools">' + imgItem + vidItem + filmItem + histItem + '</nav>';
+    return '<nav class="stools">' + imgItem + vidItem + filmItem + '</nav>'; // l'historique a son onglet « Créations » en bas
   }
   function tabs() {
     if (!root.dataset.vurl) return '';
@@ -353,6 +395,11 @@
   }
   function render() {
     if (state.checking) { root.innerHTML = '<div class="sbox sload"><span class="spin" aria-label="…"></span></div>'; return; }
+    var vw = view();
+    document.body.dataset.view = vw;
+    if (!state.user && vw !== 'gen') { root.innerHTML = guestView(vw); bind(); return; }
+    if (state.user && vw === 'account') { root.innerHTML = accountView(); bind(); return; }
+    if (state.user && vw === 'creations') { root.innerHTML = creationsView(); bind(); hist.open = true; if (!hist.items.length && !hist.busy) loadHistory(); else renderHist(); return; }
     if (!state.user) {
       root.innerHTML = tabs() + '<div class="sbox">' + (wantPass ? '<p class="lead">' + T.passLogin + '</p>' : state.mode === 'video' ? '<h2 class="vh">' + T.vLoginTitle + '</h2><p class="hint">' + T.vLoginText + '</p>' : cmdBlock()) + '<div class="refpitch"><b>' + window.saIcon('gift') + ' ' + T.pitchT + '</b><ol><li>' + T.pitch1 + '</li><li>' + T.pitch2 + '</li><li>' + T.pitch3 + '</li></ol></div><button class="btn pri big" type="button" data-login>' + T.login + '</button><p class="hint">' + T.loginNote + '</p><p class="fmsg" id="auth-msg" role="status" aria-live="polite"></p></div>';
       bind(); return;
@@ -362,8 +409,8 @@
     var addBtn = state.photos.length < 3 ? '<label class="addph"><input id="s-file" type="file" accept="image/jpeg,image/png,image/webp,image/*" multiple hidden><span>+</span><small>' + T.add + '</small></label>' : '';
     var canGen = state.photos.length && !state.busy;
     var genLabel = state.credits < GC() ? T.buy : T.genCost;
-    if (state.mode === 'video') { root.innerHTML = bar() + studioNav() + tabs() + '<div id="v-root"></div>'; bind(); mountVideo(); return; }
-    root.innerHTML = bar() + studioNav() + (state.credits < GC() ? '<a class="refstrip" href="' + refUrl() + '"><span aria-hidden="true">' + window.saIcon('gift') + '</span><b>' + T.refNone + '</b><i>' + T.refGo + ' ›</i></a>' : '') + tabs() +
+    if (state.mode === 'video') { root.innerHTML = bar() + studioNav() + '<div id="v-root"></div>'; bind(); mountVideo(); return; }
+    root.innerHTML = bar() + studioNav() + (state.credits < GC() ? '<a class="refstrip" href="' + refUrl() + '"><span aria-hidden="true">' + window.saIcon('gift') + '</span><b>' + T.refNone + '</b><i>' + T.refGo + ' ›</i></a>' : '') +
       '<div class="sbox">' + cmdBlock() +
       '<div class="sf"><b>' + T.photos + '</b><div class="phs">' + thumbs + addBtn + '</div><small class="hint">' + T.photosHint + '</small></div>' +
       '<div class="adapt sf"><label>' + lab + '<input id="s-prod" type="text" maxlength="60" placeholder="' + esc(T.prodPh) + '" value="' + esc(state.product) + '" autocomplete="off"></label><div class="seg2" role="group"><button type="button" data-n="1" aria-pressed="' + (!state.multi) + '">' + T.single + '</button><button type="button" data-n="n" aria-pressed="' + state.multi + '">' + T.several + '</button></div></div>' +
@@ -378,10 +425,6 @@
         (root.dataset.wa ? '<p class="wastudio"><span>' + T.waStudio + '</span> <a href="' + esc(root.dataset.wa) + '" target="_blank" rel="noopener" data-wa="studio">' + T.waJoin + '</a></p>' : '') + '<small class="aic">' + T.ai + ' · ' + T.aiNote + '</small></div>' : '') +
       histSection();
     bind();
-    if (state.user && location.hash === '#account') {
-      var acc = document.getElementById('account');
-      if (acc) { acc.scrollIntoView({ behavior: 'smooth', block: 'start' }); try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
-    }
     var hw = root.querySelector('.shist-wrap');
     if (hw) {
       hw.addEventListener('toggle', function () {
@@ -436,6 +479,10 @@
     var ag = $('#s-again'); if (ag) ag.addEventListener('click', function () { if (state.credits < GC()) openBuy('refaire'); else generate(); });
     var by = $('#s-buy'); if (by) by.addEventListener('click', openBuy);
     var txnBtn2 = $('#s-txn'); if (txnBtn2) txnBtn2.addEventListener('click', openTransactions);
+    var np = $('[data-nopub]'); if (np) np.addEventListener('click', function () { openBuy('pass'); });
+    var ia = $('[data-install-app]'); if (ia) ia.addEventListener('click', function () { if (window.saPwa) window.saPwa.show(); });
+    var ns = $('[data-notif-settings]'); if (ns) ns.addEventListener('click', function () { if (window.saNotif) window.saNotif.settings(); });
+    var gv = $('[data-view="gen"]'); if (gv) gv.addEventListener('click', function (e) { e.preventDefault(); history.pushState(null, '', location.pathname + location.search); render(); try { window.scrollTo(0, 0); } catch (e2) {} });
     var ed = $('#s-edit'); if (ed) ed.addEventListener('input', function () { state.instruction = ed.value; });
     var eg = $('#s-editgo'); if (eg) eg.addEventListener('click', function () { if (state.credits < GC()) openBuy('corriger'); else editImage(); });
     Array.prototype.forEach.call(root.querySelectorAll('[data-v]'), function (b) { b.addEventListener('click', function () { state.cur = +b.dataset.v; state.result = state.versions[state.cur]; ensureQr(state.result).then(render); }); });
@@ -454,7 +501,7 @@
   var vapi = {
     get cfg() { return state.cfg; }, get credits() { return state.credits; }, T: T, errText: errText, shrink: function (f) { return shrink(f); },
     call: function (p, b) { return window.slashAuth.call(p, b); }, post: function (u, b, t) { return window.slashAuth.post(u, b, t); }, blob: function (p, b) { return window.slashAuth.blob(p, b); },
-    setCredits: function (n) { state.credits = n; var e = $('#s-bal'); if (e) e.textContent = n + ' ' + (n === 1 ? T.credit : T.credits); syncBal(n); },
+    setCredits: function (n) { state.credits = n; setBal(n); syncBal(n); },
     refreshMe: function () { window.slashAuth.call('me').then(function (r) { if (r.status === 200) vapi.setCredits(r.data.credits); }); },
     openBuy: function (f) { openBuy(f); }, renderUrl: root.dataset.vurl || '',
   };
@@ -676,7 +723,7 @@
     hist.busy = true;
     window.slashAuth.call('history', {}).then(function (r) {
       hist.busy = false;
-      if (r.status === 200 && Array.isArray(r.data)) { hist.items = r.data; if (hist.items.length && !hist.open) { hist.open = true; render(); } renderHist(); }
+      if (r.status === 200 && Array.isArray(r.data)) { hist.items = r.data; if (hist.items.length && !hist.open && view() === 'gen') { hist.open = true; render(); } renderHist(); }
     }).catch(function () { hist.busy = false; });
   }
   function renderHist() {
@@ -751,7 +798,7 @@
   // ── démarrage ──
   saleLoad();
   import('/js/auth.js');
-  fetch('/api/config').then(function (r) { return r.json(); }).then(function (c) { state.cfg = c; applyCost(c.genCost || 6); maybePass(); }).catch(function () {});
+  fetch('/api/config').then(function (r) { return r.json(); }).then(function (c) { state.cfg = c; applyCost(c.genCost || 6); try { localStorage.setItem('sa_gc', String(c.genCost || 6)); } catch (e) {} if (state.user && !state.checking) render(); maybePass(); }).catch(function () {});
   document.addEventListener('sa:auth', function (e) {
     var u = e.detail.user; state.user = u;
     if (!u) { state.checking = false; state.credits = 0; state.result = null; render(); return; }

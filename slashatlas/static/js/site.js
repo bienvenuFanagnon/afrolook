@@ -50,16 +50,21 @@
     var balWrap = document.getElementById('hd-bal-wrap');
     var balEl = document.getElementById('hd-bal');
     var buyBtn = document.getElementById('hd-buy-btn');
+    // solde affiché en affiches (1 affiche = coût d'une génération, mémorisé par le Studio)
     function applyBal(n) {
       if (!balWrap || !balEl || n === null || n === '') return;
       var nb = parseInt(n, 10); if (isNaN(nb)) return;
-      balEl.textContent = nb + ' ' + (lang === 'en' ? (nb === 1 ? 'credit' : 'credits') : (nb === 1 ? 'crédit' : 'crédits'));
+      var gc = 6; try { gc = parseInt(localStorage.getItem('sa_gc') || '6', 10) || 6; } catch (e) {}
+      var p = Math.floor(nb / gc);
+      balEl.textContent = p + ' ' + (lang === 'en' ? (p === 1 ? 'poster' : 'posters') : (p === 1 ? 'affiche' : 'affiches'));
+      balWrap.title = nb + (lang === 'en' ? ' credits' : ' crédits');
       balWrap.hidden = false;
     }
     function applyUser(n) {
       if (!n) return;
       named = n;
       btns.forEach(function (b) { b.textContent = b.dataset.in; b.classList.remove('pri'); b.classList.add('gl'); if (b.dataset.inHref) b.href = b.dataset.inHref; });
+      document.body.classList.add('signed');
       try { applyBal(localStorage.getItem('sa_bal')); } catch (e) {}
     }
     window.addEventListener('sa:credits', function (ev) { if (named) applyBal(ev.detail); });
@@ -85,36 +90,7 @@
     }
     btns.forEach(function (b) {
       b.addEventListener('click', function (e) {
-        if (named) {
-          e.preventDefault();
-          var existing = document.getElementById('sa-accdrop');
-          if (existing) { existing.remove(); return; }
-          var bal = ''; try { var rawBal = localStorage.getItem('sa_bal'); if (rawBal !== null) { var nb = parseInt(rawBal, 10); bal = nb + ' ' + (lang === 'en' ? (nb === 1 ? 'credit' : 'credits') : (nb === 1 ? 'crédit' : 'crédits')); } } catch (e2) {}
-          var firstName = named.split(' ')[0] || named;
-          var genLink = lang === 'en' ? '/en/generate/' : '/generer/';
-          var refLink = lang === 'en' ? '/en/ref/' : '/parrainage/';
-          var drop = document.createElement('div');
-          drop.id = 'sa-accdrop';
-          drop.innerHTML =
-            '<div class="sa-drop-top"><b>' + firstName + '</b>' + (bal ? '<span>' + bal + '</span>' : '') + '</div>' +
-            '<a class="sa-drop-link" href="' + genLink + '">' + window.saIcon('palette') + ' Studio</a>' +
-            '<a class="sa-drop-link" href="' + refLink + '">' + window.saIcon('gift') + ' ' + (lang === 'en' ? 'Referral' : 'Parrainage') + '</a>' +
-            '<button class="sa-drop-link sa-drop-out" type="button" data-accdrop-logout>' + (lang === 'en' ? 'Log out' : 'Se déconnecter') + '</button>';
-          document.body.appendChild(drop);
-          var rect = b.getBoundingClientRect();
-          drop.style.top = (rect.bottom + 6) + 'px';
-          drop.style.right = (window.innerWidth - rect.right) + 'px';
-          var closeH = function (ev) { if (!drop.contains(ev.target) && ev.target !== b) { drop.remove(); document.removeEventListener('click', closeH, true); } };
-          setTimeout(function () { document.addEventListener('click', closeH, true); }, 0);
-          var logBtn = drop.querySelector('[data-accdrop-logout]');
-          if (logBtn) {
-            logBtn.addEventListener('click', function () {
-              drop.remove(); document.removeEventListener('click', closeH, true);
-              import('/js/auth.js').then(function () { if (window.slashAuth) window.slashAuth.logout(); }).catch(function () {});
-            });
-          }
-          return;
-        }
+        if (named) { e.preventDefault(); location.href = b.dataset.inHref || b.getAttribute('href'); return; }
         e.preventDefault();
         var go = function () { location.href = b.getAttribute('href'); };
         if (b.dataset.busy) return; b.dataset.busy = '1'; var old = b.textContent; b.textContent = '…';
@@ -161,8 +137,8 @@
     var el = e.target.closest('[data-copy]');
     if (el) {
       var src = $(el.dataset.copy); if (!src) return;
-      var old = el.textContent;
-      var done = function () { el.textContent = lang === 'fr' ? 'Copié ✓' : 'Copied ✓'; if (el.dataset.after) { var a = $('#after'); if (a) a.classList.add('on'); window.saAds && window.saAds.late(); } else { window.saAfrolookAds && window.saAfrolookAds.showCopyToast && window.saAfrolookAds.showCopyToast(lang); } window.saWaToast && window.saWaToast(); setTimeout(function () { el.textContent = old; }, 1800); track('copy', { s: el.dataset.slug || '' }); };
+      var old = el.innerHTML;
+      var done = function () { el.innerHTML = (window.saIcon ? window.saIcon('check') : '') + '<span>' + (lang === 'fr' ? 'Copié' : 'Copied') + '</span>'; if (el.dataset.after) { var a = $('#after'); if (a) a.classList.add('on'); window.saAds && window.saAds.late(); } else { window.saAfrolookAds && window.saAfrolookAds.showCopyToast && window.saAfrolookAds.showCopyToast(lang); } window.saWaToast && window.saWaToast(); setTimeout(function () { el.innerHTML = old; }, 1800); track('copy', { s: el.dataset.slug || '' }); };
       var txt = src.textContent;
       try { navigator.clipboard.writeText(txt).then(done, function () { fallbackCopy(txt, done); }); } catch (err) { fallbackCopy(txt, done); }
       return;
@@ -318,12 +294,14 @@
     if (one) show(one, one.dataset.slug, true);
   }
   function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function genLbl() { var gc = 6; try { gc = parseInt(localStorage.getItem('sa_gc') || '6', 10) || 6; } catch (e) {} return window.saIcon('sparkle') + '<span>' + (lang === 'fr' ? 'Générer ici' : 'Generate here') + '</span><small>· ' + gc + ' cr</small>'; }
+  function copyLbl() { return window.saIcon('copy') + '<span>' + (lang === 'fr' ? 'Copier' : 'Copy') + '</span><small>· ' + (lang === 'fr' ? 'gratuit' : 'free') + '</small>'; }
   function railCard(r) {
     var poster = r.img ? '<div class="poster img' + (r.ratio === '16:9' ? ' ls' : '') + '" style="--ar:' + String(r.ratio || '4:5').replace(':', '/') + '"><img src="/img/c/' + r.slug + '-t.webp" alt="" loading="lazy" decoding="async"><span class="tag">' + esc(r.cat) + '</span></div>'
       : '<div class="poster" style="--x:' + esc(r.x) + ';--y:' + esc(r.y) + ';--r:' + esc(r.r) + '"><span class="tag">' + esc(r.cat) + '</span><span class="shape"></span><b>' + esc(r.poster) + '</b><small>' + esc(r.code) + '</small></div>';
     var href = (lang === 'en' ? '/en/c/' : '/c/') + r.slug + '/';
-    var gen = r.can ? '<a class="btn pri copy" href="' + (lang === 'en' ? '/en/generate/' : '/generer/') + '?c=' + r.slug + '" data-try="' + r.slug + '">' + (lang === 'fr' ? 'Générer ici' : 'Generate here') + '</a>' : '';
-    return '<article class="rc" data-slug="' + r.slug + '" data-search="' + esc(r.code) + '"><a class="rp" href="' + href + '" aria-label="' + esc(r.title) + '">' + poster + '</a><div class="rb"><code>' + esc(r.code) + '</code><span class="rt">' + esc(r.title) + '</span><span class="cnt" title="' + esc(cw(r.copies) + ' · ' + tw(r.tries)) + '">' + label([r.copies, r.tries], false) + '</span><div class="acts">' + gen + '<button class="btn ' + (r.can ? 'gl' : 'pri') + ' copy" type="button" data-copy="#pp-' + r.slug + '" data-slug="' + r.slug + '">' + (lang === 'fr' ? 'Copier' : 'Copy') + '</button></div><pre id="pp-' + r.slug + '" hidden>' + esc(r.full) + '</pre></div></article>';
+    var gen = r.can ? '<a class="btn pri copy" href="' + (lang === 'en' ? '/en/generate/' : '/generer/') + '?c=' + r.slug + '" data-try="' + r.slug + '">' + genLbl() + '</a>' : '';
+    return '<article class="rc" data-slug="' + r.slug + '" data-search="' + esc(r.code) + '"><a class="rp" href="' + href + '" aria-label="' + esc(r.title) + '">' + poster + '</a><div class="rb"><code>' + esc(r.code) + '</code><span class="rt">' + esc(r.title) + '</span><span class="cnt" title="' + esc(cw(r.copies) + ' · ' + tw(r.tries)) + '">' + label([r.copies, r.tries], false) + '</span><div class="acts">' + gen + '<button class="btn ' + (r.can ? 'gl' : 'pri') + ' copy" type="button" data-copy="#pp-' + r.slug + '" data-slug="' + r.slug + '">' + copyLbl() + '</button></div><pre id="pp-' + r.slug + '" hidden>' + esc(r.full) + '</pre></div></article>';
   }
   // « À la une » : les commandes les plus utilisées (copie = 1 point, essai « Générer ici » = 10 points), mélangées entre catégories :
   // d'abord la meilleure de Mode, Pub produit et Beauté, puis le reste par score avec au plus 2 par catégorie ; la sélection éditoriale complète jusqu'à 10.
@@ -579,6 +557,19 @@
   sync2(); setTimeout(sync2, 400);
 })();
 
+// « Gagnez du temps » : le lien de la boutique est confié au Studio (mémoire du navigateur, pas l'adresse) puis devient le QR code de l'affiche
+(function () {
+  Array.prototype.forEach.call(document.querySelectorAll('form[data-tsaver]'), function (f) {
+    f.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var v = (f.elements.shop.value || '').trim();
+      if (v) { try { var k = 'sa_sale_v1', d = JSON.parse(localStorage.getItem(k) || '{}'); d.qrV = v; d.qr = true; localStorage.setItem(k, JSON.stringify(d)); } catch (err) {} }
+      try { window.saTrack && window.saTrack('tsaver', { s: v ? 1 : 0 }); } catch (err) {}
+      location.href = f.getAttribute('action');
+    });
+  });
+})();
+
 // Hero : rotation fluide des propositions de la deuxième ligne du titre
 (function () {
   var el = document.querySelector('.hrot');
@@ -689,4 +680,24 @@
     reel.addEventListener('mouseenter', stopTimer);
     reel.addEventListener('mouseleave', startTimer);
   });
+})();
+
+// ── Barre d'onglets : sur la page Générer, l'onglet actif suit l'ancre (#creations, #account) ──
+(function () {
+  var bar = document.querySelector('.tabbar'); if (!bar || document.body.dataset.page !== 'try') return;
+  function sync() {
+    var k = location.hash === '#account' ? 'acc' : location.hash === '#creations' ? 'crea' : 'gen';
+    Array.prototype.forEach.call(bar.querySelectorAll('a'), function (a) { var on = a.dataset.tab === k; a.classList.toggle('on', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  }
+  sync(); window.addEventListener('hashchange', sync); window.addEventListener('popstate', sync);
+  // l'onglet « Générer » touché depuis Compte ou Créations : retour à la vue Studio sans recharger la page
+  var g = bar.querySelector('[data-tab=gen]');
+  if (g) g.addEventListener('click', function (e) { if (location.hash) { e.preventDefault(); history.pushState(null, '', location.pathname + location.search); window.dispatchEvent(new HashChangeEvent('hashchange')); } });
+})();
+
+// ── Fiche commande (téléphone) : « Copier » et « Générer » collés en bas tant que les boutons de la commande ne sont pas à l'écran ──
+(function () {
+  var bar = document.querySelector('.fixacts'), inl = document.querySelector('.cmd .acts.big');
+  if (!bar || !inl || !('IntersectionObserver' in window)) return;
+  new IntersectionObserver(function (es) { bar.hidden = es[0].isIntersecting; }, { rootMargin: '0px 0px -70px 0px' }).observe(inl);
 })();

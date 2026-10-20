@@ -8,7 +8,7 @@
   var get = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } };
   var set = function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} };
   var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
-  if (standalone) { set('sa_pwa', '1'); return; }
+  if (standalone) { set('sa_pwa', '1'); window.saPwa = { standalone: true, installed: function () { return true; }, available: function () { return false; }, show: function () {} }; return; }
   var ua = navigator.userAgent, ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   var phone = matchMedia('(max-width: 820px)').matches && (matchMedia('(pointer: coarse)').matches || ios);
   var T = {
@@ -52,6 +52,8 @@
     m.appendChild(a);
   }
   addMenu();
+  // utilisé par l'écran Compte (ligne « Installer l'application »)
+  window.saPwa = { standalone: false, installed: installed, available: available, show: function () { shown = false; track('account'); show(); } };
   if (!phone || page === 'admin' || page === 'try') return;
   // quelques secondes après l'arrivée : on attend l'invite de Chrome jusqu'à 20 s au plus (sur iPhone, pas d'invite à attendre)
   var waited = 0, t = setInterval(function () {

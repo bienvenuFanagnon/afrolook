@@ -87,7 +87,11 @@ const CLAUSE = {
   },
 };
 const canGen = (c) => !['video', 'motion', 'text'].includes(c.kind) && c.kind !== 'poster' && c.kind !== 'free' && !/[\[«]/.test(c.fr.prompt + c.en.prompt); // seuls les sujets avec photo sans texte à écrire passent par le Studio // les commandes vidéo se testent dans un générateur de vidéo, pas dans le Studio d'images
-const tryBtn = (c, l, cls) => (canGen(c) ? `<a class="btn pri ${cls}" href="${P[l].try}?c=${c.slug}" data-try="${c.slug}">${TEST[l]}</a>` : '');
+const FREE = { fr: 'gratuit', en: 'free' };
+// les 2 gestes, toujours côte à côte : générer ici (prix en crédits) ou copier la commande de base (gratuit)
+const genLabel = (l) => `${svg('sparkle')}<span>${TEST[l]}</span><small>· ${GEN} cr</small>`;
+const copyLabel = (l) => `${svg('copy')}<span>${T[l].cmd.copy}</span><small>· ${FREE[l]}</small>`;
+const tryBtn = (c, l, cls) => (canGen(c) ? `<a class="btn pri ${cls}" href="${P[l].try}?c=${c.slug}" data-try="${c.slug}">${genLabel(l)}</a>` : '');
 // Marque et contacts à inscrire sur le visuel (3 champs au plus) : les mêmes modèles servent au site (commande copiée) et au serveur (Studio).
 const BRAND = {
   fr: {
@@ -148,6 +152,15 @@ const MULTI = { fr: ['Un seul', 'Plusieurs'], en: ['Single', 'Several'] };
 const clauseOf = (c, l, multi = false, type = '') => CLAUSE[l][c.kind || 'product'][multi ? 1 : 0].replace('{T}', type ? ` (${type})` : '');
 const fullPrompt = (c, l) => `${c.code} : ${c[l].prompt} ${clauseOf(c, l)}`;
 const TEST = { fr: 'Générer ici', en: 'Generate here' };
+const STUDIO_SRC = fs.readFileSync(path.join(root, 'functions', 'studio.js'), 'utf8');
+const GEN = +(STUDIO_SRC.match(/const GEN_COST = (\d+)/) || [0, 6])[1]; // crédits débités par affiche
+const WELCOME = Math.floor(+(STUDIO_SRC.match(/const WELCOME_CREDITS = (\d+)/) || [0, 12])[1] / GEN); // affiches offertes à l'inscription
+// « Gagnez du temps » : le lien de la boutique part au Studio (mémorisé dans le navigateur, jamais dans l'adresse) et devient le QR code de l'affiche.
+const SAVER = {
+  fr: { h: 'Gagnez du temps', p: 'Au lieu d’adapter la commande vous-même, entrez le lien de votre boutique ou de votre WhatsApp : nous générons l’affiche avec votre QR code intégré.', ph: 'Lien de votre boutique ou wa.me/…', btn: 'Générer' },
+  en: { h: 'Save time', p: 'Instead of adapting the command yourself, enter your shop or WhatsApp link: we generate the poster with your QR code built in.', ph: 'Your shop link or wa.me/…', btn: 'Generate' },
+};
+const timeSaver = (l, slug = '') => `<form class="tsaver" data-tsaver action="${P[l].try}${slug ? '?c=' + slug : ''}" novalidate><div class="tsaver-t">${svg('bolt')}<div><b>${SAVER[l].h}</b><p>${SAVER[l].p}</p></div></div><div class="tsaver-row"><input type="text" name="shop" inputmode="url" autocomplete="url" maxlength="200" placeholder="${esc(SAVER[l].ph)}" aria-label="${esc(SAVER[l].ph)}"><button class="btn pri" type="submit">${svg('sparkle')} ${SAVER[l].btn}</button></div></form>`;
 // Étiquette « meilleur rendu » : n'annonce que ce que le Studio fait réellement (retouche de la photo, textes dessinés par le site, consigne qualité).
 const BEST = {
   fr: { tag: '★ Meilleur rendu avec SlashAtlas', t: 'Pourquoi générer ici plutôt qu’ailleurs ?', li: ['<b>Votre photo est retouchée avant l’IA</b> : lumière, couleurs et netteté corrigées automatiquement.', '<b>Textes exacts</b> : votre nom, prix, contact et QR code sont dessinés par le site, sans lettres déformées ni fautes.', '<b>Consigne « qualité studio » ajoutée</b> : le produit reste identique à votre photo, lumière et détails soignés.', '<b>Retouche gratuite ensuite</b> : déplacez ou retirez le QR code, changez le texte, sans régénérer.'], cta: 'Générer ici avec le meilleur rendu', after: 'Pour un rendu encore meilleur, essayez « Générer ici » : photo retouchée, textes exacts, QR code inclus.' },
@@ -158,7 +171,7 @@ const bestBox = (l, slug) => `<div class="best"><div class="best-h">${bestTag(l)
 // Parrainage : commission en crédits (voir REF dans functions/studio.js). Les chiffres viennent de la même table que le serveur.
 // [prix du pack en FCFA, crédits versés au parrain] : même table que REF.credits côté serveur ; 6 crédits = 1 affiche.
 const REFC = [[500, 6], [1000, 12], [1500, 12], [3900, 30], [11000, 90]];
-const fcfa = (n) => n.toLocaleString('fr-FR').replace(/s/g, ' ');
+const fcfa = (n) => n.toLocaleString('fr-FR').replace(/\s/g, ' ');
 const REFT = {
   fr: { k: 'Parrainage', h: 'Gagnez jusqu’à 15 affiches par ami', lead: 'Jusqu’à 15 affiches offertes par ami. Partagez votre lien : quand un ami crée un compte et achète des crédits, vous gagnez des crédits en plus. Autant d’amis que vous voulez.',
     strip: 'Jusqu’à 15 affiches offertes par ami ! Créez votre compte, partagez votre lien et générez gratuitement.', stripBtn: 'Je gagne mes crédits', cart: 'Plus de crédit ? Gagnez-en gratuitement : parrainez un ami.',
@@ -204,7 +217,7 @@ function poster(c, l, big = false) {
 function card(c, l) {
   const t = c[l];
   const search = `${c.code} ${t.title} ${catOf(c.cat)[l]} ${t.desc}`.toLowerCase();
-  return `<article class="card" data-slug="${c.slug}" data-search="${esc(search)}" data-cat="${c.cat}"><a href="${P[l].cmd(c.slug)}" class="cl" aria-label="${esc(t.title)}">${poster(c, l)}</a><div class="cb"><div class="code">${esc(c.code)}</div><h3><a href="${P[l].cmd(c.slug)}">${esc(t.title)}</a></h3><div class="meta"><span>${esc(catOf(c.cat)[l])}${c.kind === 'text' ? '' : ' · ' + c.ratio}</span>${c.steps ? `<span class="stp">${c.steps.length + 1} ${l === 'fr' ? 'étapes' : 'steps'}</span>` : ''}<span class="cnt" hidden></span></div><div class="acts">${tryBtn(c, l, 'sm')}<button class="btn ${canGen(c) ? 'gl' : 'pri'} sm" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}">${T[l].cmd.copy}</button></div><pre id="p-${c.slug}" hidden>${esc(fullPrompt(c, l))}</pre></div></article>`;
+  return `<article class="card" data-slug="${c.slug}" data-search="${esc(search)}" data-cat="${c.cat}"><a href="${P[l].cmd(c.slug)}" class="cl" aria-label="${esc(t.title)}">${poster(c, l)}</a><div class="cb"><div class="code">${esc(c.code)}</div><h3><a href="${P[l].cmd(c.slug)}">${esc(t.title)}</a></h3><div class="meta"><span>${esc(catOf(c.cat)[l])}${c.kind === 'text' ? '' : ' · ' + c.ratio}</span>${c.steps ? `<span class="stp">${c.steps.length + 1} ${l === 'fr' ? 'étapes' : 'steps'}</span>` : ''}<span class="cnt" hidden></span></div><div class="acts">${tryBtn(c, l, 'sm')}<button class="btn ${canGen(c) ? 'gl' : 'pri'} sm" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}">${copyLabel(l)}</button></div><pre id="p-${c.slug}" hidden>${esc(fullPrompt(c, l))}</pre></div></article>`;
 }
 function bandForm(l, kind = 'request') {
   const b = T[l].band;
@@ -247,11 +260,22 @@ function layout({ l, key, title, desc, body, alt, noindex, ld, path: pth, authJs
 <meta property="og:title" content="${esc(ogTitle || title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="website"><meta property="og:url" content="${abs(pth)}"><meta property="og:site_name" content="${cfg.name}"><meta property="og:image" content="${abs(ogImg)}">${ogDim}<meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="${abs(ogImg)}">
 ${!robots ? [].concat(cfg.adsenseAccount || []).map((a) => `<meta name="google-adsense-account" content="${a}">`).join('') : ''}<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="SlashAtlas"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="preload" href="/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/css/site.css?v=${V.css}">${ld ? `<script type="application/ld+json">${JSON.stringify(ld)}</script>` : ''}</head>
 <body data-page="${key}" data-lang="${l}" data-imgv="${IMGV}"${WA_URL && key !== 'admin' ? ` data-wa="${esc(WA_URL)}"` : ''}><a class="skip" href="#main">${l === 'fr' ? 'Aller au contenu' : 'Skip to content'}</a>
-<header class="hd"><a class="logo" href="${p.home}"><i>/</i>${cfg.name}</a><nav aria-label="Navigation">${nav}</nav><span class="sp"></span>${sw}<a class="btn gl sm hpro" href="${p.pro}">${t.nav.pro}</a><span class="hd-bal-wrap" id="hd-bal-wrap" hidden><span id="hd-bal"></span><button class="btn pri sm" id="hd-buy-btn" type="button">${l === 'fr' ? 'Acheter' : 'Buy'}</button></span><a class="btn pri sm hlogin" href="${p.try}" data-signin data-in="${l === 'fr' ? 'Mon compte' : 'My account'}" data-in-href="${p.try}#account">${l === 'fr' ? 'Se connecter' : 'Sign in'}</a><button class="menubtn" type="button" aria-label="${t.nav.menu}" aria-expanded="false" aria-controls="mnav"><i></i><i></i><i></i></button></header>
+<header class="hd"><a class="logo" href="${p.home}"><i>/</i>${cfg.name}</a><nav aria-label="Navigation">${nav}</nav><span class="sp"></span>${sw}<a class="btn gl sm hpro" href="${p.pro}">${t.nav.pro}</a><span class="hd-bal-wrap" id="hd-bal-wrap" hidden><button class="hd-pill" id="hd-buy-btn" type="button" aria-label="${l === 'fr' ? 'Recharger mes crédits' : 'Top up my credits'}">${svg('coin')}<span id="hd-bal"></span>${svg('plus')}</button></span><a class="btn pri sm hlogin" href="${p.try}" data-signin data-in="${l === 'fr' ? 'Mon compte' : 'My account'}" data-in-href="${p.try}#account">${l === 'fr' ? 'Se connecter' : 'Sign in'}</a><button class="menubtn" type="button" aria-label="${t.nav.menu}" aria-expanded="false" aria-controls="mnav"><i></i><i></i><i></i></button></header>
 <div class="mnav" id="mnav" hidden><a class="btn pri big" href="${p.try}">${TEST[l]}</a>${[[p.cmds, t.nav.cmds, 'cmds'], [p.studio, STUDIO[l].nav, 'studio'], [p.tuto, t.nav.tuto, 'tuto'], [p.guides, t.ft.guides, 'guides'], [p.pro, t.nav.pro, 'pro'], [p.about, t.ft.about, 'about']].map(([h, n, k]) => `<a href="${h}"${key === k ? ' class="on" aria-current="page"' : ''}>${n}</a>`).join('')}</div>
 <main id="main">${body}</main>
 <footer class="ft"><span>${cfg.name} · ${t.ft.tag}</span>${cfg.legal && cfg.legal.email ? `<a class="ftmail" href="mailto:${cfg.legal.email}">${t.ft.contact} : ${cfg.legal.email}</a>` : ''}${WA_URL ? `<a class="ftwa" href="${WA_URL}" target="_blank" rel="noopener" data-wa="footer">${WA[l].ft}</a>` : ''}<a href="${p.studio}">${STUDIO[l].nav}</a><a href="${p.privacy}">${t.ft.privacy}</a><a href="${p.guides}">${t.ft.guides}</a><a href="${p.about}">${t.ft.about}</a><a href="${p.terms}">${t.ft.terms}</a><a href="${p.cookies}">${t.ft.cookies}</a>${body.includes('data-ad=') ? `<a href="#" data-adprefs hidden>${l === 'fr' ? 'Préférences publicitaires' : 'Ad preferences'}</a>` : ''}<small class="ft-build">${BUILD_VERSION}</small></footer>
+${key !== 'admin' ? tabbar(l, key) : ''}
 ${cfg.ga && key !== 'admin' ? `<script src="/js/ga.js?v=${V.js}" data-id="${cfg.ga}" defer></script>` : ''}<script src="/js/icons.js?v=${V.js}" defer></script><script src="/js/site.js?v=${V.js}" defer></script>${key !== 'admin' ? `<script src="/js/pwa.js?v=${V.js}" defer></script>` : ''}${key !== 'admin' ? `<script src="/js/afrolook-ads.js?v=${V.js}" defer></script>` : ''}${extraJs ? `<script src="${extraJs}?v=${V.js}" defer></script>` : ''}</body></html>`;
+}
+// Barre d'onglets du bas (téléphone) : le site se parcourt comme une application. L'onglet actif vient de la page (et, sur /generer/, de l'ancre : voir site.js).
+const TABS = {
+  fr: [['home', 'Accueil', 'home'], ['cmds', 'Commandes', 'grid'], ['gen', 'Générer', 'sparkle'], ['crea', 'Créations', 'image'], ['acc', 'Compte', 'user']],
+  en: [['home', 'Home', 'home'], ['cmds', 'Commands', 'grid'], ['gen', 'Generate', 'sparkle'], ['crea', 'Creations', 'image'], ['acc', 'Account', 'user']],
+};
+const TAB_OF = { home: 'home', cmds: 'cmds', cat: 'cmds', cmd: 'cmds', try: 'gen', ref: 'acc' };
+function tabbar(l, key) {
+  const p = P[l], href = { home: p.home, cmds: p.cmds, gen: p.try, crea: p.try + '#creations', acc: p.try + '#account' };
+  return `<nav class="tabbar" aria-label="${l === 'fr' ? 'Navigation principale' : 'Main navigation'}">${TABS[l].map(([k, n, ic]) => `<a href="${href[k]}" data-tab="${k}"${TAB_OF[key] === k ? ' class="on" aria-current="page"' : ''}>${svg(ic)}<span>${n}</span></a>`).join('')}</nav>`;
 }
 function emit(l, key, pth, o) { write(pth.endsWith('/') ? pth + 'index.html' : pth, layout({ l, key, path: pth, ...o })); }
 const alt2 = (fr, en) => ({ fr, en });
@@ -259,18 +283,24 @@ const alt2 = (fr, en) => ({ fr, en });
 // ───────── pages ─────────
 const HOME = {
   fr: {
-    h1: ['Copiez. Collez.', 'Votre visuel pro est prêt.'],
-    hrot: ['Votre visuel pro est prêt.', 'Affiches pro en 30 secondes.', 'Films narrés de 2 à 3 minutes.', 'Vidéos pub motion design.', 'Pour Instagram, TikTok et WhatsApp.', 'Zéro logiciel, zéro expérience.'],
-    sub: 'Copiez une commande gratuite, collez-la dans votre outil IA et obtenez un visuel pro pour vos réseaux, votre boutique ou votre marque.',
+    kick: 'Commandes IA gratuites · Affiches générées ici',
+    h1: 'Votre photo devient une affiche pro.',
+    hrot: ['Copiez la commande, collez-la dans ChatGPT ou Gemini.', 'Ou générez l’affiche ici, prête à poster.', 'Robes, gloss, mèches, plats, concerts…', 'Prix, contact et QR code ajoutés pour vous.'],
+    sub: 'Choisissez une commande toute prête : copiez-la gratuitement pour votre outil IA, ou générez l’affiche directement ici, à partir de votre photo.',
+    c1: 'Copier une commande', c1s: 'Gratuit · ChatGPT, Gemini…', c2: 'Générer ici', c2s: (g, w) => `1 affiche = ${g} crédits · ${w} offertes`,
+    qph: 'Robe, gloss, burger, concert…', qlbl: 'Que voulez-vous créer ?', qgo: 'Chercher',
     steps: [['Copiez', 'une commande gratuite'], ['Collez', 'dans votre outil IA'], ['Publiez', 'votre visuel pro']],
     rail: 'Essayez une commande', tabSel: 'À la une', tabNew: 'Nouveautés', tabVid: 'Vidéos', copy: 'Copier', cats: 'Par métier', all: 'Voir les {n} commandes', n: (k) => `${k} commandes`,
     tools: 'Fonctionne avec', tapHint: 'Faites glisser',
     statPv: 'créateurs actifs', statCp: 'commandes copiées',
   },
   en: {
-    h1: ['Copy. Paste.', 'Your pro visual is ready.'],
-    hrot: ['Your pro visual is ready.', 'Pro posters in 30 seconds.', 'Narrated films in 2–3 minutes.', 'Motion design video ads.', 'For Instagram, TikTok and WhatsApp.', 'Zero software, zero experience.'],
-    sub: 'Copy a free command, paste it into your AI tool and get a pro visual for your social media, your shop or your brand.',
+    kick: 'Free AI commands · Posters generated here',
+    h1: 'Your photo becomes a pro poster.',
+    hrot: ['Copy the command, paste it into ChatGPT or Gemini.', 'Or generate the poster here, ready to post.', 'Dresses, lip gloss, hair, dishes, concerts…', 'Price, contact and QR code added for you.'],
+    sub: 'Pick a ready-made command: copy it for free for your AI tool, or generate the poster right here, from your photo.',
+    c1: 'Copy a command', c1s: 'Free · ChatGPT, Gemini…', c2: 'Generate here', c2s: (g, w) => `1 poster = ${g} credits · ${w} free`,
+    qph: 'Dress, lip gloss, burger, concert…', qlbl: 'What do you want to create?', qgo: 'Search',
     steps: [['Copy', 'a free command'], ['Paste', 'into your AI tool'], ['Publish', 'your pro visual']],
     rail: 'Try a command', tabSel: 'Featured', tabNew: 'New', tabVid: 'Videos', copy: 'Copy', cats: 'By trade', all: 'See all {n} commands', n: (k) => `${k} commands`,
     tools: 'Works with', tapHint: 'Swipe',
@@ -284,7 +314,7 @@ const ICON = {
 };
 function railCard(c, l) {
   const t = c[l], H = HOME[l];
-  return `<article class="rc" data-slug="${c.slug}" data-search="${esc(c.code)}"><a class="rp" href="${P[l].cmd(c.slug)}" aria-label="${esc(t.title)}">${poster(c, l)}</a><div class="rb"><code>${esc(c.code)}</code><span class="rt">${esc(t.title)}</span><span class="cnt" hidden></span><div class="acts">${tryBtn(c, l, 'copy')}<button class="btn ${canGen(c) ? 'gl' : 'pri'} copy" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}">${H.copy}</button></div><pre id="p-${c.slug}" hidden>${esc(fullPrompt(c, l))}</pre></div></article>`;
+  return `<article class="rc" data-slug="${c.slug}" data-search="${esc(c.code)}"><a class="rp" href="${P[l].cmd(c.slug)}" aria-label="${esc(t.title)}">${poster(c, l)}</a><div class="rb"><code>${esc(c.code)}</code><span class="rt">${esc(t.title)}</span><span class="cnt" hidden></span><div class="acts">${tryBtn(c, l, 'copy')}<button class="btn ${canGen(c) ? 'gl' : 'pri'} copy" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}">${copyLabel(l)}</button></div><pre id="p-${c.slug}" hidden>${esc(fullPrompt(c, l))}</pre></div></article>`;
 }
 // Vidéo YouTube : image locale + lecteur chargé seulement au clic (youtube-nocookie.com) : aucune requête vers Google avant que le visiteur lise la vidéo.
 const VIDEO_T = { fr: { h: 'Voyez le site en 40 secondes', play: 'Lire la vidéo', alt: 'Vidéo : des visuels pro et des vidéos publicitaires à partir de votre photo' }, en: { h: 'See the site in 40 seconds', play: 'Play the video', alt: 'Video: pro visuals and video ads made from your photo' } };
@@ -407,10 +437,11 @@ function home(l) {
   const newest = ['afrotopmodel', 'afrodoll', 'skyview', 'skypet', 'typobehind', 'logoglass', 'sheetpose9', 'infoexploded', 'dioskislope', 'brandboard', 'magcover', 'shopflash', 'mascotproduct', 'animeposter'].map((s) => COMMANDS.find((c) => c.slug === s));
   const vids = ['mgkinetic', 'revealvid', 'mglogoreveal', 'turntable', 'mgoutfitreveal', 'splashslow', 'mgserumdrop', 'unboxing', 'mgsneakerpop', 'mgdressflow', 'mgcountdown', 'kithooks'].map((s) => COMMANDS.find((c) => c.slug === s)).filter(Boolean);
   const cats = CATEGORIES.map((c) => `<a class="cat" href="${p.cat(c.id)}"><b>${esc(c[l])}</b><small>${H.n(COMMANDS.filter((x) => x.cat === c.id).length)}</small></a>`).join('');
-  const steps = H.steps.map((x, i) => `<li><span class="si">${[ICON.copy, ICON.paste, ICON.spark][i]}</span><b>${x[0]}</b><small>${x[1]}</small></li>`).join('');
-  const body = `<div class="wrap hero"><h1 class="big">${H.h1[0]} <span class="hrot" data-hrot="${esc(JSON.stringify(H.hrot))}">${H.h1[1]}</span></h1><p class="lead">${H.sub}</p>
-<div class="hero-stats" id="hero-stats" hidden aria-live="polite"><div class="hstat"><span class="hstat-dot" aria-hidden="true"></span><strong class="hstat-n" id="hstat-pv">—</strong><span class="hstat-lbl">${H.statPv}</span></div><span class="hstat-sep" aria-hidden="true">·</span><div class="hstat"><strong class="hstat-n" id="hstat-cp">—</strong><span class="hstat-lbl">${H.statCp}</span></div></div>
-<ol class="steps3" aria-label="${l === 'fr' ? 'Comment ça marche' : 'How it works'}">${steps}</ol>
+  const body = `<div class="wrap hero"><div class="eyebrow">${H.kick}</div><h1 class="big">${H.h1}</h1><p class="hline"><span class="hrot" data-hrot="${esc(JSON.stringify(H.hrot))}">${H.hrot[0]}</span></p><p class="lead">${H.sub}</p>
+<div class="choose"><a class="choice ch-copy" href="${p.cmds}">${svg('copy')}<span><b>${H.c1}</b><small>${H.c1s}</small></span></a><a class="choice ch-gen" href="${p.try}">${svg('sparkle')}<span><b>${H.c2}</b><small>${H.c2s(GEN, WELCOME)}</small></span></a></div>
+<form class="hsearch" action="${p.cmds}" role="search">${svg('search')}<input name="q" type="search" placeholder="${esc(H.qph)}" aria-label="${esc(H.qlbl)}" enterkeyhint="search"><button class="btn pri sm" type="submit">${H.qgo}</button></form>
+<div class="hero-stats" id="hero-stats" hidden aria-live="polite"><div class="hstat"><strong class="hstat-n" id="hstat-pv">—</strong><span class="hstat-lbl"><span class="hstat-dot" aria-hidden="true"></span>${H.statPv}</span></div><div class="hstat"><strong class="hstat-n" id="hstat-cp">—</strong><span class="hstat-lbl">${H.statCp}</span></div></div>
+${timeSaver(l)}
 ${showcase(l, 'sec1')}</div><div class="wrap"><div class="sec tight"><h2 id="rail-h">${H.rail}</h2><span class="swipe">${H.tapHint} →</span></div>
 <div class="rtabs" role="tablist" aria-label="${esc(H.rail)}"><button type="button" class="rtab on" data-rail="sel" role="tab" aria-selected="true">${H.tabSel}</button><button type="button" class="rtab" data-rail="new" role="tab">${H.tabNew}</button><button type="button" class="rtab" data-rail="vid" role="tab">${H.tabVid}</button></div></div>
 <div class="rail" id="rail-sel" role="list">${featured.map((c) => railCard(c, l)).join('')}</div>
@@ -464,13 +495,15 @@ const FS = { fr: ['Copiez', 'Collez', 'Publiez'], en: ['Copy', 'Paste', 'Post'] 
   const body = `<div class="wrap"><div class="crumb"><a href="${p.home}">${t.crumbHome}</a> › <a href="${p.cat(c.cat)}">${cat[l]}</a> › <b>${esc(c.code)}</b></div>
 ${ad('lb', l)}
 <div class="fiche"><div class="fhead"><div class="eyebrow">${cat[l]}${c.kind === 'text' ? '' : ' · ' + c.ratio}</div><h1>${esc(ct.title)}</h1></div><div class="fpost">${poster(c, l, true)}${c.kind === 'video' || c.kind === 'motion' ? `<p class="vnote">${l === 'fr' ? 'Image d’illustration. Cette commande crée une vidéo : collez-la dans un générateur de vidéo avec votre photo.' : 'Illustration image. This command creates a video: paste it into a video generator with your photo.'}</p>` : ''}</div>
-<div class="fbody">${saleBox}${canGen(c) ? bestBox(l, c.slug) + refStrip(l) : ''}<div class="cmd"><pre id="p-${c.slug}">${esc(fullText)}</pre><div class="acts big">${tryBtn(c, l, 'big')}<button class="btn ${canGen(c) ? 'gl' : 'pri'} big" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}" data-after="1">${ICON.copy}${t.copy}</button></div><p class="cnt big" id="cmd-cnt" data-slug="${c.slug}" hidden></p></div>${c.steps ? `<p class="hint stepnote">${l === 'fr' ? `Commande en ${c.steps.length + 1} étapes : envoyez la commande ci-dessus (étape 1), puis les étapes suivantes dans l’ordre, dans la même conversation.` : `${c.steps.length + 1}-step command: send the command above (step 1), then the next steps in order, in the same conversation.`}</p>${c.steps.map((st, i) => `<div class="cmd step"><pre id="p-${c.slug}-${i + 2}">${esc(st[l])}</pre><div class="acts big"><button class="btn gl big" type="button" data-copy="#p-${c.slug}-${i + 2}" data-slug="${c.slug}">${ICON.copy}${t.copy}</button></div></div>`).join('')}` : ''}
+<div class="fbody">${saleBox}${canGen(c) ? bestBox(l, c.slug) + timeSaver(l, c.slug) + refStrip(l) : ''}<div class="cmd"><pre id="p-${c.slug}">${esc(fullText)}</pre><div class="acts big">${tryBtn(c, l, 'big')}<button class="btn ${canGen(c) ? 'gl' : 'pri'} big" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}" data-after="1">${copyLabel(l)}</button></div><p class="cnt big" id="cmd-cnt" data-slug="${c.slug}" hidden></p></div>${c.steps ? `<p class="hint stepnote">${l === 'fr' ? `Commande en ${c.steps.length + 1} étapes : envoyez la commande ci-dessus (étape 1), puis les étapes suivantes dans l’ordre, dans la même conversation.` : `${c.steps.length + 1}-step command: send the command above (step 1), then the next steps in order, in the same conversation.`}</p>${c.steps.map((st, i) => `<div class="cmd step"><pre id="p-${c.slug}-${i + 2}">${esc(st[l])}</pre><div class="acts big"><button class="btn gl big" type="button" data-copy="#p-${c.slug}-${i + 2}" data-slug="${c.slug}">${ICON.copy}${t.copy}</button></div></div>`).join('')}` : ''}
 <ol class="steps3 mini3">${fsteps}</ol>
 <div class="test"><span class="tl">${t.testOn}</span>${tools.map(([n, u]) => `<a class="btn gl sm" href="${u}" target="_blank" rel="noopener noreferrer nofollow" data-test="${n}">${n} ↗</a>`).join('')}</div>
 ${c.slug === 'splashshot' ? `<div class="ex2"><b>${l === 'fr' ? 'Même commande, autre produit' : 'Same command, another product'}</b><div><figure><img src="/img/c/splashshot-ex-avant.webp" alt="" loading="lazy"><figcaption>${BEFORE[l]}</figcaption></figure><span>→</span><figure><img src="/img/c/splashshot-ex-apres.webp" alt="${l === 'fr' ? 'La même commande appliquée à un produit de soin' : 'The same command applied to a skincare product'}" loading="lazy"><figcaption>${l === 'fr' ? 'Crème de soin' : 'Skincare cream'}</figcaption></figure></div><small>${AIWORD[l]} · Gemini</small></div>` : ''}<div class="after" id="after"><b>${t.afterT}</b>${canGen(c) ? `<p class="best-after">${bestTag(l)} ${BEST[l].after} <a href="${P[l].try}?c=${c.slug}" data-try="${c.slug}">${TEST[l]} →</a></p>` : ''}${waCard(l, 'after')}<div class="grid">${rel.map((x) => card(x, l)).join('')}</div>${ad('rect', l, true)}</div></div></div>
 ${same.length ? `<div class="sec"><h2>${t.similar}</h2></div><div class="grid">${same.slice(0, 6).map((x) => card(x, l)).join('')}</div>${ad('rect', l)}${same.length > 6 ? `<div class="cta"><a class="btn gl" href="${p.cat(c.cat)}">${l === 'fr' ? `Voir les ${catList.length} commandes de la catégorie` : `See all ${catList.length} commands in this category`} ›</a></div>` : ''}` : ''}</div>`;
+  // téléphone : les 2 gestes restent collés en bas de l'écran tant que les boutons de la commande ne sont pas visibles (voir site.js)
+  const fix = `<div class="fixacts" hidden><button class="btn ${canGen(c) ? 'gl' : 'pri'}" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}" data-after="1">${copyLabel(l)}</button>${tryBtn(c, l, '')}</div>`;
   const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: t.crumbHome, item: abs(p.home) }, { '@type': 'ListItem', position: 2, name: cat[l], item: abs(p.cat(c.cat)) }, { '@type': 'ListItem', position: 3, name: c.code, item: abs(p.cmd(c.slug)) }] };
-  emit(l, 'cmd', p.cmd(c.slug), { img: c.noImage ? undefined : `/img/c/${c.slug}-apres.webp`, title: t.title(c.code, ct.title), desc: ct.desc, body, alt: alt2(P.fr.cmd(c.slug), P.en.cmd(c.slug)), ld });
+  emit(l, 'cmd', p.cmd(c.slug), { img: c.noImage ? undefined : `/img/c/${c.slug}-apres.webp`, title: t.title(c.code, ct.title), desc: ct.desc, body: body + fix, alt: alt2(P.fr.cmd(c.slug), P.en.cmd(c.slug)), ld });
   if (l === 'fr') pages.push({ fr: P.fr.cmd(c.slug), en: P.en.cmd(c.slug) });
 }
 function tutoPage(l) {
@@ -660,7 +693,7 @@ function tryPage(l) {
   // sale:true pour toutes les commandes qui génèrent une image (pas les vidéos, motion, textes) — n'importe quel visuel peut devenir une affiche de vente
   const map = { commands: Object.fromEntries(COMMANDS.filter(canGen).map((c) => [c.slug, { code: c.code, title: c[l].title, kind: c.kind || 'product', img: !c.noImage, sale: canGen(c) }])), brand: BRAND[l], sale: { ...SALE[l], currencies: CURRENCIES, defCur: l === 'fr' ? 'FCFA' : '$' } };
   const body = `<div class="wrap narrow"><div class="eyebrow">${t.k}</div><h1 class="big sm">${t.h}</h1><p class="best-line">${bestTag(l)} ${BEST[l].li.slice(0, 2).map((x) => x.replace(/<\/?b>/g, '')).join(' ')}</p>
-<div id="studio"${WA_URL ? ` data-wa="${esc(WA_URL)}"` : ''}${cfg.video && cfg.video.renderUrl ? ` data-vurl="${esc(cfg.video.renderUrl)}" data-vv="${hashOf('js/videomode.js')}"` : ''} data-sv="${hashOf('js/sale.js')}" data-contact="${esc((cfg.legal && cfg.legal.email) || '')}" data-map="${esc(JSON.stringify(map))}"></div>
+<div id="studio"${WA_URL ? ` data-wa="${esc(WA_URL)}"` : ''}${cfg.video && cfg.video.renderUrl ? ` data-vurl="${esc(cfg.video.renderUrl)}" data-vv="${hashOf('js/videomode.js')}"` : ''} data-sv="${hashOf('js/sale.js')}" data-other="${P[other(l)].try}#account" data-more="${esc(JSON.stringify([[p.cmds, T[l].nav.cmds, 'grid'], [p.studio, STUDIO[l].nav, 'palette'], [p.tuto, T[l].nav.tuto, 'video'], [p.guides, T[l].ft.guides, 'book'], [p.pro, T[l].nav.pro, 'bolt'], [p.about, T[l].ft.about, 'user'], [p.terms, T[l].ft.terms, 'receipt']]))}" data-contact="${esc((cfg.legal && cfg.legal.email) || '')}" data-map="${esc(JSON.stringify(map))}"></div>
 <div id="afl-gen-ad" hidden aria-label="${l === 'fr' ? 'Publicité' : 'Advertisement'}"></div></div>`;
   emit(l, 'try', p.try, { title: t.title, desc: t.desc, body, alt: alt2(P.fr.try, P.en.try), noindex: true, extraJs: '/js/try.js' });
 }
