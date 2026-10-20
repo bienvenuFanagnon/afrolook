@@ -13,6 +13,9 @@ import 'package:afrotok/pages/socialVideos/video_details.dart';
 import 'package:afrotok/pages/user/amis/mesAmis.dart';
 import 'package:afrotok/pages/user/amis/pageMesInvitations.dart';
 import 'package:afrotok/pages/user/monetisation.dart';
+import 'package:afrotok/pages/studio/artist_marketplace.dart';
+import 'package:afrotok/pages/user/userPubs/user_my_advertisements_page.dart';
+import 'package:afrotok/pages/admin/AfrolookPub/afrolookAdminPubPage.dart';
 import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -644,6 +647,23 @@ class _MesNotificationState extends State<MesNotification> {
         case 'COMMENT':
         case 'COMMENTAIRE':
           await _handlePostNotification(notification);
+          break;
+        case 'COMPTE_OFFICIEL':
+          // Messages de service (musiques et publicités) : `post_data_type` indique l'écran à ouvrir
+          _hideLoadingOverlay();
+          final Widget? page = switch (notification.post_data_type) {
+            'MY_SOUND' => const MyArtistSoundsPage(),
+            'MY_AD' => const UserMyAdvertisementsPage(),
+            'ADMIN_SOUNDS' => const AdminArtistSoundsPage(),
+            'ADMIN_ADS' => const AdvertisementManagementPage(),
+            _ => null,
+          };
+          if (page != null) {
+            await Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+          }
+          setState(() {
+            _isHandlingNotification = false;
+          });
           break;
         default:
           _hideLoadingOverlay();

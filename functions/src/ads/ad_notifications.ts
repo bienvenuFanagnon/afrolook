@@ -1,7 +1,8 @@
-import { onDocumentCreated } from "firebase-functions/v2/firestore";
+import { onDocumentCreated, onDocumentUpdated } from "firebase-functions/v2/firestore";
 import { db } from "../shared/firebase";
 import { emailTransporter } from "../shared/email_utils";
-import { APP_DOMAIN } from "../shared/config";
+import { APP_DOMAIN, APP_WEB_URL_AFRO } from "../shared/config";
+import { notifyAdminsAll, notifyUser, esc } from "../shared/user_notify";
 
 const ADMIN_ROLES = ["ADM", "admin", "ADMIN", "super_admin"];
 const EMAIL_FROM = '"Afrolook" <epargneplus@epargneplusfinance.com>';
@@ -102,6 +103,14 @@ export const notifyAdminsOnNewAd = onDocumentCreated(
       .where("email", "!=", "")
       .get();
 
+    // Notification dans l'application + push (en plus de l'e-mail ci-dessous)
+    await notifyAdminsAll({
+      title: "📢 Nouvelle demande de publicité",
+      message: `${ad.ownerName || ad.userName || "Un utilisateur"} demande une publicité (${ad.pricePaid ?? ad.price ?? ad.amount ?? "—"} FCFA). Ouvre la validation des publicités.`,
+      target: "ADMIN_ADS",
+      refId: event.params.adId,
+    });
+
     const adminEmails = adminsSnap.docs
       .filter(doc => {
         const role: string = (doc.data().role ?? "").toUpperCase();
@@ -126,4 +135,71 @@ export const notifyAdminsOnNewAd = onDocumentCreated(
 
     console.log(`Email pub envoyé à ${adminEmails.length} admin(s): ${adminEmails.join(", ")}`);
   }
+);
+
+/**
+ * Demande de publicité traitée : l'annonceur (champ `createdBy`) reçoit une notification (application + push) et un e-mail.
+ * - en attente → active : acceptée (la diffusion commence) ;
+ * - en attente → rejetée : refusée, avec le motif, et remboursée (le remboursement est fait par l'écran d'administration) ;
+ * - active → annulée : arrêtée par l'équipe.
+ * Les changements automatiques (expiration) et les statistiques n'envoient rien.
+ */
+export const notifyAdvertiserOnAdDecision = onDocumentUpdated(
+  { document: "Advertisements/{adId}", timeoutSeconds: 60, memory: "256MiB", maxInstances: 5 },
+  async (event) => {
+    const before = event.data?.before.data() as Record<string, any> | undefined;
+    const after = event.data?.after.data() as Record<string, any> | undefined;
+    if (!before || !after) return;
+    const from = String(before.status ?? ""), to = String(after.status ?? "");
+    if (from === to) return;
+    const accepted = from === "pending" && to === "active";
+    const rejected = from === "pending" && to === "rejected";
+    const stopped = from === "active" && to === "cancelled";
+    if (!accepted && !rejected && !stopped) return;
+    const userId = String(after.createdBy ?? "");
+    if (!userId) return;
+    const name = String(after.ownerName ?? "").trim().slice(0, 60) || "ta publicité";
+    const days = Number(after.durationDays) || 0;
+    const paid = Number(after.pricePaid) || 0;
+    const reason = String(after.rejectionReason ?? "").trim().slice(0, 300);
+    const app = { label: "Voir mes publicités", url: APP_WEB_URL_AFRO };
+
+    if (accepted) {
+      await notifyUser({
+        userId, target: "MY_AD", refId: event.params.adId,
+        title: "📢 Ta publicité est acceptée !",
+        message: `Ta publicité « ${name} » est en ligne${days ? ` pour ${days} jour${days > 1 ? "s" : ""}` : ""}. Suis ses vues et ses clics dans « Mes publicités ».`,
+        email: {
+          subject: "📢 Ta publicité est acceptée sur Afrolook", heading: "Ta publicité est acceptée !", icon: "📢", tone: "ok",
+          intro: `Bonne nouvelle : ta publicité <b>« ${esc(name)} »</b> a été validée et sa diffusion a commencé.`,
+          rows: [["Publicité", name], ["Durée", days ? `${days} jour${days > 1 ? "s" : ""}` : ""], ["Montant payé", paid ? `${paid} FCFA` : ""]],
+          outro: "Tu peux suivre les vues et les clics depuis « Mes publicités » dans l'application.", button: app,
+        },
+      });
+    } else if (rejected) {
+      await notifyUser({
+        userId, target: "MY_AD", refId: event.params.adId,
+        title: "Ta publicité n'a pas été acceptée",
+        message: `« ${name} » a été refusée${reason ? ` : ${reason}` : "."}${paid ? " Tu es remboursé(e) sur ton solde." : ""}`,
+        email: {
+          subject: "Ta publicité n'a pas été acceptée", heading: "Ta publicité n'a pas été acceptée", icon: "🚫", tone: "no",
+          intro: `Après examen, ta publicité <b>« ${esc(name)} »</b> n'a pas pu être diffusée.`,
+          rows: [["Publicité", name], ["Motif", reason || "Non conforme aux règles de diffusion"], ["Remboursement", paid ? `${paid} FCFA remis sur ton solde` : ""]],
+          outro: "Tu peux corriger ta demande et en soumettre une nouvelle à tout moment.", button: app,
+        },
+      });
+    } else {
+      await notifyUser({
+        userId, target: "MY_AD", refId: event.params.adId,
+        title: "⏹️ Ta publicité a été arrêtée",
+        message: `Ta publicité « ${name} » a été arrêtée par l'équipe${reason ? ` : ${reason}` : "."}`,
+        email: {
+          subject: "Ta publicité a été arrêtée", heading: "Ta publicité a été arrêtée", icon: "⏹️", tone: "info",
+          intro: `Ta publicité <b>« ${esc(name)} »</b> n'est plus diffusée.`,
+          rows: [["Publicité", name], ["Motif", reason]],
+          outro: "Si tu as une question, réponds simplement à cet e-mail.", button: app,
+        },
+      });
+    }
+  },
 );
