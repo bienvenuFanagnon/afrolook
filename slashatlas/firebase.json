@@ -159,6 +159,126 @@
         "source": "/en/pack",
         "destination": "/en/commands/",
         "type": 301
+      },
+      {
+        "source": "/categorie/mode",
+        "destination": "/categorie/mode-couture/",
+        "type": 301
+      },
+      {
+        "source": "/categorie/mode/",
+        "destination": "/categorie/mode-couture/",
+        "type": 301
+      },
+      {
+        "source": "/en/category/mode",
+        "destination": "/en/category/fashion-tailoring/",
+        "type": 301
+      },
+      {
+        "source": "/en/category/mode/",
+        "destination": "/en/category/fashion-tailoring/",
+        "type": 301
+      },
+      {
+        "source": "/categorie/food",
+        "destination": "/categorie/affiches-resto/",
+        "type": 301
+      },
+      {
+        "source": "/categorie/food/",
+        "destination": "/categorie/affiches-resto/",
+        "type": 301
+      },
+      {
+        "source": "/en/category/food",
+        "destination": "/en/category/restaurant-posters/",
+        "type": 301
+      },
+      {
+        "source": "/en/category/food/",
+        "destination": "/en/category/restaurant-posters/",
+        "type": 301
+      },
+      {
+        "source": "/categorie/evenement",
+        "destination": "/categorie/affiches-evenements/",
+        "type": 301
+      },
+      {
+        "source": "/categorie/evenement/",
+        "destination": "/categorie/affiches-evenements/",
+        "type": 301
+      },
+      {
+        "source": "/en/category/evenement",
+        "destination": "/en/category/event-posters/",
+        "type": 301
+      },
+      {
+        "source": "/en/category/evenement/",
+        "destination": "/en/category/event-posters/",
+        "type": 301
+      },
+      {
+        "source": "/categorie/ecom",
+        "destination": "/categorie/bannieres-ecommerce/",
+        "type": 301
+      },
+      {
+        "source": "/categorie/ecom/",
+        "destination": "/categorie/bannieres-ecommerce/",
+        "type": 301
+      },
+      {
+        "source": "/en/category/ecom",
+        "destination": "/en/category/ecommerce-banners/",
+        "type": 301
+      },
+      {
+        "source": "/en/category/ecom/",
+        "destination": "/en/category/ecommerce-banners/",
+        "type": 301
+      },
+      {
+        "source": "/categorie/beaute",
+        "destination": "/categorie/beaute-coiffure/",
+        "type": 301
+      },
+      {
+        "source": "/categorie/beaute/",
+        "destination": "/categorie/beaute-coiffure/",
+        "type": 301
+      },
+      {
+        "source": "/en/category/beaute",
+        "destination": "/en/category/beauty-hair/",
+        "type": 301
+      },
+      {
+        "source": "/en/category/beaute/",
+        "destination": "/en/category/beauty-hair/",
+        "type": 301
+      },
+      {
+        "source": "/categorie/video",
+        "destination": "/categorie/pubs-video/",
+        "type": 301
+      },
+      {
+        "source": "/categorie/video/",
+        "destination": "/categorie/pubs-video/",
+        "type": 301
+      },
+      {
+        "source": "/en/category/video",
+        "destination": "/en/category/video-ads/",
+        "type": 301
+      },
+      {
+        "source": "/en/category/video/",
+        "destination": "/en/category/video-ads/",
+        "type": 301
       }
     ]
   },

@@ -51,9 +51,10 @@ const hashDir = (d) => { const h = createHash('sha1'); const dir = path.join(roo
 { const f = path.join(root, 'static', 'js', 'icons.js'), js = clientIconsJs(); if (!fs.existsSync(f) || fs.readFileSync(f, 'utf8') !== js) fs.writeFileSync(f, js); }
 const V = { css: hashOf('css/site.css'), js: hashDir('js') };
 
+const catSlug = (id, l) => { const c = CATEGORIES.find((x) => x.id === id); return (c && c.slug && c.slug[l]) || id; };
 const P = {
-  fr: { home: '/', cmds: '/commandes/', try: '/generer/', mine: '/mes-commandes/', ref: '/parrainage/', tuto: '/tutoriel/', pack: '/pack/', pro: '/pro/', studio: '/studio-contenu/', filmStudio: '/studio-film/', privacy: '/confidentialite/', cookies: '/cookies/', terms: '/conditions/', about: '/a-propos/', guides: '/guides/', cat: (id) => `/categorie/${id}/`, cmd: (s) => `/c/${s}/` },
-  en: { home: '/en/', cmds: '/en/commands/', try: '/en/generate/', mine: '/en/my-commands/', ref: '/en/referral/', tuto: '/en/tutorial/', pack: '/en/pack/', pro: '/en/pro/', studio: '/en/content-studio/', filmStudio: '/en/film-studio/', privacy: '/en/privacy/', cookies: '/en/cookies/', terms: '/en/terms/', about: '/en/about/', guides: '/en/guides/', cat: (id) => `/en/category/${id}/`, cmd: (s) => `/en/c/${s}/` },
+  fr: { home: '/', cmds: '/commandes/', try: '/generer/', mine: '/mes-commandes/', ref: '/parrainage/', tuto: '/tutoriel/', pack: '/pack/', pro: '/pro/', studio: '/studio-contenu/', filmStudio: '/studio-film/', privacy: '/confidentialite/', cookies: '/cookies/', terms: '/conditions/', about: '/a-propos/', guides: '/guides/', cat: (id) => `/categorie/${catSlug(id, 'fr')}/`, cmd: (s) => `/c/${s}/` },
+  en: { home: '/en/', cmds: '/en/commands/', try: '/en/generate/', mine: '/en/my-commands/', ref: '/en/referral/', tuto: '/en/tutorial/', pack: '/en/pack/', pro: '/en/pro/', studio: '/en/content-studio/', filmStudio: '/en/film-studio/', privacy: '/en/privacy/', cookies: '/en/cookies/', terms: '/en/terms/', about: '/en/about/', guides: '/en/guides/', cat: (id) => `/en/category/${catSlug(id, 'en')}/`, cmd: (s) => `/en/c/${s}/` },
 };
 const other = (l) => (l === 'fr' ? 'en' : 'fr');
 const catOf = (id) => CATEGORIES.find((c) => c.id === id);
@@ -466,11 +467,20 @@ function cmdsPage(l) {
   emit(l, 'cmds', p.cmds, { title: t.title, desc: t.desc, body, alt: alt2(P.fr.cmds, P.en.cmds) });
   if (l === 'fr') pages.push({ fr: P.fr.cmds, en: P.en.cmds });
 }
+const CATFAQ = {
+  fr: (n, k, g, w) => [[`Comment créer une affiche « ${n} » avec l’IA ?`, `Choisissez une commande ci-dessus. Deux façons : copiez-la gratuitement et collez-la dans ChatGPT ou Gemini avec votre photo, ou touchez « Générer ici » : l’affiche est créée sur SlashAtlas, avec votre prix, votre contact et votre QR code si vous le souhaitez.`],
+    ['Les commandes sont-elles gratuites ?', `Oui : les ${k} commandes de cette catégorie se copient gratuitement. Seule la génération directe sur le site utilise des crédits (1 affiche = ${g} crédits, ${w} affiches offertes à la création du compte).`],
+    ['Puis-je modifier une commande ?', 'Oui : ouvrez une commande, touchez « Personnaliser », ajoutez vos touches (couleurs, décor, style) et enregistrez-la dans « Mes commandes » pour la réutiliser.']],
+  en: (n, k, g, w) => [[`How do I create a “${n}” poster with AI?`, `Pick a command above. Two ways: copy it for free and paste it into ChatGPT or Gemini with your photo, or tap “Generate here”: the poster is created on SlashAtlas, with your price, contact and QR code if you wish.`],
+    ['Are the commands free?', `Yes: the ${k} commands in this category can be copied for free. Only generating directly on the site uses credits (1 poster = ${g} credits, ${w} free posters when you create your account).`],
+    ['Can I edit a command?', 'Yes: open a command, tap “Customize”, add your touches (colors, setting, style) and save it in “My commands” to reuse it.']],
+};
 function catPage(l, c) {
   const t = T[l].cat, p = P[l];
-  const list = COMMANDS.filter((x) => x.cat === c.id);
-  const body = `<div class="wrap"><div class="crumb"><a href="${p.home}">${T[l].cmd.crumbHome}</a> › <a href="${p.cmds}">${T[l].nav.cmds}</a> › <b>${c[l]}</b></div><h1 class="big sm">${t.h(c[l])}</h1><p class="lead">${c[l + '_d']}</p>${ad('lb', l)}<div class="grid">${list.map((x) => card(x, l)).join('')}</div><div class="cta"><a class="link" href="${p.cmds}">‹ ${t.back}</a></div>${band(l)}</div>`;
-  emit(l, 'cat', p.cat(c.id), { title: t.title(c[l]), desc: c[l + '_d'], body, alt: alt2(P.fr.cat(c.id), P.en.cat(c.id)) });
+  const list = COMMANDS.filter((x) => x.cat === c.id), faq = CATFAQ[l](c[l], list.length, GEN, WELCOME);
+  const body = `<div class="wrap"><div class="crumb"><a href="${p.home}">${T[l].cmd.crumbHome}</a> › <a href="${p.cmds}">${T[l].nav.cmds}</a> › <b>${c[l]}</b></div><h1 class="big sm">${t.h(c[l])}</h1><p class="lead">${c[l + '_d']}</p>${ad('lb', l)}<div class="grid">${list.map((x) => card(x, l)).join('')}</div><div class="cta"><a class="link" href="${p.cmds}">‹ ${t.back}</a></div><div class="sec"><h2>${l === 'fr' ? 'Questions fréquentes' : 'Frequently asked questions'}</h2></div><div class="faq">${faq.map(([q, a]) => `<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join('')}</div></div>`;
+  const ld = { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) };
+  emit(l, 'cat', p.cat(c.id), { title: t.title(c[l]), desc: c[l + '_d'], body, alt: alt2(P.fr.cat(c.id), P.en.cat(c.id)), ld });
   if (l === 'fr') pages.push({ fr: P.fr.cat(c.id), en: P.en.cat(c.id) });
 }
 function cmdPage(l, c) {
