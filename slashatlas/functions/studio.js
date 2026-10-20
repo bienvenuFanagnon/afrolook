@@ -299,10 +299,13 @@ function composePrompt(slug, lang, product, multi, nPhotos, texts = [], qrpos = 
   return { text: `${intro}${c.code} : ${c[L]} ${clause}${brand ? ' ' + brand : ''}${qr ? ' ' + qr : ''}${stagingClause ? ' ' + stagingClause : ''}${saleClause ? ' ' + saleClause : ''} ${quality}`.trim(), ratio: c.ratio };
 }
 
+// Détail technique joint à l'erreur (fournisseur, modèle, code HTTP, message) : enregistré dans GenErrors pour l'administration
+const withDetail = (err, detail) => Object.assign(err, { detail });
+
 async function callCloudflareFallback(parts, ratio) {
   const token = (process.env.CF_API_TOKEN || '').replace(/^﻿/, '').trim();
   const account = (process.env.CF_ACCOUNT_ID || '').replace(/^﻿/, '').trim();
-  if (!token || !account) throw fail(502, 'gemini_unavailable');
+  if (!token || !account) throw withDetail(fail(502, 'gemini_unavailable'), { provider: 'cloudflare', raw: 'jeton Cloudflare absent' });
   const textPart = parts.find((p) => p.text);
   if (!textPart) throw fail(502, 'gemini_unavailable');
   const dims = ratio === '9:16' ? { width: 576, height: 1024 }
@@ -317,7 +320,7 @@ async function callCloudflareFallback(parts, ratio) {
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt: textPart.text, ...dims }),
     });
-    if (!r.ok) { const t = await r.text().catch(() => ''); console.error('cf-ai', r.status, t.slice(0, 200)); throw fail(502, 'gemini_unavailable'); }
+    if (!r.ok) { const t = await r.text().catch(() => ''); console.error('cf-ai', r.status, t.slice(0, 200)); throw withDetail(fail(502, 'gemini_unavailable'), { provider: 'cloudflare', http: r.status, raw: t.slice(0, 300) }); }
     const j = await r.json();
     const img = j?.result?.image;
     if (!img) throw fail(502, 'gemini_unavailable');
@@ -341,19 +344,32 @@ async function callGemini(parts, ratio) {
       const j = await r.json();
       if (j.error) {
         const code = j.error.code;
-        console.error('gemini', model, code, String(j.error.message).slice(0, 200));
+        const msg = String(j.error.message || '').slice(0, 300);
+        console.error('gemini', model, code, msg.slice(0, 200));
+        const detail = { provider: 'gemini', model, http: code, raw: msg };
         // 404 = modèle introuvable, 429 = quota dépassé, 503 = indispo → essayer le suivant
-        if (code === 404 || code === 429 || code === 503) { lastErr = fail(502, code === 429 ? 'busy' : 'gemini_unavailable'); continue; }
-        throw fail(502, 'gemini_error');
+        if (code === 404 || code === 429 || code === 503) { lastErr = withDetail(fail(502, code === 429 ? 'busy' : 'gemini_unavailable'), detail); continue; }
+        // 402 = crédits prépayés épuisés : tous les modèles du projet sont bloqués
+        if (code === 402) throw withDetail(fail(502, 'gemini_credits'), detail);
+        if (code === 401 || code === 403 || (code === 400 && /API key/i.test(msg))) throw withDetail(fail(502, 'gemini_key'), detail);
+        throw withDetail(fail(502, 'gemini_error'), detail);
       }
       const part = (j.candidates?.[0]?.content?.parts || []).find((p) => p.inlineData || p.inline_data);
       const d = part && (part.inlineData || part.inline_data);
-      if (!d) { console.error('gemini sans image', model, JSON.stringify(j.promptFeedback || j.candidates?.[0]?.finishReason || '')); throw fail(422, 'refused'); }
+      if (!d) {
+        const why = JSON.stringify(j.promptFeedback || j.candidates?.[0]?.finishReason || '');
+        console.error('gemini sans image', model, why);
+        throw withDetail(fail(422, 'refused'), { provider: 'gemini', model, raw: why.slice(0, 300) });
+      }
       return { data: d.data, mime: d.mimeType || d.mime_type || 'image/png' };
     } finally { clearTimeout(timer); }
   }
   // Dernier recours : Cloudflare Workers AI (Flux-1-Schnell, text-to-image)
-  return callCloudflareFallback(parts, ratio).catch(() => { throw lastErr || fail(502, 'gemini_unavailable'); });
+  return callCloudflareFallback(parts, ratio).catch((e) => {
+    const err = lastErr || fail(502, 'gemini_unavailable');
+    const cf = e && e.detail ? `Cloudflare ${e.detail.http || ''} ${e.detail.raw || ''}`.trim() : (e && e.message) || '';
+    throw withDetail(err, { ...(err.detail || {}), fallback: cf.slice(0, 200) });
+  });
 }
 
 async function generate(u, b) {
@@ -440,7 +456,7 @@ async function runJob(u, parts, ratio, meta) {
     await addCredits(u.uid, GEN_COST, 'refund', id, { reason: e.code || 'error' });
     await gref.update({ status: 'failed', error: e.code || 'error' });
     await bump({ genfails: 1 });
-    await logGenError('image', e.code || e.message, u.uid, { slug: meta.slug });
+    await logGenError('image', e.code || e.message, u.uid, { slug: meta.slug, ...(e.detail ? { detail: e.detail } : {}) });
     throw e;
   }
 }

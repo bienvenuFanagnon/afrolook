@@ -72,32 +72,47 @@ var ords = '<div class="adm-card"><h3>Dernières commandes (période)</h3><div c
     var proPv = 0; r.forEach(function (x) { var p = x.pages || {}; proPv += (p['_pro_'] || 0) + (p['_en_pro_'] || 0); });
     var np = sum(r, 'nopub'), wl = r.reduce(function (n, x) { return n + ((x.signupKind || {}).waitlist || 0); }, 0);
     var nopub = '<div class="kpis">' + kpi(np, 'Clics vers « Sans pub »', pv ? (100 * np / pv).toFixed(1).replace('.', ',') + ' % des vues' : '') + kpi(proPv, 'Vues de la page « Sans pub »') + kpi(wl, 'Inscrits à l\'offre sans pub', proPv ? (100 * wl / proPv).toFixed(1).replace('.', ',') + ' % des vues de la page' : '') + '</div>' + list('Clics « Sans pub » depuis quelle page', mapPairs(r, 'nopub_from', function (p) { var q = p.replace(/^_|_$/g, '').replace(/_/g, '/'); return q === '' ? 'accueil' : q === 'en' ? 'accueil (EN)' : q; }));
-    var TABS = [['over', 'Vue d\'ensemble', kpAud + tbl + (function () { var cp2 = countryPairs(r); return cp2 ? list('Pays des visiteurs (d\'après le fuseau horaire)', cp2) : '<div class="adm-card"><h3>Pays des visiteurs</h3><p class="hint">Chargement…</p></div>'; })() + cols + list('Fuseaux horaires (détail)', tzp)], ['funnel', 'Parcours', fun + probs + funDet], ['nopub', 'Sans pub', nopub], ['studio', 'Studio', kpStu + ords + usr + list('Commandes générées', merge(r, 'gen')) + list('Packs demandés par carte (avant activation)', merge(r, 'cardwish_pack'))], ['subs', 'Inscrits', subs], ['ads', 'Publicité', kpAds + adv + list('Affichages par bloc', merge(r, 'ad'))], ['errors', 'Erreurs', '<div class="adm-card"><h3>Erreurs de génération</h3><p class="hint">Les 200 dernières erreurs lors des générations image, film et motion.</p><button class="btn gl sm" type="button" id="load-gen-errors">Charger les erreurs</button><div id="gen-errors-tbl" style="margin-top:12px"></div></div>'], ['tools', 'Outils', tools]];
+    var TABS = [['over', 'Vue d\'ensemble', kpAud + tbl + (function () { var cp2 = countryPairs(r); return cp2 ? list('Pays des visiteurs (d\'après le fuseau horaire)', cp2) : '<div class="adm-card"><h3>Pays des visiteurs</h3><p class="hint">Chargement…</p></div>'; })() + cols + list('Fuseaux horaires (détail)', tzp)], ['funnel', 'Parcours', fun + probs + funDet], ['nopub', 'Sans pub', nopub], ['studio', 'Studio', kpStu + ords + usr + list('Commandes générées', merge(r, 'gen')) + list('Packs demandés par carte (avant activation)', merge(r, 'cardwish_pack'))], ['subs', 'Inscrits', subs], ['ads', 'Publicité', kpAds + adv + list('Affichages par bloc', merge(r, 'ad'))], ['errors', 'Erreurs', '<div class="adm-card"><h3>Erreurs de génération</h3><p class="hint">Chaque erreur est expliquée : ce qui s’est passé et ce qu’il faut faire. Les clients sont toujours remboursés automatiquement.</p><button class="btn gl sm" type="button" id="load-gen-errors">Actualiser</button><div id="gen-errors-sum" style="margin-top:14px"></div><div id="gen-errors-tbl" style="margin-top:14px"></div></div>'], ['tools', 'Outils', tools]];
     var tabNav = '<div class="seg adm-tabs" role="tablist">' + TABS.map(function (t) { return '<button type="button" role="tab" data-tab="' + t[0] + '"' + (t[0] === tab ? ' class="on" aria-selected="true"' : '') + '>' + t[1] + '</button>'; }).join('') + '</div>';
     root.innerHTML = head + tabNav + TABS.filter(function (t) { return t[0] === tab; }).map(function (t) { return t[2]; }).join('');
+    showAlerts();
     if (tab === 'tools') { var _rb = document.getElementById('refresh-usage'); if (_rb) _rb.addEventListener('click', loadUsageStats); loadUsageStats(); }
     if (tab === 'errors') {
       var _lge = document.getElementById('load-gen-errors');
       if (_lge) {
-        function loadGenErrors() {
+        var loadGenErrors = function (force) {
           _lge.disabled = true; _lge.textContent = 'Chargement…';
-          window.slashAuth.call('admin/gen-errors', {}).then(function (res) {
+          fetchGenErrors(force).then(function (g) {
             _lge.disabled = false; _lge.textContent = 'Actualiser';
-            var tbl = document.getElementById('gen-errors-tbl');
-            if (!tbl) return;
-            if (res.status !== 200) { tbl.innerHTML = '<p class="hint">Erreur ' + res.status + '</p>'; return; }
-            var errs = (res.data && res.data.errors) || [];
-            if (!errs.length) { tbl.innerHTML = '<p class="hint">Aucune erreur enregistrée.</p>'; return; }
+            var sumBox = document.getElementById('gen-errors-sum'), tbl = document.getElementById('gen-errors-tbl');
+            if (!sumBox || !tbl) return;
+            if (!g) { tbl.innerHTML = '<p class="hint">Impossible de charger les erreurs.</p>'; return; }
+            var errs = g.errors || [], res = g.resume || [];
+            var head = (g.alerts || []).map(alertHtml).join('');
+            head += '<p class="hint" style="margin:8px 0">' + (g.lastImageOk ? '✅ Dernière image réussie : ' + esc(when(g.lastImageOk)) : 'Aucune image réussie récemment.') + '</p>';
+            head += res.length
+              ? '<h4 style="margin:14px 0 8px">Résumé des 7 derniers jours</h4>' + res.map(function (r) {
+                  var c = GRAV[r.gravite] || GRAV.attention;
+                  var types = Object.keys(r.types || {}).map(function (k) { return k + ' ×' + r.types[k]; }).join(', ');
+                  return '<div style="border:1px solid ' + c[1] + '55;border-left:4px solid ' + c[1] + ';background:' + c[0] + ';border-radius:10px;padding:10px 12px;margin-bottom:8px">' +
+                    '<div style="display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline"><b style="color:' + c[1] + '">' + c[2] + ' ' + esc(r.titre) + '</b><span class="hint">' + r.nombre + ' fois · dernière : ' + esc(when(r.dernier)) + ' · ' + esc(types) + '</span></div>' +
+                    '<p style="margin:6px 0 4px">' + esc(r.quoi) + '</p>' +
+                    '<p style="margin:0"><b>À faire :</b> ' + esc(r.action) + (r.lien ? ' <a href="' + esc(r.lien) + '" target="_blank" rel="noopener">Ouvrir ↗</a>' : '') + '</p></div>';
+                }).join('')
+              : '<p class="hint">Aucune erreur ces 7 derniers jours. 👍</p>';
+            sumBox.innerHTML = head;
+            if (!errs.length) { tbl.innerHTML = ''; return; }
             var rows = errs.map(function (e) {
-              var genreLabel = e.genre ? ('<span style="background:#2a3a2a;color:#7ec87e;border-radius:3px;padding:1px 6px;font-size:11px">' + esc(e.genre) + '</span> ') : '';
-              var desc = e.desc || e.code || '';
-              return '<tr><td>' + esc(e.at || '—') + '</td><td>' + esc(e.type || '') + '</td><td>' + genreLabel + '</td><td style="max-width:340px;word-break:break-word">' + esc(desc) + '</td><td>' + esc(e.uid || '') + '</td></tr>';
+              var c = GRAV[e.gravite] || GRAV.attention;
+              return '<tr><td style="white-space:nowrap">' + esc(when(e.at)) + '</td><td>' + esc(e.type || '') + (e.genre ? ' <small>(' + esc(e.genre) + ')</small>' : '') + '</td>' +
+                '<td><b style="color:' + c[1] + '">' + c[2] + ' ' + esc(e.titre || e.code) + '</b></td>' +
+                '<td style="max-width:360px;word-break:break-word"><small class="hint">' + esc(e.technique || e.code || '') + '</small></td><td><small>' + esc(e.uid || '') + '</small></td></tr>';
             }).join('');
-            tbl.innerHTML = '<div class="tw"><table><thead><tr><th>Date</th><th>Type</th><th>Genre</th><th>Description</th><th>UID</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+            tbl.innerHTML = '<h4 style="margin:4px 0 8px">Dernières erreurs</h4><div class="tw"><table><thead><tr><th>Date</th><th>Création</th><th>Problème</th><th>Détail technique</th><th>Utilisateur</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
           }).catch(function () { _lge.disabled = false; _lge.textContent = 'Réessayer'; });
-        }
-        _lge.addEventListener('click', loadGenErrors);
-        loadGenErrors();
+        };
+        _lge.addEventListener('click', function () { loadGenErrors(true); });
+        loadGenErrors(false);
       }
     }
     // Transactions paginées
@@ -202,6 +217,31 @@ var ords = '<div class="adm-card"><h3>Dernières commandes (période)</h3><div c
       var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + t], { type: 'text/csv' })); a.download = 'slashatlas-inscrits.csv'; a.click();
     });
   }
+  // Erreurs de génération expliquées (cache 5 min) + bandeau d'alerte commun à tous les onglets
+  var GRAV = { critique: ['#3a1416', '#ff8a8a', '🔴'], attention: ['#3a2f12', '#ffd27a', '🟠'], info: ['#13283a', '#8cc8ff', 'ℹ️'] };
+  var genErr = null, genErrAt = 0;
+  function when(iso) { if (!iso) return '—'; var d = new Date(iso); return isNaN(d) ? String(iso) : d.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); }
+  function fetchGenErrors(force) {
+    if (!force && genErr && Date.now() - genErrAt < 300000) return Promise.resolve(genErr);
+    return window.slashAuth.call('admin/gen-errors', {}).then(function (r) { if (r.status === 200) { genErr = r.data || {}; genErrAt = Date.now(); } return genErr; });
+  }
+  function alertHtml(a) {
+    return '<div role="alert" style="border:1px solid #ff8a8a77;border-left:5px solid #ff5a5f;background:#3a1416;color:#ffe4e4;border-radius:12px;padding:12px 14px;margin:0 0 12px">' +
+      '<b style="font-size:15px">🔴 ' + esc(a.titre) + '</b> <span style="opacity:.8">— ' + a.nombre + ' échec' + (a.nombre > 1 ? 's' : '') + ' depuis ' + esc(when(a.depuis)) + '</span>' +
+      '<p style="margin:6px 0 4px">' + esc(a.quoi) + '</p>' +
+      '<p style="margin:0"><b>À faire :</b> ' + esc(a.action) + '</p>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' + (a.lien ? '<a class="btn gl sm" href="' + esc(a.lien) + '" target="_blank" rel="noopener">Ouvrir ↗</a>' : '') +
+      '<button class="btn gl sm" type="button" data-goerr>Voir les erreurs</button></div></div>';
+  }
+  function showAlerts() {
+    fetchGenErrors().then(function (g) {
+      if (!root || !g) return;
+      var box = document.getElementById('adm-alerts');
+      if (!box) { box = document.createElement('div'); box.id = 'adm-alerts'; root.insertBefore(box, root.firstChild); }
+      box.innerHTML = tab === 'errors' ? '' : (g.alerts || []).map(alertHtml).join('');
+      Array.prototype.forEach.call(box.querySelectorAll('[data-goerr]'), function (b) { b.addEventListener('click', function () { var t = root.querySelector('[data-tab="errors"]'); if (t) t.click(); }); });
+    }).catch(function () {});
+  }
   function setService(id, res) {
     var dot = document.getElementById('dot-' + id);
     var info = document.getElementById('info-' + id);
@@ -245,7 +285,12 @@ var ords = '<div class="adm-card"><h3>Dernières commandes (période)</h3><div c
         setService('claude', { dot: cost > 50 ? 'warn' : 'ok', info: fmtN(cl.tokens_this_month || 0) + ' tokens ce mois · ' + cost + ' $' });
       }
       setService('firebase', { dot: 'ok', info: 'Actif (vous êtes connecté)' });
-      setService('gemini', { dot: '', info: 'Vérifier dans AI Studio ↗' });
+      fetchGenErrors().then(function (g) {
+        var a = ((g && g.alerts) || []).filter(function (x) { return /^gemini/.test(x.cause); })[0];
+        if (a) setService('gemini', { dot: 'err', info: a.titre + ' depuis ' + when(a.depuis) });
+        else if (g && g.lastImageOk) setService('gemini', { dot: 'ok', info: 'Dernière image réussie : ' + when(g.lastImageOk) });
+        else setService('gemini', { dot: 'warn', info: 'Aucune image récente : vérifier dans AI Studio ↗' });
+      }).catch(function () { setService('gemini', { dot: '', info: 'Vérifier dans AI Studio ↗' }); });
       setService('gtts', { dot: '', info: 'Vérifier dans Google Cloud ↗' });
     }).catch(function() {
       if (btn) { btn.disabled = false; btn.textContent = 'Actualiser'; }

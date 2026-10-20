@@ -169,7 +169,7 @@ async function render(u, b) {
     await addCredits(u.uid, cost, 'refund', 'v' + id, { reason: (e && e.code) || 'error' });
     await vref.update({ status: 'failed', error: (e && e.code) || 'error' });
     await bump({ videofails: 1 });
-    await studio.logGenError('motion', (e && e.code) || (e && e.message) || 'error', u.uid, { style: b.style });
+    await studio.logGenError('motion', (e && e.code) || (e && e.message) || 'error', u.uid, { style: b.style, ...(e && e.detail ? { detail: e.detail } : {}) });
     throw e && e.status ? e : fail(500, e && e.code === 'too_long' ? 'too_long' : e && e.code === 'tts' ? 'voice_error' : 'render_failed');
   } finally { if (out) { try { fs.rmSync(out.dir, { recursive: true, force: true }); } catch (e) { /* temporaire */ } } }
 }
@@ -219,16 +219,22 @@ async function script(u, b) {
     ? `Tu écris le texte d’une courte publicité vidéo (15 à 25 secondes) pour un petit commerçant. ${ctx}\nRéponds uniquement en JSON : {"hook": accroche de 3 à 6 mots, "lines": [3 atouts de 2 à 5 mots chacun], "cta": appel à l’action de 2 à 4 mots, "voice": {"hook": phrase d’accroche parlée de 8 mots au plus, "product": 1 ou 2 phrases courtes de 22 mots au plus, "benefits": 1 phrase de 20 mots au plus, "offer": 1 phrase de 18 mots au plus (vide s’il n’y a ni prix ni offre), "cta": 1 phrase de 12 mots au plus}}.\nRègles : français simple et chaleureux ; n’invente ni chiffre, ni prix, ni certification, ni promesse médicale ou de résultat garanti ; rien d’exagéré ; pas d’émoji ; pas de guillemets dans les textes.`
     : `You write the text of a short video ad (15 to 25 seconds) for a small business owner. ${ctx}\nReply with JSON only: {"hook": a 3 to 6 word hook, "lines": [3 benefits of 2 to 5 words each], "cta": a 2 to 4 word call to action, "voice": {"hook": spoken hook of 8 words max, "product": 1 or 2 short sentences of 22 words max, "benefits": 1 sentence of 20 words max, "offer": 1 sentence of 18 words max (empty if no price or offer), "cta": 1 sentence of 12 words max}}.\nRules: simple, warm English; invent no number, price, certification, medical claim or guaranteed result; nothing exaggerated; no emoji; no quotation marks inside the texts.`;
   let j = null;
+  let lastDetail = null;
   for (const model of SCRIPT_MODELS) {
     try {
       const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-goog-api-key': studio.GEMINI_API_KEY.value() },
         body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: 'application/json', temperature: 0.8 } }) });
       const x = await r.json(); const txt = x.candidates && x.candidates[0] && x.candidates[0].content && x.candidates[0].content.parts && x.candidates[0].content.parts[0] && x.candidates[0].content.parts[0].text;
       if (txt) { j = JSON.parse(txt); break; }
-      console.error('script model', model, JSON.stringify(x.error || x.promptFeedback || '').slice(0, 200));
-    } catch (e) { console.error('script', model, e.message); }
+      const raw = JSON.stringify(x.error || x.promptFeedback || '');
+      console.error('script model', model, raw.slice(0, 200));
+      lastDetail = { provider: 'gemini', model, http: (x.error && x.error.code) || null, raw: ((x.error && x.error.message) || raw).slice(0, 300) };
+    } catch (e) { console.error('script', model, e.message); lastDetail = { provider: 'gemini', model, raw: String(e.message).slice(0, 300) }; }
   }
-  if (!j || typeof j !== 'object') throw fail(502, 'script_failed');
+  if (!j || typeof j !== 'object') {
+    const credits = lastDetail && lastDetail.http === 402;
+    throw Object.assign(fail(502, credits ? 'gemini_credits' : 'script_failed'), { detail: lastDetail });
+  }
   const v = j.voice && typeof j.voice === 'object' ? j.voice : {};
   return { hook: oneLine(j.hook, 60), lines: (Array.isArray(j.lines) ? j.lines : []).map((x) => oneLine(x, 48)).filter(Boolean).slice(0, 3), cta: oneLine(j.cta, 30),
     voice: { hook: oneLine(v.hook, 120), product: oneLine(v.product, 240), benefits: oneLine(v.benefits, 240), offer: oneLine(v.offer, 240), cta: oneLine(v.cta, 160) } };

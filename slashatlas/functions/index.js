@@ -12,6 +12,7 @@ const studio = require('./studio');
 const videoApi = require('./videoApi');
 const filmStudio = require('./filmStudio');
 const filmRenderer = require('./filmRenderer');
+const { explain: explainGenError } = require('./genErrors');
 const fs = require('fs');
 const nodePath = require('path');
 const OG_DIR = nodePath.join(__dirname, 'og');
@@ -236,6 +237,51 @@ async function whoIs(req) {
 const isAdmin = (u) => !!u && ['password', 'google.com'].includes(u.provider) && ADMINS.includes(u.email);
 
 const ts = (v) => (v && v.toDate ? v.toDate().toISOString() : null);
+
+/** Erreurs de génération expliquées en clair : liste, résumé par cause (7 jours) et alertes en cours.
+ *  Une alerte reste affichée tant qu'aucune création du même type n'a réussi depuis la dernière panne critique. */
+async function adminGenErrors() {
+  const ms = (v) => (v && v.toMillis ? v.toMillis() : 0);
+  const [snap, gens] = await Promise.all([
+    db.collection('GenErrors').orderBy('at', 'desc').limit(200).get(),
+    db.collection('StudioGenerations').orderBy('createdAt', 'desc').limit(40).get(),
+  ]);
+  const okGen = gens.docs.map((d) => d.data()).find((g) => g.status === 'done');
+  const lastImageOk = okGen ? ms(okGen.doneAt) || ms(okGen.createdAt) : 0;
+
+  const errors = snap.docs.map((d) => {
+    const x = d.data();
+    const ex = explainGenError(x);
+    const det = x.detail || {};
+    return {
+      id: d.id, type: x.type, code: x.code, uid: x.uid, at: ts(x.at), atMs: ms(x.at), genre: x.genre || null,
+      ...ex,
+      technique: [det.provider, det.model, det.http ? 'HTTP ' + det.http : '', det.raw || x.desc || '', det.fallback ? 'secours : ' + det.fallback : ''].filter(Boolean).join(' · ').slice(0, 500),
+    };
+  });
+
+  const weekAgo = Date.now() - 7 * 864e5;
+  const groups = {};
+  for (const e of errors) {
+    if (e.atMs < weekAgo) continue;
+    const g = groups[e.cause] || (groups[e.cause] = { cause: e.cause, titre: e.titre, gravite: e.gravite, quoi: e.quoi, action: e.action, lien: e.lien || null, nombre: 0, dernier: e.at, types: {} });
+    g.nombre += 1;
+    g.types[e.type] = (g.types[e.type] || 0) + 1;
+  }
+  const ordre = { critique: 0, attention: 1, info: 2 };
+  const resume = Object.values(groups).sort((a, b) => (ordre[a.gravite] - ordre[b.gravite]) || (b.nombre - a.nombre));
+
+  const twoDays = Date.now() - 2 * 864e5;
+  const alerts = [];
+  const seen = new Set();
+  for (const e of errors) {
+    if (e.gravite !== 'critique' || e.atMs < twoDays || seen.has(e.cause)) continue;
+    seen.add(e.cause);
+    if (e.type === 'image' && lastImageOk > e.atMs) continue;
+    alerts.push({ cause: e.cause, titre: e.titre, quoi: e.quoi, action: e.action, lien: e.lien || null, depuis: e.at, nombre: errors.filter((x) => x.cause === e.cause && x.atMs >= twoDays).length });
+  }
+  return { errors, resume, alerts, lastImageOk: lastImageOk ? new Date(lastImageOk).toISOString() : null };
+}
 // Réglages de publicité modifiables depuis l'administration (aucun redéploiement nécessaire).
 let adsCache = { at: 0, v: { enabled: false } };
 async function getAds(force) {
@@ -468,9 +514,7 @@ exports.slashatlasApi = onRequest(
         const u = await whoIs(req);
         if (!u) return res.status(401).json({ error: 'auth' });
         if (!isAdmin(u)) return res.status(403).json({ error: 'forbidden' });
-        const snap = await db.collection('GenErrors').orderBy('at', 'desc').limit(200).get();
-        const errors = snap.docs.map((d) => { const x = d.data(); return { id: d.id, type: x.type, code: x.code, uid: x.uid, at: ts(x.at) }; });
-        return res.status(200).json({ errors });
+        return res.status(200).json(await adminGenErrors());
       }
       if (path.endsWith('/studio-film/upload-url')) {
         // Génère une URL signée pour que le frontend uploade un audio directement vers Firebase Storage
