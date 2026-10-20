@@ -32,5 +32,8 @@
   },
   "community": {
     "whatsapp": "https://whatsapp.com/channel/0029Vb9H9ht9Bb67cMwhv026"
+  },
+  "push": {
+    "publicKey": "BJkiNd43mvErTOOjqQBj5FVrvGUOpqEmuSwDSYgOdXF2NhzAK59PqDj7dqkjjTxM5nS-cAePSXl9MQVCPmXpYAo"
   }
 }

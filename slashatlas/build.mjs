@@ -10,6 +10,7 @@ import { termsBody, TERMS_VERSION } from './src/terms.mjs';
 import { aboutBody } from './src/about.mjs';
 import { GUIDES } from './src/guides.mjs';
 import { svg, clientIconsJs } from './src/icons.mjs';
+import { PRIORITY as PUSH_PRIORITY } from './src/cmds/femmes.mjs';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 
@@ -262,13 +263,13 @@ function layout({ l, key, title, desc, body, alt, noindex, ld, path: pth, authJs
   return `<!doctype html><html lang="${t.htmlLang}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">${key === 'home' ? LANG_JS : ''}<title>${esc(title)}</title><meta name="description" content="${esc(desc)}"><meta name="theme-color" content="#000000"><meta name="color-scheme" content="dark">${robots}<link rel="canonical" href="${abs(pth)}">${hl}
 <meta property="og:title" content="${esc(ogTitle || title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="website"><meta property="og:url" content="${abs(pth)}"><meta property="og:site_name" content="${cfg.name}"><meta property="og:image" content="${abs(ogImg)}">${ogDim}<meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="${abs(ogImg)}">
 ${!robots ? [].concat(cfg.adsenseAccount || []).map((a) => `<meta name="google-adsense-account" content="${a}">`).join('') : ''}<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="SlashAtlas"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="preload" href="/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/css/site.css?v=${V.css}">${ld ? `<script type="application/ld+json">${JSON.stringify(ld)}</script>` : ''}</head>
-<body data-page="${key}" data-lang="${l}" data-imgv="${IMGV}" data-idx="${IDX[l]}"${WA_URL && key !== 'admin' ? ` data-wa="${esc(WA_URL)}"` : ''}><a class="skip" href="#main">${l === 'fr' ? 'Aller au contenu' : 'Skip to content'}</a>
+<body data-page="${key}" data-lang="${l}" data-imgv="${IMGV}" data-idx="${IDX[l]}"${cfg.push && cfg.push.publicKey ? ` data-vapid="${cfg.push.publicKey}"` : ''}${WA_URL && key !== 'admin' ? ` data-wa="${esc(WA_URL)}"` : ''}><a class="skip" href="#main">${l === 'fr' ? 'Aller au contenu' : 'Skip to content'}</a>
 <header class="hd"><a class="logo" href="${p.home}"><i>/</i>${cfg.name}</a><nav aria-label="Navigation">${nav}</nav><span class="sp"></span>${sw}<a class="btn gl sm hpro" href="${p.pro}">${t.nav.pro}</a><span class="hd-bal-wrap" id="hd-bal-wrap" hidden><button class="hd-pill" id="hd-buy-btn" type="button" aria-label="${l === 'fr' ? 'Recharger mes crédits' : 'Top up my credits'}">${svg('coin')}<span id="hd-bal"></span>${svg('plus')}</button></span><a class="btn pri sm hlogin" href="${p.try}" data-signin data-in="${l === 'fr' ? 'Mon compte' : 'My account'}" data-in-href="${p.try}#account">${l === 'fr' ? 'Se connecter' : 'Sign in'}</a><button class="menubtn" type="button" aria-label="${t.nav.menu}" aria-expanded="false" aria-controls="mnav"><i></i><i></i><i></i></button></header>
 <div class="mnav" id="mnav" hidden><a class="btn pri big" href="${p.try}">${TEST[l]}</a>${[[p.cmds, t.nav.cmds, 'cmds'], [p.studio, STUDIO[l].nav, 'studio'], [p.tuto, t.nav.tuto, 'tuto'], [p.guides, t.ft.guides, 'guides'], [p.pro, t.nav.pro, 'pro'], [p.about, t.ft.about, 'about']].map(([h, n, k]) => `<a href="${h}"${key === k ? ' class="on" aria-current="page"' : ''}>${n}</a>`).join('')}</div>
 <main id="main">${body}</main>
 <footer class="ft"><span>${cfg.name} · ${t.ft.tag}</span>${cfg.legal && cfg.legal.email ? `<a class="ftmail" href="mailto:${cfg.legal.email}">${t.ft.contact} : ${cfg.legal.email}</a>` : ''}${WA_URL ? `<a class="ftwa" href="${WA_URL}" target="_blank" rel="noopener" data-wa="footer">${WA[l].ft}</a>` : ''}<a href="${p.studio}">${STUDIO[l].nav}</a><a href="${p.privacy}">${t.ft.privacy}</a><a href="${p.guides}">${t.ft.guides}</a><a href="${p.about}">${t.ft.about}</a><a href="${p.terms}">${t.ft.terms}</a><a href="${p.cookies}">${t.ft.cookies}</a>${body.includes('data-ad=') ? `<a href="#" data-adprefs hidden>${l === 'fr' ? 'Préférences publicitaires' : 'Ad preferences'}</a>` : ''}<small class="ft-build">${BUILD_VERSION}</small></footer>
 ${key !== 'admin' ? tabbar(l, key) : ''}
-${cfg.ga && key !== 'admin' ? `<script src="/js/ga.js?v=${V.js}" data-id="${cfg.ga}" defer></script>` : ''}<script src="/js/icons.js?v=${V.js}" defer></script><script src="/js/site.js?v=${V.js}" defer></script>${key !== 'admin' ? `<script src="/js/pwa.js?v=${V.js}" defer></script><script src="/js/library.js?v=${V.js}" defer></script>` : ''}${key !== 'admin' ? `<script src="/js/afrolook-ads.js?v=${V.js}" defer></script>` : ''}${extraJs ? `<script src="${extraJs}?v=${V.js}" defer></script>` : ''}</body></html>`;
+${cfg.ga && key !== 'admin' ? `<script src="/js/ga.js?v=${V.js}" data-id="${cfg.ga}" defer></script>` : ''}<script src="/js/icons.js?v=${V.js}" defer></script><script src="/js/site.js?v=${V.js}" defer></script>${key !== 'admin' ? `<script src="/js/pwa.js?v=${V.js}" defer></script><script src="/js/library.js?v=${V.js}" defer></script><script src="/js/notif.js?v=${V.js}" defer></script>` : ''}${key !== 'admin' ? `<script src="/js/afrolook-ads.js?v=${V.js}" defer></script>` : ''}${extraJs ? `<script src="${extraJs}?v=${V.js}" defer></script>` : ''}</body></html>`;
 }
 // Barre d'onglets du bas (téléphone) : le site se parcourt comme une application. L'onglet actif vient de la page (et, sur /generer/, de l'ancre : voir site.js).
 const TABS = {
@@ -730,6 +731,18 @@ fs.writeFileSync(path.join(root, 'functions', 'commands.json'), JSON.stringify({
   brand: BRAND,
   termsVersion: TERMS_VERSION,
 }));
+// Commandes du jour (notifications) : par thème, seulement les commandes illustrées et générables sur le site ; les nouvelles (femmes.mjs, P1 d'abord) en tête.
+{
+  const HAIR = ['hairbundles', 'satinbonnet', 'hairstylingcream', 'hairaccessories', 'braidaccessories', 'wigdisplay', 'hairoilcare', 'silkscarves', 'hairshowcase'];
+  const GIFTS = ['giftbox', 'handmadecraft', 'pagnepouch', 'customgifts', 'giftwrap', 'jewelbox', 'pouchset', 'walletkeys', 'phonecase', 'dailyaccessories'];
+  const SWEETS = ['homeyogurt', 'cookiesbox', 'sweetshop', 'snackpack', 'sandwichdeal', 'coldwater', 'juicebar', 'celebrationcake'];
+  const themeOf = (c) => (HAIR.includes(c.slug) ? 'cheveux' : GIFTS.includes(c.slug) ? 'cadeaux' : SWEETS.includes(c.slug) ? 'douceurs' : ['beaute', 'sante'].includes(c.cat) ? 'beaute' : ['mode', 'afrofashion', 'bijoux'].includes(c.cat) ? 'mode' : null);
+  const prio = Object.values(PUSH_PRIORITY).flat();
+  const rank = (c) => { const i = prio.indexOf(c.slug); return i < 0 ? 1000 + COMMANDS.indexOf(c) : i; };
+  const POOL = { beaute: [], cheveux: [], mode: [], cadeaux: [], douceurs: [] };
+  COMMANDS.filter((c) => !c.noImage && canGen(c) && themeOf(c)).sort((a, b) => rank(a) - rank(b)).forEach((c) => POOL[themeOf(c)].push({ s: c.slug, fr: c.fr.title, en: c.en.title }));
+  fs.writeFileSync(path.join(root, 'functions', 'push_pool.json'), JSON.stringify(POOL));
+}
 fs.rmSync(dist, { recursive: true, force: true });
 // Index des commandes pour le navigateur : page Commandes (suite de la liste), favoris, « Mes commandes ». p = commande de base (celle qu'on copie).
 const IDX = {}, IDXJ = {};

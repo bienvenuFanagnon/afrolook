@@ -550,6 +550,7 @@
         newVersion(r.data.id, r.data.mime, r.data.image).then(function (v) {
           v.genPos = genPos; state.result = v; state.versions = [v]; state.cur = 0; state.instruction = '';
           state.credits = r.data.credits; render(); window.scrollTo({ top: $('.sres').offsetTop - 70, behavior: 'smooth' });
+          try { window.dispatchEvent(new CustomEvent('sa:generated')); } catch (e) {}
           // Sauvegarde locale de l\u2019image et refresh de l\u2019historique
           if (v.blob) idb.save(r.data.id, v.blob).catch(function () {});
           setTimeout(loadHistory, 800);

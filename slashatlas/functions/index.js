@@ -2,6 +2,7 @@
 // Aucune donnée personnelle hors e-mail volontairement saisi ; aucune IP stockée.
 // v2026-10-13
 const { onRequest } = require('firebase-functions/v2/https');
+const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { defineSecret } = require('firebase-functions/params');
 const { initializeApp, getApps } = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
@@ -13,6 +14,7 @@ const videoApi = require('./videoApi');
 const filmStudio = require('./filmStudio');
 const filmRenderer = require('./filmRenderer');
 const { explain: explainGenError } = require('./genErrors');
+const push = require('./push');
 const fs = require('fs');
 const nodePath = require('path');
 const OG_DIR = nodePath.join(__dirname, 'og');
@@ -371,7 +373,7 @@ async function adminUsageStats() {
 }
 
 exports.slashatlasApi = onRequest(
-  { region: 'europe-west1', invoker: 'public', memory: '512MiB', maxInstances: 10, timeoutSeconds: 120, secrets: [...studio.SECRETS, CF_API_TOKEN, CF_ACCOUNT_ID] },
+  { region: 'europe-west1', invoker: 'public', memory: '512MiB', maxInstances: 10, timeoutSeconds: 120, secrets: [...studio.SECRETS, CF_API_TOKEN, CF_ACCOUNT_ID, push.VAPID_PRIVATE_KEY] },
   async (req, res) => {
     // Aperçu de lien (WhatsApp, Facebook…) : une image tirée au hasard à chaque lecture, jamais mise en cache.
     if (req.method === 'GET' && /\/og\.jpg$/.test(req.path)) {
@@ -451,6 +453,20 @@ exports.slashatlasApi = onRequest(
         if (path.endsWith('/pay/card')) return res.status(200).json(await studio.payCard(u, body(req), { ip, ua: req.get('user-agent') }));
         if (path.endsWith('/my-orders')) return res.status(200).json(await studio.myOrders(u, body(req)));
         return res.status(200).json(await studio.payStatus(u, body(req)));
+      }
+      // notifications « commande du jour » : abonnement anonyme, sans compte
+      if (/\/push\/(sub|unsub|click)$/.test(path)) {
+        if (limited('p' + ipKey, 30, 600000)) return res.status(429).json({ error: 'rate' });
+        const pb = body(req);
+        const r = path.endsWith('/sub') ? await push.subscribe(pb) : path.endsWith('/unsub') ? await push.unsubscribe(pb) : await push.click(pb);
+        return res.status(r.error ? 400 : 200).json(r);
+      }
+      if (path.endsWith('/admin/push-stats')) {
+        if (limited('ap' + ipKey, 40, 600000)) return res.status(429).json({ error: 'rate' });
+        const u = await whoIs(req);
+        if (!u) return res.status(401).json({ error: 'auth' });
+        if (!isAdmin(u)) return res.status(403).json({ error: 'forbidden' });
+        return res.status(200).json(await push.adminStats());
       }
       if (path.endsWith('/admin/orders')) {
         if (limited('ao' + ipKey, 40, 600000)) return res.status(429).json({ error: 'rate' });
@@ -616,4 +632,10 @@ exports.slashatlasFilm = onRequest(
     filmRenderer.renderFilm(String(jobId), process.env.CF_ACCOUNT_ID, process.env.CF_API_TOKEN, process.env.MINIMAX_API_KEY)
       .catch((e) => { console.error('slashatlasFilm bg render', jobId, e.message); });
   },
+);
+
+// Notifications « commande du jour » : chaque heure à la demie, envoi aux abonnés pour qui il est 9 h 30 (voir push.js).
+exports.slashatlasPush = onSchedule(
+  { schedule: '30 * * * *', timeZone: 'UTC', region: 'europe-west1', memory: '512MiB', timeoutSeconds: 300, maxInstances: 1, secrets: [push.VAPID_PRIVATE_KEY] },
+  async () => { await push.sendHourly(); },
 );

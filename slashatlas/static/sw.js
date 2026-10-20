@@ -22,3 +22,24 @@ self.addEventListener('fetch', (e) => {
     e.respondWith(caches.match(r).then((m) => m || fetch(r).then((res) => { if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(r, copy)); } return res; })));
   }
 });
+
+// ── Notifications « commande du jour » (Web Push) ──
+self.addEventListener('push', (e) => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (err) { d = { title: 'SlashAtlas', body: e.data ? e.data.text() : '' }; }
+  const opts = { body: d.body || '', icon: '/icons/icon-192.png', badge: '/icons/icon-192.png', tag: d.tag || 'sa', renotify: false, data: { url: d.url || '/', gen: d.gen || '', slug: d.slug || '' } };
+  if (d.image) opts.image = d.image; // grande image : Android seulement (iPhone ne l'affiche pas)
+  if (Array.isArray(d.actions)) opts.actions = d.actions.slice(0, 2).map((a) => ({ action: a.action, title: a.title }));
+  e.waitUntil(self.registration.showNotification(d.title || 'SlashAtlas', opts));
+});
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const dt = e.notification.data || {}, a = e.action === 'gen' ? 'gen' : e.action === 'see' ? 'see' : 'open';
+  const url = a === 'gen' && dt.gen ? dt.gen : dt.url || '/';
+  e.waitUntil((async () => {
+    try { await fetch('/api/push/click', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ a }) }); } catch (err) {}
+    const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const c of all) { if ('focus' in c) { await c.focus(); if ('navigate' in c) { try { await c.navigate(url); } catch (err) {} } return; } }
+    if (self.clients.openWindow) await self.clients.openWindow(url);
+  })());
+});

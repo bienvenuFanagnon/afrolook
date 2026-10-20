@@ -967,3 +967,12 @@ body[data-view=creations] #main>.wrap>.eyebrow,body[data-view=creations] #main>.
 .ccard .acts{display:flex;flex-wrap:wrap;gap:6px}.ccard .acts .btn{flex:1 1 auto;min-width:0;padding:8px 10px;font-size:12.5px}
 .btn.warn{background:rgba(255,69,58,.18);color:#ff6b61}
 .mtabs2 button{white-space:nowrap;font-size:13.5px}.mtabs2 .ic{width:17px;height:17px}
+/* Notifications : fenêtre du bas */
+.nsheet .nhead{display:flex;gap:12px;align-items:flex-start;padding-right:36px}.nsheet .nhead>.ic{width:30px;height:30px;color:var(--acc);flex:none;margin-top:2px}
+.nsheet .nhead b{display:block;font-size:18px;letter-spacing:-.02em}.nsheet .nhead span{display:block;color:var(--mut);font-size:13.5px;margin-top:3px;line-height:1.45}
+.nlbl{margin:2px 0 -4px;font:700 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.nthemes{display:flex;flex-wrap:wrap;gap:8px}
+.nchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line2);background:none;color:var(--mut);border-radius:999px;padding:9px 13px;font:700 13.5px var(--f);cursor:pointer}
+.nchip .ic{width:15px;height:15px;opacity:0}
+.nchip[aria-pressed=true]{background:rgba(41,151,255,.16);border-color:var(--acc);color:var(--txt)}.nchip[aria-pressed=true] .ic{opacity:1;color:var(--acc)}
+.nsheet .btn{width:100%}

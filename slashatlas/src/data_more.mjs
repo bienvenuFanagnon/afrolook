@@ -35,8 +35,11 @@ import mascotte from './cmds/mascotte.mjs';
 import motion from './cmds/motion.mjs';
 import kit from './cmds/kit.mjs';
 import mise_en_scene from './cmds/mise_en_scene.mjs';
+import femmes from './cmds/femmes.mjs';
 
-const FILES = { mode, produit, food, immobilier, sport, musique, reseaux, evenement, beaute, effets, video, tech, auto, bijoux, maison, education, sante, voyage, business, packaging, typo, logomat, planches, infographie, diorama, anime, marque, editorial, jalons, magazine, ecom, mascotte, motion, kit, affiches: mise_en_scene };
+const FILES0 = { mode, produit, food, immobilier, sport, musique, reseaux, evenement, beaute, effets, video, tech, auto, bijoux, maison, education, sante, voyage, business, packaging, typo, logomat, planches, infographie, diorama, anime, marque, editorial, jalons, magazine, ecom, mascotte, motion, kit, affiches: mise_en_scene };
+// commandes « produits que les femmes vendent le plus » placées en tête de leur catégorie
+const FILES = Object.fromEntries(Object.entries(FILES0).map(([cat, rows]) => [cat, [...(femmes[cat] || []), ...rows]]));
 const FMT = {
   fr: { '4:5': 'vertical 4:5', '1:1': 'carré 1:1', '3:2': 'paysage 3:2', '9:16': 'vertical 9:16', '16:9': 'paysage 16:9', '3:4': 'vertical 3:4', 'texte': 'texte' },
   en: { '4:5': 'vertical 4:5', '1:1': 'square 1:1', '3:2': 'landscape 3:2', '9:16': 'vertical 9:16', '16:9': 'landscape 16:9', '3:4': 'vertical 3:4', 'texte': 'text' },
