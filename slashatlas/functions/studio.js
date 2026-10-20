@@ -21,16 +21,21 @@ const IMAGE_MODELS = ['gemini-3.1-flash-image', 'gemini-3-pro-image', 'gemini-2.
 // (pour que les chiffres parlent plus : 60 crédits au lieu de 6, 10 crédits par image au lieu de 1). 10 crédits = une génération (ou une correction).
 // Prix en FCFA, hors frais de paiement (ajoutés au client).
 // Coût de revient d'une génération ≈ 0,067 $ (Gemini, qualité standard) ≈ 40 FCFA à 600 FCFA le dollar : cible de marge brute d'environ 40 à 47 %.
-const GEN_COST = 10;
+// Formule « Usage » (20 octobre 2026) : petite marge pour faire utiliser le site. 1 affiche = 6 crédits ; coût Gemini mesuré ≈ 0,057 $ ≈ 34 FCFA l'image.
+const GEN_COST = 6;
 // Vidéo pub (montage maison : photos + animations + musique + voix Google). Coût de revient réel ≈ 0,02 $ (calcul + voix + stockage), soit moins de 15 FCFA : la marge est très large.
 const VIDEO_COST = { base: 40, voice: 0, cutout: 0 }; // prix unique : détourage IA, texte écrit par l'IA, voix off et musique sont compris (coût réel ≈ 0,02 à 0,25 $ selon le nombre de photos détourées par l'IA)
 const VIDEO_LIMITS = { userPerDay: 8, globalPerDay: 150 };
+// Identifiants conservés (commandes et parrainage existants) ; marge par affiche de 18 % (500 F) à 10 % (11 000 F).
 const PACKS = [
-  { id: 'p6', credits: 60, xof: 500, usd: 0.85 }, // petit pack d'entrée : mobile money seulement (frais fixes de carte trop lourds, voir CARD_LIMITS.packs)
-  { id: 'p20', credits: 200, xof: 1500, usd: 2.5 },
-  { id: 'p55', credits: 550, xof: 3900, usd: 6.5, tag: 'popular' },
-  { id: 'p160', credits: 1600, xof: 11000, usd: 18.5 },
+  { id: 'p6', credits: 72, xof: 500, usd: 0.85 }, // 12 affiches · petit pack d'entrée : mobile money seulement (frais fixes de carte trop lourds, voir CARD_LIMITS.packs)
+  { id: 'p12', credits: 150, xof: 1000, usd: 1.7 }, // 25 affiches · mobile money seulement
+  { id: 'p20', credits: 228, xof: 1500, usd: 2.5 }, // 38 affiches
+  { id: 'p55', credits: 606, xof: 3900, usd: 6.5, tag: 'popular' }, // 101 affiches
+  { id: 'p160', credits: 1740, xof: 11000, usd: 18.5 }, // 290 affiches
 ];
+// Affiches offertes à la création du compte (une seule fois par compte Google).
+const WELCOME_CREDITS = 12;
 // Pass « sans pub » : 30 jours sans publicité sur tout le site. Prix affiché en dollars (usd), payé en FCFA par mobile money (xof) ou en dollars par carte ; frais de paiement en plus, comme pour les crédits.
 const PASS = { id: 'nopub', days: 30, xof: 1000, usd: 1.7, pass: true };
 const findPack = (id) => PACKS.find((p) => p.id === id) || (id === PASS.id ? PASS : null);
@@ -38,7 +43,8 @@ const findPack = (id) => PACKS.find((p) => p.id === id) || (id === PASS.id ? PAS
 // Calcul de rentabilité : un crédit nous coûte ≈ 40 FCFA (Gemini) et se vend 69 à 83 FCFA ; les frais de paiement sont payés par le client.
 // Commission ≈ 15 % en crédits (p6 : 10, p20 : 30, p55 : 80, p160 : 240, échelle ×10) → marge brute après commission, si tous les crédits sont utilisés :
 // p6 ≈ 49 %, p20 ≈ 39 %, p55 ≈ 35 %, p160 ≈ 33 %. Aucune récompense à l'inscription (pas de faux comptes rentables), commission à chaque rechargement du filleul, sans limite de durée (chaque achat reste rentable, voir marges ci-dessus).
-const REF = { credits: { p6: 10, p20: 30, p55: 80, p160: 240 }, months: 0, listMax: 50 }; // months: 0 = pas de limite de durée
+// Formule « Usage » : la marge étant petite, la commission parrain est réduite (≈ 5 %, en affiches entières) pour que chaque vente reste rentable.
+const REF = { credits: { p6: 6, p12: 12, p20: 12, p55: 30, p160: 90 }, months: 0, listMax: 50 }; // months: 0 = pas de limite de durée
 const REF_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const newRefCode = () => Array.from(crypto.randomBytes(7), (b) => REF_ALPHABET[b % REF_ALPHABET.length]).join('');
 // Plafonds de sécurité (par jour, UTC)
@@ -127,6 +133,8 @@ async function me(u, opts = {}) {
     await stat.set({ day: day() }, { merge: true });
     await stat.update({ accounts: FieldValue.increment(1) });
     if (wanted) await attachReferrer(u, wanted).catch((e) => console.error('referral attach', e && e.message));
+    const w = await addCredits(u.uid, WELCOME_CREDITS, 'welcome', u.uid).catch((e) => { console.error('welcome', e && e.message); return null; });
+    if (w && w.applied) data.credits = (data.credits || 0) + WELCOME_CREDITS;
   }
   const code = await ensureRefCode(u.uid);
   return { uid: u.uid, email: u.email, name: u.name || data.name || '', credits: data.credits || 0, adFreeUntil: data.adFreeUntil || 0, created, refCode: code };
@@ -640,6 +648,7 @@ async function payWebhook(b) {
 function publicConfig() {
   return {
     genCost: GEN_COST,
+    welcome: WELCOME_CREDITS,
     video: { base: VIDEO_COST.base, voice: VIDEO_COST.voice, cutout: VIDEO_COST.cutout, userPerDay: VIDEO_LIMITS.userPerDay },
     packs: [...PACKS, PASS],
     currency: 'XOF',

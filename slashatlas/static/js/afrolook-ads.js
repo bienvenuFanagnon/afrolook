@@ -203,6 +203,20 @@
     '</a>';
   }
 
+  // Afrolook reste discret : seulement lors de la toute première visite (session), sur les pages clés
+  // (accueil, fiche commande, page Générer), 1 encart par page et 3 au maximum sur la session. Ensuite plus rien.
+  var MAX_SESSION = 3, pageShown = false;
+  var KEY_PAGE = /^\/(en\/)?(c\/[^\/]+\/|generer\/|generate\/)?$/.test(location.pathname);
+  function allowed() {
+    if (!KEY_PAGE || pageShown) return false;
+    try {
+      if (!localStorage.getItem('sa_afl_first')) { localStorage.setItem('sa_afl_first', String(Date.now())); sessionStorage.setItem('sa_afl_sess', '1'); }
+      else if (sessionStorage.getItem('sa_afl_sess') !== '1') return false;
+      return parseInt(sessionStorage.getItem('sa_afl_n') || '0', 10) < MAX_SESSION;
+    } catch (e) { return false; }
+  }
+  function counted() { pageShown = true; try { sessionStorage.setItem('sa_afl_n', String(parseInt(sessionStorage.getItem('sa_afl_n') || '0', 10) + 1)); } catch (e) {} }
+
   function renderIn(el, buildFn) {
     el.innerHTML = buildFn(fr);
     el.hidden = false;
@@ -216,40 +230,14 @@
 
   window.saAfrolookAds = {
     fill: function (el) {
+      if (!allowed()) { el.hidden = true; el.innerHTML = ''; return; }
+      counted();
       var fmt = el.dataset.ad;
       if (fmt === 'native') { renderIn(el, buildNativeCard); el.removeAttribute('aria-hidden'); return; }
       if (fmt === 'load') { renderIn(el, buildLoad); return; }
       renderIn(el, fmt === 'lb' ? buildLb : buildRect);
     },
-    showCopyToast: function (lang) {
-      var GAP = 90;
-      try {
-        var last = parseInt(sessionStorage.getItem('sa_act') || '0', 10);
-        var now = (Date.now() / 1000) | 0;
-        if (now - last < GAP) return;
-        sessionStorage.setItem('sa_act', now);
-      } catch (e) {}
-      var old = document.getElementById('afl-copy-toast');
-      if (old) old.parentNode.removeChild(old);
-      var toast = document.createElement('div');
-      toast.id = 'afl-copy-toast';
-      toast.dataset.ad = 'load';
-      document.body.appendChild(toast);
-      renderIn(toast, buildLoad);
-      var btn = document.createElement('button');
-      btn.className = 'afl-toast-x';
-      btn.setAttribute('aria-label', lang === 'fr' ? 'Fermer' : 'Close');
-      btn.textContent = '×';
-      toast.appendChild(btn);
-      requestAnimationFrame(function () { toast.classList.add('on'); });
-      var hide = function () {
-        toast.classList.remove('on');
-        setTimeout(function () { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 320);
-      };
-      btn.addEventListener('click', hide, { once: true });
-      var t = setTimeout(hide, 5000);
-      toast.addEventListener('click', function (e) { if (!e.target.closest('.afl-toast-x')) clearTimeout(t); });
-    }
+    showCopyToast: function () {}
   };
 
   // Bannière pendant la génération : surveille #s-gen.loading
@@ -261,6 +249,8 @@
     var observer = new MutationObserver(function () {
       var busy = genBtn.classList.contains('loading');
       if (busy && !shown) {
+        if (!allowed()) return;
+        counted();
         renderIn(slot, buildLoad);
         shown = true;
       } else if (!busy && shown) {

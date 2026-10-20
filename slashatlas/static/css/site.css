@@ -810,3 +810,10 @@ textarea.film-input{resize:vertical;min-height:110px}
   .afl-lb-img{width:44px;height:44px}
   .afl-cta-lb{padding:7px 12px;font-size:11px}
 }
+/* Barre de compte sur téléphone : les boutons passent à la ligne au lieu de sortir de l'écran */
+@media (max-width:719px){
+  .sbar{flex-direction:column;align-items:stretch}
+  .sbar .acts{flex:1 1 100%;display:flex;flex-wrap:wrap;gap:6px}
+  .sbar .acts .btn{flex:1 1 auto;min-width:0;font-size:12.5px;padding:9px 10px;white-space:nowrap;text-align:center}
+  .sbar .acts .btn.pri{flex:1 1 100%}
+}
