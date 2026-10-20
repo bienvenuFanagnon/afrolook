@@ -33,11 +33,12 @@ const BRANDS = {
   maison: ['Déco Maison', 'Bois d’Ébène', 'Maison Douce', 'Intérieur Chic'],
   immobilier: ['Immo Prestige', 'Terre & Toit', 'Villa Plus', 'Cap Immo'],
   produit: ['Maison Soleil', 'Source Pure', 'Boutique Awa', 'Prix Malin', 'Marché Express'],
+  sante: ['Douceur Awa', 'Belle Peau', 'Soin Naturel', 'Pure Éclat'],
   packaging: ['Pack & Co', 'Boîte Chic', 'Emballage Pro', 'Maison Kraft'],
 };
 const PRICE = { // [min, max, pas]
   mode: [6000, 45000, 500], beaute: [3500, 28000, 500], bijoux: [8000, 120000, 1000], food: [1500, 9000, 250], tech: [25000, 450000, 5000],
-  auto: [2500000, 9500000, 50000], maison: [15000, 250000, 1000], immobilier: [18000000, 85000000, 500000], produit: [2000, 60000, 500], packaging: [150, 1800, 25],
+  auto: [2500000, 9500000, 50000], maison: [15000, 250000, 1000], immobilier: [18000000, 85000000, 500000], produit: [2000, 60000, 500], packaging: [150, 1800, 25], sante: [1000, 12000, 250],
 };
 const PHONES = ['+225 07 12 34 56 78', '+229 97 12 34 56', '+221 77 123 45 67', '+237 6 77 12 34 56', '+225 05 98 76 54 32', '+228 90 12 34 56', '+234 803 123 4567', '+243 81 234 5678'];
 // toujours en FCFA — la cible est l'Afrique francophone

@@ -286,11 +286,32 @@ async function polishPhoto(b64, strength = 0.85) {
   return enhance(cv, { minSide: 1024, maxSide: 1600, strength }).toBuffer('image/jpeg', 92).toString('base64');
 }
 
-function composePrompt(slug, lang, product, multi, nPhotos, texts = [], qrpos = '', sale = false, stagingInstruction = '') {
+// Les commandes à textes (affiches de magazine, typographie, miniatures…) contiennent des « textes » entre guillemets ou des [sujets] entre crochets :
+// le Studio demande ces valeurs à l'utilisateur et le serveur les met à la place (dans la langue de la commande, dans l'ordre).
+const PH_RE = /«[^»]*»|\[[^\]]*\]/g;
+const phCount = (str) => (String(str).match(PH_RE) || []).length;
+const cleanFields = (a) => (Array.isArray(a) ? a : []).slice(0, 8).map((v) => String(v == null ? '' : v).replace(/[«»"“”\[\]\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80));
+function fillFields(prompt, fields, L) {
+  const n = phCount(prompt);
+  if (!n) return prompt;
+  if (fields.length !== n || fields.some((v) => !v)) throw fail(400, 'missing_texts');
+  let i = 0;
+  let out = prompt.replace(PH_RE, (m) => (m[0] === '«' ? '« ' + fields[i++] + ' »' : fields[i++]));
+  // les consignes « remplacez-les par les vôtres » n'ont plus lieu d'être : tout est rempli
+  out = L === 'fr'
+    ? out.replace(/ ?: remplacez-les par les vôtres\./g, '.').replace(/\s*Remplacez[^.]*\./g, '')
+    : out.replace(/: replace them with your own\./g, '.').replace(/\s*Replace the words[^.]*\./g, '');
+  return out.trim();
+}
+const NO_IMAGE_KINDS = ['video', 'motion', 'text'];
+
+function composePrompt(slug, lang, product, multi, nPhotos, texts = [], qrpos = '', sale = false, stagingInstruction = '', fields = []) {
   const c = COMMANDS.commands[slug];
   if (!c) throw fail(400, 'unknown_command');
-  if (['video', 'motion', 'text', 'poster', 'free'].includes(c.kind) || /[\[«]/.test(c.fr + c.en)) throw fail(400, 'not_image'); // vidéo, affiches à texte et commandes sans photo ne passent pas par le Studio d'images
+  if (NO_IMAGE_KINDS.includes(c.kind)) throw fail(400, 'not_image'); // vidéo, motion et texte ont leur propre outil
   const L = lang === 'en' ? 'en' : 'fr';
+  const basePrompt = fillFields(c[L], fields, L);
+  if (phCount(c[L]) > 0 || c.kind === 'poster' || c.kind === 'free') sale = false; // pas de bandeau de vente sur les affiches à textes
   const clause = COMMANDS.clauses[L][c.kind][multi ? 1 : 0].replace('{T}', product ? ` (${product})` : '');
   const intro = nPhotos > 1
     ? (L === 'fr' ? 'Les photos jointes montrent les éléments à réunir dans une même création. ' : 'The attached photos show the elements to bring together in a single creation. ')
@@ -305,7 +326,7 @@ function composePrompt(slug, lang, product, multi, nPhotos, texts = [], qrpos = 
   const quality = L === 'en'
     ? 'Studio quality: premium commercial photographic rendering, careful lighting slightly brightened, colors slightly livelier but faithful, with no oversaturation or artificial look, sharp details, colors faithful to the photo. The product stays strictly identical (shape, colors, logo, details); add no object, text or watermark that was not requested.'
     : "Qualité studio : rendu photographique commercial premium, lumière soignée légèrement rehaussée, couleurs légèrement ravivées mais fidèles, sans saturation excessive ni aspect artificiel, détails nets, couleurs fidèles à la photo. Le produit reste strictement identique (forme, couleurs, logo, détails) ; n'ajoute aucun objet, texte ou filigrane qui n'a pas été demandé.";
-  return { text: `${intro}${c.code} : ${c[L]} ${clause}${brand ? ' ' + brand : ''}${qr ? ' ' + qr : ''}${stagingClause ? ' ' + stagingClause : ''}${saleClause ? ' ' + saleClause : ''} ${quality}`.trim(), ratio: c.ratio };
+  return { text: `${intro}${c.code} : ${basePrompt} ${clause}${brand ? ' ' + brand : ''}${qr ? ' ' + qr : ''}${stagingClause ? ' ' + stagingClause : ''}${saleClause ? ' ' + saleClause : ''} ${quality}`.trim(), ratio: c.ratio };
 }
 
 // Détail technique joint à l'erreur (fournisseur, modèle, code HTTP, message) : enregistré dans GenErrors pour l'administration
@@ -387,7 +408,8 @@ async function generate(u, b) {
   const product = clean(b.product, 60).replace(/[()]/g, '');
   const multi = b.multi === true || b.multi === 'n';
   const photos = Array.isArray(b.photos) ? b.photos.slice(0, 3) : [];
-  if (!photos.length) throw fail(400, 'no_photo');
+  const cmd = COMMANDS.commands[slug];
+  if (!photos.length && !(cmd && cmd.kind === 'free')) throw fail(400, 'no_photo');
   let total = 0;
   const parts = [];
   for (const p of photos) {
@@ -407,7 +429,7 @@ async function generate(u, b) {
   const qrpos = QR_CORNER[b.qrpos] ? b.qrpos : '';
   const sale = b.sale === true;
   const stagingInstruction = clean(b.stagingInstruction || '', 200);
-  const { text, ratio } = composePrompt(slug, lang, product, multi, photos.length, texts, qrpos, sale, stagingInstruction);
+  const { text, ratio } = composePrompt(slug, lang, product, multi, photos.length, texts, qrpos, sale, stagingInstruction, cleanFields(b.fields));
   parts.push({ text });
 
   // Paramètres de l'affiche de vente pour l'historique (jamais dans le prompt IA)
@@ -649,6 +671,7 @@ async function payWebhook(b) {
 function publicConfig() {
   return {
     genCost: GEN_COST,
+    textCost: TEXT_COST,
     welcome: WELCOME_CREDITS,
     video: { base: VIDEO_COST.base, voice: VIDEO_COST.voice, cutout: VIDEO_COST.cutout, userPerDay: VIDEO_LIMITS.userPerDay },
     packs: [...PACKS, PASS],
@@ -899,6 +922,49 @@ async function saveLibrary(u, b) {
   return { ok: true, favs: lib.favs.length, customs: lib.customs.length };
 }
 
+const TEXT_COST = 2; // crédits par texte généré (coût réel : une fraction de franc)
+const TEXT_MODELS = ['gemini-3.5-flash', 'gemini-3.8-flash', 'gemini-3.1-flash-lite'];
+const TEXT_PER_DAY = 40;
+async function generateText(u, b) {
+  const slug = clean(b.slug, 40), lang = b.lang === 'en' ? 'en' : 'fr';
+  const c = COMMANDS.commands[slug];
+  if (!c || c.kind !== 'text') throw fail(400, 'not_text');
+  const prompt = fillFields(c[lang], cleanFields(b.fields), lang);
+  const id = crypto.randomBytes(10).toString('hex');
+  await spendCredits(u.uid, TEXT_COST, 'txt_' + id);
+  const d = day(), cUser = db().collection('StudioCounters').doc(`${d}_txt_${u.uid}`);
+  try {
+    await db().runTransaction(async (tx) => {
+      const a = await tx.get(cUser);
+      if ((a.exists ? a.data().n : 0) >= TEXT_PER_DAY) throw fail(429, 'daily_limit');
+      tx.set(cUser, { n: FieldValue.increment(1), day: d }, { merge: true });
+    });
+  } catch (e) { await addCredits(u.uid, TEXT_COST, 'refund', 'txt_' + id, { reason: e.code || 'limit' }); throw e; }
+  try {
+    const system = lang === 'en' ? 'Answer directly with the requested content, well structured, ready to copy and paste. No preamble, no comment about the instructions.' : 'Réponds directement avec le contenu demandé, bien structuré, prêt à copier-coller. Sans introduction ni commentaire sur la consigne.';
+    let text = '', lastErr = null;
+    for (const model of TEXT_MODELS) {
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: 'POST', signal: AbortSignal.timeout(50000), headers: { 'content-type': 'application/json', 'x-goog-api-key': GEMINI_API_KEY.value() },
+        body: JSON.stringify({ systemInstruction: { parts: [{ text: system }] }, contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.8, maxOutputTokens: 4096 } }),
+      }).catch((e) => { lastErr = e; return null; });
+      if (!r) continue;
+      if (!r.ok) { const raw = await r.text().catch(() => ''); console.error('gemini text', model, r.status, raw.slice(0, 160)); lastErr = withDetail(fail(502, r.status === 402 ? 'gemini_credits' : 'gemini_error'), { provider: 'gemini', model, http: r.status, raw: raw.slice(0, 200) }); continue; }
+      const j = await r.json();
+      text = ((j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || []).map((p) => p.text || '').join('').trim();
+      if (text) break;
+    }
+    if (!text) throw lastErr && lastErr.code ? lastErr : fail(502, 'gemini_unavailable');
+    await bump({ texts: 1 });
+    const left = (await db().collection('StudioUsers').doc(u.uid).get()).data().credits || 0;
+    return { id, text, credits: left };
+  } catch (e) {
+    await addCredits(u.uid, TEXT_COST, 'refund', 'txt_' + id, { reason: e.code || 'error' });
+    await logGenError('text', e.code || e.message, u.uid, { slug, ...(e.detail ? { detail: e.detail } : {}) });
+    throw e;
+  }
+}
+
 async function logGenError(type, code, uid, extra) {
   try {
     await db().collection('GenErrors').add({
@@ -911,4 +977,4 @@ async function logGenError(type, code, uid, extra) {
   } catch (_) { /* silencieux */ }
 }
 
-module.exports = { getLibrary, saveLibrary, adminChargeback, feexSnapshot, quoteCard, referrals, attachReferrer, referralReward, ensureRefCode, grant, evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, history, regen, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST, spendCredits, addCredits, bump, day, db, clean, GEMINI_API_KEY, VIDEO_COST, VIDEO_LIMITS, callGemini, getBrandProfile, saveBrandProfile, myOrders, adminOrders, adminUserDetail, logGenError };
+module.exports = { generateText, TEXT_COST, getLibrary, saveLibrary, adminChargeback, feexSnapshot, quoteCard, referrals, attachReferrer, referralReward, ensureRefCode, grant, evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, history, regen, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST, spendCredits, addCredits, bump, day, db, clean, GEMINI_API_KEY, VIDEO_COST, VIDEO_LIMITS, callGemini, getBrandProfile, saveBrandProfile, myOrders, adminOrders, adminUserDetail, logGenError };

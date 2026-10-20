@@ -11,6 +11,8 @@ import { aboutBody } from './src/about.mjs';
 import { GUIDES } from './src/guides.mjs';
 import { svg, clientIconsJs } from './src/icons.mjs';
 import { PRIORITY as PUSH_PRIORITY } from './src/cmds/femmes.mjs';
+const NEWSET = new Set(Object.values(PUSH_PRIORITY).flat()); // commandes ajoutées le 20 octobre 2026 : badge « Nouveau », rangée Nouveautés, filtre
+const NEWL = { fr: 'Nouveau', en: 'New' };
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 
@@ -88,12 +90,24 @@ const CLAUSE = {
     video: ['Smooth, natural motion, with no distortion of the product{T}, no abrupt cuts and no on-screen text. Length 6 to 8 seconds.', 'The photo contains several products{T}: keep them all identical and visible throughout the shot. Smooth motion, no distortion, no on-screen text. Length 6 to 8 seconds.'],
   },
 };
-const canGen = (c) => !['video', 'motion', 'text'].includes(c.kind) && c.kind !== 'poster' && c.kind !== 'free' && !/[\[«]/.test(c.fr.prompt + c.en.prompt); // seuls les sujets avec photo sans texte à écrire passent par le Studio // les commandes vidéo se testent dans un générateur de vidéo, pas dans le Studio d'images
+// Toutes les commandes se génèrent sur le site : image (photo, textes à écrire ou sujet libre sans photo), vidéo (studio vidéo) ou texte (kit créateur).
+const canGen = (c) => !['video', 'motion', 'text'].includes(c.kind); // image : passe par le Studio d'images
+const canSale = (c) => canGen(c) && c.kind !== 'poster' && c.kind !== 'free' && !/[\[«]/.test(c.fr.prompt + c.en.prompt); // seuls les sujets avec photo sans texte à écrire portent prix, marque, contact et QR
+const genKind = (c) => (['video', 'motion'].includes(c.kind) ? 'vid' : c.kind === 'text' ? 'txt' : 'img');
+// champs à remplir : « textes » entre guillemets et [sujets] entre crochets de la commande (dans la langue de la page, dans l'ordre)
+const PH_RE = /«[^»]*»|\[[^\]]*\]/g;
+const fieldsOf = (c, l) => (c[l].prompt.match(PH_RE) || []).map((m) => {
+  const q = m[0] === '«', inner = m.slice(1, -1).trim();
+  const i = !q ? inner.indexOf(':') : -1;
+  return q ? { l: inner, p: inner, q: 1 } : { l: i > 0 ? inner.slice(0, i).trim() : inner, p: i > 0 ? inner.slice(i + 1).trim() : '', q: 0 };
+});
 const FREE = { fr: 'gratuit', en: 'free' };
 // les 2 gestes, toujours côte à côte : générer ici (prix en crédits) ou copier la commande de base (gratuit)
-const genLabel = (l) => `${svg('sparkle')}<span>${TEST[l]}</span><small>· ${GEN} cr</small>`;
+const GENL = { fr: { img: 'Générer ici', vid: 'Créer une vidéo', txt: 'Générer le texte' }, en: { img: 'Generate here', vid: 'Create a video', txt: 'Generate the text' } };
+const genLabel = (l, c) => { const k = c ? genKind(c) : 'img'; return `${svg(k === 'vid' ? 'video' : k === 'txt' ? 'edit' : 'sparkle')}<span>${GENL[l][k]}</span><small>· ${k === 'vid' ? VCOST : k === 'txt' ? TCOST : GEN} cr</small>`; };
 const copyLabel = (l) => `${svg('copy')}<span>${T[l].cmd.copy}</span><small>· ${FREE[l]}</small>`;
-const tryBtn = (c, l, cls) => (canGen(c) ? `<a class="btn pri ${cls}" href="${P[l].try}?c=${c.slug}" data-try="${c.slug}">${genLabel(l)}</a>` : '');
+const tryHref = (c, l) => (genKind(c) === 'vid' ? `${P[l].try}?mode=video` : `${P[l].try}?c=${c.slug}`);
+const tryBtn = (c, l, cls) => `<a class="btn pri ${cls}" href="${tryHref(c, l)}" data-try="${c.slug}">${genLabel(l, c)}</a>`;
 // Marque et contacts à inscrire sur le visuel (3 champs au plus) : les mêmes modèles servent au site (commande copiée) et au serveur (Studio).
 const BRAND = {
   fr: {
@@ -152,9 +166,41 @@ const KIND_LABEL = {
 };
 const MULTI = { fr: ['Un seul', 'Plusieurs'], en: ['Single', 'Several'] };
 const clauseOf = (c, l, multi = false, type = '') => CLAUSE[l][c.kind || 'product'][multi ? 1 : 0].replace('{T}', type ? ` (${type})` : '');
-const fullPrompt = (c, l) => `${c.code} : ${c[l].prompt} ${clauseOf(c, l)}`;
+// Lumière et couleurs : une consigne courte, adaptée au type de sujet, ajoutée à la commande copiée (le Studio a la sienne, côté serveur).
+// Jamais ajoutée si la commande parle déjà de saturation ou d'aspect artificiel. Pas de retouche « ChatGPT » : lumière à peine rehaussée, couleurs fidèles.
+const LIGHT = {
+  fr: {
+    product: 'Lumière douce et naturelle, à peine rehaussée ; couleurs fidèles à la photo, légèrement ravivées, sans saturation excessive ni aspect artificiel.',
+    beauty: 'Lumière douce qui respecte les textures (crème, huile, brillant, grain) ; couleurs fidèles à la photo, à peine ravivées, sans saturation excessive, sans effet plastique ni aspect artificiel.',
+    person: 'Lumière douce et naturelle ; teint et couleur de peau fidèles (ni éclaircis, ni lissés à l’excès), couleurs à peine ravivées, sans saturation excessive ni aspect artificiel.',
+    dish: 'Lumière chaude et naturelle ; couleurs appétissantes mais fidèles à la photo, sans saturation excessive ni aspect artificiel.',
+    place: 'Lumière naturelle équilibrée, sans surexposition ; couleurs fidèles, sans saturation excessive ni aspect artificiel.',
+    poster: 'Couleurs fidèles au sujet et à la marque, lumière naturelle à peine rehaussée, sans saturation excessive ni aspect artificiel.',
+    logo: 'Couleurs du logo strictement respectées, lumière naturelle, sans saturation excessive ni aspect artificiel.',
+    video: 'Lumière et couleurs naturelles et fidèles à la photo, stables d’un plan à l’autre, sans saturation excessive.',
+  },
+  en: {
+    product: 'Soft, natural light, only slightly brightened; colors faithful to the photo, slightly livelier, with no oversaturation or artificial look.',
+    beauty: 'Soft light that respects textures (cream, oil, gloss, grain); colors faithful to the photo, barely livelier, with no oversaturation, no plastic effect or artificial look.',
+    person: 'Soft, natural light; skin tone and color faithful (neither lightened nor over-smoothed), colors barely livelier, with no oversaturation or artificial look.',
+    dish: 'Warm, natural light; appetizing but faithful colors, with no oversaturation or artificial look.',
+    place: 'Balanced natural light, no overexposure; faithful colors, with no oversaturation or artificial look.',
+    poster: 'Colors faithful to the subject and the brand, natural light only slightly brightened, with no oversaturation or artificial look.',
+    logo: 'Logo colors strictly respected, natural light, with no oversaturation or artificial look.',
+    video: 'Natural lighting and colors faithful to the photo, steady from shot to shot, with no oversaturation.',
+  },
+};
+const BEAUTY_CATS = ['beaute', 'sante'];
+const lightOf = (c, l) => {
+  const k = c.kind || 'product';
+  if (['text', 'free', 'motion'].includes(k) || /satur|artificiel|artificial/i.test(c[l].prompt)) return '';
+  return LIGHT[l][BEAUTY_CATS.includes(c.cat) && k === 'product' ? 'beauty' : k] || '';
+};
+const fullPrompt = (c, l) => `${c.code} : ${c[l].prompt} ${clauseOf(c, l)}${lightOf(c, l) ? ' ' + lightOf(c, l) : ''}`;
 const TEST = { fr: 'Générer ici', en: 'Generate here' };
 const STUDIO_SRC = fs.readFileSync(path.join(root, 'functions', 'studio.js'), 'utf8');
+const VCOST = +(STUDIO_SRC.match(/const VIDEO_COST = \{ base: (\d+)/) || [0, 40])[1]; // crédits d'une vidéo
+const TCOST = +(STUDIO_SRC.match(/const TEXT_COST = (\d+)/) || [0, 2])[1]; // crédits d'un texte
 const GEN = +(STUDIO_SRC.match(/const GEN_COST = (\d+)/) || [0, 6])[1]; // crédits débités par affiche
 const WELCOME = Math.floor(+(STUDIO_SRC.match(/const WELCOME_CREDITS = (\d+)/) || [0, 12])[1] / GEN); // affiches offertes à l'inscription
 // « Gagnez du temps » : le lien de la boutique part au Studio (mémorisé dans le navigateur, jamais dans l'adresse) et devient le QR code de l'affiche.
@@ -214,14 +260,14 @@ function poster(c, l, big = false) {
   if (big) {
     return `<div class="poster img big" style="--ar:${c.ratio.replace(':', '/')}"><img src="/img/c/${c.slug}-apres.webp" alt="${esc(imgAlt(c, l))}" fetchpriority="high">${pl}</div><div class="pstart">${c.noBefore ? '' : `<img src="/img/c/${c.slug}-avant.webp" alt="" loading="lazy" width="64" height="64"><span>${BEFORE[l]}</span>`}<span class="aiw">${AIWORD[l]} · ${c.engine}</span></div>`;
   }
-  return `<div class="poster img${c.ratio === '16:9' ? ' ls' : ''}" style="--ar:${c.ratio.replace(':', '/')}"><img src="/img/c/${c.slug}-t.webp" alt="${esc(imgAlt(c, l))}" loading="lazy" decoding="async"><span class="tag">${esc(catOf(c.cat)[l])}</span><span class="ai">${AIWORD[l]}</span>${pl}</div>`;
+  return `<div class="poster img${c.ratio === '16:9' ? ' ls' : ''}" style="--ar:${c.ratio.replace(':', '/')}"><img src="/img/c/${c.slug}-t.webp" alt="${esc(imgAlt(c, l))}" loading="lazy" decoding="async"><span class="tag">${esc(catOf(c.cat)[l])}</span><span class="ai">${AIWORD[l]}</span>${NEWSET.has(c.slug) ? `<span class="nw">${NEWL[l]}</span>` : ''}${pl}</div>`;
 }
 const FAVL = { fr: 'Ajouter aux favoris', en: 'Add to favorites' };
 const favBtn = (c, l, cls = '') => `<button class="fav${cls ? ' ' + cls : ''}" type="button" data-fav="${c.slug}" aria-pressed="false" aria-label="${FAVL[l]}">${svg('heart')}</button>`;
 function card(c, l) {
   const t = c[l];
   const search = `${c.code} ${t.title} ${catOf(c.cat)[l]} ${t.desc}`.toLowerCase();
-  return `<article class="card" data-slug="${c.slug}" data-search="${esc(search)}" data-cat="${c.cat}"><a href="${P[l].cmd(c.slug)}" class="cl" aria-label="${esc(t.title)}">${poster(c, l)}</a><div class="cb"><div class="chead"><div class="code">${esc(c.code)}</div>${favBtn(c, l)}</div><h3><a href="${P[l].cmd(c.slug)}">${esc(t.title)}</a></h3><div class="meta"><span>${esc(catOf(c.cat)[l])}${c.kind === 'text' ? '' : ' · ' + c.ratio}</span>${c.steps ? `<span class="stp">${c.steps.length + 1} ${l === 'fr' ? 'étapes' : 'steps'}</span>` : ''}<span class="cnt" hidden></span></div><div class="acts">${tryBtn(c, l, 'sm')}<button class="btn ${canGen(c) ? 'gl' : 'pri'} sm" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}">${copyLabel(l)}</button></div><pre id="p-${c.slug}" hidden>${esc(fullPrompt(c, l))}</pre></div></article>`;
+  return `<article class="card" data-slug="${c.slug}" data-search="${esc(search)}" data-cat="${c.cat}"${NEWSET.has(c.slug) ? ' data-new="1"' : ''}><a href="${P[l].cmd(c.slug)}" class="cl" aria-label="${esc(t.title)}">${poster(c, l)}</a><div class="cb"><div class="chead"><div class="code">${esc(c.code)}</div>${favBtn(c, l)}</div><h3><a href="${P[l].cmd(c.slug)}">${esc(t.title)}</a></h3><div class="meta"><span>${esc(catOf(c.cat)[l])}${c.kind === 'text' ? '' : ' · ' + c.ratio}</span>${c.steps ? `<span class="stp">${c.steps.length + 1} ${l === 'fr' ? 'étapes' : 'steps'}</span>` : ''}<span class="cnt" hidden></span></div><div class="acts">${tryBtn(c, l, 'sm')}<button class="btn gl sm" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}">${copyLabel(l)}</button></div><pre id="p-${c.slug}" hidden>${esc(fullPrompt(c, l))}</pre></div></article>`;
 }
 function bandForm(l, kind = 'request') {
   const b = T[l].band;
@@ -318,7 +364,7 @@ const ICON = {
 };
 function railCard(c, l) {
   const t = c[l], H = HOME[l];
-  return `<article class="rc" data-slug="${c.slug}" data-search="${esc(c.code)}"><a class="rp" href="${P[l].cmd(c.slug)}" aria-label="${esc(t.title)}">${poster(c, l)}</a><div class="rb"><div class="chead"><code>${esc(c.code)}</code>${favBtn(c, l)}</div><span class="rt">${esc(t.title)}</span><span class="cnt" hidden></span><div class="acts">${tryBtn(c, l, 'copy')}<button class="btn ${canGen(c) ? 'gl' : 'pri'} copy" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}">${copyLabel(l)}</button></div><pre id="p-${c.slug}" hidden>${esc(fullPrompt(c, l))}</pre></div></article>`;
+  return `<article class="rc" data-slug="${c.slug}" data-search="${esc(c.code)}"><a class="rp" href="${P[l].cmd(c.slug)}" aria-label="${esc(t.title)}">${poster(c, l)}</a><div class="rb"><div class="chead"><code>${esc(c.code)}</code>${favBtn(c, l)}</div><span class="rt">${esc(t.title)}</span><span class="cnt" hidden></span><div class="acts">${tryBtn(c, l, 'copy')}<button class="btn gl copy" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}">${copyLabel(l)}</button></div><pre id="p-${c.slug}" hidden>${esc(fullPrompt(c, l))}</pre></div></article>`;
 }
 // Vidéo YouTube : image locale + lecteur chargé seulement au clic (youtube-nocookie.com) : aucune requête vers Google avant que le visiteur lise la vidéo.
 const VIDEO_T = { fr: { h: 'Voyez le site en 40 secondes', play: 'Lire la vidéo', alt: 'Vidéo : des visuels pro et des vidéos publicitaires à partir de votre photo' }, en: { h: 'See the site in 40 seconds', play: 'Play the video', alt: 'Video: pro visuals and video ads made from your photo' } };
@@ -437,8 +483,8 @@ ${showcase(l)}<div class="cta"><a class="btn pri big" href="${p.try}?mode=video"
 }
 function home(l) {
   const t = T[l].home, p = P[l], H = HOME[l];
-  const featured = ['fashionposter', 'productglow', 'skincareglow', 'lookbook', 'splashshot', 'hairshowcase', 'menuhero', 'openhouse'].map((s) => COMMANDS.find((c) => c.slug === s)); // mode, produit et cosmétique d'abord ; l'accueil les remplace par les plus utilisées dès qu'il y a des données
-  const newest = ['afrotopmodel', 'afrodoll', 'skyview', 'skypet', 'typobehind', 'logoglass', 'sheetpose9', 'infoexploded', 'dioskislope', 'brandboard', 'magcover', 'shopflash', 'mascotproduct', 'animeposter'].map((s) => COMMANDS.find((c) => c.slug === s));
+  const featured = ['robesac', 'fashionposter', 'lipgloss', 'productglow', 'hairbundles', 'skincareglow', 'lookcomplet', 'lookbook', 'menuhero', 'splashshot'].map((s) => COMMANDS.find((c) => c.slug === s)); // mode, produit et cosmétique d'abord ; l'accueil les remplace par les plus utilisées dès qu'il y a des données
+  const newest = ['robesac', 'lipgloss', 'hairbundles', 'lookcomplet', 'sacportee', 'bodylotion', 'satinbonnet', 'parurebijoux', 'chaussuresfemme', 'falselashes', 'pressonnails', 'bouclesoreilles', 'afrotopmodel', 'afrodoll'].map((s) => COMMANDS.find((c) => c.slug === s));
   const vids = ['mgkinetic', 'revealvid', 'mglogoreveal', 'turntable', 'mgoutfitreveal', 'splashslow', 'mgserumdrop', 'unboxing', 'mgsneakerpop', 'mgdressflow', 'mgcountdown', 'kithooks'].map((s) => COMMANDS.find((c) => c.slug === s)).filter(Boolean);
   const cats = CATEGORIES.map((c) => `<a class="cat" href="${p.cat(c.id)}"><b>${esc(c[l])}</b><small>${H.n(COMMANDS.filter((x) => x.cat === c.id).length)}</small></a>`).join('');
   const body = `<div class="wrap hero"><h1 class="big">${H.h1}</h1><p class="hline"><span class="hrot" data-hrot="${esc(JSON.stringify(H.hrot))}">${H.hrot[0]}</span></p>
@@ -462,9 +508,12 @@ ${refStrip(l, 'big')}${ad('rect', l)}${waCard(l, 'home')}</div>`;
 }
 function cmdsPage(l) {
   const t = T[l].cmds, p = P[l];
-  const chips = [`<button class="chip" data-cat="" aria-pressed="true" type="button">${t.all}</button>`, ...CATEGORIES.map((c) => `<button class="chip" data-cat="${c.id}" aria-pressed="false" type="button">${c[l]}</button>`)].join('');
+  const chips = [`<button class="chip" data-cat="" aria-pressed="true" type="button">${t.all}</button>`, `<button class="chip chip-new" data-cat="__new" aria-pressed="false" type="button">${NEWL[l]}s</button>`, ...CATEGORIES.map((c) => `<button class="chip" data-cat="${c.id}" aria-pressed="false" type="button">${c[l]}</button>`)].join('');
+  // 8 nouveautés en tête (ordre de priorité), puis le reste ; le tri par popularité (site.js) reprend la main dès qu'il y a assez de données
+  const fresh = PUSH_PRIORITY[1].map((sl) => COMMANDS.find((c) => c.slug === sl)).filter((c) => c && !c.noImage).slice(0, 8);
+  const ordered = [...fresh, ...COMMANDS.filter((c) => !fresh.includes(c))];
   const nativeAdSlot = `<article class="card card-ad" data-ad="native" aria-hidden="true"></article>`;
-  const body = `<div class="wrap"><h1 class="big sm">${t.h}</h1><a class="minelink" href="${p.mine}">${svg('heart')} ${MINE[l].link} ›</a><div class="search"><span aria-hidden="true">⌕</span><input id="q" type="search" placeholder="${esc(t.search)}" aria-label="${esc(t.search)}"></div><div class="chips2">${chips}</div>${ad('lb', l)}<div class="grid" id="list" data-lazy="${COMMANDS.length}">${COMMANDS.slice(0, 8).map((c) => card(c, l)).join('')}${nativeAdSlot}${COMMANDS.slice(8, 24).map((c) => card(c, l)).join('')}</div><p class="none" id="none" hidden>${t.none}</p><div class="cta center"><button class="btn gl" id="more" type="button" hidden></button></div>${band(l)}</div>`;
+  const body = `<div class="wrap"><h1 class="big sm">${t.h}</h1><a class="minelink" href="${p.mine}">${svg('heart')} ${MINE[l].link} ›</a><div class="search"><span aria-hidden="true">⌕</span><input id="q" type="search" placeholder="${esc(t.search)}" aria-label="${esc(t.search)}"></div><div class="chips2">${chips}</div>${ad('lb', l)}<div class="grid" id="list" data-lazy="${COMMANDS.length}">${ordered.slice(0, 8).map((c) => card(c, l)).join('')}${nativeAdSlot}${ordered.slice(8, 24).map((c) => card(c, l)).join('')}</div><p class="none" id="none" hidden>${t.none}</p><div class="cta center"><button class="btn gl" id="more" type="button" hidden></button></div>${band(l)}</div>`;
   emit(l, 'cmds', p.cmds, { title: t.title, desc: t.desc, body, alt: alt2(P.fr.cmds, P.en.cmds) });
   if (l === 'fr') pages.push({ fr: P.fr.cmds, en: P.en.cmds });
 }
@@ -492,7 +541,7 @@ function cmdPage(l, c) {
   const tools = c.kind === 'text' ? [['ChatGPT', 'https://chatgpt.com/'], ['Gemini', 'https://gemini.google.com/'], ['Claude', 'https://claude.ai/']] : c.kind === 'video' || c.kind === 'motion' ? [['Gemini (Veo)', 'https://gemini.google.com/'], ['Runway', 'https://runwayml.com/'], ['Kling', 'https://klingai.com/'], ['Pika', 'https://pika.art/']] : [['ChatGPT', 'https://chatgpt.com/'], ['Gemini', 'https://gemini.google.com/'], ['Midjourney', 'https://www.midjourney.com/']];
   const fullText = fullPrompt(c, l);
   const KL = KIND_LABEL[l][c.kind || 'product'];
-  const saleBox = isSale(c) && canGen(c) ? `<details class="brandbox salebox" open data-sale="${esc(JSON.stringify({ ...SALE[l], currencies: CURRENCIES, defCur: l === 'fr' ? 'FCFA' : '$' }))}"><summary>${SALE[l].title}</summary><p class="hint">${SALE[l].hint}</p><div class="sgrid">
+  const saleBox = isSale(c) && canSale(c) ? `<details class="brandbox salebox" open data-sale="${esc(JSON.stringify({ ...SALE[l], currencies: CURRENCIES, defCur: l === 'fr' ? 'FCFA' : '$' }))}"><summary>${SALE[l].title}</summary><p class="hint">${SALE[l].hint}</p><div class="sgrid">
 <label class="chk"><input type="checkbox" data-s="tag" checked><span>${SALE[l].tag}</span><select data-sv="tagv">${Object.entries(SALE[l].tags).map(([k, v]) => `<option value="${k}"${(c.cat === 'immobilier' ? 'sale' : 'sale') === k ? ' selected' : ''}>${v}</option>`).join('')}</select></label>
 <label class="chk"><input type="checkbox" data-s="price" checked><span>${SALE[l].price}</span><input type="text" data-sv="price" maxlength="20" placeholder="${esc(SALE[l].pricePh)}" inputmode="decimal" autocomplete="off"><select data-sv="cur">${CURRENCIES.map((x) => `<option${x === (l === 'fr' ? 'FCFA' : '$') ? ' selected' : ''}>${x}</option>`).join('')}</select></label>
 <label class="chk"><input type="checkbox" data-s="old"><span>${SALE[l].old}</span><input type="text" data-sv="old" maxlength="20" placeholder="${esc(SALE[l].oldPh)}" autocomplete="off"></label>
@@ -506,13 +555,13 @@ const FS = { fr: ['Copiez', 'Collez', 'Publiez'], en: ['Copy', 'Paste', 'Post'] 
   const body = `<div class="wrap"><div class="crumb"><a href="${p.home}">${t.crumbHome}</a> › <a href="${p.cat(c.cat)}">${cat[l]}</a> › <b>${esc(c.code)}</b></div>
 ${ad('lb', l)}
 <div class="fiche"><div class="fhead"><div class="eyebrow">${cat[l]}${c.kind === 'text' ? '' : ' · ' + c.ratio}</div><div class="fh1"><h1>${esc(ct.title)}</h1>${favBtn(c, l, 'big')}</div></div><div class="fpost">${poster(c, l, true)}${c.kind === 'video' || c.kind === 'motion' ? `<p class="vnote">${l === 'fr' ? 'Image d’illustration. Cette commande crée une vidéo : collez-la dans un générateur de vidéo avec votre photo.' : 'Illustration image. This command creates a video: paste it into a video generator with your photo.'}</p>` : ''}</div>
-<div class="fbody">${saleBox}${canGen(c) ? bestBox(l, c.slug) + timeSaver(l, c.slug) + refStrip(l) : ''}<div class="cmd"><pre id="p-${c.slug}">${esc(fullText)}</pre><div class="acts big">${tryBtn(c, l, 'big')}<button class="btn ${canGen(c) ? 'gl' : 'pri'} big" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}" data-after="1">${copyLabel(l)}</button></div><p class="cnt big" id="cmd-cnt" data-slug="${c.slug}" hidden></p></div><div class="perso" data-perso="${c.slug}" data-code="${esc(c.code)}"${canGen(c) ? ' data-gen="1"' : ''}></div>${c.steps ? `<p class="hint stepnote">${l === 'fr' ? `Commande en ${c.steps.length + 1} étapes : envoyez la commande ci-dessus (étape 1), puis les étapes suivantes dans l’ordre, dans la même conversation.` : `${c.steps.length + 1}-step command: send the command above (step 1), then the next steps in order, in the same conversation.`}</p>${c.steps.map((st, i) => `<div class="cmd step"><pre id="p-${c.slug}-${i + 2}">${esc(st[l])}</pre><div class="acts big"><button class="btn gl big" type="button" data-copy="#p-${c.slug}-${i + 2}" data-slug="${c.slug}">${ICON.copy}${t.copy}</button></div></div>`).join('')}` : ''}
+<div class="fbody">${saleBox}${canGen(c) ? bestBox(l, c.slug) + timeSaver(l, c.slug) + refStrip(l) : ''}<div class="cmd"><pre id="p-${c.slug}">${esc(fullText)}</pre><div class="acts big">${tryBtn(c, l, 'big')}<button class="btn gl big" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}" data-after="1">${copyLabel(l)}</button></div><p class="cnt big" id="cmd-cnt" data-slug="${c.slug}" hidden></p></div><div class="perso" data-perso="${c.slug}" data-code="${esc(c.code)}"${canGen(c) ? ' data-gen="1"' : ''}></div>${c.steps ? `<p class="hint stepnote">${l === 'fr' ? `Commande en ${c.steps.length + 1} étapes : envoyez la commande ci-dessus (étape 1), puis les étapes suivantes dans l’ordre, dans la même conversation.` : `${c.steps.length + 1}-step command: send the command above (step 1), then the next steps in order, in the same conversation.`}</p>${c.steps.map((st, i) => `<div class="cmd step"><pre id="p-${c.slug}-${i + 2}">${esc(st[l])}</pre><div class="acts big"><button class="btn gl big" type="button" data-copy="#p-${c.slug}-${i + 2}" data-slug="${c.slug}">${ICON.copy}${t.copy}</button></div></div>`).join('')}` : ''}
 <ol class="steps3 mini3">${fsteps}</ol>
 <div class="test"><span class="tl">${t.testOn}</span>${tools.map(([n, u]) => `<a class="btn gl sm" href="${u}" target="_blank" rel="noopener noreferrer nofollow" data-test="${n}">${n} ↗</a>`).join('')}</div>
-${c.slug === 'splashshot' ? `<div class="ex2"><b>${l === 'fr' ? 'Même commande, autre produit' : 'Same command, another product'}</b><div><figure><img src="/img/c/splashshot-ex-avant.webp" alt="" loading="lazy"><figcaption>${BEFORE[l]}</figcaption></figure><span>→</span><figure><img src="/img/c/splashshot-ex-apres.webp" alt="${l === 'fr' ? 'La même commande appliquée à un produit de soin' : 'The same command applied to a skincare product'}" loading="lazy"><figcaption>${l === 'fr' ? 'Crème de soin' : 'Skincare cream'}</figcaption></figure></div><small>${AIWORD[l]} · Gemini</small></div>` : ''}<div class="after" id="after"><b>${t.afterT}</b>${canGen(c) ? `<p class="best-after">${bestTag(l)} ${BEST[l].after} <a href="${P[l].try}?c=${c.slug}" data-try="${c.slug}">${TEST[l]} →</a></p>` : ''}${waCard(l, 'after')}<div class="grid">${rel.map((x) => card(x, l)).join('')}</div>${ad('rect', l, true)}</div></div></div>
+${c.slug === 'splashshot' ? `<div class="ex2"><b>${l === 'fr' ? 'Même commande, autre produit' : 'Same command, another product'}</b><div><figure><img src="/img/c/splashshot-ex-avant.webp" alt="" loading="lazy"><figcaption>${BEFORE[l]}</figcaption></figure><span>→</span><figure><img src="/img/c/splashshot-ex-apres.webp" alt="${l === 'fr' ? 'La même commande appliquée à un produit de soin' : 'The same command applied to a skincare product'}" loading="lazy"><figcaption>${l === 'fr' ? 'Crème de soin' : 'Skincare cream'}</figcaption></figure></div><small>${AIWORD[l]} · Gemini</small></div>` : ''}<div class="after" id="after"><b>${t.afterT}</b><p class="best-after">${bestTag(l)} ${BEST[l].after} <a href="${tryHref(c, l)}" data-try="${c.slug}">${GENL[l][genKind(c)]} →</a></p>${waCard(l, 'after')}<div class="grid">${rel.map((x) => card(x, l)).join('')}</div>${ad('rect', l, true)}</div></div></div>
 ${same.length ? `<div class="sec"><h2>${t.similar}</h2></div><div class="grid">${same.slice(0, 6).map((x) => card(x, l)).join('')}</div>${ad('rect', l)}${same.length > 6 ? `<div class="cta"><a class="btn gl" href="${p.cat(c.cat)}">${l === 'fr' ? `Voir les ${catList.length} commandes de la catégorie` : `See all ${catList.length} commands in this category`} ›</a></div>` : ''}` : ''}</div>`;
   // téléphone : les 2 gestes restent collés en bas de l'écran tant que les boutons de la commande ne sont pas visibles (voir site.js)
-  const fix = `<div class="fixacts" hidden><button class="btn ${canGen(c) ? 'gl' : 'pri'}" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}" data-after="1">${copyLabel(l)}</button>${tryBtn(c, l, '')}</div>`;
+  const fix = `<div class="fixacts" hidden><button class="btn gl" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}" data-after="1">${copyLabel(l)}</button>${tryBtn(c, l, '')}</div>`;
   const ld = { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: t.crumbHome, item: abs(p.home) }, { '@type': 'ListItem', position: 2, name: cat[l], item: abs(p.cat(c.cat)) }, { '@type': 'ListItem', position: 3, name: c.code, item: abs(p.cmd(c.slug)) }] };
   emit(l, 'cmd', p.cmd(c.slug), { img: c.noImage ? undefined : `/img/c/${c.slug}-apres.webp`, title: t.title(c.code, ct.title), desc: ct.desc, body: body + fix, alt: alt2(P.fr.cmd(c.slug), P.en.cmd(c.slug)), ld });
   if (l === 'fr') pages.push({ fr: P.fr.cmd(c.slug), en: P.en.cmd(c.slug) });
@@ -711,7 +760,7 @@ function minePage(l) {
 function tryPage(l) {
   const t = TRY[l], p = P[l];
   // sale:true pour toutes les commandes qui génèrent une image (pas les vidéos, motion, textes) — n'importe quel visuel peut devenir une affiche de vente
-  const map = { commands: Object.fromEntries(COMMANDS.filter(canGen).map((c) => [c.slug, { code: c.code, title: c[l].title, kind: c.kind || 'product', img: !c.noImage, sale: canGen(c) }])), brand: BRAND[l], sale: { ...SALE[l], currencies: CURRENCIES, defCur: l === 'fr' ? 'FCFA' : '$' } };
+  const map = { commands: Object.fromEntries(COMMANDS.filter((c) => genKind(c) !== 'vid').map((c) => { const fl = fieldsOf(c, l); return [c.slug, { code: c.code, title: c[l].title, kind: c.kind || 'product', img: !c.noImage, sale: canSale(c), ...(fl.length ? { f: fl } : {}), ...(c.kind === 'free' ? { free: 1 } : {}), ...(c.kind === 'text' ? { txt: 1 } : {}) }]; })), brand: BRAND[l], sale: { ...SALE[l], currencies: CURRENCIES, defCur: l === 'fr' ? 'FCFA' : '$' } };
   const body = `<div class="wrap narrow"><div class="eyebrow">${t.k}</div><h1 class="big sm">${t.h}</h1><p class="best-line">${bestTag(l)} ${BEST[l].li.slice(0, 2).map((x) => x.replace(/<\/?b>/g, '')).join(' ')}</p>
 <div id="studio"${WA_URL ? ` data-wa="${esc(WA_URL)}"` : ''}${cfg.video && cfg.video.renderUrl ? ` data-vurl="${esc(cfg.video.renderUrl)}" data-vv="${hashOf('js/videomode.js')}"` : ''} data-sv="${hashOf('js/sale.js')}" data-other="${P[other(l)].try}#account" data-more="${esc(JSON.stringify([[p.cmds, T[l].nav.cmds, 'grid'], [p.studio, STUDIO[l].nav, 'palette'], [p.tuto, T[l].nav.tuto, 'video'], [p.guides, T[l].ft.guides, 'book'], [p.pro, T[l].nav.pro, 'bolt'], [p.about, T[l].ft.about, 'user'], [p.terms, T[l].ft.terms, 'receipt']]))}" data-contact="${esc((cfg.legal && cfg.legal.email) || '')}" data-map="${esc(JSON.stringify(map))}"></div>
 <div id="afl-gen-ad" hidden aria-label="${l === 'fr' ? 'Publicité' : 'Advertisement'}"></div></div>`;
@@ -725,7 +774,7 @@ function notFound() {
 // ───────── génération ─────────
 // Données des commandes pour le serveur (la commande finale est composée côté serveur : le client ne peut pas la modifier).
 fs.writeFileSync(path.join(root, 'functions', 'commands.json'), JSON.stringify({
-  commands: Object.fromEntries(COMMANDS.map((c) => [c.slug, { code: c.code, ratio: c.ratio, kind: c.kind || 'product', fr: c.fr.prompt, en: c.en.prompt, titleFr: c.fr.title, titleEn: c.en.title, cat: c.cat, can: canGen(c) ? 1 : 0, img: c.noImage ? 0 : 1, x: c.x, y: c.y, r: c.r, posterFr: c.fr.poster, posterEn: c.en.poster, full: { fr: fullPrompt(c, 'fr'), en: fullPrompt(c, 'en') } }])),
+  commands: Object.fromEntries(COMMANDS.map((c) => [c.slug, { code: c.code, ratio: c.ratio, kind: c.kind || 'product', fr: c.fr.prompt, en: c.en.prompt, titleFr: c.fr.title, titleEn: c.en.title, cat: c.cat, can: genKind(c) === 'vid' ? 0 : 1, img: c.noImage ? 0 : 1, x: c.x, y: c.y, r: c.r, posterFr: c.fr.poster, posterEn: c.en.poster, full: { fr: fullPrompt(c, 'fr'), en: fullPrompt(c, 'en') } }])),
   cats: Object.fromEntries(CATEGORIES.map((k) => [k.id, { fr: k.fr, en: k.en }])),
   clauses: CLAUSE,
   brand: BRAND,
@@ -747,7 +796,7 @@ fs.rmSync(dist, { recursive: true, force: true });
 // Index des commandes pour le navigateur : page Commandes (suite de la liste), favoris, « Mes commandes ». p = commande de base (celle qu'on copie).
 const IDX = {}, IDXJ = {};
 for (const l of ['fr', 'en']) {
-  IDXJ[l] = JSON.stringify(COMMANDS.map((c) => { const t = c[l], cat = catOf(c.cat)[l]; return { s: c.slug, c: c.code, t: t.title, k: cat, a: c.cat, r: c.ratio, i: c.noImage ? 0 : 1, g: canGen(c) ? 1 : 0, m: c.kind === 'video' || c.kind === 'motion' ? 1 : 0, o: c.kind === 'text' ? 1 : 0, st: c.steps ? c.steps.length + 1 : 0, p: fullPrompt(c, l), n: t.poster, x: c.x, y: c.y, z: c.r, q: `${c.code} ${t.title} ${cat} ${t.desc}`.toLowerCase(), al: imgAlt(c, l) }; }));
+  IDXJ[l] = JSON.stringify(COMMANDS.map((c) => { const t = c[l], cat = catOf(c.cat)[l]; return { s: c.slug, c: c.code, t: t.title, k: cat, a: c.cat, r: c.ratio, i: c.noImage ? 0 : 1, g: 1, gk: genKind(c), m: c.kind === 'video' || c.kind === 'motion' ? 1 : 0, o: c.kind === 'text' ? 1 : 0, st: c.steps ? c.steps.length + 1 : 0, p: fullPrompt(c, l), n: t.poster, x: c.x, y: c.y, z: c.r, q: `${c.code} ${t.title} ${cat} ${t.desc}`.toLowerCase(), al: imgAlt(c, l), nw: NEWSET.has(c.slug) ? 1 : 0 }; }));
   IDX[l] = `/data/cmds-${l}.json?v=${createHash('sha1').update(IDXJ[l]).digest('hex').slice(0, 8)}`;
 }
 fs.mkdirSync(dist, { recursive: true });

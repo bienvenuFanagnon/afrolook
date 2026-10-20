@@ -115,21 +115,24 @@
   function posterHtml(c) {
     var pl = c.m ? '<span class="vplay2" aria-hidden="true"></span>' : '';
     if (!c.i) return '<div class="poster" style="--x:' + esc(c.x) + ';--y:' + esc(c.y) + ';--r:' + esc(c.z) + '"><span class="tag">' + esc(c.k) + '</span><span class="shape"></span><b>' + esc(c.n) + '</b><small>' + esc(c.c) + '</small>' + pl + '</div>';
-    return '<div class="poster img' + (c.r === '16:9' ? ' ls' : '') + '" style="--ar:' + String(c.r).replace(':', '/') + '"><img src="/img/c/' + c.s + '-t.webp' + IMGQ + '" alt="' + esc(c.al) + '" loading="lazy" decoding="async"><span class="tag">' + esc(c.k) + '</span><span class="ai">' + T.ai + '</span>' + pl + '</div>';
+    return '<div class="poster img' + (c.r === '16:9' ? ' ls' : '') + '" style="--ar:' + String(c.r).replace(':', '/') + '"><img src="/img/c/' + c.s + '-t.webp' + IMGQ + '" alt="' + esc(c.al) + '" loading="lazy" decoding="async"><span class="tag">' + esc(c.k) + '</span><span class="ai">' + T.ai + '</span>' + (c.nw ? '<span class="nw">' + (lang === 'en' ? 'New' : 'Nouveau') + '</span>' : '') + pl + '</div>';
   }
-  var genLbl = function () { return ic('sparkle') + '<span>' + T.genL + '</span><small>· ' + GEN() + ' cr</small>'; };
+  var VC = function () { try { return parseInt(localStorage.getItem('sa_vc') || '40', 10) || 40; } catch (e) { return 40; } }, TC = function () { try { return parseInt(localStorage.getItem('sa_tc') || '2', 10) || 2; } catch (e) { return 2; } };
+  var GK = { fr: { img: 'Générer ici', vid: 'Créer une vidéo', txt: 'Générer le texte' }, en: { img: 'Generate here', vid: 'Create a video', txt: 'Generate the text' } }[lang];
+  var genLbl = function (k) { k = k || 'img'; return ic(k === 'vid' ? 'video' : k === 'txt' ? 'edit' : 'sparkle') + '<span>' + GK[k] + '</span><small>· ' + (k === 'vid' ? VC() : k === 'txt' ? TC() : GEN()) + ' cr</small>'; };
+  var tryHref = function (c) { return c.gk === 'vid' ? P.try + '?mode=video' : P.try + '?c=' + c.s; };
   var copyLbl = function () { return ic('copy') + '<span>' + T.copyL + '</span><small>· ' + T.free + '</small>'; };
   var favHtml = function (s) { return '<button class="fav" type="button" data-fav="' + s + '" aria-pressed="false" aria-label="' + T.fav + '">' + ic('heart') + '</button>'; };
   // même carte que card() dans build.mjs
   function cardHtml(c, pre) {
     var href = P.cmd + c.s + '/', id = (pre || 'p-') + c.s;
-    return '<article class="card" data-slug="' + c.s + '" data-search="' + esc(c.q) + '" data-cat="' + c.a + '"><a href="' + href + '" class="cl" aria-label="' + esc(c.t) + '">' + posterHtml(c) + '</a><div class="cb"><div class="chead"><div class="code">' + esc(c.c) + '</div>' + favHtml(c.s) + '</div><h3><a href="' + href + '">' + esc(c.t) + '</a></h3><div class="meta"><span>' + esc(c.k) + (c.o ? '' : ' · ' + c.r) + '</span>' + (c.st ? '<span class="stp">' + c.st + ' ' + T.steps + '</span>' : '') + '<span class="cnt" hidden></span></div><div class="acts">' +
-      (c.g ? '<a class="btn pri sm" href="' + P.try + '?c=' + c.s + '" data-try="' + c.s + '">' + genLbl() + '</a>' : '') + '<button class="btn ' + (c.g ? 'gl' : 'pri') + ' sm" type="button" data-copy="#' + id + '" data-slug="' + c.s + '">' + copyLbl() + '</button></div><pre id="' + id + '" hidden>' + esc(c.p) + '</pre></div></article>';
+    return '<article class="card" data-slug="' + c.s + '" data-search="' + esc(c.q) + '" data-cat="' + c.a + '"' + (c.nw ? ' data-new="1"' : '') + '><a href="' + href + '" class="cl" aria-label="' + esc(c.t) + '">' + posterHtml(c) + '</a><div class="cb"><div class="chead"><div class="code">' + esc(c.c) + '</div>' + favHtml(c.s) + '</div><h3><a href="' + href + '">' + esc(c.t) + '</a></h3><div class="meta"><span>' + esc(c.k) + (c.o ? '' : ' · ' + c.r) + '</span>' + (c.st ? '<span class="stp">' + c.st + ' ' + T.steps + '</span>' : '') + '<span class="cnt" hidden></span></div><div class="acts">' +
+      '<a class="btn pri sm" href="' + tryHref(c) + '" data-try="' + c.s + '">' + genLbl(c.gk) + '</a><button class="btn gl sm" type="button" data-copy="#' + id + '" data-slug="' + c.s + '">' + copyLbl() + '</button></div><pre id="' + id + '" hidden>' + esc(c.p) + '</pre></div></article>';
   }
   function railHtml(c) {
     var href = P.cmd + c.s + '/';
     return '<article class="rc" data-slug="' + c.s + '" role="listitem"><a class="rp" href="' + href + '" aria-label="' + esc(c.t) + '">' + posterHtml(c) + '</a><div class="rb"><div class="chead"><code>' + esc(c.c) + '</code>' + favHtml(c.s) + '</div><span class="rt">' + esc(c.t) + '</span><div class="acts">' +
-      (c.g ? '<a class="btn pri copy" href="' + P.try + '?c=' + c.s + '" data-try="' + c.s + '">' + genLbl() + '</a>' : '') + '<button class="btn ' + (c.g ? 'gl' : 'pri') + ' copy" type="button" data-copy="#pf-' + c.s + '" data-slug="' + c.s + '">' + copyLbl() + '</button></div><pre id="pf-' + c.s + '" hidden>' + esc(c.p) + '</pre></div></article>';
+      '<a class="btn pri copy" href="' + tryHref(c) + '" data-try="' + c.s + '">' + genLbl(c.gk) + '</a><button class="btn gl copy" type="button" data-copy="#pf-' + c.s + '" data-slug="' + c.s + '">' + copyLbl() + '</button></div><pre id="pf-' + c.s + '" hidden>' + esc(c.p) + '</pre></div></article>';
   }
 
   // ── page Commandes : la suite de la liste arrive de l'index (la page n'en contient que 24) ──
@@ -235,7 +238,7 @@
           return '<article class="ccard" data-id="' + v.id + '">' + (c.i ? '<a class="ccard-img" href="' + P.cmd + c.s + '/?perso=' + v.id + '"><img src="/img/c/' + c.s + '-t.webp' + IMGQ + '" alt="" loading="lazy"></a>' : '') +
             '<div class="ccard-b"><b>' + esc(v.name) + '</b><small>' + T.base + ' : <a href="' + P.cmd + c.s + '/">' + esc(c.c) + '</a>' + (c.t ? ' · ' + esc(c.t) : '') + '</small>' + (v.touch ? '<small class="ccard-t">' + T.touches + ' : ' + esc(v.touch) + '</small>' : '') +
             '<p class="ccard-p">' + esc(v.text) + '</p><pre id="pc-' + v.id + '" hidden>' + esc(v.text) + '</pre>' +
-            '<div class="acts"><button class="btn pri sm" type="button" data-copy="#pc-' + v.id + '" data-slug="' + v.slug + '">' + copyLbl() + '</button>' + (c.g ? '<button class="btn gl sm" type="button" data-cgen="' + v.id + '">' + genLbl() + '</button>' : '') +
+            '<div class="acts"><button class="btn pri sm" type="button" data-copy="#pc-' + v.id + '" data-slug="' + v.slug + '">' + copyLbl() + '</button>' + (c.gk === 'img' ? '<button class="btn gl sm" type="button" data-cgen="' + v.id + '">' + genLbl('img') + '</button>' : '') +
             '<a class="btn gl sm" href="' + P.cmd + c.s + '/?perso=' + v.id + '">' + ic('edit') + '<span>' + T.edit + '</span></a><button class="btn gl sm ccard-del" type="button" data-del="' + v.id + '">' + ic('trash') + '<span>' + T.del + '</span></button></div></div></article>';
         }).join('');
         Array.prototype.forEach.call(box.querySelectorAll('[data-cgen]'), function (b) { b.addEventListener('click', function () { var v = getCustom(b.dataset.cgen); if (!v) return; try { sessionStorage.setItem('sa_touch', JSON.stringify({ slug: v.slug, touch: v.touch || '' })); } catch (e) {} location.href = P.try + '?c=' + v.slug; }); });

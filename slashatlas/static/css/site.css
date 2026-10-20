@@ -976,3 +976,11 @@ body[data-view=creations] #main>.wrap>.eyebrow,body[data-view=creations] #main>.
 .nchip .ic{width:15px;height:15px;opacity:0}
 .nchip[aria-pressed=true]{background:rgba(41,151,255,.16);border-color:var(--acc);color:var(--txt)}.nchip[aria-pressed=true] .ic{opacity:1;color:var(--acc)}
 .nsheet .btn{width:100%}
+/* Badge « Nouveau » */
+.poster .nw{position:absolute;left:8px;top:8px;z-index:2;background:#ff4d6d;color:#fff;font:800 9.5px var(--f);letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;border-radius:999px}
+.chip-new{border-color:#ff4d6d88;color:#ff8fa3}.chip-new[aria-pressed=true]{background:#ff4d6d;color:#fff;border-color:#ff4d6d}
+/* Studio : champs de texte, photo facultative, résultat texte */
+.fieldsbox{display:flex;flex-direction:column;gap:8px}.fieldsbox label{display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:var(--mut);font-weight:600}
+.fieldsbox input{background:#0d0e10;border:1px solid var(--line2);border-radius:13px;color:var(--txt);padding:12px;font:inherit;font-size:15px;min-width:0;width:100%}
+.fieldsbox .hint{margin:0}.opt{font-style:normal;font-weight:600;color:var(--faint);font-size:12px}
+.txtres{display:flex;flex-direction:column;gap:10px}.txtres pre{white-space:pre-wrap;word-break:break-word;margin:0;background:#0d0e10;border:1px solid var(--line2);border-radius:14px;padding:14px;font:13.5px/1.55 var(--f);max-height:60vh;overflow:auto}

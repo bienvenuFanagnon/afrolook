@@ -171,7 +171,7 @@
       var filtering = !!(cat || v);
       $$('#list .card-ad').forEach(function (a) { a.hidden = filtering; });
       list.forEach(function (card) {
-        var hit = (!cat || card.dataset.cat === cat) && (!v || card.dataset.search.indexOf(v) > -1);
+        var hit = (!cat || (cat === '__new' ? card.dataset.new === '1' : card.dataset.cat === cat)) && (!v || card.dataset.search.indexOf(v) > -1);
         if (hit) { c++; if (shown < limit) { shown++; card.hidden = false; } else card.hidden = true; } else card.hidden = true;
       });
       if (none) none.hidden = c > 0;
@@ -294,7 +294,7 @@
     if (one) show(one, one.dataset.slug, true);
   }
   function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-  function genLbl() { var gc = 6; try { gc = parseInt(localStorage.getItem('sa_gc') || '6', 10) || 6; } catch (e) {} return window.saIcon('sparkle') + '<span>' + (lang === 'fr' ? 'Générer ici' : 'Generate here') + '</span><small>· ' + gc + ' cr</small>'; }
+  function genLbl(k) { var gc = 6, vc = 40, tc = 2; try { gc = parseInt(localStorage.getItem('sa_gc') || '6', 10) || 6; vc = parseInt(localStorage.getItem('sa_vc') || '40', 10) || 40; tc = parseInt(localStorage.getItem('sa_tc') || '2', 10) || 2; } catch (e) {} var t = { fr: { img: 'Générer ici', vid: 'Créer une vidéo', txt: 'Générer le texte' }, en: { img: 'Generate here', vid: 'Create a video', txt: 'Generate the text' } }[lang]; k = k || 'img'; return window.saIcon(k === 'vid' ? 'video' : k === 'txt' ? 'edit' : 'sparkle') + '<span>' + t[k] + '</span><small>· ' + (k === 'vid' ? vc : k === 'txt' ? tc : gc) + ' cr</small>'; }
   function copyLbl() { return window.saIcon('copy') + '<span>' + (lang === 'fr' ? 'Copier' : 'Copy') + '</span><small>· ' + (lang === 'fr' ? 'gratuit' : 'free') + '</small>'; }
   function railCard(r) {
     var poster = r.img ? '<div class="poster img' + (r.ratio === '16:9' ? ' ls' : '') + '" style="--ar:' + String(r.ratio || '4:5').replace(':', '/') + '"><img src="/img/c/' + r.slug + '-t.webp" alt="" loading="lazy" decoding="async"><span class="tag">' + esc(r.cat) + '</span></div>'
@@ -313,7 +313,7 @@
     var picked = [], per = {};
     var take = function (r) { picked.push(r); per[r.catId] = (per[r.catId] || 0) + 1; };
     PRI.forEach(function (cat) { var r = pool.filter(function (x) { return x.catId === cat && picked.indexOf(x) < 0; })[0]; if (r) take(r); });
-    pool.forEach(function (r) { if (picked.length < 10 && picked.indexOf(r) < 0 && (per[r.catId] || 0) < 2) take(r); });
+    pool.forEach(function (r) { if (picked.length < 7 && picked.indexOf(r) < 0 && (per[r.catId] || 0) < 2) take(r); });
     picked.sort(function (a, b) { return b.score - a.score; });
     var have = {}; picked.forEach(function (r) { have[r.slug] = 1; });
     var base = Array.prototype.filter.call(rail.children, function (c) { return c.dataset.slug && !have[c.dataset.slug]; });

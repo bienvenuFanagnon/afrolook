@@ -433,7 +433,7 @@ exports.slashatlasApi = onRequest(
         await studio.payWebhook(body(req));
         return res.status(200).send('OK');
       }
-      if (/\/(me|referrals|generate|edit|history|regen|brand-profile|library|my-orders|pay\/start|pay\/card|pay\/status)$/.test(path)) {
+      if (/\/(me|referrals|generate|edit|history|regen|brand-profile|library|text|my-orders|pay\/start|pay\/card|pay\/status)$/.test(path)) {
         if (limited('g' + ipKey, (path.endsWith('/generate') || path.endsWith('/edit')) ? 30 : 60, 600000)) return res.status(429).json({ error: 'rate' });
         const u = await whoIs(req);
         if (!u || u.provider !== 'google.com') return res.status(401).json({ error: 'auth' });
@@ -448,6 +448,7 @@ exports.slashatlasApi = onRequest(
           if (bp.brand !== undefined || bp.contact !== undefined) return res.status(200).json(await studio.saveBrandProfile(u, bp));
           return res.status(200).json(await studio.getBrandProfile(u));
         }
+        if (path.endsWith('/text')) return res.status(200).json(await studio.generateText(u, body(req)));
         if (path.endsWith('/library')) { const lb = body(req); return res.status(200).json(lb.save ? await studio.saveLibrary(u, lb) : await studio.getLibrary(u)); }
         if (path.endsWith('/pay/start')) return res.status(200).json(await studio.payStart(u, body(req), { ip, ua: req.get('user-agent') }));
         if (path.endsWith('/pay/card')) return res.status(200).json(await studio.payCard(u, body(req), { ip, ua: req.get('user-agent') }));
