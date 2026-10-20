@@ -5,7 +5,7 @@
   var days = 14, root = $('#adm'), tab = 'over'; try { tab = sessionStorage.getItem('sa_admtab') || 'over'; } catch (e) {}
   var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
   var payStt = function (o) { var extra = o.status === 'paid' ? '' : (o.failure || o.lastStatus || ''); return esc(o.status === 'chargeback' ? 'contesté' : o.status) + (extra ? ' <small title="' + esc(extra) + '">(' + esc(String(extra).slice(0, 40)) + ')</small>' : ''); };
-    var payMoyen = function (o) { return o.provider === 'feexpay_card' || o.operator === 'card' ? '💳 carte' : esc(o.operator); };
+    var payMoyen = function (o) { return o.provider === 'feexpay_card' || o.operator === 'card' ? window.saIcon('card') + ' carte' : esc(o.operator); };
     var cbBtn = function (o) { return (o.status === 'paid' && (o.provider === 'feexpay_card' || o.operator === 'card')) ? ' <button class="btn gl sm" type="button" data-cb="' + esc(o.id) + '">Contestation</button>' : ''; };
   var sum = function (rows, k) { return rows.reduce(function (n, r) { return n + (r[k] || 0); }, 0); };
   function merge(rows, k) { var o = {}; rows.forEach(function (r) { var m = r[k] || {}; Object.keys(m).forEach(function (a) { o[a] = (o[a] || 0) + m[a]; }); }); return Object.keys(o).map(function (a) { return [a, o[a]]; }).sort(function (a, b) { return b[1] - a[1]; }); }
@@ -89,7 +89,7 @@ var ords = '<div class="adm-card"><h3>Dernières commandes (période)</h3><div c
             if (!g) { tbl.innerHTML = '<p class="hint">Impossible de charger les erreurs.</p>'; return; }
             var errs = g.errors || [], res = g.resume || [];
             var head = (g.alerts || []).map(alertHtml).join('');
-            head += '<p class="hint" style="margin:8px 0">' + (g.lastImageOk ? '✅ Dernière image réussie : ' + esc(when(g.lastImageOk)) : 'Aucune image réussie récemment.') + '</p>';
+            head += '<p class="hint" style="margin:8px 0">' + (g.lastImageOk ? window.saIcon('check') + ' Dernière image réussie : ' + esc(when(g.lastImageOk)) : 'Aucune image réussie récemment.') + '</p>';
             head += res.length
               ? '<h4 style="margin:14px 0 8px">Résumé des 7 derniers jours</h4>' + res.map(function (r) {
                   var c = GRAV[r.gravite] || GRAV.attention;
@@ -99,7 +99,7 @@ var ords = '<div class="adm-card"><h3>Dernières commandes (période)</h3><div c
                     '<p style="margin:6px 0 4px">' + esc(r.quoi) + '</p>' +
                     '<p style="margin:0"><b>À faire :</b> ' + esc(r.action) + (r.lien ? ' <a href="' + esc(r.lien) + '" target="_blank" rel="noopener">Ouvrir ↗</a>' : '') + '</p></div>';
                 }).join('')
-              : '<p class="hint">Aucune erreur ces 7 derniers jours. 👍</p>';
+              : '<p class="hint">Aucune erreur ces 7 derniers jours.</p>';
             sumBox.innerHTML = head;
             if (!errs.length) { tbl.innerHTML = ''; return; }
             var rows = errs.map(function (e) {
@@ -169,8 +169,8 @@ var ords = '<div class="adm-card"><h3>Dernières commandes (période)</h3><div c
         var u = r.data;
         var ldgHtml = (u.ledger || []).map(function (l) {
           var sign = l.delta > 0 ? '<span class="txn-ok">+' + l.delta + '</span>' : '<span class="txn-err">' + l.delta + '</span>';
-          var badge = { purchase: '💳 Achat', grant: '🎁 Don', refund: '↩ Remboursement', generation: '🖼 Génération', adfree: '🔕 Sans-pub' }[l.type] || l.type;
-          return '<tr><td class="txn-date">' + fmt(l.at ? new Date(l.at).getTime() : null) + '</td><td>' + sign + '</td><td>' + esc(badge) + '</td><td class="txn-mut">' + esc(l.ref) + '</td><td class="txn-mut">' + esc(l.note) + '</td></tr>';
+          var badge = { purchase: '' + window.saIcon('card') + 'Achat', grant: '' + window.saIcon('gift') + 'Don', refund: '' + window.saIcon('receipt') + 'Remboursement', generation: '' + window.saIcon('image') + 'Génération', adfree: '' + window.saIcon('bell') + 'Sans-pub' }[l.type] || l.type;
+          return '<tr><td class="txn-date">' + fmt(l.at ? new Date(l.at).getTime() : null) + '</td><td>' + sign + '</td><td>' + (/^<svg/.test(badge) ? badge : esc(badge)) + '</td><td class="txn-mut">' + esc(l.ref) + '</td><td class="txn-mut">' + esc(l.note) + '</td></tr>';
         }).join('') || '<tr><td colspan="5">Aucune entrée.</td></tr>';
         var ordsHtml = (u.orders || []).map(function (o) {
           return '<tr><td class="txn-date">' + fmt(o.createdAt ? new Date(o.createdAt).getTime() : null) + '</td><td>' + esc(o.credits) + ' cr.</td><td>' + fmtN(o.amount) + ' ' + esc(o.currency) + '</td><td>' + esc(o.operator) + '</td><td>' + esc(o.phone) + '</td><td>' + esc(o.status) + '</td></tr>';
@@ -218,7 +218,7 @@ var ords = '<div class="adm-card"><h3>Dernières commandes (période)</h3><div c
     });
   }
   // Erreurs de génération expliquées (cache 5 min) + bandeau d'alerte commun à tous les onglets
-  var GRAV = { critique: ['#3a1416', '#ff8a8a', '🔴'], attention: ['#3a2f12', '#ffd27a', '🟠'], info: ['#13283a', '#8cc8ff', 'ℹ️'] };
+  var GRAV = { critique: ['#3a1416', '#ff8a8a', window.saIcon('dot')], attention: ['#3a2f12', '#ffd27a', window.saIcon('dot')], info: ['#13283a', '#8cc8ff', window.saIcon('dot')] };
   var genErr = null, genErrAt = 0;
   function when(iso) { if (!iso) return '—'; var d = new Date(iso); return isNaN(d) ? String(iso) : d.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); }
   function fetchGenErrors(force) {
@@ -227,7 +227,7 @@ var ords = '<div class="adm-card"><h3>Dernières commandes (période)</h3><div c
   }
   function alertHtml(a) {
     return '<div role="alert" style="border:1px solid #ff8a8a77;border-left:5px solid #ff5a5f;background:#3a1416;color:#ffe4e4;border-radius:12px;padding:12px 14px;margin:0 0 12px">' +
-      '<b style="font-size:15px">🔴 ' + esc(a.titre) + '</b> <span style="opacity:.8">— ' + a.nombre + ' échec' + (a.nombre > 1 ? 's' : '') + ' depuis ' + esc(when(a.depuis)) + '</span>' +
+      '<b style="font-size:15px">' + window.saIcon('dot') + ' ' + esc(a.titre) + '</b> <span style="opacity:.8">— ' + a.nombre + ' échec' + (a.nombre > 1 ? 's' : '') + ' depuis ' + esc(when(a.depuis)) + '</span>' +
       '<p style="margin:6px 0 4px">' + esc(a.quoi) + '</p>' +
       '<p style="margin:0"><b>À faire :</b> ' + esc(a.action) + '</p>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">' + (a.lien ? '<a class="btn gl sm" href="' + esc(a.lien) + '" target="_blank" rel="noopener">Ouvrir ↗</a>' : '') +

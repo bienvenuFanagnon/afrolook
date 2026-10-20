@@ -97,8 +97,8 @@
           drop.id = 'sa-accdrop';
           drop.innerHTML =
             '<div class="sa-drop-top"><b>' + firstName + '</b>' + (bal ? '<span>' + bal + '</span>' : '') + '</div>' +
-            '<a class="sa-drop-link" href="' + genLink + '">🎨 Studio</a>' +
-            '<a class="sa-drop-link" href="' + refLink + '">🎁 ' + (lang === 'en' ? 'Referral' : 'Parrainage') + '</a>' +
+            '<a class="sa-drop-link" href="' + genLink + '">' + window.saIcon('palette') + ' Studio</a>' +
+            '<a class="sa-drop-link" href="' + refLink + '">' + window.saIcon('gift') + ' ' + (lang === 'en' ? 'Referral' : 'Parrainage') + '</a>' +
             '<button class="sa-drop-link sa-drop-out" type="button" data-accdrop-logout>' + (lang === 'en' ? 'Log out' : 'Se déconnecter') + '</button>';
           document.body.appendChild(drop);
           var rect = b.getBoundingClientRect();
@@ -266,55 +266,24 @@
   };
   window.saBrandClean = function (v, max) { return String(v || '').replace(/[«»"“”\u0000-\u001f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max); };
   
-  // ── Adapter la commande au produit : texte libre + un ou plusieurs éléments ──
-  $$('.adapt').forEach(function (box) {
-    var pre = document.getElementById(box.dataset.for), input = $('input', box), mode = '1';
-    var bb = box.nextElementSibling && box.nextElementSibling.classList.contains('brandbox') && !box.nextElementSibling.classList.contains('salebox') ? box.nextElementSibling : null, B = bb ? JSON.parse(bb.dataset.brand) : null;
-    var sb = (bb || box).nextElementSibling; sb = sb && sb.classList.contains('salebox') ? sb : null; var SL = sb ? JSON.parse(sb.dataset.sale) : null;
-    // éléments de vente cochés : À VENDRE, prix et devise, ancien prix, réduction, marque, contact, place pour un QR code
-    function saleExtra() {
-      if (!SL) return '';
-      var on = function (k) { var c = $('input[data-s="' + k + '"]', sb); return !!(c && c.checked); }, val = function (k) { var e = $('[data-sv="' + k + '"]', sb); return e ? window.saBrandClean(e.value, 40) : ''; };
-      var cur = val('cur'), parts = [];
-      if (on('tag')) parts.push(SL.el.tag.replace('{v}', SL.tags[val('tagv')] || SL.tags.sale));
-      if (on('price') && val('price')) parts.push(SL.el.price.replace('{v}', val('price') + ' ' + cur));
-      if (on('old') && val('old')) parts.push(SL.el.old.replace('{v}', val('old') + ' ' + cur));
-      if (on('disc') && val('disc')) parts.push(SL.el.disc.replace('{v}', val('disc')));
-      if (on('brand') && val('brand')) parts.push(SL.el.brand.replace('{v}', val('brand')));
-      if (on('contact') && val('contact')) parts.push(SL.el.contact.replace('{v}', val('contact')));
-      var qr = on('qr');
-      if (!parts.length && !qr) return '';
-      return (parts.length ? SL.intro.replace('{L}', parts.join(' ; ')) : '') + (qr ? ' ' + SL.qrClause : '') + ' ' + SL.outro;
-    }
-    function build() {
-      var type = input.value.trim().replace(/[()]/g, '');
-      var clause = (mode === 'n' ? box.dataset.cn : box.dataset.c1).replace('{T}', type ? ' (' + type + ')' : '');
-      var extra = bb ? window.saBrand(B, $$('input', bb).map(function (i) { return { role: i.dataset.role, text: window.saBrandClean(i.value, +i.maxLength || 60) }; })) : '';
-      var sale = saleExtra();
-      if (pre) pre.textContent = box.dataset.code + ' : ' + box.dataset.base + ' ' + clause + (extra ? ' ' + extra : '') + (sale ? ' ' + sale : '');
-    }
-    input.addEventListener('input', build);
-    if (bb) $$('input', bb).forEach(function (i) { i.addEventListener('input', build); });
-    if (sb) {
-      // ce qui est renseigné ici est gardé (localStorage « sa_sale_v1 ») et repris tel quel dans le Studio « Générer ici », et inversement
-      var KEY = 'sa_sale_v1', load = function () { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { return {}; } };
-      var save = function () {
-        var d = load(); $$('input[data-s]', sb).forEach(function (c) { d[c.dataset.s] = c.checked; });
-        $$('[data-sv]', sb).forEach(function (i) { var k = i.dataset.sv; if (k === 'tagv' || k === 'cur') d[k] = i.value; else d[k + 'V'] = i.value; });
-        try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {}
-      };
-      var d0 = load();
-      $$('input[data-s]', sb).forEach(function (c) { if (typeof d0[c.dataset.s] === 'boolean') c.checked = d0[c.dataset.s]; });
-      $$('[data-sv]', sb).forEach(function (i) {
-        var k = i.dataset.sv, v = k === 'tagv' || k === 'cur' ? d0[k] : d0[k + 'V'];
-        if (v == null || v === '') return;
-        if (i.tagName === 'SELECT' && !Array.prototype.some.call(i.options, function (o) { return o.value === v || o.text === v; })) { var o = document.createElement('option'); o.textContent = v; i.appendChild(o); }
-        i.value = v;
-      });
-      $$('input,select', sb).forEach(function (i) { i.addEventListener('input', function () { save(); build(); }); i.addEventListener('change', function () { save(); build(); }); });
-      build();
-    }
-    $$('.seg2 button', box).forEach(function (b) { b.addEventListener('click', function () { mode = b.dataset.n; $$('.seg2 button', box).forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); }); build(); }); });
+  // ── Réglages de l'affiche de vente (prix, contact, QR…) : ils servent seulement à « Générer ici ».
+  // Ils sont gardés dans localStorage « sa_sale_v1 », partagé avec le Studio ; la commande copiée reste toujours la commande de base.
+  $$('.salebox').forEach(function (sb) {
+    var KEY = 'sa_sale_v1', load = function () { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { return {}; } };
+    var save = function () {
+      var d = load(); $$('input[data-s]', sb).forEach(function (c) { d[c.dataset.s] = c.checked; });
+      $$('[data-sv]', sb).forEach(function (i) { var k = i.dataset.sv; if (k === 'tagv' || k === 'cur') d[k] = i.value; else d[k + 'V'] = i.value; });
+      try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {}
+    };
+    var d0 = load();
+    $$('input[data-s]', sb).forEach(function (c) { if (typeof d0[c.dataset.s] === 'boolean') c.checked = d0[c.dataset.s]; });
+    $$('[data-sv]', sb).forEach(function (i) {
+      var k = i.dataset.sv, v = k === 'tagv' || k === 'cur' ? d0[k] : d0[k + 'V'];
+      if (v == null || v === '') return;
+      if (i.tagName === 'SELECT' && !Array.prototype.some.call(i.options, function (o) { return o.value === v || o.text === v; })) { var o = document.createElement('option'); o.textContent = v; i.appendChild(o); }
+      i.value = v;
+    });
+    $$('input,select', sb).forEach(function (i) { i.addEventListener('input', save); i.addEventListener('change', save); });
   });
 })();
 
@@ -544,7 +513,7 @@
     var ids; try { ids = JSON.parse(el.getAttribute('data-ids')); } catch (e) { return; } if (!ids || !ids.length) return;
     var id = ids[n % ids.length];
     Array.prototype.forEach.call(el.querySelectorAll('img[data-r]'), function (im) {
-      var r = im.getAttribute('data-r'); var src = (kind === 'img' ? '/img/c/' + id + '-' + r + '.webp' : '/img/video/' + r + '-' + id + '.webp') + IMGQ;
+      var r = im.getAttribute('data-r'); var src = (kind === 'img' ? '/img/c/' + id + '-' + r + '.webp' : '/img/video/' + r + '-' + id + '.webp') + ((document.body && document.body.dataset.imgv) ? '?v=' + document.body.dataset.imgv : '');
       if (im.getAttribute('src') !== src) im.setAttribute('src', src);
     });
   });

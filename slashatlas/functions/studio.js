@@ -276,13 +276,14 @@ function qrClause(lang, pos) {
     : `Laisse entièrement libre ${pref ? 'le coin inférieur droit du visuel (ou, si la composition l’exige, un autre coin calme)' : 'le coin ' + c[0] + ' du visuel'}, une petite zone d’environ 15 % de la largeur et 20 % de la hauteur, sans texte, sans élément important ni détail du sujet : un petit code QR y sera ajouté après coup. Éloigne de ce coin les textes de contact éventuels. N’écris et ne dessine aucun code QR toi-même.`;
 }
 /** Retouche automatique d'une photo (base64) : niveaux, lumière, couleurs, netteté, agrandissement doux des petites photos. Retourne du JPEG en base64, ou null si impossible. */
-async function polishPhoto(b64) {
+// strength : 0,85 = retouche nette (plats, lieux) ; 0,5 = retouche légère (vêtements, accessoires, beauté, personnes) pour éviter l'effet saturé
+async function polishPhoto(b64, strength = 0.85) {
   const { loadImage, createCanvas } = require('@napi-rs/canvas');
   const { enhance } = require('./enhance');
   const im = await loadImage(Buffer.from(b64, 'base64'));
   if (!im.width || !im.height || Math.max(im.width, im.height) > 4000) return null;
   const cv = createCanvas(im.width, im.height); cv.getContext('2d').drawImage(im, 0, 0);
-  return enhance(cv, { minSide: 1024, maxSide: 1600, strength: 0.85 }).toBuffer('image/jpeg', 92).toString('base64');
+  return enhance(cv, { minSide: 1024, maxSide: 1600, strength }).toBuffer('image/jpeg', 92).toString('base64');
 }
 
 function composePrompt(slug, lang, product, multi, nPhotos, texts = [], qrpos = '', sale = false, stagingInstruction = '') {
@@ -302,8 +303,8 @@ function composePrompt(slug, lang, product, multi, nPhotos, texts = [], qrpos = 
   const stagingClause = stagingInstruction ? (L === 'fr' ? `Instruction de mise en scène : ${stagingInstruction}` : `Scene instruction: ${stagingInstruction}`) : '';
   // qualité studio, propre au Studio : rendu photo premium, fidélité au produit, aucun ajout non demandé
   const quality = L === 'en'
-    ? 'Studio quality: premium commercial photographic rendering, careful lighting, sharp details, colors faithful to the photo. The product stays strictly identical (shape, colors, logo, details); add no object, text or watermark that was not requested.'
-    : "Qualité studio : rendu photographique commercial premium, lumière soignée, détails nets, couleurs fidèles à la photo. Le produit reste strictement identique (forme, couleurs, logo, détails) ; n'ajoute aucun objet, texte ou filigrane qui n'a pas été demandé.";
+    ? 'Studio quality: premium commercial photographic rendering, careful lighting slightly brightened, colors slightly livelier but faithful, with no oversaturation or artificial look, sharp details, colors faithful to the photo. The product stays strictly identical (shape, colors, logo, details); add no object, text or watermark that was not requested.'
+    : "Qualité studio : rendu photographique commercial premium, lumière soignée légèrement rehaussée, couleurs légèrement ravivées mais fidèles, sans saturation excessive ni aspect artificiel, détails nets, couleurs fidèles à la photo. Le produit reste strictement identique (forme, couleurs, logo, détails) ; n'ajoute aucun objet, texte ou filigrane qui n'a pas été demandé.";
   return { text: `${intro}${c.code} : ${c[L]} ${clause}${brand ? ' ' + brand : ''}${qr ? ' ' + qr : ''}${stagingClause ? ' ' + stagingClause : ''}${saleClause ? ' ' + saleClause : ''} ${quality}`.trim(), ratio: c.ratio };
 }
 
@@ -401,7 +402,7 @@ async function generate(u, b) {
   if (total > 6 * 1024 * 1024) throw fail(413, 'photo_too_big');
   // Rendu optimisé SlashAtlas : la photo est retouchée avant d'être donnée à l'IA (lumière, couleurs, netteté, taille). Une photo sombre ou terne donne un résultat terne.
   let polished = 0;
-  for (const part of parts) { try { const r = await polishPhoto(part.inlineData.data); if (r) { part.inlineData = { mimeType: 'image/jpeg', data: r }; polished++; } } catch (e) { console.error('polish', e && e.message); } }
+  for (const part of parts) { try { const r = await polishPhoto(part.inlineData.data, ['product', 'person'].includes((COMMANDS.commands[slug] || {}).kind) ? 0.5 : 0.85); if (r) { part.inlineData = { mimeType: 'image/jpeg', data: r }; polished++; } } catch (e) { console.error('polish', e && e.message); } }
   const texts = cleanTexts(b.texts);
   const qrpos = QR_CORNER[b.qrpos] ? b.qrpos : '';
   const sale = b.sale === true;

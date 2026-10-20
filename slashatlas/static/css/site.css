@@ -817,3 +817,12 @@ textarea.film-input{resize:vertical;min-height:110px}
   .sbar .acts .btn{flex:1 1 auto;min-width:0;font-size:12.5px;padding:9px 10px;white-space:nowrap;text-align:center}
   .sbar .acts .btn.pri{flex:1 1 100%}
 }
+/* Icônes au trait (src/icons.mjs) : taille du texte, alignées sur la ligne */
+.ic{width:1.15em;height:1.15em;vertical-align:-.2em;flex:none;display:inline-block}
+.stool-ic .ic,.film-cred-icon .ic,.film-idea-emoji .ic{width:1.5em;height:1.5em}
+/* Bandeau parrainage sur téléphone : le lien passe sous le texte au lieu de l'écraser */
+@media (max-width:719px){
+  .refstrip{flex-wrap:wrap;gap:6px 10px}
+  .refstrip b{flex:1 1 calc(100% - 40px);min-width:0}
+  .refstrip i{flex:1 1 100%;padding-left:34px;white-space:normal}
+}

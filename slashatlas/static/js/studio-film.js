@@ -31,8 +31,8 @@
       steps: ['Scénario', 'Images & voix', 'Assemblage'],
       credModalH: 'Crédits insuffisants',
       credModalP: 'Il vous faut au moins 100 crédits pour créer un film de 2 min. Rechargez facilement via mobile money ou carte bancaire.',
-      credMomo: '📱 Mobile Money',
-      credCard: '💳 Carte bancaire',
+      credMomo: 'Mobile Money',
+      credCard: 'Carte bancaire',
       credClose: 'Fermer',
       seriesH: 'Mes séries',
       seriesSub: 'Continuez une série existante ou créez-en une nouvelle.',
@@ -68,8 +68,8 @@
       steps: ['Script', 'Images & voice', 'Assembly'],
       credModalH: 'Not enough credits',
       credModalP: 'You need at least 100 credits to create a 2-min film. Top up via mobile money or bank card.',
-      credMomo: '📱 Mobile Money',
-      credCard: '💳 Bank card',
+      credMomo: 'Mobile Money',
+      credCard: 'Bank card',
       credClose: 'Close',
       seriesH: 'My series',
       seriesSub: 'Continue an existing series or start a new one.',
@@ -161,12 +161,12 @@
     credModal.innerHTML =
       '<div class="film-cred-inner">' +
         '<button class="film-cred-close" aria-label="' + T.credClose + '">✕</button>' +
-        '<div class="film-cred-icon">🪙</div>' +
+        '<div class="film-cred-icon">' + window.saIcon('coin') + '</div>' +
         '<h3 class="film-cred-h">' + T.credModalH + '</h3>' +
         '<p class="film-cred-p">' + T.credModalP + '</p>' +
         '<div class="film-cred-btns">' +
-          '<button class="btn pri film-cred-btn" data-buy="mm">' + T.credMomo + '</button>' +
-          '<button class="btn pri film-cred-btn" data-buy="card">' + T.credCard + '</button>' +
+          '<button class="btn pri film-cred-btn" data-buy="mm">' + window.saIcon('phone') + ' ' + T.credMomo + '</button>' +
+          '<button class="btn pri film-cred-btn" data-buy="card">' + window.saIcon('card') + ' ' + T.credCard + '</button>' +
         '</div>' +
       '</div>';
     document.body.appendChild(credModal);
@@ -320,7 +320,7 @@
     var html = '<div class="film-progress"><div class="film-progress-steps">';
     for (var i = 0; i < 3; i++) {
       var cls = i < step ? 'done' : i === step && step < 3 ? 'active' : '';
-      var icon = i < step ? '✓' : (i === step && step < 3 ? '⏳' : '○');
+      var icon = window.saIcon(i < step ? 'check' : (i === step && step < 3 ? 'hourglass' : 'dot'));
       html += '<div class="film-ps ' + cls + '"><span class="film-ps-icon">' + icon + '</span>' + labels[i] + '</div>';
     }
     html += '</div>';
@@ -524,7 +524,7 @@
               '<span class="film-series-ep-badge">' + epLabel + '</span>' +
             '</div>' +
             (synopsis ? '<p class="film-series-synopsis">' + esc(synopsis) + '</p>' : '') +
-            (s.characters && s.characters.length ? '<p class="film-series-chars">👤 ' + s.characters.slice(0, 4).map(esc).join(', ') + '</p>' : '') +
+            (s.characters && s.characters.length ? '<p class="film-series-chars">' + window.saIcon('user') + ' ' + s.characters.slice(0, 4).map(esc).join(', ') + '</p>' : '') +
             '<button class="btn sec film-series-btn" type="button">' + T.seriesContinue + '</button>' +
           '</div>';
       });
@@ -553,7 +553,7 @@
     // Indicateur série sélectionnée
     var badge = document.getElementById('film-series-badge');
     if (badge) {
-      badge.textContent = isFr ? '📺 Suite de : ' + title : '📺 Continuing: ' + title;
+      badge.innerHTML = window.saIcon('tv') + ' ' + esc(isFr ? 'Suite de : ' + title : 'Continuing: ' + title);
       badge.hidden = false;
     }
     var resetBtn = document.getElementById('film-series-reset');

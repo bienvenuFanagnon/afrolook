@@ -280,7 +280,7 @@
     });
   }
   function bar() {
-    return '<div class="sbar" id="account"><div><small>' + T.hello + ', ' + esc((state.user.displayName || '').split(' ')[0] || state.user.email) + '</small><b id="s-bal">' + state.credits + ' ' + (state.credits === 1 ? T.credit : T.credits) + '</b>' + (state.adFreeUntil ? '<small class="okline">' + T.noAdsUntil.replace('{d}', new Date(state.adFreeUntil).toLocaleDateString(L === 'en' ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long' })) + '</small>' : '') + '</div><div class="acts"><button class="btn pri sm" type="button" id="s-buy">' + T.buy + '</button><a class="btn gl sm" href="' + refUrl() + '">🎁 ' + T.refShort + '</a><button class="btn gl sm" type="button" id="s-txn">' + (L === 'en' ? 'My purchases' : 'Mes achats') + '</button>' + (state.user.email === 'jorbienvenu@gmail.com' ? '<a class="btn gl sm" href="/admin/">Hub</a>' : '') + '<button class="btn gl sm" type="button" data-logout>' + T.logout + '</button></div></div>';
+    return '<div class="sbar" id="account"><div><small>' + T.hello + ', ' + esc((state.user.displayName || '').split(' ')[0] || state.user.email) + '</small><b id="s-bal">' + state.credits + ' ' + (state.credits === 1 ? T.credit : T.credits) + '</b>' + (state.adFreeUntil ? '<small class="okline">' + T.noAdsUntil.replace('{d}', new Date(state.adFreeUntil).toLocaleDateString(L === 'en' ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long' })) + '</small>' : '') + '</div><div class="acts"><button class="btn pri sm" type="button" id="s-buy">' + T.buy + '</button><a class="btn gl sm" href="' + refUrl() + '">' + window.saIcon('gift') + ' ' + T.refShort + '</a><button class="btn gl sm" type="button" id="s-txn">' + (L === 'en' ? 'My purchases' : 'Mes achats') + '</button>' + (state.user.email === 'jorbienvenu@gmail.com' ? '<a class="btn gl sm" href="/admin/">Hub</a>' : '') + '<button class="btn gl sm" type="button" data-logout>' + T.logout + '</button></div></div>';
   }
 
   // ── Historique des transactions ───────────────────────────────────────────
@@ -336,15 +336,15 @@
     var genPath = L === 'en' ? '/en/generate/' : '/generer/';
     var filmPath = L === 'en' ? '/en/film-studio/' : '/studio-film/';
     var imgItem = hasVurl
-      ? '<button class="stool' + (!isVideo ? ' on' : '') + '" type="button" data-mode="image"><span class="stool-ic">🖼</span><b>Image</b><small>' + (L === 'en' ? 'Posters' : 'Affiches') + '</small></button>'
-      : '<a class="stool on" href="' + genPath + '"><span class="stool-ic">🖼</span><b>Image</b><small>' + (L === 'en' ? 'Posters' : 'Affiches') + '</small></a>';
+      ? '<button class="stool' + (!isVideo ? ' on' : '') + '" type="button" data-mode="image"><span class="stool-ic">' + window.saIcon('image') + '</span><b>Image</b><small>' + (L === 'en' ? 'Posters' : 'Affiches') + '</small></button>'
+      : '<a class="stool on" href="' + genPath + '"><span class="stool-ic">' + window.saIcon('image') + '</span><b>Image</b><small>' + (L === 'en' ? 'Posters' : 'Affiches') + '</small></a>';
     var vidItem = hasVurl
-      ? '<button class="stool' + (isVideo ? ' on' : '') + '" type="button" data-mode="video"><span class="stool-ic">🎬</span><b>' + (L === 'en' ? 'Video' : 'Vidéo') + '</b><small>Motion design</small></button>'
-      : '<a class="stool" href="' + genPath + '?mode=video"><span class="stool-ic">🎬</span><b>' + (L === 'en' ? 'Video' : 'Vidéo') + '</b><small>Motion design</small></a>';
-    var filmItem = '<a class="stool" href="' + filmPath + '"><span class="stool-ic">🎭</span><b>Film</b><small>' + (L === 'en' ? 'Scenario' : 'Scénario') + '</small></a>';
+      ? '<button class="stool' + (isVideo ? ' on' : '') + '" type="button" data-mode="video"><span class="stool-ic">' + window.saIcon('video') + '</span><b>' + (L === 'en' ? 'Video' : 'Vidéo') + '</b><small>Motion design</small></button>'
+      : '<a class="stool" href="' + genPath + '?mode=video"><span class="stool-ic">' + window.saIcon('video') + '</span><b>' + (L === 'en' ? 'Video' : 'Vidéo') + '</b><small>Motion design</small></a>';
+    var filmItem = '<a class="stool" href="' + filmPath + '"><span class="stool-ic">' + window.saIcon('film') + '</span><b>Film</b><small>' + (L === 'en' ? 'Scenario' : 'Scénario') + '</small></a>';
     var histCount = hist.items.length ? hist.items.length + (L === 'en' ? ' items' : '') : (L === 'en' ? 'My images' : 'Mes images');
     if (hist.items.length && L !== 'en') histCount = hist.items.length + ' créations';
-    var histItem = '<button class="stool" type="button" id="s-hist-btn"><span class="stool-ic">🕐</span><b>' + (L === 'en' ? 'History' : 'Historique') + '</b><small>' + histCount + '</small></button>';
+    var histItem = '<button class="stool" type="button" id="s-hist-btn"><span class="stool-ic">' + window.saIcon('clock') + '</span><b>' + (L === 'en' ? 'History' : 'Historique') + '</b><small>' + histCount + '</small></button>';
     return '<nav class="stools">' + imgItem + vidItem + filmItem + histItem + '</nav>';
   }
   function tabs() {
@@ -354,7 +354,7 @@
   function render() {
     if (state.checking) { root.innerHTML = '<div class="sbox sload"><span class="spin" aria-label="…"></span></div>'; return; }
     if (!state.user) {
-      root.innerHTML = tabs() + '<div class="sbox">' + (wantPass ? '<p class="lead">' + T.passLogin + '</p>' : state.mode === 'video' ? '<h2 class="vh">' + T.vLoginTitle + '</h2><p class="hint">' + T.vLoginText + '</p>' : cmdBlock()) + '<div class="refpitch"><b>🎁 ' + T.pitchT + '</b><ol><li>' + T.pitch1 + '</li><li>' + T.pitch2 + '</li><li>' + T.pitch3 + '</li></ol></div><button class="btn pri big" type="button" data-login>' + T.login + '</button><p class="hint">' + T.loginNote + '</p><p class="fmsg" id="auth-msg" role="status" aria-live="polite"></p></div>';
+      root.innerHTML = tabs() + '<div class="sbox">' + (wantPass ? '<p class="lead">' + T.passLogin + '</p>' : state.mode === 'video' ? '<h2 class="vh">' + T.vLoginTitle + '</h2><p class="hint">' + T.vLoginText + '</p>' : cmdBlock()) + '<div class="refpitch"><b>' + window.saIcon('gift') + ' ' + T.pitchT + '</b><ol><li>' + T.pitch1 + '</li><li>' + T.pitch2 + '</li><li>' + T.pitch3 + '</li></ol></div><button class="btn pri big" type="button" data-login>' + T.login + '</button><p class="hint">' + T.loginNote + '</p><p class="fmsg" id="auth-msg" role="status" aria-live="polite"></p></div>';
       bind(); return;
     }
     var kind = data.commands[slug].kind, lab = T.prodLabel[kind] || T.prodLabel.product;
@@ -363,7 +363,7 @@
     var canGen = state.photos.length && !state.busy;
     var genLabel = state.credits < GC() ? T.buy : T.genCost;
     if (state.mode === 'video') { root.innerHTML = bar() + studioNav() + tabs() + '<div id="v-root"></div>'; bind(); mountVideo(); return; }
-    root.innerHTML = bar() + studioNav() + (state.credits < GC() ? '<a class="refstrip" href="' + refUrl() + '"><span aria-hidden="true">🎁</span><b>' + T.refNone + '</b><i>' + T.refGo + ' ›</i></a>' : '') + tabs() +
+    root.innerHTML = bar() + studioNav() + (state.credits < GC() ? '<a class="refstrip" href="' + refUrl() + '"><span aria-hidden="true">' + window.saIcon('gift') + '</span><b>' + T.refNone + '</b><i>' + T.refGo + ' ›</i></a>' : '') + tabs() +
       '<div class="sbox">' + cmdBlock() +
       '<div class="sf"><b>' + T.photos + '</b><div class="phs">' + thumbs + addBtn + '</div><small class="hint">' + T.photosHint + '</small></div>' +
       '<div class="adapt sf"><label>' + lab + '<input id="s-prod" type="text" maxlength="60" placeholder="' + esc(T.prodPh) + '" value="' + esc(state.product) + '" autocomplete="off"></label><div class="seg2" role="group"><button type="button" data-n="1" aria-pressed="' + (!state.multi) + '">' + T.single + '</button><button type="button" data-n="n" aria-pressed="' + state.multi + '">' + T.several + '</button></div></div>' +
@@ -567,7 +567,7 @@
           '<div class="two"><label>' + T.city + '<input id="c-city" autocomplete="address-level2"></label><label>' + T.zip + '<input id="c-zip" autocomplete="postal-code"></label></div>' +
           '<label>' + T.countryCard + '<select id="c-country">' + ISO.map(function (c) { return '<option value="' + c + '">' + esc(countryName(c)) + '</option>'; }).join('') + '</select></label><p class="hint">' + T.cardInfo + '</p>';
       }
-      modal.innerHTML = '<div class="sheet"><button class="x" type="button" aria-label="' + T.close + '">×</button><h2>' + (pk.days ? T.passTitle : T.buyTitle) + '</h2><p class="hint">' + (pk.days ? T.passSub : T.buySub) + '</p>' + (pk.days ? '' : '<a class="refstrip" href="' + refUrl() + '"><span aria-hidden="true">🎁</span><b>' + T.refShort + '</b><i>' + T.refGo + ' ›</i></a>') +
+      modal.innerHTML = '<div class="sheet"><button class="x" type="button" aria-label="' + T.close + '">×</button><h2>' + (pk.days ? T.passTitle : T.buyTitle) + '</h2><p class="hint">' + (pk.days ? T.passSub : T.buySub) + '</p>' + (pk.days ? '' : '<a class="refstrip" href="' + refUrl() + '"><span aria-hidden="true">' + window.saIcon('gift') + '</span><b>' + T.refShort + '</b><i>' + T.refGo + ' ›</i></a>') +
         '<div class="packs">' + cfg.packs.slice().sort(function (x, y) { return (x.days ? 1 : 0) - (y.days ? 1 : 0); }).map(function (p) { return '<button type="button" class="pack' + (p.days ? ' passtile' : '') + (p.id === sel.pack ? ' on' : '') + '" data-p="' + p.id + '"' + (isCard && !cardOk(p.id) ? ' disabled' : '') + '>' + (p.tag ? '<i>' + T.popular + '</i>' : '') + (p.days ? '<b>' + p.days + ' ' + T.passUnit + '</b><span>' + T.passTag + '</span><em>' + usd(p.usd) + '</em><small>≈ ' + fmt(p.xof) + ' FCFA</small>' : '<b>' + Math.floor(p.credits / GC()) + '</b><span>' + T.posters + '</span><em>' + usd(p.usd) + '</em><small>≈ ' + fmt(p.xof) + ' FCFA · ' + p.credits + ' ' + T.credits + '</small>') + '</button>'; }).join('') + '</div>' + tabs + form +
         '<p class="hint soft">' + (isCard ? T.feeLineCard.replace('{p}', usd(pk.usd)).replace('{f}', usd(quoteUsd(pk.usd, cfg.card && cfg.card.feePct).fee)) : T.feeNote) + '</p><label class="terms"><input type="checkbox" id="b-terms"' + (sel.terms ? ' checked' : '') + '><span><b class="ttag">' + T.termsTag + '</b>' + T.termsAccept + '<a href="' + TL + '" target="_blank" rel="noopener">' + T.termsLink + '</a>.' + T.termsNote + '</span></label>' + (isCard ? '<p class="hint">' + T.cardPackOnly + '</p>' : '') +
         '<button class="btn pri big" type="button" id="b-pay">' + (isCard ? T.cardGo + ' ' + usd(quoteUsd(pk.usd, cfg.card && cfg.card.feePct).total) : T.pay + ' ' + fmt(pk.xof) + ' FCFA') + '</button><p class="fmsg" id="b-msg" role="status" aria-live="polite"></p>' + (CONTACT ? '<p class="hint soft">' + T.help + ' <a href="mailto:' + CONTACT + '">' + CONTACT + '</a></p>' : '') + '</div>';
