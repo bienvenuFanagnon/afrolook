@@ -202,7 +202,6 @@ const STUDIO_SRC = fs.readFileSync(path.join(root, 'functions', 'studio.js'), 'u
 const VCOST = +(STUDIO_SRC.match(/const VIDEO_COST = \{ base: (\d+)/) || [0, 40])[1]; // crédits d'une vidéo
 const TCOST = +(STUDIO_SRC.match(/const TEXT_COST = (\d+)/) || [0, 2])[1]; // crédits d'un texte
 const GEN = +(STUDIO_SRC.match(/const GEN_COST = (\d+)/) || [0, 6])[1]; // crédits débités par affiche
-const WELCOME = Math.floor(+(STUDIO_SRC.match(/const WELCOME_CREDITS = (\d+)/) || [0, 12])[1] / GEN); // affiches offertes à l'inscription
 // « Gagnez du temps » : le lien de la boutique part au Studio (mémorisé dans le navigateur, jamais dans l'adresse) et devient le QR code de l'affiche.
 const SAVER = {
   fr: { h: 'Gagnez du temps', p: 'Au lieu d’adapter la commande vous-même, entrez le lien de votre boutique ou de votre WhatsApp : nous générons l’affiche avec votre QR code intégré.', ph: 'Lien de votre boutique ou wa.me/…', btn: 'Générer' },
@@ -337,7 +336,7 @@ const HOME = {
     h1: 'Votre photo devient une affiche pro.',
     hrot: ['Copiez la commande, collez-la dans ChatGPT ou Gemini.', 'Ou générez l’affiche ici, prête à poster.', 'Robes, gloss, mèches, plats, concerts…', 'Prix, contact et QR code ajoutés pour vous.'],
     sub: 'Choisissez une commande toute prête : copiez-la gratuitement pour votre outil IA, ou générez l’affiche directement ici, à partir de votre photo.',
-    c1: 'Copier une commande', c1s: 'Gratuit · ChatGPT, Gemini…', c2: 'Générer ici', c2s: (g, w) => (w ? `1 affiche = ${g} crédits · ${w} offertes` : `1 affiche = ${g} crédits`),
+    c1: 'Copier une commande', c1s: 'Gratuit · ChatGPT, Gemini…', c2: 'Générer ici', c2s: (g) => `1 affiche = ${g} crédits`,
     qph: 'Robe, gloss, burger, concert…', qlbl: 'Que voulez-vous créer ?', qgo: 'Chercher',
     steps: [['Copiez', 'une commande gratuite'], ['Collez', 'dans votre outil IA'], ['Publiez', 'votre visuel pro']],
     rail: 'Commandes phares', favs: 'Vos favoris', favAll: 'Mes commandes', tabSel: 'À la une', tabNew: 'Nouveautés', tabVid: 'Vidéos', copy: 'Copier', cats: 'Par métier', all: 'Voir les {n} commandes', n: (k) => `${k} commandes`,
@@ -349,7 +348,7 @@ const HOME = {
     h1: 'Your photo becomes a pro poster.',
     hrot: ['Copy the command, paste it into ChatGPT or Gemini.', 'Or generate the poster here, ready to post.', 'Dresses, lip gloss, hair, dishes, concerts…', 'Price, contact and QR code added for you.'],
     sub: 'Pick a ready-made command: copy it for free for your AI tool, or generate the poster right here, from your photo.',
-    c1: 'Copy a command', c1s: 'Free · ChatGPT, Gemini…', c2: 'Generate here', c2s: (g, w) => (w ? `1 poster = ${g} credits · ${w} free` : `1 poster = ${g} credits`),
+    c1: 'Copy a command', c1s: 'Free · ChatGPT, Gemini…', c2: 'Generate here', c2s: (g) => `1 poster = ${g} credits`,
     qph: 'Dress, lip gloss, burger, concert…', qlbl: 'What do you want to create?', qgo: 'Search',
     steps: [['Copy', 'a free command'], ['Paste', 'into your AI tool'], ['Publish', 'your pro visual']],
     rail: 'Top commands', favs: 'Your favorites', favAll: 'My commands', tabSel: 'Featured', tabNew: 'New', tabVid: 'Videos', copy: 'Copy', cats: 'By trade', all: 'See all {n} commands', n: (k) => `${k} commands`,
@@ -488,7 +487,7 @@ function home(l) {
   const vids = ['mgkinetic', 'revealvid', 'mglogoreveal', 'turntable', 'mgoutfitreveal', 'splashslow', 'mgserumdrop', 'unboxing', 'mgsneakerpop', 'mgdressflow', 'mgcountdown', 'kithooks'].map((s) => COMMANDS.find((c) => c.slug === s)).filter(Boolean);
   const cats = CATEGORIES.map((c) => `<a class="cat" href="${p.cat(c.id)}"><b>${esc(c[l])}</b><small>${H.n(COMMANDS.filter((x) => x.cat === c.id).length)}</small></a>`).join('');
   const body = `<div class="wrap hero"><h1 class="big">${H.h1}</h1><p class="hline"><span class="hrot" data-hrot="${esc(JSON.stringify(H.hrot))}">${H.hrot[0]}</span></p>
-<div class="choose"><a class="choice ch-copy" href="${p.cmds}">${svg('copy')}<span><b>${H.c1}</b><small>${H.c1s}</small></span></a><a class="choice ch-gen" href="${p.try}">${svg('sparkle')}<span><b>${H.c2}</b><small>${H.c2s(GEN, WELCOME)}</small></span></a></div>
+<div class="choose"><a class="choice ch-copy" href="${p.cmds}">${svg('copy')}<span><b>${H.c1}</b><small>${H.c1s}</small></span></a><a class="choice ch-gen" href="${p.try}">${svg('sparkle')}<span><b>${H.c2}</b><small>${H.c2s(GEN)}</small></span></a></div>
 <form class="hsearch" action="${p.cmds}" role="search">${svg('search')}<input name="q" type="search" placeholder="${esc(H.qph)}" aria-label="${esc(H.qlbl)}" enterkeyhint="search"><button class="btn pri sm" type="submit">${H.qgo}</button></form>
 <div class="hero-stats" id="hero-stats" hidden aria-live="polite"><div class="hstat"><strong class="hstat-n" id="hstat-pv">—</strong><span class="hstat-lbl"><span class="hstat-dot" aria-hidden="true"></span>${H.statPv}</span></div><div class="hstat"><strong class="hstat-n" id="hstat-cp">—</strong><span class="hstat-lbl">${H.statCp}</span></div></div></div>
 <div class="wrap"><div class="sec tight"><h2 id="rail-h">${H.rail}</h2><a class="more" href="${p.cmds}">${H.all.replace('{n}', COMMANDS.length)} ›</a></div>
@@ -518,16 +517,16 @@ function cmdsPage(l) {
   if (l === 'fr') pages.push({ fr: P.fr.cmds, en: P.en.cmds });
 }
 const CATFAQ = {
-  fr: (n, k, g, w) => [[`Comment créer une affiche « ${n} » avec l’IA ?`, `Choisissez une commande ci-dessus. Deux façons : copiez-la gratuitement et collez-la dans ChatGPT ou Gemini avec votre photo, ou touchez « Générer ici » : l’affiche est créée sur SlashAtlas, avec votre prix, votre contact et votre QR code si vous le souhaitez.`],
-    ['Les commandes sont-elles gratuites ?', `Oui : les ${k} commandes de cette catégorie se copient gratuitement. Seule la génération directe sur le site utilise des crédits (1 affiche = ${g} crédits${w ? `, ${w} affiches offertes à la création du compte` : ''}).`],
+  fr: (n, k, g) => [[`Comment créer une affiche « ${n} » avec l’IA ?`, `Choisissez une commande ci-dessus. Deux façons : copiez-la gratuitement et collez-la dans ChatGPT ou Gemini avec votre photo, ou touchez « Générer ici » : l’affiche est créée sur SlashAtlas, avec votre prix, votre contact et votre QR code si vous le souhaitez.`],
+    ['Les commandes sont-elles gratuites ?', `Oui : les ${k} commandes de cette catégorie se copient gratuitement. Seule la génération directe sur le site utilise des crédits (1 affiche = ${g} crédits).`],
     ['Puis-je modifier une commande ?', 'Oui : ouvrez une commande, touchez « Personnaliser », ajoutez vos touches (couleurs, décor, style) et enregistrez-la dans « Mes commandes » pour la réutiliser.']],
-  en: (n, k, g, w) => [[`How do I create a “${n}” poster with AI?`, `Pick a command above. Two ways: copy it for free and paste it into ChatGPT or Gemini with your photo, or tap “Generate here”: the poster is created on SlashAtlas, with your price, contact and QR code if you wish.`],
-    ['Are the commands free?', `Yes: the ${k} commands in this category can be copied for free. Only generating directly on the site uses credits (1 poster = ${g} credits${w ? `, ${w} free posters when you create your account` : ''}).`],
+  en: (n, k, g) => [[`How do I create a “${n}” poster with AI?`, `Pick a command above. Two ways: copy it for free and paste it into ChatGPT or Gemini with your photo, or tap “Generate here”: the poster is created on SlashAtlas, with your price, contact and QR code if you wish.`],
+    ['Are the commands free?', `Yes: the ${k} commands in this category can be copied for free. Only generating directly on the site uses credits (1 poster = ${g} credits).`],
     ['Can I edit a command?', 'Yes: open a command, tap “Customize”, add your touches (colors, setting, style) and save it in “My commands” to reuse it.']],
 };
 function catPage(l, c) {
   const t = T[l].cat, p = P[l];
-  const list = COMMANDS.filter((x) => x.cat === c.id), faq = CATFAQ[l](c[l], list.length, GEN, WELCOME);
+  const list = COMMANDS.filter((x) => x.cat === c.id), faq = CATFAQ[l](c[l], list.length, GEN);
   const body = `<div class="wrap"><div class="crumb"><a href="${p.home}">${T[l].cmd.crumbHome}</a> › <a href="${p.cmds}">${T[l].nav.cmds}</a> › <b>${c[l]}</b></div><h1 class="big sm">${t.h(c[l])}</h1><p class="lead">${c[l + '_d']}</p>${ad('lb', l)}<div class="grid">${list.map((x) => card(x, l)).join('')}</div><div class="cta"><a class="link" href="${p.cmds}">‹ ${t.back}</a></div><div class="sec"><h2>${l === 'fr' ? 'Questions fréquentes' : 'Frequently asked questions'}</h2></div><div class="faq">${faq.map(([q, a]) => `<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join('')}</div></div>`;
   const ld = { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) };
   emit(l, 'cat', p.cat(c.id), { title: t.title(c[l]), desc: c[l + '_d'], body, alt: alt2(P.fr.cat(c.id), P.en.cat(c.id)), ld });
