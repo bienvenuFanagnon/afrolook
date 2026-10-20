@@ -2970,6 +2970,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.4.0"
+  stack_appodeal_flutter:
+    dependency: "direct main"
+    description:
+      name: stack_appodeal_flutter
+      sha256: "92ada55533ae6d4f84bb7d247ca1df99e841e5b5fc0416c3cccebc638c10e68c"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.3.1"
   stack_trace:
     dependency: transitive
     description:

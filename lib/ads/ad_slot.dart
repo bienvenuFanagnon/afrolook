@@ -7,11 +7,16 @@ import 'ad_gate.dart';
 import 'admob_native_pool.dart';
 import 'admob_service.dart';
 import 'admob_widgets.dart';
+import 'appodeal_service.dart';
+import 'appodeal_widgets.dart';
 import 'music_ads.dart';
 
-/// Emplacement publicitaire : pub Afrolook ou pub AdMob, jamais les deux.
+/// Emplacement publicitaire : pub Afrolook ou pub du réseau, jamais les deux.
 ///
-/// - AdMob possible : AdMob, toujours en priorité (fil, détails, commentaires, listes, chroniques…).
+/// Bannières et grand format : Appodeal (médiation, AdMob médié) quand `AppConfig/ads.bannerProvider` vaut `appodeal` (par défaut), sinon AdMob
+/// en direct. Pubs natives : AdMob en direct. Un seul fournisseur est actif à la fois sur un emplacement.
+///
+/// - Réseau possible : le réseau, toujours en priorité (fil, détails, commentaires, listes, chroniques…).
 /// - Une seule des deux disponible : celle-là.
 /// - AdMob ne charge pas : repli sur la pub Afrolook ; sinon rien (aucun trou dans la page).
 /// - Aucun utilisateur Gold (admin excepté) ne voit de pub (voir [AdGate.userSeesAds]).
@@ -91,11 +96,16 @@ class _AdSlotState extends State<AdSlot> {
       ? 'banner'
       : 'native';
 
+  /// Cet emplacement est-il une bannière confiée à Appodeal ?
+  bool get _viaAppodeal => _type == 'banner' && AppodealService.bannersViaAppodeal;
+
   _Mode _decide(UserAuthProvider auth) {
     final user = auth.loginUserData;
     if (!AdGate.userSeesAds(user)) return _Mode.none;
     final ownAvailable = auth.advertisements.isNotEmpty;
-    final admobOk = !_admobFailed && _kindEnabled() && AdGate.canShowType(user, _type);
+    // Bannière Appodeal : mêmes règles d'accès que les autres pubs, mais pas d'identifiant AdMob requis ; tant qu'Appodeal n'est pas prêt, pub Afrolook
+    final admobOk = !_admobFailed && _kindEnabled() &&
+        (_viaAppodeal ? (AdGate.canShowAdmob(user) && AppodealService.ready.value) : AdGate.canShowType(user, _type));
     // AdMob d'abord, partout : la pub Afrolook ne passe que si AdMob n'est pas disponible
     // (désactivé, pas encore chargé, comptes neufs, pas de bloc d'annonce) ou ne charge pas.
     if (admobOk) return _Mode.admob;
@@ -125,9 +135,9 @@ class _AdSlotState extends State<AdSlot> {
   Widget build(BuildContext context) {
     final auth = context.watch<UserAuthProvider>();
     AdmobService.ensureInit();
-    return ValueListenableBuilder<bool>(
-      valueListenable: AdmobService.ready,
-      builder: (context, _, __) {
+    return ListenableBuilder(
+      listenable: Listenable.merge([AdmobService.ready, AppodealService.ready]),
+      builder: (context, _) {
         // Redécide tant que rien n'est affiché (pubs Afrolook ou SDK arrivés après coup)
         if (_mode == null || _mode == _Mode.none) _mode = _decide(auth);
         switch (_mode!) {
@@ -137,11 +147,13 @@ class _AdSlotState extends State<AdSlot> {
             switch (widget.kind) {
               case AdSlotKind.detail:
               case AdSlotKind.groupBanner:
-                return AdmobBannerWidget(onFailed: _onAdmobFailed);
+                return _viaAppodeal ? AppodealBannerWidget(onFailed: _onAdmobFailed) : AdmobBannerWidget(onFailed: _onAdmobFailed);
               case AdSlotKind.detailMrec:
-                return AdmobBannerWidget(mrec: true, onFailed: _onAdmobFailed);
+                return _viaAppodeal ? AppodealBannerWidget(mrec: true, onFailed: _onAdmobFailed) : AdmobBannerWidget(mrec: true, onFailed: _onAdmobFailed);
               case AdSlotKind.musicBanner:
-                return AdmobBannerWidget(unitKey: 'musicBanner', onPaid: MusicAds.paid('banner'), onFailed: _onAdmobFailed);
+                return _viaAppodeal
+                    ? AppodealBannerWidget(onFailed: _onAdmobFailed)
+                    : AdmobBannerWidget(unitKey: 'musicBanner', onPaid: MusicAds.paid('banner'), onFailed: _onAdmobFailed);
               case AdSlotKind.musicList:
                 return AdmobNativeWidget(small: true, unitKey: 'musicNative', onPaid: MusicAds.paid('native'), onFailed: _onAdmobFailed);
               case AdSlotKind.feed:

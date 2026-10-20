@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../ads/ad_config.dart';
-import '../../ads/admob_widgets.dart';
+import '../../ads/ad_banner.dart';
 
 /// Emplacement pub des listes et pages (profils, classements, défis, services…) : AdMob uniquement
 /// (les pubs Afrolook ont leurs propres emplacements). [useBanner] : bannière ; sinon grand format.
@@ -25,6 +25,6 @@ class MrecAdWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (!AdConfig.current.listsNative) return const SizedBox.shrink();
-    return AdmobBannerWidget(mrec: !useBanner);
+    return AdBanner(mrec: !useBanner);
   }
 }

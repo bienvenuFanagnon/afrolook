@@ -120,6 +120,21 @@ class AdConfig {
   bool get rewardedEnabled => _b('rewardedEnabled', true);
   int get rewardedMaxPerDay => _i('rewardedMaxPerDay', 2).clamp(0, 10);
 
+  /// Fournisseur des bannières : `appodeal` (médiation, par défaut) ou `admob` (AdMob en direct : repli sans publier de mise à jour).
+  /// Un seul des deux est actif à la fois. Plein écran, récompensée et natives restent AdMob dans tous les cas.
+  String get bannerProvider => _d['bannerProvider'] == 'admob' ? 'admob' : 'appodeal';
+
+  /// Appodeal sur iPhone : désactivé tant que le Podfile iOS n'a pas été validé sur Mac (voir ios/APPODEAL_IOS.md) ; sur Android, toujours actif.
+  /// Passe à `true` dans Firestore (`appodealIos`) pour l'activer sans publier de mise à jour, une fois la version iOS publiée avec ses pods.
+  bool get appodealIos => _b('appodealIos', false);
+
+  /// Clés d'application Appodeal imposées par Firestore (`appodealKeys.android`, `appodealKeys.ios`) ; vide = clés intégrées à l'application.
+  Map<String, String> get appodealKeys {
+    final k = _d['appodealKeys'];
+    if (k is! Map) return const {};
+    return {for (final e in k.entries) if (e.value is String) '${e.key}': (e.value as String).trim()};
+  }
+
   /// Identifiant d'emplacement : test en développement, sinon Firestore (`units.<plateforme>.<type>`),
   /// sinon (Android) ceux déjà créés. Vide = type indisponible.
   String unit(String type) {

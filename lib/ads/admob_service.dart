@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/model_data.dart';
 import 'ad_config.dart';
 import 'ad_gate.dart';
+import 'appodeal_service.dart';
 
 /// AdMob : consentement, initialisation, pub plein écran et pub récompensée.
 /// Les bannières et pubs natives sont dans admob_widgets.dart.
@@ -49,6 +50,8 @@ class AdmobService {
       ));
       await MobileAds.instance.initialize();
       ready.value = await ConsentInformation.instance.canRequestAds();
+      // Bannières : Appodeal démarre une fois le consentement obtenu (même consentement Google, pas de seconde question)
+      if (ready.value) unawaited(AppodealService.init());
     } catch (e) {
       debugPrint('[Ads] init : $e');
       _started = false;

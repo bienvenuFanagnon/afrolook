@@ -6,6 +6,8 @@
 //        listsNative, interstitialEnabled, interstitialEveryVideos, interstitialMinGapMinutes,
 //        interstitialMaxPerDay, interstitialWarmupMinutes, rewardedEnabled, rewardedMaxPerDay,
 //        units: {android:{banner,native,interstitial,rewarded}, ios:{...}}
+//        bannerProvider: "appodeal" (médiation, par défaut) ou "admob" (AdMob en direct : repli sans publier de mise à jour)
+//        appodealKeys: {android:"…", ios:"…"} (facultatif : sinon les clés intégrées à l'application)
 const admin = require('../../functions/node_modules/firebase-admin');
 admin.initializeApp({ credential: admin.credential.cert(require(process.env.GOOGLE_APPLICATION_CREDENTIALS)), projectId: 'afrolooki' });
 (async () => {

@@ -2,6 +2,8 @@ import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/ads/ad_config.dart';
 import 'package:afrotok/ads/ad_gate.dart';
 import 'package:afrotok/ads/admob_service.dart';
+import 'package:afrotok/ads/appodeal_service.dart';
+import 'package:afrotok/ads/ad_banner.dart';
 import 'package:afrotok/ads/admob_widgets.dart';
 import 'package:afrotok/ads/rewards_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -11,7 +13,7 @@ import 'package:afrotok/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-/// Outils admin AdMob : état de la configuration, inspecteur, essais de chaque format.
+/// Outils admin des publicités : état de la configuration (Appodeal pour les bannières, AdMob pour le reste), inspecteur, essais de chaque format.
 /// (L'admin voit toujours les pubs, même Gold, pour vérifier que tout fonctionne.)
 class AdAdminPage extends StatefulWidget {
   const AdAdminPage({Key? key}) : super(key: key);
@@ -73,7 +75,7 @@ class _AdAdminPageState extends State<AdAdminPage> {
       appBar: AppBar(
         backgroundColor: colors.surface,
         foregroundColor: colors.textPrimary,
-        title: const Text('Publicités AdMob'),
+        title: const Text('Publicités (Appodeal + AdMob)'),
       ),
       body: CenteredContent(
         child: ListView(
@@ -97,6 +99,20 @@ class _AdAdminPageState extends State<AdAdminPage> {
                 row('Emplacement bannière', c.unit('banner').isEmpty ? 'manquant' : 'ok'),
                 row('Emplacement plein écran', c.unit('interstitial').isEmpty ? 'manquant' : 'ok'),
                 row('Emplacement récompensée', c.unit('rewarded').isEmpty ? 'manquant' : 'ok'),
+                const Divider(height: 18),
+                row('Bannières confiées à', AppodealService.bannersViaAppodeal ? 'Appodeal (médiation)' : (c.bannerProvider == 'appodeal' ? 'AdMob direct (Appodeal pas encore activé sur iPhone)' : 'AdMob en direct')),
+                row('Appodeal prêt', AppodealService.ready.value ? 'oui' : 'non'),
+                row('Appodeal : mode', AppodealService.useTestAds ? 'TEST (développement)' : 'PRODUCTION'),
+                row('Appodeal : clé', '…${AppodealService.appKey.substring(AppodealService.appKey.length - 6)}'),
+                row('Bannières chargées / échecs', '${AppodealService.bannerLoaded.value} / ${AppodealService.bannerFailed.value}'),
+                row('Grands formats chargés / échecs', '${AppodealService.mrecLoaded.value} / ${AppodealService.mrecFailed.value}'),
+                if (AppodealService.lastError != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text('Dernière erreur Appodeal : ${AppodealService.lastError}', style: TextStyle(color: colors.warning, fontSize: 12)),
+                  ),
+                const SizedBox(height: 4),
+                Text("Changer de fournisseur sans mise à jour : node tools/ads/set_config.js '{\"bannerProvider\":\"admob\"}' (ou \"appodeal\").", style: TextStyle(color: colors.textSecondary, fontSize: 11.5)),
               ]),
             ),
             const SizedBox(height: 14),
@@ -122,6 +138,7 @@ class _AdAdminPageState extends State<AdAdminPage> {
             btn('Recharger la configuration', () async {
               await RewardsService.loadConfig(force: true);
               await _loadStats();
+              await AppodealService.init();
               await _reload();
             }),
             btn('Ouvrir l\'inspecteur AdMob', AdmobService.openInspector),
@@ -139,7 +156,7 @@ class _AdAdminPageState extends State<AdAdminPage> {
             }),
             const SizedBox(height: 8),
             Text('Essai bannière et native', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
-            const AdmobBannerWidget(),
+            const AdBanner(),
             const AdmobNativeWidget(),
             const SizedBox(height: 12),
             Text(_status, style: TextStyle(color: colors.textSecondary, fontSize: 12)),

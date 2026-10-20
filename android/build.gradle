@@ -26,6 +26,8 @@ allprojects {
         google()
         mavenCentral()
         maven { url 'https://jitpack.io' }
+        // Appodeal (médiation des bannières)
+        maven { url 'https://artifactory.appodeal.com/appodeal' }
     }
 }
 
