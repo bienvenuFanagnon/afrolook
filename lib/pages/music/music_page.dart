@@ -16,6 +16,7 @@ import 'package:provider/provider.dart';
 import '../../ads/ad_slot.dart';
 import '../../ads/music_ads.dart';
 import '../../providers/authProvider.dart';
+import '../../services/music_background.dart';
 import '../../services/music_queue.dart';
 import '../../services/offline_music_service.dart';
 import '../../utils/media_cdn.dart';
@@ -278,6 +279,11 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
             }),
           ),
           IconButton(
+            tooltip: 'Réglages de la lecture',
+            icon: Icon(Icons.tune_rounded, color: c.textPrimary),
+            onPressed: () => _openPlaybackSettings(c),
+          ),
+          IconButton(
             tooltip: 'Espace artiste',
             icon: Icon(Icons.mic_rounded, color: c.primary),
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyArtistSoundsPage())),
@@ -323,6 +329,39 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
       bottomNavigationBar: widget.preview == null && MediaQuery.of(context).size.height >= 700
           ? AdSlot(key: const ValueKey('music_banner'), kind: AdSlotKind.musicBanner, own: () => const AfrolookInlineAd(compact: true), admobFirst: true)
           : null,
+    );
+  }
+
+  /// Réglage de la lecture : musique en arrière-plan (téléphone verrouillé ou autre application ouverte). Désactivé par défaut.
+  void _openPlaybackSettings(AppColors c) {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: c.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 14, 8, 10),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text('Réglages de la lecture', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w900, fontSize: 17)),
+            const SizedBox(height: 6),
+            ValueListenableBuilder<bool>(
+              valueListenable: MusicBackground.enabled,
+              builder: (_, on, __) => SwitchListTile.adaptive(
+                value: on,
+                activeThumbColor: c.primary,
+                onChanged: (v) => MusicBackground.set(v),
+                title: Text('Lecture en arrière-plan', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700)),
+                subtitle: Text(
+                  on
+                      ? 'La musique continue quand tu quittes Afrolook ou verrouilles ton écran.'
+                      : 'La musique se met en pause quand tu quittes Afrolook ou verrouilles ton écran, et reprend à ton retour.',
+                  style: TextStyle(color: c.textSecondary, fontSize: 12.5, height: 1.35),
+                ),
+              ),
+            ),
+          ]),
+        ),
+      ),
     );
   }
 

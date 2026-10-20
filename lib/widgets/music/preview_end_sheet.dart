@@ -17,7 +17,7 @@ import 'vinyl.dart';
 enum PreviewEnd { buy, topup, ad, post, later }
 
 /// Ouvre la feuille. [ctx] doit être sous le Navigator (contexte de page ou de la clé de navigation).
-Future<void> showPreviewEndSheet(BuildContext ctx, MusicTrack t) async {
+Future<void> showPreviewEndSheet(BuildContext ctx, MusicTrack t, {VoidCallback? onClosed}) async {
   final user = Provider.of<UserAuthProvider>(ctx, listen: false).loginUserData;
   final balance = user.giftCoinsBalance ?? 0;
   final r = await showModalBottomSheet<PreviewEnd>(
@@ -26,6 +26,7 @@ Future<void> showPreviewEndSheet(BuildContext ctx, MusicTrack t) async {
     backgroundColor: Colors.transparent,
     builder: (_) => PreviewEndSheet(track: t, balance: balance, canAd: t.sound != null && MusicAds.canOfferRewarded(user)),
   );
+  onClosed?.call(); // la feuille est fermée : le bouton « Débloquer » redevient actif même si l'achat ou la pub qui suit dure
   if (r == null || r == PreviewEnd.later || !ctx.mounted) return;
   final s = t.sound;
   switch (r) {

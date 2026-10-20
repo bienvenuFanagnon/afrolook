@@ -1,3 +1,4 @@
+import '../post_video_format_tel_details.dart';
 import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -173,7 +174,8 @@ class _ModerationReportsPageState extends State<ModerationReportsPage> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Publication déjà supprimée.')));
       return;
     }
-    Navigator.push(context, MaterialPageRoute(builder: (_) => DetailsPost(post: Post.fromJson(doc.data()!))));
+    final post = Post.fromJson(doc.data()!);
+    Navigator.push(context, MaterialPageRoute(builder: (_) => post.dataType == PostDataType.VIDEO.name ? PostDetailsVideoFormatTel(initialPost: post, isIn: false) : DetailsPost(post: post)));
   }
 
   Future<void> _openProfile(String userId) async {

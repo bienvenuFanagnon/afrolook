@@ -34,6 +34,7 @@ import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../../theme/app_colors.dart';
 import '../postDetails.dart';
+import '../post_video_format_tel_details.dart';
 import '../userPosts/userPostForm.dart';
 import '../../services/offline_music_service.dart';
 import 'artist_sound_common.dart';
@@ -1228,8 +1229,24 @@ class _HatchPainter extends CustomPainter {
 
 /// Achat d'un titre : annonce le prix, la part de l'artiste et le solde ; recharge proposée si le solde est insuffisant.
 /// Renvoie true si le titre est maintenant dans la bibliothèque.
+final Set<String> _buyingTracks = <String>{};
+
 Future<bool> buyTrack(BuildContext context, ArtistSound s) async {
   final c = AppColors.of(context);
+  // déjà dans la bibliothèque (ou achat en cours) : jamais de deuxième paiement ni de nouvelle confirmation
+  if (MusicQueue.ownedIds.value.contains(s.id)) {
+    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ce titre est déjà dans ta bibliothèque.')));
+    return true;
+  }
+  if (!_buyingTracks.add(s.id)) return false;
+  try {
+    return await _buyTrackConfirmed(context, s, c);
+  } finally {
+    _buyingTracks.remove(s.id);
+  }
+}
+
+Future<bool> _buyTrackConfirmed(BuildContext context, ArtistSound s, AppColors c) async {
   final me = Provider.of<UserAuthProvider>(context, listen: false).loginUserData;
   final balance = me.giftCoinsBalance ?? 0;
   final price = s.saleCoins;
@@ -1962,7 +1979,9 @@ class _SoundPostsSectionState extends State<SoundPostsSection> {
         borderRadius: BorderRadius.circular(12),
         onTap: () async {
           await SoundPreview.stop();
-          if (context.mounted) Navigator.push(context, MaterialPageRoute(builder: (_) => DetailsPost(post: p)));
+          if (!context.mounted) return;
+          // une vidéo s'ouvre dans la page des vidéos, une image / un texte dans la page des posts (comme partout dans l'application)
+          Navigator.push(context, MaterialPageRoute(builder: (_) => isVideo ? PostDetailsVideoFormatTel(initialPost: p, isIn: false) : DetailsPost(post: p)));
         },
         child: Container(
           padding: const EdgeInsets.all(8),

@@ -26,12 +26,9 @@ class SoundCountries {
     return 1;
   }
 
-  /// Un titre est montré à une personne si ses pays contiennent le sien, ou « tous ». Les anciens titres (sans liste) sont pour tous.
-  /// Son propre titre et ceux qu'on a achetés restent toujours visibles.
-  static bool visible(List<String> countries, String? viewerCountry) {
-    if (countries.isEmpty || countries.contains('ALL')) return true;
-    return viewerCountry != null && countries.contains(viewerCountry.toUpperCase());
-  }
+  /// Un titre validé est montré à tout le monde, quels que soient les pays choisis par l'artiste : les pays ne servent qu'à classer
+  /// (les titres visés pour le pays de la personne passent devant, voir [rank]).
+  static bool visible(List<String> countries, String? viewerCountry) => true;
 
   /// Rang d'affichage : les titres visés précisément pour le pays de la personne passent avant ceux pour tous.
   static int rank(List<String> countries, String? viewerCountry) =>
@@ -75,7 +72,14 @@ class SoundCountries {
     }
   }
 
-  static String? viewerCountry(BuildContext context) => homeOf(Provider.of<UserAuthProvider>(context, listen: false).loginUserData);
+  /// Valeur spéciale du « pays du spectateur » pour l'administrateur : il voit tous les titres (sinon il ne voit que ceux de son pays,
+  /// et les titres déposés par des artistes d'autres pays semblent absents).
+  static const String allCountries = '*';
+
+  static String? viewerCountry(BuildContext context) {
+    final u = Provider.of<UserAuthProvider>(context, listen: false).loginUserData;
+    return u.role == UserRole.ADM.name ? allCountries : homeOf(u);
+  }
 
   /// Filtre et classe des titres pour la personne : pays visés d'abord ; son propre titre est toujours montré.
   static List<T> forViewer<T>(Iterable<T> items, {required List<String> Function(T) countries, required String Function(T) owner, required String? viewerCountry}) {

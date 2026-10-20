@@ -179,10 +179,27 @@ class MusicQueue {
     if (u == null) return;
     _ownedSub = FirebaseFirestore.instance.collection('MusicLibrary').where('uid', isEqualTo: u.uid).snapshotsM('music_queue.dart:179').listen((s) {
       ownedIds.value = {for (final d in s.docs) '${d.data()['soundId']}'};
+      unawaited(_upgradeIfOwned());
     }, onError: (_) {});
   }
 
   static bool isOwned(MusicTrack t) => t.owned || ownedIds.value.contains(t.id);
+
+  /// Le titre en cours vient d'être acheté alors qu'on n'en écoutait que l'extrait : lecture du titre complet, là où l'extrait s'était arrêté,
+  /// sans redemander l'achat et sans repartir sur l'extrait gratuit.
+  static bool _upgrading = false;
+  static Future<void> _upgradeIfOwned() async {
+    final t = current.value;
+    if (_upgrading || t == null || !t.isArtist || !isOwned(t) || !(previewMode.value || previewEnded.value)) return;
+    _upgrading = true;
+    try {
+      final pos = previewEnded.value ? Duration.zero : _lastPos;
+      final ok = await _startCurrent(interstitial: false);
+      if (ok && pos.inSeconds > 2 && current.value?.key == t.key) await SoundPreview.seek(pos);
+    } finally {
+      _upgrading = false;
+    }
+  }
 
   // ── Lancer ──
 
@@ -215,7 +232,11 @@ class MusicQueue {
 
   static const streamAfterSeconds = 10;
 
+  static Duration _lastPos = Duration.zero;
+
   static void _onPosition(Duration p) {
+    final cur = current.value;
+    if (cur != null && SoundPreview.playing.value == cur.key) _lastPos = p;
     if (p.inSeconds < streamAfterSeconds) return;
     final t = current.value;
     if (t == null || _streamCountedKey == t.key) return;

@@ -12,6 +12,7 @@ import '../../pages/music/music_page.dart';
 import '../../pages/studio/artist_marketplace.dart';
 import '../../pages/studio/artist_sound_common.dart';
 import '../../providers/authProvider.dart';
+import '../../services/music_background.dart';
 import '../../services/music_queue.dart';
 import '../../services/music_voice.dart';
 import '../../services/nav_cache_service.dart';
@@ -93,6 +94,9 @@ class _MusicOverlayHostState extends State<MusicOverlayHost> with WidgetsBinding
   MusicTrack? _pendingEnd;
   bool _resumed = true;
   bool _sheetOpen = false;
+  /// Jeton de mise en pause « application en arrière-plan » (réglage de lecture en arrière-plan désactivé).
+  final Object _bgToken = Object();
+  bool _bgSuspended = false;
   double _lift = 0; // décalage vertical choisi par la personne (glisser la capsule)
 
   BuildContext? get _navCtx => NavigationCacheService().navigatorKey.currentContext;
@@ -102,6 +106,7 @@ class _MusicOverlayHostState extends State<MusicOverlayHost> with WidgetsBinding
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     MusicQueue.start();
+    unawaited(MusicBackground.load());
     MusicQueue.interstitialHook = () async {
       final ctx = _navCtx;
       if (ctx == null) return;
@@ -124,6 +129,15 @@ class _MusicOverlayHostState extends State<MusicOverlayHost> with WidgetsBinding
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _resumed = state == AppLifecycleState.resumed;
+    // Lecture en arrière-plan : seulement si la personne l'a autorisée (réglage, désactivé par défaut). Sinon la musique se met en pause dès que
+    // l'application est quittée ou l'écran verrouillé, et reprend toute seule à son retour. (« inactive » = simple interruption : on ne touche à rien.)
+    if (state == AppLifecycleState.paused && !MusicBackground.enabled.value && !_bgSuspended) {
+      _bgSuspended = true;
+      MusicQueue.suspend(_bgToken);
+    } else if (state == AppLifecycleState.resumed && _bgSuspended) {
+      _bgSuspended = false;
+      MusicQueue.release(_bgToken);
+    }
     if (_resumed && _pendingEnd != null) {
       final t = _pendingEnd!;
       _pendingEnd = null;
@@ -132,6 +146,7 @@ class _MusicOverlayHostState extends State<MusicOverlayHost> with WidgetsBinding
   }
 
   void _onEnd(MusicTrack t) {
+    if (MusicQueue.isOwned(t)) return; // déjà acheté : rien à proposer
     if (!_resumed) {
       _pendingEnd = t; // l'extrait s'est terminé en arrière-plan : on propose le titre au retour
       return;
@@ -139,15 +154,31 @@ class _MusicOverlayHostState extends State<MusicOverlayHost> with WidgetsBinding
     _openSheet(t);
   }
 
+  /// Toucher « Débloquer » : titre déjà acheté → lecture complète tout de suite ; sinon la feuille propose l'achat (avec confirmation).
   Future<void> _openSheet(MusicTrack t) async {
+    if (MusicQueue.isOwned(t) || t.isMine) {
+      unawaited(MusicQueue.playTrack(t, interstitial: false));
+      return;
+    }
     final ctx = _navCtx;
-    if (ctx == null || _sheetOpen || !ctx.mounted) return;
+    if (_sheetOpen) return;
+    if (ctx == null || !ctx.mounted) {
+      _toast('Réessaie dans un instant.');
+      return;
+    }
     _sheetOpen = true;
     try {
-      await showPreviewEndSheet(ctx, t);
+      await showPreviewEndSheet(ctx, t, onClosed: () => _sheetOpen = false);
+    } catch (_) {
+      _toast('Impossible d’ouvrir l’achat pour le moment. Réessaie.');
     } finally {
       _sheetOpen = false;
     }
+  }
+
+  void _toast(String m) {
+    final ctx = _navCtx;
+    if (ctx != null && ctx.mounted) ScaffoldMessenger.maybeOf(ctx)?.showSnackBar(SnackBar(content: Text(m)));
   }
 
   void _onError() {
