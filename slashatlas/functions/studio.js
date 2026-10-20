@@ -34,8 +34,9 @@ const PACKS = [
   { id: 'p55', credits: 606, xof: 3900, usd: 6.5, tag: 'popular' }, // 101 affiches
   { id: 'p160', credits: 1740, xof: 11000, usd: 18.5 }, // 290 affiches
 ];
-// Affiches offertes à la création du compte (une seule fois par compte Google).
-const WELCOME_CREDITS = 12;
+// Cadeau de bienvenue SUPPRIMÉ le 20 octobre 2026 (0 = aucun crédit offert à l'inscription) : à 28 F l'image réelle, 2 affiches offertes coûtaient 56 F par
+// inscrit et ne se rentabilisaient qu'avec 1 acheteur sur 3. Les comptes déjà créés gardent leurs crédits. Pour le rétablir : mettre un nombre de crédits ici.
+const WELCOME_CREDITS = 0;
 // Pass « sans pub » : 30 jours sans publicité sur tout le site. Prix affiché en dollars (usd), payé en FCFA par mobile money (xof) ou en dollars par carte ; frais de paiement en plus, comme pour les crédits.
 const PASS = { id: 'nopub', days: 30, xof: 1000, usd: 1.7, pass: true };
 const findPack = (id) => PACKS.find((p) => p.id === id) || (id === PASS.id ? PASS : null);
@@ -133,8 +134,10 @@ async function me(u, opts = {}) {
     await stat.set({ day: day() }, { merge: true });
     await stat.update({ accounts: FieldValue.increment(1) });
     if (wanted) await attachReferrer(u, wanted).catch((e) => console.error('referral attach', e && e.message));
-    const w = await addCredits(u.uid, WELCOME_CREDITS, 'welcome', u.uid).catch((e) => { console.error('welcome', e && e.message); return null; });
-    if (w && w.applied) data.credits = (data.credits || 0) + WELCOME_CREDITS;
+    if (WELCOME_CREDITS > 0) {
+      const w = await addCredits(u.uid, WELCOME_CREDITS, 'welcome', u.uid).catch((e) => { console.error('welcome', e && e.message); return null; });
+      if (w && w.applied) data.credits = (data.credits || 0) + WELCOME_CREDITS;
+    }
   }
   const code = await ensureRefCode(u.uid);
   return { uid: u.uid, email: u.email, name: u.name || data.name || '', credits: data.credits || 0, adFreeUntil: data.adFreeUntil || 0, created, refCode: code };

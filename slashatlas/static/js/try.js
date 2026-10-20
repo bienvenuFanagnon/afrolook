@@ -10,7 +10,7 @@
       login: 'Continuer avec Google', loginNote: 'Connexion rapide avec votre compte Google. Si vous avez déjà un compte, vous êtes simplement reconnecté.',
       tabImage: 'Image', tabVideo: 'Vidéo', tabNew: 'Nouveau', vLoginTitle: 'Créez une vidéo publicitaire pour votre produit', vLoginText: 'Animations, musique et voix off facultative, à partir de vos photos. Connectez-vous pour commencer.',
       tabImage: 'Image', tabVideo: 'Vidéo', tabNew: 'Nouveau', vLoginTitle: 'Créez une vidéo publicitaire pour votre produit', vLoginText: 'Animations, musique et voix off facultative, à partir de vos photos. Connectez-vous pour commencer.',
-      hello: 'Bonjour', back: 'Content de vous revoir', welcome: 'Compte créé', credits: 'crédits', posters: 'affiches', welcomeNote: '{w} affiches offertes à la création du compte', credit: 'crédit', buy: 'Acheter des crédits', logout: 'Se déconnecter',
+      hello: 'Bonjour', back: 'Content de vous revoir', welcome: 'Compte créé', credits: 'crédits', posters: 'affiches', credit: 'crédit', buy: 'Acheter des crédits', logout: 'Se déconnecter',
       cmd: 'Commande', change: 'Changer', photos: 'Vos photos', photosHint: 'Jusqu’à 3 photos (un ou plusieurs produits). JPG, PNG ou WebP.', add: 'Ajouter une photo', remove: 'Retirer',
       prodLabel: { product: 'Votre produit', dish: 'Votre plat', person: 'Sur la photo', place: 'Votre bien' }, prodPh: 'ex. crème visage, 3 bouteilles de jus', single: 'Un seul', several: 'Plusieurs',
       scene: 'Mise en scène', sceneHint: 'Décrivez le fond, l\u2019ambiance ou comment composer la scène. Facultatif.', scenePh: 'ex. fond de marché africain, la personne porte le vêtement, ambiance coucher de soleil', sceneChips: ['Porter le vêtement', 'Fond marché africain', 'Studio blanc épuré', 'Ambiance coucher de soleil', 'Avant / Après'],
@@ -30,7 +30,7 @@
     en: {
       login: 'Continue with Google', loginNote: 'Quick sign-in with your Google account. If you already have an account, you are simply signed back in.',
       tabImage: 'Image', tabVideo: 'Video', tabNew: 'New', vLoginTitle: 'Create a video ad for your product', vLoginText: 'Animations, music and optional voice-over, from your photos. Sign in to get started.',
-      hello: 'Hello', back: 'Welcome back', welcome: 'Account created', credits: 'credits', posters: 'posters', welcomeNote: '{w} free posters when you create your account', credit: 'credit', buy: 'Buy credits', logout: 'Sign out',
+      hello: 'Hello', back: 'Welcome back', welcome: 'Account created', credits: 'credits', posters: 'posters', credit: 'credit', buy: 'Buy credits', logout: 'Sign out',
       cmd: 'Command', change: 'Change', photos: 'Your photos', photosHint: 'Up to 3 photos (one or several products). JPG, PNG or WebP.', add: 'Add a photo', remove: 'Remove',
       prodLabel: { product: 'Your product', dish: 'Your dish', person: 'In the photo', place: 'Your property' }, prodPh: 'e.g. face cream, 3 juice bottles', single: 'Single', several: 'Several',
       scene: 'Scene setup', sceneHint: 'Describe the background, mood or how the scene should be composed. Optional.', scenePh: 'e.g. African market backdrop, person wears the outfit, sunset mood', sceneChips: ['Wear the outfit', 'African market backdrop', 'Clean white studio', 'Sunset mood', 'Before / After'],

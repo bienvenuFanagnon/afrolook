@@ -337,7 +337,7 @@ const HOME = {
     h1: 'Votre photo devient une affiche pro.',
     hrot: ['Copiez la commande, collez-la dans ChatGPT ou Gemini.', 'Ou générez l’affiche ici, prête à poster.', 'Robes, gloss, mèches, plats, concerts…', 'Prix, contact et QR code ajoutés pour vous.'],
     sub: 'Choisissez une commande toute prête : copiez-la gratuitement pour votre outil IA, ou générez l’affiche directement ici, à partir de votre photo.',
-    c1: 'Copier une commande', c1s: 'Gratuit · ChatGPT, Gemini…', c2: 'Générer ici', c2s: (g, w) => `1 affiche = ${g} crédits · ${w} offertes`,
+    c1: 'Copier une commande', c1s: 'Gratuit · ChatGPT, Gemini…', c2: 'Générer ici', c2s: (g, w) => (w ? `1 affiche = ${g} crédits · ${w} offertes` : `1 affiche = ${g} crédits`),
     qph: 'Robe, gloss, burger, concert…', qlbl: 'Que voulez-vous créer ?', qgo: 'Chercher',
     steps: [['Copiez', 'une commande gratuite'], ['Collez', 'dans votre outil IA'], ['Publiez', 'votre visuel pro']],
     rail: 'Commandes phares', favs: 'Vos favoris', favAll: 'Mes commandes', tabSel: 'À la une', tabNew: 'Nouveautés', tabVid: 'Vidéos', copy: 'Copier', cats: 'Par métier', all: 'Voir les {n} commandes', n: (k) => `${k} commandes`,
@@ -349,7 +349,7 @@ const HOME = {
     h1: 'Your photo becomes a pro poster.',
     hrot: ['Copy the command, paste it into ChatGPT or Gemini.', 'Or generate the poster here, ready to post.', 'Dresses, lip gloss, hair, dishes, concerts…', 'Price, contact and QR code added for you.'],
     sub: 'Pick a ready-made command: copy it for free for your AI tool, or generate the poster right here, from your photo.',
-    c1: 'Copy a command', c1s: 'Free · ChatGPT, Gemini…', c2: 'Generate here', c2s: (g, w) => `1 poster = ${g} credits · ${w} free`,
+    c1: 'Copy a command', c1s: 'Free · ChatGPT, Gemini…', c2: 'Generate here', c2s: (g, w) => (w ? `1 poster = ${g} credits · ${w} free` : `1 poster = ${g} credits`),
     qph: 'Dress, lip gloss, burger, concert…', qlbl: 'What do you want to create?', qgo: 'Search',
     steps: [['Copy', 'a free command'], ['Paste', 'into your AI tool'], ['Publish', 'your pro visual']],
     rail: 'Top commands', favs: 'Your favorites', favAll: 'My commands', tabSel: 'Featured', tabNew: 'New', tabVid: 'Videos', copy: 'Copy', cats: 'By trade', all: 'See all {n} commands', n: (k) => `${k} commands`,
@@ -519,10 +519,10 @@ function cmdsPage(l) {
 }
 const CATFAQ = {
   fr: (n, k, g, w) => [[`Comment créer une affiche « ${n} » avec l’IA ?`, `Choisissez une commande ci-dessus. Deux façons : copiez-la gratuitement et collez-la dans ChatGPT ou Gemini avec votre photo, ou touchez « Générer ici » : l’affiche est créée sur SlashAtlas, avec votre prix, votre contact et votre QR code si vous le souhaitez.`],
-    ['Les commandes sont-elles gratuites ?', `Oui : les ${k} commandes de cette catégorie se copient gratuitement. Seule la génération directe sur le site utilise des crédits (1 affiche = ${g} crédits, ${w} affiches offertes à la création du compte).`],
+    ['Les commandes sont-elles gratuites ?', `Oui : les ${k} commandes de cette catégorie se copient gratuitement. Seule la génération directe sur le site utilise des crédits (1 affiche = ${g} crédits${w ? `, ${w} affiches offertes à la création du compte` : ''}).`],
     ['Puis-je modifier une commande ?', 'Oui : ouvrez une commande, touchez « Personnaliser », ajoutez vos touches (couleurs, décor, style) et enregistrez-la dans « Mes commandes » pour la réutiliser.']],
   en: (n, k, g, w) => [[`How do I create a “${n}” poster with AI?`, `Pick a command above. Two ways: copy it for free and paste it into ChatGPT or Gemini with your photo, or tap “Generate here”: the poster is created on SlashAtlas, with your price, contact and QR code if you wish.`],
-    ['Are the commands free?', `Yes: the ${k} commands in this category can be copied for free. Only generating directly on the site uses credits (1 poster = ${g} credits, ${w} free posters when you create your account).`],
+    ['Are the commands free?', `Yes: the ${k} commands in this category can be copied for free. Only generating directly on the site uses credits (1 poster = ${g} credits${w ? `, ${w} free posters when you create your account` : ''}).`],
     ['Can I edit a command?', 'Yes: open a command, tap “Customize”, add your touches (colors, setting, style) and save it in “My commands” to reuse it.']],
 };
 function catPage(l, c) {
