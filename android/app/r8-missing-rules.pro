@@ -6,3 +6,7 @@
 # numéro de téléphone, que l'application n'appelle pas. R8 refusait donc de compiler (« Missing class »).
 # Liste produite par Gradle (missing_rules.txt), regroupée en une ligne.
 -dontwarn com.google.android.gms.auth.api.credentials.**
+
+# Adaptateur Meta (Audience Network) d'Appodeal : il mentionne des annotations de compilation (Nullsafe) absentes de l'application ;
+# ce ne sont que des annotations, sans effet à l'exécution. Liste produite par Gradle (missing_rules.txt).
+-dontwarn com.facebook.infer.annotation.**
