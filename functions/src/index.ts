@@ -81,3 +81,4 @@ export * from "./news/admin";
 export { onNewsCommentCreated } from "./news/engagement";
 export { newsPipelineTick, newsRunPipeline, newsSourcesTest } from "./news/schedule";
 export { newsCleanup } from "./news/cleanup";
+export { newsDigestTick, newsBuildDigests } from "./news/digest";

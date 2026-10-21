@@ -91,7 +91,7 @@ export function validateSummary(raw: unknown, ctx: { sourcesText: string; refs: 
   const notifRaw = (j["notif"] && typeof j["notif"] === "object" ? j["notif"] : null) as Record<string, unknown> | null;
   const notif = notifRaw ? { titre: String(notifRaw["titre"] ?? "").trim(), corps: String(notifRaw["corps"] ?? "").trim() } : null;
 
-  if (!str(titre, 25, 120)) errors.push("titre_longueur");
+  if (!str(titre, 25, 130)) errors.push("titre_longueur");
   if (!str(chapo, 60, 300)) errors.push("chapo_longueur");
   if (sections.length < 2 || sections.length > 4) errors.push("sections_nombre");
   if (sections.some((s) => !str(s.titre, 3, 70) || !str(s.texte, 120, 750))) errors.push("section_longueur");

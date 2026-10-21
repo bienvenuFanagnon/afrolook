@@ -52,6 +52,7 @@ export async function runNewsCleanup(nowMs = Date.now()): Promise<Record<string,
   out["Compteurs"] = await purge("NewsRuns", "day", iso(nowMs - 30 * DAY_MS));
   out["Consommation IA"] = await purge("NewsBudget", "day", compact(nowMs - 30 * DAY_MS));
   out["Plafonds de notifications"] = await purge("NewsPushDaily", "updatedAt", nowMs - 30 * DAY_MS);
+  out["Résumés périmés"] = await purge("NewsDigests", "expireAt", nowMs);
 
   // articles arrivés à échéance, puis garde-fou sur les plus de 45 jours (y compris sans date de fin)
   const [due, old] = await Promise.all([

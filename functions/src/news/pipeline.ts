@@ -239,13 +239,14 @@ export async function runNewsPipeline(opts: RunOpts = {}): Promise<PipelineRepor
       for (const t of plan) {
         if (quotaFlag.hit) break;
         const res = await summarizeTopic(t, { model: chooseModel(used), nowMs: now, quotaFlag, countryName: null });
-        used += res.ai?.neurons ?? 0;
+        used += res.neurons ?? res.ai?.neurons ?? 0;
         const title = t.items[0].titre.slice(0, 110);
         const hashes = t.items.map((i) => linkHash(i.lien));
         if (!res.ok || !res.input) {
           const reason = res.error ?? (res.errors ?? []).join(", ");
           report.failed.push({ title, reason });
-          if (!quotaFlag.hit) await markSeen(hashes, { status: "failed", retryAfter: now + 12 * 3600_000 }, now);
+          // texte refusé : 4 h avant de retenter (une autre source peut rejoindre le sujet) ; erreur de l'IA ou du réseau : 1 h
+          if (!quotaFlag.hit) await markSeen(hashes, { status: "failed", retryAfter: now + (res.errors?.length ? 4 : 1) * 3600_000 }, now);
           await logNews({ kind: "collect", ok: false, message: `Résumé refusé : ${title} (${reason})`.slice(0, 240) });
           continue;
         }

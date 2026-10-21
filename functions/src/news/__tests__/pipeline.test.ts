@@ -6,7 +6,7 @@ import { parseFeed } from "../rss";
 import { parsePreview, publicHttps } from "../pagePreview";
 import { RawItem, Topic, buildTopics, classify, clusterItems, detectCountry, linkHash, scopeOf, titleTokens, similar } from "../cluster";
 import { copiedRun, inventedNumbers, unknownNames, validateSummary } from "../validate";
-import { summarizeTopic } from "../summarize";
+import { fixHint, summarizeTopic } from "../summarize";
 import { chooseModel, planSelection, readPipelineConfig, readSource, topicKey } from "../pipeline";
 import { activeSources, DEFAULT_SOURCES } from "../sources";
 import { cleanNewsInput } from "../model";
@@ -172,10 +172,35 @@ describe("résumé d'un sujet", () => {
     expect(clean.value.notif?.title).toBe("Éperviers : la liste est tombée");
     expect((run.mock.calls[0] as unknown as unknown[])[0]).toEqual(expect.arrayContaining([expect.objectContaining({ role: "system" })]));
   });
-  test("texte refusé : erreurs renvoyées, rien à publier", async () => {
-    const r = await summarizeTopic(topic(), { run: ai("n'importe quoi") as never });
+  test("texte refusé deux fois : erreurs renvoyées, rien à publier, les deux appels comptés", async () => {
+    const run = ai("n'importe quoi");
+    const r = await summarizeTopic(topic(), { run: run as never });
     expect(r.ok).toBe(false);
     expect(r.errors).toEqual(["json_invalide"]);
+    expect(r.retried).toBe(true);
+    expect(run).toHaveBeenCalledTimes(2);
+    expect(r.neurons).toBe(300);
+  });
+  test("premier texte refusé : un second essai guidé par l'erreur le rattrape", async () => {
+    const run = jest.fn()
+      .mockResolvedValueOnce({ text: '{"titre": "coupé', neurons: 100, accountId: "a".repeat(32), model: "m", ms: 5 })
+      .mockResolvedValueOnce({ text: JSON.stringify(GOOD), neurons: 120, accountId: "a".repeat(32), model: "m", ms: 5 });
+    const r = await summarizeTopic(topic(), { run: run as never });
+    expect(r.ok).toBe(true);
+    expect(r.retried).toBe(true);
+    expect(r.neurons).toBe(220);
+    const secondCall = (run.mock.calls[1] as unknown as [Array<{ role: string; content: string }>])[0];
+    expect(secondCall.slice(-2).map((m) => m.role)).toEqual(["assistant", "user"]);
+    expect(secondCall[secondCall.length - 1].content).toContain("json_invalide");
+  });
+  test("consigne de correction : une phrase par erreur", () => {
+    expect(fixHint(["texte_recopie:a b c", "nom_invente:Karim,Zidane", "titre_longueur"])).toMatch(/Reformule entièrement.*Retire les noms.*Karim,Zidane.*40 et 100/);
+  });
+  test("une erreur de l'IA n'entraîne pas de second essai", async () => {
+    const run = jest.fn(async () => { throw new Error("réseau"); });
+    const r = await summarizeTopic(topic(), { run: run as never });
+    expect(r.ok).toBe(false);
+    expect(run).toHaveBeenCalledTimes(1);
   });
   test("quota : le passage est signalé comme arrêté", async () => {
     const quota = Object.assign(new Error("plafond"), { code: "quota" });
@@ -226,10 +251,12 @@ describe("réglages", () => {
   });
   test("sources : actives par défaut, réglages par source, sources ajoutées validées", () => {
     const ids = (c: Parameters<typeof activeSources>[0]) => activeSources(c).map((s) => s.id);
-    expect(ids({})).toContain("rfi_afrique");
+    expect(ids({})).toContain("africanews_fr");
+    expect(ids({})).not.toContain("rfi_afrique"); // RFI refuse nos serveurs (403) : désactivé par défaut
     expect(ids({})).not.toContain("jeuneafrique");
-    expect(ids({ sourcesOn: { jeuneafrique: true, rfi_afrique: false } })).toEqual(expect.arrayContaining(["jeuneafrique"]));
-    expect(ids({ sourcesOn: { rfi_afrique: false } })).not.toContain("rfi_afrique");
+    expect(ids({ sourcesOn: { jeuneafrique: true, africanews_fr: false } })).toEqual(expect.arrayContaining(["jeuneafrique"]));
+    expect(ids({ sourcesOn: { africanews_fr: false } })).not.toContain("africanews_fr");
+    expect(ids({ sourcesOn: { rfi_afrique: true } })).toContain("rfi_afrique");
     expect(ids({ customSources: [{ id: "togofirst", name: "Togo First", url: "https://www.togofirst.com/fr/rss", category: "politique" }, { id: "x", url: "http://non.https" }] })).toContain("togofirst");
     expect(ids({ customSources: [{ id: "x", url: "http://non.https" }] })).not.toContain("x");
   });

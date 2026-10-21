@@ -430,7 +430,7 @@ class _NewsAdminPageState extends State<NewsAdminPage> {
               dense: true,
               contentPadding: EdgeInsets.zero,
               title: Text('Génération automatique (toutes les 2 heures)', style: TextStyle(color: c.textPrimary, fontSize: 13)),
-              subtitle: Text('Désactivée : rien n\'est publié tant que tu ne l\'actives pas. Plafonds : 60 articles par jour, 2 par agent et périmètre.', style: TextStyle(color: c.textSecondary, fontSize: 11.5)),
+              subtitle: Text(_pipelineEnabled ? 'Activée : un passage toutes les 2 heures. Plafonds : 60 articles par jour, 2 par agent et périmètre.' : 'Désactivée : rien n\'est publié tant que tu ne l\'actives pas.', style: TextStyle(color: c.textSecondary, fontSize: 11.5)),
               value: _pipelineEnabled,
               onChanged: (v) => _setConfig({'pipelineEnabled': v}),
             ),

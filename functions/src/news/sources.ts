@@ -2,7 +2,7 @@
  * Sources d'actualités : flux RSS publics. `category` fixe le domaine quand le flux est thématique ; `null` = flux général, classé par mots-clés.
  * `region` : « africa » pour une source africaine (un article sans pays reconnu part au niveau continent), « world » pour le reste.
  * `active` : état de départ, modifiable dans l'administration (AppConfig/news.sourcesOn : { id: true|false }).
- * Les flux marqués actifs ont été lus avec succès (RFI, Africanews, Le Monde, Culturebene) ou viennent de PronoFlash (sport). Les autres sont
+ * Les flux marqués actifs ont été lus avec succès depuis le serveur (Africanews, Le Monde) ou viennent de PronoFlash (sport) ; RFI refuse nos serveurs (403). Les autres sont
  * proposés désactivés : le bouton « Tester les sources » de l'administration les essaie depuis le serveur, on active ceux qui répondent.
  */
 export type NewsCategory = "sport" | "politique" | "culture" | "musique" | "tech" | "voyage";
@@ -22,10 +22,11 @@ const S = (id: string, name: string, url: string, lang: "fr" | "en", category: N
 
 export const DEFAULT_SOURCES: NewsSourceDef[] = [
   // ── lus avec succès ──
-  S("rfi_afrique", "RFI", "https://www.rfi.fr/fr/afrique/rss", "fr", null, "africa", true),
-  S("rfi_monde", "RFI", "https://www.rfi.fr/fr/rss", "fr", null, "world", true),
-  S("rfi_sport", "RFI Sport", "https://www.rfi.fr/fr/sport/rss", "fr", "sport", "world", true),
-  S("rfi_culture", "RFI Culture", "https://www.rfi.fr/fr/culture/rss", "fr", "culture", "world", true),
+  // RFI répond depuis un ordinateur mais refuse (403) les serveurs d'Afrolook : désactivé par défaut, à réactiver si le test des sources passe
+  S("rfi_afrique", "RFI", "https://www.rfi.fr/fr/afrique/rss", "fr", null, "africa", false),
+  S("rfi_monde", "RFI", "https://www.rfi.fr/fr/rss", "fr", null, "world", false),
+  S("rfi_sport", "RFI Sport", "https://www.rfi.fr/fr/sport/rss", "fr", "sport", "world", false),
+  S("rfi_culture", "RFI Culture", "https://www.rfi.fr/fr/culture/rss", "fr", "culture", "world", false),
   S("africanews_fr", "Africanews", "https://fr.africanews.com/feed/rss", "fr", null, "africa", true),
   S("africanews_politics", "Africanews", "https://www.africanews.com/feed/rss?themes=politics", "en", "politique", "africa", true),
   S("africanews_sport", "Africanews", "https://www.africanews.com/feed/rss?themes=sport", "en", "sport", "africa", true),
