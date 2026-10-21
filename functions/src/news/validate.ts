@@ -1,4 +1,4 @@
-import { strip } from "./cluster";
+import { COUNTRY_KEYWORDS, strip } from "./cluster";
 
 /**
  * Garde-fous d'un résumé écrit par l'IA (portés de PronoFlash) : il n'est publié que s'il passe TOUTES ces vérifications.
@@ -20,7 +20,18 @@ const MONTHS_DAYS = /^(?:lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche|jan
 const WORD = /\p{Lu}[\p{L}'’-]{3,}/gu;
 const FR_WORDS = /(?<!\p{L})(?:le|la|les|un|une|des|de|du|et|en|à|au|aux|est|sont|avec|pour|sur|dans|qui|que|ne|pas|plus|se|son|sa|ses|ont|a)(?!\p{L})/giu;
 const EN_WORDS = /(?<!\p{L})(?:the|and|with|their|have|has|are|is|will|this|that|from|of|to|in|a|an|at|for|by)(?!\p{L})/giu;
-const CLICKBAIT = /(?<!\p{L})(?:incroyable|choquant|vous n'?allez pas croire|exclusif|scandale|bombe|urgent)(?!\p{L})/iu;
+const CLICKBAIT = /(?<!\p{L})(?:incroyable|choquant|vous n'?allez pas croire|exclusif|scandale|bombe|urgent)(?!\p{L})/giu;
+
+/**
+ * Noms de lieux qu'une source en anglais ne peut pas contenir sous cette forme : l'IA traduit « South Africa » en « Afrique du Sud ». Les pays et leurs
+ * capitales (tous ceux que connaît cluster.ts), les continents et les points cardinaux ne sont donc jamais pris pour des noms inventés.
+ */
+const GEO_ALLOW = new Set<string>([
+  ...Object.values(COUNTRY_KEYWORDS).flat().flatMap((k) => k.split(" ")),
+  "afrique", "europe", "asie", "amerique", "oceanie", "orient", "occident", "nord", "sud", "est", "ouest", "etats", "unis", "royaume", "uni", "cap", "vert",
+  "oriental", "orientale", "occidental", "occidentale", "central", "centrale", "septentrional", "meridional",
+  "ivoire", "cote", "sao", "tome", "principe", "leone", "sierra", "bissau", "equatoriale", "centrafricaine", "democratique", "republique", "congo",
+]);
 
 /** Premier objet JSON d'un texte (tolère les balises ```json). */
 export function extractJson(raw: unknown): Record<string, unknown> | null {
@@ -51,7 +62,7 @@ export function inventedNumbers(out: string, sourcesText: string): string[] {
 }
 
 /** Noms propres du texte (mots en majuscule qui ne commencent pas une phrase) absents des sources. */
-export function unknownNames(out: string, corpusNorm: string): string[] {
+export function unknownNames(out: string, corpusNorm: string, allow?: Set<string>): string[] {
   const bad: string[] = [];
   for (const m of out.matchAll(WORD)) {
     const idx = m.index ?? 0;
@@ -60,10 +71,23 @@ export function unknownNames(out: string, corpusNorm: string): string[] {
     const w = m[0].replace(/['’-]+$/, "");
     if (MONTHS_DAYS.test(w)) continue;
     const parts = w.split(/['’-]/).filter((x) => x.length >= 3);
-    if (parts.every((p) => corpusNorm.includes(strip(p)))) continue;
+    if (parts.every((p) => corpusNorm.includes(strip(p)) || (allow?.has(strip(p)) ?? false))) continue;
     bad.push(w);
   }
   return bad;
+}
+
+/** Formule racoleuse absente des sources (un mot comme « scandale » est légitime quand la source le dit). */
+export function clickbait(out: string, corpusNorm: string): boolean {
+  for (const m of out.matchAll(CLICKBAIT)) if (!corpusNorm.includes(strip(m[0]))) return true;
+  return false;
+}
+
+/** Titre ramené à 130 caractères au plus, coupé entre deux mots : un titre un peu long n'est pas une raison de refuser un résumé. */
+export function fitTitle(t: string, max = 130): string {
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max);
+  return cut.slice(0, Math.max(cut.lastIndexOf(" "), max - 25)).replace(/[\s,;:.\-–—]+$/, "");
 }
 
 /** Première suite de `n` mots identique entre le texte et l'un des textes de référence (titres, extraits), sinon null. */
@@ -83,7 +107,7 @@ export function validateSummary(raw: unknown, ctx: { sourcesText: string; refs: 
   const errors: string[] = [];
   const j = extractJson(raw);
   if (!j) return { ok: false, errors: ["json_invalide"] };
-  const titre = typeof j["titre"] === "string" ? j["titre"].trim() : "";
+  const titre = typeof j["titre"] === "string" ? fitTitle(j["titre"].trim()) : "";
   const chapo = typeof j["chapo"] === "string" ? j["chapo"].trim() : "";
   const sections = (Array.isArray(j["sections"]) ? j["sections"] : []).filter((s) => s && typeof s === "object")
     .map((s) => ({ titre: String((s as Record<string, unknown>)["titre"] ?? "").trim(), texte: String((s as Record<string, unknown>)["texte"] ?? "").trim() }));
@@ -104,12 +128,13 @@ export function validateSummary(raw: unknown, ctx: { sourcesText: string; refs: 
   const fr = (all.match(FR_WORDS) ?? []).length;
   const en = (all.match(EN_WORDS) ?? []).length;
   if (fr < 20 || en > fr / 2) errors.push("pas_en_francais");
-  if (CLICKBAIT.test(all)) errors.push("formule_racoleuse");
+  const corpusNorm = ` ${strip(ctx.sourcesText)} `;
+  if (clickbait(all, corpusNorm)) errors.push("formule_racoleuse");
   const nums = inventedNumbers(all, ctx.sourcesText);
   if (nums.length) errors.push("chiffre_invente:" + nums.slice(0, 3).join(","));
-  const names = unknownNames(all, ` ${strip(ctx.sourcesText)} `);
+  const names = unknownNames(all, corpusNorm, GEO_ALLOW);
   if (names.length) errors.push("nom_invente:" + names.slice(0, 3).join(","));
-  const copy = copiedRun(all, ctx.refs);
+  const copy = copiedRun(all, ctx.refs, 10); // 10 mots d'affilée : une info d'une seule ligne se résume souvent avec quelques mots communs
   if (copy) errors.push("texte_recopie:" + copy);
   if (errors.length) return { ok: false, errors };
   return { ok: true, value: { titre, chapo, sections, retenir: retenir.slice(0, 4), notif } };

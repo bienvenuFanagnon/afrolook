@@ -24,9 +24,13 @@ export function buildMessages(topic: Topic, countryName: string | null, dateText
   const items = distinctOutlets(topic).slice(0, 4);
   const where = topic.level === "country" ? (countryName ?? "le pays") : topic.level === "continent" ? CONTINENT_LABEL : "le monde";
   const sources = items.map((it, i) => `[S${i + 1}] ${it.sourceName} — ${it.titre}\n${(it.corps || it.resume).slice(0, 900)}`).join("\n\n");
+  const english = items.some((it) => it.lang === "en");
+  const hint = english
+    ? "Les sources sont en anglais : écris en français, garde les noms de personnes, d'équipes et d'organisations tels qu'ils sont écrits dans les sources, et utilise le nom français usuel des pays.\n\n"
+    : "";
   const user =
     `Date : ${dateText}\nDomaine : ${CATEGORY_LABEL[topic.category] ?? topic.category}\nPérimètre : ${where}\n\nSources :\n${sources}\n\n` +
-    `Écris le résumé en JSON :\n{"titre": titre clair de 40 à 100 caractères, fidèle aux faits,\n` +
+    `${hint}Écris le résumé en JSON :\n{"titre": titre clair de 40 à 100 caractères, fidèle aux faits,\n` +
     ` "chapo": 1 à 2 phrases qui donnent l'essentiel, 80 à 280 caractères,\n` +
     ` "sections": 2 à 3 objets {"titre": intertitre court, "texte": 150 à 450 caractères de prose claire},\n` +
     ` "retenir": 3 puces courtes (140 caractères au plus chacune),\n` +

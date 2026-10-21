@@ -5,7 +5,7 @@ jest.mock("firebase-functions/params", () => ({ defineSecret: () => ({ value: ()
 import { parseFeed } from "../rss";
 import { parsePreview, publicHttps } from "../pagePreview";
 import { RawItem, Topic, buildTopics, classify, clusterItems, detectCountry, linkHash, scopeOf, titleTokens, similar } from "../cluster";
-import { copiedRun, inventedNumbers, unknownNames, validateSummary } from "../validate";
+import { clickbait, copiedRun, fitTitle, inventedNumbers, unknownNames, validateSummary } from "../validate";
 import { fixHint, summarizeTopic } from "../summarize";
 import { chooseModel, planSelection, readPipelineConfig, readSource, topicKey } from "../pipeline";
 import { activeSources, DEFAULT_SOURCES } from "../sources";
@@ -149,6 +149,21 @@ describe("garde-fous du résumé de l'IA", () => {
     expect(r4.ok).toBe(false);
     expect(bad({ titre: "Court" }).ok).toBe(false);
     expect(bad({ retenir: ["un"] }).ok).toBe(false);
+  });
+  test("faux refus évités : titre un peu long, mot présent dans la source, lieux traduits d'une source anglaise", () => {
+    const long = "Ligue des Champions : Yaya Touré craque après une nouvelle humiliation du Slovan Bratislava, une soirée très difficile pour son équipe et ses supporters";
+    expect(long.length).toBeGreaterThan(130);
+    const fit = fitTitle(long);
+    expect(fit.length).toBeLessThanOrEqual(130);
+    expect(long.startsWith(fit)).toBe(true);
+    expect(fitTitle("Court")).toBe("Court");
+    const corpus = " le scandale cambridge analytica a coute cher ";
+    expect(clickbait("Meta paie après le scandale de Cambridge Analytica", corpus)).toBe(false); // le mot est dans la source
+    expect(clickbait("Un scandale incroyable éclate", " rien de tel ici ")).toBe(true);
+    // « South African » / « Eastern Cape » en anglais : les pays et points cardinaux ne sont pas des noms inventés
+    const en = " woman 65 killed in shark attack at south african beach in eastern cape ";
+    expect(unknownNames("Une femme de 65 ans a été tuée par un requin sur une plage d'Afrique du Sud, dans le Cap-Oriental.", en, new Set(["afrique", "sud", "cap", "oriental"]))).toEqual([]);
+    expect(unknownNames("Elle a été attaquée selon Karim Benzema.", en, new Set(["afrique"]))).toEqual(["Karim", "Benzema"]);
   });
   test("fonctions de contrôle", () => {
     expect(inventedNumbers("Il y a 24 joueurs et 37 absents, soit 12,5 %", "24 joueurs")).toEqual(["37", "12,5"]);
