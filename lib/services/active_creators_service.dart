@@ -393,14 +393,21 @@ class ActiveCreatorsService {
     }
   }
 
+  /// Canaux suivis par personne : gardés 30 minutes (la liste change rarement ; chaque lecture coûte un document par canal).
+  static final Map<String, ({int at, List<String> ids})> _canalIdsCache = {};
+
   Future<List<String>> fetchFollowedCanalIds(String userId) async {
     if (userId.isEmpty) return [];
+    final cached = _canalIdsCache[userId];
+    if (cached != null && DateTime.now().millisecondsSinceEpoch - cached.at < 30 * 60 * 1000) return cached.ids;
     try {
       final snap = await _db
           .collection('Canaux')
           .where('usersSuiviId', arrayContains: userId)
           .getM('active_creators_service.dart:401');
-      return snap.docs.map((d) => d.id).toList();
+      final ids = snap.docs.map((d) => d.id).toList();
+      _canalIdsCache[userId] = (at: DateTime.now().millisecondsSinceEpoch, ids: ids);
+      return ids;
     } catch (_) {
       return [];
     }
@@ -440,6 +447,14 @@ class ActiveCreatorsService {
   // [viewedPostIds]) créés après [userCreatedAtMs].
   // Retourne une Map creatorId → unseenCount (seulement ceux > 0).
 
+  /// Posts récents de chaque groupe de créateurs, gardés 10 minutes pour tous les écrans (accueil, retour dans l'application, conversations) :
+  /// le décompte des « non vus » est recalculé localement à chaque appel (viewedPostIds peut avoir changé) sans relire Firestore.
+  static final Map<String, ({int at, List<({String id, String uid})> posts})> _recentPostsCache = {};
+
+  /// Fenêtre des posts comptés comme « nouveaux » : au-delà, un badge n'a plus de sens (et chaque post lu coûte une lecture).
+  static const int _recalibrateWindowDays = 14;
+  static const int _recalibratePerChunk = 100;
+
   Future<Map<String, int>> recalibrateUnseenCounts({
     required List<String> creatorIds,
     required Set<String> viewedPostIds,
@@ -447,34 +462,49 @@ class ActiveCreatorsService {
   }) async {
     if (creatorIds.isEmpty) return {};
 
-    final sinceUs = userCreatedAtMs > 0 ? userCreatedAtMs * 1000 : 0;
-    final Map<String, int> unseenPerCreator = {};
-    final futures = <Future<void>>[];
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    final windowStartMs = nowMs - _recalibrateWindowDays * 24 * 3600 * 1000;
+    final fromMs = userCreatedAtMs > windowStartMs ? userCreatedAtMs : windowStartMs;
+    final sinceUs = fromMs * 1000;
 
-    for (int i = 0; i < creatorIds.length; i += 10) {
-      final chunk = creatorIds.sublist(i, (i + 10).clamp(0, creatorIds.length));
-      futures.add(() async {
-        try {
-          var q = _db
-              .collection('Posts')
-              .where('user_id', whereIn: chunk)
-              .orderBy('created_at', descending: true)
-              .limit(500);
-          if (sinceUs > 0) {
-            q = q.where('created_at', isGreaterThanOrEqualTo: sinceUs);
-          }
-          final snap = await q.getM('active_creators_service.dart:465');
-          for (final doc in snap.docs) {
-            final uid = doc.data()['user_id'] as String? ?? '';
-            if (uid.isEmpty) continue;
-            if (!viewedPostIds.contains(doc.id)) {
-              unseenPerCreator[uid] = (unseenPerCreator[uid] ?? 0) + 1;
+    final key = (List<String>.of(creatorIds)..sort()).join(',');
+    final cached = _recentPostsCache[key];
+    List<({String id, String uid})> posts;
+
+    if (cached != null && nowMs - cached.at < 10 * 60 * 1000) {
+      posts = cached.posts;
+    } else {
+      posts = [];
+      var failed = false;
+      final futures = <Future<void>>[];
+      for (int i = 0; i < creatorIds.length; i += 10) {
+        final chunk = creatorIds.sublist(i, (i + 10).clamp(0, creatorIds.length));
+        futures.add(() async {
+          try {
+            final snap = await _db
+                .collection('Posts')
+                .where('user_id', whereIn: chunk)
+                .where('created_at', isGreaterThanOrEqualTo: sinceUs)
+                .orderBy('created_at', descending: true)
+                .limit(_recalibratePerChunk)
+                .getM('active_creators_service.dart:465');
+            for (final doc in snap.docs) {
+              final uid = doc.data()['user_id'] as String? ?? '';
+              if (uid.isNotEmpty) posts.add((id: doc.id, uid: uid));
             }
+          } catch (_) {
+            failed = true;
           }
-        } catch (_) {}
-      }());
+        }());
+      }
+      await Future.wait(futures);
+      if (!failed) _recentPostsCache[key] = (at: nowMs, posts: posts);
     }
-    await Future.wait(futures);
+
+    final Map<String, int> unseenPerCreator = {};
+    for (final p in posts) {
+      if (!viewedPostIds.contains(p.id)) unseenPerCreator[p.uid] = (unseenPerCreator[p.uid] ?? 0) + 1;
+    }
     return unseenPerCreator;
   }
 

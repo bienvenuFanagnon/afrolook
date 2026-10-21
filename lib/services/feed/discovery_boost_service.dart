@@ -131,7 +131,7 @@ class DiscoveryBoostService {
       final topSnap = await _db
           .collection('Posts')
           .orderBy('postScore', descending: true)
-          .limit(limit * 6)
+          .limit(limit * 3)
           .getM('discovery_boost_service.dart:134');
 
       // Pool B : nouveaux posts < 72h (cold start)
@@ -139,7 +139,7 @@ class DiscoveryBoostService {
           .collection('Posts')
           .where('created_at', isGreaterThan: freshCutoffUs)
           .orderBy('created_at', descending: true)
-          .limit(limit * 4)
+          .limit(limit * 2)
           .getM('discovery_boost_service.dart:142');
 
       bool _isEligible(String docId, String uid) {
