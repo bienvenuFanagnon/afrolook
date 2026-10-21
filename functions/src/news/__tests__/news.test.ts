@@ -4,7 +4,7 @@ jest.mock("firebase-admin/firestore", () => ({ FieldValue: {}, FieldPath: {} }))
 
 import { CONTINENT_OF, continentOf, scopeKey, scopesForUser } from "../geo";
 import { NEWS_AGENTS, agentUserId } from "../agents";
-import { buildFeedItem, buildNewsPostDoc, cleanNewsInput, cleanUrl, mergeFeedItems, MAX_FEED_ITEMS } from "../model";
+import { DAY_MS, buildFeedItem, buildNewsPostDoc, cleanNewsInput, cleanUrl, decideExpiry, lifespanDays, mergeFeedItems, popularityBonus, MAX_FEED_ITEMS } from "../model";
 import { commentMessage, likeMessage, milestoneMessage, newMilestone, shouldPushComment, shouldPushLike } from "../engagement";
 import { postGiftShares } from "../../payments/coinShares";
 
@@ -86,11 +86,12 @@ describe("validation et construction d'un article", () => {
   test("index du fil : plus récent en tête, sans doublon, 30 au plus", () => {
     const r = cleanNewsInput(base);
     if (!r.ok) throw new Error(r.error);
+    const T0 = Date.parse("2026-10-21T12:00:00Z");
     let list: ReturnType<typeof mergeFeedItems> = [];
-    for (let i = 0; i < 40; i++) list = mergeFeedItems(list, buildFeedItem(r.value, `id${i}`, i));
+    for (let i = 0; i < 40; i++) list = mergeFeedItems(list, buildFeedItem(r.value, `id${i}`, T0 + i), T0 + i);
     expect(list).toHaveLength(MAX_FEED_ITEMS);
     expect(list[0].id).toBe("id39");
-    const again = mergeFeedItems(list, buildFeedItem(r.value, "id20", 99));
+    const again = mergeFeedItems(list, buildFeedItem(r.value, "id20", T0 + 99), T0 + 99);
     expect(again[0].id).toBe("id20");
     expect(again.filter((x) => x.id === "id20")).toHaveLength(1);
   });
@@ -138,5 +139,52 @@ describe("notifications d'engagement", () => {
     expect(shouldPushLike(25, undefined, t0)).toBe(true);
     expect(shouldPushLike(25, { likeAt: t0 - 30 * 60 * 1000 }, t0)).toBe(false);
     expect(shouldPushLike(25, { likeAt: t0 - 2 * 3600 * 1000, likeDay: "2026-10-21", likeN: 2 }, t0)).toBe(false);
+  });
+});
+
+describe("durée de vie des articles", () => {
+  const NOW = Date.parse("2026-10-21T12:00:00Z");
+  const make = (extra: Record<string, unknown> = {}) => {
+    const r = cleanNewsInput({ ...base, ...extra });
+    if (!r.ok) throw new Error(r.error);
+    return r.value;
+  };
+  test("durée selon le domaine, ou imposée par l'administrateur (1 à 45 jours)", () => {
+    expect([lifespanDays("sport"), lifespanDays("politique"), lifespanDays("voyage"), lifespanDays("inconnu")]).toEqual([4, 7, 21, 7]);
+    const doc = buildNewsPostDoc(make(), "news_a1", NOW);
+    expect(doc["expiresAt"]).toBe(NOW + 4 * DAY_MS);
+    expect(buildNewsPostDoc(make({ lifeDays: 10 }), "news_a2", NOW)["expiresAt"]).toBe(NOW + 10 * DAY_MS);
+    expect(buildNewsPostDoc(make({ lifeDays: 99 }), "news_a3", NOW)["expiresAt"]).toBe(NOW + 4 * DAY_MS); // hors limites : durée du domaine
+    expect(buildFeedItem(make(), "news_a1", NOW).exp).toBe(NOW + 4 * DAY_MS);
+  });
+  test("l'index du fil écarte les articles périmés", () => {
+    const fresh = buildFeedItem(make(), "frais", NOW);
+    const stale = { ...buildFeedItem(make(), "vieux", NOW - 10 * DAY_MS) };
+    const list = mergeFeedItems([stale, { ...fresh, id: "autre" }], buildFeedItem(make(), "nouveau", NOW), NOW);
+    expect(list.map((i) => i.id)).toEqual(["nouveau", "autre"]);
+  });
+  test("bonus de popularité : ×1,5 dès 50 points, ×2 dès 200", () => {
+    expect(popularityBonus({ loves: 10, comments: 2, giftCount: 1 })).toBe(1);
+    expect(popularityBonus({ loves: 30, comments: 10 })).toBe(1.5);
+    expect(popularityBonus({ loves: 100, comments: 50, giftCount: 5 })).toBe(2);
+  });
+  test("à l'échéance : garder, prolonger une fois par palier, supprimer ; garde-fou à 45 jours", () => {
+    const created = NOW - 5 * DAY_MS;
+    const post = (o: Record<string, unknown> = {}) => ({ created_at: created * 1000, expiresAt: created + 4 * DAY_MS, news: { category: "sport" }, ...o });
+    expect(decideExpiry(post({ expiresAt: NOW + DAY_MS }), NOW)).toEqual({ action: "keep" });
+    expect(decideExpiry(post(), NOW)).toEqual({ action: "delete" });
+    // très aimé : prolongé à 6 jours (4 × 1,5) depuis la création, donc encore vivant
+    expect(decideExpiry(post({ loves: 60 }), NOW)).toEqual({ action: "extend", expiresAt: created + 6 * DAY_MS, tier: 1.5 });
+    // déjà prolongé à ce palier : supprimé à la nouvelle échéance
+    expect(decideExpiry(post({ loves: 60, extendedTier: 1.5, expiresAt: created + 6 * DAY_MS - 1 }), NOW + 2 * DAY_MS)).toEqual({ action: "delete" });
+    // palier supérieur : prolongé encore (21 j × 2 = 42 j depuis la création)
+    const c2 = NOW - 33 * DAY_MS;
+    expect(decideExpiry({ created_at: c2 * 1000, expiresAt: c2 + 31.5 * DAY_MS, extendedTier: 1.5, loves: 300, news: { category: "voyage" } }, NOW)).toEqual({ action: "extend", expiresAt: c2 + 42 * DAY_MS, tier: 2 });
+    // jamais au-delà de 45 jours depuis la création
+    const c3 = NOW - 40 * DAY_MS;
+    expect(decideExpiry({ created_at: c3 * 1000, expiresAt: c3 + 30 * DAY_MS, loves: 300, news: { category: "voyage", lifeDays: 30 } }, NOW)).toEqual({ action: "extend", expiresAt: c3 + 45 * DAY_MS, tier: 2 });
+    expect(decideExpiry({ created_at: (NOW - 46 * DAY_MS) * 1000, expiresAt: NOW + 5 * DAY_MS, news: { category: "voyage" } }, NOW)).toEqual({ action: "delete" });
+    // ancien article sans date de fin : calculée d'après son domaine
+    expect(decideExpiry({ created_at: created * 1000, news: { category: "voyage" } }, NOW)).toEqual({ action: "keep" });
   });
 });

@@ -1,9 +1,13 @@
-import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
+import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { db } from "../shared/firebase";
 import { AiError, CF_NEWS_ACCOUNTS, DAILY_TOTAL_CAP, DEFAULT_MODELS, PER_ACCOUNT_CAP, loadUsage, maskId, parseAccounts, runAi } from "./ai";
+import { requireAdmin } from "./adminAuth";
+import { COUNTRY_KEYWORDS } from "./cluster";
+import { DEFAULT_SOURCES } from "./sources";
+import { readPipelineConfig } from "./pipeline";
 import { NEWS_AGENTS, agentUserId } from "./agents";
 import { readNewsLogs } from "./log";
-import { cleanNewsInput } from "./model";
+import { DAY_MS, cleanNewsInput } from "./model";
 import { publishNews, removeNews } from "./publish";
 
 /**
@@ -12,20 +16,13 @@ import { publishNews, removeNews } from "./publish";
  * - newsPublishManual : publie un article saisi à la main (essai de la carte et de la page de détail avant le pipeline automatique) ;
  * - newsAgentStats    : par agent, articles publiés, vues, j'aime, commentaires, et cadeaux reçus (information : les vrais gains vont à l'app) ;
  * - newsDeleteArticle : retire un article ;
+ * - newsListArticles  : les 40 derniers articles avec leur fin de vie et leur engagement ;
+ * - newsExtendArticle : prolonge la vie d'un article (1 à 30 jours) ;
  * - newsSetConfig     : interrupteurs (AppConfig/news : enabled, feedEnabled) ;
  * - newsLogs          : journal (appels à l'IA, articles publiés, incidents) et état de chaque compte Cloudflare ;
  * - newsCheckAi       : teste chaque compte Cloudflare (une toute petite question) et montre la consommation du jour ; ne renvoie jamais de clé.
  */
-const ADMIN_ROLES = ["ADM", "admin", "ADMIN", "super_admin"];
 const OPTS = { region: "us-central1" as const, timeoutSeconds: 60, memory: "256MiB" as const };
-
-async function requireAdmin(request: CallableRequest): Promise<string> {
-  const uid = request.auth?.uid;
-  if (!uid) throw new HttpsError("unauthenticated", "Connexion requise");
-  const role = String((await db.collection("Users").doc(uid).get()).data()?.["role"] ?? "");
-  if (!ADMIN_ROLES.includes(role)) throw new HttpsError("permission-denied", "Réservé aux administrateurs");
-  return uid;
-}
 
 export const newsSeedAgents = onCall(OPTS, async (request) => {
   await requireAdmin(request);
@@ -64,6 +61,18 @@ export const newsSetConfig = onCall(OPTS, async (request) => {
   const patch: Record<string, unknown> = { updatedAt: Date.now() };
   if (typeof d["enabled"] === "boolean") patch["enabled"] = d["enabled"];
   if (typeof d["feedEnabled"] === "boolean") patch["feedEnabled"] = d["feedEnabled"];
+  if (typeof d["pipelineEnabled"] === "boolean") patch["pipelineEnabled"] = d["pipelineEnabled"];
+  if (Array.isArray(d["countries"])) patch["countries"] = (d["countries"] as unknown[]).map((c) => String(c).trim().toUpperCase()).filter((c) => c in COUNTRY_KEYWORDS).slice(0, 30);
+  for (const [k, min, max] of [["dailyCap", 1, 300], ["perRun", 1, 12], ["perKeyDaily", 1, 6]] as const) {
+    const n = Math.trunc(Number(d[k]));
+    if (d[k] !== undefined && Number.isFinite(n) && n >= min && n <= max) patch[k] = n;
+  }
+  if (d["sourcesOn"] && typeof d["sourcesOn"] === "object") {
+    const known = new Set(DEFAULT_SOURCES.map((x) => x.id));
+    const on: Record<string, boolean> = {};
+    for (const [id, v] of Object.entries(d["sourcesOn"] as Record<string, unknown>)) if (known.has(id) && typeof v === "boolean") on[id] = v;
+    patch["sourcesOn"] = on;
+  }
   await db.collection("AppConfig").doc("news").set(patch, { merge: true });
   return { ok: true, ...patch };
 });
@@ -73,8 +82,8 @@ export const newsAgentStats = onCall(OPTS, async (request) => {
   const [agents, cfg, posts] = await Promise.all([
     db.getAll(...NEWS_AGENTS.map((a) => db.collection("NewsAgents").doc(a.key))),
     db.collection("AppConfig").doc("news").get(),
-    // les 200 derniers articles suffisent à un tableau de bord (200 lectures par ouverture de l'écran)
-    db.collection("Posts").where("type", "==", "NEWS").orderBy("created_at", "desc").limit(200).get(),
+    // les 120 derniers articles suffisent à un tableau de bord (120 lectures par ouverture de l'écran)
+    db.collection("Posts").where("type", "==", "NEWS").orderBy("created_at", "desc").limit(120).get(),
   ]);
   const per: Record<string, { views: number; loves: number; comments: number; recent: number }> = {};
   for (const d of posts.docs) {
@@ -87,7 +96,7 @@ export const newsAgentStats = onCall(OPTS, async (request) => {
     s.recent += 1;
   }
   return {
-    config: { enabled: cfg.data()?.["enabled"] !== false, feedEnabled: cfg.data()?.["feedEnabled"] === true },
+    config: { ...readPipelineConfig(cfg.data()), feedEnabled: cfg.data()?.["feedEnabled"] === true, sourcesOn: (cfg.data()?.["sourcesOn"] as Record<string, boolean> | undefined) ?? {} },
     agents: NEWS_AGENTS.map((a, i) => {
       const d = agents[i].data() ?? {};
       return {
@@ -133,4 +142,47 @@ export const newsLogs = onCall(OPTS, async (request) => {
   await requireAdmin(request);
   const limit = Number((request.data as Record<string, unknown> | undefined)?.["limit"] ?? 60) || 60;
   return readNewsLogs(limit);
+});
+
+export const newsListArticles = onCall(OPTS, async (request) => {
+  await requireAdmin(request);
+  const snap = await db.collection("Posts").where("type", "==", "NEWS").orderBy("created_at", "desc").limit(40).get();
+  return {
+    articles: snap.docs.map((d) => {
+      const p = d.data();
+      const n = (p["news"] ?? {}) as Record<string, unknown>;
+      const created = Number(p["created_at"]) || 0;
+      return {
+        id: d.id, title: String(n["title"] ?? ""), agentKey: String(n["agentKey"] ?? ""), scope: String(n["scope"] ?? ""),
+        createdAt: created > 1e14 ? Math.floor(created / 1000) : created, expiresAt: Number(p["expiresAt"]) || 0, extendedTier: Number(p["extendedTier"]) || 1,
+        views: Number(p["vues"] ?? 0), loves: Number(p["loves"] ?? 0), comments: Number(p["comments"] ?? 0), gifts: Number(p["giftCount"] ?? 0),
+      };
+    }),
+  };
+});
+
+export const newsExtendArticle = onCall(OPTS, async (request) => {
+  await requireAdmin(request);
+  const d = (request.data ?? {}) as Record<string, unknown>;
+  const id = String(d["id"] ?? "");
+  const days = Math.max(1, Math.min(30, Math.trunc(Number(d["days"] ?? 7)) || 7));
+  if (!/^[A-Za-z0-9_-]{4,64}$/.test(id)) throw new HttpsError("invalid-argument", "Identifiant invalide");
+  const ref = db.collection("Posts").doc(id);
+  const snap = await ref.get();
+  if (!snap.exists || snap.data()?.["type"] !== "NEWS") throw new HttpsError("not-found", "Article introuvable");
+  const now = Date.now();
+  const expiresAt = Math.max(Number(snap.data()?.["expiresAt"]) || 0, now) + days * DAY_MS;
+  await ref.update({ expiresAt });
+  // l'index du fil porte la fin de vie de chaque article : on la met à jour pour que l'article reste affiché
+  const scope = String((snap.data()?.["news"] as Record<string, unknown> | undefined)?.["scope"] ?? "");
+  if (scope) {
+    const feedRef = db.collection("NewsFeed").doc(scope);
+    await db.runTransaction(async (tx) => {
+      const f = await tx.get(feedRef);
+      if (!f.exists) return;
+      const items = ((f.data()?.["items"] as Array<{ id?: string }> | undefined) ?? []).map((i) => (i.id === id ? { ...i, exp: expiresAt } : i));
+      tx.set(feedRef, { items, updatedAt: now }, { merge: true });
+    });
+  }
+  return { id, expiresAt };
 });

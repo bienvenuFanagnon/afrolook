@@ -93,6 +93,9 @@ class NewsFeedItem {
   final List<String> sourceNames;
   final int at;
 
+  /// Fin de vie de l'article (ms) ; 0 = pas de date connue.
+  final int exp;
+
   const NewsFeedItem({
     required this.id,
     required this.agentKey,
@@ -106,6 +109,7 @@ class NewsFeedItem {
     required this.sourceCount,
     required this.sourceNames,
     required this.at,
+    this.exp = 0,
   });
 
   factory NewsFeedItem.fromMap(Map<String, dynamic> m) => NewsFeedItem(
@@ -121,6 +125,7 @@ class NewsFeedItem {
         sourceCount: (m['sourceCount'] as num?)?.toInt() ?? 1,
         sourceNames: ((m['sourceNames'] as List?) ?? const []).map((e) => e.toString()).toList(),
         at: (m['at'] as num?)?.toInt() ?? 0,
+        exp: (m['exp'] as num?)?.toInt() ?? 0,
       );
 }
 
@@ -143,6 +148,7 @@ class NewsArticle {
   final int comments;
   final int views;
   final int gifts;
+  final int expiresAt;
   final List<String> lovedBy;
   final List<String> viewedBy;
   final Map<String, dynamic> raw;
@@ -165,12 +171,16 @@ class NewsArticle {
     required this.comments,
     required this.views,
     required this.gifts,
+    this.expiresAt = 0,
     required this.lovedBy,
     required this.viewedBy,
     required this.raw,
   });
 
   NewsAgentInfo get agent => newsAgentOf(agentKey);
+
+  /// L'article a-t-il fini sa vie ? (il disparaît alors de l'application)
+  bool get isExpired => expiresAt > 0 && expiresAt <= DateTime.now().millisecondsSinceEpoch;
 
   bool lovedByUser(String? uid) => uid != null && lovedBy.contains(uid);
 
@@ -199,6 +209,7 @@ class NewsArticle {
       comments: toInt(d['comments']),
       views: toInt(d['vues']),
       gifts: toInt(d['giftCount']),
+      expiresAt: toInt(d['expiresAt']),
       lovedBy: strings(d['users_love_id']),
       viewedBy: strings(d['users_vue_id']),
       raw: d,

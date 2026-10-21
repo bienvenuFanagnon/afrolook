@@ -30,8 +30,8 @@ const COMMENT_GAP_MS = 30 * 60 * 1000;
 const LIKE_GAP_MS = 60 * 60 * 1000;
 const PER_ARTICLE_DAILY = 2;
 const PER_AGENT_DAILY = 4;
-const MAX_FOLLOWERS_READ = 3000;
-const MAX_RECIPIENTS = 3500;
+const MAX_FOLLOWERS_READ = 1500; // lectures plafonnées : chaque destinataire coûte une lecture de profil
+const MAX_RECIPIENTS = 2000;
 
 const cut = (s: unknown, n: number): string => {
   const t = Array.from(String(s ?? "").replace(/\s+/g, " ").trim());
@@ -165,7 +165,8 @@ export const onNewsCommentCreated = onDocumentCreated(
   async (event) => {
     const c = event.data?.data();
     const postId = String(c?.["post_id"] ?? "");
-    if (!c || !postId) return;
+    // un article a un identifiant « news_… » : tous les autres commentaires de l'application sortent ici, sans lecture
+    if (!c || !postId.startsWith("news_")) return;
     try {
       const post = (await db.collection("Posts").doc(postId).get()).data();
       if (!post || post["type"] !== "NEWS") return;

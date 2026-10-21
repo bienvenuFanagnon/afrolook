@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import '../../ads/ad_banner.dart';
+import '../../ads/admob_service.dart';
+import '../../ads/admob_widgets.dart';
 import '../../l10n/tr.dart';
 import '../../models/news_article.dart';
 import '../../providers/authProvider.dart';
@@ -39,7 +42,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
   }
 
   Future<void> _load() async {
-    final a = await NewsService.instance.article(widget.postId);
+    final a = await NewsService.instance.article(widget.postId, fresh: true);
     if (!mounted) return;
     final uid = context.read<UserAuthProvider>().loginUserData.id;
     setState(() {
@@ -52,6 +55,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
     });
     if (a == null) return;
     NewsService.instance.recordView(a);
+    AdmobService.warmUpInterstitial(context.read<UserAuthProvider>().loginUserData); // prête pour l'ouverture d'une source
     if (uid != null && !a.viewedBy.contains(uid) && mounted) setState(() => _views += 1);
     try {
       final f = await FirebaseFirestore.instance.collection('Follows').doc('${a.agent.userId}_$uid').get();
@@ -201,11 +205,13 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
       ),
       const SizedBox(height: 14),
       Text(a.chapo, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w600, fontSize: 15.5, height: 1.45)),
-      for (final s in a.sections) ...[
+      for (var i = 0; i < a.sections.length; i++) ...[
         const SizedBox(height: 16),
-        if (s.title.isNotEmpty) Text(s.title, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 16.5)),
-        if (s.title.isNotEmpty) const SizedBox(height: 4),
-        Text(s.text, style: TextStyle(color: c.textPrimary, fontSize: 14.5, height: 1.55)),
+        if (a.sections[i].title.isNotEmpty) Text(a.sections[i].title, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 16.5)),
+        if (a.sections[i].title.isNotEmpty) const SizedBox(height: 4),
+        Text(a.sections[i].text, style: TextStyle(color: c.textPrimary, fontSize: 14.5, height: 1.55)),
+        // pub native après la première section (rien ne s'affiche pour Gold ou si aucune pub n'est prête)
+        if (i == 0) const AdmobNativeWidget(key: ValueKey('news_native_1')),
       ],
       if (a.retenir.isNotEmpty) ...[
         const SizedBox(height: 18),
@@ -240,7 +246,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
           const SizedBox(height: 6),
           for (final s in a.sources)
             InkWell(
-              onTap: () => NewsActions.openSource(s),
+              onTap: () => NewsActions.openSource(context, s),
               borderRadius: BorderRadius.circular(8),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
@@ -258,6 +264,8 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
             ),
         ]),
       ),
+      // grand format sous les sources : l'endroit où la personne s'arrête de lire
+      const Center(child: AdBanner(key: ValueKey('news_mrec'), mrec: true)),
       const SizedBox(height: 16),
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -267,7 +275,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
           _action(c, _liked ? Icons.favorite_rounded : Icons.favorite_border_rounded, newsCount(_loves), _like, _liked ? c.danger : c.textSecondary),
           _action(c, Icons.chat_bubble_outline_rounded, newsCount(_comments), () async {
             await NewsActions.comments(context, a);
-            final fresh = await NewsService.instance.article(a.id);
+            final fresh = await NewsService.instance.article(a.id, fresh: true);
             if (mounted && fresh != null) setState(() => _comments = fresh.comments);
           }, c.textSecondary),
           _action(c, Icons.card_giftcard_rounded, context.tr('Cadeau'), () => NewsActions.gift(context, a), c.warning),

@@ -79,3 +79,5 @@ export { playlistSave, playlistAdd, playlistDelete, musicStream } from "./studio
 // Actualités : agents, publication, outils admin et notifications d'engagement
 export * from "./news/admin";
 export { onNewsCommentCreated } from "./news/engagement";
+export { newsPipelineTick, newsRunPipeline, newsSourcesTest } from "./news/schedule";
+export { newsCleanup } from "./news/cleanup";

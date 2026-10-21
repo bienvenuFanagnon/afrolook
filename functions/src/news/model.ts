@@ -5,6 +5,44 @@ import { Continent, CONTINENTS, NewsLevel, NEWS_LEVELS, continentOf, scopeKey } 
  * Article d'actualité = résumé de plusieurs sources (jamais une copie) : titre, chapô, quelques sections, « À retenir » et la liste des sources
  * (nom + lien, au moins une). Ce fichier ne contient que des fonctions pures : validation de l'entrée et construction des documents Firestore.
  */
+/**
+ * Durée de vie d'un article : il disparaît de l'application quand elle est écoulée (l'actualité vieillit vite). Le sport se périme en quelques jours,
+ * les sujets de fond (voyage, culture, tech) durent plus longtemps. Un article très commenté ou très aimé est prolongé une fois (×1,5 ou ×2), dans la
+ * limite de 45 jours. L'administrateur peut le supprimer ou le prolonger à tout moment.
+ */
+export const DAY_MS = 86_400_000;
+export const LIFESPAN_DAYS: Record<string, number> = { sport: 4, politique: 7, culture: 14, musique: 10, tech: 14, voyage: 21 };
+export const MAX_LIFE_DAYS = 45;
+export const lifespanDays = (category: string): number => LIFESPAN_DAYS[category] ?? 7;
+
+/** Prolongation selon l'engagement : j'aime + 2 × commentaires + 3 × cadeaux. */
+export function popularityBonus(p: { loves?: unknown; comments?: unknown; giftCount?: unknown }): number {
+  const score = (Number(p.loves) || 0) + 2 * (Number(p.comments) || 0) + 3 * (Number(p.giftCount) || 0);
+  return score >= 200 ? 2 : score >= 50 ? 1.5 : 1;
+}
+
+export type ExpiryDecision = { action: "keep" } | { action: "extend"; expiresAt: number; tier: number } | { action: "delete" };
+
+/** Que faire d'un article à cet instant : le garder, le prolonger (une fois par palier de popularité) ou le supprimer. */
+export function decideExpiry(post: Record<string, unknown>, nowMs: number): ExpiryDecision {
+  const rawCreated = Number(post["created_at"]) || 0;
+  const createdMs = rawCreated > 1e14 ? Math.floor(rawCreated / 1000) : rawCreated; // created_at est en microsecondes
+  const news = (post["news"] ?? {}) as Record<string, unknown>;
+  const base = Number(news["lifeDays"]) > 0 ? Number(news["lifeDays"]) : lifespanDays(String(news["category"] ?? ""));
+  if (createdMs && nowMs - createdMs > MAX_LIFE_DAYS * DAY_MS) return { action: "delete" };
+  const exp = Number(post["expiresAt"]) || (createdMs ? createdMs + base * DAY_MS : 0);
+  if (exp > nowMs) return { action: "keep" };
+  const bonus = popularityBonus(post);
+  const tier = Number(post["extendedTier"]) || 1;
+  if (bonus > tier && createdMs) {
+    const next = Math.min(createdMs + base * bonus * DAY_MS, createdMs + MAX_LIFE_DAYS * DAY_MS);
+    if (next > nowMs) return { action: "extend", expiresAt: next, tier: bonus };
+  }
+  return { action: "delete" };
+}
+
+export const expiresAtFor = (n: { category: string; lifeDays: number | null }, nowMs: number): number => nowMs + (n.lifeDays ?? lifespanDays(n.category)) * DAY_MS;
+
 export const LANGS = ["fr", "en", "es", "de", "ar", "pt", "zh", "sw"] as const;
 export type NewsLang = (typeof LANGS)[number];
 
@@ -27,6 +65,10 @@ export interface NewsClean {
   sources: NewsSource[];
   image: string;
   score: number;
+  /** Texte de la notification de cet article (écrit par l'IA avec le résumé) ; utilisé par les notifications d'actualités. */
+  notif: { title: string; body: string } | null;
+  /** Durée de vie imposée (jours) ; sinon celle du domaine. */
+  lifeDays: number | null;
 }
 
 /** Entrée d'un élément de l'index du fil (NewsFeed/{périmètre}) : de quoi afficher une carte sans lire le post. */
@@ -43,6 +85,8 @@ export interface NewsFeedItem {
   sourceCount: number;
   sourceNames: string[];
   at: number;
+  /** Fin de vie de l'article (ms) : l'application ne montre plus l'article passé cette date. */
+  exp: number;
 }
 
 export const MAX_FEED_ITEMS = 30;
@@ -113,12 +157,20 @@ export function cleanNewsInput(raw: unknown): Result {
   }
   if (!sources.length) return { ok: false, error: "Au moins une source avec son nom et un lien https" };
 
+  const nr = (r["notif"] ?? {}) as Record<string, unknown>;
+  const notifTitle = clip(nr["title"]).slice(0, 60);
+  const notifBody = clip(nr["body"]).slice(0, 120);
+  const notif = notifTitle.length >= 8 && notifBody.length >= 20 ? { title: notifTitle, body: notifBody } : null;
+
+  const life = Math.trunc(Number(r["lifeDays"]));
+  const lifeDays = Number.isFinite(life) && life >= 1 && life <= MAX_LIFE_DAYS ? life : null;
+
   const lang = (LANGS as readonly string[]).includes(String(r["lang"])) ? (String(r["lang"]) as NewsLang) : "fr";
   const score = Math.max(0, Math.min(100, Number(r["score"]) || 0));
 
   return {
     ok: true,
-    value: { agentKey: agent.key, category: agent.category, level, country, continent, scope, lang, title, chapo, sections, retenir, sources, image: cleanUrl(r["image"]), score },
+    value: { agentKey: agent.key, category: agent.category, level, country, continent, scope, lang, title, chapo, sections, retenir, sources, image: cleanUrl(r["image"]), score, notif, lifeDays },
   };
 }
 
@@ -143,10 +195,11 @@ export function buildNewsPostDoc(n: NewsClean, id: string, nowMs: number): Recor
     // jamais monétisé : likes gratuits, aucune vue payée (voir sendLike et PostViewService)
     monetized: false,
     isAdvertisement: false,
+    expiresAt: expiresAtFor(n, nowMs),
     availableCountries: n.level === "country" && n.country ? [n.country] : ["ALL"],
     news: {
       agentKey: n.agentKey, category: n.category, level: n.level, country: n.country, continent: n.continent, scope: n.scope, lang: n.lang,
-      title: n.title, chapo: n.chapo, sections: n.sections, retenir: n.retenir, sources: n.sources, sourceCount: n.sources.length, score: n.score,
+      title: n.title, chapo: n.chapo, sections: n.sections, retenir: n.retenir, sources: n.sources, sourceCount: n.sources.length, score: n.score, notif: n.notif, lifeDays: n.lifeDays,
     },
   };
 }
@@ -155,12 +208,12 @@ export function buildFeedItem(n: NewsClean, id: string, nowMs: number): NewsFeed
   return {
     id, agentKey: n.agentKey, category: n.category, level: n.level, country: n.country, continent: n.continent,
     title: n.title, chapo: n.chapo.slice(0, 160), image: n.image,
-    sourceCount: n.sources.length, sourceNames: n.sources.slice(0, 3).map((s) => s.name), at: nowMs,
+    sourceCount: n.sources.length, sourceNames: n.sources.slice(0, 3).map((s) => s.name), at: nowMs, exp: expiresAtFor(n, nowMs),
   };
 }
 
-/** Ajoute un élément en tête de l'index, sans doublon, et garde les plus récents. */
-export function mergeFeedItems(current: unknown, item: NewsFeedItem): NewsFeedItem[] {
+/** Ajoute un élément en tête de l'index, sans doublon ni article périmé, et garde les plus récents. */
+export function mergeFeedItems(current: unknown, item: NewsFeedItem, nowMs = Date.now()): NewsFeedItem[] {
   const list = Array.isArray(current) ? (current as NewsFeedItem[]) : [];
-  return [item, ...list.filter((x) => x && x.id !== item.id)].slice(0, MAX_FEED_ITEMS);
+  return [item, ...list.filter((x) => x && x.id !== item.id && (!x.exp || x.exp > nowMs))].slice(0, MAX_FEED_ITEMS);
 }

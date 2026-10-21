@@ -6,6 +6,7 @@ import '../../models/news_article.dart';
 import '../../pages/coins/coin_gift_dialog.dart';
 import '../../pages/postComments.dart';
 import '../../theme/app_colors.dart';
+import 'news_ads.dart';
 
 /// Avatar d'un agent d'actualités : pastille aux couleurs de son domaine, avec le badge « journal » vert, réservé aux agents
 /// (carte du fil, page de détail, commentaires).
@@ -112,7 +113,9 @@ class NewsActions {
     } catch (_) {}
   }
 
-  static Future<void> openSource(NewsSource s) async {
+  /// Ouvre une source dans le navigateur, après une pub plein écran (voir [NewsAds.beforeSource]) : jamais bloquant.
+  static Future<void> openSource(BuildContext context, NewsSource s) async {
+    await NewsAds.beforeSource(context);
     try {
       await launchUrl(Uri.parse(s.url), mode: LaunchMode.externalApplication);
     } catch (_) {}

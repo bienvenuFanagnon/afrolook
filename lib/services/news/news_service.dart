@@ -32,6 +32,7 @@ class NewsService {
   DateTime? _feedAt;
   final Map<String, String> _slotItem = {}; // emplacement du fil → article (stable pendant la session, même si la carte est recréée)
   final Set<String> _shown = {};
+  final Map<String, _CachedArticle> _articles = {}; // articles déjà lus : une carte recréée en défilant ne relit pas le document
 
   Future<NewsConfig> loadConfig() async {
     final now = DateTime.now();
@@ -58,7 +59,8 @@ class NewsService {
         final d = (await FirebaseFirestore.instance.collection('NewsFeed').doc(scope).get()).data();
         for (final m in ((d?['items'] as List?) ?? const [])) {
           final item = NewsFeedItem.fromMap(Map<String, dynamic>.from(m as Map));
-          if (item.id.isNotEmpty && ids.add(item.id) && now.millisecondsSinceEpoch - item.at < _maxAgeMs) out.add(item);
+          final alive = item.exp == 0 || item.exp > now.millisecondsSinceEpoch; // fin de vie dépassée : l'article ne s'affiche plus
+          if (item.id.isNotEmpty && alive && ids.add(item.id) && now.millisecondsSinceEpoch - item.at < _maxAgeMs) out.add(item);
         }
       } catch (e) {
         if (kDebugMode) debugPrint('NewsService.feedFor($scope) : $e');
@@ -129,12 +131,18 @@ class NewsService {
     return '${n.year}-${n.month}-${n.day}';
   }
 
-  Future<NewsArticle?> article(String id) async {
+  /// Lit un article (5 minutes de cache) ; [fresh] force une nouvelle lecture (page de détail, après un commentaire).
+  Future<NewsArticle?> article(String id, {bool fresh = false}) async {
+    final cached = _articles[id];
+    if (!fresh && cached != null && DateTime.now().difference(cached.at).inMinutes < 5) return cached.article;
     try {
       final doc = await FirebaseFirestore.instance.collection('Posts').doc(id).get();
       final d = doc.data();
       if (d == null || d['type'] != 'NEWS') return null;
-      return NewsArticle.fromDoc(doc.id, d);
+      final a = NewsArticle.fromDoc(doc.id, d);
+      if (a.isExpired) return null;
+      _articles[id] = _CachedArticle(a);
+      return a;
     } catch (e) {
       if (kDebugMode) debugPrint('NewsService.article($id) : $e');
       return null;
@@ -176,4 +184,10 @@ class NewsService {
       return 'error';
     }
   }
+}
+
+class _CachedArticle {
+  final NewsArticle article;
+  final DateTime at = DateTime.now();
+  _CachedArticle(this.article);
 }
