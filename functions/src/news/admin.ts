@@ -2,6 +2,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { db } from "../shared/firebase";
 import { AiError, CF_NEWS_ACCOUNTS, DAILY_TOTAL_CAP, DEFAULT_MODELS, PER_ACCOUNT_CAP, loadUsage, maskId, parseAccounts, runAi } from "./ai";
 import { requireAdmin } from "./adminAuth";
+import { publishAvatars } from "./avatars";
 import { COUNTRY_KEYWORDS } from "./cluster";
 import { DEFAULT_SOURCES } from "./sources";
 import { readPipelineConfig } from "./pipeline";
@@ -15,6 +16,7 @@ import { publishNews, removeNews } from "./publish";
  * - newsSeedAgents    : crée ou met à jour les comptes des agents (Users) et leurs compteurs (NewsAgents) ; sans danger si on le relance ;
  * - newsPublishManual : publie un article saisi à la main (essai de la carte et de la page de détail avant le pipeline automatique) ;
  * - newsAgentStats    : par agent, articles publiés, vues, j'aime, commentaires, et cadeaux reçus (information : les vrais gains vont à l'app) ;
+ * - newsCreateAvatars : crée les photos de profil des 6 agents (dessinées par le code, aux couleurs de l'application) ;
  * - newsDeleteArticle : retire un article ;
  * - newsListArticles  : les 40 derniers articles avec leur fin de vie et leur engagement ;
  * - newsExtendArticle : prolonge la vie d'un article (1 à 30 jours) ;
@@ -108,6 +110,7 @@ export const newsAgentStats = onCall(OPTS, async (request) => {
       const d = agents[i].data() ?? {};
       return {
         key: a.key, pseudo: a.pseudo, seeded: agents[i].exists,
+        avatarUrl: String(d["avatarUrl"] ?? ""),
         articles: Number(d["articles"] ?? 0), giftCoins: Number(d["giftCoins"] ?? 0), giftCount: Number(d["giftCount"] ?? 0),
         lastPublishedAt: Number(d["lastPublishedAt"] ?? 0),
         recent: per[a.key] ?? { views: 0, loves: 0, comments: 0, recent: 0 },
@@ -192,4 +195,9 @@ export const newsExtendArticle = onCall(OPTS, async (request) => {
     });
   }
   return { id, expiresAt };
+});
+
+export const newsCreateAvatars = onCall({ ...OPTS, memory: "512MiB", timeoutSeconds: 120 }, async (request) => {
+  await requireAdmin(request);
+  return { avatars: await publishAvatars() };
 });

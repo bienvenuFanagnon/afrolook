@@ -108,6 +108,18 @@ class _NewsAdminPageState extends State<NewsAdminPage> {
     await _loadStats();
   }
 
+  /// Crée (ou remplace) les photos de profil des 6 agents : dessinées par le serveur, rangées dans leur profil.
+  Future<void> _createAvatars() async {
+    setState(() => _loading = true);
+    try {
+      await _call('newsCreateAvatars');
+      _status = 'Photos de profil créées pour les 6 agents.';
+    } catch (e) {
+      _status = _err(e);
+    }
+    await _loadStats();
+  }
+
   Future<void> _seed() async {
     setState(() => _loading = true);
     try {
@@ -413,12 +425,17 @@ class _NewsAdminPageState extends State<NewsAdminPage> {
               child: OutlinedButton.icon(onPressed: _loading ? null : _seed, icon: const Icon(Icons.group_add_rounded), label: const Text('Créer ou mettre à jour les agents')),
             ),
             const SizedBox(height: 6),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(onPressed: _loading ? null : _createAvatars, icon: const Icon(Icons.face_retouching_natural_rounded), label: const Text('Créer les photos de profil des agents')),
+            ),
+            const SizedBox(height: 6),
             if (_agents.isEmpty) Text('Aucune donnée pour le moment.', style: TextStyle(color: c.textSecondary, fontSize: 12)),
             for (final a in _agents)
               ListTile(
                 dense: true,
                 contentPadding: EdgeInsets.zero,
-                leading: AgentAvatarMini(agentKey: '${a['key']}'),
+                leading: AgentAvatarMini(agentKey: '${a['key']}', imageUrl: '${a['avatarUrl'] ?? ''}'),
                 title: Text('${a['pseudo']}${a['seeded'] == true ? '' : '  (non créé)'}', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13)),
                 subtitle: Text(
                   '${a['articles']} articles · ${(a['recent'] as Map)['views']} vues · ${(a['recent'] as Map)['loves']} j\'aime · ${(a['recent'] as Map)['comments']} commentaires\n'
@@ -640,12 +657,14 @@ class _NewsAdminPageState extends State<NewsAdminPage> {
 /// Petite icône d'agent pour les listes de l'administration.
 class AgentAvatarMini extends StatelessWidget {
   final String agentKey;
-  const AgentAvatarMini({super.key, required this.agentKey});
+  final String imageUrl;
+  const AgentAvatarMini({super.key, required this.agentKey, this.imageUrl = ''});
 
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     final agent = newsAgentOf(agentKey);
+    if (imageUrl.isNotEmpty) return CircleAvatar(radius: 18, backgroundImage: NetworkImage(imageUrl));
     return CircleAvatar(radius: 16, backgroundColor: agent.color(c).withOpacity(0.18), child: Icon(agent.icon, size: 17, color: agent.color(c)));
   }
 }

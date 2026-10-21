@@ -54,6 +54,8 @@ class NewsAgentInfo {
         return c.danger;
       case 'tech':
         return c.supportAccent;
+      case 'voyage':
+        return const Color(0xFF14B8A6); // turquoise, comme sa photo de profil
       default:
         return c.info;
     }
