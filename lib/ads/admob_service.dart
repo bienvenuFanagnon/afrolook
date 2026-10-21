@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/model_data.dart';
 import 'ad_config.dart';
+import 'rewarded_ads.dart' show RewardedOutcome;
 import 'ad_gate.dart';
 import 'appodeal_service.dart';
 
@@ -280,30 +281,33 @@ class AdmobService {
 
   /// Charge (si besoin) puis affiche une pub récompensée ; retourne `true` si elle a été regardée en entier.
   /// [userId] est transmis à AdMob pour la vérification côté serveur.
-  static Future<bool> watchRewarded({String? userId}) async {
+  static Future<bool> watchRewarded({String? userId}) async => (await watchRewardedOutcome(userId: userId)) == RewardedOutcome.earned;
+
+  /// Comme [watchRewarded], mais distingue le cas « aucune pub disponible » (on peut alors essayer un autre réseau) de « pub fermée avant la fin ».
+  static Future<RewardedOutcome> watchRewardedOutcome({String? userId}) async {
     loadRewarded();
     for (var i = 0; i < 20 && _rewarded == null; i++) {
       await Future<void>.delayed(const Duration(milliseconds: 500));
     }
     final ad = _rewarded;
-    if (ad == null) return false;
+    if (ad == null) return RewardedOutcome.noAd;
     _rewarded = null;
     rewardedReadyNotifier.value = false;
     if (userId != null) {
       await ad.setServerSideOptions(ServerSideVerificationOptions(userId: userId));
     }
-    final done = Completer<bool>();
+    final done = Completer<RewardedOutcome>();
     var earned = false;
     ad.fullScreenContentCallback = FullScreenContentCallback(
       onAdDismissedFullScreenContent: (a) {
         a.dispose();
         loadRewarded();
-        if (!done.isCompleted) done.complete(earned);
+        if (!done.isCompleted) done.complete(earned ? RewardedOutcome.earned : RewardedOutcome.dismissed);
       },
       onAdFailedToShowFullScreenContent: (a, _) {
         a.dispose();
         loadRewarded();
-        if (!done.isCompleted) done.complete(false);
+        if (!done.isCompleted) done.complete(RewardedOutcome.noAd);
       },
     );
     await ad.show(onUserEarnedReward: (_, __) => earned = true);

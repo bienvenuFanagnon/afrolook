@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../ads/ad_config.dart';
 import '../../ads/admob_service.dart';
+import '../../ads/rewarded_ads.dart';
 import '../../ads/rewards_service.dart';
 import '../../l10n/tr.dart';
 import '../../providers/authProvider.dart';
@@ -79,7 +80,7 @@ class _RewardsPageState extends State<RewardsPage> {
         if (mounted) {
           setState(() => _progress = context.tr('Pub {i} sur {n}', {'i': pending + 1, 'n': o.ads}));
         }
-        final earned = await AdmobService.watchRewarded(userId: _uid);
+        final earned = await RewardedAds.watch(userId: _uid); // AdMob d'abord, Appodeal en renfort s'il n'a aucune pub
         if (!mounted) return;
         if (!earned) {
           _say(context.tr('Aucune vidéo disponible pour le moment, réessaie dans un instant.'));

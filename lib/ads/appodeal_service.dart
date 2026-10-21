@@ -109,6 +109,35 @@ class AppodealService {
   }
 
   static final Map<AppodealAdType, String> _outcome = {};
+  static Completer<bool>? _rewardWaiter;
+  static bool _rewardEarned = false;
+
+  /// Pub récompensée Appodeal, en renfort quand AdMob n'a rien à montrer (voir RewardedAds) : charge à la demande, affiche, et retourne `true`
+  /// si elle a été regardée en entier. `false` : Appodeal pas prêt, aucune pub disponible, ou abandon.
+  static Future<bool> watchRewarded() async {
+    if (!supported || !ready.value) return false;
+    const type = AppodealAdType.RewardedVideo;
+    try {
+      if (!await Appodeal.isLoaded(type)) {
+        _outcome.remove(type);
+        Appodeal.cache(type);
+        for (var i = 0; i < 20; i++) {
+          await Future.delayed(const Duration(milliseconds: 500));
+          if (await Appodeal.isLoaded(type) || _outcome[type] == 'ko') break;
+        }
+      }
+      if (!await Appodeal.isLoaded(type)) return false;
+      _rewardEarned = false;
+      _rewardWaiter = Completer<bool>();
+      if (!await Appodeal.show(type)) return false;
+      return await _rewardWaiter!.future.timeout(const Duration(minutes: 3), onTimeout: () => _rewardEarned);
+    } catch (e) {
+      lastError = '$e';
+      return false;
+    } finally {
+      _rewardWaiter = null;
+    }
+  }
 
   static void _log(String line) {
     final d = DateTime.now();
@@ -182,10 +211,19 @@ class AppodealService {
         _log('récompensée : aucun réseau n’a rempli la demande');
       },
       onRewardedVideoShown: () => _log('récompensée : affichée'),
-      onRewardedVideoShowFailed: () => _log('récompensée : affichage impossible'),
+      onRewardedVideoShowFailed: () {
+        _log('récompensée : affichage impossible');
+        if (_rewardWaiter != null && !_rewardWaiter!.isCompleted) _rewardWaiter!.complete(false);
+      },
       onRewardedVideoClicked: () => _log('récompensée : cliquée'),
-      onRewardedVideoFinished: (amount, reward) => _log('récompensée : terminée ($amount $reward)'),
-      onRewardedVideoClosed: (isFinished) => _log('récompensée : fermée (${isFinished ? 'récompense obtenue' : 'abandonnée'})'),
+      onRewardedVideoFinished: (amount, reward) {
+        _rewardEarned = true;
+        _log('récompensée : terminée ($amount $reward)');
+      },
+      onRewardedVideoClosed: (isFinished) {
+        _log('récompensée : fermée (${isFinished ? 'récompense obtenue' : 'abandonnée'})');
+        if (_rewardWaiter != null && !_rewardWaiter!.isCompleted) _rewardWaiter!.complete(_rewardEarned || isFinished);
+      },
       onRewardedVideoExpired: () => _log('récompensée : expirée'),
     );
     Appodeal.setMrecCallbacks(
