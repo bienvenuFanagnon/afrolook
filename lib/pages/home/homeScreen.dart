@@ -33,6 +33,7 @@ import 'package:afrotok/pages/chat/group/create_group_page.dart';
 import 'package:afrotok/pages/studio/artist_marketplace.dart';
 import 'package:afrotok/pages/music/music_page.dart';
 import 'package:afrotok/pages/quiz/quiz_etude_hub_page.dart';
+import 'package:afrotok/pages/news/news_journal_page.dart';
 import 'package:afrotok/pages/regles_confidentialite_page.dart';
 import 'package:afrotok/pages/chat/chatXilo.dart';
 import 'package:afrotok/pages/chronique/mychroniquepage.dart';
@@ -605,6 +606,12 @@ class _MyHomePageState extends State<MyHomePage>
                       iconColor: const Color(0xFF2ECC71),
                       label: context.tr('Quiz & Étude'),
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QuizEtudeHubPage()))),
+                  // Mon journal : actualités du pays, du continent et du monde (résumés de sources)
+                  _dItem(context, colors,
+                      icon: Icons.newspaper_rounded,
+                      iconColor: const Color(0xFF2ECC71),
+                      label: context.tr('Mon journal'),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NewsJournalPage()))),
                   // Musique : titres gratuits et d'artistes, bibliothèque, favoris, titres téléchargés
                   _dItem(context, colors,
                       icon: Icons.library_music_rounded,
@@ -1311,6 +1318,9 @@ class _MyHomePageState extends State<MyHomePage>
       return;
     }
     switch (screen) {
+      case 'news_journal':
+        page = const NewsJournalPage();
+        break;
       case 'quiz':
         page = const QuizHomePage();
         break;
@@ -2481,6 +2491,16 @@ class _MyHomePageState extends State<MyHomePage>
                     icon: Icons.school_rounded,
                     label: context.tr('Quiz & Étude'),
                     onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QuizEtudeHubPage())),
+                    wide: wide,
+                    colors: colors,
+                    iconColor: colors.primary,
+                  ),
+                  // Mon journal
+                  _sidebarItem(
+                    context: context,
+                    icon: Icons.newspaper_rounded,
+                    label: context.tr('Mon journal'),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NewsJournalPage())),
                     wide: wide,
                     colors: colors,
                     iconColor: colors.primary,

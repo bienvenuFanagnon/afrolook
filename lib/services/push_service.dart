@@ -212,6 +212,7 @@ Future<void> storeNavigationFromPush(Map<String, dynamic> data) async {
     'RAPPEL_NOUVEAUTE_DEFI': 'defi',
     'RAPPEL_NOUVEAUTE_ETUDE': 'etude',
     'RAPPEL_NOUVEAUTE_CONTES': 'contes',
+    'RAPPEL_JOURNAL': 'news_journal', // résumé du jour, de la semaine : Mon journal
     'MUSIC': 'music',
     'WEEKLY_REWARD': 'monetisation',
     'GAIN': 'monetisation',

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../l10n/tr.dart';
 import '../../../models/news_article.dart';
 import '../../../pages/news/news_detail_page.dart';
+import '../../../pages/news/news_journal_page.dart';
 import '../../../providers/authProvider.dart';
 import '../../../services/news/news_service.dart';
 import '../../../theme/app_colors.dart';
@@ -161,6 +162,21 @@ class _NewsFeedCardState extends State<NewsFeedCard> {
               _stat(c, Icons.chat_bubble_outline_rounded, newsCount(a?.comments ?? 0), a == null ? null : () => NewsActions.comments(context, a), c.textSecondary),
               _stat(c, Icons.card_giftcard_rounded, context.tr('Cadeau'), a == null ? null : () => NewsActions.gift(context, a), c.warning),
             ]),
+            // accès à tout le journal : pays, continent, monde, résumés du jour, de la semaine et du mois
+            Align(
+              alignment: Alignment.centerRight,
+              child: InkWell(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NewsJournalPage())),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 6, 4, 2),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Text(context.tr('Tout le journal'), style: TextStyle(color: c.primary, fontWeight: FontWeight.w700, fontSize: 12.5)),
+                    Icon(Icons.chevron_right_rounded, size: 18, color: c.primary),
+                  ]),
+                ),
+              ),
+            ),
           ]),
         ),
       ),
