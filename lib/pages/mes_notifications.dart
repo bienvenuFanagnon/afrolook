@@ -15,6 +15,7 @@ import 'package:afrotok/pages/user/amis/pageMesInvitations.dart';
 import 'dart:async';
 
 import 'package:afrotok/pages/user/monetisation.dart';
+import 'package:afrotok/l10n/tr.dart';
 import 'package:afrotok/pages/notification_settings_page.dart';
 import 'package:afrotok/widgets/feed/sections/social_follow_card.dart';
 import 'package:afrotok/pages/music/music_page.dart';
@@ -1397,7 +1398,7 @@ class _MesNotificationState extends State<MesNotification> {
           IconButton(
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationSettingsPage())),
             icon: Icon(Icons.tune_rounded, color: _colors.textSecondary),
-            tooltip: 'Préférences',
+            tooltip: context.tr('Préférences'),
           ),
         ],
       ),

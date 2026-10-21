@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:stack_appodeal_flutter/stack_appodeal_flutter.dart';
 
 import 'ad_config.dart';
+import 'ad_revenue_tracker.dart';
 
 /// Appodeal : médiation des bannières (AdMob est l'un des réseaux médiés ; le plein écran, la récompensée et les natives restent AdMob en direct).
 ///
@@ -217,7 +218,10 @@ class AppodealService {
       onBannerExpired: () {},
     );
     Appodeal.setAdRevenueCallbacks(
-      onAdRevenueReceive: (r) => lastNetwork.value = '${r.networkName} (${r.adType.name}, ${r.adUnitName}) · ${r.revenue.toStringAsFixed(5)} ${r.currency}',
+      onAdRevenueReceive: (r) {
+        AdRevenueTracker.record('appodeal_${r.adType.name.toLowerCase()}', r.revenue * 1000000, r.currency);
+        lastNetwork.value = '${r.networkName} (${r.adType.name}, ${r.adUnitName}) · ${r.revenue.toStringAsFixed(5)} ${r.currency}';
+      },
     );
     Appodeal.setInterstitialCallbacks(
       onInterstitialLoaded: (isPrecache) => _log('plein écran : pub chargée'),

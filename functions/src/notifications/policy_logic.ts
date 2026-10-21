@@ -53,6 +53,13 @@ export function shouldStoreInApp(typeNotif?: unknown): boolean {
 }
 
 /** Catégorie d'après les données d'une notification (`type_notif`, ou `type` pour les anciens rappels de série). */
+/** Abonnement Gold payant encore actif : aucune pub (règle de l'application). */
+export function isGoldActive(user: Record<string, unknown> | undefined, nowMs: number): boolean {
+  const ab = (user?.["abonnement"] ?? {}) as { type?: string; dateFin?: string; estActif?: boolean };
+  const end = ab.dateFin ? Date.parse(ab.dateFin) : NaN;
+  return ab.type === "gold" && ab.estActif !== false && Number.isFinite(end) && end > nowMs;
+}
+
 export function categoryOfData(data?: Record<string, unknown>): PushCategory {
   if (String(data?.["type"] ?? "") === "streak_reminder") return "reminder";
   return categoryOf(data?.["type_notif"]);
@@ -162,7 +169,7 @@ export function daysInactive(nowMs: number, lastActiveMs?: number): number {
 
 // ─── Choix du contenu d'un rappel ─────────────────────────────────────────────────────────────────
 
-export type ReminderKind = "quiz" | "etude" | "conte" | "feed" | "streak" | "comeback" | "tip";
+export type ReminderKind = "quiz" | "etude" | "conte" | "feed" | "streak" | "comeback" | "tip" | "sponsor" | "creator";
 
 export interface ReminderContext {
   /** Créneau du jour : 0 (matin), 1 (midi), 2 (soir). */
@@ -176,6 +183,10 @@ export interface ReminderContext {
   daysInactive: number;
   /** Les notifications pédagogiques (monétisation, parrainage, lives…) sont-elles activées ? (AppConfig/push.tipsEnabled) */
   tipsEnabled?: boolean;
+  /** Une pub Afrolook autorisée en notification existe et la personne peut en recevoir (pas de Gold). */
+  sponsorAvailable?: boolean;
+  /** Un nouveau créateur à faire découvrir existe pour cette personne (voir reengagement.ts : critères identiques à ceux du fil). */
+  creatorPromoAvailable?: boolean;
 }
 
 const LEARNING: ReminderKind[] = ["quiz", "etude", "conte"];
@@ -185,6 +196,10 @@ export function chooseReminder(c: ReminderContext): ReminderKind {
   const learning = LEARNING[(c.dayIndex * 3 + c.slot) % 3];
   if (c.daysInactive >= 7 && c.slot === 1) return "comeback";
   if (c.slot === 2 && c.streak >= 3 && !c.streakDoneToday) return "streak";
+  // matin : un nouveau créateur à découvrir un jour sur deux (à la place des nouveautés des abonnements, qui passent les autres jours)
+  if (c.slot === 0 && c.creatorPromoAvailable && ((c.dayIndex % 2) + 2) % 2 === 0) return "creator";
+  // soir : une pub Afrolook (sponsor) un jour sur quatre, après la série en danger
+  if (c.slot === 2 && c.sponsorAvailable && ((c.dayIndex % 4) + 4) % 4 === 1) return "sponsor";
   // créneau de midi : un sujet pédagogique 4 jours sur 7 (monétisation, commentaire, musique, parrainage, lives…)
   if (c.slot === 1 && c.tipsEnabled && [0, 2, 4, 5].includes(((c.dayIndex % 7) + 7) % 7)) return "tip";
   if (c.slot !== 1 && c.unseenPosts > 0) return "feed";
@@ -193,7 +208,7 @@ export function chooseReminder(c: ReminderContext): ReminderKind {
 
 /** Données transmises à l'application pour ouvrir directement la bonne page. */
 export function typeNotifFor(kind: ReminderKind): string {
-  return { quiz: "RAPPEL_QUIZ", etude: "RAPPEL_ETUDE", conte: "RAPPEL_CONTE", feed: "RAPPEL_FEED", streak: "RAPPEL_STREAK", comeback: "RAPPEL_RETOUR", tip: "RAPPEL_ABOUT" }[kind];
+  return { quiz: "RAPPEL_QUIZ", etude: "RAPPEL_ETUDE", conte: "RAPPEL_CONTE", feed: "RAPPEL_FEED", streak: "RAPPEL_STREAK", comeback: "RAPPEL_RETOUR", tip: "RAPPEL_ABOUT", sponsor: "RAPPEL_PUB", creator: "RAPPEL_CREATEUR" }[kind];
 }
 
 export interface Copy {
@@ -223,6 +238,8 @@ const COPY: Record<ReminderKind, Copy[]> = {
     { title: "💬 Tu as des nouveautés", body: "Ton fil est à jour : viens voir ce que tu as manqué." },
   ],
   tip: [{ title: "", body: "" }], // les sujets pédagogiques viennent de tips_library.ts
+  sponsor: [{ title: "", body: "" }], // le texte d'une pub vient de la pub elle-même
+  creator: [{ title: "", body: "" }], // le texte vient du créateur promu
   streak: [
     { title: "🔥 Ta série est en danger", body: "Commente quelques posts aujourd’hui pour la garder." },
     { title: "⏳ Ne casse pas ta série", body: "Il te reste peu de temps pour valider ta journée." },

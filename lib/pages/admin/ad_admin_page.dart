@@ -1,6 +1,8 @@
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/ads/ad_config.dart';
 import 'package:afrotok/ads/ad_gate.dart';
+import 'package:afrotok/ads/ad_revenue_tracker.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:afrotok/ads/admob_service.dart';
 import 'package:afrotok/ads/appodeal_service.dart';
 import 'package:afrotok/ads/ad_banner.dart';
@@ -27,10 +29,168 @@ class _AdAdminPageState extends State<AdAdminPage> {
   String _status = "En attente d'action...";
   Map<String, dynamic> _todayStats = {};
 
+  // ── Revenus estimés par emplacement (événements « paid » des SDK, cumulés par le serveur) ──
+  List<Map<String, dynamic>> _revenueDays = [];
+  bool _revenueLoading = false;
+  String? _revenueError;
+
+  // ── Pubs Afrolook qui peuvent aussi partir en notification ──
+  List<Map<String, dynamic>> _pushAds = [];
+  bool _pushLoading = false;
+  String? _pushError;
+
   @override
   void initState() {
     super.initState();
     _loadStats();
+    _loadRevenue();
+    _loadPushAds();
+  }
+
+  Future<void> _loadRevenue() async {
+    setState(() {
+      _revenueLoading = true;
+      _revenueError = null;
+    });
+    try {
+      await AdRevenueTracker.flush(); // inclut ce que cet appareil n'a pas encore envoyé
+      final res = await FirebaseFunctions.instance.httpsCallable('adRevenueReport').call({'days': 7});
+      final days = ((res.data as Map)['days'] as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      if (mounted) setState(() => _revenueDays = days);
+    } on FirebaseFunctionsException catch (e) {
+      if (mounted) setState(() => _revenueError = e.code == 'not-found' ? 'La fonction adRevenueReport n\'est pas encore déployée.' : 'Refusé (${e.code}) : ${e.message ?? ''}');
+    } catch (e) {
+      if (mounted) setState(() => _revenueError = 'Impossible de charger les revenus : $e');
+    }
+    if (mounted) setState(() => _revenueLoading = false);
+  }
+
+  Future<void> _loadPushAds() async {
+    setState(() {
+      _pushLoading = true;
+      _pushError = null;
+    });
+    try {
+      final res = await FirebaseFunctions.instance.httpsCallable('adPushList').call();
+      final ads = ((res.data as Map)['ads'] as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      if (mounted) setState(() => _pushAds = ads);
+    } on FirebaseFunctionsException catch (e) {
+      if (mounted) setState(() => _pushError = e.code == 'not-found' ? 'La fonction adPushList n\'est pas encore déployée.' : 'Refusé (${e.code}) : ${e.message ?? ''}');
+    } catch (e) {
+      if (mounted) setState(() => _pushError = 'Impossible de charger les pubs : $e');
+    }
+    if (mounted) setState(() => _pushLoading = false);
+  }
+
+  Future<void> _setPush(Map<String, dynamic> ad, bool enabled) async {
+    final before = ad['pushEnabled'] == true;
+    setState(() => ad['pushEnabled'] = enabled);
+    try {
+      await FirebaseFunctions.instance.httpsCallable('setAdPush').call({'adId': ad['id'], 'enabled': enabled});
+    } catch (_) {
+      if (mounted) {
+        setState(() => ad['pushEnabled'] = before);
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Modification impossible pour le moment.')));
+      }
+    }
+  }
+
+  /// Total d'un jour par devise : { 'USD': 1.2345 }, en additionnant tous les emplacements (micros → unités).
+  Map<String, double> _dayTotals(Map rev) {
+    final out = <String, double>{};
+    rev.forEach((_, byCur) {
+      (byCur as Map).forEach((cur, v) {
+        out['$cur'] = (out['$cur'] ?? 0) + ((v as Map)['micros'] as num? ?? 0) / 1e6;
+      });
+    });
+    return out;
+  }
+
+  String _money(Map<String, double> m) => m.isEmpty ? '—' : m.entries.map((e) => '${e.value.toStringAsFixed(2)} ${e.key}').join(' + ');
+
+  Widget _revenueCard(AppColors colors, Widget Function(String, String) row) {
+    // total de la semaine par emplacement
+    final perPlacement = <String, Map<String, double>>{};
+    final week = <String, double>{};
+    for (final d in _revenueDays) {
+      final rev = (d['rev'] as Map?) ?? const {};
+      rev.forEach((p, byCur) {
+        (byCur as Map).forEach((cur, v) {
+          final x = ((v as Map)['micros'] as num? ?? 0) / 1e6;
+          perPlacement.putIfAbsent('$p', () => {})['$cur'] = (perPlacement['$p']!['$cur'] ?? 0) + x;
+          week['$cur'] = (week['$cur'] ?? 0) + x;
+        });
+      });
+    }
+    final places = perPlacement.entries.toList()
+      ..sort((a, b) => b.value.values.fold<double>(0, (s, x) => s + x).compareTo(a.value.values.fold<double>(0, (s, x) => s + x)));
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(color: colors.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: colors.border)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Expanded(child: Text('Revenus publicitaires estimés (7 jours)', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 13))),
+          IconButton(
+            tooltip: 'Actualiser',
+            visualDensity: VisualDensity.compact,
+            onPressed: _revenueLoading ? null : _loadRevenue,
+            icon: _revenueLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.refresh_rounded, size: 20),
+          ),
+        ]),
+        if (_revenueError != null)
+          Text(_revenueError!, style: TextStyle(color: colors.warning, fontSize: 12))
+        else if (_revenueDays.every((d) => ((d['rev'] as Map?) ?? const {}).isEmpty))
+          Text('Aucun revenu enregistré pour le moment. Les montants arrivent après quelques minutes d\'utilisation (versions récentes seulement).',
+              style: TextStyle(color: colors.textSecondary, fontSize: 12))
+        else ...[
+          row('Total de la semaine', _money(week)),
+          const Divider(height: 16),
+          Text('Par emplacement', style: TextStyle(color: colors.textSecondary, fontSize: 11.5)),
+          for (final e in places) row(e.key, _money(e.value)),
+          const Divider(height: 16),
+          Text('Par jour', style: TextStyle(color: colors.textSecondary, fontSize: 11.5)),
+          for (final d in _revenueDays) row('${d['day']}', _money(_dayTotals((d['rev'] as Map?) ?? const {}))),
+        ],
+        const SizedBox(height: 4),
+        Text('Estimations remontées par les SDK (AdMob et Appodeal) ; les chiffres définitifs sont dans vos tableaux de bord AdMob et Appodeal.',
+            style: TextStyle(color: colors.textSecondary, fontSize: 11)),
+      ]),
+    );
+  }
+
+  Widget _pushAdsCard(AppColors colors) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(color: colors.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: colors.border)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Expanded(child: Text('Pubs Afrolook par notification', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 13))),
+          IconButton(
+            tooltip: 'Actualiser',
+            visualDensity: VisualDensity.compact,
+            onPressed: _pushLoading ? null : _loadPushAds,
+            icon: _pushLoading ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.refresh_rounded, size: 20),
+          ),
+        ]),
+        Text('Active une pub pour qu\'elle puisse aussi être envoyée en notification (au plus une pub par rappel, un jour sur quatre, avec la mention « Pub » et dans la limite d\'envois de la pub). Seules les pubs Afrolook sont concernées.',
+            style: TextStyle(color: colors.textSecondary, fontSize: 11.5, height: 1.3)),
+        const SizedBox(height: 6),
+        if (_pushError != null)
+          Text(_pushError!, style: TextStyle(color: colors.warning, fontSize: 12))
+        else if (_pushAds.isEmpty && !_pushLoading)
+          Text('Aucune pub Afrolook active.', style: TextStyle(color: colors.textSecondary, fontSize: 12))
+        else
+          for (final ad in _pushAds)
+            SwitchListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              value: ad['pushEnabled'] == true,
+              onChanged: (v) => _setPush(ad, v),
+              title: Text('${ad['actionType'] == '' ? 'Pub' : ad['actionType']} · ${ad['id']}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: colors.textPrimary, fontSize: 12.5)),
+              subtitle: Text('${ad['views']} vues · ${ad['clicks']} clics · notifications ${ad['pushSent']}/${ad['pushLimit']}', style: TextStyle(color: colors.textSecondary, fontSize: 11.5)),
+            ),
+      ]),
+    );
   }
 
   /// Récompenses accordées aujourd'hui (AdRewardStats, jour UTC) : pour surveiller l'effet sur les abonnements.
@@ -159,6 +319,10 @@ class _AdAdminPageState extends State<AdAdminPage> {
                 row('Pubs échangées', '${_todayStats['adsSpent'] ?? 0}'),
               ]),
             ),
+            const SizedBox(height: 14),
+            _revenueCard(colors, row),
+            const SizedBox(height: 14),
+            _pushAdsCard(colors),
             const SizedBox(height: 14),
             btn('Recharger la configuration', () async {
               await RewardsService.loadConfig(force: true);

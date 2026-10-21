@@ -6,6 +6,7 @@ import '../providers/authProvider.dart';
 import '../theme/app_colors.dart';
 import 'ad_config.dart';
 import 'ad_gate.dart';
+import 'ad_revenue_tracker.dart';
 import 'admob_native_pool.dart';
 import 'admob_service.dart';
 
@@ -55,7 +56,10 @@ class _AdmobBannerWidgetState extends State<AdmobBannerWidget> {
       size: size,
       request: AdmobService.request(),
       listener: BannerAdListener(
-        onPaidEvent: widget.onPaid == null ? null : (a, micros, precision, currency) => widget.onPaid!(micros, currency),
+        onPaidEvent: (a, micros, precision, currency) {
+          AdRevenueTracker.record(widget.mrec ? 'admob_mrec' : 'admob_banner_${widget.unitKey}', micros, currency);
+          widget.onPaid?.call(micros, currency);
+        },
         onAdLoaded: (a) {
           if (mounted) setState(() => _loaded = true);
         },
@@ -141,7 +145,10 @@ class _AdmobNativeWidgetState extends State<AdmobNativeWidget> {
       adUnitId: unit,
       request: AdmobService.request(),
       listener: NativeAdListener(
-        onPaidEvent: widget.onPaid == null ? null : (a, micros, precision, currency) => widget.onPaid!(micros, currency),
+        onPaidEvent: (a, micros, precision, currency) {
+          AdRevenueTracker.record('admob_native_${widget.unitKey}', micros, currency);
+          widget.onPaid?.call(micros, currency);
+        },
         onAdLoaded: (a) {
           if (mounted) setState(() => _loaded = true);
         },

@@ -121,3 +121,32 @@ describe("créneaux", () => {
     expect(tzForSlot(Date.UTC(2026, 9, 21, 22, 30), SLOTS_MIN[2])).toBe(-180);
   });
 });
+
+import { isGoldActive } from "../policy_logic";
+
+describe("promotions : créateurs, pubs Afrolook", () => {
+  const base = { dayIndex: 100, streak: 0, streakDoneToday: true, unseenPosts: 3, daysInactive: 0 };
+  test("un nouveau créateur le matin, un jour sur deux ; l'autre jour, les nouveaux posts des abonnements", () => {
+    expect(chooseReminder({ ...base, slot: 0, dayIndex: 100, creatorPromoAvailable: true })).toBe("creator"); // jour pair
+    expect(chooseReminder({ ...base, slot: 0, dayIndex: 101, creatorPromoAvailable: true })).toBe("feed"); // jour impair
+    expect(chooseReminder({ ...base, slot: 0, dayIndex: 100, creatorPromoAvailable: false })).toBe("feed");
+    expect(chooseReminder({ ...base, slot: 1, dayIndex: 100, creatorPromoAvailable: true })).not.toBe("creator");
+  });
+  test("une pub Afrolook le soir, un jour sur quatre, seulement si elle est disponible", () => {
+    expect(chooseReminder({ ...base, slot: 2, dayIndex: 101, sponsorAvailable: true })).toBe("sponsor");
+    expect(chooseReminder({ ...base, slot: 2, dayIndex: 102, sponsorAvailable: true })).not.toBe("sponsor");
+    expect(chooseReminder({ ...base, slot: 2, dayIndex: 101, sponsorAvailable: false })).not.toBe("sponsor");
+    expect(categoryOf(typeNotifFor("sponsor"))).toBe("reminder"); // compte dans le budget quotidien
+    expect(categoryOf(typeNotifFor("creator"))).toBe("reminder");
+  });
+  test("la série en danger passe avant la pub", () => {
+    expect(chooseReminder({ ...base, slot: 2, dayIndex: 101, sponsorAvailable: true, streak: 5, streakDoneToday: false })).toBe("streak");
+  });
+  test("isGoldActive : aucune pub pour un Gold payant encore actif", () => {
+    const now = Date.UTC(2026, 9, 21);
+    expect(isGoldActive({ abonnement: { type: "gold", estActif: true, dateFin: "2026-12-01T00:00:00Z" } }, now)).toBe(true);
+    expect(isGoldActive({ abonnement: { type: "gold", estActif: true, dateFin: "2026-01-01T00:00:00Z" } }, now)).toBe(false);
+    expect(isGoldActive({ abonnement: { type: "premium", estActif: true, dateFin: "2026-12-01T00:00:00Z" } }, now)).toBe(false);
+    expect(isGoldActive(undefined, now)).toBe(false);
+  });
+});

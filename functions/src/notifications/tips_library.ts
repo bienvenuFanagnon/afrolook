@@ -334,6 +334,24 @@ export const TIPS: Tip[] = [
   },
 ];
 
+/** Mention « Pub » d'une pub Afrolook envoyée par notification, dans la langue de la personne. */
+export const AD_LABEL: Record<Lang, string> = { fr: "Pub", en: "Ad", es: "Anuncio", de: "Anzeige", ar: "إعلان", pt: "Anúncio", zh: "广告", sw: "Tangazo" };
+
+/** Promotion d'un nouveau créateur : mention du titre et texte de repli (quand son post n'a pas de texte), dans la langue de la personne. */
+export const NEW_CREATOR_LABEL: Record<Lang, string> = {
+  fr: "Nouveau créateur", en: "New creator", es: "Nuevo creador", de: "Neuer Creator", ar: "مبدع جديد", pt: "Novo criador", zh: "新创作者", sw: "Mwundaji mpya",
+};
+export const NEW_CREATOR_BODY: Record<Lang, string> = {
+  fr: "Découvre son dernier post et encourage-le en t'abonnant.",
+  en: "Check out their latest post and cheer them on by following.",
+  es: "Descubre su última publicación y anímale siguiéndole.",
+  de: "Schau dir den neuesten Beitrag an und unterstütze mit einem Follow.",
+  ar: "اكتشف آخر منشور له وشجّعه بمتابعته.",
+  pt: "Descubra a última publicação e incentive seguindo.",
+  zh: "看看他的最新帖子，关注来鼓励他吧。",
+  sw: "Tazama chapisho lake la hivi karibuni na umtie moyo kwa kumfuata.",
+};
+
 /** Langue d'un profil (champ `appLang`) : une des 8 langues de l'application, sinon le français. */
 export function langOf(v: unknown): Lang {
   const s = String(v ?? "").toLowerCase().slice(0, 2);

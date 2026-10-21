@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/model_data.dart';
 import 'ad_config.dart';
+import 'ad_revenue_tracker.dart';
 import 'rewarded_ads.dart' show RewardedOutcome;
 import 'ad_gate.dart';
 import 'appodeal_service.dart';
@@ -114,6 +115,7 @@ class AdmobService {
       request: request(),
       adLoadCallback: InterstitialAdLoadCallback(
         onAdLoaded: (ad) {
+          ad.onPaidEvent = (a, micros, precision, currency) => AdRevenueTracker.record('admob_interstitial', micros, currency);
           _interstitial = ad;
           _loadingInterstitial = false;
         },
@@ -240,6 +242,7 @@ class AdmobService {
       request: request(),
       rewardedAdLoadCallback: RewardedAdLoadCallback(
         onAdLoaded: (ad) {
+          ad.onPaidEvent = (a, micros, precision, currency) => AdRevenueTracker.record('admob_rewarded', micros, currency);
           _rewarded = ad;
           _loadingRewarded = false;
           rewardedReadyNotifier.value = true;

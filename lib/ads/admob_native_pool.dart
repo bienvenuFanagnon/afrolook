@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'ad_revenue_tracker.dart';
 
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -108,6 +109,7 @@ class AdmobNativePool {
         adUnitId: unit,
         request: AdmobService.request(),
         listener: NativeAdListener(
+          onPaidEvent: (a, micros, precision, currency) => AdRevenueTracker.record('admob_native_pool', micros, currency),
           onAdLoaded: (_) {
             _loading[key] = (_loading[key] ?? 1) - 1;
             _failedAt.remove(key);

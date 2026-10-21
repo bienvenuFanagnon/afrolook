@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../l10n/tr.dart';
 import '../providers/authProvider.dart';
 import '../theme/app_colors.dart';
 
@@ -50,7 +51,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
         'pushPrefs': {'reminders': _reminders, 'activity': _activity},
       });
     } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enregistrement impossible pour le moment.')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Enregistrement impossible pour le moment.'))));
     }
   }
 
@@ -62,32 +63,42 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
       appBar: AppBar(
         backgroundColor: colors.surface,
         foregroundColor: colors.textPrimary,
-        title: const Text('Mes notifications'),
+        title: Text(context.tr('Mes notifications')),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                _tile(colors, Icons.lightbulb_outline_rounded, 'Rappels et idées',
-                    'Quiz, étude, contes, nouveautés de vos créateurs, astuces pour gagner sur Afrolook (3 par jour au plus).', _reminders,
-                    (v) {
-                  setState(() => _reminders = v);
-                  _save();
-                }),
+                _tile(
+                  colors,
+                  Icons.lightbulb_outline_rounded,
+                  context.tr('Rappels et idées'),
+                  context.tr('Quiz, étude, contes, nouveautés de vos créateurs, astuces pour gagner sur Afrolook (3 par jour au plus).'),
+                  _reminders,
+                  (v) {
+                    setState(() => _reminders = v);
+                    _save();
+                  },
+                ),
                 const SizedBox(height: 10),
-                _tile(colors, Icons.favorite_border_rounded, 'Activité', 'J\'aime, commentaires, nouveaux abonnés, nouveaux posts et musiques des créateurs que vous suivez.',
-                    _activity, (v) {
-                  setState(() => _activity = v);
-                  _save();
-                }),
+                _tile(
+                  colors,
+                  Icons.favorite_border_rounded,
+                  context.tr('Activité'),
+                  context.tr('J\'aime, commentaires, nouveaux abonnés, nouveaux posts et musiques des créateurs que vous suivez.'),
+                  _activity,
+                  (v) {
+                    setState(() => _activity = v);
+                    _save();
+                  },
+                ),
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(color: colors.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: colors.border)),
                   child: Text(
-                    'Toujours envoyés : messages, invitations, cadeaux, gains et paiements.\n'
-                    'Heures calmes : aucune notification d\'activité ni de rappel entre 22 h et 7 h 30 (heure de votre téléphone).',
+                    context.tr('Toujours envoyés : messages, invitations, cadeaux, gains et paiements.\nHeures calmes : aucune notification d\'activité ni de rappel entre 22 h et 7 h 30 (heure de votre téléphone).'),
                     style: TextStyle(color: colors.textSecondary, fontSize: 12.5, height: 1.4),
                   ),
                 ),

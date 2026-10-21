@@ -33,6 +33,107 @@ class _PushTestPageState extends State<PushTestPage> {
   Map<String, dynamic>? _result;
   List<_Person> _recipients = [];
 
+  // ── Exemples de chaque cas de notification (aux administrateurs) ──
+  List<Map<String, dynamic>> _cases = [];
+  bool _casesLoading = false;
+  bool _casesSending = false;
+  bool _samplesToMe = false;
+  String? _samplesStatus;
+
+  Future<void> _loadCases() async {
+    setState(() {
+      _casesLoading = true;
+      _samplesStatus = null;
+    });
+    try {
+      final res = await FirebaseFunctions.instance.httpsCallable('sendNotificationSamples').call({'list': true});
+      final list = ((res.data as Map)['cases'] as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      if (mounted) setState(() => _cases = list);
+    } on FirebaseFunctionsException catch (e) {
+      if (mounted) setState(() => _samplesStatus = e.code == 'not-found' ? 'La fonction sendNotificationSamples n\'est pas encore déployée.' : 'Refusé (${e.code}) : ${e.message ?? ''}');
+    } catch (e) {
+      if (mounted) setState(() => _samplesStatus = 'Impossible de charger la liste : $e');
+    }
+    if (mounted) setState(() => _casesLoading = false);
+  }
+
+  Future<void> _sendCases(Object cases, String label) async {
+    setState(() {
+      _casesSending = true;
+      _samplesStatus = 'Envoi de « $label » en cours…';
+    });
+    try {
+      final res = await FirebaseFunctions.instance.httpsCallable('sendNotificationSamples').call({'cases': cases, 'target': _samplesToMe ? 'me' : 'admins'});
+      final d = Map<String, dynamic>.from(res.data as Map);
+      if (mounted) setState(() => _samplesStatus = '✅ ${d['sent']} notification(s) envoyée(s) à ${d['recipients']} personne(s). Elles arrivent une à une.');
+    } on FirebaseFunctionsException catch (e) {
+      if (mounted) setState(() => _samplesStatus = 'Refusé (${e.code}) : ${e.message ?? ''}');
+    } catch (e) {
+      if (mounted) setState(() => _samplesStatus = 'Envoi impossible : $e');
+    }
+    if (mounted) setState(() => _casesSending = false);
+  }
+
+  Widget _samplesSection(AppColors colors, Widget Function(Widget) card, Text Function(String) label) {
+    const groups = {'rappels': 'Rappels programmés', 'pedagogiques': 'Notifications pédagogiques (langue de votre profil)', 'activite': 'Activité et événements'};
+    return card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      label('Exemples de chaque cas'),
+      const SizedBox(height: 4),
+      Text('Envoie une vraie notification de test par cas (titre « 🧪 TEST »), avec son image d\'aperçu et son action au clic, pour vérifier à quoi elle ressemble et où elle mène.',
+          style: TextStyle(color: colors.textSecondary, fontSize: 12, height: 1.3)),
+      const SizedBox(height: 8),
+      Wrap(spacing: 8, children: [
+        ChoiceChip(label: const Text('Tous les administrateurs'), selected: !_samplesToMe, onSelected: (_) => setState(() => _samplesToMe = false)),
+        ChoiceChip(label: const Text('Moi seulement'), selected: _samplesToMe, onSelected: (_) => setState(() => _samplesToMe = true)),
+      ]),
+      const SizedBox(height: 8),
+      if (_cases.isEmpty)
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _casesLoading ? null : _loadCases,
+            icon: _casesLoading ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.list_alt_rounded),
+            label: const Text('Afficher les cas'),
+          ),
+        )
+      else ...[
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _casesSending ? null : () => _sendCases('all', 'tous les cas'),
+            icon: const Icon(Icons.send_rounded),
+            label: Text('Tout envoyer (${_cases.length} notifications)'),
+          ),
+        ),
+        for (final g in groups.entries)
+          ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            title: Text('${g.value} (${_cases.where((c) => c['group'] == g.key).length})', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 13)),
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: _casesSending ? null : () => _sendCases(g.key, g.value),
+                  icon: const Icon(Icons.send_rounded, size: 16),
+                  label: const Text('Envoyer ce groupe'),
+                ),
+              ),
+              for (final c in _cases.where((c) => c['group'] == g.key))
+                ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  title: Text('${c['label']}', style: TextStyle(color: colors.textPrimary, fontSize: 12.5)),
+                  subtitle: c['hasImage'] == true ? Text('avec image d\'aperçu', style: TextStyle(color: colors.textSecondary, fontSize: 11)) : null,
+                  trailing: TextButton(onPressed: _casesSending ? null : () => _sendCases(c['id'], '${c['label']}'), child: const Text('Envoyer')),
+                ),
+            ],
+          ),
+      ],
+      if (_samplesStatus != null)
+        Padding(padding: const EdgeInsets.only(top: 8), child: Text(_samplesStatus!, style: TextStyle(color: colors.textSecondary, fontSize: 12))),
+    ]));
+  }
+
   static String _now() {
     final d = DateTime.now();
     String t(int v) => v.toString().padLeft(2, '0');
@@ -280,6 +381,7 @@ class _PushTestPageState extends State<PushTestPage> {
               padding: const EdgeInsets.only(top: 12),
               child: Text(_error!, style: TextStyle(color: colors.warning, fontSize: 13)),
             ),
+          _samplesSection(colors, card, label),
           if (_result != null) ...[
             const SizedBox(height: 14),
             card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
