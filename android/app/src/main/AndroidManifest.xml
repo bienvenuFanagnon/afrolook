@@ -220,10 +220,13 @@
         <!-- Notifications push FCM : canal et petite icône par défaut (le serveur envoie le même canal) -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="afrolook_push" />
+            android:value="afrolook_push_v2" />
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
-            android:resource="@drawable/notification_icon" />
+            android:resource="@drawable/ic_stat_afrolook" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notification_accent" />
 
         <!-- SERVICES POUR PARTAGE D'ÉCRAN AGORA -->
         <service

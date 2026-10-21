@@ -324,7 +324,9 @@ Future<void> _runNotificationCheck(
     },
   );
 
-  await _runPromoNotification(firestore, userId, prefs, now);
+  // Promos de créateurs et de canaux : supprimées en production. Le serveur envoie désormais des rappels programmés (FCM, règles de budget,
+  // heures calmes et préférences — functions/src/notifications/reengagement.ts) : garder ces promos locales ferait doublon et dérangerait.
+  // (Le déclenchement de test en mode debug reste disponible.)
 
   _saveLastCounts(prefs, {
     'messages':    countMessages,
@@ -738,9 +740,13 @@ void onNotificationTapBackground(NotificationResponse details) {
 
 Future<void> initLocalNotifications() async {
   const AndroidInitializationSettings android =
-      AndroidInitializationSettings('@drawable/notification_icon');
+      AndroidInitializationSettings('@drawable/ic_stat_afrolook');
   await flutterLocalNotificationsPlugin.initialize(
-    InitializationSettings(android: android),
+    const InitializationSettings(
+      android: android,
+      // iPhone : les réglages sont obligatoires ; les permissions sont demandées ailleurs (PushService / OneSignal)
+      iOS: DarwinInitializationSettings(requestAlertPermission: false, requestBadgePermission: false, requestSoundPermission: false),
+    ),
     onDidReceiveNotificationResponse: (details) => _handleLocalNotifPayload(details.payload),
     onDidReceiveBackgroundNotificationResponse: onNotificationTapBackground,
   );

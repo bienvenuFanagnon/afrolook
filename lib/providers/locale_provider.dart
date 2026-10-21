@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_localizations.dart';
 import '../l10n/tr.dart';
+import '../services/push_service.dart';
 
 class LocaleProvider extends ChangeNotifier {
   Locale _locale = Locale(deviceLanguageCode());
@@ -44,6 +45,7 @@ class LocaleProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('app_locale', locale.languageCode);
+    PushService.syncProfile(); // les rappels du serveur suivent la langue choisie
   }
 
   void toggleLocale() {

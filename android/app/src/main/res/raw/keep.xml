@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ressources appelées par leur nom à l'exécution (icône de la barre d'état, son des notifications) : à garder malgré shrinkResources -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_stat_afrolook,@drawable/ic_stat_onesignal_default,@raw/afrolook_chime" />

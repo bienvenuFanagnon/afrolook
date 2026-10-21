@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Couleur d'accent des notifications (pastille de l'icône dans le panneau) : vert du logo Afrolook -->
+    <color name="notification_accent">#00BE62</color>
+</resources>

@@ -148,7 +148,7 @@ Future<void> main() async {
       await JustAudioBackground.init(
         androidNotificationChannelId: 'com.afrotok.afrotok.music',
         androidNotificationChannelName: 'Afrolook Musique',
-        androidNotificationIcon: 'drawable/notification_icon',
+        androidNotificationIcon: 'drawable/ic_stat_afrolook',
         androidNotificationOngoing: true,
       ).timeout(const Duration(seconds: 6));
     } catch (e) {

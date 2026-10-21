@@ -70,7 +70,8 @@ class DestinationData {
   final String? affiliateId;
   final String? creatorId;
   final Canal? canal;
-  DestinationData({required this.type, this.post, this.chat, this.chroniqueId, this.liveId, this.chatId, this.sendUserId, this.joinCode, this.content, this.affiliateId, this.creatorId, this.canal});
+  final String? screen;
+  DestinationData({required this.type, this.screen, this.post, this.chat, this.chroniqueId, this.liveId, this.chatId, this.sendUserId, this.joinCode, this.content, this.affiliateId, this.creatorId, this.canal});
 }
 
 class SplashChargement extends StatefulWidget {
@@ -125,6 +126,7 @@ class _SplashChargementState extends State<SplashChargement> {
   String? _pendingCreatorId;
 
   String? _pendingCanalId;
+  String? _pendingScreen;
   Canal? _loadedCanal;
 
   @override
@@ -739,6 +741,9 @@ class _SplashChargementState extends State<SplashChargement> {
         case 'canal':
           _pendingCanalId = _cachedNavigation!['canalId'] as String?;
           break;
+        case 'screen':
+          _pendingScreen = _cachedNavigation!['screen'] as String?;
+          break;
         case 'group':
           _pendingJoinCode = _cachedNavigation!['joinCode'] as String?;
           break;
@@ -802,6 +807,9 @@ class _SplashChargementState extends State<SplashChargement> {
         break;
       case 'group':
         _destinationToSend = DestinationData(type: 'group', joinCode: _pendingJoinCode);
+        break;
+      case 'screen':
+        _destinationToSend = DestinationData(type: 'screen', screen: _pendingScreen);
         break;
       default:
         _destinationToSend = DestinationData(type: 'home');

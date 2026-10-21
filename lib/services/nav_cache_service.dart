@@ -125,6 +125,15 @@ class NavigationCacheService {
     });
   }
 
+  /// Ouvre un écran précis de l'application (voir HomeScreen._openScreen) : rappels, gains, classement, création de live / canal / groupe…
+  Future<void> storeScreenNavigation(String screen) async {
+    await storePendingNavigation({'type': 'screen', 'screen': screen});
+  }
+
+  Future<void> storeLiveNavigation(String liveId) async {
+    await storePendingNavigation({'type': 'live', 'liveId': liveId});
+  }
+
   Future<void> storeCanalNavigation(String canalId) async {
     await storePendingNavigation({
       'type': 'canal',

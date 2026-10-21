@@ -12,7 +12,14 @@ import 'package:afrotok/pages/postDetailsVideo.dart';
 import 'package:afrotok/pages/socialVideos/video_details.dart';
 import 'package:afrotok/pages/user/amis/mesAmis.dart';
 import 'package:afrotok/pages/user/amis/pageMesInvitations.dart';
+import 'dart:async';
+
 import 'package:afrotok/pages/user/monetisation.dart';
+import 'package:afrotok/pages/notification_settings_page.dart';
+import 'package:afrotok/pages/music/music_page.dart';
+import 'package:afrotok/pages/dating/dating_notifications_page.dart';
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:afrotok/pages/studio/artist_marketplace.dart';
 import 'package:afrotok/pages/user/userPubs/user_my_advertisements_page.dart';
 import 'package:afrotok/pages/admin/AfrolookPub/afrolookAdminPubPage.dart';
@@ -275,6 +282,7 @@ class _MesNotificationState extends State<MesNotification> {
     _authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     _postProvider = Provider.of<PostProvider>(context, listen: false);
     _loadAvailableTypes();
+    _retryPendingMarkAll(); // termine un « tout marquer comme vu » resté en attente (hors ligne)
     _loadInitialNotifications();
     _loadGroupCounts();
     _loadGroupSamples();
@@ -464,7 +472,11 @@ class _MesNotificationState extends State<MesNotification> {
     }
   }
 
+  bool _overlayShown = false;
+
   void _showLoadingOverlay() {
+    if (_overlayShown) return;
+    _overlayShown = true;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -504,14 +516,75 @@ class _MesNotificationState extends State<MesNotification> {
   }
 
   void _hideLoadingOverlay() {
-    Navigator.of(context, rootNavigator: true).pop();
+    // ne retirer le voile que s'il est affiché : un second retrait fermerait la page des notifications elle-même
+    if (!_overlayShown) return;
+    _overlayShown = false;
+    if (mounted) Navigator.of(context, rootNavigator: true).pop();
+  }
+
+  /// Notification sans page propre (information) : on montre son texte, au lieu d'une page vide ou d'une erreur.
+  Future<void> _showInfoDialog(NotificationData n) async {
+    _hideLoadingOverlay();
+    if (!mounted) return;
+    final title = (n.titre ?? '').trim();
+    final text = (n.description ?? '').trim();
+    if (title.isNotEmpty || text.isNotEmpty) {
+      await showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: title.isEmpty ? null : Text(title),
+          content: Text(text),
+          actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: Text(MaterialLocalizations.of(ctx).okButtonLabel))],
+        ),
+      );
+    }
+    if (mounted) setState(() => _isHandlingNotification = false);
+  }
+
+  /// Page ouverte depuis une notification, puis retour à l'état normal.
+  Future<void> _openPage(Widget page) async {
+    _hideLoadingOverlay();
+    if (!mounted) return;
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+    if (mounted) setState(() => _isHandlingNotification = false);
   }
 
   Future<void> _navigateToNotificationTarget(NotificationData notification) async {
     try {
       switch (notification.type) {
         case 'MESSAGE':
-          await _handlePostNotification(notification);
+          // un message qui désigne un post (réponse, partage) ouvre ce post ; sinon c'est une simple information
+          if ((notification.post_id ?? '').isNotEmpty) {
+            await _handlePostNotification(notification);
+          } else {
+            await _showInfoDialog(notification);
+          }
+          break;
+        case 'GAIN':
+        case 'WEEKLY_REWARD':
+          await _openPage(MonetisationPage());
+          break;
+        case 'PROFILE_LIKE':
+        case 'USER':
+          final profileId = notification.user_id;
+          if (profileId != null && profileId.isNotEmpty) {
+            _hideLoadingOverlay();
+            _showUserProfile(profileId);
+            setState(() => _isHandlingNotification = false);
+          } else {
+            await _showInfoDialog(notification);
+          }
+          break;
+        case 'MUSIC':
+          await _openPage(const MusicPage());
+          break;
+        case 'REPOST':
+        case 'COMMENT_LIKE':
+          if ((notification.post_id ?? '').isNotEmpty) {
+            await _handlePostNotification(notification);
+          } else {
+            await _showInfoDialog(notification);
+          }
           break;
         case 'POST':
           await _handlePostNotification(notification);
@@ -666,10 +739,12 @@ class _MesNotificationState extends State<MesNotification> {
           });
           break;
         default:
-          _hideLoadingOverlay();
-          setState(() {
-            _isHandlingNotification = false;
-          });
+          // DATING_*, SUPPORT, CERTIFICATION, MARKETING… : pas de page de détails d'un post, on montre le texte de la notification
+          if ((notification.type ?? '').startsWith('DATING_')) {
+            await _openPage(const DatingNotificationsPage());
+          } else {
+            await _showInfoDialog(notification);
+          }
           break;
       }
     } catch (e) {
@@ -757,18 +832,20 @@ class _MesNotificationState extends State<MesNotification> {
     printVm("notification data : ${notification.toJson()}");
     final postId = notification.post_id;
     if (postId == null || postId.isEmpty) {
-      _hideLoadingOverlay();
-      _showErrorSnackBar(_l10n.notifPostNotFound);
-      setState(() => _isHandlingNotification = false);
+      // pas de post désigné : cette notification n'a pas de page de détails, on montre son texte
+      await _showInfoDialog(notification);
       return;
     }
     try {
       // Fetch unique par doc ID — rapide, indépendant du type
       final post = await _fetchPostById(postId);
       if (post == null) {
+        // post supprimé depuis : information neutre (pas une erreur)
         _hideLoadingOverlay();
-        _showErrorSnackBar(_l10n.notifPostNotFound);
-        setState(() => _isHandlingNotification = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(_l10n.notifPostNotFound)));
+          setState(() => _isHandlingNotification = false);
+        }
         return;
       }
 
@@ -1217,57 +1294,41 @@ class _MesNotificationState extends State<MesNotification> {
     );
   }
 
+  /// « Tout marquer comme vu » : tout apparaît vu IMMÉDIATEMENT (liste, compteurs, badge de l'accueil) ; le reste du travail se fait sur le serveur
+  /// (fonction markAllNotificationsRead), la personne n'a pas besoin de rester sur la page. Si l'appel échoue (hors ligne), il est refait à la prochaine
+  /// ouverture de cette page.
   Future<void> _markAllAsRead() async {
-    if (_isMarkingAllRead) return;
-    if (mounted) setState(() => _isMarkingAllRead = true);
     final userId = _authProvider.loginUserData.id!;
+    setState(() {
+      for (final notif in _notifications) {
+        notif.is_open = true;
+      }
+      _groupUnreadCounts.updateAll((key, value) => 0);
+    });
+    _authProvider.markNotificationsSeenLocally(userId);
+    _showSuccessSnackBar(_l10n.notifAllMarkedAsRead);
+    unawaited(_markAllOnServer(userId));
+  }
+
+  static const _pendingMarkKey = 'pending_mark_all_notifications';
+
+  Future<void> _markAllOnServer(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
     try {
-      // Query par receiver_id seul (index single-field auto) pour éviter
-      // l'index composite receiver_id+is_open qui peut être absent.
-      QuerySnapshot snap;
-      DocumentSnapshot? lastDoc;
-      do {
-        Query q = _firestore
-            .collection('Notifications')
-            .where('receiver_id', isEqualTo: userId)
-            .limit(500);
-        if (lastDoc != null) q = q.startAfterDocument(lastDoc);
-        snap = await q.getM('mes_notifications.dart:1214');
-
-        if (snap.docs.isEmpty) break;
-
-        final batch = _firestore.batch();
-        for (final doc in snap.docs) {
-          final data = doc.data() as Map<String, dynamic>?;
-          final isOpen = data?['is_open'] as bool? ?? false;
-          final views = List<String>.from(data?['users_id_view'] ?? []);
-          if (!isOpen || !views.contains(userId)) {
-            batch.update(doc.reference, {
-              'is_open': true,
-              'users_id_view': FieldValue.arrayUnion([userId]),
-            });
-          }
-        }
-        await batch.commit();
-        lastDoc = snap.docs.last;
-      } while (snap.docs.length == 500);
-
-      if (mounted) {
-        setState(() {
-          for (final notif in _notifications) {
-            notif.is_open = true;
-          }
-          _isMarkingAllRead = false;
-        });
-        _showSuccessSnackBar(_l10n.notifAllMarkedAsRead);
-      }
+      await FirebaseFunctions.instance.httpsCallable('markAllNotificationsRead').call();
+      await prefs.remove('$_pendingMarkKey$userId');
     } catch (e) {
-      printVm("Erreur marquer tout comme lu: $e");
-      if (mounted) {
-        setState(() => _isMarkingAllRead = false);
-        _showErrorSnackBar(_l10n.notifErrorMarkingAsRead);
-      }
+      printVm("Tout marquer comme vu (serveur) : $e — sera refait plus tard");
+      await prefs.setBool('$_pendingMarkKey$userId', true);
     }
+  }
+
+  /// À l'ouverture : termine un « tout marquer comme vu » qui n'avait pas pu partir.
+  Future<void> _retryPendingMarkAll() async {
+    final userId = _authProvider.loginUserData.id;
+    if (userId == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool('$_pendingMarkKey$userId') == true) unawaited(_markAllOnServer(userId));
   }
 
   void _showErrorSnackBar(String message) {
@@ -1327,23 +1388,16 @@ class _MesNotificationState extends State<MesNotification> {
               tooltip: _l10n.notifFilterByType,
             ),
           if (_notifications.any((n) => !n.is_open!))
-            _isMarkingAllRead
-                ? Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        valueColor: AlwaysStoppedAnimation<Color>(_colors.danger),
-                      ),
-                    ),
-                  )
-                : IconButton(
-                    onPressed: _markAllAsRead,
-                    icon: Icon(Icons.done_all, color: _colors.danger),
-                    tooltip: l10n.notifMarkRead,
-                  ),
+            IconButton(
+              onPressed: _markAllAsRead,
+              icon: Icon(Icons.done_all, color: _colors.danger),
+              tooltip: l10n.notifMarkRead,
+            ),
+          IconButton(
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationSettingsPage())),
+            icon: Icon(Icons.tune_rounded, color: _colors.textSecondary),
+            tooltip: 'Préférences',
+          ),
         ],
       ),
       body: CenteredContent(
