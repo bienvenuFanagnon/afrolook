@@ -220,7 +220,10 @@ Future<void> storeNavigationFromPush(Map<String, dynamic> data) async {
     'SERVICE': 'notifications',
     'CERTIFICATION': 'notifications',
   };
-  if (screens.containsKey(type)) {
+  if (type == 'NEWS' && hasPost) {
+    // article d'actualité : sa page de détail
+    await nav.storeScreenNavigation('news:$postId');
+  } else if (screens.containsKey(type)) {
     await nav.storeScreenNavigation(screens[type]!);
   } else if (type == 'RAPPEL_PARRAINAGE' || type == NotificationType.PARRAINAGE.name) {
     await nav.storeParrainageNavigation();

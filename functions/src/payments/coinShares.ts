@@ -22,6 +22,15 @@ function num(v: unknown): number {
   return typeof v === "number" && Number.isFinite(v) ? v : 0;
 }
 
+/**
+ * Répartition d'un cadeau sur un post : le créateur reçoit 70 % en Pièces gagnées, sauf pour un agent d'actualités (post de type NEWS) :
+ * son compte n'est pas un portefeuille, tout ce qui n'est pas versé aux parrains revient à l'application.
+ */
+export function postGiftShares(coins: number, sponsorCoins: number, toNewsAgent: boolean): { receiverCoins: number; appCoins: number } {
+  const receiverCoins = toNewsAgent ? 0 : Math.floor(coins * CREATOR_SHARE);
+  return { receiverCoins, appCoins: coins - receiverCoins - sponsorCoins };
+}
+
 /** Parrain d'un utilisateur (champ code_parrain → Users.code_parrainage), hors lui-même. */
 export async function sponsorOf(userId: string | undefined): Promise<string | undefined> {
   if (!userId) return undefined;

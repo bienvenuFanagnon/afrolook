@@ -276,6 +276,8 @@ export const onNewPostFromSubscription = onDocumentCreated(
   async (event) => {
     const post = event.data?.data();
     if (!post) return;
+    // Articles des agents d'actualités : jamais d'e-mail aux abonnés (leurs notifications sont gérées par le module d'actualités)
+    if (post.type === "NEWS") return;
 
     try {
       const postOwnerId = post.userId;

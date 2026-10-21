@@ -75,3 +75,7 @@ export { notifyAdminsOnNewSound, notifyArtistOnSoundStatus } from "./studio/arti
 export { notifyArtistOnEarning } from "./studio/artistEarnNotify";
 export { musicBuy, musicStreamUrl, musicLicense, musicAdListen, musicAdPaid, cleanupTempListen } from "./studio/musicLibrary";
 export { playlistSave, playlistAdd, playlistDelete, musicStream } from "./studio/musicPlaylists";
+
+// Actualités : agents, publication, outils admin et notifications d'engagement
+export * from "./news/admin";
+export { onNewsCommentCreated } from "./news/engagement";

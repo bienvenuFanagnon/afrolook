@@ -17,6 +17,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../shared/firebase";
 import { queueModerationReport } from "../moderation/moderation";
 import { shouldPropagate } from "./scorePropagation";
+import { onNewsPostChanged } from "../news/engagement";
 
 // ─── Recalcul en temps réel à chaque love ou commentaire ────────────────────
 
@@ -26,6 +27,12 @@ export const recalculateScoresOnInteraction = onDocumentUpdated(
     if (!event.data) return;
     const before = event.data.before.data();
     const after  = event.data.after.data();
+
+    // Article d'actualité : pas de score de créateur à propager ; on annonce seulement un palier (vues, j'aime, commentaires) ou un j'aime remarqué
+    if (after.type === "NEWS") {
+      await onNewsPostChanged(event.params.postId, before, after).catch((e) => console.error("[actualités] engagement", e));
+      return;
+    }
 
     // Déclencher si loves, comments ou totalInteractions ont changé
     const lovesChanged        = (before.loves             ?? 0) !== (after.loves             ?? 0);

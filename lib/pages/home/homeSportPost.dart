@@ -78,6 +78,7 @@ import '../intro/monetization_tutorial.dart';
 import '../../widgets/feed/sections/social_follow_card.dart';
 import '../../widgets/feed/sections/ad_free_day_card.dart';
 import '../../widgets/feed/sections/quiz_feed_card.dart';
+import '../../widgets/feed/sections/news_feed_card.dart';
 import '../../widgets/feed/sections/contes_feed_card.dart';
 import '../../widgets/feed/sections/etude_feed_card.dart';
 
@@ -3001,6 +3002,11 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       // Défis en cours : traités comme des pubs, ils reviennent souvent (après les posts 4, 11, 19 puis tous les 12 posts), un défi différent à chaque fois
       if (i == 3 || i == 10 || i == 18 || (i > 18 && (i - 18) % 12 == 0)) {
         contentWidgets.add(DefiFeedCard(key: ValueKey('defi_card_sport_$i'), slot: i == 3 ? 0 : i == 10 ? 1 : i == 18 ? 2 : 3 + (i - 18) ~/ 12));
+      }
+
+      // Actualités sportives (AfroSport) : une carte tous les 10 posts (6e, 16e, 26e…) ; invisible tant que AppConfig/news.feedEnabled n'est pas actif
+      if (i == 5 || (i > 5 && (i - 5) % 10 == 0)) {
+        contentWidgets.add(NewsFeedCard(key: ValueKey('news_card_sport_$i'), slotKey: 'sport_$i', category: 'sport'));
       }
 
       // Invitation « Crée ta carte Afrolook » : après le 13e post, puis plus loin (au plus une fois tous les 3 jours, jamais sur le web)

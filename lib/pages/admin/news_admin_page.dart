@@ -1,0 +1,312 @@
+import 'package:cloud_functions/cloud_functions.dart';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../layout/centered_content.dart';
+import '../../models/news_article.dart';
+import '../../providers/authProvider.dart';
+import '../../theme/app_colors.dart';
+import '../news/news_detail_page.dart';
+
+/// Administration des actualités : interrupteurs, création des agents, statistiques par agent (information : les cadeaux reçus par les agents
+/// vont à l'application) et publication d'un article d'essai pour voir la carte du fil et la page de détail avant le pipeline automatique.
+class NewsAdminPage extends StatefulWidget {
+  const NewsAdminPage({super.key});
+
+  @override
+  State<NewsAdminPage> createState() => _NewsAdminPageState();
+}
+
+class _NewsAdminPageState extends State<NewsAdminPage> {
+  bool _enabled = true;
+  bool _feedEnabled = false;
+  List<Map<String, dynamic>> _agents = [];
+  bool _loading = false;
+  String? _status;
+
+  String _agentKey = 'sport';
+  String _level = 'country';
+  final _country = TextEditingController();
+  final _continent = TextEditingController(text: 'AF');
+  final _title = TextEditingController();
+  final _chapo = TextEditingController();
+  final _section = TextEditingController();
+  final _s1Name = TextEditingController();
+  final _s1Url = TextEditingController();
+  final _s2Name = TextEditingController();
+  final _s2Url = TextEditingController();
+  final _image = TextEditingController();
+  String? _lastId;
+
+  @override
+  void initState() {
+    super.initState();
+    final code = context.read<UserAuthProvider>().loginUserData.countryData?['countryCode'];
+    _country.text = (code ?? 'TG').toUpperCase();
+    _loadStats();
+  }
+
+  @override
+  void dispose() {
+    for (final c in [_country, _continent, _title, _chapo, _section, _s1Name, _s1Url, _s2Name, _s2Url, _image]) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
+  Future<Map<String, dynamic>> _call(String name, [Map<String, dynamic>? data]) async {
+    final res = await FirebaseFunctions.instance.httpsCallable(name).call(data ?? <String, dynamic>{});
+    return Map<String, dynamic>.from(res.data as Map);
+  }
+
+  String _err(Object e) {
+    if (e is FirebaseFunctionsException) {
+      if (e.code == 'not-found') return 'Fonction pas encore déployée.';
+      return '${e.code} : ${e.message ?? ''}';
+    }
+    return '$e';
+  }
+
+  Future<void> _loadStats() async {
+    setState(() => _loading = true);
+    try {
+      final d = await _call('newsAgentStats');
+      final cfg = Map<String, dynamic>.from(d['config'] as Map);
+      setState(() {
+        _enabled = cfg['enabled'] == true;
+        _feedEnabled = cfg['feedEnabled'] == true;
+        _agents = (d['agents'] as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        _status = null;
+      });
+    } catch (e) {
+      setState(() => _status = _err(e));
+    }
+    if (mounted) setState(() => _loading = false);
+  }
+
+  Future<void> _setConfig(Map<String, dynamic> patch) async {
+    try {
+      await _call('newsSetConfig', patch);
+    } catch (e) {
+      setState(() => _status = _err(e));
+    }
+    await _loadStats();
+  }
+
+  Future<void> _seed() async {
+    setState(() => _loading = true);
+    try {
+      await _call('newsSeedAgents');
+      _status = 'Agents créés ou mis à jour.';
+    } catch (e) {
+      _status = _err(e);
+    }
+    await _loadStats();
+  }
+
+  void _fillExample() {
+    final a = newsAgentOf(_agentKey);
+    setState(() {
+      _title.text = '[ESSAI] Les Éperviers préparent leur match de qualification';
+      _chapo.text = 'Le sélectionneur a dévoilé sa liste de 24 joueurs. Trois absents sont à signaler avant le déplacement de samedi.';
+      _section.text = 'Le sélectionneur a retenu vingt-quatre joueurs pour la double confrontation, avec trois absents confirmés par la fédération. '
+          'Le groupe se retrouve dès demain pour une dernière séance avant le départ.';
+      _s1Name.text = 'Africanews';
+      _s1Url.text = 'https://www.africanews.com/';
+      _s2Name.text = 'RFI Sport';
+      _s2Url.text = 'https://www.rfi.fr/fr/sport/';
+      _status = 'Exemple rempli pour ${a.pseudo}. Modifie ce que tu veux puis publie.';
+    });
+  }
+
+  Future<void> _publish() async {
+    final sources = <Map<String, String>>[
+      if (_s1Url.text.trim().isNotEmpty) {'name': _s1Name.text.trim(), 'url': _s1Url.text.trim()},
+      if (_s2Url.text.trim().isNotEmpty) {'name': _s2Name.text.trim(), 'url': _s2Url.text.trim()},
+    ];
+    setState(() => _loading = true);
+    try {
+      final d = await _call('newsPublishManual', {
+        'agentKey': _agentKey,
+        'level': _level,
+        'country': _country.text.trim(),
+        'continent': _continent.text.trim(),
+        'title': _title.text.trim(),
+        'chapo': _chapo.text.trim(),
+        'sections': [
+          {'titre': '', 'texte': _section.text.trim()}
+        ],
+        'retenir': ['Liste de 24 joueurs', 'Trois absents confirmés', 'Match prévu samedi'],
+        'sources': sources,
+        'image': _image.text.trim(),
+      });
+      _lastId = d['id']?.toString();
+      _status = 'Article publié (${d['scope']}). ${_feedEnabled ? '' : 'Active « Cartes dans le fil » pour le voir dans le fil.'}';
+    } catch (e) {
+      _status = _err(e);
+    }
+    await _loadStats();
+  }
+
+  Future<void> _delete() async {
+    final id = _lastId;
+    if (id == null) return;
+    try {
+      await _call('newsDeleteArticle', {'id': id});
+      _lastId = null;
+      _status = 'Article supprimé.';
+    } catch (e) {
+      _status = _err(e);
+    }
+    await _loadStats();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    Widget card(Widget child) => Container(
+          margin: const EdgeInsets.only(bottom: 14),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: c.border)),
+          child: child,
+        );
+    Text title(String t) => Text(t, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 13.5));
+    Widget field(String label, TextEditingController ctrl, {int lines = 1}) => Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: TextField(
+            controller: ctrl,
+            maxLines: lines,
+            style: TextStyle(color: c.textPrimary, fontSize: 13),
+            decoration: InputDecoration(labelText: label, isDense: true, border: const OutlineInputBorder()),
+          ),
+        );
+    return Scaffold(
+      backgroundColor: c.background,
+      appBar: AppBar(
+        backgroundColor: c.surface,
+        foregroundColor: c.textPrimary,
+        title: const Text('Actualités (agents)'),
+        actions: [IconButton(onPressed: _loading ? null : _loadStats, icon: const Icon(Icons.refresh_rounded))],
+      ),
+      body: CenteredContent(
+        child: ListView(padding: const EdgeInsets.all(16), children: [
+          if (_loading) const LinearProgressIndicator(),
+          if (_status != null)
+            Padding(padding: const EdgeInsets.only(bottom: 12), child: Text(_status!, style: TextStyle(color: c.warning, fontSize: 12.5))),
+          card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            title('Réglages'),
+            SwitchListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              title: Text('Actualités actives', style: TextStyle(color: c.textPrimary, fontSize: 13)),
+              value: _enabled,
+              onChanged: (v) => _setConfig({'enabled': v}),
+            ),
+            SwitchListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              title: Text('Cartes dans le fil', style: TextStyle(color: c.textPrimary, fontSize: 13)),
+              subtitle: Text('Désactivé : rien n\'apparaît dans le fil, quel que soit le nombre d\'articles.', style: TextStyle(color: c.textSecondary, fontSize: 11.5)),
+              value: _feedEnabled,
+              onChanged: (v) => _setConfig({'feedEnabled': v}),
+            ),
+          ])),
+          card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            title('Agents'),
+            const SizedBox(height: 6),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(onPressed: _loading ? null : _seed, icon: const Icon(Icons.group_add_rounded), label: const Text('Créer ou mettre à jour les agents')),
+            ),
+            const SizedBox(height: 6),
+            if (_agents.isEmpty) Text('Aucune donnée pour le moment.', style: TextStyle(color: c.textSecondary, fontSize: 12)),
+            for (final a in _agents)
+              ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                leading: AgentAvatarMini(agentKey: '${a['key']}'),
+                title: Text('${a['pseudo']}${a['seeded'] == true ? '' : '  (non créé)'}', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13)),
+                subtitle: Text(
+                  '${a['articles']} articles · ${(a['recent'] as Map)['views']} vues · ${(a['recent'] as Map)['loves']} j\'aime · ${(a['recent'] as Map)['comments']} commentaires\n'
+                  'Cadeaux reçus (information) : ${a['giftCoins']} pièces, ${a['giftCount']} cadeaux',
+                  style: TextStyle(color: c.textSecondary, fontSize: 11.5, height: 1.35),
+                ),
+                isThreeLine: true,
+              ),
+            Text('Vues, j\'aime et commentaires : sur les 200 derniers articles.', style: TextStyle(color: c.textSecondary, fontSize: 11)),
+          ])),
+          card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            title('Publier un article d\'essai'),
+            const SizedBox(height: 8),
+            Row(children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: _agentKey,
+                  isDense: true,
+                  decoration: const InputDecoration(labelText: 'Agent', isDense: true, border: OutlineInputBorder()),
+                  items: [for (final a in kNewsAgents) DropdownMenuItem(value: a.key, child: Text(a.pseudo))],
+                  onChanged: (v) => setState(() => _agentKey = v ?? 'sport'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  value: _level,
+                  isDense: true,
+                  decoration: const InputDecoration(labelText: 'Niveau', isDense: true, border: OutlineInputBorder()),
+                  items: const [
+                    DropdownMenuItem(value: 'country', child: Text('Pays')),
+                    DropdownMenuItem(value: 'continent', child: Text('Continent')),
+                    DropdownMenuItem(value: 'world', child: Text('Monde')),
+                  ],
+                  onChanged: (v) => setState(() => _level = v ?? 'country'),
+                ),
+              ),
+            ]),
+            if (_level == 'country') field('Pays (code à 2 lettres, ex. TG)', _country),
+            if (_level == 'continent') field('Continent (AF, EU, AS, NA, SA, OC)', _continent),
+            field('Titre (10 à 140 caractères)', _title),
+            field('Chapô (40 à 320 caractères)', _chapo, lines: 2),
+            field('Texte (40 caractères ou plus)', _section, lines: 4),
+            field('Source 1 : nom', _s1Name),
+            field('Source 1 : lien https', _s1Url),
+            field('Source 2 : nom (facultatif)', _s2Name),
+            field('Source 2 : lien https (facultatif)', _s2Url),
+            field('Image : lien https (facultatif)', _image),
+            const SizedBox(height: 10),
+            Row(children: [
+              Expanded(child: OutlinedButton(onPressed: _fillExample, child: const Text('Remplir un exemple'))),
+              const SizedBox(width: 8),
+              Expanded(child: ElevatedButton(onPressed: _loading ? null : _publish, child: const Text('Publier'))),
+            ]),
+            if (_lastId != null) ...[
+              const SizedBox(height: 6),
+              Row(children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => NewsDetailPage(postId: _lastId!))),
+                    child: const Text('Voir la page de détail'),
+                  ),
+                ),
+                Expanded(child: TextButton(onPressed: _delete, child: Text('Supprimer', style: TextStyle(color: c.danger)))),
+              ]),
+            ],
+          ])),
+        ]),
+      ),
+    );
+  }
+}
+
+/// Petite icône d'agent pour les listes de l'administration.
+class AgentAvatarMini extends StatelessWidget {
+  final String agentKey;
+  const AgentAvatarMini({super.key, required this.agentKey});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final agent = newsAgentOf(agentKey);
+    return CircleAvatar(radius: 16, backgroundColor: agent.color(c).withOpacity(0.18), child: Icon(agent.icon, size: 17, color: agent.color(c)));
+  }
+}

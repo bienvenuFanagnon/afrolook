@@ -1,4 +1,5 @@
 import 'package:afrotok/services/read_meter.dart';
+import '../news/news_detail_page.dart';
 import '../coins/card_coin_page.dart';
 import 'package:afrotok/pages/cards/card_events.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
@@ -1303,6 +1304,12 @@ class _MyHomePageState extends State<MyHomePage>
   /// Écran demandé par une notification (rappels programmés, gains, classement, création…). Inconnu ou « home » : on reste sur l'accueil.
   void _openScreen(String? screen) {
     Widget? page;
+    // « news:<identifiant> » : un article d'actualité (notification)
+    if (screen != null && screen.startsWith('news:')) {
+      page = NewsDetailPage(postId: screen.substring(5));
+      Navigator.push(context, MaterialPageRoute(builder: (_) => page!));
+      return;
+    }
     switch (screen) {
       case 'quiz':
         page = const QuizHomePage();

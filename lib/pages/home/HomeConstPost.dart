@@ -91,6 +91,7 @@ import '../intro/monetization_tutorial.dart';
 import '../../widgets/feed/sections/social_follow_card.dart';
 import '../../widgets/feed/sections/ad_free_day_card.dart';
 import '../../widgets/feed/sections/quiz_feed_card.dart';
+import '../../widgets/feed/sections/news_feed_card.dart';
 import '../../widgets/feed/sections/contes_feed_card.dart';
 import '../../widgets/feed/sections/etude_feed_card.dart';
 import '../studio/artist_marketplace.dart';
@@ -3749,6 +3750,12 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       // Défis en cours : traités comme des pubs, ils reviennent souvent (après les posts 4, 11, 19 puis tous les 12 posts), un défi différent à chaque fois
       if (i == 3 || i == 10 || i == 18 || (i > 18 && (i - 18) % 12 == 0)) {
         contentWidgets.add(DefiFeedCard(key: ValueKey('defi_card_home_$i'), slot: i == 3 ? 0 : i == 10 ? 1 : i == 18 ? 2 : 3 + (i - 18) ~/ 12));
+      }
+
+      // Actualités des agents (résumés de sources) : une carte tous les 15 posts (8e, 23e, 38e…), jamais collée à une autre carte d'actualité ;
+      // invisible tant que AppConfig/news.feedEnabled n'est pas actif
+      if (i == 7 || (i > 7 && (i - 7) % 15 == 0)) {
+        contentWidgets.add(NewsFeedCard(key: ValueKey('news_card_home_$i'), slotKey: 'home_$i'));
       }
 
       // Invitation « Crée ta carte Afrolook » : après le 13e post, puis plus loin (au plus une fois tous les 3 jours, jamais sur le web)

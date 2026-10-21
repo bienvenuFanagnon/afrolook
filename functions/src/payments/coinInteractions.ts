@@ -1,14 +1,14 @@
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../shared/firebase";
-import { CREATOR_SHARE, creditSponsors, num, recordAppCommission, resolveSponsors } from "./coinShares";
+import { CREATOR_SHARE, creditSponsors, num, postGiftShares, recordAppCommission, resolveSponsors } from "./coinShares";
 
 /**
  * Interactions payantes en pièces, calculées côté serveur (auparavant dans l'app, donc contournables).
  * - sendLike      : 2 pièces → 1 au créateur, 1 à l'app (pas de parrainage) — seulement si le post est monétisé
  *                   (champ monetized ; absent = ancien post = monétisé). Sinon le like est gratuit.
  * - sendComment   : GRATUIT depuis 2026-10 (plus aucun débit) ; conservé pour les anciennes versions de l'app.
- * - sendPostGift  : cadeau sur un post → 70 % créateur, 2,5 % + 2,5 % parrains, reste à l'app.
+ * - sendPostGift  : cadeau sur un post → 70 % créateur, 2,5 % + 2,5 % parrains, reste à l'app (post NEWS d'un agent d'actualités : tout à l'app).
  * - sendLiveGift  : cadeau en live → 70 % hôte, 2,5 % + 2,5 % parrains, reste à l'app.
  * Les notifications, commentaires automatiques et animations restent gérés par l'app.
  */
@@ -255,8 +255,10 @@ export const sendPostGift = onCall({ timeoutSeconds: 30, memory: "256MiB" }, asy
   if (!receiverId) throw new HttpsError("failed-precondition", "Créateur introuvable.");
 
   const sponsors = await resolveSponsors(uid, receiverId, coins);
-  const receiverCoins = Math.floor(coins * CREATOR_SHARE);
-  const appCoins = coins - receiverCoins - sponsors.reduce((s, p) => s + p.coins, 0);
+  // Article d'actualité (post NEWS) : le cadeau va à 100 % à l'application ; l'agent n'a qu'un compteur d'information (NewsAgents)
+  const newsAgentKey = postSnap.data()!["type"] === "NEWS" ? String((postSnap.data()!["news"] as Record<string, unknown> | undefined)?.["agentKey"] ?? "") : "";
+  const toNewsAgent = newsAgentKey !== "";
+  const { receiverCoins, appCoins } = postGiftShares(coins, sponsors.reduce((s, p) => s + p.coins, 0), toNewsAgent);
   const icon = (giftIcon ?? "🎁").slice(0, 8);
   const label = (giftLabel ?? "Cadeau").slice(0, 40);
 
@@ -277,11 +279,15 @@ export const sendPostGift = onCall({ timeoutSeconds: 30, memory: "256MiB" }, asy
       totalGiftCoinsSpent: FieldValue.increment(coins),
       updatedAt: now,
     });
-    tx.update(receiverRef, {
-      giftCoinsBalance: FieldValue.increment(receiverCoins),
-      totalCoinsEarnedFromGifts: FieldValue.increment(receiverCoins),
-      updatedAt: now,
-    });
+    if (toNewsAgent) {
+      tx.set(db.collection("NewsAgents").doc(newsAgentKey), { key: newsAgentKey, giftCoins: FieldValue.increment(coins), giftCount: FieldValue.increment(1) }, { merge: true });
+    } else {
+      tx.update(receiverRef, {
+        giftCoinsBalance: FieldValue.increment(receiverCoins),
+        totalCoinsEarnedFromGifts: FieldValue.increment(receiverCoins),
+        updatedAt: now,
+      });
+    }
     tx.update(postRef, {
       users_cadeau_id: FieldValue.arrayUnion(uid),
       popularity: FieldValue.increment(5),
@@ -299,12 +305,14 @@ export const sendPostGift = onCall({ timeoutSeconds: 30, memory: "256MiB" }, asy
       description: `Envoi de ${icon} ${coins} pièces à @${receiverPseudo}`,
       montant: coins, methode_paiement: "pieces", createdAt: now, updatedAt: now, postId,
     });
-    const txReceiver = db.collection("TransactionSoldes").doc();
-    tx.set(txReceiver, {
-      id: txReceiver.id, user_id: receiverId, type: "CADEAU_PIECES_RECU", statut: "VALIDER",
-      description: `Réception de ${icon} ${receiverCoins} pièces de @${senderPseudo}`,
-      montant: receiverCoins, methode_paiement: "pieces", createdAt: now, updatedAt: now, postId,
-    });
+    if (!toNewsAgent) {
+      const txReceiver = db.collection("TransactionSoldes").doc();
+      tx.set(txReceiver, {
+        id: txReceiver.id, user_id: receiverId, type: "CADEAU_PIECES_RECU", statut: "VALIDER",
+        description: `Réception de ${icon} ${receiverCoins} pièces de @${senderPseudo}`,
+        montant: receiverCoins, methode_paiement: "pieces", createdAt: now, updatedAt: now, postId,
+      });
+    }
     creditSponsors(tx, sponsors, `cadeau de ${coins} pièces`, now, { postId });
     recordAppCommission(tx, "cadeaux", appCoins, now);
     return { success: true, coins, receiverCoins };

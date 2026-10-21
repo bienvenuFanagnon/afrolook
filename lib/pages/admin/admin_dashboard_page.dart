@@ -25,6 +25,7 @@ import 'commissions_admin_page.dart';
 import 'dating/admin_dating_profiles_page.dart';
 import 'influencer_requests_page.dart';
 import 'moderation_reports_page.dart';
+import 'news_admin_page.dart';
 import 'official_accounts_page.dart';
 import 'payment_methods_admin_page.dart';
 import 'payment_logs_admin_page.dart';
@@ -560,6 +561,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       _Module(Icons.quiz_rounded, 'Quiz', const Color(0xFFE0A100), 0, const QuizAdminPage()),
       _Module(Icons.school_rounded, 'Étude', const Color(0xFF1FAA59), 0, const EtudeAdminPage()),
       _Module(Icons.auto_stories_rounded, 'Contes', const Color(0xFFB07A1F), 0, const ContesAdminPage()),
+      _Module(Icons.newspaper_rounded, 'Actualités', c.info, 0, const NewsAdminPage()),
       _Module(Icons.pie_chart_rounded, 'Commissions', c.primary, 0, const CommissionsAdminPage()),
       _Module(Icons.account_balance_wallet_rounded, 'Rémunération', c.primary, 0, RemunerationAdminPage()),
       _Module(Icons.storefront_rounded, 'Contenus payants', c.supportAccent, 0, const AdminContentPage()),
