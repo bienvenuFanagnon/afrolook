@@ -1406,8 +1406,6 @@ class _MesNotificationState extends State<MesNotification> {
         maxWidth: AppLayout.isDesktop(context) ? 800 : AppLayout.maxFeedWidth,
         child: Column(
         children: [
-          // Invitation à nous suivre (chaîne WhatsApp, Facebook, TikTok) avec ses boutons d'action
-          const SocialFollowCard(variant: SocialFollowVariant.end),
           if (_showFilterMenu && _availableTypes.isNotEmpty)
             Container(
               height: 50,
@@ -1451,7 +1449,10 @@ class _MesNotificationState extends State<MesNotification> {
             ),
           Expanded(
             child: _isLoading && _notifications.isEmpty
-                ? Center(
+                ? ListView(children: [
+              // Invitation à nous suivre (chaîne WhatsApp, Facebook, TikTok) : elle défile avec la page
+              const SocialFollowCard(variant: SocialFollowVariant.end),
+              Padding(padding: const EdgeInsets.only(top: 48), child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -1467,9 +1468,11 @@ class _MesNotificationState extends State<MesNotification> {
                   ),
                 ],
               ),
-            )
+            ))])
                 : _notifications.isEmpty
-                ? Center(
+                ? ListView(children: [
+              const SocialFollowCard(variant: SocialFollowVariant.end),
+              Padding(padding: const EdgeInsets.only(top: 48), child: Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -1496,7 +1499,7 @@ class _MesNotificationState extends State<MesNotification> {
                   ),
                 ],
               ),
-            )
+            ))])
                 : NotificationListener<ScrollNotification>(
               onNotification: (ScrollNotification scrollInfo) {
                 if (scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent) {
@@ -1546,6 +1549,8 @@ class _MesNotificationState extends State<MesNotification> {
                   Expanded(
                     child: ListView(
                       children: [
+                        // Invitation à nous suivre (chaîne WhatsApp, Facebook, TikTok) : elle défile avec les notifications
+                        const SocialFollowCard(variant: SocialFollowVariant.end),
                         ...() {
                           // Groupes avec contenu en premier (triés par plus récent),
                           // puis les groupes vides à la suite.
