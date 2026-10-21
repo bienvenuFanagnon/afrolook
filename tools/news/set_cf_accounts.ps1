@@ -1,4 +1,4 @@
-# Enregistre les comptes Cloudflare d'Afro Journal dans le secret Firebase CF_NEWS_ACCOUNTS.
+﻿# Enregistre les comptes Cloudflare d'Afro Journal dans le secret Firebase CF_NEWS_ACCOUNTS.
 # Le script ne contient aucune clé : il demande l'identifiant et le token de chaque compte (le token est masqué à la saisie),
 # écrit un fichier temporaire hors du projet, l'envoie à Firebase puis le supprime.
 #
@@ -11,10 +11,15 @@ while ($true) {
   $n = $accounts.Count + 1
   $id = Read-Host "Identifiant du compte Cloudflare n°$n (laisser vide pour terminer)"
   if ([string]::IsNullOrWhiteSpace($id)) { break }
+  $id = $id.Trim()
+  if ($id -notmatch '^[a-fA-F0-9]{32}$') {
+    Write-Host "Identifiant invalide : il doit faire 32 caractères (chiffres et lettres a à f) et celui-ci en a $($id.Length). Recommence ce compte."
+    continue
+  }
   $secure = Read-Host "Token d'API du compte n°$n (la saisie est masquée)" -AsSecureString
   $token = [System.Net.NetworkCredential]::new("", $secure).Password
   if ([string]::IsNullOrWhiteSpace($token)) { Write-Host "Token vide : compte ignoré."; continue }
-  $accounts += @{ id = $id.Trim(); token = $token.Trim() }
+  $accounts += @{ id = $id; token = $token.Trim() }
 }
 
 if ($accounts.Count -eq 0) {
