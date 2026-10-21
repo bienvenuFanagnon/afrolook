@@ -165,6 +165,7 @@ NewsFeedItem newsFeedItemOf(NewsArticle a) => NewsFeedItem(
       sourceCount: a.sources.length,
       sourceNames: a.sources.take(3).map((s) => s.name).toList(),
       at: a.createdAtMs,
+      score: a.score,
       exp: a.expiresAt,
     );
 
@@ -191,6 +192,9 @@ class NewsArticle {
   final List<String> lovedBy;
   final List<String> viewedBy;
   final Map<String, dynamic> raw;
+
+  /// Importance au départ (`news.score`), lue dans le document.
+  int get score => ((raw['news'] as Map?)?['score'] as num?)?.toInt() ?? 0;
 
   const NewsArticle({
     required this.id,

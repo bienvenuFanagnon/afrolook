@@ -108,15 +108,19 @@ class _NewsFeedCardState extends State<NewsFeedCard> {
     if (mounted) setState(() => _hidden = true);
   }
 
-  /// 0 = A, 1 = B, 2 = C, 3 = D. Dépend de l'emplacement, de l'article et du jour : stable pendant la journée, différent le lendemain.
+  /// 0 = A, 1 = B, 2 = C, 3 = D (seulement si l'article a un score élevé). Dépend de l'emplacement, de l'article et du jour : stable pendant la journée, différent le lendemain.
   int _variant(NewsFeedItem item) {
     final day = DateTime.now().difference(DateTime(2026)).inDays;
     var h = 0;
     for (final u in '${widget.slotKey}|${item.id}'.codeUnits) {
       h = (h * 31 + u) & 0x7fffffff;
     }
-    return (h + day) % 4;
+    // Flash info réservé aux grosses actualités (même seuil que l'alerte « À la une ») ; les autres alternent entre A, B et C
+    if (item.score >= _flashMinScore) return (h + day) % 4;
+    return (h + day) % 3;
   }
+
+  static const _flashMinScore = 16;
 
   @override
   Widget build(BuildContext context) {
