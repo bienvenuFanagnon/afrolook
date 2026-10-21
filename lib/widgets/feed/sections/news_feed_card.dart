@@ -12,6 +12,8 @@ import '../../news/news_widgets.dart';
 
 /// Carte d'actualité dans le fil : un résumé de plusieurs sources, avec le pseudo de l'agent et son badge, le niveau (pays, continent, monde),
 /// les sources et les actions (j'aime, commentaires, cadeau). Un toucher ouvre la page de détail.
+/// Quatre présentations qui alternent (A « La une », B « Photo plein cadre », C « Brève compacte », D « Flash info »), choisies d'après
+/// l'emplacement dans le fil et le jour : un même article garde le même aspect pendant la journée, et le fil change d'un jour à l'autre.
 /// Jamais montrée tant que `AppConfig/news.feedEnabled` n'est pas actif. La croix la masque jusqu'à demain.
 /// [slotKey] : emplacement dans le fil (le même article revient au même emplacement) ; [category] : domaine imposé (page Sport : « sport »).
 class NewsFeedCard extends StatefulWidget {
@@ -101,15 +103,40 @@ class _NewsFeedCardState extends State<NewsFeedCard> {
     }
   }
 
+  Future<void> _close() async {
+    if (widget.postId == null) await NewsService.instance.hideUntilTomorrow(); // la croix du fil masque toutes les cartes jusqu'à demain
+    if (mounted) setState(() => _hidden = true);
+  }
+
+  /// 0 = A, 1 = B, 2 = C, 3 = D. Dépend de l'emplacement, de l'article et du jour : stable pendant la journée, différent le lendemain.
+  int _variant(NewsFeedItem item) {
+    final day = DateTime.now().difference(DateTime(2026)).inDays;
+    var h = 0;
+    for (final u in '${widget.slotKey}|${item.id}'.codeUnits) {
+      h = (h * 31 + u) & 0x7fffffff;
+    }
+    return (h + day) % 4;
+  }
+
   @override
   Widget build(BuildContext context) {
     final item = _item;
     if (!_ready || _hidden || item == null) return const SizedBox.shrink();
     final c = AppColors.of(context);
-    final agent = newsAgentOf(item.agentKey);
-    final a = _article;
-    // Présentation « journal » : bandeau ACTUALITÉ, photo pleine largeur, titre en empattement, signature de l'agent, sources, puis le bouton vers le journal.
-    // Volontairement différente d'un post ordinaire (pas de carte arrondie verte, pas de ligne auteur en tête).
+    final Widget body;
+    switch (_variant(item)) {
+      case 1:
+        body = _photoFull(c, item);
+        break;
+      case 2:
+        body = _compact(c, item);
+        break;
+      case 3:
+        body = _flash(c, item);
+        break;
+      default:
+        body = _lead(c, item);
+    }
     return GestureDetector(
       onTap: _open,
       child: Container(
@@ -119,79 +146,301 @@ class _NewsFeedCardState extends State<NewsFeedCard> {
           color: c.surface,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: c.border),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 8, offset: const Offset(0, 3))],
         ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          NewsMasthead(
-            place: newsLevelLabel(item.level, item.country, item.continent),
-            onClose: () async {
-              if (widget.postId == null) await NewsService.instance.hideUntilTomorrow(); // la croix du fil masque toutes les cartes jusqu'à demain
-              if (mounted) setState(() => _hidden = true);
-            },
+        child: body,
+      ),
+    );
+  }
+
+  // ── Éléments communs ─────────────────────────────────────────────────────
+
+  String _place(NewsFeedItem item) => newsLevelLabel(item.level, item.country, item.continent);
+
+  Widget _closeButton(AppColors c, {Color? color}) => InkWell(
+        onTap: _close,
+        customBorder: const CircleBorder(),
+        child: Padding(padding: const EdgeInsets.all(4), child: Icon(Icons.close_rounded, size: 18, color: color ?? c.textSecondary)),
+      );
+
+  Widget _photo(AppColors c, NewsFeedItem item, double height, {double radius = 0}) {
+    if (item.image.isEmpty) return const SizedBox.shrink();
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: CachedNetworkImage(
+        imageUrl: item.image,
+        height: height,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        placeholder: (_, __) => Container(height: height, color: c.shimmerBase),
+        errorWidget: (_, __, ___) => Container(height: height * 0.5, color: c.surfaceVariant, child: Icon(Icons.image_not_supported_outlined, color: c.textSecondary)),
+      ),
+    );
+  }
+
+  Widget _title(AppColors c, String text, double size, {Color? color}) =>
+      Text(text, style: TextStyle(color: color ?? c.textPrimary, fontFamily: 'serif', fontWeight: FontWeight.w800, fontSize: size, height: 1.25));
+
+  Widget _byline(AppColors c, NewsFeedItem item, {bool sources = true}) {
+    final agent = newsAgentOf(item.agentKey);
+    final srcLabel = context.tr('Résumé de {n} sources', {'n': item.sourceCount});
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        AgentAvatar(agent: agent, size: 24),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text.rich(
+            TextSpan(children: [
+              TextSpan(text: agent.pseudo, style: TextStyle(color: agent.color(c), fontWeight: FontWeight.w800)),
+              TextSpan(text: '  ·  ${newsAgo(item.at)}'),
+            ]),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: c.textSecondary, fontSize: 12),
           ),
+        ),
+      ]),
+      if (sources) ...[
+        const SizedBox(height: 8),
+        Row(children: [
+          Icon(Icons.link_rounded, size: 14, color: c.info),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Text(
+              item.sourceNames.isEmpty ? srcLabel : '$srcLabel : ${item.sourceNames.join(', ')}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: c.info, fontSize: 11.5, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ]),
+      ],
+    ]);
+  }
+
+  Widget _stats(AppColors c) {
+    final a = _article;
+    return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+      _stat(c, Icons.visibility_outlined, newsCount(a?.views ?? 0), null, c.textSecondary),
+      _stat(c, _liked ? Icons.favorite_rounded : Icons.favorite_border_rounded, newsCount(_loves), _like, _liked ? c.danger : c.textSecondary),
+      _stat(c, Icons.chat_bubble_outline_rounded, newsCount(a?.comments ?? 0), a == null ? null : () => NewsActions.comments(context, a), c.textSecondary),
+      _stat(c, Icons.card_giftcard_rounded, context.tr('Cadeau'), a == null ? null : () => NewsActions.gift(context, a), c.warning),
+    ]);
+  }
+
+  // ── A : La une (sobre, style presse) ─────────────────────────────────────
+
+  Widget _lead(AppColors c, NewsFeedItem item) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Text(context.tr('ACTUALITÉ'), style: TextStyle(color: c.primary, fontWeight: FontWeight.w900, fontSize: 11.5, letterSpacing: 1.4)),
+          const SizedBox(width: 6),
+          Expanded(child: Text('· ${_place(item).toUpperCase()}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 11, fontWeight: FontWeight.w600))),
+          _closeButton(c),
+        ]),
+        const SizedBox(height: 6),
+        _photo(c, item, 160, radius: 8),
+        if (item.image.isNotEmpty) const SizedBox(height: 10),
+        _title(c, item.title, 17.5),
+        const SizedBox(height: 6),
+        Text(item.chapo, maxLines: 3, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 13, height: 1.4)),
+        const SizedBox(height: 10),
+        _byline(c, item),
+        const SizedBox(height: 8),
+        Divider(color: c.border, height: 1),
+        const SizedBox(height: 4),
+        _stats(c),
+        const SizedBox(height: 8),
+        const NewsMoreButton(),
+      ]),
+    );
+  }
+
+  // ── B : Photo plein cadre (le titre sur la photo) ────────────────────────
+
+  Widget _photoFull(AppColors c, NewsFeedItem item) {
+    final agent = newsAgentOf(item.agentKey);
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      SizedBox(
+        height: 220,
+        child: Stack(fit: StackFit.expand, children: [
           if (item.image.isNotEmpty)
             CachedNetworkImage(
               imageUrl: item.image,
-              height: 175,
-              width: double.infinity,
               fit: BoxFit.cover,
-              placeholder: (_, __) => Container(height: 175, color: c.shimmerBase),
-              errorWidget: (_, __, ___) => Container(height: 70, color: c.surfaceVariant, child: Icon(Icons.image_not_supported_outlined, color: c.textSecondary)),
+              placeholder: (_, __) => Container(color: c.shimmerBase),
+              errorWidget: (_, __, ___) => Container(color: const Color(0xFF2C2C2A), child: Icon(agent.icon, size: 56, color: Colors.white24)),
+            )
+          else
+            Container(color: const Color(0xFF2C2C2A), child: Icon(agent.icon, size: 56, color: Colors.white24)),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.transparent, Colors.black.withOpacity(0.85)], stops: const [0.35, 1]),
+              ),
             ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(item.title, style: TextStyle(color: c.textPrimary, fontFamily: 'serif', fontWeight: FontWeight.w800, fontSize: 17.5, height: 1.25)),
-              const SizedBox(height: 6),
-              Text(item.chapo, maxLines: 3, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 13, height: 1.4)),
-              const SizedBox(height: 10),
-              Row(children: [
-                AgentAvatar(agent: agent, size: 24),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text.rich(
-                    TextSpan(children: [
-                      TextSpan(text: agent.pseudo, style: TextStyle(color: agent.color(c), fontWeight: FontWeight.w800)),
-                      TextSpan(text: '  ·  ${newsAgo(item.at)}'),
-                    ]),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: c.textSecondary, fontSize: 12),
-                  ),
-                ),
-              ]),
-              const SizedBox(height: 8),
-              Row(children: [
-                Icon(Icons.link_rounded, size: 14, color: c.info),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    item.sourceNames.isEmpty
-                        ? context.tr('Résumé de {n} sources', {'n': item.sourceCount})
-                        : '${context.tr('Résumé de {n} sources', {'n': item.sourceCount})} : ${item.sourceNames.join(', ')}',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(color: c.info, fontSize: 11.5, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ]),
-              const SizedBox(height: 8),
-              Divider(color: c.border, height: 1),
+          ),
+          Positioned(
+            top: 10,
+            left: 10,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(color: Colors.black.withOpacity(0.6), borderRadius: BorderRadius.circular(6)),
+              child: Text('${context.tr('ACTUALITÉ')} · ${_place(item).toUpperCase()}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 10.5, letterSpacing: 0.8)),
+            ),
+          ),
+          Positioned(
+            top: 6,
+            right: 6,
+            child: Container(decoration: BoxDecoration(color: Colors.black.withOpacity(0.6), shape: BoxShape.circle), child: _closeButton(c, color: Colors.white)),
+          ),
+          Positioned(
+            left: 12,
+            right: 12,
+            bottom: 10,
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+              _title(c, item.title, 18, color: Colors.white),
               const SizedBox(height: 4),
-              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                _stat(c, Icons.visibility_outlined, newsCount(a?.views ?? 0), null, c.textSecondary),
-                _stat(c, _liked ? Icons.favorite_rounded : Icons.favorite_border_rounded, newsCount(_loves), _like, _liked ? c.danger : c.textSecondary),
-                _stat(c, Icons.chat_bubble_outline_rounded, newsCount(a?.comments ?? 0), a == null ? null : () => NewsActions.comments(context, a), c.textSecondary),
-                _stat(c, Icons.card_giftcard_rounded, context.tr('Cadeau'), a == null ? null : () => NewsActions.gift(context, a), c.warning),
-              ]),
-              const SizedBox(height: 8),
-              // accès à tout le journal : pays, continent, monde, résumés du jour, de la semaine et du mois
-              const NewsMoreButton(),
+              Text('${agent.pseudo}  ·  ${newsAgo(item.at)}  ·  ${context.tr('Résumé de {n} sources', {'n': item.sourceCount})}',
+                  maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 11.5)),
             ]),
           ),
         ]),
       ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+        child: Column(children: [
+          _stats(c),
+          const SizedBox(height: 8),
+          const NewsMoreButton(),
+        ]),
+      ),
+    ]);
+  }
+
+  // ── C : Brève compacte (barre colorée, miniature) ────────────────────────
+
+  Widget _compact(AppColors c, NewsFeedItem item) {
+    final agent = newsAgentOf(item.agentKey);
+    return IntrinsicHeight(
+      child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Container(width: 4, color: agent.color(c)),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 10, 10),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Text(context.tr('ACTUALITÉ'), style: TextStyle(color: agent.color(c), fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1.3)),
+                const SizedBox(width: 6),
+                Expanded(child: Text('· ${_place(item).toUpperCase()}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 10.5, fontWeight: FontWeight.w600))),
+                _closeButton(c),
+              ]),
+              const SizedBox(height: 4),
+              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(item.title, maxLines: 4, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textPrimary, fontFamily: 'serif', fontWeight: FontWeight.w800, fontSize: 15, height: 1.25)),
+                    const SizedBox(height: 6),
+                    Text('${agent.pseudo}  ·  ${newsAgo(item.at)}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 11.5)),
+                  ]),
+                ),
+                if (item.image.isNotEmpty) ...[
+                  const SizedBox(width: 10),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: CachedNetworkImage(
+                      imageUrl: item.image,
+                      width: 88,
+                      height: 88,
+                      fit: BoxFit.cover,
+                      placeholder: (_, __) => Container(width: 88, height: 88, color: c.shimmerBase),
+                      errorWidget: (_, __, ___) => Container(width: 88, height: 88, color: c.surfaceVariant, child: Icon(agent.icon, color: c.textSecondary)),
+                    ),
+                  ),
+                ],
+              ]),
+              const SizedBox(height: 8),
+              Row(children: [
+                Expanded(
+                  child: Row(children: [
+                    Icon(Icons.visibility_outlined, size: 15, color: c.textSecondary),
+                    const SizedBox(width: 3),
+                    Text(newsCount(_article?.views ?? 0), style: TextStyle(color: c.textSecondary, fontSize: 11.5, fontWeight: FontWeight.w600)),
+                    const SizedBox(width: 12),
+                    InkWell(
+                      onTap: _like,
+                      child: Row(children: [
+                        Icon(_liked ? Icons.favorite_rounded : Icons.favorite_border_rounded, size: 15, color: _liked ? c.danger : c.textSecondary),
+                        const SizedBox(width: 3),
+                        Text(newsCount(_loves), style: TextStyle(color: _liked ? c.danger : c.textSecondary, fontSize: 11.5, fontWeight: FontWeight.w600)),
+                      ]),
+                    ),
+                    const SizedBox(width: 12),
+                    Icon(Icons.chat_bubble_outline_rounded, size: 15, color: c.textSecondary),
+                    const SizedBox(width: 3),
+                    Text(newsCount(_article?.comments ?? 0), style: TextStyle(color: c.textSecondary, fontSize: 11.5, fontWeight: FontWeight.w600)),
+                  ]),
+                ),
+                InkWell(
+                  onTap: () => NewsMoreButton.openJournal(context),
+                  borderRadius: BorderRadius.circular(6),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Text(context.tr('Voir plus d\'actualités'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 12)),
+                      const SizedBox(width: 2),
+                      Icon(Icons.arrow_forward_rounded, size: 15, color: c.textPrimary),
+                    ]),
+                  ),
+                ),
+              ]),
+            ]),
+          ),
+        ),
+      ]),
     );
+  }
+
+  // ── D : Flash info (bandeau sombre) ──────────────────────────────────────
+
+  Widget _flash(AppColors c, NewsFeedItem item) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Container(
+        color: const Color(0xFF2C2C2A),
+        padding: const EdgeInsets.fromLTRB(12, 4, 6, 4),
+        child: Row(children: [
+          Container(width: 8, height: 8, decoration: const BoxDecoration(color: Color(0xFFE24B4A), shape: BoxShape.circle)),
+          const SizedBox(width: 7),
+          Text(context.tr('FLASH ACTUALITÉ'), style: const TextStyle(color: Color(0xFFF1EFE8), fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1.3)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text('${_place(item).toUpperCase()} · ${newsAgo(item.at)}', maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.right, style: const TextStyle(color: Color(0xFFB4B2A9), fontSize: 10.5, fontWeight: FontWeight.w600)),
+          ),
+          _closeButton(c, color: const Color(0xFFB4B2A9)),
+        ]),
+      ),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          _title(c, item.title, 18.5),
+          const SizedBox(height: 6),
+          Text(item.chapo, maxLines: 3, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 13, height: 1.4)),
+          if (item.image.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            _photo(c, item, 110, radius: 8),
+          ],
+          const SizedBox(height: 10),
+          _byline(c, item, sources: false),
+          const SizedBox(height: 8),
+          Divider(color: c.border, height: 1),
+          const SizedBox(height: 4),
+          _stats(c),
+          const SizedBox(height: 8),
+          const NewsMoreButton(),
+        ]),
+      ),
+    ]);
   }
 
   Widget _stat(AppColors c, IconData icon, String label, VoidCallback? onTap, Color color) {

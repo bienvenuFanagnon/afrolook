@@ -22,27 +22,24 @@ class NewsMasthead extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     return Container(
-      color: c.primary,
-      padding: EdgeInsets.fromLTRB(12, onClose == null ? 7 : 4, onClose == null ? 12 : 4, onClose == null ? 7 : 4),
+      color: c.surface,
+      padding: EdgeInsets.fromLTRB(12, onClose == null ? 8 : 4, onClose == null ? 12 : 4, onClose == null ? 8 : 4),
       child: Row(children: [
-        Icon(Icons.newspaper_rounded, size: 16, color: c.onPrimary),
+        Text(context.tr('ACTUALITÉ'), style: TextStyle(color: c.primary, fontWeight: FontWeight.w900, fontSize: 11.5, letterSpacing: 1.4)),
         const SizedBox(width: 6),
-        Text(context.tr('ACTUALITÉ'), style: TextStyle(color: c.onPrimary, fontWeight: FontWeight.w900, fontSize: 11.5, letterSpacing: 1.6)),
-        const SizedBox(width: 8),
         Expanded(
           child: Text(
-            place.toUpperCase(),
+            '· ${place.toUpperCase()}',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.right,
-            style: TextStyle(color: c.onPrimary.withOpacity(0.85), fontWeight: FontWeight.w700, fontSize: 10.5, letterSpacing: 0.8),
+            style: TextStyle(color: c.textSecondary, fontWeight: FontWeight.w600, fontSize: 11),
           ),
         ),
         if (onClose != null)
           InkWell(
             onTap: onClose,
             customBorder: const CircleBorder(),
-            child: Padding(padding: const EdgeInsets.all(5), child: Icon(Icons.close_rounded, size: 17, color: c.onPrimary)),
+            child: Padding(padding: const EdgeInsets.all(5), child: Icon(Icons.close_rounded, size: 17, color: c.textSecondary)),
           ),
       ]),
     );
@@ -103,6 +100,8 @@ class NewsImageViewer extends StatelessWidget {
 /// Bouton « Voir plus d'actualités » : ouvre la page du journal (pays, continent, monde, résumés du jour, de la semaine, du mois).
 class NewsMoreButton extends StatelessWidget {
   const NewsMoreButton({super.key});
+
+  static Future<void> openJournal(BuildContext context) => Navigator.push(context, MaterialPageRoute(builder: (_) => const NewsJournalPage()));
 
   @override
   Widget build(BuildContext context) {
