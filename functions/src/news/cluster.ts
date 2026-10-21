@@ -54,9 +54,10 @@ const PHRASES: Array<[string, string]> = [
   ["soudan du sud", "soudandusud"], ["south sudan", "soudandusud"], ["cap vert", "capvert"], ["cape verde", "capvert"], ["sao tome", "saotome"], ["sierra leone", "sierraleone"],
   ["burkina faso", "burkina"], ["porto novo", "portonovo"], ["le caire", "lecaire"], ["addis abeba", "addisabeba"], ["addis ababa", "addisabeba"], ["republique centrafricaine", "centrafrique"],
   ["ile maurice", "ilemaurice"], ["dar es salaam", "daressalaam"], ["n djamena", "ndjamena"], ["port louis", "portlouis"],
+  ["etats unis", "etatsunis"], ["united states", "etatsunis"], ["royaume uni", "royaumeuni"], ["united kingdom", "royaumeuni"],
 ];
 
-/** Mots-clés (sans accent) de chaque pays africain : nom, adjectif et capitale, en français et en anglais. */
+/** Mots-clés (sans accent) de chaque pays : tous les pays africains, plus la France et quelques pays d'autres continents ; nom, adjectif et capitale, en français et en anglais. */
 export const COUNTRY_KEYWORDS: Record<string, string[]> = {
   DZ: ["algerie", "algerien", "algerienne", "alger", "algeria"], AO: ["angola", "angolais", "luanda"], BJ: ["benin", "beninois", "beninoise", "cotonou", "portonovo"],
   BW: ["botswana", "gaborone"], BF: ["burkina", "burkinabe", "ouagadougou"], BI: ["burundi", "burundais", "bujumbura", "gitega"],
@@ -75,6 +76,9 @@ export const COUNTRY_KEYWORDS: Record<string, string[]> = {
   SD: ["soudan", "soudanais", "khartoum", "sudan"], TZ: ["tanzanie", "tanzanien", "dodoma", "daressalaam", "tanzania"], TG: ["togo", "togolais", "togolaise", "lome"],
   TN: ["tunisie", "tunisien", "tunisienne", "tunis", "tunisia"], UG: ["ouganda", "ougandais", "kampala", "uganda"], ZM: ["zambie", "zambien", "lusaka", "zambia"],
   ZW: ["zimbabwe", "zimbabween", "harare"],
+  // hors d'Afrique : peuvent être choisis comme pays suivis
+  FR: ["france", "francais", "francaise", "paris", "hexagone"], BE: ["belgique", "belge", "belges", "bruxelles"], CH: ["suisse", "suisses", "berne", "geneve"],
+  CA: ["canada", "canadien", "canadienne", "ottawa", "montreal", "quebec"], US: ["etatsunis", "americain", "americaine", "washington", "usa"], GB: ["royaumeuni", "britannique", "londres", "london"],
 };
 
 const KEYWORD_TO_COUNTRY = new Map<string, string>();
@@ -87,7 +91,7 @@ function phrased(text: string): string[] {
 }
 
 /**
- * Pays africain principal d'un sujet : un mot-clé dans le titre pèse 3, dans l'extrait 1 ; il faut au moins 3 points et le double du suivant.
+ * Pays principal d'un sujet : un mot-clé dans le titre pèse 3, dans l'extrait 1 ; il faut au moins 3 points et le double du suivant.
  * Retourne null si aucun pays ne se détache (article général ou régional).
  */
 export function detectCountry(title: string, body: string): string | null {

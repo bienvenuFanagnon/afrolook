@@ -21,7 +21,8 @@ import { summarizeTopic } from "./summarize";
  *  - plafonds par jour (total) et par agent et périmètre (2 au plus) ; un échec bloque le sujet 12 heures pour ne pas gaspiller de neurons ;
  *  - quota Cloudflare atteint : le passage s'arrête ; chaque passage est écrit dans le journal de l'administration.
  */
-export const DEFAULT_COUNTRIES = ["TG", "BJ", "CI", "SN", "CM"];
+/** Pays suivis au départ : Togo, Bénin, Côte d'Ivoire, Sénégal, Cameroun, Burkina Faso, Madagascar, Congo, RD Congo, France. */
+export const DEFAULT_COUNTRIES = ["TG", "BJ", "CI", "SN", "CM", "BF", "MG", "CG", "CD", "FR"];
 const LOCK_MS = 9 * 60 * 1000;
 const PER_KEY_RUN = 1;
 const MAX_RECENT_TITLES = 300;

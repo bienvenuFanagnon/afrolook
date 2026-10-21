@@ -29,6 +29,18 @@ class NewsAgentInfo {
   /// Identifiant du compte de l'agent (Users/{id}).
   String get userId => 'news_agent_$key';
 
+  /// Domaine couvert, tel que le serveur l'écrit sur les articles (« politique » pour AfroPolitik, « musique » pour AfroBeat).
+  String get category {
+    switch (key) {
+      case 'politik':
+        return 'politique';
+      case 'beat':
+        return 'musique';
+      default:
+        return key;
+    }
+  }
+
   /// Couleur du domaine, prise dans la palette de l'application.
   Color color(AppColors c) {
     switch (key) {
@@ -68,6 +80,9 @@ const Map<String, String> _kContinentNames = {
   'OC': 'Océanie',
 };
 
+/// Nom d'un continent (code AF, EU, AS, NA, SA, OC).
+String newsContinentName(String? code) => _kContinentNames[code] ?? 'Continent';
+
 /// Pastille de niveau : « 🇹🇬 TG » pour un pays, « Afrique » pour un continent, « Monde ».
 String newsLevelLabel(String level, String? country, String? continent) {
   if (level == 'country' && country != null && country.length == 2) {
@@ -93,6 +108,9 @@ class NewsFeedItem {
   final List<String> sourceNames;
   final int at;
 
+  /// Importance au départ (sert à choisir « À la une »).
+  final int score;
+
   /// Fin de vie de l'article (ms) ; 0 = pas de date connue.
   final int exp;
 
@@ -109,6 +127,7 @@ class NewsFeedItem {
     required this.sourceCount,
     required this.sourceNames,
     required this.at,
+    this.score = 0,
     this.exp = 0,
   });
 
@@ -125,6 +144,7 @@ class NewsFeedItem {
         sourceCount: (m['sourceCount'] as num?)?.toInt() ?? 1,
         sourceNames: ((m['sourceNames'] as List?) ?? const []).map((e) => e.toString()).toList(),
         at: (m['at'] as num?)?.toInt() ?? 0,
+        score: (m['score'] as num?)?.toInt() ?? 0,
         exp: (m['exp'] as num?)?.toInt() ?? 0,
       );
 }

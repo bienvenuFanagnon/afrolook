@@ -69,6 +69,13 @@ describe("pays, domaines et sujets", () => {
     expect(detectCountry("Ivory Coast hosts the summit", "")).toBe("CI");
     expect(detectCountry("Une décision européenne", "rien sur l'Afrique")).toBeNull();
     expect(detectCountry("Nigeria et Niger signent un accord", "")).toBeNull();
+    expect(detectCountry("Madagascar : un nouveau gouvernement à Antananarivo", "")).toBe("MG");
+    expect(detectCountry("Burkina Faso : Ouagadougou accueille un festival", "")).toBe("BF");
+    expect(detectCountry("Brazzaville accueille le sommet", "")).toBe("CG");
+    expect(detectCountry("Kinshasa : la RDC annonce un plan", "")).toBe("CD");
+    expect(detectCountry("Paris : le gouvernement français présente son budget", "")).toBe("FR");
+    expect(detectCountry("Le Mali expulse l'ambassadeur de France", "")).toBeNull(); // deux pays à égalité : sujet régional
+    expect(detectCountry("Les Américains à Washington", "")).toBe("US");
   });
   test("domaine : indice du flux, musique avant culture, mots-clés pour les flux généraux", () => {
     expect(classify({ titre: "Sans rapport", resume: "", categoryHint: "tech" })).toBe("tech");
@@ -246,7 +253,7 @@ describe("réglages", () => {
   test("valeurs prudentes par défaut ; génération automatique coupée tant qu'elle n'est pas activée", () => {
     const c = readPipelineConfig(undefined);
     expect(c).toMatchObject({ enabled: true, pipelineEnabled: false, dailyCap: 60, perRun: 5, perKeyDaily: 2 });
-    expect(c.countries).toEqual(["TG", "BJ", "CI", "SN", "CM"]);
+    expect(c.countries).toEqual(["TG", "BJ", "CI", "SN", "CM", "BF", "MG", "CG", "CD", "FR"]);
     expect(readPipelineConfig({ pipelineEnabled: true, countries: ["gh", "ZZ", "ng"], perRun: 99 })).toMatchObject({ pipelineEnabled: true, countries: ["GH", "NG"], perRun: 5 });
   });
   test("sources : actives par défaut, réglages par source, sources ajoutées validées", () => {

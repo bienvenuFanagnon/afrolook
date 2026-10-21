@@ -5,13 +5,17 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/news_article.dart';
+import '../../models/news_digest.dart';
 import '../../utils/country_continent.dart';
 
 /// Réglages des actualités (AppConfig/news) : `enabled` (défaut : oui) coupe tout ; `feedEnabled` (défaut : non) montre les cartes dans le fil.
 class NewsConfig {
   final bool enabled;
   final bool feedEnabled;
-  const NewsConfig({this.enabled = true, this.feedEnabled = false});
+
+  /// Pays qui ont leurs propres articles (codes à 2 lettres).
+  final List<String> countries;
+  const NewsConfig({this.enabled = true, this.feedEnabled = false, this.countries = const []});
 }
 
 /// Accès aux actualités. Peu de lectures : l'index du fil tient en 3 documents par session (pays, continent, monde), chaque carte affichée lit
@@ -39,7 +43,11 @@ class NewsService {
     if (_cfg != null && _cfgAt != null && now.difference(_cfgAt!).inMinutes < 10) return _cfg!;
     try {
       final d = (await FirebaseFirestore.instance.collection('AppConfig').doc('news').get()).data() ?? const <String, dynamic>{};
-      _cfg = NewsConfig(enabled: d['enabled'] != false, feedEnabled: d['feedEnabled'] == true);
+      _cfg = NewsConfig(
+        enabled: d['enabled'] != false,
+        feedEnabled: d['feedEnabled'] == true,
+        countries: ((d['countries'] as List?) ?? const ['TG', 'BJ', 'CI', 'SN', 'CM', 'BF', 'MG', 'CG', 'CD', 'FR']).map((e) => e.toString().toUpperCase()).toList(),
+      );
     } catch (_) {
       _cfg = const NewsConfig();
     }
@@ -70,6 +78,52 @@ class NewsService {
     _feedCountry = code;
     _feedAt = now;
     return out;
+  }
+
+  final Map<String, _Timed<List<NewsFeedItem>>> _live = {};
+  final Map<String, _Timed<NewsDigest?>> _digests = {};
+
+  /// Articles d'un périmètre (`country_TG`, `continent_AF`, `world`) : un seul document (10 minutes de cache), sans les articles périmés.
+  Future<List<NewsFeedItem>> liveScope(String scope, {bool fresh = false}) async {
+    final c = _live[scope];
+    if (!fresh && c != null && DateTime.now().difference(c.at).inMinutes < 10) return c.value;
+    final out = <NewsFeedItem>[];
+    try {
+      final d = (await FirebaseFirestore.instance.collection('NewsFeed').doc(scope).get()).data();
+      final now = DateTime.now().millisecondsSinceEpoch;
+      for (final m in ((d?['items'] as List?) ?? const [])) {
+        final item = NewsFeedItem.fromMap(Map<String, dynamic>.from(m as Map));
+        if (item.id.isNotEmpty && (item.exp == 0 || item.exp > now)) out.add(item);
+      }
+    } catch (e) {
+      if (kDebugMode) debugPrint('NewsService.liveScope($scope) : $e');
+    }
+    _live[scope] = _Timed(out);
+    return out;
+  }
+
+  /// Résumé d'une période (un document, 30 minutes de cache) ; null s'il n'existe pas (pas encore paru, ou aucun article ce jour-là).
+  Future<NewsDigest?> digest(String scope, String period, String key, {bool fresh = false}) async {
+    final id = '${scope}_${period}_$key';
+    final c = _digests[id];
+    if (!fresh && c != null && DateTime.now().difference(c.at).inMinutes < 30) return c.value;
+    NewsDigest? out;
+    try {
+      final d = (await FirebaseFirestore.instance.collection('NewsDigests').doc(id).get()).data();
+      if (d != null) out = NewsDigest.fromMap(d);
+    } catch (e) {
+      if (kDebugMode) debugPrint('NewsService.digest($id) : $e');
+    }
+    _digests[id] = _Timed(out);
+    return out;
+  }
+
+  /// Oublie les lectures en mémoire (tirer pour actualiser).
+  void clearCache() {
+    _live.clear();
+    _digests.clear();
+    _feed = null;
+    _articles.clear();
   }
 
   Future<Set<String>> _seen() async {
@@ -190,4 +244,10 @@ class _CachedArticle {
   final NewsArticle article;
   final DateTime at = DateTime.now();
   _CachedArticle(this.article);
+}
+
+class _Timed<T> {
+  final T value;
+  final DateTime at = DateTime.now();
+  _Timed(this.value);
 }
