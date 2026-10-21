@@ -13,7 +13,7 @@
 export type Lang = "fr" | "en" | "es" | "de" | "ar" | "pt" | "zh" | "sw";
 export const LANGS: Lang[] = ["fr", "en", "es", "de", "ar", "pt", "zh", "sw"];
 
-export type TipTopic = "earn" | "estimate" | "creator" | "referral" | "live" | "sellLive" | "channel" | "group" | "packs" | "weekly" | "shop" | "about" | "comment" | "flame" | "musicUpload" | "musicEarn" | "whatsapp" | "facebook" | "tiktok" | "newsMusic" | "newsDefi" | "newsStudy" | "newsContes";
+export type TipTopic = "earn" | "estimate" | "creator" | "referral" | "live" | "sellLive" | "channel" | "group" | "packs" | "weekly" | "shop" | "about" | "comment" | "flame" | "musicUpload" | "musicEarn" | "musicUse" | "whatsapp" | "facebook" | "tiktok" | "newsMusic" | "newsDefi" | "newsStudy" | "newsContes";
 
 /** Variables remplies à l'envoi à partir du barème réel. */
 export interface TipVars {
@@ -241,6 +241,20 @@ export const TIPS: Tip[] = [
     },
   },
   {
+    // Côté auditeur : utiliser le son d'un artiste dans un post le rémunère (l'artiste touche 60 %, texte officiel de la page artiste)
+    topic: "musicUse", target: "RAPPEL_NOUVEAUTE_MUSIQUE",
+    texts: {
+      fr: { title: "🎶 Utilise un son, soutiens un artiste", body: "Mets le titre d'un artiste dans ton post : il est payé à chaque utilisation. Découvre les sons du moment." },
+      en: { title: "🎶 Use a sound, support an artist", body: "Put an artist's track in your post: they get paid every time it's used. Discover the sounds of the moment." },
+      es: { title: "🎶 Usa un sonido, apoya a un artista", body: "Pon el tema de un artista en tu publicación: cobra cada vez que se usa. Descubre los sonidos del momento." },
+      de: { title: "🎶 Nutze einen Sound, unterstütze Künstler", body: "Setze den Titel eines Künstlers in deinen Beitrag: Er wird bei jeder Nutzung bezahlt. Entdecke die Sounds des Moments." },
+      ar: { title: "🎶 استخدم صوتًا وادعم فنانًا", body: "ضع أغنية فنان في منشورك: يحصل على أجره عند كل استخدام. اكتشف أصوات اللحظة." },
+      pt: { title: "🎶 Use um som, apoie um artista", body: "Coloque a faixa de um artista na sua publicação: ele é pago a cada utilização. Descubra os sons do momento." },
+      zh: { title: "🎶 用一首歌，支持一位艺人", body: "在你的帖子里使用艺人的歌曲：每次使用他都会获得报酬。快来发现热门声音。" },
+      sw: { title: "🎶 Tumia wimbo, msaidie msanii", body: "Weka wimbo wa msanii kwenye chapisho lako: analipwa kila unapotumiwa. Gundua nyimbo za sasa." },
+    },
+  },
+  {
     // Invitation à suivre la CHAÎNE WhatsApp d'Afrolook : un clic ouvre la chaîne (https://whatsapp.com/channel/…), pas un contact
     topic: "whatsapp", target: "RAPPEL_WHATSAPP",
     texts: {
@@ -336,6 +350,18 @@ export const TIPS: Tip[] = [
 
 /** Mention « Pub » d'une pub Afrolook envoyée par notification, dans la langue de la personne. */
 export const AD_LABEL: Record<Lang, string> = { fr: "Pub", en: "Ad", es: "Anuncio", de: "Anzeige", ar: "إعلان", pt: "Anúncio", zh: "广告", sw: "Tangazo" };
+
+/** Alerte de gain d'un artiste (vente d'un titre, utilisation dans un post), dans sa langue : un seul gain, ou plusieurs regroupés. */
+export const EARN_TEXT: Record<Lang, { title: string; sale: string; use: string; many: string }> = {
+  fr: { title: "💰 Ta musique te rapporte !", sale: "« {title} » vient d’être acheté : +{coins} pièces.", use: "« {title} » a été utilisé dans un post : +{coins} pièces.", many: "{n} nouveaux gains sur ta musique : +{coins} pièces." },
+  en: { title: "💰 Your music is earning!", sale: "“{title}” was just bought: +{coins} coins.", use: "“{title}” was used in a post: +{coins} coins.", many: "{n} new earnings on your music: +{coins} coins." },
+  es: { title: "💰 ¡Tu música te da ingresos!", sale: "Acaban de comprar «{title}»: +{coins} monedas.", use: "«{title}» se usó en una publicación: +{coins} monedas.", many: "{n} nuevos ingresos por tu música: +{coins} monedas." },
+  de: { title: "💰 Deine Musik verdient!", sale: "„{title}“ wurde gerade gekauft: +{coins} Münzen.", use: "„{title}“ wurde in einem Beitrag genutzt: +{coins} Münzen.", many: "{n} neue Einnahmen mit deiner Musik: +{coins} Münzen." },
+  ar: { title: "💰 موسيقاك تدرّ عليك أرباحًا!", sale: "تم شراء «{title}» للتو: +{coins} عملة.", use: "تم استخدام «{title}» في منشور: +{coins} عملة.", many: "{n} أرباح جديدة من موسيقاك: +{coins} عملة." },
+  pt: { title: "💰 A sua música rende!", sale: "«{title}» acabou de ser comprada: +{coins} moedas.", use: "«{title}» foi usada numa publicação: +{coins} moedas.", many: "{n} novos ganhos com a sua música: +{coins} moedas." },
+  zh: { title: "💰 你的音乐有收入了！", sale: "《{title}》刚刚被购买：+{coins} 枚金币。", use: "《{title}》被用在了一条帖子里：+{coins} 枚金币。", many: "你的音乐有 {n} 笔新收入：+{coins} 枚金币。" },
+  sw: { title: "💰 Muziki wako unakuingizia!", sale: "“{title}” imenunuliwa sasa hivi: +{coins} sarafu.", use: "“{title}” imetumika kwenye chapisho: +{coins} sarafu.", many: "Mapato {n} mapya kwenye muziki wako: +{coins} sarafu." },
+};
 
 /** Promotion d'un nouveau créateur : mention du titre et texte de repli (quand son post n'a pas de texte), dans la langue de la personne. */
 export const NEW_CREATOR_LABEL: Record<Lang, string> = {

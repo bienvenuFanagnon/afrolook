@@ -55,7 +55,7 @@ describe("bibliothèque des notifications pédagogiques", () => {
 
   test("les sujets couvrent ce qui a été demandé", () => {
     const topics = TIPS.map((t) => t.topic);
-    for (const t of ["earn", "estimate", "creator", "referral", "live", "sellLive", "channel", "group", "shop", "comment", "flame", "musicUpload", "musicEarn", "weekly", "whatsapp", "facebook", "tiktok", "newsMusic", "newsDefi", "newsStudy", "newsContes"]) {
+    for (const t of ["earn", "estimate", "creator", "referral", "live", "sellLive", "channel", "group", "shop", "comment", "flame", "musicUpload", "musicEarn", "musicUse", "weekly", "whatsapp", "facebook", "tiktok", "newsMusic", "newsDefi", "newsStudy", "newsContes"]) {
       expect(topics).toContain(t);
     }
   });

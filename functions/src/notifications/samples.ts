@@ -4,7 +4,8 @@ import { adminDocs } from "../shared/admin_notify";
 import { deliverPush } from "../shared/push";
 import { previewFromChronique, previewFromPost, previewFromSound } from "../shared/preview";
 import { ReminderKind, typeNotifFor } from "./policy_logic";
-import { AD_LABEL, NEW_CREATOR_BODY, NEW_CREATOR_LABEL, TIPS, Lang, fmt, langOf, reminderText, tipText } from "./tips_library";
+import { AD_LABEL, EARN_TEXT, NEW_CREATOR_BODY, NEW_CREATOR_LABEL, TIPS, Lang, fmt, langOf, reminderText, tipText } from "./tips_library";
+import { earnMessage } from "../studio/artistEarnNotify";
 
 /**
  * Exemples de notifications pour les administrateurs : un envoi par cas, avec le vrai format (titre, texte, image d'aperçu, `type_notif`), afin de
@@ -90,6 +91,13 @@ export function buildSamples(c: Ctx): Sample[] {
   out.push({ id: "act_invitation", group: "activite", label: "Invitation (ouvre la page des invitations)", title: T + "@Ibrahim", message: "vous a envoyé une invitation", data: { type_notif: "INVITATION", ...noData } });
   out.push({ id: "act_abonne", group: "activite", label: "Nouvel abonné (ouvre son profil)", title: T + "@Nadia", message: "s'est abonné(e) à vous", data: { type_notif: "ABONNER", post_id: "", post_type: "", chat_id: "", send_user_id: c.adminId } });
   out.push({ id: "act_musique", group: "activite", label: "Nouvelle musique d'un artiste suivi (pochette)", title: T + "🎵 @Artiste a sorti un nouveau titre", message: "« Titre exemple » est disponible : écoute-le maintenant.", image: c.sound?.image, data: { type_notif: "MUSIC", sound_id: c.sound?.id ?? "", ...noData } });
+  // Gains d'artiste (alerte réelle : studio/artistEarnNotify.ts), ouvre l'Espace artiste ; un exemple d'achat, d'utilisation et de gains regroupés
+  const earn = EARN_TEXT[c.lang];
+  const sound = (kind: "sale" | "use", n: number) => earnMessage(c.lang, { coins: kind === "sale" ? 18 : 3, count: n, soundId: c.sound?.id ?? "", title: "Titre exemple", kind });
+  const earnData = { type_notif: "RAPPEL_ARTISTE", sound_id: c.sound?.id ?? "", ...noData };
+  out.push({ id: "act_gain_vente", group: "activite", label: "Artiste : un de ses titres est acheté (Espace artiste)", title: T + earn.title, message: sound("sale", 1).body, image: c.sound?.image, data: earnData });
+  out.push({ id: "act_gain_usage", group: "activite", label: "Artiste : son utilisé dans un post (Espace artiste)", title: T + earn.title, message: sound("use", 1).body, image: c.sound?.image, data: earnData });
+  out.push({ id: "act_gain_groupe", group: "activite", label: "Artiste : plusieurs gains regroupés en une alerte", title: T + earn.title, message: sound("use", 4).body, image: c.sound?.image, data: earnData });
   out.push({ id: "act_gain", group: "activite", label: "Gain reçu (ouvre la page Monétisation)", title: T + "Vous avez reçu un cadeau", message: "@Aïcha vous a offert 10 pièces", data: { type_notif: "GAIN", ...noData } });
   out.push({ id: "act_hebdo", group: "activite", label: "Récompense hebdomadaire (ouvre la page Monétisation)", title: T + "🏆 Récompense de la semaine", message: "Vous êtes dans le top des commentateurs : 300 pièces !", data: { type_notif: "WEEKLY_REWARD", ...noData } });
   out.push({ id: "act_live", group: "activite", label: "Un live démarre (ouvre la liste des lives)", title: T + "🔴 @Studio est en direct", message: "Rejoins le live maintenant", data: { type_notif: "LIVE", ...noData } });
