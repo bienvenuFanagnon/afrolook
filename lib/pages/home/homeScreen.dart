@@ -11,6 +11,7 @@ import 'dart:math';
 import 'dart:ui';
 import 'package:afrotok/services/linkService.dart';
 import 'package:afrotok/services/nav_cache_service.dart';
+import 'package:afrotok/services/new_content_bus.dart';
 import '../user/otherUser/otherUser.dart';
 import '../search/creator_canal_search_page.dart';
 import 'package:afrotok/pages/canaux/listCanal.dart';
@@ -22,6 +23,12 @@ import 'package:afrotok/ads/rewards_service.dart';
 import 'package:afrotok/ads/admob_native_pool.dart';
 import 'package:afrotok/pages/rewards/rewards_page.dart';
 import 'package:afrotok/pages/quiz/quiz_home_page.dart';
+import 'package:afrotok/pages/etude/etude_home_page.dart';
+import 'package:afrotok/pages/contes/contes_home_page.dart';
+import 'package:afrotok/pages/LiveAgora/create_live_page.dart';
+import 'package:afrotok/pages/canaux/newCanal.dart';
+import 'package:afrotok/pages/chat/group/create_group_page.dart';
+import 'package:afrotok/pages/studio/artist_marketplace.dart';
 import 'package:afrotok/pages/music/music_page.dart';
 import 'package:afrotok/pages/quiz/quiz_etude_hub_page.dart';
 import 'package:afrotok/pages/regles_confidentialite_page.dart';
@@ -192,6 +199,7 @@ class _MyHomePageState extends State<MyHomePage>
   List<Canal> canaux=[];
   Color _color =Colors.blue;
   TabController? _tabController;
+  StreamSubscription<void>? _newContentSub;
   int _unreadNotificationsCount = 0;
   int _unreadDatingCount = 0;
   bool _startupModalsDone = false;
@@ -1170,6 +1178,10 @@ class _MyHomePageState extends State<MyHomePage>
 
     WidgetsBinding.instance.addObserver(this);
 
+    // Publication terminée : on revient sur le premier onglet (le fil montre le nouveau contenu en tête)
+    _newContentSub = NewContentBus.instance.homeRequests.listen((_) {
+      if (mounted && _tabController != null && _tabController!.index != 0) _tabController!.animateTo(0);
+    });
   }
 
 
@@ -1179,6 +1191,12 @@ class _MyHomePageState extends State<MyHomePage>
     if (!mounted) return;
     final type = data['type'] as String?;
     switch (type) {
+      case 'screen':
+        _openScreen(data['screen'] as String?);
+        break;
+      case 'live':
+        _navigateToLive(data['liveId'] as String?);
+        break;
       case 'creator':
         final userId = data['userId'] as String?;
         if (userId != null && userId.isNotEmpty) {
@@ -1274,8 +1292,58 @@ class _MyHomePageState extends State<MyHomePage>
       case 'live':
         _navigateToLive(dest.liveId);
         break;
+      case 'screen':
+        _openScreen(dest.screen);
+        break;
     // 'home' : ne rien faire
     }
+  }
+
+  /// Écran demandé par une notification (rappels programmés, gains, classement, création…). Inconnu ou « home » : on reste sur l'accueil.
+  void _openScreen(String? screen) {
+    Widget? page;
+    switch (screen) {
+      case 'quiz':
+        page = const QuizHomePage();
+        break;
+      case 'etude':
+        page = const EtudeHomePage();
+        break;
+      case 'contes':
+        page = const ContesHomePage();
+        break;
+      case 'monetisation':
+        page = MonetisationPage();
+        break;
+      case 'live_create':
+        page = CreateLivePage();
+        break;
+      case 'canal_create':
+        page = NewCanal();
+        break;
+      case 'group_create':
+        page = const CreateGroupPage();
+        break;
+      case 'weekly_commentators':
+        page = const WeeklyTopCommentatorsPage();
+        break;
+      case 'music':
+        page = const MusicPage();
+        break;
+      case 'artist_space':
+        page = const MyArtistSoundsPage();
+        break;
+      case 'notifications':
+        page = MesNotification();
+        break;
+      case 'dating_notifications':
+        page = const DatingNotificationsPage();
+        break;
+      case 'live_list':
+        Navigator.pushNamed(context, '/list_live');
+        return;
+    }
+    if (page != null) Navigator.push(context, MaterialPageRoute(builder: (_) => page!));
   }
 
 // Implémentations des méthodes de navigation (vous les avez probablement déjà)
@@ -1459,6 +1527,7 @@ class _MyHomePageState extends State<MyHomePage>
 
   @override
   void dispose() {
+    _newContentSub?.cancel();
     _liveNavSub?.cancel();
     _invitationsKeepAlive?.cancel();
     _messagesKeepAlive?.cancel();

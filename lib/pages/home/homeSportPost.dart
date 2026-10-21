@@ -6,6 +6,7 @@ import 'package:afrotok/utils/responsive_sheet.dart';
 import 'discovery_feed_page.dart';
 import '../../widgets/feed/sections/feed_sport_discovery_section.dart';
 import '../../widgets/feed/sections/feed_end_discovery_section.dart';
+import '../../widgets/feed/sections/feed_discovery_section.dart';
 import '../../widgets/feed/sections/feed_live_section.dart';
 import '../LiveAgora/livesAgora.dart';
 import 'dart:async';
@@ -2876,7 +2877,16 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
     if (_isLoadingPosts && _posts.isEmpty) return _buildLoadingShimmer(width, height);
     if (_hasErrorPosts && _posts.isEmpty) return _buildErrorWidget();
-    if (_posts.isEmpty) return _buildEmptyWidget();
+    if (_posts.isEmpty) {
+      // Aucun post : on montre des posts à découvrir plutôt qu'un écran vide
+      return ListView(
+        controller: _scrollController,
+        children: [
+          SizedBox(height: 180, child: _buildEmptyWidget()),
+          _buildDiscoverySection(width, height),
+        ],
+      );
+    }
 
     // ------------------------------------------------------------
     // 1. Construction du flux alterné (3 normaux → 2 anciens)
@@ -3083,6 +3093,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       // Fin du feed T1 : widget de découverte + boutons d'action
       contentWidgets.add(const QuizFeedCard(key: ValueKey('quiz_card_sport_end'), slot: 3));
       contentWidgets.add(const SocialFollowCard(key: ValueKey('social_follow_end_sport'), variant: SocialFollowVariant.end));
+      contentWidgets.add(_buildDiscoverySection(width, height));
       contentWidgets.add(
         FeedEndDiscoverySection(
           pageType: widget.type.isNotEmpty ? widget.type : null,
@@ -3703,6 +3714,24 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       printVm('Error recording post view: $e');
       _postsViewedInSession.remove(post.id!);
     }
+  }
+
+  /// Posts « À découvrir » du thème quand il n'y a plus de post non lu (au lieu d'un fil sans contenu).
+  Widget _buildDiscoverySection(double width, double height) {
+    final me = authProvider.loginUserData;
+    return FeedDiscoverySection(
+      key: ValueKey('feed_discovery_sport_${_loadedPostIds.length}'),
+      myId: me.id ?? '',
+      pageType: widget.type.isNotEmpty ? widget.type : 'SPORT',
+      excludeIds: _loadedPostIds,
+      followedIds: <String>{...(me.followingIds ?? <String>[])},
+      buildPost: (post, i) {
+        final isVideo = post.type == PostType.POST.name && post.dataType == PostDataType.VIDEO.name;
+        return isVideo
+            ? _buildPostWidget(post, width, height, 1000 + i)
+            : GestureDetector(onTap: () => _navigateToPostDetails(post), child: _buildPostWidget(post, width, height, 1000 + i));
+      },
+    );
   }
 
   void _navigateToPostDetails(Post post) {

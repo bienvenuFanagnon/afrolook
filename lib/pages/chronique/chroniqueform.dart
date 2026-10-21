@@ -17,6 +17,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
+import '../../services/new_content_bus.dart';
 import '../../providers/chroniqueProvider.dart';
 import '../../theme/app_colors.dart';
 import 'chronique_music.dart';
@@ -602,6 +603,7 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
           setState(() => _uploadProgress = progress);
         },
       );
+      NewContentBus.instance.onChroniquePublished(); // retour à l'accueil, la chronique apparaît dans la barre
       addPointsForAction(UserAction.post);
       // Notification fire-and-forget via Cloud Function (abonnés uniquement, comme les posts)
       unawaited(_sendNotification(authProvider, mediaUrl: uploadedMediaUrl));

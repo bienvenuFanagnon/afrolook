@@ -31,6 +31,7 @@ import '../component/showUserDetails.dart';
 import '../../providers/afroshop/authAfroshopProvider.dart';
 import '../../providers/afroshop/categorie_produits_provider.dart';
 import '../../providers/authProvider.dart';
+import '../../services/new_content_bus.dart';
 import 'package:shimmer/shimmer.dart';
 import '../contenuPayant/recent_vip_content_widget.dart';
 import '../contenuPayant/widgets/boosted_content_strip.dart';
@@ -65,6 +66,7 @@ import '../../services/feed/feed_preload_service.dart';
 import '../../constants/user_interests.dart';
 import '../../widgets/feed/sections/feed_category_section.dart';
 import '../../widgets/feed/sections/feed_end_discovery_section.dart';
+import '../../widgets/feed/sections/feed_discovery_section.dart';
 import '../../widgets/feed/sections/feed_live_section.dart';
 import '../LiveAgora/livesAgora.dart';
 import '../../services/feed/discovery_boost_service.dart';
@@ -182,6 +184,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   // Contrôleurs
   final ScrollController _scrollController = ScrollController();
+  StreamSubscription<Post>? _newPostSub;
+  StreamSubscription<void>? _newChroniqueSub;
+  /// Posts que la personne vient de publier : affichés en tête, sans badge « Tendance » ni « Nouveau ».
+  final Set<String> _ownNewPostIds = <String>{};
   final Random _random = Random();
 
   // Variables d'état pour les posts
@@ -317,6 +323,13 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   @override
   void initState() {
     super.initState();
+    // Publication terminée : le nouveau contenu s'affiche en tête du fil (et le fil remonte tout en haut)
+    _newPostSub = NewContentBus.instance.newPosts.listen(_insertOwnNewPost);
+    _newChroniqueSub = NewContentBus.instance.chroniquePublished.listen((_) {
+      if (!mounted || widget.type.isNotEmpty) return;
+      _loadChroniquesInBackground();
+      scrollToTop();
+    });
     ChroniqueFirstPage.changes.addListener(_onChroniquesChanged);
     MonetizationReminder.due('home').then((v) {
       if (mounted && v) setState(() => _showTutoReminder = true);
@@ -376,6 +389,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   @override
   void dispose() {
+    _newPostSub?.cancel();
+    _newChroniqueSub?.cancel();
     _scrollCooldownTimer?.cancel();
     _scrollController.dispose();
     _visibilityTimers.forEach((key, timer) => timer.cancel());
@@ -614,6 +629,22 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   void _setupScrollController() {
     _scrollController.addListener(_scrollListener);
+  }
+
+  /// Place en tête du fil le post que la personne vient de publier, et remonte tout en haut.
+  void _insertOwnNewPost(Post post) {
+    final id = post.id;
+    if (!mounted || id == null || id.isEmpty) return;
+    // sur un fil par thème, seulement un post de ce thème ; sur l'accueil, tout post
+    if (widget.type.isNotEmpty && post.typeTabbar != widget.type) return;
+    setState(() {
+      _posts.removeWhere((p) => p.id == id);
+      _posts.insert(0, post);
+      _loadedPostIds.add(id);
+      _ownNewPostIds.add(id);
+      _totalPostsLoaded = _posts.length;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => scrollToTop());
   }
 
   void scrollToTop() {
@@ -3276,11 +3307,12 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     final isDiscovery = pid != null &&
         DiscoveryBoostService.instance.discoveryPostIds.contains(pid);
     final isLocalDiscovery = pid != null && !isDiscovery && _localDiscoveryIds.contains(pid);
-    final isTier1 = pid != null && _seenTier1PostIds.contains(pid);
+    final isOwnNew = pid != null && _ownNewPostIds.contains(pid);
+    final isTier1 = pid != null && _seenTier1PostIds.contains(pid) && !isOwnNew;
     final isTier2 = pid != null && _tier2PostIds.contains(pid) && !isTier1;
     // Tendance uniquement affiché après la fin du chargement initial.
     // Pendant _isFirstLoad le tier est inconnu → on n'affiche rien.
-    final isTier3 = !_isFirstLoad && pid != null && !isTier1 && !isTier2 && !isDiscovery && !isLocalDiscovery;
+    final isTier3 = !_isFirstLoad && pid != null && !isOwnNew && !isTier1 && !isTier2 && !isDiscovery && !isLocalDiscovery;
 
     if (index < 5) {
       final badge = isTier1 ? 'NOUVEAU' : isTier2 ? 'DECOUVERTE' : isTier3 ? 'TENDANCE' : 'AUCUN(_isFirstLoad=$_isFirstLoad)';
@@ -3587,6 +3619,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           SliverList(
             delegate: SliverChildListDelegate([
               if (widget.type.isEmpty) _buildNoNewPostsBanner(),
+              _buildDiscoverySection(width, height),
               const QuizFeedCard(key: ValueKey('quiz_card_home_end_empty'), slot: 3),
               FeedEndDiscoverySection(
                 pageType: widget.type.isNotEmpty ? widget.type : null,
@@ -3846,6 +3879,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       // Plus de posts à voir : le quiz s'affiche avant les widgets de fin
       contentWidgets.add(const QuizFeedCard(key: ValueKey('quiz_card_home_end'), slot: 3));
       contentWidgets.add(const SocialFollowCard(key: ValueKey('social_follow_end'), variant: SocialFollowVariant.end));
+      contentWidgets.add(_buildDiscoverySection(width, height));
       contentWidgets.add(FeedEndDiscoverySection(
         pageType: widget.type.isNotEmpty ? widget.type : null,
         onSubscribed: () {
@@ -4127,6 +4161,31 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           ),
         ],
       ),
+    );
+  }
+
+  /// Posts « À découvrir » quand il n'y a plus de post non lu (au lieu d'un fil sans contenu). Accueil : lot déjà préchargé en arrière-plan.
+  Widget _buildDiscoverySection(double width, double height) {
+    final me = authProvider.loginUserData;
+    final followed = <String>{...(_followingIds.isNotEmpty ? _followingIds : (me.followingIds ?? <String>[]))};
+    return FeedDiscoverySection(
+      key: ValueKey('feed_discovery_${widget.type}_${_regularDiscoveryPool.length}'),
+      myId: me.id ?? '',
+      pageType: widget.type.isNotEmpty ? widget.type : null,
+      seed: widget.type.isEmpty ? _regularDiscoveryPool : const [],
+      excludeIds: _loadedPostIds,
+      followedIds: followed,
+      onShown: (posts) {
+        for (final p in posts) {
+          if (p.id != null) _localDiscoveryIds.add(p.id!); // badge « Découverte · Créateur »
+        }
+      },
+      buildPost: (post, i) {
+        final isVideo = post.type == PostType.POST.name && post.dataType == PostDataType.VIDEO.name;
+        return isVideo
+            ? _buildPostWidget(post, width, height, 1000 + i)
+            : GestureDetector(onTap: () => _navigateToPostDetails(post), child: _buildPostWidget(post, width, height, 1000 + i));
+      },
     );
   }
 

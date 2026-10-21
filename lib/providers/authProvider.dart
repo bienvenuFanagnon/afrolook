@@ -6,6 +6,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:afrotok/services/abonnement_service.dart';
 import 'package:afrotok/services/push_service.dart';
+import 'package:afrotok/services/new_content_bus.dart';
 import 'package:rxdart/rxdart.dart' as rx;
 import 'package:afrotok/services/remote_config_service.dart';
 import 'package:afrotok/models/chatmodels/message.dart';
@@ -1169,6 +1170,11 @@ class UserAuthProvider extends ChangeNotifier {
       return s;
     });
     return subject.stream;
+  }
+
+  /// « Tout marquer comme vu » : le badge de l'accueil passe à zéro immédiatement ; le serveur met ensuite la base à jour.
+  void markNotificationsSeenLocally(String userId) {
+    _notificationSubjects[userId]?.add(const <NotificationData>[]);
   }
 
   /// À la déconnexion : ferme les abonnements aux notifications.
@@ -3309,6 +3315,8 @@ if(actionType == 'comment'){
 }
 
 Future<void> addPointsForAction(UserAction action) async {
+  // Une publication vient de réussir : retour à l'accueil et affichage en tête du fil (voir NewContentBus)
+  if (action == UserAction.post) NewContentBus.instance.onPublished();
   final FirebaseAuth auth = FirebaseAuth.instance;
   final FirebaseFirestore db = FirebaseFirestore.instance;
 
