@@ -116,9 +116,9 @@ export function validateSummary(raw: unknown, ctx: { sourcesText: string; refs: 
   const notif = notifRaw ? { titre: String(notifRaw["titre"] ?? "").trim(), corps: String(notifRaw["corps"] ?? "").trim() } : null;
 
   if (!str(titre, 25, 130)) errors.push("titre_longueur");
-  if (!str(chapo, 60, 300)) errors.push("chapo_longueur");
-  if (sections.length < 2 || sections.length > 4) errors.push("sections_nombre");
-  if (sections.some((s) => !str(s.titre, 3, 70) || !str(s.texte, 120, 750))) errors.push("section_longueur");
+  if (!str(chapo, 60, 320)) errors.push("chapo_longueur");
+  if (sections.length < 2 || sections.length > 5) errors.push("sections_nombre");
+  if (sections.some((s) => !str(s.titre, 3, 70) || !str(s.texte, 120, 900))) errors.push("section_longueur");
   if (retenir.length < 3) errors.push("retenir_nombre");
   if (retenir.some((x) => x.length > 160)) errors.push("retenir_longueur");
   if (!notif || !str(notif.titre, 8, 60) || !str(notif.corps, 20, 120)) errors.push("notif_longueur");

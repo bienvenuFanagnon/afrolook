@@ -23,7 +23,7 @@ export const SYSTEM_PROMPT =
 export function buildMessages(topic: Topic, countryName: string | null, dateText: string): Msg[] {
   const items = distinctOutlets(topic).slice(0, 4);
   const where = topic.level === "country" ? (countryName ?? "le pays") : topic.level === "continent" ? CONTINENT_LABEL : "le monde";
-  const sources = items.map((it, i) => `[S${i + 1}] ${it.sourceName} — ${it.titre}\n${(it.corps || it.resume).slice(0, 900)}`).join("\n\n");
+  const sources = items.map((it, i) => `[S${i + 1}] ${it.sourceName} — ${it.titre}\n${(it.corps || it.resume).slice(0, 2800)}`).join("\n\n");
   const english = items.some((it) => it.lang === "en");
   const hint = english
     ? "Les sources sont en anglais : écris en français, garde les noms de personnes, d'équipes et d'organisations tels qu'ils sont écrits dans les sources, et utilise le nom français usuel des pays.\n\n"
@@ -31,9 +31,9 @@ export function buildMessages(topic: Topic, countryName: string | null, dateText
   const user =
     `Date : ${dateText}\nDomaine : ${CATEGORY_LABEL[topic.category] ?? topic.category}\nPérimètre : ${where}\n\nSources :\n${sources}\n\n` +
     `${hint}Écris le résumé en JSON :\n{"titre": titre clair de 40 à 100 caractères, fidèle aux faits,\n` +
-    ` "chapo": 1 à 2 phrases qui donnent l'essentiel, 80 à 280 caractères,\n` +
-    ` "sections": 2 à 3 objets {"titre": intertitre court, "texte": 150 à 450 caractères de prose claire},\n` +
-    ` "retenir": 3 puces courtes (140 caractères au plus chacune),\n` +
+    ` "chapo": 2 phrases qui donnent l'essentiel, 100 à 300 caractères,\n` +
+    ` "sections": 3 à 4 objets {"titre": intertitre court, "texte": 250 à 550 caractères de prose claire : le contexte, les faits, les chiffres, les réactions, la suite attendue, seulement ce que disent les sources. Si les sources sont brèves, écris moins plutôt que d'inventer},\n` +
+    ` "retenir": 4 puces courtes (140 caractères au plus chacune),\n` +
     ` "notif": {"titre": titre de notification de 55 caractères au plus, accrocheur mais honnête, "corps": 110 caractères au plus, donne envie de lire, sans promesse ni majuscules criardes}}`;
   return [{ role: "system", content: SYSTEM_PROMPT }, { role: "user", content: user }];
 }
@@ -62,7 +62,7 @@ export function fixHint(errors: string[]): string {
     if (e === "json_invalide") return "Réponds avec UNIQUEMENT l'objet JSON complet et valide, sans texte autour.";
     if (e === "titre_longueur") return "Le titre doit faire entre 40 et 100 caractères.";
     if (e === "chapo_longueur") return "Le chapô doit faire entre 80 et 280 caractères.";
-    if (e.startsWith("section")) return "Donne 2 ou 3 sections, chacune avec un intertitre court et un texte de 150 à 450 caractères.";
+    if (e.startsWith("section")) return "Donne 3 ou 4 sections, chacune avec un intertitre court et un texte de 250 à 550 caractères.";
     if (e.startsWith("texte_recopie")) return "Reformule entièrement avec tes propres mots : ne reprends aucune suite de 8 mots des sources.";
     if (e.startsWith("nom_invente")) return `Retire les noms qui ne figurent pas dans les sources (${e.split(":")[1] ?? ""}).`;
     if (e.startsWith("chiffre_invente")) return `Retire les chiffres qui ne figurent pas dans les sources (${e.split(":")[1] ?? ""}).`;
@@ -85,11 +85,11 @@ export async function summarizeTopic(topic: Topic, opts: { countryName?: string 
   const model = opts.model ?? DEFAULT_MODELS.quality;
   const outlets = distinctOutlets(topic).slice(0, 4);
   const sourcesText = outlets.map((it) => `${it.titre}. ${it.corps || it.resume}`).join("\n");
-  const refs = topic.items.flatMap((it) => [it.titre, it.resume]);
+  const refs = topic.items.flatMap((it) => [it.titre, it.resume, it.corps]); // ni titre, ni extrait, ni texte de page recopié
 
   const call = async (msgs: Msg[]): Promise<AiResult | SummaryResult> => {
     try {
-      return await run(msgs, { model, maxTokens: 1300, temperature: 0.3 });
+      return await run(msgs, { model, maxTokens: 1900, temperature: 0.3 });
     } catch (e) {
       const code = (e as { code?: string }).code;
       if (code === "quota" && opts.quotaFlag) opts.quotaFlag.hit = true;

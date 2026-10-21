@@ -5,7 +5,7 @@ import { DAILY_TOTAL_CAP, DEFAULT_MODELS, loadUsage } from "./ai";
 import { COUNTRY_KEYWORDS, Fingerprint, RawItem, Topic, buildTopics, fingerprint, linkHash, sameFingerprint, toRaw } from "./cluster";
 import { logNews } from "./log";
 import { cleanNewsInput } from "./model";
-import { fetchPreview } from "./pagePreview";
+import { fetchArticleText, fetchPreview } from "./pagePreview";
 import { publishNews } from "./publish";
 import { fetchFeed } from "./rss";
 import { NewsSourceDef, activeSources } from "./sources";
@@ -109,9 +109,9 @@ export function planSelection(topics: Topic[], counters: Counters, cfg: Pick<Pip
   return out;
 }
 
-/** Modèle de qualité tant que la consommation du jour reste sous 60 % du plafond, puis le modèle léger. */
+/** Modèle de qualité tant que la consommation du jour reste sous 80 % du plafond, puis le modèle léger. */
 export function chooseModel(usedTotal: number, models: { quality: string; light: string } = DEFAULT_MODELS): string {
-  return usedTotal < DAILY_TOTAL_CAP * 0.6 ? models.quality : models.light;
+  return usedTotal < DAILY_TOTAL_CAP * 0.8 ? models.quality : models.light;
 }
 
 async function pool<T, R>(list: T[], size: number, fn: (x: T) => Promise<R>): Promise<R[]> {
@@ -121,6 +121,22 @@ async function pool<T, R>(list: T[], size: number, fn: (x: T) => Promise<R>): Pr
     while (next < list.length) { const i = next++; out[i] = await fn(list[i]); }
   }));
   return out;
+}
+
+/**
+ * Lecture approfondie : pour les 2 médias les plus utiles d'un sujet, on lit le texte de la page (au lieu du seul extrait du flux) pour que le résumé soit
+ * développé et exact. Le texte ne sert qu'à écrire notre propre résumé (sources citées) : rien n'en est conservé. Coupée par `AppConfig/news.deepRead: false`.
+ * Retourne le nombre de pages lues avec succès.
+ */
+export async function deepRead(topic: Topic, fetchText: (url: string) => Promise<string> = (u) => fetchArticleText(u), maxPerTopic = 2): Promise<number> {
+  const seen = new Set<string>();
+  const outlets = topic.items.filter((it) => (seen.has(it.sourceName) ? false : (seen.add(it.sourceName), true))).slice(0, maxPerTopic);
+  const texts = await Promise.all(outlets.map((it) => fetchText(it.lien)));
+  let ok = 0;
+  outlets.forEach((it, i) => {
+    if (texts[i].length > it.corps.length + 150) { it.corps = texts[i]; ok++; }
+  });
+  return ok;
 }
 
 export interface SourceStatus { id: string; name: string; url: string; active: boolean; ok: boolean; items: number; newest: string | null; error: string | null; ms: number }
@@ -231,6 +247,15 @@ export async function runNewsPipeline(opts: RunOpts = {}): Promise<PipelineRepor
         previews++;
         const pv = await fetchPreview(t.items[0].lien, opts.fetchImpl);
         if (pv?.image) t.items[0].image = pv.image;
+      }
+
+      // lecture approfondie des meilleures sources (au plus 10 pages par passage)
+      if (cfgDoc?.["deepRead"] !== false) {
+        let pages = 0;
+        for (const t of plan) {
+          if (pages >= 10) break;
+          pages += (await deepRead(t, (u) => fetchArticleText(u, opts.fetchImpl))) + 0;
+        }
       }
 
       // 4. résumé et publication, un sujet après l'autre

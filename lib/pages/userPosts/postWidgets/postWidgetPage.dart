@@ -85,6 +85,7 @@ import 'package:afrotok/services/comment_coins.dart';
 import 'package:afrotok/widgets/post_coins_earned.dart';
 import '../../../ads/ad_slot.dart';
 import '../../studio/artist_marketplace.dart';
+import '../../../widgets/feed/sections/news_feed_card.dart';
 
 
 
@@ -993,6 +994,10 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    // Article d'actualité : jamais le rendu d'un post ordinaire (qui n'en montrerait que le chapô, sans ses sources)
+    if (widget.post.type == 'NEWS' && (widget.post.id ?? '').isNotEmpty) {
+      return NewsFeedCard(key: ValueKey('news_post_${widget.post.id}'), slotKey: 'post_${widget.post.id}', postId: widget.post.id);
+    }
     // Appui long : menu du post (avec « Créer une carte Afrolook »)
     return GestureDetector(
       behavior: HitTestBehavior.translucent,

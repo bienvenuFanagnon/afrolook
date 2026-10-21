@@ -151,6 +151,23 @@ class NewsFeedItem {
       );
 }
 
+/// Élément d'affichage d'un article déjà lu (carte d'un article ouvert depuis une liste de posts).
+NewsFeedItem newsFeedItemOf(NewsArticle a) => NewsFeedItem(
+      id: a.id,
+      agentKey: a.agentKey,
+      category: a.category,
+      level: a.level,
+      country: a.country,
+      continent: a.continent,
+      title: a.title,
+      chapo: a.chapo,
+      image: a.image,
+      sourceCount: a.sources.length,
+      sourceNames: a.sources.take(3).map((s) => s.name).toList(),
+      at: a.createdAtMs,
+      exp: a.expiresAt,
+    );
+
 /// Article complet (Posts/{id} de type NEWS).
 class NewsArticle {
   final String id;

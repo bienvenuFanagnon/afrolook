@@ -612,6 +612,11 @@ class _MyHomePageState extends State<MyHomePage>
                       iconColor: const Color(0xFF2ECC71),
                       label: context.tr('Mon journal'),
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NewsJournalPage()))),
+                  // Fil Découverte : ancien onglet du haut de l'accueil, remplacé par Actualités
+                  _dItem(context, colors,
+                      icon: Icons.explore_rounded,
+                      label: context.tr('Découverte'),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => HomeSportPostPage(type: TabBarType.DECOUVERTE.name)))),
                   // Musique : titres gratuits et d'artistes, bibliothèque, favoris, titres téléchargés
                   _dItem(context, colors,
                       icon: Icons.library_music_rounded,
@@ -1161,13 +1166,13 @@ class _MyHomePageState extends State<MyHomePage>
           _tabController!.animateTo(0);
         });
       }
-      // index 3 → Découverte (push + retour à 0)
+      // index 3 → Actualités (push + retour à 0) ; le fil Découverte reste dans le menu
       if (_tabController!.index == 3) {
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) =>
-                HomeSportPostPage(type: TabBarType.DECOUVERTE.name),
+                const NewsJournalPage(),
           ),
         ).then((_) {
           _tabController!.animateTo(0);
@@ -1887,7 +1892,7 @@ class _MyHomePageState extends State<MyHomePage>
                         Tab(text: l10n.tabHome),
                         Tab(text: l10n.tabSport),
                         Tab(text: l10n.tabEvents),
-                        Tab(text: l10n.tabDiscovery),
+                        Tab(text: context.tr('Actualités')),
                         Tab(text: l10n.tabDefi),
                       ],
                     ),
@@ -2505,6 +2510,16 @@ class _MyHomePageState extends State<MyHomePage>
                     colors: colors,
                     iconColor: colors.primary,
                   ),
+                  // Fil Découverte (ancien onglet du haut de l'accueil)
+                  _sidebarItem(
+                    context: context,
+                    icon: Icons.explore_rounded,
+                    label: context.tr('Découverte'),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => HomeSportPostPage(type: TabBarType.DECOUVERTE.name))),
+                    wide: wide,
+                    colors: colors,
+                    iconColor: colors.primary,
+                  ),
                   // Musique
                   _sidebarItem(
                     context: context,
@@ -2732,7 +2747,7 @@ class _MyHomePageState extends State<MyHomePage>
           Tab(text: l10n.tabHome),
           Tab(text: l10n.tabSport),
           Tab(text: l10n.tabEvents),
-          Tab(text: l10n.tabDiscovery),
+          Tab(text: context.tr('Actualités')),
           Tab(text: l10n.tabDefi),
         ],
       ),

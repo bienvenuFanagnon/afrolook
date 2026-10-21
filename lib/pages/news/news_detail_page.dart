@@ -147,25 +147,26 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
   Widget _body(AppColors c, NewsArticle a) {
     final agent = a.agent;
     return ListView(padding: const EdgeInsets.fromLTRB(16, 12, 16, 32), children: [
-      if (a.image.isNotEmpty)
-        ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: CachedNetworkImage(
-            imageUrl: a.image,
-            width: double.infinity,
-            height: 210,
-            fit: BoxFit.cover,
-            placeholder: (_, __) => Container(height: 210, color: c.shimmerBase),
-            errorWidget: (_, __, ___) => Container(height: 90, color: c.surfaceVariant, child: Icon(Icons.image_not_supported_outlined, color: c.textSecondary)),
-          ),
-        ),
+      // en-tête « journal » : bandeau ACTUALITÉ puis photo, comme sur la carte du fil
+      ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Column(children: [
+          NewsMasthead(place: newsLevelLabel(a.level, a.country, a.continent)),
+          if (a.image.isNotEmpty)
+            CachedNetworkImage(
+              imageUrl: a.image,
+              width: double.infinity,
+              height: 210,
+              fit: BoxFit.cover,
+              placeholder: (_, __) => Container(height: 210, color: c.shimmerBase),
+              errorWidget: (_, __, ___) => Container(height: 90, color: c.surfaceVariant, child: Icon(Icons.image_not_supported_outlined, color: c.textSecondary)),
+            ),
+        ]),
+      ),
       const SizedBox(height: 12),
-      Wrap(spacing: 6, runSpacing: 6, children: [
-        NewsChip(text: context.tr(agent.label), color: agent.color(c), filled: true),
-        NewsChip(text: newsLevelLabel(a.level, a.country, a.continent), color: c.supportAccent),
-      ]),
+      NewsChip(text: context.tr(agent.label), color: agent.color(c), filled: true),
       const SizedBox(height: 10),
-      Text(a.title, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 22, height: 1.25)),
+      Text(a.title, style: TextStyle(color: c.textPrimary, fontFamily: 'serif', fontWeight: FontWeight.w800, fontSize: 23, height: 1.25)),
       const SizedBox(height: 12),
       Row(children: [
         AgentAvatar(agent: agent, size: 36),
@@ -281,6 +282,8 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
           _action(c, Icons.card_giftcard_rounded, context.tr('Cadeau'), () => NewsActions.gift(context, a), c.warning),
         ]),
       ),
+      const SizedBox(height: 12),
+      const NewsMoreButton(),
     ]);
   }
 

@@ -100,6 +100,7 @@ import 'package:afrotok/services/comment_coins.dart';
 import 'package:afrotok/widgets/post_coins_earned.dart';
 import '../utils/platform_guard.dart';
 import '../l10n/tr.dart';
+import 'news/news_detail_page.dart';
 
 // Couleurs migrées vers AppColors (_colors.*) dans _DetailsPostState
 
@@ -4951,6 +4952,8 @@ class _DetailsPostState extends State<DetailsPost>
 
   @override
   Widget build(BuildContext context) {
+    // Article d'actualité : sa propre page (résumé complet, À retenir, sources), d'où qu'on l'ouvre (liste, notification, profil, commentaires)
+    if (widget.post.type == 'NEWS' && (widget.post.id ?? '').isNotEmpty) return NewsDetailPage(postId: widget.post.id!);
     _colors = AppColors.of(context);
     final isLocked = _isLockedContent();
 
