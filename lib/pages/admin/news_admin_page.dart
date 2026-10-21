@@ -119,6 +119,61 @@ class _NewsAdminPageState extends State<NewsAdminPage> {
     });
   }
 
+  String? _aiReport;
+  List<Map<String, dynamic>> _logs = [];
+  Map<String, dynamic> _health = {};
+  bool _logsLoaded = false;
+
+  String _when(int ms) {
+    final d = DateTime.fromMillisecondsSinceEpoch(ms).toLocal();
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(d.day)}/${two(d.month)} ${two(d.hour)}:${two(d.minute)}';
+  }
+
+  /// Journal : appels à l'IA (réussis ou en erreur), articles publiés, incidents ; et état de chaque compte Cloudflare.
+  Future<void> _loadLogs() async {
+    setState(() => _loading = true);
+    try {
+      final d = await _call('newsLogs', {'limit': 60});
+      setState(() {
+        _logs = (d['logs'] as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        _health = Map<String, dynamic>.from(d['health'] as Map);
+        _logsLoaded = true;
+      });
+    } catch (e) {
+      setState(() => _status = _err(e));
+    }
+    if (mounted) setState(() => _loading = false);
+  }
+
+  /// Teste chaque compte Cloudflare (une toute petite question) et montre la consommation du jour ; aucune clé n'est affichée.
+  Future<void> _checkAi() async {
+    setState(() {
+      _loading = true;
+      _aiReport = null;
+    });
+    try {
+      final d = await _call('newsCheckAi');
+      final lines = <String>['Comptes configurés : ${d['configured']}'];
+      for (final r in (d['results'] as List)) {
+        final m = Map<String, dynamic>.from(r as Map);
+        lines.add(m['ok'] == true
+            ? '✅ ${m['account']} : fonctionne (${(m['model'] as String).split('/').last}, ${m['neurons']} neurons, ${m['ms']} ms)'
+            : '❌ ${m['account']} : ${m['error']}');
+      }
+      for (final t in (d['today'] as List)) {
+        final m = Map<String, dynamic>.from(t as Map);
+        lines.add('Aujourd\'hui ${m['account']} : ${m['neurons']} / ${m['cap']} neurons');
+      }
+      lines.add('Plafond total du jour : ${d['dailyCap']} neurons');
+      if ((d['configured'] as num) == 0) lines.add('Aucun compte lisible : lance tools\\news\\set_cf_accounts.ps1 puis redéploie les fonctions.');
+      setState(() => _aiReport = lines.join('\n'));
+    } catch (e) {
+      setState(() => _aiReport = _err(e));
+    }
+    if (mounted) setState(() => _loading = false);
+  }
+
   Future<void> _publish() async {
     final sources = <Map<String, String>>[
       if (_s1Url.text.trim().isNotEmpty) {'name': _s1Name.text.trim(), 'url': _s1Url.text.trim()},
@@ -234,6 +289,54 @@ class _NewsAdminPageState extends State<NewsAdminPage> {
                 isThreeLine: true,
               ),
             Text('Vues, j\'aime et commentaires : sur les 200 derniers articles.', style: TextStyle(color: c.textSecondary, fontSize: 11)),
+          ])),
+          card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            title('IA (comptes Cloudflare)'),
+            const SizedBox(height: 6),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(onPressed: _loading ? null : _checkAi, icon: const Icon(Icons.bolt_rounded), label: const Text('Tester les comptes IA')),
+            ),
+            if (_aiReport != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(_aiReport!, style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.4))),
+          ])),
+          card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Expanded(child: title('Journal de l\'IA et des articles')),
+              TextButton(onPressed: _loading ? null : _loadLogs, child: Text(_logsLoaded ? 'Actualiser' : 'Afficher')),
+            ]),
+            if (!_logsLoaded) Text('Appels à l\'IA, articles publiés et incidents, avec l\'état de chaque compte Cloudflare.', style: TextStyle(color: c.textSecondary, fontSize: 12)),
+            if (_logsLoaded) ...[
+              if (_health.isEmpty) Text('Aucun appel à l\'IA enregistré pour le moment.', style: TextStyle(color: c.textSecondary, fontSize: 12)),
+              for (final e in _health.entries)
+                Builder(builder: (_) {
+                  final h = Map<String, dynamic>.from(e.value as Map);
+                  final okAt = (h['lastOkAt'] as num?)?.toInt() ?? 0;
+                  final errAt = (h['lastErrorAt'] as num?)?.toInt() ?? 0;
+                  final bad = errAt > okAt; // la dernière tentative a échoué
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      '${bad ? '⚠️' : '✅'} Compte ${e.key} : ${h['okCount'] ?? 0} réussites, ${h['errCount'] ?? 0} erreurs'
+                      '${okAt > 0 ? ' · dernier succès ${_when(okAt)}' : ''}'
+                      '${errAt > 0 ? '\nDernière erreur ${_when(errAt)} : ${h['lastError']}' : ''}',
+                      style: TextStyle(color: bad ? c.danger : c.textPrimary, fontSize: 12, height: 1.35),
+                    ),
+                  );
+                }),
+              const Divider(height: 18),
+              if (_logs.isEmpty) Text('Journal vide.', style: TextStyle(color: c.textSecondary, fontSize: 12)),
+              for (final l in _logs)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    '${_when((l['at'] as num).toInt())}  ${l['ok'] == true ? '✅' : '❌'} ${l['kind']}'
+                    '${l['account'] != null ? ' · ${l['account']}' : ''}'
+                    '${l['neurons'] != null ? ' · ${l['neurons']} neurons' : ''}'
+                    '${l['ms'] != null ? ' · ${l['ms']} ms' : ''}\n${l['message']}',
+                    style: TextStyle(color: l['ok'] == true ? c.textSecondary : c.danger, fontSize: 11.5, height: 1.3),
+                  ),
+                ),
+            ],
           ])),
           card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             title('Publier un article d\'essai'),

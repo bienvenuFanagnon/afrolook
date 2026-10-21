@@ -1,6 +1,8 @@
 import { onCall, HttpsError, CallableRequest } from "firebase-functions/v2/https";
 import { db } from "../shared/firebase";
+import { AiError, CF_NEWS_ACCOUNTS, DAILY_TOTAL_CAP, DEFAULT_MODELS, PER_ACCOUNT_CAP, loadUsage, maskId, parseAccounts, runAi } from "./ai";
 import { NEWS_AGENTS, agentUserId } from "./agents";
+import { readNewsLogs } from "./log";
 import { cleanNewsInput } from "./model";
 import { publishNews, removeNews } from "./publish";
 
@@ -10,7 +12,9 @@ import { publishNews, removeNews } from "./publish";
  * - newsPublishManual : publie un article saisi à la main (essai de la carte et de la page de détail avant le pipeline automatique) ;
  * - newsAgentStats    : par agent, articles publiés, vues, j'aime, commentaires, et cadeaux reçus (information : les vrais gains vont à l'app) ;
  * - newsDeleteArticle : retire un article ;
- * - newsSetConfig     : interrupteurs (AppConfig/news : enabled, feedEnabled).
+ * - newsSetConfig     : interrupteurs (AppConfig/news : enabled, feedEnabled) ;
+ * - newsLogs          : journal (appels à l'IA, articles publiés, incidents) et état de chaque compte Cloudflare ;
+ * - newsCheckAi       : teste chaque compte Cloudflare (une toute petite question) et montre la consommation du jour ; ne renvoie jamais de clé.
  */
 const ADMIN_ROLES = ["ADM", "admin", "ADMIN", "super_admin"];
 const OPTS = { region: "us-central1" as const, timeoutSeconds: 60, memory: "256MiB" as const };
@@ -94,4 +98,39 @@ export const newsAgentStats = onCall(OPTS, async (request) => {
       };
     }),
   };
+});
+
+export const newsCheckAi = onCall({ ...OPTS, secrets: [CF_NEWS_ACCOUNTS] }, async (request) => {
+  await requireAdmin(request);
+  const accounts = parseAccounts(CF_NEWS_ACCOUNTS.value());
+  const results: Array<{ account: string; ok: boolean; model?: string; neurons?: number; ms?: number; error?: string }> = [];
+  for (const a of accounts) {
+    let last = "";
+    let done = false;
+    // modèle léger d'abord (quelques neurons) ; s'il n'existe plus, on essaie le modèle de qualité
+    for (const model of [DEFAULT_MODELS.light, DEFAULT_MODELS.quality]) {
+      try {
+        const r = await runAi([{ role: "user", content: "Réponds uniquement par le mot OK." }], { model, maxTokens: 5, accounts, accountId: a.id });
+        results.push({ account: maskId(a.id), ok: true, model, neurons: Math.round(r.neurons * 100) / 100, ms: r.ms });
+        done = true;
+        break;
+      } catch (e) {
+        last = e instanceof AiError ? e.message : String(e).slice(0, 160);
+      }
+    }
+    if (!done) results.push({ account: maskId(a.id), ok: false, error: last });
+  }
+  const used = await loadUsage();
+  return {
+    configured: accounts.length,
+    results,
+    today: accounts.map((a) => ({ account: maskId(a.id), neurons: Math.round((used[a.id] ?? 0) * 10) / 10, cap: PER_ACCOUNT_CAP })),
+    dailyCap: DAILY_TOTAL_CAP,
+  };
+});
+
+export const newsLogs = onCall(OPTS, async (request) => {
+  await requireAdmin(request);
+  const limit = Number((request.data as Record<string, unknown> | undefined)?.["limit"] ?? 60) || 60;
+  return readNewsLogs(limit);
 });

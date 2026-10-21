@@ -1,5 +1,6 @@
 import { FieldValue } from "firebase-admin/firestore";
 import { db } from "../shared/firebase";
+import { logNews } from "./log";
 import { buildFeedItem, buildNewsPostDoc, mergeFeedItems, NewsClean } from "./model";
 
 /**
@@ -22,6 +23,7 @@ export async function publishNews(n: NewsClean, opts: { id?: string; nowMs?: num
     { key: n.agentKey, articles: FieldValue.increment(1), lastPublishedAt: now },
     { merge: true },
   );
+  await logNews({ kind: "publish", ok: true, message: `${n.agentKey} · ${n.scope} : ${n.title.slice(0, 90)}`, ref: ref.id }, now);
   return { id: ref.id, scope: n.scope };
 }
 
