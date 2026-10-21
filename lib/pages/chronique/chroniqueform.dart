@@ -1,6 +1,8 @@
 ﻿// pages/chronique/add_chronique_page.dart
 
 import 'dart:async';
+import 'package:afrotok/ads/ad_config.dart';
+import 'package:afrotok/ads/admob_service.dart';
 
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:audioplayers/audioplayers.dart';
@@ -356,6 +358,7 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
   @override
   void initState() {
     super.initState();
+    if (AdConfig.current.enabled) AdmobService.preloadInterstitial(); // prête pour la fin de la publication
     if (widget.initialType != null && widget.initialImage == null) _selectedType = widget.initialType!;
     if (widget.initialImage != null) {
       _selectedType = ChroniqueType.IMAGE;

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:afrotok/ads/rewarded_ads.dart';
 
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
@@ -131,7 +132,7 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
   }
 
   Future<bool> _watchAd() async {
-    final ok = await AdmobService.watchRewarded(userId: QuizService.instance.uid);
+    final ok = await RewardedAds.watch(userId: QuizService.instance.uid);
     if (!ok && mounted) {
       quizToast(context, context.tr("La pub n'est pas disponible pour le moment. Réessaie dans un instant."), error: true);
     }

@@ -4,7 +4,15 @@ import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'package:flutter/widgets.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../ads/ad_config.dart';
+import '../ads/ad_gate.dart';
+import '../ads/admob_service.dart';
 import '../models/model_data.dart';
+import '../providers/authProvider.dart';
 import 'nav_cache_service.dart';
 
 /// Après une publication (post, post de canal, chronique) :
@@ -50,7 +58,25 @@ class NewContentBus {
     Future.delayed(const Duration(milliseconds: 700), () {
       NavigationCacheService().navigatorKey.currentState?.popUntil((route) => route.isFirst);
       _homeRequests.add(null);
+      Future.delayed(const Duration(milliseconds: 1500), _maybeInterstitialAfterPublish);
     });
+  }
+
+  /// Une pub plein écran après une publication réussie : moment naturel (l'action est terminée), UNE par jour au plus, jamais pour un Gold ni si les
+  /// pubs plein écran sont coupées. Le retour à l'accueil et le nouveau post en tête du fil sont déjà faits.
+  Future<void> _maybeInterstitialAfterPublish() async {
+    try {
+      final ctx = NavigationCacheService().navigatorKey.currentContext;
+      if (ctx == null) return;
+      final user = Provider.of<UserAuthProvider>(ctx, listen: false).loginUserData;
+      final cfg = AdConfig.current;
+      if (!AdConfig.isMobile || !cfg.enabled || !cfg.interstitialEnabled || !AdGate.canShowType(user, 'interstitial')) return;
+      final sp = await SharedPreferences.getInstance();
+      final n = DateTime.now();
+      final key = 'pub_inter_${n.year}-${n.month}-${n.day}';
+      if ((sp.getInt(key) ?? 0) >= 1) return;
+      if (await AdmobService.showInterstitialNow()) await sp.setInt(key, 1);
+    } catch (_) {}
   }
 
   Future<void> _showLatestOwnPost() async {

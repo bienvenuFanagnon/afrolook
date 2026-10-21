@@ -1,4 +1,5 @@
 import 'package:afrotok/services/read_meter.dart';
+import 'rewarded_ads.dart';
 import 'ad_gate.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -172,7 +173,7 @@ class RewardsService {
     if (o == null) return false;
     var pending = (await status(uid)).pending;
     while (pending < o.ads) {
-      final earned = await AdmobService.watchRewarded(userId: uid);
+      final earned = await RewardedAds.watch(userId: uid);
       if (!earned) return false;
       if (AdConfig.current.ssvEnabled) {
         final target = pending + 1;

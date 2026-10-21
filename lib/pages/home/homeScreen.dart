@@ -12,6 +12,7 @@ import 'dart:ui';
 import 'package:afrotok/services/linkService.dart';
 import 'package:afrotok/services/nav_cache_service.dart';
 import 'package:afrotok/services/new_content_bus.dart';
+import 'package:afrotok/utils/external_links.dart';
 import '../user/otherUser/otherUser.dart';
 import '../search/creator_canal_search_page.dart';
 import 'package:afrotok/pages/canaux/listCanal.dart';
@@ -1342,6 +1343,14 @@ class _MyHomePageState extends State<MyHomePage>
       case 'live_list':
         Navigator.pushNamed(context, '/list_live');
         return;
+      case 'whatsapp':
+      case 'facebook':
+      case 'tiktok':
+        openSocial(screen!); // WhatsApp : la CHAÎNE d'Afrolook
+        return;
+      case 'defi':
+        page = const DefiDiscoverPage();
+        break;
     }
     if (page != null) Navigator.push(context, MaterialPageRoute(builder: (_) => page!));
   }

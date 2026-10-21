@@ -110,6 +110,33 @@ class AppodealService {
 
   static final Map<AppodealAdType, String> _outcome = {};
   static Completer<bool>? _rewardWaiter;
+  static Completer<bool>? _interWaiter;
+
+  /// Pub plein écran Appodeal, en renfort quand AdMob n'a rien de prêt : charge à la demande (3 s au plus), affiche, et appelle [onDismissed] à la fermeture.
+  /// Retourne `false` si rien n'a pu être montré.
+  static Future<bool> showInterstitial({VoidCallback? onDismissed}) async {
+    if (!supported || !ready.value) return false;
+    const type = AppodealAdType.Interstitial;
+    try {
+      if (!await Appodeal.isLoaded(type)) {
+        _outcome.remove(type);
+        Appodeal.cache(type);
+        for (var i = 0; i < 6; i++) {
+          await Future.delayed(const Duration(milliseconds: 500));
+          if (await Appodeal.isLoaded(type) || _outcome[type] == 'ko') break;
+        }
+      }
+      if (!await Appodeal.isLoaded(type)) return false;
+      _interWaiter = Completer<bool>();
+      final waiter = _interWaiter!;
+      if (!await Appodeal.show(type)) return false;
+      waiter.future.then((_) => onDismissed?.call());
+      return true;
+    } catch (e) {
+      lastError = '$e';
+      return false;
+    }
+  }
   static bool _rewardEarned = false;
 
   /// Pub récompensée Appodeal, en renfort quand AdMob n'a rien à montrer (voir RewardedAds) : charge à la demande, affiche, et retourne `true`
@@ -199,9 +226,15 @@ class AppodealService {
         _log('plein écran : aucun réseau n’a rempli la demande');
       },
       onInterstitialShown: () => _log('plein écran : affiché'),
-      onInterstitialShowFailed: () => _log('plein écran : affichage impossible'),
+      onInterstitialShowFailed: () {
+        _log('plein écran : affichage impossible');
+        if (_interWaiter != null && !_interWaiter!.isCompleted) _interWaiter!.complete(false);
+      },
       onInterstitialClicked: () => _log('plein écran : cliqué'),
-      onInterstitialClosed: () => _log('plein écran : fermé'),
+      onInterstitialClosed: () {
+        _log('plein écran : fermé');
+        if (_interWaiter != null && !_interWaiter!.isCompleted) _interWaiter!.complete(true);
+      },
       onInterstitialExpired: () => _log('plein écran : expiré'),
     );
     Appodeal.setRewardedVideoCallbacks(

@@ -16,6 +16,7 @@ import 'dart:async';
 
 import 'package:afrotok/pages/user/monetisation.dart';
 import 'package:afrotok/pages/notification_settings_page.dart';
+import 'package:afrotok/widgets/feed/sections/social_follow_card.dart';
 import 'package:afrotok/pages/music/music_page.dart';
 import 'package:afrotok/pages/dating/dating_notifications_page.dart';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -1404,6 +1405,8 @@ class _MesNotificationState extends State<MesNotification> {
         maxWidth: AppLayout.isDesktop(context) ? 800 : AppLayout.maxFeedWidth,
         child: Column(
         children: [
+          // Invitation à nous suivre (chaîne WhatsApp, Facebook, TikTok) avec ses boutons d'action
+          const SocialFollowCard(variant: SocialFollowVariant.end),
           if (_showFilterMenu && _availableTypes.isNotEmpty)
             Container(
               height: 50,

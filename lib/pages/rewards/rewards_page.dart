@@ -16,7 +16,9 @@ import '../user/userAbonnementPage.dart';
 /// Page « Récompenses » : on regarde des pubs (au choix) pour débloquer du Premium temporaire,
 /// une journée sans pub, des pièces cadeau ou un bouclier de flamme. Le serveur décide de tout.
 class RewardsPage extends StatefulWidget {
-  const RewardsPage({Key? key}) : super(key: key);
+  /// [autoOffer] : identifiant d'une offre à lancer tout de suite à l'ouverture (ex. `coins_2` depuis la carte « cadeau » du fil).
+  const RewardsPage({Key? key, this.autoOffer}) : super(key: key);
+  final String? autoOffer;
 
   @override
   State<RewardsPage> createState() => _RewardsPageState();
@@ -35,7 +37,20 @@ class _RewardsPageState extends State<RewardsPage> {
   void initState() {
     super.initState();
     if (AdConfig.current.enabled) AdmobService.loadRewarded();
-    RewardsService.loadConfig(force: true).then((_) => _refresh());
+    RewardsService.loadConfig(force: true).then((_) async {
+      await _refresh();
+      _maybeAutoRedeem();
+    });
+  }
+
+  bool _autoStarted = false;
+
+  void _maybeAutoRedeem() {
+    final id = widget.autoOffer;
+    if (id == null || _autoStarted || !mounted) return;
+    _autoStarted = true;
+    final offer = RewardsService.visibleOffers(_auth.loginUserData).where((o) => o.id == id).toList();
+    if (offer.isNotEmpty) _redeem(offer.first);
   }
 
   Future<void> _refresh() async {

@@ -67,6 +67,7 @@ import '../../constants/user_interests.dart';
 import '../../widgets/feed/sections/feed_category_section.dart';
 import '../../widgets/feed/sections/feed_end_discovery_section.dart';
 import '../../widgets/feed/sections/feed_discovery_section.dart';
+import '../../widgets/feed/sections/gift_reward_card.dart';
 import '../../widgets/feed/sections/feed_live_section.dart';
 import '../LiveAgora/livesAgora.dart';
 import '../../services/feed/discovery_boost_service.dart';
@@ -3620,6 +3621,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
             delegate: SliverChildListDelegate([
               if (widget.type.isEmpty) _buildNoNewPostsBanner(),
               _buildDiscoverySection(width, height),
+              const GiftRewardCard(key: ValueKey('gift_card_home_empty'), slot: 3),
               const QuizFeedCard(key: ValueKey('quiz_card_home_end_empty'), slot: 3),
               FeedEndDiscoverySection(
                 pageType: widget.type.isNotEmpty ? widget.type : null,
@@ -3721,6 +3723,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       // Offre « Une journée sans pub » : après le 5e post (jamais collée à une pub), 1 fois par jour
       if (i == 4) {
         contentWidgets.add(const AdFreeDayCard(key: ValueKey('ad_free_day_home')));
+      }
+
+      // Cadeau à récupérer après une courte vidéo (pub récompensée) : au milieu du fil
+      if (i == 11) {
+        contentWidgets.add(const GiftRewardCard(key: ValueKey('gift_card_home_1'), slot: 1));
       }
 
       // Quiz : les 3 questions du jour après le 3e post, puis un rappel plus loin si la personne n'a pas joué
@@ -3879,6 +3886,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       // Plus de posts à voir : le quiz s'affiche avant les widgets de fin
       contentWidgets.add(const QuizFeedCard(key: ValueKey('quiz_card_home_end'), slot: 3));
       contentWidgets.add(const SocialFollowCard(key: ValueKey('social_follow_end'), variant: SocialFollowVariant.end));
+      contentWidgets.add(const GiftRewardCard(key: ValueKey('gift_card_home_end'), slot: 2));
       contentWidgets.add(_buildDiscoverySection(width, height));
       contentWidgets.add(FeedEndDiscoverySection(
         pageType: widget.type.isNotEmpty ? widget.type : null,

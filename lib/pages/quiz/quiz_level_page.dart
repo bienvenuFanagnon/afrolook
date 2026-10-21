@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:afrotok/ads/rewarded_ads.dart';
 
 import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
@@ -194,7 +195,7 @@ class _QuizLevelPageState extends State<QuizLevelPage> {
     final f = _finish;
     if (f == null || _doubling || _doubled) return;
     setState(() => _doubling = true);
-    final ok = await AdmobService.watchRewarded(userId: QuizService.instance.uid);
+    final ok = await RewardedAds.watch(userId: QuizService.instance.uid);
     if (!mounted) return;
     if (!ok) {
       setState(() => _doubling = false);

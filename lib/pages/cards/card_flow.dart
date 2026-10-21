@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:afrotok/ads/rewarded_ads.dart';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -146,7 +147,7 @@ class CardFlow {
       },
     );
     if (go != true) return false;
-    final earned = await AdmobService.watchRewarded(userId: user.id);
+    final earned = await RewardedAds.watch(userId: user.id);
     if (!earned && context.mounted) _say(context, tr('Regarde la pub jusqu\'au bout pour obtenir ta carte offerte.'));
     return earned;
   }

@@ -2,6 +2,7 @@
 // et suivi du revenu estimé des emplacements dédiés (bannière et natif de la page Musique).
 
 import 'dart:async';
+import 'rewarded_ads.dart';
 
 import 'package:cloud_functions/cloud_functions.dart';
 
@@ -45,7 +46,7 @@ class MusicAds {
 
   /// Regarde une pub récompensée, puis demande au serveur d'ouvrir UNE écoute complète de ce titre (5 par jour au plus).
   static Future<MusicAdListen> listenWithAd(String soundId, {required String userId}) async {
-    final earned = await AdmobService.watchRewarded(userId: userId);
+    final earned = await RewardedAds.watch(userId: userId);
     if (!earned) return const MusicAdListen(MusicAdOutcome.noAd);
     try {
       await RewardsService.recordView();

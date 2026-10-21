@@ -1,4 +1,6 @@
 import '../../services/template_link.dart';
+import 'package:afrotok/ads/ad_config.dart';
+import 'package:afrotok/ads/admob_service.dart';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -45,6 +47,7 @@ class _UserPostFormState extends State<UserPostForm> {
   @override
   void initState() {
     super.initState();
+    if (AdConfig.current.enabled) AdmobService.preloadInterstitial(); // prête pour la fin de la publication
     // Compte bloqué pour inactivité (20 jours sans publication) : déblocage en pièces avant de continuer
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!await AccountGate.ensureCanPublish(context) && mounted) Navigator.of(context).maybePop();

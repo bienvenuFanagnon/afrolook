@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:afrotok/ads/rewarded_ads.dart';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -136,7 +137,7 @@ class _ConteUnlockSheetState extends State<_ConteUnlockSheet> with EtudeAdBypass
   /// Une pub avec récompense regardée remplit la jauge du conte ; quand elle est pleine, il est débloqué.
   Future<void> _watch() async {
     setState(() => _busy = true);
-    final ok = await AdmobService.watchRewarded(userId: ContesService.instance.uid);
+    final ok = await RewardedAds.watch(userId: ContesService.instance.uid);
     if (!mounted) return;
     if (!ok) {
       setState(() {

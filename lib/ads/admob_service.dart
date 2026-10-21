@@ -196,6 +196,8 @@ class AdmobService {
     final ad = _interstitial;
     if (ad == null || !ready.value) {
       _loadInterstitial();
+      // AdMob n'a rien de prêt : Appodeal prend le relais (autre jeu de réseaux, plus de chances de remplissage)
+      if (await AppodealService.showInterstitial(onDismissed: onDismissed)) return true;
       onFailed?.call();
       return false;
     }

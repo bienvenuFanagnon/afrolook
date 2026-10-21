@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:afrotok/ads/rewarded_ads.dart';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -67,7 +68,7 @@ class _NoHeartsSheetState extends State<_NoHeartsSheet> {
   Future<void> _watch() async {
     final uid = QuizService.instance.uid;
     setState(() => _busy = true);
-    final ok = await AdmobService.watchRewarded(userId: uid);
+    final ok = await RewardedAds.watch(userId: uid);
     if (!mounted) return;
     if (!ok) {
       setState(() => _busy = false);
