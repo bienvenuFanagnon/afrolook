@@ -4,6 +4,7 @@ import 'package:afrotok/ads/ad_gate.dart';
 import 'package:afrotok/ads/admob_service.dart';
 import 'package:afrotok/ads/appodeal_service.dart';
 import 'package:afrotok/ads/ad_banner.dart';
+import 'package:afrotok/ads/appodeal_widgets.dart';
 import 'package:afrotok/ads/admob_widgets.dart';
 import 'package:afrotok/ads/rewards_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -101,16 +102,40 @@ class _AdAdminPageState extends State<AdAdminPage> {
                 row('Emplacement récompensée', c.unit('rewarded').isEmpty ? 'manquant' : 'ok'),
                 const Divider(height: 18),
                 row('Bannières confiées à', AppodealService.bannersViaAppodeal ? 'Appodeal (médiation)' : (c.bannerProvider == 'appodeal' ? 'AdMob direct (Appodeal pas encore activé sur iPhone)' : 'AdMob en direct')),
-                row('Appodeal prêt', AppodealService.ready.value ? 'oui' : 'non'),
-                row('Appodeal : mode', AppodealService.useTestAds ? 'TEST (développement)' : 'PRODUCTION'),
-                row('Appodeal : clé', '…${AppodealService.appKey.substring(AppodealService.appKey.length - 6)}'),
-                row('Bannières chargées / échecs', '${AppodealService.bannerLoaded.value} / ${AppodealService.bannerFailed.value}'),
-                row('Grands formats chargés / échecs', '${AppodealService.mrecLoaded.value} / ${AppodealService.mrecFailed.value}'),
-                if (AppodealService.lastError != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
-                    child: Text('Dernière erreur Appodeal : ${AppodealService.lastError}', style: TextStyle(color: colors.warning, fontSize: 12)),
-                  ),
+                ListenableBuilder(
+                  listenable: Listenable.merge([
+                    AppodealService.ready,
+                    AppodealService.bannerLoaded,
+                    AppodealService.bannerFailed,
+                    AppodealService.mrecLoaded,
+                    AppodealService.mrecFailed,
+                    AppodealService.lastNetwork,
+                  ]),
+                  builder: (context, _) => Column(children: [
+                    row('Appodeal prêt', AppodealService.ready.value ? 'oui' : 'non'),
+                    row('Appodeal : mode', AppodealService.useTestAds ? 'TEST (développement)' : 'PRODUCTION'),
+                    row('Appodeal : clé', '…${AppodealService.appKey.substring(AppodealService.appKey.length - 6)}'),
+                    row('Bannières chargées / échecs', '${AppodealService.bannerLoaded.value} / ${AppodealService.bannerFailed.value}'),
+                    row('Grands formats chargés / échecs', '${AppodealService.mrecLoaded.value} / ${AppodealService.mrecFailed.value}'),
+                    row('Repli bannières vers AdMob direct', AppodealService.skipBanners ? 'ACTIF (Appodeal ne remplit pas, nouvel essai dans 10 min max)' : 'non'),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text('Dernier réseau ayant servi une pub : ${AppodealService.lastNetwork.value}',
+                            style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+                      ),
+                    ),
+                    if (AppodealService.lastError != null)
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text('Dernière erreur Appodeal : ${AppodealService.lastError}', style: TextStyle(color: colors.warning, fontSize: 12)),
+                        ),
+                      ),
+                  ]),
+                ),
                 const SizedBox(height: 4),
                 Text("Changer de fournisseur sans mise à jour : node tools/ads/set_config.js '{\"bannerProvider\":\"admob\"}' (ou \"appodeal\").", style: TextStyle(color: colors.textSecondary, fontSize: 11.5)),
               ]),
@@ -142,6 +167,21 @@ class _AdAdminPageState extends State<AdAdminPage> {
               await _reload();
             }),
             btn('Ouvrir l\'inspecteur AdMob', AdmobService.openInspector),
+            const SizedBox(height: 4),
+            Text('Essais Appodeal (vrais réseaux, comme pour les utilisateurs)', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+            const SizedBox(height: 6),
+            btn('Essayer Appodeal : plein écran', () => AppodealService.testFullScreen(rewarded: false)),
+            btn('Essayer Appodeal : récompensée', () => AppodealService.testFullScreen(rewarded: true)),
+            ValueListenableBuilder<List<String>>(
+              valueListenable: AppodealService.testLog,
+              builder: (context, lines, _) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Text(
+                  lines.isEmpty ? 'Journal des essais Appodeal : aucun essai pour l\'instant' : lines.join('\n'),
+                  style: TextStyle(color: colors.textSecondary, fontSize: 11.5),
+                ),
+              ),
+            ),
             btn('Essayer la pub plein écran', () async {
               AdmobService.preloadInterstitial();
               final ok = await AdmobService.showInterstitialNow(
@@ -155,7 +195,10 @@ class _AdAdminPageState extends State<AdAdminPage> {
               if (!ok) setState(() => _status = 'Récompensée indisponible : ${AdmobService.lastErrors['récompensée'] ?? 'en chargement, réessaie dans quelques secondes'}');
             }),
             const SizedBox(height: 8),
-            Text('Essai bannière et native', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+            Text('Bannière Appodeal seule (sans repli : vide = Appodeal n\'a rien servi)', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+            const AppodealBannerWidget(),
+            const SizedBox(height: 8),
+            Text('Bannière de l\'application (Appodeal, sinon AdMob en direct) et native', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
             const AdBanner(),
             const AdmobNativeWidget(),
             const SizedBox(height: 12),

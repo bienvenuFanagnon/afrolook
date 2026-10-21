@@ -35,6 +35,29 @@ class AppodealService {
   /// Dernière erreur d'initialisation ou de chargement (écran admin).
   static String? lastError;
 
+  /// Réseau qui a servi la dernière pub (retour du SDK à chaque impression) : montre qui sert vraiment, AdMob ou un autre réseau.
+  static final ValueNotifier<String> lastNetwork = ValueNotifier('aucune pub servie pour l’instant');
+
+  /// Journal des essais manuels de l'écran admin (10 dernières lignes).
+  static final ValueNotifier<List<String>> testLog = ValueNotifier(const []);
+
+  // ── Repli des bannières ──
+  // Appodeal d'abord, AdMob en direct si Appodeal ne sert rien (jamais les deux en même temps sur un emplacement). Après 3 échecs de suite,
+  // les emplacements vont directement à AdMob pendant 10 minutes (pas d'attente inutile), puis Appodeal est retenté.
+  static int _bannerFailStreak = 0;
+  static DateTime? _skipUntil;
+
+  static bool get skipBanners => _skipUntil != null && DateTime.now().isBefore(_skipUntil!);
+
+  static void noteBannerResult({required bool ok}) {
+    if (ok) {
+      _bannerFailStreak = 0;
+      _skipUntil = null;
+      return;
+    }
+    if (++_bannerFailStreak >= 3) _skipUntil = DateTime.now().add(const Duration(minutes: 10));
+  }
+
   static bool _started = false;
 
   /// Appodeal est-il utilisable sur cette plateforme ? Android : oui. iPhone : seulement une fois activé (`appodealIos`) : voir ios/APPODEAL_IOS.md.
@@ -63,10 +86,13 @@ class AppodealService {
       Appodeal.setTesting(useTestAds);
       Appodeal.setLogLevel(useTestAds ? Appodeal.LogLevelVerbose : Appodeal.LogLevelNone);
       _wireCallbacks();
+      // Plein écran et récompensée : initialisés seulement pour les essais de l'écran admin, SANS chargement automatique (aucune requête, aucune
+      // pub montrée aux utilisateurs tant que l'écran admin n'a pas demandé un essai).
+      Appodeal.setAutoCache(AppodealAdType.Interstitial, false);
+      Appodeal.setAutoCache(AppodealAdType.RewardedVideo, false);
       Appodeal.initialize(
         appKey: key,
-        // Si l'application utilisait déjà Appodeal pour d'autres formats, ils seraient ajoutés ici (une seule initialisation).
-        adTypes: [AppodealAdType.Banner, AppodealAdType.MREC],
+        adTypes: [AppodealAdType.Banner, AppodealAdType.MREC, AppodealAdType.Interstitial, AppodealAdType.RewardedVideo],
         onInitializationFinished: (errors) {
           if (errors != null && errors.isNotEmpty) {
             lastError = errors.map((e) => e.description).join(' | ');
@@ -82,6 +108,45 @@ class AppodealService {
     }
   }
 
+  static final Map<AppodealAdType, String> _outcome = {};
+
+  static void _log(String line) {
+    final d = DateTime.now();
+    String t(int v) => v.toString().padLeft(2, '0');
+    final all = [...testLog.value, '${t(d.hour)}:${t(d.minute)}:${t(d.second)}  $line'];
+    testLog.value = all.length > 10 ? all.sublist(all.length - 10) : all;
+  }
+
+  /// Essai manuel (écran admin) : demande une pub plein écran ou récompensée aux réseaux d'Appodeal, l'affiche si elle arrive, et journalise
+  /// chaque étape. Ne sert qu'à vérifier que la médiation répond ; aucun utilisateur n'est concerné.
+  static Future<void> testFullScreen({required bool rewarded}) async {
+    final type = rewarded ? AppodealAdType.RewardedVideo : AppodealAdType.Interstitial;
+    final label = rewarded ? 'récompensée' : 'plein écran';
+    if (!ready.value) {
+      _log('$label : Appodeal n’est pas prêt (SDK non initialisé)');
+      return;
+    }
+    _outcome.remove(type);
+    try {
+      if (!await Appodeal.isLoaded(type)) {
+        _log('$label : demande envoyée aux réseaux…');
+        Appodeal.cache(type);
+      }
+      for (var i = 0; i < 25; i++) {
+        if (await Appodeal.isLoaded(type)) {
+          final shown = await Appodeal.show(type);
+          if (!shown) _log('$label : le SDK refuse l’affichage');
+          return;
+        }
+        if (_outcome[type] == 'ko') return; // l'échec est déjà journalisé par le rappel
+        await Future.delayed(const Duration(seconds: 1));
+      }
+      _log('$label : rien reçu après 25 s');
+    } catch (e) {
+      _log('$label : erreur $e');
+    }
+  }
+
   /// Rappels : journaux et compteurs seulement. Une erreur de pub ne bloque jamais l'écran ; le SDK gère lui-même le rafraîchissement.
   static void _wireCallbacks() {
     Appodeal.setBannerCallbacks(
@@ -94,6 +159,34 @@ class AppodealService {
       onBannerShowFailed: () {},
       onBannerClicked: () {},
       onBannerExpired: () {},
+    );
+    Appodeal.setAdRevenueCallbacks(
+      onAdRevenueReceive: (r) => lastNetwork.value = '${r.networkName} (${r.adType.name}, ${r.adUnitName}) · ${r.revenue.toStringAsFixed(5)} ${r.currency}',
+    );
+    Appodeal.setInterstitialCallbacks(
+      onInterstitialLoaded: (isPrecache) => _log('plein écran : pub chargée'),
+      onInterstitialFailedToLoad: () {
+        _outcome[AppodealAdType.Interstitial] = 'ko';
+        _log('plein écran : aucun réseau n’a rempli la demande');
+      },
+      onInterstitialShown: () => _log('plein écran : affiché'),
+      onInterstitialShowFailed: () => _log('plein écran : affichage impossible'),
+      onInterstitialClicked: () => _log('plein écran : cliqué'),
+      onInterstitialClosed: () => _log('plein écran : fermé'),
+      onInterstitialExpired: () => _log('plein écran : expiré'),
+    );
+    Appodeal.setRewardedVideoCallbacks(
+      onRewardedVideoLoaded: (isPrecache) => _log('récompensée : pub chargée'),
+      onRewardedVideoFailedToLoad: () {
+        _outcome[AppodealAdType.RewardedVideo] = 'ko';
+        _log('récompensée : aucun réseau n’a rempli la demande');
+      },
+      onRewardedVideoShown: () => _log('récompensée : affichée'),
+      onRewardedVideoShowFailed: () => _log('récompensée : affichage impossible'),
+      onRewardedVideoClicked: () => _log('récompensée : cliquée'),
+      onRewardedVideoFinished: (amount, reward) => _log('récompensée : terminée ($amount $reward)'),
+      onRewardedVideoClosed: (isFinished) => _log('récompensée : fermée (${isFinished ? 'récompense obtenue' : 'abandonnée'})'),
+      onRewardedVideoExpired: () => _log('récompensée : expirée'),
     );
     Appodeal.setMrecCallbacks(
       onMrecLoaded: (isPrecache) => mrecLoaded.value++,

@@ -7,8 +7,8 @@ import 'ad_gate.dart';
 import 'admob_native_pool.dart';
 import 'admob_service.dart';
 import 'admob_widgets.dart';
+import 'ad_banner.dart';
 import 'appodeal_service.dart';
-import 'appodeal_widgets.dart';
 import 'music_ads.dart';
 
 /// Emplacement publicitaire : pub Afrolook ou pub du réseau, jamais les deux.
@@ -147,13 +147,11 @@ class _AdSlotState extends State<AdSlot> {
             switch (widget.kind) {
               case AdSlotKind.detail:
               case AdSlotKind.groupBanner:
-                return _viaAppodeal ? AppodealBannerWidget(onFailed: _onAdmobFailed) : AdmobBannerWidget(onFailed: _onAdmobFailed);
+                return AdBanner(onFailed: _onAdmobFailed);
               case AdSlotKind.detailMrec:
-                return _viaAppodeal ? AppodealBannerWidget(mrec: true, onFailed: _onAdmobFailed) : AdmobBannerWidget(mrec: true, onFailed: _onAdmobFailed);
+                return AdBanner(mrec: true, onFailed: _onAdmobFailed);
               case AdSlotKind.musicBanner:
-                return _viaAppodeal
-                    ? AppodealBannerWidget(onFailed: _onAdmobFailed)
-                    : AdmobBannerWidget(unitKey: 'musicBanner', onPaid: MusicAds.paid('banner'), onFailed: _onAdmobFailed);
+                return AdBanner(unitKey: 'musicBanner', onPaid: MusicAds.paid('banner'), onFailed: _onAdmobFailed);
               case AdSlotKind.musicList:
                 return AdmobNativeWidget(small: true, unitKey: 'musicNative', onPaid: MusicAds.paid('native'), onFailed: _onAdmobFailed);
               case AdSlotKind.feed:

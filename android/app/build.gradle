@@ -151,6 +151,20 @@ dependencies {
     implementation("com.appodeal.ads.sdk.adapters:inmobi:11.3.0.0")
     implementation("com.appodeal.ads.sdk.adapters:ironsource:9.4.4.0")
     implementation("com.appodeal.ads.sdk.adapters:unity_ads:4.17.0.0")
+    // Réseaux supplémentaires (plus de réseaux interrogés = plus de chances de remplissage des bannières). Mêmes versions que le README du plugin.
+    // À activer aussi dans le tableau de bord Appodeal (onglets Banners / MREC). Toujours exclus : Mintegral, VK/MyTarget (dépôts Maven en plus), Amazon.
+    implementation("com.appodeal.ads.sdk.adapters:meta:6.21.0.0")
+    implementation("com.appodeal.ads.sdk.adapters:vungle:7.7.4.0")
+    implementation("com.appodeal.ads.sdk.adapters:chartboost:9.10.2.0")
+    implementation("com.appodeal.ads.sdk.adapters:moloco:4.3.1.0")
+    implementation("com.appodeal.ads.sdk.adapters:yandex:7.17.0.0")
+    implementation("com.appodeal.ads.sdk.adapters:startio:5.2.4.0")
+    implementation("com.appodeal.ads.sdk.adapters:smaato:22.7.2.0")
+    implementation("com.appodeal.ads.sdk.adapters:pubmatic:4.10.0.0")
+    implementation("com.appodeal.ads.sdk.adapters:mobilefuse:1.11.0.0")
+    implementation("com.appodeal.ads.sdk.adapters:ogury:6.2.0.0")
+    implementation("com.appodeal.ads.sdk.adapters:taurusx:1.12.2.0")
+    implementation("com.appodeal.ads.sdk.adapters:verve:3.7.1.0")
 
     implementation("androidx.multidex:multidex:2.0.1")
 
