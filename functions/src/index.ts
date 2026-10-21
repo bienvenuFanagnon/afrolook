@@ -13,6 +13,8 @@ export * from "./posts/lifecycle";
 export * from "./posts/weeklyRewards";
 export * from "./notifications/bulk";
 export * from "./notifications/sendPush";
+export * from "./notifications/reengagement";
+export * from "./notifications/markRead";
 export * from "./emails/email_functions";
 export * from "./chat/groupNotifications";
 export * from "./contenu/contentPaie";

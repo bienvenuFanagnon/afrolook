@@ -2,6 +2,8 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { db } from "../shared/firebase";
 import { deliverPush, PushTarget } from "../shared/push";
 import { adminDocs } from "../shared/admin_notify";
+import { previewForContent } from "../shared/preview";
+import { categoryOfData } from "./policy_logic";
 
 /**
  * Envoi d'une notification push depuis l'application (like, commentaire, message, cadeau…).
@@ -53,5 +55,8 @@ export const sendPushToUsers = onCall({ region: "us-central1", timeoutSeconds: 6
   // L'expéditeur affiché ne peut pas être usurpé (sauf par un administrateur qui écrit au nom d'un compte officiel)
   if (!isAdmin || !data["send_user_id"]) data["send_user_id"] = uid;
 
-  return deliverPush(targets, { title, message, image: clip(d["smallImage"], 500), data }, undefined, d["details"] === true);
+  // Image d'aperçu : celle du post / de la chronique concerné (photo, miniature de vidéo) ; rien pour un contenu texte ou un message.
+  // La photo envoyée par l'application (expéditeur) ne sert que d'icône pour OneSignal.
+  const image = data["post_id"] ? await previewForContent(data["post_id"], data["post_type"]) : "";
+  return deliverPush(targets, { title, message, image, avatar: clip(d["smallImage"], 500), data }, undefined, d["details"] === true, categoryOfData(data));
 });

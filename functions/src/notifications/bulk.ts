@@ -2,6 +2,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { db } from "../shared/firebase";
 import { collectFollowerIds } from "../follows/followersRead";
 import { sendToOneSignal, getCanalImage } from "../shared/notification_utils";
+import { shouldStoreInApp } from "./policy_logic";
 
 // Interface pour les données
 interface SendBulkNotificationData {
@@ -179,6 +180,10 @@ export const sendBulkNotification = onCall(
           await new Promise(resolve => setTimeout(resolve, 100));
         }
       }
+
+      // Un nouveau post d'un créateur suivi se retrouve dans le fil : inutile de l'enregistrer dans la liste de chaque abonné (économie d'écritures,
+      // liste plus utile). Le push part quand même.
+      if (!shouldStoreInApp(typeNotif)) notificationsToSave.length = 0;
 
       console.log(`Sauvegarde de ${notificationsToSave.length} notifications dans Firebase`);
 

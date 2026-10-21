@@ -188,7 +188,9 @@ export const onGroupMessageCreated = onDocumentCreated(
             post_id: (msg.post_id as string) ?? "",
             post_type: msgType === "post" ? "post" : "",
             chat_id: groupId,
-          }
+          },
+          // photo envoyée dans le groupe : on la montre ; un message texte reste en texte (un post partagé a son aperçu via post_id)
+          msgType === "image" || msgType === "multi_image" ? String(msg.message ?? "") : undefined
         );
         console.log(
           `[onGroupMessageCreated] Batch ${Math.floor(i / PUSH_BATCH_SIZE) + 1}: ${pushBatch.length} pushs envoyés`

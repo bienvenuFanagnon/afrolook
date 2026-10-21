@@ -3,6 +3,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { getMessaging } from "firebase-admin/messaging";
 import { db } from "./firebase";
 import { ONESIGNAL_ID_REGEX, chunk, isDeadTokenCode, isQuotaError, stringifyData, tokensOf } from "./push_logic";
+import { Budget, PushCategory, PushPrefs, consume, decide } from "../notifications/policy_logic";
 
 /**
  * Envoi des notifications push, en trois niveaux :
@@ -20,14 +21,24 @@ const FCM_BATCH = 500;
 const ONESIGNAL_BATCH = 2000;
 const BLOCK_MS = 6 * 60 * 60 * 1000;
 const STATE_CACHE_MS = 60 * 1000;
-/** Canal Android créé par l'application (importance haute) pour afficher les notifications en bandeau. */
-export const ANDROID_CHANNEL_ID = "afrolook_push";
+/**
+ * Canal Android créé par l'application (importance haute, son Afrolook). Un canal garde son son pour toujours : le son a été ajouté avec la
+ * version 2 du canal. Doit rester identique à PushService.channelId (application) et au manifest.
+ */
+export const ANDROID_CHANNEL_ID = "afrolook_push_v2";
+/** Fichier du son Afrolook (android/app/src/main/res/raw/afrolook_chime.wav ; iPhone : afrolook_chime.wav dans le projet Xcode). */
+export const NOTIFICATION_SOUND = "afrolook_chime";
 
 export interface PushPayload {
   title: string;
   message: string;
-  /** Logo ou photo de l'expéditeur / de la commande : OneSignal l'affiche en icône, FCM en grande image de la notification (Android). */
+  /**
+   * Image d'APERÇU du contenu (photo du post, miniature de vidéo, pochette de musique, média de chronique) : montrée en grande image.
+   * Pour un contenu sans aperçu (texte, message, rappel), on n'en met pas : la notification reste en texte.
+   */
   image?: string;
+  /** Photo de l'expéditeur (OneSignal seulement : icône ; FCM n'affiche pas d'icône personnalisée). */
+  avatar?: string;
   /** Données transmises à l'application pour ouvrir le bon écran (type_notif, post_id, post_type, chat_id, send_user_id…). */
   data?: Record<string, unknown>;
 }
@@ -37,6 +48,10 @@ export interface PushTarget {
   userId?: string;
   oneSignalId?: string;
   fcmTokens?: string[];
+  /** Infos du profil déjà lues par l'appelant (évite de relire le profil pour appliquer les règles). */
+  prefs?: PushPrefs;
+  tz?: number;
+  lastActive?: number;
 }
 
 export interface PushDetail {
@@ -62,6 +77,9 @@ interface Recipient {
   userId?: string;
   oneSignalId: string;
   tokens: string[];
+  prefs?: PushPrefs;
+  tz?: number;
+  lastActive?: number;
 }
 
 interface OneSignalConfig {
@@ -73,7 +91,13 @@ interface OneSignalConfig {
 
 function toRecipient(userId: string | undefined, data: Record<string, unknown> | undefined, fallbackOs = ""): Recipient {
   const os = String(data?.["oneIgnalUserid"] ?? fallbackOs ?? "").trim();
-  return { key: userId ?? `os:${os}`, userId, oneSignalId: os, tokens: tokensOf(data) };
+  const tz = Number(data?.["tzOffsetMin"]);
+  return {
+    key: userId ?? `os:${os}`, userId, oneSignalId: os, tokens: tokensOf(data),
+    prefs: (data?.["pushPrefs"] as PushPrefs | undefined) ?? undefined,
+    tz: Number.isFinite(tz) ? tz : undefined,
+    lastActive: Number(data?.["last_time_active"]) || 0,
+  };
 }
 
 async function resolveRecipients(targets: PushTarget[]): Promise<Recipient[]> {
@@ -84,7 +108,7 @@ async function resolveRecipients(targets: PushTarget[]): Promise<Recipient[]> {
   for (const t of targets) {
     const os = (t.oneSignalId ?? "").trim();
     if (t.fcmTokens) {
-      const r: Recipient = { key: t.userId ?? `os:${os}`, userId: t.userId, oneSignalId: os, tokens: tokensOf({ fcmTokens: t.fcmTokens }) };
+      const r: Recipient = { key: t.userId ?? `os:${os}`, userId: t.userId, oneSignalId: os, tokens: tokensOf({ fcmTokens: t.fcmTokens }), prefs: t.prefs, tz: t.tz, lastActive: t.lastActive };
       if (!out.has(r.key)) out.set(r.key, r);
     } else if (t.userId) {
       byUser.add(t.userId);
@@ -137,8 +161,9 @@ async function sendFcm(recipients: Recipient[], payload: PushPayload): Promise<{
         tokens: group.map((e) => e.token),
         notification: { title: payload.title, body: payload.message, ...(imageUrl ? { imageUrl } : {}) },
         data,
-        android: { priority: "high", ttl: 24 * 60 * 60 * 1000, notification: { channelId: ANDROID_CHANNEL_ID, ...(imageUrl ? { imageUrl } : {}) } },
-        apns: { headers: { "apns-priority": "10" }, payload: { aps: { sound: "default" } } },
+        android: { priority: "high", ttl: 24 * 60 * 60 * 1000, notification: { channelId: ANDROID_CHANNEL_ID, sound: NOTIFICATION_SOUND, ...(imageUrl ? { imageUrl } : {}) } },
+        // « mutable-content » + image : permet à l'extension de service iPhone (ios/NOTIFICATION_IMAGES_IOS.md) de télécharger l'image d'aperçu
+        apns: { headers: { "apns-priority": "10" }, payload: { aps: { sound: NOTIFICATION_SOUND + ".wav", "mutable-content": 1 } }, ...(imageUrl ? { fcmOptions: { imageUrl } } : {}) },
       });
       res.responses.forEach((resp, i) => {
         const { token, r } = group[i];
@@ -237,8 +262,8 @@ async function sendOneSignal(ids: string[], payload: PushPayload, cfgIn?: OneSig
         contents: { en: payload.message },
         include_player_ids: group,
         headings: { en: payload.title },
-        small_icon: payload.image || fallbackImage,
-        large_icon: payload.image || fallbackImage,
+        large_icon: payload.avatar || fallbackImage,
+        ...(payload.image ? { big_picture: payload.image } : {}),
         android_accent_color: "FFD700",
         data: payload.data ?? {},
       }, { headers: { "Content-Type": "application/json", Authorization: `Basic ${cfg.apiKey}` }, timeout: 30000 });
@@ -258,15 +283,64 @@ async function sendOneSignal(ids: string[], payload: PushPayload, cfgIn?: OneSig
 
 // ─── Point d'entrée ──────────────────────────────────────────────────────────────────────────────
 
+// ─── Règles unifiées (budget quotidien, heures calmes, préférences) ──────────────────────────────
+
+/** Ne garde que les personnes à qui cette catégorie de notification peut être envoyée maintenant. Les messages directs passent toujours. */
+async function applyPolicy(recipients: Recipient[], category: PushCategory): Promise<{ allowed: Recipient[]; budgets: Map<string, Partial<Budget>>; blocked: Record<string, number> }> {
+  const budgets = new Map<string, Partial<Budget>>();
+  const blocked: Record<string, number> = {};
+  if (category === "direct") return { allowed: recipients, budgets, blocked };
+  const ids = recipients.map((r) => r.userId).filter((x): x is string => !!x);
+  for (const group of chunk(ids, 300)) {
+    const snaps = await db.getAll(...group.map((id) => db.collection("PushBudget").doc(id)));
+    snaps.forEach((sn) => { if (sn.exists) budgets.set(sn.id, sn.data() as Partial<Budget>); });
+  }
+  const now = Date.now();
+  const allowed = recipients.filter((r) => {
+    if (!r.userId) return true; // identifiant OneSignal inconnu du serveur : pas de profil, donc pas de règle à appliquer
+    const d = decide(category, { nowMs: now, tzMin: r.tz, prefs: r.prefs, budget: budgets.get(r.userId), lastActiveMs: r.lastActive });
+    if (!d.allow) blocked[d.reason ?? "autre"] = (blocked[d.reason ?? "autre"] ?? 0) + 1;
+    return d.allow;
+  });
+  return { allowed, budgets, blocked };
+}
+
+/** Compte l'envoi dans le budget du jour de chaque personne jointe, et dans les statistiques du jour (PushStats). */
+async function recordSent(reached: Recipient[], budgets: Map<string, Partial<Budget>>, category: PushCategory, blocked: Record<string, number>): Promise<void> {
+  try {
+    const now = Date.now();
+    if (category !== "direct") {
+      for (const group of chunk(reached.filter((r) => r.userId), 400)) {
+        const batch = db.batch();
+        for (const r of group) batch.set(db.collection("PushBudget").doc(r.userId!), consume(category, budgets.get(r.userId!), now, r.tz));
+        await batch.commit();
+      }
+    }
+    const inc: Record<string, FieldValue> = { ["sent_" + category]: FieldValue.increment(reached.length) };
+    for (const [k, v] of Object.entries(blocked)) inc["blocked_" + k] = FieldValue.increment(v);
+    await db.collection("PushStats").doc(new Date(now).toISOString().slice(0, 10).replace(/-/g, "")).set(inc, { merge: true });
+  } catch (e) {
+    console.warn("[push] budget / statistiques non enregistrés", e);
+  }
+}
+
 /**
  * Envoie une notification push à ces personnes : FCM d'abord, OneSignal pour celles qui n'ont pas de jeton (ou dont l'envoi FCM a échoué).
+ * `category` : direct (toujours envoyée), social ou reminder (heures calmes, préférences et budget quotidien : voir notifications/policy_logic.ts).
  * `oneSignal` : identifiants de l'API OneSignal, lus dans AppData si absents.
  */
-export async function deliverPush(targets: PushTarget[], payload: PushPayload, oneSignal?: OneSignalConfig, withDetails = false): Promise<PushResult> {
+export async function deliverPush(
+  targets: PushTarget[],
+  payload: PushPayload,
+  oneSignal?: OneSignalConfig,
+  withDetails = false,
+  category: PushCategory = "direct",
+): Promise<PushResult> {
   const result: PushResult = { fcm: 0, oneSignal: 0, unreachable: 0 };
   try {
     if (!targets.length) return result;
-    const recipients = await resolveRecipients(targets);
+    const resolved = await resolveRecipients(targets);
+    const { allowed: recipients, budgets, blocked } = await applyPolicy(resolved, category);
     const withTokens = recipients.filter((r) => r.tokens.length > 0);
 
     const { delivered, sent } = await sendFcm(withTokens, payload);
@@ -277,16 +351,18 @@ export async function deliverPush(targets: PushTarget[], payload: PushPayload, o
     if (fallbackIds.length) result.oneSignal = await sendOneSignal(fallbackIds, payload, oneSignal);
 
     result.unreachable = recipients.length - delivered.size - result.oneSignal;
+    const viaOneSignal = new Set(result.oneSignal > 0 ? fallbackIds : []);
     if (withDetails) {
-      const viaOneSignal = new Set(fallbackIds);
-      result.details = recipients.map((r) => ({
+      result.details = resolved.map((r) => ({
         userId: r.userId,
-        channel: delivered.has(r.key) ? "FCM" : result.oneSignal > 0 && viaOneSignal.has(r.oneSignalId) ? "OneSignal" : "aucun",
+        channel: delivered.has(r.key) ? "FCM" : viaOneSignal.has(r.oneSignalId) ? "OneSignal" : "aucun",
         tokens: r.tokens.length,
         hasOneSignalId: r.oneSignalId.length > 5,
       }));
     }
-    console.log(`[push] FCM: ${delivered.size} personne(s) · OneSignal: ${result.oneSignal} · non jointes: ${Math.max(0, result.unreachable)}`);
+    const reached = recipients.filter((r) => delivered.has(r.key) || viaOneSignal.has(r.oneSignalId));
+    await recordSent(reached, budgets, category, blocked);
+    console.log(`[push] ${category} · FCM: ${delivered.size} personne(s) · OneSignal: ${result.oneSignal} · non jointes: ${Math.max(0, result.unreachable)} · bloquées par les règles: ${resolved.length - recipients.length}`);
   } catch (e) {
     console.error("[push] deliverPush", e);
   }

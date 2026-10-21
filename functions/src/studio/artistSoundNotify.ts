@@ -1,6 +1,11 @@
 import { onDocumentCreated, onDocumentUpdated } from "firebase-functions/v2/firestore";
 import { notifyAdminsAll, notifyUser, esc } from "../shared/user_notify";
 import { APP_WEB_URL_AFRO } from "../shared/config";
+import { db } from "../shared/firebase";
+import { deliverPush } from "../shared/push";
+import { chunk } from "../shared/push_logic";
+import { previewFromSound } from "../shared/preview";
+import { collectFollowerIds } from "../follows/followersRead";
 
 /**
  * Sons d'artistes (musiques proposées par les utilisateurs) : messages automatiques.
@@ -10,6 +15,32 @@ import { APP_WEB_URL_AFRO } from "../shared/config";
  * Un refus automatique (fichier déjà existant, fichier illisible) prévient aussi l'artiste : le motif est dans `refusalReason`.
  */
 const cut = (s: unknown, n: number) => String(s ?? "").trim().slice(0, n);
+
+/**
+ * Une musique vient d'être validée : les abonnés de l'artiste reçoivent une notification avec la pochette (une seule fois par musique).
+ * Catégorie « sociale » : heures calmes, préférences et budget quotidien de chaque personne s'appliquent.
+ */
+async function notifyFollowersOfNewSound(artistId: string, soundId: string, sound: Record<string, unknown>): Promise<void> {
+  try {
+    const artist = (await db.collection("Users").doc(artistId).get()).data() ?? {};
+    const pseudo = cut(artist["pseudo"] ?? sound["userPseudo"], 60) || "Un artiste";
+    const title = cut(sound["title"], 80) || "un nouveau titre";
+    const legacy = Array.isArray(artist["userAbonnesIds"]) ? (artist["userAbonnesIds"] as string[]) : [];
+    const followers = (await collectFollowerIds(artistId, legacy)).filter((id) => id && id !== artistId);
+    if (!followers.length) return;
+    const payload = {
+      title: `🎵 @${pseudo} a sorti un nouveau titre`,
+      message: `« ${title} » est disponible : écoute-le maintenant.`,
+      image: previewFromSound(sound),
+      avatar: String(artist["imageUrl"] ?? ""),
+      data: { type_notif: "MUSIC", sound_id: soundId, send_user_id: artistId, post_id: "", post_type: "", chat_id: "" },
+    };
+    for (const group of chunk(followers, 500)) await deliverPush(group.map((userId) => ({ userId })), payload, undefined, false, "social");
+    console.log(`[musique] ${followers.length} abonné(s) prévenus pour « ${title} »`);
+  } catch (e) {
+    console.error("[musique] abonnés non prévenus", e);
+  }
+}
 
 export const notifyAdminsOnNewSound = onDocumentCreated(
   { document: "artist_sounds/{id}", timeoutSeconds: 60, memory: "256MiB", maxInstances: 5 },
@@ -59,6 +90,10 @@ export const notifyArtistOnSoundStatus = onDocumentUpdated(
 
     if (to === "validated") {
       const back = from === "suspended";
+      if (!back && !after["followersNotifiedAt"] && event.data?.after.ref) {
+        await event.data.after.ref.update({ followersNotifiedAt: Date.now() }).catch(() => undefined);
+        await notifyFollowersOfNewSound(userId, event.params.id, after);
+      }
       await notifyUser({
         userId, target: "MY_SOUND", refId: event.params.id,
         title: back ? "✅ Ta musique est de nouveau en ligne" : "🎉 Ta musique est acceptée !",

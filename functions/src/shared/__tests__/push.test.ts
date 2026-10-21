@@ -40,7 +40,7 @@ jest.mock("axios", () => ({ __esModule: true, default: { post: (...a: unknown[])
 const notifyAdminsAll = jest.fn().mockResolvedValue(undefined);
 jest.mock("../user_notify.js", () => ({ notifyAdminsAll: (...a: unknown[]) => notifyAdminsAll(...a) }));
 
-jest.mock("firebase-admin/firestore", () => ({ FieldValue: { arrayRemove: (...v: unknown[]) => ({ remove: v }) } }));
+jest.mock("firebase-admin/firestore", () => ({ FieldValue: { arrayRemove: (...v: unknown[]) => ({ remove: v }), increment: (n: number) => ({ inc: n }) } }));
 
 import { deliverPush } from "../push";
 
