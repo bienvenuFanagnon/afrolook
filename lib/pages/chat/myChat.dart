@@ -889,7 +889,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       final msgid = _firestore.collection('Messages').doc().id;
       msg.id = msgid;
       await _firestore.collection('Messages').doc(msgid).set(msg.toJson()..['createdAt'] = FieldValue.serverTimestamp());
-      await _sendNotification(caption.isNotEmpty ? '📷 $caption' : '📷 Image');
+      await _sendNotification(caption.isNotEmpty ? '📷 $caption' : '📷 Image', imageUrl: fileURL);
       await _resetAfterMessage();
     } catch (e) {
       _showErrorSnackbar("Erreur lors de l'envoi de l'image");
@@ -1055,7 +1055,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       msg.id = msgId;
       final _msgDataMulti = msg.toJson()..['createdAt'] = FieldValue.serverTimestamp();
       await _firestore.collection('Messages').doc(msgId).set(_msgDataMulti);
-      await _sendNotification('📷 ${urls.length} photos');
+      await _sendNotification('📷 ${urls.length} photos', imageUrl: urls.first);
       await _resetAfterMessage();
     } catch (e) {
       _showErrorSnackbar("Erreur lors de l'envoi des images");
@@ -1411,7 +1411,9 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _sendNotification(String messageContent) async {
+  /// Notification au format des messageries : titre « @pseudo », texte = début du message (« 📷 Photo »… pour un média).
+  /// [imageUrl] : photo envoyée, montrée en aperçu dans la notification.
+  Future<void> _sendNotification(String messageContent, {String? imageUrl}) async {
     try {
       final receiverId = widget.chat.senderId == _authProvider.loginUserData.id!
           ? widget.chat.receiverId!
@@ -1422,22 +1424,17 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       final activeViewers = List<String>.from(chatDoc.data()?['activeViewers'] ?? []);
       if (activeViewers.contains(receiverId)) return;
 
-      final users = await _authProvider.getUserById(receiverId);
-
-      if (users.isNotEmpty && users.first.oneIgnalUserid != null &&
-          users.first.oneIgnalUserid!.length > 5) {
-        await _authProvider.sendNotification(
-          userIds: [users.first.oneIgnalUserid!],
-          smallImage: _authProvider.loginUserData.imageUrl!,
-          send_user_id: _authProvider.loginUserData.id!,
-          recever_user_id: receiverId,
-          message: "🗨️ @${_authProvider.loginUserData.pseudo!} vous a envoyé un message",
-          type_notif: NotificationType.MESSAGE.name,
-          post_id: "",
-          post_type: "",
-          chat_id: widget.chat.id!,
-        );
-      }
+      // Envoi à l'identifiant de la personne : fonctionne aussi pour qui n'a pas d'identifiant OneSignal (appareils à jour)
+      final me = _authProvider.loginUserData;
+      final text = String.fromCharCodes(messageContent.replaceAll(RegExp(r'\s+'), ' ').trim().runes.take(120));
+      await _authProvider.sendChatPush(
+        receiverId: receiverId,
+        title: '@${me.pseudo ?? ''}',
+        message: text.isEmpty ? '🗨️ Nouveau message' : text,
+        smallImage: me.imageUrl,
+        image: imageUrl,
+        chatId: widget.chat.id!,
+      );
     } catch (e) {
       printVm("Erreur notification: $e");
     }

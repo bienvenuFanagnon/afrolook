@@ -11,6 +11,20 @@ const https = (v: unknown): string => {
   return /^https:\/\/\S{6,1500}$/.test(s) ? s : "";
 };
 
+/** Hébergeurs d'images de l'application (Firebase Storage, CDN Afrolook) : seules leurs adresses peuvent servir d'aperçu à un message de chat. */
+const CHAT_IMAGE_HOSTS = ["firebasestorage.googleapis.com", "storage.googleapis.com", "cdn.afrolookmedia.com"];
+
+/** Photo envoyée dans un chat : adresse https d'un de nos hébergeurs, sinon vide (jamais l'adresse d'un site tiers). */
+export function safeChatImage(url: unknown): string {
+  const s = https(url);
+  if (!s) return "";
+  try {
+    return CHAT_IMAGE_HOSTS.includes(new URL(s).hostname) ? s : "";
+  } catch {
+    return "";
+  }
+}
+
 /** Post : photo pour une image, miniature pour une vidéo, sinon aperçu éventuel ; vide pour un post texte. */
 export function previewFromPost(p: Record<string, unknown> | undefined): string {
   if (!p) return "";

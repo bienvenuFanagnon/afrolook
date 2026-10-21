@@ -2915,6 +2915,42 @@ if(actionType == 'comment'){
   }
 
 
+  /// Notification d'un message de chat, au format des messageries : titre « @pseudo », texte = début du message.
+  /// Envoyée à l'identifiant de la personne (et non à son identifiant OneSignal) : le serveur choisit FCM, sinon OneSignal.
+  /// [image] : photo envoyée dans le chat (aperçu) ; [postId]/[postType] : post partagé (aperçu du post).
+  Future<void> sendChatPush({
+    required String receiverId,
+    required String title,
+    required String message,
+    String? smallImage,
+    String? image,
+    String chatId = '',
+    String postId = '',
+    String postType = '',
+  }) async {
+    final me = loginUserData.id;
+    if (me == null || receiverId.isEmpty || receiverId == me) return;
+    try {
+      await FirebaseFunctions.instance.httpsCallable('sendPushToUsers').call({
+        'userIds': [receiverId],
+        'title': title,
+        'message': message,
+        'smallImage': smallImage ?? '',
+        if (image != null && image.isNotEmpty) 'image': image,
+        'data': {
+          'send_user_id': me,
+          'recever_user_id': receiverId,
+          'type_notif': NotificationType.MESSAGE.name,
+          'post_id': postId,
+          'post_type': postType,
+          'chat_id': chatId,
+        },
+      });
+    } catch (e) {
+      printVm('❌ Erreur envoi push message : $e');
+    }
+  }
+
   Future<void> checkAppVersionAndProceed(BuildContext context, Function onSuccess) async {
     // Si appDefaultData est déjà chargé en mémoire, on évite l'appel réseau.
     if (appDefaultData.id == null) {

@@ -1,4 +1,5 @@
 import 'package:afrotok/services/read_meter.dart';
+import 'dart:async';
 import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -153,6 +154,17 @@ class _GenericShareSheetState extends State<GenericShareSheet>
         'last_message': '📎 ${widget.title}',
         'updated_at': now,
       });
+      // Prévient la personne : « @pseudo » + titre du contenu partagé (produit, contenu VIP, live)
+      final otherId = chat.senderId == myId ? chat.receiverId : chat.senderId;
+      if (otherId != null && otherId.isNotEmpty) {
+        unawaited(_auth.sendChatPush(
+          receiverId: otherId,
+          title: '@${_auth.loginUserData.pseudo ?? ''}',
+          message: '📎 ${String.fromCharCodes(widget.title.replaceAll(RegExp(r'\s+'), ' ').trim().runes.take(90))}',
+          smallImage: _auth.loginUserData.imageUrl,
+          chatId: chat.id ?? '',
+        ));
+      }
       _done();
     } catch (_) {
       if (mounted) setState(() { _sendingId = null; _error = 'Envoi impossible. Vérifie ta connexion puis réessaie.'; });

@@ -1,5 +1,6 @@
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
+import 'dart:async';
 import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -156,6 +157,20 @@ class _PostShareSheetState extends State<PostShareSheet>
         'last_message': _lastMsgLabel(post),
         'updated_at': DateTime.now().millisecondsSinceEpoch,
       });
+      // Prévient la personne : « @pseudo » + début de la description, avec l'aperçu du post
+      final otherId = chat.senderId == myId ? chat.receiverId : chat.senderId;
+      if (otherId != null && otherId.isNotEmpty) {
+        final desc = (post.description ?? '').replaceAll(RegExp(r'\s+'), ' ').trim();
+        unawaited(_auth.sendChatPush(
+          receiverId: otherId,
+          title: '@${_auth.loginUserData.pseudo ?? ''}',
+          message: desc.isEmpty ? '📎 Post partagé' : '📎 ${String.fromCharCodes(desc.runes.take(90))}',
+          smallImage: _auth.loginUserData.imageUrl,
+          chatId: chat.id ?? '',
+          postId: post.id ?? '',
+          postType: post.dataType ?? 'IMAGE',
+        ));
+      }
       _done();
     } catch (_) {
       if (mounted) setState(() { _sendingId = null; _error = 'Envoi impossible. Vérifie ta connexion puis réessaie.'; });

@@ -2,7 +2,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { db } from "../shared/firebase";
 import { deliverPush, PushTarget } from "../shared/push";
 import { adminDocs } from "../shared/admin_notify";
-import { previewForContent } from "../shared/preview";
+import { previewForContent, safeChatImage } from "../shared/preview";
 import { categoryOfData } from "./policy_logic";
 
 /**
@@ -57,6 +57,7 @@ export const sendPushToUsers = onCall({ region: "us-central1", timeoutSeconds: 6
 
   // Image d'aperçu : celle du post / de la chronique concerné (photo, miniature de vidéo) ; rien pour un contenu texte ou un message.
   // La photo envoyée par l'application (expéditeur) ne sert que d'icône pour OneSignal.
-  const image = data["post_id"] ? await previewForContent(data["post_id"], data["post_type"]) : "";
+  // Une photo envoyée dans un chat (message) peut aussi servir d'aperçu, si elle est hébergée chez nous.
+  const image = data["post_id"] ? await previewForContent(data["post_id"], data["post_type"]) : data["type_notif"] === "MESSAGE" ? safeChatImage(d["image"]) : "";
   return deliverPush(targets, { title, message, image, avatar: clip(d["smallImage"], 500), data }, undefined, d["details"] === true, categoryOfData(data));
 });
