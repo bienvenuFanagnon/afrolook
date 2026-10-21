@@ -348,6 +348,12 @@ export const TIPS: Tip[] = [
   },
 ];
 
+/** « La semaine en N infos » (résumé du lundi), dans la langue de la personne. */
+export const NEWS_WEEK_TITLE: Record<Lang, string> = {
+  fr: "🗞️ La semaine en {n} infos", en: "🗞️ Your week in {n} stories", es: "🗞️ La semana en {n} noticias", de: "🗞️ Die Woche in {n} Meldungen",
+  ar: "🗞️ الأسبوع في {n} أخبار", pt: "🗞️ A semana em {n} notícias", zh: "🗞️ 一周 {n} 条要闻", sw: "🗞️ Wiki katika habari {n}",
+};
+
 /** Mention « Pub » d'une pub Afrolook envoyée par notification, dans la langue de la personne. */
 export const AD_LABEL: Record<Lang, string> = { fr: "Pub", en: "Ad", es: "Anuncio", de: "Anzeige", ar: "إعلان", pt: "Anúncio", zh: "广告", sw: "Tangazo" };
 

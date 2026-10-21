@@ -21,6 +21,8 @@ class _NewsAdminPageState extends State<NewsAdminPage> {
   bool _enabled = true;
   bool _feedEnabled = false;
   bool _pipelineEnabled = false;
+  bool _pushNews = false;
+  bool _pushFlash = true;
   final _countriesCtrl = TextEditingController();
   List<Map<String, dynamic>> _sources = [];
   String? _runReport;
@@ -84,6 +86,9 @@ class _NewsAdminPageState extends State<NewsAdminPage> {
         _enabled = cfg['enabled'] == true;
         _feedEnabled = cfg['feedEnabled'] == true;
         _pipelineEnabled = cfg['pipelineEnabled'] == true;
+        final pn = Map<String, dynamic>.from((d['pushNews'] as Map?) ?? const {});
+        _pushNews = pn['enabled'] == true;
+        _pushFlash = pn['flash'] != false;
         if (_countriesCtrl.text.isEmpty) _countriesCtrl.text = ((cfg['countries'] as List?) ?? const []).join(', ');
         _agents = (d['agents'] as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
         _status = null;
@@ -442,6 +447,30 @@ class _NewsAdminPageState extends State<NewsAdminPage> {
               Expanded(child: ElevatedButton(onPressed: _loading ? null : () => _runPipeline(dryRun: false), child: const Text('Lancer (3 articles)'))),
             ]),
             if (_runReport != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(_runReport!, style: TextStyle(color: c.textSecondary, fontSize: 11.5, height: 1.4))),
+          ])),
+          card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            title('Notifications d\'actualités'),
+            SwitchListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              title: Text('Journal du matin, semaine du lundi, À la une', style: TextStyle(color: c.textPrimary, fontSize: 13)),
+              subtitle: Text(
+                _pushNews
+                    ? 'Activées : le matin (8 h 30 locale) la semaine du lundi, l\'article du jour le mercredi, vendredi et samedi ; le soir l\'alerte « À la une » si une info forte est sortie. Une actualité par personne et par jour au plus, avec l\'interrupteur « Actualités » des préférences.'
+                    : 'Désactivées : aucune notification d\'actualité n\'est envoyée tant que tu ne les actives pas. Teste d\'abord avec « Essai notifications → Exemples de chaque cas ».',
+                style: TextStyle(color: c.textSecondary, fontSize: 11.5, height: 1.35),
+              ),
+              value: _pushNews,
+              onChanged: (v) => _setConfig({'pushEnabled': v}),
+            ),
+            SwitchListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              title: Text('Alerte « À la une » du soir', style: TextStyle(color: c.textPrimary, fontSize: 13)),
+              subtitle: Text('Seulement pour une info reprise par au moins 3 sources et sortie dans les 8 dernières heures.', style: TextStyle(color: c.textSecondary, fontSize: 11.5)),
+              value: _pushFlash,
+              onChanged: _pushNews ? (v) => _setConfig({'flashEnabled': v}) : null,
+            ),
           ])),
           card(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [

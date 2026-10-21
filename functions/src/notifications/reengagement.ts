@@ -7,6 +7,8 @@ import { previewFromPost } from "../shared/preview";
 import {
   Budget, SLOTS_MIN, isGoldActive, ReminderKind, budgetForToday, chooseReminder, daysInactive, decide, localDay, reminderGapMs, typeNotifFor, tzForSlot,
 } from "./policy_logic";
+import { NewsPlan, NewsPushSource, FLASH_MIN_SCORE } from "../news/newsPush";
+import { readPipelineConfig } from "../news/pipeline";
 import { AD_LABEL, NEW_CREATOR_BODY, NEW_CREATOR_LABEL, TIPS, TipVars, fmt, hashId, langOf, reminderText, tipText, topicIndex } from "./tips_library";
 
 /**
@@ -157,6 +159,11 @@ export async function runReengagementTick(nowMs: number = Date.now()): Promise<R
   const promoSent: Record<string, number> = {};
   const promoRecipients: string[] = [];
   const sponsorSent: Record<string, number> = {};
+  // actualités : journal du matin, semaine du lundi, alerte « À la une » (désactivées tant que AppConfig/push.newsPushEnabled n'est pas true)
+  const newsFlashOn = pushCfg["newsFlashEnabled"] !== false;
+  const newsSource = pushCfg["newsPushEnabled"] === true
+    ? new NewsPushSource(nowMs, readPipelineConfig((await db.collection("AppConfig").doc("news").get().catch(() => undefined))?.data()).countries, Number(pushCfg["newsFlashMinScore"]) || FLASH_MIN_SCORE)
+    : null;
 
   for (let slot = 0; slot < SLOTS_MIN.length; slot++) {
     const tz = tzForSlot(nowMs, SLOTS_MIN[slot]);
@@ -178,6 +185,7 @@ export async function runReengagementTick(nowMs: number = Date.now()): Promise<R
 
       // une notification par contenu (même titre et même texte) : un seul envoi pour tout le groupe
       const socialNudged: Record<string, string[]> = {}; // réseau → personnes à qui on vient de proposer de nous suivre
+      const newsStamp: Array<{ id: string; storyId: string }> = []; // personnes à qui une actualité part : date et identifiant, pour ne pas la renvoyer
       if (slot === 2 && sponsors === null) sponsors = await loadSponsors(nowMs);
       if (slot === 0 && creatorPromoOn && promoCreators === null) {
         promoCreators = await loadPromoCreators(nowMs);
@@ -188,8 +196,11 @@ export async function runReengagementTick(nowMs: number = Date.now()): Promise<R
         const u = d.data();
         const lastActive = Number(u["last_time_active"]) || 0;
         const budget = budgets.get(d.id);
-        const prefs = u["pushPrefs"] as { reminders?: boolean; activity?: boolean } | undefined;
-        if (!decide("reminder", { nowMs, tzMin: tz, prefs, budget, lastActiveMs: lastActive }).allow) continue;
+        const prefs = u["pushPrefs"] as { reminders?: boolean; activity?: boolean; news?: boolean } | undefined;
+        const remindersOn = prefs?.reminders !== false;
+        const newsOn = prefs?.news !== false;
+        // « Rappels et idées » coupé : la personne peut garder les actualités (heures calmes, budget et paliers s'appliquent toujours)
+        if (!decide("reminder", { nowMs, tzMin: tz, prefs: remindersOn ? prefs : { ...prefs, reminders: true }, budget, lastActiveMs: lastActive }).allow) continue;
 
         const days = daysInactive(nowMs, lastActive);
         const gap = reminderGapMs(days);
@@ -202,8 +213,11 @@ export async function runReengagementTick(nowMs: number = Date.now()): Promise<R
         const sponsorAvailable = slot === 2 && (sponsors?.length ?? 0) > 0 && !isGoldActive(u, nowMs);
         const promo = slot === 0 && promoCreators && promoCounts && nowMs - (Number(u["creatorPromoAt"]) || 0) > PROMO_USER_GAP_MS
           ? pickCreatorPromo(u, d.id, promoCreators, promoCounts, promoCap) : undefined;
-        const kind = chooseReminder({ slot, dayIndex, streak: 0, streakDoneToday: true, unseenPosts: unseen, daysInactive: days, tipsEnabled, sponsorAvailable, creatorPromoAvailable: !!promo });
         const lang = langOf(u["appLang"]);
+        const newsPlan: NewsPlan | undefined = newsSource && newsOn ? await newsSource.plan(u, slot, tz, lang, newsFlashOn) : undefined;
+        if (!remindersOn && !newsPlan) continue;
+        const kind: ReminderKind = !remindersOn && newsPlan ? newsPlan.kind
+          : chooseReminder({ slot, dayIndex, streak: 0, streakDoneToday: true, unseenPosts: unseen, daysInactive: days, tipsEnabled, sponsorAvailable, creatorPromoAvailable: !!promo, newsKind: newsPlan?.kind });
         let copy = reminderText(kind, lang, dayIndex + slot, unseen);
         let typeNotif = typeNotifFor(kind);
         let image: string | undefined;
@@ -246,11 +260,23 @@ export async function runReengagementTick(nowMs: number = Date.now()): Promise<R
           promoSent[promo.id] = (promoSent[promo.id] ?? 0) + 1;
           promoRecipients.push(d.id);
         }
+        // actualité : texte, aperçu et clic viennent de l'article (ou du résumé de la semaine)
+        let isNews = false;
+        if ((kind === "news" || kind === "newsflash" || kind === "newsweek") && newsPlan) {
+          const { type_notif: tn, ...rest } = newsPlan.data;
+          copy = { title: newsPlan.title, body: newsPlan.body };
+          typeNotif = tn;
+          image = newsPlan.image;
+          extra = rest;
+          isNews = true;
+        }
         const key = `${typeNotif}|${copy.title}|${copy.body}`;
         const tokens = Array.isArray(u["fcmTokens"]) ? (u["fcmTokens"] as string[]) : [];
         if (!tokens.length) continue;
+        if (isNews && newsPlan) newsStamp.push({ id: d.id, storyId: newsPlan.storyId });
         const g = groups.get(key) ?? { kind, typeNotif, title: copy.title, body: copy.body, image, extra, adId, targets: [] };
-        g.targets.push({ userId: d.id, fcmTokens: tokens, prefs, tz, lastActive });
+        // une actualité part avec l'interrupteur « Actualités » (déjà vérifié) et non avec « Rappels et idées »
+        g.targets.push({ userId: d.id, fcmTokens: tokens, prefs: isNews ? { ...prefs, reminders: true } : prefs, tz, lastActive });
         groups.set(key, g);
       }
 
@@ -264,6 +290,11 @@ export async function runReengagementTick(nowMs: number = Date.now()): Promise<R
           data: { type_notif: g.typeNotif, post_id: "", post_type: "", chat_id: "", send_user_id: "", ...(g.extra ?? {}) },
         }, undefined, false, "reminder");
         if (g.adId) sponsorSent[g.adId] = (sponsorSent[g.adId] ?? 0) + g.targets.length;
+      }
+      for (const ids of chunk(newsStamp, 400)) {
+        const batch = db.batch();
+        ids.forEach((s) => batch.set(db.collection("Users").doc(s.id), { newsAt: nowMs, newsLastId: s.storyId }, { merge: true }));
+        await batch.commit().catch((e) => console.warn("[rappels] actualité non enregistrée", e));
       }
       for (const [network, all] of Object.entries(socialNudged)) {
         for (const ids of chunk(all, 400)) {

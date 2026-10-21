@@ -62,6 +62,11 @@ export const newsSetConfig = onCall(OPTS, async (request) => {
   if (typeof d["enabled"] === "boolean") patch["enabled"] = d["enabled"];
   if (typeof d["feedEnabled"] === "boolean") patch["feedEnabled"] = d["feedEnabled"];
   if (typeof d["pipelineEnabled"] === "boolean") patch["pipelineEnabled"] = d["pipelineEnabled"];
+  // notifications d'actualités : dans AppConfig/push, lu par le planificateur des rappels
+  const pushPatch: Record<string, unknown> = {};
+  if (typeof d["pushEnabled"] === "boolean") pushPatch["newsPushEnabled"] = d["pushEnabled"];
+  if (typeof d["flashEnabled"] === "boolean") pushPatch["newsFlashEnabled"] = d["flashEnabled"];
+  if (Object.keys(pushPatch).length) await db.collection("AppConfig").doc("push").set(pushPatch, { merge: true });
   if (Array.isArray(d["countries"])) patch["countries"] = (d["countries"] as unknown[]).map((c) => String(c).trim().toUpperCase()).filter((c) => c in COUNTRY_KEYWORDS).slice(0, 30);
   for (const [k, min, max] of [["dailyCap", 1, 300], ["perRun", 1, 12], ["perKeyDaily", 1, 6]] as const) {
     const n = Math.trunc(Number(d[k]));
@@ -79,11 +84,12 @@ export const newsSetConfig = onCall(OPTS, async (request) => {
 
 export const newsAgentStats = onCall(OPTS, async (request) => {
   await requireAdmin(request);
-  const [agents, cfg, posts] = await Promise.all([
+  const [agents, cfg, posts, pushCfg] = await Promise.all([
     db.getAll(...NEWS_AGENTS.map((a) => db.collection("NewsAgents").doc(a.key))),
     db.collection("AppConfig").doc("news").get(),
     // les 120 derniers articles suffisent à un tableau de bord (120 lectures par ouverture de l'écran)
     db.collection("Posts").where("type", "==", "NEWS").orderBy("created_at", "desc").limit(120).get(),
+    db.collection("AppConfig").doc("push").get(),
   ]);
   const per: Record<string, { views: number; loves: number; comments: number; recent: number }> = {};
   for (const d of posts.docs) {
@@ -96,6 +102,7 @@ export const newsAgentStats = onCall(OPTS, async (request) => {
     s.recent += 1;
   }
   return {
+    pushNews: { enabled: pushCfg.data()?.["newsPushEnabled"] === true, flash: pushCfg.data()?.["newsFlashEnabled"] !== false },
     config: { ...readPipelineConfig(cfg.data()), feedEnabled: cfg.data()?.["feedEnabled"] === true, sourcesOn: (cfg.data()?.["sourcesOn"] as Record<string, boolean> | undefined) ?? {} },
     agents: NEWS_AGENTS.map((a, i) => {
       const d = agents[i].data() ?? {};

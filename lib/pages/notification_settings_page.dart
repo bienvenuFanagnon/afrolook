@@ -18,6 +18,7 @@ class NotificationSettingsPage extends StatefulWidget {
 class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   bool _reminders = true;
   bool _activity = true;
+  bool _news = true;
   bool _loading = true;
   String? _uid;
 
@@ -39,6 +40,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
       final prefs = (doc.data()?['pushPrefs'] as Map?) ?? const {};
       _reminders = prefs['reminders'] != false;
       _activity = prefs['activity'] != false;
+      _news = prefs['news'] != false;
     } catch (_) {}
     if (mounted) setState(() => _loading = false);
   }
@@ -48,7 +50,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
     if (uid == null) return;
     try {
       await FirebaseFirestore.instance.collection('Users').doc(uid).update({
-        'pushPrefs': {'reminders': _reminders, 'activity': _activity},
+        'pushPrefs': {'reminders': _reminders, 'activity': _activity, 'news': _news},
       });
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Enregistrement impossible pour le moment.'))));
@@ -78,6 +80,18 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
                   _reminders,
                   (v) {
                     setState(() => _reminders = v);
+                    _save();
+                  },
+                ),
+                const SizedBox(height: 10),
+                _tile(
+                  colors,
+                  Icons.newspaper_rounded,
+                  context.tr('Actualités'),
+                  context.tr('Le journal du matin, la semaine en quelques infos et les grandes nouvelles du moment, pour ton pays, ton continent et le monde.'),
+                  _news,
+                  (v) {
+                    setState(() => _news = v);
                     _save();
                   },
                 ),

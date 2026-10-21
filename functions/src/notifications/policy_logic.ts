@@ -45,7 +45,7 @@ export function categoryOf(typeNotif?: unknown): PushCategory {
  * Pas pour ce qui se retrouve ailleurs ou n'a aucune valeur après coup : un nouveau post ou une nouvelle chronique d'un créateur suivi (c'est dans
  * le fil), une nouvelle musique, un live qui démarre, un nouveau produit, et tous les rappels programmés. Le push part dans tous les cas.
  */
-const NOT_STORED = new Set(["POST", "NEWPOST", "CHRONIQUE", "MUSIC", "LIVE", "ARTICLE", "MARKETING"]);
+const NOT_STORED = new Set(["POST", "NEWPOST", "CHRONIQUE", "MUSIC", "LIVE", "ARTICLE", "MARKETING", "NEWS"]);
 export function shouldStoreInApp(typeNotif?: unknown): boolean {
   const t = String(typeNotif ?? "").toUpperCase();
   if (t.startsWith("RAPPEL_") || t === "REMINDER") return false;
@@ -68,6 +68,8 @@ export function categoryOfData(data?: Record<string, unknown>): PushCategory {
 export interface PushPrefs {
   reminders?: boolean;
   activity?: boolean;
+  /** Actualités (journal du matin, semaine, À la une) : indépendant de « Rappels et idées ». */
+  news?: boolean;
 }
 
 export interface Budget {
@@ -169,7 +171,7 @@ export function daysInactive(nowMs: number, lastActiveMs?: number): number {
 
 // ─── Choix du contenu d'un rappel ─────────────────────────────────────────────────────────────────
 
-export type ReminderKind = "quiz" | "etude" | "conte" | "feed" | "streak" | "comeback" | "tip" | "sponsor" | "creator";
+export type ReminderKind = "quiz" | "etude" | "conte" | "feed" | "streak" | "comeback" | "tip" | "sponsor" | "creator" | "news" | "newsflash" | "newsweek";
 
 export interface ReminderContext {
   /** Créneau du jour : 0 (matin), 1 (midi), 2 (soir). */
@@ -187,6 +189,8 @@ export interface ReminderContext {
   sponsorAvailable?: boolean;
   /** Un nouveau créateur à faire découvrir existe pour cette personne (voir reengagement.ts : critères identiques à ceux du fil). */
   creatorPromoAvailable?: boolean;
+  /** Une actualité à envoyer existe pour cette personne à ce créneau (voir news/newsPush.ts). */
+  newsKind?: "news" | "newsflash" | "newsweek";
 }
 
 const LEARNING: ReminderKind[] = ["quiz", "etude", "conte"];
@@ -196,6 +200,9 @@ export function chooseReminder(c: ReminderContext): ReminderKind {
   const learning = LEARNING[(c.dayIndex * 3 + c.slot) % 3];
   if (c.daysInactive >= 7 && c.slot === 1) return "comeback";
   if (c.slot === 2 && c.streak >= 3 && !c.streakDoneToday) return "streak";
+  // actualités : le matin, la semaine du lundi ou l'article du jour (avant la promotion d'un créateur) ; le soir, l'alerte « À la une » (avant la pub)
+  if (c.slot === 0 && (c.newsKind === "newsweek" || c.newsKind === "news")) return c.newsKind;
+  if (c.slot === 2 && c.newsKind === "newsflash") return "newsflash";
   // matin : un nouveau créateur à découvrir un jour sur deux (à la place des nouveautés des abonnements, qui passent les autres jours)
   if (c.slot === 0 && c.creatorPromoAvailable && ((c.dayIndex % 2) + 2) % 2 === 0) return "creator";
   // soir : une pub Afrolook (sponsor) un jour sur quatre, après la série en danger
@@ -208,7 +215,7 @@ export function chooseReminder(c: ReminderContext): ReminderKind {
 
 /** Données transmises à l'application pour ouvrir directement la bonne page. */
 export function typeNotifFor(kind: ReminderKind): string {
-  return { quiz: "RAPPEL_QUIZ", etude: "RAPPEL_ETUDE", conte: "RAPPEL_CONTE", feed: "RAPPEL_FEED", streak: "RAPPEL_STREAK", comeback: "RAPPEL_RETOUR", tip: "RAPPEL_ABOUT", sponsor: "RAPPEL_PUB", creator: "RAPPEL_CREATEUR" }[kind];
+  return { quiz: "RAPPEL_QUIZ", etude: "RAPPEL_ETUDE", conte: "RAPPEL_CONTE", feed: "RAPPEL_FEED", streak: "RAPPEL_STREAK", comeback: "RAPPEL_RETOUR", tip: "RAPPEL_ABOUT", sponsor: "RAPPEL_PUB", creator: "RAPPEL_CREATEUR", news: "NEWS", newsflash: "NEWS", newsweek: "RAPPEL_JOURNAL" }[kind];
 }
 
 export interface Copy {
@@ -240,6 +247,9 @@ const COPY: Record<ReminderKind, Copy[]> = {
   tip: [{ title: "", body: "" }], // les sujets pédagogiques viennent de tips_library.ts
   sponsor: [{ title: "", body: "" }], // le texte d'une pub vient de la pub elle-même
   creator: [{ title: "", body: "" }], // le texte vient du créateur promu
+  news: [{ title: "", body: "" }], // le texte vient de l'article (écrit par l'IA avec son résumé)
+  newsflash: [{ title: "", body: "" }],
+  newsweek: [{ title: "", body: "" }], // le texte vient du résumé de la semaine (tips_library : NEWS_WEEK_TITLE)
   streak: [
     { title: "🔥 Ta série est en danger", body: "Commente quelques posts aujourd’hui pour la garder." },
     { title: "⏳ Ne casse pas ta série", body: "Il te reste peu de temps pour valider ta journée." },

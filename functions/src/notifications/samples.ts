@@ -4,7 +4,8 @@ import { adminDocs } from "../shared/admin_notify";
 import { deliverPush } from "../shared/push";
 import { previewFromChronique, previewFromPost, previewFromSound } from "../shared/preview";
 import { ReminderKind, typeNotifFor } from "./policy_logic";
-import { AD_LABEL, EARN_TEXT, NEW_CREATOR_BODY, NEW_CREATOR_LABEL, TIPS, Lang, fmt, langOf, reminderText, tipText } from "./tips_library";
+import { agentUserId } from "../news/agents";
+import { AD_LABEL, EARN_TEXT, NEWS_WEEK_TITLE, NEW_CREATOR_BODY, NEW_CREATOR_LABEL, TIPS, Lang, fmt, langOf, reminderText, tipText } from "./tips_library";
 import { earnMessage } from "../studio/artistEarnNotify";
 
 /**
@@ -17,7 +18,7 @@ const PAUSE_MS = 1200;
 
 interface Sample { id: string; group: "rappels" | "pedagogiques" | "activite"; label: string; title: string; message: string; image?: string; data: Record<string, string> }
 
-interface Ctx { post?: { id: string; type: string; image: string; text: string }; chronique?: { id: string; image: string }; sound?: { id: string; image: string }; lang: Lang; adminId: string; rate: number }
+interface Ctx { news?: { id: string; agentKey: string; title: string; chapo: string; image: string; notif?: { title: string; body: string } }; post?: { id: string; type: string; image: string; text: string }; chronique?: { id: string; image: string }; sound?: { id: string; image: string }; lang: Lang; adminId: string; rate: number }
 
 async function loadContext(adminId: string): Promise<Ctx> {
   const ctx: Ctx = { lang: "fr", adminId, rate: 1 };
@@ -34,6 +35,13 @@ async function loadContext(adminId: string): Promise<Ctx> {
         ctx.post = { id: d.id, type: String(x["dataType"] ?? ""), image, text: String(x["description"] ?? "").replace(/\s+/g, " ").trim() };
         break;
       }
+    }
+    // le dernier article d'actualité : les exemples « journal du matin » et « À la une » s'ouvrent sur un vrai article
+    const news = await db.collection("Posts").where("type", "==", "NEWS").orderBy("created_at", "desc").limit(1).get();
+    if (!news.empty) {
+      const p = news.docs[0].data();
+      const n = (p["news"] ?? {}) as Record<string, unknown>;
+      ctx.news = { id: news.docs[0].id, agentKey: String(n["agentKey"] ?? "sport"), title: String(n["title"] ?? ""), chapo: String(n["chapo"] ?? ""), image: previewFromPost(p), notif: n["notif"] as { title: string; body: string } | undefined };
     }
     const chroniques = await db.collection("chroniques").orderBy("expiresAt", "desc").limit(15).get();
     for (const d of chroniques.docs) {
@@ -68,6 +76,14 @@ export function buildSamples(c: Ctx): Sample[] {
     title: `${T}🌟 ${NEW_CREATOR_LABEL[c.lang]} · @exemple`, message: post?.text ? post.text.slice(0, 100) : NEW_CREATOR_BODY[c.lang], image: post?.image,
     data: { type_notif: typeNotifFor("creator"), post_id: post?.id ?? "", post_type: post?.type ?? "", chat_id: "", send_user_id: "" },
   });
+  // Actualités (désactivées tant que AppConfig/push.newsPushEnabled n'est pas à true) : journal du matin, alerte « À la une », semaine du lundi
+  const nw = c.news;
+  const nwData = nw ? { type_notif: "NEWS", post_id: nw.id, post_type: "NEWS", chat_id: "", send_user_id: agentUserId(nw.agentKey) } : { type_notif: "NEWS", ...noData };
+  const nwTitle = nw?.notif?.title || nw?.title || "Titre de l'article du moment";
+  const nwBody = nw?.notif?.body || nw?.chapo || "Le texte de notification écrit par l'IA avec le résumé.";
+  out.push({ id: "rappel_news", group: "rappels", label: "Actualité : l'article du moment (journal du matin ; ouvre l'article)", title: T + nwTitle.slice(0, 58), message: nwBody.slice(0, 110), image: nw?.image, data: nwData });
+  out.push({ id: "rappel_newsflash", group: "rappels", label: "Actualité : alerte « À la une » du soir (ouvre l'article)", title: T + "🔴 " + nwTitle.slice(0, 55), message: nwBody.slice(0, 110), image: nw?.image, data: nwData });
+  out.push({ id: "rappel_newsweek", group: "rappels", label: "Actualité : La semaine en 5 infos du lundi (ouvre Mon journal)", title: T + NEWS_WEEK_TITLE[c.lang].replace("{n}", "5"), message: (nw?.title || "L'info la plus importante de la semaine").slice(0, 110), image: nw?.image, data: { type_notif: "RAPPEL_JOURNAL", ...noData } });
   out.push({
     id: "rappel_pub", group: "rappels", label: "Pub Afrolook sponsorisée",
     title: `${T}📢 ${AD_LABEL[c.lang]} · Offre exemple`, message: post?.text ? post.text.slice(0, 110) : "Texte de la pub Afrolook", image: post?.image,

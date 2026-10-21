@@ -6,11 +6,12 @@ import { buildSamples } from "../samples";
 import { LANGS, TIPS } from "../tips_library";
 
 // types de notification que l'application sait ouvrir (PushService.storeNavigationFromPush et la page Notifications)
-const KNOWN = new Set(["POST", "CHRONIQUE", "MESSAGE", "INVITATION", "ABONNER", "MUSIC", "GAIN", "WEEKLY_REWARD", "LIVE", "COMPTE_OFFICIEL"]);
+const KNOWN = new Set(["POST", "CHRONIQUE", "MESSAGE", "INVITATION", "ABONNER", "MUSIC", "GAIN", "WEEKLY_REWARD", "LIVE", "NEWS", "COMPTE_OFFICIEL"]);
 
 describe("exemples de notifications pour les administrateurs", () => {
   const ctx = { lang: "fr" as const, adminId: "admin1", rate: 1, post: { id: "p1234567", type: "IMAGE", image: "https://cdn.exemple.com/p.jpg", text: "Mon premier post" },
-    chronique: { id: "c1234567", image: "https://cdn.exemple.com/c.jpg" }, sound: { id: "s1234567", image: "https://cdn.exemple.com/s.jpg" } };
+    chronique: { id: "c1234567", image: "https://cdn.exemple.com/c.jpg" }, sound: { id: "s1234567", image: "https://cdn.exemple.com/s.jpg" },
+    news: { id: "news_abc12345", agentKey: "sport", title: "Les Éperviers préparent leur match", chapo: "Un point complet sur la liste.", image: "https://cdn.exemple.com/n.jpg", notif: { title: "Éperviers : la liste est tombée", body: "Trois absents, un match samedi : le point complet." } } };
 
   test("un exemple par cas : rappels, tous les sujets pédagogiques, activité", () => {
     const s = buildSamples(ctx);
@@ -37,6 +38,10 @@ describe("exemples de notifications pour les administrateurs", () => {
     const by = Object.fromEntries(buildSamples(ctx).map((x) => [x.id, x]));
     for (const id of ["act_like", "act_commentaire", "act_post_abonne", "rappel_createur", "rappel_pub"]) expect(by[id].image).toBe("https://cdn.exemple.com/p.jpg");
     expect(by["act_chronique"].image).toBe("https://cdn.exemple.com/c.jpg");
+    expect(by["rappel_news"].image).toBe("https://cdn.exemple.com/n.jpg");
+    expect(by["rappel_news"].data).toMatchObject({ type_notif: "NEWS", post_id: "news_abc12345", post_type: "NEWS" });
+    expect(by["rappel_newsflash"].title).toContain("🔴");
+    expect(by["rappel_newsweek"].data["type_notif"]).toBe("RAPPEL_JOURNAL");
     expect(by["act_musique"].image).toBe("https://cdn.exemple.com/s.jpg");
     for (const id of ["act_message", "act_invitation", "act_gain", "rappel_quiz", "tip_earn"]) expect(by[id].image).toBeUndefined();
   });

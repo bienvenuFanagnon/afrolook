@@ -87,6 +87,8 @@ export interface NewsFeedItem {
   at: number;
   /** Importance au départ (sert à choisir « À la une »). */
   score: number;
+  /** Texte de notification écrit par l'IA avec le résumé (pour les notifications d'actualités). */
+  notif: { title: string; body: string } | null;
   /** Fin de vie de l'article (ms) : l'application ne montre plus l'article passé cette date. */
   exp: number;
 }
@@ -210,7 +212,7 @@ export function buildFeedItem(n: NewsClean, id: string, nowMs: number): NewsFeed
   return {
     id, agentKey: n.agentKey, category: n.category, level: n.level, country: n.country, continent: n.continent,
     title: n.title, chapo: n.chapo.slice(0, 160), image: n.image,
-    sourceCount: n.sources.length, sourceNames: n.sources.slice(0, 3).map((s) => s.name), at: nowMs, score: Math.round(n.score), exp: expiresAtFor(n, nowMs),
+    sourceCount: n.sources.length, sourceNames: n.sources.slice(0, 3).map((s) => s.name), at: nowMs, score: Math.round(n.score), notif: n.notif, exp: expiresAtFor(n, nowMs),
   };
 }
 
