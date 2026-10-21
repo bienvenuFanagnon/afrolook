@@ -227,6 +227,17 @@ class NewsService {
     }
   }
 
+  /// Suppression d'un article par un administrateur (fonction serveur réservée aux rôles admin : l'article, son index et ses commentaires).
+  Future<bool> adminDelete(String postId) async {
+    try {
+      await FirebaseFunctions.instance.httpsCallable('newsDeleteArticle').call({'id': postId});
+      _articles.remove(postId);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Signalement d'un article (une fois par personne).
   Future<String> report(String postId) async {
     try {

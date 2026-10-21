@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -43,6 +44,57 @@ class NewsMasthead extends StatelessWidget {
             customBorder: const CircleBorder(),
             child: Padding(padding: const EdgeInsets.all(5), child: Icon(Icons.close_rounded, size: 17, color: c.onPrimary)),
           ),
+      ]),
+    );
+  }
+}
+
+/// Photo d'un article en grand : zoom et déplacement au doigt, fermeture par la croix ou en glissant vers le bas.
+class NewsImageViewer extends StatelessWidget {
+  final String imageUrl;
+  final String heroTag;
+  const NewsImageViewer({super.key, required this.imageUrl, required this.heroTag});
+
+  static Future<void> open(BuildContext context, String imageUrl, String heroTag) =>
+      Navigator.push(context, PageRouteBuilder(opaque: false, barrierColor: Colors.black, pageBuilder: (_, __, ___) => NewsImageViewer(imageUrl: imageUrl, heroTag: heroTag)));
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(children: [
+        Positioned.fill(
+          child: Dismissible(
+            key: const ValueKey('news_image_viewer'),
+            direction: DismissDirection.down,
+            onDismissed: (_) => Navigator.pop(context),
+            child: Center(
+              child: Hero(
+                tag: heroTag,
+                child: InteractiveViewer(
+                  minScale: 1,
+                  maxScale: 5,
+                  child: CachedNetworkImage(
+                    imageUrl: imageUrl,
+                    fit: BoxFit.contain,
+                    placeholder: (_, __) => const Center(child: CircularProgressIndicator(color: Colors.white)),
+                    errorWidget: (_, __, ___) => const Icon(Icons.image_not_supported_outlined, color: Colors.white54, size: 48),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        SafeArea(
+          child: Align(
+            alignment: Alignment.topRight,
+            child: IconButton(
+              icon: const Icon(Icons.close_rounded, color: Colors.white, size: 28),
+              style: IconButton.styleFrom(backgroundColor: Colors.black54),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+        ),
       ]),
     );
   }

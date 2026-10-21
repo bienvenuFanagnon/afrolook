@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -34,6 +35,8 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
   int _views = 0;
   bool _following = false;
   bool _followBusy = false;
+  int _followers = 0;
+  bool _pulse = false; // petit rebond du bouton Suivre au toucher
 
   @override
   void initState() {
@@ -58,8 +61,17 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
     AdmobService.warmUpInterstitial(context.read<UserAuthProvider>().loginUserData); // prête pour l'ouverture d'une source
     if (uid != null && !a.viewedBy.contains(uid) && mounted) setState(() => _views += 1);
     try {
-      final f = await FirebaseFirestore.instance.collection('Follows').doc('${a.agent.userId}_$uid').get();
-      if (mounted) setState(() => _following = f.exists);
+      final db = FirebaseFirestore.instance;
+      final res = await Future.wait([
+        db.collection('Follows').doc('${a.agent.userId}_$uid').get(),
+        db.collection('Users').doc(a.agent.userId).get(),
+      ]);
+      if (mounted) {
+        setState(() {
+          _following = res[0].exists;
+          _followers = ((res[1].data() ?? const {})['abonnes'] as num?)?.toInt() ?? 0;
+        });
+      }
     } catch (_) {}
   }
 
@@ -81,19 +93,56 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
   Future<void> _toggleFollow() async {
     final a = _a;
     if (a == null || _followBusy) return;
-    setState(() => _followBusy = true);
+    // réponse immédiate (le compteur et le bouton changent tout de suite), annulée si le serveur refuse
+    final was = _following;
+    HapticFeedback.selectionClick();
+    setState(() {
+      _followBusy = true;
+      _following = !was;
+      _followers = (_followers + (was ? -1 : 1)).clamp(0, 1 << 31).toInt();
+      _pulse = true;
+    });
+    Future.delayed(const Duration(milliseconds: 160), () {
+      if (mounted) setState(() => _pulse = false);
+    });
     try {
-      if (_following) {
+      if (was) {
         await FollowService.unfollow(a.agent.userId);
-        if (mounted) setState(() => _following = false);
       } else {
         await FollowService.follow(a.agent.userId);
-        if (mounted) setState(() => _following = true);
       }
     } catch (_) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Action impossible pour le moment.'))));
+      if (mounted) {
+        setState(() {
+          _following = was;
+          _followers = (_followers + (was ? 1 : -1)).clamp(0, 1 << 31).toInt();
+        });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Action impossible pour le moment.'))));
+      }
     }
     if (mounted) setState(() => _followBusy = false);
+  }
+
+  /// Suppression par un administrateur, avec confirmation ; l'article disparaît du fil, du journal et de la liste admin.
+  Future<void> _adminDelete() async {
+    final a = _a;
+    if (a == null) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(ctx.tr('Supprimer cet article ?')),
+        content: Text(ctx.tr('Il disparaîtra du fil et du journal, avec ses commentaires. Cette action est définitive.')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(ctx.tr('Annuler'))),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(ctx.tr('Supprimer'), style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w800))),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final done = await NewsService.instance.adminDelete(a.id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr(done ? 'Article supprimé.' : 'Suppression impossible pour le moment.'))));
+    if (done) Navigator.pop(context);
   }
 
   Future<void> _report() async {
@@ -118,6 +167,9 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
         foregroundColor: c.textPrimary,
         title: Text(context.tr('Actualités')),
         actions: [
+          // administrateur : suppression directe, sans passer par l'écran d'administration
+          if (a != null && context.read<UserAuthProvider>().loginUserData.role == 'ADM')
+            IconButton(tooltip: context.tr('Supprimer (admin)'), icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent), onPressed: _adminDelete),
           if (a != null)
             PopupMenuButton<String>(
               onSelected: (v) {
@@ -153,13 +205,30 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
         child: Column(children: [
           NewsMasthead(place: newsLevelLabel(a.level, a.country, a.continent)),
           if (a.image.isNotEmpty)
-            CachedNetworkImage(
-              imageUrl: a.image,
-              width: double.infinity,
-              height: 210,
-              fit: BoxFit.cover,
-              placeholder: (_, __) => Container(height: 210, color: c.shimmerBase),
-              errorWidget: (_, __, ___) => Container(height: 90, color: c.surfaceVariant, child: Icon(Icons.image_not_supported_outlined, color: c.textSecondary)),
+            GestureDetector(
+              onTap: () => NewsImageViewer.open(context, a.image, 'news_img_${a.id}'), // photo en grand : zoom, glisser vers le bas pour fermer
+              child: Stack(children: [
+                Hero(
+                  tag: 'news_img_${a.id}',
+                  child: CachedNetworkImage(
+                    imageUrl: a.image,
+                    width: double.infinity,
+                    height: 210,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => Container(height: 210, color: c.shimmerBase),
+                    errorWidget: (_, __, ___) => Container(height: 90, color: c.surfaceVariant, child: Icon(Icons.image_not_supported_outlined, color: c.textSecondary)),
+                  ),
+                ),
+                Positioned(
+                  right: 8,
+                  bottom: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                    child: const Icon(Icons.zoom_out_map_rounded, size: 18, color: Colors.white),
+                  ),
+                ),
+              ]),
             ),
         ]),
       ),
@@ -174,20 +243,18 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(agent.pseudo, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 14)),
-            Text(newsAgo(a.createdAtMs), style: TextStyle(color: c.textSecondary, fontSize: 12)),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              transitionBuilder: (w, anim) => FadeTransition(opacity: anim, child: SlideTransition(position: Tween(begin: const Offset(0, 0.4), end: Offset.zero).animate(anim), child: w)),
+              child: Text(
+                '${newsCount(_followers)} ${context.tr(_followers > 1 ? 'abonnés' : 'abonné')} · ${newsAgo(a.createdAtMs)}',
+                key: ValueKey(_followers),
+                style: TextStyle(color: c.textSecondary, fontSize: 12),
+              ),
+            ),
           ]),
         ),
-        OutlinedButton(
-          onPressed: _followBusy ? null : _toggleFollow,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: _following ? c.textSecondary : c.primary,
-            side: BorderSide(color: _following ? c.border : c.primary),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            visualDensity: VisualDensity.compact,
-          ),
-          child: Text(_following ? context.tr('Abonné') : context.tr('Suivre'), style: const TextStyle(fontWeight: FontWeight.w700)),
-        ),
+        _followButton(c),
       ]),
       const SizedBox(height: 12),
       Container(
@@ -285,6 +352,44 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
       const SizedBox(height: 12),
       const NewsMoreButton(),
     ]);
+  }
+
+  /// Bouton Suivre / Abonné : change de couleur et d'icône en fondu, rebondit au toucher.
+  Widget _followButton(AppColors c) {
+    return AnimatedScale(
+      scale: _pulse ? 1.12 : 1,
+      duration: const Duration(milliseconds: 160),
+      curve: Curves.easeOut,
+      child: GestureDetector(
+        onTap: _followBusy ? null : _toggleFollow,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: _following ? Colors.transparent : c.primary,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _following ? c.border : c.primary, width: 1.4),
+          ),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            transitionBuilder: (w, anim) => FadeTransition(opacity: anim, child: ScaleTransition(scale: anim, child: w)),
+            child: Row(
+              key: ValueKey(_following),
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(_following ? Icons.check_rounded : Icons.add_rounded, size: 17, color: _following ? c.textSecondary : c.onPrimary),
+                const SizedBox(width: 4),
+                Text(
+                  _following ? context.tr('Abonné') : context.tr('Suivre'),
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: _following ? c.textSecondary : c.onPrimary),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _action(AppColors c, IconData icon, String label, VoidCallback? onTap, Color color) {
