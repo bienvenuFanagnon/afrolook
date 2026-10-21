@@ -1,7 +1,8 @@
 'use strict';
 // Notifications « commande du jour » (Web Push, clés VAPID ; la clé privée est dans les secrets Firebase).
 // Abonnés anonymes : PushSubs/{id}, id = empreinte de l'adresse d'abonnement (aucun compte requis, aucune donnée personnelle).
-// Envoi : chaque heure (à la demie), les abonnés pour qui il est 9 h 30 reçoivent la commande du jour d'un de leurs thèmes, au plus 1 par jour.
+// Envoi : chaque heure (à la demie), les abonnés pour qui il est 9 h 30 (créneau 1) ou 18 h 30 (créneau 2) reçoivent une commande illustrée d'un de leurs
+// thèmes, au plus SLOTS par jour ; chaque notification montre l'image « après » de la commande (Android : grande image).
 // Thèmes et commandes : functions/push_pool.json, écrit par build.mjs (seulement des commandes illustrées et générables sur le site).
 const crypto = require('crypto');
 const webpush = require('web-push');
@@ -12,6 +13,9 @@ const VAPID_PRIVATE_KEY = defineSecret('VAPID_PRIVATE_KEY');
 const VAPID_PUBLIC_KEY = 'BJkiNd43mvErTOOjqQBj5FVrvGUOpqEmuSwDSYgOdXF2NhzAK59PqDj7dqkjjTxM5nS-cAePSXl9MQVCPmXpYAo'; // aussi dans src/config.json (push.publicKey)
 const SITE = 'https://slashatlas.com';
 const THEMES = ['beaute', 'cheveux', 'mode', 'cadeaux', 'douceurs'];
+/** Envois par jour et par abonné : 9 h 30 puis 9 h plus tard (18 h 30). Pour en changer : modifier SLOTS (et SLOT_GAP_H). */
+const SLOTS = 2;
+const SLOT_GAP_H = 9;
 let POOL = null;
 const pool = () => POOL || (POOL = require('./push_pool.json'));
 const db = () => getFirestore();
@@ -20,8 +24,16 @@ const day = (d = new Date()) => d.toISOString().slice(0, 10);
 // heure UTC à laquelle il est 9 h 30 chez l'abonné (tz = getTimezoneOffset() du navigateur, en minutes, UTC − heure locale)
 const hourFor = (tz) => (((Math.floor((570 + tz) / 60)) % 24) + 24) % 24;
 const T = {
-  fr: { title: (t) => `Commande du jour : ${t}`, body: 'Votre affiche pro en 1 minute, à partir de votre photo. Prix et contact ajoutés pour vous.', gen: 'Générer', see: 'Voir l’exemple', hello: 'Notifications activées', helloB: 'Vous recevrez une commande illustrée chaque matin, au plus une par jour.' },
-  en: { title: (t) => `Command of the day: ${t}`, body: 'Your pro poster in 1 minute, from your photo. Price and contact added for you.', gen: 'Generate', see: 'See the example', hello: 'Notifications on', helloB: 'You will get an illustrated command every morning, at most one a day.' },
+  fr: {
+    titles: [(t) => `Commande du jour : ${t}`, (t) => `Idée du soir : ${t}`],
+    bodies: ['Votre affiche pro en 1 minute, à partir de votre photo. Prix et contact ajoutés pour vous.', 'Voyez le résultat avant de lancer : une affiche prête à publier, avec prix, marque et contact.', 'Une photo, une commande, une affiche qui vend. Essayez-la maintenant.', 'Copiez la commande gratuite ou générez l’affiche ici, en 1 minute.'],
+    gen: 'Générer', see: 'Voir l’exemple', hello: 'Notifications activées', helloB: 'Vous recevrez des commandes illustrées, le matin et le soir, au plus deux par jour.',
+  },
+  en: {
+    titles: [(t) => `Command of the day: ${t}`, (t) => `Tonight’s idea: ${t}`],
+    bodies: ['Your pro poster in 1 minute, from your photo. Price and contact added for you.', 'See the result before you start: a ready-to-post poster with price, brand and contact.', 'One photo, one command, a poster that sells. Try it now.', 'Copy the free command or generate the poster here, in 1 minute.'],
+    gen: 'Generate', see: 'See the example', hello: 'Notifications on', helloB: 'You will get illustrated commands, morning and evening, at most two a day.',
+  },
 };
 let vapidSet = false;
 function vapid() {
@@ -47,11 +59,11 @@ function pick(theme, dayIndex) {
   const list = pool()[theme] || [];
   return list.length ? list[dayIndex % list.length] : null;
 }
-function payload(item, lang, welcome) {
+function payload(item, lang, welcome, slot = 0, n = 0) {
   const t = T[lang] || T.fr, L = lang === 'en' ? 'en' : 'fr';
   if (welcome) return JSON.stringify({ title: t.hello, body: t.helloB, url: SITE + (L === 'en' ? '/en/' : '/'), tag: 'sa-hello' });
   const page = (L === 'en' ? '/en/c/' : '/c/') + item.s + '/', gen = (L === 'en' ? '/en/generate/' : '/generer/') + '?c=' + item.s;
-  return JSON.stringify({ title: t.title(item[L]), body: t.body, image: SITE + '/img/c/' + item.s + '-apres.webp', url: SITE + page + '?utm_source=push', gen: SITE + gen + '&utm_source=push', slug: item.s, tag: 'sa-daily', actions: [{ action: 'gen', title: t.gen }, { action: 'see', title: t.see }] });
+  return JSON.stringify({ title: t.titles[slot % t.titles.length](item[L]), body: t.bodies[n % t.bodies.length], image: SITE + '/img/c/' + item.s + '-apres.webp', icon: SITE + '/img/c/' + item.s + '-t.webp', url: SITE + page + '?utm_source=push', gen: SITE + gen + '&utm_source=push', slug: item.s, tag: 'sa-daily-' + slot, actions: [{ action: 'gen', title: t.gen }, { action: 'see', title: t.see }] });
 }
 
 async function subscribe(b) {
@@ -85,20 +97,25 @@ async function click(b) {
 async function sendHourly() {
   vapid();
   const now = new Date(), h = now.getUTCHours();
-  const snap = await db().collection('PushSubs').where('hour', '==', h).limit(5000).get();
+  // créneau 1 : abonnés dont l'heure de 9 h 30 est maintenant ; créneau 2 : ceux dont le 9 h 30 était il y a SLOT_GAP_H heures
+  const h2 = (h + 24 - SLOT_GAP_H) % 24;
+  const snap = await db().collection('PushSubs').where('hour', 'in', [h, h2]).limit(5000).get();
   let sent = 0, failed = 0, removed = 0;
   const docs = snap.docs.slice();
   const worker = async () => {
     while (docs.length) {
       const d = docs.shift(), s = d.data();
       const local = new Date(now.getTime() - (s.tz || 0) * 60000), ld = day(local);
-      if (s.lastDay === ld) continue;
-      const di = Math.floor(local.getTime() / 86400000), themes = cleanThemes(s.themes);
-      const item = pick(themes[di % themes.length], Math.floor(di / themes.length)) || pick('mode', di);
+      const slot = s.hour === h ? 0 : 1;
+      // envois déjà faits aujourd'hui (anciens abonnés : lastDay = aujourd'hui compte pour 1) ; le créneau 1 n'envoie qu'à 0, le créneau 2 jusqu'à 1
+      const count = s.lastDay === ld ? (s.sentToday ?? 1) : 0;
+      if (count > slot || count >= SLOTS) continue;
+      const di = Math.floor(local.getTime() / 86400000), themes = cleanThemes(s.themes), n = di * SLOTS + slot;
+      const item = pick(themes[n % themes.length], Math.floor(n / themes.length)) || pick('mode', n);
       if (!item) continue;
       try {
-        await webpush.sendNotification(s.sub, payload(item, s.lang), { TTL: 6 * 3600, urgency: 'normal' });
-        sent++; await d.ref.update({ lastDay: ld, lastSlug: item.s, sent: FieldValue.increment(1) });
+        await webpush.sendNotification(s.sub, payload(item, s.lang, false, slot, n), { TTL: 6 * 3600, urgency: 'normal' });
+        sent++; await d.ref.update({ lastDay: ld, sentToday: count + 1, lastSlug: item.s, sent: FieldValue.increment(1) });
       } catch (e) {
         if (e.statusCode === 404 || e.statusCode === 410) { removed++; await d.ref.delete().catch(() => {}); }
         else { failed++; console.error('push send', e.statusCode || e.message); }

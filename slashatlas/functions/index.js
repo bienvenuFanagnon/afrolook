@@ -74,15 +74,20 @@ function body(req) {
 
 const CMDS = require('./commands.json');
 let popCache = { at: 0, rows: [], totalCopies: 0 };
-let pvCache = { at: 0, pv: 0 };
-/** Vues totales des 90 derniers jours — cache 1 h. */
-async function cachedTotalPv() {
+let pvCache = { at: 0, pv: 0, gens: 0 };
+/** Vues des 90 derniers jours et créations générées (affiches, vidéos, films) depuis le début (un document par jour) — cache 1 h. */
+async function cachedTotals() {
   if (Date.now() - pvCache.at > 3600000) {
     const since = new Date(Date.now() - 90 * 864e5).toISOString().slice(0, 10);
-    const q = await getFirestore().collection('SlashAtlasStats').where('day', '>=', since).get();
-    pvCache = { at: Date.now(), pv: q.docs.reduce((s, d) => s + (d.data().pv || 0), 0) };
+    const q = await getFirestore().collection('SlashAtlasStats').get();
+    pvCache = {
+      at: Date.now(),
+      pv: q.docs.reduce((s, d) => s + ((d.data().day || d.id) >= since ? (d.data().pv || 0) : 0), 0),
+      // créations réussies : affiches (generations), vidéos motion (videos) et films / séries / contes (film_done) ; les retouches (edits) ne comptent pas
+      gens: q.docs.reduce((s, d) => { const x = d.data(); return s + (x.generations || 0) + (x.videos || 0) + (x.film_done || 0); }, 0),
+    };
   }
-  return pvCache.pv;
+  return pvCache;
 }
 /** Commandes les plus copiées (compteur public) : lecture mise en cache 15 min côté fonction et 15 min côté CDN. */
 async function popular(l) {
@@ -105,8 +110,8 @@ async function popular(l) {
     return { slug: r.slug, copies: r.copies, tries: r.tries, views: r.views, catId: c.cat, code: c.code, title: l === 'en' ? c.titleEn : c.titleFr, cat: (CMDS.cats[c.cat] || {})[l] || '', full: c.full[l], img: c.img, can: c.can, x: c.x, y: c.y, r: c.r, poster: l === 'en' ? c.posterEn : c.posterFr, ratio: c.ratio };
   });
   const globalCopies = popCache.totalCopies;
-  const globalPv = await cachedTotalPv().catch(() => 0);
-  return { counts, top, globalCopies, globalPv };
+  const totals = await cachedTotals().catch(() => ({ pv: 0, gens: 0 }));
+  return { counts, top, globalCopies, globalPv: totals.pv, globalGens: totals.gens };
 }
 /** Compteur public par commande (copies, clics « Générer ici » et pages de détails visitées) : chaque événement compte, commandes connues seulement ; « score » sert au classement : un essai « Générer ici » vaut 10 copies, une visite de la page de détails 0,2 copie (5 visites = 1 copie). */
 async function publicCount(slug, field) {

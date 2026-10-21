@@ -350,23 +350,25 @@
       if (p < 1) requestAnimationFrame(step); else el.textContent = fmt(n);
     })(t0);
   }
-  function showHeroStats(pv, cp) {
+  function showHeroStats(pv, cp, gn) {
     var hs = document.getElementById('hero-stats');
-    if (!hs || (!pv && !cp)) return;
+    if (!hs || (!pv && !cp && !gn)) return;
     hs.removeAttribute('hidden');
     animStat(document.getElementById('hstat-pv'), pv || 0);
     animStat(document.getElementById('hstat-cp'), cp || 0);
+    var g = document.getElementById('hstat-gn'), gw = g && g.parentNode;
+    if (g && gn) { gw.removeAttribute('hidden'); animStat(g, gn); }
   }
   var STATS_KEY = 'sa_hstats', STATS_TTL = 300000; // 5 min
   try {
     var cached = JSON.parse(localStorage.getItem(STATS_KEY) || 'null');
-    if (cached && Date.now() - cached.at < STATS_TTL && (cached.pv || cached.cp)) showHeroStats(cached.pv, cached.cp);
+    if (cached && Date.now() - cached.at < STATS_TTL && (cached.pv || cached.cp)) showHeroStats(cached.pv, cached.cp, cached.gn);
   } catch (e) {}
   fetch('/api/popular?l=' + lang).then(function (r) { return r.json(); }).then(function (d) {
     counts = d.counts || {}; paint(); railFill(d.top || []); sortList(counts);
-    if (d.globalPv || d.globalCopies) {
-      try { localStorage.setItem(STATS_KEY, JSON.stringify({ at: Date.now(), pv: d.globalPv || 0, cp: d.globalCopies || 0 })); } catch (e) {}
-      showHeroStats(d.globalPv || 0, d.globalCopies || 0);
+    if (d.globalPv || d.globalCopies || d.globalGens) {
+      try { localStorage.setItem(STATS_KEY, JSON.stringify({ at: Date.now(), pv: d.globalPv || 0, cp: d.globalCopies || 0, gn: d.globalGens || 0 })); } catch (e) {}
+      showHeroStats(d.globalPv || 0, d.globalCopies || 0, d.globalGens || 0);
     }
   }).catch(function () {});
   window.saPopRefresh = function () { cards = document.querySelectorAll('.card[data-slug], .rc[data-slug]'); paint(); sortList(counts); };

@@ -27,7 +27,7 @@ self.addEventListener('fetch', (e) => {
 self.addEventListener('push', (e) => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (err) { d = { title: 'SlashAtlas', body: e.data ? e.data.text() : '' }; }
-  const opts = { body: d.body || '', icon: '/icons/icon-192.png', badge: '/icons/icon-192.png', tag: d.tag || 'sa', renotify: false, data: { url: d.url || '/', gen: d.gen || '', slug: d.slug || '' } };
+  const opts = { body: d.body || '', icon: d.icon || '/icons/icon-192.png', badge: '/icons/icon-192.png', tag: d.tag || 'sa', renotify: false, data: { url: d.url || '/', gen: d.gen || '', slug: d.slug || '' } };
   if (d.image) opts.image = d.image; // grande image : Android seulement (iPhone ne l'affiche pas)
   if (Array.isArray(d.actions)) opts.actions = d.actions.slice(0, 2).map((a) => ({ action: a.action, title: a.title }));
   e.waitUntil(self.registration.showNotification(d.title || 'SlashAtlas', opts));

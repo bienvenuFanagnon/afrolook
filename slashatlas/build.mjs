@@ -341,7 +341,7 @@ const HOME = {
     steps: [['Copiez', 'une commande gratuite'], ['Collez', 'dans votre outil IA'], ['Publiez', 'votre visuel pro']],
     rail: 'Commandes phares', favs: 'Vos favoris', favAll: 'Mes commandes', tabSel: 'À la une', tabNew: 'Nouveautés', tabVid: 'Vidéos', copy: 'Copier', cats: 'Par métier', all: 'Voir les {n} commandes', n: (k) => `${k} commandes`,
     tools: 'Fonctionne avec', tapHint: 'Faites glisser',
-    statPv: 'créateurs actifs', statCp: 'commandes copiées',
+    statPv: 'créateurs actifs', statCp: 'commandes copiées', statGn: 'affiches et vidéos générées',
   },
   en: {
     kick: 'Free AI commands · Posters generated here',
@@ -353,7 +353,7 @@ const HOME = {
     steps: [['Copy', 'a free command'], ['Paste', 'into your AI tool'], ['Publish', 'your pro visual']],
     rail: 'Top commands', favs: 'Your favorites', favAll: 'My commands', tabSel: 'Featured', tabNew: 'New', tabVid: 'Videos', copy: 'Copy', cats: 'By trade', all: 'See all {n} commands', n: (k) => `${k} commands`,
     tools: 'Works with', tapHint: 'Swipe',
-    statPv: 'active creators', statCp: 'commands copied',
+    statPv: 'active creators', statCp: 'commands copied', statGn: 'posters and videos generated',
   },
 };
 const ICON = {
@@ -489,7 +489,7 @@ function home(l) {
   const body = `<div class="wrap hero"><h1 class="big">${H.h1}</h1><p class="hline"><span class="hrot" data-hrot="${esc(JSON.stringify(H.hrot))}">${H.hrot[0]}</span></p>
 <div class="choose"><a class="choice ch-copy" href="${p.cmds}">${svg('copy')}<span><b>${H.c1}</b><small>${H.c1s}</small></span></a><a class="choice ch-gen" href="${p.try}">${svg('sparkle')}<span><b>${H.c2}</b><small>${H.c2s(GEN)}</small></span></a></div>
 <form class="hsearch" action="${p.cmds}" role="search">${svg('search')}<input name="q" type="search" placeholder="${esc(H.qph)}" aria-label="${esc(H.qlbl)}" enterkeyhint="search"><button class="btn pri sm" type="submit">${H.qgo}</button></form>
-<div class="hero-stats" id="hero-stats" hidden aria-live="polite"><div class="hstat"><strong class="hstat-n" id="hstat-pv">—</strong><span class="hstat-lbl"><span class="hstat-dot" aria-hidden="true"></span>${H.statPv}</span></div><div class="hstat"><strong class="hstat-n" id="hstat-cp">—</strong><span class="hstat-lbl">${H.statCp}</span></div></div></div>
+<div class="hero-stats" id="hero-stats" hidden aria-live="polite"><div class="hstat"><strong class="hstat-n" id="hstat-pv">—</strong><span class="hstat-lbl"><span class="hstat-dot" aria-hidden="true"></span>${H.statPv}</span></div><div class="hstat"><strong class="hstat-n" id="hstat-cp">—</strong><span class="hstat-lbl">${H.statCp}</span></div><div class="hstat" hidden><strong class="hstat-n" id="hstat-gn">—</strong><span class="hstat-lbl">${H.statGn}</span></div></div></div>
 <div class="wrap"><div class="sec tight"><h2 id="rail-h">${H.rail}</h2><a class="more" href="${p.cmds}">${H.all.replace('{n}', COMMANDS.length)} ›</a></div>
 <div class="rtabs" role="tablist" aria-label="${esc(H.rail)}"><button type="button" class="rtab on" data-rail="sel" role="tab" aria-selected="true">${H.tabSel}</button><button type="button" class="rtab" data-rail="new" role="tab">${H.tabNew}</button><button type="button" class="rtab" data-rail="vid" role="tab">${H.tabVid}</button></div></div>
 <div class="rail" id="rail-sel" role="list">${featured.map((c) => railCard(c, l)).join('')}</div>

@@ -14,11 +14,11 @@
   var standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
   var THEMES = ['beaute', 'cheveux', 'mode', 'cadeaux', 'douceurs'];
   var T = {
-    fr: { row: 'Commande du jour', on: 'Activée', off: 'Désactivée', iosNeed: 'Installez l’app d’abord', title: 'La commande du jour, chaque matin', text: 'Une idée d’affiche illustrée pour vos produits. Une seule par jour au maximum, désactivable à tout moment.',
+    fr: { row: 'Commande du jour', on: 'Activée', off: 'Désactivée', iosNeed: 'Installez l’app d’abord', title: 'Des commandes illustrées, matin et soir', text: 'Une idée d’affiche illustrée pour vos produits, avec son image. Deux par jour au maximum, désactivable à tout moment.',
       themes: { beaute: 'Beauté & soins', cheveux: 'Cheveux', mode: 'Mode & accessoires', cadeaux: 'Cadeaux & fait main', douceurs: 'Douceurs' }, later: 'Plus tard', enable: 'Activer', save: 'Enregistrer', stop: 'Désactiver les notifications',
       denied: 'Les notifications sont bloquées dans votre navigateur : autorisez-les dans les réglages du site, puis réessayez.', fail: 'Activation impossible pour le moment. Réessayez.', done: 'Notifications activées', saved: 'Thèmes enregistrés', stopped: 'Notifications désactivées',
       hdr: 'Mes thèmes', ios1: 'Sur iPhone, les notifications demandent d’installer SlashAtlas sur l’écran d’accueil.', iosGo: 'Voir comment faire' },
-    en: { row: 'Command of the day', on: 'On', off: 'Off', iosNeed: 'Install the app first', title: 'The command of the day, every morning', text: 'An illustrated poster idea for your products. One a day at most, and you can turn it off at any time.',
+    en: { row: 'Command of the day', on: 'On', off: 'Off', iosNeed: 'Install the app first', title: 'Illustrated commands, morning and evening', text: 'An illustrated poster idea for your products, with its picture. Two a day at most, and you can turn it off at any time.',
       themes: { beaute: 'Beauty & care', cheveux: 'Hair', mode: 'Fashion & accessories', cadeaux: 'Gifts & handmade', douceurs: 'Treats' }, later: 'Later', enable: 'Turn on', save: 'Save', stop: 'Turn off notifications',
       denied: 'Notifications are blocked in your browser: allow them in the site settings, then try again.', fail: 'Could not turn on right now. Please try again.', done: 'Notifications on', saved: 'Themes saved', stopped: 'Notifications off',
       hdr: 'My themes', ios1: 'On iPhone, notifications need SlashAtlas installed on your home screen.', iosGo: 'See how' },
