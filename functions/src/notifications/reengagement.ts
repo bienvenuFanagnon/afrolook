@@ -69,6 +69,7 @@ export async function runReengagementTick(nowMs: number = Date.now()): Promise<R
       }
 
       // une notification par contenu (même titre et même texte) : un seul envoi pour tout le groupe
+      const socialNudged: Record<string, string[]> = {}; // réseau → personnes à qui on vient de proposer de nous suivre
       const groups = new Map<string, { kind: ReminderKind; typeNotif: string; title: string; body: string; targets: PushTarget[] }>();
       for (const d of snap.docs) {
         const u = d.data();
@@ -90,7 +91,20 @@ export async function runReengagementTick(nowMs: number = Date.now()): Promise<R
         let copy = reminderText(kind, lang, dayIndex + slot, unseen);
         let typeNotif = typeNotifFor(kind);
         if (kind === "tip") {
-          const tip = TIPS[topicIndex(dayIndex, hashId(d.id))];
+          // Priorité : (1) nous suivre sur la chaîne WhatsApp, Facebook, TikTok (un réseau à la fois, tous les 14 jours tant que la personne n'y a pas été
+          // dirigée : Users.<réseau>Followed est écrit par l'application) ; (2) une NOUVEAUTÉ tous les 3 jours ; (3) la rotation des autres sujets.
+          const due = ["whatsapp", "facebook", "tiktok"].find((n) => u[n + "Followed"] !== true && nowMs - (Number(u[n + "NudgeAt"]) || 0) > 14 * 86400000);
+          const news = TIPS.filter((t) => t.topic.startsWith("news"));
+          let tip = TIPS[topicIndex(dayIndex, hashId(d.id))];
+          if (due) {
+            tip = TIPS.find((t) => t.topic === due)!;
+            (socialNudged[due] = socialNudged[due] ?? []).push(d.id);
+          } else if (news.length && dayIndex % 3 === 0) {
+            tip = news[(Math.floor(dayIndex / 3) + hashId(d.id)) % news.length];
+          } else if (["whatsapp", "facebook", "tiktok"].includes(tip.topic)) {
+            // la rotation ne propose pas un réseau déjà suivi : sujet suivant
+            while (["whatsapp", "facebook", "tiktok"].includes(tip.topic)) tip = TIPS[(TIPS.indexOf(tip) + 1) % TIPS.length];
+          }
           copy = tipText(tip, lang, tipVars);
           typeNotif = tip.target;
         }
@@ -110,6 +124,13 @@ export async function runReengagementTick(nowMs: number = Date.now()): Promise<R
           message: g.body,
           data: { type_notif: g.typeNotif, post_id: "", post_type: "", chat_id: "", send_user_id: "" },
         }, undefined, false, "reminder");
+      }
+      for (const [network, all] of Object.entries(socialNudged)) {
+        for (const ids of chunk(all, 400)) {
+          const batch = db.batch();
+          ids.forEach((id) => batch.set(db.collection("Users").doc(id), { [network + "NudgeAt"]: nowMs }, { merge: true }));
+          await batch.commit().catch((e) => console.warn("[rappels] invitation réseau non enregistrée", network, e));
+        }
       }
       if (snap.size < PAGE) break;
     }

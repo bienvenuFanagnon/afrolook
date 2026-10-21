@@ -19,7 +19,7 @@ describe("bibliothèque des notifications pédagogiques", () => {
 
   test("chaque sujet ouvre une page d'action et reste classé comme rappel", () => {
     for (const tip of TIPS) {
-      expect(tip.target).toMatch(/^RAPPEL_[A-Z]+$/);
+      expect(tip.target).toMatch(/^RAPPEL_[A-Z_]+$/);
       expect(categoryOf(tip.target)).toBe("reminder");
     }
   });
@@ -55,7 +55,7 @@ describe("bibliothèque des notifications pédagogiques", () => {
 
   test("les sujets couvrent ce qui a été demandé", () => {
     const topics = TIPS.map((t) => t.topic);
-    for (const t of ["earn", "estimate", "creator", "referral", "live", "sellLive", "channel", "group", "shop", "comment", "flame", "musicUpload", "musicEarn", "weekly"]) {
+    for (const t of ["earn", "estimate", "creator", "referral", "live", "sellLive", "channel", "group", "shop", "comment", "flame", "musicUpload", "musicEarn", "weekly", "whatsapp", "facebook", "tiktok", "newsMusic", "newsDefi", "newsStudy", "newsContes"]) {
       expect(topics).toContain(t);
     }
   });

@@ -7,8 +7,10 @@ Fichier généré à partir de `functions/src/notifications/tips_library.ts` (8 
 ## Règles
 - Créneaux (heure locale) : 8 h 30, 13 h 00, 19 h 30 ; 3 notifications non directes par jour au plus ; heures calmes 22 h – 7 h 30.
 - Les sujets pédagogiques occupent le créneau de midi, 4 jours sur 7, un sujet différent à chaque fois.
-- Le parrainage n'annonce que « 75 % » (règle du propriétaire) ; la vente directe est présentée comme « bientôt », sans date.
+- Ni la part de l'application (), ni date de lancement de la vente directe : uniquement « bientôt ».
 - Les chiffres de l'estimation viennent de `config/monetization` (barème réel).
+- Invitations à nous suivre (chaîne WhatsApp, Facebook, TikTok) : un réseau à la fois, tous les 14 jours, tant que la personne n'a pas été dirigée vers ce réseau ; le clic ouvre la page du réseau.
+- Une nouveauté (musique, défis, étude, contes) tous les 3 jours.
 - Ces notifications ne sont pas enregistrées dans la liste des notifications de l'application.
 
 ## Sujets (français, puis anglais)
@@ -31,6 +33,13 @@ Fichier généré à partir de `functions/src/notifications/tips_library.ts` (8 
 | flame | RAPPEL_COMMENTER | 🔥 Allume ta flamme | Commente chaque jour pour garder ta série de flammes et grimper au classement. |
 | musicUpload | RAPPEL_MUSIQUE | 🎵 Mets ta musique en ligne | Publie tes titres sur Afrolook : écoutes, ventes et utilisations dans les posts peuvent te rapporter des pièces. |
 | musicEarn | RAPPEL_ARTISTE | 💿 Ce que gagnent les artistes | Tu fixes tes prix et tu touches 60 % de chaque vente et de chaque utilisation, en pièces gagnées convertibles en argent. |
+| whatsapp | RAPPEL_WHATSAPP | 📲 Suis-nous sur WhatsApp | Rejoins la chaîne officielle Afrolook : actus, astuces pour gagner et nouveautés en avant-première. |
+| facebook | RAPPEL_FACEBOOK | 👍 Suis-nous sur Facebook | Rejoins notre page : actus, annonces et conseils pour réussir sur Afrolook. |
+| tiktok | RAPPEL_TIKTOK | 🎬 Retrouve-nous sur TikTok | Des vidéos, des astuces et les coulisses d’Afrolook t’attendent. |
+| newsMusic | RAPPEL_NOUVEAUTE_MUSIQUE | 🆕 Nouveau : la musique sur Afrolook | Écoute des artistes africains, utilise leurs sons dans tes posts et soutiens-les. |
+| newsDefi | RAPPEL_NOUVEAUTE_DEFI | 🆕 Les DÉFIS sont arrivés | Relève un défi, vote et fais vibrer la communauté. Viens voir. |
+| newsStudy | RAPPEL_NOUVEAUTE_ETUDE | 🆕 Étudie sur Afrolook | Cours, quiz et diplômes : progresse chapitre après chapitre, à ton rythme. |
+| newsContes | RAPPEL_NOUVEAUTE_CONTES | 🆕 Des contes africains à lire | De nouvelles histoires t’attendent, avec un quiz pour gagner des pièces. |
 
 ### Anglais
 
@@ -52,6 +61,13 @@ Fichier généré à partir de `functions/src/notifications/tips_library.ts` (8 
 | flame | 🔥 Keep your flame lit | Comment every day to keep your flame streak going and climb the ranking. |
 | musicUpload | 🎵 Put your music online | Publish your tracks on Afrolook: listens, sales and uses in posts can earn you coins. |
 | musicEarn | 💿 What artists earn | You set your prices and keep 60% of every sale and every use, in earned coins you can convert to cash. |
+| whatsapp | 📲 Follow us on WhatsApp | Join the official Afrolook channel: news, tips to earn and early updates. |
+| facebook | 👍 Follow us on Facebook | Join our page: news, announcements and tips to succeed on Afrolook. |
+| tiktok | 🎬 Find us on TikTok | Videos, tips and behind-the-scenes of Afrolook are waiting for you. |
+| newsMusic | 🆕 New: music on Afrolook | Listen to African artists, use their sounds in your posts and support them. |
+| newsDefi | 🆕 Challenges are here | Take on a challenge, vote and get the community buzzing. Come and see. |
+| newsStudy | 🆕 Study on Afrolook | Lessons, quizzes and diplomas: progress chapter by chapter, at your own pace. |
+| newsContes | 🆕 African tales to read | New stories are waiting for you, with a quiz to win coins. |
 
 Les 6 autres langues sont dans le fichier source (mêmes sujets).
 

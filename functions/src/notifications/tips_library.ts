@@ -13,7 +13,7 @@
 export type Lang = "fr" | "en" | "es" | "de" | "ar" | "pt" | "zh" | "sw";
 export const LANGS: Lang[] = ["fr", "en", "es", "de", "ar", "pt", "zh", "sw"];
 
-export type TipTopic = "earn" | "estimate" | "creator" | "referral" | "live" | "sellLive" | "channel" | "group" | "packs" | "weekly" | "shop" | "about" | "comment" | "flame" | "musicUpload" | "musicEarn";
+export type TipTopic = "earn" | "estimate" | "creator" | "referral" | "live" | "sellLive" | "channel" | "group" | "packs" | "weekly" | "shop" | "about" | "comment" | "flame" | "musicUpload" | "musicEarn" | "whatsapp" | "facebook" | "tiktok" | "newsMusic" | "newsDefi" | "newsStudy" | "newsContes";
 
 /** Variables remplies à l'envoi à partir du barème réel. */
 export interface TipVars {
@@ -238,6 +238,98 @@ export const TIPS: Tip[] = [
       pt: { title: "💿 O que ganham os artistas", body: "Você define os preços e recebe 60 % de cada venda e de cada utilização, em moedas ganhas convertíveis em dinheiro." },
       zh: { title: "💿 艺术家能赚多少", body: "价格由你定，每次销售和每次使用你都能获得 60%，以赚得的金币结算，可兑换成现金。" },
       sw: { title: "💿 Kile wanachopata wasanii", body: "Unaweka bei zako na kupata 60% ya kila mauzo na kila matumizi, kwa sarafu ulizopata zinazobadilishwa kuwa pesa." },
+    },
+  },
+  {
+    // Invitation à suivre la CHAÎNE WhatsApp d'Afrolook : un clic ouvre la chaîne (https://whatsapp.com/channel/…), pas un contact
+    topic: "whatsapp", target: "RAPPEL_WHATSAPP",
+    texts: {
+      fr: { title: "📲 Suis-nous sur WhatsApp", body: "Rejoins la chaîne officielle Afrolook : actus, astuces pour gagner et nouveautés en avant-première." },
+      en: { title: "📲 Follow us on WhatsApp", body: "Join the official Afrolook channel: news, tips to earn and early updates." },
+      es: { title: "📲 Síguenos en WhatsApp", body: "Únete al canal oficial de Afrolook: novedades, consejos para ganar y avances en primicia." },
+      de: { title: "📲 Folge uns auf WhatsApp", body: "Tritt dem offiziellen Afrolook-Kanal bei: News, Verdienst-Tipps und Neuheiten vorab." },
+      ar: { title: "📲 تابعنا على واتساب", body: "انضم إلى قناة أفرولوك الرسمية: الأخبار ونصائح الربح والمستجدات أولًا بأول." },
+      pt: { title: "📲 Siga-nos no WhatsApp", body: "Entre no canal oficial do Afrolook: novidades, dicas para ganhar e novidades em primeira mão." },
+      zh: { title: "📲 在 WhatsApp 上关注我们", body: "加入 Afrolook 官方频道：资讯、赚钱技巧和抢先体验。" },
+      sw: { title: "📲 Tufuate kwenye WhatsApp", body: "Jiunge na kituo rasmi cha Afrolook: habari, vidokezo vya kupata na mambo mapya kabla ya wengine." },
+    },
+  },
+  {
+    topic: "facebook", target: "RAPPEL_FACEBOOK",
+    texts: {
+      fr: { title: "👍 Suis-nous sur Facebook", body: "Rejoins notre page : actus, annonces et conseils pour réussir sur Afrolook." },
+      en: { title: "👍 Follow us on Facebook", body: "Join our page: news, announcements and tips to succeed on Afrolook." },
+      es: { title: "👍 Síguenos en Facebook", body: "Únete a nuestra página: novedades, anuncios y consejos para triunfar en Afrolook." },
+      de: { title: "👍 Folge uns auf Facebook", body: "Besuche unsere Seite: News, Ankündigungen und Tipps für deinen Erfolg auf Afrolook." },
+      ar: { title: "👍 تابعنا على فيسبوك", body: "انضم إلى صفحتنا: الأخبار والإعلانات ونصائح للنجاح على أفرولوك." },
+      pt: { title: "👍 Siga-nos no Facebook", body: "Junte-se à nossa página: novidades, anúncios e dicas para ter sucesso no Afrolook." },
+      zh: { title: "👍 在 Facebook 关注我们", body: "加入我们的主页：资讯、公告和在 Afrolook 成功的小技巧。" },
+      sw: { title: "👍 Tufuate kwenye Facebook", body: "Jiunge na ukurasa wetu: habari, matangazo na vidokezo vya kufanikiwa kwenye Afrolook." },
+    },
+  },
+  {
+    topic: "tiktok", target: "RAPPEL_TIKTOK",
+    texts: {
+      fr: { title: "🎬 Retrouve-nous sur TikTok", body: "Des vidéos, des astuces et les coulisses d’Afrolook t’attendent." },
+      en: { title: "🎬 Find us on TikTok", body: "Videos, tips and behind-the-scenes of Afrolook are waiting for you." },
+      es: { title: "🎬 Encuéntranos en TikTok", body: "Te esperan vídeos, consejos y los entresijos de Afrolook." },
+      de: { title: "🎬 Finde uns auf TikTok", body: "Videos, Tipps und Einblicke hinter die Kulissen von Afrolook warten auf dich." },
+      ar: { title: "🎬 تجدنا على تيك توك", body: "فيديوهات ونصائح وكواليس أفرولوك بانتظارك." },
+      pt: { title: "🎬 Encontre-nos no TikTok", body: "Vídeos, dicas e bastidores do Afrolook esperam por si." },
+      zh: { title: "🎬 在 TikTok 找到我们", body: "视频、技巧和 Afrolook 的幕后花絮等着你。" },
+      sw: { title: "🎬 Tupate kwenye TikTok", body: "Video, vidokezo na nyuma ya pazia ya Afrolook vinakusubiri." },
+    },
+  },
+  {
+    topic: "newsMusic", target: "RAPPEL_NOUVEAUTE_MUSIQUE",
+    texts: {
+      fr: { title: "🆕 Nouveau : la musique sur Afrolook", body: "Écoute des artistes africains, utilise leurs sons dans tes posts et soutiens-les." },
+      en: { title: "🆕 New: music on Afrolook", body: "Listen to African artists, use their sounds in your posts and support them." },
+      es: { title: "🆕 Novedad: música en Afrolook", body: "Escucha artistas africanos, usa sus sonidos en tus publicaciones y apóyalos." },
+      de: { title: "🆕 Neu: Musik auf Afrolook", body: "Höre afrikanische Künstler, nutze ihre Sounds in deinen Beiträgen und unterstütze sie." },
+      ar: { title: "🆕 جديد: الموسيقى على أفرولوك", body: "استمع لفنانين أفارقة واستخدم أصواتهم في منشوراتك وادعمهم." },
+      pt: { title: "🆕 Novo: música no Afrolook", body: "Ouça artistas africanos, use os sons deles nas suas publicações e apoie-os." },
+      zh: { title: "🆕 新功能：Afrolook 音乐", body: "收听非洲艺术家的作品，在帖子中使用他们的声音并支持他们。" },
+      sw: { title: "🆕 Mpya: muziki kwenye Afrolook", body: "Sikiliza wasanii wa Afrika, tumia sauti zao kwenye machapisho yako na uwaunge mkono." },
+    },
+  },
+  {
+    topic: "newsDefi", target: "RAPPEL_NOUVEAUTE_DEFI",
+    texts: {
+      fr: { title: "🆕 Les DÉFIS sont arrivés", body: "Relève un défi, vote et fais vibrer la communauté. Viens voir." },
+      en: { title: "🆕 Challenges are here", body: "Take on a challenge, vote and get the community buzzing. Come and see." },
+      es: { title: "🆕 Llegaron los RETOS", body: "Acepta un reto, vota y haz vibrar a la comunidad. Ven a verlo." },
+      de: { title: "🆕 Die CHALLENGES sind da", body: "Nimm eine Challenge an, stimme ab und bring die Community in Schwung. Schau vorbei." },
+      ar: { title: "🆕 وصلت التحديات", body: "خُض تحديًا وصوّت وأشعل حماس المجتمع. تعال وشاهد." },
+      pt: { title: "🆕 Os DESAFIOS chegaram", body: "Aceite um desafio, vote e anime a comunidade. Venha ver." },
+      zh: { title: "🆕 挑战来了", body: "接受挑战、投票，让社群热闹起来。快来看看。" },
+      sw: { title: "🆕 Changamoto zimewasili", body: "Chukua changamoto, piga kura na uchangamshe jumuiya. Njoo uone." },
+    },
+  },
+  {
+    topic: "newsStudy", target: "RAPPEL_NOUVEAUTE_ETUDE",
+    texts: {
+      fr: { title: "🆕 Étudie sur Afrolook", body: "Cours, quiz et diplômes : progresse chapitre après chapitre, à ton rythme." },
+      en: { title: "🆕 Study on Afrolook", body: "Lessons, quizzes and diplomas: progress chapter by chapter, at your own pace." },
+      es: { title: "🆕 Estudia en Afrolook", body: "Lecciones, quizzes y diplomas: avanza capítulo a capítulo, a tu ritmo." },
+      de: { title: "🆕 Lerne auf Afrolook", body: "Lektionen, Quiz und Abschlüsse: komm Kapitel für Kapitel voran, in deinem Tempo." },
+      ar: { title: "🆕 ادرس على أفرولوك", body: "دروس واختبارات وشهادات: تقدّم فصلًا بعد فصل وبالوتيرة التي تناسبك." },
+      pt: { title: "🆕 Estude no Afrolook", body: "Aulas, quizzes e diplomas: avance capítulo a capítulo, ao seu ritmo." },
+      zh: { title: "🆕 在 Afrolook 学习", body: "课程、问答和文凭：按自己的节奏，一章一章地前进。" },
+      sw: { title: "🆕 Soma kwenye Afrolook", body: "Masomo, maswali na vyeti: songa sura baada ya sura, kwa kasi yako." },
+    },
+  },
+  {
+    topic: "newsContes", target: "RAPPEL_NOUVEAUTE_CONTES",
+    texts: {
+      fr: { title: "🆕 Des contes africains à lire", body: "De nouvelles histoires t’attendent, avec un quiz pour gagner des pièces." },
+      en: { title: "🆕 African tales to read", body: "New stories are waiting for you, with a quiz to win coins." },
+      es: { title: "🆕 Cuentos africanos para leer", body: "Te esperan nuevas historias, con un quiz para ganar monedas." },
+      de: { title: "🆕 Afrikanische Märchen zum Lesen", body: "Neue Geschichten warten auf dich, mit Quiz und Münzen." },
+      ar: { title: "🆕 حكايات أفريقية للقراءة", body: "قصص جديدة بانتظارك مع اختبار لربح العملات." },
+      pt: { title: "🆕 Contos africanos para ler", body: "Novas histórias esperam por si, com um quiz para ganhar moedas." },
+      zh: { title: "🆕 值得一读的非洲故事", body: "新故事等着你，还有问答可赢金币。" },
+      sw: { title: "🆕 Hadithi za Kiafrika za kusoma", body: "Hadithi mpya zinakusubiri, na maswali ya kushinda sarafu." },
     },
   },
 ];
