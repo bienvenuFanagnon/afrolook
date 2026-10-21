@@ -31,6 +31,7 @@ import 'payment_logs_admin_page.dart';
 import 'remuneration_admin_page.dart';
 import 'quiz_admin_page.dart';
 import 'read_meter_page.dart';
+import 'push_test_page.dart';
 import 'stickers/admin_stickers_page.dart';
 import 'pseudo_migration_page.dart';
 import '../intro/tutos/tuto_scene_card.dart';
@@ -574,6 +575,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       _Module(Icons.tag_rounded, 'Noms de canaux', c.primary, 0, const PseudoMigrationPage(canaux: true)),
       _Module(Icons.library_music_rounded, 'Sons artistes', const Color(0xFF9B59B6), 0, const AdminArtistSoundsPage()),
       _Module(Icons.speed_rounded, 'Mesure des lectures', c.warning, 0, const ReadMeterPage()),
+      _Module(Icons.notifications_active_rounded, 'Essai notifications', c.info, 0, const PushTestPage()),
     ];
     return GridView.count(
       crossAxisCount: 3,

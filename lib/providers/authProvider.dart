@@ -5,6 +5,8 @@ import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:afrotok/services/abonnement_service.dart';
+import 'package:afrotok/services/push_service.dart';
+import 'package:rxdart/rxdart.dart' as rx;
 import 'package:afrotok/services/remote_config_service.dart';
 import 'package:afrotok/models/chatmodels/message.dart';
 import 'package:afrotok/providers/userProvider.dart';
@@ -390,6 +392,10 @@ class UserAuthProvider extends ChangeNotifier {
         );
       }
 
+      _closeNotificationStreams();
+      // 3️⃣ Cet appareil ne reçoit plus les notifications de ce compte (avant la fermeture de session)
+      final uidPush = loginUserData?.id;
+      if (uidPush != null) await PushService.unregisterForUser(uidPush).timeout(const Duration(seconds: 3), onTimeout: () {});
       // 3️⃣ Supprimer token local
       await storeToken('');
       // 4️⃣ FORCER la déconnexion Firebase (la plus importante)
@@ -1151,7 +1157,33 @@ class UserAuthProvider extends ChangeNotifier {
       yield notifications;
     }
   }
-  Stream<List<NotificationData>> getListNotificationAuth(String user_id) async* {
+  // Un seul abonnement Firestore par personne, partagé par tous les écrans (badges de l'accueil…) : avant, chaque reconstruction d'écran
+  // créait un nouveau flux et relisait les 12 notifications. Les nouveaux écrans reçoivent aussitôt la dernière valeur connue.
+  final Map<String, rx.BehaviorSubject<List<NotificationData>>> _notificationSubjects = {};
+  final Map<String, StreamSubscription<List<NotificationData>>> _notificationSubs = {};
+
+  Stream<List<NotificationData>> getListNotificationAuth(String user_id) {
+    final subject = _notificationSubjects.putIfAbsent(user_id, () {
+      final s = rx.BehaviorSubject<List<NotificationData>>();
+      _notificationSubs[user_id] = _notificationStream(user_id).listen(s.add, onError: s.addError);
+      return s;
+    });
+    return subject.stream;
+  }
+
+  /// À la déconnexion : ferme les abonnements aux notifications.
+  void _closeNotificationStreams() {
+    for (final sub in _notificationSubs.values) {
+      sub.cancel();
+    }
+    for (final s in _notificationSubjects.values) {
+      s.close();
+    }
+    _notificationSubs.clear();
+    _notificationSubjects.clear();
+  }
+
+  Stream<List<NotificationData>> _notificationStream(String user_id) async* {
     var postStream = FirebaseFirestore.instance
         .collection('Notifications')
         .where("receiver_id", isEqualTo: user_id)
@@ -1232,6 +1264,7 @@ class UserAuthProvider extends ChangeNotifier {
 
       // 3. Update ciblé pour ne pas écraser les stories
       await userDoc.reference.update(updateData);
+      unawaited(PushService.registerForUser(userDoc.id)); // jeton FCM de cet appareil
 
 
       haveData = true;
@@ -1299,6 +1332,7 @@ class UserAuthProvider extends ChangeNotifier {
     //  printVm("OneSignal token : ${OneSignal.User.pushSubscription.token}");
 
       loginUserData.oneIgnalUserid = OneSignal.User.pushSubscription.id;
+      unawaited(PushService.registerForUser(loginUserData.id ?? '')); // jeton FCM de cet appareil
 
       loginUserData.popularite =
           (loginUserData.abonnes! + loginUserData.likes! +
@@ -2673,6 +2707,7 @@ if(actionType == 'comment'){
               (appDefaultData.nbr_abonnes! + appDefaultData.nbr_likes! +
                   appDefaultData.nbr_loves!);
       loginUserData.oneIgnalUserid = OneSignal.User.pushSubscription.id;
+      unawaited(PushService.registerForUser(loginUserData.id ?? '')); // jeton FCM de cet appareil
 
 
 
@@ -2713,6 +2748,7 @@ if(actionType == 'comment'){
               (appDefaultData.nbr_abonnes! + appDefaultData.nbr_likes! +
                   appDefaultData.nbr_loves!);
       loginUserData.oneIgnalUserid = OneSignal.User.pushSubscription.id;
+      unawaited(PushService.registerForUser(loginUserData.id ?? '')); // jeton FCM de cet appareil
 
       loginUserData.compteTarif = loginUserData.popularite! * 80;
       await firestore.collection('Users').doc(loginUserData!.id).update(
@@ -2842,119 +2878,34 @@ if(actionType == 'comment'){
   {
     final String usedAppName = appName ?? "AfroLook"; // valeur par défaut
 
-    String oneSignalUrl = '';
-    String applogo = '';
-    String oneSignalAppId = ''; // Replace with your app ID
-    String oneSignalAuthorization = ''; // Replace with your authorization key
-    getAppData().then((app_datas) async {
-
-        printVm(
-            'app  data*** ');
-        // printVm(appDefaultData.toJson());
-        oneSignalUrl = appDefaultData.one_signal_app_url;
-        applogo = appDefaultData.app_logo;
-        oneSignalAppId = appDefaultData.one_signal_app_id; // Replace with your app ID
-        oneSignalAuthorization = appDefaultData.one_signal_api_key; // Replace with your authorization key
-        printVm(
-            'one signal url*** ');
-        printVm(oneSignalUrl);
-        printVm(
-            'state current user data  ================================================');
-
-        printVm(OneSignal.User.pushSubscription.id);
-        // Filtrer les IDs invalides avant d'envoyer à OneSignal
-        final validIds = userIds.where((id) => id.isNotEmpty && id.length > 10).toList();
-        if (validIds.isEmpty) {
-          printVm('⚠️ sendNotification: aucun ID OneSignal valide, abandon');
-          return;
-        }
-
-        final body = {
-          'contents': {'en': message},
-          'app_id': oneSignalAppId,
-
-          "include_player_ids":
-          // "include_subscription_ids":
-          validIds,
-
-          // android_accent_color reprsent the color of the heading text in the notifiction
-          "android_accent_color": "FF9976D2",
-
-          "small_icon":smallImage.length>5?smallImage: applogo,
-
-          "large_icon": smallImage.length>5?smallImage: applogo,
-
-          "headings": {"en": usedAppName},
-          //"included_segments": ["Active Users", "Inactive Users"],
-          // "custom_data": {"order_id": 123, "currency": "USD", "amount": 25},
-          "data": {"send_user_id": "${send_user_id}","recever_user_id": "${recever_user_id}", "type_notif": "${type_notif}", "post_id": "${post_id}","post_type": "${post_type}","chat_id": "${chat_id}"},
-          'name': 'Afrolook',
-        };
-
-        final response = await http.post(
-          Uri.parse(oneSignalUrl),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': "Basic $oneSignalAuthorization",
-          },
-          body: jsonEncode(body),
-        );
-
-        if (response.statusCode == 200) {
-          printVm('Notification sent successfully!');
-          printVm('sending notification: ${response.body}');
-        } else {
-          printVm('Error sending notification: ${response.statusCode}');
-          printVm('Error sending notification: ${response.body}');
-        }
-        // final body = {
-        //   'contents': {'en': message},
-        //   'app_id': oneSignalAppId,
-        //
-        //   "include_player_ids":
-        //   // "include_subscription_ids":
-        //   userIds, //tokenIdList Is the List of All the Token Id to to Whom notification must be sent.
-        //
-        //   // android_accent_color reprsent the color of the heading text in the notifiction
-        //   "android_accent_color": "FF9976D2",
-        //
-        //   "small_icon": applogo,
-        //
-        //   "large_icon": applogo,
-        //
-        //   "headings": {"en": "konami"},
-        //   //"included_segments": ["Active Users", "Inactive Users"],
-        //   "data": {"foo": "bar"},
-        //   'name': 'konami',
-        //   'custom_data': {'order_id': 123, 'Prix': '500 fcfa'},
-        // };
-        //
-        // final response = await http.post(
-        //   Uri.parse(oneSignalUrl),
-        //   headers: {
-        //     'Content-Type': 'application/json',
-        //     'Authorization': "Basic $oneSignalAuthorization",
-        //   },
-        //   body: jsonEncode(body),
-        // );
-        //
-        // if (response.statusCode == 200) {
-        //   printVm('Notification sent successfully!');
-        //   printVm('sending notification: ${response.body}');
-        //   return true;
-        // } else {
-        //   printVm('Error sending notification: ${response.statusCode}');
-        //   printVm('Error sending notification: ${response.body}');
-        //   return false;
-        //
-        // }
-
-    },);
-
-
-    //printVm(OneSignal.User.pushSubscription.id);
-
-
+    // Le serveur choisit le canal (FCM pour les appareils à jour, sinon OneSignal) et garde les clés :
+    // plus aucune clé OneSignal ni appel direct depuis le téléphone. Envoi sans attendre, comme avant.
+    final validIds = userIds.where((id) => id.isNotEmpty && id.length > 10).toSet().toList();
+    if (validIds.isEmpty) {
+      printVm('⚠️ sendNotification: aucun destinataire valide, abandon');
+      return;
+    }
+    // 200 destinataires au plus par appel (limite du serveur)
+    for (var i = 0; i < validIds.length; i += 200) {
+    unawaited(FirebaseFunctions.instance.httpsCallable('sendPushToUsers').call({
+      'oneSignalIds': validIds.sublist(i, i + 200 > validIds.length ? validIds.length : i + 200),
+      'title': usedAppName,
+      'message': message,
+      'smallImage': smallImage,
+      'data': {
+        'send_user_id': send_user_id,
+        'recever_user_id': recever_user_id,
+        'type_notif': type_notif,
+        'post_id': post_id,
+        'post_type': post_type,
+        'chat_id': chat_id,
+      },
+    }).then((r) {
+      printVm('Notification envoyée : ${r.data}');
+    }).catchError((e) {
+      printVm('❌ Erreur envoi push : $e');
+    }));
+    }
   }
 
 

@@ -15,6 +15,7 @@ import 'package:workmanager/workmanager.dart';
 import '../firebase_options.dart';
 import '../pages/component/consoleWidget.dart';
 import 'nav_cache_service.dart';
+import 'push_service.dart';
 
 // ═══════════════════════════════════════════════════════════════
 // GLOBAL
@@ -750,6 +751,12 @@ void _handleLocalNotifPayload(String? payload) {
   if (payload == null || payload.isEmpty) return;
   try {
     final data = jsonDecode(payload) as Map<String, dynamic>;
+    // Notification push (FCM) affichée pendant que l'application était ouverte
+    final push = data['push'];
+    if (push is Map) {
+      PushService.handleLocalTap(Map<String, dynamic>.from(push));
+      return;
+    }
     final type = data['type'] as String?;
     if (type == 'creator') {
       final uid = data['userId'] as String?;

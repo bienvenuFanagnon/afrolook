@@ -85,6 +85,7 @@ import 'package:afrotok/services/remote_config_service.dart';
 import 'package:afrotok/pages/component/maintenance_page.dart';
 import 'package:afrotok/services/linkService.dart';
 import 'package:afrotok/services/nav_cache_service.dart';
+import 'package:afrotok/services/push_service.dart';
 
 import 'package:afrotok/services/workManagerService.dart';
 import 'package:app_links/app_links.dart';
@@ -211,6 +212,9 @@ Future<void> main() async {
 
   if (!kIsWeb) initLocalNotifications();
 
+  // Notifications push FCM (canal principal ; OneSignal reste en secours) : écoute, affichage, jeton
+  if (!kIsWeb) unawaited(PushService.init());
+
   // Workmanager — Android uniquement (iOS : BGTaskScheduler nécessite enregistrement natif non supporté)
   if (!kIsWeb && Platform.isAndroid) {
     await Workmanager().initialize(
@@ -264,6 +268,9 @@ class _MyAppState extends State<MyApp> {
   void _initNotificationListeners() {
     if (kIsWeb) return;
 
+    // Notification FCM touchée (application en arrière-plan ou ouverte) : même relance que pour OneSignal
+    PushService.onNavigate = _navigateToSplashAndClearStack;
+
     // Listener pour les clics de notification (stocke dans cache et redémarre)
     OneSignal.Notifications.addClickListener((event) async {
       printVm("📱 [NOTIFICATION] Clic détecté");
@@ -273,47 +280,8 @@ class _MyAppState extends State<MyApp> {
       final additionalData = event.notification.additionalData;
       if (additionalData == null) return;
 
-      final typeNotif = additionalData['type_notif'] as String?;
-      final postType = additionalData['post_type'] as String? ?? '';
-      final postId = additionalData['post_id'] as String?;
-      final chatId = additionalData['chat_id'] as String?;
-      final sendUserId = additionalData['send_user_id'] as String?;
-
-      // Stocker dans le cache selon le type
-      if (postType == 'CHRONIQUE' ||
-          typeNotif == 'CHRONIQUE' ||
-          (typeNotif == 'LIKE' && postType == 'CHRONIQUE') ||
-          (typeNotif == 'COMMENT' && postType == 'CHRONIQUE') ||
-          (typeNotif == 'COMMENT_LIKE')) {
-
-        if (postId != null && postId.isNotEmpty) {
-          await NavigationCacheService().storeChroniqueNavigation(postId);
-        } else {
-          await NavigationCacheService().storePendingNavigation({'type': 'chronique_home'});
-        }
-      }
-      else if (typeNotif == NotificationType.MESSAGE.name) {
-        if (chatId != null && sendUserId != null) {
-          await NavigationCacheService().storeMessageNavigation(chatId, sendUserId);
-        }
-      }
-      else if (typeNotif == NotificationType.INVITATION.name) {
-        await NavigationCacheService().storeInvitationNavigation();
-      }
-      else if (typeNotif == NotificationType.ACCEPTINVITATION.name) {
-        await NavigationCacheService().storeAcceptInvitationNavigation();
-      }
-      else if (typeNotif == NotificationType.PARRAINAGE.name) {
-        await NavigationCacheService().storeParrainageNavigation();
-      }
-      else if (typeNotif == NotificationType.ARTICLE.name) {
-        await NavigationCacheService().storeArticleNavigation();
-      }
-      else if (typeNotif == NotificationType.POST.name || typeNotif == NotificationType.FAVORITE.name) {
-        if (postId != null && postId.isNotEmpty) {
-          await NavigationCacheService().storePostNavigation(postId, postType);
-        }
-      }
+      // Stocker dans le cache selon le type (même logique que pour les notifications FCM : services/push_service.dart)
+      await storeNavigationFromPush(Map<String, dynamic>.from(additionalData));
 
       printVm("💾 [NOTIFICATION] Données stockées dans le cache");
 

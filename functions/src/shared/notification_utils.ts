@@ -1,12 +1,14 @@
-import axios from "axios";
 import { db } from "./firebase";
+import { deliverPush, PushResult } from "./push";
 
 /**
- * Envoie une notification push via OneSignal
+ * Envoie une notification push à des personnes désignées par leur identifiant OneSignal.
+ *
+ * Nom et signature conservés pour les fonctions existantes, mais l'envoi passe maintenant par `deliverPush` (shared/push.ts) :
+ * FCM pour les personnes qui ont un jeton Firebase, OneSignal (avec coupe-circuit) pour les autres.
+ * `appId` / `apiKey` : identifiants OneSignal, utilisés seulement pour le repli OneSignal.
+ * Ne lève plus d'erreur : un échec d'envoi ne fait pas échouer l'appelant.
  */
-// Regex UUID v4 (format OneSignal : xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 export async function sendToOneSignal(
   userIds: string[],
   message: string,
@@ -15,47 +17,13 @@ export async function sendToOneSignal(
   appId: string,
   apiKey: string,
   data: any
-): Promise<any> {
-  // Filtrer les IDs invalides — OneSignal rejette tout le batch si un seul est vide/mal formé
-  const validIds = userIds.filter(id => id && UUID_REGEX.test(id));
-  if (validIds.length === 0) {
-    console.log("sendToOneSignal: aucun ID OneSignal valide, envoi annulé");
-    return { skipped: true };
-  }
-  if (validIds.length < userIds.length) {
-    console.warn(`sendToOneSignal: ${userIds.length - validIds.length} ID(s) invalide(s) ignoré(s)`);
-  }
-
-  const body = {
-    app_id: appId,
-    contents: { en: message },
-    include_player_ids: validIds,
-    headings: { en: appName },
-    small_icon: smallImage,
-    large_icon: smallImage,
-    android_accent_color: "FFD700",
-    data: data,
-  };
-
-  try {
-    const response = await axios.post(
-      "https://onesignal.com/api/v1/notifications",
-      body,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Basic ${apiKey}`,
-        },
-        timeout: 30000,
-      }
-    );
-
-    console.log(`Push envoyé à ${userIds.length} utilisateurs - Status: ${response.status}`);
-    return response.data;
-  } catch (error) {
-    console.error("Erreur OneSignal:", error);
-    throw error;
-  }
+): Promise<PushResult> {
+  const oneSignal = appId && apiKey ? { appId, apiKey } : undefined;
+  return deliverPush(
+    userIds.filter((id) => id && id.length > 5).map((oneSignalId) => ({ oneSignalId })),
+    { title: appName, message, image: smallImage, data },
+    oneSignal
+  );
 }
 
 /**

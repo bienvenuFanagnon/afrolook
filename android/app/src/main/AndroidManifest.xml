@@ -217,6 +217,14 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
+        <!-- Notifications push FCM : canal et petite icône par défaut (le serveur envoie le même canal) -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="afrolook_push" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/notification_icon" />
+
         <!-- SERVICES POUR PARTAGE D'ÉCRAN AGORA -->
         <service
             android:name="io.agora.rtc.ss.ScreenSharingService"

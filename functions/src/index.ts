@@ -12,6 +12,7 @@ export * from "./posts/interactions";
 export * from "./posts/lifecycle";
 export * from "./posts/weeklyRewards";
 export * from "./notifications/bulk";
+export * from "./notifications/sendPush";
 export * from "./emails/email_functions";
 export * from "./chat/groupNotifications";
 export * from "./contenu/contentPaie";
