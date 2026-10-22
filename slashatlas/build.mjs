@@ -11,7 +11,8 @@ import { aboutBody } from './src/about.mjs';
 import { GUIDES } from './src/guides.mjs';
 import { svg, clientIconsJs } from './src/icons.mjs';
 import { PRIORITY as PUSH_PRIORITY } from './src/cmds/femmes.mjs';
-const NEWSET = new Set(Object.values(PUSH_PRIORITY).flat()); // commandes ajoutées le 20 octobre 2026 : badge « Nouveau », rangée Nouveautés, filtre
+import { PRIORITY as FOYER_PRIORITY } from './src/cmds/foyer.mjs';
+const NEWSET = new Set([...Object.values(PUSH_PRIORITY).flat(), ...Object.values(FOYER_PRIORITY).flat()]); // commandes ajoutées le 20 octobre 2026 : badge « Nouveau », rangée Nouveautés, filtre
 const NEWL = { fr: 'Nouveau', en: 'New' };
 
 const root = path.dirname(fileURLToPath(import.meta.url));
@@ -247,6 +248,8 @@ function refPage(l) {
 // seulement si l'administration a activé la publicité (réglages lus via /api/config). Jamais sur /generer/ ni /admin/.
 const ad = (kind, l = 'fr', late = false) => `<aside class="ad ad-${kind}" data-ad="${kind}"${late ? ' data-adlate' : ''} hidden aria-label="${l === 'fr' ? 'Publicité' : 'Advertisement'}"><small>${l === 'fr' ? 'Publicité' : 'Advertisement'}</small></aside>`;
 
+// Texte cherché : sans accents ni majuscules, tirets et apostrophes comptés comme des espaces (« éponge » trouve « Éponges », « porte savon » trouve « Porte-savons »)
+const nq = (s) => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 const AIWORD = { fr: 'Généré par IA', en: 'AI-generated' };
 const BEFORE = { fr: 'Photo de départ', en: 'Starting photo' };
 const imgAlt = (c, l) => (c.noBefore ? (l === 'fr' ? `Exemple illustrant la commande ${c.code} : ${c.fr.title}` : `Example illustrating the ${c.code} command: ${c.en.title}`) : (l === 'fr' ? `Résultat de la commande ${c.code} : ${c.fr.title}` : `Result of the ${c.code} command: ${c.en.title}`));
@@ -265,7 +268,7 @@ const FAVL = { fr: 'Ajouter aux favoris', en: 'Add to favorites' };
 const favBtn = (c, l, cls = '') => `<button class="fav${cls ? ' ' + cls : ''}" type="button" data-fav="${c.slug}" aria-pressed="false" aria-label="${FAVL[l]}">${svg('heart')}</button>`;
 function card(c, l) {
   const t = c[l];
-  const search = `${c.code} ${t.title} ${catOf(c.cat)[l]} ${t.desc}`.toLowerCase();
+  const search = nq(`${c.code} ${t.title} ${catOf(c.cat)[l]} ${t.desc} ${c.kw || ''}`);
   return `<article class="card" data-slug="${c.slug}" data-search="${esc(search)}" data-cat="${c.cat}"${NEWSET.has(c.slug) ? ' data-new="1"' : ''}><a href="${P[l].cmd(c.slug)}" class="cl" aria-label="${esc(t.title)}">${poster(c, l)}</a><div class="cb"><div class="chead"><div class="code">${esc(c.code)}</div>${favBtn(c, l)}</div><h3><a href="${P[l].cmd(c.slug)}">${esc(t.title)}</a></h3><div class="meta"><span>${esc(catOf(c.cat)[l])}${c.kind === 'text' ? '' : ' · ' + c.ratio}</span>${c.steps ? `<span class="stp">${c.steps.length + 1} ${l === 'fr' ? 'étapes' : 'steps'}</span>` : ''}<span class="cnt" hidden></span></div><div class="acts">${tryBtn(c, l, 'sm')}<button class="btn gl sm" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}">${copyLabel(l)}</button></div><pre id="p-${c.slug}" hidden>${esc(fullPrompt(c, l))}</pre></div></article>`;
 }
 function bandForm(l, kind = 'request') {
@@ -795,7 +798,7 @@ fs.rmSync(dist, { recursive: true, force: true });
 // Index des commandes pour le navigateur : page Commandes (suite de la liste), favoris, « Mes commandes ». p = commande de base (celle qu'on copie).
 const IDX = {}, IDXJ = {};
 for (const l of ['fr', 'en']) {
-  IDXJ[l] = JSON.stringify(COMMANDS.map((c) => { const t = c[l], cat = catOf(c.cat)[l]; return { s: c.slug, c: c.code, t: t.title, k: cat, a: c.cat, r: c.ratio, i: c.noImage ? 0 : 1, g: 1, gk: genKind(c), m: c.kind === 'video' || c.kind === 'motion' ? 1 : 0, o: c.kind === 'text' ? 1 : 0, st: c.steps ? c.steps.length + 1 : 0, p: fullPrompt(c, l), n: t.poster, x: c.x, y: c.y, z: c.r, q: `${c.code} ${t.title} ${cat} ${t.desc}`.toLowerCase(), al: imgAlt(c, l), nw: NEWSET.has(c.slug) ? 1 : 0 }; }));
+  IDXJ[l] = JSON.stringify(COMMANDS.map((c) => { const t = c[l], cat = catOf(c.cat)[l]; return { s: c.slug, c: c.code, t: t.title, k: cat, a: c.cat, r: c.ratio, i: c.noImage ? 0 : 1, g: 1, gk: genKind(c), m: c.kind === 'video' || c.kind === 'motion' ? 1 : 0, o: c.kind === 'text' ? 1 : 0, st: c.steps ? c.steps.length + 1 : 0, p: fullPrompt(c, l), n: t.poster, x: c.x, y: c.y, z: c.r, q: nq(`${c.code} ${t.title} ${cat} ${t.desc} ${c.kw || ''}`), al: imgAlt(c, l), nw: NEWSET.has(c.slug) ? 1 : 0 }; }));
   IDX[l] = `/data/cmds-${l}.json?v=${createHash('sha1').update(IDXJ[l]).digest('hex').slice(0, 8)}`;
 }
 fs.mkdirSync(dist, { recursive: true });

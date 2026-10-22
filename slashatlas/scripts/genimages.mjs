@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { COMMANDS } from '../src/data.mjs';
 import { SRC as SRC_FEMMES } from '../src/cmds/femmes.mjs';
+import { SRC as SRC_FOYER } from '../src/cmds/foyer.mjs';
 
 const MODEL = process.env.GEMINI_IMAGE_MODEL || 'gemini-3.1-flash-image';
 const KEY = process.env.GEMINI_API_KEY;
@@ -36,6 +37,8 @@ const SRC = {
 
 // photos de départ des commandes « produits que les femmes vendent le plus » (src/cmds/femmes.mjs)
 for (const [k, v] of Object.entries(SRC_FEMMES)) if (!SRC[k]) SRC[k] = P + v;
+// photos de départ des produits du quotidien et des styles de décoration (src/cmds/foyer.mjs)
+for (const [k, v] of Object.entries(SRC_FOYER)) if (!SRC[k]) SRC[k] = P + v;
 
 async function gen(parts, ratio) {
   const body = { contents: [{ parts }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: ratio } } };

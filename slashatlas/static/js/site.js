@@ -161,17 +161,21 @@
   });
 
   // ── Recherche et filtre ──
+  // Texte sans accents ni majuscules, tirets et apostrophes comptés comme des espaces (même règle que build.mjs) ; chaque mot tapé doit se retrouver, le pluriel est ignoré
+  var nq = function (s) { return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim(); };
   var q = $('#q');
   if (q) {
     var cat = '', list = $$('#list .card:not(.card-ad)'), none = $('#none'), more = $('#more'), STEP = 24, limit = STEP;
     window.saReorder = function () { list = $$('#list .card:not(.card-ad)'); apply(); };
     var apply = function (keep) {
       if (keep !== true) limit = STEP;
-      var v = q.value.trim().toLowerCase(), c = 0, shown = 0;
+      var toks = nq(q.value).split(' ').filter(Boolean), big = toks.filter(function (w) { return w.length > 2; });
+      var words = (big.length ? big : toks).map(function (w) { return w.length > 3 ? w.replace(/[sx]$/, '') : w; }), c = 0, shown = 0;
+      var v = words.length;
       var filtering = !!(cat || v);
       $$('#list .card-ad').forEach(function (a) { a.hidden = filtering; });
       list.forEach(function (card) {
-        var hit = (!cat || (cat === '__new' ? card.dataset.new === '1' : card.dataset.cat === cat)) && (!v || card.dataset.search.indexOf(v) > -1);
+        var hit = (!cat || (cat === '__new' ? card.dataset.new === '1' : card.dataset.cat === cat)) && (!v || words.every(function (w) { return (' ' + card.dataset.search).indexOf(' ' + w) > -1; })); // chaque mot tapé est le début d'un mot de la commande
         if (hit) { c++; if (shown < limit) { shown++; card.hidden = false; } else card.hidden = true; } else card.hidden = true;
       });
       if (none) none.hidden = c > 0;
