@@ -268,7 +268,8 @@ describe("réglages", () => {
   test("valeurs prudentes par défaut ; génération automatique coupée tant qu'elle n'est pas activée", () => {
     const c = readPipelineConfig(undefined);
     expect(c).toMatchObject({ enabled: true, pipelineEnabled: false, dailyCap: 60, perRun: 5, perKeyDaily: 2 });
-    expect(c.countries).toEqual(["TG", "BJ", "CI", "SN", "CM", "BF", "MG", "CG", "CD", "FR"]);
+    expect(c.countries).toHaveLength(30);
+    expect(c.countries.slice(0, 9)).toEqual(["TG", "BJ", "CI", "SN", "CM", "BF", "MG", "CG", "CD"]);
     expect(readPipelineConfig({ pipelineEnabled: true, countries: ["gh", "ZZ", "ng"], perRun: 99 })).toMatchObject({ pipelineEnabled: true, countries: ["GH", "NG"], perRun: 5 });
   });
   test("sources : actives par défaut, réglages par source, sources ajoutées validées", () => {

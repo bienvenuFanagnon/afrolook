@@ -47,7 +47,10 @@ class NewsService {
       _cfg = NewsConfig(
         enabled: d['enabled'] != false,
         feedEnabled: d['feedEnabled'] == true,
-        countries: ((d['countries'] as List?) ?? const ['TG', 'BJ', 'CI', 'SN', 'CM', 'BF', 'MG', 'CG', 'CD', 'FR']).map((e) => e.toString().toUpperCase()).toList(),
+        countries: ((d['countries'] as List?) ?? const [
+            'TG', 'BJ', 'CI', 'SN', 'CM', 'BF', 'MG', 'CG', 'CD', 'ML', 'NE', 'GN', 'GA', 'GH', 'NG', 'TD', 'ZM', 'KE', 'ZA', //
+            'FR', 'BE', 'CH', 'GB', 'DE', 'ES', 'US', 'CA', 'BR', 'HT', 'MX',
+          ]).map((e) => e.toString().toUpperCase()).toList(),
       );
     } catch (_) {
       _cfg = const NewsConfig();

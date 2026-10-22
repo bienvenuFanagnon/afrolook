@@ -3,8 +3,8 @@ jest.mock("firebase-admin/firestore", () => ({ FieldValue: { increment: (n: numb
 jest.mock("firebase-functions/params", () => ({ defineSecret: () => ({ value: () => "[]" }) }));
 
 import { extractArticleText, fetchArticleText } from "../pagePreview";
-import { RawItem, Topic } from "../cluster";
-import { deepRead } from "../pipeline";
+import { RawItem, Topic, detectCountry, scopeOf } from "../cluster";
+import { DEFAULT_COUNTRIES, deepRead } from "../pipeline";
 import { buildMessages } from "../summarize";
 import { validateSummary } from "../validate";
 
@@ -131,5 +131,26 @@ describe("article de qualité média", () => {
     const rc = validateSummary(JSON.stringify(copied), ctx);
     expect(rc.ok).toBe(false);
     if (!rc.ok) expect(rc.errors.join(" ")).toContain("texte_recopie");
+  });
+});
+
+describe("pays suivis par défaut", () => {
+  test("30 pays : Afrique de l'Ouest, centrale, de l'Est et australe, Europe, Amériques, sans doublon", () => {
+    expect(DEFAULT_COUNTRIES).toHaveLength(30);
+    expect(new Set(DEFAULT_COUNTRIES).size).toBe(30);
+    for (const c of ["ML", "NE", "GN", "GA", "GH", "NG", "TD", "ZM", "KE", "ZA", "BE", "CH", "GB", "DE", "ES", "US", "CA", "BR", "HT", "MX"]) expect(DEFAULT_COUNTRIES).toContain(c);
+  });
+  test("chaque pays suivi est reconnu dans un titre", () => {
+    const cases: Array<[string, string]> = [
+      ["ML", "Le Mali renforce la sécurité autour de Bamako"], ["ZM", "Lusaka : la Zambie annonce un nouveau budget"], ["DE", "L'Allemagne et Berlin fêtent un accord"],
+      ["ES", "Madrid : l'Espagne bat le record de touristes"], ["BR", "Le Brésil lance un plan pour l'Amazonie"], ["MX", "Le Mexique et la ville de Mexico ouvrent un nouveau métro"],
+      ["HT", "Haïti : Port-au-Prince attend l'aide humanitaire"], ["KE", "Nairobi : le Kenya vote une nouvelle loi"], ["GH", "Accra : le Ghana lance une monnaie numérique"],
+    ];
+    for (const [code, title] of cases) expect(detectCountry(title, "")).toBe(code);
+  });
+  test("un pays suivi donne un article au niveau du pays, un pays non suivi retombe au continent ou au monde", () => {
+    expect(scopeOf("DE", DEFAULT_COUNTRIES, "world")).toEqual({ level: "country", country: "DE" });
+    expect(scopeOf("IN", DEFAULT_COUNTRIES, "world")).toEqual({ level: "continent", country: null });
+    expect(scopeOf(null, DEFAULT_COUNTRIES, "world")).toEqual({ level: "world", country: null });
   });
 });

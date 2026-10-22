@@ -8,6 +8,7 @@ const Map<String, String> kCountryNamesFr = {
   'ST': 'Sao Tomé-et-Principe', 'SN': 'Sénégal', 'SC': 'Seychelles', 'SL': 'Sierra Leone', 'SO': 'Somalie', 'ZA': 'Afrique du Sud', 'SS': 'Soudan du Sud',
   'SD': 'Soudan', 'TZ': 'Tanzanie', 'TG': 'Togo', 'TN': 'Tunisie', 'UG': 'Ouganda', 'ZM': 'Zambie', 'ZW': 'Zimbabwe',
   'FR': 'France', 'BE': 'Belgique', 'CH': 'Suisse', 'CA': 'Canada', 'US': 'États-Unis', 'GB': 'Royaume-Uni',
+  'DE': 'Allemagne', 'ES': 'Espagne', 'BR': 'Brésil', 'MX': 'Mexique', 'HT': 'Haïti',
 };
 
 /// Nom du pays, ou son code s'il n'est pas dans la liste.

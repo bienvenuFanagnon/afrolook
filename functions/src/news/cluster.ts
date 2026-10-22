@@ -54,7 +54,7 @@ const PHRASES: Array<[string, string]> = [
   ["soudan du sud", "soudandusud"], ["south sudan", "soudandusud"], ["cap vert", "capvert"], ["cape verde", "capvert"], ["sao tome", "saotome"], ["sierra leone", "sierraleone"],
   ["burkina faso", "burkina"], ["porto novo", "portonovo"], ["le caire", "lecaire"], ["addis abeba", "addisabeba"], ["addis ababa", "addisabeba"], ["republique centrafricaine", "centrafrique"],
   ["ile maurice", "ilemaurice"], ["dar es salaam", "daressalaam"], ["n djamena", "ndjamena"], ["port louis", "portlouis"],
-  ["etats unis", "etatsunis"], ["united states", "etatsunis"], ["royaume uni", "royaumeuni"], ["united kingdom", "royaumeuni"],
+  ["port au prince", "portauprince"], ["etats unis", "etatsunis"], ["united states", "etatsunis"], ["royaume uni", "royaumeuni"], ["united kingdom", "royaumeuni"],
 ];
 
 /** Mots-clés (sans accent) de chaque pays : tous les pays africains, plus la France et quelques pays d'autres continents ; nom, adjectif et capitale, en français et en anglais. */
@@ -79,6 +79,9 @@ export const COUNTRY_KEYWORDS: Record<string, string[]> = {
   // hors d'Afrique : peuvent être choisis comme pays suivis
   FR: ["france", "francais", "francaise", "paris", "hexagone"], BE: ["belgique", "belge", "belges", "bruxelles"], CH: ["suisse", "suisses", "berne", "geneve"],
   CA: ["canada", "canadien", "canadienne", "ottawa", "montreal", "quebec"], US: ["etatsunis", "americain", "americaine", "washington", "usa"], GB: ["royaumeuni", "britannique", "londres", "london"],
+  DE: ["allemagne", "allemand", "allemande", "berlin", "germany", "german"], ES: ["espagne", "espagnol", "espagnole", "madrid", "barcelone", "spain", "spanish"],
+  BR: ["bresil", "bresilien", "bresilienne", "brasilia", "brazil", "brazilian"], MX: ["mexique", "mexicain", "mexicaine", "mexico", "mexican"],
+  HT: ["haiti", "haitien", "haitienne", "portauprince"],
 };
 
 const KEYWORD_TO_COUNTRY = new Map<string, string>();

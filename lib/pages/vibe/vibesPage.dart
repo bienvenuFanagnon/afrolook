@@ -67,6 +67,8 @@ import '../coins/coin_recharge_screen.dart';
 import '../coins/post_gifts_list.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../services/news/news_service.dart';
+import '../../widgets/feed/sections/news_full_page.dart';
 
 const _vibeBlack = Color(0xFF000000);
 const _vibeGreen = Color(0xFF2ECC71);
@@ -182,9 +184,25 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
     }
 
     _initializeFeed();
+    _initNews();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showFirstScrollModalIfNeeded();
     });
+  }
+
+  /// Les actualités s'intercalent de temps en temps dans le fil (une page entière tous les 7 vibes), seulement si elles sont activées et qu'il y en a.
+  bool _newsOn = false;
+
+  Future<void> _initNews() async {
+    try {
+      final cfg = await NewsService.instance.loadConfig();
+      if (!cfg.enabled || !cfg.feedEnabled) return;
+      final items = await NewsService.instance.feedFor(authProvider.loginUserData.countryData?['countryCode']);
+      if (items.isEmpty || !mounted) return;
+      _newsOn = true;
+      // le fil déjà construit est complété sans déplacer les pages proches de celle qu'on regarde
+      if (_feedItems.isNotEmpty && _currentPage < 3) setState(_rebuildFeedItems);
+    } catch (_) {}
   }
 
   Future<void> _initSharedPreferences() async {
@@ -592,11 +610,17 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
         AbonnementUtils.isAdmin(authProvider.loginUserData?.role);
     _feedItems.clear();
     int adIdx = 0;
+    int newsIdx = 0;
     for (int i = 0; i < mixedPosts.length; i++) {
       _feedItems.add(mixedPosts[i]);
       if (!skipAds && (i + 1) % 3 == 0 && i != mixedPosts.length - 1 && adIdx < ads.length) {
         _feedItems.add(ads[adIdx]);
         adIdx++;
+      }
+      // une actualité en page entière après le 4e vibe, puis tous les 7 (jamais en dernière page)
+      if (_newsOn && (i + 1) % 7 == 4 && i != mixedPosts.length - 1) {
+        _feedItems.add(_VibeNewsSlot(newsIdx));
+        newsIdx++;
       }
     }
   }
@@ -1336,6 +1360,19 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
             itemBuilder: (context, index) {
               final item = _feedItems[index];
               if (item is Post) return _buildVideoPage(item);
+              if (item is _VibeNewsSlot) {
+                return NewsFullPage(
+                  key: ValueKey('vibe_news_${item.n}'),
+                  slotKey: 'vibe_${item.n}',
+                  bottomInset: 56,
+                  onEmpty: () {
+                    // aucun article disponible : on passe à la page suivante (ou on reste sur la précédente si c'est la dernière)
+                    if (_pageController.hasClients && _pageController.page?.round() == index && index + 1 < _feedItems.length) {
+                      _pageController.nextPage(duration: const Duration(milliseconds: 250), curve: Curves.ease);
+                    }
+                  },
+                );
+              }
               if (item is Map<String, dynamic>) {
                 return AdPostWidget(adData: item, width: MediaQuery.of(context).size.width, height: MediaQuery.of(context).size.height, onComplete: () {
                   if (_pageController.hasClients && _pageController.page?.toInt() == index) {
@@ -1352,7 +1389,11 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
         if (_showRewardedAd)
           RewardedAdWidget(
             key: _rewardedAdKey,
-            onUserEarnedReward: (amount, name) async => await _onSupportAdRewarded(_vibePosts[_currentPage]),
+            onUserEarnedReward: (amount, name) async {
+              // la page courante vient de _feedItems (qui contient aussi des pubs et des actualités), pas de _vibePosts
+              final current = _currentPage < _feedItems.length ? _feedItems[_currentPage] : null;
+              if (current is Post) await _onSupportAdRewarded(current);
+            },
             onAdDismissed: () => setState(() { _showRewardedAd = false; _isSupporting = false; }),
             child: const SizedBox.shrink(),
           ),
@@ -1369,6 +1410,12 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
     }
     return _videoStack;
   }
+}
+
+/// Emplacement d'une actualité en page entière dans le fil Vibe.
+class _VibeNewsSlot {
+  final int n;
+  const _VibeNewsSlot(this.n);
 }
 
 class FlyingHeart {

@@ -114,7 +114,15 @@ import '../postComments.dart';
 import '../user/otherUser/otherUser.dart';
 import '../userPosts/video_preload_manager.dart';
 import 'chroniqueform.dart';
+import '../../services/news/news_service.dart';
+import '../../widgets/feed/sections/news_full_page.dart';
 import 'package:audioplayers/audioplayers.dart';
+
+/// Emplacement d'une actualité en page entière entre deux chroniques.
+class _NewsSlot {
+  const _NewsSlot(this.n);
+  final int n;
+}
 
 /// Emplacement AdMob entre deux chroniques (grand format 300×250). [fallback] : pub Afrolook montrée si AdMob ne charge pas.
 class _AdmobSlot {
@@ -197,6 +205,20 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
   Map<String, int> _likesCountMap = {};
 
 
+  // Actualités en page entière entre les chroniques (après la 3e, puis toutes les 5, 3 au plus par ouverture), si elles sont activées et disponibles
+  bool _newsOn = false;
+  bool _showingNews = false;
+  static const int _maxNewsPerSession = 3;
+
+  Future<void> _initNews() async {
+    try {
+      final cfg = await NewsService.instance.loadConfig();
+      if (!cfg.enabled || !cfg.feedEnabled) return;
+      final items = await NewsService.instance.feedFor(authProvider.loginUserData.countryData?['countryCode']);
+      if (items.isNotEmpty && mounted) setState(() => _newsOn = true);
+    } catch (_) {}
+  }
+
   // État pour la slide pub courante
   bool _isShowingAd = false;
   Advertisement? _currentDisplayAd;
@@ -213,6 +235,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
     _initializeLikesData();
     _loadInitialChroniques();
     _loadActiveAds();
+    _initNews();
 
     _heartAnimationController = AnimationController(
       duration: Duration(milliseconds: 1500),
@@ -1005,21 +1028,28 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
     final ads = _shuffledAds.isNotEmpty ? _shuffledAds : _activeAds;
     final user = authProvider.loginUserData;
     final admob = AdGate.canShowType(user, 'banner');
-    if (ads.isEmpty && !admob) return _allChroniques;
+    if (ads.isEmpty && !admob && !_newsOn) return _allChroniques;
     final result = <dynamic>[];
     final n = _allChroniques.length;
     int adCursor = 0;
     int slotOrdinal = 0;
+    int newsOrdinal = 0;
     for (int i = 0; i < n; i++) {
       result.add(_allChroniques[i]);
       final seen = i + 1; // chroniques regardées jusqu'ici
       final isAdSlot = n == 1 || seen == 2 || (seen > 2 && (seen - 2) % 4 == 0);
-      if (!isAdSlot || slotOrdinal + adCursor >= _maxAdsPerSession) continue;
-      if (admob) {
-        result.add(_AdmobSlot(slotOrdinal, ads.isEmpty ? null : ads[slotOrdinal % ads.length]));
-        slotOrdinal++;
-      } else if (adCursor < ads.length) {
-        result.add(ads[adCursor++]);
+      if (isAdSlot && slotOrdinal + adCursor < _maxAdsPerSession) {
+        if (admob) {
+          result.add(_AdmobSlot(slotOrdinal, ads.isEmpty ? null : ads[slotOrdinal % ads.length]));
+          slotOrdinal++;
+        } else if (adCursor < ads.length) {
+          result.add(ads[adCursor++]);
+        }
+      }
+      // actualité en page entière : après la 3e chronique, puis toutes les 5 (jamais en dernière page)
+      if (_newsOn && newsOrdinal < _maxNewsPerSession && seen >= 3 && (seen - 3) % 5 == 0 && i != n - 1) {
+        result.add(_NewsSlot(newsOrdinal));
+        newsOrdinal++;
       }
     }
     return result;
@@ -1036,7 +1066,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
   bool _isVirtualAd(int virtualIndex) {
     if (virtualIndex < 0 || virtualIndex >= _displayItems.length) return false;
     final it = _displayItems[virtualIndex];
-    return it is Advertisement || it is _AdmobSlot;
+    return it is Advertisement || it is _AdmobSlot || it is _NewsSlot; // _NewsSlot : page entière d'actualité, traitée comme une pause entre chroniques
   }
 
   /// Slides AdMob dont le chargement a échoué (par ordinal) : elles montrent la pub de repli ou sont sautées.
@@ -1581,11 +1611,19 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
                   unawaited(_stopMusic());
                   final item = _displayItems[virtualIndex];
                   // La pub avance toute seule, comme une chronique (5 s ; une vidéo : sa durée, voir _initializeAdVideo)
-                  _startAdTimer(_adImageMs);
-                  if (item is _AdmobSlot) {
+                  _startAdTimer(item is _NewsSlot ? 9000 : _adImageMs); // une actualité reste plus longtemps (temps de lire)
+                  if (item is _NewsSlot) {
                     _stopAdVideo();
                     setState(() {
                       _isShowingAd = true;
+                      _showingNews = true;
+                      _currentDisplayAd = null;
+                    });
+                  } else if (item is _AdmobSlot) {
+                    _stopAdVideo();
+                    setState(() {
+                      _isShowingAd = true;
+                      _showingNews = false;
                       _currentDisplayAd = null;
                     });
                   } else if (item is Advertisement) {
@@ -1594,6 +1632,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
                     final uid = Provider.of<UserAuthProvider>(context, listen: false).loginUserData.id;
                     setState(() {
                       _isShowingAd = true;
+                      _showingNews = false;
                       _currentDisplayAd = item;
                       _adPostLiked = adPost?.users_love_id?.contains(uid) ?? false;
                       _adPostLikesCount = adPost?.loves ?? 0;
@@ -1606,6 +1645,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
                     setState(() {
                       _currentPage = chroniqueIdx;
                       _isShowingAd = false;
+                      _showingNews = false;
                       _currentDisplayAd = null;
                     });
                   }
@@ -1619,6 +1659,17 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
               },
               itemBuilder: (context, index) {
                 final item = _displayItems[index];
+                if (item is _NewsSlot) {
+                  return NewsFullPage(
+                    key: ValueKey('chronique_news_${item.n}'),
+                    slotKey: 'chronique_${item.n}',
+                    onEmpty: _goToNextStory, // aucun article disponible : on passe tout de suite à la suite
+                    onOpenStart: () => _sheetOpen++, // le minuteur attend pendant la lecture de l'article ou d'un panneau
+                    onOpenEnd: () {
+                      if (_sheetOpen > 0) _sheetOpen--;
+                    },
+                  );
+                }
                 if (item is _AdmobSlot) {
                   return _buildAdmobSlide(item);
                 }
@@ -1670,7 +1721,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
       left: 12,
       right: 12,
       child: Row(children: [
-        const Text('Publicité', style: TextStyle(color: Colors.white70, fontSize: 10.5, fontWeight: FontWeight.w700)),
+        Text(_showingNews ? 'Actualité' : 'Publicité', style: const TextStyle(color: Colors.white70, fontSize: 10.5, fontWeight: FontWeight.w700)),
         const SizedBox(width: 8),
         Expanded(
           child: ClipRRect(

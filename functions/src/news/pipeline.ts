@@ -22,7 +22,12 @@ import { summarizeTopic } from "./summarize";
  *  - quota Cloudflare atteint : le passage s'arrête ; chaque passage est écrit dans le journal de l'administration.
  */
 /** Pays suivis au départ : Togo, Bénin, Côte d'Ivoire, Sénégal, Cameroun, Burkina Faso, Madagascar, Congo, RD Congo, France. */
-export const DEFAULT_COUNTRIES = ["TG", "BJ", "CI", "SN", "CM", "BF", "MG", "CG", "CD", "FR"];
+export const DEFAULT_COUNTRIES = [
+  "TG", "BJ", "CI", "SN", "CM", "BF", "MG", "CG", "CD", // Afrique : départ
+  "ML", "NE", "GN", "GA", "GH", "NG", "TD", "ZM", "KE", "ZA", // Afrique de l'Ouest, centrale, de l'Est et australe
+  "FR", "BE", "CH", "GB", "DE", "ES", // Europe
+  "US", "CA", "BR", "HT", "MX", // Amériques
+];
 const LOCK_MS = 9 * 60 * 1000;
 const PER_KEY_RUN = 1;
 const MAX_RECENT_TITLES = 300;
