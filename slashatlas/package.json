@@ -8,7 +8,7 @@
     "build": "node build.mjs",
     "check": "node check.mjs",
     "stats": "node scripts/stats.mjs",
-    "deploy": "node build.mjs && node check.mjs && firebase deploy --only hosting,functions:slashatlas --project afrolooki"
+    "deploy": "node build.mjs && node check.mjs && firebase deploy --only hosting,functions:slashatlas --project slashatlas-studio"
   },
   "devDependencies": {
     "jimp": "^1.6.1",
