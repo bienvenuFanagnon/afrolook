@@ -57,9 +57,11 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
       _views = a?.views ?? 0;
     });
     if (a == null) return;
-    NewsService.instance.recordView(a);
+    // déjà comptée si la carte du fil a été vue : le compteur n'augmente alors pas une seconde fois
+    NewsService.instance.recordView(a).then((counted) {
+      if (counted && mounted) setState(() => _views += 1);
+    });
     AdmobService.warmUpInterstitial(context.read<UserAuthProvider>().loginUserData); // prête pour l'ouverture d'une source
-    if (uid != null && !a.viewedBy.contains(uid) && mounted) setState(() => _views += 1);
     try {
       final db = FirebaseFirestore.instance;
       final res = await Future.wait([

@@ -36,6 +36,7 @@ class NewsService {
   DateTime? _feedAt;
   final Map<String, String> _slotItem = {}; // emplacement du fil → article (stable pendant la session, même si la carte est recréée)
   final Set<String> _shown = {};
+  final Set<String> _viewed = {}; // articles dont la vue a déjà été comptée pendant cette session
   final Map<String, _CachedArticle> _articles = {}; // articles déjà lus : une carte recréée en défilant ne relit pas le document
 
   Future<NewsConfig> loadConfig() async {
@@ -203,10 +204,11 @@ class NewsService {
     }
   }
 
-  /// Compte une vue par personne et par article (la première ouverture de la page de détail).
-  Future<void> recordView(NewsArticle a) async {
+  /// Compte une vue par personne et par article : la première fois que la carte est visible dans le fil, qu'on aime l'article depuis le fil
+  /// ou qu'on ouvre sa page de détail (selon ce qui arrive en premier). Retourne true si une vue vient d'être comptée.
+  Future<bool> recordView(NewsArticle a) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null || a.viewedBy.contains(uid)) return;
+    if (uid == null || a.viewedBy.contains(uid) || !_viewed.add(a.id)) return false; // _viewed : déjà compté pendant cette session
     try {
       await FirebaseFirestore.instance.collection('Posts').doc(a.id).update({
         'vues': FieldValue.increment(1),
@@ -214,7 +216,11 @@ class NewsService {
         'totalInteractions': FieldValue.increment(1),
         'users_vue_id': FieldValue.arrayUnion([uid]),
       });
-    } catch (_) {}
+      return true;
+    } catch (_) {
+      _viewed.remove(a.id); // l'écriture a échoué : on réessaiera à la prochaine occasion
+      return false;
+    }
   }
 
   /// J'aime (gratuit sur les articles). Retourne false en cas d'échec.

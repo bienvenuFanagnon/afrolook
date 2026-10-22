@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 
 import '../../../l10n/tr.dart';
 import '../../../models/news_article.dart';
@@ -35,11 +38,35 @@ class _NewsFeedCardState extends State<NewsFeedCard> {
   bool _hidden = false;
   bool _liked = false;
   int _loves = 0;
+  bool _extraView = false; // la vue de cette personne vient d'être comptée : le compteur affiché monte de 1
+  bool _visible = false;
+  Timer? _viewTimer;
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _viewTimer?.cancel();
+    super.dispose();
+  }
+
+  int get _views => (_article?.views ?? 0) + (_extraView ? 1 : 0);
+
+  /// Une vue = la carte est visible à l'écran (au moins la moitié) pendant 1 seconde. Comptée une fois par personne et par article.
+  void _onVisibility(VisibilityInfo info) {
+    _visible = info.visibleFraction >= 0.5;
+    _viewTimer?.cancel();
+    if (_visible) _viewTimer = Timer(const Duration(seconds: 1), _countView);
+  }
+
+  Future<void> _countView() async {
+    final a = _article;
+    if (!mounted || !_visible || a == null || _extraView) return;
+    if (await NewsService.instance.recordView(a) && mounted) setState(() => _extraView = true);
   }
 
   Future<void> _load() async {
@@ -56,6 +83,7 @@ class _NewsFeedCardState extends State<NewsFeedCard> {
         _loves = a?.loves ?? 0;
         _ready = true;
       });
+      if (_visible) _viewTimer = Timer(const Duration(seconds: 1), _countView);
       return;
     }
     final cfg = await svc.loadConfig();
@@ -79,6 +107,7 @@ class _NewsFeedCardState extends State<NewsFeedCard> {
       _liked = a.lovedByUser(user.id);
       _loves = a.loves;
     });
+    if (_visible) _viewTimer = Timer(const Duration(seconds: 1), _countView); // carte déjà à l'écran avant l'arrivée de l'article
   }
 
   Future<void> _open() async {
@@ -94,6 +123,9 @@ class _NewsFeedCardState extends State<NewsFeedCard> {
       _liked = true;
       _loves += 1;
     });
+    _viewTimer?.cancel();
+    _visible = true; // un j'aime depuis le fil prouve que la carte est vue : la vue est comptée tout de suite
+    _countView();
     final ok = await NewsService.instance.like(a.id);
     if (!ok && mounted) {
       setState(() {
@@ -141,17 +173,21 @@ class _NewsFeedCardState extends State<NewsFeedCard> {
       default:
         body = _lead(c, item);
     }
-    return GestureDetector(
-      onTap: _open,
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: c.surface,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: c.border),
+    return VisibilityDetector(
+      key: Key('news-card-${widget.slotKey}-${item.id}'),
+      onVisibilityChanged: _onVisibility,
+      child: GestureDetector(
+        onTap: _open,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: c.surface,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: c.border),
+          ),
+          child: body,
         ),
-        child: body,
       ),
     );
   }
@@ -224,7 +260,7 @@ class _NewsFeedCardState extends State<NewsFeedCard> {
   Widget _stats(AppColors c) {
     final a = _article;
     return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-      _stat(c, Icons.visibility_outlined, newsCount(a?.views ?? 0), null, c.textSecondary),
+      _stat(c, Icons.visibility_outlined, newsCount(_views), null, c.textSecondary),
       _stat(c, _liked ? Icons.favorite_rounded : Icons.favorite_border_rounded, newsCount(_loves), _like, _liked ? c.danger : c.textSecondary),
       _stat(c, Icons.chat_bubble_outline_rounded, newsCount(a?.comments ?? 0), a == null ? null : () => NewsActions.comments(context, a), c.textSecondary),
       _stat(c, Icons.card_giftcard_rounded, context.tr('Cadeau'), a == null ? null : () => NewsActions.gift(context, a), c.warning),
@@ -370,7 +406,7 @@ class _NewsFeedCardState extends State<NewsFeedCard> {
                   child: Row(children: [
                     Icon(Icons.visibility_outlined, size: 15, color: c.textSecondary),
                     const SizedBox(width: 3),
-                    Text(newsCount(_article?.views ?? 0), style: TextStyle(color: c.textSecondary, fontSize: 11.5, fontWeight: FontWeight.w600)),
+                    Text(newsCount(_views), style: TextStyle(color: c.textSecondary, fontSize: 11.5, fontWeight: FontWeight.w600)),
                     const SizedBox(width: 12),
                     InkWell(
                       onTap: _like,
