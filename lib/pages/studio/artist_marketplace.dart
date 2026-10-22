@@ -50,6 +50,7 @@ import '../music/music_page.dart';
 import '../../services/music_queue.dart';
 import '../../widgets/music/music_overlay.dart';
 import '../../widgets/music/streams_text.dart';
+import '../../widgets/music/music_like.dart';
 import '../../widgets/music/vinyl.dart';
 import '../../services/stream_counts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -84,6 +85,7 @@ class ArtistSound {
   final int saleCount;
   final int previewSec; // durée de l'extrait gratuit (selon la durée du titre ; 30 pour les anciens sons)
   final int streamCount; // écoutes comptées (30 s), comme les « streams » d'une plateforme de musique
+  final int likeCount; // j'aime (un par personne, compté par le serveur)
   final int saleEarnings; // pièces gagnées sur les ventes du titre
   final int useEarnings; // pièces gagnées quand le son est utilisé dans un post
   final Object? processed; // true | 'error' | null (analyse du serveur)
@@ -117,6 +119,7 @@ class ArtistSound {
     this.saleCount = 0,
     this.previewSec = 30,
     this.streamCount = 0,
+    this.likeCount = 0,
     this.saleEarnings = 0,
     this.useEarnings = 0,
     this.processed,
@@ -166,6 +169,7 @@ class ArtistSound {
       saleCount: (map['saleCount'] as num?)?.toInt() ?? 0,
       previewSec: ((map['previewSec'] as num?)?.toInt() ?? 30).clamp(5, 60),
       streamCount: (map['streamCount'] as num?)?.toInt() ?? 0,
+      likeCount: (map['likeCount'] as num?)?.toInt() ?? 0,
       saleEarnings: (map['saleEarnings'] as num?)?.toInt() ?? 0,
       useEarnings: (map['useEarnings'] as num?)?.toInt() ?? 0,
       processed: map['processed'],
@@ -787,6 +791,8 @@ class _PostSoundCreditState extends State<PostSoundCredit> {
                 if (t != null) ...[
                   const SizedBox(width: 6),
                   StreamsText(track: t, color: widget.dark ? Colors.white70 : c.primary, fontSize: 10.5),
+                  const SizedBox(width: 4),
+                  MusicLikeButton(track: t, color: widget.dark ? Colors.white70 : c.primary, fontSize: 10.5),
                 ],
                 Icon(Icons.chevron_right_rounded, size: 15, color: widget.dark ? Colors.white : c.primary),
               ]),
@@ -939,7 +945,7 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
           const SizedBox(height: 4),
           Text('par @${s.userPseudo}${s.genre != null && s.genre!.isNotEmpty ? ' · ${s.genre}' : ''}', textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary, fontSize: 13)),
           const SizedBox(height: 4),
-          Center(child: StreamsText(track: _track, color: c.textSecondary, fontSize: 12.5, weight: FontWeight.w700)),
+          Center(child: Row(mainAxisSize: MainAxisSize.min, children: [StreamsText(track: _track, color: c.textSecondary, fontSize: 12.5, weight: FontWeight.w700), const SizedBox(width: 14), MusicLikeButton(track: _track, color: c.textSecondary, fontSize: 12.5, weight: FontWeight.w700)])),
           const SizedBox(height: 10),
           Wrap(alignment: WrapAlignment.center, spacing: 8, children: [
             _pricingBadge(s, c),
@@ -1004,6 +1010,8 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
           ],
           Row(children: [
             Expanded(child: ValueListenableBuilder<Map<String, int>>(valueListenable: StreamCounts.counts, builder: (_, __, ___) => _Stat(label: 'Écoutes', value: StreamCounts.fmt(StreamCounts.of(_track)), c: c))),
+            const SizedBox(width: 10),
+            Expanded(child: ValueListenableBuilder<Map<String, int>>(valueListenable: StreamCounts.likes, builder: (_, __, ___) => _Stat(label: 'J’aime', value: StreamCounts.fmt(StreamCounts.likesOf(_track)), c: c))),
             const SizedBox(width: 10),
             Expanded(child: _Stat(label: 'Posts créés', value: '${s.postCount}', c: c)),
             const SizedBox(width: 10),

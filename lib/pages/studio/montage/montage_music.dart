@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import '../../../services/music_queue.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/music/streams_text.dart';
+import '../../../widgets/music/music_like.dart';
 import '../artist_marketplace.dart';
 import '../../../utils/media_cdn.dart';
 import '../artist_sound_common.dart';
@@ -354,7 +355,7 @@ class _MusicSheetState extends State<_MusicSheet> {
                     child: Text(s.isFree ? 'Gratuit' : '🪙 ${s.unitPrice}', style: TextStyle(color: s.isFree ? const Color(0xFF2ECC71) : const Color(0xFFFFD400), fontSize: 11.5, fontWeight: FontWeight.w800)),
                   ),
                   const SizedBox(height: 3),
-                  StreamsText(track: MusicTrack.fromSound(s), color: _c.textSecondary, fontSize: 10),
+                  Row(mainAxisSize: MainAxisSize.min, children: [Flexible(child: StreamsText(track: MusicTrack.fromSound(s), color: _c.textSecondary, fontSize: 10)), const SizedBox(width: 6), Flexible(child: MusicLikeButton(track: MusicTrack.fromSound(s), color: _c.textSecondary, fontSize: 10))]),
                 ]),
               );
             }),

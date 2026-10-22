@@ -15,12 +15,23 @@ class StreamCounts {
   /// Écoutes connues, par clé de titre (`music_artist:id`, `music_free:id`).
   static final ValueNotifier<Map<String, int>> counts = ValueNotifier<Map<String, int>>(const {});
 
+  /// J'aime connus, par clé de titre : mêmes sources que les écoutes (le document du son, ou MusicStudioStats pour les musiques gratuites).
+  static final ValueNotifier<Map<String, int>> likes = ValueNotifier<Map<String, int>>(const {});
+
   static final Map<String, int> _refs = {};
   static final Map<String, StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>> _subs = {};
   static StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _studioSub;
 
   /// Écoutes d'un titre : valeur en direct si on l'a, sinon celle du son chargé, sinon 0.
   static int of(MusicTrack t) => counts.value[t.key] ?? t.sound?.streamCount ?? 0;
+
+  /// J'aime d'un titre : valeur en direct si on l'a, sinon celle du son chargé, sinon 0.
+  static int likesOf(MusicTrack t) => likes.value[t.key] ?? t.sound?.likeCount ?? 0;
+
+  static void setLikes(String key, int v) {
+    if (likes.value[key] == v) return;
+    likes.value = {...likes.value, key: v};
+  }
 
   static void _set(String key, int v) {
     if (counts.value[key] == v) return;
@@ -38,7 +49,10 @@ class StreamCounts {
     if (_subs.containsKey(key)) return;
     try {
       _subs[key] = FirebaseFirestore.instance.collection('artist_sounds').doc(t.id).snapshotsM('stream_counts.dart:39').listen((d) {
-        if (d.exists) _set(key, (d.data()?['streamCount'] as num?)?.toInt() ?? 0);
+        if (d.exists) {
+          _set(key, (d.data()?['streamCount'] as num?)?.toInt() ?? 0);
+          setLikes(key, (d.data()?['likeCount'] as num?)?.toInt() ?? 0);
+        }
       }, onError: (_) {});
     } catch (_) {
       // Firebase pas prêt (aperçus, tests) : on garde la valeur du son
@@ -62,10 +76,13 @@ class StreamCounts {
     try {
       _studioSub = FirebaseFirestore.instance.collection('MusicStudioStats').snapshotsM('stream_counts.dart:62').listen((s) {
         final m = {...counts.value};
+        final l = {...likes.value};
         for (final d in s.docs) {
           m['music_free:${d.id}'] = (d.data()['streamCount'] as num?)?.toInt() ?? 0;
+          l['music_free:${d.id}'] = (d.data()['likeCount'] as num?)?.toInt() ?? 0;
         }
         counts.value = m;
+        likes.value = l;
       }, onError: (_) {});
     } catch (_) {}
   }

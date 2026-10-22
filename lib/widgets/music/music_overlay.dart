@@ -19,6 +19,7 @@ import '../../services/nav_cache_service.dart';
 import '../../theme/app_colors.dart';
 import 'preview_end_sheet.dart';
 import 'streams_text.dart';
+import 'music_like.dart';
 import 'vinyl.dart';
 
 /// Pages qui masquent le lecteur flottant.
@@ -354,6 +355,8 @@ class _Capsule extends StatelessWidget {
                   Flexible(child: Text(track.artist, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontWeight: FontWeight.w700, fontSize: 10.5))),
                   const SizedBox(width: 6),
                   Flexible(child: StreamsText(track: track, color: c.textSecondary, fontSize: 10)),
+                  const SizedBox(width: 4),
+                  MusicLikeButton(track: track, color: c.textSecondary, fontSize: 10),
                 ]),
         ),
     ]);

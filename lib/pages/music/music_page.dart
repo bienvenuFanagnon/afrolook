@@ -22,6 +22,7 @@ import '../../services/offline_music_service.dart';
 import '../../utils/media_cdn.dart';
 import '../../widgets/music/music_overlay.dart';
 import '../../widgets/music/streams_text.dart';
+import '../../widgets/music/music_like.dart';
 import '../../widgets/music/vinyl.dart';
 import '../pub/afrolook_inline_ad.dart';
 import '../../theme/app_colors.dart';
@@ -465,7 +466,7 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
           const SizedBox(height: 6),
           Text(t.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 12)),
           Text(t.artist, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 11)),
-          StreamsText(track: t, color: c.textSecondary, fontSize: 10),
+          Row(mainAxisSize: MainAxisSize.min, children: [Flexible(child: StreamsText(track: t, color: c.textSecondary, fontSize: 10)), const SizedBox(width: 6), Flexible(child: MusicLikeButton(track: t, color: c.textSecondary, fontSize: 10))]),
         ]),
       ),
     );
@@ -608,6 +609,8 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
                   Expanded(child: Text(it.artist, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 11.5))),
                   const SizedBox(width: 6),
                   Flexible(child: StreamsText(track: it, color: c.textSecondary, fontSize: 10.5)),
+                  const SizedBox(width: 4),
+                  MusicLikeButton(track: it, color: c.textSecondary, fontSize: 10.5),
                 ]),
               ]),
             ),
@@ -730,7 +733,7 @@ class _NowHero extends StatelessWidget {
         const SizedBox(height: 2),
         Text('${t.artist}${t.genre != null && t.genre!.isNotEmpty ? ' · ${t.genre}' : ''}', textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 12)),
         const SizedBox(height: 4),
-        Center(child: StreamsText(track: t, color: c.textSecondary, fontSize: 12)),
+        Center(child: Row(mainAxisSize: MainAxisSize.min, children: [StreamsText(track: t, color: c.textSecondary, fontSize: 12), const SizedBox(width: 14), MusicLikeButton(track: t, color: c.textSecondary, fontSize: 12)])),
         const SizedBox(height: 6),
         _status(c),
         const SizedBox(height: 6),

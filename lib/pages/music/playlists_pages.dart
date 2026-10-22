@@ -16,6 +16,7 @@ import '../../services/music_playlists.dart';
 import '../../services/music_queue.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/music/streams_text.dart';
+import '../../widgets/music/music_like.dart';
 import '../../widgets/music/vinyl.dart';
 import '../coins/coin_recharge_screen.dart';
 import '../studio/artist_marketplace.dart';
@@ -637,6 +638,8 @@ class _TrackRow extends StatelessWidget {
                         Expanded(child: Text(t.artist, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 11.5))),
                         const SizedBox(width: 6),
                         Flexible(child: StreamsText(track: t, color: c.textSecondary, fontSize: 10.5)),
+                        const SizedBox(width: 4),
+                        MusicLikeButton(track: t, color: c.textSecondary, fontSize: 10.5),
                       ]),
                       if (!free && !mine)
                         Padding(

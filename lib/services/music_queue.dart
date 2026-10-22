@@ -53,6 +53,9 @@ class MusicTrack {
         studio: t,
       );
 
+  /// Référence minimale (type et identifiant) : suffit pour aimer un titre et lire ses compteurs, sans charger le son (sélecteur de musique des chroniques).
+  factory MusicTrack.ref({required String kind, required String id, String title = ''}) => MusicTrack._(kind: kind, id: id, title: title, artist: '');
+
   /// Titre de la bibliothèque : on garde l'essentiel du document MusicLibrary (le son complet se charge à la demande).
   factory MusicTrack.fromLibrary(Map<String, dynamic> d, {String? cover}) => MusicTrack._(
         kind: 'artist',

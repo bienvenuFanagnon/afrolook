@@ -10,7 +10,9 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
+import '../../services/music_queue.dart';
 import '../../theme/app_colors.dart';
+import '../../widgets/music/music_like.dart';
 import '../studio/artist_marketplace.dart';
 import '../studio/montage/montage_music.dart';
 import '../studio/sound_countries.dart';
@@ -426,6 +428,10 @@ class _MusicSheetState extends State<_MusicSheet> {
   Widget _row(AppColors c, _Pick p, {bool library = false}) {
     final selected = _pick?.key == p.key;
     final playing = _playingKey == p.key;
+    // j'aime et leur nombre : musiques gratuites, sons d'artistes et titres de la bibliothèque (pas pour la voix ni un fichier perso)
+    final likeId = p.key.contains(':') ? p.key.substring(p.key.indexOf(':') + 1) : '';
+    final likeKind = p.key.startsWith('free:') ? 'free' : (p.key.startsWith('artist:') || p.key.startsWith('lib:')) ? 'artist' : null;
+    final likeTrack = likeKind == null || likeId.isEmpty ? null : MusicTrack.ref(kind: likeKind, id: likeId, title: p.title);
     return GestureDetector(
       onTap: library ? () => _selectLibrary(p) : () => _select(p),
       child: Container(
@@ -452,6 +458,7 @@ class _MusicSheetState extends State<_MusicSheet> {
               Text(p.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 11)),
             ]),
           ),
+          if (likeTrack != null) ...[MusicLikeButton(track: likeTrack, color: c.textSecondary, fontSize: 10.5), const SizedBox(width: 4)],
           if (p.durationMs > 0 || !library)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),

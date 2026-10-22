@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import '../../services/music_queue.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/music/streams_text.dart';
+import '../../widgets/music/music_like.dart';
 import '../../widgets/music/vinyl.dart';
 import '../music/music_page.dart';
 import 'artist_marketplace.dart';
@@ -265,7 +266,7 @@ class _FeedSoundCardState extends State<FeedSoundCard> {
                     _priceBadge(s, onPhoto: true),
                   ]),
                   const SizedBox(height: 3),
-                  StreamsText(track: t, color: const Color(0xFFDBE4DE), fontSize: 11.5),
+                  Row(mainAxisSize: MainAxisSize.min, children: [Flexible(child: StreamsText(track: t, color: const Color(0xFFDBE4DE), fontSize: 11.5)), const SizedBox(width: 6), Flexible(child: MusicLikeButton(track: t, color: const Color(0xFFDBE4DE), fontSize: 11.5))]),
                   const SizedBox(height: 10),
                   Row(children: [
                     _PlayDot(track: t, size: 42, glass: true, onTap: () => _play([t], 0)),
@@ -374,7 +375,7 @@ class _CarouselTile extends StatelessWidget {
           Text(sound.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 13)),
           const SizedBox(height: 1),
           Text('@${sound.userPseudo}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 11)),
-          StreamsText(track: MusicTrack.fromSound(sound), color: c.textSecondary, fontSize: 10.5),
+          Row(mainAxisSize: MainAxisSize.min, children: [Flexible(child: StreamsText(track: MusicTrack.fromSound(sound), color: c.textSecondary, fontSize: 10.5)), const SizedBox(width: 6), Flexible(child: MusicLikeButton(track: MusicTrack.fromSound(sound), color: c.textSecondary, fontSize: 10.5))]),
           const SizedBox(height: 5),
           Align(alignment: Alignment.centerLeft, child: _priceBadge(sound)),
           const Spacer(),
@@ -497,7 +498,7 @@ class _ListRow extends StatelessWidget {
                       Flexible(child: Text('@${sound.userPseudo}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 11))),
                     ]),
                     const SizedBox(height: 1),
-                    StreamsText(track: MusicTrack.fromSound(sound), color: c.textSecondary, fontSize: 10.5),
+                    Row(mainAxisSize: MainAxisSize.min, children: [Flexible(child: StreamsText(track: MusicTrack.fromSound(sound), color: c.textSecondary, fontSize: 10.5)), const SizedBox(width: 6), Flexible(child: MusicLikeButton(track: MusicTrack.fromSound(sound), color: c.textSecondary, fontSize: 10.5))]),
                   ]),
                 ),
                 const SizedBox(width: 6),
