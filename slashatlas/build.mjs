@@ -510,12 +510,15 @@ ${refStrip(l, 'big')}${ad('rect', l)}${waCard(l, 'home')}</div>`;
 }
 function cmdsPage(l) {
   const t = T[l].cmds, p = P[l];
-  const chips = [`<button class="chip" data-cat="" aria-pressed="true" type="button">${t.all}</button>`, `<button class="chip chip-new" data-cat="__new" aria-pressed="false" type="button">${NEWL[l]}s</button>`, ...CATEGORIES.map((c) => `<button class="chip" data-cat="${c.id}" aria-pressed="false" type="button">${c[l]}</button>`)].join('');
+  // Catégories en liste déroulante (une liste verticale facile à parcourir, sur ordinateur comme sur téléphone), par ordre alphabétique, avec le nombre de commandes
+  const nOf = (id) => COMMANDS.filter((x) => x.cat === id).length, nNew = COMMANDS.filter((x) => NEWSET.has(x.slug)).length;
+  const catOpts = [`<option value="">${t.allCats} (${COMMANDS.length})</option>`, `<option value="__new">${l === 'fr' ? 'Nouveautés' : 'New'} (${nNew})</option>`, ...[...CATEGORIES].sort((a, b) => a[l].localeCompare(b[l], l)).map((c) => `<option value="${c.id}">${esc(c[l])} (${nOf(c.id)})</option>`)].join('');
+  const chips = `<label class="selwrap"><span class="sel-l">${t.catLabel}</span><select id="catsel" class="catsel" aria-label="${esc(t.catLabel)}">${catOpts}</select></label><button class="btn gl sm" id="catreset" type="button" hidden>${t.reset}</button><span class="fcount" id="fcount" role="status" aria-live="polite"></span>`;
   // 8 nouveautés en tête (ordre de priorité), puis le reste ; le tri par popularité (site.js) reprend la main dès qu'il y a assez de données
   const fresh = PUSH_PRIORITY[1].map((sl) => COMMANDS.find((c) => c.slug === sl)).filter((c) => c && !c.noImage).slice(0, 8);
   const ordered = [...fresh, ...COMMANDS.filter((c) => !fresh.includes(c))];
   const nativeAdSlot = `<article class="card card-ad" data-ad="native" aria-hidden="true"></article>`;
-  const body = `<div class="wrap"><h1 class="big sm">${t.h}</h1><a class="minelink" href="${p.mine}">${svg('heart')} ${MINE[l].link} ›</a><div class="search"><span aria-hidden="true">⌕</span><input id="q" type="search" placeholder="${esc(t.search)}" aria-label="${esc(t.search)}"></div><div class="chips2">${chips}</div>${ad('lb', l)}<div class="grid" id="list" data-lazy="${COMMANDS.length}">${ordered.slice(0, 8).map((c) => card(c, l)).join('')}${nativeAdSlot}${ordered.slice(8, 24).map((c) => card(c, l)).join('')}</div><p class="none" id="none" hidden>${t.none}</p><div class="cta center"><button class="btn gl" id="more" type="button" hidden></button></div>${band(l)}</div>`;
+  const body = `<div class="wrap"><h1 class="big sm">${t.h}</h1><a class="minelink" href="${p.mine}">${svg('heart')} ${MINE[l].link} ›</a><div class="search"><span aria-hidden="true">⌕</span><input id="q" type="search" placeholder="${esc(t.search)}" aria-label="${esc(t.search)}"></div><div class="filterbar">${chips}</div>${ad('lb', l)}<div class="grid" id="list" data-lazy="${COMMANDS.length}">${ordered.slice(0, 8).map((c) => card(c, l)).join('')}${nativeAdSlot}${ordered.slice(8, 24).map((c) => card(c, l)).join('')}</div><p class="none" id="none" hidden>${t.none}</p><div class="cta center"><button class="btn gl" id="more" type="button" hidden></button></div>${band(l)}</div>`;
   emit(l, 'cmds', p.cmds, { title: t.title, desc: t.desc, body, alt: alt2(P.fr.cmds, P.en.cmds) });
   if (l === 'fr') pages.push({ fr: P.fr.cmds, en: P.en.cmds });
 }

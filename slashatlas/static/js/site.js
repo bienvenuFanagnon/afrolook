@@ -166,6 +166,7 @@
   var q = $('#q');
   if (q) {
     var cat = '', list = $$('#list .card:not(.card-ad)'), none = $('#none'), more = $('#more'), STEP = 24, limit = STEP;
+    var sel = $('#catsel'), reset = $('#catreset'), fcount = $('#fcount');
     window.saReorder = function () { list = $$('#list .card:not(.card-ad)'); apply(); };
     var apply = function (keep) {
       if (keep !== true) limit = STEP;
@@ -179,12 +180,19 @@
         if (hit) { c++; if (shown < limit) { shown++; card.hidden = false; } else card.hidden = true; } else card.hidden = true;
       });
       if (none) none.hidden = c > 0;
+      // la liste montre la catégorie choisie, et le nombre de résultats apparaît dès qu'on filtre
+      if (sel) { sel.value = cat; sel.classList.toggle('on', !!cat); }
+      if (reset) reset.hidden = !filtering;
+      if (fcount) fcount.textContent = filtering ? c + (lang === 'fr' ? ' commande' : ' command') + (c > 1 ? 's' : '') : '';
       if (more) { more.hidden = c <= limit; more.textContent = (lang === 'fr' ? 'Voir plus (' : 'Show more (') + (c - limit) + ')'; }
     };
     if (more) more.addEventListener('click', function () { limit += STEP; apply(true); });
     apply();
     q.addEventListener('input', apply);
-    $$('.chips2 .chip').forEach(function (b) { b.addEventListener('click', function () { cat = b.dataset.cat; $$('.chips2 .chip').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); }); apply(); }); });
+    if (sel) sel.addEventListener('change', function () { cat = sel.value; apply(); try { var u = new URL(location.href); if (cat) u.searchParams.set('cat', cat); else u.searchParams.delete('cat'); history.replaceState(null, '', u); } catch (e) {} });
+    if (reset) reset.addEventListener('click', function () { cat = ''; q.value = ''; apply(); try { history.replaceState(null, '', location.pathname); } catch (e) {} });
+    // /commandes/?cat=... : la catégorie est déjà choisie à l'arrivée
+    var mc = /[?&]cat=([a-z0-9_]+)/.exec(location.search); if (mc && sel) { sel.value = mc[1]; if (sel.value === mc[1]) { cat = mc[1]; apply(); } }
     // /commandes/?q=... depuis les liens internes
     var m = /[?&]q=([^&]+)/.exec(location.search); if (m) { q.value = decodeURIComponent(m[1]); apply(); }
   }
