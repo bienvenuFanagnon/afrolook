@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../ads/ad_banner.dart';
 import '../../ads/admob_widgets.dart';
 import '../../l10n/tr.dart';
 import '../../layout/centered_content.dart';
@@ -11,6 +12,7 @@ import '../../services/news/news_service.dart';
 import '../../theme/app_colors.dart';
 import '../../utils/country_continent.dart';
 import '../../utils/country_names.dart';
+import '../../widgets/feed/sections/news_feed_card.dart';
 import '../../widgets/news/news_list_widgets.dart';
 import 'news_detail_page.dart';
 
@@ -40,6 +42,7 @@ class _NewsJournalPageState extends State<NewsJournalPage> {
   bool _loading = true;
   List<NewsFeedItem> _live = [];
   NewsDigest? _digest;
+  String _digestScopeKey = '';
 
   @override
   void initState() {
@@ -57,13 +60,15 @@ class _NewsJournalPageState extends State<NewsJournalPage> {
       _countries = cfg.countries;
       _scope = _countries.contains(code) ? _Scope.country : _Scope.continent;
     });
-    await _load();
+    await _autoLoad(_scope);
   }
 
   String get _continent => continentOfCountry(_userCountry) ?? 'AF';
 
-  String get _scopeKey {
-    switch (_scope) {
+  String get _scopeKey => _scopeKeyFor(_scope);
+
+  String _scopeKeyFor(_Scope s) {
+    switch (s) {
       case _Scope.country:
         return 'country_$_userCountry';
       case _Scope.other:
@@ -103,14 +108,86 @@ class _NewsJournalPageState extends State<NewsJournalPage> {
         _loading = false;
       });
     } else {
-      final d = await _svc.digest(_scopeKey, _period, _periodKey, fresh: fresh);
+      final key = _scopeKey;
+      final d = await _svc.digest(key, _period, _periodKey, fresh: fresh);
       if (!mounted) return;
       setState(() {
         _digest = d;
+        _digestScopeKey = key;
         _live = [];
         _loading = false;
       });
     }
+  }
+
+  /// Périmètres à essayer à partir de [from], du plus proche au plus large : pays → continent → monde.
+  List<_Scope> _scopesFrom(_Scope from) {
+    switch (from) {
+      case _Scope.country:
+      case _Scope.other:
+        return [from, _Scope.continent, _Scope.world];
+      case _Scope.continent:
+        return [_Scope.continent, _Scope.world];
+      case _Scope.world:
+        return [_Scope.world];
+    }
+  }
+
+  /// Trouve tout de suite quelque chose à montrer, sans que la personne le remarque : pour chaque périmètre (pays, puis continent, puis monde),
+  /// les articles du moment ; sinon, lus en même temps, hier et les deux jours d'avant, puis la semaine en cours et la précédente, puis le mois
+  /// en cours et le précédent. Le premier qui contient des articles est affiché, et les onglets s'alignent sur ce qui est affiché.
+  Future<void> _autoLoad(_Scope from, {bool fresh = false}) async {
+    if (!mounted) return;
+    setState(() => _loading = true);
+    if (fresh) _svc.clearCache();
+    final today = NewsPeriods.days().first.key;
+    final candidates = <({String period, String key})>[
+      for (final d in NewsPeriods.days().skip(1).take(3)) (period: 'day', key: d.key),
+      for (final w in NewsPeriods.weeks().take(2)) (period: 'week', key: w.key),
+      for (final m in NewsPeriods.months().take(2)) (period: 'month', key: m.key),
+    ];
+    for (final s in _scopesFrom(from)) {
+      final key = _scopeKeyFor(s);
+      final live = await _svc.liveScope(key, fresh: fresh);
+      if (!mounted) return;
+      if (live.isNotEmpty) {
+        setState(() {
+          _scope = s;
+          _period = 'day';
+          _periodKey = today;
+          _live = live;
+          _digest = null;
+          _loading = false;
+        });
+        return;
+      }
+      final found = await Future.wait(candidates.map((c) => _svc.digest(key, c.period, c.key, fresh: fresh)));
+      if (!mounted) return;
+      for (var i = 0; i < found.length; i++) {
+        final d = found[i];
+        if (d != null && d.items.isNotEmpty) {
+          setState(() {
+            _scope = s;
+            _period = candidates[i].period;
+            _periodKey = candidates[i].key;
+            _digest = d;
+            _digestScopeKey = key;
+            _live = [];
+            _loading = false;
+          });
+          return;
+        }
+      }
+    }
+    // rien nulle part : on reste sur le périmètre demandé, avec l'état vide (et les pubs)
+    setState(() {
+      _scope = from;
+      _period = 'day';
+      _periodKey = today;
+      _live = [];
+      _digest = null;
+      _loading = false;
+    });
   }
 
   void _setPeriod(String p) {
@@ -123,11 +200,9 @@ class _NewsJournalPageState extends State<NewsJournalPage> {
   }
 
   void _setScope(_Scope s, {String? other}) {
-    setState(() {
-      _scope = s;
-      if (other != null) _otherCountry = other;
-    });
-    _load();
+    if (other != null) _otherCountry = other;
+    setState(() => _scope = s);
+    _autoLoad(s); // si ce périmètre n'a rien, on passe tout de suite au plus large
   }
 
   /// Niveau plus large que l'actuel (pays → continent → monde), pour ne jamais rester sur une page vide.
@@ -234,54 +309,81 @@ class _NewsJournalPageState extends State<NewsJournalPage> {
       );
 
   // ── contenu ──
+
+  /// Rien à montrer : le message, mais toujours des pubs (native + grand format), comme s'il y avait des articles.
+  List<Widget> _emptyWithAds(Widget empty) => [
+        empty,
+        const AdmobNativeWidget(key: ValueKey('journal_native_empty')),
+        const Center(child: AdBanner(key: ValueKey('journal_mrec_empty'), mrec: true)),
+      ];
+
+  /// Un article en grande carte (même carte que dans le fil, présentation alternée), sans croix ni bouton « Voir plus d'actualités ».
+  Widget _bigCard(NewsFeedItem it, int i, {VoidCallback? onOpen}) =>
+      NewsFeedCard(key: ValueKey('journal_card_${_scopeKey}_${_period}_${_periodKey}_${it.id}'), slotKey: 'journal_$i', item: it, onOpen: onOpen, showClose: false, showMore: false);
+
+  /// Les grandes cartes, avec une pub native après la 2e puis toutes les 3 cartes.
+  List<Widget> _cardsWithAds(List<NewsFeedItem> items, {VoidCallback? Function(NewsFeedItem it)? openOf}) {
+    final out = <Widget>[];
+    for (var i = 0; i < items.length; i++) {
+      out.add(_bigCard(items[i], i, onOpen: openOf?.call(items[i])));
+      if (i % 3 == 1) out.add(AdmobNativeWidget(key: ValueKey('journal_native_$i'))); // rien pour Gold ou sans pub prête
+    }
+    // peu d'articles : une pub quand même en fin de liste
+    if (items.length < 2) out.add(const AdmobNativeWidget(key: ValueKey('journal_native_end')));
+    return out;
+  }
+
   List<Widget> _liveContent(AppColors c) {
     final now = DateTime.now().millisecondsSinceEpoch;
-    var items = _live.where((i) => _cat == null || i.category == _cat).toList();
+    final items = _live.where((i) => _cat == null || i.category == _cat).toList();
     if (items.isEmpty) {
       final b = _broader;
-      return [
-        NewsEmpty(
-          message: _live.isEmpty ? context.tr('Aucune actualité pour {lieu} pour le moment.', {'lieu': _scopeLabel}) : context.tr('Aucune actualité dans ce domaine.'),
-          hint: context.tr('De nouveaux articles arrivent tout au long de la journée.'),
-          action: _live.isEmpty && b != null ? context.tr(b == _Scope.continent ? 'Voir {lieu}' : 'Voir le monde', {'lieu': newsContinentName(_continent)}) : null,
-          onAction: b == null ? null : () => _setScope(b),
-        ),
-      ];
+      return _emptyWithAds(NewsEmpty(
+        message: _live.isEmpty ? context.tr('Aucune actualité pour {lieu} pour le moment.', {'lieu': _scopeLabel}) : context.tr('Aucune actualité dans ce domaine.'),
+        hint: context.tr('De nouveaux articles arrivent tout au long de la journée.'),
+        action: _live.isEmpty && b != null ? context.tr(b == _Scope.continent ? 'Voir {lieu}' : 'Voir le monde', {'lieu': newsContinentName(_continent)}) : null,
+        onAction: b == null ? null : () => _setScope(b),
+      ));
     }
-    final today = items.where((i) => now - i.at < 24 * 3600 * 1000).toList();
-    final recentOnly = today.isNotEmpty;
-    if (recentOnly) items = today;
-    NewsFeedItem top = items.reduce((a, b) => (b.score > a.score || (b.score == a.score && b.at > a.at)) ? b : a);
+    // la une d'abord (meilleur score, puis le plus récent), puis tout le reste du plus récent au plus ancien
+    final top = items.reduce((a, b) => (b.score > a.score || (b.score == a.score && b.at > a.at)) ? b : a);
     final rest = items.where((i) => i.id != top.id).toList()..sort((a, b) => b.at.compareTo(a.at));
-    final out = <Widget>[
-      if (!recentOnly)
+    final ordered = [top, ...rest];
+    final fresh = ordered.any((i) => now - i.at < 24 * 3600 * 1000);
+    return [
+      if (!fresh)
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
           child: Text(context.tr('Pas de nouveauté depuis 24 h : voici les dernières actualités.'), style: TextStyle(color: c.textSecondary, fontSize: 12)),
         ),
-      NewsTopCard(
-        badge: context.tr('À la une'),
-        agent: newsAgentOf(top.agentKey),
-        title: top.title,
-        chapo: top.chapo,
-        image: top.image,
-        meta: '${newsAgentOf(top.agentKey).pseudo} · ${newsAgo(top.at)} · ${newsLevelLabel(top.level, top.country, top.continent)}',
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => NewsDetailPage(postId: top.id))),
-      ),
+      ..._cardsWithAds(ordered),
     ];
-    for (var i = 0; i < rest.length; i++) {
-      final it = rest[i];
-      final agent = newsAgentOf(it.agentKey);
-      out.add(NewsListTile(
-        agent: agent,
-        title: it.title,
-        image: it.image,
-        meta: '${context.tr(agent.label)} · ${agent.pseudo} · ${newsAgo(it.at)}',
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => NewsDetailPage(postId: it.id))),
-      ));
-      if (i == 2 || i == 8) out.add(AdmobNativeWidget(key: ValueKey('journal_native_$i'))); // pub native (rien pour Gold ou sans pub prête)
-    }
-    return out;
+  }
+
+  /// Les éléments d'un résumé deviennent des éléments d'index (même carte que pour les articles du moment).
+  List<NewsFeedItem> _digestAsCards(NewsDigest d) {
+    final key = _digestScopeKey;
+    final level = key.startsWith('country_') ? 'country' : key.startsWith('continent_') ? 'continent' : 'world';
+    final country = level == 'country' ? key.substring(8) : null;
+    final continent = level == 'continent' ? key.substring(10) : (country != null ? continentOfCountry(country) : null);
+    return [
+      for (final it in d.items)
+        if (_cat == null || it.category == _cat)
+          NewsFeedItem(
+            id: it.id,
+            agentKey: it.agentKey,
+            category: it.category,
+            level: level,
+            country: country,
+            continent: continent,
+            title: it.title,
+            chapo: it.chapo,
+            image: it.image,
+            sourceCount: it.sourceCount,
+            sourceNames: it.sources.take(3).map((s) => s.name).toList(),
+            at: it.at,
+          ),
+    ];
   }
 
   List<Widget> _digestContent(AppColors c) {
@@ -290,34 +392,26 @@ class _NewsJournalPageState extends State<NewsJournalPage> {
     final isCurrent = _choices.first.key == _periodKey;
     if (d == null) {
       final b = _broader;
-      return [
-        NewsEmpty(
-          message: context.tr('Pas encore de résumé pour cette période.'),
-          hint: isCurrent
-              ? context.tr(_period == 'week' ? 'Le résumé de la semaine paraît le dimanche soir.' : _period == 'month' ? 'Le résumé du mois paraît le dernier jour du mois.' : 'Le résumé du jour paraît en fin de journée.')
-              : context.tr('Aucun article n\'a été retenu pour {lieu} à cette période.', {'lieu': _scopeLabel}),
-          action: b != null ? context.tr(b == _Scope.continent ? 'Voir {lieu}' : 'Voir le monde', {'lieu': newsContinentName(_continent)}) : null,
-          onAction: b == null ? null : () => _setScope(b),
-        ),
-      ];
-    }
-    final items = d.items.where((i) => _cat == null || i.category == _cat).toList();
-    final title = _period == 'day' ? 'Les infos du jour' : _period == 'week' ? 'Les infos de la semaine' : 'Les infos du mois';
-    final out = <Widget>[NewsDigestHeader(title: context.tr(title), range: context.tr(choice.label), intro: d.intro)];
-    if (items.isEmpty) out.add(NewsEmpty(message: context.tr('Aucune info dans ce domaine pour cette période.')));
-    for (var i = 0; i < items.length; i++) {
-      final it = items[i];
-      out.add(NewsListTile(
-        agent: it.agent,
-        title: it.title,
-        image: it.image,
-        rank: i + 1,
-        meta: '${it.agent.pseudo} · ${newsAgo(it.at)} · ${context.tr('Résumé de {n} sources', {'n': it.sourceCount})}',
-        onTap: () => _openDigestItem(it),
+      return _emptyWithAds(NewsEmpty(
+        message: context.tr('Pas encore de résumé pour cette période.'),
+        hint: isCurrent
+            ? context.tr(_period == 'week' ? 'Le résumé de la semaine paraît le dimanche soir.' : _period == 'month' ? 'Le résumé du mois paraît le dernier jour du mois.' : 'Le résumé du jour paraît en fin de journée.')
+            : context.tr('Aucun article n\'a été retenu pour {lieu} à cette période.', {'lieu': _scopeLabel}),
+        action: b != null ? context.tr(b == _Scope.continent ? 'Voir {lieu}' : 'Voir le monde', {'lieu': newsContinentName(_continent)}) : null,
+        onAction: b == null ? null : () => _setScope(b),
       ));
-      if (i == 2) out.add(const AdmobNativeWidget(key: ValueKey('journal_native_digest')));
     }
-    return out;
+    final cards = _digestAsCards(d);
+    final byId = {for (final it in d.items) it.id: it};
+    final title = _period == 'day' ? 'Les infos du jour' : _period == 'week' ? 'Les infos de la semaine' : 'Les infos du mois';
+    return [
+      NewsDigestHeader(title: context.tr(title), range: context.tr(choice.label), intro: d.intro),
+      if (cards.isEmpty) ..._emptyWithAds(NewsEmpty(message: context.tr('Aucune info dans ce domaine pour cette période.'))),
+      ..._cardsWithAds(cards, openOf: (it) {
+        final src = byId[it.id];
+        return src == null ? null : () => _openDigestItem(src);
+      }),
+    ];
   }
 
   @override
@@ -333,7 +427,7 @@ class _NewsJournalPageState extends State<NewsJournalPage> {
       body: CenteredContent(
         child: RefreshIndicator(
           color: c.primary,
-          onRefresh: () => _load(fresh: true),
+          onRefresh: () => _autoLoad(_scope, fresh: true),
           child: ListView(padding: const EdgeInsets.only(top: 10, bottom: 30), children: [
             _scopeRow(c),
             const SizedBox(height: 8),

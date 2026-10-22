@@ -20,12 +20,22 @@ import '../../news/news_widgets.dart';
 /// Jamais montrée tant que `AppConfig/news.feedEnabled` n'est pas actif. La croix la masque jusqu'à demain.
 /// [slotKey] : emplacement dans le fil (le même article revient au même emplacement) ; [category] : domaine imposé (page Sport : « sport »).
 class NewsFeedCard extends StatefulWidget {
-  const NewsFeedCard({super.key, required this.slotKey, this.category, this.postId});
+  const NewsFeedCard({super.key, required this.slotKey, this.category, this.postId, this.item, this.onOpen, this.showClose = true, this.showMore = true});
   final String slotKey;
   final String? category;
 
   /// Article précis à montrer (un post d'actualité rencontré dans une liste de posts) : pas de choix automatique, pas de réglage du fil.
   final String? postId;
+
+  /// Article déjà connu (page « Mon journal ») : pas de choix automatique dans le fil, pas de réglage du fil.
+  final NewsFeedItem? item;
+
+  /// Remplace l'ouverture de la page de détail (résumés de semaine ou de mois : l'article d'origine peut avoir disparu).
+  final VoidCallback? onOpen;
+
+  /// Croix « masquer jusqu'à demain » (fil) et bouton « Voir plus d'actualités » : cachés dans le journal, qui est déjà la page des actualités.
+  final bool showClose;
+  final bool showMore;
 
   @override
   State<NewsFeedCard> createState() => _NewsFeedCardState();
@@ -71,6 +81,23 @@ class _NewsFeedCardState extends State<NewsFeedCard> {
 
   Future<void> _load() async {
     final svc = NewsService.instance;
+    final preset = widget.item;
+    if (preset != null) {
+      setState(() {
+        _item = preset;
+        _ready = true;
+      });
+      final a = await svc.article(preset.id);
+      if (!mounted || a == null) return;
+      final uid = context.read<UserAuthProvider>().loginUserData.id;
+      setState(() {
+        _article = a;
+        _liked = a.lovedByUser(uid);
+        _loves = a.loves;
+      });
+      if (_visible) _viewTimer = Timer(const Duration(seconds: 1), _countView);
+      return;
+    }
     final fixed = widget.postId;
     if (fixed != null) {
       final a = await svc.article(fixed);
@@ -113,6 +140,7 @@ class _NewsFeedCardState extends State<NewsFeedCard> {
   Future<void> _open() async {
     final item = _item;
     if (item == null) return;
+    if (widget.onOpen != null) return widget.onOpen!();
     await Navigator.push(context, MaterialPageRoute(builder: (_) => NewsDetailPage(postId: item.id)));
   }
 
@@ -196,7 +224,11 @@ class _NewsFeedCardState extends State<NewsFeedCard> {
 
   String _place(NewsFeedItem item) => newsLevelLabel(item.level, item.country, item.continent);
 
-  Widget _closeButton(AppColors c, {Color? color}) => InkWell(
+  Widget _more() => widget.showMore ? const NewsMoreButton() : const SizedBox.shrink();
+
+  Widget _closeButton(AppColors c, {Color? color}) => !widget.showClose
+      ? const SizedBox(height: 26)
+      : InkWell(
         onTap: _close,
         customBorder: const CircleBorder(),
         child: Padding(padding: const EdgeInsets.all(4), child: Icon(Icons.close_rounded, size: 18, color: color ?? c.textSecondary)),
@@ -292,7 +324,7 @@ class _NewsFeedCardState extends State<NewsFeedCard> {
         const SizedBox(height: 4),
         _stats(c),
         const SizedBox(height: 8),
-        const NewsMoreButton(),
+        _more(),
       ]),
     );
   }
@@ -330,11 +362,12 @@ class _NewsFeedCardState extends State<NewsFeedCard> {
               child: Text('${context.tr('ACTUALITÉ')} · ${_place(item).toUpperCase()}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 10.5, letterSpacing: 0.8)),
             ),
           ),
-          Positioned(
-            top: 6,
-            right: 6,
-            child: Container(decoration: BoxDecoration(color: Colors.black.withOpacity(0.6), shape: BoxShape.circle), child: _closeButton(c, color: Colors.white)),
-          ),
+          if (widget.showClose)
+            Positioned(
+              top: 6,
+              right: 6,
+              child: Container(decoration: BoxDecoration(color: Colors.black.withOpacity(0.6), shape: BoxShape.circle), child: _closeButton(c, color: Colors.white)),
+            ),
           Positioned(
             left: 12,
             right: 12,
@@ -353,7 +386,7 @@ class _NewsFeedCardState extends State<NewsFeedCard> {
         child: Column(children: [
           _stats(c),
           const SizedBox(height: 8),
-          const NewsMoreButton(),
+          _more(),
         ]),
       ),
     ]);
@@ -422,7 +455,8 @@ class _NewsFeedCardState extends State<NewsFeedCard> {
                     Text(newsCount(_article?.comments ?? 0), style: TextStyle(color: c.textSecondary, fontSize: 11.5, fontWeight: FontWeight.w600)),
                   ]),
                 ),
-                InkWell(
+                if (widget.showMore)
+                  InkWell(
                   onTap: () => NewsMoreButton.openJournal(context),
                   borderRadius: BorderRadius.circular(6),
                   child: Padding(
@@ -477,7 +511,7 @@ class _NewsFeedCardState extends State<NewsFeedCard> {
           const SizedBox(height: 4),
           _stats(c),
           const SizedBox(height: 8),
-          const NewsMoreButton(),
+          _more(),
         ]),
       ),
     ]);
