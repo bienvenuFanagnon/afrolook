@@ -161,40 +161,97 @@
   });
 
   // ── Recherche et filtre ──
-  // Texte sans accents ni majuscules, tirets et apostrophes comptés comme des espaces (même règle que build.mjs) ; chaque mot tapé doit se retrouver, le pluriel est ignoré
-  var nq = function (s) { return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim(); };
+  // Moteur : static/js/sasearch.js (sans accents ni pluriels, synonymes FR/EN, fautes de frappe, classement par pertinence).
+  var S = window.SASearch;
+  var nq = S ? S.nq : function (s) { return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim(); };
   var q = $('#q');
   if (q) {
-    var cat = '', list = $$('#list .card:not(.card-ad)'), none = $('#none'), more = $('#more'), STEP = 24, limit = STEP;
-    var sel = $('#catsel'), reset = $('#catreset'), fcount = $('#fcount');
-    window.saReorder = function () { list = $$('#list .card:not(.card-ad)'); apply(); };
+    var cat = '', box = $('#list'), adEl = $('#list .card-ad'), adNext = adEl ? adEl.nextElementSibling : null, list = [], items = [], none = $('#none'), more = $('#more'), STEP = 24, limit = STEP, dirty = false, counter = 0;
+    var sel = $('#catsel'), reset = $('#catreset'), fcount = $('#fcount'), fhint = $('#fhint'), sugg = $('#sugg');
+    // une fiche = un élément cherchable ; data-o garde l'ordre d'origine (la liste est reclassée quand on cherche, puis remise en ordre)
+    var build = function () {
+      list = $$('#list .card:not(.card-ad)');
+      items = list.map(function (card) {
+        if (card.dataset.o == null) card.dataset.o = counter++;
+        var code = card.querySelector('.code');
+        return { el: card, t: card.dataset.t || '', k: card.dataset.k || '', c: nq(code ? code.textContent : ''), a: card.dataset.search || '', cat: card.dataset.cat, isNew: card.dataset.new === '1', o: +card.dataset.o };
+      });
+    };
     var apply = function (keep) {
       if (keep !== true) limit = STEP;
-      var toks = nq(q.value).split(' ').filter(Boolean), big = toks.filter(function (w) { return w.length > 2; });
-      var words = (big.length ? big : toks).map(function (w) { return w.length > 3 ? w.replace(/[sx]$/, '') : w; }), c = 0, shown = 0;
-      var v = words.length;
-      var filtering = !!(cat || v);
+      var raw = q.value, searching = !!(S ? S.nq(raw) : nq(raw)), filtering = !!(cat || searching);
       $$('#list .card-ad').forEach(function (a) { a.hidden = filtering; });
-      list.forEach(function (card) {
-        var hit = (!cat || (cat === '__new' ? card.dataset.new === '1' : card.dataset.cat === cat)) && (!v || words.every(function (w) { return (' ' + card.dataset.search).indexOf(' ' + w) > -1; })); // chaque mot tapé est le début d'un mot de la commande
-        if (hit) { c++; if (shown < limit) { shown++; card.hidden = false; } else card.hidden = true; } else card.hidden = true;
-      });
+      var pool = items.filter(function (it) { return !cat || (cat === '__new' ? it.isNew : it.cat === cat); });
+      var res = searching && S ? S.search(pool, raw) : null, ordered;
+      if (res) ordered = res.list.map(function (x) { return x.it; });
+      else ordered = pool.slice().sort(function (a, b) { return a.o - b.o; });
+      if (searching && !S) { var w = nq(raw); ordered = ordered.filter(function (it) { return it.a.indexOf(w) > -1; }); }
+      var show = {}, c = ordered.length;
+      ordered.slice(0, limit).forEach(function (it) { show[it.o] = 1; });
+      items.forEach(function (it) { it.el.hidden = !show[it.o]; });
+      // pendant une recherche, les meilleures réponses passent en tête ; sans recherche, l'ordre d'origine revient
+      if (res) { ordered.slice(0, limit).reverse().forEach(function (it) { box.insertBefore(it.el, box.firstChild); }); dirty = true; }
+      else if (dirty) { items.slice().sort(function (a, b) { return a.o - b.o; }).forEach(function (it) { box.appendChild(it.el); }); if (adEl && adNext) box.insertBefore(adEl, adNext); dirty = false; } // la pub native retrouve sa place
       if (none) none.hidden = c > 0;
-      // la liste montre la catégorie choisie, et le nombre de résultats apparaît dès qu'on filtre
+      if (sugg) sugg.hidden = c > 0;
+      // la liste montre la catégorie choisie, le nombre de résultats, et dit quand les réponses sont seulement proches
       if (sel) { sel.value = cat; sel.classList.toggle('on', !!cat); }
       if (reset) reset.hidden = !filtering;
       if (fcount) fcount.textContent = filtering ? c + (lang === 'fr' ? ' commande' : ' command') + (c > 1 ? 's' : '') : '';
+      if (fhint) {
+        var near = res && c > 0 && (res.mode === 'fuzzy' || res.mode === 'or');
+        fhint.hidden = !near;
+        if (near) fhint.textContent = res.mode === 'or' ? (lang === 'fr' ? 'Aucune commande ne contient tous ces mots : voici celles qui en contiennent certains.' : 'No command has all these words: here are the ones that have some of them.') : (lang === 'fr' ? 'Aucun résultat exact : voici les commandes les plus proches de « ' + raw.trim() + ' ».' : 'No exact result: here are the closest commands to “' + raw.trim() + '”.');
+      }
       if (more) { more.hidden = c <= limit; more.textContent = (lang === 'fr' ? 'Voir plus (' : 'Show more (') + (c - limit) + ')'; }
     };
+    window.saReorder = function () { build(); apply(true); };
+    build();
     if (more) more.addEventListener('click', function () { limit += STEP; apply(true); });
     apply();
-    q.addEventListener('input', apply);
+    q.addEventListener('input', function () { apply(); });
     if (sel) sel.addEventListener('change', function () { cat = sel.value; apply(); try { var u = new URL(location.href); if (cat) u.searchParams.set('cat', cat); else u.searchParams.delete('cat'); history.replaceState(null, '', u); } catch (e) {} });
     if (reset) reset.addEventListener('click', function () { cat = ''; q.value = ''; apply(); try { history.replaceState(null, '', location.pathname); } catch (e) {} });
+    // mots proposés quand rien ne correspond
+    if (sugg) sugg.addEventListener('click', function (e) { var b = e.target.closest('button[data-w]'); if (b) { q.value = b.dataset.w; apply(); q.focus(); } });
     // /commandes/?cat=... : la catégorie est déjà choisie à l'arrivée
     var mc = /[?&]cat=([a-z0-9_]+)/.exec(location.search); if (mc && sel) { sel.value = mc[1]; if (sel.value === mc[1]) { cat = mc[1]; apply(); } }
     // /commandes/?q=... depuis les liens internes
-    var m = /[?&]q=([^&]+)/.exec(location.search); if (m) { q.value = decodeURIComponent(m[1]); apply(); }
+    var m = /[?&]q=([^&]+)/.exec(location.search); if (m) { q.value = decodeURIComponent(m[1].replace(/\+/g, ' ')); apply(); }
+  }
+
+  // ── Propositions instantanées sous le champ de recherche de l'accueil : les meilleures commandes apparaissent pendant la frappe ──
+  var hq = $('.hsearch input[name="q"]');
+  if (hq && S && document.body.dataset.idx) {
+    var hform = hq.form, hbox = document.createElement('div'), hitems = null, hsel = -1, hlist = [];
+    hbox.className = 'qsugg'; hbox.setAttribute('role', 'listbox'); hbox.hidden = true;
+    hform.style.position = hform.style.position || 'relative'; hform.appendChild(hbox);
+    var esc2 = function (t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+    var base = lang === 'en' ? '/en/c/' : '/c/';
+    var load = function () { if (!hitems) hitems = fetch(document.body.dataset.idx).then(function (r) { return r.json(); }).then(function (a) { return a.map(function (c, i) { return { t: c.tt, k: c.kk, c: S.nq(c.c), a: c.q, s: c.s, title: c.t, code: c.c, cat: c.k, o: i }; }); }).catch(function () { return []; }); return hitems; };
+    var hide = function () { hbox.hidden = true; hsel = -1; };
+    var render = function () {
+      var raw = hq.value;
+      if (!S.nq(raw)) { hide(); return; }
+      load().then(function (all) {
+        if (hq.value !== raw) return;
+        var r = S.search(all, raw); hlist = r.list.slice(0, 6).map(function (x) { return x.it; });
+        if (!hlist.length) { hbox.innerHTML = '<div class="qs-none">' + (lang === 'fr' ? 'Aucune commande pour cette recherche. Essayez un autre mot.' : 'No command for this search. Try another word.') + '</div>'; hbox.hidden = false; return; }
+        hbox.innerHTML = hlist.map(function (it, i) { return '<a class="qs" role="option" href="' + base + it.s + '/" data-i="' + i + '"><b>' + esc2(it.title) + '</b><small>' + esc2(it.cat) + ' · <code>' + esc2(it.code) + '</code></small></a>'; }).join('') + '<a class="qs qs-all" href="' + (lang === 'en' ? '/en/commands/' : '/commandes/') + '?q=' + encodeURIComponent(raw.trim()) + '">' + (lang === 'fr' ? 'Voir les ' + r.list.length + ' résultats' : 'See all ' + r.list.length + ' results') + ' ›</a>';
+        hbox.hidden = false; hsel = -1;
+      });
+    };
+    hq.addEventListener('input', render);
+    hq.addEventListener('focus', function () { load(); if (hq.value.trim()) render(); });
+    hq.addEventListener('keydown', function (e) {
+      var links = $$('.qs', hbox);
+      if (e.key === 'Escape') { hide(); return; }
+      if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && links.length && !hbox.hidden) {
+        e.preventDefault(); hsel = (hsel + (e.key === 'ArrowDown' ? 1 : -1) + links.length) % links.length;
+        links.forEach(function (a, i) { a.classList.toggle('on', i === hsel); });
+      } else if (e.key === 'Enter' && hsel >= 0 && links[hsel]) { e.preventDefault(); location.href = links[hsel].href; }
+    });
+    document.addEventListener('click', function (e) { if (!hform.contains(e.target)) hide(); });
   }
 
   // ── Formulaires (liste d'attente, prévenez-moi, demande de commande) ──

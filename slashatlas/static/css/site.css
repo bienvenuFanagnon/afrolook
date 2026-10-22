@@ -1002,3 +1002,15 @@ body[data-view=creations] #main>.wrap>.eyebrow,body[data-view=creations] #main>.
   .sbox .btn.big{align-self:center;width:auto;min-width:340px;max-width:100%}
   .mcmd .btn{justify-self:start;width:auto;min-width:160px;padding-inline:28px}
 }
+
+/* Recherche : message « résultats proches », mots proposés, propositions instantanées de l'accueil */
+.fhint{margin:-4px 0 14px;font-size:13.5px;color:var(--acc2);font-weight:600}
+.sugg-words{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;margin:0 0 18px;color:var(--mut);font-size:14px}
+.sugg-words .chip{min-height:36px}
+.hsearch{position:relative}
+.qsugg{position:absolute;left:0;right:0;top:calc(100% + 6px);background:#111114;border:1px solid var(--line2);border-radius:16px;box-shadow:0 18px 40px rgba(0,0,0,.55);z-index:40;overflow:hidden;text-align:left}
+.qs{display:flex;flex-direction:column;gap:1px;padding:10px 16px;border-bottom:1px solid var(--line)}
+.qs b{font-size:14.5px;font-weight:700;color:var(--txt)}.qs small{font-size:12px;color:var(--faint)}.qs small code{font-family:var(--mono);color:var(--mut)}
+.qs:hover,.qs.on{background:rgba(41,151,255,.14)}
+.qs-all{border-bottom:0;color:var(--acc2);font-weight:700;font-size:13.5px}
+.qs-none{padding:14px 16px;color:var(--mut);font-size:14px}

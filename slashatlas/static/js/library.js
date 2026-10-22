@@ -126,7 +126,7 @@
   // même carte que card() dans build.mjs
   function cardHtml(c, pre) {
     var href = P.cmd + c.s + '/', id = (pre || 'p-') + c.s;
-    return '<article class="card" data-slug="' + c.s + '" data-search="' + esc(c.q) + '" data-cat="' + c.a + '"' + (c.nw ? ' data-new="1"' : '') + '><a href="' + href + '" class="cl" aria-label="' + esc(c.t) + '">' + posterHtml(c) + '</a><div class="cb"><div class="chead"><div class="code">' + esc(c.c) + '</div>' + favHtml(c.s) + '</div><h3><a href="' + href + '">' + esc(c.t) + '</a></h3><div class="meta"><span>' + esc(c.k) + (c.o ? '' : ' · ' + c.r) + '</span>' + (c.st ? '<span class="stp">' + c.st + ' ' + T.steps + '</span>' : '') + '<span class="cnt" hidden></span></div><div class="acts">' +
+    return '<article class="card" data-slug="' + c.s + '" data-search="' + esc(c.q) + '" data-t="' + esc(c.tt || '') + '" data-k="' + esc(c.kk || '') + '" data-cat="' + c.a + '"' + (c.nw ? ' data-new="1"' : '') + '><a href="' + href + '" class="cl" aria-label="' + esc(c.t) + '">' + posterHtml(c) + '</a><div class="cb"><div class="chead"><div class="code">' + esc(c.c) + '</div>' + favHtml(c.s) + '</div><h3><a href="' + href + '">' + esc(c.t) + '</a></h3><div class="meta"><span>' + esc(c.k) + (c.o ? '' : ' · ' + c.r) + '</span>' + (c.st ? '<span class="stp">' + c.st + ' ' + T.steps + '</span>' : '') + '<span class="cnt" hidden></span></div><div class="acts">' +
       '<a class="btn pri sm" href="' + tryHref(c) + '" data-try="' + c.s + '">' + genLbl(c.gk) + '</a><button class="btn gl sm" type="button" data-copy="#' + id + '" data-slug="' + c.s + '">' + copyLbl() + '</button></div><pre id="' + id + '" hidden>' + esc(c.p) + '</pre></div></article>';
   }
   function railHtml(c) {
