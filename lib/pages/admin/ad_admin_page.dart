@@ -11,6 +11,9 @@ import 'package:afrotok/ads/admob_widgets.dart';
 import 'package:afrotok/ads/rewards_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:afrotok/layout/centered_content.dart';
+import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/pages/postDetails.dart';
+import 'package:afrotok/pages/postDetailsVideo.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/theme/app_colors.dart';
 import 'package:flutter/material.dart';
@@ -65,6 +68,142 @@ class _AdAdminPageState extends State<AdAdminPage> {
     if (mounted) setState(() => _revenueLoading = false);
   }
 
+  /// Image d'aperçu d'un post (même règle que la notification : photo, miniature de vidéo, sinon première image).
+  String _previewImage(Map<String, dynamic> p) {
+    String https(dynamic v) {
+      final s = '${v ?? ''}'.trim();
+      return RegExp(r'^https://\S{6,1500}$').hasMatch(s) ? s : '';
+    }
+
+    final type = '${p['dataType'] ?? ''}'.toUpperCase();
+    final images = (p['images'] is List) ? (p['images'] as List) : const [];
+    final first = images.isNotEmpty ? https(images.first) : '';
+    if (type == 'VIDEO') return https(p['thumbnail']).isNotEmpty ? https(p['thumbnail']) : first;
+    if (type == 'IMAGE') return first.isNotEmpty ? first : (https(p['url_media']).isNotEmpty ? https(p['url_media']) : https(p['thumbnail']));
+    return first.isNotEmpty ? first : https(p['thumbnail']);
+  }
+
+  /// Ajoute à chaque pub le texte et l'image de son post (`_text`, `_image`, `_type`) : c'est ce que la notification montre.
+  Future<void> _attachPosts(List<Map<String, dynamic>> ads) async {
+    await Future.wait(ads.map((ad) async {
+      final id = '${ad['postId'] ?? ''}';
+      if (id.isEmpty) return;
+      try {
+        final data = (await FirebaseFirestore.instance.collection('Posts').doc(id).getM('ad_admin_page.dart:pushAdPost')).data();
+        if (data == null) return;
+        ad['_text'] = '${data['description'] ?? ''}'.replaceAll(RegExp(r'\s+'), ' ').trim();
+        ad['_image'] = _previewImage(data);
+        ad['_type'] = '${data['dataType'] ?? ''}'.toUpperCase();
+      } catch (_) {}
+    }));
+  }
+
+  /// Ouvre la pub comme le verrait une personne (page du post : image ou vidéo, texte, bouton d'action).
+  Future<void> _openAdPost(Map<String, dynamic> ad) async {
+    final id = '${ad['postId'] ?? ''}';
+    if (id.isEmpty) return;
+    try {
+      final doc = await FirebaseFirestore.instance.collection('Posts').doc(id).getM('ad_admin_page.dart:openAdPost');
+      if (!doc.exists || !mounted) return;
+      final data = Map<String, dynamic>.from(doc.data()!)..['id'] = doc.id;
+      final post = Post.fromJson(data);
+      final isVideo = '${data['dataType'] ?? ''}'.toUpperCase() == 'VIDEO';
+      Navigator.push(context, MaterialPageRoute(builder: (_) => isVideo ? VideoYoutubePageDetails(initialPost: post) : DetailsPost(post: post)));
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Impossible d\'ouvrir la pub : $e')));
+    }
+  }
+
+  Widget _adThumb(AppColors colors, Map<String, dynamic> ad, double size) {
+    final image = '${ad['_image'] ?? ''}';
+    final placeholder = Container(
+      width: size,
+      height: size,
+      color: colors.surfaceVariant,
+      child: Icon('${ad['_type'] ?? ''}' == 'VIDEO' ? Icons.play_circle_outline_rounded : Icons.campaign_outlined, color: colors.textSecondary, size: size * 0.45),
+    );
+    if (image.isEmpty) return placeholder;
+    return Image.network(image, width: size, height: size, fit: BoxFit.cover, errorBuilder: (_, __, ___) => placeholder);
+  }
+
+  /// Fiche d'une pub : aperçu de la notification telle qu'elle partirait, chiffres, et bouton pour voir la pub en entier.
+  void _showAdDetail(Map<String, dynamic> ad) {
+    final colors = AppColors.of(context);
+    final text = '${ad['_text'] ?? ''}';
+    final title = text.isEmpty ? '…' : (text.length > 50 ? text.substring(0, 50) : text);
+    final body = text.isEmpty ? '…' : (text.length > 110 ? text.substring(0, 110) : text);
+    final image = '${ad['_image'] ?? ''}';
+    Widget stat(String k, String v) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          child: Row(children: [
+            Expanded(flex: 5, child: Text(k, style: TextStyle(color: colors.textSecondary, fontSize: 13))),
+            Flexible(flex: 6, child: Text(v, textAlign: TextAlign.right, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 13))),
+          ]),
+        );
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: colors.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(18))),
+      builder: (ctx) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.75,
+        maxChildSize: 0.95,
+        minChildSize: 0.4,
+        builder: (_, controller) => ListView(controller: controller, padding: const EdgeInsets.fromLTRB(16, 14, 16, 24), children: [
+          Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: colors.border, borderRadius: BorderRadius.circular(2)))),
+          const SizedBox(height: 12),
+          Text('Aperçu de la notification', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 15)),
+          const SizedBox(height: 8),
+          // la notification, telle qu'elle apparaîtrait (la mention « Pub » est ajoutée selon la langue de la personne)
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: colors.background, borderRadius: BorderRadius.circular(14), border: Border.all(color: colors.border)),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Icon(Icons.notifications_active_outlined, size: 14, color: colors.textSecondary),
+                const SizedBox(width: 6),
+                Text('Afrolook · maintenant · Pub', style: TextStyle(color: colors.textSecondary, fontSize: 11.5)),
+              ]),
+              const SizedBox(height: 6),
+              Text(title, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 14)),
+              const SizedBox(height: 2),
+              Text(body, style: TextStyle(color: colors.textSecondary, fontSize: 13, height: 1.3)),
+              if (image.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.network(image, width: double.infinity, height: 170, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _adThumb(colors, ad, 120))),
+              ],
+            ]),
+          ),
+          const SizedBox(height: 14),
+          stat('Type d\'action', '${ad['actionType'] == '' ? '—' : ad['actionType']}'),
+          stat('Contenu', '${ad['_type'] == null || ad['_type'] == '' ? 'texte' : ad['_type']}'),
+          stat('Vues', '${ad['views']}'),
+          stat('Clics', '${ad['clicks']}'),
+          stat('Notifications envoyées', '${ad['pushSent']} / ${ad['pushLimit']}'),
+          stat('Envoi par notification', ad['pushEnabled'] == true ? 'activé' : 'désactivé'),
+          stat('Identifiant', '${ad['id']}'),
+          const SizedBox(height: 14),
+          if ('${ad['postId'] ?? ''}'.isEmpty)
+            Text('Cette pub n\'a pas de post : elle ne peut pas partir en notification.', style: TextStyle(color: colors.warning, fontSize: 12))
+          else
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _openAdPost(ad);
+                },
+                icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                label: const Text('Voir la pub en détail'),
+                style: ElevatedButton.styleFrom(backgroundColor: colors.primary, foregroundColor: colors.onPrimary),
+              ),
+            ),
+        ]),
+      ),
+    );
+  }
+
   Future<void> _loadPushAds() async {
     setState(() {
       _pushLoading = true;
@@ -73,6 +212,7 @@ class _AdAdminPageState extends State<AdAdminPage> {
     try {
       final res = await FirebaseFunctions.instance.httpsCallable('adPushList').call();
       final ads = ((res.data as Map)['ads'] as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      await _attachPosts(ads);
       if (mounted) setState(() => _pushAds = ads);
     } on FirebaseFunctionsException catch (e) {
       if (mounted) setState(() => _pushError = e.code == 'not-found' ? 'La fonction adPushList n\'est pas encore déployée.' : 'Refusé (${e.code}) : ${e.message ?? ''}');
@@ -181,13 +321,30 @@ class _AdAdminPageState extends State<AdAdminPage> {
           Text('Aucune pub Afrolook active.', style: TextStyle(color: colors.textSecondary, fontSize: 12))
         else
           for (final ad in _pushAds)
-            SwitchListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              value: ad['pushEnabled'] == true,
-              onChanged: (v) => _setPush(ad, v),
-              title: Text('${ad['actionType'] == '' ? 'Pub' : ad['actionType']} · ${ad['id']}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: colors.textPrimary, fontSize: 12.5)),
-              subtitle: Text('${ad['views']} vues · ${ad['clicks']} clics · notifications ${ad['pushSent']}/${ad['pushLimit']}', style: TextStyle(color: colors.textSecondary, fontSize: 11.5)),
+            InkWell(
+              onTap: () => _showAdDetail(ad), // fiche : aperçu de la notification, chiffres, voir la pub en détail
+              borderRadius: BorderRadius.circular(10),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(children: [
+                  ClipRRect(borderRadius: BorderRadius.circular(8), child: _adThumb(colors, ad, 58)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Text(
+                        '${ad['_text'] ?? ''}'.isEmpty ? '${ad['actionType'] == '' ? 'Pub' : ad['actionType']} · ${ad['id']}' : '${ad['_text']}',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 12.5, height: 1.25),
+                      ),
+                      const SizedBox(height: 3),
+                      Text('${ad['views']} vues · ${ad['clicks']} clics · notifications ${ad['pushSent']}/${ad['pushLimit']}', style: TextStyle(color: colors.textSecondary, fontSize: 11.5)),
+                      Text('Toucher pour voir le détail', style: TextStyle(color: colors.primary, fontSize: 11, fontWeight: FontWeight.w600)),
+                    ]),
+                  ),
+                  Switch(value: ad['pushEnabled'] == true, onChanged: (v) => _setPush(ad, v), activeColor: colors.primary),
+                ]),
+              ),
             ),
       ]),
     );
