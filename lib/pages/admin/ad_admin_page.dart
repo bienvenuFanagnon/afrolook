@@ -106,7 +106,7 @@ class _AdAdminPageState extends State<AdAdminPage> {
     return out;
   }
 
-  String _money(Map<String, double> m) => m.isEmpty ? '—' : m.entries.map((e) => '${e.value.toStringAsFixed(2)} ${e.key}').join(' + ');
+  String _money(Map<String, double> m) => m.isEmpty ? '—' : m.entries.map((e) => '${e.value.toStringAsFixed(e.value > 0 && e.value < 1 ? 4 : 2)} ${e.key}').join(' + '); // 4 décimales sous 1 unité : une pub rapporte une fraction de centime
 
   Widget _revenueCard(AppColors colors, Widget Function(String, String) row) {
     // total de la semaine par emplacement
@@ -216,8 +216,10 @@ class _AdAdminPageState extends State<AdAdminPage> {
     Widget row(String k, String v) => Padding(
           padding: const EdgeInsets.symmetric(vertical: 3),
           child: Row(children: [
-            Expanded(child: Text(k, style: TextStyle(color: colors.textSecondary, fontSize: 13))),
-            Text(v, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 13)),
+            Expanded(flex: 5, child: Text(k, style: TextStyle(color: colors.textSecondary, fontSize: 13))),
+            const SizedBox(width: 8),
+            // la valeur peut être longue (« ACTIF (Appodeal ne remplit pas… »): elle passe à la ligne au lieu d'écraser le libellé
+            Flexible(flex: 6, child: Text(v, textAlign: TextAlign.right, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 13))),
           ]),
         );
     Widget btn(String label, VoidCallback onTap) => Padding(
