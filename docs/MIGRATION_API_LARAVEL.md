@@ -1,0 +1,253 @@
+# Migration d'Afrolook vers une API Laravel (plan du 27 octobre 2026)
+
+Statut : **plan à valider**. Rien n'est encore construit. Ce document est le **plan détaillé** ; **l'état d'avancement (ce qui est fait, ce qui reste) et les décisions sont dans `docs/PROJET_MEMOIRE.md`** (mémoire unique du projet, section 6). Le mettre à jour à chaque phase.
+
+**Périmètre ajusté le 27/10/2026** : le module **Afrolove (rencontres) est abandonné** et les **pronostics sont supprimés** ; ils ne sont **pas migrés**. Les « pages qu'on n'affiche plus » ne sont pas migrées non plus (inventaire : `docs/PAGES_ORPHELINES.md`, à confirmer). Conséquences : le module 18 ci-dessous est barré, la phase 6 est allégée, et le travail total baisse d'environ 3 semaines.
+
+## 1. Objectif et règles du jeu
+
+- Séparer Afrolook en deux : **l'application Flutter** (affichage, interactions) et **une API Laravel** (toute la logique et les données), hébergée sur **un VPS avec Docker**, base **PostgreSQL**.
+- **Raison** : la facture Firebase augmente avec les lectures / écritures Firestore, le transfert de données et le temps de calcul des fonctions. Sur un VPS, le coût est fixe.
+- **Médias** : plus de Firebase Storage. Les fichiers vont **directement sur Cloudflare R2** (lecture par le CDN `cdn.afrolookmedia.com`).
+- **On garde chez Firebase** : Authentification (e-mail, validation d'e-mail, Google, Apple), **Cloud Messaging (FCM)**, les **chats** (temps réel), Remote Config, App Check. Ces services sont gratuits ou bon marché, et le temps réel y est bien meilleur qu'ailleurs.
+- **Précision du propriétaire (27/10/2026)** : les **pages et l'interface existent déjà** et sont **réadaptées** ; ce qui est **créé**, ce sont les **traitements** (les Cloud Functions) qui deviennent l'**API**. **Firebase ne sert plus au traitement ni au stockage des données métier** : il ne reste que l'authentification, FCM, les chats, Remote Config, App Check et **les tâches périodiques** (la planification reste chez Firebase et ne fait que **déclencher l'API** ; à confirmer, question 15 de `docs/PROJET_MEMOIRE.md`).
+- **Règle d'or de la migration** : une fonctionnalité à la fois, chaque étape déployable, retour arrière possible, **jamais de coupure** pour les utilisateurs.
+
+## 2. Ce que montre l'analyse du projet
+
+| Mesure | Valeur |
+|---|---|
+| Application Flutter | 755 fichiers, ~377 000 lignes (pages : 300 000) |
+| Code qui parle **directement** à Firestore | 290 fichiers (1 158 lectures, 1 123 `add`, 608 `update`, 299 `set`, 326 compteurs, 46 transactions, 38 lots) |
+| Écoutes temps réel (`snapshots`) | 141 (Users 219 réf., Posts, Chats, Notifications, Messages, chroniques, rencontres, lives, groupes, canaux) |
+| Fonctions serveur appelées par l'app (`httpsCallable`) | 93 distinctes |
+| Fonctions Cloud | 152 appelables, 25 planifiées, 7 HTTP (webhooks), 28 déclencheurs Firestore — ~21 000 lignes TypeScript |
+| Règles de sécurité Firestore | 53 collections protégées : **c'est aujourd'hui la couche d'autorisation de l'application** |
+| Documents | Users 2 046 · Posts 6 719 · **Notifications 318 391** · PostComments 5 502 · TransactionSoldes 5 370 · Invitations 3 916 · membres de canaux 8 231 · Chats 362 · messages 2 829 · rencontres 695 · lives 415 |
+| Utilisateurs | ~2 000 inscrits, ~40 actifs par jour (très petit trafic) |
+| Lectures Firestore | 553 000 par jour (mesure du 18/10), dont 98,9 % viennent de requêtes et d'écoutes |
+
+**Où partent les lectures** (mesure par écran de l'application, 24-26 octobre, `ReadStats`) :
+`discovery_boost_service` ≈ 40 % (3 sources), `feed_discovery_section` 5,6 %, `feed_preload_service` 4,4 %, `active_creators_service` ≈ 5 %, `feed_repository` ≈ 4 %, tableau de bord du contenu payant 5 %, `authProvider` ≈ 6 %, notifications ≈ 1 %.
+→ **Plus de la moitié du coût vient du fil et de la découverte (module Publications).** C'est là qu'il faut commencer, après les fondations.
+
+**Autres postes de coût déjà traités** : sortie de Cloud Storage (passée de 33 Go/jour à ~10 Go/jour grâce à R2), CPU des fonctions (~0,3 $/jour), poids des profils `Users`.
+
+## 3. Avis franc sur l'intérêt de la migration
+
+- **Ce que la migration règle vraiment** : le coût variable. Avec Postgres, une requête « le fil de cette personne » devient **une** requête SQL sur le VPS (et un cache Redis) au lieu de centaines de lectures facturées. Les compteurs, classements, listes de notifications et profils lourds (`followingIds`, `viewedPostIds`…) deviennent des tables normales. Le coût ne grandit plus avec le nombre de lectures.
+- **Ce qu'elle ne règle pas** : à ~40 utilisateurs actifs par jour, la facture Firebase actuelle est probablement **modeste** (ordre de grandeur : quelques dizaines de dollars par mois). Un VPS coûte lui aussi de l'argent, plus du temps de maintenance. Le gain monte avec la croissance. **Il faut donc fixer un seuil de rentabilité avec la vraie facture** (voir « Questions à valider », n°1).
+- **Le vrai coût du projet est le travail** : 290 fichiers de l'application écrivent aujourd'hui directement en base, et les règles Firestore font l'autorisation. Tout cela doit être **adapté** en appels API (les **écrans ne sont pas refaits** : le frontend est la copie de l'application actuelle dont seule la couche de données change), avec les règles portées côté serveur. Fourchette indicative (une personne + moi) : **4 à 5 mois et demi** (après abandon d'Afrolove) pour tout migrer, en livrant par étapes.
+- **Parade au risque** : chaque phase a un **critère de sortie mesurable** (lectures Firestore en baisse, zéro écart de soldes, etc.). Si une phase ne rapporte pas, on s'arrête là : l'architecture « mixte » reste saine (Firebase pour le temps réel, Laravel pour le reste).
+
+## 4. Architecture cible
+
+```
+  Application Flutter ──(HTTPS, jeton Firebase)──▶ Cloudflare (proxy, pare-feu, limite de débit)
+        │                                                   │
+        │                                                   ▼
+        │                                         VPS (Docker Compose)
+        │                                         ├─ Caddy/Nginx (TLS)
+        │                                         ├─ Laravel (PHP-FPM ou Octane)  ◀── API /v1
+        │                                         ├─ Horizon (files de travaux) + Scheduler
+        │                                         ├─ PostgreSQL 16/17 (+ sauvegardes vers R2)
+        │                                         └─ Redis (cache, files, limites de débit)
+        │
+        ├──▶ Firebase : Auth · FCM · Firestore (chats seulement) · Remote Config · App Check
+        └──▶ Cloudflare R2 (envoi direct par URL signée) ──▶ CDN cdn.afrolookmedia.com
+```
+
+### 4.1 Authentification (Firebase reste la source d'identité)
+1. L'application se connecte à Firebase comme aujourd'hui (e-mail, Google, Apple, validation d'e-mail).
+2. Chaque requête API porte `Authorization: Bearer <jeton d'identité Firebase>` et `X-Firebase-AppCheck`.
+3. Laravel vérifie la signature (clés publiques de Google, en cache), l'expiration et l'identifiant du projet, puis retrouve l'utilisateur par `firebase_uid`. Garde personnalisée `firebase`, paquet `kreait/laravel-firebase`.
+4. Aucun mot de passe n'est jamais stocké chez nous. Suppression de compte : l'API supprime aussi l'utilisateur Firebase (SDK Admin).
+
+### 4.2 Ce qui reste où, et pourquoi
+
+| Élément | Où | Pourquoi |
+|---|---|---|
+| Connexion, e-mails de vérification, Google/Apple, réinitialisation | **Firebase Auth** | Demandé ; gratuit, fiable, déjà intégré |
+| Notifications push | **FCM** (envoi depuis Laravel avec le SDK Admin) | Gratuit et sans quota ; seul l'envoi change de serveur. OneSignal : supprimé à la fin |
+| Chats privés, groupes, discussions d'entreprise, réponses de chroniques | **Firestore** (inchangé) | Vrai temps réel, hors ligne, règles déjà écrites. Volume faible (2 800 messages) donc coût négligeable |
+| Commentaires de lives (flux rapide) | **Firestore** | Temps réel pur |
+| Remote Config, App Check, Crashlytics | **Firebase** | Gratuit, indépendant des données |
+| Médias (images, vidéos, audio, stickers, musique) | **Cloudflare R2 + CDN** | Sortie gratuite ; envoi direct sans passer par le VPS (URL signée) |
+| Données métier (utilisateurs, publications, commentaires, canaux, notifications, soldes, paiements, quiz, étude, contes, boutique, pubs, contenu payant, rencontres, classements) | **PostgreSQL via l'API Laravel** | C'est là que se trouve le coût variable |
+| Tâches planifiées (25) | **Consigne du propriétaire : la planification reste chez Firebase** (Cloud Scheduler) ; chaque tâche **appelle l'API** (point d'entrée protégé) où se trouve la logique. *Variante à proposer* : planificateur Laravel (sans coût Firebase) — question 15 | La logique et les données sont dans l'API ; la tâche Firebase est un simple déclencheur |
+| Déclencheurs sur les données (28) | **Événements de l'API** (observateurs de modèles + files Horizon) pour les données migrées ; seuls les déclencheurs des **chats** restent sur Firestore | Un déclencheur Firestore ne peut plus voir des données qui sont dans PostgreSQL |
+| Intelligence artificielle (résumés, traductions, suggestions) | Appels depuis Laravel vers **Cloudflare Workers AI** (inchangé côté fournisseur) | |
+| Paiements (FeexPay, CinetPay, PayGate, Apple, Google Play) | **Laravel** (webhooks signés, journal de grand livre) | Transactions SQL vraies (`SELECT … FOR UPDATE`), plus sûr que Firestore pour l'argent |
+
+### 4.3 Conventions de l'API
+- `/api/v1/...`, JSON, **pagination par curseur** partout, `ETag` / `If-None-Match` (réponses 304 sans corps : économise la bande passante des téléphones), compression Brotli/gzip.
+- Autorisation par **Policies Laravel** qui reprennent une à une les règles de `firestore.rules`.
+- **`Idempotency-Key` obligatoire** sur tous les points d'écriture d'argent (dépôt, achat, cadeau, retrait) : un double clic ou un rejeu réseau ne double jamais un débit.
+- Limitation de débit par utilisateur et par IP (Redis), journal d'audit des actions sensibles.
+- Contrat décrit en **OpenAPI** (généré) ; le client Dart est généré à partir de lui (plus de modèles écrits à la main qui divergent).
+- Erreurs au format unique `{ code, message, details }`, messages d'erreur en français (clés de traduction).
+
+## 5. Modèle de données PostgreSQL (grandes lignes)
+
+- **Clés** : les entités importées gardent leur **identifiant Firestore comme clé primaire texte** (les liens de partage existants `/post/<id>` et les références restent valables). Les nouvelles entités utilisent des ULID.
+- **JSONB** seulement pour les champs réellement libres (préférences, métadonnées). Tout ce qui est liste qui grandit devient **table de liaison** : `follows`, `post_views` (avec durée de conservation), `post_likes`, `favorites`, `blocks`, `canal_members`…
+- **Argent** : entiers (pièces / centimes), jamais de flottants. Table `ledger_entries` en **écriture double** (débit/crédit), le solde d'un portefeuille est vérifiable par somme. `wallets` (dépôt / gains, voir « deux soldes de pièces »), `transactions`, `withdrawal_requests`.
+- **Notifications** (318 000 lignes) : table partitionnée par mois, purge automatique, index `(user_id, created_at desc)` ; compteurs de non-lus en Redis.
+- **Recherche** : `pg_trgm` + index pour les pseudos, titres, canaux (remplace les requêtes « préfixe » de Firestore).
+- **Fil** : classement calculé en SQL à partir de `post_scores` (le moteur de score actuel est porté en tâche planifiée), liste d'identifiants du fil mise en cache dans Redis par utilisateur.
+- **Sauvegardes** : `pg_dump` quotidien + archivage continu (WAL) chez R2, restauration testée chaque mois.
+
+## 6. Découpage par modules : API ou application, et phase
+
+Légende : **API** = logique et données sur Laravel ; **Firebase** = reste sur Firebase ; **App** = reste dans Flutter (affichage, cache, saisie).
+Difficulté : ● faible · ●● moyenne · ●●● élevée.
+
+| # | Module | Collections / code actuel | Côté API Laravel | Reste dans Flutter / Firebase | Diff. | Phase |
+|---|---|---|---|---|---|---|
+| 0 | **Fondations** | — | Projet, Docker, authentification Firebase, utilisateurs (`firebase_uid`), envoi R2, observabilité, CI | Couche `ApiClient` (jeton, nouvelle tentative, 304), interrupteurs de bascule par module (Remote Config), version minimale par module | ●● | 0 |
+| 1 | **Configuration** | AppConfig, AppData, Informations, Remote | Lecture publique mise en cache (une requête au démarrage) | Remote Config reste pour les interrupteurs | ● | 1 |
+| 2 | **Notifications** | Notifications (318 k), rappels `reengagement`, budget (`PushBudget`), `newsPush`, `sendPush` | Liste paginée, non-lus, marquage, **orchestration des rappels** (créneaux 8 h 30 / 13 h / 19 h 30, budget 3/jour, heures calmes), envoi FCM | Réception FCM, affichage, ouverture d'écran | ●● | 1 |
+| 3 | **Comptes et profils** | Users, Pseudo, UserKeys, BlockedUsers, Friends, UserPresence, `users/*`, `accountDeletion` (J+15) | Profil, pseudo unique, blocages, suppression J+15, présence (Redis), parrainage, certification | Saisie, cache du profil connecté | ●●● | 2 |
+| 4 | **Abonnements (follows)** | `follows/*`, `followUser`, `syncFollowsFromLegacy` | Table `follows`, compteurs | Bouton, état local | ● | 2 |
+| 5 | **Publications, fil, découverte** | Posts (6,7 k), `discovery_boost_service`, `feed_*`, `active_creators`, `scoreEngine`, `weeklyRankings`, `unreadCleanup` | Fil classé, découverte, créateurs actifs, vues, j'aime, favoris, partages, reposts, score, classements hebdomadaires | Défilement, lecture médias, cache | ●●● | 2 |
+| 6 | **Commentaires** | PostComments (5,5 k), `comments_prefetch` | CRUD, comptes, réponses, notifications | Affichage, saisie | ●● | 2 |
+| 7 | **Canaux** | Canaux (126), membres (8,2 k), CanalNames, `canalInactivity`, `adminCanaux` | Création, abonnements, privés/payants, règles d'accès | Écrans | ●● | 3 |
+| 8 | **Chroniques** | chroniques (24 h), `chroniqueReply` | Création, expiration, aperçu | Lecteur. **Réponses (`chronique_messages`) : Firebase** | ● | 3 |
+| 9 | **Chats** | Chats, Messages, GroupChats, GroupMessages, entreprise | Rien, sauf création de groupes si besoin de règles métier | **Firebase (inchangé)**. Notification de message : déclencheur Firestore conservé (`onGroupMessageCreated`) | — | — |
+| 10 | **Quiz / Étude / Contes** | `quiz/*` (18 fonctions), `etude/*`, `contes/*` | Tirage, réponses, progression, classements, anti-triche, diplômes, rappels | Écrans de jeu, minuteur | ●● | 4 |
+| 11 | **Musique et sons d'artistes** | MusicLibrary/Likes/Favorites/Playlists, artist_sounds, `studio/*` | Catalogue, droits, licences, comptes d'écoute, URL temporaires | Lecteur audio, cache chiffré du début | ●● | 4 |
+| 12 | **Studio, cartes, stickers, montage** | StickerPacks, Stickers, UserStickers, `cards/*`, `studio/*` | Métadonnées, achats, modération, génération IA | Éditeur, rendu | ●● | 4 |
+| 13 | **Afro Journal (actualités)** | `news/*` (2 843 lignes), NewsFeed, NewsDigests… | Pipeline en **tâches Laravel** (ou conteneur Node qui réutilise le code TypeScript au début), mêmes plafonds | Cartes, page journal | ●● | 4 |
+| 14 | **Pubs** | Advertisements, AdRewards, SSV, `ads/*` | Campagnes, récompenses, vérification serveur | AdMob / Appodeal restent dans l'app | ●● | 5 |
+| 15 | **Portefeuille, pièces, paiements** | TransactionSoldes (5,4 k), wallets, `payments/*` (3 261 lignes), retraits, IAP Apple/Google, taux de change | Grand livre, dépôts, achats en pièces, conversions, **webhooks** FeexPay / CinetPay / PayGate, validation des reçus Apple et Google, retraits (demandes manuelles) | Écrans de paiement, SDK d'achat intégré | ●●● | 5 |
+| 16 | **Contenu payant et créateurs** | ContentPaies, ContentComments, creator_*, PromoCodes | Achats, abonnements créateurs, codes promo, statistiques | Écrans | ●● | 5 |
+| 17 | **Boutique (AfroShop)** | Articles (86), Entreprises (94), Commandes, UserServices | Produits, commandes, paiements | Écrans | ●● | 5 |
+| 18 | ~~**Rencontres (Afrolove)**~~ **ABANDONNÉ le 27/10/2026** | dating_* (profils 695, 23 000 lignes de code) | **Rien** : non migré. Entrées masquées, données gardées en archive, code supprimé ensuite | — | — | — |
+| 19 | **Lives** | lives (415), Agora | Liste, jetons Agora, cadeaux, gains | Flux vidéo Agora. **Commentaires : Firebase** | ●● | 6 |
+| 20 | **Administration, équipe, modération, signalements** | `team/*`, `moderation`, Reports, AdminActions | Tableaux de bord, files de modération, journaux | Pages admin (clients de l'API) | ●● | 6 |
+| 21 | **E-mails** | `emails/*` | Laravel Mail + files (modèles existants) ; e-mails de vérification restent Firebase | — | ● | 6 |
+| 22 | **Série (streak), récompenses hebdomadaires, invitations** | `streak/*`, `weekly*`, Invitations | Tâches planifiées, compteurs | Écrans | ●● | 6 |
+| 23 | **Médias** | Storage, `r2Mirror`, `media/*` | URL signées R2, nettoyage, aperçus | Envoi direct, compression (`media_shrink`) | ●● | 3 (en continu) |
+
+**Hors périmètre** : SlashAtlas (projet Firebase séparé, `slashatlas-studio`) et PronoFlash restent tels quels ; on pourra les rattacher plus tard.
+
+## 7. Temps réel : comment on s'en passe (ou pas)
+
+| Besoin actuel | Solution |
+|---|---|
+| Liste de notifications, badge | Interrogation légère (compteur en 1 requête, ETag), mise à jour quand FCM arrive pendant que l'app est ouverte |
+| Compteurs d'un post (j'aime, commentaires, vues) | Valeur renvoyée avec le post, rafraîchie à l'ouverture et après une action ; pas d'écoute permanente |
+| Présence en ligne | Battement de cœur toutes les 60 s vers Redis, lecture groupée pour une liste d'utilisateurs |
+| Chats, commentaires de lives | **Restent Firestore** |
+| Plus tard, si un besoin apparaît | Laravel Reverb (WebSocket) sur le même VPS |
+
+## 8. Médias sur Cloudflare R2
+
+1. L'app demande `POST /v1/uploads` (type, taille, hash) → l'API contrôle (taille max, types, quotas, droits) et renvoie une **URL signée de dépôt (PUT)** valable 10 minutes, avec une clé de la forme `u/{userId}/{aaaa}/{mm}/{ulid}.{ext}`.
+2. L'app envoie le fichier **directement à R2** (rien ne transite par le VPS : zéro bande passante serveur).
+3. L'app confirme `POST /v1/uploads/{id}/complete` → l'API vérifie l'objet (taille, type réel), enregistre le média et renvoie l'URL du CDN.
+4. Lecture : `cdn.afrolookmedia.com/<clé>` (Worker existant, mis en cache). Plus de jetons Firebase dans les liens.
+5. **Migration de l'existant** (15 747 fichiers, 25 Go déjà copiés dans R2 le 17/10) : script qui range chaque fichier sous sa nouvelle clé, réécrit les URL en base, garde l'ancien chemin en repli pendant 30 jours.
+6. Vignettes et variantes : générées par tâche de file (ou par Cloudflare Images si le coût le justifie) ; vidéos : compression côté téléphone (`media_shrink`) conservée.
+
+## 9. Tester en local, sans VPS (et avant d'acheter quoi que ce soit)
+
+**État de ce poste** (vérifié aujourd'hui) : PHP 8.3 et Composer installés, **PostgreSQL 17 installé et démarré**, Node 22, Git, Flutter. **Docker et WSL ne sont pas installés** ; Redis non plus ; 16 Go de mémoire, 16 cœurs, disque C : 45 Go libres, disque D : 9,9 Go libres. Conclusion : on peut développer et tester **dès maintenant** sans Docker ; Docker sert seulement à valider les images avant le VPS.
+
+### 9.1 Niveaux de test (du moins cher au plus réaliste)
+
+| Niveau | Quoi | Comment |
+|---|---|---|
+| **1. Tests automatiques** | Chaque règle métier : autorisation, grand livre, webhooks, limites | Pest (PHPUnit) sur une base PostgreSQL `afrolook_test` locale. Cible : **chaque point d'API a au moins un test d'autorisation et un test métier**. Les paiements ont des tests de **rejeu** (même webhook deux fois = un seul crédit) |
+| **2. API locale + Firebase en émulateur** | L'application ou des scripts parlent à l'API sur ce poste | `php artisan serve` + PostgreSQL local. Firebase Emulator Suite (Auth + Firestore) : les scripts `scripts/seed_emulator.js` et `seed_auth_emulator.js` existent déjà. En mode `local` seulement, Laravel accepte les jetons de l'émulateur |
+| **3. Médias réels sans toucher la production** | Envoi par URL signée, lecture par le CDN | Compartiment R2 **de développement** `afrolook-media-dev` + sous-domaine `cdn-dev.<votre domaine>` + copie du Worker (gratuit, 10 Go offerts). Clés dans `.env`, jamais dans Git. Variante 100 % hors ligne : **MinIO** (compatible S3, comme R2) pour les tests automatiques |
+| **4. Vrai téléphone sur l'API locale** | Tester l'application complète et les paiements bac à sable | **Cloudflare Tunnel** (`cloudflared`, gratuit) : `api-dev.<votre domaine>` pointe vers l'API de ce poste, en HTTPS, sans ouvrir de port. Le téléphone et les **webhooks** (FeexPay, CinetPay, Apple, Google) atteignent ainsi le poste. Application : `--dart-define=API_BASE=https://api-dev.…` (émulateur Android : `10.0.2.2`) |
+| **5. Parité des données** | Prouver que la nouvelle base contient la même chose que Firestore | Export de production (lecture seule) → import dans Postgres de développement → **rapport de rapprochement** : nombres de lignes par collection, **somme des soldes**, empreintes (hash) d'échantillons, doublons, références orphelines. Rapport relu avant toute bascule |
+| **6. Comparaison « à l'ombre »** | Vérifier les réponses sur de vrais usages | Pour chaque module en lecture : l'application appelle l'ancienne source ET l'API, compare, **journalise les écarts** (sans changer ce que voit l'utilisateur). On passe à l'API quand le taux d'écart est nul sur 7 jours |
+| **7. Charge** | Tenir 10 à 100 fois le trafic actuel | k6 sur l'API locale puis sur le VPS de préproduction : scénarios « ouverture de l'accueil », « 50 j'aime/s », « rafale de webhooks » |
+| **8. Préproduction sur le VPS** | Mêmes conteneurs que la production | `api-staging.<domaine>` avec une copie anonymisée des données ; c'est la dernière marche avant `api.<domaine>` |
+
+### 9.2 Domaine et sous-domaines (le domaine existe déjà, hébergé chez Cloudflare)
+`api.` (production) · `api-staging.` (préproduction) · `api-dev.` (tunnel vers ce poste) · `cdn.` (existant) · `cdn-dev.` (développement). Les trois jeux de clés (dev, préproduction, production) sont **séparés** : un test ne peut jamais écrire en production.
+
+### 9.3 Règles de sécurité des tests
+- Aucun test n'écrit dans la base Firebase de production. Les exports sont en lecture seule.
+- Les données personnelles de la copie de développement sont **anonymisées** (e-mails, téléphones) avant d'aller en préproduction.
+- Paiements : modes **bac à sable** des fournisseurs et cartes de test publiées uniquement ; aucune vraie transaction en développement.
+- Les secrets (R2, Cloudflare, FCM, fournisseurs de paiement) restent dans `.env` non versionné puis dans les secrets Docker du VPS.
+
+### 9.4 Ce que je propose d'installer sur ce poste le moment venu
+Redis (ou l'équivalent Windows) pour les files, MinIO (un seul exécutable), `cloudflared`, k6. **Docker Desktop (avec WSL2)** pour construire et valider les images avant le VPS : il consomme du disque sur C : (prévoir ~15 Go). Rien n'est installé sans votre accord.
+
+## 10. Infrastructure du VPS (quand on l'achètera)
+
+- **Dimensionnement de départ** : 4 vCPU, 8 Go de RAM, 160 Go NVMe (largement suffisant pour 2 000 à 50 000 utilisateurs). Montée en charge : PgBouncer, réplique en lecture, Octane.
+- **Conteneurs** (`docker compose`) : `caddy` (TLS automatique) → `app` (PHP-FPM) → `postgres`, `redis`, `horizon`, `scheduler`, `backup` (pg_dump + WAL vers R2). Sauvegarde hors VPS obligatoire.
+- **Sécurité** : voir `docs/SECURITE_API.md` (comptes administrateurs séparés, 2FA, Cloudflare Access, Cloudflare Tunnel, sauvegardes chiffrées).
+- **Hébergeur** : LWS, VPS à accès administrateur complet (décidé le 27/10/2026).
+- **Réseau** : le VPS n'accepte que Cloudflare (liste d'adresses Cloudflare au pare-feu), SSH par clé uniquement, port PostgreSQL fermé à l'extérieur.
+- **Déploiement** : GitHub Actions → construction d'image → déploiement par SSH avec **bascule sans coupure** et retour arrière en une commande ; migrations de base exécutées avant la bascule, compatibles avec la version précédente.
+- **Supervision** : Sentry (erreurs), Laravel Pulse/Horizon (files, lenteurs), Uptime Kuma (disponibilité), alerte sur espace disque, sauvegarde manquante, file bloquée, taux d'erreur.
+- **Coût indicatif** : un VPS de cette taille se loue autour de 10 à 25 € par mois selon l'hébergeur ; R2 reste facturé à l'usage (déjà en place).
+
+## 11. Stratégie de bascule (sans casser les anciennes versions)
+
+Le point délicat : **des utilisateurs ont encore d'anciennes versions de l'application, qui écrivent directement dans Firestore** (1 444 comptes n'ont pas encore l'application à jour pour les notifications, par exemple).
+
+1. **Interrupteur par module** dans Remote Config (`api_module_<nom>` : `off` / `shadow` / `on`) et **version minimale par module**.
+2. **Étape « à l'ombre »** : l'application lit l'ancienne source, appelle aussi l'API et compare (niveau de test 6).
+3. **Import final** : arrêt court des écritures du module (message « maintenance de 2 minutes » ou verrou), dernier import différentiel, rapprochement, bascule `on`.
+4. **Anciennes versions** : pendant la transition, un pont Firestore → API (déclencheurs conservés pour le module concerné) garde les données synchronisées ; une fois la version minimale relevée (écran « mise à jour obligatoire »), le pont est supprimé. Vu la taille de la base active (~40 par jour), la mise à jour forcée est réaliste.
+5. **Retour arrière** : l'interrupteur revient à `off` ; Firestore reste intact (lecture seule) **30 jours** après chaque bascule.
+6. **Argent** : doublement d'écriture et rapprochement quotidien des soldes pendant 2 semaines avant de couper l'ancien circuit.
+
+## 12. Phasage et critères de sortie
+
+| Phase | Contenu | Durée indicative | Critère de sortie |
+|---|---|---|---|
+| **0. Fondations** | Projet Laravel, authentification Firebase, utilisateurs, envoi R2, CI, observabilité, `ApiClient` Flutter, interrupteurs. **Livrable : API opérationnelle en local** (voir §13) | 2-3 semaines | Un téléphone se connecte, s'authentifie, envoie une image sur R2 de développement et la relit par le CDN |
+| **1. Config + notifications** | Modules 1 et 2 | 3 semaines | Notifications servies par l'API, FCM envoyé par Laravel, rappels programmés identiques, lectures « Notifications » = 0 |
+| **2. Cœur social** | Modules 3, 4, 5, 6 (comptes, follows, fil, commentaires) | 6-8 semaines | **Lectures Firestore divisées par 3 au moins** sur 7 jours, écarts « à l'ombre » nuls |
+| **3. Canaux, chroniques, médias** | Modules 7, 8, 23 | 3-4 semaines | Plus aucun envoi vers Firebase Storage ; liens R2 partout |
+| **4. Contenus** | Modules 10-13 (quiz, étude, contes, musique, studio, journal) | 5-6 semaines | Fonctions Cloud correspondantes supprimées |
+| **5. Argent** | Modules 14-17 (pubs, portefeuille, paiements, contenu payant, boutique) | 6-8 semaines | 2 semaines de rapprochement à 0 écart, tous webhooks rejoués sans doublon |
+| **6. Reste** | Modules 19-22 (lives, admin, e-mails, série) — rencontres abandonnées | 3 semaines | Plus de fonction Cloud métier ; il ne reste que le trafic Firebase prévu |
+| **7. Extinction** | Retrait des fonctions et collections migrées, archivage, réduction du plan Firebase | 1-2 semaines | Facture Firebase ramenée au niveau visé |
+
+Les modules 5 (fil) et 15 (argent) sont les plus risqués : ils ont des **marches de contrôle** supplémentaires (comparaison à l'ombre, puis rapprochement).
+
+## 13. Contenu de la « première API opérationnelle » (phase 0)
+
+À la fin de la phase 0, en local puis sur le VPS de préproduction :
+- Projet Laravel 12 (PHP 8.3) dans un dossier à part du dépôt Flutter, avec Pest, Pint, Larastan, Horizon, Pulse.
+- `docker-compose` complet (Caddy, PHP-FPM, PostgreSQL, Redis, Horizon, Scheduler, MinIO pour le test) **et** mode « sans Docker » pour ce poste.
+- Garde `firebase` (vérification des jetons réels et de l'émulateur en local), App Check, création automatique de l'utilisateur à la première requête.
+- Points d'API de base : `GET /v1/me`, `PATCH /v1/me`, `POST /v1/uploads` + `complete`, `GET /v1/config`, `GET /v1/health`.
+- Envoi par URL signée vers R2 (ou MinIO) et lecture par le CDN de développement.
+- Tests automatiques, documentation OpenAPI, script de rapprochement Firestore → Postgres (squelette), pipeline CI.
+- Côté Flutter : classe `ApiClient` (jeton, nouvelle tentative, ETag, erreurs), configuration `API_BASE` par environnement, interrupteurs de modules. Aucun écran existant n'est modifié à ce stade.
+- **Principe consigné le 27/10/2026** : le frontend n'est **pas** recréé ; c'est **une copie de l'application actuelle, réadaptée à l'API** (voir `docs/AGENTS_ET_ORGANISATION.md` §5.6).
+
+## 14. Risques et parades
+
+| Risque | Parade |
+|---|---|
+| **Règles Firestore oubliées** (une règle non portée = faille) | Matrice « règle → Policy → test » établie module par module avant de migrer ; revue de sécurité à chaque phase |
+| **Argent** (double crédit, solde faux) | Grand livre à écriture double, `Idempotency-Key`, verrous SQL, rapprochement quotidien, retraits restent manuels |
+| **Anciennes versions de l'application** | Version minimale par module, pont de synchronisation temporaire |
+| **Perte de données** | Sauvegardes quotidiennes + WAL hors VPS, restauration testée, Firestore conservé 30 jours |
+| **Panne du VPS** (point unique) | Supervision et alertes, déploiement reproductible, procédure de reconstruction documentée ; plus tard, second serveur |
+| **Temps réel dégradé** | Les chats et les commentaires de lives restent sur Firebase |
+| **Effort sous-estimé** | Livraison par phases avec critère de sortie ; on peut s'arrêter à la phase 2 ou 3 et garder une architecture mixte |
+| **Dépendance à une personne** | Plan, contrats OpenAPI, tests et scripts versionnés dans Git |
+
+## 15. Questions à valider avant de lancer
+
+1. **Facture Firebase réelle** : pouvez-vous fournir les 3 derniers mois par ligne (Facturation → Rapports, regroupés par SKU) ? Elle fixe le seuil de rentabilité et l'ordre des phases.
+2. ~~Hébergeur~~ **LWS (décidé le 27/10/2026)**. Reste à préciser : l'offre exacte (VPS à accès administrateur complet, Docker possible) et le budget mensuel.
+3. **Emplacement du code** : dossier frère `afrolook-api` dans `D:\...\afrolook\V2\` avec son propre dépôt Git (recommandé), ou dossier `api/` dans le dépôt actuel ?
+4. **Mise à jour obligatoire** : acceptez-vous une version minimale par module (les utilisateurs qui n'ont pas mis à jour verront un écran de mise à jour) ?
+5. **Installations sur ce poste** : Docker Desktop (WSL2), Redis, MinIO, `cloudflared`, k6. Accord pour installer, et sur quel disque (C : a 45 Go libres, D : 9,9 Go) ?
+6. ~~Domaine~~ **`afrolookmedia.com` (décidé)**. À confirmer : DNS géré par Cloudflare ; sous-domaines `api.`, `api-staging.`, `api-dev.`, `admin.`, `cdn.`, `cdn-dev.`.
+7. ~~Firebase Dynamic Links~~ **non utilisé (décidé le 27/10)** : le partage et les aperçus passent par le domaine propre (`afrolookmedia.com/share/...`). Les pages d'aperçu (aujourd'hui la fonction `sharePostLink`) seront reprises dans Laravel ; le paquet `firebase_dynamic_links` et son code résiduel seront retirés.
+8. **Afro Journal** : réécrire en PHP, ou garder le code TypeScript dans un petit conteneur Node pendant la transition ?
