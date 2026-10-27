@@ -10,6 +10,9 @@ const { getAuth } = require('firebase-admin/auth');
 const { getStorage } = require('firebase-admin/storage');
 const crypto = require('crypto');
 const studio = require('./studio');
+const community = require('./community');
+const communityPages = require('./communityPages');
+const likes = require('./likes');
 const videoApi = require('./videoApi');
 const filmStudio = require('./filmStudio');
 const filmRenderer = require('./filmRenderer');
@@ -335,6 +338,8 @@ async function adminData(daysIn) {
     orders: os.docs.map((d) => { const x = d.data(); return { id: d.id, email: x.email || '', packId: x.packId, credits: x.credits, total: x.total, provider: x.provider, operator: x.operator, status: x.status, failure: x.failure || '', lastStatus: x.lastStatus || '', terms: x.terms ? x.terms.version : '', at: ts(x.createdAt) }; }),
     stats: st.docs.map((d) => { const x = d.data(); return { id: d.id, ...x, visitors: Object.keys(x.uids || {}).length }; }).sort((a, b) => a.id.localeCompare(b.id)),
     studioUsers: accCount.data().count,
+    withdrawalsPending: await community.withdrawalsPending().catch(() => 0), // retraits demandés par des créateurs : à payer
+    communityPending: await community.pendingCount().catch(() => 0), // commandes proposées qui attendent la validation : sert à l'alerte de l'administration
     subscribers: { total: subCount.data().count, items: subs.docs.map((d) => { const x = d.data(); return { email: x.email, kinds: x.kinds || [], lang: x.lang, page: x.page, note: x.note || '', at: ts(x.updatedAt) }; }) },
   };
 }
@@ -396,9 +401,30 @@ exports.slashatlasApi = onRequest(
       const pubs = [...new Set([a.client, 'ca-pub-4937249920200692'].filter((c) => /^ca-pub-\d{10,20}$/.test(c)))]; // compte principal de l'éditeur (application Afrolook) + compte du site
       return res.status(200).send(pubs.map((c) => `google.com, ${c.replace('ca-', '')}, DIRECT, f08c47fec0942fa0\n`).join(''));
     }
+    // Plan du site des commandes communautaires et des profils (déclaré dans robots.txt)
+    if (req.method === 'GET' && /\/sitemap-communaute\.xml$/.test(req.path)) {
+      try {
+        const xml = await communityPages.sitemap();
+        res.set('Content-Type', 'application/xml; charset=utf-8').set('Cache-Control', 'public, max-age=1800, s-maxage=3600');
+        return res.status(200).send(xml);
+      } catch (e) { console.error('sitemap communauté', e && e.message); return res.status(500).send(''); }
+    }
+    // Pages publiques des commandes communautaires (/c/u-<id>/, /createur/<pseudo>/) : coquille du site + contenu, pour que les aperçus de lien (WhatsApp, Facebook) et Google voient le vrai titre et la vraie image.
+    if (req.method === 'GET') {
+      const pm = /^(\/en)?\/(?:c\/u-([a-f0-9]{10})|(?:createur|creator)\/([a-zA-Z0-9_]{3,20}))\/?$/.exec(req.path);
+      if (pm) {
+        try {
+          const l = pm[1] ? 'en' : 'fr', ipk = crypto.createHash('sha256').update((req.get('x-forwarded-for') || req.ip || '').split(',')[0].trim()).digest('hex').slice(0, 12);
+          if (limited('pg' + ipk, 240, 60000)) return res.status(429).send('Too many requests');
+          const out = pm[2] ? await communityPages.commandPage(l, pm[2]) : await communityPages.creatorPage(l, pm[3].toLowerCase());
+          res.set('Content-Type', 'text/html; charset=utf-8').set('Cache-Control', out.status === 200 ? 'public, max-age=300, s-maxage=600' : 'public, max-age=60');
+          return res.status(out.status).send(out.html);
+        } catch (e) { console.error('community page', e && e.message); return res.status(500).send('Erreur'); }
+      }
+    }
     cors(req, res);
     if (req.method === 'OPTIONS') return res.status(204).send('');
-    if (req.method !== 'POST' && !(req.method === 'GET' && /\/(config|popular)$/.test(req.path))) return res.status(405).json({ error: 'method' });
+    if (req.method !== 'POST' && !(req.method === 'GET' && /\/(config|popular|likes|community\/(list|cmd|creators|top|preview\/[a-f0-9]{10}(\.jpg)?))$/.test(req.path))) return res.status(405).json({ error: 'method' });
     const o = req.get('origin');
     if (o && !ORIGINS.some((r) => r.test(o))) return res.status(403).json({ error: 'origin' });
     const ip = (req.get('x-forwarded-for') || req.ip || '').split(',')[0].trim();
@@ -459,6 +485,73 @@ exports.slashatlasApi = onRequest(
         if (path.endsWith('/pay/card')) return res.status(200).json(await studio.payCard(u, body(req), { ip, ua: req.get('user-agent') }));
         if (path.endsWith('/my-orders')) return res.status(200).json(await studio.myOrders(u, body(req)));
         return res.status(200).json(await studio.payStatus(u, body(req)));
+      }
+      // J'aime sur les commandes : totaux publics (une lecture, mise en cache), puis ajout / retrait et liste des miens (connecté)
+      if (req.method === 'GET' && path.endsWith('/likes')) {
+        if (limited('lk' + ipKey, 300, 60000)) return res.status(429).json({ error: 'rate' });
+        res.set('Cache-Control', 'public, max-age=60, s-maxage=120');
+        return res.status(200).json({ n: await likes.counts() });
+      }
+      if (req.method === 'POST' && /\/likes\/(toggle|mine)$/.test(path)) {
+        if (limited('lt' + ipKey, 120, 600000)) return res.status(429).json({ error: 'rate' });
+        // avec ou sans compte : le compte (jeton) s'il est fourni, sinon l'identifiant anonyme de l'appareil
+        const u = await whoIs(req), lb = body(req), who = likes.identity(u && u.provider === 'google.com' ? u : null, lb);
+        if (!who) return res.status(400).json({ error: 'identity' });
+        return res.status(200).json(path.endsWith('/toggle') ? await likes.toggle(who, lb) : await likes.mine(who));
+      }
+      // commandes communautaires publiées : liste, détail, recherche de créateurs, image d'aperçu (aucune consigne payante)
+      if (req.method === 'GET' && /\/community\/(list|cmd|creators|top|preview\/)/.test(path)) {
+        if (limited('cp' + ipKey, 300, 60000)) return res.status(429).json({ error: 'rate' });
+        if (/\/community\/preview\//.test(path)) {
+          const buf = await community.previewImage(path.split('/preview/')[1].replace(/\.jpg$/, ''));
+          res.set('Content-Type', 'image/jpeg').set('Cache-Control', 'public, max-age=86400, s-maxage=86400');
+          return res.status(200).send(buf);
+        }
+        res.set('Cache-Control', 'public, max-age=60, s-maxage=120');
+        if (path.endsWith('/community/list')) return res.status(200).json({ items: await community.publicList() });
+        if (path.endsWith('/community/cmd')) return res.status(200).json(await community.publicCmd(req.query.id));
+        if (path.endsWith('/community/top')) return res.status(200).json(await community.top(req.query.p));
+        return res.status(200).json(await community.creatorSearch(req.query.q));
+      }
+      // commandes communautaires : pseudo, proposition, contrôle IA, test obligatoire, soumission
+      if (/\/community\/(profile|handle-check|handle|analyze|test|approve-render|submit|mine|remove|wallet|convert|withdraw|copy)$/.test(path)) {
+        if (limited('c' + ipKey, path.endsWith('/test') ? 20 : 60, 600000)) return res.status(429).json({ error: 'rate' });
+        const u = await whoIs(req);
+        if (!u || u.provider !== 'google.com') return res.status(401).json({ error: 'auth' });
+        const cb = body(req), act = path.split('/community/')[1];
+        const fn = { profile: () => community.profile(u), 'handle-check': () => community.handleCheck(u, cb), handle: () => community.setHandle(u, cb), analyze: () => community.analyze(u, cb), test: () => community.test(u, cb), 'approve-render': () => community.approveRender(u, cb), submit: () => community.submit(u, cb), mine: () => community.mine(u), remove: () => community.remove(u, cb), wallet: () => community.wallet(u), convert: () => community.convert(u, cb), withdraw: () => community.withdraw(u, cb), copy: () => community.copyCommand(u, cb) }[act];
+        return res.status(200).json(await fn());
+      }
+      if (/\/admin\/community(-decide|-overview|-withdrawals|-withdraw-decide)?$/.test(path)) {
+        if (limited('acm' + ipKey, 60, 600000)) return res.status(429).json({ error: 'rate' });
+        const u = await whoIs(req);
+        if (!u) return res.status(401).json({ error: 'auth' });
+        if (!isAdmin(u)) return res.status(403).json({ error: 'forbidden' });
+        const cb = body(req);
+        if (path.endsWith('-overview')) return res.status(200).json(await community.adminOverview());
+        if (path.endsWith('-withdrawals')) return res.status(200).json(await community.adminWithdrawals(cb));
+        if (path.endsWith('-withdraw-decide')) {
+          const r = await community.adminWithdrawDecide(cb, u.email);
+          await db.collection('SlashAtlasAdminLog').add({ at: FieldValue.serverTimestamp(), by: u.email, action: 'withdraw_' + clean(cb.action, 10), id: clean(cb.id, 24), note: clean(cb.note, 200) });
+          return res.status(200).json(r);
+        }
+        if (path.endsWith('-decide') && cb.action === 'freeze') {
+          const r = await community.adminFreeze(cb);
+          await db.collection('SlashAtlasAdminLog').add({ at: FieldValue.serverTimestamp(), by: u.email, action: 'freeze', uid: clean(cb.uid, 128), on: !!cb.on });
+          return res.status(200).json(r);
+        }
+        if (path.endsWith('-decide') && cb.action === 'settings') {
+          const r = await community.adminSettings(cb, u.email);
+          await db.collection('SlashAtlasAdminLog').add({ at: FieldValue.serverTimestamp(), by: u.email, action: 'community_settings' });
+          return res.status(200).json(r);
+        }
+        if (path.endsWith('-decide') && cb.action === 'setcat') return res.status(200).json(await community.adminSetCat(cb));
+        if (path.endsWith('-decide')) {
+          const r = await community.adminDecide(cb, u.email);
+          await db.collection('SlashAtlasAdminLog').add({ at: FieldValue.serverTimestamp(), by: u.email, action: 'community_' + clean(cb.action, 12), ids: (Array.isArray(cb.ids) ? cb.ids : []).slice(0, 50).map((x) => clean(x, 24)), reason: clean(cb.reason, 200), done: r.done });
+          return res.status(200).json(r);
+        }
+        return res.status(200).json(await community.adminList(cb));
       }
       // notifications « commande du jour » : abonnement anonyme, sans compte
       if (/\/push\/(sub|unsub|click)$/.test(path)) {

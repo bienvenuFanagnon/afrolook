@@ -1014,3 +1014,137 @@ body[data-view=creations] #main>.wrap>.eyebrow,body[data-view=creations] #main>.
 .qs:hover,.qs.on{background:rgba(41,151,255,.14)}
 .qs-all{border-bottom:0;color:var(--acc2);font-weight:700;font-size:13.5px}
 .qs-none{padding:14px 16px;color:var(--mut);font-size:14px}
+
+/* ── Commandes communautaires : page « Proposer ma commande » et file de validation (admin) ── */
+.pwho{margin:14px 0 0;color:var(--mut);font-size:13.5px}.pwho b{color:var(--txt)}
+.pbox{gap:14px}.ph2{font:800 1.15rem/1.25 var(--f);margin:0;letter-spacing:-.02em;text-wrap:balance}
+.pstep{display:flex;gap:6px;list-style:none;margin:0;padding:0}.pstep li{flex:1;text-align:center;padding:8px 6px;border-radius:999px;border:1px solid var(--line);color:var(--faint);font-size:12.5px;font-weight:700}
+.pstep li.on{background:var(--acc);border-color:var(--acc);color:#fff}.pstep li.ok{color:var(--ok);border-color:rgba(48,209,88,.4)}
+.pin{width:100%;box-sizing:border-box;background:#0d0e10;border:1px solid var(--line2);border-radius:14px;color:var(--txt);padding:12px 14px;font:inherit;font-size:15px;resize:vertical}.pin:focus{outline:2px solid var(--acc);outline-offset:1px}
+.prow{display:flex;align-items:center;gap:8px}.pat{color:var(--mut);font-weight:800;font-size:18px}.prow .pin{flex:1}
+.pex{display:flex;flex-wrap:wrap;gap:6px;align-items:center}.pex small{width:100%;color:var(--faint);font-size:12px}.pex .chip{white-space:normal;text-align:left;font-size:12.5px;padding:6px 12px}
+.pcard{border:1px solid var(--line2);border-radius:16px;padding:14px;display:grid;gap:4px;background:var(--bg2)}.pcard b{font-size:16px}.pcard p{margin:0;color:var(--mut);font-size:14px}.pcard small{color:var(--faint);font-size:12px}
+.pphoto{display:flex;align-items:center;gap:12px;flex-wrap:wrap}.pphoto img{width:92px;height:92px;object-fit:cover;border-radius:14px;border:1px solid var(--line2)}.pphoto label{cursor:pointer}
+.pbal{margin:0;color:var(--mut);font-size:13px}.pbal b{color:var(--txt)}.pbal a{color:var(--acc2);font-weight:700}
+.pres{display:grid;gap:12px}.pres img{width:100%;max-width:420px;border-radius:16px;border:1px solid var(--line2);justify-self:center}
+.pmode{display:grid;gap:10px}.pm{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;border:1px solid var(--line2);border-radius:16px;padding:12px 14px;cursor:pointer}.pm.on{border-color:var(--acc);background:rgba(41,151,255,.08)}
+.pm input{grid-row:1/3;align-self:start;margin-top:4px}.pm small{color:var(--mut);font-size:12.5px}
+.pchk{display:flex;gap:10px;align-items:flex-start;color:var(--mut);font-size:13px;cursor:pointer}.pchk input{margin-top:3px}
+.plist{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:10px}
+.pit{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:16px;padding:12px;background:var(--card)}
+.pth{width:64px;height:80px;border-radius:10px;background:var(--bg2);flex:none;overflow:hidden}.pth img{width:100%;height:100%;object-fit:cover}
+.pin2{display:grid;gap:3px;min-width:0}.pin2 b{overflow-wrap:anywhere}.pin2 small{color:var(--faint);font-size:12px}.preason{color:#ffb4b4!important}
+.pbadge{justify-self:start;border-radius:999px;padding:2px 10px;font-size:11.5px;font-weight:700;border:1px solid var(--line2);color:var(--mut)}
+.pbadge.pending{color:#ffd27a;border-color:rgba(255,210,122,.4)}.pbadge.published{color:var(--ok);border-color:rgba(48,209,88,.4)}.pbadge.rejected,.pbadge.suspended{color:#ff8a8a;border-color:rgba(255,138,138,.4)}
+.pbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.sbox .pbox .btn.big,.pbox .btn.big{min-width:0;width:100%}
+/* file de validation (administration) */
+.cq-top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cq-banner{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between;border:1px solid rgba(255,210,122,.45);border-left:5px solid #ffd27a;background:#3a2f12;color:#ffe9b8;border-radius:12px;padding:12px 14px;margin:0 0 12px}
+.cq-item{display:grid;grid-template-columns:auto 130px 1fr;gap:12px;border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:10px;background:var(--bg2)}
+.cq-item .cq-img{width:130px;aspect-ratio:4/5;border-radius:10px;object-fit:cover;background:var(--card)}
+.cq-info{display:grid;gap:4px;min-width:0}.cq-info b{font-size:15px}.cq-info p{margin:0;color:var(--mut);font-size:13px;overflow-wrap:anywhere}.cq-info small{color:var(--faint);font-size:12px}
+.cq-info details{margin-top:4px}.cq-info summary{cursor:pointer;color:var(--acc2);font-size:12.5px}.cq-info pre{white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.5 var(--mono);color:#cfd3d8;margin:6px 0 0}
+.cq-tag{display:inline-block;border-radius:999px;padding:1px 9px;font-size:11px;font-weight:700;margin-right:6px;border:1px solid var(--line2);color:var(--mut)}.cq-tag.safe{color:var(--ok);border-color:rgba(48,209,88,.4)}.cq-tag.review{color:#ffd27a;border-color:rgba(255,210,122,.45)}
+@media (max-width:640px){.cq-item{grid-template-columns:auto 1fr}.cq-item .cq-info{grid-column:1/3}}
+
+/* ── Pages d'une commande communautaire et d'un créateur ── */
+.cv{display:grid;gap:22px;margin:14px 0 26px}
+.cv-img img{display:block;width:100%;max-width:460px;border-radius:22px;border:1px solid var(--line2);object-fit:cover;background:var(--card)}
+.cv-info{display:flex;flex-direction:column;gap:12px;min-width:0}.cv-info h1{margin:0}.cv-info .lead{margin:0}
+.cv-by{margin:0;color:var(--mut);font-size:14px}.cv-by a{color:var(--acc2);font-weight:700}
+.cv-info .acts.big{flex-wrap:wrap}.cv-info .acts .btn small{opacity:.85;font-weight:600}
+.cv-copy{display:grid;gap:10px;border:1px solid var(--line2);border-radius:18px;padding:14px;background:var(--bg2)}.cv-copy b{font-size:14px}
+.cv-copy pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;font:12.5px/1.55 var(--mono);color:#cfd3d8;max-height:240px;overflow:auto}
+.cv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px;margin:6px 0 30px}
+.cv-card{display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);border-radius:18px;padding:10px;background:var(--card);min-width:0}.cv-card:hover{border-color:var(--line2)}
+.cv-card img{width:100%;border-radius:12px;object-fit:cover;background:var(--bg2)}.cv-card b{font-size:14px;overflow-wrap:anywhere}.cv-card small{color:var(--faint);font-size:12px}
+@media (min-width:820px){.cv{grid-template-columns:minmax(0,460px) 1fr;align-items:start}}
+/* cartes communautaires dans la liste des commandes */
+.poster .nw.cm{background:var(--acc);color:#fff}
+.creators-strip{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 12px}.creators-strip small{color:var(--faint);font-size:12px}
+.creators-strip a{border:1px solid var(--line2);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:700;color:var(--txt)}.creators-strip a:hover{background:var(--line)}.creators-strip a i{font-style:normal;color:var(--faint);font-weight:600;margin-left:6px}
+
+/* ── Top 10 des créateurs, solde de gains ── */
+.top10{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:16px;margin:0 0 14px;display:grid;gap:12px}
+.top10-h{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}.top10-h h2{margin:0;font:800 1.05rem var(--f)}
+.top10-l{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
+.top10-l a{display:grid;grid-template-columns:30px 1fr;gap:0 10px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:9px 12px;background:var(--bg2)}.top10-l a:hover{border-color:var(--line2)}
+.top10-l i{grid-row:1/3;font:800 15px var(--mono);font-style:normal;color:var(--acc2);text-align:center}.top10-l li:nth-child(-n+3) i{color:#ffd27a}
+.top10-l b{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.top10-l small{color:var(--faint);font-size:12px}
+.pform{display:grid;gap:10px;max-width:420px}.pform label{display:grid;gap:4px;font-size:12.5px;color:var(--mut);font-weight:600}
+.ph3{font:800 .95rem var(--f);margin:10px 0 0}
+
+/* ── Annonce phare : publier ses commandes et gagner ── */
+.earn{border:1px solid rgba(41,151,255,.35);background:linear-gradient(160deg,rgba(41,151,255,.14),rgba(41,151,255,.03) 55%);border-radius:26px;padding:clamp(18px,4vw,30px);margin:20px 0;display:grid;gap:14px}
+.earn-chip{justify-self:start;border-radius:999px;padding:4px 12px;background:var(--acc);color:#fff;font:700 12px var(--f)}
+.earn h2{margin:0;font:800 clamp(22px,5.4vw,34px)/1.12 var(--f);letter-spacing:-.03em;text-wrap:balance}.earn .lead{margin:0}
+.earn-steps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+.earn-steps li{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:16px;padding:12px;background:rgba(0,0,0,.28)}
+.earn-steps li>span{flex:none;width:26px;height:26px;border-radius:50%;background:var(--acc);display:grid;place-items:center;font:800 13px var(--f)}
+.earn-steps b{display:block;font-size:14.5px}.earn-steps small{display:block;color:var(--mut);font-size:12.5px;margin-top:2px}
+.earn-cta{display:flex;gap:10px;flex-wrap:wrap}.earn-cta .btn{flex:1 1 220px;min-width:0}
+.earnbox{border:1px solid rgba(41,151,255,.35);background:rgba(41,151,255,.08);border-radius:18px;padding:16px;margin:0 0 16px;display:grid;gap:8px;justify-items:start}.earnbox b{font-size:15px}.earnbox p{margin:0;color:var(--mut);font-size:13.5px}
+@media (min-width:720px){.earn-cta .btn{flex:0 1 auto;min-width:260px}}
+
+/* ── Commutateur Toutes / Officielles / Communauté ── */
+.srcsw{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin:0 0 12px}.srcsw small{color:var(--faint);font-size:12px;flex:1 1 220px}
+
+/* ── Annonce « publier et gagner » : version compacte sur téléphone (une seule ligne de contenu, sans texte long) ── */
+.earn .sh{display:none;font-style:normal}.earn .fl{font-style:normal}
+@media (max-width:719px){
+  .earn{padding:14px;gap:10px;border-radius:20px;margin:16px 0}
+  .earn .lead,.earn-steps small{display:none}
+  .earn h2{font-size:18px;line-height:1.2;letter-spacing:-.02em}
+  .earn-chip{font-size:11px;padding:3px 10px}
+  .earn-steps{display:flex;flex-wrap:nowrap;gap:6px}
+  .earn-steps li{flex:1 1 0;min-width:0;flex-direction:column;align-items:center;text-align:center;gap:4px;padding:8px 2px;border-radius:12px}
+  .earn-steps li>span{width:22px;height:22px;font-size:12px}
+  .earn-steps b{font-size:12px;line-height:1.2}
+  .earn .fl{display:none}.earn .sh{display:inline}
+  .earn-cta{flex-wrap:nowrap;gap:8px}
+  .earn-cta .btn{flex:1 1 0;min-width:0;padding:11px 8px;font-size:13px}
+}
+@media (max-width:719px){
+  .earn{gap:8px;padding:12px}
+  .earn .earn-cta .btn.big{padding:9px 6px;font-size:12.5px;min-height:0;white-space:nowrap;line-height:1.2}
+  .earn .earn-cta .btn.pri{flex:1.2 1 0}
+  .earn-steps li{padding:6px 2px}
+}
+
+/* ── Cadenas : commande payante (texte privé) ── */
+.lk{display:inline-flex;align-items:center;color:#ffd27a;margin-left:auto}.lk .ic{width:15px;height:15px}
+.poster .lockb{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.68);display:grid;place-items:center;color:#ffd27a;z-index:2}.poster .lockb .ic{width:15px;height:15px}
+.chips span .ic{width:13px;height:13px;vertical-align:-2px;color:#ffd27a}.cv-card small .ic{width:12px;height:12px;vertical-align:-2px;color:#ffd27a}
+
+/* ── Page de l'opportunité (partageable) ── */
+.earn-page{margin:16px 0}.earn-page li small{display:block}
+.gainbox{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:16px;margin:0 0 16px;display:grid;gap:12px}.gainbox h2{margin:0;font:800 1.05rem var(--f)}
+.gain-rows{list-style:none;margin:0;padding:0;display:grid;gap:6px}.gain-rows li{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;border:1px solid var(--line);border-radius:12px;padding:9px 12px;background:var(--bg2)}.gain-rows span{color:var(--mut)}.gain-rows b{color:#ffd27a}
+.gain-notes{margin:0;padding-left:18px;color:var(--mut);font-size:13.5px;display:grid;gap:6px}.gain-notes b{color:var(--txt)}
+.acts[data-msg]{margin:0 0 6px;flex-wrap:wrap}.acts[data-msg] .btn{flex:1 1 140px}
+@media (max-width:719px){.earn-page{display:grid;grid-template-columns:1fr 1fr}}
+/* Boutons de partage de l'opportunité : jamais de texte qui dépasse sur petit écran */
+.acts[data-msg] .btn{min-width:0;white-space:normal;line-height:1.2}
+@media (max-width:520px){.acts[data-msg]{flex-direction:column;align-items:stretch}.acts[data-msg] .btn{flex:none;width:100%;padding:13px 14px}}
+
+/* Explications repliables sous l'espace créateur */
+.howto{border:1px solid var(--line);border-radius:18px;background:var(--card);padding:0 14px;margin:6px 0 18px}
+.howto>summary{cursor:pointer;list-style:none;padding:14px 0;font-weight:800;font-size:14.5px;display:flex;justify-content:space-between;gap:10px}.howto>summary::-webkit-details-marker{display:none}.howto>summary::after{content:'+';color:var(--acc)}.howto[open]>summary::after{content:'–'}
+.howto[open]{padding-bottom:14px}.howto .earn-page{margin-top:2px}
+
+/* ── J'aime (pouce, pastille bleue, public, avec le nombre) et favori (cœur seul, privé) : compacts et bien distincts ── */
+.lk-btn{display:inline-flex;align-items:center;gap:5px;background:transparent;border:1px solid var(--line2);border-radius:999px;padding:4px 10px;color:var(--mut);font:700 12.5px var(--f);cursor:pointer;line-height:1;flex:none}
+.lk-btn .ic{width:15px;height:15px}.lk-btn b{font-variant-numeric:tabular-nums;font-weight:800}
+.lk-btn:hover{color:var(--txt);border-color:var(--mut)}.lk-btn.on{color:var(--acc2);border-color:var(--acc);background:rgba(41,151,255,.14)}.lk-btn.on .ic{fill:currentColor}
+.lk-btn.big{height:42px;padding:0 14px;font-size:14px}.lk-btn.big .ic{width:19px;height:19px}
+.chead .lk-btn{margin-left:auto;margin-right:4px}.chead .lk-btn+.fav{margin-left:0}
+.fh1 .lk-btn.big,.fh1 .fav.big{flex:none;align-self:center}.fh1 .lk-btn.big{margin-left:auto}.fh1 .lk-btn.big+.fav.big{margin-left:8px}
+.cv-info .acts .lk-btn.big{flex:none}
+.lk-ro{color:var(--faint);font-size:12px}
+
+/* Demande « Cette commande vous a plu ? » après une copie */
+.likeask{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:70;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center;background:#111114;border:1px solid var(--line2);border-radius:18px;padding:10px 12px;box-shadow:0 14px 34px rgba(0,0,0,.55);max-width:calc(100vw - 24px);font-weight:700;font-size:13.5px;animation:likeaskin .25s ease-out}
+.likeask .btn{padding:8px 14px;font-size:13px}
+@keyframes likeaskin{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
+@media (min-width:720px){.likeask{bottom:24px}}

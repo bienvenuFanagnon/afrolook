@@ -57,8 +57,8 @@ const V = { css: hashOf('css/site.css'), js: hashDir('js') };
 
 const catSlug = (id, l) => { const c = CATEGORIES.find((x) => x.id === id); return (c && c.slug && c.slug[l]) || id; };
 const P = {
-  fr: { home: '/', cmds: '/commandes/', try: '/generer/', mine: '/mes-commandes/', ref: '/parrainage/', tuto: '/tutoriel/', pack: '/pack/', pro: '/pro/', studio: '/studio-contenu/', filmStudio: '/studio-film/', privacy: '/confidentialite/', cookies: '/cookies/', terms: '/conditions/', about: '/a-propos/', guides: '/guides/', cat: (id) => `/categorie/${catSlug(id, 'fr')}/`, cmd: (s) => `/c/${s}/` },
-  en: { home: '/en/', cmds: '/en/commands/', try: '/en/generate/', mine: '/en/my-commands/', ref: '/en/referral/', tuto: '/en/tutorial/', pack: '/en/pack/', pro: '/en/pro/', studio: '/en/content-studio/', filmStudio: '/en/film-studio/', privacy: '/en/privacy/', cookies: '/en/cookies/', terms: '/en/terms/', about: '/en/about/', guides: '/en/guides/', cat: (id) => `/en/category/${catSlug(id, 'en')}/`, cmd: (s) => `/en/c/${s}/` },
+  fr: { home: '/', cmds: '/commandes/', try: '/generer/', mine: '/mes-commandes/', propose: '/proposer/', ref: '/parrainage/', tuto: '/tutoriel/', pack: '/pack/', pro: '/pro/', studio: '/studio-contenu/', filmStudio: '/studio-film/', privacy: '/confidentialite/', cookies: '/cookies/', terms: '/conditions/', about: '/a-propos/', guides: '/guides/', cat: (id) => `/categorie/${catSlug(id, 'fr')}/`, cmd: (s) => `/c/${s}/` },
+  en: { home: '/en/', cmds: '/en/commands/', try: '/en/generate/', mine: '/en/my-commands/', propose: '/en/propose/', ref: '/en/referral/', tuto: '/en/tutorial/', pack: '/en/pack/', pro: '/en/pro/', studio: '/en/content-studio/', filmStudio: '/en/film-studio/', privacy: '/en/privacy/', cookies: '/en/cookies/', terms: '/en/terms/', about: '/en/about/', guides: '/en/guides/', cat: (id) => `/en/category/${catSlug(id, 'en')}/`, cmd: (s) => `/en/c/${s}/` },
 };
 const other = (l) => (l === 'fr' ? 'en' : 'fr');
 const catOf = (id) => CATEGORIES.find((c) => c.id === id);
@@ -239,6 +239,7 @@ function refPage(l) {
   const t = REFT[l], p = P[l];
   const body = `<div class="wrap narrow"><div class="eyebrow">${t.k}</div><h1 class="big sm">${t.h}</h1><p class="lead">${t.lead}</p>
 <ol class="refsteps">${t.steps.map((x) => `<li><span>${x[0]}</span><div><b>${x[1]}</b><small>${x[2]}</small></div></li>`).join('')}</ol>
+<div class="earnbox"><b>${EARN[l].chip}</b><p>${EARN[l].short}</p><a class="btn pri" href="${p.propose}">${EARN[l].cta}</a></div>
 <div class="reftab"><b>${t.tabH}</b>${REFC.map(([xof, n]) => `<p>${t.tabRow(xof, n)}</p>`).join('')}<small>${t.small}</small></div>
 <div id="ref" data-t="${esc(JSON.stringify({ login: t.login, loginNote: t.loginNote, link: t.link, copy: t.copy, copied: t.copied, wa: t.wa, share: t.share, n1: t.n1, n2: t.n2, n3: t.n3, listH: t.listH, none: t.none, bought: t.bought, joined: t.joined, gen: t.gen, shareText: t.shareText, tryUrl: p.try, locale: l }))}"></div></div>`;
   emit(l, 'ref', p.ref, { title: t.title, desc: t.desc, body, alt: alt2(P.fr.ref, P.en.ref), noindex: true, extraJs: '/js/referral.js' });
@@ -265,13 +266,15 @@ function poster(c, l, big = false) {
   return `<div class="poster img${c.ratio === '16:9' ? ' ls' : ''}" style="--ar:${c.ratio.replace(':', '/')}"><img src="/img/c/${c.slug}-t.webp" alt="${esc(imgAlt(c, l))}" loading="lazy" decoding="async"><span class="tag">${esc(catOf(c.cat)[l])}</span><span class="ai">${AIWORD[l]}</span>${NEWSET.has(c.slug) ? `<span class="nw">${NEWL[l]}</span>` : ''}${pl}</div>`;
 }
 const FAVL = { fr: 'Ajouter aux favoris', en: 'Add to favorites' };
-const favBtn = (c, l, cls = '') => `<button class="fav${cls ? ' ' + cls : ''}" type="button" data-fav="${c.slug}" aria-pressed="false" aria-label="${FAVL[l]}">${svg('heart')}</button>`;
+const LIKEL = { fr: 'J’aime cette commande (visible par tous)', en: 'Like this command (public)' }, LIKET = { fr: 'J’aime', en: 'Like' }, FAVT = { fr: 'Favori', en: 'Favorite' }, FAVTIP = { fr: 'Ajouter aux favoris (privé, rien que pour vous)', en: 'Add to favorites (private, just for you)' };
+const likeBtn = (slug, l, cls = '') => `<button class="lk-btn${cls ? ' ' + cls : ''}" type="button" data-like="${slug}" aria-pressed="false" aria-label="${LIKEL[l]}" title="${LIKEL[l]}">${svg('thumb')}<b hidden></b></button>`;
+const favBtn = (c, l, cls = '') => `<button class="fav${cls ? ' ' + cls : ''}" type="button" data-fav="${c.slug}" aria-pressed="false" aria-label="${FAVL[l]}" title="${FAVTIP[l]}">${svg('heart')}</button>`;
 // Champs cherchés (sans accents) : titres FR + EN (tt), mots-clés + catégories FR + EN + libellés (kk), tout le texte (q). Une personne qui tape en anglais sur le site français trouve aussi.
 const searchFields = (c, l) => { const t = c[l], ct = catOf(c.cat); return { tt: nq(`${c.fr.title} ${c.en.title}`), kk: nq(`${c.kw || ''} ${ct.fr} ${ct.en} ${c.fr.poster} ${c.en.poster}`), q: nq(`${c.code} ${c.fr.title} ${c.en.title} ${ct.fr} ${ct.en} ${t.desc} ${c.kw || ''} ${c.fr.poster} ${c.en.poster}`) }; };
 function card(c, l) {
   const t = c[l];
   const sf = searchFields(c, l);
-  return `<article class="card" data-slug="${c.slug}" data-search="${esc(sf.q)}" data-t="${esc(sf.tt)}" data-k="${esc(sf.kk)}" data-cat="${c.cat}"${NEWSET.has(c.slug) ? ' data-new="1"' : ''}><a href="${P[l].cmd(c.slug)}" class="cl" aria-label="${esc(t.title)}">${poster(c, l)}</a><div class="cb"><div class="chead"><div class="code">${esc(c.code)}</div>${favBtn(c, l)}</div><h3><a href="${P[l].cmd(c.slug)}">${esc(t.title)}</a></h3><div class="meta"><span>${esc(catOf(c.cat)[l])}${c.kind === 'text' ? '' : ' · ' + c.ratio}</span>${c.steps ? `<span class="stp">${c.steps.length + 1} ${l === 'fr' ? 'étapes' : 'steps'}</span>` : ''}<span class="cnt" hidden></span></div><div class="acts">${tryBtn(c, l, 'sm')}<button class="btn gl sm" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}">${copyLabel(l)}</button></div><pre id="p-${c.slug}" hidden>${esc(fullPrompt(c, l))}</pre></div></article>`;
+  return `<article class="card" data-slug="${c.slug}" data-search="${esc(sf.q)}" data-t="${esc(sf.tt)}" data-k="${esc(sf.kk)}" data-cat="${c.cat}"${NEWSET.has(c.slug) ? ' data-new="1"' : ''}><a href="${P[l].cmd(c.slug)}" class="cl" aria-label="${esc(t.title)}">${poster(c, l)}</a><div class="cb"><div class="chead"><div class="code">${esc(c.code)}</div>${likeBtn(c.slug, l)}${favBtn(c, l)}</div><h3><a href="${P[l].cmd(c.slug)}">${esc(t.title)}</a></h3><div class="meta"><span>${esc(catOf(c.cat)[l])}${c.kind === 'text' ? '' : ' · ' + c.ratio}</span>${c.steps ? `<span class="stp">${c.steps.length + 1} ${l === 'fr' ? 'étapes' : 'steps'}</span>` : ''}<span class="cnt" hidden></span></div><div class="acts">${tryBtn(c, l, 'sm')}<button class="btn gl sm" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}">${copyLabel(l)}</button></div><pre id="p-${c.slug}" hidden>${esc(fullPrompt(c, l))}</pre></div></article>`;
 }
 function bandForm(l, kind = 'request') {
   const b = T[l].band;
@@ -315,18 +318,18 @@ function layout({ l, key, title, desc, body, alt, noindex, ld, path: pth, authJs
 ${!robots ? [].concat(cfg.adsenseAccount || []).map((a) => `<meta name="google-adsense-account" content="${a}">`).join('') : ''}<link rel="icon" href="/favicon.svg" type="image/svg+xml"><link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/icons/apple-touch-icon.png"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="SlashAtlas"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="preload" href="/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/css/site.css?v=${V.css}">${ld ? `<script type="application/ld+json">${JSON.stringify(ld)}</script>` : ''}</head>
 <body data-page="${key}" data-lang="${l}" data-imgv="${IMGV}" data-idx="${IDX[l]}"${cfg.push && cfg.push.publicKey ? ` data-vapid="${cfg.push.publicKey}"` : ''}${WA_URL && key !== 'admin' ? ` data-wa="${esc(WA_URL)}"` : ''}><a class="skip" href="#main">${l === 'fr' ? 'Aller au contenu' : 'Skip to content'}</a>
 <header class="hd"><a class="logo" href="${p.home}"><i>/</i>${cfg.name}</a><nav aria-label="Navigation">${nav}</nav><span class="sp"></span>${sw}<a class="btn gl sm hpro" href="${p.pro}">${t.nav.pro}</a><span class="hd-bal-wrap" id="hd-bal-wrap" hidden><button class="hd-pill" id="hd-buy-btn" type="button" aria-label="${l === 'fr' ? 'Recharger mes crédits' : 'Top up my credits'}">${svg('coin')}<span id="hd-bal"></span>${svg('plus')}</button></span><a class="btn pri sm hlogin" href="${p.try}" data-signin data-in="${l === 'fr' ? 'Mon compte' : 'My account'}" data-in-href="${p.try}#account">${l === 'fr' ? 'Se connecter' : 'Sign in'}</a><button class="menubtn" type="button" aria-label="${t.nav.menu}" aria-expanded="false" aria-controls="mnav"><i></i><i></i><i></i></button></header>
-<div class="mnav" id="mnav" hidden><a class="btn pri big" href="${p.try}">${TEST[l]}</a>${[[p.cmds, t.nav.cmds, 'cmds'], [p.studio, STUDIO[l].nav, 'studio'], [p.tuto, t.nav.tuto, 'tuto'], [p.guides, t.ft.guides, 'guides'], [p.pro, t.nav.pro, 'pro'], [p.about, t.ft.about, 'about']].map(([h, n, k]) => `<a href="${h}"${key === k ? ' class="on" aria-current="page"' : ''}>${n}</a>`).join('')}</div>
+<div class="mnav" id="mnav" hidden><a class="btn pri big" href="${p.try}">${TEST[l]}</a>${[[p.cmds, t.nav.cmds, 'cmds'], [p.studio, STUDIO[l].nav, 'studio'], [p.tuto, t.nav.tuto, 'tuto'], [p.guides, t.ft.guides, 'guides'], [p.pro, t.nav.pro, 'pro'], [p.propose, EARN[l].nav, 'propose'], [p.about, t.ft.about, 'about']].map(([h, n, k]) => `<a href="${h}"${key === k ? ' class="on" aria-current="page"' : ''}>${n}</a>`).join('')}</div>
 <main id="main">${body}</main>
-<footer class="ft"><span>${cfg.name} · ${t.ft.tag}</span>${cfg.legal && cfg.legal.email ? `<a class="ftmail" href="mailto:${cfg.legal.email}">${t.ft.contact} : ${cfg.legal.email}</a>` : ''}${WA_URL ? `<a class="ftwa" href="${WA_URL}" target="_blank" rel="noopener" data-wa="footer">${WA[l].ft}</a>` : ''}<a href="${p.studio}">${STUDIO[l].nav}</a><a href="${p.privacy}">${t.ft.privacy}</a><a href="${p.guides}">${t.ft.guides}</a><a href="${p.about}">${t.ft.about}</a><a href="${p.terms}">${t.ft.terms}</a><a href="${p.cookies}">${t.ft.cookies}</a>${body.includes('data-ad=') ? `<a href="#" data-adprefs hidden>${l === 'fr' ? 'Préférences publicitaires' : 'Ad preferences'}</a>` : ''}<small class="ft-build">${BUILD_VERSION}</small></footer>
+<footer class="ft"><span>${cfg.name} · ${t.ft.tag}</span>${cfg.legal && cfg.legal.email ? `<a class="ftmail" href="mailto:${cfg.legal.email}">${t.ft.contact} : ${cfg.legal.email}</a>` : ''}${WA_URL ? `<a class="ftwa" href="${WA_URL}" target="_blank" rel="noopener" data-wa="footer">${WA[l].ft}</a>` : ''}<a href="${p.studio}">${STUDIO[l].nav}</a><a href="${p.propose}">${EARN[l].nav}</a><a href="${p.privacy}">${t.ft.privacy}</a><a href="${p.guides}">${t.ft.guides}</a><a href="${p.about}">${t.ft.about}</a><a href="${p.terms}">${t.ft.terms}</a><a href="${p.cookies}">${t.ft.cookies}</a>${body.includes('data-ad=') ? `<a href="#" data-adprefs hidden>${l === 'fr' ? 'Préférences publicitaires' : 'Ad preferences'}</a>` : ''}<small class="ft-build">${BUILD_VERSION}</small></footer>
 ${key !== 'admin' ? tabbar(l, key) : ''}
-${cfg.ga && key !== 'admin' ? `<script src="/js/ga.js?v=${V.js}" data-id="${cfg.ga}" defer></script>` : ''}<script src="/js/icons.js?v=${V.js}" defer></script><script src="/js/sasearch.js?v=${V.js}" defer></script><script src="/js/site.js?v=${V.js}" defer></script>${key !== 'admin' ? `<script src="/js/pwa.js?v=${V.js}" defer></script><script src="/js/library.js?v=${V.js}" defer></script><script src="/js/notif.js?v=${V.js}" defer></script>` : ''}${key !== 'admin' ? `<script src="/js/afrolook-ads.js?v=${V.js}" defer></script>` : ''}${extraJs ? `<script src="${extraJs}?v=${V.js}" defer></script>` : ''}</body></html>`;
+${cfg.ga && key !== 'admin' ? `<script src="/js/ga.js?v=${V.js}" data-id="${cfg.ga}" defer></script>` : ''}<script src="/js/icons.js?v=${V.js}" defer></script><script src="/js/sasearch.js?v=${V.js}" defer></script><script src="/js/site.js?v=${V.js}" defer></script>${key !== 'admin' ? `<script src="/js/pwa.js?v=${V.js}" defer></script><script src="/js/library.js?v=${V.js}" defer></script><script src="/js/likes.js?v=${V.js}" defer></script><script src="/js/notif.js?v=${V.js}" defer></script>` : ''}${key !== 'admin' ? `<script src="/js/afrolook-ads.js?v=${V.js}" defer></script>` : ''}${extraJs ? `<script src="${extraJs}?v=${V.js}" defer></script>` : ''}</body></html>`;
 }
 // Barre d'onglets du bas (téléphone) : le site se parcourt comme une application. L'onglet actif vient de la page (et, sur /generer/, de l'ancre : voir site.js).
 const TABS = {
   fr: [['home', 'Accueil', 'home'], ['cmds', 'Commandes', 'grid'], ['gen', 'Générer', 'sparkle'], ['crea', 'Créations', 'image'], ['acc', 'Compte', 'user']],
   en: [['home', 'Home', 'home'], ['cmds', 'Commands', 'grid'], ['gen', 'Generate', 'sparkle'], ['crea', 'Creations', 'image'], ['acc', 'Account', 'user']],
 };
-const TAB_OF = { home: 'home', cmds: 'cmds', cat: 'cmds', cmd: 'cmds', mine: 'cmds', try: 'gen', ref: 'acc' };
+const TAB_OF = { home: 'home', cmds: 'cmds', cat: 'cmds', cmd: 'cmds', mine: 'cmds', propose: 'acc', ccmd: 'cmds', ccreator: 'cmds', try: 'gen', ref: 'acc' };
 function tabbar(l, key) {
   const p = P[l], href = { home: p.home, cmds: p.cmds, gen: p.try, crea: p.try + '#creations', acc: p.try + '#account' };
   return `<nav class="tabbar" aria-label="${l === 'fr' ? 'Navigation principale' : 'Main navigation'}">${TABS[l].map(([k, n, ic]) => `<a href="${href[k]}" data-tab="${k}"${TAB_OF[key] === k ? ' class="on" aria-current="page"' : ''}>${svg(ic)}<span>${n}</span></a>`).join('')}</nav>`;
@@ -368,7 +371,7 @@ const ICON = {
 };
 function railCard(c, l) {
   const t = c[l], H = HOME[l];
-  return `<article class="rc" data-slug="${c.slug}" data-search="${esc(c.code)}"><a class="rp" href="${P[l].cmd(c.slug)}" aria-label="${esc(t.title)}">${poster(c, l)}</a><div class="rb"><div class="chead"><code>${esc(c.code)}</code>${favBtn(c, l)}</div><span class="rt">${esc(t.title)}</span><span class="cnt" hidden></span><div class="acts">${tryBtn(c, l, 'copy')}<button class="btn gl copy" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}">${copyLabel(l)}</button></div><pre id="p-${c.slug}" hidden>${esc(fullPrompt(c, l))}</pre></div></article>`;
+  return `<article class="rc" data-slug="${c.slug}" data-search="${esc(c.code)}"><a class="rp" href="${P[l].cmd(c.slug)}" aria-label="${esc(t.title)}">${poster(c, l)}</a><div class="rb"><div class="chead"><code>${esc(c.code)}</code>${likeBtn(c.slug, l)}${favBtn(c, l)}</div><span class="rt">${esc(t.title)}</span><span class="cnt" hidden></span><div class="acts">${tryBtn(c, l, 'copy')}<button class="btn gl copy" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}">${copyLabel(l)}</button></div><pre id="p-${c.slug}" hidden>${esc(fullPrompt(c, l))}</pre></div></article>`;
 }
 // Vidéo YouTube : image locale + lecteur chargé seulement au clic (youtube-nocookie.com) : aucune requête vers Google avant que le visiteur lise la vidéo.
 const VIDEO_T = { fr: { h: 'Voyez le site en 40 secondes', play: 'Lire la vidéo', alt: 'Vidéo : des visuels pro et des vidéos publicitaires à partir de votre photo' }, en: { h: 'See the site in 40 seconds', play: 'Play the video', alt: 'Video: pro visuals and video ads made from your photo' } };
@@ -485,6 +488,18 @@ ${showcase(l)}<div class="cta"><a class="btn pri big" href="${p.try}?mode=video"
   emit(l, 'studio', p.studio, { title: S.title, desc: S.desc, body, alt: alt2(P.fr.studio, P.en.studio) });
   if (l === 'fr') pages.push({ fr: P.fr.studio, en: P.en.studio });
 }
+// Annonce phare : publier ses commandes et gagner (accueil) ; version courte sur la page « crédits gratuits »
+const EARN = {
+  fr: { chip: 'Nouveau : gagnez de l’argent avec vos commandes', h: 'Publiez votre commande. Chaque utilisation vous rapporte.', lead: 'Vos crédits gagnés servent à créer des affiches gratuitement, ou se convertissent en argent : retrait par mobile money dès 1 000 F.',
+    steps: [['1', 'Rédigez votre commande', 'Décrivez l’affiche voulue en quelques lignes : notre IA la met au bon format.'], ['2', 'Testez le rendu', 'Avec vos propres crédits : le test est obligatoire, et votre rendu devient l’aperçu.'], ['3', 'Soumettez pour validation', 'Nous relisons, puis votre commande est publiée sous votre pseudo.'], ['4', 'Gagnez', 'Quand elle est payante, chaque utilisation vous rapporte 1 crédit (environ 4 F).']],
+    sh: ['Rédigez', 'Testez', 'Soumettez', 'Gagnez'], cta2s: 'Voir la communauté',
+    cta: 'Proposer ma commande', cta2: 'Voir les commandes de la communauté', short: 'Publiez vos propres commandes : chaque fois qu’une personne utilise une commande payante, vous gagnez 1 crédit (environ 4 F). Vos crédits gagnés servent à créer des affiches, ou se retirent par mobile money dès 1 000 F.', nav: 'Mon espace créateur' },
+  en: { chip: 'New: earn money with your commands', h: 'Publish your command. Every use pays you.', lead: 'Your earned credits create posters for free, or convert into cash: withdraw by mobile money from 1,000 F.',
+    steps: [['1', 'Write your command', 'Describe the poster you want in a few lines: our AI puts it in the right format.'], ['2', 'Test the result', 'With your own credits: the test is mandatory, and your result becomes the preview.'], ['3', 'Submit for approval', 'We review it, then your command is published under your username.'], ['4', 'Earn', 'When it is paid, every use earns you 1 credit (about 4 F).']],
+    sh: ['Write', 'Test', 'Submit', 'Earn'], cta2s: 'See community',
+    cta: 'Submit my command', cta2: 'See community commands', short: 'Publish your own commands: every time someone uses a paid command, you earn 1 credit (about 4 F). Earned credits create posters, or can be withdrawn by mobile money from 1,000 F.', nav: 'My creator space' },
+};
+const earnBand = (l) => { const e = EARN[l], p = P[l]; return `<section class="earn" aria-labelledby="earn-h"><span class="earn-chip">${e.chip}</span><h2 id="earn-h">${e.h}</h2><p class="lead">${e.lead}</p><ol class="earn-steps">${e.steps.map((s) => `<li><span>${s[0]}</span><div><b><i class="fl">${s[1]}</i><i class="sh">${e.sh[+s[0] - 1]}</i></b><small>${s[2]}</small></div></li>`).join('')}</ol><div class="earn-cta"><a class="btn pri big" href="${p.propose}">${e.cta}</a><a class="btn gl big" href="${p.cmds}?src=communaute"><i class="fl">${e.cta2}</i><i class="sh">${e.cta2s}</i></a></div></section>`; };
 function home(l) {
   const t = T[l].home, p = P[l], H = HOME[l];
   const featured = ['robesac', 'fashionposter', 'lipgloss', 'productglow', 'hairbundles', 'skincareglow', 'lookcomplet', 'lookbook', 'menuhero', 'splashshot'].map((s) => COMMANDS.find((c) => c.slug === s)); // mode, produit et cosmétique d'abord ; l'accueil les remplace par les plus utilisées dès qu'il y a des données
@@ -504,6 +519,7 @@ function home(l) {
 <section class="home-favs" id="home-favs" hidden><div class="sec tight"><h2>${H.favs}</h2><a class="more" href="${P[l].mine}">${H.favAll} ›</a></div><div class="rail" id="rail-fav" role="list"></div></section>
 <div class="sec"><h2>${H.cats}</h2></div><div class="cats">${cats}</div>
 ${timeSaver(l)}
+${earnBand(l)}
 ${showcase(l, 'sec1')}${ad('lb', l)}${showcase(l, 'sec3')}${showcase(l, 'sec2')}
 ${refStrip(l, 'big')}${ad('rect', l)}${waCard(l, 'home')}</div>`;
   emit(l, 'home', p.home, { ogTitle: t.ogTitle, title: t.title, desc: t.desc, body, alt: alt2(P.fr.home, P.en.home),
@@ -561,7 +577,7 @@ const FS = { fr: ['Copiez', 'Collez', 'Publiez'], en: ['Copy', 'Paste', 'Post'] 
   const fsteps = FS[l].map((x, i) => `<li><span class="si">${[ICON.copy, ICON.paste, ICON.spark][i]}</span><b>${x}</b></li>`).join('');
   const body = `<div class="wrap"><div class="crumb"><a href="${p.home}">${t.crumbHome}</a> › <a href="${p.cat(c.cat)}">${cat[l]}</a> › <b>${esc(c.code)}</b></div>
 ${ad('lb', l)}
-<div class="fiche"><div class="fhead"><div class="eyebrow">${cat[l]}${c.kind === 'text' ? '' : ' · ' + c.ratio}</div><div class="fh1"><h1>${esc(ct.title)}</h1>${favBtn(c, l, 'big')}</div></div><div class="fpost">${poster(c, l, true)}${c.kind === 'video' || c.kind === 'motion' ? `<p class="vnote">${l === 'fr' ? 'Image d’illustration. Cette commande crée une vidéo : collez-la dans un générateur de vidéo avec votre photo.' : 'Illustration image. This command creates a video: paste it into a video generator with your photo.'}</p>` : ''}</div>
+<div class="fiche"><div class="fhead"><div class="eyebrow">${cat[l]}${c.kind === 'text' ? '' : ' · ' + c.ratio}</div><div class="fh1"><h1>${esc(ct.title)}</h1>${likeBtn(c.slug, l, 'big')}${favBtn(c, l, 'big')}</div></div><div class="fpost">${poster(c, l, true)}${c.kind === 'video' || c.kind === 'motion' ? `<p class="vnote">${l === 'fr' ? 'Image d’illustration. Cette commande crée une vidéo : collez-la dans un générateur de vidéo avec votre photo.' : 'Illustration image. This command creates a video: paste it into a video generator with your photo.'}</p>` : ''}</div>
 <div class="fbody">${saleBox}${canGen(c) ? bestBox(l, c.slug) + timeSaver(l, c.slug) + refStrip(l) : ''}<div class="cmd"><pre id="p-${c.slug}">${esc(fullText)}</pre><div class="acts big">${tryBtn(c, l, 'big')}<button class="btn gl big" type="button" data-copy="#p-${c.slug}" data-slug="${c.slug}" data-after="1">${copyLabel(l)}</button></div><p class="cnt big" id="cmd-cnt" data-slug="${c.slug}" hidden></p></div><div class="perso" data-perso="${c.slug}" data-code="${esc(c.code)}"${canGen(c) ? ' data-gen="1"' : ''}></div>${c.steps ? `<p class="hint stepnote">${l === 'fr' ? `Commande en ${c.steps.length + 1} étapes : envoyez la commande ci-dessus (étape 1), puis les étapes suivantes dans l’ordre, dans la même conversation.` : `${c.steps.length + 1}-step command: send the command above (step 1), then the next steps in order, in the same conversation.`}</p>${c.steps.map((st, i) => `<div class="cmd step"><pre id="p-${c.slug}-${i + 2}">${esc(st[l])}</pre><div class="acts big"><button class="btn gl big" type="button" data-copy="#p-${c.slug}-${i + 2}" data-slug="${c.slug}">${ICON.copy}${t.copy}</button></div></div>`).join('')}` : ''}
 <ol class="steps3 mini3">${fsteps}</ol>
 <div class="test"><span class="tl">${t.testOn}</span>${tools.map(([n, u]) => `<a class="btn gl sm" href="${u}" target="_blank" rel="noopener noreferrer nofollow" data-test="${n}">${n} ↗</a>`).join('')}</div>
@@ -764,6 +780,42 @@ function minePage(l) {
   const body = `<div class="wrap"><h1 class="big sm">${t.h}</h1><p class="lead sm">${t.lead}</p><div id="mine" data-gen="${GEN}"></div></div>`;
   emit(l, 'mine', p.mine, { title: t.title, desc: t.lead, body, alt: alt2(P.fr.mine, P.en.mine), noindex: true });
 }
+const PROP = {
+  fr: { title: 'Espace créateur : proposer et suivre mes commandes | SlashAtlas', desc: 'Proposez vos commandes, testez le rendu avec vos crédits, suivez leurs utilisations et vos gains, et demandez vos retraits sur SlashAtlas.', k: 'Communauté', h: 'Mon espace créateur', lead: 'Décrivez l’affiche que vous imaginez. Notre IA la transforme en commande, vous testez le rendu avec vos crédits, puis vous la soumettez pour validation.',
+    ogT: 'Gagnez de l’argent avec vos commandes d’affiches IA', ogD: 'Publiez vos commandes d’affiches IA sur SlashAtlas : 1 crédit gagné (≈ 4 F) à chaque utilisation. Rédigez, testez avec vos crédits, soumettez : retrait mobile money dès 1 000 F.',
+    howH: 'Comment ça marche et combien je gagne', share: 'Partager cette opportunité', wa: 'WhatsApp', shareMsg: '💰 Gagne de l’argent avec SlashAtlas : publie tes commandes d’affiches IA, chaque utilisation te rapporte des crédits (retrait mobile money dès 1 000 F).',
+    gainH: 'Combien puis-je gagner ?', gainRows: [['50 utilisations', '50 crédits ≈ 200 F'], ['250 utilisations', '250 crédits ≈ 1 000 F : premier retrait possible'], ['1 000 utilisations', '1 000 crédits ≈ 4 000 F']],
+    gainNotes: ['Vous gagnez 1 crédit chaque fois qu’une personne utilise votre commande <b>payante</b> avec des crédits achetés.', 'Commande <b>gratuite</b> : pas de gain, mais de la visibilité et une place dans le Top 10 des créateurs.', 'Vos gains sont protégés 7 jours, puis ils servent à créer des affiches ou se retirent par mobile money (dès 1 000 F) ou carte bancaire (dès 100 $).', 'Chaque commande est relue avant d’être publiée : pas de contenu adulte, illégal ou trompeur.'] },
+  en: { title: 'Creator space: submit and track my commands | SlashAtlas', desc: 'Submit your commands, test the result with your credits, track their uses and your earnings, and request your withdrawals on SlashAtlas.', k: 'Community', h: 'My creator space', lead: 'Describe the poster you imagine. Our AI turns it into a command, you test the result with your credits, then you submit it for approval.',
+    ogT: 'Earn money with your AI poster commands', ogD: 'Publish your AI poster commands on SlashAtlas: 1 earned credit (≈ 4 F) every time someone uses them. Write, test with your credits, submit: mobile money withdrawal from 1,000 F.',
+    howH: 'How it works and how much I earn', share: 'Share this opportunity', wa: 'WhatsApp', shareMsg: '💰 Earn money with SlashAtlas: publish your AI poster commands, every use earns you credits (mobile money withdrawal from 1,000 F).',
+    gainH: 'How much can I earn?', gainRows: [['50 uses', '50 credits ≈ 200 F'], ['250 uses', '250 credits ≈ 1,000 F: first withdrawal possible'], ['1,000 uses', '1,000 credits ≈ 4,000 F']],
+    gainNotes: ['You earn 1 credit every time someone uses your <b>paid</b> command with purchased credits.', '<b>Free</b> command: no earnings, but visibility and a place in the Top 10 creators.', 'Your earnings are held for 7 days, then they create posters or can be withdrawn by mobile money (from 1,000 F) or bank card (from $100).', 'Every command is reviewed before publication: no adult, illegal or misleading content.'] },
+};
+function proposePage(l) {
+  const t = PROP[l], p = P[l];
+  const e = EARN[l];
+  const steps = e.steps.map((s) => `<li><span>${s[0]}</span><div><b>${s[1]}</b><small>${s[2]}</small></div></li>`).join('');
+  const gain = `<section class="gainbox"><h2>${t.gainH}</h2><ul class="gain-rows">${t.gainRows.map((r) => `<li><span>${r[0]}</span><b>${r[1]}</b></li>`).join('')}</ul><ul class="gain-notes">${t.gainNotes.map((n) => `<li>${n}</li>`).join('')}</ul></section>`;
+  const body = `<div class="wrap narrow"><div class="eyebrow">${t.k}</div><h1 class="big sm">${t.h}</h1><p class="lead">${e.lead}</p>
+<div id="prop" data-try="${p.try}" data-locale="${l}"></div>
+<details class="howto" id="howto" open><summary>${t.howH}</summary><ol class="earn-steps earn-page">${steps}</ol>${gain}<div class="acts" data-msg="${esc(t.shareMsg)}"><button class="btn pri" type="button" id="earn-share">${t.share}</button><a class="btn gl" id="earn-wa" href="https://wa.me/" target="_blank" rel="noopener">${t.wa}</a></div></details></div>`;
+  const strip = (h) => h.replace(/<[^>]+>/g, '');
+  const faqQ = l === 'fr' ? ['Comment gagner de l’argent avec SlashAtlas ?', 'Combien rapporte une commande ?', 'Comment retirer mes gains ?', 'Quelles commandes sont refusées ?'] : ['How do I earn money with SlashAtlas?', 'How much does a command earn?', 'How do I withdraw my earnings?', 'Which commands are refused?'];
+  const faqA = l === 'fr' ? [e.lead, t.gainRows.map((r) => r.join(' : ')).join(' ; ') + '. ' + strip(t.gainNotes[0]), strip(t.gainNotes[2]), strip(t.gainNotes[3])] : [e.lead, t.gainRows.map((r) => r.join(': ')).join('; ') + '. ' + strip(t.gainNotes[0]), strip(t.gainNotes[2]), strip(t.gainNotes[3])];
+  const ld = { '@context': 'https://schema.org', '@graph': [
+    { '@type': 'WebPage', url: abs(p.propose), name: t.ogT, description: t.ogD, inLanguage: l, primaryImageOfPage: abs(`/img/og-gagner-${l}.jpg`) },
+    { '@type': 'HowTo', name: t.ogT, description: t.ogD, step: e.steps.map((s, i) => ({ '@type': 'HowToStep', position: i + 1, name: s[1], text: s[2] })) },
+    { '@type': 'FAQPage', mainEntity: faqQ.map((q, i) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: faqA[i] } })) },
+  ] };
+  emit(l, 'propose', p.propose, { ld, title: t.title, desc: t.ogD, ogTitle: t.ogT, img: `/img/og-gagner-${l}.jpg`, body, alt: alt2(P.fr.propose, P.en.propose), extraJs: '/js/community.js' });
+  if (l === 'fr') pages.push({ fr: P.fr.propose, en: P.en.propose });
+}
+// Coquilles des pages communautaires (/c/u-<id>/, /createur/<pseudo>/) : la fonction slashatlasApi y insère le contenu (voir functions/communityPages.js).
+function communityShell(l, kind) {
+  const body = '<div id="cview">@@BODY@@</div><script type="application/json" id="cdata">@@DATA@@</script>';
+  write(`_shell/${kind}-${l}.html`, layout({ l, key: kind === 'cmd' ? 'ccmd' : 'ccreator', path: '/@@URL@@', title: '@@TITLE@@', desc: '@@DESC@@', body, alt: { fr: '/@@ALTFR@@', en: '/@@ALTEN@@' }, img: '/@@IMG@@', ld: '@@LD@@', extraJs: '/js/community-view.js' }));
+}
 function tryPage(l) {
   const t = TRY[l], p = P[l];
   // sale:true pour toutes les commandes qui génèrent une image (pas les vidéos, motion, textes) — n'importe quel visuel peut devenir une affiche de vente
@@ -811,7 +863,7 @@ fs.cpSync(path.join(root, 'static'), dist, { recursive: true });
 { const sw = path.join(dist, 'sw.js'); fs.writeFileSync(sw, fs.readFileSync(sw, 'utf8').replace(/__V__/g, createHash('sha1').update(V.js + V.css + Date.now()).digest('hex').slice(0, 8))); } // une version du service worker par construction
 for (const l of ['fr', 'en']) write(`data/cmds-${l}.json`, IDXJ[l]);
 for (const l of ['fr', 'en']) {
-  home(l); studioPage(l); filmStudioPage(l); cmdsPage(l); tutoPage(l); proPage(l); legalPage(l, 'privacy'); legalPage(l, 'cookies'); termsPage(l); aboutPage(l); guidesIndexPage(l); GUIDES.forEach((g) => guidePage(l, g)); tryPage(l); refPage(l); minePage(l);
+  home(l); studioPage(l); filmStudioPage(l); cmdsPage(l); tutoPage(l); proPage(l); legalPage(l, 'privacy'); legalPage(l, 'cookies'); termsPage(l); aboutPage(l); guidesIndexPage(l); GUIDES.forEach((g) => guidePage(l, g)); tryPage(l); refPage(l); minePage(l); proposePage(l); communityShell(l, 'cmd'); communityShell(l, 'creator');
   for (const c of CATEGORIES) catPage(l, c);
   for (const c of COMMANDS) cmdPage(l, c);
 }
@@ -819,5 +871,5 @@ adminPage();
 notFound();
 const xml = (u) => `<url><loc>${abs(u.fr)}</loc><xhtml:link rel="alternate" hreflang="fr" href="${abs(u.fr)}"/><xhtml:link rel="alternate" hreflang="en" href="${abs(u.en)}"/></url>\n<url><loc>${abs(u.en)}</loc><xhtml:link rel="alternate" hreflang="fr" href="${abs(u.fr)}"/><xhtml:link rel="alternate" hreflang="en" href="${abs(u.en)}"/></url>`;
 write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${pages.map(xml).join('\n')}\n</urlset>\n`);
-write('robots.txt', cfg.indexable ? `User-agent: *\nAllow: /\nDisallow: /api/\nSitemap: ${abs('/sitemap.xml')}\n` : 'User-agent: *\nDisallow: /\n');
+write('robots.txt', cfg.indexable ? `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /_shell/\nSitemap: ${abs('/sitemap.xml')}\nSitemap: ${abs('/sitemap-communaute.xml')}\n` : 'User-agent: *\nDisallow: /\n');
 console.log(`SlashAtlas : ${pages.length * 2 + 1} pages (${COMMANDS.length} commandes, ${CATEGORIES.length} catégories), indexable=${cfg.indexable}`);

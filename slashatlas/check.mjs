@@ -9,6 +9,7 @@ const exists = (u) => { const c = decodeURIComponent(u.split('#')[0].split('?')[
 let errors = 0; const titles = new Map(), descs = new Map();
 for (const f of htmls) {
   const html = fs.readFileSync(f, 'utf8'), rel = '/' + path.relative(dist, f);
+  if (rel.split('\\').join('/').startsWith('/_shell/')) continue; // coquilles remplies par la fonction : liens, titres et descriptions fictifs
   for (const m of html.matchAll(/(?:href|src)="([^"]+)"/g)) { const u = m[1]; if (/^(https?:|mailto:|tel:|data:|#|javascript:)/.test(u)) continue; if (u.startsWith('/') && !exists(u)) { console.log(`lien cassé ${u} dans ${rel}`); errors++; } }
   if (rel === '/404.html') continue;
   const t = html.match(/<title>([^<]*)<\/title>/)?.[1], d = html.match(/<meta name="description" content="([^"]*)"/)?.[1];

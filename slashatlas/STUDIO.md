@@ -133,3 +133,11 @@ Affichée sur les pages de commande (bloc « Pourquoi générer ici ? » + bouto
 
 ## Catégorie « Afro Fashion et top modèles »
 16 commandes (`afrotopmodel`, `afrorunway`, `afroelegant`, `afrodoll`, `afrorealistic`, `afrorooftop`, `afrobeach`, `afrowax`, `afrogarden`, `afrocity`, `afrocar`, `afrovilla`, `afroneon`, `afroceremony`, `afroduo`, `afrostory`) dans `src/data_extra.mjs` (bloc `AF`) : la personne de la photo mise en scène comme un top modèle dans différents décors. Consigne de fidélité commune (`AF_FR` / `AF_EN`) : visage, **couleur de peau exacte (sans l’éclaircir ni la lisser)**, coiffure, morphologie ; tenue élégante, aucune nudité, aucun texte. Le style « poupée » est nommé « poupée glamour rose » (sans marque). Images d’exemple : à (re)créer avec `scripts/genimages_cf.mjs --cats afrofashion` quand le quota Cloudflare revient (le script force « Black African person » pour cette catégorie).
+
+## Commandes communautaires (étape 1, octobre 2026)
+Les utilisateurs proposent leurs propres commandes (page `/proposer/`, `/en/propose/`, code `functions/community.js`, interface `static/js/community.js`).
+- **Pseudo** : `StudioHandles/{pseudo}` (unicité) + `StudioUsers.handle` ; 3 à 20 caractères, mots réservés et usurpation refusés, un changement par mois.
+- **Parcours** : demande libre → contrôle et rédaction par l'IA (`analyze`, brouillon `StudioCommunity/{id}`) → **test obligatoire** payé avec les crédits du créateur (`test`, génération normale, hors historique) → « ce rendu me convient » (`approve-render`, aperçu = rendu du serveur lié à l'empreinte de la consigne) → soumission (`submit`, mode gratuite/payante) → statut `pending`.
+- **Secret** : le texte complet de la commande est dans `StudioCommunityPrompts/{id}` ; il n'est jamais renvoyé à un utilisateur (seulement à l'administrateur, onglet « Commandes »).
+- **Administration** : onglet « Commandes » (file, validation/refus/retrait par lot), bandeau d'alerte et badge du nombre à valider (`communityPending` dans `/api/admin`).
+- **À venir** : publication visible sur le site, profils et Top 10, liens de partage, gains et retraits (voir le plan validé).

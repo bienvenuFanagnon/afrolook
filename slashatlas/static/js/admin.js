@@ -46,6 +46,10 @@
     var maxPv = Math.max.apply(null, r.map(function (x) { return x.pv || 0; }).concat([1]));
     var rate = pv ? (100 * cp / pv).toFixed(1).replace('.', ',') + ' % des vues' : '';
     var head = '<div class="adm-top"><div class="seg">' + [7, 14, 30, 90].map(function (n) { return '<button type="button" data-d="' + n + '"' + (n === d.days ? ' class="on"' : '') + '>' + n + ' j</button>'; }).join('') + '</div><button class="btn gl sm" type="button" data-logout>Se déconnecter</button></div>';
+    var pend = d.communityPending || 0;
+    var cqBanner = pend && tab !== 'cmty' ? '<div class="cq-banner"><span><b>' + pend + ' commande' + (pend > 1 ? 's' : '') + ' à valider</b> · proposée' + (pend > 1 ? 's' : '') + ' par des utilisateurs</span><button class="btn pri sm" type="button" data-gocmty>Voir la file</button></div>' : '';
+    var wdp = d.withdrawalsPending || 0;
+    var wdBanner = wdp && tab !== 'cwd' ? '<div class="cq-banner"><span><b>' + wdp + ' retrait' + (wdp > 1 ? 's' : '') + ' à payer</b> · demandé' + (wdp > 1 ? 's' : '') + ' par des créateurs</span><button class="btn pri sm" type="button" data-gocwd>Voir les retraits</button></div>' : '';
     var uniqVisitors = sum(r, 'visitors');
     var kpAud = '<div class="kpis">' + kpi(uniqVisitors, 'Visiteurs uniques', 'personnes différentes — chaque appareil est compté une seule fois, indépendamment du nombre de visites') + kpi(pv, 'Pages vues', 'nombre de pages ouvertes en tout (une personne qui lit 5 pages = 5 vues)') + kpi(sum(r, 'sessions'), 'Visites', 'nombre de passages sur le site (une personne qui revient plus tard = une nouvelle visite) · dont ' + sum(r, 'returning') + ' venues d\'un appareil déjà connu') + kpi(cp, 'Commandes copiées', 'clics sur « Copier » · ' + rate) + kpi(sum(r, 'tries'), 'Clics « Générer ici »', 'sur la plateforme') + kpi(sum(r, 'tests'), 'Clics ChatGPT/Gemini') + kpi(sum(r, 'videoplays'), 'Vidéo lue', 'clics sur « lire » (accueil)') + kpi(d.subscribers.total, 'Inscrits liste', sum(r, 'signups') + ' sur la période') + '</div>';
     var kpStu = '<div class="kpis">' + kpi(d.studioUsers || 0, 'Comptes Studio', sum(r, 'accounts') + ' sur la période') + kpi(sum(r, 'generations'), 'Générations', sum(r, 'edits') + ' corrections') + kpi(sum(r, 'orders'), 'Achats de crédits', fmtN(sum(r, 'revenueXof')) + ' FCFA') + kpi(sum(r, 'shares'), 'Partages', 'visuels partagés ou copiés') + kpi(sum(r, 'qrs'), 'QR codes', 'ajoutés sur des affiches') + kpi(sum(r, 'wa'), 'Clics canal WhatsApp', 'invitations cliquées') + kpi(sum(r, 'cardwish'), 'Demandes « carte »', 'clics sur Carte bancaire avant son activation') + '</div>';
@@ -72,10 +76,14 @@ var ords = '<div class="adm-card"><h3>Dernières commandes (période)</h3><div c
     var proPv = 0; r.forEach(function (x) { var p = x.pages || {}; proPv += (p['_pro_'] || 0) + (p['_en_pro_'] || 0); });
     var np = sum(r, 'nopub'), wl = r.reduce(function (n, x) { return n + ((x.signupKind || {}).waitlist || 0); }, 0);
     var nopub = '<div class="kpis">' + kpi(np, 'Clics vers « Sans pub »', pv ? (100 * np / pv).toFixed(1).replace('.', ',') + ' % des vues' : '') + kpi(proPv, 'Vues de la page « Sans pub »') + kpi(wl, 'Inscrits à l\'offre sans pub', proPv ? (100 * wl / proPv).toFixed(1).replace('.', ',') + ' % des vues de la page' : '') + '</div>' + list('Clics « Sans pub » depuis quelle page', mapPairs(r, 'nopub_from', function (p) { var q = p.replace(/^_|_$/g, '').replace(/_/g, '/'); return q === '' ? 'accueil' : q === 'en' ? 'accueil (EN)' : q; }));
-    var TABS = [['over', 'Vue d\'ensemble', kpAud + tbl + (function () { var cp2 = countryPairs(r); return cp2 ? list('Pays des visiteurs (d\'après le fuseau horaire)', cp2) : '<div class="adm-card"><h3>Pays des visiteurs</h3><p class="hint">Chargement…</p></div>'; })() + cols + list('Fuseaux horaires (détail)', tzp)], ['funnel', 'Parcours', fun + probs + funDet], ['nopub', 'Sans pub', nopub], ['studio', 'Studio', kpStu + ords + usr + list('Commandes générées', merge(r, 'gen')) + list('Packs demandés par carte (avant activation)', merge(r, 'cardwish_pack'))], ['subs', 'Inscrits', subs], ['ads', 'Publicité', kpAds + adv + list('Affichages par bloc', merge(r, 'ad'))], ['errors', 'Erreurs', '<div class="adm-card"><h3>Erreurs de génération</h3><p class="hint">Chaque erreur est expliquée : ce qui s’est passé et ce qu’il faut faire. Les clients sont toujours remboursés automatiquement.</p><button class="btn gl sm" type="button" id="load-gen-errors">Actualiser</button><div id="gen-errors-sum" style="margin-top:14px"></div><div id="gen-errors-tbl" style="margin-top:14px"></div></div>'], ['tools', 'Outils', tools],['push', 'Notifications', '<div class="adm-card"><h3>Commande du jour (notifications)</h3><div id="push-box"><p class="hint">Chargement…</p></div></div>']];
+    var TABS = [['over', 'Vue d\'ensemble', kpAud + tbl + (function () { var cp2 = countryPairs(r); return cp2 ? list('Pays des visiteurs (d\'après le fuseau horaire)', cp2) : '<div class="adm-card"><h3>Pays des visiteurs</h3><p class="hint">Chargement…</p></div>'; })() + cols + list('Fuseaux horaires (détail)', tzp)], ['funnel', 'Parcours', fun + probs + funDet], ['nopub', 'Sans pub', nopub], ['studio', 'Studio', kpStu + ords + usr + list('Commandes générées', merge(r, 'gen')) + list('Packs demandés par carte (avant activation)', merge(r, 'cardwish_pack'))], ['cmty', 'Commandes' + (pend ? ' (' + pend + ')' : ''), '<div id="cq-ov"></div><div class="adm-card"><h3>Commandes proposées par les utilisateurs</h3><div id="cq-box"><p class="hint">Chargement…</p></div></div>'], ['cwd', 'Retraits' + (wdp ? ' (' + wdp + ')' : ''), '<div class="adm-card"><h3>Retraits des créateurs</h3><p class="hint">Payez depuis votre compte mobile money ou bancaire, puis cliquez sur « Payé » avec la référence du paiement. Ne payez pas avant la date indiquée pour un compte de retrait récent.</p><div id="cw-box"><p class="hint">Chargement…</p></div></div>'], ['subs', 'Inscrits', subs], ['ads', 'Publicité', kpAds + adv + list('Affichages par bloc', merge(r, 'ad'))], ['errors', 'Erreurs', '<div class="adm-card"><h3>Erreurs de génération</h3><p class="hint">Chaque erreur est expliquée : ce qui s’est passé et ce qu’il faut faire. Les clients sont toujours remboursés automatiquement.</p><button class="btn gl sm" type="button" id="load-gen-errors">Actualiser</button><div id="gen-errors-sum" style="margin-top:14px"></div><div id="gen-errors-tbl" style="margin-top:14px"></div></div>'], ['tools', 'Outils', tools],['push', 'Notifications', '<div class="adm-card"><h3>Commande du jour (notifications)</h3><div id="push-box"><p class="hint">Chargement…</p></div></div>']];
     var tabNav = '<div class="seg adm-tabs" role="tablist">' + TABS.map(function (t) { return '<button type="button" role="tab" data-tab="' + t[0] + '"' + (t[0] === tab ? ' class="on" aria-selected="true"' : '') + '>' + t[1] + '</button>'; }).join('') + '</div>';
-    root.innerHTML = head + tabNav + TABS.filter(function (t) { return t[0] === tab; }).map(function (t) { return t[2]; }).join('');
+    root.innerHTML = head + wdBanner + cqBanner + tabNav + TABS.filter(function (t) { return t[0] === tab; }).map(function (t) { return t[2]; }).join('');
     showAlerts();
+    var goc = root.querySelector('[data-gocmty]'); if (goc) goc.addEventListener('click', function () { var t = root.querySelector('[data-tab="cmty"]'); if (t) t.click(); });
+    var gow = root.querySelector('[data-gocwd]'); if (gow) gow.addEventListener('click', function () { var t = root.querySelector('[data-tab="cwd"]'); if (t) t.click(); });
+    if (tab === 'cmty') { loadOverview(); loadCommunity(); }
+    if (tab === 'cwd') loadWithdrawals();
     if (tab === 'tools') { var _rb = document.getElementById('refresh-usage'); if (_rb) _rb.addEventListener('click', loadUsageStats); loadUsageStats(); }
     if (tab === 'push') {
       window.slashAuth.call('admin/push-stats', {}).then(function (r) {
@@ -226,6 +234,94 @@ var ords = '<div class="adm-card"><h3>Dernières commandes (période)</h3><div c
       var t = rows.map(function (r) { return r.map(function (c) { c = String(c == null ? '' : c); if (/^[=+\-@]/.test(c)) c = "'" + c; return '"' + c.replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
       var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + t], { type: 'text/csv' })); a.download = 'slashatlas-inscrits.csv'; a.click();
     });
+  }
+  // Vue globale des commandes communautaires : chiffres, gains, créateurs (avec alerte de concentration), réglages
+  function loadOverview() {
+    var box = document.getElementById('cq-ov'); if (!box) return;
+    window.slashAuth.call('admin/community-overview', {}).then(function (r) {
+      if (r.status !== 200) { box.innerHTML = ''; return; }
+      var o = r.data, g = o.gains, s = o.settings, n = fmtN;
+      var kp = '<div class="kpis">' + kpi(n(o.cmd.published), 'Commandes publiées', o.cmd.paid + ' payantes') + kpi(n(o.cmd.uses), 'Utilisations', 'par des personnes autres que le créateur') + kpi(n(o.copies), 'Textes débloqués', 'copies de commandes payantes') + kpi(n(g.pending), 'Gains en attente', 'crédits, protégés ' + s.holdDays + ' jours') + kpi(n(g.available), 'Gains disponibles', 'crédits retirables ou convertibles') + kpi(n(g.owedXof) + ' F', 'Montant maximal dû', 'si tous les gains étaient retirés (' + s.creditCash + ' F le crédit)') + kpi(n(g.cancelled), 'Gains annulés', 'contestations de paiement') + kpi(n(o.withdrawalsPending), 'Retraits à payer') + '</div>';
+      var rows = o.creators.map(function (c) { return '<tr><td>@' + esc(c.handle || '—') + '</td><td>' + esc(c.email) + '</td><td>' + n(c.credits) + '</td><td>' + c.n + '</td><td>' + c.buyers + '</td><td>' + (c.concentration ? '<span class="cq-tag ' + (c.concentration > 50 ? 'review' : 'safe') + '">' + c.concentration + ' %</span>' : '—') + '</td><td>' + (c.frozen ? 'gelés' : '') + '</td><td><button class="btn gl sm" type="button" data-freeze="' + esc(c.uid) + '" data-on="' + (c.frozen ? '0' : '1') + '">' + (c.frozen ? 'Dégeler' : 'Geler les gains') + '</button></td></tr>'; }).join('') || '<tr><td colspan="8">Aucun gain pour le moment.</td></tr>';
+      var top = o.mostUsed.length ? '<p class="hint">Plus utilisées : ' + o.mostUsed.map(function (c) { return esc(c.title) + ' (@' + esc(c.handle) + ', ' + c.uses + ')'; }).join(' · ') + '</p>' : '';
+      var fields = [['holdDays', 'Jours de protection'], ['capPerDay', 'Gains max par personne, commande et jour'], ['creditCash', 'Valeur d’un crédit gagné (F)'], ['minMobileXof', 'Retrait mobile money minimum (F)'], ['minCardUsd', 'Retrait carte minimum ($)'], ['usdRate', 'F pour 1 $'], ['copiesPerDay', 'Copies payantes max par jour'], ['payoutWaitHours', 'Attente d’un nouveau compte de retrait (h)']];
+      var form = '<details><summary>Réglages des gains</summary><form class="adm-form" id="cs-f">' + fields.map(function (f) { return '<label class="chk" style="flex-basis:100%">' + f[1] + ' <input type="number" step="any" min="0" data-k="' + f[0] + '" value="' + esc(s[f[0]]) + '" style="max-width:120px"></label>'; }).join('') + '<button class="btn pri sm" type="submit">Enregistrer</button></form><p class="fmsg" id="cs-msg" role="status"></p></details>';
+      box.innerHTML = '<div class="adm-card"><h3>Vue globale</h3>' + kp + top + '<div class="tw"><table><thead><tr><th>Créateur</th><th>E-mail</th><th>Gains (cr.)</th><th>Gains</th><th>Acheteurs</th><th>Concentration</th><th></th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div><p class="hint">Concentration : part des gains venant des 2 acheteurs les plus actifs (au-delà de 50 %, vérifier un éventuel faux compte).</p>' + form + '</div>';
+      Array.prototype.forEach.call(box.querySelectorAll('[data-freeze]'), function (b) { b.addEventListener('click', function () {
+        if (b.dataset.on === '1' && !window.confirm('Geler les gains de ce créateur ?')) return;
+        window.slashAuth.call('admin/community-decide', { action: 'freeze', uid: b.dataset.freeze, on: b.dataset.on === '1' }).then(function () { loadOverview(); });
+      }); });
+      var cf = document.getElementById('cs-f'); if (cf) cf.addEventListener('submit', function (e) {
+        e.preventDefault(); var body = { action: 'settings' };
+        Array.prototype.forEach.call(cf.querySelectorAll('[data-k]'), function (i) { body[i.dataset.k] = +i.value; });
+        window.slashAuth.call('admin/community-decide', body).then(function (r2) { var m = document.getElementById('cs-msg'); m.textContent = r2.status === 200 ? 'Enregistré.' : 'Valeur invalide.'; m.className = 'fmsg' + (r2.status === 200 ? ' ok' : ' err'); });
+      });
+    }).catch(function () {});
+  }
+  // Retraits demandés par les créateurs : à payer à la main, puis « Payé » (référence) ou « Refuser » (les crédits reviennent au solde)
+  var cwStatus = 'requested';
+  function loadWithdrawals() {
+    var box = document.getElementById('cw-box'); if (!box) return;
+    window.slashAuth.call('admin/community-withdrawals', { status: cwStatus }).then(function (r) {
+      if (r.status !== 200) { box.innerHTML = '<p class="hint">Impossible de charger (' + esc((r.data && r.data.error) || r.status) + ').</p>'; return; }
+      var d = r.data, c = d.counts || {};
+      var seg = '<div class="seg">' + [['requested', 'À payer'], ['paid', 'Payés'], ['refused', 'Refusés']].map(function (s) { return '<button type="button" data-cw="' + s[0] + '"' + (s[0] === d.status ? ' class="on"' : '') + '>' + s[1] + ' (' + (c[s[0]] || 0) + ')</button>'; }).join('') + '</div>';
+      var rows = d.items.map(function (x) {
+        var wait = x.readyAt && x.readyAt > Date.now() ? '<span class="cq-tag review">ne pas payer avant le ' + fmt(x.readyAt) + '</span>' : '';
+        return '<tr><td>' + fmt(x.at) + '</td><td>@' + esc(x.handle) + '<br><small>' + esc(x.email) + '</small></td><td>' + esc(x.name) + '</td><td>' + (x.method === 'card' ? 'Carte' : 'Mobile money') + '<br><small style="white-space:normal">' + esc(x.account) + '</small></td><td><b>' + fmtN(x.xof) + ' F</b><br><small>' + fmtN(x.credits) + ' cr. · ' + x.usd + ' $</small></td><td>' + (x.first ? '<span class="cq-tag review">1er retrait</span>' : '') + (x.newAccount ? '<span class="cq-tag review">nouveau compte</span>' : '') + wait + (x.ref ? '<small>Réf. : ' + esc(x.ref) + '</small>' : '') + (x.reason ? '<small style="color:#ffb4b4">' + esc(x.reason) + '</small>' : '') + '</td><td>' + (d.status === 'requested' ? '<button class="btn pri sm" type="button" data-wd="paid" data-id="' + esc(x.id) + '">Payé</button> <button class="btn gl sm" type="button" data-wd="refused" data-id="' + esc(x.id) + '">Refuser</button>' : '') + '</td></tr>';
+      }).join('') || '<tr><td colspan="7">Aucun retrait dans cette liste.</td></tr>';
+      box.innerHTML = '<div class="cq-top">' + seg + '</div><div class="tw"><table><thead><tr><th>Date</th><th>Créateur</th><th>Titulaire</th><th>Compte</th><th>Montant</th><th>Contrôles</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+      Array.prototype.forEach.call(box.querySelectorAll('[data-cw]'), function (b) { b.addEventListener('click', function () { cwStatus = b.dataset.cw; loadWithdrawals(); }); });
+      Array.prototype.forEach.call(box.querySelectorAll('[data-wd]'), function (b) { b.addEventListener('click', function () {
+        var act = b.dataset.wd, note = window.prompt(act === 'paid' ? 'Référence du paiement effectué (obligatoire) :' : 'Motif du refus (affiché au créateur, obligatoire) :', '') || '';
+        if (!note.trim()) return;
+        b.disabled = true;
+        window.slashAuth.call('admin/community-withdraw-decide', { id: b.dataset.id, action: act, note: note }).then(function (r2) { if (r2.status === 200) load(); else { b.disabled = false; window.alert('Erreur : ' + ((r2.data && r2.data.error) || r2.status)); } }).catch(function () { b.disabled = false; });
+      }); });
+    }).catch(function () { box.innerHTML = '<p class="hint">Erreur réseau.</p>'; });
+  }
+  // Commandes proposées par les utilisateurs : file de validation par lot, publiées, refusées
+  var cqStatus = 'pending';
+  function loadCommunity() {
+    var box = document.getElementById('cq-box'); if (!box) return;
+    box.innerHTML = '<p class="hint">Chargement…</p>';
+    window.slashAuth.call('admin/community', { status: cqStatus }).then(function (r) {
+      if (r.status !== 200) { box.innerHTML = '<p class="hint">Impossible de charger la file (' + esc((r.data && r.data.error) || r.status) + ').</p>'; return; }
+      var d = r.data, c = d.counts || {}, st = d.status, cats = d.cats || [];
+      var seg = '<div class="seg">' + [['pending', 'À valider'], ['published', 'Publiées'], ['rejected', 'Refusées'], ['suspended', 'Retirées']].map(function (s) { return '<button type="button" data-cq="' + s[0] + '"' + (s[0] === st ? ' class="on"' : '') + '>' + s[1] + ' (' + (c[s[0]] || 0) + ')</button>'; }).join('') + '</div>';
+      var acts = !d.items.length ? '' : st === 'pending'
+        ? '<div class="acts"><button class="btn gl sm" type="button" id="cq-all">Tout sélectionner</button><button class="btn pri sm" type="button" data-cqact="approve">Valider la sélection</button><button class="btn gl sm" type="button" data-cqact="reject">Refuser la sélection</button></div>'
+        : st === 'published' ? '<div class="acts"><button class="btn gl sm" type="button" data-cqact="suspend">Retirer la sélection</button></div>' : '';
+      var items = d.items.length ? d.items.map(function (x) {
+        var sel = st === 'pending' || st === 'published' ? '<input type="checkbox" class="cq-sel" data-id="' + esc(x.id) + '" aria-label="Sélectionner">' : '<span></span>';
+        var sim = (x.similar || []).length ? '<small>Ressemble à : ' + x.similar.map(function (s) { return esc(s.title) + ' (' + s.s + ' %)'; }).join(', ') + '</small>' : '';
+        return '<div class="cq-item">' + sel + (x.thumb ? '<img class="cq-img" src="' + esc(x.thumb) + '" alt="Aperçu">' : '<div class="cq-img"></div>') + '<div class="cq-info">' +
+          '<b>' + esc(x.titleFr) + '</b><small>' + esc(x.titleEn) + '</small><p>' + esc(x.descFr) + '</p>' +
+          '<div><span class="cq-tag ' + x.score + '">' + (x.score === 'safe' ? 'sûr' : 'à revoir') + '</span><span class="cq-tag">' + (x.mode === 'paid' ? 'payante' : x.mode === 'free' ? 'gratuite' : '—') + '</span><span class="cq-tag">' + esc(x.catLabel) + ' · ' + esc(x.kind) + ' · ' + esc(x.ratio) + '</span></div>' + (st === 'pending' || st === 'published' ? '<div class="acts" style="max-width:360px"><select class="pin" data-catsel="' + esc(x.id) + '" aria-label="Catégorie">' + cats.map(function (k) { return '<option value="' + esc(k[0]) + '"' + (k[0] === x.cat ? ' selected' : '') + '>' + esc(k[1]) + '</option>'; }).join('') + '</select><button class="btn gl sm" type="button" data-catsave="' + esc(x.id) + '">Changer</button></div>' : '') +
+          '<small>@' + esc(x.owner.handle || '—') + ' · ' + esc(x.owner.email) + ' · ' + x.tests + ' test' + (x.tests > 1 ? 's' : '') + ' · ' + fmt(x.at) + '</small>' + sim +
+          (x.reason ? '<small style="color:#ffb4b4">Motif : ' + esc(x.reason) + '</small>' : '') +
+          '<details><summary>Demande d’origine et consigne rédigée par l’IA</summary><small>Demande de l’utilisateur</small><pre>' + esc(x.brief) + '</pre><small>Consigne (FR)</small><pre>' + esc(x.promptFr) + '</pre><small>Consigne (EN)</small><pre>' + esc(x.promptEn) + '</pre><small>Mots-clés</small><pre>' + esc(x.kw) + '</pre></details></div></div>';
+      }).join('') : '<p class="hint">Aucune commande dans cette liste.</p>';
+      box.innerHTML = '<div class="cq-top">' + seg + '</div>' + acts + '<div style="margin-top:12px">' + items + '</div>';
+      Array.prototype.forEach.call(box.querySelectorAll('[data-catsave]'), function (b) { b.addEventListener('click', function () {
+        var sel = box.querySelector('[data-catsel="' + b.dataset.catsave + '"]'); b.disabled = true;
+        window.slashAuth.call('admin/community-decide', { action: 'setcat', id: b.dataset.catsave, cat: sel.value }).then(function (r2) { b.disabled = false; b.textContent = r2.status === 200 ? 'Enregistré ✓' : 'Erreur'; setTimeout(function () { b.textContent = 'Changer'; }, 1800); }).catch(function () { b.disabled = false; });
+      }); });
+      Array.prototype.forEach.call(box.querySelectorAll('[data-cq]'), function (b) { b.addEventListener('click', function () { cqStatus = b.dataset.cq; loadCommunity(); }); });
+      var all = document.getElementById('cq-all'); if (all) all.addEventListener('click', function () { Array.prototype.forEach.call(box.querySelectorAll('.cq-sel'), function (k) { k.checked = true; }); });
+      Array.prototype.forEach.call(box.querySelectorAll('[data-cqact]'), function (b) { b.addEventListener('click', function () {
+        var ids = Array.prototype.map.call(box.querySelectorAll('.cq-sel:checked'), function (k) { return k.dataset.id; });
+        if (!ids.length) { window.alert('Sélectionnez au moins une commande.'); return; }
+        var act = b.dataset.cqact, reason = '';
+        if (act !== 'approve') { reason = window.prompt('Motif (affiché au créateur) :', '') || ''; if (!reason.trim()) return; }
+        else if (!window.confirm('Publier ' + ids.length + ' commande' + (ids.length > 1 ? 's' : '') + ' ?')) return;
+        b.disabled = true;
+        window.slashAuth.call('admin/community-decide', { action: act, ids: ids, reason: reason }).then(function (r2) {
+          if (r2.status === 200) { window.alert(r2.data.done + ' traitée' + (r2.data.done > 1 ? 's' : '') + (r2.data.skipped ? ', ' + r2.data.skipped + ' ignorée' + (r2.data.skipped > 1 ? 's' : '') + ' (déjà traitées ou sans aperçu)' : '') + '.'); load(); }
+          else { b.disabled = false; window.alert('Erreur : ' + ((r2.data && r2.data.error) || r2.status)); }
+        }).catch(function () { b.disabled = false; });
+      }); });
+    }).catch(function () { box.innerHTML = '<p class="hint">Erreur réseau.</p>'; });
   }
   // Erreurs de génération expliquées (cache 5 min) + bandeau d'alerte commun à tous les onglets
   var GRAV = { critique: ['#3a1416', '#ff8a8a', window.saIcon('dot')], attention: ['#3a2f12', '#ffd27a', window.saIcon('dot')], info: ['#13283a', '#8cc8ff', window.saIcon('dot')] };

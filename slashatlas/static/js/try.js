@@ -50,9 +50,18 @@
   }[L];
   var data = {}; try { data = JSON.parse(root.dataset.map); } catch (e) {}
   var params = new URLSearchParams(location.search);
-  var slug = data.commands[params.get('c')] ? params.get('c') : Object.keys(data.commands)[0];
+  var cu = params.get('c');
+  if (/^u-[a-f0-9]{10}$/.test(cu || '') && !data.commands[cu]) {
+    data.commands[cu] = { code: L === 'en' ? '/community' : '/communaute', title: '…', kind: 'product', img: false, sale: false };
+    fetch('/api/community/cmd?id=' + cu.slice(2)).then(function (r) { return r.ok ? r.json() : null; }).then(function (c) {
+      if (!c || !c.s) { delete data.commands[cu]; if (slug === cu) slug = Object.keys(data.commands)[0]; render(); return; }
+      var d = data.commands[cu]; d.title = (L === 'en' ? c.te : c.tf) + ' (@' + c.h + ')'; d.kind = c.kind; d.paid = c.mode === 'paid'; if (c.kind === 'free') d.free = 1;
+      render();
+    }).catch(function () {});
+  }
+  var slug = data.commands[cu] ? cu : Object.keys(data.commands)[0];
   var wantPass = params.get('pass') === '1';
-  function GC() { return (state && state.cfg && state.cfg.genCost) || 6; }
+  function GC() { return ((state && state.cfg && state.cfg.genCost) || 6) + ((data.commands[slug] || {}).paid ? ((state && state.cfg && state.cfg.communityExtra) || 1) : 0); } // commande communautaire payante : +1 crédit pour son créateur
   // Prix d'une affiche lu depuis le serveur : les textes « {n} crédits » suivent toujours le vrai tarif
   var T0 = {}; Object.keys(T).forEach(function (k) { T0[k] = T[k]; });
   function applyCost(n) { Object.keys(T0).forEach(function (k) { if (typeof T0[k] === 'string' && T0[k].indexOf('{n}') >= 0) T[k] = T0[k].replace(/{n}/g, n); }); }
@@ -327,6 +336,7 @@
         accRow(location.pathname + '#creations', 'image', A.crea, A.creaS, '') +
         accRow(L === 'en' ? '/en/film-studio/' : '/studio-film/', 'film', A.creaFilm, A.creaFilmS, '') +
         accRow(L === 'en' ? '/en/my-commands/' : '/mes-commandes/', 'heart', A.mine, A.mineS, '') +
+        accRow(L === 'en' ? '/en/propose/' : '/proposer/', 'sparkle', L === 'en' ? 'My creator space' : 'Mon espace créateur', L === 'en' ? 'Submit commands, uses, earnings, withdrawals' : 'Proposer, suivre mes commandes, gains et retraits', '') +
         accRow(refUrl(), 'gift', A.earn, A.earnS, '') +
         accRow('', 'receipt', A.txn, A.txnS, ' id="s-txn"') +
         accRow('', 'bolt', A.nopub, until, state.adFreeUntil ? '' : ' data-nopub') +

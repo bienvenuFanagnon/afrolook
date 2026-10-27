@@ -122,16 +122,17 @@
   var genLbl = function (k) { k = k || 'img'; return ic(k === 'vid' ? 'video' : k === 'txt' ? 'edit' : 'sparkle') + '<span>' + GK[k] + '</span><small>· ' + (k === 'vid' ? VC() : k === 'txt' ? TC() : GEN()) + ' cr</small>'; };
   var tryHref = function (c) { return c.gk === 'vid' ? P.try + '?mode=video' : P.try + '?c=' + c.s; };
   var copyLbl = function () { return ic('copy') + '<span>' + T.copyL + '</span><small>· ' + T.free + '</small>'; };
+  var likeHtml = function (s) { var t = lang === 'en' ? 'Like this command (public)' : 'J’aime cette commande (visible par tous)'; return '<button class="lk-btn" type="button" data-like="' + s + '" aria-pressed="false" aria-label="' + t + '" title="' + t + '">' + ic('thumb') + '<b hidden></b></button>'; };
   var favHtml = function (s) { return '<button class="fav" type="button" data-fav="' + s + '" aria-pressed="false" aria-label="' + T.fav + '">' + ic('heart') + '</button>'; };
   // même carte que card() dans build.mjs
   function cardHtml(c, pre) {
     var href = P.cmd + c.s + '/', id = (pre || 'p-') + c.s;
-    return '<article class="card" data-slug="' + c.s + '" data-search="' + esc(c.q) + '" data-t="' + esc(c.tt || '') + '" data-k="' + esc(c.kk || '') + '" data-cat="' + c.a + '"' + (c.nw ? ' data-new="1"' : '') + '><a href="' + href + '" class="cl" aria-label="' + esc(c.t) + '">' + posterHtml(c) + '</a><div class="cb"><div class="chead"><div class="code">' + esc(c.c) + '</div>' + favHtml(c.s) + '</div><h3><a href="' + href + '">' + esc(c.t) + '</a></h3><div class="meta"><span>' + esc(c.k) + (c.o ? '' : ' · ' + c.r) + '</span>' + (c.st ? '<span class="stp">' + c.st + ' ' + T.steps + '</span>' : '') + '<span class="cnt" hidden></span></div><div class="acts">' +
+    return '<article class="card" data-slug="' + c.s + '" data-search="' + esc(c.q) + '" data-t="' + esc(c.tt || '') + '" data-k="' + esc(c.kk || '') + '" data-cat="' + c.a + '"' + (c.nw ? ' data-new="1"' : '') + '><a href="' + href + '" class="cl" aria-label="' + esc(c.t) + '">' + posterHtml(c) + '</a><div class="cb"><div class="chead"><div class="code">' + esc(c.c) + '</div>' + likeHtml(c.s) + favHtml(c.s) + '</div><h3><a href="' + href + '">' + esc(c.t) + '</a></h3><div class="meta"><span>' + esc(c.k) + (c.o ? '' : ' · ' + c.r) + '</span>' + (c.st ? '<span class="stp">' + c.st + ' ' + T.steps + '</span>' : '') + '<span class="cnt" hidden></span></div><div class="acts">' +
       '<a class="btn pri sm" href="' + tryHref(c) + '" data-try="' + c.s + '">' + genLbl(c.gk) + '</a><button class="btn gl sm" type="button" data-copy="#' + id + '" data-slug="' + c.s + '">' + copyLbl() + '</button></div><pre id="' + id + '" hidden>' + esc(c.p) + '</pre></div></article>';
   }
   function railHtml(c) {
     var href = P.cmd + c.s + '/';
-    return '<article class="rc" data-slug="' + c.s + '" role="listitem"><a class="rp" href="' + href + '" aria-label="' + esc(c.t) + '">' + posterHtml(c) + '</a><div class="rb"><div class="chead"><code>' + esc(c.c) + '</code>' + favHtml(c.s) + '</div><span class="rt">' + esc(c.t) + '</span><div class="acts">' +
+    return '<article class="rc" data-slug="' + c.s + '" role="listitem"><a class="rp" href="' + href + '" aria-label="' + esc(c.t) + '">' + posterHtml(c) + '</a><div class="rb"><div class="chead"><code>' + esc(c.c) + '</code>' + likeHtml(c.s) + favHtml(c.s) + '</div><span class="rt">' + esc(c.t) + '</span><div class="acts">' +
       '<a class="btn pri copy" href="' + tryHref(c) + '" data-try="' + c.s + '">' + genLbl(c.gk) + '</a><button class="btn gl copy" type="button" data-copy="#pf-' + c.s + '" data-slug="' + c.s + '">' + copyLbl() + '</button></div><pre id="pf-' + c.s + '" hidden>' + esc(c.p) + '</pre></div></article>';
   }
 
@@ -147,7 +148,70 @@
       paint(list);
       if (window.saPopRefresh) window.saPopRefresh();
       if (window.saReorder) window.saReorder();
+      addCommunity(list);
     }).catch(function () {});
+  } else if (list && document.getElementById('q')) addCommunity(list);
+
+  // ── commandes de la communauté : cartes ajoutées à la liste, et créateurs trouvés par pseudo ──
+  var CM = { fr: { tag: 'Communauté', paid: 'Commande payante : le texte reste privé', view: 'Voir', by: 'Créateurs', n: function (n) { return n + ' commande' + (n > 1 ? 's' : ''); } }, en: { tag: 'Community', paid: 'Paid command: the text stays private', view: 'View', by: 'Creators', n: function (n) { return n + ' command' + (n > 1 ? 's' : ''); } } }[lang];
+  function cmCard(x) {
+    var t = lang === 'en' ? x.te : x.tf, k = lang === 'en' ? x.ke : x.kf, href = (lang === 'en' ? '/en/c/' : '/c/') + x.s + '/';
+    return '<article class="card" data-src="cm" data-slug="' + x.s + '" data-search="' + esc(x.q) + '" data-t="' + esc(x.tt) + '" data-k="' + esc(x.kk) + '" data-cat="' + esc(x.a) + '"><a href="' + href + '" class="cl" aria-label="' + esc(t) + '"><div class="poster img' + (x.r === '16:9' ? ' ls' : '') + '" style="--ar:' + String(x.r).replace(':', '/') + '"><img src="/api/community/preview/' + x.id + '.jpg" alt="' + esc(t) + '" loading="lazy" decoding="async"><span class="tag">' + esc(k) + '</span><span class="nw cm">' + CM.tag + '</span>' + (x.mode === 'paid' ? '<span class="lockb" title="' + esc(CM.paid) + '">' + ic('lock') + '</span>' : '') + '</div></a><div class="cb"><div class="chead"><div class="code">@' + esc(x.h) + '</div>' + likeHtml(x.s) + (x.mode === 'paid' ? '<span class="lk" title="' + esc(CM.paid) + '">' + ic('lock') + '</span>' : '') + '</div><h3><a href="' + href + '">' + esc(t) + '</a></h3><div class="meta"><span>' + esc(k) + ' · ' + esc(x.r) + '</span></div><div class="acts"><a class="btn pri sm" href="' + P.try + '?c=' + x.s + '" data-try="' + x.s + '">' + (x.mode === 'paid' ? genLbl('img').replace('· ' + GEN() + ' cr', '· ' + (GEN() + 1) + ' cr') : genLbl('img')) + '</a><a class="btn gl sm" href="' + href + '">' + CM.view + '</a></div></div></article>';
+  }
+  // « Toutes · Officielles · Communauté » : c'est la même liste, ce commutateur sépare les commandes du site de celles des utilisateurs
+  var SW = { fr: { all: 'Toutes', off: 'Officielles', cm: 'Communauté', hint: 'Les commandes « Communauté » sont proposées par les utilisateurs et validées par SlashAtlas.', mine: 'Mes commandes créées' }, en: { all: 'All', off: 'Official', cm: 'Community', hint: '“Community” commands are submitted by users and approved by SlashAtlas.', mine: 'My created commands' } }[lang];
+  function srcSwitch(box, n) {
+    if (!n || document.getElementById('srcsw')) return;
+    var w = document.createElement('div'); w.className = 'srcsw'; w.id = 'srcsw';
+    w.innerHTML = '<div class="seg" role="tablist">' + [['', SW.all], ['off', SW.off], ['cm', SW.cm + ' (' + n + ')']].map(function (b, i) { return '<button type="button" data-src="' + b[0] + '"' + (i ? '' : ' class="on"') + '>' + esc(b[1]) + '</button>'; }).join('') + '</div><a class="btn gl sm" href="' + (lang === 'en' ? '/en/propose/' : '/proposer/') + '#mes-commandes">' + esc(SW.mine) + '</a><small>' + esc(SW.hint) + '</small>';
+    var fb = document.querySelector('.filterbar'); (fb || box).parentNode.insertBefore(w, fb || box);
+    var set = function (v) { Array.prototype.forEach.call(w.querySelectorAll('[data-src]'), function (x) { x.classList.toggle('on', x.dataset.src === v); }); if (window.saSetSrc) window.saSetSrc(v); try { var u = new URL(location.href); if (v === 'cm') u.searchParams.set('src', 'communaute'); else u.searchParams.delete('src'); history.replaceState(null, '', u); } catch (e) {} };
+    w.addEventListener('click', function (e) { var b = e.target.closest('[data-src]'); if (b) set(b.dataset.src); });
+  }
+  function addCommunity(box) {
+    fetch('/api/community/list').then(function (r) { return r.ok ? r.json() : { items: [] }; }).then(function (j) {
+      var have = {}; Array.prototype.forEach.call(box.querySelectorAll('.card[data-slug]'), function (c) { have[c.dataset.slug] = 1; });
+      var items = (j.items || []).filter(function (x) { return !have[x.s]; }); if (!items.length) return;
+      var tmp = document.createElement('div'); tmp.innerHTML = items.map(cmCard).join('');
+      // Arrivée par le bouton « Voir les commandes de la communauté » (?src=communaute) : elles passent en tête de la même liste. Sinon, elles restent à la suite des commandes du site, sans mise en avant.
+      var prio = /[?&]src=(communaute|community|cm)\b/.test(location.search);
+      var frag = document.createDocumentFragment(); Array.prototype.slice.call(tmp.children).forEach(function (n, i) { n.hidden = true; if (prio) n.dataset.o = String(i - items.length); frag.appendChild(n); });
+      if (prio) box.insertBefore(frag, box.firstChild); else box.appendChild(frag);
+      if (window.saReorder) window.saReorder();
+      srcSwitch(box, items.length);
+    }).catch(function () {});
+  }
+  // Top 10 des créateurs : classés par nombre de personnes différentes qui ont utilisé leurs commandes (jamais par gains)
+  var TP = { fr: { h: 'Top 10 des créateurs', week: 'Semaine', month: 'Mois', all: 'Depuis le début', n: function (n) { return n + ' personne' + (n > 1 ? 's' : ''); }, c: function (n) { return n + ' commande' + (n > 1 ? 's' : ''); }, cta: 'Proposer ma commande' }, en: { h: 'Top 10 creators', week: 'Week', month: 'Month', all: 'All time', n: function (n) { return n + ' ' + (n > 1 ? 'people' : 'person'); }, c: function (n) { return n + ' command' + (n > 1 ? 's' : ''); }, cta: 'Submit my command' } }[lang];
+  function topBox(anchor) {
+    var box = document.createElement('section'); box.className = 'top10'; box.hidden = true;
+    box.innerHTML = '<div class="top10-h"><h2>' + TP.h + '</h2><div class="seg" role="tablist">' + ['week', 'month', 'all'].map(function (k, i) { return '<button type="button" data-p="' + k + '"' + (i ? '' : ' class="on"') + '>' + TP[k] + '</button>'; }).join('') + '</div></div><ol class="top10-l"></ol><a class="btn gl sm" href="' + (lang === 'en' ? '/en/propose/' : '/proposer/') + '">' + TP.cta + '</a>';
+    anchor.parentNode.insertBefore(box, anchor);
+    var ol = box.querySelector('ol'), load = function (p) {
+      fetch('/api/community/top?p=' + p).then(function (r) { return r.ok ? r.json() : { items: [] }; }).then(function (j) {
+        var it = j.items || [];
+        ol.innerHTML = it.length ? it.map(function (c, i) { return '<li><a href="' + (lang === 'en' ? '/en/creator/' : '/createur/') + esc(c.h) + '/"><i>' + (i + 1) + '</i><b>@' + esc(c.h) + '</b><small>' + TP.n(c.n) + ' · ' + TP.c(c.cmds) + '</small></a></li>'; }).join('') : '<li class="none">—</li>';
+      }).catch(function () {});
+    };
+    box.addEventListener('click', function (e) { var b = e.target.closest('[data-p]'); if (!b) return; Array.prototype.forEach.call(box.querySelectorAll('[data-p]'), function (x) { x.classList.toggle('on', x === b); }); load(b.dataset.p); });
+    fetch('/api/community/top?p=all').then(function (r) { return r.ok ? r.json() : { items: [] }; }).then(function (j) { if ((j.items || []).length) { box.hidden = false; load('week'); } }).catch(function () {});
+  }
+  var cmBox = document.getElementById('list'), cmQ = document.getElementById('q');
+  if (cmBox && cmQ) { var fb = document.querySelector('.filterbar'); if (fb) topBox(fb.nextElementSibling || cmBox); }
+  if (cmBox && cmQ) {
+    var strip = document.createElement('div'); strip.className = 'creators-strip'; strip.hidden = true; cmBox.parentNode.insertBefore(strip, cmBox);
+    var cmT = null;
+    cmQ.addEventListener('input', function () {
+      clearTimeout(cmT); var v = cmQ.value.trim();
+      if (v.replace(/^@/, '').length < 2) { strip.hidden = true; return; }
+      cmT = setTimeout(function () {
+        fetch('/api/community/creators?q=' + encodeURIComponent(v)).then(function (r) { return r.ok ? r.json() : { items: [] }; }).then(function (j) {
+          if (cmQ.value.trim() !== v) return;
+          var it = j.items || []; strip.hidden = !it.length;
+          strip.innerHTML = it.length ? '<small>' + CM.by + '</small>' + it.map(function (c) { return '<a href="' + (lang === 'en' ? '/en/creator/' : '/createur/') + esc(c.h) + '/">@' + esc(c.h) + '<i>' + CM.n(c.n) + '</i></a>'; }).join('') : '';
+        }).catch(function () {});
+      }, 300);
+    });
   }
 
   // ── accueil : rangée « Vos favoris » ──

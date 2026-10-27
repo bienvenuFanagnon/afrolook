@@ -127,6 +127,41 @@
           "functionId": "slashatlasApi",
           "region": "europe-west1"
         }
+      },
+      {
+        "source": "/c/u-**",
+        "function": {
+          "functionId": "slashatlasApi",
+          "region": "europe-west1"
+        }
+      },
+      {
+        "source": "/en/c/u-**",
+        "function": {
+          "functionId": "slashatlasApi",
+          "region": "europe-west1"
+        }
+      },
+      {
+        "source": "/createur/**",
+        "function": {
+          "functionId": "slashatlasApi",
+          "region": "europe-west1"
+        }
+      },
+      {
+        "source": "/en/creator/**",
+        "function": {
+          "functionId": "slashatlasApi",
+          "region": "europe-west1"
+        }
+      },
+      {
+        "source": "/sitemap-communaute.xml",
+        "function": {
+          "functionId": "slashatlasApi",
+          "region": "europe-west1"
+        }
       }
     ],
     "redirects": [

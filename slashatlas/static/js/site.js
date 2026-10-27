@@ -166,7 +166,7 @@
   var nq = S ? S.nq : function (s) { return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim(); };
   var q = $('#q');
   if (q) {
-    var cat = '', box = $('#list'), adEl = $('#list .card-ad'), adNext = adEl ? adEl.nextElementSibling : null, list = [], items = [], none = $('#none'), more = $('#more'), STEP = 24, limit = STEP, dirty = false, counter = 0;
+    var cat = '', srcf = '', box = $('#list'), adEl = $('#list .card-ad'), adNext = adEl ? adEl.nextElementSibling : null, list = [], items = [], none = $('#none'), more = $('#more'), STEP = 24, limit = STEP, dirty = false, counter = 0;
     var sel = $('#catsel'), reset = $('#catreset'), fcount = $('#fcount'), fhint = $('#fhint'), sugg = $('#sugg');
     // une fiche = un élément cherchable ; data-o garde l'ordre d'origine (la liste est reclassée quand on cherche, puis remise en ordre)
     var build = function () {
@@ -174,14 +174,14 @@
       items = list.map(function (card) {
         if (card.dataset.o == null) card.dataset.o = counter++;
         var code = card.querySelector('.code');
-        return { el: card, t: card.dataset.t || '', k: card.dataset.k || '', c: nq(code ? code.textContent : ''), a: card.dataset.search || '', cat: card.dataset.cat, isNew: card.dataset.new === '1', o: +card.dataset.o };
+        return { el: card, t: card.dataset.t || '', k: card.dataset.k || '', c: nq(code ? code.textContent : ''), a: card.dataset.search || '', cat: card.dataset.cat, isNew: card.dataset.new === '1', cm: card.dataset.src === 'cm', o: +card.dataset.o };
       });
     };
     var apply = function (keep) {
       if (keep !== true) limit = STEP;
-      var raw = q.value, searching = !!(S ? S.nq(raw) : nq(raw)), filtering = !!(cat || searching);
+      var raw = q.value, searching = !!(S ? S.nq(raw) : nq(raw)), filtering = !!(cat || searching || srcf);
       $$('#list .card-ad').forEach(function (a) { a.hidden = filtering; });
-      var pool = items.filter(function (it) { return !cat || (cat === '__new' ? it.isNew : it.cat === cat); });
+      var pool = items.filter(function (it) { return (!cat || (cat === '__new' ? it.isNew : it.cat === cat)) && (!srcf || (srcf === 'cm' ? it.cm : !it.cm)); });
       var res = searching && S ? S.search(pool, raw) : null, ordered;
       if (res) ordered = res.list.map(function (x) { return x.it; });
       else ordered = pool.slice().sort(function (a, b) { return a.o - b.o; });
@@ -206,6 +206,7 @@
       if (more) { more.hidden = c <= limit; more.textContent = (lang === 'fr' ? 'Voir plus (' : 'Show more (') + (c - limit) + ')'; }
     };
     window.saReorder = function () { build(); apply(true); };
+    window.saSetSrc = function (v) { srcf = v === 'cm' || v === 'off' ? v : ''; apply(); }; // origine des commandes : '' toutes, 'off' officielles, 'cm' communauté
     build();
     if (more) more.addEventListener('click', function () { limit += STEP; apply(true); });
     apply();

@@ -203,6 +203,11 @@ async function referrals(u) {
 }
 
 // ───────── crédits ─────────
+/** Part du solde qui vient d'achats (comptes antérieurs au suivi : déduite une fois du journal des achats). */
+async function legacyPurchased(tx, uid, credits) {
+  const q = await tx.get(db().collection('StudioLedger').where('uid', '==', uid).where('type', '==', 'purchase'));
+  return Math.max(0, Math.min(credits, q.docs.reduce((n, d) => n + (d.data().delta || 0), 0)));
+}
 async function addCredits(uid, n, type, ref, meta = {}) {
   const user = db().collection('StudioUsers').doc(uid);
   const ledger = db().collection('StudioLedger').doc(`${type}_${ref}`); // identifiant fixe : jamais deux fois la même opération
@@ -211,7 +216,13 @@ async function addCredits(uid, n, type, ref, meta = {}) {
     if (l.exists) return { applied: false };
     const s = await tx.get(user);
     if (!s.exists) throw fail(404, 'no_user');
-    tx.update(user, { credits: FieldValue.increment(n) });
+    const pn = type === 'purchase' ? n : Math.max(0, Math.trunc(Number(meta.purchased)) || 0); // achat, ou remboursement de la part achetée
+    const upd = { credits: FieldValue.increment(n) };
+    if (pn) {
+      const cur = s.data().purchasedCredits;
+      upd.purchasedCredits = (cur !== undefined ? cur : await legacyPurchased(tx, uid, s.data().credits || 0)) + pn;
+    }
+    tx.update(user, upd);
     tx.set(ledger, { uid, delta: n, type, ref, ...meta, at: FieldValue.serverTimestamp() });
     return { applied: true };
   });
@@ -235,13 +246,17 @@ async function spendCredits(uid, n, ref, ledgerId) {
   const user = db().collection('StudioUsers').doc(uid);
   const docId = ledgerId ? `generation_${ledgerId}` : `generation_${ref}`;
   const ledger = db().collection('StudioLedger').doc(docId);
-  await db().runTransaction(async (tx) => {
+  // les crédits achetés sont dépensés en premier ; on retient la part achetée de la dépense (fromPurchased)
+  return db().runTransaction(async (tx) => {
     const s = await tx.get(user);
     if (!s.exists || (s.data().credits || 0) < n) throw fail(402, 'insufficient_credits');
-    tx.update(user, { credits: FieldValue.increment(-n) });
-    tx.set(ledger, { uid, delta: -n, type: 'generation', ref, at: FieldValue.serverTimestamp() });
+    const cur = s.data().purchasedCredits;
+    const purchased = Math.min(s.data().credits || 0, cur !== undefined ? cur : await legacyPurchased(tx, uid, s.data().credits || 0));
+    const fromP = Math.min(purchased, n);
+    tx.update(user, { credits: FieldValue.increment(-n), purchasedCredits: purchased - fromP });
+    tx.set(ledger, { uid, delta: -n, type: 'generation', ref, fromPurchased: fromP, at: FieldValue.serverTimestamp() });
+    return fromP;
   });
-  return true;
 }
 
 // ───────── génération ─────────
@@ -301,8 +316,8 @@ function fillFields(prompt, fields, L) {
 }
 const NO_IMAGE_KINDS = ['video', 'motion', 'text'];
 
-function composePrompt(slug, lang, product, multi, nPhotos, texts = [], qrpos = '', sale = false, stagingInstruction = '', fields = []) {
-  const c = COMMANDS.commands[slug];
+function composePrompt(slug, lang, product, multi, nPhotos, texts = [], qrpos = '', sale = false, stagingInstruction = '', fields = [], cmdOverride = null) {
+  const c = cmdOverride || COMMANDS.commands[slug]; // cmdOverride : commande communautaire, lue en base côté serveur (jamais envoyée par le navigateur)
   if (!c) throw fail(400, 'unknown_command');
   if (NO_IMAGE_KINDS.includes(c.kind)) throw fail(400, 'not_image'); // vidéo, motion et texte ont leur propre outil
   const L = lang === 'en' ? 'en' : 'fr';
@@ -398,13 +413,25 @@ async function callGemini(parts, ratio) {
   });
 }
 
+// Commandes communautaires : community.js s'enregistre ici au chargement (pas d'import circulaire)
+let communityHooks = null;
+const setCommunityHooks = (h) => { communityHooks = h; };
 async function generate(u, b) {
   const slug = clean(b.slug, 40);
+  if (communityHooks && /^u-[a-f0-9]{10}$/.test(slug)) {
+    const r = await communityHooks.resolve(slug.slice(2)); // 404 si la commande n'est pas publiée ; la consigne reste côté serveur
+    const out = await generateWith(u, b, r.cmd, slug, r.extra);
+    communityHooks.used(slug.slice(2), u, out).catch((e) => console.error('community use', e && e.message));
+    return out;
+  }
+  return generateWith(u, b, COMMANDS.commands[slug], slug, null);
+}
+/** Génération à partir d'une commande donnée (commande du site ou commande communautaire) ; extra : champs ajoutés à la trace de la génération. */
+async function generateWith(u, b, cmd, slug, extra) {
   const lang = b.lang === 'en' ? 'en' : 'fr';
   const product = clean(b.product, 60).replace(/[()]/g, '');
   const multi = b.multi === true || b.multi === 'n';
   const photos = Array.isArray(b.photos) ? b.photos.slice(0, 3) : [];
-  const cmd = COMMANDS.commands[slug];
   if (!photos.length && !(cmd && cmd.kind === 'free')) throw fail(400, 'no_photo');
   let total = 0;
   const parts = [];
@@ -420,12 +447,12 @@ async function generate(u, b) {
   if (total > 6 * 1024 * 1024) throw fail(413, 'photo_too_big');
   // Rendu optimisé SlashAtlas : la photo est retouchée avant d'être donnée à l'IA (lumière, couleurs, netteté, taille). Une photo sombre ou terne donne un résultat terne.
   let polished = 0;
-  for (const part of parts) { try { const r = await polishPhoto(part.inlineData.data, ['product', 'person'].includes((COMMANDS.commands[slug] || {}).kind) ? 0.5 : 0.85); if (r) { part.inlineData = { mimeType: 'image/jpeg', data: r }; polished++; } } catch (e) { console.error('polish', e && e.message); } }
+  for (const part of parts) { try { const r = await polishPhoto(part.inlineData.data, ['product', 'person'].includes((cmd || {}).kind) ? 0.5 : 0.85); if (r) { part.inlineData = { mimeType: 'image/jpeg', data: r }; polished++; } } catch (e) { console.error('polish', e && e.message); } }
   const texts = cleanTexts(b.texts);
   const qrpos = QR_CORNER[b.qrpos] ? b.qrpos : '';
   const sale = b.sale === true;
   const stagingInstruction = clean(b.stagingInstruction || '', 200);
-  const { text, ratio } = composePrompt(slug, lang, product, multi, photos.length, texts, qrpos, sale, stagingInstruction, cleanFields(b.fields));
+  const { text, ratio } = composePrompt(slug, lang, product, multi, photos.length, texts, qrpos, sale, stagingInstruction, cleanFields(b.fields), cmd);
   parts.push({ text });
 
   // Paramètres de l'affiche de vente pour l'historique (jamais dans le prompt IA)
@@ -446,13 +473,14 @@ async function generate(u, b) {
     };
   }
 
-  return runJob(u, parts, ratio, { slug, lang, product, multi, photos: photos.length, brand: texts.length, qr: qrpos, sale, polished, ...(saleOpts ? { saleOpts } : {}) });
+  return runJob(u, parts, ratio, { slug, lang, product, multi, photos: photos.length, brand: texts.length, qr: qrpos, sale, polished, ...(saleOpts ? { saleOpts } : {}), ...(extra || {}) });
 }
 
 /** Débit, plafonds, appel Gemini, stockage, remboursement en cas d'échec : commun à « générer » et « modifier ». */
 async function runJob(u, parts, ratio, meta) {
   const id = crypto.randomBytes(10).toString('hex');
-  await spendCredits(u.uid, GEN_COST, id); // lève 402 s'il n'y a pas assez de crédits (avant tout compteur : un compte sans crédit ne peut pas saturer les plafonds)
+  const cost = meta.cost || GEN_COST; // une commande communautaire payante coûte 1 crédit de plus (qui revient à son créateur)
+  const fromP = await spendCredits(u.uid, cost, id); // lève 402 s'il n'y a pas assez de crédits (avant tout compteur : un compte sans crédit ne peut pas saturer les plafonds)
   // plafonds du jour (utilisateur et global)
   const d = day();
   const cUser = db().collection('StudioCounters').doc(`${d}_${u.uid}`);
@@ -465,9 +493,9 @@ async function runJob(u, parts, ratio, meta) {
       tx.set(cUser, { n: FieldValue.increment(1), day: d }, { merge: true });
       tx.set(cAll, { n: FieldValue.increment(1), day: d }, { merge: true });
     });
-  } catch (e) { await addCredits(u.uid, GEN_COST, 'refund', id, { reason: e.code || 'limit' }); throw e; }
+  } catch (e) { await addCredits(u.uid, cost, 'refund', id, { reason: e.code || 'limit', purchased: fromP }); throw e; }
   const gref = db().collection('StudioGenerations').doc(id);
-  await gref.set({ uid: u.uid, ratio, cost: GEN_COST, status: 'pending', createdAt: FieldValue.serverTimestamp(), ...meta });
+  await gref.set({ uid: u.uid, ratio, cost, status: 'pending', createdAt: FieldValue.serverTimestamp(), ...meta });
   try {
     const img = await callGemini(parts, ratio);
     const ext = img.mime.includes('jpeg') ? 'jpg' : 'png';
@@ -478,9 +506,9 @@ async function runJob(u, parts, ratio, meta) {
     await stat.set({ day: d }, { merge: true });
     await stat.update(meta.parent ? { edits: FieldValue.increment(1) } : { generations: FieldValue.increment(1), [`gen.${meta.slug}`]: FieldValue.increment(1) });
     const left = (await db().collection('StudioUsers').doc(u.uid).get()).data().credits || 0;
-    return { id, image: img.data, mime: img.mime, credits: left };
+    return { id, image: img.data, mime: img.mime, credits: left, cost, fromPurchased: fromP };
   } catch (e) {
-    await addCredits(u.uid, GEN_COST, 'refund', id, { reason: e.code || 'error' });
+    await addCredits(u.uid, cost, 'refund', id, { reason: e.code || 'error', purchased: fromP });
     await gref.update({ status: 'failed', error: e.code || 'error' });
     await bump({ genfails: 1 });
     await logGenError('image', e.code || e.message, u.uid, { slug: meta.slug, ...(e.detail ? { detail: e.detail } : {}) });
@@ -667,6 +695,7 @@ async function payWebhook(b) {
 function publicConfig() {
   return {
     genCost: GEN_COST,
+    communityExtra: 1,
     textCost: TEXT_COST,
     video: { base: VIDEO_COST.base, voice: VIDEO_COST.voice, cutout: VIDEO_COST.cutout, userPerDay: VIDEO_LIMITS.userPerDay },
     packs: [...PACKS, PASS],
@@ -713,7 +742,9 @@ async function adminChargeback(b, by) {
   const ledger = db().collection('StudioLedger').doc(`chargeback_${orderId}`);
   await db().runTransaction(async (tx) => {
     const l = await tx.get(ledger); if (l.exists) return;
+    const us = await tx.get(uref);
     const upd = { cardBlocked: true, cardBlockedAt: FieldValue.serverTimestamp() };
+    if (o.credits && us.exists && us.data().purchasedCredits !== undefined) upd.purchasedCredits = Math.max(0, us.data().purchasedCredits - o.credits);
     if (o.credits) upd.credits = FieldValue.increment(-o.credits);
     if (o.days) upd.adFreeUntil = 0;
     tx.update(uref, upd);
@@ -721,6 +752,7 @@ async function adminChargeback(b, by) {
     tx.update(oref, { status: 'chargeback', chargebackAt: FieldValue.serverTimestamp(), chargebackNote: note });
   });
   await bump({ chargebacks: 1, chargeback_xof: o.price || 0 });
+  if (communityHooks) await communityHooks.chargeback(o.uid, orderId).catch((e) => console.error('community chargeback', e && e.message)); // gains de créateurs tirés de ce compte : annulés
   return { ok: true };
 }
 
@@ -732,7 +764,7 @@ async function history(u) {
     .limit(30)
     .get();
   return snap.docs
-    .filter((d) => { const x = d.data(); return x.status === 'done' && x.slug; })
+    .filter((d) => { const x = d.data(); return x.status === 'done' && x.slug && !x.community; }) // les tests de commandes communautaires n'apparaissent pas dans l'historique
     .slice(0, 20)
     .map((d) => {
       const x = d.data();
@@ -972,4 +1004,4 @@ async function logGenError(type, code, uid, extra) {
   } catch (_) { /* silencieux */ }
 }
 
-module.exports = { generateText, TEXT_COST, getLibrary, saveLibrary, adminChargeback, feexSnapshot, quoteCard, referrals, attachReferrer, referralReward, ensureRefCode, grant, evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, history, regen, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST, spendCredits, addCredits, bump, day, db, clean, GEMINI_API_KEY, VIDEO_COST, VIDEO_LIMITS, callGemini, getBrandProfile, saveBrandProfile, myOrders, adminOrders, adminUserDetail, logGenError };
+module.exports = { setCommunityHooks, generateWith, TEXT_MODELS, withDetail, generateText, TEXT_COST, getLibrary, saveLibrary, adminChargeback, feexSnapshot, quoteCard, referrals, attachReferrer, referralReward, ensureRefCode, grant, evidence, TERMS_VERSION, CARD_LIMITS, SECRETS, me, generate, edit, history, regen, payCard, quote, CARD, payStart, payStatus, payWebhook, publicConfig, fail, PACKS, OPERATORS, composePrompt, GEN_COST, spendCredits, addCredits, bump, day, db, clean, GEMINI_API_KEY, VIDEO_COST, VIDEO_LIMITS, callGemini, getBrandProfile, saveBrandProfile, myOrders, adminOrders, adminUserDetail, logGenError };

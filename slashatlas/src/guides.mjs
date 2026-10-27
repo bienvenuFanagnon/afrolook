@@ -155,4 +155,60 @@ export const GUIDES = [
       ],
     },
   },
+  {
+    slug: { fr: 'gagner-argent-commandes-ia', en: 'earn-money-ai-commands' }, cat: 'business', cmd: 'productglow', min: 5,
+    fr: {
+      title: 'Gagner de l’argent avec des commandes d’affiches IA', desc: 'Publier une commande sur SlashAtlas, ce qu’elle rapporte, comment vos gains sont protégés et retirés par mobile money. Exemples chiffrés, sans promesse de revenu.',
+      intro: 'Une commande SlashAtlas est une consigne prête à l’emploi qui transforme une photo en affiche professionnelle. Si vous savez décrire une bonne affiche, vous pouvez publier vos propres commandes : chaque fois qu’une personne utilise l’une d’elles, vous gagnez des crédits, que vous pouvez convertir en argent.',
+      sections: [
+        ['1. Le principe en une minute', ['Vous décrivez l’affiche voulue en quelques lignes. Notre IA la met au format d’une commande, vous la testez avec vos propres crédits, puis vous la soumettez. Une fois relue et publiée sous votre pseudo, tout le monde peut l’utiliser avec sa propre photo.', 'Quand votre commande est payante, chaque utilisation vous rapporte 1 crédit gagné, soit environ 4 F.']],
+        ['2. Les 4 étapes pour publier', [['Rédigez : dites à quoi sert l’affiche, ce qu’on y voit et l’ambiance.', 'Testez : lancez un rendu avec une photo. Le test est obligatoire et vous le payez avec vos crédits ; le rendu que vous validez devient l’aperçu public de votre commande.', 'Soumettez : choisissez gratuite ou payante, puis envoyez pour validation. L’équipe relit chaque commande.', 'Gagnez : partagez le lien de votre commande. Le suivi des utilisations et de vos gains se fait dans « Mon espace créateur ».']]],
+        ['3. Gratuite ou payante ?', ['Une commande gratuite se lance au tarif normal (6 crédits pour l’utilisateur) et ne rapporte rien directement, mais elle vous donne de la visibilité et une place possible dans le Top 10 des créateurs.', 'Une commande payante coûte 7 crédits à l’utilisateur : 6 pour la génération et 1 pour vous. Son texte reste privé : on ne peut le copier qu’en payant 1 crédit, qui vous revient aussi.']],
+        ['4. Combien ça rapporte, concrètement', [['50 utilisations : 50 crédits gagnés, environ 200 F.', '250 utilisations : 250 crédits, environ 1 000 F, le minimum du premier retrait.', '1 000 utilisations : 1 000 crédits, environ 4 000 F.'], 'Ce sont des exemples de calcul, pas une promesse de revenu : vos gains dépendent du nombre de personnes qui utilisent vraiment votre commande.']],
+        ['5. Vos gains sont protégés, puis retirables', ['Chaque gain est bloqué 7 jours pour pouvoir être annulé en cas de paiement contesté. Ensuite, vous pouvez soit le convertir en crédits pour créer vos propres affiches, soit demander un retrait : par mobile money dès 1 000 F, ou par carte bancaire dès 100 $.', 'Les retraits sont vérifiés puis payés à la main, avec une référence de paiement. Pour éviter les abus, un seul compte de retrait peut être relié à un compte, et un gain n’est accordé que lorsque l’acheteur a utilisé des crédits achetés.']],
+        ['6. Ce qui rend une commande populaire', [['Un besoin précis : salon de coiffure, restaurant, boutique de mode, annonce immobilière…', 'Un bon titre, simple et sans nom de marque.', 'Un aperçu net : testez avec une belle photo avant de valider.', 'Le partage : envoyez le lien sur WhatsApp, avec une phrase qui dit à qui elle sert.']]],
+        ['7. Les règles à respecter', ['Pas de contenu adulte, violent, illégal ou trompeur, pas d’imitation de marque ni de personne réelle, pas de promesse mensongère. Chaque commande est relue avant publication et peut être retirée si elle ne respecte pas ces règles.']],
+      ],
+    },
+    en: {
+      title: 'Earn money with AI poster commands', desc: 'Publish a command on SlashAtlas, what it earns, how your earnings are protected and withdrawn by mobile money. Worked examples, no income promises.',
+      intro: 'A SlashAtlas command is a ready-made instruction that turns a photo into a professional poster. If you can describe a good poster, you can publish your own commands: every time someone uses one, you earn credits that you can convert into cash.',
+      sections: [
+        ['1. The idea in one minute', ['You describe the poster you want in a few lines. Our AI puts it in command format, you test it with your own credits, then you submit it. Once reviewed and published under your username, anyone can use it with their own photo.', 'When your command is paid, every use earns you 1 credit, about 4 F.']],
+        ['2. The 4 steps to publish', [['Write: say what the poster is for, what we see in it and the mood.', 'Test: run a result with a photo. The test is mandatory and paid with your own credits; the result you approve becomes the public preview of your command.', 'Submit: choose free or paid, then send it for approval. The team reviews every command.', 'Earn: share your command link. Uses and earnings are tracked in “My creator space”.']]],
+        ['3. Free or paid?', ['A free command runs at the normal price (6 credits for the user) and earns nothing directly, but it gives you visibility and a possible place in the Top 10 creators.', 'A paid command costs the user 7 credits: 6 for the generation and 1 for you. Its text stays private: it can only be copied by paying 1 credit, which also goes to you.']],
+        ['4. How much does it earn, in practice', [['50 uses: 50 earned credits, about 200 F.', '250 uses: 250 credits, about 1,000 F, the minimum for a first withdrawal.', '1,000 uses: 1,000 credits, about 4,000 F.'], 'These are worked examples, not an income promise: your earnings depend on how many people really use your command.']],
+        ['5. Your earnings are protected, then withdrawable', ['Each earning is held for 7 days so it can be cancelled if a payment is disputed. After that, you can either convert it into credits to create your own posters, or request a withdrawal: by mobile money from 1,000 F, or by bank card from $100.', 'Withdrawals are checked and paid by hand, with a payment reference. To prevent abuse, a payout account can only be linked to one account, and an earning is only granted when the buyer used purchased credits.']],
+        ['6. What makes a command popular', [['A precise need: hair salon, restaurant, fashion shop, property ad…', 'A good title, simple and without brand names.', 'A sharp preview: test with a good photo before approving.', 'Sharing: send the link on WhatsApp, with a sentence saying who it is for.']]],
+        ['7. The rules to follow', ['No adult, violent, illegal or misleading content, no imitation of brands or real people, no false promises. Every command is reviewed before publication and can be removed if it breaks these rules.']],
+      ],
+    },
+  },
+  {
+    slug: { fr: 'affiche-publicitaire-ia', en: 'ai-advertising-poster' }, cat: 'affiches', cmd: 'fashionposter', min: 5,
+    fr: {
+      title: 'Créer une affiche publicitaire avec l’IA, pas à pas', desc: 'Choisir une commande, préparer sa photo, copier la commande gratuitement ou générer l’affiche sur SlashAtlas, puis la publier sur WhatsApp, Facebook et Instagram.',
+      intro: 'Une affiche publicitaire de qualité n’exige plus un graphiste. Avec une bonne photo et une commande adaptée, l’IA produit une affiche prête à publier en quelques minutes. Voici la méthode, de la photo à la publication.',
+      sections: [
+        ['1. Choisissez la commande qui correspond à votre activité', ['SlashAtlas propose plus de 900 commandes classées par métier : mode, beauté, restauration, immobilier, boutique en ligne, événements. Utilisez la recherche : tapez simplement ce que vous vendez (« robe », « perruque », « burger », « villa »).']],
+        ['2. Préparez une photo nette', ['La qualité de l’affiche dépend de la photo de départ : lumière du jour, fond simple, produit entier et au centre. Évitez le flash et les photos floues.']],
+        ['3. Deux façons de créer', [['Copier la commande : c’est gratuit. Vous la collez avec votre photo dans l’outil IA de votre choix.', 'Générer ici : vous envoyez votre photo sur SlashAtlas et l’affiche est créée pour 6 crédits, avec votre prix, votre contact et un QR code si vous le souhaitez.']]],
+        ['4. Ajoutez le prix, le contact et le QR code', ['Sur une affiche de vente, les clients doivent savoir combien ça coûte et comment vous joindre. Renseignez votre prix, votre numéro WhatsApp ou le lien de votre boutique : SlashAtlas les place proprement sur l’affiche.']],
+        ['5. Vérifiez avant de publier', [['Le produit est-il identique à la photo (forme, couleurs, détails) ?', 'Les textes sont-ils lisibles et sans faute ?', 'Le prix et le contact sont-ils corrects ?']]],
+        ['6. Publiez au bon format', ['Le format vertical 4:5 convient au fil d’Instagram et de Facebook, le 9:16 aux statuts WhatsApp et aux stories. Chaque commande indique son format : choisissez-la en fonction de l’endroit où vous publierez.']],
+      ],
+    },
+    en: {
+      title: 'Create an AI advertising poster, step by step', desc: 'Pick a command, prepare your photo, copy the command for free or generate the poster on SlashAtlas, then publish it on WhatsApp, Facebook and Instagram.',
+      intro: 'A quality advertising poster no longer needs a graphic designer. With a good photo and the right command, AI produces a ready-to-post poster in minutes. Here is the method, from photo to publication.',
+      sections: [
+        ['1. Pick the command that fits your business', ['SlashAtlas offers over 900 commands sorted by trade: fashion, beauty, food, property, online shops, events. Use the search: just type what you sell (“dress”, “wig”, “burger”, “villa”).']],
+        ['2. Prepare a sharp photo', ['The poster is only as good as the starting photo: daylight, simple background, the whole product in the middle. Avoid flash and blurry photos.']],
+        ['3. Two ways to create', [['Copy the command: it is free. Paste it with your photo into the AI tool of your choice.', 'Generate here: upload your photo to SlashAtlas and the poster is created for 6 credits, with your price, your contact and a QR code if you like.']]],
+        ['4. Add the price, contact and QR code', ['On a sales poster, customers need to know the price and how to reach you. Fill in your price, your WhatsApp number or your shop link: SlashAtlas places them neatly on the poster.']],
+        ['5. Check before you publish', [['Is the product identical to the photo (shape, colors, details)?', 'Is the text readable and free of mistakes?', 'Are the price and contact correct?']]],
+        ['6. Publish in the right format', ['The vertical 4:5 format suits Instagram and Facebook feeds, 9:16 suits WhatsApp statuses and stories. Each command shows its format: choose it according to where you will post.']],
+      ],
+    },
+  },
 ];
