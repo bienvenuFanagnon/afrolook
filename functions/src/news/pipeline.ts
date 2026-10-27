@@ -30,6 +30,10 @@ export const DEFAULT_COUNTRIES = [
 ];
 const LOCK_MS = 9 * 60 * 1000;
 const PER_KEY_RUN = 1;
+/** Articles par jour et par périmètre : un pays n'avale pas tout le budget, le continent et le monde gardent une large place. */
+const SCOPE_DAILY = { country: 8, continent: 30, world: 25 };
+const scopeOfKey = (key: string): string => key.slice(key.indexOf("|") + 1);
+const scopeCap = (scope: string): number => (scope.startsWith("country_") ? SCOPE_DAILY.country : scope.startsWith("continent_") ? SCOPE_DAILY.continent : SCOPE_DAILY.world);
 const MAX_RECENT_TITLES = 300;
 
 export interface PipelineConfig {
@@ -51,9 +55,9 @@ export function readPipelineConfig(d: Record<string, unknown> | undefined): Pipe
     enabled: o["enabled"] !== false,
     pipelineEnabled: o["pipelineEnabled"] === true,
     countries: countries.length ? countries : DEFAULT_COUNTRIES,
-    dailyCap: n(o["dailyCap"], 60, 1, 300),
-    perRun: n(o["perRun"], 5, 1, 12),
-    perKeyDaily: n(o["perKeyDaily"], 2, 1, 6),
+    dailyCap: n(o["dailyCap"], 120, 1, 300),
+    perRun: n(o["perRun"], 8, 1, 12),
+    perKeyDaily: n(o["perKeyDaily"], 3, 1, 8),
   };
 }
 
@@ -81,21 +85,23 @@ export function planSelection(topics: Topic[], counters: Counters, cfg: Pick<Pip
     return !!s && (s.status === "published" || (s.retryAfter ?? 0) > nowMs);
   });
   const printsOf = (t: Topic) => t.items.map((i) => fingerprint(i.titre));
-  const byAgent = new Map<string, Array<{ t: Topic; prints: Fingerprint[] }>>();
+  const doneInScope = (scope: string): number => Object.entries(counters.byKey).reduce((s, [k, n]) => (scopeOfKey(k) === scope ? s + (Number(n) || 0) : s), 0);
+  const byScope = new Map<string, Array<{ t: Topic; prints: Fingerprint[] }>>();
   for (const t of topics) {
     if (blocked(t)) continue;
     const key = topicKey(t);
     if ((counters.byKey[key] ?? 0) >= cfg.perKeyDaily) continue;
+    if (doneInScope(scopeOfKey(key)) >= scopeCap(scopeOfKey(key))) continue;
     const prints = printsOf(t);
     if (recentPrints.length && prints.some((p) => recentPrints.some((r) => sameFingerprint(p, r)))) continue; // déjà raconté récemment
-    const agent = AGENT_OF_CATEGORY[t.category];
-    byAgent.set(agent, [...(byAgent.get(agent) ?? []), { t, prints }]);
+    const scope = scopeOfKey(key);
+    byScope.set(scope, [...(byScope.get(scope) ?? []), { t, prints }]);
   }
   const out: Topic[] = [];
   const taken: Record<string, number> = {};
   const chosenPrints: Fingerprint[] = [];
-  const queues = [...byAgent.values()];
-  // tour de table : le meilleur sujet de chaque agent, puis le suivant…
+  const queues = [...byScope.values()];
+  // tour de table entre périmètres (chaque pays suivi, le continent, le monde) : le meilleur sujet de chacun, puis le suivant…
   while (out.length < room && queues.some((q) => q.length)) {
     for (const q of queues) {
       if (out.length >= room) break;
@@ -103,6 +109,8 @@ export function planSelection(topics: Topic[], counters: Counters, cfg: Pick<Pip
         const { t, prints } = q.shift()!;
         const key = topicKey(t);
         if ((taken[key] ?? 0) >= PER_KEY_RUN || (counters.byKey[key] ?? 0) + (taken[key] ?? 0) >= cfg.perKeyDaily) continue;
+        const sc = scopeOfKey(key);
+        if (doneInScope(sc) + Object.entries(taken).reduce((s, [k, n]) => (scopeOfKey(k) === sc ? s + n : s), 0) >= scopeCap(sc)) continue;
         if (prints.some((p) => chosenPrints.some((c) => sameFingerprint(p, c)))) continue; // même événement qu'un sujet déjà choisi (autre langue, autre domaine)
         taken[key] = (taken[key] ?? 0) + 1;
         chosenPrints.push(...prints);
@@ -115,9 +123,14 @@ export function planSelection(topics: Topic[], counters: Counters, cfg: Pick<Pip
 }
 
 /** Modèle de qualité tant que la consommation du jour reste sous 80 % du plafond, puis le modèle léger. */
-export function chooseModel(usedTotal: number, models: { quality: string; light: string } = DEFAULT_MODELS): string {
-  return usedTotal < DAILY_TOTAL_CAP * 0.8 ? models.quality : models.light;
+export function chooseModel(usedTotal: number, models: { quality: string; light: string } = DEFAULT_MODELS, topic?: Pick<Topic, "distinctSources">): string {
+  if (!topic) return usedTotal < DAILY_TOTAL_CAP * 0.8 ? models.quality : models.light;
+  // le modèle de qualité coûte ~6 fois plus de neurons : réservé aux sujets recoupés par 2 médias au moins, et seulement sur le premier tiers du budget du jour
+  return topic.distinctSources >= 2 && usedTotal < DAILY_TOTAL_CAP * 0.35 ? models.quality : models.light;
 }
+
+/** Nombre d'articles « permis » à cette heure : le plafond du jour se répartit sur 24 heures (UTC) au lieu d'être épuisé le matin. */
+export const pacedCap = (dailyCap: number, nowMs: number): number => Math.min(dailyCap, Math.ceil((dailyCap * (new Date(nowMs).getUTCHours() + 2)) / 24));
 
 async function pool<T, R>(list: T[], size: number, fn: (x: T) => Promise<R>): Promise<R[]> {
   const out: R[] = new Array(list.length);
@@ -225,6 +238,9 @@ export async function runNewsPipeline(opts: RunOpts = {}): Promise<PipelineRepor
   const cnt: Counters = { published: Number(today.data()?.["published"] ?? 0), byKey: (today.data()?.["byKey"] ?? {}) as Record<string, number> };
   const recent = [...((yesterday.data()?.["titles"] as string[] | undefined) ?? []), ...((today.data()?.["titles"] as string[] | undefined) ?? [])];
   if (cnt.published >= cfg.dailyCap) { report.skipped = `Plafond du jour atteint (${cnt.published} articles)`; return report; }
+  const paced = pacedCap(cfg.dailyCap, now) - cnt.published;
+  if (!opts.maxPublish && paced <= 0) { report.skipped = `Rythme du jour tenu (${cnt.published} articles, le suivant plus tard)`; return report; }
+  if (!opts.maxPublish) cfg.perRun = Math.max(1, Math.min(cfg.perRun, paced));
 
   if (!opts.dryRun && !(await acquireRunLock(now))) { report.skipped = "Un autre passage est déjà en cours"; return report; }
   try {
@@ -239,7 +255,9 @@ export async function runNewsPipeline(opts: RunOpts = {}): Promise<PipelineRepor
     // 2. sujets, déjà vus, plafonds
     const topics = buildTopics(items, cfg.countries, now);
     report.topics = topics.length;
-    const candidates = topics.slice(0, 80);
+    // candidats : les 4 meilleurs sujets de chaque périmètre (sinon les pays aux médias plus petits seraient toujours devancés par le monde et le continent)
+    const perScope = new Map<string, number>();
+    const candidates = topics.filter((t) => { const sc = scopeOfKey(topicKey(t)); const n = perScope.get(sc) ?? 0; perScope.set(sc, n + 1); return n < 4; }).slice(0, 130);
     const seen = await loadSeen([...new Set(candidates.flatMap((t) => t.items.map((i) => linkHash(i.lien))))]);
     const plan = planSelection(candidates, cnt, cfg, seen, now, recent);
     report.planned = plan.map((t) => ({ title: t.items[0].titre.slice(0, 110), agent: AGENT_OF_CATEGORY[t.category], key: topicKey(t), sources: t.distinctSources, score: Math.round(t.score * 10) / 10 }));
@@ -269,7 +287,7 @@ export async function runNewsPipeline(opts: RunOpts = {}): Promise<PipelineRepor
       const quotaFlag = { hit: false };
       for (const t of plan) {
         if (quotaFlag.hit) break;
-        const res = await summarizeTopic(t, { model: chooseModel(used), nowMs: now, quotaFlag, countryName: null });
+        const res = await summarizeTopic(t, { model: chooseModel(used, DEFAULT_MODELS, t), retryModel: used < DAILY_TOTAL_CAP * 0.8 ? DEFAULT_MODELS.quality : undefined, nowMs: now, quotaFlag, countryName: null });
         used += res.neurons ?? res.ai?.neurons ?? 0;
         const title = t.items[0].titre.slice(0, 110);
         const hashes = t.items.map((i) => linkHash(i.lien));

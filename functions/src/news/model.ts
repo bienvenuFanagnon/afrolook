@@ -11,7 +11,7 @@ import { Continent, CONTINENTS, NewsLevel, NEWS_LEVELS, continentOf, scopeKey } 
  * limite de 45 jours. L'administrateur peut le supprimer ou le prolonger à tout moment.
  */
 export const DAY_MS = 86_400_000;
-export const LIFESPAN_DAYS: Record<string, number> = { sport: 4, politique: 7, culture: 14, musique: 10, tech: 14, voyage: 21 };
+export const LIFESPAN_DAYS: Record<string, number> = { sport: 4, politique: 7, culture: 14, musique: 10, tech: 14, voyage: 21, mode: 14, evenement: 5 };
 export const MAX_LIFE_DAYS = 45;
 export const lifespanDays = (category: string): number => LIFESPAN_DAYS[category] ?? 7;
 

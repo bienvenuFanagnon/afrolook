@@ -2338,6 +2338,9 @@ class _DetailsPostState extends State<DetailsPost>
   }
 
 
+  /// Vrai quand le chargement du créateur / du canal est terminé (réussi ou non) : tant qu'il ne l'est pas, l'en-tête reste un gabarit neutre.
+  bool _relationsDone = false;
+
   Future<void> _loadPostRelations() async {
     try {
       // Vérifier qu'on a des IDs
@@ -2345,32 +2348,48 @@ class _DetailsPostState extends State<DetailsPost>
       if (post.user_id == null || post.user_id!.isEmpty) return;
       final hasCanalId = post.canal_id != null && post.canal_id!.isNotEmpty;
 
-      // Récupérer l'utilisateur
-      final userDoc = await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(post.user_id)
-          .getM('postDetails.dart:2350');
+      // Créateur et canal chargés en même temps ; l'écran n'est rafraîchi qu'une fois les deux là
+      final results = await Future.wait([
+        FirebaseFirestore.instance.collection('Users').doc(post.user_id).getM('postDetails.dart:2350'),
+        if (hasCanalId) FirebaseFirestore.instance.collection('Canaux').doc(post.canal_id).getM('postDetails.dart:2361'),
+      ]);
 
-      if (userDoc.exists) {
-        post.user = UserData.fromJson(userDoc.data()!);
+      if (results[0].exists) {
+        post.user = UserData.fromJson(results[0].data()!);
       }
-
-      // Récupérer le canal
-      if (hasCanalId) {
-        final canalDoc = await FirebaseFirestore.instance
-            .collection('Canaux')
-            .doc(post.canal_id)
-            .getM('postDetails.dart:2361');
-        if (canalDoc.exists) {
-          post.canal = Canal.fromJson(canalDoc.data()!);
-        }
+      if (hasCanalId && results[1].exists) {
+        post.canal = Canal.fromJson(results[1].data()!);
       }
-
-      // Rebuild UI avec les données chargées
-      if (mounted) setState(() {});
     } catch (e, stack) {
       debugPrint('❌ Erreur récupération user/canal: $e\n$stack');
+    } finally {
+      if (mounted) setState(() => _relationsDone = true);
     }
+  }
+
+  /// Gabarit statique de l'en-tête, affiché tant que le créateur ou le canal du post n'est pas chargé : aucune donnée du créateur n'est montrée à la place du canal.
+  Widget _buildUserHeaderSkeleton() {
+    final fill = _colors.textSecondary.withOpacity(0.18);
+    Widget bar(double w, double h) => Container(width: w, height: h, decoration: BoxDecoration(color: fill, borderRadius: BorderRadius.circular(h / 2)));
+    return Row(
+      children: [
+        Container(width: 50, height: 50, decoration: BoxDecoration(color: fill, shape: BoxShape.circle)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              bar(130, 14),
+              const SizedBox(height: 7),
+              bar(80, 10),
+              const SizedBox(height: 5),
+              bar(56, 10),
+            ],
+          ),
+        ),
+        Icon(Icons.more_horiz, color: _colors.textPrimary.withOpacity(0.35), size: 20),
+      ],
+    );
   }
 
 
@@ -3082,6 +3101,8 @@ class _DetailsPostState extends State<DetailsPost>
   Widget _buildUserHeader(Post post) {
     final canal = post.canal;
     final user = post.user;
+    // post de canal : on attend le canal (jamais le créateur à sa place) ; autre post : on attend le créateur
+    if (!_relationsDone && canal == null && ((post.canal_id ?? '').isNotEmpty || user == null)) return _buildUserHeaderSkeleton();
     final isLocked = _isLockedContent();
 
     return GestureDetector(

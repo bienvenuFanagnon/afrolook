@@ -873,28 +873,34 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     _hasSeenSupportModal = true;
   }
 
+  /// Vrai quand le chargement du créateur / du canal est terminé (réussi ou non) : tant qu'il ne l'est pas, l'en-tête reste un gabarit neutre.
+  bool _relationsDone = false;
+
   Future<void> _loadPostRelations() async {
-    if (_currentPost.user_id == null) return;
+    if (_currentPost.user_id == null) {
+      if (mounted) setState(() => _relationsDone = true);
+      return;
+    }
     setState(() => _isLoadingUser = true);
     try {
-      final userDoc = await _firestore.collection('Users').doc(_currentPost.user_id).getM('postDetailsVideo.dart:879');
-      if (userDoc.exists) {
-        _currentUser = UserData.fromJson(userDoc.data()!);
+      final hasCanal = _currentPost.canal_id != null && _currentPost.canal_id!.isNotEmpty;
+      // créateur et canal chargés en même temps ; rien n'est affiché avant que les deux soient là
+      final results = await Future.wait([
+        _firestore.collection('Users').doc(_currentPost.user_id).getM('postDetailsVideo.dart:879'),
+        if (hasCanal) _firestore.collection('Canaux').doc(_currentPost.canal_id).getM('postDetailsVideo.dart:886'),
+      ]);
+      if (results[0].exists) {
+        _currentUser = UserData.fromJson(results[0].data()!);
         _currentPost.user = _currentUser;
       }
-      if (_currentPost.canal_id != null && _currentPost.canal_id!.isNotEmpty) {
-        setState(() => _isLoadingCanal = true);
-        final canalDoc = await _firestore.collection('Canaux').doc(_currentPost.canal_id).getM('postDetailsVideo.dart:886');
-        if (canalDoc.exists) {
-          _currentCanal = Canal.fromJson(canalDoc.data()!);
-          _currentPost.canal = _currentCanal;
-        }
-        setState(() => _isLoadingCanal = false);
+      if (hasCanal && results[1].exists) {
+        _currentCanal = Canal.fromJson(results[1].data()!);
+        _currentPost.canal = _currentCanal;
       }
     } catch (e) {
       printVm('Erreur chargement relations: $e');
     } finally {
-      setState(() => _isLoadingUser = false);
+      if (mounted) setState(() { _isLoadingUser = false; _isLoadingCanal = false; _relationsDone = true; });
     }
   }
 
@@ -1650,6 +1656,22 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     final isLocked = _isLockedContent();
     final colors = AppColors.of(context);
     final myId = authProvider.loginUserData.id;
+
+    // Gabarit statique tant que le canal (post de canal) ou le créateur n'est pas chargé : jamais le créateur à la place du canal
+    if (!_relationsDone && canal == null && ((_currentPost.canal_id ?? '').isNotEmpty || user == null)) {
+      final fill = colors.textSecondary.withOpacity(0.18);
+      Widget bar(double w, double h) => Container(width: w, height: h, decoration: BoxDecoration(color: fill, borderRadius: BorderRadius.circular(h / 2)));
+      return Row(
+        children: [
+          Container(width: 50, height: 50, decoration: BoxDecoration(color: fill, shape: BoxShape.circle)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [bar(130, 14), const SizedBox(height: 7), bar(80, 10), const SizedBox(height: 5), bar(56, 10)]),
+          ),
+          Icon(Icons.more_vert, color: colors.textPrimary.withOpacity(0.35)),
+        ],
+      );
+    }
 
     // Compteur affiché : liste en priorité, sinon le champ entier (snapshot)
     final int followerCount = canal != null

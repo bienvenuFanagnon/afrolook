@@ -200,7 +200,7 @@ class _NewsFullPageState extends State<NewsFullPage> {
                   AgentAvatar(agent: agent, size: 28),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text('${agent.pseudo}  ·  ${newsAgo(item.at)}  ·  ${context.tr('Résumé de {n} sources', {'n': item.sourceCount})}',
+                    child: Text('${agent.pseudo}  ·  ${newsAgo(item.at)}${newsLeftTag(item.exp)}  ·  ${context.tr('Résumé de {n} sources', {'n': item.sourceCount})}',
                         maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 12)),
                   ),
                 ]),

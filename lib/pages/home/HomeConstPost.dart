@@ -3699,6 +3699,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     int _lastInsertedAt = -10;
     bool _profilesInLoop = false;
     bool _canauxInLoop = false;
+    // dernière carte d'actualité insérée (pour espacer les cartes d'au moins 4 posts, même en mode « à découvrir »)
+    int _lastNewsAt = -100;
 
     for (int i = 0; i < finalPosts.length; i++) {
       final post = finalPosts[i];
@@ -3753,8 +3755,12 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       }
 
       // Actualités des agents (résumés de sources) : une carte tous les 15 posts (8e, 23e, 38e…), jamais collée à une autre carte d'actualité ;
-      // invisible tant que AppConfig/news.feedEnabled n'est pas actif
-      if (i == 7 || (i > 7 && (i - 7) % 15 == 0)) {
+      // invisible tant que AppConfig/news.feedEnabled n'est pas actif.
+      // Quand les posts non vus sont épuisés et que le fil passe aux posts à découvrir (déjà vus ou tendances), les actualités deviennent plus
+      // fréquentes : une carte tous les 4 posts, pour que la personne ait toujours du nouveau à lire.
+      final bool _discoveryPost = pid.isNotEmpty && _tier2PostIds.contains(pid) && !_seenTier1PostIds.contains(pid);
+      if (i == 7 || (i > 7 && (i - 7) % 15 == 0) || (_discoveryPost && i > 7 && i - _lastNewsAt >= 4)) {
+        _lastNewsAt = i;
         contentWidgets.add(NewsFeedCard(key: ValueKey('news_card_home_$i'), slotKey: 'home_$i'));
       }
 

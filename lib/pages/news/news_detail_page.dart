@@ -3,7 +3,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:share_plus/share_plus.dart';
 
 import '../../ads/ad_banner.dart';
 import '../../ads/admob_service.dart';
@@ -12,6 +11,7 @@ import '../../l10n/tr.dart';
 import '../../models/news_article.dart';
 import '../../providers/authProvider.dart';
 import '../../services/follow_service.dart';
+import '../../services/linkService.dart';
 import '../../services/news/news_service.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/news/news_widgets.dart';
@@ -125,6 +125,14 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
     if (mounted) setState(() => _followBusy = false);
   }
 
+  /// Partage l'article : titre, début du résumé et lien Afrolook (afrolookmedia.com/share/news/{id}), qui ouvre directement l'article dans l'application.
+  void _share(NewsArticle a) {
+    var intro = a.chapo.trim();
+    if (intro.length > 220) intro = '${intro.substring(0, 217).trimRight()}…';
+    final lines = <String>['📰 ${a.title}', if (intro.isNotEmpty) intro, context.tr('Lire l’actualité sur Afrolook :')];
+    AppLinkService().shareLink(AppLinkType.news, a.id, message: lines.join('\n\n'));
+  }
+
   /// Suppression par un administrateur, avec confirmation ; l'article disparaît du fil, du journal et de la liste admin.
   Future<void> _adminDelete() async {
     final a = _a;
@@ -175,7 +183,7 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
           if (a != null)
             PopupMenuButton<String>(
               onSelected: (v) {
-                if (v == 'share') Share.share('${a.title}\n\n${context.tr('Résumé de {n} sources', {'n': a.sources.length})} · Afrolook');
+                if (v == 'share') _share(a);
                 if (v == 'report') _report();
               },
               itemBuilder: (_) => [
@@ -254,6 +262,16 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
                 style: TextStyle(color: c.textSecondary, fontSize: 12),
               ),
             ),
+            // date de disparition (comme les chroniques) : on sait jusqu'à quand l'article reste disponible
+            if (a.expiresAt > 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 3),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.hourglass_bottom_rounded, size: 13, color: c.textSecondary),
+                  const SizedBox(width: 4),
+                  Text('${context.tr('Disparaît le')} ${newsUntilDate(a.expiresAt)} · ${newsLeftShort(a.expiresAt)}', style: TextStyle(color: c.textSecondary, fontSize: 12)),
+                ]),
+              ),
           ]),
         ),
         _followButton(c),

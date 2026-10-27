@@ -13,7 +13,7 @@ import { ensureAgent } from "./publish";
  * Écrites dans Storage (news_agents/{agent}.png, lien permanent avec jeton) puis rangées dans le profil de l'agent (Users.imageUrl).
  */
 export const AVATAR_COLORS: Record<string, string> = {
-  sport: "#2ECC71", politik: "#5B9CFA", culture: "#FF9248", beat: "#FF6B6F", tech: "#FFE14D", voyage: "#14B8A6",
+  sport: "#2ECC71", politik: "#5B9CFA", culture: "#FF9248", beat: "#FF6B6F", tech: "#FFE14D", voyage: "#14B8A6", mode: "#EC4899", info: "#A78BFA",
 };
 const BG = "#0E0E0E";
 const GREEN = "#2ECC71";
@@ -45,7 +45,7 @@ export async function avatarPng(key: string): Promise<Buffer> {
   return sharp(Buffer.from(avatarSvg(key))).png({ compressionLevel: 9 }).toBuffer();
 }
 
-/** Crée (ou remplace) les photos des 6 agents et les range dans leur profil. Retourne le lien de chaque photo. */
+/** Crée (ou remplace) les photos des agents et les range dans leur profil. Retourne le lien de chaque photo. */
 export async function publishAvatars(nowMs = Date.now()): Promise<Array<{ key: string; pseudo: string; url: string }>> {
   const bucket = getStorage().bucket();
   const out: Array<{ key: string; pseudo: string; url: string }> = [];

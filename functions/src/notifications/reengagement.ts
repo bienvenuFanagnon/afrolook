@@ -5,6 +5,7 @@ import { deliverPush, PushTarget } from "../shared/push";
 import { chunk } from "../shared/push_logic";
 import { previewFromPost } from "../shared/preview";
 import {
+  countriesForTz,
   Budget, SLOTS_MIN, isGoldActive, ReminderKind, budgetForToday, chooseReminder, daysInactive, decide, localDay, reminderGapMs, typeNotifFor, tzForSlot,
 } from "./policy_logic";
 import { NewsPlan, NewsPushSource, FLASH_MIN_SCORE } from "../news/newsPush";
@@ -27,6 +28,7 @@ import { AD_LABEL, NEW_CREATOR_BODY, NEW_CREATOR_LABEL, TIPS, TipVars, fmt, hash
  * Quiz, étude et contes n'ont pas d'image d'aperçu dans les données : ces rappels partent en texte (une couverture serait montrée automatiquement).
  */
 const PAGE = 500;
+const LEGACY_ACTIVE_DAYS = 30; // comptes de l'ancien système : seulement ceux revus dans les 30 derniers jours
 const MAX_PAGES = 20;
 
 /** Somme des nouveaux posts non vus (compteurs par créateur maintenus par le serveur). */
@@ -151,6 +153,7 @@ export async function runReengagementTick(nowMs: number = Date.now()): Promise<R
   const tipVars = tipsEnabled ? await loadTipVars() : { views: "", amount: "", min: "" };
   let sponsors: Sponsor[] | null = null; // chargées une seule fois, seulement au créneau du soir
   const pushCfg = (await db.collection("AppConfig").doc("push").get().catch(() => undefined))?.data() ?? {};
+  const legacyOn = pushCfg["legacyReachEnabled"] === true; // joindre aussi les comptes dont l'application n'est pas à jour (OneSignal), fuseau déduit du pays
   const creatorPromoOn = pushCfg["creatorPromoEnabled"] !== false; // activée par défaut ; false pour la couper
   const promoCap = Math.max(20, Math.min(2000, Number(pushCfg["creatorPromoDailyCap"]) || PROMO_DAILY_CAP));
   let promoCreators: PromoCreator[] | null = null;
@@ -168,17 +171,28 @@ export async function runReengagementTick(nowMs: number = Date.now()): Promise<R
   for (let slot = 0; slot < SLOTS_MIN.length; slot++) {
     const tz = tzForSlot(nowMs, SLOTS_MIN[slot]);
     if (Math.abs(tz) > 720) continue;
+    for (const mode of (legacyOn ? ["fcm", "legacy"] : ["fcm"]) as Array<"fcm" | "legacy">) {
+    const codes = mode === "legacy" ? countriesForTz(tz).slice(0, 10) : [];
+    if (mode === "legacy" && !codes.length) continue;
     let last: string | undefined;
     for (let page = 0; page < MAX_PAGES; page++) {
-      let q = db.collection("Users").where("pushReady", "==", true).where("tzOffsetMin", "==", tz).orderBy(FieldPath.documentId()).limit(PAGE);
+      let q = mode === "fcm"
+        ? db.collection("Users").where("pushReady", "==", true).where("tzOffsetMin", "==", tz).orderBy(FieldPath.documentId()).limit(PAGE)
+        : db.collection("Users").where("countryData.countryCode", "in", codes).orderBy(FieldPath.documentId()).limit(PAGE);
       if (last) q = q.startAfter(last);
-      const snap = await q.get();
+      let snap;
+      try { snap = await q.get(); } catch (e) { console.warn("[rappels] lecture des comptes impossible", mode, e); break; }
       if (snap.empty) break;
       last = snap.docs[snap.docs.length - 1].id;
-      scanned += snap.size;
+      // ancien système : on ne garde que les comptes non mis à jour (sans jeton FCM prêt), avec un identifiant OneSignal et revus récemment
+      const docs = mode === "fcm" ? snap.docs : snap.docs.filter((d) => {
+        const x = d.data();
+        return x["pushReady"] !== true && String(x["oneIgnalUserid"] ?? "").length > 5 && nowMs - (Number(x["last_time_active"]) || 0) < LEGACY_ACTIVE_DAYS * 86_400_000;
+      });
+      scanned += docs.length;
 
       const budgets = new Map<string, Partial<Budget>>();
-      for (const ids of chunk(snap.docs.map((d) => d.id), 300)) {
+      for (const ids of chunk(docs.map((d) => d.id), 300)) {
         const bs = await db.getAll(...ids.map((id) => db.collection("PushBudget").doc(id)));
         bs.forEach((b) => { if (b.exists) budgets.set(b.id, b.data() as Partial<Budget>); });
       }
@@ -192,7 +206,7 @@ export async function runReengagementTick(nowMs: number = Date.now()): Promise<R
         promoCounts = ((await db.collection("CreatorPromoDaily").doc(dayKey).get().catch(() => undefined))?.data()?.["counts"] ?? {}) as Record<string, number>;
       }
       const groups = new Map<string, { kind: ReminderKind; typeNotif: string; title: string; body: string; image?: string; extra?: Record<string, string>; adId?: string; targets: PushTarget[] }>();
-      for (const d of snap.docs) {
+      for (const d of docs) {
         const u = d.data();
         const lastActive = Number(u["last_time_active"]) || 0;
         const budget = budgets.get(d.id);
@@ -272,11 +286,13 @@ export async function runReengagementTick(nowMs: number = Date.now()): Promise<R
         }
         const key = `${typeNotif}|${copy.title}|${copy.body}`;
         const tokens = Array.isArray(u["fcmTokens"]) ? (u["fcmTokens"] as string[]) : [];
-        if (!tokens.length) continue;
+        const os = String(u["oneIgnalUserid"] ?? "");
+        // passage Firebase : seulement les comptes qui ont un jeton FCM ; l'identifiant OneSignal ne sert qu'au passage « comptes pas encore mis à jour »
+        if (!tokens.length && (mode !== "legacy" || os.length <= 5)) continue;
         if (isNews && newsPlan) newsStamp.push({ id: d.id, storyId: newsPlan.storyId });
         const g = groups.get(key) ?? { kind, typeNotif, title: copy.title, body: copy.body, image, extra, adId, targets: [] };
         // une actualité part avec l'interrupteur « Actualités » (déjà vérifié) et non avec « Rappels et idées »
-        g.targets.push({ userId: d.id, fcmTokens: tokens, prefs: isNews ? { ...prefs, reminders: true } : prefs, tz, lastActive });
+        g.targets.push({ userId: d.id, fcmTokens: tokens, oneSignalId: tokens.length || mode !== "legacy" ? undefined : os, prefs: isNews ? { ...prefs, reminders: true } : prefs, tz, lastActive });
         groups.set(key, g);
       }
 
@@ -288,7 +304,7 @@ export async function runReengagementTick(nowMs: number = Date.now()): Promise<R
           message: g.body,
           image: g.image,
           data: { type_notif: g.typeNotif, post_id: "", post_type: "", chat_id: "", send_user_id: "", ...(g.extra ?? {}) },
-        }, undefined, false, "reminder");
+        }, undefined, false, "reminder", mode !== "legacy"); // Firebase seulement, sauf pour les comptes pas encore mis à jour (option désactivée par défaut)
         if (g.adId) sponsorSent[g.adId] = (sponsorSent[g.adId] ?? 0) + g.targets.length;
       }
       for (const ids of chunk(newsStamp, 400)) {
@@ -304,6 +320,7 @@ export async function runReengagementTick(nowMs: number = Date.now()): Promise<R
         }
       }
       if (snap.size < PAGE) break;
+    }
     }
   }
 
@@ -334,6 +351,6 @@ export async function runReengagementTick(nowMs: number = Date.now()): Promise<R
 }
 
 export const reengagementTick = onSchedule(
-  { schedule: "every 30 minutes", timeZone: "UTC", memory: "512MiB", timeoutSeconds: 300, maxInstances: 1 },
+  { schedule: "0,30 * * * *", timeZone: "UTC", memory: "512MiB", timeoutSeconds: 300, maxInstances: 1 }, // pile aux heures pleines et aux demies (les créneaux sont des demi-heures)
   async () => { await runReengagementTick(); },
 );

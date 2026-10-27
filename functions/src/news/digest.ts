@@ -97,7 +97,7 @@ export function topItems(items: DigestItem[], n: number): DigestItem[] {
   return [...first, ...rest].slice(0, n).sort((a, b) => b.rank - a.rank || b.at - a.at);
 }
 
-const CATEGORY_FR: Record<string, string> = { sport: "le sport", politique: "la politique", culture: "la culture", musique: "la musique", tech: "la technologie", voyage: "le voyage" };
+const CATEGORY_FR: Record<string, string> = { sport: "le sport", politique: "la politique", culture: "la culture", musique: "la musique", tech: "la technologie", voyage: "le voyage", mode: "la mode", evenement: "les événements" };
 
 /** Introduction sans IA : les domaines qui dominent la période. */
 export function templateIntro(period: Period, items: DigestItem[]): string {

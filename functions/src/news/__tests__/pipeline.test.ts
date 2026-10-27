@@ -7,7 +7,7 @@ import { parsePreview, publicHttps } from "../pagePreview";
 import { RawItem, Topic, buildTopics, classify, clusterItems, detectCountry, linkHash, scopeOf, titleTokens, similar } from "../cluster";
 import { clickbait, copiedRun, fitTitle, inventedNumbers, unknownNames, validateSummary } from "../validate";
 import { fixHint, summarizeTopic } from "../summarize";
-import { chooseModel, planSelection, readPipelineConfig, readSource, topicKey } from "../pipeline";
+import { chooseModel, pacedCap, planSelection, readPipelineConfig, readSource, topicKey } from "../pipeline";
 import { activeSources, DEFAULT_SOURCES } from "../sources";
 import { cleanNewsInput } from "../model";
 
@@ -100,6 +100,21 @@ describe("pays, domaines et sujets", () => {
     expect(scopeOf("KE", ["TG"], "africa")).toEqual({ level: "continent", country: null });
     expect(scopeOf(null, ["TG"], "africa")).toEqual({ level: "continent", country: null });
     expect(scopeOf(null, ["TG"], "world")).toEqual({ level: "world", country: null });
+  });
+  test("média national : pays du média quand le texte n'en désigne aucun ; actualité générale classée « événement »", () => {
+    const national = item({ titre: "Les commerçants du grand marché réclament de nouveaux étals", sourceName: "Togo Top News", sourceId: "tg_togotopnews", country: "TG", corps: "x".repeat(260) });
+    const t = buildTopics([national], ["TG", "BJ"], NOW);
+    expect(t).toHaveLength(1);
+    expect(t[0]).toMatchObject({ category: "evenement", level: "country", country: "TG" });
+    // sans média national, la même actualité sans domaine est écartée
+    expect(buildTopics([{ ...national, country: null }], ["TG"], NOW)).toHaveLength(0);
+    // un article qui parle d'un autre pays garde ce pays
+    const other = item({ titre: "Le Bénin inaugure un nouveau pont à Cotonou ce matin", sourceName: "Togo Top News", sourceId: "tg_togotopnews", country: "TG", corps: "x".repeat(260), categoryHint: "evenement" });
+    expect(buildTopics([other], ["TG", "BJ"], NOW)[0]).toMatchObject({ level: "country", country: "BJ" });
+  });
+  test("nouveaux domaines : mode et événements reconnus par les mots-clés", () => {
+    expect(classify({ titre: "Défilé de mode à Dakar : les stylistes africains à l'honneur", resume: "", categoryHint: null })).toBe("mode");
+    expect(classify({ titre: "Sommet économique : accord sur la dette et la croissance", resume: "", categoryHint: null })).toBe("evenement");
   });
   test("sujets : anciens, sans domaine ou sans matière écartés ; score qui favorise les sources multiples", () => {
     const items = [
@@ -260,17 +275,36 @@ describe("choix des sujets du passage", () => {
     expect(topicKey(T("musique", "continent", null, 1, "m"))).toBe("beat|continent_AF");
     expect(topicKey(T("politique", "country", "BJ", 1, "p"))).toBe("politik|country_BJ");
     expect(chooseModel(1000)).toContain("70b");
-    expect(chooseModel(12000)).toContain("8b");
+    expect(chooseModel(14000)).toContain("8b");
+    // avec le sujet : le modèle de qualité est réservé aux sujets recoupés par 2 médias, sur le premier tiers du budget
+    expect(chooseModel(1000, undefined, { distinctSources: 3 })).toContain("70b");
+    expect(chooseModel(1000, undefined, { distinctSources: 1 })).toContain("8b");
+    expect(chooseModel(7000, undefined, { distinctSources: 3 })).toContain("8b");
+  });
+  test("périmètres : chaque pays a sa part, le plafond d'un pays ne bloque pas les autres", () => {
+    const mk = (cat: Topic["category"], country: string, score: number, link: string): Topic => T(cat, "country", country, score, link);
+    const topics = [mk("evenement", "TG", 30, "e1"), mk("politique", "TG", 29, "e2"), mk("evenement", "BJ", 10, "e3"), mk("evenement", "CI", 9, "e4"), mk("evenement", "SN", 8, "e5")];
+    const plan = planSelection(topics, { published: 0, byKey: {} }, { dailyCap: 100, perRun: 4, perKeyDaily: 3 }, none, NOW);
+    expect(plan.map((t) => t.country)).toEqual(["TG", "BJ", "CI", "SN"]); // un sujet par pays avant un deuxième du même pays
+    // le Togo a déjà eu son compte du jour (8) : les autres pays passent
+    const full = { published: 8, byKey: { "info|country_TG": 3, "politik|country_TG": 3, "sport|country_TG": 2 } };
+    expect(planSelection(topics, full, { dailyCap: 100, perRun: 4, perKeyDaily: 3 }, none, NOW).map((t) => t.country)).toEqual(["BJ", "CI", "SN"]);
+  });
+  test("rythme : le plafond du jour se répartit sur 24 heures", () => {
+    expect(pacedCap(120, Date.parse("2026-10-21T00:20:00Z"))).toBe(10);
+    expect(pacedCap(120, Date.parse("2026-10-21T12:20:00Z"))).toBe(70);
+    expect(pacedCap(120, Date.parse("2026-10-21T22:20:00Z"))).toBe(120);
+    expect(pacedCap(120, Date.parse("2026-10-21T23:59:00Z"))).toBe(120);
   });
 });
 
 describe("réglages", () => {
   test("valeurs prudentes par défaut ; génération automatique coupée tant qu'elle n'est pas activée", () => {
     const c = readPipelineConfig(undefined);
-    expect(c).toMatchObject({ enabled: true, pipelineEnabled: false, dailyCap: 60, perRun: 5, perKeyDaily: 2 });
+    expect(c).toMatchObject({ enabled: true, pipelineEnabled: false, dailyCap: 120, perRun: 8, perKeyDaily: 3 });
     expect(c.countries).toHaveLength(30);
     expect(c.countries.slice(0, 9)).toEqual(["TG", "BJ", "CI", "SN", "CM", "BF", "MG", "CG", "CD"]);
-    expect(readPipelineConfig({ pipelineEnabled: true, countries: ["gh", "ZZ", "ng"], perRun: 99 })).toMatchObject({ pipelineEnabled: true, countries: ["GH", "NG"], perRun: 5 });
+    expect(readPipelineConfig({ pipelineEnabled: true, countries: ["gh", "ZZ", "ng"], perRun: 99 })).toMatchObject({ pipelineEnabled: true, countries: ["GH", "NG"], perRun: 8 });
   });
   test("sources : actives par défaut, réglages par source, sources ajoutées validées", () => {
     const ids = (c: Parameters<typeof activeSources>[0]) => activeSources(c).map((s) => s.id);

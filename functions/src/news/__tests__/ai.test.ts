@@ -51,7 +51,7 @@ describe("comptes Cloudflare des actualités", () => {
     expect(pickAccount([A, B], { [A.id]: 500, [B.id]: 100 })?.id).toBe(B.id);
     expect(pickAccount([A, B], { [A.id]: 9000, [B.id]: 100 })?.id).toBe(B.id);
     expect(pickAccount([A, B], { [A.id]: 9000, [B.id]: 9000 })).toBeNull();
-    expect(pickAccount([A, B], { [A.id]: 8000, [B.id]: 8000 })).toBeNull(); // total de 16 000 > 15 000
+    expect(pickAccount([A, B], { [A.id]: 8700, [B.id]: 8700 })).toBeNull(); // total de 17 400 > 17 000
     expect(pickAccount([], {})).toBeNull();
   });
 });

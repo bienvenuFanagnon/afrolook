@@ -36,6 +36,8 @@ class NewsAgentInfo {
         return 'politique';
       case 'beat':
         return 'musique';
+      case 'info':
+        return 'evenement';
       default:
         return key;
     }
@@ -56,6 +58,10 @@ class NewsAgentInfo {
         return c.supportAccent;
       case 'voyage':
         return const Color(0xFF14B8A6); // turquoise, comme sa photo de profil
+      case 'mode':
+        return const Color(0xFFEC4899); // rose, comme sa photo de profil
+      case 'info':
+        return const Color(0xFFA78BFA); // violet, comme sa photo de profil
       default:
         return c.info;
     }
@@ -69,6 +75,8 @@ const List<NewsAgentInfo> kNewsAgents = [
   NewsAgentInfo('beat', 'AfroBeat', 'Musique', Icons.music_note_rounded),
   NewsAgentInfo('tech', 'AfroTech', 'Technologie', Icons.memory_rounded),
   NewsAgentInfo('voyage', 'AfroVoyage', 'Voyage', Icons.flight_takeoff_rounded),
+  NewsAgentInfo('mode', 'AfroMode', 'Mode', Icons.checkroom_rounded),
+  NewsAgentInfo('info', 'AfroInfo', 'Événements', Icons.stars_rounded),
 ];
 
 NewsAgentInfo newsAgentOf(String? key) => kNewsAgents.firstWhere((a) => a.key == key, orElse: () => kNewsAgents.first);
@@ -270,6 +278,30 @@ String newsAgo(int ms) {
   if (h < 24) return 'il y a $h h';
   final d = h ~/ 24;
   return d == 1 ? 'hier' : 'il y a $d j';
+}
+
+/// Temps restant avant la disparition d'un article (comme pour les chroniques) : « 3 j », « 5 h », « < 1 h ». Vide si la date n'est pas connue.
+String newsLeftShort(int expMs) {
+  if (expMs <= 0) return '';
+  final diff = expMs - DateTime.now().millisecondsSinceEpoch;
+  if (diff <= 0) return '< 1 h';
+  final h = diff ~/ 3600000;
+  if (h < 1) return '< 1 h';
+  if (h < 48) return '$h h';
+  return '${h ~/ 24} j';
+}
+
+/// Texte court à ajouter à la ligne d'une carte : « · ⏳ 3 j » (rien si la date n'est pas connue).
+String newsLeftTag(int expMs) {
+  final l = newsLeftShort(expMs);
+  return l.isEmpty ? '' : '  ·  ⏳ $l';
+}
+
+/// Date de disparition en toutes lettres : « 27 oct. 2026 ».
+String newsUntilDate(int expMs) {
+  const months = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+  final d = DateTime.fromMillisecondsSinceEpoch(expMs);
+  return '${d.day} ${months[d.month - 1]} ${d.year}';
 }
 
 /// Nombre court : 1 234 → « 1,2 k ».

@@ -10,13 +10,19 @@ import { validateSummary } from "./validate";
  * (titre, chapô, 2 à 4 sections, « À retenir », texte de notification). Le résultat n'est gardé que s'il passe les garde-fous (validate.ts).
  * Les sources sont toujours citées dans l'article (nom et lien) ; le texte des sources n'est jamais conservé.
  */
-const CATEGORY_LABEL: Record<string, string> = { sport: "sport", politique: "politique", culture: "culture", musique: "musique", tech: "technologie", voyage: "voyage" };
+const CATEGORY_LABEL: Record<string, string> = { sport: "sport", politique: "politique", culture: "culture", musique: "musique", tech: "technologie", voyage: "voyage", mode: "mode et beauté", evenement: "événements importants et actualité générale" };
 const CONTINENT_LABEL = "Afrique";
+/** Nom usuel des pays suivis, donné à l'IA comme périmètre d'un article « pays ». */
+export const COUNTRY_NAME: Record<string, string> = {
+  TG: "le Togo", BJ: "le Bénin", CI: "la Côte d'Ivoire", SN: "le Sénégal", CM: "le Cameroun", BF: "le Burkina Faso", MG: "Madagascar", CG: "le Congo", CD: "la RD Congo",
+  ML: "le Mali", NE: "le Niger", GN: "la Guinée", GA: "le Gabon", GH: "le Ghana", NG: "le Nigeria", TD: "le Tchad", ZM: "la Zambie", KE: "le Kenya", ZA: "l'Afrique du Sud",
+  FR: "la France", BE: "la Belgique", CH: "la Suisse", GB: "le Royaume-Uni", DE: "l'Allemagne", ES: "l'Espagne", US: "les États-Unis", CA: "le Canada", BR: "le Brésil", HT: "Haïti", MX: "le Mexique",
+};
 
 export const SYSTEM_PROMPT =
   "Tu es le rédacteur d'Afrolook, un journal pour l'Afrique et le monde. Tu écris un RÉSUMÉ de plusieurs sources, en français, clair, vivant et factuel. " +
   "Tu utilises UNIQUEMENT les faits fournis : n'invente jamais une personne, un lieu, un chiffre, une date ni une citation. " +
-  "Reformule avec tes propres mots : ne recopie jamais un titre ni une phrase des sources. " +
+  "Reformule avec tes propres mots : ne recopie jamais un titre ni une phrase des sources ; change la construction des phrases et les mots (synonymes), et n'enchaîne jamais 6 mots identiques à une source. " +
   "Reste neutre : aucun avis personnel, aucune rumeur présentée comme un fait ; si les sources se contredisent, dis-le. " +
   "Pas de formule racoleuse. Réponds uniquement avec un JSON strict.";
 
@@ -77,19 +83,19 @@ export function fixHint(errors: string[]): string {
 type Runner = typeof runAi;
 
 /** Résume un sujet. `run` est injectable pour les tests. Ne lève jamais : les erreurs de l'IA sont renvoyées dans `error` (et `quota` stoppe le passage). */
-export async function summarizeTopic(topic: Topic, opts: { countryName?: string | null; model?: string; nowMs?: number; run?: Runner; quotaFlag?: { hit: boolean } } = {}): Promise<SummaryResult> {
+export async function summarizeTopic(topic: Topic, opts: { countryName?: string | null; model?: string; retryModel?: string; nowMs?: number; run?: Runner; quotaFlag?: { hit: boolean } } = {}): Promise<SummaryResult> {
   const now = opts.nowMs ?? Date.now();
   const dateText = new Date(now).toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
-  const messages = buildMessages(topic, opts.countryName ?? null, dateText);
+  const messages = buildMessages(topic, opts.countryName ?? (topic.country ? COUNTRY_NAME[topic.country] ?? null : null), dateText);
   const run = opts.run ?? runAi;
   const model = opts.model ?? DEFAULT_MODELS.quality;
   const outlets = distinctOutlets(topic).slice(0, 4);
   const sourcesText = outlets.map((it) => `${it.titre}. ${it.corps || it.resume}`).join("\n");
   const refs = topic.items.flatMap((it) => [it.titre, it.resume, it.corps]); // ni titre, ni extrait, ni texte de page recopié
 
-  const call = async (msgs: Msg[]): Promise<AiResult | SummaryResult> => {
+  const call = async (msgs: Msg[], useModel: string = model): Promise<AiResult | SummaryResult> => {
     try {
-      return await run(msgs, { model, maxTokens: 1900, temperature: 0.3 });
+      return await run(msgs, { model: useModel, maxTokens: 1900, temperature: 0.3 });
     } catch (e) {
       const code = (e as { code?: string }).code;
       if (code === "quota" && opts.quotaFlag) opts.quotaFlag.hit = true;
@@ -105,7 +111,8 @@ export async function summarizeTopic(topic: Topic, opts: { countryName?: string 
   if (!v.ok) {
     // un seul second essai, guidé par ce qui a été refusé (coût d'un appel de plus, seulement quand le premier est refusé)
     retried = true;
-    const second = await call([...messages, { role: "assistant", content: ai.text.slice(0, 3500) }, { role: "user", content: fixHint(v.errors) }]);
+    // le second essai peut passer au modèle de qualité (le modèle léger recopie plus volontiers les sources)
+    const second = await call([...messages, { role: "assistant", content: ai.text.slice(0, 3500) }, { role: "user", content: fixHint(v.errors) }], opts.retryModel ?? model);
     if (!("text" in second)) return { ok: false, error: second.error, errors: v.errors, ai, neurons, retried };
     ai = second;
     neurons += second.neurons;

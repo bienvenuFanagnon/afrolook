@@ -197,7 +197,7 @@ const LEARNING: ReminderKind[] = ["quiz", "etude", "conte"];
 
 /** Un seul contenu par créneau, du plus utile au moins utile. Le quiz / l'étude / le conte tournent pour que chaque créneau soit différent. */
 export function chooseReminder(c: ReminderContext): ReminderKind {
-  const learning = LEARNING[(c.dayIndex * 3 + c.slot) % 3];
+  const learning = LEARNING[(((c.dayIndex + c.slot) % 3) + 3) % 3]; // (jour + créneau) : un créneau donné change de sujet chaque jour, donc le quiz passe aussi à midi
   if (c.daysInactive >= 7 && c.slot === 1) return "comeback";
   if (c.slot === 2 && c.streak >= 3 && !c.streakDoneToday) return "streak";
   // actualités : le matin, la semaine du lundi ou l'article du jour (avant la promotion d'un créateur) ; le soir, l'alerte « À la une » (avant la pub)
@@ -271,9 +271,26 @@ export function copyFor(kind: ReminderKind, variantSeed: number, streak = 0, uns
   return base;
 }
 
-/** Fuseaux (en minutes) dont l'heure locale tombe exactement sur ce créneau à cet instant UTC (le déclencheur passe aux heures pleines et aux demies). */
+/**
+ * Fuseau habituel (minutes par rapport à UTC) des pays suivis. Sert à joindre, par l'ancien système de notifications (OneSignal), les comptes dont l'application
+ * n'a pas encore été mise à jour : ils n'ont pas de fuseau enregistré, on le déduit de leur pays. Pays sans heure d'été, donc stable toute l'année.
+ */
+export const COUNTRY_TZ: Record<string, number> = {
+  TG: 0, GH: 0, CI: 0, SN: 0, BF: 0, ML: 0, GN: 0, GM: 0, SL: 0, LR: 0, MR: 0,
+  BJ: 60, NG: 60, NE: 60, CM: 60, TD: 60, GA: 60, CG: 60, CD: 60, GQ: 60, CF: 60, AO: 60, DZ: 60, TN: 60,
+  ZA: 120, ZM: 120, ZW: 120, RW: 120, BI: 120, MW: 120, MZ: 120, BW: 120, NA: 120, EG: 120, LY: 120,
+  KE: 180, TZ: 180, UG: 180, ET: 180, MG: 180, SO: 180, DJ: 180, ER: 180, KM: 180,
+};
+/** Pays dont l'heure habituelle correspond à ce fuseau. */
+export const countriesForTz = (tzMin: number): string[] => Object.keys(COUNTRY_TZ).filter((c) => COUNTRY_TZ[c] === tzMin);
+
+/**
+ * Fuseaux (en minutes) dont l'heure locale tombe sur ce créneau à cet instant UTC. Le déclencheur passe aux heures pleines et aux demies ; s'il passe un peu
+ * avant ou après (le planificateur « toutes les 30 minutes » est décalé de son heure de création, par exemple :24 et :54), on se cale sur la demi-heure la plus proche :
+ * sans cet arrondi, aucun fuseau ne correspondait et aucun rappel ne partait.
+ */
 export function tzForSlot(nowMs: number, slotMin: number): number {
-  const utcMin = Math.floor(nowMs / 60000) % 1440;
+  const utcMin = (Math.round(nowMs / 60000 / 30) * 30) % 1440;
   let x = (slotMin - utcMin) % 1440;
   if (x > 720) x -= 1440;
   if (x < -720) x += 1440;

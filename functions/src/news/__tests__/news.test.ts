@@ -3,7 +3,7 @@ jest.mock("firebase-admin/messaging", () => ({ getMessaging: () => ({}) }));
 jest.mock("firebase-admin/firestore", () => ({ FieldValue: {}, FieldPath: {} }));
 
 import { CONTINENT_OF, continentOf, scopeKey, scopesForUser } from "../geo";
-import { NEWS_AGENTS, agentUserId } from "../agents";
+import { AGENT_OF_CATEGORY, NEWS_AGENTS, agentUserId } from "../agents";
 import { DAY_MS, buildFeedItem, buildNewsPostDoc, cleanNewsInput, cleanUrl, decideExpiry, lifespanDays, mergeFeedItems, popularityBonus, MAX_FEED_ITEMS } from "../model";
 import { commentMessage, likeMessage, milestoneMessage, newMilestone, shouldPushComment, shouldPushLike } from "../engagement";
 import { postGiftShares } from "../../payments/coinShares";
@@ -39,8 +39,11 @@ describe("géographie des actualités", () => {
 });
 
 describe("agents", () => {
-  test("les 6 agents de départ", () => {
-    expect(NEWS_AGENTS.map((a) => a.pseudo)).toEqual(["AfroSport", "AfroPolitik", "AfroCulture", "AfroBeat", "AfroTech", "AfroVoyage"]);
+  test("les 8 agents : 6 de départ, puis la mode et les événements importants", () => {
+    expect(NEWS_AGENTS.map((a) => a.pseudo)).toEqual(["AfroSport", "AfroPolitik", "AfroCulture", "AfroBeat", "AfroTech", "AfroVoyage", "AfroMode", "AfroInfo"]);
+    expect(NEWS_AGENTS.every((a) => AGENT_OF_CATEGORY[a.category] === a.key)).toBe(true); // chaque domaine a son agent
+    expect(lifespanDays("mode")).toBe(14);
+    expect(lifespanDays("evenement")).toBe(5);
     expect(agentUserId("sport")).toBe("news_agent_sport");
   });
 });

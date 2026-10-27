@@ -348,6 +348,9 @@ class _MyAppState extends State<MyApp> {
       case 'article':
         await NavigationCacheService().storeArticleNavigation();
         break;
+      case 'news': // article d'actualité partagé : ouvre sa page de détail
+        await NavigationCacheService().storeScreenNavigation('news:$id');
+        break;
       case 'video':
         await NavigationCacheService().storePostNavigation(id, 'VIDEO');
         break;

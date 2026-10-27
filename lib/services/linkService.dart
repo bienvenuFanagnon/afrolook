@@ -36,6 +36,7 @@ enum AppLinkType {
   article,
   service,
   group,
+  news, // article d'actualité (Afro Journal) : https://afrolookmedia.com/share/news/{id}
   unknown
 }
 
@@ -148,6 +149,8 @@ class AppLinkService {
         return AppLinkType.service;
       case 'group':
         return AppLinkType.group;
+      case 'news':
+        return AppLinkType.news;
       default:
         return AppLinkType.unknown;
     }
@@ -186,6 +189,8 @@ class AppLinkService {
         return 'service';
       case AppLinkType.group:
         return 'group';
+      case AppLinkType.news:
+        return 'news';
       default:
         return 'unknown';
     }

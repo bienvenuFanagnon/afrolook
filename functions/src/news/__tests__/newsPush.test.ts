@@ -20,10 +20,9 @@ const item = (id: string, o: Partial<NewsFeedItem> = {}): NewsFeedItem => ({
 });
 
 describe("quel créneau porte quelle actualité", () => {
-  test("lundi matin : semaine ; mercredi, vendredi, samedi matin : article ; soir : alerte ; midi : rien", () => {
+  test("lundi matin : semaine ; les autres matins : article ; soir : alerte ; midi : rien", () => {
     expect(newsKindFor(0, 1)).toBe("newsweek");
-    for (const d of [3, 5, 6]) expect(newsKindFor(0, d)).toBe("news");
-    for (const d of [0, 2, 4]) expect(newsKindFor(0, d)).toBeNull();
+    for (const d of [0, 2, 3, 4, 5, 6]) expect(newsKindFor(0, d)).toBe("news");
     expect(newsKindFor(2, 4)).toBe("newsflash");
     expect(newsKindFor(1, 3)).toBeNull();
   });

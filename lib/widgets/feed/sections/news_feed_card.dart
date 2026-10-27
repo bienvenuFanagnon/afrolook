@@ -263,7 +263,7 @@ class _NewsFeedCardState extends State<NewsFeedCard> {
           child: Text.rich(
             TextSpan(children: [
               TextSpan(text: agent.pseudo, style: TextStyle(color: agent.color(c), fontWeight: FontWeight.w800)),
-              TextSpan(text: '  ·  ${newsAgo(item.at)}'),
+              TextSpan(text: '  ·  ${newsAgo(item.at)}${newsLeftTag(item.exp)}'),
             ]),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -375,7 +375,7 @@ class _NewsFeedCardState extends State<NewsFeedCard> {
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
               _title(c, item.title, 18, color: Colors.white),
               const SizedBox(height: 4),
-              Text('${agent.pseudo}  ·  ${newsAgo(item.at)}  ·  ${context.tr('Résumé de {n} sources', {'n': item.sourceCount})}',
+              Text('${agent.pseudo}  ·  ${newsAgo(item.at)}${newsLeftTag(item.exp)}  ·  ${context.tr('Résumé de {n} sources', {'n': item.sourceCount})}',
                   maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 11.5)),
             ]),
           ),
@@ -415,7 +415,7 @@ class _NewsFeedCardState extends State<NewsFeedCard> {
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text(item.title, maxLines: 4, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textPrimary, fontFamily: 'serif', fontWeight: FontWeight.w800, fontSize: 15, height: 1.25)),
                     const SizedBox(height: 6),
-                    Text('${agent.pseudo}  ·  ${newsAgo(item.at)}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 11.5)),
+                    Text('${agent.pseudo}  ·  ${newsAgo(item.at)}${newsLeftTag(item.exp)}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 11.5)),
                   ]),
                 ),
                 if (item.image.isNotEmpty) ...[
@@ -489,7 +489,7 @@ class _NewsFeedCardState extends State<NewsFeedCard> {
           Text(context.tr('FLASH ACTUALITÉ'), style: const TextStyle(color: Color(0xFFF1EFE8), fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1.3)),
           const SizedBox(width: 8),
           Expanded(
-            child: Text('${_place(item).toUpperCase()} · ${newsAgo(item.at)}', maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.right, style: const TextStyle(color: Color(0xFFB4B2A9), fontSize: 10.5, fontWeight: FontWeight.w600)),
+            child: Text('${_place(item).toUpperCase()} · ${newsAgo(item.at)}${newsLeftTag(item.exp)}', maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.right, style: const TextStyle(color: Color(0xFFB4B2A9), fontSize: 10.5, fontWeight: FontWeight.w600)),
           ),
           _closeButton(c, color: const Color(0xFFB4B2A9)),
         ]),

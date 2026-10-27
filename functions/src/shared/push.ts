@@ -328,6 +328,7 @@ async function recordSent(reached: Recipient[], budgets: Map<string, Partial<Bud
  * Envoie une notification push à ces personnes : FCM d'abord, OneSignal pour celles qui n'ont pas de jeton (ou dont l'envoi FCM a échoué).
  * `category` : direct (toujours envoyée), social ou reminder (heures calmes, préférences et budget quotidien : voir notifications/policy_logic.ts).
  * `oneSignal` : identifiants de l'API OneSignal, lus dans AppData si absents.
+ * `fcmOnly` : Firebase seulement, jamais de repli OneSignal (rappels programmés et actualités).
  */
 export async function deliverPush(
   targets: PushTarget[],
@@ -335,6 +336,7 @@ export async function deliverPush(
   oneSignal?: OneSignalConfig,
   withDetails = false,
   category: PushCategory = "direct",
+  fcmOnly = false,
 ): Promise<PushResult> {
   const result: PushResult = { fcm: 0, oneSignal: 0, unreachable: 0 };
   try {
@@ -347,7 +349,7 @@ export async function deliverPush(
     result.fcm = sent;
 
     // Repli OneSignal : pas de jeton FCM, ou aucun appareil joint par FCM
-    const fallbackIds = recipients.filter((r) => !delivered.has(r.key) && r.oneSignalId.length > 5).map((r) => r.oneSignalId);
+    const fallbackIds = fcmOnly ? [] : recipients.filter((r) => !delivered.has(r.key) && r.oneSignalId.length > 5).map((r) => r.oneSignalId);
     if (fallbackIds.length) result.oneSignal = await sendOneSignal(fallbackIds, payload, oneSignal);
 
     result.unreachable = recipients.length - delivered.size - result.oneSignal;

@@ -162,6 +162,7 @@ export const sharePostLink = onRequest(
         case "creator":
         case "profil": collectionName = "Users"; break;
         case "post": collectionName = "Posts"; break;
+        case "news": collectionName = "Posts"; break; // article d'actualité (Afro Journal) : un post de type NEWS
         default: collectionName = "Posts";
       }
 
@@ -201,6 +202,11 @@ export const sharePostLink = onRequest(
             }
             previewImage = (data.images && data.images[0]) || previewImage;
           }
+        } else if (type === "news") {
+          const n = (data.news || {}) as { title?: string; chapo?: string };
+          title = n.title || "Actualité Afrolook";
+          description = (n.chapo || data.description || "Lisez cette actualité sur Afrolook").toString().substring(0, 200);
+          previewImage = data.url_media || previewImage;
         } else if (type === "creator" || type === "profil") {
           const pseudo = data.pseudo || "Utilisateur";
           title = `@${pseudo} — Business`;

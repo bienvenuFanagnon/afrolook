@@ -22,7 +22,7 @@ const NEURON_RATES: Record<string, { input: number; output: number }> = {
 
 /** Plafond par compte (sur 10 000 gratuits) et plafond total du jour : de la marge pour ne jamais passer en facturation. */
 export const PER_ACCOUNT_CAP = 9000;
-export const DAILY_TOTAL_CAP = 15000;
+export const DAILY_TOTAL_CAP = 17000;
 
 export interface CfAccount { id: string; token: string }
 

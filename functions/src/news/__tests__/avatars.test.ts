@@ -9,13 +9,13 @@ import { GLYPHS } from "../avatarGlyphs";
 import { NEWS_AGENTS } from "../agents";
 
 describe("photos de profil des agents", () => {
-  test("une couleur et une icône pour chacun des 6 agents, plus le badge journal", () => {
+  test("une couleur et une icône pour chacun des 8 agents, plus le badge journal", () => {
     for (const a of NEWS_AGENTS) {
       expect(AVATAR_COLORS[a.key]).toMatch(/^#[0-9A-F]{6}$/);
       expect(GLYPHS[a.key].d.length).toBeGreaterThan(100);
     }
     expect(GLYPHS["journal"].d.length).toBeGreaterThan(100);
-    expect(new Set(Object.values(AVATAR_COLORS)).size).toBe(6); // aucune couleur en double : on reconnaît un agent d'un coup d'œil
+    expect(new Set(Object.values(AVATAR_COLORS)).size).toBe(8); // aucune couleur en double : on reconnaît un agent d'un coup d'œil
   });
 
   test("dessin : fond sombre, cercle teinté, icône du domaine et badge vert", () => {

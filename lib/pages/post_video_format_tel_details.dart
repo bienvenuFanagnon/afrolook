@@ -3072,6 +3072,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
     final user = post.user;
     final canal = post.canal;
+    // post de canal dont le canal n'est pas encore chargé : gabarit statique, jamais le créateur à la place du canal
+    final bool canalPending = canal == null && post.canal_id != null && post.canal_id!.isNotEmpty;
     final String displayName = canal != null
         ? '#${canal.titre ?? ''}'
         : '@${user?.pseudo ?? ''}';
@@ -3097,19 +3099,27 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
               clipBehavior: Clip.none,
               children: [
                 Container(
-                  decoration: BoxDecoration(border: canal != null ? null : Border.all(color: _afroGreen, width: 2), shape: BoxShape.circle),
-                  child: (canal == null && user == null)
+                  decoration: BoxDecoration(border: (canal != null || canalPending) ? null : Border.all(color: _afroGreen, width: 2), shape: BoxShape.circle),
+                  child: canalPending
+                      ? Container(width: 50, height: 50, decoration: BoxDecoration(color: Colors.white.withOpacity(0.22), shape: BoxShape.circle))
+                      : (canal == null && user == null)
                       ? const CircleAvatar(radius: 25, child: CircularProgressIndicator(strokeWidth: 2))
                       : SafeNetworkAvatar(url: canal?.urlImage ?? user?.imageUrl, radius: 25),
                 ),
-                _buildSubscribeIcon(post),
+                if (!canalPending) _buildSubscribeIcon(post),
               ],
             ),
           ),
           const SizedBox(height: 4),
           SizedBox(
             width: 62,
-            child: Column(
+            child: canalPending
+                ? Column(children: [
+                    Container(width: 44, height: 8, decoration: BoxDecoration(color: Colors.white.withOpacity(0.22), borderRadius: BorderRadius.circular(4))),
+                    const SizedBox(height: 4),
+                    Container(width: 28, height: 8, decoration: BoxDecoration(color: Colors.white.withOpacity(0.22), borderRadius: BorderRadius.circular(4))),
+                  ])
+                : Column(
               children: [
                 Row(
                   mainAxisSize: MainAxisSize.min,

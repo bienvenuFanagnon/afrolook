@@ -10,7 +10,7 @@ import { DAY_MS, NewsFeedItem } from "./model";
  * planificateur fait déjà pour chaque personne ; seulement quelques documents partagés (l'index du fil de chaque périmètre, le résumé de la semaine),
  * lus une fois par passage et gardés en mémoire.
  *
- *  - créneau du matin (8 h 30 locale) : le lundi « La semaine en N infos » (résumé de la semaine passée) ; le mercredi, le vendredi et le samedi,
+ *  - créneau du matin (8 h 30 locale) : le lundi « La semaine en N infos » (résumé de la semaine passée) ; les autres jours,
  *    l'article le plus important du moment pour la personne (son pays d'abord, puis son continent, puis le monde) ;
  *  - créneau du soir (19 h 30) : alerte « À la une », seulement si une info forte est sortie dans les 8 dernières heures (au moins 3 sources) ;
  *  - une seule notification d'actualité par personne et par jour, jamais deux fois le même article (Users.newsAt et Users.newsLastId) ;
@@ -37,7 +37,7 @@ export const weekdayOf = (nowMs: number, tzMin: number): number => new Date(nowM
 
 /** Quel type d'actualité un créneau peut-il porter ? (créneaux : 0 matin, 1 midi, 2 soir) */
 export function newsKindFor(slot: number, weekday: number): NewsKind | null {
-  if (slot === 0) return weekday === 1 ? "newsweek" : [3, 5, 6].includes(weekday) ? "news" : null;
+  if (slot === 0) return weekday === 1 ? "newsweek" : "news"; // chaque matin : le lundi le résumé de la semaine, les autres jours l'article le plus important
   if (slot === 2) return "newsflash";
   return null;
 }

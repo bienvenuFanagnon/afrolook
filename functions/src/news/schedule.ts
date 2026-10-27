@@ -9,13 +9,13 @@ import { DEFAULT_SOURCES, NewsSourceDef, activeSources } from "./sources";
 
 /**
  * Déclenchement du pipeline des actualités :
- * - newsPipelineTick : toutes les 2 heures (à :20, heure UTC). Ne fait rien tant que `AppConfig/news.pipelineEnabled` n'est pas actif ;
+ * - newsPipelineTick : toutes les heures (à :20, heure UTC). Ne fait rien tant que `AppConfig/news.pipelineEnabled` n'est pas actif ;
  * - newsRunPipeline  : lancement à la main depuis l'administration (3 articles au plus par défaut) ou essai sans IA (`dryRun`) qui montre ce qui serait publié ;
  * - newsSourcesTest  : lit chaque source depuis le serveur (sans IA, sans rien publier) pour savoir lesquelles répondent.
  */
 const RUN = { region: "us-central1" as const, timeoutSeconds: 540, memory: "512MiB" as const, secrets: [CF_NEWS_ACCOUNTS] };
 
-export const newsPipelineTick = onSchedule({ ...RUN, schedule: "20 */2 * * *", timeZone: "UTC" }, async () => {
+export const newsPipelineTick = onSchedule({ ...RUN, schedule: "20 * * * *", timeZone: "UTC" }, async () => {
   const cfg = readPipelineConfig((await db.collection("AppConfig").doc("news").get()).data());
   if (!cfg.enabled || !cfg.pipelineEnabled) return;
   try {

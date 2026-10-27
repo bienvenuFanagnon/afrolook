@@ -11,6 +11,8 @@ export interface RawItem {
   sourceName: string;
   lang: "fr" | "en";
   region: "africa" | "world";
+  /** Pays du média quand il est national (sert quand le texte ne désigne aucun pays). */
+  country?: string | null;
   categoryHint: NewsCategory | null;
   titre: string;
   lien: string;
@@ -21,7 +23,7 @@ export interface RawItem {
 }
 
 export const toRaw = (s: NewsSourceDef, it: FeedItem): RawItem => ({
-  sourceId: s.id, sourceName: s.name, lang: s.lang, region: s.region, categoryHint: s.category,
+  sourceId: s.id, sourceName: s.name, lang: s.lang, region: s.region, country: s.country ?? null, categoryHint: s.category,
   titre: it.titre, lien: it.lien, date: it.date, resume: it.resume, corps: it.corps, image: it.image,
 });
 
@@ -115,6 +117,8 @@ const CATEGORY_WORDS: Record<NewsCategory, string[]> = {
   musique: ["musique", "chanson", "chanteur", "chanteuse", "album", "single", "clip", "concert", "rappeur", "rappeuse", "afrobeats", "afrobeat", "amapiano", "dj", "tournee", "music", "singer", "rapper"],
   culture: ["culture", "cinema", "film", "festival", "theatre", "litterature", "livre", "roman", "exposition", "musee", "art", "danse", "patrimoine", "serie", "spectacle", "ecrivain", "auteur", "peinture"],
   tech: ["technologie", "numerique", "intelligence", "artificielle", "ia", "startup", "startups", "application", "smartphone", "internet", "cybersecurite", "logiciel", "robot", "cloud", "blockchain", "fintech", "tech", "digital", "ai"],
+  mode: ["mode", "fashion", "defile", "defiles", "styliste", "stylistes", "couture", "tenue", "tenues", "pagne", "wax", "mannequin", "mannequins", "podium", "stylist", "designer", "designers", "runway", "beaute", "vogue", "bazaar", "tendance", "tendances", "outfit", "outfits", "bijoux", "coiffure", "maquillage", "wardrobe", "style", "glamour", "elegance", "robe", "robes", "lookbook"],
+  evenement: ["sommet", "catastrophe", "inondation", "inondations", "incendie", "explosion", "accident", "attentat", "seisme", "epidemie", "pandemie", "ebola", "cholera", "greve", "manifestation", "manifestations", "crise", "urgence", "deces", "obseques", "hommage", "ceremonie", "inauguration", "salon", "foire", "conference", "forum", "budget", "inflation", "economie", "economique", "fmi", "banque", "bourse", "croissance", "dette", "accord", "evenement", "independance", "summit", "disaster", "flood", "fire", "crash", "strike", "protest", "economy", "growth", "bank", "debt", "agreement", "ceremony", "investissement", "investissements", "emploi", "chomage"],
   voyage: ["voyage", "tourisme", "touristes", "touristique", "destination", "vol", "compagnie", "aerienne", "hotel", "plage", "visa", "aeroport", "vacances", "croisiere", "airline", "travel", "tourism", "flight"],
 };
 
@@ -181,13 +185,17 @@ export function buildTopics(items: RawItem[], configured: string[], nowMs = Date
   const topics: Topic[] = [];
   for (const members of clusterItems(fresh)) {
     const cats = members.map((m) => classify(m)).filter((c): c is NewsCategory => !!c);
+    // actualité générale d'un média national sans mot-clé de domaine : classée « événement » (AfroInfo), pour ne pas perdre l'info du pays
+    if (!cats.length && members.some((m) => m.country)) cats.push("evenement");
     if (!cats.length) continue;
     const counts = new Map<NewsCategory, number>();
     for (const c of cats) counts.set(c, (counts.get(c) ?? 0) + 1);
     const category = [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0];
     const distinct = new Set(members.map((m) => m.sourceName)).size;
     if (distinct === 1 && !members.some((m) => m.corps.length >= 200 || m.resume.length >= 160)) continue;
-    const country = detectCountry(members[0].titre, members.map((m) => m.resume).join(" "));
+    // pays du texte, sinon pays du média ; un sujet repris par des médias de plusieurs pays est international : pas de pays imposé
+    const mediaCountries = new Set(members.map((m) => m.country).filter((c): c is string => !!c));
+    const country = detectCountry(members[0].titre, members.map((m) => m.resume).join(" ")) ?? (mediaCountries.size === 1 ? [...mediaCountries][0] : null);
     const region = members.some((m) => m.region === "africa") ? "africa" : "world";
     const { level, country: cc } = scopeOf(country, configured, region);
     topics.push({ items: members, category, level, country: cc, distinctSources: distinct, score: scoreTopic(members, nowMs, level === "country") });

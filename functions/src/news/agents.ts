@@ -19,10 +19,12 @@ export const NEWS_AGENTS: NewsAgent[] = [
   { key: "beat", pseudo: "AfroBeat", category: "musique", label: "Musique" },
   { key: "tech", pseudo: "AfroTech", category: "tech", label: "Technologie" },
   { key: "voyage", pseudo: "AfroVoyage", category: "voyage", label: "Voyage" },
+  { key: "mode", pseudo: "AfroMode", category: "mode", label: "Mode" },
+  { key: "info", pseudo: "AfroInfo", category: "evenement", label: "Événements" },
 ];
 
 /** Agent qui signe les articles d'un domaine. */
-export const AGENT_OF_CATEGORY: Record<string, string> = { sport: "sport", politique: "politik", culture: "culture", musique: "beat", tech: "tech", voyage: "voyage" };
+export const AGENT_OF_CATEGORY: Record<string, string> = { sport: "sport", politique: "politik", culture: "culture", musique: "beat", tech: "tech", voyage: "voyage", mode: "mode", evenement: "info" };
 
 export const agentByKey = (key: unknown): NewsAgent | undefined => NEWS_AGENTS.find((a) => a.key === key);
 

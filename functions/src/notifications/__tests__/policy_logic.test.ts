@@ -1,6 +1,6 @@
 import {
   DAILY_BUDGET, SOCIAL_MAX, categoryOf, categoryOfData, chooseReminder, consume, copyFor, daysInactive, decide, inQuietHours, localDay, localMinutes,
-  reminderGapMs, tzForSlot, typeNotifFor, SLOTS_MIN,
+  reminderGapMs, tzForSlot, typeNotifFor, SLOTS_MIN, countriesForTz, COUNTRY_TZ,
 } from "../policy_logic";
 
 const H = 3600 * 1000;
@@ -94,6 +94,11 @@ describe("choix du contenu", () => {
     expect(new Set(kinds).size).toBe(3);
     expect(kinds.every((k) => ["quiz", "etude", "conte"].includes(k))).toBe(true);
   });
+  test("à midi, quiz, étude et conte se relaient d'un jour à l'autre (le quiz n'est plus réservé au créneau du matin)", () => {
+    const kinds = [100, 101, 102].map((dayIndex) => chooseReminder({ ...base, slot: 1, dayIndex }));
+    expect(new Set(kinds).size).toBe(3);
+    expect(kinds).toContain("quiz");
+  });
   test("nouveaux posts avant le quiz le matin et le soir, pas à midi", () => {
     expect(chooseReminder({ ...base, slot: 0, unseenPosts: 4 })).toBe("feed");
     expect(chooseReminder({ ...base, slot: 2, unseenPosts: 4 })).toBe("feed");
@@ -119,6 +124,20 @@ describe("créneaux", () => {
     expect(tzForSlot(Date.UTC(2026, 9, 21, 13, 0), SLOTS_MIN[1])).toBe(0);
     // 19 h 30 locale à 22 h 30 UTC → UTC-3
     expect(tzForSlot(Date.UTC(2026, 9, 21, 22, 30), SLOTS_MIN[2])).toBe(-180);
+  });
+  test("countriesForTz : les pays dont l'heure habituelle est ce fuseau (comptes pas encore mis à jour)", () => {
+    expect(countriesForTz(0)).toEqual(expect.arrayContaining(["TG", "CI", "SN"]));
+    expect(countriesForTz(60)).toEqual(expect.arrayContaining(["BJ", "CM", "NG"]));
+    expect(countriesForTz(60)).not.toContain("TG");
+    expect(countriesForTz(999)).toEqual([]);
+    expect(Object.values(COUNTRY_TZ).every((m) => m % 60 === 0)).toBe(true);
+  });
+  test("tzForSlot : le déclencheur peut passer à :24 ou :54, on se cale sur la demi-heure la plus proche (sinon aucun rappel ne part)", () => {
+    expect(tzForSlot(Date.UTC(2026, 9, 21, 8, 24), SLOTS_MIN[0])).toBe(0); // 8 h 30 locale à Lomé (UTC+0)
+    expect(tzForSlot(Date.UTC(2026, 9, 21, 12, 54), SLOTS_MIN[1])).toBe(0); // 13 h 00 locale à Lomé
+    expect(tzForSlot(Date.UTC(2026, 9, 21, 7, 24), SLOTS_MIN[0])).toBe(60); // 8 h 30 locale à Cotonou (UTC+1)
+    expect(tzForSlot(Date.UTC(2026, 9, 21, 22, 54), SLOTS_MIN[2])).toBe(-210); // 19 h 30 locale quand il est 23 h 00 UTC → UTC-3:30
+    expect(Math.abs(tzForSlot(Date.UTC(2026, 9, 21, 22, 24), SLOTS_MIN[2]) % 15)).toBe(0); // toujours un vrai fuseau (multiple de 15 minutes)
   });
 });
 
