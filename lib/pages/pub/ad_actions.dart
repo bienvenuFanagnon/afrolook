@@ -21,20 +21,14 @@ class AdRoute {
 const List<AdRoute> kAdAppRoutes = [
   AdRoute(route: '/home',                label: 'Accueil',               description: 'Fil d\'actualité principal',              icon: Icons.home),
   AdRoute(route: '/videos',              label: 'Vidéos',                description: 'Section vidéos courtes',                  icon: Icons.play_circle),
-  AdRoute(route: '/dating',              label: 'Rencontres',            description: 'Application de rencontres',               icon: Icons.favorite),
   AdRoute(route: '/list_live',           label: 'Lives',                 description: 'Lives en cours',                          icon: Icons.live_tv),
   AdRoute(route: '/create_live',         label: 'Créer un live',         description: 'Démarrer un live',                        icon: Icons.videocam),
   AdRoute(route: '/classemnent',         label: 'Classement',            description: 'Classement des créateurs',                icon: Icons.leaderboard),
   AdRoute(route: '/abonnement',          label: 'Abonnements',           description: 'Plans d\'abonnement premium',             icon: Icons.workspace_premium),
-  AdRoute(route: '/coins/buy',           label: 'Acheter des pièces',    description: 'Boutique de pièces Afrolook',             icon: Icons.monetization_on),
-  AdRoute(route: '/coins/transactions',  label: 'Mes transactions',      description: 'Historique des pièces',                   icon: Icons.receipt_long),
-  AdRoute(route: '/creator/subscription',label: 'Abonnements créateurs', description: 'S\'abonner à des créateurs',              icon: Icons.star),
   AdRoute(route: '/mes_notifications',   label: 'Notifications',         description: 'Mes notifications',                      icon: Icons.notifications),
   AdRoute(route: '/gagner_point_infos',  label: 'Gagner des pièces',     description: 'Comment gagner des pièces',               icon: Icons.emoji_events),
   AdRoute(route: '/amis',               label: 'Mes amis',              description: 'Liste des amis et suggestions',           icon: Icons.people),
   AdRoute(route: '/list_users_chat',     label: 'Messages',              description: 'Messagerie privée',                       icon: Icons.chat_bubble),
-  AdRoute(route: '/dating/list',         label: 'Profils Rencontres',    description: 'Explorer les profils de rencontres',      icon: Icons.search),
-  AdRoute(route: '/dating/connections',  label: 'Mes connexions',        description: 'Mes matchs et connexions',                icon: Icons.handshake),
 ];
 
 /// Action du bouton d'une publicité : ouvre le lien de l'annonceur, navigue en interne

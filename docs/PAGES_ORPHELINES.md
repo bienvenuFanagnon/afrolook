@@ -1,5 +1,7 @@
 # Pages jamais référencées (candidates à la suppression)
 
+> **Mise à jour du 30/10/2026** : le propriétaire a demandé la suppression. Une analyse d'accessibilité depuis `main.dart` (plus fiable que cette liste) a trouvé 119 fichiers morts (35 238 lignes) ; **117 ont été supprimés** sur la branche `nettoyage_legacy` (2 restaurés car encore importés : `confirm_verification_otp.dart`, `change_pass_word.dart`), avec le module Afrolove (35 fichiers) et les pages CinetPay. Compilation : 0 erreur. Cette liste est désormais **historique**.
+
 Généré le 27 octobre 2026 par une analyse statique : chaque classe de widget de `lib/pages/` dont le nom n'apparaît **dans aucun autre fichier** de `lib/`.
 **C'est une liste de candidates, pas une décision.** Faux positifs possibles : une classe utilisée seulement dans son propre fichier (le fichier est alors utile, la classe d'entrée est référencée ailleurs), une page ouverte par nom de route, ou du code d'outillage. **Rien ne doit être supprimé sans la confirmation du propriétaire** (colonne « Décision »).
 

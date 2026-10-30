@@ -106,8 +106,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../contenuPayant/content_detail_page.dart';
 import '../contenuPayant/profileScreenContent.dart';
-import '../dating/dating_entry_page.dart';
-import '../dating/dating_notifications_page.dart';
 import '../mes_notifications.dart';
 import '../postDetails.dart';
 import '../postDetailsVideo.dart';
@@ -1358,9 +1356,6 @@ class _MyHomePageState extends State<MyHomePage>
         break;
       case 'notifications':
         page = MesNotification();
-        break;
-      case 'dating_notifications':
-        page = const DatingNotificationsPage();
         break;
       case 'live_list':
         Navigator.pushNamed(context, '/list_live');
@@ -2820,7 +2815,6 @@ class _MyHomePageState extends State<MyHomePage>
 
                 // ── Réseaux sociaux ──────────────────────────────────
                 _rpSection(colors, 'Réseaux'),
-                if (!kIsAppleStore) _rpItem(context, colors, icon: Fontisto.tinder, iconColor: Colors.red,     label: 'Afro Love',            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const DatingSwipePage()))),
                 _rpItem(context, colors, icon: Icons.group,                                label: l10n.menuFriends,        onTap: () => _setDesktopSection(Amis(), l10n.menuFriends)),
                 _rpItem(context, colors, icon: Icons.search,                               label: l10n.menuSearchUsers,    onTap: () => _setDesktopSection(AddListAmis(), l10n.menuSearchUsers)),
                 _rpItem(context, colors, icon: Icons.notifications_none_rounded,           label: l10n.navNotifications,    onTap: () => _setDesktopSection(MesNotification(), l10n.navNotifications)),
@@ -2889,15 +2883,6 @@ class _MyHomePageState extends State<MyHomePage>
                 _rpItem(context, colors, icon: Icons.info_outline,                         label: l10n.menuNewsInfo,        onTap: () => Navigator.pushNamed(context, '/app_info')),
                 _rpItem(context, colors, icon: Icons.contact_mail,                         label: l10n.menuContacts,        onTap: () => Navigator.pushNamed(context, '/contact')),
                 _rpItem(context, colors, icon: Icons.smartphone,                           label: l10n.menuShareApp,        onTap: () => showShareAppSheet(context)),
-
-                // Afro Love — en bas du menu, masqué sur iOS (App Store)
-                if (!kIsAppleStore)
-                  _rpItem(context, colors,
-                    icon: Fontisto.tinder,
-                    iconColor: Colors.red,
-                    label: 'Afro Love',
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DatingSwipePage())),
-                  ),
 
                 const SizedBox(height: 8),
                 Divider(color: colors.border),

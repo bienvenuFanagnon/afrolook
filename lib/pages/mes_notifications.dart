@@ -19,7 +19,6 @@ import 'package:afrotok/l10n/tr.dart';
 import 'package:afrotok/pages/notification_settings_page.dart';
 import 'package:afrotok/widgets/feed/sections/social_follow_card.dart';
 import 'package:afrotok/pages/music/music_page.dart';
-import 'package:afrotok/pages/dating/dating_notifications_page.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:afrotok/pages/studio/artist_marketplace.dart';
@@ -741,12 +740,8 @@ class _MesNotificationState extends State<MesNotification> {
           });
           break;
         default:
-          // DATING_*, SUPPORT, CERTIFICATION, MARKETING… : pas de page de détails d'un post, on montre le texte de la notification
-          if ((notification.type ?? '').startsWith('DATING_')) {
-            await _openPage(const DatingNotificationsPage());
-          } else {
-            await _showInfoDialog(notification);
-          }
+          // SUPPORT, CERTIFICATION, MARKETING… : pas de page de détails d'un post, on montre le texte de la notification
+          await _showInfoDialog(notification);
           break;
       }
     } catch (e) {

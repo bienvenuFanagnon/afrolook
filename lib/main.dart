@@ -23,18 +23,6 @@ import 'package:afrotok/pages/chronique/chroniquehome.dart';
 import 'package:afrotok/pages/classements/userClassement.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/contact.dart';
-import 'package:afrotok/pages/dating/buy_coins_page.dart';
-import 'package:afrotok/pages/dating/coin_transactions_page.dart';
-import 'package:afrotok/pages/dating/creator_profile_page.dart';
-import 'package:afrotok/pages/dating/creator_subscription_page.dart';
-import 'package:afrotok/pages/dating/dating_connections_page.dart';
-import 'package:afrotok/pages/dating/dating_conversations_page.dart';
-import 'package:afrotok/pages/dating/dating_entry_page.dart';
-import 'package:afrotok/pages/dating/dating_likes_list_page.dart';
-import 'package:afrotok/pages/dating/dating_notifications_page.dart';
-import 'package:afrotok/pages/dating/dating_profile_setup_page.dart';
-import 'package:afrotok/pages/dating/dating_profiles_list_page.dart';
-import 'package:afrotok/pages/dating/dating_super_likes_list_page.dart';
 
 import 'package:afrotok/pages/entreprise/profile/ProfileEntreprise.dart';
 import 'package:afrotok/pages/entreprise/profile/newEntreprise.dart';
@@ -69,9 +57,6 @@ import 'package:afrotok/providers/streakProvider.dart';
 import 'package:afrotok/providers/chroniqueProvider.dart';
 import 'package:afrotok/providers/coin_gift_provider.dart';
 import 'package:afrotok/providers/contenuPayantProvider.dart';
-import 'package:afrotok/providers/dating/coin_provider.dart';
-import 'package:afrotok/providers/dating/creator_provider.dart';
-import 'package:afrotok/providers/dating/dating_provider.dart';
 import 'package:afrotok/providers/feed_provider.dart';
 import 'package:afrotok/providers/gold_groups_provider.dart';
 import 'package:afrotok/providers/mixed_feed_service_provider.dart';
@@ -440,26 +425,10 @@ class _MyAppState extends State<MyApp> {
           create: (context) => RecentPostsProvider(),
           child: HomeConstPostPage(type: TabBarType.LOOKS.name,),
         ),
-        ChangeNotifierProxyProvider<UserAuthProvider, DatingProvider>(
-          create: (context) => DatingProvider(authProvider: context.read<UserAuthProvider>()),
-          update: (context, authProvider, previous) =>
-              DatingProvider(authProvider: authProvider),
-        ),
-        ChangeNotifierProxyProvider<UserAuthProvider, CreatorProvider>(
-          create: (context) => CreatorProvider(authProvider: context.read<UserAuthProvider>()),
-          update: (context, authProvider, previous) =>
-              CreatorProvider(authProvider: authProvider),
-        ),
-        ChangeNotifierProxyProvider<UserAuthProvider, CoinProvider>(
-          create: (context) => CoinProvider(authProvider: context.read<UserAuthProvider>()),
-          update: (context, authProvider, previous) =>
-              CoinProvider(authProvider: authProvider),
-        ),
       ],
       child: Consumer3<ThemeProvider, LocaleProvider, CurrencyService>(
         builder: (context, themeProvider, localeProvider, _, __) => MaterialApp(
         navigatorKey: NavigationCacheService().navigatorKey,
-        navigatorObservers: [datingRouteObserver],
         title: 'Afrolook',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
@@ -530,35 +499,6 @@ class _MyAppState extends State<MyApp> {
               return PageTransition(child: ProfilePage(), type: PageTransitionType.fade);
             case '/classemnent':
               return PageTransition(child: UserClassement(), type: PageTransitionType.fade);
-            case '/dating':
-              return PageTransition(child: DatingSwipePage(), type: PageTransitionType.fade);
-            case '/dating/list':
-              return PageTransition(child: DatingProfilesListPage(), type: PageTransitionType.fade);
-            case '/dating/profile-setup':
-              return PageTransition(child: DatingProfileSetupPage(profile: null), type: PageTransitionType.fade);
-            case '/creator/profile':
-              final args = settings.arguments as Map<String, dynamic>;
-              return PageTransition(child: CreatorProfilePage(userId: args['userId']), type: PageTransitionType.fade);
-            case '/dating/connections':
-              return PageTransition(child: DatingConnectionsPage(), type: PageTransitionType.fade);
-            case '/dating/conversations':
-              return PageTransition(child: DatingConversationsPage(), type: PageTransitionType.fade);
-            case '/creator/subscription':
-              final args = settings.arguments as Map<String, dynamic>;
-              return PageTransition(child: CreatorSubscriptionPage(
-                creatorId: args['creatorId'],
-                creatorName: args['creatorName'],
-              ), type: PageTransitionType.fade);
-            case '/coins/buy':
-              return PageTransition(child: BuyCoinsPage(), type: PageTransitionType.fade);
-            case '/coins/transactions':
-              return PageTransition(child: CoinTransactionsPage(), type: PageTransitionType.fade);
-            case '/dating/likes-list':
-              return PageTransition(child: DatingLikesListPage(), type: PageTransitionType.fade);
-            case '/dating/super-likes':
-              return PageTransition(child: DatingSuperLikesPage(), type: PageTransitionType.fade);
-            case '/dating/notifications':
-              return PageTransition(child: DatingNotificationsPage(), type: PageTransitionType.fade);
             case '/abonnement':
               return PageTransition(child: AbonnementScreen(), type: PageTransitionType.fade);
             default:
@@ -946,7 +886,6 @@ class _MyAppState extends State<MyApp> {
 //         ChangeNotifierProvider(create: (_) => CryptoAdminProvider()),
 //         ChangeNotifierProvider(create: (_) => CryptoPortfolioProvider()),
 //         ChangeNotifierProvider(create: (_) => MixedFeedServiceProvider()),
-//         ChangeNotifierProvider(create: (_) => PronosticProvider()),
 // // Dans main.dart, modifier l'initialisation de CoinGiftUserProvider
 //         ChangeNotifierProxyProvider<UserAuthProvider, CoinGiftUserProvider>(
 //           create: (context) => CoinGiftUserProvider(

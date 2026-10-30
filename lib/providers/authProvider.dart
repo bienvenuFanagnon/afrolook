@@ -33,7 +33,6 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../models/dating_data.dart';
 import '../pages/auth/authTest/Screens/Login/loginPageUser.dart';
 import '../pages/component/consoleWidget.dart';
 import '../services/auth/authService.dart';
@@ -54,7 +53,6 @@ class UserAuthProvider extends ChangeNotifier {
   late String registerText = "";
   late String? token = '';
 
-  String _kLastDatingWidgetShown = "last_dating_widget_shown";
 
   // late String? userId = "";
   late int app_version_code = 268;
@@ -84,45 +82,6 @@ class UserAuthProvider extends ChangeNotifier {
   List<Map<String, dynamic>> get advertisements => _advertisements;
 
 
-  // ----------------------------------------------------------------------
-// Gestion des profils de rencontre (AfroLove)
-// ----------------------------------------------------------------------
-  List<DatingProfile> _topDatingProfiles = [];
-  bool _isLoadingDatingProfiles = false;
-
-  List<DatingProfile> get topDatingProfiles => _topDatingProfiles;
-  bool get isLoadingDatingProfiles => _isLoadingDatingProfiles;
-
-  /// Charge les 3 meilleurs profils (mélangés parmi les 5 plus populaires)
-  Future<void> loadTopDatingProfiles({int limit = 3}) async {
-    if (_isLoadingDatingProfiles) return;
-    _isLoadingDatingProfiles = true;
-    notifyListeners();
-
-    try {
-      // Récupère 5 profils actifs triés par popularité
-      final query = await FirebaseFirestore.instance
-          .collection('dating_profiles')
-          .where('isActive', isEqualTo: true)
-          .orderBy('popularityScore', descending: true)
-          .limit(5)
-          .getM('authProvider.dart:105');
-
-      final profiles = query.docs
-          .map((doc) => DatingProfile.fromJson(doc.data()))
-          .toList();
-
-      // Mélanger et prendre les 'limit' premiers
-      profiles.shuffle();
-      _topDatingProfiles = profiles.take(limit).toList();
-    } catch (e) {
-      printVm('❌ Erreur chargement profils dating: $e');
-      _topDatingProfiles = [];
-    } finally {
-      _isLoadingDatingProfiles = false;
-      notifyListeners();
-    }
-  }
   Future<void> loadAdvertisements() async {
     final _swAds = Stopwatch()..start();
     final prefs = await SharedPreferences.getInstance();
@@ -3294,30 +3253,6 @@ if(actionType == 'comment'){
     });
   }
 
-  Future<bool> canShowDatingWidget() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    final lastString = prefs.getString(_kLastDatingWidgetShown);
-
-    if (lastString == null) {
-      return true; // jamais affiché
-    }
-
-    final lastDate = DateTime.parse(lastString);
-    final now = DateTime.now();
-
-    final difference = now.difference(lastDate).inHours;
-
-    return difference >= (3 * 24); // 3 jours
-  }
-
-  Future<void> markDatingWidgetShown() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _kLastDatingWidgetShown,
-      DateTime.now().toIso8601String(),
-    );
-  }
 
 
 

@@ -23,7 +23,6 @@ import 'ads_regie_admin_page.dart';
 import 'admin_email_screen.dart';
 import 'afrolook_group_migration_page.dart';
 import 'commissions_admin_page.dart';
-import 'dating/admin_dating_profiles_page.dart';
 import 'influencer_requests_page.dart';
 import 'moderation_reports_page.dart';
 import 'news_admin_page.dart';
@@ -573,7 +572,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       _Module(Icons.handshake_rounded, 'Tâches : partenaires (validation)', c.info, 0, const OfferwallPartnersPage()),
       _Module(Icons.account_balance_wallet_rounded, 'Rémunération', c.primary, 0, RemunerationAdminPage()),
       _Module(Icons.storefront_rounded, 'Contenus payants', c.supportAccent, 0, const AdminContentPage()),
-      _Module(Icons.favorite_rounded, 'Afrolove', const Color(0xFFD6204A), 0, AdminDatingProfilesPage()),
       _Module(Icons.mail_rounded, 'Emailing', c.textSecondary, 0, AdminEmailScreen()),
       _Module(Icons.payment_rounded, 'Moyens de paiement', c.primary, 0, const PaymentMethodsAdminPage()),
       _Module(Icons.monitor_heart_rounded, 'Suivi des paiements', c.danger, 0, const PaymentLogsAdminPage()),

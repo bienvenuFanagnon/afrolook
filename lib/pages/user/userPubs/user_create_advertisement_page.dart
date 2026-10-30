@@ -29,7 +29,6 @@ import '../../../providers/authProvider.dart';
 import '../../../theme/app_colors.dart';
 import '../../../services/ad_config_service.dart';
 import '../../../widgets/link_preview_card.dart';
-import '../../paiement/depotPaiment.dart';
 import '../../paiement/newDepot.dart';
 
 class UserCreateAdvertisementPage extends StatefulWidget {

@@ -252,8 +252,6 @@ Future<void> storeNavigationFromPush(Map<String, dynamic> data) async {
     } else {
       await nav.storeScreenNavigation('live_list');
     }
-  } else if (type.startsWith('DATING_')) {
-    await nav.storeScreenNavigation('dating_notifications');
   } else if (hasPost) {
     // j'aime, commentaire, republication, nouveau post, favori, défi… : le post concerné
     await nav.storePostNavigation(postId, postType);

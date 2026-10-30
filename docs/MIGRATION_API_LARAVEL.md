@@ -77,7 +77,7 @@ Statut : **plan à valider**. Rien n'est encore construit. Ce document est le **
 | Remote Config, App Check, Crashlytics | **Firebase** | Gratuit, indépendant des données |
 | Médias (images, vidéos, audio, stickers, musique) | **Cloudflare R2 + CDN** | Sortie gratuite ; envoi direct sans passer par le VPS (URL signée) |
 | Données métier (utilisateurs, publications, commentaires, canaux, notifications, soldes, paiements, quiz, étude, contes, boutique, pubs, contenu payant, rencontres, classements) | **PostgreSQL via l'API Laravel** | C'est là que se trouve le coût variable |
-| Tâches planifiées (25) | **Consigne du propriétaire : la planification reste chez Firebase** (Cloud Scheduler) ; chaque tâche **appelle l'API** (point d'entrée protégé) où se trouve la logique. *Variante à proposer* : planificateur Laravel (sans coût Firebase) — question 15 | La logique et les données sont dans l'API ; la tâche Firebase est un simple déclencheur |
+| Tâches planifiées (34 au 30/10) | **Décidé le 30/10/2026 : planificateur Laravel sur le VPS** (sans coût supplémentaire : cron `* * * * * php artisan schedule:run`, files Horizon) ; Firebase Cloud Scheduler n'est plus utilisé pour ces tâches. Surveillance : alerte si une tâche ne s'exécute pas (Uptime Kuma / heartbeat), car si le VPS tombe, les tâches s'arrêtent | La logique et les données sont dans l'API ; la tâche Firebase est un simple déclencheur |
 | Déclencheurs sur les données (28) | **Événements de l'API** (observateurs de modèles + files Horizon) pour les données migrées ; seuls les déclencheurs des **chats** restent sur Firestore | Un déclencheur Firestore ne peut plus voir des données qui sont dans PostgreSQL |
 | Intelligence artificielle (résumés, traductions, suggestions) | Appels depuis Laravel vers **Cloudflare Workers AI** (inchangé côté fournisseur) | |
 | Paiements (FeexPay, CinetPay, PayGate, Apple, Google Play) | **Laravel** (webhooks signés, journal de grand livre) | Transactions SQL vraies (`SELECT … FOR UPDATE`), plus sûr que Firestore pour l'argent |
@@ -215,6 +215,22 @@ Le point délicat : **des utilisateurs ont encore d'anciennes versions de l'appl
    Parade : **dès la phase P**, toutes ces adresses passent par le domaine `afrolookmedia.com` (route Cloudflare qui renvoie aujourd'hui vers Firebase). Le jour de la bascule, seule la route change (vers Laravel) : rien à modifier chez les diffuseurs ni chez les partenaires. Les adresses de retour encore réglées sur `cloudfunctions.net` sont remplacées une par une chez chaque partenaire pendant la phase P.
 8. **Pièces gagnées en cours de retenue** (72 h pour le partage) : l'import final reprend les gains « en attente » avec leur date de libération ; la libération est faite par l'API ensuite. Contrôle : somme des gains en attente identique avant et après.
 
+### 11 bis. Aucune perte de données pour les utilisateurs (consigne du propriétaire, 30/10/2026)
+
+L'application est **en production et utilisée** : **personne ne doit perdre ses données** (profil, publications, abonnés, pièces, gains, historique, messages). Garanties :
+1. **Les comptes ne bougent pas** : Firebase Auth reste la source d'identité, l'`uid` de chaque utilisateur est conservé, aucun utilisateur ne recrée son compte. Les identifiants Firestore des entités importées deviennent les clés de PostgreSQL (les liens de partage existants restent valables). L'application garde le même identifiant (`com.afrotok.afrotok`) : c'est une **mise à jour** de la même fiche des stores.
+2. **Copie, jamais déplacement** : Firestore n'est jamais vidé ni modifié par l'import ; il reste en **lecture seule pendant 30 jours** après chaque bascule (retour arrière immédiat).
+3. **Sauvegarde complète avant tout** : export Firestore du 30/10/2026 dans un compartiment privé (`gs://afrolooki-legacy-backup-2026/`), étiquette Git `legacy-firebase-2026-10-30`, copie des fichiers déjà dans R2. Une nouvelle sauvegarde est faite juste avant chaque bascule.
+4. **Répétitions** : chaque import est d'abord joué plusieurs fois sur une copie, avec un **rapport de rapprochement** (nombre de lignes par collection, **somme des soldes de pièces à l'unité près**, échantillons comparés, doublons, références orphelines). Aucune bascule tant que le rapport n'est pas à zéro écart.
+5. **Import différentiel au moment de la bascule** : une copie complète est faite en avance (et refaite autant de fois que nécessaire), puis un **dernier import des seules différences** pendant une coupure d'écriture très courte (2 minutes, message « maintenance »). Aucune écriture d'utilisateur n'est perdue entre la copie et la bascule.
+6. **Argent** : doublement d'écriture et rapprochement quotidien des soldes pendant 2 semaines avant de couper l'ancien circuit ; gains en retenue repris avec leur date de libération.
+7. **Anciennes versions de l'application** : pont de synchronisation temporaire, puis mise à jour obligatoire (version minimale) ; aucune donnée écrite par une ancienne version n'est ignorée.
+
+**Question ouverte (n°12 du §15) : migration en une seule fois ou module par module ?**
+- *Une seule bascule générale* : l'application entière passe sur l'API le même jour. Simple à raconter, mais il faut avoir réécrit et testé **tous** les modules avant (≈ 290 fichiers, plusieurs mois sans rien livrer), une seule coupure plus longue, et si un module a un défaut tout le monde en souffre : risque le plus élevé pour des utilisateurs réels.
+- *Une copie complète unique des données, puis bascule module par module* (**recommandé**) : **toutes les données existantes sont copiées une seule fois dans PostgreSQL au début** (et resynchronisées avant chaque bascule), puis chaque module bascule quand il est prêt, avec comparaison « à l'ombre » et retour arrière. Les utilisateurs ne voient aucune coupure notable et ne perdent rien ; en cas de problème, on ne revient en arrière que sur un module.
+La phase 5 (argent) peut, au choix du propriétaire, être regroupée en une seule bascule courte, car les soldes doivent rester cohérents entre eux.
+
 ## 12. Phasage et critères de sortie (recalculé le 30/10/2026)
 
 | Phase | Contenu | Durée indicative | Critère de sortie |
@@ -340,3 +356,4 @@ La documentation publique d'intégration donne aux diffuseurs les **adresses dir
 2. Mettre à jour la documentation, `tag.js`, `afrolook_ads_banner.dart` et `site/static/js/ads.js` pour n'utiliser que ces adresses ; images servies par `cdn.afrolookmedia.com` au lieu de `firebasestorage.googleapis.com`.
 3. Prévenir les diffuseurs déjà validés (s'il y en a) de mettre à jour leur balise ; garder les anciennes adresses jusqu'à la fin de la migration.
 
+12. *(ajout 30/10)* **Une seule bascule générale ou module par module ?** Voir §11 bis : recommandation = **copie complète unique des données au début, puis bascule module par module** (aucune perte, retour arrière par module). Le propriétaire souhaite avant tout que **personne ne perde ses données**.

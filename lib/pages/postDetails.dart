@@ -29,7 +29,6 @@ import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/defi/defi_details_section.dart';
 import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:afrotok/pages/home/homeWidget.dart';
-import 'package:afrotok/pages/paiement/depotPaiment.dart';
 import 'package:afrotok/pages/paiement/newDepot.dart';
 import 'package:afrotok/pages/postDetailsVideo.dart';
 import 'package:afrotok/pages/post_video_format_tel_details.dart';
