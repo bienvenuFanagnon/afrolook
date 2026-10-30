@@ -136,9 +136,8 @@ class _FeedUnifiedAdSlotState extends State<FeedUnifiedAdSlot> {
         _showCarousel = false;
       }
     }
-    return _showCarousel == true
-        ? FeedAdCarousel(adKey: widget.adKey)
-        : const AfrolookInlineAd();
+    // Règle du propriétaire (30/10) : dans les fils, jamais de bannière — uniquement le grand format, bien visible.
+    return FeedAdCarousel(adKey: widget.adKey);
   }
 
   @override

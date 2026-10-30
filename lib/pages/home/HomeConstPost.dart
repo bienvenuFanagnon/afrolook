@@ -1,4 +1,5 @@
 import 'package:afrotok/services/chronique_first_page.dart';
+import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/feed/sections/card_feed_invite.dart';
 import 'package:afrotok/widgets/feed/sections/defi_feed_card.dart';
@@ -1795,7 +1796,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
         printVm('⏱️ [PERF] lancement T1+T2 en parallèle — unread=${unread.length}, interests=${userInterests.length} (réels=${hasRealInterests})');
 
-        final t1Future = unread.isEmpty
+        final t1Future = (unread.isEmpty && !ApiGateway.instance.useApi('feed'))
             ? Future.value(<Post>[])
             : FeedRepository().fetchUnreadSubscriptionPosts(unread, excludedSnapshot, limit: 5, repostMeta: authProvider.loginUserData.repostMeta ?? {});
         // T2 (Découverte/Tendance) jamais chargé automatiquement — uniquement sur demande utilisateur.
@@ -2013,7 +2014,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       }
     }
 
-    if (unread.isEmpty) {
+    if (unread.isEmpty && !ApiGateway.instance.useApi('feed')) {
       printVm('📌 [TIER1] → toujours vide, aucun post Tier1 chargé');
       return;
     }

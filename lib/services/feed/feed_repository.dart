@@ -45,21 +45,27 @@ class FeedRepository {
 
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
+  /// Appelle le niveau [tier] (1 abonnements, 2 intérêts, 3 découverte) du feed de l'API. Renvoie null en cas d'erreur (→ Firebase).
+  Future<List<Post>?> _apiTier(int tier, Set<String> excluded, int limit) async {
+    try {
+      final r = await ApiGateway.instance.client.get('/feed', query: {'tier': tier, 'limit': limit > 50 ? 50 : (limit < 1 ? 1 : limit)});
+      final rows = ((r as Map)['data'] as List).cast<Map<String, dynamic>>();
+      return rows.map(postFromApi).where((p) => p.id != null && !excluded.contains(p.id)).toList();
+    } catch (e) {
+      printVm('API feed (niveau $tier) indisponible, retour à Firebase : $e');
+      return null;
+    }
+  }
+
   // ── POINT D'ENTRÉE PRINCIPAL ─────────────────────────────────────────────────
 
   /// Charge un batch de posts selon la composition algorithmique approuvée :
   /// 30% abonnements · 25% pays · 20% score · 15% découverte · 10% résurgence
   Future<List<Post>> fetchFeed(FeedQuery query) async {
-    // Nouvelle API (module « feed » activé dans Remote Config) : accueil = niveau 1 du serveur (publications des abonnements, non vues).
-    // Les autres onglets restent sur Firebase pour l'instant. Toute erreur de l'API → retour à Firebase.
+    // Nouvelle API (module « feed » activé dans Remote Config) : découverte et tendances = niveau 3 du serveur. Erreur → Firebase.
     if (query.type == FeedType.home && ApiGateway.instance.useApi('feed')) {
-      try {
-        final r = await ApiGateway.instance.client.get('/feed', query: {'tier': 1, 'limit': query.targetCount > 50 ? 50 : query.targetCount});
-        final rows = ((r as Map)['data'] as List).cast<Map<String, dynamic>>();
-        return rows.map(postFromApi).where((p) => p.id != null && !query.excludeIds.contains(p.id)).toList();
-      } catch (e) {
-        printVm('API feed indisponible, retour à Firebase : $e');
-      }
+      final api = await _apiTier(3, query.excludeIds, query.targetCount);
+      if (api != null) return api;
     }
     final target = query.targetCount;
     final excluded = Set<String>.from(query.excludeIds);
@@ -590,6 +596,10 @@ class FeedRepository {
     int limit = 20,
     String? tabbarType,
   }) async {
+    if (tabbarType == null && ApiGateway.instance.useApi('feed')) {
+      final api = await _apiTier(2, excluded, limit);
+      if (api != null) return api;
+    }
     if (interests.isEmpty) return [];
     final _swT2 = Stopwatch()..start();
     try {
@@ -643,6 +653,10 @@ class FeedRepository {
     String? tabbarType,
     Map<String, Map<String, dynamic>> repostMeta = const {},
   }) async {
+    if (tabbarType == null && ApiGateway.instance.useApi('feed')) {
+      final api = await _apiTier(1, excluded, limit);
+      if (api != null) return api;
+    }
     if (unreadMap.isEmpty) return [];
     final _swT1 = Stopwatch()..start();
     // Trier par timestamp desc, prendre les N plus récents
