@@ -1,4 +1,6 @@
-# Migration d'Afrolook vers une API Laravel (plan du 27 octobre 2026)
+# Migration d'Afrolook vers une API Laravel (plan du 27 octobre 2026, refait le 30 octobre 2026)
+
+**Révision du 30/10/2026** : ajout des chantiers construits depuis le 27/10 : **régie Afrolook Ads** (module 24), **Partage et gagne** (module 26), **sites clients de l'API** (module 27) ; le **mur de tâches des partenaires** Tapjoy / ayeT / PubScale (module 25) est **abandonné** (partenaires non obtenus) ; relevé détaillé de la régie telle qu'elle existe (§17) ; nouvelle **phase préparatoire P** (sécurité, conservation du legacy, adresses stables) ; phase 5 coupée en **5a (argent)** et **5b (monétisation)** ; calendrier recalculé (§12) ; déroulé concret du travail (§16). Le chiffre « 4 à 5 mois et demi » de la première version **ne correspondait pas à la somme des phases** (29 à 37 semaines) : il est corrigé.
 
 Statut : **plan à valider**. Rien n'est encore construit. Ce document est le **plan détaillé** ; **l'état d'avancement (ce qui est fait, ce qui reste) et les décisions sont dans `docs/PROJET_MEMOIRE.md`** (mémoire unique du projet, section 6). Le mettre à jour à chaque phase.
 
@@ -21,7 +23,8 @@ Statut : **plan à valider**. Rien n'est encore construit. Ce document est le **
 | Code qui parle **directement** à Firestore | 290 fichiers (1 158 lectures, 1 123 `add`, 608 `update`, 299 `set`, 326 compteurs, 46 transactions, 38 lots) |
 | Écoutes temps réel (`snapshots`) | 141 (Users 219 réf., Posts, Chats, Notifications, Messages, chroniques, rencontres, lives, groupes, canaux) |
 | Fonctions serveur appelées par l'app (`httpsCallable`) | 93 distinctes |
-| Fonctions Cloud | 152 appelables, 25 planifiées, 7 HTTP (webhooks), 28 déclencheurs Firestore — ~21 000 lignes TypeScript |
+| Fonctions Cloud | **Au 30/10 : ~180 appelables, 34 planifiées, 19 HTTP (webhooks, régie, retours des partenaires), 28 déclencheurs Firestore — ~28 100 lignes TypeScript** (le 27/10 : 152 / 25 / 7 / 28, ~21 000 lignes). Ajouts : régie `ads/` (~4 100 lignes, 24 fichiers) ; mur de tâches `offerwall/` (~1 500 lignes, 12 fichiers) **abandonné, non migré** |
+| Tests serveur existants | 45 suites, 444 tests unitaires (Jest) + 5 scénarios d'intégration sur émulateur (`functions/integration/`) : **ils servent de cahier de recettes** pour réécrire les mêmes règles en Laravel |
 | Règles de sécurité Firestore | 53 collections protégées : **c'est aujourd'hui la couche d'autorisation de l'application** |
 | Documents | Users 2 046 · Posts 6 719 · **Notifications 318 391** · PostComments 5 502 · TransactionSoldes 5 370 · Invitations 3 916 · membres de canaux 8 231 · Chats 362 · messages 2 829 · rencontres 695 · lives 415 |
 | Utilisateurs | ~2 000 inscrits, ~40 actifs par jour (très petit trafic) |
@@ -37,7 +40,7 @@ Statut : **plan à valider**. Rien n'est encore construit. Ce document est le **
 
 - **Ce que la migration règle vraiment** : le coût variable. Avec Postgres, une requête « le fil de cette personne » devient **une** requête SQL sur le VPS (et un cache Redis) au lieu de centaines de lectures facturées. Les compteurs, classements, listes de notifications et profils lourds (`followingIds`, `viewedPostIds`…) deviennent des tables normales. Le coût ne grandit plus avec le nombre de lectures.
 - **Ce qu'elle ne règle pas** : à ~40 utilisateurs actifs par jour, la facture Firebase actuelle est probablement **modeste** (ordre de grandeur : quelques dizaines de dollars par mois). Un VPS coûte lui aussi de l'argent, plus du temps de maintenance. Le gain monte avec la croissance. **Il faut donc fixer un seuil de rentabilité avec la vraie facture** (voir « Questions à valider », n°1).
-- **Le vrai coût du projet est le travail** : 290 fichiers de l'application écrivent aujourd'hui directement en base, et les règles Firestore font l'autorisation. Tout cela doit être **adapté** en appels API (les **écrans ne sont pas refaits** : le frontend est la copie de l'application actuelle dont seule la couche de données change), avec les règles portées côté serveur. Fourchette indicative (une personne + moi) : **4 à 5 mois et demi** (après abandon d'Afrolove) pour tout migrer, en livrant par étapes.
+- **Le vrai coût du projet est le travail** : 290 fichiers de l'application écrivent aujourd'hui directement en base, et les règles Firestore font l'autorisation. Tout cela doit être **adapté** en appels API (les **écrans ne sont pas refaits** : le frontend est la copie de l'application actuelle dont seule la couche de données change), avec les règles portées côté serveur. Fourchette indicative recalculée le 30/10 (avec la régie, les tâches et le partage) : **9 à 12 mois** avec un seul chantier à la fois, **7 à 9 mois** avec deux chantiers en parallèle (détail §12), en livrant par étapes.
 - **Parade au risque** : chaque phase a un **critère de sortie mesurable** (lectures Firestore en baisse, zéro écart de soldes, etc.). Si une phase ne rapporte pas, on s'arrête là : l'architecture « mixte » reste saine (Firebase pour le temps réel, Laravel pour le reste).
 
 ## 4. Architecture cible
@@ -106,7 +109,7 @@ Difficulté : ● faible · ●● moyenne · ●●● élevée.
 |---|---|---|---|---|---|---|
 | 0 | **Fondations** | — | Projet, Docker, authentification Firebase, utilisateurs (`firebase_uid`), envoi R2, observabilité, CI | Couche `ApiClient` (jeton, nouvelle tentative, 304), interrupteurs de bascule par module (Remote Config), version minimale par module | ●● | 0 |
 | 1 | **Configuration** | AppConfig, AppData, Informations, Remote | Lecture publique mise en cache (une requête au démarrage) | Remote Config reste pour les interrupteurs | ● | 1 |
-| 2 | **Notifications** | Notifications (318 k), rappels `reengagement`, budget (`PushBudget`), `newsPush`, `sendPush` | Liste paginée, non-lus, marquage, **orchestration des rappels** (créneaux 8 h 30 / 13 h / 19 h 30, budget 3/jour, heures calmes), envoi FCM | Réception FCM, affichage, ouverture d'écran | ●● | 1 |
+| 2 | **Notifications** | Notifications (318 k), rappels `reengagement` (FCM seul depuis le 27/10, rotation quiz/étude, 8 langues), budget (`PushBudget`), `newsPush`, `sendPush` | Liste paginée, non-lus, marquage, **orchestration des rappels** (créneaux 8 h 30 / 13 h / 19 h 30, budget 3/jour, heures calmes), envoi FCM | Réception FCM, affichage, ouverture d'écran | ●● | 1 |
 | 3 | **Comptes et profils** | Users, Pseudo, UserKeys, BlockedUsers, Friends, UserPresence, `users/*`, `accountDeletion` (J+15) | Profil, pseudo unique, blocages, suppression J+15, présence (Redis), parrainage, certification | Saisie, cache du profil connecté | ●●● | 2 |
 | 4 | **Abonnements (follows)** | `follows/*`, `followUser`, `syncFollowsFromLegacy` | Table `follows`, compteurs | Bouton, état local | ● | 2 |
 | 5 | **Publications, fil, découverte** | Posts (6,7 k), `discovery_boost_service`, `feed_*`, `active_creators`, `scoreEngine`, `weeklyRankings`, `unreadCleanup` | Fil classé, découverte, créateurs actifs, vues, j'aime, favoris, partages, reposts, score, classements hebdomadaires | Défilement, lecture médias, cache | ●●● | 2 |
@@ -117,8 +120,8 @@ Difficulté : ● faible · ●● moyenne · ●●● élevée.
 | 10 | **Quiz / Étude / Contes** | `quiz/*` (18 fonctions), `etude/*`, `contes/*` | Tirage, réponses, progression, classements, anti-triche, diplômes, rappels | Écrans de jeu, minuteur | ●● | 4 |
 | 11 | **Musique et sons d'artistes** | MusicLibrary/Likes/Favorites/Playlists, artist_sounds, `studio/*` | Catalogue, droits, licences, comptes d'écoute, URL temporaires | Lecteur audio, cache chiffré du début | ●● | 4 |
 | 12 | **Studio, cartes, stickers, montage** | StickerPacks, Stickers, UserStickers, `cards/*`, `studio/*` | Métadonnées, achats, modération, génération IA | Éditeur, rendu | ●● | 4 |
-| 13 | **Afro Journal (actualités)** | `news/*` (2 843 lignes), NewsFeed, NewsDigests… | Pipeline en **tâches Laravel** (ou conteneur Node qui réutilise le code TypeScript au début), mêmes plafonds | Cartes, page journal | ●● | 4 |
-| 14 | **Pubs** | Advertisements, AdRewards, SSV, `ads/*` | Campagnes, récompenses, vérification serveur | AdMob / Appodeal restent dans l'app | ●● | 5 |
+| 13 | **Afro Journal (actualités)** | `news/*` (2 843 lignes), NewsFeed, NewsDigests… ; *au 30/10* : 51 médias nationaux, agents AfroMode et AfroInfo, 30 pays, passage horaire, plafond 120 articles/jour, budget IA `NewsBudget` | Pipeline en **tâches Laravel** (ou conteneur Node qui réutilise le code TypeScript au début), mêmes plafonds, agents et budget IA | Cartes, page journal | ●● | 4 |
+| 14 | **Pubs des réseaux (AdMob, Appodeal) et récompenses** *(élargi le 30/10)* | Advertisements, AdRewards, SSV, `ads/rewards.ts` (page Récompenses, vérification SSV), `ads/adFree.ts` (pub récompensée → 1 jour sans pub, plafond par jour), `ads/adRevenue.ts` (revenus par emplacement AdMob/Appodeal), `ads/ad_notifications.ts` (pubs Afrolook envoyées par notification, mention « Pub »), `AppConfig/ads` (activation par plateforme, pourcentage, emplacements iOS/Android), socle `RewardedAds` | Vérification serveur des pubs récompensées (SSV signée), crédit en pièces, jours sans pub, plafonds, **revenus par emplacement**, configuration des emplacements, pubs Afrolook dans les notifications (jamais AdMob/Appodeal en push), journal des erreurs de chargement | Affichage AdMob / Appodeal (bannières, plein écran, récompensées, natives du fil) reste dans l'app | ●● | 5b |
 | 15 | **Portefeuille, pièces, paiements** | TransactionSoldes (5,4 k), wallets, `payments/*` (3 261 lignes), retraits, IAP Apple/Google, taux de change | Grand livre, dépôts, achats en pièces, conversions, **webhooks** FeexPay / CinetPay / PayGate, validation des reçus Apple et Google, retraits (demandes manuelles) | Écrans de paiement, SDK d'achat intégré | ●●● | 5 |
 | 16 | **Contenu payant et créateurs** | ContentPaies, ContentComments, creator_*, PromoCodes | Achats, abonnements créateurs, codes promo, statistiques | Écrans | ●● | 5 |
 | 17 | **Boutique (AfroShop)** | Articles (86), Entreprises (94), Commandes, UserServices | Produits, commandes, paiements | Écrans | ●● | 5 |
@@ -128,6 +131,10 @@ Difficulté : ● faible · ●● moyenne · ●●● élevée.
 | 21 | **E-mails** | `emails/*` | Laravel Mail + files (modèles existants) ; e-mails de vérification restent Firebase | — | ● | 6 |
 | 22 | **Série (streak), récompenses hebdomadaires, invitations** | `streak/*`, `weekly*`, Invitations | Tâches planifiées, compteurs | Écrans | ●● | 6 |
 | 23 | **Médias** | Storage, `r2Mirror`, `media/*` | URL signées R2, nettoyage, aperçus | Envoi direct, compression (`media_shrink`) | ●● | 3 (en continu) |
+| 24 | **Régie Afrolook Ads** *(ajout 30/10)* | `ads/adsEngine*`, `adsWeb*`, `adsAdvertisers*`, `adsPublishers*`, `adsWatch`, `adsGuard`, `adsHll`, `adsMeasure`, `adsTargeting` ; collections des annonceurs, diffuseurs (`ap_…`), compteurs répartis, audiences HLL, alertes | Moteur de diffusion (`serve` / `event` / `go`, jeton HMAC), compteurs en **Redis** (HyperLogLog natif, remplace les compteurs répartis), plafonds, ciblage, catégories, tarifs et remise de lancement, espace annonceur, diffuseurs et leurs gains, surveillance et blocage des paiements | Composant `afrolook_ads_banner.dart`, script `static/js/ads.js` des sites | ●●● | 5b |
+| 25 | ~~**Mur de tâches des partenaires** (Tapjoy, ayeT, PubScale)~~ **ABANDONNÉ le 30/10/2026** : les partenaires n'ont pas accepté Afrolook | `offerwall/*`, `tapjoyOfferwallCallback`, `ayetOfferwallCallback`, `offerwallRelease`, `OfferwallEvents`, `OfferwallDaily`, `OfferwallPartners` | **Rien** : non migré. Code et fonctions à désactiver puis retirer du legacy (à décider avec le propriétaire) | — | — | — |
+| 26 | **Partage et gagne** *(ajout 30/10)* | `adsShare*` (10 fonctions), `ShareCampaigns`, `AdShareProfiles`, `AdShareStats`, `AdShareEarnings`, `AdShareProof`, `AdShareReports`, lien `/p/<code>/` | Campagnes à l'audience, profils de partageurs et validation, **jugement du clic** (identifiant navigateur, IP/appareil, robots), gains 5 F/clic, plafonds, retenue 72 h, parrainage 10 % compté dans le plafond, analyse de fraude horaire, reprise des gains, audience touchée | Pages `share/`, partage natif | ●●● | 5b |
+| 27 | **Sites clients de l'API** *(ajout 30/10)* | Vitrine `site/` (afrolookmedia.com, `/ads/`, `/gagner/`, `/p/`), SlashAtlas et PronoFlash (servis par la régie) | Rien de plus : ils appellent les mêmes points publics de la régie | Pages statiques ; **les adresses publiques ne doivent pas changer** (voir §11, point 7) | ● | 5b |
 
 **Hors périmètre** : SlashAtlas (projet Firebase séparé, `slashatlas-studio`) et PronoFlash restent tels quels ; on pourra les rattacher plus tard.
 
@@ -176,8 +183,9 @@ Difficulté : ● faible · ●● moyenne · ●●● élevée.
 - Paiements : modes **bac à sable** des fournisseurs et cartes de test publiées uniquement ; aucune vraie transaction en développement.
 - Les secrets (R2, Cloudflare, FCM, fournisseurs de paiement) restent dans `.env` non versionné puis dans les secrets Docker du VPS.
 
-### 9.4 Ce que je propose d'installer sur ce poste le moment venu
-Redis (ou l'équivalent Windows) pour les files, MinIO (un seul exécutable), `cloudflared`, k6. **Docker Desktop (avec WSL2)** pour construire et valider les images avant le VPS : il consomme du disque sur C : (prévoir ~15 Go). Rien n'est installé sans votre accord.
+### 9.4 Ce qui sera installé sur ce poste (décision du 30/10/2026 : **pas de Docker sur le PC**)
+**Décision du propriétaire (30/10/2026)** : le développement et les tests se font **sans Docker** sur le PC (Docker Desktop prendrait ~15 Go ; C : a 41 Go libres, D : 9,4 Go). **Docker sert seulement sur le VPS**, où les images sont construites (sur le VPS ou par GitHub Actions, jamais sur le PC).
+À installer, avec l'accord du propriétaire au moment de la phase 0 : **PHP 8.3 + Composer** (~150 Mo ; PHP n'est plus trouvé dans le PATH au 30/10), **Memurai** (Redis pour Windows, facultatif : au début, cache et files peuvent utiliser PostgreSQL), **`cloudflared`** (tunnel vers le téléphone), k6 plus tard pour la charge. PostgreSQL 17 est déjà installé. Médias de développement : compartiment R2 `afrolook-media-dev` (rien à installer). Parade à l'absence de Docker local : vérification de l'image exacte sur la **préproduction** du VPS (`api-staging.`) avant chaque mise en production.
 
 ## 10. Infrastructure du VPS (quand on l'achètera)
 
@@ -200,27 +208,39 @@ Le point délicat : **des utilisateurs ont encore d'anciennes versions de l'appl
 4. **Anciennes versions** : pendant la transition, un pont Firestore → API (déclencheurs conservés pour le module concerné) garde les données synchronisées ; une fois la version minimale relevée (écran « mise à jour obligatoire »), le pont est supprimé. Vu la taille de la base active (~40 par jour), la mise à jour forcée est réaliste.
 5. **Retour arrière** : l'interrupteur revient à `off` ; Firestore reste intact (lecture seule) **30 jours** après chaque bascule.
 6. **Argent** : doublement d'écriture et rapprochement quotidien des soldes pendant 2 semaines avant de couper l'ancien circuit.
+7. **Adresses publiques stables (ajout 30/10)** : des adresses sont **inscrites chez des tiers** et ne doivent jamais casser :
+   - le script et les points de la régie (`adsServe`, `adsEvent`, `adsGo`) collés sur les **sites et applications des diffuseurs**, sur SlashAtlas et PronoFlash ;
+   - les liens de partage `afrolookmedia.com/p/<code>/` **déjà envoyés sur WhatsApp et Telegram** ;
+   - les **adresses de retour** réglées chez AdMob (SSV), FeexPay, Apple et Google.
+   Parade : **dès la phase P**, toutes ces adresses passent par le domaine `afrolookmedia.com` (route Cloudflare qui renvoie aujourd'hui vers Firebase). Le jour de la bascule, seule la route change (vers Laravel) : rien à modifier chez les diffuseurs ni chez les partenaires. Les adresses de retour encore réglées sur `cloudfunctions.net` sont remplacées une par une chez chaque partenaire pendant la phase P.
+8. **Pièces gagnées en cours de retenue** (72 h pour le partage) : l'import final reprend les gains « en attente » avec leur date de libération ; la libération est faite par l'API ensuite. Contrôle : somme des gains en attente identique avant et après.
 
-## 12. Phasage et critères de sortie
+## 12. Phasage et critères de sortie (recalculé le 30/10/2026)
 
 | Phase | Contenu | Durée indicative | Critère de sortie |
 |---|---|---|---|
+| **P. Préparation** *(nouvelle)* | Sur le legacy, sans API : correctifs de sécurité urgents validés (`docs/SECURITE_API.md` §5 : U1, U7, U5, U8, puis U2-U4), étiquette Git et **export Firestore de sauvegarde**, **adresses publiques stables** sur `afrolookmedia.com` (§11 point 7), facture Firebase réelle, réponses aux questions du §15, création des dossiers `afrolook-api` / `afrolook-coordination`, définition des trois agents, installations sur le poste | 2-3 semaines | Toutes les questions du §15 répondues ; sauvegarde vérifiée ; plus aucune adresse `cloudfunctions.net` chez un tiers ; failles F1, F2, F13 fermées ou planifiées |
 | **0. Fondations** | Projet Laravel, authentification Firebase, utilisateurs, envoi R2, CI, observabilité, `ApiClient` Flutter, interrupteurs. **Livrable : API opérationnelle en local** (voir §13) | 2-3 semaines | Un téléphone se connecte, s'authentifie, envoie une image sur R2 de développement et la relit par le CDN |
 | **1. Config + notifications** | Modules 1 et 2 | 3 semaines | Notifications servies par l'API, FCM envoyé par Laravel, rappels programmés identiques, lectures « Notifications » = 0 |
 | **2. Cœur social** | Modules 3, 4, 5, 6 (comptes, follows, fil, commentaires) | 6-8 semaines | **Lectures Firestore divisées par 3 au moins** sur 7 jours, écarts « à l'ombre » nuls |
 | **3. Canaux, chroniques, médias** | Modules 7, 8, 23 | 3-4 semaines | Plus aucun envoi vers Firebase Storage ; liens R2 partout |
 | **4. Contenus** | Modules 10-13 (quiz, étude, contes, musique, studio, journal) | 5-6 semaines | Fonctions Cloud correspondantes supprimées |
-| **5. Argent** | Modules 14-17 (pubs, portefeuille, paiements, contenu payant, boutique) | 6-8 semaines | 2 semaines de rapprochement à 0 écart, tous webhooks rejoués sans doublon |
+| **5a. Argent** | Modules 15, 16, 17 (grand livre, deux soldes, paiements et webhooks, achats intégrés, retraits manuels, contenu payant, boutique) | 6-8 semaines | 2 semaines de rapprochement à 0 écart, tous webhooks rejoués sans doublon |
+| **5b. Monétisation** *(nouvelle)* | Modules 14, 24, 26, 27 (pubs des réseaux et récompenses, régie Afrolook Ads, Partage et gagne, sites clients). **Après 5a** : tous créditent des pièces sur le grand livre | 6-8 semaines | Mêmes résultats que les 444 tests et les 5 scénarios d'intégration actuels, rejoués contre l'API ; compteurs de la régie identiques à l'ombre pendant 7 jours ; retours SSV et webhooks rejoués sans doublon ; gains en retenue repris à l'unité près |
 | **6. Reste** | Modules 19-22 (lives, admin, e-mails, série) — rencontres abandonnées | 3 semaines | Plus de fonction Cloud métier ; il ne reste que le trafic Firebase prévu |
 | **7. Extinction** | Retrait des fonctions et collections migrées, archivage, réduction du plan Firebase | 1-2 semaines | Facture Firebase ramenée au niveau visé |
 
-Les modules 5 (fil) et 15 (argent) sont les plus risqués : ils ont des **marches de contrôle** supplémentaires (comparaison à l'ombre, puis rapprochement).
+**Total : 39 à 51 semaines, soit environ 9 à 12 mois** avec un seul agent de construction et la validation du propriétaire à chaque étape. **Avec deux chantiers en parallèle** (un agent sur l'argent et la monétisation pendant qu'un autre fait les contenus, phases 4 et 5a/5b en même temps), on peut viser **7 à 9 mois**. Calendrier indicatif si la phase P démarre début novembre 2026 : fondations en décembre, cœur social de mi-décembre à février, argent et monétisation au printemps 2027, extinction à l'été 2027.
+
+Les modules 5 (fil), 15 (argent) et 26 (partage, argent versé au clic) sont les plus risqués : ils ont des **marches de contrôle** supplémentaires (comparaison à l'ombre, puis rapprochement).
+
+**On peut s'arrêter après chaque phase** : l'architecture mixte reste saine. Le gain financier le plus fort vient des phases 1 et 2 (fil et notifications = plus de la moitié des lectures Firestore).
 
 ## 13. Contenu de la « première API opérationnelle » (phase 0)
 
 À la fin de la phase 0, en local puis sur le VPS de préproduction :
 - Projet Laravel 12 (PHP 8.3) dans un dossier à part du dépôt Flutter, avec Pest, Pint, Larastan, Horizon, Pulse.
-- `docker-compose` complet (Caddy, PHP-FPM, PostgreSQL, Redis, Horizon, Scheduler, MinIO pour le test) **et** mode « sans Docker » pour ce poste.
+- Mode **« sans Docker »** pour ce poste (décision du 30/10) ; `docker-compose` complet (Caddy, PHP-FPM, PostgreSQL, Redis, Horizon, Scheduler) **utilisé seulement sur le VPS** (préproduction puis production).
 - Garde `firebase` (vérification des jetons réels et de l'émulateur en local), App Check, création automatique de l'utilisateur à la première requête.
 - Points d'API de base : `GET /v1/me`, `PATCH /v1/me`, `POST /v1/uploads` + `complete`, `GET /v1/config`, `GET /v1/health`.
 - Envoi par URL signée vers R2 (ou MinIO) et lecture par le CDN de développement.
@@ -245,9 +265,78 @@ Les modules 5 (fil) et 15 (argent) sont les plus risqués : ils ont des **marche
 
 1. **Facture Firebase réelle** : pouvez-vous fournir les 3 derniers mois par ligne (Facturation → Rapports, regroupés par SKU) ? Elle fixe le seuil de rentabilité et l'ordre des phases.
 2. ~~Hébergeur~~ **LWS (décidé le 27/10/2026)**. Reste à préciser : l'offre exacte (VPS à accès administrateur complet, Docker possible) et le budget mensuel.
-3. **Emplacement du code** : dossier frère `afrolook-api` dans `D:\...\afrolook\V2\` avec son propre dépôt Git (recommandé), ou dossier `api/` dans le dépôt actuel ?
+3. ~~Emplacement du code~~ **Décidé le 30/10 : dépôt GitHub séparé et privé `afrolook-api`** (dossier frère `D:\...\afrolook\V2\afrolook-api`), jamais dans le dépôt de l'application ; une branche ne peut pas être privée seule sur GitHub.
 4. **Mise à jour obligatoire** : acceptez-vous une version minimale par module (les utilisateurs qui n'ont pas mis à jour verront un écran de mise à jour) ?
-5. **Installations sur ce poste** : Docker Desktop (WSL2), Redis, MinIO, `cloudflared`, k6. Accord pour installer, et sur quel disque (C : a 45 Go libres, D : 9,9 Go) ?
+5. ~~Installations sur ce poste~~ **Pas de Docker sur le PC (décidé le 30/10)** : reste à donner l'accord pour installer PHP 8.3 + Composer, Memurai (facultatif) et `cloudflared` au début de la phase 0.
 6. ~~Domaine~~ **`afrolookmedia.com` (décidé)**. À confirmer : DNS géré par Cloudflare ; sous-domaines `api.`, `api-staging.`, `api-dev.`, `admin.`, `cdn.`, `cdn-dev.`.
 7. ~~Firebase Dynamic Links~~ **non utilisé (décidé le 27/10)** : le partage et les aperçus passent par le domaine propre (`afrolookmedia.com/share/...`). Les pages d'aperçu (aujourd'hui la fonction `sharePostLink`) seront reprises dans Laravel ; le paquet `firebase_dynamic_links` et son code résiduel seront retirés.
 8. **Afro Journal** : réécrire en PHP, ou garder le code TypeScript dans un petit conteneur Node pendant la transition ?
+9. *(ajout 30/10)* **Deux chantiers en parallèle** (7 à 9 mois au lieu de 9 à 12) : d'accord pour faire avancer les contenus (phase 4) et l'argent/monétisation (5a/5b) en même temps, avec deux agents de construction et le superviseur ?
+10. *(ajout 30/10)* **Adresses publiques stables** : d'accord pour faire passer dès la phase P le script de la régie, les liens `/p/` et les adresses de retour des partenaires par `afrolookmedia.com` ? Il faudra alors mettre à jour l'adresse de retour chez AdMob (SSV), FeexPay et les autres (geste à faire par vous dans leurs tableaux de bord, je vous guide).
+11. *(ajout 30/10)* **Gel des nouveautés** : pendant les phases 2 et 5, accepte-t-on de ne pas ajouter de grande fonctionnalité dans l'ancien système (chaque nouveauté sur Firebase est à écrire deux fois) ? Sinon, toute nouvelle fonctionnalité est construite directement dans l'API.
+
+## 16. Comment ça va se faire, concrètement (ajout 30/10/2026)
+
+### 16.1 Qui fait quoi
+| Rôle | Qui | Ce qu'il fait |
+|---|---|---|
+| **Décideur** | Le propriétaire | Répond aux questions, valide chaque phase, teste sur son téléphone, achète le VPS, règle les tableaux de bord des partenaires, dit « oui, déploie » |
+| **Coordinateur** | L'agent principal (cette conversation) | Pose les questions, consigne les réponses dans `docs/PROJET_MEMOIRE.md`, distribue le travail, rend compte |
+| **Informateur** | Agent `informateur-app` | Pour chaque module : fiche « ce que fait l'application actuelle » (écrans, collections, règles, fonctions, pièges, tests existants à rejouer) |
+| **Constructeur** | Agent `api-laravel` (un ou deux) | Écrit l'API du module, ses tests, son contrat OpenAPI ; adapte la couche de données de la copie de l'application |
+| **Superviseur** | Agent `superviseur` | Vérifie tests, sécurité, parité, absence de secrets ; coche la case seulement après vérification |
+
+### 16.2 Le cycle d'un module (toujours le même)
+1. **Fiche** : l'informateur décrit le module tel qu'il existe (preuves : fichier et ligne).
+2. **Questions** : tout choix ouvert est posé au propriétaire avant d'écrire du code.
+3. **Construction** : tables PostgreSQL, points d'API, règles d'accès (une par règle Firestore), tests. Les **tests Jest et les scénarios d'intégration actuels** sont réécrits en tests Laravel : même entrée, même résultat attendu.
+4. **Import** : script qui copie les données Firestore du module dans PostgreSQL (lecture seule sur la production) + rapport de rapprochement (nombres, sommes, échantillons).
+5. **À l'ombre** : l'application appelle l'ancienne source ET l'API, compare et journalise les écarts, sans rien changer pour l'utilisateur. 7 jours sans écart.
+6. **Bascule** : interrupteur du module sur `on` (Remote Config), version minimale si nécessaire. Firestore reste intact 30 jours (retour arrière immédiat).
+7. **Nettoyage** : suppression des fonctions Cloud et de l'accès Firestore devenus inutiles ; règle de la collection fermée ; case cochée dans la mémoire.
+
+### 16.3 Ce que le propriétaire voit et fait à chaque phase
+- **Avant** : une liste de questions (avec recommandation) ; ses réponses sont consignées.
+- **Pendant** : un point court à chaque étape importante (fiche prête, API prête en local, test sur téléphone via `api-dev`).
+- **Fin de phase** : un rapport (ce qui marche, chiffres de lectures Firestore avant/après, écarts, ce qui reste) et la demande de bascule. Rien ne passe en production sans son « oui ».
+
+### 16.4 Ordre de démarrage proposé
+1. Phase P, dans cet ordre : questions du §15 → sauvegarde (étiquette Git + export Firestore) → correctifs de sécurité U1, U7, U5, U8 → adresses publiques stables → dossiers et agents → installations.
+2. Phase 0 en local (aucune dépense), puis achat du VPS LWS seulement quand l'API locale passe le critère de sortie.
+3. Phases 1 et 2 (le plus gros gain sur la facture), puis on décide de continuer au vu des chiffres.
+
+## 17. Régie Afrolook Ads : ce qui existe aujourd'hui et ce qu'il faut porter (relevé du 30/10/2026)
+
+Relevé fait en lisant les pages publiques de la vitrine (`/ads/`, `/ads/espace/`, `/ads/diffuseur/`, `/ads/diffuseur/regles/`, `/ads/diffuseur/documentation/`, `/ads/admin/`, `/ads/partager/`, `/gagner/`) et le code (`functions/src/ads/`, `site/src/ads*.mjs`, `site/static/js/ads.js`). **Ce qui est promis sur ces pages est un contrat public : l'API doit le reproduire à l'identique.**
+
+### 17.1 Les acteurs et leurs profils
+| Acteur | Connexion | Profil (validé par l'équipe avant toute action) | Ce qu'il peut faire |
+|---|---|---|---|
+| **Annonceur** | Compte Google sur le site (Firebase Auth) | **Profil de marque** obligatoire : logo, nom, secteur, pays, ville, site, WhatsApp, description (20 à 200 caractères), accord d'affichage comme partenaire | **Annonce affichée gratuite** : 3 annonces de 14 jours, renouvelables une fois ; promouvoir entreprise, site, application, projet ou affiche ; titre 60 caractères, texte 220 ; **catégorie obligatoire** (16 courantes, 10 sensibles) ; jusqu'à 5 images ou une vidéo de 15 s (25 Mo) ; **bannières prêtes** 728×90, 320×100, 320×50, 300×250 ; bouton d'action (site, télécharger, en savoir plus, WhatsApp, appeler) ; ciblage pays, langues, appareils, types de sites (au plus 40 % des vues hors des pays visés) ; e-mail à la validation puis tous les 100 vues. **Campagne Partage payante** : audience à atteindre, prix affiché avant validation, frais de paiement en plus, « paiement reçu » validé à la main ; campagne offerte pour l'administrateur |
+| **Diffuseur** | Compte Google | **Profil diffuseur** : particulier ou entreprise, nom, pays, ville, WhatsApp, site, présentation (300 caractères), **acceptation des règles versionnées** (version 2026-10-29 ; nouvelle version = nouvelle acceptation) | Ajouter **jusqu'à 10 sites ou applications** en ligne, chacun validé séparément : type, catégories d'annonces acceptées (sensibles décochées par défaut), pays de l'audience, audience mensuelle déclarée, sessions, description ; **preuve de propriété** (balise ou fichier `/afrolook-ads.txt` ; retirée 3 jours = suspension) ; reçoit un **identifiant `ap_…`** lié au domaine ou à l'application |
+| **Partageur** | Application Afrolook | Profil d'audience WhatsApp, Telegram, groupes, validé par l'équipe | Missions de partage, lien personnel `/p/<code>/`, gain au clic valide (module 26) |
+| **Administrateur de la régie** | Compte Google **et** une des deux adresses autorisées (`ads/adsAdmin.ts`) | — | Valider ou refuser annonceurs, annonces, diffuseurs, sites, partageurs et campagnes ; site `/ads/admin/` et page d'administration de l'application |
+
+### 17.2 Règles de diffusion et d'argent à porter telles quelles
+- **Moteur** : `adsServe` (annonce choisie par le serveur, pays d'après l'adresse IP), `adsEvent` (vue, lecture complète), `adsGo` (clic par redirection). Jeton signé à usage unique : 30 min pour la vue, 2 h pour le clic. Vue = moitié de l'annonce visible pendant la durée du format. Motifs de refus publiés : `not_visible`, `too_fast`, `expired`, `replay`, `interval`, `ad_cap`, `device_cap`, `ip_cap`, `bot`, `origine`, `ad_inactive`.
+- **Plafonds** : 3 vues de la même annonce par visiteur et par jour, 300 affichages par visiteur et par jour, intervalle par format (30 s bannière, 20 s native, 10 min interstitiel, 5 min récompensée), 3 emplacements par page, limites de rafale par adresse et par visiteur. Visiteurs « Ne pas suivre » : affichage sans comptage. Aucun cookie.
+- **Neuf formats et tarifs** (pour 1 000 affichages valides) : bannière 1 000 F, bandeau collant 1 250, native 1 500, carrousel 1 800, affiche 2 000, vidéo 2 500, interstitiel 3 000, récompensée 3 500 (vue complète) ; notification sur sélection, 3 par jour au plus. **Part du diffuseur : 65 %** ; remise de lancement de 30 % le premier mois de l'offre Réseau. L'offre Réseau (payante, chez les diffuseurs) **n'est pas encore ouverte** : les affichages sont comptés, la rémunération démarre à son ouverture.
+- **Audience et fraude des diffuseurs** : audience réelle mesurée sur 30 et 60 jours (HyperLogLog), comparée à la déclarée ; audience retenue jamais au-dessus de la déclarée ; répartition par pays contrôlée ; trafic invalide sous 10 % normal, de 10 à 25 % alerte, au-delà de 25 % emplacement suspendu ; identifiant utilisé depuis un autre domaine refusé et compté ; applications payées seulement après attestation (App Check).
+- **Gains des diffuseurs** : bloqués 30 jours, réserve de 10 % pendant 90 jours, retrait minimum 10 000 F par Mobile Money, frais à la charge de l'annonceur, gains annulés en cas de fraude.
+- **Vocabulaire** : toujours « Afrolook Ads » ; jamais la part gardée par Afrolook.
+
+### 17.3 Données de la régie à importer (collections relevées dans le code)
+- **Annonceurs et annonces** : `Advertisements`, `AdAdvertiserProfiles`, `AdsWebSeen`, `AdsWebRate`.
+- **Diffuseurs** : `AdProperties` (sites et applications `ap_…`), `AdsPubDaily`, `AdsPubHealth`, `AdsHll` (audiences), `AdsSecure`.
+- **Moteur et compteurs** : `AdsTokens`, `AdsShards`, `AdsDaily`, `AdsCaps`, `AdsRate`, `AdsAudit`, `AdsAlerts` → compteurs en Redis, totaux journaliers et audit en PostgreSQL.
+- **Partage** : `ShareCampaigns`, `AdShareProfiles`, `AdShareLinks`, `AdShareStats`, `AdShareEarnings`, `AdShareSeen`, `AdShareSharerDay`, `AdShareProof`, `AdShareReports`, `AdShareState`.
+- **Pubs des réseaux et récompenses** : `AdRewards`, `AdRewardsWeek`, `AdRewardStats`, `AdSsvTx`, `AdRevenueDaily`, `AdTaskState`.
+- **Configuration** : `AppConfig/ads`, `AppConfig/share`.
+
+### 17.4 Point à corriger dès la phase P (avant que des diffuseurs s'intègrent)
+La documentation publique d'intégration donne aux diffuseurs les **adresses directes des fonctions Firebase** (`https://us-central1-afrolooki.cloudfunctions.net/adsServe`, `/adsEvent`, `/adsGo`) et leur demande d'autoriser `connect-src https://us-central1-afrolooki.cloudfunctions.net` et `img-src https://firebasestorage.googleapis.com`. L'exemple Flutter fourni aux applications partenaires contient aussi `_host = 'us-central1-afrolooki.cloudfunctions.net'`.
+**Chaque diffuseur qui s'intègre avec ces adresses devra changer son code le jour de la migration.** Correction proposée (rien n'est fait, accord requis) :
+1. Publier les points sous le domaine propre (`https://afrolookmedia.com/ads/api/serve`, `/event`, `/go`) par une réécriture vers les fonctions actuelles ; les anciennes adresses continuent de marcher.
+2. Mettre à jour la documentation, `tag.js`, `afrolook_ads_banner.dart` et `site/static/js/ads.js` pour n'utiliser que ces adresses ; images servies par `cdn.afrolookmedia.com` au lieu de `firebasestorage.googleapis.com`.
+3. Prévenir les diffuseurs déjà validés (s'il y en a) de mettre à jour leur balise ; garder les anciennes adresses jusqu'à la fin de la migration.
+
