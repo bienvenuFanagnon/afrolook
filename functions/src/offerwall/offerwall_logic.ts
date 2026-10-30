@@ -36,7 +36,7 @@ export interface OfferwallConfig {
 export const DEFAULT_OFFERWALL_CONFIG: OfferwallConfig = {
   enabled: true,
   holdHours: 48,
-  minAccountAgeDays: 3,
+  minAccountAgeDays: 0, // plus de contrôle d'ancienneté (décision du propriétaire, 30/10) : réglable par AppConfig/offerwall.minAccountAgeDays
   requireVerifiedEmail: true,
   dailyCapCoins: 2000,
   weeklyCapCoins: 10000,

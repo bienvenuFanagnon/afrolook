@@ -13,9 +13,13 @@ export async function loadConfig(): Promise<OfferwallConfig> {
 /** Éléments du compte utiles aux règles (e-mail vérifié lu auprès de Firebase Auth, jamais déduit du profil modifiable). */
 export async function userFacts(uid: string, data: FirebaseFirestore.DocumentData | undefined): Promise<UserFacts> {
   if (!data) return { exists: false, deleted: false, pendingDeletion: false, createdAt: 0, emailVerified: false, blockedFromOffers: false };
-  let emailVerified = false;
-  try { emailVerified = (await getAuth().getUser(uid)).emailVerified === true; } catch { emailVerified = false; }
-  const created = Number(data["createdAt"]) || 0;
+  let emailVerified = false, authCreated = 0;
+  try {
+    const a = await getAuth().getUser(uid);
+    emailVerified = a.emailVerified === true;
+    authCreated = Date.parse(a.metadata.creationTime) || 0; // les comptes anciens n'ont pas de createdAt dans Users : on prend la date de création de la connexion
+  } catch { emailVerified = false; }
+  const created = Number(data["createdAt"]) || authCreated;
   return {
     exists: true,
     deleted: data["deleted"] === true,
