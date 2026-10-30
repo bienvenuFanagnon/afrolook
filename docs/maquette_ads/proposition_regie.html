@@ -1,0 +1,691 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Afrolook Ads : régie unifiée, proposition</title>
+<style>
+:root{
+  --bg:#f6f8f5;--surface:#fff;--ink:#0f1a14;--muted:#56645b;--line:#dbe3dc;
+  --green:#12804a;--green-bright:#2ecc71;--yellow:#f5b50a;--night:#0b1511;--night-ink:#eaf3ec;
+  --red:#c2332b;--soft:#eaf6ee;--soft2:#fff6dc;--soft3:#e8f0fb;--blue:#2a5db0;--warnink:#7a5600;--shadow:0 8px 30px rgba(10,30,20,.08);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0a120e;--surface:#111d17;--ink:#eaf3ec;--muted:#9bb0a2;--line:#22352a;--green:#38d27f;--soft:#12261b;--soft2:#2a2410;--soft3:#14233a;--blue:#7fb0ff;--warnink:#ffd35a;--red:#ff7a70;--shadow:0 8px 30px rgba(0,0,0,.35);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0a120e;--surface:#111d17;--ink:#eaf3ec;--muted:#9bb0a2;--line:#22352a;--green:#38d27f;--soft:#12261b;--soft2:#2a2410;--soft3:#14233a;--blue:#7fb0ff;--warnink:#ffd35a;--red:#ff7a70;--shadow:0 8px 30px rgba(0,0,0,.35);color-scheme:dark}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-text-size-adjust:100%}
+.wrap{max-width:1120px;margin:0 auto;padding-inline:20px}
+h1,h2,h3{line-height:1.15;text-wrap:balance;margin:0}
+h2{font-size:clamp(26px,4vw,38px);font-weight:800;letter-spacing:-.01em}
+h3{font-size:19px;font-weight:800}
+p{margin:0}
+section{padding-block:56px}
+.alt{background:color-mix(in srgb,var(--soft) 40%,var(--bg))}
+.eyebrow{font:800 12px/1 system-ui;letter-spacing:.12em;text-transform:uppercase;color:var(--green)}
+.lead{color:var(--muted);font-size:18px;max-width:70ch;margin-top:12px}
+.grid{display:grid;gap:18px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:900px){.g3,.g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:620px){.g2,.g3,.g4{grid-template-columns:minmax(0,1fr)}section{padding-block:40px}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:22px;min-width:0}
+.pill{display:inline-block;font-size:12px;font-weight:800;padding:4px 11px;border-radius:99px;background:var(--soft);color:var(--green)}
+.pill.y{background:var(--soft2);color:var(--warnink)}
+.pill.b{background:var(--soft3);color:var(--blue)}
+.who{display:inline-flex;gap:8px;align-items:center;font-weight:800;font-size:13px;padding:6px 14px;border-radius:99px;margin-bottom:12px}
+.who.adv{background:var(--soft2);color:var(--warnink)}.who.pub{background:var(--soft3);color:var(--blue)}.who.own{background:var(--soft);color:var(--green)}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:16px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:15px}
+th,td{padding:12px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:color-mix(in srgb,var(--soft) 55%,var(--surface))}
+tr:last-child td{border-bottom:0}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.hero{background:linear-gradient(135deg,#0b1511,#12331f);color:var(--night-ink);padding-block:64px 56px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-120px;top:-120px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(46,204,113,.35),transparent 65%)}
+.hero .wrap{position:relative;z-index:1}
+.hero h1{font-size:clamp(34px,6vw,60px);font-weight:900;letter-spacing:-.02em;margin-top:14px}
+.hero h1 em{font-style:normal;color:var(--yellow)}
+.hero p{color:#b8cdbf;font-size:19px;max-width:62ch;margin-top:16px}
+.badges{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+.badges span{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.16);border-radius:99px;padding:8px 16px;font-weight:700;font-size:14px}
+nav.toc{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 92%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+nav.toc .wrap{display:flex;gap:6px;overflow-x:auto;padding-block:10px;scrollbar-width:none}
+nav.toc a{flex:none;padding:7px 14px;border-radius:99px;font-weight:700;font-size:14px;color:var(--muted);text-decoration:none;white-space:nowrap}
+nav.toc a:hover{background:var(--soft);color:var(--green)}
+nav.toc a.adv{color:var(--warnink)}nav.toc a.pub{color:var(--blue)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media (max-width:760px){.two{grid-template-columns:minmax(0,1fr)}}
+.offer h3{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.offer ul,.list{margin:14px 0 0;padding-left:20px;color:var(--muted)}
+.offer li,.list li{margin:6px 0}
+.offer.free{border-color:color-mix(in srgb,var(--green-bright) 45%,var(--line))}
+.offer.paid{border-color:color-mix(in srgb,var(--yellow) 55%,var(--line));background:linear-gradient(180deg,var(--soft2),var(--surface) 60%)}
+.price{font-size:30px;font-weight:900;margin-top:10px}.price small{font-size:14px;color:var(--muted);font-weight:600}
+.flow{display:grid;gap:10px}
+.fl-row{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.fl-box{border:1px solid var(--line);background:var(--surface);border-radius:14px;padding:12px 14px;font-weight:700;font-size:14.5px}
+.fl-box small{display:block;color:var(--muted);font-weight:500;margin-top:2px}
+.fl-box.core{background:var(--green);color:#fff;border-color:var(--green)}
+.fl-box.core small{color:#d8f5e5}
+.fl-arrow{text-align:center;color:var(--green);font-weight:900;font-size:20px;line-height:1}
+.fm{display:flex;flex-direction:column;gap:12px}
+.mk{height:170px;border-radius:14px;background:linear-gradient(180deg,#e9efe9,#dfe8e0);border:1px solid var(--line);position:relative;overflow:hidden;display:grid;place-items:center}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .mk{background:linear-gradient(180deg,#16251c,#101b15)}}
+.ph{width:88px;height:150px;border-radius:14px;border:2px solid #7d8d83;background:var(--surface);position:relative;overflow:hidden;padding:7px 6px;display:flex;flex-direction:column;gap:5px}
+.ph i{display:block;height:6px;border-radius:3px;background:var(--line)}
+.ph i.s{width:60%}
+.ad{background:linear-gradient(135deg,var(--green-bright),var(--yellow));border-radius:6px;color:#0b1511;font:800 7px/1.2 system-ui;display:grid;place-items:center;text-align:center;position:relative}
+.ad.photo{background:linear-gradient(135deg,#1a9b5b,#f5b50a 80%)}
+.tag{position:absolute;font:800 6px/1 system-ui;background:rgba(0,0,0,.65);color:#fff;padding:2px 4px;border-radius:3px;left:4px;top:4px}
+.web{width:86%;height:136px;border-radius:10px;border:2px solid #7d8d83;background:var(--surface);padding:8px;display:flex;flex-direction:column;gap:6px;position:relative}
+.web i{display:block;height:7px;border-radius:3px;background:var(--line)}
+.web i.s{width:55%}
+.fmeta{font-size:14px;color:var(--muted)}
+.fmeta b{color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font-size:12px;font-weight:800;padding:3px 10px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
+.chip.p{border-color:color-mix(in srgb,var(--green-bright) 55%,var(--line));color:var(--green);background:var(--soft)}
+.sim{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+@media (max-width:820px){.sim{grid-template-columns:minmax(0,1fr)}}
+label.f{display:block;font-weight:800;font-size:14px;margin-top:14px}
+select,input[type=number]{width:100%;margin-top:6px;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
+input[type=range]{width:100%;margin-top:10px;accent-color:var(--green)}
+.out{display:grid;gap:10px;align-content:start}
+.kpi{display:flex;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:12px;background:var(--bg);border:1px solid var(--line);font-variant-numeric:tabular-nums}
+.kpi b{font-size:18px}
+.kpi.big{background:var(--green);color:#fff;border-color:var(--green)}
+.kpi.big b{font-size:26px}
+.kpi.flat{border:0;padding:0;background:none}
+.bar{display:flex;height:34px;border-radius:10px;overflow:hidden;font:800 12px/34px system-ui;color:#fff;margin-top:6px}
+.bar span{display:block;text-align:center;white-space:nowrap;overflow:hidden}
+.gauge{height:14px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:6px}
+.gauge i{display:block;height:100%;background:linear-gradient(90deg,var(--green-bright),var(--yellow));width:6%;transition:width .3s}
+.note{font-size:13.5px;color:var(--muted);margin-top:10px}
+.warn{border-left:4px solid var(--yellow);background:var(--soft2);padding:14px 16px;border-radius:0 12px 12px 0;margin-top:16px;font-size:15px}
+.ok{border-left:4px solid var(--green-bright);background:var(--soft);padding:14px 16px;border-radius:0 12px 12px 0;margin-top:16px;font-size:15px}
+.guard{display:flex;gap:14px}
+.guard .nb{flex:none;width:36px;height:36px;border-radius:50%;background:var(--green);color:#fff;display:grid;place-items:center;font-weight:900}
+.guard p{color:var(--muted);font-size:15px;margin-top:4px}
+.dash{border:1px solid var(--line);border-radius:18px;background:var(--surface);overflow:hidden}
+.dash header{background:var(--night);color:var(--night-ink);padding:12px 16px;font-weight:800;display:flex;justify-content:space-between;gap:10px}
+.dash .body{padding:16px;display:grid;gap:12px}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tile{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+.tile b{display:block;font-size:20px;font-variant-numeric:tabular-nums}.tile small{color:var(--muted);font-size:12px}
+.row{display:flex;justify-content:space-between;gap:10px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;font-size:14px;background:var(--bg)}
+.st{font-size:12px;font-weight:800;padding:2px 9px;border-radius:99px}.st.ok2{background:var(--soft);color:var(--green)}.st.wait{background:var(--soft2);color:var(--warnink)}
+.step{display:grid;grid-template-columns:120px 1fr;gap:16px;padding:16px 0;border-bottom:1px solid var(--line)}
+.step:last-child{border-bottom:0}
+@media (max-width:620px){.step{grid-template-columns:minmax(0,1fr);gap:6px}}
+.step .w{font-weight:900;color:var(--green)}
+.q{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+.q:last-child{border-bottom:0}
+.q .k{flex:none;width:30px;height:30px;border-radius:8px;background:var(--soft2);color:var(--warnink);display:grid;place-items:center;font-weight:900}
+.q.done .k{background:var(--soft);color:var(--green)}
+.q p{color:var(--muted);font-size:15px;margin-top:3px}
+.pitch{background:linear-gradient(135deg,var(--soft2),var(--surface));border:1px solid color-mix(in srgb,var(--yellow) 45%,var(--line));border-radius:22px;padding:26px}
+.pitch.pub{background:linear-gradient(135deg,var(--soft3),var(--surface));border-color:color-mix(in srgb,var(--blue) 40%,var(--line))}
+.pitch h3{font-size:clamp(22px,3vw,30px)}
+.bignum{font-size:34px;font-weight:900;line-height:1;font-variant-numeric:tabular-nums}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;min-width:0}
+.stat small{display:block;color:var(--muted);margin-top:6px;font-size:13.5px}
+.threat{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:14px;padding:14px 0;border-bottom:1px solid var(--line)}
+.threat:last-child{border-bottom:0}
+@media (max-width:700px){.threat{grid-template-columns:minmax(0,1fr);gap:4px}}
+.threat .t{font-weight:800}.threat .t small{display:block;color:var(--muted);font-weight:500;margin-top:2px}
+.threat .d{color:var(--muted);font-size:15px}.threat .d b{color:var(--ink)}
+code{background:var(--soft);padding:1px 6px;border-radius:6px;font-size:.92em}
+pre{margin:12px 0 0;padding:14px;border-radius:12px;background:var(--night);color:#cfe8d8;font-size:13px;overflow-x:auto;white-space:pre}
+footer{padding-block:34px;color:var(--muted);font-size:14px;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <span class="pill y">Proposition v2 · à valider · rien n'est encore construit</span>
+    <h1>Afrolook Ads : <em>une seule régie</em> pour nos plateformes et celles de nos partenaires</h1>
+    <p>Un annonceur dépose <b>une</b> création : elle est diffusée partout, dans le bon format, de façon sécurisée. Les diffuseurs sont payés <b>uniquement avec l'argent encaissé</b>. Ce document présente le plan, puis <b>ce que voit chaque catégorie de personnes</b> : annonceurs et diffuseurs.</p>
+    <div class="badges"><span>Offre gratuite : nos plateformes</span><span>Offre Réseau : payante (FeexPay)</span><span>Frais de paiement : à la charge de l'annonceur</span></div>
+  </div>
+</header>
+
+<nav class="toc"><div class="wrap">
+  <a href="#offres">1 · Deux offres</a><a href="#moteur">2 · Un seul moteur</a><a href="#formats">3 · Formats</a>
+  <a class="adv" href="#annonceurs">4 · Page annonceurs</a><a class="pub" href="#diffuseurs">5 · Page diffuseurs (eCPM)</a>
+  <a href="#robots">6 · Robots et appels répétés</a><a href="#securite">7 · Sécurité</a><a href="#economie">8 · Économie</a><a href="#profils">9 · Profils et tableaux</a><a href="#route">10 · Étapes</a><a href="#valider">11 · Décisions</a>
+</div></nav>
+
+<section id="offres"><div class="wrap">
+  <span class="eyebrow">1 · Deux offres séparées</span>
+  <h2>Gratuit pour se faire connaître, payant pour toucher le réseau</h2>
+  <p class="lead">L'annonceur choisit, à la création, où va son annonce. Les diffuseurs ne sont rémunérés que par l'offre Réseau.</p>
+  <div class="two" style="margin-top:26px">
+    <div class="card offer free">
+      <h3>Offre gratuite <span class="pill">Nos plateformes</span></h3>
+      <div class="price">0 F <small>pendant le lancement</small></div>
+      <ul>
+        <li>Diffusée sur <b>Afrolook, SlashAtlas, PronoFlash</b> (puis Épargne+)</li>
+        <li>3 annonces par compte, 14 jours chacune, 1 renouvellement gratuit</li>
+        <li>Validation par notre équipe avant diffusion</li>
+        <li>Formats de base : carte native, bannière, affiche, vidéo ≤ 15 s</li>
+        <li>Pas de volume garanti : rotation entre les annonces</li>
+        <li>Vues et clics dans le tableau de bord</li>
+      </ul>
+    </div>
+    <div class="card offer paid">
+      <h3>Offre Réseau <span class="pill y">Payante</span></h3>
+      <div class="price">dès 5 000 F <small>+ frais de paiement</small></div>
+      <ul>
+        <li>Nos plateformes <b>et</b> toutes les applications et sites partenaires</li>
+        <li><b>Estimation d'audience</b> avant de payer (comme Facebook)</li>
+        <li>Choix : pays, plateformes, formats, durée, budget</li>
+        <li>Tous les formats : bannière, native, vidéo, interstitiel, récompensée…</li>
+        <li><b>Seuls les affichages valides sont facturés</b> ; le trafic invalide est remboursé</li>
+        <li>Paiement direct : Mobile Money ou carte (FeexPay) ; en pièces dans l'application (règle Apple)</li>
+        <li>Suivi par plateforme, format et pays</li>
+      </ul>
+    </div>
+  </div>
+  <div class="ok"><b>Pourquoi c'est sain :</b> l'offre gratuite ne coûte presque rien à Afrolook (nos propres sites). L'offre Réseau est <b>financée par l'annonceur</b> : chaque franc versé à un diffuseur vient d'un franc encaissé.</div>
+</div></section>
+
+<section id="moteur" class="alt"><div class="wrap">
+  <span class="eyebrow">2 · Uniformisation</span>
+  <h2>Un seul moteur publicitaire, utilisé par tout le monde, y compris Afrolook</h2>
+  <p class="lead">Une <b>annonce unique</b>, un <b>serveur d'annonces unique</b>, les <b>mêmes outils d'affichage</b> pour nous et pour les partenaires. Afrolook devient simplement le premier « diffuseur ».</p>
+  <div class="flow" style="margin-top:26px">
+    <div class="fl-row">
+      <div class="fl-box">Création depuis le site<small>/ads/espace</small></div>
+      <div class="fl-box">Création depuis l'application<small>même formulaire, même annonce</small></div>
+      <div class="fl-box">Création par l'administration<small>campagnes maison</small></div>
+    </div>
+    <div class="fl-arrow">↓</div>
+    <div class="fl-row"><div class="fl-box core">Annonce unique + validation par notre équipe<small>création structurée : image, vidéo, titre, texte, bouton, lien. Jamais de code ni de script.</small></div></div>
+    <div class="fl-arrow">↓</div>
+    <div class="fl-row"><div class="fl-box core">Serveur d'annonces sécurisé<small>choisit l'annonce, signe l'affichage, compte vues et clics, calcule les gains, filtre les robots</small></div></div>
+    <div class="fl-arrow">↓</div>
+    <div class="fl-row">
+      <div class="fl-box">Application Afrolook<small>composants Flutter : fil, bannière, interstitiel, récompensée</small></div>
+      <div class="fl-box">Nos sites<small>SlashAtlas, PronoFlash, afrolookmedia.com : balise web</small></div>
+      <div class="fl-box">Sites partenaires<small>balise web d'une ligne</small></div>
+      <div class="fl-box">Applications partenaires<small>composant Flutter / Android / iOS ou API</small></div>
+    </div>
+  </div>
+  <div class="two" style="margin-top:26px">
+    <div class="card"><h3>Ce qui change dans l'application</h3><ul class="list"><li>Les pubs du fil, bannières et écrans plein format passent par les mêmes composants que les partenaires</li><li>Créer une pub depuis l'application reste possible : même annonce, même validation</li><li>Vues et clics comptés de la même façon partout</li><li>Paiement dans l'app en <b>pièces</b> (règle Apple), sur le site par FeexPay</li></ul></div>
+    <div class="card"><h3>Ce qui reste</h3><ul class="list"><li>Appodeal / AdMob restent en <b>remplissage</b> : sans annonce directe, on affiche leur pub (revenus actuels conservés)</li><li>Le mur de tâches et la tâche « regarder une pub » deviennent le format « récompensée »</li><li>Les annonces gratuites actuelles continuent</li></ul></div>
+  </div>
+</div></section>
+
+<section id="formats"><div class="wrap">
+  <span class="eyebrow">3 · Catalogue des formats</span>
+  <h2>Neuf formats, du plus discret au plus visible</h2>
+  <p class="lead">Un annonceur dépose <b>un seul visuel</b> : le système l'adapte à chaque format compatible. Chaque encart porte la mention « Annonce ».</p>
+  <div class="grid g3" style="margin-top:28px">
+    <article class="card fm">
+      <div class="mk"><div class="web"><i></i><i class="s"></i><div class="ad" style="height:20px;margin-top:2px;font-size:8px"><span class="tag">Annonce</span>Votre message ici · Visiter</div><i></i><i class="s"></i></div></div>
+      <h3>1 · Bannière</h3>
+      <div class="chips"><span class="chip p">1 000 F / 1 000</span><span class="chip">320×50 · 728×90 · 300×250</span></div>
+      <p class="fmeta"><b>Où :</b> haut, milieu ou bas d'une page ou d'un écran. <b>À fournir :</b> image + court texte. <b>Idéal :</b> notoriété, petit budget.</p>
+    </article>
+    <article class="card fm">
+      <div class="mk"><div class="ph"><i></i><i class="s"></i><i></i><i class="s"></i><div style="flex:1"></div><div class="ad" style="height:16px"><span class="tag" style="top:2px;left:2px">Annonce</span>Bandeau</div></div></div>
+      <h3>2 · Bandeau collant</h3>
+      <div class="chips"><span class="chip p">1 250 F / 1 000</span><span class="chip">fixé en bas de l'écran</span></div>
+      <p class="fmeta"><b>Où :</b> reste visible en bas pendant la lecture, fermable. <b>Idéal :</b> clics vers WhatsApp ou téléchargement.</p>
+    </article>
+    <article class="card fm">
+      <div class="mk"><div class="ph"><i></i><i class="s"></i><div class="ad photo" style="height:52px"><span class="tag">Annonce</span>image</div><i></i><i class="s"></i><div class="ad" style="height:12px;width:50%">Visiter</div><i></i></div></div>
+      <h3>3 · Carte native</h3>
+      <div class="chips"><span class="chip p">1 500 F / 1 000</span><span class="chip">dans le fil ou la liste</span></div>
+      <p class="fmeta"><b>Où :</b> entre deux contenus, même forme qu'eux, étiquetée « Annonce ». <b>À fournir :</b> image, titre, texte, bouton. <b>Idéal :</b> le plus de clics.</p>
+    </article>
+    <article class="card fm">
+      <div class="mk"><div class="ph" style="width:120px"><i></i><div style="display:flex;gap:4px"><div class="ad photo" style="height:52px;flex:0 0 70%"><span class="tag">Annonce</span>1/3</div><div class="ad" style="height:52px;flex:0 0 70%">2/3</div></div><i class="s"></i><div class="ad" style="height:12px;width:50%">En savoir plus</div></div></div>
+      <h3>4 · Carrousel</h3>
+      <div class="chips"><span class="chip p">1 800 F / 1 000</span><span class="chip">2 à 5 images</span></div>
+      <p class="fmeta"><b>Où :</b> fil ou liste, on fait glisser. <b>Idéal :</b> catalogue de produits, étapes d'un service.</p>
+    </article>
+    <article class="card fm">
+      <div class="mk"><div class="ph"><i></i><div class="ad photo" style="height:62px;color:#fff;font-size:18px"><span class="tag">Annonce</span>▶</div><i></i><i class="s"></i><div class="ad" style="height:12px;width:55%">Visiter</div></div></div>
+      <h3>5 · Vidéo dans le fil</h3>
+      <div class="chips"><span class="chip p">2 500 F / 1 000</span><span class="chip">≤ 15 s · muette au départ</span></div>
+      <p class="fmeta"><b>Où :</b> fil ou liste, se lance seule sans son. <b>Facturé :</b> à partir de 2 s à l'écran. <b>Idéal :</b> démonstration.</p>
+    </article>
+    <article class="card fm">
+      <div class="mk"><div class="ph" style="width:96px"><div class="ad photo" style="flex:1;font-size:10px"><span class="tag">Annonce</span>Affiche<br>4:5</div><div class="ad" style="height:14px">Commander</div></div></div>
+      <h3>6 · Affiche</h3>
+      <div class="chips"><span class="chip p">2 000 F / 1 000</span><span class="chip">grande image verticale</span></div>
+      <p class="fmeta"><b>Où :</b> grande carte plein format dans le fil. <b>Idéal :</b> événements, promotions, concerts.</p>
+    </article>
+    <article class="card fm">
+      <div class="mk"><div class="ph" style="width:104px;border-color:var(--green)"><div style="position:absolute;right:5px;top:5px;z-index:2;font:800 8px system-ui;background:rgba(0,0,0,.7);color:#fff;border-radius:99px;padding:2px 6px">✕ 3</div><div class="ad photo" style="position:absolute;inset:0;border-radius:0;font-size:11px">Plein écran<br>entre deux écrans</div></div></div>
+      <h3>7 · Interstitiel</h3>
+      <div class="chips"><span class="chip p">3 000 F / 1 000</span><span class="chip">plein écran · fermable après 3 s</span></div>
+      <p class="fmeta"><b>Où :</b> à un moment naturel, <b>au plus 1 fois toutes les 10 minutes</b> par personne. <b>Idéal :</b> lancement fort.</p>
+    </article>
+    <article class="card fm">
+      <div class="mk"><div class="ph" style="width:118px;height:140px;justify-content:center;align-items:center;gap:6px"><div style="font:800 8px/1.3 system-ui;text-align:center">Regarde 15 s<br>pour gagner<br><b style="color:var(--green)">5 pièces</b></div><div style="width:84%;height:6px;border-radius:3px;background:var(--line)"><div style="width:60%;height:100%;border-radius:3px;background:var(--green-bright)"></div></div><div class="ad" style="height:14px;width:70%">Regarder</div></div></div>
+      <h3>8 · Récompensée</h3>
+      <div class="chips"><span class="chip p">6 000 F / 1 000 vues complètes</span></div>
+      <p class="fmeta"><b>Où :</b> le visiteur choisit de regarder en entier pour une récompense (pièces, déblocage). <b>Facturé :</b> seulement les vues <b>complètes</b>. <b>Idéal :</b> attention maximale.</p>
+    </article>
+    <article class="card fm">
+      <div class="mk"><div style="width:88%;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px;display:flex;gap:10px;align-items:center;box-shadow:var(--shadow)"><div class="ad" style="width:34px;height:34px;flex:none;border-radius:9px">A</div><div style="min-width:0"><div style="font:800 12px system-ui">Boutique Kofi <span class="chip" style="padding:0 6px;font-size:9px">Annonce</span></div><div style="font-size:11px;color:var(--muted)">−20 % ce week-end, livraison à Lomé</div></div></div></div>
+      <h3>9 · Notification</h3>
+      <div class="chips"><span class="chip">Plus tard</span><span class="chip">sur sélection</span></div>
+      <p class="fmeta"><b>Où :</b> notification sur le téléphone, seulement pour ceux qui l'acceptent, <b>3 par jour au plus</b> au total. <b>Prix à part</b> après les tests.</p>
+    </article>
+  </div>
+  <div class="warn"><b>Règles communes :</b> étiquette « Annonce » obligatoire ; jamais d'annonce qui imite un bouton de l'application ; pas de son qui démarre seul ; fermeture toujours possible ; 3 affichages par personne, annonce et jour au plus ; interstitiel et récompensée jamais pendant un paiement ou une saisie importante.</div>
+</div></section>
+
+<!-- ============ PAGE ANNONCEURS ============ -->
+<section id="annonceurs" class="alt"><div class="wrap">
+  <span class="who adv">🎯 Pour les annonceurs</span>
+  <span class="eyebrow" style="display:block">4 · Ce que l'annonceur voit (gratuit et payant)</span>
+  <h2>Faites connaître votre activité : gratuit pour démarrer, puissant pour grandir</h2>
+  <div class="pitch" style="margin-top:22px">
+    <h3>Une annonce, un visuel, et vous êtes vu sur tout un réseau d'applications et de sites africains</h3>
+    <p class="lead" style="margin-top:10px">Entreprise, startup, boutique, site, application, événement : déposez votre annonce en 5 minutes avec votre compte Google. Vous choisissez la portée, vous voyez l'estimation <b>avant</b> de payer, et vous suivez vos résultats en direct.</p>
+    <div class="grid g4" style="margin-top:20px">
+      <div class="stat"><div class="bignum">0 F</div><small>pour démarrer sur Afrolook, SlashAtlas et PronoFlash</small></div>
+      <div class="stat"><div class="bignum">1 000 000+</div><small>personnes atteignables sur le réseau (estimation, en croissance)</small></div>
+      <div class="stat"><div class="bignum">5 000 F</div><small>pour commencer l'offre Réseau</small></div>
+      <div class="stat"><div class="bignum">0 F</div><small>facturés pour le trafic invalide : on rembourse</small></div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:34px">Gratuit ou Réseau : le comparatif complet</h3>
+  <div class="tablewrap" style="margin-top:14px"><table>
+    <thead><tr><th>Ce que vous obtenez</th><th>Offre gratuite</th><th>Offre Réseau (payante)</th></tr></thead>
+    <tbody>
+      <tr><td><b>Prix</b></td><td>0 F</td><td>À partir de 5 000 F, <b>à l'affichage valide</b> (voir la grille)</td></tr>
+      <tr><td><b>Où l'annonce s'affiche</b></td><td>Afrolook, SlashAtlas, PronoFlash (puis Épargne+)</td><td>Nos plateformes <b>+ applications et sites partenaires</b></td></tr>
+      <tr><td><b>Audience atteignable</b></td><td>plus de 50 000 personnes</td><td>plus de 1 000 000 (estimation du réseau, affichée en temps réel)</td></tr>
+      <tr><td><b>Volume garanti</b></td><td>Non : rotation entre les annonces</td><td><b>Oui</b> : nombre d'affichages estimé et livré</td></tr>
+      <tr><td><b>Nombre d'annonces</b></td><td>3 par compte (14 jours, 1 renouvellement)</td><td>Illimité</td></tr>
+      <tr><td><b>Formats</b></td><td>Native, bannière, affiche, vidéo ≤ 15 s</td><td>Les 8 formats : + collant, carrousel, interstitiel, récompensée</td></tr>
+      <tr><td><b>Choix de l'audience</b></td><td>Non</td><td>Pays, type de plateforme, format, durée, budget</td></tr>
+      <tr><td><b>Statistiques</b></td><td>Vues, clics, par jour</td><td>+ par plateforme, format, pays ; taux de clic ; coût par clic</td></tr>
+      <tr><td><b>Validation</b></td><td>Par notre équipe</td><td>Par notre équipe, plus rapide (prioritaire)</td></tr>
+      <tr><td><b>Paiement</b></td><td>Aucun</td><td>Mobile Money, carte bancaire (FeexPay) ; pièces dans l'app</td></tr>
+      <tr><td><b>Reçu</b></td><td>—</td><td>Reçu téléchargeable pour chaque paiement</td></tr>
+    </tbody></table></div>
+
+  <h3 style="margin-top:34px">Frais de paiement : clairs, annoncés avant de payer</h3>
+  <div class="grid g3" style="margin-top:14px">
+    <div class="stat"><div class="bignum">5,6 %</div><small><b>Mobile Money</b> (MTN, Moov, Orange, Wave, T-Money, Flooz…) : frais tout compris, dépôt et retrait, comme dans l'application</small></div>
+    <div class="stat"><div class="bignum">≈ 9,9 %</div><small><b>Carte bancaire</b> : 3,9 % de frais carte + 3 % de conversion + 3 % de marge (change, remboursements, retrait). Valeur actuelle de l'achat de pièces par carte, à confirmer</small></div>
+    <div class="stat"><div class="bignum">0 F</div><small>de frais cachés : <b>votre budget publicitaire reste intact</b>, les frais s'ajoutent au prix et s'affichent avant de payer</small></div>
+  </div>
+  <p class="note">Les frais sont payés par l'annonceur et couvrent le paiement <b>et</b> les retraits des diffuseurs : ni Afrolook ni les diffuseurs ne les supportent. Dans l'application iPhone, l'achat se fait en pièces (la commission Apple est déjà dans le prix des pièces).</p>
+
+  <h3 style="margin-top:34px">Exemples de budgets (carte native, 1 500 F pour 1 000 affichages)</h3>
+  <div class="tablewrap" style="margin-top:14px"><table id="t-bud"><thead><tr><th>Budget publicitaire</th><th class="n">Affichages garantis</th><th class="n">Personnes (≈, 3 vues chacune)</th><th class="n">À payer en Mobile Money</th><th class="n">À payer par carte</th></tr></thead><tbody></tbody></table></div>
+
+  <h3 style="margin-top:34px">Simulateur « comme Facebook »</h3>
+  <div class="card sim" style="margin-top:14px">
+    <div>
+      <label class="f" for="s-fmt">Format</label>
+      <select id="s-fmt">
+        <option value="1000">Bannière</option><option value="1250">Bandeau collant</option><option value="1500" selected>Carte native</option><option value="1800">Carrousel</option><option value="2000">Affiche</option><option value="2500">Vidéo dans le fil</option><option value="3000">Interstitiel</option><option value="6000">Récompensée (vue complète)</option>
+      </select>
+      <label class="f" for="s-bud">Budget publicitaire : <span id="s-budv">15 000</span> F</label>
+      <input id="s-bud" type="range" min="5000" max="500000" step="1000" value="15000">
+      <label class="f" for="s-sc">Plateformes</label>
+      <select id="s-sc"><option value="net">Réseau complet (nos plateformes + partenaires)</option><option value="own">Seulement nos plateformes</option></select>
+      <label class="f" for="s-dur">Durée</label>
+      <select id="s-dur"><option value="7">7 jours</option><option value="14" selected>14 jours</option><option value="30">30 jours</option></select>
+      <label class="f" for="s-pay">Mode de paiement</label>
+      <select id="s-pay"><option value="5.6">Mobile Money (frais 5,6 %)</option><option value="9.9">Carte bancaire (frais ≈ 9,9 %)</option></select>
+    </div>
+    <div class="out">
+      <div class="kpi"><span>Audience potentielle du réseau</span><b id="o-pool">1 000 000+</b></div>
+      <div class="gauge"><i id="o-g"></i></div>
+      <div class="kpi big"><span>Affichages garantis</span><b id="o-imp">0</b></div>
+      <div class="kpi"><span>Personnes touchées (estimation)</span><b id="o-ppl">0</b></div>
+      <div class="kpi"><span>Clics attendus (estimation)</span><b id="o-clk">0</b></div>
+      <div class="kpi"><span>Part de l'audience atteinte</span><b id="o-pct">0 %</b></div>
+      <div class="kpi"><span>Frais de paiement</span><b id="o-fee">0 F</b></div>
+      <div class="kpi big" style="background:var(--night)"><span>Total à payer</span><b id="o-tot">0 F</b></div>
+      <p class="note" id="o-note"></p>
+    </div>
+  </div>
+  <div class="warn"><b>À propos de « plus de 1 000 000 » :</b> ce chiffre doit être <b>calculé à partir des partenaires réellement intégrés et mesurés</b>. Avant cela, afficher le chiffre réel du moment (aujourd'hui « plus de 50 000 ») : l'annonceur ne paie que les affichages livrés, mais une promesse d'audience exagérée serait une publicité mensongère.</div>
+
+  <div class="grid g3" style="margin-top:22px">
+    <div class="card"><h3>Ce qui est garanti</h3><ul class="list"><li>Vous ne payez que des <b>affichages valides</b> mesurés par nos outils</li><li>Trafic de robots ou frauduleux : <b>non facturé, remboursé</b></li><li>Budget non consommé en fin de campagne : <b>crédité</b> sur votre compte</li><li>Annonces validées par un humain avant diffusion</li><li>Toujours étiquetée « Annonce », jamais mélangée avec du contenu trompeur</li></ul></div>
+    <div class="card"><h3>Ce que vous suivez</h3><ul class="list"><li>Affichages, clics, taux de clic, coût par clic</li><li>Par plateforme (Afrolook, SlashAtlas, partenaires), format, pays et jour</li><li>Budget consommé et durée restante</li><li>Pause ou arrêt à tout moment</li><li>Reçus de paiement</li></ul></div>
+    <div class="card"><h3>Comment ça se passe</h3><ul class="list"><li><b>1.</b> Connexion Google et profil annonceur</li><li><b>2.</b> Création : image ou vidéo, titre, texte, bouton</li><li><b>3.</b> Audience : pays, plateformes, estimation en direct</li><li><b>4.</b> Budget et durée, puis paiement</li><li><b>5.</b> Validation par notre équipe, puis diffusion</li></ul></div>
+  </div>
+  <p class="note">Résultats attendus (estimations, non garanties) : taux de clic de 0,8 % (bannière) à 2 % (récompensée et native). Un budget de 15 000 F en carte native livre 10 000 affichages et environ 150 clics.</p>
+</div></section>
+
+<!-- ============ PAGE DIFFUSEURS ============ -->
+<section id="diffuseurs"><div class="wrap">
+  <span class="who pub">📡 Pour les diffuseurs (sites et applications)</span>
+  <span class="eyebrow" style="display:block">5 · Ce que le diffuseur voit : revenus, eCPM, paiement</span>
+  <h2>Gagnez de l'argent avec votre site ou votre application, sans effort</h2>
+  <div class="pitch pub" style="margin-top:22px">
+    <h3>Affichez des annonces locales et gardez 65 % de ce que paient les annonceurs</h3>
+    <p class="lead" style="margin-top:10px">Une ligne de code (site) ou un composant (application), et des annonces validées s'affichent chez vous. Vous suivez vos gains en direct et vous retirez par Mobile Money, <b>sans frais de retrait</b>.</p>
+    <div class="grid g4" style="margin-top:20px">
+      <div class="stat"><div class="bignum">65 %</div><small>de chaque franc payé par l'annonceur pour vos emplacements</small></div>
+      <div class="stat"><div class="bignum">5 min</div><small>pour intégrer (site) ; 10 min pour une application Flutter</small></div>
+      <div class="stat"><div class="bignum">0 F</div><small>de frais de retrait : payés par l'annonceur</small></div>
+      <div class="stat"><div class="bignum">10 000 F</div><small>retrait minimum, par Mobile Money</small></div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:34px">Comprendre l'eCPM : ce que vous gagnez vraiment</h3>
+  <div class="grid g3" style="margin-top:14px">
+    <div class="card"><h3>CPM</h3><p class="fmeta" style="margin-top:8px">Le <b>prix payé par l'annonceur pour 1 000 affichages</b> (grille de prix). Exemple : carte native = 1 500 F.</p></div>
+    <div class="card"><h3>Votre gain pour 1 000</h3><p class="fmeta" style="margin-top:8px"><b>CPM × 65 %.</b> Exemple : native 1 500 F × 65 % = <b>975 F</b> chaque fois que 1 000 emplacements sont remplis.</p></div>
+    <div class="card"><h3>eCPM réel</h3><p class="fmeta" style="margin-top:8px">Ce que vous gagnez <b>en moyenne pour 1 000 emplacements affichés</b>, remplis ou non : <b>CPM × 65 % × taux de remplissage</b>. C'est le chiffre à suivre dans votre tableau de bord.</p></div>
+  </div>
+  <div class="ok"><b>Taux de remplissage</b> = part de vos emplacements où une annonce <b>payante</b> est affichée. Il dépend de la demande des annonceurs (nombre de campagnes Réseau actives, pays, format). Quand aucune annonce payante n'est disponible, l'emplacement reste vide ou affiche votre propre solution de remplissage : <b>rien n'est facturé et rien n'est payé</b>.</div>
+
+  <h3 style="margin-top:34px">Tableau des eCPM par format</h3>
+  <p class="lead" style="font-size:16px;margin-top:6px">En F CFA, pour 1 000 emplacements affichés, selon le remplissage. Au démarrage, comptez plutôt 30 % ; un réseau installé monte vers 60 % et plus.</p>
+  <div class="tablewrap" style="margin-top:14px"><table id="t-ecpm"><thead><tr><th>Format</th><th class="n">Prix annonceur (CPM)</th><th class="n">Votre gain si 100 % rempli</th><th class="n">eCPM à 30 %</th><th class="n">eCPM à 60 %</th><th class="n">eCPM à 90 %</th></tr></thead><tbody></tbody></table></div>
+  <p class="note">La récompensée se compte en <b>vues complètes</b> (le spectateur a regardé jusqu'au bout). La notification a un prix à part. Valeurs de départ ajustables dans l'administration ; vos conditions restent celles affichées à votre inscription.</p>
+
+  <h3 style="margin-top:34px">Ce qui fait monter votre eCPM</h3>
+  <div class="grid g3" style="margin-top:14px">
+    <div class="card"><h3>Le format</h3><p class="fmeta" style="margin-top:8px">Récompensée (×6) et interstitiel (×3) paient bien plus que la bannière. À utiliser avec modération pour ne pas gêner vos visiteurs.</p></div>
+    <div class="card"><h3>La visibilité</h3><p class="fmeta" style="margin-top:8px">Un emplacement visible à l'écran sans défiler se remplit plus et se compte plus. Placez-le dans la zone de lecture.</p></div>
+    <div class="card"><h3>Le trafic de qualité</h3><p class="fmeta" style="margin-top:8px">Des visiteurs réels, du mobile, des pays recherchés par les annonceurs. Le trafic invalide n'est pas payé.</p></div>
+    <div class="card"><h3>Le remplissage</h3><p class="fmeta" style="margin-top:8px">Plus d'annonceurs sur le Réseau = plus d'emplacements remplis. Vous pouvez refuser des catégories, mais en refuser beaucoup baisse le remplissage.</p></div>
+    <div class="card"><h3>Le pays et la langue</h3><p class="fmeta" style="margin-top:8px">Les annonceurs choisissent leurs pays : un trafic togolais, béninois ou ivoirien correspond à beaucoup de demandes.</p></div>
+    <div class="card"><h3>Le nombre d'emplacements</h3><p class="fmeta" style="margin-top:8px">Plusieurs emplacements bien placés rapportent plus, mais 3 au maximum par page pour garder la confiance de vos visiteurs.</p></div>
+  </div>
+
+  <h3 style="margin-top:34px">Simulateur de gains</h3>
+  <div class="card sim" style="margin-top:14px">
+    <div>
+      <label class="f" for="p-pv">Pages vues (ou sessions) par mois : <span id="p-pvv">50 000</span></label>
+      <input id="p-pv" type="range" min="1000" max="1000000" step="1000" value="50000">
+      <label class="f" for="p-slots">Emplacements par page ou session</label>
+      <select id="p-slots"><option>1</option><option selected>2</option><option>3</option></select>
+      <label class="f" for="p-fmt">Format principal</label>
+      <select id="p-fmt"><option value="1000">Bannière</option><option value="1500" selected>Carte native</option><option value="2500">Vidéo</option><option value="3000">Interstitiel</option><option value="6000">Récompensée (vue complète)</option></select>
+      <label class="f" for="p-vis">Visibilité : <span id="p-visv">70</span> % des emplacements vus</label>
+      <input id="p-vis" type="range" min="30" max="100" step="5" value="70">
+      <label class="f" for="p-fill">Remplissage : <span id="p-fillv">30</span> %</label>
+      <input id="p-fill" type="range" min="10" max="100" step="5" value="30">
+    </div>
+    <div class="out">
+      <div class="kpi"><span>Affichages payés par mois</span><b id="p-imp">0</b></div>
+      <div class="kpi"><span>eCPM réel (pour 1 000 emplacements chargés, visibilité incluse)</span><b id="p-ecpm">0 F</b></div>
+      <div class="kpi big"><span>Gain estimé par mois</span><b id="p-gain">0 F</b></div>
+      <div class="kpi"><span>Dont disponible après la retenue de 30 jours</span><b id="p-av">0 F</b></div>
+      <p class="note">Estimation, non garantie : elle dépend de la demande des annonceurs et du trafic réel. Chiffre à partir d'emplacements remplis par des annonces payantes de l'offre Réseau ; les annonces gratuites ne rémunèrent pas les diffuseurs.</p>
+    </div>
+  </div>
+  <div class="grid g3" style="margin-top:18px">
+    <div class="card"><h3>Exemple · un blog</h3><p class="fmeta" style="margin-top:8px">50 000 pages vues, 2 cartes natives, visibilité 70 %, remplissage 30 % : 21 000 affichages payés = <b>≈ 20 500 F par mois</b>.</p></div>
+    <div class="card"><h3>Exemple · une application</h3><p class="fmeta" style="margin-top:8px">100 000 sessions : 1 bannière (visibilité 85 %, remplissage 30 %) + 1 interstitiel par session (remplissage 30 %) : <b>≈ 75 000 F par mois</b>.</p></div>
+    <div class="card"><h3>Exemple · récompensée</h3><p class="fmeta" style="margin-top:8px">10 000 vues complètes dans le mois : 10 000 × 3,9 F = <b>≈ 39 000 F par mois</b>.</p></div>
+  </div>
+
+  <div class="grid g3" style="margin-top:22px">
+    <div class="card"><h3>Paiement</h3><ul class="list"><li>Gains visibles <b>en temps réel</b> (en attente, disponibles)</li><li>Retenue de <b>30 jours</b> avant retrait (temps de vérifier la fraude)</li><li>Retrait minimum <b>10 000 F</b> par Mobile Money</li><li><b>Aucun frais de retrait</b> pour vous</li><li>Historique et relevés téléchargeables</li></ul></div>
+    <div class="card"><h3>Vos protections</h3><ul class="list"><li>Seules des annonces <b>validées</b> s'affichent chez vous, jamais de code externe</li><li>Catégories d'annonces refusées au choix</li><li>Votre <b>taux de trafic invalide</b> visible, pour corriger vite</li><li>Mode test avec fausses annonces avant le réel</li><li>Pas de cookie : vos visiteurs ne sont pas suivis d'un site à l'autre</li></ul></div>
+    <div class="card"><h3>Ce que nous attendons de vous</h3><ul class="list"><li>Un site ou une application <b>réel et légal</b>, avec un minimum de trafic réel</li><li>Aucun clic sur vos propres annonces, aucune incitation au clic</li><li>L'étiquette « Annonce » toujours visible</li><li>Pas de trafic acheté ou automatique</li><li>Pas d'annonces sur des pages interdites (adulte, illégal)</li></ul></div>
+  </div>
+  <div class="card" style="margin-top:18px"><h3>Intégration « facile »</h3>
+    <div class="grid g3" style="margin-top:12px">
+      <div><span class="pill b">Site web</span><pre>&lt;ins class="afl-ad" data-slot="fil-principal"&gt;&lt;/ins&gt;
+&lt;script async src="…/ads/tag.js"&gt;&lt;/script&gt;</pre></div>
+      <div><span class="pill b">Application Flutter</span><pre>AfrolookAd(
+  slot: 'fil-principal',
+  format: AdFormat.native,
+)</pre></div>
+      <div><span class="pill b">API</span><p class="fmeta" style="margin-top:10px">Pour les autres cas : obtenir une annonce, signaler l'affichage et le clic, avec jeton signé. Documentation et mode test inclus.</p></div>
+    </div></div>
+</div></section>
+
+<!-- ============ ROBOTS ============ -->
+<section id="robots" class="alt"><div class="wrap">
+  <span class="who own">🛡️ Pour vous (propriétaire) · aussi présenté aux annonceurs et diffuseurs</span>
+  <span class="eyebrow" style="display:block">6 · Robots, boucles d'appels et faux clics</span>
+  <h2>Un affichage ne compte que s'il est prouvé : jeton signé, mesuré chez nous, jamais rejouable</h2>
+  <p class="lead">Principe : <b>ne jamais croire ce que dit l'application ou le site du diffuseur</b>. Un affichage ou un clic n'est compté que s'il passe par nos jetons et nos mesures. Tout le reste est « invalide » : ni facturé à l'annonceur, ni payé au diffuseur.</p>
+
+  <div class="card" style="margin-top:24px">
+    <div class="threat"><div class="t">Une application qui appelle en boucle<small>rafraîchit l'annonce toutes les secondes</small></div><div class="d"><b>Jeton à usage unique</b> (expire en 30 min, lié à l'emplacement) ; <b>intervalle minimum</b> entre deux affichages sur le même emplacement (30 s bannière, 20 s native, 10 min interstitiel, 5 min récompensée) ; <b>plafond par appareil et par jour</b> et par annonce (3) ; au-delà, l'affichage est ignoré et compté « invalide ».</div></div>
+    <div class="threat"><div class="t">Rejouer le même appel<small>« replay » d'une requête valide</small></div><div class="d">Le jeton est <b>consommé à la première utilisation</b> ; un second envoi est refusé. Le jeton est lié à l'annonce, au diffuseur, à l'emplacement et à une empreinte de l'appareil.</div></div>
+    <div class="threat"><div class="t">Inventer des affichages sans rien afficher<small>appels directs depuis un serveur</small></div><div class="d">Impossible sans jeton signé délivré par notre serveur <b>et</b> sans preuve d'affichage <b>mesurée dans notre cadre ou notre composant</b> (annonce à moitié visible pendant 1 s). Sur application : <b>attestation de l'application</b> (Play Integrity / App Attest) ; une application non attestée est plafonnée et non payée.</div></div>
+    <div class="threat"><div class="t">Robots et navigateurs automatisés<small>« headless », scripts</small></div><div class="d">Liste de robots connus, signaux de navigateur automatisé, <b>adresses de centres de données et VPN massifs</b>, absence d'interaction humaine. Trafic classé <b>invalide</b>, jamais compté.</div></div>
+    <div class="threat"><div class="t">Clics automatiques ou sur ses propres annonces</div><div class="d">Le clic passe par <b>notre redirection</b> : il exige un jeton valide, un <b>événement réel</b> (toucher ou souris), un <b>délai minimum</b> après l'affichage (≥ 1 s), au plus <b>un clic par personne, annonce et jour</b>. Les clics depuis l'appareil ou l'adresse du diffuseur sont exclus.</div></div>
+    <div class="threat"><div class="t">Annonces cachées, empilées ou de 1 pixel</div><div class="d">Une vue exige <b>au moins 50 % de l'annonce visible pendant 1 s</b>, dans une taille minimum ; <b>une seule annonce visible par emplacement</b> ; 3 emplacements par page au plus.</div></div>
+    <div class="threat"><div class="t">Fermes de clics, vrais humains payés</div><div class="d">Plafonds par adresse, appareil et diffuseur ; <b>analyse statistique quotidienne</b> (taux de clic, heures régulières, pays différents du pays annoncé, trop de clics par visiteur, pics soudains) ; retenue de 30 jours pour avoir le temps d'agir.</div></div>
+    <div class="threat"><div class="t">Application modifiée (APK trafiqué)</div><div class="d">Attestation de l'intégrité de l'application ; sans attestation valide, le trafic est marqué « non vérifié » et <b>non payé</b>.</div></div>
+    <div class="threat"><div class="t">Attaque par saturation</div><div class="d">Limitation du débit par clé de diffuseur, par adresse et par appareil, nombre maximum d'instances et alerte de coût ; blocage progressif (pause puis suspension).</div></div>
+  </div>
+
+  <div class="grid g2" style="margin-top:22px">
+    <div class="card"><h3>Définition d'un affichage « valide » (payé)</h3><ul class="list"><li>Jeton signé, récent et non utilisé</li><li>Au moins 50 % visible pendant 1 s (2 s pour la vidéo, vue complète pour la récompensée)</li><li>Navigateur ou application non automatisé, appareil attesté</li><li>Intervalle et plafonds respectés</li><li>Non détecté comme anormal à l'analyse quotidienne</li></ul></div>
+    <div class="card"><h3>Barème de décisions (valeurs de départ)</h3>
+      <div class="tablewrap" style="margin-top:10px"><table style="min-width:360px"><thead><tr><th>Trafic invalide du diffuseur</th><th>Décision</th></tr></thead><tbody>
+        <tr><td>moins de 10 %</td><td>normal</td></tr><tr><td>10 à 25 %</td><td>alerte envoyée, gains concernés retirés</td></tr><tr><td>plus de 25 %</td><td>emplacement suspendu, enquête, gains retenus</td></tr><tr><td>fraude confirmée</td><td>compte fermé, gains annulés</td></tr></tbody></table></div>
+      <p class="note">Le diffuseur voit son taux de trafic invalide chaque jour : les honnêtes corrigent vite. Annonceur : le trafic invalide n'est <b>jamais facturé</b> (remboursement automatique).</p></div>
+  </div>
+  <div class="ok"><b>Honnêteté :</b> aucun système n'arrête 100 % de la fraude (un humain payé pour cliquer est très difficile à distinguer). La parade est <b>économique</b> : retenue de 30 jours, réserve de 10 % pendant 90 jours, plafonds, confiance progressive et clauses de récupération. Aujourd'hui l'adresse est hachée sans sel quotidien : à corriger dans la première étape.</div>
+</div></section>
+
+<section id="securite"><div class="wrap">
+  <span class="eyebrow">7 · Sécurité</span>
+  <h2>Une annonce ne s'affiche jamais « n'importe comment »</h2>
+  <div class="grid g2" style="margin-top:24px">
+    <div class="card"><h3>Contenu</h3><ul class="list">
+      <li>Seules les annonces <b>validées par notre équipe</b> sont servies</li>
+      <li>Création <b>structurée</b> uniquement : image, vidéo, titre, texte, bouton, lien. <b>Aucun code, aucun script</b> : pas de publicité malveillante possible</li>
+      <li>Lien de destination vérifié à la création et chaque jour (listes de sites dangereux)</li>
+      <li>Catégories interdites (adulte, arnaques, illégal) ; catégories sensibles réservées aux diffuseurs qui les acceptent</li>
+      <li>Interrupteur d'urgence : une annonce ou un diffuseur coupé en quelques secondes</li>
+    </ul></div>
+    <div class="card"><h3>Chez les diffuseurs</h3><ul class="list">
+      <li>Site : l'annonce s'affiche dans <b>notre cadre isolé</b> ; le diffuseur ne peut changer ni image, ni texte, ni lien</li>
+      <li>Application : la destination est dans un <b>jeton signé</b> ; modifier l'affichage ne change pas où mène le clic</li>
+      <li>Diffuseur vérifié : propriété du site prouvée, application identifiée (nom du paquet), validation par l'administration</li>
+      <li>Clé liée à l'identité de l'application ; appels limités par diffuseur</li>
+      <li>Conditions : interdiction de cliquer soi-même, d'inciter au clic, de masquer « Annonce »</li>
+    </ul></div>
+    <div class="card"><h3>Vie privée</h3><ul class="list">
+      <li>Pas de cookie, pas de suivi entre sites (identifiant différent par diffuseur), pas de ciblage comportemental</li>
+      <li>Adresse IP jamais gardée en clair (empreinte avec sel quotidien, 48 h)</li>
+      <li>Respect de « Ne pas suivre » ; consentement transmis par l'application diffuseur</li>
+      <li>Contrat de traitement des données et politique de confidentialité à rédiger</li>
+    </ul></div>
+    <div class="card"><h3>Argent</h3><ul class="list">
+      <li>Registre des gains <b>jamais modifié après coup</b> ; toute correction est une ligne d'ajustement</li>
+      <li>Données de paiement chez FeexPay uniquement</li>
+      <li>Journal de toutes les décisions (annonce validée, suspension, retrait)</li>
+      <li>Retenue de 30 jours et réserve de 10 % sur 90 jours</li>
+    </ul></div>
+  </div>
+</div></section>
+
+<section id="economie" class="alt"><div class="wrap">
+  <span class="eyebrow">8 · Économie</span>
+  <h2>Partage et garde-fous : on ne paie jamais plus que ce qu'on encaisse</h2>
+  <p class="lead">Partage <b>65 % diffuseur / 35 % Afrolook</b> sur le <b>budget publicitaire</b> (le prix affiché). Les <b>frais de paiement sont en plus</b>, à la charge de l'annonceur. Sur nos propres plateformes, Afrolook garde 100 %.</p>
+  <div class="card" style="margin-top:24px">
+    <h3>Exemple : budget 10 000 F en carte native, payé en Mobile Money, affiché chez un partenaire</h3>
+    <div class="bar" style="margin-top:14px"><span style="width:5.3%;background:#7d8d83" title="frais"></span><span style="width:61.5%;background:var(--green)">Diffuseur 6 500 F</span><span style="width:33.2%;background:#c78b00">Afrolook 3 500 F</span></div>
+    <div class="grid g3" style="margin-top:16px">
+      <div class="kpi"><span>L'annonceur paie</span><b>10 560 F</b></div>
+      <div class="kpi"><span>Frais FeexPay (5,6 %, dépôt + retrait)</span><b>560 F</b></div>
+      <div class="kpi"><span>Affichages livrés</span><b>6 667</b></div>
+    </div>
+    <p class="note">Les frais couvrent le dépôt chez FeexPay et le retrait vers le diffuseur : ils ne rognent ni sa part ni la nôtre. Le diffuseur voit sa part ; l'annonceur ne voit jamais la part d'Afrolook.</p>
+  </div>
+
+  <h3 style="margin-top:34px">Six garde-fous financiers</h3>
+  <div class="grid g2" style="margin-top:14px">
+    <div class="card guard"><div class="nb">1</div><div><h3>Coût variable, jamais fixe</h3><p>Aucun diffuseur n'a de revenu garanti : il reçoit un pourcentage de ce que l'annonceur a payé. Pas d'annonceur, pas de paiement.</p></div></div>
+    <div class="card guard"><div class="nb">2</div><div><h3>L'annonceur paie avant</h3><p>La diffusion Réseau démarre après paiement. Budget consommé : l'annonce s'arrête seule. Aucun impayé.</p></div></div>
+    <div class="card guard"><div class="nb">3</div><div><h3>Retenue de 30 jours</h3><p>Gains bloqués 30 jours (réserve de 10 % pendant 90 jours) : le temps de détecter la fraude et les remboursements par carte.</p></div></div>
+    <div class="card guard"><div class="nb">4</div><div><h3>Plafonds et confiance progressive</h3><p>Un nouveau diffuseur a un plafond de gains par jour ; aucun diffuseur ne dépasse 30 % du réseau tant qu'il n'est pas éprouvé.</p></div></div>
+    <div class="card guard"><div class="nb">5</div><div><h3>Facturation à l'affichage valide</h3><p>L'annonceur paie des affichages mesurés par nos outils. Audience plus petite que prévu : livraison plus lente ou crédit.</p></div></div>
+    <div class="card guard"><div class="nb">6</div><div><h3>Lancement plafonné</h3><p>Pour payer des diffuseurs avant que les annonceurs paient : <b>fonds d'amorçage plafonné</b> (par exemple 100 000 F par mois, à votre choix). Épuisé, plus rien n'est versé ce mois-là.</p></div></div>
+  </div>
+
+  <h3 style="margin-top:34px">Coût réel de fonctionnement (estimation)</h3>
+  <div class="grid g3" style="margin-top:14px">
+    <div class="card"><div class="kpi flat"><span>Par million d'affichages</span><b>≈ 8 000 F</b></div><p class="note">Écritures de base de données, appels de fonctions, images servies. Moins de 1 % du revenu d'un million d'affichages.</p></div>
+    <div class="card"><div class="kpi flat"><span>Frais fixes par mois</span><b>≈ 10 000 F</b></div><p class="note">Une instance toujours prête (réponse rapide) et la surveillance. À vérifier à l'usage.</p></div>
+    <div class="card"><div class="kpi flat"><span>Frais de paiement</span><b>0 F pour nous</b></div><p class="note">Payés par l'annonceur (5,6 % Mobile Money, ≈ 9,9 % carte).</p></div>
+  </div>
+
+  <h3 style="margin-top:34px">Trois scénarios mensuels (prix moyen 1 800 F / 1 000, 70 % des affichages chez les partenaires)</h3>
+  <div class="tablewrap" style="margin-top:14px"><table>
+    <thead><tr><th>Par mois</th><th class="n">Prudent</th><th class="n">Réaliste</th><th class="n">Ambitieux</th></tr></thead>
+    <tbody>
+      <tr><td>Affichages payants</td><td class="n">200 000</td><td class="n">1 000 000</td><td class="n">5 000 000</td></tr>
+      <tr><td>Budgets publicitaires encaissés</td><td class="n">360 000 F</td><td class="n">1 800 000 F</td><td class="n">9 000 000 F</td></tr>
+      <tr><td>− Part des diffuseurs (45,5 % du total)</td><td class="n">163 800 F</td><td class="n">819 000 F</td><td class="n">4 095 000 F</td></tr>
+      <tr><td>− Serveur et surveillance</td><td class="n">11 600 F</td><td class="n">18 000 F</td><td class="n">50 000 F</td></tr>
+      <tr><td><b>Reste pour Afrolook</b></td><td class="n"><b>≈ 185 000 F</b></td><td class="n"><b>≈ 963 000 F</b></td><td class="n"><b>≈ 4 855 000 F</b></td></tr>
+    </tbody></table></div>
+  <p class="note">Avant impôts, TVA éventuelle, équipe, support et marketing. Sans acheteur du Réseau, le coût se limite aux frais fixes (≈ 10 000 F par mois) : <b>aucun</b> paiement de diffuseur sans recette. Les remboursements de trafic invalide viennent en déduction.</p>
+  <div class="ok"><b>Conclusion :</b> le risque principal n'est pas financier mais la <b>fraude</b> et la <b>promesse d'audience</b> ; les deux sont traitées en §6 et §4.</div>
+</div></section>
+
+<section id="profils"><div class="wrap">
+  <span class="eyebrow">9 · Profils et tableaux de bord</span>
+  <h2>Deux profils, deux tableaux de bord dédiés</h2>
+  <p class="lead">Une même connexion Google ouvre deux espaces : « Annonceur » et « Diffuseur ». Un profil complet est demandé avant le premier paiement ou le premier retrait.</p>
+  <div class="grid g2" style="margin-top:26px">
+    <div>
+      <div class="dash">
+        <header><span>Tableau de bord Annonceur</span><span>Kofi Studio</span></header>
+        <div class="body">
+          <div class="tiles"><div class="tile"><b>48 210</b><small>affichages</small></div><div class="tile"><b>1 304</b><small>clics</small></div><div class="tile"><b>2,7 %</b><small>taux de clic</small></div></div>
+          <div class="row"><span>Carte native · Réseau</span><span class="st ok2">En ligne</span></div>
+          <div class="row"><span>Vidéo 15 s · Nos plateformes</span><span class="st ok2">En ligne</span></div>
+          <div class="row"><span>Affiche · Réseau</span><span class="st wait">En validation</span></div>
+          <div class="row"><span>Afrolook 38 % · SlashAtlas 22 % · partenaires 40 %</span></div>
+          <div class="row"><span>Budget : 15 000 F · consommé 62 %</span><b>Recharger</b></div>
+          <div class="row"><span>Trafic invalide remboursé ce mois</span><b>1 200 F</b></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px"><h3>Profil annonceur</h3><ul class="list"><li>Marque ou entreprise, pays, ville, secteur</li><li>Site ou page, WhatsApp, e-mail et téléphone vérifiés</li><li>Logo utilisé dans les annonces</li><li>Offre Réseau : acceptation des règles de contenu</li><li>Reçus de paiement téléchargeables</li><li>Création en 5 étapes : objectif, création, audience, budget, paiement</li></ul></div>
+    </div>
+    <div>
+      <div class="dash">
+        <header><span>Tableau de bord Diffuseur</span><span>MonSiteBénin.com</span></header>
+        <div class="body">
+          <div class="tiles"><div class="tile"><b>112 400</b><small>emplacements</small></div><div class="tile"><b>46 %</b><small>remplissage</small></div><div class="tile"><b>52 300 F</b><small>gains</small></div></div>
+          <div class="row"><span>eCPM réel ce mois</span><b>448 F</b></div>
+          <div class="row"><span>Disponible au retrait</span><b>31 200 F</b></div>
+          <div class="row"><span>En attente (30 jours)</span><b>21 100 F</b></div>
+          <div class="row"><span>« fil-principal » · carte native</span><span class="st ok2">Actif</span></div>
+          <div class="row"><span>Trafic invalide</span><span class="st ok2">3,1 %</span></div>
+          <div class="row"><span>Code d'intégration</span><b>Copier</b></div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:14px"><h3>Profil diffuseur</h3><ul class="list"><li>Site ou application ; adresse ou nom du paquet</li><li>Preuve de propriété (fichier ou balise à poser)</li><li>Catégorie, pays, langue, audience mensuelle déclarée</li><li>Catégories d'annonces refusées</li><li>Numéro Mobile Money pour les retraits (identité demandée au-delà d'un seuil)</li><li>Mode test avec fausses annonces avant le réel</li></ul></div>
+    </div>
+  </div>
+</div></section>
+
+<section id="route" class="alt"><div class="wrap">
+  <span class="eyebrow">10 · Étapes proposées</span>
+  <h2>Six étapes, chacune validée avant la suivante</h2>
+  <div style="margin-top:20px">
+    <div class="step"><div class="w">Étape 0</div><div><b>Décisions</b> : valider ce document (prix, partage, frais, règles) ; rédiger les conditions des annonceurs et des diffuseurs.</div></div>
+    <div class="step"><div class="w">Étape 1</div><div><b>Moteur unique</b> : serveur d'annonces sécurisé, jetons signés, clic par redirection, protection contre robots et boucles, comptage fiable à grande échelle, catalogue de formats. SlashAtlas et PronoFlash migrent dessus.</div></div>
+    <div class="step"><div class="w">Étape 2</div><div><b>Application Afrolook sur le même moteur</b> : composants Flutter (fil, bannière, interstitiel, récompensée), création de pub dans l'app sur la même annonce, Appodeal/AdMob en remplissage.</div></div>
+    <div class="step"><div class="w">Étape 3</div><div><b>Offre Réseau côté annonceur</b> : profil, création en 5 étapes, estimation d'audience, paiement FeexPay (frais 5,6 % / carte) et pièces, tableau de bord par plateforme, remboursement du trafic invalide.</div></div>
+    <div class="step"><div class="w">Étape 4</div><div><b>Diffuseurs invités</b> : profil, vérification, balise web et composant Flutter, tableau de bord avec eCPM, mode test, 2 à 5 pilotes.</div></div>
+    <div class="step"><div class="w">Étape 5</div><div><b>Paiement des diffuseurs et ouverture</b> : registre des gains, retenue, retraits, analyse d'anomalies, page « Devenir diffuseur », puis inscription plus ouverte.</div></div>
+  </div>
+</div></section>
+
+<section id="valider"><div class="wrap">
+  <span class="eyebrow">11 · Décisions</span>
+  <h2>Où on en est</h2>
+  <div class="card" style="margin-top:22px">
+    <div class="q done"><div class="k">✓</div><div><b>Grille de prix et partage 65 % / 35 %</b> : validés (« c'est bon pour les propositions »).<p>Les prix restent réglables dans l'administration.</p></div></div>
+    <div class="q done"><div class="k">✓</div><div><b>Frais de paiement à la charge de l'annonceur</b> : 5,6 % en Mobile Money (dépôt et retrait compris), carte : dépôt et retrait combinés, ≈ 9,9 % d'après le calcul actuel de l'achat de pièces.<p>À confirmer : le taux carte exact à retenir (9,9 % ?).</p></div></div>
+    <div class="q"><div class="k">1</div><div><b>Lancement gratuit et diffuseurs payés</b> : fonds d'amorçage plafonné (par exemple 100 000 F par mois) ? Quel plafond ? Les annonces gratuites s'affichent-elles aussi chez les partenaires pendant ce lancement, ou restent-elles sur nos plateformes ?</div></div>
+    <div class="q"><div class="k">2</div><div><b>Audience affichée</b> : chiffre réel calculé (aujourd'hui « plus de 50 000 ») plutôt que « plus de 1 000 000 » tant que les partenaires ne sont pas intégrés ?</div></div>
+    <div class="q"><div class="k">3</div><div><b>Retraits des diffuseurs</b> : minimum 10 000 F, retenue 30 jours, Mobile Money, demande manuelle comme aujourd'hui ?</div></div>
+    <div class="q"><div class="k">4</div><div><b>Diffuseurs invités d'abord</b> (2 à 5 pilotes) avant toute inscription libre ?</div></div>
+    <div class="q"><div class="k">5</div><div><b>Épargne+</b> : de quelle technologie (Flutter ?) pour fixer le premier composant d'intégration.</div></div>
+    <div class="q"><div class="k">6</div><div><b>Catégories refusées</b> chez les partenaires (adulte, jeux d'argent : PronoFlash parle de paris…).</div></div>
+    <div class="q"><div class="k">7</div><div><b>Conditions et contrats</b> (annonceurs, diffuseurs, données personnelles) : qui les valide ?</div></div>
+    <div class="q"><div class="k">8</div><div><b>Remboursement du trafic invalide et du budget non consommé</b> : en crédit sur le compte annonceur (recommandé) ou en retrait ?</div></div>
+  </div>
+</div></section>
+
+<footer><div class="wrap">Document de travail Afrolook Ads · prix, pourcentages et estimations = hypothèses à valider · aucun développement n'a commencé.</div></footer>
+
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  var n=function(v){return Math.round(v).toLocaleString('fr-FR')};
+  var FMT=[['Bannière',1000],['Bandeau collant',1250],['Carte native',1500],['Carrousel',1800],['Affiche',2000],['Vidéo dans le fil',2500],['Interstitiel',3000],['Récompensée (vue complète)',6000]];
+  var SHARE=0.65, FEE_MM=0.056, FEE_CARD=0.099;
+
+  /* tableau des budgets (annonceur) */
+  var tb=document.querySelector('#t-bud tbody');
+  [5000,15000,50000,150000].forEach(function(b){
+    var imp=b/1500*1000, r=document.createElement('tr');
+    r.innerHTML='<td>'+n(b)+' F</td><td class="n">'+n(imp)+'</td><td class="n">≈ '+n(imp/3)+'</td><td class="n">'+n(b*(1+FEE_MM))+' F</td><td class="n">'+n(b*(1+FEE_CARD))+' F</td>';
+    tb.appendChild(r);
+  });
+
+  /* tableau des eCPM (diffuseur) */
+  var te=document.querySelector('#t-ecpm tbody');
+  FMT.forEach(function(f){
+    var g=f[1]*SHARE, r=document.createElement('tr');
+    r.innerHTML='<td>'+f[0]+'</td><td class="n">'+n(f[1])+' F</td><td class="n"><b>'+n(g)+' F</b></td><td class="n">'+n(g*.3)+' F</td><td class="n">'+n(g*.6)+' F</td><td class="n">'+n(g*.9)+' F</td>';
+    te.appendChild(r);
+  });
+
+  /* simulateur annonceur */
+  var POOL_NET=1000000, POOL_OWN=50000, FREQ=3, DAYMAX=3;
+  function calcA(){
+    var cpm=+$('s-fmt').value, bud=+$('s-bud').value, scope=$('s-sc').value, days=+$('s-dur').value, fee=+$('s-pay').value/100;
+    $('s-budv').textContent=n(bud);
+    var imp=bud/cpm*1000, ctr=cpm>=6000?0.02:cpm>=2500?0.012:cpm>=1500?0.015:0.008;
+    var pool=scope==='net'?POOL_NET:POOL_OWN, cap=pool*DAYMAX*days, limited=imp>cap, used=bud;
+    if(limited){imp=cap; used=imp/1000*cpm}
+    var ppl=imp/FREQ, clk=imp*ctr, pct=Math.min(100,ppl/pool*100), f=used*fee;
+    $('o-pool').textContent=scope==='net'?'1 000 000+':'50 000+';
+    $('o-g').style.width=Math.max(2,Math.min(100,pct))+'%';
+    $('o-imp').textContent=n(imp);
+    $('o-ppl').textContent='≈ '+n(ppl);
+    $('o-clk').textContent='≈ '+n(clk);
+    $('o-pct').textContent=(pct<1?pct.toFixed(1).replace('.',','):Math.round(pct))+' %';
+    $('o-fee').textContent=n(f)+' F';
+    $('o-tot').textContent=n(used+f)+' F';
+    $('o-note').textContent=limited
+      ?'Ce budget dépasse ce que l\'audience choisie peut absorber en '+days+' jours : seul le montant utile ('+n(used)+' F) serait facturé.'
+      :(scope==='own'?'Offre Réseau limitée à nos plateformes : choisissez « Réseau complet » pour une portée plus large.':'Estimation : vous ne payez que les affichages réellement livrés.');
+  }
+  ['s-fmt','s-bud','s-sc','s-dur','s-pay'].forEach(function(i){$(i).addEventListener('input',calcA);$(i).addEventListener('change',calcA)});
+  calcA();
+
+  /* simulateur diffuseur */
+  function calcP(){
+    var pv=+$('p-pv').value, slots=+$('p-slots').value, cpm=+$('p-fmt').value, vis=+$('p-vis').value/100, fill=+$('p-fill').value/100;
+    $('p-pvv').textContent=n(pv); $('p-visv').textContent=Math.round(vis*100); $('p-fillv').textContent=Math.round(fill*100);
+    var shown=pv*slots, imp=shown*vis*fill, gain=imp/1000*cpm*SHARE, ecpm=cpm*SHARE*fill*vis;
+    $('p-imp').textContent=n(imp);
+    $('p-ecpm').textContent=n(ecpm)+' F';
+    $('p-gain').textContent=n(gain)+' F';
+    $('p-av').textContent=n(gain*0.9)+' F';
+  }
+  ['p-pv','p-slots','p-fmt','p-vis','p-fill'].forEach(function(i){$(i).addEventListener('input',calcP);$(i).addEventListener('change',calcP)});
+  calcP();
+})();
+</script>
+</body>
+</html>

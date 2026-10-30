@@ -184,11 +184,11 @@ Redis (ou l'équivalent Windows) pour les files, MinIO (un seul exécutable), `c
 - **Dimensionnement de départ** : 4 vCPU, 8 Go de RAM, 160 Go NVMe (largement suffisant pour 2 000 à 50 000 utilisateurs). Montée en charge : PgBouncer, réplique en lecture, Octane.
 - **Conteneurs** (`docker compose`) : `caddy` (TLS automatique) → `app` (PHP-FPM) → `postgres`, `redis`, `horizon`, `scheduler`, `backup` (pg_dump + WAL vers R2). Sauvegarde hors VPS obligatoire.
 - **Sécurité** : voir `docs/SECURITE_API.md` (comptes administrateurs séparés, 2FA, Cloudflare Access, Cloudflare Tunnel, sauvegardes chiffrées).
-- **Hébergeur** : LWS, VPS à accès administrateur complet (décidé le 27/10/2026).
+- **Hébergeur** : LWS, offre **« VPS M »** (KVM, 4 vCore 3,0 GHz, 8 Go, 150 Go NVMe, option accès root, 4,99 € HT/mois en promotion, 19,99 € ensuite) — décidé le 27/10/2026. À vérifier avant commande : prix de renouvellement, système, centre de données, sauvegardes, pare-feu.
 - **Réseau** : le VPS n'accepte que Cloudflare (liste d'adresses Cloudflare au pare-feu), SSH par clé uniquement, port PostgreSQL fermé à l'extérieur.
 - **Déploiement** : GitHub Actions → construction d'image → déploiement par SSH avec **bascule sans coupure** et retour arrière en une commande ; migrations de base exécutées avant la bascule, compatibles avec la version précédente.
 - **Supervision** : Sentry (erreurs), Laravel Pulse/Horizon (files, lenteurs), Uptime Kuma (disponibilité), alerte sur espace disque, sauvegarde manquante, file bloquée, taux d'erreur.
-- **Coût indicatif** : un VPS de cette taille se loue autour de 10 à 25 € par mois selon l'hébergeur ; R2 reste facturé à l'usage (déjà en place).
+- **Coût** : VPS LWS « VPS M » **4,99 € HT/mois en promotion (5,99 € TTC), 19,99 € HT ensuite (à confirmer)** ; R2 facturé à l'usage (déjà en place) ; Firebase réduit à l'authentification, FCM et aux chats. Constat du propriétaire : ~20 $ déjà dépensés sur Google Cloud avec ~2 000 utilisateurs et ~100 actifs/jour.
 
 ## 11. Stratégie de bascule (sans casser les anciennes versions)
 

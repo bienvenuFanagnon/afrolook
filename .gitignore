@@ -55,3 +55,19 @@ slashatlas/.firebase/
 
 # variables secrètes des fonctions : jamais dans Git
 functions/.env
+
+# Clés locales du mur de tâches (jamais versionnées)
+tool/offerwall/dart_defines.local.json
+*.local.json
+
+# Clés du SDK Tapjoy (fichier local, comme functions/.env)
+assets/env/*.env
+
+# Fichiers locaux et temporaires : jamais dans Git
+.claude/
+.firebase/
+emulator-data/
+firebase-export-*/
+android/.kotlin/
+pronoflashia/functions/.env.*
+!pronoflashia/functions/.env.example
