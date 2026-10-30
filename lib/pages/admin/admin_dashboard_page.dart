@@ -19,6 +19,7 @@ import '../weekly_top/weekly_top_commentators_page.dart';
 import 'AfrolookPub/afrolookAdminPubPage.dart';
 import 'ad_admin_page.dart';
 import 'admin_canaux_page.dart';
+import 'ads_regie_admin_page.dart';
 import 'admin_email_screen.dart';
 import 'afrolook_group_migration_page.dart';
 import 'commissions_admin_page.dart';
@@ -33,8 +34,11 @@ import 'remuneration_admin_page.dart';
 import 'quiz_admin_page.dart';
 import 'read_meter_page.dart';
 import 'push_test_page.dart';
+import 'offerwall_admin_page.dart';
 import 'stickers/admin_stickers_page.dart';
 import 'pseudo_migration_page.dart';
+import 'offerwall_fraud_guide_page.dart';
+import 'offerwall_partners_page.dart';
 import '../intro/tutos/tuto_scene_card.dart';
 import '../studio/artist_marketplace.dart';
 
@@ -557,12 +561,16 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       _Module(Icons.verified_rounded, 'Comptes officiels', c.info, _officialPending, const OfficialAccountsPage()),
       _Module(Icons.star_rounded, 'Influenceurs', c.supportAccent, _influencerPending, const InfluencerRequestsPage()),
       _Module(Icons.campaign_rounded, 'Publicités', const Color(0xFF8E3CC4), _boostsPending, const AdvertisementManagementPage()),
+      _Module(Icons.public_rounded, 'Régie : logos et diffuseurs', c.info, 0, const AdsRegieAdminPage()),
       _Module(Icons.ondemand_video_rounded, 'Pub AdMob', const Color(0xFF8E3CC4), 0, AdAdminPage()),
       _Module(Icons.quiz_rounded, 'Quiz', const Color(0xFFE0A100), 0, const QuizAdminPage()),
       _Module(Icons.school_rounded, 'Étude', const Color(0xFF1FAA59), 0, const EtudeAdminPage()),
       _Module(Icons.auto_stories_rounded, 'Contes', const Color(0xFFB07A1F), 0, const ContesAdminPage()),
       _Module(Icons.newspaper_rounded, 'Actualités', c.info, 0, const NewsAdminPage()),
       _Module(Icons.pie_chart_rounded, 'Commissions', c.primary, 0, const CommissionsAdminPage()),
+      _Module(Icons.task_alt_rounded, 'Tâches (offres)', c.primary, 0, const OfferwallAdminPage()),
+      _Module(Icons.fact_check_rounded, 'Tâches : fraude (aide-mémoire)', c.warning, 0, const OfferwallFraudGuidePage()),
+      _Module(Icons.handshake_rounded, 'Tâches : partenaires (validation)', c.info, 0, const OfferwallPartnersPage()),
       _Module(Icons.account_balance_wallet_rounded, 'Rémunération', c.primary, 0, RemunerationAdminPage()),
       _Module(Icons.storefront_rounded, 'Contenus payants', c.supportAccent, 0, const AdminContentPage()),
       _Module(Icons.favorite_rounded, 'Afrolove', const Color(0xFFD6204A), 0, AdminDatingProfilesPage()),

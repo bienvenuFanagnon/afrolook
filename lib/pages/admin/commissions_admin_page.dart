@@ -44,6 +44,10 @@ class _CommissionsAdminPageState extends State<CommissionsAdminPage> {
     'pubs_boosts': ('Publicités et boosts', Icons.rocket_launch_rounded),
     'abonnement_entreprise': ('Abonnements entreprise (Afroshop)', Icons.store_rounded),
     'contenus': ('Contenus payants (en pièces)', Icons.storefront_rounded),
+    'offres_tapjoy': ('Tâches : Tapjoy', Icons.task_alt_rounded),
+    'offres_ayet': ('Tâches : ayeT', Icons.task_alt_rounded),
+    'offres_pubscale': ('Tâches : Pubscale', Icons.task_alt_rounded),
+    'offres': ('Tâches (partenaire inconnu)', Icons.task_alt_rounded),
   };
 
   _Period _period = _Period.month30;

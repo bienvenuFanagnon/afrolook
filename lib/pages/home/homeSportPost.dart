@@ -78,6 +78,7 @@ import '../intro/monetization_tutorial.dart';
 import '../../widgets/feed/sections/social_follow_card.dart';
 import '../../widgets/feed/sections/ad_free_day_card.dart';
 import '../../widgets/feed/sections/quiz_feed_card.dart';
+import '../../widgets/feed/sections/offerwall_feed_card.dart';
 import '../../widgets/feed/sections/news_feed_card.dart';
 import '../../widgets/feed/sections/contes_feed_card.dart';
 import '../../widgets/feed/sections/etude_feed_card.dart';
@@ -2884,6 +2885,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         controller: _scrollController,
         children: [
           SizedBox(height: 180, child: _buildEmptyWidget()),
+          const OfferwallFeedCard(key: ValueKey('offerwall_card_sport_empty'), slot: 8),
           _buildDiscoverySection(width, height),
         ],
       );
@@ -2981,6 +2983,14 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       // Offre « Une journée sans pub » : après le 5e post (jamais collée à une pub), 1 fois par jour
       if (i == 4) {
         contentWidgets.add(const AdFreeDayCard(key: ValueKey('ad_free_day_sport')));
+      }
+
+      // Tâches rémunérées (« travaille dans Afrolook et gagne de l'argent ») : après le 9e post, puis un rappel plus loin (emplacements 4 à 6 : propres au fil Sport)
+      if (i == 8) {
+        contentWidgets.add(const OfferwallFeedCard(key: ValueKey('offerwall_card_sport_1'), slot: 4));
+      }
+      if (i == 23) {
+        contentWidgets.add(const OfferwallFeedCard(key: ValueKey('offerwall_card_sport_2'), slot: 5));
       }
 
       // Quiz : les 3 questions du jour après le 3e post, puis un rappel plus loin si la personne n'a pas joué
@@ -3098,6 +3108,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     } else if (!_hasMorePosts) {
       // Fin du feed T1 : widget de découverte + boutons d'action
       contentWidgets.add(const QuizFeedCard(key: ValueKey('quiz_card_sport_end'), slot: 3));
+      contentWidgets.add(const OfferwallFeedCard(key: ValueKey('offerwall_card_sport_end'), slot: 6));
       contentWidgets.add(const SocialFollowCard(key: ValueKey('social_follow_end_sport'), variant: SocialFollowVariant.end));
       contentWidgets.add(_buildDiscoverySection(width, height));
       contentWidgets.add(

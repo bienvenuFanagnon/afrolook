@@ -44,8 +44,11 @@ enum AdSlotKind {
 }
 
 class AdSlot extends StatefulWidget {
-  const AdSlot({Key? key, required this.kind, required this.own, this.admobFirst = false}) : super(key: key);
+  const AdSlot({Key? key, required this.kind, required this.own, this.admobFirst = false, this.allowOwn = true}) : super(key: key);
   final AdSlotKind kind;
+
+  ///  : jamais de pub Afrolook sur cet emplacement, seulement AdMob / Appodeal (page des tâches rémunérées) ; rien si les réseaux n'ont rien.
+  final bool allowOwn;
 
   /// AdMob en priorité ; la pub Afrolook ne s'affiche que si AdMob n'est pas disponible ou ne charge pas.
   final bool admobFirst;
@@ -102,7 +105,7 @@ class _AdSlotState extends State<AdSlot> {
   _Mode _decide(UserAuthProvider auth) {
     final user = auth.loginUserData;
     if (!AdGate.userSeesAds(user)) return _Mode.none;
-    final ownAvailable = auth.advertisements.isNotEmpty;
+    final ownAvailable = widget.allowOwn && auth.advertisements.isNotEmpty;
     // Bannière Appodeal : mêmes règles d'accès que les autres pubs, mais pas d'identifiant AdMob requis ; tant qu'Appodeal n'est pas prêt, pub Afrolook
     final admobOk = !_admobFailed && _kindEnabled() &&
         (_viaAppodeal ? (AdGate.canShowAdmob(user) && AppodealService.ready.value) : AdGate.canShowType(user, _type));

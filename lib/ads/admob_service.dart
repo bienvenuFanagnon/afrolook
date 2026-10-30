@@ -161,13 +161,13 @@ class AdmobService {
 
   /// Pub plein écran entre deux écoutes de la page Musique : attend sa fermeture avant de rendre la main.
   /// Mêmes garde-fous que dans le fil (pas pendant les premières minutes, écart minimum, plafond par jour).
-  static Future<bool> showInterstitialAndWait(UserData? user, {required int maxPerDay}) async {
+  static Future<bool> showInterstitialAndWait(UserData? user, {required int maxPerDay, String capKey = 'ad_inter_music', bool warmup = true}) async {
     final c = AdConfig.current;
     if (!c.interstitialEnabled || !AdGate.canShowType(user, 'interstitial')) return false;
-    if (DateTime.now().difference(AdGate.sessionStart).inMinutes < c.interstitialWarmupMinutes) return false;
+    if (warmup && DateTime.now().difference(AdGate.sessionStart).inMinutes < c.interstitialWarmupMinutes) return false;
     final last = _lastInterstitial;
     if (last != null && DateTime.now().difference(last).inMinutes < c.interstitialMinGapMinutes) return false;
-    if (!await _underDailyCap('ad_inter_music', maxPerDay)) return false;
+    if (!await _underDailyCap(capKey, maxPerDay)) return false;
     final ad = _interstitial;
     if (ad == null) {
       _loadInterstitial();
@@ -188,7 +188,7 @@ class AdmobService {
       },
     );
     _lastInterstitial = DateTime.now();
-    await _countToday('ad_inter_music');
+    await _countToday(capKey);
     await ad.show();
     return done.future;
   }

@@ -28,6 +28,7 @@ allprojects {
         maven { url 'https://jitpack.io' }
         // Appodeal (médiation des bannières)
         maven { url 'https://artifactory.appodeal.com/appodeal' }
+        maven { url 'https://sdk.tapjoy.com' } // mur de tâches (Tapjoy)
     }
 }
 

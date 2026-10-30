@@ -65,7 +65,9 @@ class AdConfig {
   /// Part des utilisateurs concernés (0–100) ; les admins sont toujours inclus.
   int get rolloutPercent => kDebugMode ? 100 : _i('rolloutPercent', 0).clamp(0, 100);
 
-  bool get testMode => kDebugMode || _b('testMode', false);
+  /// Pubs de TEST seulement si AppConfig/ads.testMode est à true. Décision du propriétaire (27/10/2026) : plus de pubs de test imposées en développement
+  /// (les vraies pubs s'affichent aussi en mode debug). ATTENTION : ne jamais toucher aux vraies pubs sur ses propres appareils (clics = trafic invalide).
+  bool get testMode => _b('testMode', false);
 
   // Feed
   int get nativeEvery => _i('nativeEvery', 8).clamp(4, 40);
@@ -88,6 +90,9 @@ class AdConfig {
   bool get musicInterstitial => _b('musicInterstitial', true);
   int get musicInterstitialEvery => kDebugMode ? 2 : _i('musicInterstitialEvery', 5).clamp(2, 30);
   int get musicInterstitialMaxPerDay => kDebugMode ? 99 : _i('musicInterstitialMaxPerDay', 3).clamp(0, 20);
+  // Page « Travaille et gagne de l'argent » : pub plein écran avant d'ouvrir le mur de tâches (par jour et par appareil au plus)
+  bool get tasksInterstitial => _b('tasksInterstitial', true);
+  int get tasksInterstitialMaxPerDay => kDebugMode ? 99 : _i('tasksInterstitialMaxPerDay', 5).clamp(0, 20);
   /// Écouter un titre payant en entier contre une pub récompensée.
   bool get musicRewarded => _b('musicRewarded', true);
 

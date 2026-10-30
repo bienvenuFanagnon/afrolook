@@ -10,3 +10,10 @@
 # Adaptateur Meta (Audience Network) d'Appodeal : il mentionne des annotations de compilation (Nullsafe) absentes de l'application ;
 # ce ne sont que des annotations, sans effet à l'exécution. Liste produite par Gradle (missing_rules.txt).
 -dontwarn com.facebook.infer.annotation.**
+
+# Mur de tâches (Tapjoy) : règles usuelles du SDK (à confirmer avec la page « Proguard » de la documentation Tapjoy)
+-keep class com.tapjoy.** { *; }
+-keep class com.moat.** { *; }
+-keepattributes JavascriptInterface
+-keepattributes *Annotation*
+-dontwarn com.tapjoy.**

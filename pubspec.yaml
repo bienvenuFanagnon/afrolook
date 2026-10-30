@@ -17,7 +17,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
 #version: 1.0.0+1
-version: 2.0.17+266
+version: 2.0.17+267
 
 environment:
   sdk: '>=3.2.6 <4.0.0'
@@ -238,6 +238,10 @@ dependencies:
   just_audio_platform_interface: ^4.6.0
   flutter_tts: ^4.2.5
   firebase_messaging: ^15.2.10
+  ayet_sdk_v2:
+    path: third_party/ayet_sdk_v2  # copie Android seulement (iPhone : Swift Package Manager désactivé sur Codemagic) : voir third_party/ayet_sdk_v2/PATCH_AFROLOOK.md
+  tapjoy_offerwall:
+    path: third_party/tapjoy_offerwall  # copie corrigée (activité de type FlutterFragmentActivity) : voir third_party/tapjoy_offerwall/PATCH_AFROLOOK.md
 #  ffmpeg_kit_flutter_new: ^4.2.1
 
 
@@ -330,6 +334,7 @@ flutter:
 #    - assets/frames/
     - assets/fonts/
     - assets/fonts/contes/
+    - assets/env/
     - assets/fonts/file.zip
     - shorebird.yaml
 

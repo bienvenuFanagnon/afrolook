@@ -7,6 +7,8 @@ import '../../canaux/listCanauxByUser.dart';
 import '../../chat/group/create_group_page.dart';
 import '../../contenuPayant/contentForm.dart';
 import '../../defi/defi_discover_page.dart';
+import '../../offerwall/offerwall_tasks_page.dart';
+import '../../../services/offerwall/offerwall_service.dart';
 import '../../user/UserRetrait/userRetraitForm.dart';
 import '../../user/monetisation.dart';
 import '../../user/userPubs/user_profile_boost_page.dart';
@@ -125,6 +127,21 @@ final List<TutoScene> kTutoScenes = [
     earn: 'Chaque vue rémunérée s’ajoute à tes gains : encaisse-les quand tu veux',
     actionLabel: 'Voir mes gains', action: (c) => _push(c, MonetisationPage()),
   ),
+  // Tâches rémunérées : montants alignés sur OfferwallPromo (lib/services/offerwall/offerwall_promo.dart) ; textes écrits tels quels (clés de traduction de tr_offerwall.dart).
+  TutoScene(
+    id: 'taches', emoji: '💼', title: 'Travaille et sois payé', hook: 'Fais des tâches dans Afrolook et gagne de l’argent réel.',
+    screenTitle: 'Mes tâches',
+    els: const [
+      MockEl(MockKind.big, a: 'Gagné grâce aux tâches', b: '3 000 🪙 = 1 200 F'),
+      MockEl(MockKind.tile, a: 'Tâche terminée', b: 'Pièces en attente 48 h', trailing: '+3 000 🪙'),
+      MockEl(MockKind.tile, a: 'Par jour, jusqu’à', trailing: '6 000 F'),
+      MockEl(MockKind.button, a: 'Voir les tâches', color: 1),
+    ],
+    target: 3, hint: 'Choisis une tâche et termine-la',
+    gainEmoji: '💰', gainTitle: '+3 000 pièces = 1 200 F', gainSub: 'pour une seule tâche, convertis en argent réel',
+    earn: 'Jusqu’à 6 000 F par jour, soit jusqu’à 180 000 F par mois, et tes pièces se convertissent en argent réel',
+    actionLabel: 'Voir les tâches', action: (c) => _push(c, const OfferwallTasksPage()), publicScene: false,
+  ),
   TutoScene(
     id: 'defi', emoji: '🏆', title: 'Les DÉFIs', hook: 'Participe, fais voter, remporte la cagnotte.',
     screenTitle: 'DÉFI',
@@ -241,4 +258,4 @@ final List<TutoScene> kTutoScenes = [
 
 /// Scènes disponibles sur la plateforme courante ([publicOnly] : avant la connexion).
 List<TutoScene> tutoScenesAvailable({bool publicOnly = false}) =>
-    kTutoScenes.where((s) => !(kIsAppleStore && s.hiddenOnIOS) && (!publicOnly || s.publicScene)).toList();
+    kTutoScenes.where((s) => !(kIsAppleStore && s.hiddenOnIOS) && (!publicOnly || s.publicScene) && (s.id != 'taches' || OfferwallService.partnersActive)).toList();

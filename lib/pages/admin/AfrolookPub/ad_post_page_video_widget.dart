@@ -1,4 +1,5 @@
 import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/ads_engine_service.dart';
 import '../../pub/ad_actions.dart';
 import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -121,65 +122,14 @@ class _AdPostWidgetState extends State<AdPostWidget> {
   Future<void> _recordAdView() async {
     if (_hasRecordedView) return;
     _hasRecordedView = true;
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    if (currentUserId == null || ad.id == null) return;
-
-    try {
-      final adRef = FirebaseFirestore.instance.collection('Advertisements').doc(ad.id);
-      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-
-      // Mise à jour des vues totales et journalières
-      final viewIncr = Random().nextInt(3) + 1;
-      await adRef.update({
-        'views': FieldValue.increment(viewIncr),
-        'dailyStats.$today.views': FieldValue.increment(viewIncr),
-        'updatedAt': DateTime.now().microsecondsSinceEpoch,
-      });
-
-      // Vérifier si c’est une vue unique
-      final doc = await adRef.getM('ad_post_page_video_widget.dart:139');
-      if (doc.exists) {
-        final viewersIds = List<String>.from(doc.data()?['viewersIds'] ?? []);
-        if (!viewersIds.contains(currentUserId)) {
-          await adRef.update({
-            'uniqueViews': FieldValue.increment(1),
-            'viewersIds': FieldValue.arrayUnion([currentUserId]),
-          });
-        }
-      }
-    } catch (e) {
-      printVm('Erreur enregistrement vue pub: $e');
-    }
+    if (FirebaseAuth.instance.currentUser == null || ad.id == null) return;
+    // vue comptée par le moteur d'Afrolook Ads (plus d'écriture directe dans Advertisements)
+    AdsEngineService.instance.view(ad.id!, format: 'video', slot: 'detail');
   }
 
   Future<void> _recordAdClick() async {
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    if (currentUserId == null || ad.id == null) return;
-
-    try {
-      final adRef = FirebaseFirestore.instance.collection('Advertisements').doc(ad.id);
-      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-
-      final clickIncr = Random().nextInt(3) + 1;
-      await adRef.update({
-        'clicks': FieldValue.increment(clickIncr),
-        'dailyStats.$today.clicks': FieldValue.increment(clickIncr),
-        'updatedAt': DateTime.now().microsecondsSinceEpoch,
-      });
-
-      final doc = await adRef.getM('ad_post_page_video_widget.dart:169');
-      if (doc.exists) {
-        final clickersIds = List<String>.from(doc.data()?['clickersIds'] ?? []);
-        if (!clickersIds.contains(currentUserId)) {
-          await adRef.update({
-            'uniqueClicks': FieldValue.increment(1),
-            'clickersIds': FieldValue.arrayUnion([currentUserId]),
-          });
-        }
-      }
-    } catch (e) {
-      printVm('Erreur enregistrement clic pub: $e');
-    }
+    if (FirebaseAuth.instance.currentUser == null || ad.id == null) return;
+    AdsEngineService.instance.click(ad.id!, format: 'video', slot: 'detail');
   }
 
   void _initVideo() async {

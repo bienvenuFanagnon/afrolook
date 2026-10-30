@@ -1,4 +1,5 @@
 import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/ads_engine_service.dart';
 import '../services/comments_prefetch.dart';
 import 'package:afrotok/widgets/studio/post_template_try.dart';
 import 'defi/defi_boost.dart';
@@ -1592,50 +1593,10 @@ class _DetailsPostState extends State<DetailsPost>
     // Éviter les doubles comptages dans la même session
     final clickKey = '${ad.id}_$currentUserId';
     if (_clickedInSession.contains(clickKey)) return;
-
     _clickedInSession.add(clickKey);
 
-    try {
-      final adRef = _firestore.collection('Advertisements').doc(ad.id);
-      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-
-      await _firestore.runTransaction((transaction) async {
-        final adDoc = await transaction.get(adRef);
-        if (!adDoc.exists) return;
-
-        final currentAd = Advertisement.fromJson(adDoc.data()!);
-
-        final clickIncr = Random().nextInt(3) + 1;
-        Map<String, dynamic> updates = {
-          'clicks': FieldValue.increment(clickIncr),
-          'updatedAt': DateTime.now().microsecondsSinceEpoch,
-        };
-
-        if (currentAd.dailyStats != null) {
-          updates['dailyStats.$today.clicks'] = FieldValue.increment(clickIncr);
-        }
-
-        final hasClicked =
-            currentAd.clickersIds?.contains(currentUserId) ?? false;
-        if (!hasClicked) {
-          updates['uniqueClicks'] = FieldValue.increment(1);
-          updates['clickersIds'] = FieldValue.arrayUnion([currentUserId]);
-        }
-
-        transaction.update(adRef, updates);
-      });
-
-      // Mettre à jour l'objet local
-      // ad.clicks = (ad.clicks ?? 0) + 1;
-
-      // Notifier le parent
-      // widget.onAdClicked?.call(post, ad);
-
-      printVm('✅ Clic enregistré pour la pub: ${ad.id}');
-    } catch (e) {
-      printVm('❌ Erreur lors de l\'enregistrement du clic: $e');
-      _clickedInSession.remove(clickKey);
-    }
+    // clic compté par le moteur d'Afrolook Ads (jeton signé, un clic par jeton) ; l'application n'écrit plus de compteur
+    AdsEngineService.instance.click(ad.id!, format: 'native', slot: 'detail');
   }
 
   Widget _buildAudioContent(Post post, bool isLocked) {

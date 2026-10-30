@@ -1,6 +1,7 @@
 ﻿// pages/chronique/chronique_detail_page.dart
 
 import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/ads_engine_service.dart';
 import '../../utils/media_cdn.dart';
 import 'dart:async';
 import '../../widgets/video_poster_image.dart';
@@ -989,28 +990,12 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
 
   Future<void> _recordAdView(Advertisement ad) async {
     if (ad.id == null) return;
-    final viewIncr = Random().nextInt(3) + 1;
-    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    try {
-      await FirebaseFirestore.instance.collection('Advertisements').doc(ad.id).update({
-        'views': FieldValue.increment(viewIncr),
-        'uniqueViews': FieldValue.increment(1),
-        'dailyStats.$today.views': FieldValue.increment(viewIncr),
-      });
-    } catch (_) {}
+    AdsEngineService.instance.view(ad.id!, format: 'native', slot: 'chronique');
   }
 
   Future<void> _recordAdClick(Advertisement ad) async {
     if (ad.id == null) return;
-    final clickIncr = Random().nextInt(3) + 1;
-    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    try {
-      await FirebaseFirestore.instance.collection('Advertisements').doc(ad.id).update({
-        'clicks': FieldValue.increment(clickIncr),
-        'uniqueClicks': FieldValue.increment(1),
-        'dailyStats.$today.clicks': FieldValue.increment(clickIncr),
-      });
-    } catch (_) {}
+    AdsEngineService.instance.click(ad.id!, format: 'native', slot: 'chronique');
   }
 
   /// Liste mixte Chronique + pub pour le PageView.

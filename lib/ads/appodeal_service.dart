@@ -21,8 +21,8 @@ class AppodealService {
   static const _defaultAndroidKey = 'b03ae4750807969d5c5527055739a6237c9c90795a05d492';
   static const _defaultIosKey = '47013088991ce1f20343b13078a4c981027aff2aa7ca05c6';
 
-  /// Pubs de test en développement, vraies pubs en production.
-  static const bool useTestAds = !kReleaseMode;
+  /// Vraies pubs partout, même en développement (décision du propriétaire, 27/10/2026). Ne jamais cliquer sur ses propres pubs.
+  static const bool useTestAds = false;
 
   /// Vrai quand le SDK est initialisé et prêt à servir des bannières.
   static final ValueNotifier<bool> ready = ValueNotifier(false);

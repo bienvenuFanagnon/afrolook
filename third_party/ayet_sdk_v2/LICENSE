@@ -1,0 +1,59 @@
+ayetstudios SDK License
+
+Copyright (c) 2025 ayetstudios. All rights reserved.
+
+1. LICENSE GRANT
+
+   Subject to the terms of this License, ayetstudios grants you a limited,
+   non-exclusive, non-transferable, royalty-free license to use this Software
+   Development Kit ("SDK") solely for the purpose of integrating ayetstudios
+   services into your applications, including commercial applications.
+
+2. RESTRICTIONS
+
+   You may NOT:
+   a) Modify, adapt, alter, translate, or create derivative works of the SDK;
+   b) Reverse engineer, disassemble, decompile, or otherwise attempt to derive
+      the source code of the SDK, except to the extent permitted by applicable
+      law;
+   c) Redistribute, sublicense, rent, lease, or lend the SDK as a standalone
+      product;
+   d) Remove, alter, or obscure any proprietary notices on the SDK;
+   e) Use the SDK to create a competing product or service.
+
+3. OWNERSHIP
+
+   ayetstudios retains all right, title, and interest in and to the SDK,
+   including all intellectual property rights. This License does not grant
+   you any rights to trademarks or service marks of ayetstudios.
+
+4. DISCLAIMER OF WARRANTIES
+
+   THE SDK IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. AYETSTUDIOS DOES
+   NOT WARRANT THAT THE SDK WILL BE ERROR-FREE OR UNINTERRUPTED.
+
+5. LIMITATION OF LIABILITY
+
+   IN NO EVENT SHALL AYETSTUDIOS BE LIABLE FOR ANY INDIRECT, INCIDENTAL,
+   SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS OR
+   REVENUE, WHETHER INCURRED DIRECTLY OR INDIRECTLY, OR ANY LOSS OF DATA,
+   USE, GOODWILL, OR OTHER INTANGIBLE LOSSES, ARISING OUT OF YOUR USE OF
+   THE SDK.
+
+6. TERMINATION
+
+   This License is effective until terminated. ayetstudios may terminate
+   this License at any time if you fail to comply with any term of this
+   License. Upon termination, you must cease all use of the SDK and destroy
+   all copies in your possession.
+
+7. GOVERNING LAW
+
+   This License shall be governed by and construed in accordance with the
+   laws of the jurisdiction in which ayetstudios is established, without
+   regard to its conflict of law provisions.
+
+By using this SDK, you acknowledge that you have read, understood, and agree
+to be bound by the terms of this License.

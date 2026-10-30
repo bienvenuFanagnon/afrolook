@@ -1,4 +1,5 @@
 import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/ads_engine_service.dart';
 import '../services/comments_prefetch.dart';
 import 'package:afrotok/widgets/studio/post_template_try.dart';
 import '../widgets/music/music_overlay.dart';
@@ -3357,16 +3358,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
   Future<void> _recordAdViewForPost(Advertisement ad) async {
     if (ad.id == null) return;
-    final viewIncr = Random().nextInt(3) + 1;
-    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    try {
-      await _firestore.collection('Advertisements').doc(ad.id).update({
-        'views': FieldValue.increment(viewIncr),
-        'uniqueViews': FieldValue.increment(1),
-        'dailyStats.$today.views': FieldValue.increment(viewIncr),
-        'updatedAt': DateTime.now().microsecondsSinceEpoch,
-      });
-    } catch (_) {}
+    AdsEngineService.instance.view(ad.id!, format: 'video', slot: 'video');
   }
 
   Widget _adStatChip(IconData icon, String value) {
@@ -3429,13 +3421,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
             // Bouton d'action
             GestureDetector(
               onTap: () async {
-                final clickIncr = Random().nextInt(3) + 1;
-                final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-                _firestore.collection('Advertisements').doc(ad.id).update({
-                  'clicks': FieldValue.increment(clickIncr),
-                  'uniqueClicks': FieldValue.increment(1),
-                  'dailyStats.$today.clicks': FieldValue.increment(clickIncr),
-                });
+                if (ad.id != null) AdsEngineService.instance.click(ad.id!, format: 'video', slot: 'video');
                 await AdActions.open(ad);
               },
               child: Container(

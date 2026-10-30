@@ -12,6 +12,7 @@ import '../../providers/authProvider.dart';
 import '../../services/utils/abonnement_utils.dart';
 import '../../theme/app_colors.dart';
 import '../user/userAbonnementPage.dart';
+import '../../widgets/offerwall_entry_card.dart';
 
 /// Page « Récompenses » : on regarde des pubs (au choix) pour débloquer du Premium temporaire,
 /// une journée sans pub, des pièces cadeau ou un bouclier de flamme. Le serveur décide de tout.
@@ -144,12 +145,17 @@ class _RewardsPageState extends State<RewardsPage> {
       ),
       body: CenteredContent(
         child: isGold
-            ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Text(context.tr('Tu es Gold : aucune pub, tout est déjà débloqué.'),
-                      textAlign: TextAlign.center, style: TextStyle(color: colors.textSecondary, fontSize: 15, height: 1.4)),
-                ),
+            // Gold : aucune pub, mais le travail rémunéré reste proposé (il ne dépend pas des pubs)
+            ? ListView(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+                children: [
+                  const OfferwallEntryCard(),
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Text(context.tr('Tu es Gold : aucune pub, tout est déjà débloqué.'),
+                        textAlign: TextAlign.center, style: TextStyle(color: colors.textSecondary, fontSize: 15, height: 1.4)),
+                  ),
+                ],
               )
             : _loading
                 ? Center(child: CircularProgressIndicator(color: colors.primary))
@@ -159,6 +165,7 @@ class _RewardsPageState extends State<RewardsPage> {
                     child: ListView(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
                       children: [
+                        const OfferwallEntryCard(),
                         _progressCard(colors, admin),
                         const SizedBox(height: 12),
                         for (final o in offers) _offerCard(o, colors, admin, remainingAds),

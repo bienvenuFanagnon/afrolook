@@ -21,6 +21,7 @@ import '../../../theme/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../l10n/tr.dart';
 import '../../services/currency_service.dart';
+import '../../widgets/offerwall_earnings_card.dart';
 
 // Barème : config/monetization (MonetizationConfig), partagé avec les Cloud Functions.
 const _tierColors = [0xFF22C55E, 0xFF3B82F6, 0xFFF97316, 0xFFF59E0B, 0xFF94A3B8];
@@ -460,6 +461,8 @@ class _MonetisationPageState extends State<MonetisationPage> {
             ],
           ),
         ),
+        // total gagné grâce aux tâches (validé + en attente) : montré à part ; ces pièces sont créditées dans les Pièces gagnées
+        OfferwallEarningsCard(userId: user.id ?? '', compact: true),
         const SizedBox(height: 20),
         _walletTitle(c, context.tr('Mon argent')),
         Container(

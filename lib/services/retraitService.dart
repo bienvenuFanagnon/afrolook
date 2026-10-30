@@ -62,6 +62,10 @@ class RetraitService {
         final userRef = _firestore.collection(_collectionUsers).doc(userId);
         final userDoc = await transaction.get(userRef);
 
+        // dette laissée par une tâche annulée par un partenaire : pas de retrait tant qu'elle n'est pas remboursée par les prochains gains de tâches
+        final debt = ((userDoc.data()?['offerwallDebtCoins'] ?? 0) as num).toInt();
+        if (debt > 0) throw Exception('Retrait impossible : dette de $debt pièces (tâche annulée par un partenaire)');
+
         final currentBalance = (userDoc.get('votre_solde_principal') ?? 0.0).toDouble();
         if (currentBalance < montant) {
           throw Exception('Solde insuffisant pendant la transaction');

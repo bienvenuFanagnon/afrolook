@@ -138,6 +138,9 @@ dependencies {
     // Import the Firebase BoM
     implementation platform('com.google.firebase:firebase-bom:33.10.0')
 
+    // Mur de tâches (Tapjoy) : le SDK doit aussi être déclaré ici (le plugin tapjoy_offerwall 14.6.0 ne l'expose pas à l'application)
+    implementation 'com.tapjoy:tapjoy-android-sdk:14.6.0'
+
 
     // Appodeal (stack_appodeal_flutter 4.3.1, SDK 4.3.0) : depuis la 4.1.0 le plugin n'embarque que « core » + « iab » ; les adaptateurs des réseaux se
     // déclarent ici, aux versions EXACTES du README du plugin (sans eux : « Requests = 0 » dans Appodeal). Réseaux retenus : ceux qui servent des

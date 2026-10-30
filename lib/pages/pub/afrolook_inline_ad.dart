@@ -1,4 +1,5 @@
 import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/ads_engine_service.dart';
 import 'ad_actions.dart';
 import '../../ads/ad_gate.dart';
 import 'dart:async';
@@ -190,25 +191,8 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
     try {
       final ad = Advertisement.fromJson(adData['ad'] as Map<String, dynamic>);
       if (ad.id == null) return;
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid == null) return;
-      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-      final ref = FirebaseFirestore.instance.collection('Advertisements').doc(ad.id);
-      await ref.update({
-        'views': FieldValue.increment(1),
-        'dailyStats.$today.views': FieldValue.increment(1),
-        'updatedAt': DateTime.now().microsecondsSinceEpoch,
-      });
-      final doc = await ref.getM('afrolook_inline_ad.dart:201');
-      if (doc.exists) {
-        final viewers = List<String>.from(doc.data()?['viewersIds'] ?? []);
-        if (!viewers.contains(uid)) {
-          await ref.update({
-            'uniqueViews': FieldValue.increment(1),
-            'viewersIds': FieldValue.arrayUnion([uid]),
-          });
-        }
-      }
+      // vue comptée par le moteur d'Afrolook Ads (plus d'écriture directe dans Advertisements)
+      AdsEngineService.instance.view(ad.id!, format: 'native', slot: 'feed');
     } catch (e) {
       printVm('AfrolookInlineAd._recordView error: $e');
     }
@@ -216,29 +200,7 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
 
   Future<void> _recordClick(Advertisement ad) async {
     if (ad.id == null) return;
-    try {
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid == null) return;
-      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-      final ref = FirebaseFirestore.instance.collection('Advertisements').doc(ad.id);
-      await ref.update({
-        'clicks': FieldValue.increment(1),
-        'dailyStats.$today.clicks': FieldValue.increment(1),
-        'updatedAt': DateTime.now().microsecondsSinceEpoch,
-      });
-      final doc = await ref.getM('afrolook_inline_ad.dart:228');
-      if (doc.exists) {
-        final clickers = List<String>.from(doc.data()?['clickersIds'] ?? []);
-        if (!clickers.contains(uid)) {
-          await ref.update({
-            'uniqueClicks': FieldValue.increment(1),
-            'clickersIds': FieldValue.arrayUnion([uid]),
-          });
-        }
-      }
-    } catch (e) {
-      printVm('AfrolookInlineAd._recordClick error: $e');
-    }
+    AdsEngineService.instance.click(ad.id!, format: 'native', slot: 'feed');
   }
 
   void _showPremiumModal(BuildContext context) {

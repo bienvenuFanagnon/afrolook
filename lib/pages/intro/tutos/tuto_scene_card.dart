@@ -1,3 +1,4 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -103,7 +104,9 @@ class TutoRotation {
 /// puis le gain qui tombe. Boucle de 9 s.
 class TutoPhone extends StatefulWidget {
   final TutoScene scene;
-  const TutoPhone({super.key, required this.scene});
+  /// Joue les sons du tutoriel de monétisation (whoosh, tic, pop, pièces, succès) calés sur l'animation.
+  final bool sound;
+  const TutoPhone({super.key, required this.scene, this.sound = false});
 
   @override
   State<TutoPhone> createState() => _TutoPhoneState();
@@ -112,6 +115,49 @@ class TutoPhone extends StatefulWidget {
 class _TutoPhoneState extends State<TutoPhone> with SingleTickerProviderStateMixin {
   late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(seconds: 9))..repeat();
 
+  // Sons (facultatifs) : instant de la boucle (0 à 1), nom du son (assets/sounds/tuto_<nom>.wav), volume.
+  static const _cues = <(double, String, double)>[
+    (0.07, 'whoosh', 0.45),
+    (0.10, 'tick', 0.35),
+    (0.40, 'pop', 0.6),
+    (0.56, 'coin', 0.7),
+    (0.62, 'success', 0.55),
+  ];
+  final Map<String, AudioPlayer> _players = {};
+  double _prev = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.sound) {
+      for (final n in {for (final c in _cues) c.$2}) {
+        final p = AudioPlayer();
+        _players[n] = p;
+        () async {
+          try {
+            await p.setPlayerMode(PlayerMode.lowLatency);
+            await p.setReleaseMode(ReleaseMode.stop);
+            await p.setSource(AssetSource('sounds/tuto_$n.wav'));
+          } catch (_) {}
+        }();
+      }
+      _c.addListener(_playCues);
+    }
+  }
+
+  void _playCues() {
+    final t = _c.value;
+    if (t < _prev) _prev = 0; // nouvelle boucle
+    for (final c in _cues) {
+      if (_prev < c.$1 && t >= c.$1) {
+        try {
+          _players[c.$2]?.play(AssetSource('sounds/tuto_${c.$2}.wav'), volume: c.$3, mode: PlayerMode.lowLatency);
+        } catch (_) {}
+      }
+    }
+    _prev = t;
+  }
+
   static const _green = Color(0xFF2ECC71);
   static const _greenInk = Color(0xFF06331A);
   static const _goldInk = Color(0xFF412402);
@@ -119,7 +165,13 @@ class _TutoPhoneState extends State<TutoPhone> with SingleTickerProviderStateMix
 
   @override
   void dispose() {
+    _c.removeListener(_playCues);
     _c.dispose();
+    for (final p in _players.values) {
+      try {
+        p.dispose();
+      } catch (_) {}
+    }
     super.dispose();
   }
 
@@ -242,7 +294,10 @@ class _TutoPhoneState extends State<TutoPhone> with SingleTickerProviderStateMix
     final spotR = custom ? sc.spot!.right : 10.0;
     final labelBelow = y + th < 290;
 
-    return SizedBox(
+    // Illustration à taille fixe : elle ne suit pas l'agrandissement du texte du téléphone (sinon les maquettes débordent)
+    return MediaQuery(
+      data: MediaQuery.of(context).copyWith(textScaler: TextScaler.noScaling),
+      child: SizedBox(
       width: 240,
       height: 470,
       child: Container(
@@ -425,6 +480,7 @@ class _TutoPhoneState extends State<TutoPhone> with SingleTickerProviderStateMix
           ),
         ),
       ),
+      ),
     );
   }
 }
@@ -439,10 +495,12 @@ class TutoSceneCard extends StatelessWidget {
   final VoidCallback? onActionOverride;
   final String? actionLabelOverride;
   final VoidCallback? onSeeAll;
+  final bool sound;
 
   const TutoSceneCard({
     super.key,
     required this.scene,
+    this.sound = false,
     this.fullScreen = false,
     this.onClose,
     this.onActionOverride,
@@ -487,7 +545,7 @@ class TutoSceneCard extends StatelessWidget {
           child: SizedBox(
             width: 240 * scale,
             height: 470 * scale,
-            child: FittedBox(fit: BoxFit.contain, child: TutoPhone(scene: scene)),
+            child: FittedBox(fit: BoxFit.contain, child: TutoPhone(scene: scene, sound: sound)),
           ),
         ),
         const SizedBox(height: 12),

@@ -1,5 +1,6 @@
 // widgets/advertisement_post_widget.dart
 import '../../pub/ad_actions.dart';
+import 'package:afrotok/services/ads_engine_service.dart';
 import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/models/model_data.dart';
@@ -134,78 +135,20 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
     final currentUserId = authProvider.loginUserData.id;
     if (currentUserId == null || widget.ad.id == null) return;
     if (_hasRecordedView) return;
-
-    try {
-      _hasRecordedView = true;
-      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-      final adRef = _firestore.collection('Advertisements').doc(widget.ad.id);
-
-      await _firestore.runTransaction((transaction) async {
-        final adDoc = await transaction.get(adRef);
-        if (!adDoc.exists) return;
-
-        final currentAd = Advertisement.fromJson(adDoc.data()!);
-        final hasSeen = currentAd.viewersIds?.contains(currentUserId) ?? false;
-        final viewIncr = Random().nextInt(3) + 1;
-
-        final updates = <String, dynamic>{
-          'views': FieldValue.increment(viewIncr),
-          'updatedAt': DateTime.now().microsecondsSinceEpoch,
-        };
-        if (!hasSeen) {
-          updates['uniqueViews'] = FieldValue.increment(1);
-          updates['viewersIds'] = FieldValue.arrayUnion([currentUserId]);
-        }
-        if (currentAd.dailyStats == null) {
-          updates['dailyStats'] = {today: {'views': viewIncr}};
-        } else {
-          updates['dailyStats.$today.views'] = FieldValue.increment(viewIncr);
-        }
-        transaction.update(adRef, updates);
-      });
-
-      if (mounted) setState(() => widget.ad.views = (widget.ad.views ?? 0) + 1);
-      widget.onAdViewed?.call(widget.post, widget.ad);
-    } catch (e) {
-      _hasRecordedView = false;
-    }
+    _hasRecordedView = true;
+    // la vue est comptée par le moteur d'Afrolook Ads (jeton signé, durée visible, plafond par utilisateur) ; l'application n'écrit plus de compteur
+    AdsEngineService.instance.view(widget.ad.id!, format: 'native', slot: 'feed');
+    if (mounted) setState(() => widget.ad.views = (widget.ad.views ?? 0) + 1);
+    widget.onAdViewed?.call(widget.post, widget.ad);
   }
 
   Future<void> _handleActionButtonClick() async {
     final currentUserId = authProvider.loginUserData.id;
     if (currentUserId == null || widget.ad.id == null) return;
-
+    AdsEngineService.instance.click(widget.ad.id!, format: 'native', slot: 'feed');
     try {
-      final adRef = _firestore.collection('Advertisements').doc(widget.ad.id);
-      final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
-
-      await _firestore.runTransaction((transaction) async {
-        final adDoc = await transaction.get(adRef);
-        if (!adDoc.exists) return;
-
-        final currentAd = Advertisement.fromJson(adDoc.data()!);
-        final hasClicked = currentAd.clickersIds?.contains(currentUserId) ?? false;
-        final clickIncr = Random().nextInt(3) + 1;
-
-        final updates = <String, dynamic>{
-          'clicks': FieldValue.increment(clickIncr),
-          'updatedAt': DateTime.now().microsecondsSinceEpoch,
-        };
-        if (!hasClicked) {
-          updates['uniqueClicks'] = FieldValue.increment(1);
-          updates['clickersIds'] = FieldValue.arrayUnion([currentUserId]);
-        }
-        if (currentAd.dailyStats == null) {
-          updates['dailyStats'] = {today: {'clicks': clickIncr}};
-        } else {
-          updates['dailyStats.$today.clicks'] = FieldValue.increment(clickIncr);
-        }
-        transaction.update(adRef, updates);
-      });
-
       if (mounted) setState(() => widget.ad.clicks = (widget.ad.clicks ?? 0) + 1);
       widget.onAdClicked?.call(widget.post, widget.ad);
-
       await AdActions.open(widget.ad);
     } catch (e) {
       // silently ignore

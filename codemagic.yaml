@@ -6,6 +6,8 @@ workflows:
       flutter: stable
       xcode: latest
       cocoapods: default
+      groups:
+        - offerwall_keys
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.afrotok.afrotok
@@ -27,6 +29,11 @@ workflows:
           BUILD_NUMBER=$(($(app-store-connect get-latest-testflight-build-number "6811423047") + 1))
           cd ios
           agvtool new-version -all $BUILD_NUMBER
+      - name: Créer le fichier de clé des tâches (Tapjoy iPhone)
+        # assets/env/*.env sont ignorés par Git (clés non versionnées) : on recrée ici celui de Tapjoy (clé iPhone) à partir de la variable sécurisée TAPJOY_SDK_KEY_IOS du groupe « offerwall_keys » (Codemagic ne sert que pour iOS ; ayeT n'est pas dans la version iPhone)
+        script: |
+          mkdir -p assets/env
+          echo "TAPJOY_SDK_KEY_IOS=$TAPJOY_SDK_KEY_IOS" > assets/env/tapjoy.env
       - name: Build iOS release
         script: |
           flutter build ipa --release \
@@ -103,6 +110,8 @@ workflows:
       flutter: stable
       xcode: latest
       cocoapods: default
+      groups:
+        - offerwall_keys
     scripts:
       - name: Get Flutter packages
         script: flutter pub get
@@ -110,6 +119,11 @@ workflows:
         script: |
           cd ios
           pod install --repo-update
+      - name: Créer le fichier de clé des tâches (Tapjoy iPhone)
+        # assets/env/*.env sont ignorés par Git (clés non versionnées) : on recrée ici celui de Tapjoy (clé iPhone) à partir de la variable sécurisée TAPJOY_SDK_KEY_IOS du groupe « offerwall_keys » (Codemagic ne sert que pour iOS ; ayeT n'est pas dans la version iPhone)
+        script: |
+          mkdir -p assets/env
+          echo "TAPJOY_SDK_KEY_IOS=$TAPJOY_SDK_KEY_IOS" > assets/env/tapjoy.env
       - name: Build iOS (no code sign)
         script: |
           flutter build ios --debug --no-codesign

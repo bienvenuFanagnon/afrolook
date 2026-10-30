@@ -1,0 +1,29 @@
+name: tapjoy_offerwall
+description: Flutter Plugin for Tapjoy SDK
+version: 14.6.0
+homepage: "https://dev.tapjoy.com"
+documentation: "https://dev.tapjoy.com/en/flutter-plugin/Quickstart"
+repository: "https://github.com/Tapjoy/flutter-sdk"
+
+environment:
+  sdk: '>=3.0.5 <4.0.0'
+  flutter: ">=3.3.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  plugin_platform_interface: ^2.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.tapjoy.flutter
+        pluginClass: TapjoyOfferwallPlugin
+      ios:
+        pluginClass: TapjoyOfferwallPlugin

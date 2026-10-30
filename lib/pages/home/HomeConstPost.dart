@@ -68,6 +68,7 @@ import '../../widgets/feed/sections/feed_category_section.dart';
 import '../../widgets/feed/sections/feed_end_discovery_section.dart';
 import '../../widgets/feed/sections/feed_discovery_section.dart';
 import '../../widgets/feed/sections/gift_reward_card.dart';
+import '../../widgets/feed/sections/offerwall_feed_card.dart';
 import '../../widgets/feed/sections/feed_live_section.dart';
 import '../LiveAgora/livesAgora.dart';
 import '../../services/feed/discovery_boost_service.dart';
@@ -3622,6 +3623,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
             delegate: SliverChildListDelegate([
               if (widget.type.isEmpty) _buildNoNewPostsBanner(),
               _buildDiscoverySection(width, height),
+              const OfferwallFeedCard(key: ValueKey('offerwall_card_home_empty'), slot: 7),
               const GiftRewardCard(key: ValueKey('gift_card_home_empty'), slot: 3),
               const QuizFeedCard(key: ValueKey('quiz_card_home_end_empty'), slot: 3),
               FeedEndDiscoverySection(
@@ -3731,6 +3733,14 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       // Cadeau à récupérer après une courte vidéo (pub récompensée) : au milieu du fil
       if (i == 11) {
         contentWidgets.add(const GiftRewardCard(key: ValueKey('gift_card_home_1'), slot: 1));
+      }
+
+      // Tâches rémunérées (« travaille dans Afrolook et gagne de l'argent ») : après le 9e post, puis un rappel plus loin
+      if (i == 8) {
+        contentWidgets.add(const OfferwallFeedCard(key: ValueKey('offerwall_card_home_1'), slot: 1));
+      }
+      if (i == 23) {
+        contentWidgets.add(const OfferwallFeedCard(key: ValueKey('offerwall_card_home_2'), slot: 2));
       }
 
       // Quiz : les 3 questions du jour après le 3e post, puis un rappel plus loin si la personne n'a pas joué
@@ -3899,6 +3909,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       // Plus de posts à voir : le quiz s'affiche avant les widgets de fin
       contentWidgets.add(const QuizFeedCard(key: ValueKey('quiz_card_home_end'), slot: 3));
       contentWidgets.add(const SocialFollowCard(key: ValueKey('social_follow_end'), variant: SocialFollowVariant.end));
+      contentWidgets.add(const OfferwallFeedCard(key: ValueKey('offerwall_card_home_end'), slot: 3));
       contentWidgets.add(const GiftRewardCard(key: ValueKey('gift_card_home_end'), slot: 2));
       contentWidgets.add(_buildDiscoverySection(width, height));
       contentWidgets.add(FeedEndDiscoverySection(
