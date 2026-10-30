@@ -6,6 +6,7 @@ export const T = {
     nav: { earn: 'Comment gagner', cards: 'Studio Cartes', music: 'Musique', holidays: 'Fêtes', contact: 'Contact', download: 'Télécharger', web: 'Ouvrir sur le web', menu: 'Menu', skip: 'Aller au contenu' },
     store: { avail: 'DISPONIBLE SUR', get: 'TÉLÉCHARGER SUR', play: 'Google Play', apple: 'App Store' },
     home: {
+      screens: { k: 'L\'application', h: 'Le fil, le sport, les lives et les actualités', p: 'Tout ce que tu fais dans Afrolook se retrouve dans une seule application : un fil fait pour toi, un onglet Sport, des lives avec cadeaux et un journal d\'actualités de ton pays.', liveH: 'Les lives, de la liste à la salle', liveP: 'Rejoins un live en cours, écris dans les commentaires, envoie des cadeaux, puis retrouve les meilleurs donateurs à la fin.', fine: 'Écrans de l\'application, avec des contenus d\'exemple.' },
       title: 'Afrolook : gagne de l\'argent avec tes posts, tes cartes et ta musique',
       desc: 'Le réseau social qui paie ses créateurs : likes, cadeaux, ventes, cartes à partager et Musique avec extrait gratuit et son d\'artiste dans tes posts. Gratuit sur Android et iPhone.',
       eyebrow: 'Rémunération · Studio Cartes · Musique',
@@ -95,6 +96,7 @@ export const T = {
     nav: { earn: 'How to earn', cards: 'Card Studio', music: 'Music', holidays: 'Holidays', contact: 'Contact', download: 'Download', web: 'Open on the web', menu: 'Menu', skip: 'Skip to content' },
     store: { avail: 'GET IT ON', get: 'DOWNLOAD ON THE', play: 'Google Play', apple: 'App Store' },
     home: {
+      screens: { k: 'The app', h: 'The feed, sport, live streams and news', p: 'Everything you do in Afrolook lives in one app: a feed made for you, a Sport tab, live streams with gifts and a news journal for your country.', liveH: 'Live streams, from the list to the room', liveP: 'Join a live stream, write in the comments, send gifts, then see the top donors at the end.', fine: 'Screens from the app, with example content.' },
       title: 'Afrolook: earn money from your posts, your cards and your music',
       desc: 'The social network that pays its creators: likes, gifts, sales, shareable cards and Music with a free preview and artist sounds in your posts. Free on Android and iPhone.',
       eyebrow: 'Earnings · Card Studio · Music',

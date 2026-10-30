@@ -3,6 +3,11 @@
 # AdMob (compte Afrolook)
 google.com, pub-4937249920200692, DIRECT, f08c47fec0942fa0
 
+# AYET-STUDIOS (placements Android n° 25815 et iPhone n° 25818)
+ayetstudios.com, AYETSTUDIOS, DIRECT
+ayetstudios.com, PL-25815, DIRECT
+ayetstudios.com, PL-25818, DIRECT
+
 #Appodeal
 appodeal.com, 262803, DIRECT
 #BidMachine

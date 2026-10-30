@@ -1148,3 +1148,46 @@ body[data-view=creations] #main>.wrap>.eyebrow,body[data-view=creations] #main>.
 .likeask .btn{padding:8px 14px;font-size:13px}
 @keyframes likeaskin{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
 @media (min-width:720px){.likeask{bottom:24px}}
+
+/* ── Afrolook Ads : formats d'annonces (grande bannière, rectangle moyen, carte native, chargement) ─────────────── */
+.afa{position:relative;display:flex;text-decoration:none;color:inherit;border-radius:14px;overflow:hidden;background:#0d0d0d;border:1px solid rgba(255,184,48,.3);width:100%;box-sizing:border-box;transition:border-color .2s,transform .2s}
+.afa:hover{border-color:rgba(255,184,48,.65);transform:translateY(-1px)}
+.afa-spon{position:absolute;top:7px;right:11px;font:600 9.5px/1 var(--mono);color:rgba(255,255,255,.55);letter-spacing:.05em;text-transform:uppercase;z-index:2;pointer-events:none}
+.afa-media{position:relative;overflow:hidden;background:#161616;flex-shrink:0}
+.afa-bg{position:absolute;inset:-14px;background-size:cover;background-position:center;filter:blur(14px) brightness(.65);transform:scale(1.1)}
+.afa-img,.poster .afa-img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain!important;display:block}
+.afa-ph{position:absolute;inset:0;display:grid;place-items:center;font:700 12px var(--mono);color:rgba(255,255,255,.4)}
+.afa-badge{display:inline-block;background:rgba(255,184,48,.16);color:#ffb830;border-radius:999px;padding:2px 9px;font:700 10.5px var(--mono);letter-spacing:.04em;margin-bottom:6px}
+.afa-t{margin:0 0 4px;font:700 15px/1.3 var(--f);color:var(--txt);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.afa-d{margin:0;font:400 12.5px/1.4 var(--f);color:rgba(255,255,255,.7);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.afa-cta{display:inline-flex;align-items:center;justify-content:center;background:#ffb830;color:#000;border-radius:999px;padding:10px 20px;font:800 13px var(--f);white-space:nowrap;flex-shrink:0}
+.afa:hover .afa-cta{background:#ffc552}
+/* grande bannière / leaderboard (320×100 sur téléphone, 728×90 sur ordinateur) */
+.afa-lb{align-items:center;flex-wrap:wrap;gap:12px 14px;padding:10px 14px 10px 10px;min-height:104px;max-width:728px;margin-inline:auto}
+.afa-lb .afa-media{width:84px;height:84px;border-radius:10px}
+.afa-lb .afa-body{flex:1 1 180px;min-width:0;padding-top:6px}
+/* rectangle moyen 300×250 */
+.afa-rect{flex-direction:column;max-width:336px;margin-inline:auto}
+.afa-rect .afa-media{width:100%;height:176px}
+.afa-rect .afa-body{padding:12px 14px 4px}
+.afa-rect .afa-cta{margin:8px 14px 14px}
+/* bandeau pendant le chargement */
+.afa-load{align-items:center;gap:12px;padding:10px 12px;min-height:84px}
+.afa-load .afa-media{width:64px;height:64px;border-radius:9px}
+.afa-load .afa-body{flex:1;min-width:0;padding-top:4px}
+/* carte native dans une liste : affiche entière sur fond flouté */
+.poster.img{position:relative;overflow:hidden}
+@media(max-width:520px){
+  .afa-lb{padding:8px 10px 8px 8px;gap:8px 10px;min-height:96px}
+  .afa-lb .afa-media{width:76px;height:76px}
+  .afa-t{font-size:14px}
+  .afa-lb .afa-cta{padding:8px 14px;font-size:12.5px;margin-left:auto}
+  .afa-rect{max-width:100%}
+  .afa-rect .afa-media{height:160px}
+}
+
+/* bannière prête à l'emploi (image seule des annonceurs : 728×90, 320×100, 300×250) */
+.afa-bn{display:block;border:0;background:none;padding:0;margin-inline:auto;overflow:hidden;border-radius:8px;width:100%}
+.afa-bn:hover{transform:none}
+.afa-bn img{display:block;width:100%;height:auto}
+.afa-spon-bn{top:4px;right:auto;left:4px;background:rgba(0,0,0,.65);color:#fff;border-radius:4px;padding:2px 5px;font-size:9px}

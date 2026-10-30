@@ -1,0 +1,8 @@
+Illustrations des formats de la page /ads/ : photos libres de droits (licence Pexels : usage gratuit, y compris commercial, mention non obligatoire).
+carte.webp         : https://www.pexels.com/photo/woman-scrolling-instagram-feed-6963589/
+video.webp         : https://www.pexels.com/photo/a-man-filming-himself-using-his-mobile-phone-8359955/
+carrousel.webp     : https://www.pexels.com/photo/collage-photo-collage-3024995/
+banniere.webp      : https://www.pexels.com/photo/laptop-on-a-wooden-table-with-the-design-business-website-on-the-screen-7181184/
+affiche.webp       : https://www.pexels.com/photo/assorted-posters-placed-on-street-wall-3964819/
+notification.webp  : https://www.pexels.com/photo/smartphone-display-with-app-notifications-32944547/
+Réduites à 640 x 400 (recadrage centré, WebP).

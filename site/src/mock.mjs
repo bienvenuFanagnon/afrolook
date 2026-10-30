@@ -48,6 +48,7 @@ const I = {
   heart: 'M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55l-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z',
   heartf: 'M12 21l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.18L12 21z',
   repeat: 'M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z', bars: 'M5 9.2h3V19H5zM10.6 5h2.8v14h-2.8zm5.6 8H19v6h-2.8z',
+  send: 'M2.01 21L23 12 2.01 3 2 10l15 2-15 2z',
   chev: 'M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z', user: 'M12 12a4 4 0 100-8 4 4 0 000 8zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z',
   adp: 'M12 2a10 10 0 100 20 10 10 0 000-20zm-2 14.5v-9l7 4.5-7 4.5z',
 };
@@ -101,4 +102,74 @@ export function musicMocks(lang, which = ['page', 'fiche', 'sheet', 'feed']) {
   const m = MK[lang];
   const map = { page: [m.cap1, pagePhone], fiche: [m.cap2, fichePhone], sheet: [m.cap3, sheetPhone], feed: [m.cap4, feedPhone] };
   return `<div class="mkrow4">${which.map((k) => wrap(map[k][0], map[k][1](m))).join('')}</div>`;
+}
+
+// ─── Écrans de l'accueil : fil « Pour toi », Sport, Lives, journal des actualités (contenus d'exemple) ───
+const MK2 = {
+  fr: {
+    caps: ['Le fil « Pour toi »', 'L\'onglet Sport', 'Les lives en direct', 'Le journal des actualités', 'Dans le live : commentaires et cadeaux', 'Fin du live : les meilleurs donateurs'],
+    room: { host: '@mawuli_k', title: 'Soirée freestyle', viewers: '1,2K', gift: '🎁 @adjoa a envoyé un cadeau : Couronne', cm: [['kofi_a', 'Trop fort ! 🔥'], ['ama_k', 'Bonjour de Lomé 👋'], ['yao_d', 'Envoie le prochain son !']], input: 'Écris un commentaire…' },
+    end: { title: 'Live terminé 🎉', sub: 'Merci à tous vos spectateurs !', stat: '1,2K spectateurs · 48 min', top: 'Top donateurs', d: [['@adjoa', '🪙 500'], ['@kofi_a', '🪙 250'], ['@ama_k', '🪙 120']], share: 'Partager ce live', close: 'Fermer' },
+    p1: ['@fatou_diop', 'Marché de Cotonou au lever du soleil <u>#Cotonou</u>', '48', '1,2K', '12', '8,9k'],
+    p2: ['@koffi_sport', 'Quel but ! Le stade a explosé de joie <u>#Football</u>', '126', '3,4K', '57', '21k'],
+    live: 'EN DIRECT', join: 'Rejoindre', lives: 'Lives', tabsL: ['En cours', 'Tous', 'Mes lives'],
+    l1: ['Soirée freestyle', '@mawuli_k', '1,2K'], l2: ['Cuisine togolaise : le fufu', '@ama_cuisine', '482'],
+    journal: 'Mon journal', per: ['Jour', 'Semaine', 'Mois'], cats: ['Tout', 'Sport', 'Culture', 'Musique', 'Tech'],
+    a: [['Sport', '🇹🇬 TG', 'il y a 2 h', 'Football : les clubs préparent la nouvelle saison'], ['Culture', '🇨🇮 CI', 'il y a 3 h', 'Un festival de musique ouvre ses portes à Abidjan'], ['Mode', 'Afrique', 'il y a 5 h', 'Le wax à l\'honneur cette semaine']],
+  },
+  en: {
+    caps: ['The "For you" feed', 'The Sport tab', 'Live streams', 'The news journal', 'Inside a live: comments and gifts', 'End of the live: top donors'],
+    room: { host: '@mawuli_k', title: 'Freestyle night', viewers: '1.2K', gift: '🎁 @adjoa sent a gift: Crown', cm: [['kofi_a', 'So good! 🔥'], ['ama_k', 'Hello from Lomé 👋'], ['yao_d', 'Play the next track!']], input: 'Write a comment…' },
+    end: { title: 'Live ended 🎉', sub: 'Thank you to all your viewers!', stat: '1.2K viewers · 48 min', top: 'Top donors', d: [['@adjoa', '🪙 500'], ['@kofi_a', '🪙 250'], ['@ama_k', '🪙 120']], share: 'Share this live', close: 'Close' },
+    p1: ['@fatou_diop', 'Cotonou market at sunrise <u>#Cotonou</u>', '48', '1.2K', '12', '8.9k'],
+    p2: ['@koffi_sport', 'What a goal! The stadium exploded with joy <u>#Football</u>', '126', '3.4K', '57', '21k'],
+    live: 'LIVE', join: 'Join', lives: 'Lives', tabsL: ['Live now', 'All', 'My lives'],
+    l1: ['Freestyle night', '@mawuli_k', '1.2K'], l2: ['Togolese cooking: fufu', '@ama_cuisine', '482'],
+    journal: 'My journal', per: ['Day', 'Week', 'Month'], cats: ['All', 'Sport', 'Culture', 'Music', 'Tech'],
+    a: [['Sport', '🇹🇬 TG', '2 h ago', 'Football: clubs get ready for the new season'], ['Culture', '🇨🇮 CI', '3 h ago', 'A music festival opens its doors in Abidjan'], ['Fashion', 'Africa', '5 h ago', 'Wax prints in the spotlight this week']],
+  },
+};
+
+const feedShell = (m, k, tab, p, imgClass) => `
+<div class="mkab"><span>${ic('menu')}</span><b class="logo">Afrolook</b><i></i><span>${ic('bell')}</span><span>${ic('search')}</span><span class="g">${ic('vol')}</span><span class="g">${ic('refresh')}</span></div>
+<div class="mknav">${[['group', 0], ['chatb', 1], ['biz', 2], ['plus', 3], ['vlib', 4], ['school', 5], ['live', 6]].map(([i, n]) => `<span class="${n === 3 ? 'cr' : ''}">${n === 3 ? `<s>${ic('plus')}</s>` : ic(i)}<em>${m.nav[n]}</em></span>`).join('')}</div>
+<div class="mktabs2">${m.tabs2.map((x, i) => `<span class="${i === tab ? 'on' : ''}">${x}</span>`).join('')}</div>
+<article class="mkth"><i class="mkav">${ic('user')}</i><span class="mkvl"></span><div class="mktc">
+ <div class="mkhh"><span class="mkps"><u>@</u>${p[0].slice(1)}</span><span class="mkflw">${m.follow}</span><span class="mkct">🌍</span>${ic('moreh', 'dm')}</div>
+ <p class="mkcap">${p[1]}</p><div class="mkimg ${imgClass}"></div>
+ <div class="mkac"><span>${ic('chatb')}${p[2]}</span><span class="on">${ic('heartf')}${p[3]}</span><span>${ic('repeat')}${p[4]}</span><span class="mkgf"><s>🏆</s>${m.gift}</span><em class="mkin">${ic('bars')}${p[5]}</em></div></div></article>`;
+
+const livesPhone = (m, k) => `
+<div class="mkab"><span>${ic('back')}</span><b>${k.lives}</b><span>${ic('search')}</span></div>
+<div class="mktabs2">${k.tabsL.map((x, i) => `<span class="${i === 0 ? 'on' : ''}">${x}</span>`).join('')}</div>
+${[[k.l1, 1], [k.l2, 2]].map(([l, v]) => `<div class="mklv"><i class="mklc" data-v="${v}"></i><span class="mklb">● ${k.live}</span><span class="mklw">${ic('user')} ${l[2]}</span>
+ <div class="mkli"><i class="mkav">${ic('user')}</i><span class="mkt2"><b>${l[0]}</b><small>${l[1]}</small></span><span class="mkjn">${k.join}</span></div></div>`).join('')}
+<div class="mklg"><span>${ic('heart', 'rd')}</span><span>🎁 ${m.gift}</span></div>`;
+
+const newsPhone = (m, k) => `
+<div class="mkab"><span>${ic('back')}</span><b>${k.journal}</b><span>${ic('search')}</span></div>
+<div class="mktabs2">${k.per.map((x, i) => `<span class="${i === 0 ? 'on' : ''}">${x}</span>`).join('')}</div>
+<div class="mkpills">${k.cats.map((x, i) => `<span class="mkpill ${i === 0 ? 'on' : ''}">${x}</span>`).join('')}</div>
+${k.a.map((a, i) => `<div class="mkart"><span><small><b>${a[0]}</b> ${a[1]} · ${a[2]}</small><h5>${a[3]}</h5></span><i data-v="${i + 1}"></i></div>`).join('')}`;
+
+const roomPhone = (m, k) => { const r = k.room; return `
+<div class="mkrmv"><i class="mklc" data-v="1"></i>
+ <div class="mkrmt"><i class="mkav">${ic('user')}</i><span class="mkt2"><b>${r.host}</b><small>${r.title}</small></span><span class="mklb st">● ${k.live}</span><span class="mklw st">${ic('user')} ${r.viewers}</span><span class="mkx">${ic('close')}</span></div>
+ <div class="mkgb">${r.gift}</div>
+ <div class="mkcm">${r.cm.map((c) => `<p><b>${c[0]}</b> ${c[1]}</p>`).join('')}</div>
+ <div class="mkrb"><span class="mkin2">${r.input}</span><span class="mkgfb">🎁</span><span class="mkrbi">${ic('send')}</span><span class="mkrbi rd">${ic('heartf')}</span></div></div>`; };
+
+const endPhone = (m, k) => { const e = k.end; return `
+<div class="mkend"><div class="mkend1">🎉</div><h4>${e.title}</h4><p>${e.sub}</p><span class="mkst2">${e.stat}</span>
+ <div class="mkcard"><b>🏆 ${e.top}</b>${e.d.map((d, i) => `<div class="mkdn"><span class="mkrk">${i + 1}</span><span class="mkdh">${d[0]}</span><em>${d[1]}</em></div>`).join('')}</div>
+ <span class="mkbuy">${ic('send')} ${e.share}</span><span class="mklater">${e.close}</span></div>`; };
+
+/** Écrans de l'application pour l'accueil. `group` : 'main' (fil, sport, journal) ou 'lives' (liste, salle, fin du live). Contenus d'exemple. */
+export function appMocks(lang, group = 'main') {
+  const m = MK[lang], k = MK2[lang];
+  const sets = {
+    main: [wrap(k.caps[0], feedShell(m, k, 0, k.p1, '')), wrap(k.caps[1], feedShell(m, k, 1, k.p2, 'sp')), wrap(k.caps[3], newsPhone(m, k))],
+    lives: [wrap(k.caps[2], livesPhone(m, k)), wrap(k.caps[4], roomPhone(m, k)), wrap(k.caps[5], endPhone(m, k))],
+  };
+  return `<div class="mkrow4">${sets[group].join('')}</div>`;
 }

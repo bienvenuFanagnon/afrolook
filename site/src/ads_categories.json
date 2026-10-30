@@ -1,0 +1,116 @@
+{
+ "categories": {
+  "commerce": {
+   "label": "Commerce et boutiques",
+   "level": "standard"
+  },
+  "restauration": {
+   "label": "Restauration et alimentation",
+   "level": "standard"
+  },
+  "mode_beaute": {
+   "label": "Mode, beauté, cosmétiques",
+   "level": "standard"
+  },
+  "technologie": {
+   "label": "Technologie, applications, sites web",
+   "level": "standard"
+  },
+  "immobilier": {
+   "label": "Immobilier et construction",
+   "level": "standard"
+  },
+  "education": {
+   "label": "Éducation et formation",
+   "level": "standard"
+  },
+  "emploi": {
+   "label": "Emploi et recrutement",
+   "level": "standard"
+  },
+  "evenements": {
+   "label": "Événements, musique, spectacles",
+   "level": "standard"
+  },
+  "medias": {
+   "label": "Médias et créateurs de contenu",
+   "level": "standard"
+  },
+  "voyage": {
+   "label": "Voyage, transport, hôtellerie",
+   "level": "standard"
+  },
+  "auto": {
+   "label": "Automobile et moto",
+   "level": "standard"
+  },
+  "telecom": {
+   "label": "Télécoms et internet",
+   "level": "standard"
+  },
+  "services": {
+   "label": "Services aux particuliers et aux entreprises",
+   "level": "standard"
+  },
+  "sante_bienetre": {
+   "label": "Santé et bien-être (sans médicaments)",
+   "level": "standard"
+  },
+  "sport": {
+   "label": "Sport et loisirs",
+   "level": "standard"
+  },
+  "association": {
+   "label": "Associations, ONG, institutions",
+   "level": "standard"
+  },
+  "finance": {
+   "label": "Finance, crédit, assurance, épargne",
+   "level": "sensitive"
+  },
+  "crypto": {
+   "label": "Cryptomonnaies et investissement",
+   "level": "sensitive"
+  },
+  "paris_jeux": {
+   "label": "Paris sportifs et jeux d'argent",
+   "level": "sensitive"
+  },
+  "alcool_tabac": {
+   "label": "Alcool et tabac",
+   "level": "sensitive"
+  },
+  "medicaments": {
+   "label": "Médicaments et produits de santé",
+   "level": "sensitive"
+  },
+  "rencontres": {
+   "label": "Rencontres",
+   "level": "sensitive"
+  },
+  "sensuel": {
+   "label": "Contenu sensuel (corps dénudé ou suggestif)",
+   "level": "sensitive",
+   "hint": "Une image qui expose le corps de façon suggestive. Le contenu sexuellement explicite est interdit."
+  },
+  "politique": {
+   "label": "Politique et élections",
+   "level": "sensitive"
+  },
+  "religion": {
+   "label": "Religion et spiritualité",
+   "level": "sensitive"
+  },
+  "loterie": {
+   "label": "Concours, loteries et tirages",
+   "level": "sensitive"
+  }
+ },
+ "forbidden": [
+  "contenu sexuellement explicite",
+  "armes",
+  "drogues",
+  "arnaques et fausses promesses de gains",
+  "contenus illégaux ou haineux"
+ ]
+}

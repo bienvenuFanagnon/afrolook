@@ -39,7 +39,6 @@ db.settings({ ignoreUndefinedProperties: true });
 
 const API_FOOTBALL_KEY = defineString('API_FOOTBALL_KEY', { default: '' });
 const FOOTBALL_DATA_TOKEN = defineString('FOOTBALL_DATA_TOKEN', { default: '' });
-const ADSTERRA_API_TOKEN = defineString('ADSTERRA_API_TOKEN', { default: '' });
 const CF_API_TOKEN = defineString('CF_API_TOKEN', { default: '' });
 const CF_ACCOUNT_ID = defineString('CF_ACCOUNT_ID', { default: '' });
 const GEMINI_API_KEY = defineString('GEMINI_API_KEY', { default: '' });
@@ -51,7 +50,7 @@ const FOOTBALL_SOURCE = defineString('FOOTBALL_SOURCE', { default: '' });
 
 const REGION = 'europe-west1';
 const val = (p) => { try { return p.value(); } catch { return ''; } };
-const secrets = () => ({ adsterra: val(ADSTERRA_API_TOKEN), source: val(FOOTBALL_SOURCE), footballData: val(FOOTBALL_DATA_TOKEN), apiFootball: val(API_FOOTBALL_KEY), cfToken: val(CF_API_TOKEN), cfAccount: val(CF_ACCOUNT_ID), gemini: val(GEMINI_API_KEY) });
+const secrets = () => ({ adsterra: '', /* Adsterra abandonné : seulement Afrolook Ads */ source: val(FOOTBALL_SOURCE), footballData: val(FOOTBALL_DATA_TOKEN), apiFootball: val(API_FOOTBALL_KEY), cfToken: val(CF_API_TOKEN), cfAccount: val(CF_ACCOUNT_ID), gemini: val(GEMINI_API_KEY) });
 const cron = (nom) => SCHEDULE.find((x) => x.nom === nom).cron;
 const sched = (schedule, extra = {}) => Object.assign({ schedule, timeZone: 'UTC', region: REGION, memory: '512MiB', timeoutSeconds: 540, maxInstances: 1, retryCount: 0 }, extra);
 

@@ -85,7 +85,8 @@
 
   /* ---------- consentement (UE et Royaume-Uni) ---------- */
   var NON_UE = /^Europe\/(Moscow|Istanbul|Minsk|Kiev|Kyiv|Chisinau|Belgrade|Skopje|Sarajevo|Tirane|Podgorica|Zurich|Simferopol|Volgograd|Samara|Kaliningrad|Saratov|Astrakhan|Ulyanovsk|Kirov)$/;
-  var needsConsent = /^Europe\//.test(tz) && !NON_UE.test(tz);
+  /* Plus aucun réseau publicitaire tiers (seulement Afrolook Ads, sans cookie ni suivi) : le bandeau de consentement n'est plus nécessaire. */
+  var needsConsent = false;
   var consent = store.get('pf_consent');
   /* navigateur de l'administrateur : pubs tierces masquées (aucun affichage ni clic de soi-même, que les réseaux sanctionnent) */
   var ownerBrowser = store.get('pf_noads') === 1;
@@ -144,13 +145,88 @@
   /* ---------- encarts Afrolook ---------- */
   var MSG = L.msg;
   var STORE_IOS = 'https://apps.apple.com/gh/app/afrolook/id6811423047';
+  /* Annonces des annonceurs (moteur Afrolook Ads) : elles passent avant l'encart maison. Le moteur d'Afrolook CHOISIT l'annonce (catégories acceptées par PronoFlash,
+     ciblage de l'annonceur), la SIGNE et COMPTE les vues et les clics ; ce script l'affiche. La vue part avec le jeton une fois l'encart visible à moitié pendant
+     la durée du format ; le clic passe par le lien d'Afrolook (adsGo). L'annonceur retrouve ses chiffres dans son espace sur afrolookmedia.com. */
+  var ADS_API = 'https://us-central1-afrolooki.cloudfunctions.net', webN = 0;
+  var VID = (function () {
+    try {
+      var v = localStorage.getItem('adsvid');
+      if (!v) { v = (w.crypto && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36)).replace(/[^A-Za-z0-9-]/g, ''); localStorage.setItem('adsvid', v); }
+      return v;
+    } catch (e) { return 'anon-' + Math.random().toString(36).slice(2, 12) + Date.now().toString(36); }
+  })();
+  function serveAd(slot, size) {
+    return new Promise(function (res) {
+      var done = false;
+      function end(ad) { if (done) return; done = true; res(ad); }
+      setTimeout(function () { end(null); }, 6000);
+      var s = 'pf-' + String(slot).toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 18) + '-' + (webN++); // un nom d'emplacement par encart de la page
+      fetch(ADS_API + '/adsServe?pub=pronoflash&fmt=native&slot=' + encodeURIComponent(s) + '&vid=' + encodeURIComponent(VID) + '&lang=' + LANG + (size ? '&size=' + size : ''), { cache: 'no-store' })
+        .then(function (r) { return r.json(); }).then(function (j) { end(j && j.ok && j.ad && j.ad.id && j.ad.title && j.ad.token ? j.ad : null); }).catch(function () { end(null); });
+    });
+  }
+  function httpsUrl(u) { try { var x = new URL(u); return x.protocol === 'https:' ? x.href : ''; } catch (e) { return ''; } }
+  function cutTxt(t, n) { t = String(t || '').replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n - 1).trim() + '…' : t; }
+  /* remplace le contenu de l'encart maison par l'annonce d'un annonceur */
+  function applyWeb(a, ad) {
+    a.href = httpsUrl(ad.click) || 'https://afrolookmedia.com/ads/';
+    a.rel = 'noopener sponsored nofollow';
+    a.setAttribute('data-web', ad.id); a.setAttribute('data-r', '1');
+    var im = $('.im', a), photo = httpsUrl(ad.media && (ad.media.thumb || ad.media.url));
+    /* image TOUJOURS visible en entier (jamais rognée) : posée sur une copie floutée d'elle-même, quel que soit son format */
+    if (im && photo) { var u = 'url("' + photo.replace(/["'()\\\s]/g, '') + '")'; im.style.backgroundImage = u; im.style.setProperty('--abg', u); }
+    var bg = $('.bg', a); if (bg) bg.textContent = EN ? 'Ad' : 'Annonce';
+    var p = $('p', a); if (p) p.textContent = cutTxt(ad.title, 90);
+    if (p && ad.text && !$('.dsc', a)) { var dsc = d.createElement('p'); dsc.className = 'dsc'; dsc.textContent = cutTxt(ad.text, 140); p.parentNode.insertBefore(dsc, p.nextSibling); }
+    var cta = $('.cta', a); if (cta) cta.textContent = ad.cta || (EN ? 'Learn more' : 'En savoir plus');
+  }
+  /* une vue = l'encart reste visible à moitié au moins, sans interruption, pendant la durée du format (le serveur recoupe avec l'heure d'émission du jeton) */
+  function watchView(el, ad) {
+    if (DNT) return; /* « Ne pas suivre » : la vue n'est pas enregistrée */
+    var timer = 0, sent = false, io = null;
+    function fire() {
+      if (sent) return; sent = true; if (io) io.disconnect();
+      try { fetch(ad.event, { method: 'POST', body: JSON.stringify({ t: ad.token, e: 'view', ms: ad.viewMs + 50, vid: VID }), headers: { 'Content-Type': 'text/plain' }, keepalive: true }).catch(function () { /* tant pis */ }); } catch (e) { /* tant pis */ }
+    }
+    if (!('IntersectionObserver' in w)) { timer = setTimeout(fire, ad.viewMs + 100); return; }
+    io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        clearTimeout(timer);
+        if (e.isIntersecting && e.intersectionRatio >= 0.5 && d.visibilityState === 'visible') timer = setTimeout(function () { if (d.visibilityState === 'visible') fire(); }, ad.viewMs + 50);
+      });
+    }, { threshold: [0, 0.5, 1] });
+    io.observe(el);
+  }
+  /* bannière prête à l'emploi : l'image dessinée par l'annonceur, en entier, cliquable ; seule la mention « Sponsorisé » s'y ajoute */
+  function bannerNode(ad) {
+    var n = d.createElement('a'); n.className = 'afb'; n.href = httpsUrl(ad.click) || 'https://afrolookmedia.com/ads/'; n.target = '_blank'; n.rel = 'noopener sponsored nofollow'; n.setAttribute('data-web', ad.id);
+    var im = d.createElement('img'); im.src = httpsUrl(ad.banner.url); im.alt = cutTxt(ad.title, 80); im.width = +ad.banner.w || 0; im.height = +ad.banner.h || 0; im.loading = 'lazy';
+    var sp = d.createElement('span'); sp.className = 'afb-sp'; sp.textContent = L.sponsored;
+    n.style.maxWidth = (+ad.banner.w || 728) + 'px'; n.appendChild(im); n.appendChild(sp); return n;
+  }
   function aflInit(a) {
     var slot = a.getAttribute('data-afl') || 'x';
     if (IOS) a.href = STORE_IOS + '?' + 'utm_source=pronoflashia&utm_campaign=' + encodeURIComponent(slot);
     var p = $('p', a); if (p && !a.getAttribute('data-r')) { var i = (parseInt(a.getAttribute('data-i'), 10) + Math.floor(Math.random() * MSG.length)) % MSG.length; p.textContent = MSG[i]; a.setAttribute('data-r', '1'); }
-    var seen = false;
-    if ('IntersectionObserver' in w) new IntersectionObserver(function (es, o) { es.forEach(function (e) { if (e.isIntersecting && !seen) { seen = true; send({ t: 'afl_imp', fmt: slot }); o.disconnect(); } }); }).observe(a);
-    a.addEventListener('click', function () { send({ t: 'afl_click', fmt: slot }); });
+    var seen = false, ad = null;
+    function watch() {
+      if (ad) { watchView(a, ad); return; }
+      if ('IntersectionObserver' in w) new IntersectionObserver(function (es, o) { es.forEach(function (e) { if (e.isIntersecting && !seen) { seen = true; send({ t: 'afl_imp', fmt: slot }); o.disconnect(); } }); }).observe(a);
+    }
+    a.addEventListener('click', function () { if (!ad) send({ t: 'afl_click', fmt: slot }); }); /* le clic d'annonceur est compté par le lien d'Afrolook lui-même */
+    /* un annonceur d'abord ; s'il n'y en a aucun (ou si la lecture échoue), l'encart maison reste tel quel */
+    var host = a.parentNode && a.parentNode.classList && a.parentNode.classList.contains('ad') ? a.parentNode : null;
+    var size = host ? host.getAttribute('data-w') + 'x' + host.getAttribute('data-h') : '';
+    if (!/^(728x90|320x50|320x100|300x250)$/.test(size)) size = '';
+    serveAd(slot, size).then(function (x) {
+      if (x) {
+        ad = x;
+        if (x.banner && x.banner.url && httpsUrl(x.banner.url) && host && a.parentNode === host) { var b = bannerNode(x); host.replaceChild(b, a); a = b; host.style.minHeight = '0'; }
+        else applyWeb(a, ad);
+      }
+      watch();
+    });
   }
   $$('a.afl').forEach(aflInit);
   /* canal WhatsApp : clics comptés */
@@ -168,67 +244,27 @@
     aflInit(a); return a;
   }
 
-  /* ---------- publicités : chargement paresseux, repli Adsterra → Monetag → Afrolook ---------- */
-  var cfg = null, cfgP = null;
-  function getCfg() { if (!cfgP) cfgP = fetch('/api/config').then(function (r) { return r.json(); }).catch(function () { return null; }); return cfgP; }
-  function runScripts(host, html) {
-    var doc = new DOMParser().parseFromString(html, 'text/html');
-    Array.prototype.slice.call(doc.body.childNodes).forEach(function (n) {
-      if (n.nodeName === 'SCRIPT') { var s = d.createElement('script'); Array.prototype.slice.call(n.attributes).forEach(function (at) { s.setAttribute(at.name, at.value); }); s.text = n.textContent; host.appendChild(s); }
-      else host.appendChild(n.cloneNode(true));
-    });
-  }
-  function frameFill(el, code, wd, ht) {
-    var f = d.createElement('iframe'); f.width = wd; f.height = ht; f.scrolling = 'no'; f.setAttribute('loading', 'lazy'); f.title = L.adTitle;
-    f.srcdoc = '<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;background:transparent;overflow:hidden}</style></head><body>' + code + '</body></html>';
-    el.appendChild(f); return f;
-  }
-  /* « rempli » : l'iframe contient une annonce (image, iframe, lien ou élément ins) ; sinon on passe au réseau suivant */
-  function filled(f) { try { var b = f.contentDocument && f.contentDocument.body; return !!(b && b.querySelector('iframe,img,ins,a,video,canvas') && b.scrollHeight > 20); } catch (e) { return true; } }
-  function fill(el, c) {
-    var id = el.getAttribute('data-ad'); var e = c && c.emplacements && c.emplacements[id];
+  /* ---------- publicités : uniquement Afrolook Ads (aucun réseau publicitaire tiers) ----------
+     Chaque emplacement reçoit une annonce choisie, signée et comptée par le moteur d'Afrolook Ads (voir aflInit) ; s'il n'y en a aucune, l'encart maison reste. */
+  function fill(el) {
+    var id = el.getAttribute('data-ad');
     if (el.getAttribute('data-done')) return; el.setAttribute('data-done', '1');
-    var wd = +el.getAttribute('data-w'), ht = +el.getAttribute('data-h'); var mobile = el.getAttribute('data-v') === 'mo';
-    var nets = (e && e.reseaux || []).filter(function (r) { return (mobile && r.codeMobile ? r.codeMobile : r.code); });
-    var afl = c && c.afrolook; var aflFirst = afl && afl.actif && Math.random() * 100 < (afl.part || 0);
-    function afrolook() { if ((afl && !afl.actif) || el.getAttribute('data-nofb')) { el.hidden = true; return; } el.innerHTML = ''; el.style.minHeight = '0'; el.appendChild(aflNode('pub-' + id, parseInt(el.getAttribute('data-k'), 10) || 0)); el.style.width = '100%'; }
-    if (!c || !c.actif || !adsAllowed() || !nets.length || aflFirst) return afrolook();
-    var k = 0;
-    (function next() {
-      if (k >= nets.length) return afrolook();
-      var r = nets[k++]; el.innerHTML = '';
-      var code = mobile && r.codeMobile ? r.codeMobile : r.code;
-      var f = frameFill(el, code, wd, ht);
-      send({ t: 'adview', n: id + ':' + r.reseau });
-      setTimeout(function () { if (!filled(f)) next(); }, 5000);
-    })();
+    el.innerHTML = ''; el.style.minHeight = '0';
+    el.appendChild(aflNode('pub-' + id, parseInt(el.getAttribute('data-k'), 10) || 0));
+    el.style.width = '100%';
   }
   function loadAds(retry) {
     var slots = $$('.ad[data-ad]').filter(function (s) { return s.offsetParent !== null && (retry || !s.getAttribute('data-done')); });
     if (!slots.length) return;
-    getCfg().then(function (c) {
-      cfg = c; if (!c) { slots.forEach(function (s) { s.hidden = true; }); return; }
-      if (!('IntersectionObserver' in w)) { slots.forEach(function (s) { fill(s, c); }); return; }
-      var io = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { io.unobserve(en.target); fill(en.target, c); } }); }, { rootMargin: '300px' });
-      slots.forEach(function (s) { if (retry) { s.removeAttribute('data-done'); s.innerHTML = ''; s.style.minHeight = (s.getAttribute('data-h') || 0) + 'px'; s.style.width = ''; } io.observe(s); });
-    });
+    if (!('IntersectionObserver' in w)) { slots.forEach(fill); return; }
+    var io = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { io.unobserve(en.target); fill(en.target); } }); }, { rootMargin: '300px' });
+    slots.forEach(function (s) { if (retry) { s.removeAttribute('data-done'); s.innerHTML = ''; s.style.minHeight = (s.getAttribute('data-h') || 0) + 'px'; s.style.width = ''; } io.observe(s); });
   }
   /* bannière collante : fermable, reste fermée pendant la visite */
   var stk = $('#pf-stk');
   if (stk) { if (store.sget('pf_stk_x')) stk.remove(); else $('button', stk).addEventListener('click', function () { store.sset('pf_stk_x', '1'); stk.remove(); d.body.classList.remove('hasstk'); }); }
   if (w.PF && w.PF.ads) {
     loadAds(false);
-    /* Social Bar : une fois par visite, après le délai */
-    getCfg().then(function (c) {
-      var sb = c && c.actif && c.emplacements && c.emplacements.socialbar; if (!sb || !sb.actif || !sb.reseaux.length || store.sget('pf_sb')) return;
-      setTimeout(function () { if (!adsAllowed() || store.sget('pf_sb')) return; store.sset('pf_sb', '1'); runScripts(d.body, sb.reseaux[0].code); send({ t: 'adview', n: 'socialbar' }); }, (sb.delaiSec || 20) * 1000);
-    });
-    /* Pop-under : coupé par défaut ; si l'admin l'active, au plus une fois par période, au premier clic */
-    getCfg().then(function (c) {
-      var po = c && c.actif && c.emplacements && c.emplacements.popunder; if (!po || !po.actif || !po.reseaux.length) return;
-      var last = store.get('pf_po') || 0; if (Date.now() - last < (po.parJours || 1) * 864e5) return;
-      d.addEventListener('click', function once() { d.removeEventListener('click', once); if (!adsAllowed()) return; store.set('pf_po', Date.now()); runScripts(d.body, po.reseaux[0].code); }, { once: true });
-    });
   }
 
   /* ---------- paris avancés : l'annonce du haut du bloc ne se charge qu'à l'ouverture ---------- */
@@ -397,15 +433,12 @@
       if (panel) panel.innerHTML = panelHtml();
       chrome();
     };
-    /* Pubs dans la liste « Choisis tes paris » : une après chaque 3e match (3, 6, 9…), cinq au plus. Elles prennent les codes de l'emplacement
-       « Bannières dans la liste du coupon » ; s'il n'est pas réglé, ceux d'un autre emplacement actif (haut, fin, native) ; à défaut, un encart Afrolook.
+    /* Pubs dans la liste « Choisis tes paris » : une après chaque 3e match (3, 6, 9…), cinq au plus. Chaque emplacement reçoit une annonce d'Afrolook Ads (à défaut, l'encart maison Afrolook).
        Le squelette de la liste ne change jamais : les pubs ne se rechargent pas aux clics. */
     var insertPickerAds = function () {
-      getCfg().then(function (c) {
-        if (!c) return;
-        var E = c.emplacements || {}, id = 'coupon_liste';
-        if (c.actif) { ['coupon_liste', 'haut', 'fin', 'native'].some(function (k) { var e = E[k]; if (e && e.actif && (e.reseaux || []).length) { id = k; return true; } return false; }); }
-        var every = Math.max(2, (E.coupon_liste && E.coupon_liste.every) || 3), blocks = $$('#pf-picker .cmb'), put = 0;
+      (function () {
+        var id = 'coupon_liste';
+        var every = 3, blocks = $$('#pf-picker .cmb'), put = 0;
         blocks.forEach(function (b, i) {
           var n = i + 1; if (put >= 5 || n % every !== 0 || n >= blocks.length) return;
           var mk = function (v, wd, ht) { var x = d.createElement('div'); x.className = 'ad ad-end ' + v; x.setAttribute('data-ad', id); x.setAttribute('data-v', v); x.setAttribute('data-w', wd); x.setAttribute('data-h', ht); x.setAttribute('data-k', String(put)); x.style.minHeight = ht + 'px'; return x; };
@@ -414,7 +447,7 @@
           put++;
         });
         loadAds(false);
-      });
+      })();
     };
     var panelHtml = function () {
       var n = sel.length, r = calc(), pc = Math.round(r.prob * 100), risk = PFc.riskLevel ? PFc.riskLevel(r.prob, LANG) : { label: '' };

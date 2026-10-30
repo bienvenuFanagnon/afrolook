@@ -93,7 +93,7 @@ ${C.contactBox(rc)}`),
 <h2>Liens vers des sites d'actualité</h2>
 <p>Le site affiche des titres d'actualité avec un lien vers le site d'origine ; les miniatures sont chargées depuis ces sites. En cliquant, tu quittes PronoFlash IA et tu dépends de la politique de confidentialité du site visité.</p>
 <h2>Publicité</h2>
-<p>Le site affiche des publicités de réseaux tiers (notamment Adsterra et Monetag) et des encarts pour Afrolook. Ces réseaux peuvent déposer des cookies ou utiliser des identifiants pour choisir et mesurer les annonces. Pour les visiteurs de l'Union européenne et du Royaume-Uni, <b>aucune publicité tierce n'est chargée avant ton accord</b> ; tu peux changer d'avis à tout moment avec le bouton « Préférences publicitaires » en bas de page. Les politiques de ces réseaux s'appliquent à leurs traitements.</p>
+<p>Le site affiche uniquement des annonces d'<b>Afrolook Ads</b>, la régie publicitaire d'Afrolook : aucun réseau publicitaire tiers n'est chargé. Afrolook Ads n'utilise aucun cookie, ne suit pas les visiteurs d'un site à l'autre et ne fait aucun ciblage comportemental. Un identifiant propre au site, stocké dans ton navigateur, sert seulement à limiter la répétition d'une annonce et à compter les affichages ; le réglage « Ne pas suivre » de ton navigateur est respecté.</p>
 <h2>Liens vers Afrolook</h2>
 <p>Un clic sur un encart Afrolook ouvre la boutique d'applications (Google Play ou App Store) avec un paramètre qui indique l'emplacement du clic, sans donnée personnelle.</p>
 <h2>Base légale et durée</h2>
@@ -129,7 +129,7 @@ ${C.contactBox(rc)}`),
 <h2>Ce que le site dépose lui-même</h2>
 <p><b>Aucun cookie.</b> Le site écrit seulement dans le stockage local de ton navigateur : <code>pf_coupon</code> (ton coupon en cours), <code>pf_consent</code> (ton choix sur les publicités) et l'état de fermeture des bannières. Ces données restent sur ton appareil.</p>
 <h2>Ce que les publicités peuvent déposer</h2>
-<p>Les réseaux publicitaires tiers (Adsterra, Monetag) peuvent déposer des cookies pour choisir, limiter la répétition et mesurer les annonces. Dans l'Union européenne et au Royaume-Uni, ces publicités ne se chargent qu'après ton accord.</p>
+<p>Les annonces sont celles d'Afrolook Ads, sans cookie publicitaire : un identifiant propre au site, stocké dans ton navigateur, sert à limiter la répétition et à compter les affichages.</p>
 <h2>Gérer ton choix</h2>
 <p>Utilise le bouton <b>Préférences publicitaires</b> en bas de chaque page pour accepter ou refuser. Tu peux aussi supprimer les cookies depuis les réglages de ton navigateur.</p>`),
   }),
@@ -244,7 +244,7 @@ ${C.contactBox(rc)}`),
 <h2>Links to news sites</h2>
 <p>The site shows news headlines with a link to the original site; thumbnails are loaded from those sites. By clicking, you leave PronoFlash IA and are subject to the privacy policy of the site you visit.</p>
 <h2>Advertising</h2>
-<p>The site shows ads from third-party networks (including Adsterra and Monetag) and promotions for Afrolook. These networks may set cookies or use identifiers to choose and measure ads. For visitors in the European Union and the United Kingdom, <b>no third-party ad loads before you agree</b>; you can change your mind at any time with the "Ad preferences" button at the bottom of the page. These networks' own policies apply to their processing.</p>
+<p>The site only shows ads from <b>Afrolook Ads</b>, Afrolook's ad network: no third-party ad network is loaded. Afrolook Ads sets no cookies, does not track visitors from one site to another and does no behavioural targeting. An identifier specific to this site, stored in your browser, is only used to limit how often an ad repeats and to count impressions; your browser's "Do Not Track" setting is respected.</p>
 <h2>Links to Afrolook</h2>
 <p>Clicking an Afrolook promotion opens the app store (Google Play or App Store) with a parameter showing where the click came from, with no personal data.</p>
 <h2>Legal basis and retention</h2>
@@ -278,7 +278,7 @@ ${C.contactBox(rc)}`),
 <h2>What the site sets itself</h2>
 <p><b>No cookies.</b> The site only writes to your browser's local storage: <code>pf_coupon</code> (your current slip), <code>pf_consent</code> (your advertising choice) and the closed state of banners. This data stays on your device.</p>
 <h2>What ads may set</h2>
-<p>Third-party ad networks (Adsterra, Monetag) may set cookies to choose ads, limit repetition and measure them. In the European Union and the United Kingdom, these ads only load after you agree.</p>
+<p>Ads come from Afrolook Ads and use no advertising cookie: an identifier specific to this site, stored in your browser, limits repetition and counts impressions.</p>
 <h2>Managing your choice</h2>
 <p>Use the <b>Ad preferences</b> button at the bottom of every page to accept or refuse. You can also delete cookies from your browser settings.</p>`),
   }),

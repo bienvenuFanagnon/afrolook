@@ -5,7 +5,9 @@ import { fileURLToPath } from 'node:url';
 import QRCode from 'qrcode';
 import { CARDS, PACKS, EARN, NATIONAL_DAYS, AFRICA, svgIcon } from './src/data.mjs';
 import { T } from './src/i18n.mjs';
-import { musicMocks } from './src/mock.mjs';
+import { musicMocks, appMocks } from './src/mock.mjs';
+import { adsRulesPage, adsDocsPage, RULES_META, DOCS_META } from './src/ads_docs.mjs';
+import { adsKitPage, KIT_META, adsLandingEn, ADS_META_EN, adsFaqLdEn, adsHomeBlock, adsBar, adsNav, adsBadge, adsLanding, adsSpace, adsPublisherSpace, adsAdminSpace, adsFaqLd, ADS_META, SPACE_META, PUB_META, ADMIN_META } from './src/ads.mjs';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const cfg = JSON.parse(fs.readFileSync(path.join(root, 'src/config.json'), 'utf8'));
@@ -17,7 +19,7 @@ const rules = JSON.parse(fs.readFileSync(path.join(root, 'src/rules.json'), 'utf
 const dist = path.join(root, 'dist');
 const flagsDir = process.env.FLAGS_DIR || path.join(root, 'static/img/flags');
 
-const ASSET_V = '1';
+const ASSET_V = '23';
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const slug = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const write = (p, c) => { const f = path.join(dist, p); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, c); };
@@ -47,18 +49,21 @@ const cardMeta = (c, lang) => ({ id: c.id, name: c[lang][0], sub: c[lang][1] });
 
 function header(lang, key, alt) {
   const t = T[lang], p = P[lang];
-  const links = [[p.earn, t.nav.earn, 'earn'], [p.cards, t.nav.cards, 'cards'], [p.music, t.nav.music, 'music'], [p.holidays, t.nav.holidays, 'holidays'], [p.contact, t.nav.contact, 'contact']];
-  const nav = links.map(([h, l, k]) => `<a href="${h}"${key === k ? ' aria-current="page"' : ''}>${l}</a>`).join('');
+  const links = [[p.earn, t.nav.earn, 'earn'], [p.cards, t.nav.cards, 'cards'], [p.music, t.nav.music, 'music'], [p.holidays, t.nav.holidays, 'holidays'], [lang === 'fr' ? '/ads/' : '/en/ads/', adsNav(lang), 'ads'], ['/ads/diffuseur/', lang === 'fr' ? 'Diffuseurs' : 'Publishers', 'adspub'], [p.contact, t.nav.contact, 'contact']];
+  const nav = links.map(([h, l, k]) => `<a href="${h}"${k === 'ads' ? ` class="adlink" data-badge="${adsBadge(lang)}"` : ''}${key === k ? ' aria-current="page"' : ''}>${l}</a>`).join('');
   const other = lang === 'fr' ? 'en' : 'fr';
+  // pages Afrolook Ads : rien qui renvoie vers l'application (ni « Version web » ni « Télécharger »)
+  const appBtns = key === 'ads' ? '' : `<a class="btn btn-line" href="${cfg.appWebUrl}" rel="noopener">${t.nav.web}</a><a class="btn btn-primary" href="${p.download}">${t.nav.download}</a>`;
+  const appLinks = key === 'ads' ? '' : `<a href="${cfg.appWebUrl}">${t.nav.web}</a><a href="${p.download}">${t.nav.download}</a>`;
   const sw = `<span class="lang-sw" aria-label="Langue"><${lang === 'fr' ? 'span aria-current="true"' : `a href="${alt.fr}" hreflang="fr" lang="fr"`}>FR</${lang === 'fr' ? 'span' : 'a'}><${lang === 'en' ? 'span aria-current="true"' : `a href="${alt.en}" hreflang="en" lang="en"`}>EN</${lang === 'en' ? 'span' : 'a'}></span>`;
   return `<a class="skip" href="#main">${t.nav.skip}</a>
 <header class="top"><div class="wrap in">
  <a class="brand" href="${p.home}"><img src="/img/logo.webp" width="36" height="36" alt=""><span>afro<i>look</i></span></a>
  <nav class="main" aria-label="${t.nav.menu}">${nav}</nav>
- <div class="right">${sw}<a class="btn btn-line" href="${cfg.appWebUrl}" rel="noopener">${t.nav.web}</a><a class="btn btn-primary" href="${p.download}">${t.nav.download}</a>
+ <div class="right">${sw}${appBtns}
  <button class="burger" id="burger" aria-label="${t.nav.menu}" aria-expanded="false" aria-controls="drawer"><span></span></button></div>
 </div>
-<div class="drawer" id="drawer">${links.map(([h, l]) => `<a href="${h}">${l}</a>`).join('')}<a href="${cfg.appWebUrl}">${t.nav.web}</a><a href="${p.download}">${t.nav.download}</a><a href="${other === 'en' ? alt.en : alt.fr}" hreflang="${other}">${other === 'en' ? 'English' : 'Français'}</a></div>
+<div class="drawer" id="drawer">${links.map(([h, l]) => `<a href="${h}">${l}</a>`).join('')}${appLinks}<a href="${other === 'en' ? alt.en : alt.fr}" hreflang="${other}">${other === 'en' ? 'English' : 'Français'}</a></div>
 <div class="tri"></div></header>`;
 }
 
@@ -68,6 +73,7 @@ function footer(lang) {
 <div class="cols">
  <div><a class="brand" href="${p.home}" style="color:#fff"><img src="/img/logo.webp" width="36" height="36" alt=""><span>afro<i>look</i></span></a><p class="about">${f.about}</p></div>
  <div><h4>${f.product}</h4><ul><li><a href="${p.earn}">${t.nav.earn}</a></li><li><a href="${p.cards}">${t.nav.cards}</a></li><li><a href="${p.music}">${t.nav.music}</a></li><li><a href="${p.holidays}">${t.nav.holidays}</a></li><li><a href="${p.download}">${t.nav.download}</a></li><li><a href="${cfg.appWebUrl}">${f.web}</a></li></ul></div>
+ <div><h4>Afrolook Ads</h4><ul><li><a href="/ads/">${lang === 'fr' ? 'Annoncer' : 'Advertise'}</a></li><li><a href="/ads/diffuseur/">${lang === 'fr' ? 'Devenir diffuseur' : 'Become a publisher'}</a></li><li><a href="/ads/diffuseur/documentation/" hreflang="fr">${lang === 'fr' ? 'Documentation d\'intégration' : 'Integration guide'}</a></li><li><a href="/ads/diffuseur/regles/" hreflang="fr">${lang === 'fr' ? 'Règles des diffuseurs' : 'Publisher rules'}</a></li></ul></div>
  <div><h4>${f.help}</h4><ul><li><a href="${p.home}#faq">${f.faq}</a></li><li><a href="${p.contact}">${t.nav.contact}</a></li><li><a href="${p.del}">${f.delete}</a></li></ul></div>
  <div><h4>${f.legal}</h4><ul><li><a href="${p.rules}" hreflang="fr">${f.rules}</a></li><li><a href="${p.privacy}" hreflang="fr">${f.privacy}</a></li></ul></div>
 </div>
@@ -95,7 +101,7 @@ function layout({ lang, key, path: pth, alt, title, desc, body, ogImage = '/img/
 <script>document.documentElement.classList.add('js')</script>${ld}
 </head><body>
 ${header(lang, key, alt || { fr: P.fr.home, en: P.en.home })}
-<main id="main">${body}</main>
+<main id="main">${body.replaceAll("__ASSET_V__", ASSET_V)}</main>
 ${footer(lang)}
 <script src="/js/site.js?v=${ASSET_V}" defer></script>
 </body></html>`;
@@ -109,6 +115,32 @@ const waysHtml = (lang) => {
   return `<div class="groups">${t.groups.map((g, gi) => `<div class="grp"><h3>${g[0]}</h3><p>${g[1]}</p>${EARN.filter((e) => e.g === gi).map((e) => `<div class="way">${svgIcon(e.icon)}<div><b>${e[lang][0]}</b><span>${e[lang][1]}</span></div></div>`).join('')}</div>`).join('')}</div>`;
 };
 const fmt = (lang, c) => (lang === 'fr' ? [c.coins, c.fcfa] : [c.coinsEn, c.fcfaEn]);
+
+/** Jobs et tâches d'Afrolook : partager des annonces et être payé au clic valide (même bloc sur l'accueil et sur la page « Comment gagner »). */
+const JOBS = {
+  fr: {
+    k: 'Jobs et tâches Afrolook', h: 'Gagne de l\'argent en partageant des annonces.',
+    sub: 'Afrolook propose des jobs : des tâches simples et payées. Tu partages une annonce sur ton statut WhatsApp, tes groupes, Telegram, Facebook ou TikTok, et chaque personne qui clique sur ton lien te rapporte de l\'argent. Pas besoin d\'être créateur.',
+    steps: [['Crée ton profil', 'Dis-nous combien de personnes voient tes statuts et tes groupes. Notre équipe le valide avant ta première mission.'], ['Partage une annonce', 'Choisis une mission, publie-la où tu veux avec ton lien personnel : WhatsApp, Telegram, Facebook, TikTok…'], ['Gagne au clic valide', 'Environ 5 F par clic valide, jusqu\'à 500 F par jour. Tes gains deviennent des pièces, que tu retires en argent réel.']],
+    ex: [['Le parrainage rapporte aussi', 'Quand un ami que tu as parrainé gagne, tu reçois 10 % en plus. Cela ne diminue jamais ses gains.'], ['Seuls les clics valides sont payés', 'Une vraie personne, un seul clic, sans doublon. Les fraudes sont détectées et non comptées ; un gain peut être retiré en cas de fraude.']],
+    cta: 'Télécharger Afrolook', more: 'Tu es annonceur ? Fais partager ton annonce', fine: 'Les montants sont indicatifs et peuvent évoluer. Les gains dépendent de ton audience et des missions disponibles.',
+  },
+  en: {
+    k: 'Afrolook jobs and tasks', h: 'Earn money by sharing ads.',
+    sub: 'Afrolook offers jobs: simple, paid tasks. You share an ad on your WhatsApp status, your groups, Telegram, Facebook or TikTok, and every person who clicks your link earns you money. You do not need to be a creator.',
+    steps: [['Create your profile', 'Tell us how many people see your statuses and groups. Our team approves it before your first mission.'], ['Share an ad', 'Pick a mission and post it wherever you like with your personal link: WhatsApp, Telegram, Facebook, TikTok…'], ['Earn per valid click', 'About 5 F per valid click, up to 500 F a day. Your earnings become coins that you withdraw as real money.']],
+    ex: [['Referrals pay too', 'When a friend you referred earns, you get 10% extra. It never reduces their earnings.'], ['Only valid clicks are paid', 'A real person, one click, no duplicates. Frauds are detected and not counted; earnings can be withdrawn in case of fraud.']],
+    cta: 'Download Afrolook', more: 'Advertiser? Get your ad shared', fine: 'Amounts are indicative and may change. Earnings depend on your audience and on the missions available.',
+  },
+};
+const jobsHtml = (lang) => {
+  const j = JOBS[lang], icons = ['users', 'send', 'coin'];
+  return `<section class="earn" id="jobs"><div class="wrap"><span class="kicker">${j.k}</span><h2 class="h2">${j.h}</h2><p class="sub">${j.sub}</p>
+ <div class="flow">${j.steps.map((s, i) => `<div class="st"><span class="big">${i + 1}</span>${svgIcon(icons[i])}<h3>${s[0]}</h3><p>${s[1]}</p></div>`).join('')}</div>
+ <div class="feats">${j.ex.map((x) => `<article class="feat"><h3>${x[0]}</h3><p>${x[1]}</p></article>`).join('')}</div>
+ <p class="fine" style="text-align:left;margin-top:14px">${j.fine}</p>
+ <div class="cta" style="margin-top:18px"><a class="btn btn-primary" href="${P[lang].download}">${j.cta}</a><a class="btn btn-line" href="${lang === 'fr' ? '/ads/' : '/en/ads/'}#partage">${j.more} →</a></div></div></section>`;
+};
 
 const showcase = (lang, { all = false } = {}) => {
   const t = T[lang].home;
@@ -182,6 +214,12 @@ function homePage(lang) {
  <a class="big2" href="${P[lang].cards}"><span class="tagx">${h.b2[0]}</span><h2>${h.b2[1]}</h2><p>${h.b2[2]}</p><span class="more">${h.b2[3]} →</span><div class="mi"><img src="${card('neon')}" width="130" height="163" alt="" loading="lazy"><img src="${card('tarot')}" width="130" height="163" alt="" loading="lazy"><img src="${card('film')}" width="130" height="163" alt="" loading="lazy"></div></a>
 </div></section>
 
+${adsHomeBlock(lang)}
+
+<section class="appscreens" id="ecrans" style="padding-block:56px"><div class="wrap"><span class="kicker">${h.screens.k}</span><h2 class="h2">${h.screens.h}</h2><p class="sub">${h.screens.p}</p>
+ <div style="margin-top:36px">${appMocks(lang, 'main')}</div>
+ <div style="margin-top:56px"><h3 class="h2" style="font-size:clamp(22px,3vw,32px);text-align:center">${h.screens.liveH}</h3><p class="sub" style="text-align:center;margin:10px auto 28px">${h.screens.liveP}</p>${appMocks(lang, 'lives')}<p class="fine" style="text-align:center;margin-top:16px">${h.screens.fine}</p></div></div></section>
+
 <section class="musicteaser" id="musique" style="background:var(--surface);border-block:1px solid var(--line)"><div class="wrap">
  <div class="twocol"><div><span class="kicker">${t.music.teaserK}</span><h2 class="h2">${t.music.teaserH}</h2><p class="sub">${t.music.teaserP}</p>
   <div class="cta" style="margin-top:22px"><a class="btn btn-primary" href="${P[lang].music}">${t.music.teaserCta}</a></div></div>
@@ -193,6 +231,8 @@ function homePage(lang) {
 </div></section>
 
 <section class="earn" id="gagner"><div class="wrap"><span class="kicker">${h.earnK}</span><h2 class="h2">${h.earnH}</h2><p class="sub">${h.earnSub}</p>${waysHtml(lang)}<p class="fine" style="text-align:left;margin-top:18px">${h.earnFine}</p></div></section>
+
+${jobsHtml(lang)}
 
 <section id="retrait"><div class="wrap"><span class="kicker">${h.flowK}</span><h2 class="h2">${h.flowH}</h2><p class="sub">${h.flowSub(coins, fcfa, eur)}</p>
  <div class="flow">${h.flow.map((s, i) => `<div class="st"><span class="big">${i + 1}</span>${svgIcon(['img', 'coin', 'send'][i])}<h3>${s[0]}</h3><p>${s[1]}</p></div>`).join('')}</div>
@@ -225,7 +265,7 @@ function homePage(lang) {
 
 <section class="contact" id="contact" style="background:var(--soft)"><div class="wrap"><span class="kicker">${t.nav.contact}</span><h2 class="h2">${lang === 'fr' ? 'Une question, une idée, un partenariat ?' : 'A question, an idea, a partnership?'}</h2>
  <div class="grid"><div><p class="sub" style="margin-top:0">${t.contact.lead}</p>${contactBlock(lang)}</div>${contactForm(lang)}</div></div></section>`;
-  emit(lang, 'home', P[lang].home, { alt, title: h.title, desc: h.desc, body, jsonld: [mailtoOrg, appLd(lang), faqLd(lang)] });
+  emit(lang, 'home', P[lang].home, { alt, title: h.title, desc: h.desc, body: body + adsBar(lang), jsonld: [mailtoOrg, appLd(lang), faqLd(lang)], extraHead: adsHead });
 }
 
 function musicPage(lang) {
@@ -250,11 +290,12 @@ function earnPage(lang) {
   const t = T[lang], e = t.earn, h = t.home, [coins, fcfa] = fmt(lang, cfg.example), eur = cfg.example.eur;
   const alt = { fr: P.fr.earn, en: P.en.earn };
   const body = `<section class="pagehead"><div class="wrap">${crumbs(lang, [[P[lang].home, 'Afrolook'], [P[lang].earn, t.nav.earn]])}<h1>${e.h1}</h1><p>${e.lead}</p><div class="cta" style="margin-top:24px">${storeBtns(t)}</div></div></section>
+${jobsHtml(lang)}
 <section class="earn" style="padding-block:56px"><div class="wrap">${waysHtml(lang)}<p class="fine" style="text-align:left;margin-top:18px">${h.earnFine}</p><p style="margin-top:18px"><a class="btn btn-line" href="${P[lang].music}">${T[lang].music.gainK} →</a></p></div></section>
 <section><div class="wrap twocol"><div><span class="kicker">${e.example}</span><h2 class="h2">${coins} ${h.coins}</h2><p class="sub">${h.flowSub(coins, fcfa, eur)}</p><div class="pay">${h.pay.map((x) => `<span>${x}</span>`).join('')}</div><p class="fine" style="text-align:left">${h.fine}</p></div>
 <div class="grp"><h3>${e.rules}</h3><p>${e.rulesText}</p><p><a class="btn btn-line" href="${P[lang].download}">${e.rulesCta}</a></p></div></div></section>
 <section style="padding-top:0"><div class="wrap"><span class="kicker">${h.faqK}</span><h2 class="h2">${h.faqH}</h2>${faqHtml(lang)}</div></section>`;
-  emit(lang, 'earn', P[lang].earn, { alt, title: e.title, desc: e.desc, body, jsonld: [faqLd(lang)] });
+  emit(lang, 'earn', P[lang].earn, { alt, ogImage: '/img/ads/og-jobs.png', title: e.title, desc: e.desc, body, jsonld: [faqLd(lang)] });
 }
 
 function cardsPage(lang) {
@@ -334,16 +375,33 @@ function notFound() {
   write('404.html', layout({ lang: 'fr', key: '404', path: '/404.html', title: `${t.title} | Afrolook`, desc: t.text, noindex: true, body: `<section class="dlpage"><div class="wrap"><h1 class="h2" style="margin-top:0">${t.h1}</h1><p class="sub" style="margin-inline:auto">${t.text}</p><div class="cta" style="justify-content:center;margin-top:24px"><a class="btn btn-primary" href="/">${t.home}</a><a class="btn btn-line" href="/cartes/">${T.fr.nav.cards}</a></div></div></section>` }));
 }
 
+// ───────── Afrolook Ads (page française seulement pour l'instant) ─────────
+const adsHead = `<link rel="stylesheet" href="/css/ads.css?v=${ASSET_V}">`;
+function adsPages() {
+  const altAds = { fr: '/ads/', en: '/en/ads/' };
+  emit('fr', 'ads', '/ads/partager/', { title: KIT_META.title, desc: KIT_META.desc, body: adsKitPage(), noindex: true, ogImage: '/img/ads/og-annonceurs.png', extraHead: adsHead });
+  emit('fr', 'ads', '/ads/', { alt: altAds, ogImage: '/img/ads/og-annonceurs.png', title: ADS_META.title, desc: ADS_META.desc, body: adsLanding(cfg.functionsBase), jsonld: [adsFaqLd], extraHead: adsHead });
+  emit('en', 'ads', '/en/ads/', { alt: altAds, ogImage: '/img/ads/og-annonceurs.png', title: ADS_META_EN.title, desc: ADS_META_EN.desc, body: adsLandingEn(cfg.functionsBase), jsonld: [adsFaqLdEn], extraHead: adsHead });
+  emit('fr', 'ads', '/ads/espace/', { title: SPACE_META.title, desc: SPACE_META.desc, body: adsSpace(cfg.firebase, cfg.functionsBase), noindex: true, extraHead: adsHead });
+  emit('fr', 'ads', '/ads/admin/', { title: ADMIN_META.title, desc: ADMIN_META.desc, body: adsAdminSpace(cfg.firebase, cfg.functionsBase), noindex: true, extraHead: adsHead });
+  emit('fr', 'ads', '/ads/diffuseur/regles/', { title: RULES_META.title, desc: RULES_META.desc, body: adsRulesPage(), extraHead: adsHead });
+  emit('fr', 'ads', '/ads/diffuseur/documentation/', { title: DOCS_META.title, desc: DOCS_META.desc, body: adsDocsPage(cfg.functionsBase), extraHead: adsHead });
+  emit('fr', 'ads', '/ads/diffuseur/', { title: PUB_META.title, desc: PUB_META.desc, body: adsPublisherSpace(cfg.firebase, cfg.functionsBase), noindex: true, extraHead: adsHead });
+}
+
 // ───────── génération ─────────
 fs.rmSync(dist, { recursive: true, force: true });
 fs.mkdirSync(dist, { recursive: true });
 fs.cpSync(path.join(root, 'static'), dist, { recursive: true });
+// composant Flutter de bannières (même fichier que dans l'application, publié pour les diffuseurs)
+fs.mkdirSync(path.join(dist, 'ads'), { recursive: true });
+fs.copyFileSync(path.join(root, '../lib/ads/afrolook_ads_banner.dart'), path.join(dist, 'ads/afrolook_ads_banner.dart'));
 
 for (const lang of ['fr', 'en']) {
   homePage(lang); earnPage(lang); cardsPage(lang); musicPage(lang); holidaysIndex(lang); contactPage(lang); downloadPage(lang); deletePage(lang);
   for (const k of COUNTRIES) holidayPage(lang, k);
 }
-legalPages(); notFound();
+legalPages(); adsPages(); notFound();
 
 // police préchargée : la plus utilisée (titres gras, alphabet latin)
 const fontCss = fs.readFileSync(path.join(root, 'static/css/site.css'), 'utf8');

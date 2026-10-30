@@ -17,5 +17,14 @@
     "fcfa": "249 900",
     "fcfaEn": "249,900",
     "eur": "381"
+  },
+  "functionsBase": "https://us-central1-afrolooki.cloudfunctions.net",
+  "firebase": {
+    "apiKey": "AIzaSyBES1Ej6uR4FouRRkh-1PF1B89wRpW7bQo",
+    "authDomain": "afrolooki.firebaseapp.com",
+    "projectId": "afrolooki",
+    "storageBucket": "afrolooki.appspot.com",
+    "appId": "1:186049947777:web:7dc6951123bfb3ff940580",
+    "messagingSenderId": "186049947777"
   }
 }
