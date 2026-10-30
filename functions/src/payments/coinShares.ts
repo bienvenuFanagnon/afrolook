@@ -16,7 +16,7 @@ export const SPONSOR_SHARE = 0.025;
 export type CommissionSource =
   | "likes" | "commentaires" | "cadeaux" | "cadeaux_live" | "defi"
   | "groupes" | "canaux" | "lives_prives" | "participation_live"
-  | "premium" | "gold" | "compte_officiel" | "pubs_boosts" | "contenus" | "abonnement_entreprise" | "deblocages" | "stickers" | "quiz" | "etude" | "contes";
+  | "premium" | "gold" | "compte_officiel" | "pubs_boosts" | "contenus" | "abonnement_entreprise" | "deblocages" | "stickers" | "quiz" | "etude" | "contes" | "offres" | "offres_tapjoy" | "offres_ayet" | "offres_pubscale";
 
 function num(v: unknown): number {
   return typeof v === "number" && Number.isFinite(v) ? v : 0;
@@ -87,6 +87,18 @@ export function dayKey(ms: number): string {
 }
 
 /** Enregistre le gain de l'app : AppData.solde_gain_pieces + CommissionsDaily/{jour}.{source}. */
+/** Annule une part déjà enregistrée (tâche annulée par le partenaire après sa validation) : mêmes champs, écritures négatives. */
+export function reverseAppCommission(tx: Transaction, source: CommissionSource, coins: number, now: number) {
+  if (coins <= 0) return;
+  tx.update(db.collection("AppData").doc(APP_DATA_DOC), { solde_gain_pieces: FieldValue.increment(-coins) });
+  tx.set(db.collection("CommissionsDaily").doc(dayKey(now)), {
+    date: dayKey(now),
+    [source]: FieldValue.increment(-coins),
+    total: FieldValue.increment(-coins),
+    updatedAt: now,
+  }, { merge: true });
+}
+
 export function recordAppCommission(tx: Transaction, source: CommissionSource, coins: number, now: number) {
   if (coins <= 0) return;
   tx.update(db.collection("AppData").doc(APP_DATA_DOC), {

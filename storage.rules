@@ -7,7 +7,16 @@ service firebase.storage {
       // Originaux des sons d'artistes : jamais lisibles depuis un téléphone (le serveur les lit ; extrait public de 30 s à part)
       allow read: if request.auth != null && !(folder in ['artist_sound_uploads', 'artist_sound_tmp']);
       allow write: if request.auth != null
-          && !(folder in ['stickers', 'sticker_submissions', 'sticker_video_uploads', 'user_stickers', 'comment_media', 'test_builds', 'artist_sound_uploads', 'artist_sound_previews', 'artist_sound_tmp']);
+          && !(folder in ['stickers', 'sticker_submissions', 'sticker_video_uploads', 'user_stickers', 'comment_media', 'test_builds', 'artist_sound_uploads', 'artist_sound_previews', 'artist_sound_tmp', 'ad_logos']);
+    }
+
+    // Logos de marque des annonceurs (Afrolook Ads) : chacun dépose le sien dans son dossier (image, 1 Mo au plus) ; affichés ensuite comme partenaires.
+    match /ad_logos/{uid}/{file} {
+      allow read: if true;
+      allow create: if request.auth != null && request.auth.uid == uid
+                    && request.resource.size < 1024 * 1024
+                    && request.resource.contentType.matches('image/(png|jpeg|webp)');
+      allow delete: if request.auth != null && request.auth.uid == uid;
     }
     match /{rootFile} {
       allow read, write: if request.auth != null;

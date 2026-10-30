@@ -121,6 +121,11 @@ export async function notifyUser(opts: { userId: string; title: string; message:
   }
 }
 
+/** Prévient par e-mail seulement une personne sans profil Afrolook (annonceur du site Afrolook Ads). */
+export async function notifyByEmail(to: string, c: EmailContent): Promise<void> {
+  if (to) await mail(to, c);
+}
+
 /** Prévient tous les administrateurs : notification dans l'application + push + e-mail. */
 export async function notifyAdminsAll(opts: { title: string; message: string; target?: NotifyTarget; refId?: string; email?: EmailContent }): Promise<void> {
   try {

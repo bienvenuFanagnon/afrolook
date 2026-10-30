@@ -26,6 +26,11 @@ export const convertGiftCoins = onCall(
     return db.runTransaction(async (t) => {
       const userDoc = await t.get(userRef);
       if (!userDoc.exists) throw new HttpsError("not-found", "Compte introuvable.");
+      // dette laissée par une tâche annulée par un partenaire : pas de conversion tant qu'elle n'est pas remboursée par les prochains gains de tâches
+      const debt = Math.floor(Number(userDoc.data()?.["offerwallDebtCoins"]) || 0);
+      if (debt > 0) {
+        throw new HttpsError("failed-precondition", `Conversion impossible : une tâche annulée par un partenaire a laissé une dette de ${debt} pièces. Elle sera remboursée avec tes prochains gains de tâches.`, { debt });
+      }
       const convertible = convertibleCoins(userDoc.data());
       if (coins > convertible) {
         throw new HttpsError("failed-precondition", "Pièces non convertibles.", { convertible });

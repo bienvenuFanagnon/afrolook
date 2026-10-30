@@ -2,7 +2,8 @@ import { onDocumentCreated, onDocumentUpdated } from "firebase-functions/v2/fire
 import { db } from "../shared/firebase";
 import { emailTransporter } from "../shared/email_utils";
 import { APP_DOMAIN, APP_WEB_URL_AFRO } from "../shared/config";
-import { notifyAdminsAll, notifyUser, esc } from "../shared/user_notify";
+import { notifyAdminsAll, notifyByEmail, notifyUser, esc } from "../shared/user_notify";
+import { viewMilestone } from "./adsWeb_logic";
 
 const ADMIN_ROLES = ["ADM", "admin", "ADMIN", "super_admin"];
 const EMAIL_FROM = '"Afrolook" <epargneplus@epargneplusfinance.com>';
@@ -106,7 +107,9 @@ export const notifyAdminsOnNewAd = onDocumentCreated(
     // Notification dans l'application + push (en plus de l'e-mail ci-dessous)
     await notifyAdminsAll({
       title: "📢 Nouvelle demande de publicité",
-      message: `${ad.ownerName || ad.userName || "Un utilisateur"} demande une publicité (${ad.pricePaid ?? ad.price ?? ad.amount ?? "—"} FCFA). Ouvre la validation des publicités.`,
+      message: ad.source === "web"
+        ? `${ad.advertiserName || "Un annonceur"} (site Afrolook Ads, annonce gratuite « ${ad.adTitle || "sans titre"} ») demande une publicité. Ouvre la validation des publicités.`
+        : `${ad.ownerName || ad.userName || "Un utilisateur"} demande une publicité (${ad.pricePaid ?? ad.price ?? ad.amount ?? "—"} FCFA). Ouvre la validation des publicités.`,
       target: "ADMIN_ADS",
       refId: event.params.adId,
     });
@@ -150,22 +153,43 @@ export const notifyAdvertiserOnAdDecision = onDocumentUpdated(
     const before = event.data?.before.data() as Record<string, any> | undefined;
     const after = event.data?.after.data() as Record<string, any> | undefined;
     if (!before || !after) return;
+    const isWeb = after.source === "web";
+    const webUrl = "https://afrolookmedia.com/ads/espace/";
+    // Afrolook Ads : un courriel à chaque palier de 100 vues (100, 200, 300…) ; le palier annoncé est noté pour ne jamais l'envoyer deux fois
+    if (isWeb && after.advertiserEmail) {
+      const m = viewMilestone(before.views, after.views, after.lastMilestoneSent);
+      if (m) {
+        await event.data!.after.ref.update({ lastMilestoneSent: m });
+        const t = String(after.adTitle ?? after.ownerName ?? "ta publicité").slice(0, 60);
+        await notifyByEmail(String(after.advertiserEmail), {
+          subject: `👀 Ta publicité a atteint ${m} vues`, heading: `${m} vues !`, icon: "👀", tone: "ok",
+          intro: `Ta publicité <b>« ${esc(t)} »</b> vient de dépasser <b>${m} vues</b> sur Afrolook, SlashAtlas et Pronoflash.`,
+          rows: [["Vues", String(Number(after.views) || m)], ["Clics", String(Number(after.clicks) || 0)]],
+          outro: "Continue : plus ton annonce est vue, plus elle fait connaître ton projet. Retrouve tes statistiques dans ton espace annonceur.",
+          button: { label: "Voir mon espace annonceur", url: webUrl },
+        });
+      }
+    }
     const from = String(before.status ?? ""), to = String(after.status ?? "");
     if (from === to) return;
     const accepted = from === "pending" && to === "active";
     const rejected = from === "pending" && to === "rejected";
     const stopped = from === "active" && to === "cancelled";
     if (!accepted && !rejected && !stopped) return;
+    if (stopped && after.stoppedByAdvertiser === true) return; // arrêtée par l'annonceur lui-même depuis le site : rien à lui dire
     const userId = String(after.createdBy ?? "");
     if (!userId) return;
+    // annonceur du site : pas de profil Afrolook, donc un courriel seulement (adresse du compte Google)
+    const send = (o: Parameters<typeof notifyUser>[0]): Promise<void> =>
+      isWeb ? (o.email && after.advertiserEmail ? notifyByEmail(String(after.advertiserEmail), o.email) : Promise.resolve()) : notifyUser(o);
     const name = String(after.ownerName ?? "").trim().slice(0, 60) || "ta publicité";
     const days = Number(after.durationDays) || 0;
     const paid = Number(after.pricePaid) || 0;
     const reason = String(after.rejectionReason ?? "").trim().slice(0, 300);
-    const app = { label: "Voir mes publicités", url: APP_WEB_URL_AFRO };
+    const app = isWeb ? { label: "Voir mon espace annonceur", url: webUrl } : { label: "Voir mes publicités", url: APP_WEB_URL_AFRO };
 
     if (accepted) {
-      await notifyUser({
+      await send({
         userId, target: "MY_AD", refId: event.params.adId,
         title: "📢 Ta publicité est acceptée !",
         message: `Ta publicité « ${name} » est en ligne${days ? ` pour ${days} jour${days > 1 ? "s" : ""}` : ""}. Suis ses vues et ses clics dans « Mes publicités ».`,
@@ -173,11 +197,11 @@ export const notifyAdvertiserOnAdDecision = onDocumentUpdated(
           subject: "📢 Ta publicité est acceptée sur Afrolook", heading: "Ta publicité est acceptée !", icon: "📢", tone: "ok",
           intro: `Bonne nouvelle : ta publicité <b>« ${esc(name)} »</b> a été validée et sa diffusion a commencé.`,
           rows: [["Publicité", name], ["Durée", days ? `${days} jour${days > 1 ? "s" : ""}` : ""], ["Montant payé", paid ? `${paid} FCFA` : ""]],
-          outro: "Tu peux suivre les vues et les clics depuis « Mes publicités » dans l'application.", button: app,
+          outro: isWeb ? "Tu peux suivre les vues et les clics depuis ton espace annonceur. Tu seras prévenu(e) à chaque palier de 100 vues." : "Tu peux suivre les vues et les clics depuis « Mes publicités » dans l'application.", button: app,
         },
       });
     } else if (rejected) {
-      await notifyUser({
+      await send({
         userId, target: "MY_AD", refId: event.params.adId,
         title: "Ta publicité n'a pas été acceptée",
         message: `« ${name} » a été refusée${reason ? ` : ${reason}` : "."}${paid ? " Tu es remboursé(e) sur ton solde." : ""}`,
@@ -189,7 +213,7 @@ export const notifyAdvertiserOnAdDecision = onDocumentUpdated(
         },
       });
     } else {
-      await notifyUser({
+      await send({
         userId, target: "MY_AD", refId: event.params.adId,
         title: "⏹️ Ta publicité a été arrêtée",
         message: `Ta publicité « ${name} » a été arrêtée par l'équipe${reason ? ` : ${reason}` : "."}`,

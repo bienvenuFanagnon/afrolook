@@ -109,6 +109,10 @@
       ],
       "rewrites": [
         {
+          "source": "/p/**",
+          "function": "adsShareGo"
+        },
+        {
           "source": "/app/**",
           "destination": "/app/index.html"
         },

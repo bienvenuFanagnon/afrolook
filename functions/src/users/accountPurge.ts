@@ -120,6 +120,10 @@ async function purgeAccount(uid: string, user: FirebaseFirestore.DocumentData) {
 
   // Relations et données personnelles
   await deleteQuery(db.collection("Notifications").where("receiver_id", "==", uid));
+  // mur de tâches : événements et compteurs de l'utilisateur
+  await deleteQuery(db.collection("OfferwallEvents").where("userId", "==", uid));
+  await deleteQuery(db.collection("OfferwallDaily").where("userId", "==", uid));
+  await db.collection("AdTaskState").doc(uid).delete().catch(() => undefined); // tâche « Regarder une pub » : état de la personne
   await deleteQuery(db.collection("Invitations").where("receiver_id", "==", uid));
   await deleteQuery(db.collection("Invitations").where("sender_id", "==", uid));
   await deleteQuery(db.collection("BlockedUsers").where("blockedBy", "==", uid));

@@ -26,6 +26,7 @@
     "ffmpeg-static": "^5.2.0",
     "firebase-admin": "^12.6.0",
     "firebase-functions": "^6.0.1",
+    "geoip-country": "^5.0.202610280233",
     "nodemailer": "^8.0.10",
     "sharp": "^0.33.5"
   },

@@ -29,6 +29,20 @@ export * from "./payments/coinConversion";
 export * from "./payments/coinPayments";
 export * from "./payments/coinInteractions";
 export * from "./payments/coinPurchase";
+export { offerwallRelease } from "./offerwall/offerwall";
+export { adsWebCreate, adsWebRenew, adsWebMine, adsWebStop, adsWebDelete, adsWebPublic, adsWebTrack } from "./ads/adsWeb"; // Afrolook Ads : annonceurs sur afrolookmedia.com/ads/
+export { adsServe, adsEvent, adsGo, adsRollup, adsCleanup, adsHealth, adsUniques, adsReverify } from "./ads/adsEngine"; // Afrolook Ads : moteur unique (jeton signé, clic par redirection, compteurs répartis)
+export { adsAdvMe, adsAdvSaveProfile, adsAdvAdminList, adsAdvAdminReview, adsPartners } from "./ads/adsAdvertisers"; // Afrolook Ads : profil annonceur (logo de marque, partenaires)
+export { adsShareList, adsShareCreate, adsShareGo, adsShareRollup, adsShareFraudScan, adsShareProfileMe, adsShareProfileSave, adsShareCampaignCreate, adsShareCampaignMine, adsShareReport } from "./ads/adsShare"; // Partage et gagne (statut et groupes WhatsApp, liens suivis, gains en pièces)
+export { adsWatch } from "./ads/adsWatch"; // Afrolook Ads : surveillance horaire des plateformes (alertes, blocage des paiements)
+export { adsAudience, adsWho, adsPubMe, adsPubSaveProfile, adsPubAddProperty, adsPubVerifyProperty, adsPubUpdateProperty, adsPubDeleteProperty, adsPubAdminList, adsPubAdminReview, adsPubAcceptRules, adsPubStats } from "./ads/adsPublishers"; // Afrolook Ads : diffuseurs (profil, sites et applications, validation)
+export { adTaskStart, adTaskClaim } from "./offerwall/adTask"; // tâche « Regarder une pub » (docs/OFFERWALL_TACHES.md §20)
+export { tapjoyOfferwallCallback } from "./offerwall/tapjoyCallback"; // secrets posés le 27/10/2026 (tool/offerwall/setup_secrets.cjs)
+export { ayetOfferwallCallback } from "./offerwall/ayetCallback"; // secret AYET_API_KEY posé le 27/10/2026 (tool/offerwall/setup_ayet_secret.cjs)
+export { pubscaleOfferwallCallback, pubscaleChargebackCallback } from "./offerwall/pubscaleCallback"; // à déployer après la pose des secrets PUBSCALE_SECRET_ANDROID / _IOS
+export * from "./offerwall/offerwallAdmin";
+export { offerwallMyHistory } from "./offerwall/offerwallUser";
+export { offerwallAdminPartners, offerwallAdminPartnerSave } from "./offerwall/offerwallPartners";
 export { r2MirrorSweep } from "./media/r2Mirror";
 export { chroniqueReplyInvite, onInvitationAnswered } from "./chroniques/chroniqueReply";
 export { chroniqueMusicCharge } from "./chroniques/chroniqueMusic";

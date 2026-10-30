@@ -106,7 +106,7 @@ async function assertPublic(u: URL) {
   if (!addrs.length || addrs.some((a) => isPrivateIp(a.address))) throw new Error("adresse refusée");
 }
 
-async function fetchLimited(url: string, opts: { ua: string; max: number; accept?: string }): Promise<{ finalUrl: string; type: string; body: Buffer }> {
+export async function fetchLimited(url: string, opts: { ua: string; max: number; accept?: string }): Promise<{ finalUrl: string; type: string; body: Buffer }> {
   let cur = new URL(url);
   for (let hop = 0; hop < 5; hop++) {
     await assertPublic(cur);
