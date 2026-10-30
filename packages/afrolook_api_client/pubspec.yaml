@@ -1,0 +1,14 @@
+name: afrolook_api_client
+description: Client de la nouvelle API Afrolook (brouillon, non branché sur l application en ligne).
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: '>=3.2.6 <4.0.0'
+
+dependencies:
+  dio: ^5.4.0
+  uuid: ^4.5.1
+
+dev_dependencies:
+  test: ^1.25.0

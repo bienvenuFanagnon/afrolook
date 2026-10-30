@@ -1,4 +1,7 @@
 import 'package:afrotok/services/read_meter.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import 'package:afrotok/services/api/api_gateway.dart';
+import 'package:afrotok/services/api/canal_mapper.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -3451,6 +3454,16 @@ class PostProvider extends ChangeNotifier {
 
 // Dans PostProvider
   Future<List<Canal>> getCanauxLimited(int limit) async {
+    // Nouvelle API (si le module « channels » est activé dans Remote Config) ; en cas d'erreur on retombe sur Firebase.
+    if (ApiGateway.instance.useApi('channels')) {
+      try {
+        final r = await ApiGateway.instance.client.get('/channels', query: {'limit': limit > 50 ? 50 : limit});
+        final list = (ApiClient.data(r) as List).cast<Map<String, dynamic>>();
+        return list.map(canalFromApi).toList();
+      } catch (e) {
+        printVm('API canaux indisponible, retour à Firebase : $e');
+      }
+    }
     try {
       QuerySnapshot snapshot = await firestore
           .collection('Canaux')

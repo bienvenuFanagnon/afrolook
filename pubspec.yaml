@@ -172,6 +172,8 @@ dependencies:
   firebase_auth: ^5.7.0
   google_sign_in: ^6.3.0
   uuid: ^4.5.1
+  afrolook_api_client:
+    path: packages/afrolook_api_client
   file_picker: ^10.3.3
   pdfx: ^2.9.2
   universal_platform: ^1.1.0

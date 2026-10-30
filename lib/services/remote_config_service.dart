@@ -1,4 +1,5 @@
 import 'package:afrotok/pages/component/consoleWidget.dart';
+import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 
@@ -13,12 +14,16 @@ class RemoteConfigService {
     'app_active': true,
     'page_marketing_active': true,
     'cdn_active': true,
+    // Nouvelle API : tout éteint par défaut (voir ApiGateway)
+    'api_modules': '{}',
+    'api_base_url': '',
   };
 
   Future<void> initialize() async {
     if (kDebugMode) {
       // En mode debug (émulateur) : on utilise les defaults locaux sans appel production
       await _rc.setDefaults(_defaults);
+      ApiGateway.instance.refresh();
       printVm('🛠️ RemoteConfig DEBUG — valeurs par défaut locales utilisées (pas de fetch production)');
       return;
     }
@@ -29,6 +34,7 @@ class RemoteConfigService {
       ));
       await _rc.setDefaults(_defaults);
       await _rc.fetchAndActivate();
+      ApiGateway.instance.refresh();
       printVm('✅ RemoteConfig initialisé : ${_rc.getAll().map((k, v) => MapEntry(k, v.asBool()))}');
     } catch (e) {
       printVm('⚠️ RemoteConfig fallback sur valeurs par défaut : $e');
