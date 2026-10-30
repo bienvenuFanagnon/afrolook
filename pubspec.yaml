@@ -36,50 +36,33 @@ dependencies:
     sdk: flutter
   badges: ^3.1.2
   flutter_cache_manager: ^3.3.1
-  collection: ^1.18.0
-  numberpicker: ^2.1.2
-  flutter_inner_drawer: ^1.0.0+1
   phone_form_field: ^10.0.8
   flutter_svg: ^2.0.17
   page_transition: ^2.2.2
   #  ffmpeg_kit_flutter: ^4.5.1
   rxdart: ^0.27.2
-  eva_icons_flutter: ^3.0.2
-  image_watermark: ^0.1.0
 #  ionicons: ^0.1.2
   dio:
-  equatable: ^2.0.3
 #  font_awesome_flutter: ^9.2.0
-  avatar_glow: ^2.0.2
-  getwidget: ^2.0.4
-  fluttertagger: ^2.2.1
   tiktok_double_tap_like: ^1.0.5+2
   animated_icon: ^0.0.9
   record: ^6.1.1
   #  flutter_html: ^2.2.1
   cinetpay: ^1.0.8
-  flutter_widget_from_html: ^0.15.3
   #  deepseek_client: ^0.0.1
-  flutter_markdown: ^0.7.6+2
   #  story_view: ^0.16.5
   flutter_image_compress: ^2.4.0
   video_compress: ^3.1.4
-  flutter_story_presenter: ^1.0.4
-  flutter_hooks: ^0.18.1
   #  hashtagable: ^2.3.0+1
   hashtagable_v3: ^3.0.1
 
-  tap_effect: ^0.0.4
   # money_formatter:
   contained_tab_bar_view_with_custom_page_navigator: ^0.1.3
   anim_search_bar: ^2.0.3
-  flutter_parsed_text: ^2.2.1
   video_player: ^2.8.2
   cached_network_image: ^3.2.0
-  grouped_list: ^5.1.2
   flutter_linkify: ^6.0.0
   url_launcher: ^6.1.7
-  comment_tree: ^0.3.0
   csc_picker_plus: ^0.0.3
   country_flags: ^3.2.0
   jovial_svg: ^1.1.28  # dessin des drapeaux du Studio Cartes (déjà utilisé par country_flags)
@@ -96,19 +79,14 @@ dependencies:
   #  flutter_share: ^2.0.0
   share_plus: ^10.1.2
   onesignal_flutter: ^5.1.2
-  html: ^0.15.1
-  any_link_preview: ^3.0.0
-  progress_indicators: ^1.0.0
   flutter_list_view: ^1.1.22
   pull_to_refresh: ^2.0.0
   image_picker: '>=0.8.9 <2.0.0'
   audio_waveforms: ^1.0.1
   # For formatting time locale in message receipts
-  timeago:
   #  native_video_view: ^1.0.5
   simple_tags: ^0.0.6
   dropdown_search: ^5.0.6
-  stories_for_flutter: ^1.2.1
   flutter_launcher_icons: ^0.13.1
   provider: ^6.1.1
   loading_animation_widget: ^1.2.0+4
@@ -119,15 +97,11 @@ dependencies:
   #  firebase_storage: ^11.6.0
   firebase_storage: ^12.3.2
   firebase_dynamic_links: ^6.1.10
-  flash: ^3.1.0
-  pulp_flash: ^0.0.6
   searchable_listview: ^2.10.1
-  popover_gtk: ^0.2.6+3
   deeplynks: ^1.0.7
   flick_video_player: ^0.9.0
   get: ^4.7.2
   #  webview_flutter: ^4.0.1
-  tiktok_scraper: ^0.0.8
   webview_flutter: ^4.13.0
   cloud_functions: any
   app_links: ^6.4.1
@@ -137,7 +111,6 @@ dependencies:
 
   #  image: ^2.1.4
 
-  image: ^4.3.0
   #  tflite: ^1.1.2
   camera: ^0.11.0+2
   #  tflite_flutter: ^0.11.0
@@ -158,54 +131,40 @@ dependencies:
   flutter_vector_icons: ^2.0.0
   geolocator: ^10.1.0
   geocoding: ^2.1.1
-  flutter_map: ^6.1.0
-  latlong2: ^0.9.1
   ripple_wave: ^0.1.3
   skeletonizer: ^2.1.0+1
   flutter_chat_bubble: ^2.0.2
   chat_bubbles: ^1.6.0
   audioplayers: ^5.2.1
-  flutter_carousel_widget: ^3.1.0
 
   intl: ^0.20.0
-  flutter_popup_menu_button: ^0.0.1+5
   popup_menu: ^2.0.0
   popup_menu_plus: ^0.0.6
   like_button: ^2.0.5
   chewie: ^1.7.5
-  flutter_form_builder: ^10.1.0
   auto_animated: ^3.2.0
   #  flutter_animated_icons: ^1.0.1
   rate_in_stars: ^0.0.3
-  flutter_card_swiper: ^7.0.0
   marquee: ^2.2.3
   flutter_email_sender: ^6.0.2
   random_color: ^1.0.5
   #phone_verification: ^0.0.1
   #  telephony: ^0.2.0
-  introduction_screen: ^3.1.12
   awesome_dialog: ^3.2.0
   pinput: ^4.0.0
   insta_image_viewer: ^1.0.2
-  restart_app: ^1.2.1
-  encrypt_decrypt_plus: ^1.1.0
   cryptography: ^2.7.0
   flutter_secure_storage: ^9.2.2
   local_auth: ^2.3.0
-  preload_page_view: ^0.2.0
   google_generative_ai: ^0.4.0
-  fading_edge_scrollview: ^4.1.1
   upgrader: ^11.3.1
   carousel_slider: ^5.0.0
   flutter_image_slideshow: ^0.1.6
   video_player_web_hls: ^1.3.0
-  pro_image_editor: ^6.2.1
   firebase_app_check: ^0.3.1+7
   #  image_gallery_saver_plus: ^3.0.5
   permission_handler: ^11.3.1
-  youtube_player_flutter: ^9.1.1
   iconsax: ^0.0.8
-  xml: ^6.5.0
   agora_rtc_engine: 6.5.3
   confetti: ^0.8.0
   firebase_core: ^3.15.2
@@ -218,7 +177,6 @@ dependencies:
   universal_platform: ^1.1.0
 
   flutter_downloader: ^1.12.0
-  open_filex: ^4.7.0
   workmanager: ^0.9.0+3
   flutter_local_notifications: ^19.5.0
   shared_preferences: ^2.3.3
@@ -267,8 +225,6 @@ dev_dependencies:
   flutter_lints: ^2.0.0
 
 dependency_overrides:
-  fading_edge_scrollview: ^4.1.1
-  flutter_hooks: ^0.20.5
 #  flutter_svg: ^0.22.0
 #  xml: ^5.0.0
 

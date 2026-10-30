@@ -279,7 +279,7 @@ Les modules 5 (fil), 15 (argent) et 26 (partage, argent versé au clic) sont les
 
 ## 15. Questions à valider avant de lancer
 
-1. **Facture Firebase réelle** : pouvez-vous fournir les 3 derniers mois par ligne (Facturation → Rapports, regroupés par SKU) ? Elle fixe le seuil de rentabilité et l'ordre des phases.
+1. ~~Facture Firebase réelle~~ **Plus nécessaire (30/10/2026)** : la migration est décidée ; l'ordre des phases suit les lectures mesurées par écran.
 2. ~~Hébergeur~~ **LWS (décidé le 27/10/2026)**. Reste à préciser : l'offre exacte (VPS à accès administrateur complet, Docker possible) et le budget mensuel.
 3. ~~Emplacement du code~~ **Décidé le 30/10 : dépôt GitHub séparé et privé `afrolook-api`** (dossier frère `D:\...\afrolook\V2\afrolook-api`), jamais dans le dépôt de l'application ; une branche ne peut pas être privée seule sur GitHub.
 4. **Mise à jour obligatoire** : acceptez-vous une version minimale par module (les utilisateurs qui n'ont pas mis à jour verront un écran de mise à jour) ?
