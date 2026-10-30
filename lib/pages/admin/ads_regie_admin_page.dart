@@ -24,6 +24,8 @@ class _AdsRegieAdminPageState extends State<AdsRegieAdminPage> {
   List<Map<String, dynamic>> _profiles = [];
   List<Map<String, dynamic>> _props = [];
   List<Map<String, dynamic>> _alerts = [];
+  List<Map<String, dynamic>> _sharers = []; // partageurs « Partage et gagne » (utilisateurs de l'application)
+  List<Map<String, dynamic>> _camps = []; // campagnes Partage des annonceurs
 
   @override
   void initState() {
@@ -44,10 +46,13 @@ class _AdsRegieAdminPageState extends State<AdsRegieAdminPage> {
     setState(() { _loading = true; _error = null; });
     try {
       final logoStatus = switch (_filter) { 'all' => 'all', 'active' => 'approved', 'refused' => 'rejected', _ => 'pending' };
+      final campStatus = switch (_filter) { 'all' => 'all', 'active' => 'active', 'refused' => 'refused', 'suspended' => 'paused', _ => 'pending' };
       final r = await Future.wait([
         _filter == 'suspended' ? Future.value(<String, dynamic>{'items': <dynamic>[]}) : _call('adsAdvAdminList', {'status': logoStatus}),
         _call('adsPubAdminList', {'status': _filter}),
         _call('adsPubAdminList', {'alerts': true, 'status': 'open'}).catchError((_) => <String, dynamic>{'alerts': <dynamic>[]}),
+        _call('adsPubAdminList', {'sharers': true, 'status': _filter}).catchError((_) => <String, dynamic>{'sharers': <dynamic>[]}),
+        _call('adsPubAdminList', {'campaigns': true, 'status': campStatus}).catchError((_) => <String, dynamic>{'campaigns': <dynamic>[]}),
       ]);
       if (!mounted) return;
       setState(() {
@@ -55,6 +60,8 @@ class _AdsRegieAdminPageState extends State<AdsRegieAdminPage> {
         _profiles = _list(r[1]['profiles']);
         _props = _list(r[1]['properties']);
         _alerts = _list(r[2]['alerts']);
+        _sharers = _list(r[3]['sharers']);
+        _camps = _list(r[4]['campaigns']);
         _loading = false;
       });
     } catch (e) {
@@ -147,6 +154,54 @@ class _AdsRegieAdminPageState extends State<AdsRegieAdminPage> {
       final m = _err(e);
       _toast(m.contains('profil_non_valide') ? 'Valide d\'abord le profil du diffuseur.' : m);
     }
+  }
+
+  /// Partageur : valider (avec l'audience retenue, jamais plus que la déclarée), refuser, suspendre, lever un blocage, ou fraude confirmée (gains retirés).
+  Future<void> _sharerDecision(Map<String, dynamic> p, String decision) async {
+    String? reason;
+    int? retained;
+    if (decision == 'refuse' || decision == 'suspend' || decision == 'fraud') {
+      reason = await _askReason(switch (decision) { 'refuse' => 'Refuser ce profil', 'suspend' => 'Suspendre ce profil', _ => 'Fraude confirmée : retirer les gains' },
+          label: decision == 'fraud' ? 'Motif (gardé dans le journal)' : 'Motif (envoyé par e-mail)');
+      if (reason == null) return;
+    } else if (decision == 'approve' || decision == 'reactivate') {
+      final declared = (p['declared'] as num?)?.toInt() ?? 0;
+      final ctl = TextEditingController(text: '$declared');
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(decision == 'approve' ? 'Valider ce partageur' : 'Réactiver ce partageur'),
+          content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('Audience déclarée : $declared personnes.'),
+            const SizedBox(height: 10),
+            TextField(controller: ctl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Audience retenue (au plus la déclarée)')),
+          ]),
+          actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Valider'))],
+        ),
+      );
+      if (ok != true) return;
+      retained = int.tryParse(ctl.text.trim());
+    }
+    try {
+      await _call('adsPubAdminReview', {'target': 'sharer', 'id': p['uid'], 'decision': decision, if (reason != null) 'reason': reason, if (retained != null) 'audienceRetained': retained});
+      _toast('Décision enregistrée');
+      _load();
+    } catch (e) { _toast(_err(e)); }
+  }
+
+  /// Campagne Partage : valider (paiement reçu), refuser, mettre en pause, reprendre ou terminer.
+  Future<void> _campDecision(Map<String, dynamic> p, String decision) async {
+    String? reason;
+    if (decision == 'refuse' || decision == 'pause' || decision == 'end') {
+      reason = await _askReason(switch (decision) { 'refuse' => 'Refuser cette campagne', 'pause' => 'Mettre la campagne en pause', _ => 'Terminer la campagne' },
+          label: decision == 'refuse' ? 'Motif (envoyé par e-mail)' : 'Motif (gardé dans le journal)');
+      if (reason == null) return;
+    }
+    try {
+      await _call('adsPubAdminReview', {'target': 'campaign', 'id': p['id'], 'decision': decision, if (reason != null) 'reason': reason});
+      _toast('Décision enregistrée');
+      _load();
+    } catch (e) { _toast(_err(e)); }
   }
 
   Widget _card(AppColors c, {required List<Widget> children}) => Card(
@@ -309,22 +364,86 @@ class _AdsRegieAdminPageState extends State<AdsRegieAdminPage> {
     ]);
   }
 
+  String _statusLabel(Object? s) => switch ('$s') { 'pending' => 'En validation', 'active' => 'Validé', 'refused' => 'Refusé', 'suspended' => 'Suspendu', _ => '$s' };
+
+  /// Partageurs « Partage et gagne » : utilisateurs de l'application dont l'audience WhatsApp, Telegram ou groupes est à valider avant leurs premières missions.
+  Widget _sharersTab(AppColors c) {
+    if (_sharers.isEmpty) return _empty(c, 'Aucun partageur dans cette liste.');
+    return ListView(padding: const EdgeInsets.all(12), children: [
+      for (final p in _sharers)
+        _card(c, children: [
+          Row(children: [
+            Icon(Icons.campaign_rounded, color: c.info),
+            const SizedBox(width: 8),
+            Expanded(child: Text('${p['name'] ?? ''}'.isNotEmpty ? '${p['name']}' : '${p['email'] ?? p['uid']}', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 16))),
+          ]),
+          _kv(c, 'Statut', _statusLabel(p['status'])),
+          _kv(c, 'Pays, ville', '${p['country'] ?? ''}${'${p['city'] ?? ''}'.isNotEmpty ? ', ${p['city']}' : ''}'),
+          _kv(c, 'Contact', '${p['whatsapp'] ?? ''} · ${p['email'] ?? ''}'),
+          _kv(c, 'Audience déclarée', '${p['declared'] ?? 0} personnes (statut ${p['statusAudience'] ?? 0}, Telegram ${p['telegramAudience'] ?? 0}, autres ${p['otherAudience'] ?? 0}, ${(p['groups'] as List? ?? const []).length} groupes)'),
+          if ((p['groups'] as List? ?? const []).isNotEmpty) _kv(c, 'Groupes', (p['groups'] as List).map((g) => '${(g as Map)['name']} (${g['members']})').join(', ')),
+          _kv(c, 'Présentation', '${p['about'] ?? ''}'),
+          if (p['status'] == 'active') _kv(c, 'Audience retenue', '${p['retained'] ?? 0}'),
+          if (p['fraudHold'] == true) _kv(c, 'Gains', 'Bloqués : fraude possible'),
+          if ('${p['reason'] ?? ''}'.isNotEmpty) _kv(c, 'Motif', '${p['reason']}'),
+          _buttons(c, items: [
+            if (p['status'] == 'pending' || p['status'] == 'refused') ('Valider', () => _sharerDecision(p, 'approve'), c.primary),
+            if (p['status'] == 'suspended') ('Réactiver', () => _sharerDecision(p, 'reactivate'), c.primary),
+            if (p['status'] == 'pending') ('Refuser', () => _sharerDecision(p, 'refuse'), null),
+            if (p['status'] == 'active') ('Suspendre', () => _sharerDecision(p, 'suspend'), null),
+            if (p['fraudHold'] == true) ('Vérifié : lever le blocage', () => _sharerDecision(p, 'clear'), null),
+            if (p['status'] != 'refused') ('Fraude confirmée : retirer les gains', () => _sharerDecision(p, 'fraud'), null),
+          ]),
+        ]),
+    ]);
+  }
+
+  /// Campagnes Partage : à valider une fois le paiement reçu (les campagnes de l'équipe sont offertes et actives tout de suite).
+  Widget _campsTab(AppColors c) {
+    if (_camps.isEmpty) return _empty(c, 'Aucune campagne Partage dans cette liste.');
+    return ListView(padding: const EdgeInsets.all(12), children: [
+      for (final p in _camps)
+        _card(c, children: [
+          Text('${p['brand'] ?? ''} · ${p['title'] ?? ''}', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 16)),
+          _kv(c, 'Statut', switch ('${p['status']}') { 'pending' => 'À valider', 'active' => 'En cours', 'paused' => 'En pause', 'refused' => 'Refusée', 'ended' => 'Terminée', _ => '${p['status']}' }),
+          _kv(c, 'Annonceur', '${p['ownerEmail'] ?? ''}'),
+          _kv(c, 'Texte', '${p['text'] ?? ''}'),
+          _kv(c, 'Audience à atteindre', '${p['targetAudience'] ?? 0} personnes'),
+          _kv(c, 'Prix', p['free'] == true ? 'Offerte par l\'équipe' : '${p['listPriceFcfa'] ?? 0} F (à encaisser avant de valider)'),
+          _kv(c, 'Pays', (p['countries'] as List? ?? const []).join(', ')),
+          _kv(c, 'Résultats', '${p['valid'] ?? 0} clics valides · ${p['sharers'] ?? 0} partageurs · audience engagée ${p['allocatedReach'] ?? 0}'),
+          _kv(c, 'Audience touchée', '${p['provenReach'] ?? 0} personnes (publications confirmées) · ${p['uniqueOpens'] ?? 0} ouvertures · ${p['previews'] ?? 0} aperçus · ${p['declaredViews'] ?? 0} vues déclarées'),
+          _link(c, 'Voir le lien de l\'annonceur', '${p['actionUrl'] ?? ''}'),
+          if ('${p['reason'] ?? ''}'.isNotEmpty) _kv(c, 'Motif', '${p['reason']}'),
+          _buttons(c, items: [
+            if (p['status'] == 'pending') ('Valider (paiement reçu)', () => _campDecision(p, 'approve'), c.primary),
+            if (p['status'] == 'pending') ('Refuser', () => _campDecision(p, 'refuse'), null),
+            if (p['status'] == 'active') ('Mettre en pause', () => _campDecision(p, 'pause'), null),
+            if (p['status'] == 'active') ('Terminer', () => _campDecision(p, 'end'), null),
+            if (p['status'] == 'paused') ('Reprendre', () => _campDecision(p, 'resume'), c.primary),
+          ]),
+        ]),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    const filters = {'all': 'Tous', 'pending': 'En attente', 'active': 'Validés', 'refused': 'Refusés', 'suspended': 'Suspendus'};
+    const filters ={'all': 'Tous', 'pending': 'En attente', 'active': 'Validés', 'refused': 'Refusés', 'suspended': 'Suspendus'};
     return DefaultTabController(
-      length: 4,
+      length: 6,
       child: Scaffold(
         backgroundColor: c.background,
         appBar: AppBar(
           backgroundColor: c.surface,
           foregroundColor: c.textPrimary,
-          title: const Text('Régie : profils, diffuseurs et alertes'),
-          bottom: TabBar(tabs: [
+          title: const Text('Régie : annonceurs, diffuseurs, partageurs'),
+          bottom: TabBar(isScrollable: true, tabAlignment: TabAlignment.start, tabs: [
             Tab(text: 'Annonceurs (${_logos.length})'),
             Tab(text: 'Diffuseurs (${_profiles.length})'),
             Tab(text: 'Sites et applis (${_props.length})'),
+            Tab(text: 'Partageurs (${_sharers.length})'),
+            Tab(text: 'Campagnes (${_camps.length})'),
             Tab(text: 'Alertes (${_alerts.length})'),
           ]),
           actions: [IconButton(onPressed: _load, icon: const Icon(Icons.refresh_rounded), tooltip: 'Actualiser')],
@@ -346,7 +465,7 @@ class _AdsRegieAdminPageState extends State<AdsRegieAdminPage> {
                   ? const Center(child: CircularProgressIndicator())
                   : _error != null
                       ? Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(_error!, style: TextStyle(color: c.danger))))
-                      : TabBarView(children: [_logosTab(c), _profilesTab(c), _propsTab(c), _alertsTab(c)]),
+                      : TabBarView(children: [_logosTab(c), _profilesTab(c), _propsTab(c), _sharersTab(c), _campsTab(c), _alertsTab(c)]),
             ),
           ]),
         ),

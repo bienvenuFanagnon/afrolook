@@ -1,13 +1,14 @@
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb, debugPrint;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../ads/ad_slot.dart';
 import '../../layout/centered_content.dart';
@@ -32,12 +33,26 @@ class _ShareEarnPageState extends State<ShareEarnPage> {
   bool _loading = true;
   String? _busyMission;
 
+  /// Gains, parrainage et consigne : ouverts la toute première fois, fermés ensuite pour laisser voir les missions (le résumé reste visible).
+  static const _kInfoSeen = 'share_info_seen';
+  bool _infoOpen = false;
+
   UserAuthProvider get _auth => Provider.of<UserAuthProvider>(context, listen: false);
 
   @override
   void initState() {
     super.initState();
+    _loadInfoPref();
     _load();
+  }
+
+  Future<void> _loadInfoPref() async {
+    try {
+      final sp = await SharedPreferences.getInstance();
+      final seen = sp.getBool(_kInfoSeen) ?? false;
+      if (!seen) await sp.setBool(_kInfoSeen, true);
+      if (mounted && !seen) setState(() => _infoOpen = true);
+    } catch (_) {}
   }
 
   Future<void> _load() async {
@@ -96,25 +111,78 @@ class _ShareEarnPageState extends State<ShareEarnPage> {
     return ListView(padding: const EdgeInsets.fromLTRB(16, 12, 16, 32), children: [
       CenteredContent(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _hero(c),
-          _ad(AdSlotKind.detail),
-          _earnCard(c, h),
-          const SizedBox(height: 12),
-          _sponsorCard(c, h),
-          const SizedBox(height: 12),
-          _rulesCard(c, h),
-          _ad(AdSlotKind.list),
           _profileCard(c, h),
+          const SizedBox(height: 12),
+          // les missions d'abord : le reste de l'information se replie
           if (h.status == 'active') ...[
-            const SizedBox(height: 12),
             _missions(c, h),
             const SizedBox(height: 12),
+          ],
+          _infoGroup(c, h),
+          _ad(AdSlotKind.detail),
+          if (h.status == 'active') ...[
+            const SizedBox(height: 12),
             _myEarnings(c, h),
-            _ad(AdSlotKind.detail),
+            _ad(AdSlotKind.list),
           ],
         ]),
       ),
     ]);
+  }
+
+  /// Gains, parrainage et consigne regroupés : un résumé toujours visible, le détail s'ouvre au toucher (ouvert seulement la première fois).
+  Widget _infoGroup(AppColors c, ShareHome h) {
+    final summary = context.tr('environ {f} F par clic valide, jusqu\'à {m} F par jour · parrainage +{p} % · seuls les clics valides sont payés', {'f': _n(h.perClickFcfa), 'm': _n(h.dailyCapFcfa), 'p': h.sponsorPct});
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Material(
+        color: c.surface,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => setState(() => _infoOpen = !_infoOpen),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border)),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Icon(Icons.info_outline_rounded, color: c.primary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(context.tr('Gains, parrainage et consigne'), style: TextStyle(color: c.textPrimary, fontSize: 15.5, fontWeight: FontWeight.w800)),
+                  if (!_infoOpen) Padding(padding: const EdgeInsets.only(top: 3), child: Text(summary, style: TextStyle(color: c.textSecondary, fontSize: 12.5, height: 1.35))),
+                ]),
+              ),
+              Icon(_infoOpen ? Icons.expand_less_rounded : Icons.expand_more_rounded, color: c.textSecondary),
+            ]),
+          ),
+        ),
+      ),
+      if (_infoOpen) ...[
+        const SizedBox(height: 12),
+        _hero(c),
+        const SizedBox(height: 12),
+        _earnCard(c, h),
+        const SizedBox(height: 12),
+        _sponsorCard(c, h),
+        const SizedBox(height: 12),
+        _rulesCard(c, h),
+      ],
+    ]);
+  }
+
+  /// La consigne d'un partage, à la demande (bouton « Consigne » de chaque mission).
+  Future<void> _showConsigne() async {
+    final h = _home;
+    if (h == null) return;
+    final c = AppColors.of(context);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: c.background,
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => SafeArea(child: SingleChildScrollView(padding: const EdgeInsets.all(16), child: _rulesCard(c, h))),
+    );
   }
 
   /// Emplacement publicitaire : réseaux seulement (AdMob / Appodeal), jamais de pub Afrolook gratuite ici ; vide pour les comptes sans pub.
@@ -350,6 +418,8 @@ class _ShareEarnPageState extends State<ShareEarnPage> {
             Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: c.primary.withOpacity(0.12), borderRadius: BorderRadius.circular(99)), child: Text(context.tr('+{f} F par clic', {'f': _n(m.fcfaPerClick)}), style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 13))),
             _ad(AdSlotKind.detail),
             SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: () => Navigator.pop(ctx, true), icon: const Icon(Icons.ios_share_rounded, size: 18), label: Text(context.tr('Partager')))),
+            const SizedBox(height: 6),
+            SizedBox(width: double.infinity, child: OutlinedButton.icon(onPressed: _showConsigne, icon: const Icon(Icons.rule_rounded, size: 18), label: Text(context.tr('Consigne')))),
           ]),
         ),
       ),
@@ -381,6 +451,8 @@ class _ShareEarnPageState extends State<ShareEarnPage> {
               Row(children: [
                 Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: c.primary.withOpacity(0.12), borderRadius: BorderRadius.circular(99)), child: Text(context.tr('+{f} F par clic', {'f': _n(m.fcfaPerClick)}), style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 12.5))),
                 const Spacer(),
+                TextButton(onPressed: _showConsigne, style: TextButton.styleFrom(visualDensity: VisualDensity.compact, padding: const EdgeInsets.symmetric(horizontal: 10)), child: Text(context.tr('Consigne'))),
+                const SizedBox(width: 4),
                 FilledButton.icon(
                   onPressed: _busyMission == null ? () => _chooseChannel(m) : null,
                   icon: _busyMission == m.id ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.ios_share_rounded, size: 18),
@@ -450,22 +522,32 @@ class _ShareEarnPageState extends State<ShareEarnPage> {
       final lang = Localizations.localeOf(context).languageCode == 'fr' ? 'fr' : 'en';
       final link = await ShareService.createLink(m.id, channel, lang);
       if (!mounted) return;
-      if (kIsWeb || link.mediaUrl.isEmpty) {
-        await Share.share(link.caption);
-      } else {
-        final file = await _download(link.mediaUrl, link.video);
-        await Share.shareXFiles([XFile(file.path)], text: link.caption);
+      // iPad : la feuille de partage exige une zone d'ancrage, sinon elle plante (au centre de l'écran, comme une fenêtre flottante)
+      final size = MediaQuery.of(context).size;
+      final origin = Rect.fromCenter(center: Offset(size.width / 2, size.height / 2), width: 1, height: 1);
+      var shared = false;
+      if (!kIsWeb && link.mediaUrl.isNotEmpty) {
+        try {
+          final file = await _download(link.mediaUrl, link.video);
+          await Share.shareXFiles([XFile(file.path)], text: link.caption, sharePositionOrigin: origin);
+          shared = true;
+        } catch (e) {
+          debugPrint('partage avec l\'image impossible, repli sur le texte : $e');
+        }
       }
+      // le lien existe déjà : si l'image ne peut pas être jointe, on partage au moins le message avec le lien
+      if (!shared) await Share.share(link.caption, sharePositionOrigin: origin);
       if (mounted) await _load(); // met à jour les chiffres
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ShareService.explain(e, (s) => context.tr(s)))));
+      debugPrint('partage impossible : $e');
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ShareService.explain(e, (s) => context.tr(s)) + (kDebugMode ? '\n(${e.runtimeType})' : ''))));
     } finally {
       if (mounted) setState(() => _busyMission = null);
     }
   }
 
   Future<File> _download(String url, bool video) async {
-    final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 60));
+    final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 25));
     if (res.statusCode != 200) throw StateError('téléchargement impossible');
     final dir = await getTemporaryDirectory();
     final f = File('${dir.path}/afrolook_partage_${DateTime.now().millisecondsSinceEpoch}.${video ? 'mp4' : 'jpg'}');

@@ -65,6 +65,15 @@ class ShareService {
   /// Le partageur déclare combien de personnes ont vu sa publication. Retourne `{counted, proven, plausible}`.
   static Future<Map<String, dynamic>> reportViews(String campaignId, int views) => _call('adsShareReport', {'campaignId': campaignId, 'views': views});
 
+  /// Message clair quand le compte lui-même est refusé (le serveur répond « compte : raison »).
+  static String? accountReason(String m, String Function(String) tr) {
+    if (m.contains('trop récent')) return tr('Ton compte est encore trop récent pour faire des missions. Réessaie dans quelques jours.');
+    if (m.contains('e-mail non vérifié')) return tr('Vérifie ton adresse e-mail pour continuer.');
+    if (m.contains('suspendu')) return tr('Ton compte est suspendu des tâches. Contacte-nous pour en savoir plus.');
+    if (m.contains('suppression')) return tr('Ton compte est en cours de suppression.');
+    return null;
+  }
+
   /// Message simple et traduit pour une erreur d'envoi du profil : jamais le texte brut de l'erreur ni sa trace.
   static String profileError(Object e, String Function(String) tr) {
     final m = (e is FirebaseFunctionsException ? '${e.message}' : '').toLowerCase();
@@ -74,8 +83,8 @@ class ShareService {
     if (m.contains('groupe')) return tr('Chaque groupe doit avoir un nom et entre 1 et 1 024 membres.');
     if (m.contains('audience trop faible')) return tr('Ton audience doit compter au moins 20 personnes (statut, canal, groupes).');
     if (m.contains('présente ton audience')) return tr('Présente ton audience en 20 caractères au moins : qui sont-ils, que partages-tu d\'habitude ?');
-    if (m.contains('règles')) return tr('Accepte d\'abord les règles.');
-    return tr('Impossible d\'envoyer ton profil pour le moment.');
+    if (m.contains('règles') || m.contains('regles')) return tr('Accepte d\'abord les règles.');
+    return accountReason(m, tr) ?? tr('Impossible d\'envoyer ton profil pour le moment.');
   }
 
   /// Message simple pour une erreur du serveur.
@@ -86,7 +95,7 @@ class ShareService {
     if (m.contains('campagne_complete')) return tr('Cette annonce a déjà assez de partageurs. Essaie une autre.');
     if (m.contains('limite_du_jour')) return tr('Tu as atteint la limite de partages pour aujourd\'hui.');
     if (m.contains('campagne_indisponible') || m.contains('indisponible')) return tr('Cette annonce n\'est plus disponible.');
-    if (m.contains('compte')) return tr('Ton compte ne peut pas faire cette mission pour le moment.');
+    if (m.contains('compte')) return accountReason(m, tr) ?? tr('Ton compte ne peut pas faire cette mission pour le moment.');
     return tr('Impossible pour le moment. Réessaie plus tard.');
   }
 }

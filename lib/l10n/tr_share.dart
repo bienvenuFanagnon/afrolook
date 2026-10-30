@@ -119,4 +119,11 @@ const Map<String, Map<String, String>> kTrShare = {
   'Chaque groupe doit avoir un nom et entre 1 et 1 024 membres.': {'en': 'Each group needs a name and between 1 and 1,024 members.'},
   'Ton audience doit compter au moins 20 personnes (statut, canal, groupes).': {'en': 'Your audience must be at least 20 people (status, channel, groups).'},
   'Présente ton audience en 20 caractères au moins : qui sont-ils, que partages-tu d\'habitude ?': {'en': 'Describe your audience in at least 20 characters: who are they, what do you usually share?'},
+  'Ton compte est encore trop récent pour faire des missions. Réessaie dans quelques jours.': {'en': 'Your account is still too new to do missions. Try again in a few days.'},
+  'Vérifie ton adresse e-mail pour continuer.': {'en': 'Verify your email address to continue.'},
+  'Ton compte est suspendu des tâches. Contacte-nous pour en savoir plus.': {'en': 'Your account is suspended from tasks. Contact us to find out more.'},
+  'Ton compte est en cours de suppression.': {'en': 'Your account is being deleted.'},
+  'Gains, parrainage et consigne': {'en': 'Earnings, referrals and rules'},
+  'environ {f} F par clic valide, jusqu\'à {m} F par jour · parrainage +{p} % · seuls les clics valides sont payés': {'en': 'about {f} F per valid click, up to {m} F a day · referrals +{p} % · only valid clicks are paid'},
+  'Consigne': {'en': 'Rules'},
 };

@@ -561,7 +561,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       _Module(Icons.verified_rounded, 'Comptes officiels', c.info, _officialPending, const OfficialAccountsPage()),
       _Module(Icons.star_rounded, 'Influenceurs', c.supportAccent, _influencerPending, const InfluencerRequestsPage()),
       _Module(Icons.campaign_rounded, 'Publicités', const Color(0xFF8E3CC4), _boostsPending, const AdvertisementManagementPage()),
-      _Module(Icons.public_rounded, 'Régie : logos et diffuseurs', c.info, 0, const AdsRegieAdminPage()),
+      _Module(Icons.public_rounded, 'Régie : annonceurs, diffuseurs et partageurs', c.info, 0, const AdsRegieAdminPage()),
       _Module(Icons.ondemand_video_rounded, 'Pub AdMob', const Color(0xFF8E3CC4), 0, AdAdminPage()),
       _Module(Icons.quiz_rounded, 'Quiz', const Color(0xFFE0A100), 0, const QuizAdminPage()),
       _Module(Icons.school_rounded, 'Étude', const Color(0xFF1FAA59), 0, const EtudeAdminPage()),
