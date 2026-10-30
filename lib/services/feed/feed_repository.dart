@@ -1,4 +1,6 @@
 import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/api_gateway.dart';
+import 'package:afrotok/services/api/post_mapper.dart';
 import 'dart:math';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -48,6 +50,17 @@ class FeedRepository {
   /// Charge un batch de posts selon la composition algorithmique approuvée :
   /// 30% abonnements · 25% pays · 20% score · 15% découverte · 10% résurgence
   Future<List<Post>> fetchFeed(FeedQuery query) async {
+    // Nouvelle API (module « feed » activé dans Remote Config) : accueil = niveau 1 du serveur (publications des abonnements, non vues).
+    // Les autres onglets restent sur Firebase pour l'instant. Toute erreur de l'API → retour à Firebase.
+    if (query.type == FeedType.home && ApiGateway.instance.useApi('feed')) {
+      try {
+        final r = await ApiGateway.instance.client.get('/feed', query: {'tier': 1, 'limit': query.targetCount > 50 ? 50 : query.targetCount});
+        final rows = ((r as Map)['data'] as List).cast<Map<String, dynamic>>();
+        return rows.map(postFromApi).where((p) => p.id != null && !query.excludeIds.contains(p.id)).toList();
+      } catch (e) {
+        printVm('API feed indisponible, retour à Firebase : $e');
+      }
+    }
     final target = query.targetCount;
     final excluded = Set<String>.from(query.excludeIds);
     final nowMs = DateTime.now().millisecondsSinceEpoch;

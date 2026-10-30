@@ -19,6 +19,14 @@ class ApiGateway {
 
   /// À appeler après `RemoteConfigService.initialize()` (et à chaque rafraîchissement de Remote Config).
   void refresh() {
+    // Essais en debug : `flutter run --dart-define=API_MODULES={"feed":true} --dart-define=API_BASE_URL=http://192.168.1.20:8000/v1`
+    if (kDebugMode && const String.fromEnvironment('API_MODULES').isNotEmpty) {
+      modules.update(Map<String, dynamic>.from(jsonDecode(const String.fromEnvironment('API_MODULES')) as Map));
+      const u = String.fromEnvironment('API_BASE_URL');
+      _client = null;
+      _baseUrl = u.isEmpty ? _defaultBaseUrl : u;
+      return;
+    }
     try {
       final rc = FirebaseRemoteConfig.instance;
       final raw = rc.getString('api_modules');
