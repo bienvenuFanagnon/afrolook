@@ -1,4 +1,5 @@
 import 'package:afrotok/services/chronique_first_page.dart';
+import 'package:afrotok/services/api/startup_trace.dart';
 import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/feed/sections/card_feed_invite.dart';
@@ -1830,6 +1831,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
             _isFirstLoad = false;
           });
           printVm('⏱️ [PERF] 1er affichage (${newPosts.length} posts): ${_sw.elapsedMilliseconds}ms');
+          StartupTrace.mark('PREMIERS POSTS AFFICHÉS');
           _logBadgeSummary();
         }
 

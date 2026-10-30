@@ -1,4 +1,6 @@
 import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/api_gateway.dart';
+import 'package:afrotok/services/api/startup_trace.dart';
 import 'dart:async';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -137,6 +139,10 @@ class _SplashChargementState extends State<SplashChargement> {
     userProvider = Provider.of<UserProvider>(context, listen: false);
     chroniqueProvider = Provider.of<ChroniqueProvider>(context, listen: false);
     contentProvider = Provider.of<ContentProvider>(context, listen: false);
+
+    StartupTrace.mark('écran de lancement affiché');
+    // La première page du feed se prépare PENDANT le chargement (aucune attente artificielle)
+    ApiGateway.instance.prefetchHome();
 
     // Lancer la vérification directement dans initState
     _startSessionCheck();

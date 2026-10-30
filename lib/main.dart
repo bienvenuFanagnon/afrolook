@@ -1,4 +1,5 @@
 import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/startup_trace.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
@@ -108,6 +109,7 @@ bool _shouldRestart = false;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  StartupTrace.mark('main() démarre');
 
   // Supprime l'assertion debug "Cannot hit test a render box that has never been
   // laid out" causée par une race condition Overlay ↔ scroll rapide.
@@ -232,6 +234,7 @@ Future<void> main() async {
     ..loadOverride()
     ..listenRates();
 
+  StartupTrace.mark('runApp');
   runApp(const MyApp());
 }
 
