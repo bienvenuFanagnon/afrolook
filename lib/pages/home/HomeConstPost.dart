@@ -1768,7 +1768,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         var unread = authProvider.loginUserData.unreadPosts ?? {};
         // Plafond anti-accumulation (identique à _loadTier1Posts)
         const int _kMaxUnread = 16;
-        if (unread.length > _kMaxUnread) {
+        if (unread.length > _kMaxUnread && !ApiGateway.instance.useApi('feed')) {
           final sorted = unread.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
           final toKeep = sorted.take(_kMaxUnread).map((e) => e.key).toSet();
           final toDelete = unread.keys.where((id) => !toKeep.contains(id)).toList();
@@ -1994,7 +1994,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     // Plafond de sécurité : si trop de posts non vus s'accumulent (ex. 1000+),
     // supprimer les plus anciens de Firestore pour éviter une liste infinie.
     const int _kMaxUnread = 200;
-    if (unread.length > _kMaxUnread) {
+    if (unread.length > _kMaxUnread && !ApiGateway.instance.useApi('feed')) {
       final sorted = unread.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
       final toKeep = sorted.take(_kMaxUnread).map((e) => e.key).toSet();
       final toDelete = unread.keys.where((id) => !toKeep.contains(id)).toList();
@@ -2175,7 +2175,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     // Seul _flushingIds empêche le double traitement.
     if (_flushingIds.contains(postId)) return;
     final inUnread = (authProvider.loginUserData.unreadPosts ?? {}).containsKey(postId);
-    if (!inUnread) return;
+    if (!inUnread && !ApiGateway.instance.useApi('feed')) return;
 
     if (fraction >= 0.5) {
       // Enregistrer le moment d'entrée dans le viewport si pas déjà fait
@@ -2214,6 +2214,12 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     // Retrait en mémoire immédiat → le prochain rechargement ne verra plus ce post en Tier 1
     authProvider.loginUserData.unreadPosts?.remove(postId);
     authProvider.loginUserData.repostMeta?.remove(postId);
+
+    // Nouvelle API : le serveur garde la liste des publications vues (plus d'écriture Firestore)
+    if (ApiGateway.instance.useApi('feed')) {
+      ApiGateway.instance.markViewed(postId);
+      return;
+    }
 
     // Sauvegarde locale en backup (au cas où l'écriture réseau échoue)
     _persistSeenLocally({postId});
@@ -4441,6 +4447,13 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   Future<void> _recordPostView(Post post) async {
     final currentUserId = authProvider.loginUserData.id;
     if (currentUserId == null || post.id == null) return;
+
+    // Nouvelle API : la vue (compteurs, gains, « vu ») est comptée par le serveur ; plus aucune écriture Firestore
+    if (ApiGateway.instance.useApi('feed')) {
+      ApiGateway.instance.markViewed(post.id!);
+      if (mounted && post.hasBeenSeenByCurrentUser != true) setState(() => post.hasBeenSeenByCurrentUser = true);
+      return;
+    }
 
     String viewKey = '${_lastViewDatePrefix}${currentUserId}_${post.id}';
 

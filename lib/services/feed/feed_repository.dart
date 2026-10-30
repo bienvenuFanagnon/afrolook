@@ -46,14 +46,14 @@ class FeedRepository {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
   /// Appelle le niveau [tier] (1 abonnements, 2 intérêts, 3 découverte) du feed de l'API. Renvoie null en cas d'erreur (→ Firebase).
-  Future<List<Post>?> _apiTier(int tier, Set<String> excluded, int limit) async {
+  Future<List<Post>> _apiTier(int tier, Set<String> excluded, int limit) async {
     try {
       final r = await ApiGateway.instance.client.get('/feed', query: {'tier': tier, 'limit': limit > 50 ? 50 : (limit < 1 ? 1 : limit)});
       final rows = ((r as Map)['data'] as List).cast<Map<String, dynamic>>();
       return rows.map(postFromApi).where((p) => p.id != null && !excluded.contains(p.id)).toList();
     } catch (e) {
-      printVm('API feed (niveau $tier) indisponible, retour à Firebase : $e');
-      return null;
+      printVm('❌ API FEED (niveau $tier) EN ÉCHEC — aucun retour à Firebase : $e');
+      return <Post>[];
     }
   }
 
@@ -64,8 +64,7 @@ class FeedRepository {
   Future<List<Post>> fetchFeed(FeedQuery query) async {
     // Nouvelle API (module « feed » activé dans Remote Config) : découverte et tendances = niveau 3 du serveur. Erreur → Firebase.
     if (query.type == FeedType.home && ApiGateway.instance.useApi('feed')) {
-      final api = await _apiTier(3, query.excludeIds, query.targetCount);
-      if (api != null) return api;
+      return _apiTier(3, query.excludeIds, query.targetCount);
     }
     final target = query.targetCount;
     final excluded = Set<String>.from(query.excludeIds);
@@ -597,8 +596,7 @@ class FeedRepository {
     String? tabbarType,
   }) async {
     if (tabbarType == null && ApiGateway.instance.useApi('feed')) {
-      final api = await _apiTier(2, excluded, limit);
-      if (api != null) return api;
+      return _apiTier(2, excluded, limit);
     }
     if (interests.isEmpty) return [];
     final _swT2 = Stopwatch()..start();
@@ -654,8 +652,7 @@ class FeedRepository {
     Map<String, Map<String, dynamic>> repostMeta = const {},
   }) async {
     if (tabbarType == null && ApiGateway.instance.useApi('feed')) {
-      final api = await _apiTier(1, excluded, limit);
-      if (api != null) return api;
+      return _apiTier(1, excluded, limit);
     }
     if (unreadMap.isEmpty) return [];
     final _swT1 = Stopwatch()..start();

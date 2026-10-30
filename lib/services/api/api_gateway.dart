@@ -44,6 +44,20 @@ class ApiGateway {
 
   bool useApi(String module) => FirebaseAuth.instance.currentUser != null && modules.useApi(module);
 
+  final Set<String> _viewed = {};
+
+  /// Marque une publication comme vue (et compte la vue, gains compris, côté serveur). Une seule fois par publication et par session.
+  /// Aucun retour à Firebase : une erreur est affichée en clair dans le journal.
+  Future<void> markViewed(String postId) async {
+    if (!_viewed.add(postId)) return;
+    try {
+      await client.post('/posts/$postId/view');
+    } catch (e) {
+      _viewed.remove(postId); // sera retenté à la prochaine visibilité
+      debugPrint('❌ API VUE EN ÉCHEC pour $postId — aucun retour à Firebase : $e');
+    }
+  }
+
   ApiClient get client => _client ??= ApiClient(
         baseUrl: _baseUrl,
         token: ({bool forceRefresh = false}) async => FirebaseAuth.instance.currentUser?.getIdToken(forceRefresh),

@@ -3461,7 +3461,8 @@ class PostProvider extends ChangeNotifier {
         final list = (ApiClient.data(r) as List).cast<Map<String, dynamic>>();
         return list.map(canalFromApi).toList();
       } catch (e) {
-        printVm('API canaux indisponible, retour à Firebase : $e');
+        printVm('❌ API CANAUX EN ÉCHEC — aucun retour à Firebase : $e');
+        return [];
       }
     }
     try {
