@@ -327,7 +327,7 @@ class _RequestOfficialAccountPageState
         }
       } else {
         // ── Mode création : nouvelle demande ─────────────────────────────────
-        final id = OfficialAccountService.instance.newId();
+        const id = ''; // l'identifiant définitif est attribué par le serveur
         final request = OfficialAccountRequest(
           id: id,
           userId: me.id ?? '',

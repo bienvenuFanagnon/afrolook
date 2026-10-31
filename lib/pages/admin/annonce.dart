@@ -61,7 +61,6 @@ class _NewAppInfoState extends State<NewAppAnnonce> {
 
   late UserProvider userProvider =
   Provider.of<UserProvider>(context, listen: false);
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
   bool onTap = false;
 
   late List<XFile> listimages = [];

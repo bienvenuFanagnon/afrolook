@@ -40,11 +40,11 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
   // Groupes accordion (mode TOUS)
   static const _txGroups = {
     // Un achat de pièces (carte, Mobile Money, Google Play, App Store) est une recharge : il va avec les dépôts, pas avec les dépenses.
-    'Dépôts':      ['DEPOT', 'DEPOTADMIN', 'ACHAT_PIECES'],
-    'Gains':       ['GAIN', 'GAIN_PIECES', 'CADEAU_PIECES_RECU'],
-    'Dépenses':    ['DEPENSE', 'CADEAU_PIECES', 'LIKE_PIECES'],
-    'Retraits':    ['RETRAIT', 'RETRAITADMIN'],
-    'Conversions': ['CONVERSION_PIECES'],
+    'Dépôts':      ['DEPOSIT', 'COIN_PURCHASE'],
+    'Gains':       ['VIEW_CASHOUT', 'EARNING', 'COIN_EARNED', 'REWARD', 'GIFT_RECEIVED'],
+    'Dépenses':    ['SPEND', 'COIN_SPEND', 'GIFT_SENT', 'GIFT', 'LIKE'],
+    'Retraits':    ['WITHDRAWAL'],
+    'Conversions': ['CONVERSION'],
     'Autres':      <String>[],
   };
   static const _txGroupColors = {

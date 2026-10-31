@@ -34,7 +34,6 @@ class AdminComplementsApi {
   }
 
   static int _ms(Object? v) => v is String ? (DateTime.tryParse(v)?.millisecondsSinceEpoch ?? 0) : (v is num ? v.toInt() : 0);
-  static String? _iso(Object? v) => v == null ? null : DateTime.fromMillisecondsSinceEpoch(_ms(v)).toUtc().toIso8601String();
 
   // ── Comptes officiels ──────────────────────────────────────────────────────
 

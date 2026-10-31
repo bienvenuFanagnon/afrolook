@@ -1,5 +1,5 @@
 import 'package:afrotok/services/api/admin_complements_api.dart';
-﻿import 'dart:math';
+import 'dart:math';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/models/model_data.dart';

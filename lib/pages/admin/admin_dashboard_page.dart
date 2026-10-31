@@ -95,6 +95,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         _boostsPending = n(pending['ads']);
         _stickersPending = n(pending['sticker_packs']);
         _retraitsPending = n(pending['withdrawals']);
+        _officialPending = n(pending['official_accounts']);
+        _influencerPending = n(pending['influencer_requests']);
         _coinsDeposit = n(money['coins_deposit']);
         _coinsEarned = n(money['coins_earned']);
         _xofDeposit = n(money['xof_deposit']);
