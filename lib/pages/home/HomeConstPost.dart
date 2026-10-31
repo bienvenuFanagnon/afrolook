@@ -12,7 +12,9 @@ import 'package:afrotok/pages/home/unitePostPage/chronique_section.dart';
 import 'package:afrotok/providers/contenuPayantProvider.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/providers/postProvider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/home_feed_api.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;   // seulement pour le modèle Chronique (aucune lecture Firestore)
+import 'package:afrotok/services/api/users_api.dart';
 
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/userProvider.dart';
@@ -132,11 +134,7 @@ Future<void> flushSeenPostsAndCleanMemory(
     final pending = prefs.getStringList(_kSeenPostsPrefKey) ?? [];
     if (pending.isEmpty) return;
     final toFlush = pending.take(500).toList();
-    final updates = <String, dynamic>{};
-    for (final id in toFlush) {
-      updates['unreadPosts.$id'] = FieldValue.delete();
-    }
-    await FirebaseFirestore.instance.collection('Users').doc(userId).update(updates);
+    await HomeFeedApi.markSeen(toFlush);   // le serveur retient ce qui a été vu
     for (final id in toFlush) {
       userData.unreadPosts?.remove(id);
       userData.repostMeta?.remove(id);
@@ -213,7 +211,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   bool _showScrollToTop = false;
 
   // Curseur DocumentSnapshot pour le mode récent (startAfterDocument — unit-agnostic)
-  QueryDocumentSnapshot? _recentLastDoc;
+  String? _recentCursor;
 
   // Système hybride de chargement
   Set<String> _loadedPostIds = Set();
@@ -301,7 +299,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   late AnimationController _unlikeController;
 
   // Utilitaires
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   late SharedPreferences _prefs;
@@ -688,30 +685,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     final userId = authProvider.loginUserData.id;
     // Mesuré sur téléphone : cette lecture + cette écriture Firestore (ancien système des posts non vus) retardaient les premiers posts de ~1,3 s.
     // Avec l'API, c'est le serveur qui sait ce qui a été vu : plus aucune lecture ni écriture Firestore ici.
-    if (userId != null && userId.isNotEmpty && !ApiGateway.instance.useApi('feed')) {
-      // 0. Rafraîchir unreadPosts depuis Firestore AVANT le flush :
-      //    loginUserData est chargé une seule fois à la connexion, mais de nouveaux
-      //    posts d'abonnements peuvent être arrivés depuis. Sans ce refresh, Tier 1
-      //    serait toujours vide entre deux sessions.
-      try {
-        final userDoc = await FirebaseFirestore.instance
-            .collection('Users')
-            .doc(userId)
-            .getM('HomeConstPost.dart:659');
-        final _rawUnread = (userDoc.data()?['unreadPosts'] as Map<String, dynamic>?) ?? {};
-        authProvider.loginUserData.unreadPosts = UserData.parseUnreadTimestamps(_rawUnread);
-        authProvider.loginUserData.repostMeta = UserData.parseUnreadRepostMeta(_rawUnread);
-        printVm('🔄 Tier 1 — unreadPosts rafraîchi : ${_rawUnread.length} posts non vus');
-      } catch (e) {
-        printVm('⚠️ Impossible de rafraîchir unreadPosts : $e');
-      }
-
-      // Flush les posts vus lors de la session précédente → une seule écriture Firestore
-      await flushSeenPostsAndCleanMemory(
-        userId,
-        authProvider.loginUserData,
-      );
-    }
 
     // Diagnostic Tier 2 — intérêts
     final interests = authProvider.loginUserData.interests ?? [];
@@ -1050,7 +1023,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     _hasMorePosts = true;
     _isLoadingMorePosts = false;
     _isLoadingBackground = false;
-    _recentLastDoc = null;
+    _recentCursor = null;
     _t2AutoTriggered = false;
   }
 
@@ -1721,9 +1694,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
     try {
       // Enregistrement silencieux dans Firestore
-      await FirebaseFirestore.instance.collection('Users').doc(userId).update({
-        'countryData': defaultCountryData,
-      });
+      await UsersApi.updateMe({'country_code': 'TG'});
       printVm("✅ Pays par défaut (Togo) appliqué suite à la fermeture du modal.");
       // Relancer le chargement des posts avec le filtre Togo
       _refreshData();
@@ -1771,22 +1742,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         var unread = authProvider.loginUserData.unreadPosts ?? {};
         // Plafond anti-accumulation (identique à _loadTier1Posts)
         const int _kMaxUnread = 16;
-        if (unread.length > _kMaxUnread && !ApiGateway.instance.useApi('feed')) {
-          final sorted = unread.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-          final toKeep = sorted.take(_kMaxUnread).map((e) => e.key).toSet();
-          final toDelete = unread.keys.where((id) => !toKeep.contains(id)).toList();
-          for (final id in toDelete) { unread.remove(id); }
-          authProvider.loginUserData.unreadPosts = unread;
-          final userId = authProvider.loginUserData.id;
-          if (userId != null) {
-            for (int i = 0; i < toDelete.length; i += 500) {
-              final batch = toDelete.sublist(i, min(i + 500, toDelete.length));
-              final updates = <String, dynamic>{};
-              for (final id in batch) { updates['unreadPosts.$id'] = FieldValue.delete(); }
-              FirebaseFirestore.instance.collection('Users').doc(userId).update(updates).catchError((_) {});
-            }
-          }
-        }
         final userInterests = authProvider.loginUserData.interests ?? [];
         // T2 seulement si l'utilisateur a configuré ses propres intérêts.
         // Avec les defaults (userInterests vide), la query retourne souvent 0 résultats
@@ -1998,25 +1953,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     // Plafond de sécurité : si trop de posts non vus s'accumulent (ex. 1000+),
     // supprimer les plus anciens de Firestore pour éviter une liste infinie.
     const int _kMaxUnread = 200;
-    if (unread.length > _kMaxUnread && !ApiGateway.instance.useApi('feed')) {
-      final sorted = unread.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-      final toKeep = sorted.take(_kMaxUnread).map((e) => e.key).toSet();
-      final toDelete = unread.keys.where((id) => !toKeep.contains(id)).toList();
-      printVm('📌 [TIER1] ⚠️ ${unread.length} posts non vus → plafond $_kMaxUnread dépassé, suppression de ${toDelete.length} anciens');
-      // Nettoyer en mémoire immédiatement
-      for (final id in toDelete) { unread.remove(id); }
-      authProvider.loginUserData.unreadPosts = unread;
-      // Supprimer de Firestore en arrière-plan (batches de 500)
-      final userId = authProvider.loginUserData.id;
-      if (userId != null) {
-        for (int i = 0; i < toDelete.length; i += 500) {
-          final batch = toDelete.sublist(i, min(i + 500, toDelete.length));
-          final updates = <String, dynamic>{};
-          for (final id in batch) { updates['unreadPosts.$id'] = FieldValue.delete(); }
-          FirebaseFirestore.instance.collection('Users').doc(userId).update(updates).catchError((_) {});
-        }
-      }
-    }
 
     if (unread.isEmpty && !ApiGateway.instance.useApi('feed')) {
       printVm('📌 [TIER1] → toujours vide, aucun post Tier1 chargé');
@@ -2148,20 +2084,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     //    Couvre les cas où l'écriture temps-réel de _markPostAsSeenNow a échoué.
     await flushSeenPostsAndCleanMemory(userId, authProvider.loginUserData);
 
-    // 2. Relire unreadPosts depuis Firestore pour être à jour
-    //    (nouveaux posts d'abonnements arrivés depuis la dernière lecture)
-    try {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(userId)
-          .getM('HomeConstPost.dart:2115');
-      final _rawUnread = (userDoc.data()?['unreadPosts'] as Map<String, dynamic>?) ?? {};
-      authProvider.loginUserData.unreadPosts = UserData.parseUnreadTimestamps(_rawUnread);
-      authProvider.loginUserData.repostMeta = UserData.parseUnreadRepostMeta(_rawUnread);
-      printVm('🔄 [UNREAD] unreadPosts mis à jour : ${_rawUnread.length} posts non vus');
-    } catch (e) {
-      printVm('⚠️ [UNREAD] Impossible de rafraîchir unreadPosts : $e');
-    }
+    // 2. Les posts non vus viennent du serveur à chaque chargement : rien à relire ici
   }
 
   // ── Un post est considéré "vu" après 1 seconde d'affichage continu ──────
@@ -2231,13 +2154,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     // Écriture Firestore asynchrone (fire-and-forget)
     final userId = authProvider.loginUserData.id;
     if (userId != null && userId.isNotEmpty) {
-      FirebaseFirestore.instance
-          .collection('Users')
-          .doc(userId)
-          .update({'unreadPosts.$postId': FieldValue.delete()})
-          .catchError((e) {
-            printVm('⚠️ [SEEN] Firestore delete échoué pour $postId : $e');
-          });
+      HomeFeedApi.markSeen({postId}).catchError((e) {
+        printVm('⚠️ [SEEN] marquage échoué pour $postId : $e');
+      });
     }
   }
 
@@ -2328,34 +2247,16 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         int limit = 5,
       }) async {
     try {
-      Query query = _firestore
-          .collection('Posts')
-          .where("typeTabbar", isEqualTo: "EVENEMENT")
-          .orderBy("eventDate", descending: false);
-      if (countryCode.isNotEmpty) {
-        query = query.where("available_countries", arrayContains: countryCode);
-      }
-      query = query.limit((limit * 1.5).ceil());
-      final snapshot = await query.getM('HomeConstPost.dart:2291');
+      final page = await HomeFeedApi.discover(category: 'EVENEMENT', country: countryCode, limit: 20);
       final tempEvents = <Post>[];
-      for (final doc in snapshot.docs) {
+      for (final post in page.posts) {
         if (tempEvents.length >= limit) break;
-        try {
-          final post = Post.fromJson(doc.data() as Map<String, dynamic>);
-          post.id = doc.id;
-          if (post.isAdvertisement == true) continue;
-          if (loadedIds.contains(post.id) || _loadedPostIds.contains(post.id)) continue;
-          post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
-          loadedIds.add(post.id!);
-          tempEvents.add(post);
-        } catch (_) {}
+        if (post.isAdvertisement == true) continue;
+        if (loadedIds.contains(post.id) || _loadedPostIds.contains(post.id)) continue;
+        post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
+        loadedIds.add(post.id!);
+        tempEvents.add(post);
       }
-      tempEvents.sort((a, b) {
-        if (a.eventDate == null && b.eventDate == null) return 0;
-        if (a.eventDate == null) return 1;
-        if (b.eventDate == null) return -1;
-        return a.eventDate!.compareTo(b.eventDate!);
-      });
       newPosts.addAll(tempEvents);
     } catch (e) {
       printVm('❌ Erreur chargement événements: $e');
@@ -2684,30 +2585,17 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   /// Chargement initial pour le mode "Récent" — query directe Firestore avec DocumentSnapshot curseur.
   Future<void> _loadInitialRecentPosts(Set<String> loadedIds, List<Post> newPosts, int limit) async {
     try {
-      final snap = await _firestore
-          .collection('Posts')
-          .orderBy('created_at', descending: true)
-          .limit(limit * 4)
-          .getM('HomeConstPost.dart:2643');
-
-      for (final doc in snap.docs) {
-        try {
-          final post = Post.fromJson(doc.data());
-          post.id = doc.id;
-          if (post.id == null || post.isAdvertisement == true) continue;
-          if (loadedIds.contains(post.id) || _loadedPostIds.contains(post.id)) continue;
-          post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
-          loadedIds.add(post.id!);
-          newPosts.add(post);
-        } catch (_) {}
+      final page = await HomeFeedApi.discover(limit: limit * 2);
+      for (final post in page.posts) {
+        if (post.id == null || post.isAdvertisement == true) continue;
+        if (loadedIds.contains(post.id) || _loadedPostIds.contains(post.id)) continue;
+        post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
+        loadedIds.add(post.id!);
+        newPosts.add(post);
       }
-
-      // Tri client-side par createdAt normalisé (ms) pour corriger le mélange µs/ms en base
       newPosts.sort((a, b) => (b.createdAt ?? 0).compareTo(a.createdAt ?? 0));
       if (newPosts.length > limit) newPosts.removeRange(limit, newPosts.length);
-
-      // Sauvegarder le dernier doc Firestore comme curseur (unit-agnostic)
-      if (snap.docs.isNotEmpty) _recentLastDoc = snap.docs.last;
+      _recentCursor = page.next;
     } catch (e) {
       printVm('❌ Erreur chargement initial récent: $e');
     }
@@ -2715,28 +2603,16 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
   /// Pagination curseur pour le mode "Récent" — startAfterDocument (unit-agnostic).
   Future<void> _loadMoreRecentCursor(List<Post> newPosts, int limit) async {
-    if (_recentLastDoc == null) return;
+    if (_recentCursor == null) return;
     try {
-      final snap = await _firestore
-          .collection('Posts')
-          .orderBy('created_at', descending: true)
-          .startAfterDocument(_recentLastDoc!)
-          .limit(limit * 3)
-          .getM('HomeConstPost.dart:2677');
-
-      for (final doc in snap.docs) {
-        try {
-          final post = Post.fromJson(doc.data());
-          post.id = doc.id;
-          if (post.id == null || _loadedPostIds.contains(post.id) || post.isAdvertisement == true) continue;
-          post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
-          newPosts.add(post);
-        } catch (_) {}
-        _recentLastDoc = doc; // avancer le curseur sur chaque doc traité
+      final page = await HomeFeedApi.discover(cursor: _recentCursor, limit: limit * 2);
+      for (final post in page.posts) {
+        if (post.id == null || _loadedPostIds.contains(post.id) || post.isAdvertisement == true) continue;
+        post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
+        newPosts.add(post);
         if (newPosts.length >= limit) break;
       }
-
-      // Tri client-side pour corriger le mélange µs/ms restant en base
+      _recentCursor = page.next;
       newPosts.sort((a, b) => (b.createdAt ?? 0).compareTo(a.createdAt ?? 0));
     } catch (e) {
       printVm('❌ Erreur pagination récente (curseur): $e');
@@ -2965,10 +2841,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       if (followingIds.isEmpty && migratedIds.isNotEmpty) {
         followingIds = migratedIds;
         me.followingIds = followingIds;
-        FirebaseFirestore.instance
-            .collection('Users')
-            .doc(userId)
-            .update({'followingIds': followingIds}).catchError((_) {});
       }
 
       if (!mounted) return;
@@ -3017,16 +2889,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       Map<String, int>? freshCounts;
       if (userId.isNotEmpty) {
         try {
-          final doc = await FirebaseFirestore.instance
-              .collection('Users')
-              .doc(userId)
-              .getM('HomeConstPost.dart:2975');
-          final raw = doc.data()?['newPostsByCreator'] as Map<String, dynamic>? ?? {};
-          freshCounts = Map<String, int>.fromEntries(
-            raw.entries
-                .where((e) => (e.value as num? ?? 0).toInt() > 0)
-                .map((e) => MapEntry(e.key, (e.value as num).toInt())),
-          );
+          freshCounts = await HomeFeedApi.unreadByCreator();
           // Mise à jour immédiate des badges avant que resolve() finisse
           if (mounted && freshCounts.isNotEmpty) {
             setState(() => _unseenCounts = Map.from(freshCounts!));
@@ -4001,16 +3864,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                 onPressed: _hasSubscribedFromEndFeed
                     ? () async {
                         setState(() => _isReloadingAfterSubscribe = true);
-                        // Refresh unreadPosts depuis Firestore pour inclure les nouveaux abonnements
-                        final userId = authProvider.loginUserData.id;
-                        if (userId != null) {
-                          try {
-                            final doc = await FirebaseFirestore.instance.collection('Users').doc(userId).getM('HomeConstPost.dart:3921');
-                            final _rawUnread = (doc.data()?['unreadPosts'] as Map<String, dynamic>?) ?? {};
-                            authProvider.loginUserData.unreadPosts = UserData.parseUnreadTimestamps(_rawUnread);
-                            authProvider.loginUserData.repostMeta = UserData.parseUnreadRepostMeta(_rawUnread);
-                          } catch (_) {}
-                        }
                         _resetPagination();
                         await _loadInitialPosts();
                         if (mounted) setState(() {
@@ -4424,28 +4277,14 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     if (newCount <= 0) {
       _activeCreatorsService.resetCreatorCounter(userId, creatorId);
     } else {
-      FirebaseFirestore.instance
-          .collection('Users')
-          .doc(userId)
-          .update({'newPostsByCreator.$creatorId': FieldValue.increment(-1)})
-          .catchError((_) {});
+      // Le compteur de nouveautés est tenu par le serveur (vues de l'auteur)
     }
   }
   // Resynchronise newPostsByCreator dans Firestore avec les valeurs recalibrées
   // pour corriger les décalages accumulés par les échecs de CF.
   void _syncNewPostsByCreatorToFirestore(
       String userId, List<String> creatorIds, Map<String, int> calibrated) {
-    if (userId.isEmpty) return;
-    final Map<String, dynamic> updates = {};
-    for (final id in creatorIds) {
-      updates['newPostsByCreator.$id'] = calibrated[id] ?? 0;
-    }
-    if (updates.isEmpty) return;
-    FirebaseFirestore.instance
-        .collection('Users')
-        .doc(userId)
-        .update(updates)
-        .catchError((_) {});
+    // Les compteurs de nouveautés par créateur sont tenus par le serveur (GET /feed/unread-counts) : rien à resynchroniser.
   }
 
   Future<void> _recordPostView(Post post) async {
@@ -4503,20 +4342,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         }
       });
 
-      final batch = _firestore.batch();
-
-      final postRef = _firestore.collection('Posts').doc(post.id);
-      batch.update(postRef, {
-        'vues': FieldValue.increment(1),
-        'users_vue_id': FieldValue.arrayUnion([currentUserId]),
-      });
-
-      final userRef = _firestore.collection('Users').doc(currentUserId);
-      batch.update(userRef, {
-        'viewedPostIds': FieldValue.arrayUnion([post.id!]),
-      });
-
-      await batch.commit();
+      await ApiGateway.instance.markViewed(post.id!);   // vue (unique, gains compris) comptée par le serveur
 
       authProvider.loginUserData.viewedPostIds ??= [];
       if (!authProvider.loginUserData.viewedPostIds!.contains(post.id!)) {
@@ -4604,22 +4430,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       });
 
       // Mise à jour Firestore avec batch pour atomicité
-      final batch = _firestore.batch();
-
-      // 1. Incrémenter les vues du post
-      final postRef = _firestore.collection('Posts').doc(post.id);
-      batch.update(postRef, {
-        'vues': FieldValue.increment(1),
-        'users_vue_id': FieldValue.arrayUnion([currentUserId]),
-      });
-
-      // 2. Ajouter l'ID du post à l'historique de l'utilisateur
-      final userRef = _firestore.collection('Users').doc(currentUserId);
-      batch.update(userRef, {
-        'viewedPostIds': FieldValue.arrayUnion([post.id!]),
-      });
-
-      await batch.commit();
+      await ApiGateway.instance.markViewed(post.id!);   // vue (unique, gains compris) comptée par le serveur
 
       // Mettre à jour le provider local
       authProvider.loginUserData.viewedPostIds ??= [];
@@ -4653,19 +4464,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         }
       });
 
-      final batch = _firestore.batch();
-      final postRef = _firestore.collection('Posts').doc(post.id);
-      batch.update(postRef, {
-        'vues': FieldValue.increment(1),
-        'users_vue_id': FieldValue.arrayUnion([currentUserId]),
-      });
-
-      final userRef = _firestore.collection('Users').doc(currentUserId);
-      batch.update(userRef, {
-        'viewedPostIds': FieldValue.arrayUnion([post.id!]),
-      });
-
-      await batch.commit();
+      await ApiGateway.instance.markViewed(post.id!);   // vue (unique, gains compris) comptée par le serveur
 
       authProvider.loginUserData.viewedPostIds ??= [];
       if (!authProvider.loginUserData.viewedPostIds!.contains(post.id!)) {

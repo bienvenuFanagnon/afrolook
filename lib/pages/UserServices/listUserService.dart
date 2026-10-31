@@ -1,6 +1,5 @@
 ﻿import 'package:afrotok/pages/UserServices/detailsUserService.dart';
 import 'package:afrotok/providers/authProvider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:like_button/like_button.dart';

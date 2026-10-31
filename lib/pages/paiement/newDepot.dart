@@ -6,7 +6,6 @@ import 'package:afrotok/utils/platform_guard.dart';
 import 'package:afrotok/pages/coins/apple_coin_store_view.dart';
 import 'package:afrotok/pages/coins/play_coin_store_view.dart';
 import 'package:afrotok/utils/payment_region.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -284,283 +283,6 @@ class _DepositScreenState extends State<DepositScreen> {
     ('CA', tr('Canada')),        ('US', tr('États-Unis')),
   ];
 
-  Future<void> _processCinetPayPayment({required String paymentType}) async {
-    final colors = AppColors.of(context);
-    final t = AppLocalizations.of(context);
-    final provider = Provider.of<UserAuthProvider>(context, listen: false);
-    final amount = double.tryParse(amountController.text) ?? 0;
-    if (amount <= 0) return;
-
-    final user = provider.loginUserData;
-
-    // Contrôleurs pré-remplis avec les données du profil
-    final prenomCtrl   = TextEditingController(text: user.prenom ?? '');
-    final nomCtrl      = TextEditingController(text: user.nom ?? '');
-    final phoneCtrl    = TextEditingController(text: user.numeroDeTelephone ?? '');
-    final adresseCtrl  = TextEditingController(text: user.adresse ?? '');
-    final villeCtrl    = TextEditingController(text: user.userPays?.placeName ?? user.userPays?.name ?? '');
-    String selectedCountry = user.userPays?.id ?? 'CI';
-    // S'assurer que le pays est dans la liste
-    if (!_countries.any((c) => c.$1 == selectedCountry)) selectedCountry = 'CI';
-
-    const double feeRate = 0.07;
-    final int fees    = (amount * feeRate).round();
-    final int credited = (amount - fees).round();
-    final formKey = GlobalKey<FormState>();
-
-    final confirmed = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setStateSheet) => DraggableScrollableSheet(
-          initialChildSize: 0.92,
-          minChildSize: 0.6,
-          maxChildSize: 0.97,
-          builder: (_, scrollCtrl) => Container(
-            decoration: BoxDecoration(
-              color: colors.surface,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            ),
-            child: Form(
-              key: formKey,
-              child: ListView(
-                controller: scrollCtrl,
-                padding: EdgeInsets.only(
-                  left: 20, right: 20, top: 16,
-                  bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-                ),
-                children: [
-                  // Handle
-                  Center(
-                    child: Container(
-                      width: 40, height: 4,
-                      decoration: BoxDecoration(
-                        color: colors.border,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Titre
-                  Row(
-                    children: [
-                      Icon(Icons.credit_card, color: colors.primary, size: 24),
-                      const SizedBox(width: 10),
-                      Text(
-                        context.tr('Carte Bancaire — Informations'),
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          color: colors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    context.tr('Vérifiez et complétez vos informations avant de payer.'),
-                    style: TextStyle(fontSize: 12, color: colors.textSecondary),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Résumé des frais
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: colors.primary.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: colors.primary.withOpacity(0.2)),
-                    ),
-                    child: Column(
-                      children: [
-                        _feeRow(context.tr('Montant saisi'), '${amount.round()} FCFA', colors.textPrimary, colors),
-                        _feeRow(context.tr('Frais (7%)'), context.tr('- {a} FCFA', {'a': fees}), colors.danger, colors),
-                        Divider(color: colors.border, height: 16),
-                        _feeRow(context.tr('Vous recevez'), '$credited FCFA', colors.primary, colors),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  Divider(color: colors.border),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Text(
-                      context.tr('INFORMATIONS CLIENT'),
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: colors.textSecondary,
-                        letterSpacing: 1.1,
-                      ),
-                    ),
-                  ),
-
-                  // Prénom + Nom
-                  Row(
-                    children: [
-                      Expanded(child: _buildField(prenomCtrl, context.tr('Prénom'), Icons.person_outline, colors, required: true)),
-                      const SizedBox(width: 12),
-                      Expanded(child: _buildField(nomCtrl, context.tr('Nom'), Icons.person, colors, required: true)),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-
-                  // Téléphone
-                  _buildField(phoneCtrl, context.tr('Téléphone'), Icons.phone_outlined, colors,
-                      required: true, keyboardType: TextInputType.phone),
-                  const SizedBox(height: 14),
-
-                  // Adresse
-                  _buildField(adresseCtrl, context.tr('Adresse'), Icons.home_outlined, colors, required: true),
-                  const SizedBox(height: 14),
-
-                  // Ville
-                  _buildField(villeCtrl, context.tr('Ville'), Icons.location_city_outlined, colors, required: true),
-                  const SizedBox(height: 14),
-
-                  // Pays (dropdown)
-                  DropdownButtonFormField<String>(
-                    value: selectedCountry,
-                    dropdownColor: colors.surface,
-                    isExpanded: true,
-                    style: TextStyle(color: colors.textPrimary, fontSize: 14),
-                    decoration: InputDecoration(
-                      labelText: context.tr('Pays'),
-                      labelStyle: TextStyle(color: colors.textSecondary),
-                      prefixIcon: Icon(Icons.flag_outlined, color: colors.textSecondary),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: colors.border),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: colors.border),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: colors.primary),
-                      ),
-                      filled: true,
-                      fillColor: colors.surfaceVariant,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                    ),
-                    items: _countries.map((c) => DropdownMenuItem(
-                      value: c.$1,
-                      child: Text('${c.$1} — ${c.$2}', overflow: TextOverflow.ellipsis),
-                    )).toList(),
-                    onChanged: (v) => setStateSheet(() => selectedCountry = v!),
-                    validator: (v) => (v == null || v.isEmpty) ? context.tr('Requis') : null,
-                  ),
-                  const SizedBox(height: 28),
-
-                  // Bouton confirmer
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      if (!formKey.currentState!.validate()) return;
-                      Navigator.pop(ctx, true);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: colors.primary,
-                      foregroundColor: colors.onPrimary,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 0,
-                    ),
-                    icon: Icon(Icons.lock_outline, color: colors.onPrimary),
-                    label: Text(
-                      context.tr('Confirmer et payer'),
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: colors.onPrimary),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: Text(t.btnCancel, style: TextStyle(color: colors.textSecondary)),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    // Loading
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => Center(
-        child: Container(
-          decoration: BoxDecoration(color: colors.surface, borderRadius: BorderRadius.circular(16)),
-          padding: const EdgeInsets.all(30),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(valueColor: AlwaysStoppedAnimation(colors.primary)),
-              const SizedBox(height: 20),
-              Text(
-                t.depositConnecting,
-                style: TextStyle(fontSize: 16, color: colors.primary, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 6),
-              Text(t.depositRedirectSecure, style: TextStyle(fontSize: 12, color: colors.textSecondary)),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    final payload = {
-      'amount':          amount.round(),
-      'userId':          user.id,
-      'paymentType':     paymentType,
-      'customerName':    prenomCtrl.text.trim().isNotEmpty ? prenomCtrl.text.trim() : context.tr('Client'),
-      'customerSurname': nomCtrl.text.trim().isNotEmpty   ? nomCtrl.text.trim()    : context.tr('Afrolook'),
-      'customerEmail':   user.email ?? '',
-      'customerPhone':   phoneCtrl.text.trim(),
-      'customerAddress': adresseCtrl.text.trim().isNotEmpty ? adresseCtrl.text.trim() : 'N/A',
-      'customerCity':    villeCtrl.text.trim().isNotEmpty   ? villeCtrl.text.trim()   : 'N/A',
-      'customerCountry': selectedCountry,
-      'customerZipCode': '00000',
-    };
-    debugPrint('[CinetPay] payload: $payload');
-
-    try {
-      final callable = FirebaseFunctions.instance.httpsCallable('initiateAfrolookDeposit');
-      final result = await callable(payload);
-
-      debugPrint('[CinetPay] Réponse: ${result.data}');
-      Navigator.of(context).pop();
-
-      final paymentUrl = (result.data['payment_url'] as String?) ?? '';
-      if (paymentUrl.isNotEmpty && await canLaunchUrl(Uri.parse(paymentUrl))) {
-        await launchUrl(Uri.parse(paymentUrl), mode: LaunchMode.externalApplication);
-        Navigator.pop(context);
-      } else {
-        throw Exception('URL de paiement invalide ou vide');
-      }
-    } on FirebaseFunctionsException catch (e) {
-      Navigator.of(context).pop();
-      debugPrint('[CinetPay] FirebaseFunctionsException:');
-      debugPrint('  code    : ${e.code}');
-      debugPrint('  message : ${e.message}');
-      debugPrint('  details : ${e.details}');
-      final detail = (e.details != null && e.details is Map)
-          ? (e.details as Map)['message'] ?? e.message
-          : e.message;
-      _showErrorDialog('[${e.code}] $detail', colors, t);
-    } catch (e, stack) {
-      Navigator.of(context).pop();
-      debugPrint('[CinetPay] Erreur: $e\n$stack');
-      _showErrorDialog(e.toString(), colors, t);
-    }
-  }
-
   Widget _buildField(
     TextEditingController ctrl,
     String label,
@@ -774,29 +496,19 @@ class _DepositScreenState extends State<DepositScreen> {
     );
 
     try {
-      final callable = FirebaseFunctions.instance.httpsCallable('initiateAfrolookFeexpayPayment');
-      final result = await callable({
-        'amount': totalAmount,
-        'userId': userProvider.loginUserData.id,
-        'type': 'afrolook_deposit',
-      });
-
+      // Le dépôt est créé par l'API à l'étape suivante, quand l'opérateur est choisi (frais et montant crédité calculés par le serveur)
       Navigator.of(context).pop();
-
-      final params = result.data as Map<String, dynamic>;
-      final callbackInfoMap = jsonDecode(params['callback_info']) as Map<String, dynamic>;
-
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => FeexPayPaymentScreen(
             token: '',
             shopId: '',
-            amount: params['amount'] as int,
-            redirectUrl: (params['redirecturl'] as String?) ?? '',
-            transKey: (params['trans_key'] as String?) ?? '',
-            callbackInfo: callbackInfoMap,
-            depositNumber: (params['depositNumber'] as String?) ?? '',
+            amount: totalAmount,
+            redirectUrl: '',
+            transKey: '',
+            callbackInfo: const {},
+            depositNumber: '',
           ),
         ),
       );

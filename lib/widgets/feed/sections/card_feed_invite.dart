@@ -1,6 +1,7 @@
 import 'package:afrotok/services/read_meter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/post_mapper.dart';
+import 'package:afrotok/services/api/users_api.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -207,12 +208,11 @@ class _PostPicker extends StatelessWidget {
   final String userId;
 
   Future<List<Post>> _load() async {
-    final snap = await FirebaseFirestore.instance.collection('Posts').where('user_id', isEqualTo: userId).orderBy('created_at', descending: true).limit(20).getM('card_feed_invite.dart:209');
+    final page = await UsersApi.userPosts(userId, limit: 20);
     final out = <Post>[];
-    for (final d in snap.docs) {
+    for (final m in page.items) {
       try {
-        final p = Post.fromJson(d.data());
-        p.id ??= d.id;
+        final p = postFromApi(m);
         if (p.isAdvertisement == true) continue;
         if ((p.description ?? '').trim().isEmpty && (p.images ?? const []).isEmpty) continue;
         out.add(p);

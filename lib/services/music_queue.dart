@@ -1,12 +1,11 @@
 // File d'attente de la musique d'Afrolook : suivant, précédent, aléatoire, préchargement, fin d'extrait gratuit.
 // Un seul lecteur dans toute l'application (SoundPreview) ; ce fichier décide QUOI jouer ensuite et prévient l'interface.
 
-import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 import 'dart:math';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'api/music_api.dart';
+import 'music_likes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
@@ -144,7 +143,6 @@ class MusicQueue {
   static int _index = -1;
   static int _gen = 0;
   static bool _wired = false;
-  static StreamSubscription<QuerySnapshot>? _ownedSub;
   static String? _ownedUid;
   static final Random _rnd = Random();
   static final List<int> _history = [];
@@ -177,13 +175,14 @@ class MusicQueue {
     final previous = _ownedUid;
     _ownedUid = u?.uid;
     if (previous != null && u?.uid != previous) unawaited(MusicHead.purgeAll()); // déconnexion ou autre compte : plus rien de l'ancien
-    _ownedSub?.cancel();
     ownedIds.value = <String>{};
+    MusicLikes.start();
     if (u == null) return;
-    _ownedSub = FirebaseFirestore.instance.collection('MusicLibrary').where('uid', isEqualTo: u.uid).snapshotsM('music_queue.dart:179').listen((s) {
-      ownedIds.value = {for (final d in s.docs) '${d.data()['soundId']}'};
+    // Titres achetés : relus sur l'API (ma bibliothèque)
+    MusicApi.library().then((l) {
+      ownedIds.value = {for (final x in l) x.id};
       unawaited(_upgradeIfOwned());
-    }, onError: (_) {});
+    }).catchError((_) {});
   }
 
   static bool isOwned(MusicTrack t) => t.owned || ownedIds.value.contains(t.id);
@@ -250,8 +249,7 @@ class MusicQueue {
   static void _countStream(MusicTrack t) {
     _streamCountedKey = t.key;
     if (FirebaseAuth.instance.currentUser == null) return;
-    final data = <String, dynamic>{'playlistId': _playlistId, if (t.kind == 'free') 'studioId': t.id else 'soundId': t.id};
-    unawaited(FirebaseFunctions.instance.httpsCallable('musicStream').call<dynamic>(data).then<void>((_) {}, onError: (Object e) {
+    unawaited(MusicApi.countStream(t.kind, t.id).then<void>((_) {}, onError: (Object e) {
       if (kDebugMode) debugPrint('musicStream : $e');
     }));
   }

@@ -3,7 +3,8 @@ import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/utils/count_format.dart';
 import 'dart:async';
 import 'package:afrotok/services/api.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
 import 'package:flutter/material.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
@@ -136,21 +137,9 @@ class _MesInvitationsState extends State<MesInvitations> {
   }
 
   Future<void> _handleAcceptedInvitation(Invitation invitation) async {
+    // Le serveur a créé l'amitié et notifié l'expéditeur (ACCEPTINVITATION) : on met seulement à jour l'affichage local.
+    authProvider.loginUserData.friendsIds ??= [];
     authProvider.loginUserData.friendsIds!.add(invitation.inviteUser!.id!);
-    await userProvider.updateUser(authProvider.loginUserData);
-
-    await authProvider.sendNotification(
-      userIds: [invitation.inviteUser!.oneIgnalUserid!],
-      smallImage: authProvider.loginUserData.imageUrl!,
-      send_user_id: authProvider.loginUserData.id!,
-      recever_user_id: invitation.inviteUser!.id!,
-      message: "📢 @${authProvider.loginUserData.pseudo!} a accepté(e) votre invitation !",
-      type_notif: NotificationType.ACCEPTINVITATION.name,
-      post_id: "",
-      post_type: "",
-      chat_id: "",
-    );
-
     await userProvider.getUsersProfile(authProvider.loginUserData.id!, context);
     _showSnackBar("Invitation acceptée!", Colors.green);
   }
@@ -164,25 +153,17 @@ class _MesInvitationsState extends State<MesInvitations> {
     ));
   }
 
+  /// Invitations reçues en attente (API : GET /v1/invitations), relues toutes les 30 s. Une invitation par expéditeur (garanti par le serveur).
   Stream<List<Invitation>> getData() async* {
-    List<Invitation> invitations = [];
-    var invitationsStream = FirebaseFirestore.instance
-        .collection('Invitations')
-        .where('receiver_id', isEqualTo: authProvider.loginUserData.id!)
-        .where('status', isEqualTo: InvitationStatus.ENCOURS.name)
-        .snapshotsM('mesInvitationTable.dart:172');
-
-    await for (var invitationsSnapshot in invitationsStream) {
-      final all = invitationsSnapshot.docs
-          .map((doc) => Invitation.fromJson(doc.data()))
-          .toList();
-      // Déduplication par senderId
-      final seen = <String>{};
-      invitations = all.where((inv) {
-        final key = inv.senderId ?? '';
-        return key.isNotEmpty && seen.add(key);
-      }).toList();
-      yield invitations;
+    final myId = authProvider.loginUserData.id!;
+    while (true) {
+      try {
+        final page = await UsersApi.invitations(direction: 'received', status: 'pending', limit: 100);
+        yield page.items.map((j) => invitationFromApi(j, myId, sent: false)).toList();
+      } catch (e) {
+        yield <Invitation>[];
+      }
+      await Future<void>.delayed(const Duration(seconds: 30));
     }
   }
 

@@ -1,11 +1,10 @@
-import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/canaux_api.dart';
+import 'package:afrotok/services/api/regie_api.dart';
+import 'package:afrotok/services/api/users_api.dart';
 import 'package:afrotok/widgets/name_tag.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../models/model_data.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/safe_network_avatar.dart';
 import '../canaux/canal_manage_admins.dart';
@@ -15,7 +14,7 @@ import '../user/profile/retraitAdmin/userAllDetails.dart';
 
 /// Fiche de gestion d'un canal par l'administrateur : statut, inactivité et toutes les opérations
 /// (bloquer / débloquer, vérifier, mettre en avant, relancer le compteur, message au propriétaire, supprimer).
-/// Les actions passent par la Cloud Function `adminCanalAction` (droits admin vérifiés côté serveur, journalisées).
+/// Les actions passent par l'API (`POST /admin/channels/{id}/actions`, droits d'équipe vérifiés côté serveur, journalisées).
 class AdminCanalDetailPage extends StatefulWidget {
   final String canalId;
   const AdminCanalDetailPage({super.key, required this.canalId});
@@ -30,38 +29,52 @@ class _AdminCanalDetailPageState extends State<AdminCanalDetailPage> {
   String? _ownerPseudo;
   String? _ownerLoadedFor;
 
+  Map<String, dynamic>? _d; // fiche du canal (GET /channels/{id})
+  String? _loadError;
+
+  @override
+  void initState() {
+    super.initState();
+    _reload();
+  }
+
+  Future<void> _reload() async {
+    try {
+      final j = await RegieApi.getMap('/channels/${widget.canalId}');
+      if (!mounted) return;
+      setState(() {
+        _d = j;
+        _loadError = null;
+      });
+      _loadOwner(j['owner_id'] as String?);
+    } catch (e) {
+      if (mounted) setState(() => _loadError = RegieApi.err(e));
+    }
+  }
+
   Future<void> _loadOwner(String? ownerId) async {
     if (ownerId == null || ownerId.isEmpty || _ownerLoadedFor == ownerId) return;
     _ownerLoadedFor = ownerId;
     try {
-      final u = await FirebaseFirestore.instance.collection('Users').doc(ownerId).getM('admin_canal_detail_page.dart:36');
-      if (mounted) setState(() => _ownerPseudo = u.data()?['pseudo'] as String?);
+      final u = await UsersApi.publicProfile(ownerId);
+      if (mounted) setState(() => _ownerPseudo = (u['username'] ?? u['display_name']) as String?);
     } catch (_) {}
   }
 
-  int _lastAdded = 0;
-
-  Future<bool> _call(String action, {int? days, String? message, int? count}) async {
+  Future<bool> _call(String action, {int? days, String? message}) async {
     if (_busy) return false;
     setState(() => _busy = true);
     try {
-      final r = await FirebaseFunctions.instance.httpsCallable('adminCanalAction').call({
-        'canalId': widget.canalId,
+      await RegieApi.post('/admin/channels/${widget.canalId}/actions', body: {
         'action': action,
         if (days != null) 'days': days,
         if (message != null) 'message': message,
-        if (count != null) 'count': count,
       });
-      _lastAdded = ((r.data as Map?)?['added'] as num?)?.toInt() ?? 0;
+      await _reload();
       return true;
-    } on FirebaseFunctionsException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Échec : ${e.message ?? e.code}'), backgroundColor: Colors.red));
-      }
-      return false;
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Échec : $e'), backgroundColor: Colors.red));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Échec : ${RegieApi.err(e)}'), backgroundColor: Colors.red));
       }
       return false;
     } finally {
@@ -130,34 +143,6 @@ class _AdminCanalDetailPageState extends State<AdminCanalDetailPage> {
     if (await _call('reset_inactivity')) _ok('Compteur remis à zéro');
   }
 
-  Future<void> _fillFollowers() async {
-    final ctrl = TextEditingController();
-    final n = await showDialog<int>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Ajouter des abonnés'),
-        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Combien d\'abonnés ajouter ? Ils sont pris parmi les comptes les plus suivis qui ne suivent pas encore ce canal (5000 maximum).'),
-          const SizedBox(height: 10),
-          TextField(controller: ctrl, keyboardType: TextInputType.number, autofocus: true, decoration: const InputDecoration(hintText: 'Ex : 500')),
-        ]),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
-          FilledButton(
-            onPressed: () {
-              final v = int.tryParse(ctrl.text.trim());
-              if (v != null && v > 0) Navigator.pop(ctx, v);
-            },
-            child: const Text('Ajouter'),
-          ),
-        ],
-      ),
-    );
-    ctrl.dispose();
-    if (n == null) return;
-    if (await _call('fill_followers', count: n)) _ok('$_lastAdded abonné(s) ajouté(s)');
-  }
-
   Future<void> _notify() async {
     final ctrl = TextEditingController();
     final text = await showDialog<String>(
@@ -203,24 +188,26 @@ class _AdminCanalDetailPageState extends State<AdminCanalDetailPage> {
         elevation: 0,
         title: const Text('Gestion du canal', style: TextStyle(fontWeight: FontWeight.w700)),
       ),
-      body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: FirebaseFirestore.instance.collection('Canaux').doc(widget.canalId).snapshotsM('admin_canal_detail_page.dart:206'),
-        builder: (context, snap) {
-          if (snap.hasError) return Center(child: Text('Erreur : ${snap.error}', style: TextStyle(color: c.danger)));
-          if (!snap.hasData) return const Center(child: CircularProgressIndicator());
-          final doc = snap.data!;
-          if (!doc.exists) return Center(child: Text('Ce canal n\'existe plus.', style: TextStyle(color: c.textSecondary)));
-          final d = doc.data()!;
-          _loadOwner(d['userId'] as String?);
-          return Stack(children: [
-            ListView(padding: const EdgeInsets.fromLTRB(14, 12, 14, 32), children: _sections(c, d)),
-            if (_busy)
-              Positioned.fill(
-                child: Container(color: Colors.black38, child: const Center(child: CircularProgressIndicator())),
-              ),
-          ]);
-        },
-      ),
+      body: Builder(builder: (context) {
+        if (_loadError != null) {
+          return Center(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Text(_loadError!, style: TextStyle(color: c.danger)),
+              const SizedBox(height: 12),
+              OutlinedButton(onPressed: _reload, child: const Text('Réessayer')),
+            ]),
+          );
+        }
+        final d = _d;
+        if (d == null) return const Center(child: CircularProgressIndicator());
+        return Stack(children: [
+          ListView(padding: const EdgeInsets.fromLTRB(14, 12, 14, 32), children: _sections(c, d)),
+          if (_busy)
+            Positioned.fill(
+              child: Container(color: Colors.black38, child: const Center(child: CircularProgressIndicator())),
+            ),
+        ]);
+      }),
     );
   }
 
@@ -230,21 +217,19 @@ class _AdminCanalDetailPageState extends State<AdminCanalDetailPage> {
   }
 
   List<Widget> _sections(AppColors c, Map<String, dynamic> d) {
-    final titre = (d['titre'] ?? '').toString();
-    final ownerId = d['userId'] as String?;
-    final blocked = d['isBlocked'] == true;
-    final verified = d['isVerify'] == true;
+    final titre = (d['title'] ?? '').toString();
+    final ownerId = d['owner_id'] as String?;
+    final blocked = d['is_blocked'] == true;
+    final verified = d['is_verified'] == true;
     final now = DateTime.now().millisecondsSinceEpoch;
-    final popularUntil = (d['popularUntil'] as num?)?.toInt() ?? 0;
-    final popular = d['isPopular'] == true && (popularUntil == 0 || popularUntil > now);
-    final followersList = d['usersSuiviId'] is List ? List<String>.from((d['usersSuiviId'] as List).whereType<String>()) : <String>[];
-    final followers = followersList.length > ((d['suivi'] as num?)?.toInt() ?? 0) ? followersList.length : ((d['suivi'] as num?)?.toInt() ?? 0);
-    final posts = (d['publication'] as num?)?.toInt() ?? 0;
-    final lastPostAt = _ms(d['lastPostAt']);
+    final popular = d['is_popular'] == true;
+    final followers = (d['followers_count'] as num?)?.toInt() ?? 0;
+    final posts = (d['posts_count'] as num?)?.toInt() ?? 0;
+    final lastPostAt = DateTime.tryParse('${d['last_post_at']}')?.millisecondsSinceEpoch ?? 0;
     final daysInactive = lastPostAt > 0 ? ((now - lastPostAt) / _dayMs).floor() : null;
-    final created = _ms(d['createdAt']);
+    final created = DateTime.tryParse('${d['created_at']}')?.millisecondsSinceEpoch ?? 0;
     final fmt = DateFormat('dd/MM/yyyy HH:mm');
-    final score = (d['canalScore'] as num?)?.toDouble() ?? 0;
+    final score = (d['score'] as num?)?.toDouble() ?? 0;
 
     return [
       // En-tête
@@ -252,7 +237,7 @@ class _AdminCanalDetailPageState extends State<AdminCanalDetailPage> {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border)),
         child: Row(children: [
-          SafeNetworkAvatar(url: d['urlImage'] as String?, radius: 32, backgroundColor: c.surfaceVariant, iconColor: c.textSecondary),
+          SafeNetworkAvatar(url: d['image_url'] as String?, radius: 32, backgroundColor: c.surfaceVariant, iconColor: c.textSecondary),
           const SizedBox(width: 14),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -262,9 +247,9 @@ class _AdminCanalDetailPageState extends State<AdminCanalDetailPage> {
               ]),
               const SizedBox(height: 6),
               Wrap(spacing: 6, runSpacing: 4, children: [
-                if (blocked) _badge(c.danger, d['blockReason'] == 'admin' ? 'Bloqué par un admin' : 'Bloqué (inactivité)') else _badge(c.primary, 'Actif'),
+                if (blocked) _badge(c.danger, d['block_reason'] == 'admin' ? 'Bloqué par un admin' : 'Bloqué (inactivité)') else _badge(c.primary, 'Actif'),
                 if (popular) _badge(c.warning, 'Mis en avant'),
-                if (d['isPrivate'] == true) _badge(c.info, 'Privé'),
+                if (d['is_private'] == true) _badge(c.info, 'Privé'),
               ]),
             ]),
           ),
@@ -284,9 +269,6 @@ class _AdminCanalDetailPageState extends State<AdminCanalDetailPage> {
       _card(c, 'Activité', [
         _row(c, 'Dernière publication', lastPostAt > 0 ? '${fmt.format(DateTime.fromMillisecondsSinceEpoch(lastPostAt))} (il y a $daysInactive j)' : 'inconnue'),
         _row(c, 'Créé le', created > 0 ? fmt.format(DateTime.fromMillisecondsSinceEpoch(created)) : 'inconnu'),
-        if (blocked && _ms(d['blockedAt']) > 0) _row(c, 'Bloqué le', fmt.format(DateTime.fromMillisecondsSinceEpoch(_ms(d['blockedAt'])))),
-        if (_ms(d['inactivityWarnedAt']) > 0) _row(c, 'Rappel envoyé le', fmt.format(DateTime.fromMillisecondsSinceEpoch(_ms(d['inactivityWarnedAt'])))),
-        if (popular && popularUntil > 0) _row(c, 'Mis en avant jusqu\'au', fmt.format(DateTime.fromMillisecondsSinceEpoch(popularUntil))),
       ]),
       const SizedBox(height: 12),
 
@@ -313,23 +295,39 @@ class _AdminCanalDetailPageState extends State<AdminCanalDetailPage> {
         _action(c, popular ? Icons.star_border_rounded : Icons.star_rounded, popular ? 'Retirer de la mise en avant' : 'Populariser le canal',
             popular ? 'Le canal n\'est plus en tête des suggestions' : 'En tête des suggestions et de la recherche', c.warning, popular ? _unpopular : _popular),
         _action(c, Icons.restart_alt_rounded, 'Relancer le compteur d\'inactivité', 'Repart pour 20 jours, efface le rappel', c.textPrimary, _reset),
-        _action(c, Icons.group_add_rounded, 'Ajouter des abonnés', 'Comptes actifs les plus suivis', c.textPrimary, _fillFollowers),
         _action(c, Icons.campaign_rounded, 'Envoyer un message au propriétaire', 'Notification dans l\'app', c.textPrimary, _notify),
       ]),
       const SizedBox(height: 12),
 
       // Consulter / gérer
       _card(c, 'Consulter', [
-        _action(c, Icons.open_in_new_rounded, 'Ouvrir le canal', 'Voir le canal comme un utilisateur', c.textPrimary, () {
-          final canal = Canal.fromJson(d)..id = widget.canalId;
-          Navigator.push(context, MaterialPageRoute(builder: (_) => CanalDetails(canal: canal)));
+        _action(c, Icons.open_in_new_rounded, 'Ouvrir le canal', 'Voir le canal comme un utilisateur', c.textPrimary, () async {
+          try {
+            final canal = await CanauxApi.get(widget.canalId);
+            if (!mounted) return;
+            Navigator.push(context, MaterialPageRoute(builder: (_) => CanalDetails(canal: canal)));
+          } catch (e) {
+            if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(RegieApi.err(e))));
+          }
         }),
-        _action(c, Icons.groups_rounded, 'Voir les abonnés ($followers)', 'Liste des abonnés', c.textPrimary, () {
-          Navigator.push(context, MaterialPageRoute(builder: (_) => ChannelFollowersPage(userIds: followersList, channelName: titre)));
+        _action(c, Icons.groups_rounded, 'Voir les abonnés ($followers)', 'Liste des abonnés', c.textPrimary, () async {
+          try {
+            final m = await CanauxApi.members(widget.canalId, limit: 50);
+            final ids = [for (final e in m.items) '${e['user_id'] ?? e['id']}'];
+            if (!mounted) return;
+            Navigator.push(context, MaterialPageRoute(builder: (_) => ChannelFollowersPage(userIds: ids, channelName: titre)));
+          } catch (e) {
+            if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(RegieApi.err(e))));
+          }
         }),
-        _action(c, Icons.admin_panel_settings_rounded, 'Administrateurs du canal', 'Ajouter ou retirer des administrateurs', c.textPrimary, () {
-          final canal = Canal.fromJson(d)..id = widget.canalId;
-          Navigator.push(context, MaterialPageRoute(builder: (_) => CanalManageAdminsPage(canal: canal)));
+        _action(c, Icons.admin_panel_settings_rounded, 'Administrateurs du canal', 'Ajouter ou retirer des administrateurs', c.textPrimary, () async {
+          try {
+            final canal = await CanauxApi.get(widget.canalId);
+            if (!mounted) return;
+            Navigator.push(context, MaterialPageRoute(builder: (_) => CanalManageAdminsPage(canal: canal)));
+          } catch (e) {
+            if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(RegieApi.err(e))));
+          }
         }),
       ]),
       const SizedBox(height: 12),

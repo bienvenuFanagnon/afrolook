@@ -23,6 +23,9 @@ class UserRetraitListPage extends StatefulWidget {
 class _UserRetraitListPageState extends State<UserRetraitListPage> {
   static final NumberFormat _moneyFmt = NumberFormat('#,##0.##', 'fr');
 
+  Stream<List<TransactionRetrait>>? _stream;
+  String? _streamUser;
+
   void _openContact() {
     Navigator.push(context, MaterialPageRoute(builder: (_) => const ContactPage()));
   }
@@ -55,14 +58,17 @@ class _UserRetraitListPageState extends State<UserRetraitListPage> {
         ],
       ),
       body: StreamBuilder<List<TransactionRetrait>>(
-        stream: RetraitService.getRetraitsUtilisateur(userId!),
+        stream: (_streamUser == userId ? _stream : null) ?? (_stream = RetraitService.getRetraitsUtilisateur(_streamUser = userId!)),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator(color: c.primary));
           }
           if (snapshot.hasError) {
             printVm("snapshot.hasError : ${snapshot.error.toString()}");
-            return Center(child: Text(context.tr('Erreur de chargement'), style: TextStyle(color: c.danger)));
+            return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Text(context.tr('Erreur de chargement'), style: TextStyle(color: c.danger)),
+              TextButton(onPressed: () => setState(() { _stream = null; _streamUser = null; }), child: Text(context.tr('Réessayer'))),
+            ]));
           }
 
           final retraits = snapshot.data ?? [];

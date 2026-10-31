@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
 import 'package:ayet_sdk_v2/ayet_sdk_v2.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -85,26 +84,15 @@ class OfferwallService {
 
   // ── Tâche « Regarder une pub » ──────────────────────────────────────────────────────────────
 
-  /// Étape 1 : le serveur contrôle le compte, le plafond du jour et l'écart entre deux pubs, puis donne un jeton à usage unique.
+  /// Le mur de tâches des partenaires est abandonné (30/10/2026) et l'API n'a aucune route pour la tâche « Regarder une pub » :
+  /// la tâche est donc indisponible. Les pubs récompensées passent par la page Récompenses (`/rewards/*`).
   static Future<AdTaskTicket> adTaskStart() async {
-    try {
-      final res = await FirebaseFunctions.instance.httpsCallable('adTaskStart').call(<String, dynamic>{});
-      final m = Map<String, dynamic>.from(res.data as Map);
-      return AdTaskTicket(nonce: '${m['nonce']}', remaining: (m['remaining'] as num?)?.toInt() ?? 0, hundredths: (m['hundredths'] as num?)?.toInt() ?? 0);
-    } on FirebaseFunctionsException catch (e) {
-      final d = e.details is Map ? Map<String, dynamic>.from(e.details as Map) : const <String, dynamic>{};
-      if (e.code == 'resource-exhausted') throw AdTaskRefused(d['reason'] == 'trop_tot' ? AdTaskRefusal.tooSoon : AdTaskRefusal.dayLimit, (d['waitSec'] as num?)?.toInt() ?? 0);
-      throw AdTaskRefused(AdTaskRefusal.unavailable, 0);
-    }
+    throw AdTaskRefused(AdTaskRefusal.unavailable, 0);
   }
 
-  /// Étape 2 : la pub a été regardée en entier ; le serveur vérifie le jeton et la durée, puis crédite les pièces tout de suite. Retourne les pièces ajoutées.
-  /// Pièces créditées tout de suite, centièmes gardés en réserve pour la prochaine pub, et valeur de cette pub en centièmes de pièce (ex. 164 = 1,64 pièce).
+  /// Sans objet : aucune pub de tâche ne peut être démarrée (voir [adTaskStart]).
   static Future<({int coins, int carry, int value})> adTaskClaim(String nonce) async {
-    final res = await FirebaseFunctions.instance.httpsCallable('adTaskClaim').call(<String, dynamic>{'nonce': nonce});
-    final m = Map<String, dynamic>.from(res.data as Map);
-    _cacheAt = null; // l'historique et les totaux sont à recharger
-    return (coins: (m['credited'] as num?)?.toInt() ?? 0, carry: (m['carry'] as num?)?.toInt() ?? 0, value: (m['hundredths'] as num?)?.toInt() ?? 0);
+    throw AdTaskRefused(AdTaskRefusal.unavailable, 0);
   }
 
   static OfferwallInfo? _cache;
@@ -115,8 +103,8 @@ class OfferwallService {
     await _loadKeys();
     final t = _cacheAt;
     if (!force && _cache != null && t != null && DateTime.now().difference(t) < const Duration(minutes: 5)) return _cache!;
-    final res = await FirebaseFunctions.instance.httpsCallable('offerwallMyHistory').call(<String, dynamic>{});
-    final info = OfferwallInfo.fromMap(Map<String, dynamic>.from(res.data as Map), iOS: _isIOS);
+    // Plus de mur de tâches côté serveur : un état « indisponible » est renvoyé, sans aucun appel.
+    final info = OfferwallInfo.fromMap(const <String, dynamic>{}, iOS: _isIOS);
     _cache = info;
     _cacheAt = DateTime.now();
     return info;

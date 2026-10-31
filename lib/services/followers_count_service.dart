@@ -1,6 +1,5 @@
-import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/users_api.dart';
 import 'dart:async';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/widgets.dart';
 
 /// Source unique du nombre d'abonnés d'un utilisateur, partagée par tous les feeds
@@ -27,11 +26,9 @@ class FollowersCountService {
 
   Future<int?> _fetch(String userId) async {
     try {
-      final doc = await FirebaseFirestore.instance.collection('Users').doc(userId).getM('followers_count_service.dart:29');
-      final data = doc.data();
-      if (data == null) return null;
-      final counter = (data['abonnes'] as num?)?.toInt() ?? 0;
-      final count = counter > 0 ? counter : ((data['userAbonnesIds'] as List?)?.length ?? 0); // même règle que UserData.followersCount
+      final data = await UsersApi.publicProfile(userId);
+      final count = (data['followers_count'] as num?)?.toInt();
+      if (count == null) return null;
       _cache[userId] = (count: count, at: DateTime.now());
       return count;
     } catch (_) {

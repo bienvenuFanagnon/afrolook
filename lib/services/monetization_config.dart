@@ -1,5 +1,4 @@
-import 'package:afrotok/services/read_meter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'api/api_gateway.dart';
 
 /// Palier de rémunération des vues selon le score créateur.
 class ScoreTier {
@@ -18,8 +17,8 @@ class ScoreTier {
   Map<String, dynamic> toJson() => {'minScore': minScore, 'multiplier': multiplier, 'label': label};
 }
 
-/// Barème de rémunération des vues — source unique : Firestore `config/monetization`,
-/// lue aussi par la Cloud Function cashViewEarnings (encaissement).
+/// Barème de rémunération des vues — source unique : l'API (réglages publics `GET /config`, clé `monetization`),
+/// la même que celle qui calcule l'encaissement.
 /// Valeurs par défaut identiques à functions/src/posts/viewEarnings.ts.
 class MonetizationConfig {
   static const double defaultBaseViewRate = 1.0; // FCFA max par vue
@@ -35,16 +34,15 @@ class MonetizationConfig {
   static List<ScoreTier> tiers = defaultTiers;
   static DateTime? _loadedAt;
 
-  static DocumentReference<Map<String, dynamic>> get _doc =>
-      FirebaseFirestore.instance.collection('config').doc('monetization');
-
-  /// Charge le barème (mis en cache 30 min). Garde les valeurs par défaut en cas d'erreur.
+  /// Charge le barème (mis en cache 30 min). Garde les valeurs par défaut en cas d'erreur ou si l'API ne le publie pas encore.
   static Future<void> load({bool force = false}) async {
     if (!force && _loadedAt != null && DateTime.now().difference(_loadedAt!) < const Duration(minutes: 30)) {
       return;
     }
     try {
-      final data = (await _doc.getM('monetization_config.dart:46')).data() ?? {};
+      final r = await ApiGateway.instance.client.get('/config');
+      final root = r is Map ? r['data'] : null;
+      final data = root is Map && root['monetization'] is Map ? Map<String, dynamic>.from(root['monetization'] as Map) : <String, dynamic>{};
       baseViewRate = (data['baseViewRate'] as num?)?.toDouble() ?? defaultBaseViewRate;
       final raw = data['scoreTiers'] as List?;
       tiers = raw != null && raw.isNotEmpty
@@ -55,15 +53,14 @@ class MonetizationConfig {
     } catch (_) {}
   }
 
-  /// Enregistre le barème (admin). Les paiements suivants l'utilisent immédiatement.
+  /// Enregistre le barème (admin). Point d'accès prévu : PUT /admin/settings/monetization (absent pour l'instant,
+  /// voir lacunes_api_argent_creations.md) : l'erreur est transmise à l'écran.
   static Future<void> save({required double base, required List<ScoreTier> newTiers, String? adminId}) async {
     final sorted = [...newTiers]..sort((a, b) => b.minScore.compareTo(a.minScore));
-    await _doc.set({
+    await ApiGateway.instance.client.put('/admin/settings/monetization', body: {
       'baseViewRate': base,
       'scoreTiers': sorted.map((t) => t.toJson()).toList(),
-      'updatedAt': DateTime.now().millisecondsSinceEpoch,
-      if (adminId != null) 'updatedBy': adminId,
-    }, SetOptions(merge: true));
+    });
     baseViewRate = base;
     tiers = sorted;
     _loadedAt = DateTime.now();

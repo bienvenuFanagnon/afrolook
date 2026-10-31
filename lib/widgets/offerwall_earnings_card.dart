@@ -1,4 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -22,12 +23,16 @@ class OfferwallEarningsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     if (userId.isEmpty) return const SizedBox.shrink();
     final c = AppColors.of(context);
-    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      future: FirebaseFirestore.instance.collection('Users').doc(userId).getM('offerwall_earnings_card'),
+    return FutureBuilder<Map<String, dynamic>>(
+      // Route souhaitée : GET /rewards/state doit renvoyer offerwall_earned_coins / offerwall_pending_coins (voir lacunes_api_publications.md)
+      future: ApiGateway.instance.client.get('/rewards/state').then((r) {
+        final d = ApiClient.data(r);
+        return d is Map ? Map<String, dynamic>.from(d) : <String, dynamic>{};
+      }).catchError((_) => <String, dynamic>{}),
       builder: (context, snap) {
-        final d = snap.data?.data();
-        final earned = ((d?['totalOfferwallCoinsEarned'] as num?) ?? 0).toInt();
-        final pending = ((d?['offerwallPendingCoins'] as num?) ?? 0).toInt().clamp(0, 1 << 31);
+        final d = snap.data;
+        final earned = ((d?['offerwall_earned_coins'] as num?) ?? 0).toInt();
+        final pending = ((d?['offerwall_pending_coins'] as num?) ?? 0).toInt().clamp(0, 1 << 31);
         final total = earned + pending;
         if (total <= 0) return const SizedBox.shrink();
         return Container(

@@ -1,11 +1,9 @@
 // pages/retrait/admin_retrait_list_page.dart
-import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/user/profile/retraitAdmin/retraitAdminDetails.dart';
 import 'package:flutter/material.dart';
 import '../../../admin/admin_palette.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../../models/model_data.dart';
 import '../../../../services/retraitService.dart';
@@ -228,9 +226,7 @@ class _AdminRetraitListPageState extends State<AdminRetraitListPage> {
 
   Widget _buildRetraitsList() {
     return StreamBuilder<List<TransactionRetrait>>(
-      stream: _isSearching
-          ? _getSearchStream()
-          : RetraitService.getAllRetraits(),
+      stream: _currentStream(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator(color: AdminPalette.gold));
@@ -239,10 +235,13 @@ class _AdminRetraitListPageState extends State<AdminRetraitListPage> {
         if (snapshot.hasError) {
           printVm("snapshot : ${snapshot.error}");
           return Center(
-            child: Text(
-              'Erreur de chargement',
-              style: TextStyle(color: Colors.red),
-            ),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Text(
+                'Erreur de chargement',
+                style: TextStyle(color: Colors.red),
+              ),
+              TextButton(onPressed: () => setState(() { _stream = null; _streamKey = null; }), child: Text('Réessayer')),
+            ]),
           );
         }
 
@@ -264,6 +263,19 @@ class _AdminRetraitListPageState extends State<AdminRetraitListPage> {
     );
   }
 
+  Stream<List<TransactionRetrait>>? _stream;
+  String? _streamKey;
+
+  /// Le flux est gardé tant que la recherche ne change pas (sinon chaque redessin relancerait un chargement).
+  Stream<List<TransactionRetrait>> _currentStream() {
+    final key = _isSearching ? '$_searchType|${_searchController.text.trim().toLowerCase()}' : 'all';
+    if (_stream == null || _streamKey != key) {
+      _streamKey = key;
+      _stream = _isSearching ? _getSearchStream() : RetraitService.getAllRetraits();
+    }
+    return _stream!;
+  }
+
   Stream<List<TransactionRetrait>> _getSearchStream() {
     final searchText = _searchController.text.trim().toLowerCase();
 
@@ -271,18 +283,7 @@ class _AdminRetraitListPageState extends State<AdminRetraitListPage> {
       return RetraitService.searchRetraitsByEmail(searchText);
     } else {
       // Recherche par numéro de transaction
-      return FirebaseFirestore.instance
-          .collection('TransactionRetraits')
-          .where('numero_transaction', isEqualTo: searchText)
-          .orderBy('created_at', descending: true)
-          .snapshotsM('retraitAdminList.dart:277')
-          .map((snapshot) => snapshot.docs
-          .map((doc) {
-        final data = doc.data();
-        data['id'] = doc.id;
-        return TransactionRetrait.fromJson(data);
-      })
-          .toList());
+      return RetraitService.searchRetraitsByNumero(searchText);
     }
   }
 

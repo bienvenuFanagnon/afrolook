@@ -1,8 +1,6 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../cache/startup_cache_service.dart';
 
 class SessionUserFirebaseService {
@@ -58,34 +56,6 @@ class SessionUserFirebaseService {
     printVm('🗑️ Session et cache effacés');
   }
 
-  /// Vérifie si l'utilisateur est inactif depuis plus de 3 jours (Firestore)
-  static Future<bool> isUserInactive(String userId) async {
-    try {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(userId)
-          .getM('session_service.dart:66');
-
-      if (!userDoc.exists) return true;
-
-      final userData = userDoc.data()!;
-      final lastTimeActive = userData['last_time_active'] ?? 0;
-
-      if (lastTimeActive == 0) return true;
-
-      final now = DateTime.now().millisecondsSinceEpoch;
-      int lastActiveMillis = lastTimeActive;
-
-      // Conversion si timestamp est en microsecondes
-
-      final daysInactive = (now - lastActiveMillis) ~/ ONE_DAY_IN_MILLISECONDS;
-
-      printVm('📊 isUserInactive: userId=$userId, daysInactive=$daysInactive');
-
-      return daysInactive >= MAX_INACTIVE_DAYS;
-    } catch (e) {
-      printVm('Erreur isUserInactive: $e');
-      return true;
-    }
-  }
+  /// Inactif depuis trop longtemps ? La date de dernière activité est tenue en local (la dernière ouverture) ; l'API ne l'expose pas.
+  static Future<bool> isUserInactive(String userId) async => !(await canStayConnected());
 }

@@ -1,6 +1,5 @@
-import 'package:afrotok/services/read_meter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrotok/services/api/jeux_api.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
@@ -232,30 +231,55 @@ class EtudeService {
 
   String? get uid => FirebaseAuth.instance.currentUser?.uid;
 
-  Future<Map<String, dynamic>> _call(String name, [Map<String, dynamic>? data]) async {
-    // Serveur momentanément saturé (quota CPU, aucune instance libre) : la requête est refusée AVANT d'être
-    // exécutée, on peut donc la rejouer sans risque de doublon (2 nouvelles tentatives : 1 s puis 2 s).
-    for (var attempt = 0;; attempt++) {
-      try {
-        final res = await FirebaseFunctions.instance.httpsCallable(name).call(data ?? {});
-        return Map<String, dynamic>.from(res.data as Map);
-      } on FirebaseFunctionsException catch (e) {
-        final refused = e.code == 'resource-exhausted' || e.code == 'unavailable';
-        if (refused && attempt < 2) {
-          await Future.delayed(Duration(seconds: attempt + 1));
-          continue;
-        }
-        throw EtudeException((e.message ?? e.code).trim());
-      }
+  static const _alias = {'etude_off': 'QUIZ_OFF', 'need_previous': 'NEED_PREVIOUS', 'chapters_todo': 'CHAPTERS_TODO', 'no_ads': 'NO_ADS'};
+
+  EtudeException _fail(ApiException e) => EtudeException('${e.code.toUpperCase()} ${_alias[e.code.toLowerCase()] ?? ''} ${e.message}'.trim());
+
+  /// Appel de l'API ; les clés de premier niveau passent en camelCase (les identifiants à l'intérieur des tables restent intacts).
+  Future<Map<String, dynamic>> _api(String method, String path, {Map<String, dynamic>? body, bool pay = false}) async {
+    try {
+      final c = JeuxApi.client;
+      final dynamic r = switch (method) {
+        'GET' => await c.get(path),
+        _ => pay ? await c.pay(path, body: body) : await c.post(path, body: body),
+      };
+      return JeuxApi.map(r);
+    } on ApiException catch (e) {
+      throw _fail(e);
     }
+  }
+
+  /// Adapte l'état de l'API au format attendu par [EtudeState] (série, prix).
+  Map<String, dynamic> _stateJson(Map<String, dynamic> m) {
+    final streak = m['streak'];
+    final prices = _m(m['prices']);
+    return {
+      'xp': m['xp'],
+      'level': m['level'],
+      'streak': streak is Map ? streak['count'] : streak,
+      'levels': m['levels'],
+      'classes': m['classes'],
+      'unlocked': m['unlocked'],
+      'adsPaid': m['ads_paid'],
+      'diplomas': m['diplomas'],
+      'tracks': m['tracks'],
+      'certs': m['certs'],
+      'freeEpreuve': m['free_epreuve'],
+      'dailyFreeLeft': m['daily_free_left'],
+      'config': {
+        if (prices['chapter'] != null) 'chapterPrice': prices['chapter'],
+        if (prices['class_pass'] != null) 'classPassPrice': prices['class_pass'],
+        if (prices['compo'] != null) 'compoPrice': prices['compo'],
+        if (prices['exam'] != null) 'examPrice': prices['exam'],
+        if (prices['cert'] != null) 'certPrice': prices['cert'],
+      },
+    };
   }
 
   Future<List<EtudeTrack>> catalog({bool force = false}) async {
     final at = _catalogAt;
     if (!force && at != null && _catalog.isNotEmpty && DateTime.now().difference(at).inMinutes < 10) return _catalog;
-    final snap = await FirebaseFirestore.instance.collection('EtudeCatalog').getM('etude_service.dart:255');
-    _catalog = snap.docs.map((d) => EtudeTrack.fromMap(d.data())).toList()..sort((a, b) => a.order.compareTo(b.order));
-    _catalogAt = DateTime.now();
+    await refresh(); // le catalogue arrive avec l'état du joueur
     return _catalog;
   }
 
@@ -265,14 +289,19 @@ class EtudeService {
     return s;
   }
 
-  Future<EtudeState> refresh() async => _publish(await _call('etudeGetState'));
+  Future<EtudeState> refresh() async {
+    final m = await _api('GET', '/etude/state');
+    _catalog = _l(m['catalog']).map((d) => EtudeTrack.fromMap(_m(d))).toList()..sort((a, b) => a.order.compareTo(b.order));
+    _catalogAt = DateTime.now();
+    return _publish(_stateJson(m));
+  }
 
   /// Commence un parcours à la classe [entry]. [declared] : le diplôme d'avant est déclaré déjà obtenu.
   Future<EtudeState> startTrack(String track, {String? entry, bool declared = false}) async =>
-      _publish(await _call('etudeStartTrack', {'track': track, if (entry != null) 'entry': entry, 'declared': declared}));
+      _publish(_stateJson(await _api('POST', '/etude/tracks/start', body: {'track': track, if (entry != null) 'entry': entry, 'declared': declared})));
 
   Future<EtudeLesson> openChapter(String chapterId) async {
-    final m = await _call('etudeOpenChapter', {'chapter': chapterId});
+    final m = await _api('GET', '/etude/chapters/$chapterId');
     return EtudeLesson(
       '${m['id']}',
       '${m['title']}',
@@ -284,14 +313,14 @@ class EtudeService {
 
   /// kind : level (id = « chapitre:niveau »), compo (id = classe), exam (id = parcours), cert (id = attestation).
   Future<EtudeStart> start(String kind, String id) async {
-    final m = await _call('etudeStart', {'kind': kind, 'id': id});
+    final m = await _api('POST', '/etude/sessions', body: {'kind': kind, 'id': id});
     return EtudeStart(
       sid: '${m['sid']}',
       kind: '${m['kind']}',
       id: '${m['id']}',
       title: '${m['title']}',
       total: _i(m['total']),
-      passPct: (m['passPct'] as num?)?.toDouble() ?? 0.5,
+      passPct: (m['pass_pct'] as num?)?.toDouble() ?? 0.5,
       seconds: _i(m['seconds']),
       practice: m['practice'] == true,
       questions: _l(m['questions']).map((q) {
@@ -302,12 +331,12 @@ class EtudeService {
   }
 
   Future<EtudeAnswerResult> answer(String sid, int i, int choice) async {
-    final m = await _call('etudeAnswer', {'sid': sid, 'i': i, 'choice': choice});
-    return EtudeAnswerResult(m['correct'] == true, _i(m['correctIndex']), '${m['explanation'] ?? ''}');
+    final m = await _api('POST', '/etude/sessions/answer', body: {'sid': sid, 'i': i, 'choice': choice});
+    return EtudeAnswerResult(m['correct'] == true, _i(m['correct_index']), '${m['explanation'] ?? ''}');
   }
 
   Future<EtudeFinish> finish(String sid) async {
-    final m = await _call('etudeFinish', {'sid': sid});
+    final m = await _api('POST', '/etude/sessions/finish', body: {'sid': sid});
     await refresh().catchError((Object _) => state.value ?? const EtudeState());
     return EtudeFinish(
       pass: m['pass'] == true,
@@ -316,8 +345,8 @@ class EtudeService {
       pct: _i(m['pct']),
       need: _i(m['need']),
       xp: _i(m['xp']),
-      chapterFinished: m['chapterFinished'] == true,
-      classValidated: '${m['classValidated'] ?? ''}',
+      chapterFinished: m['chapter_finished'] == true,
+      classValidated: '${m['class_validated'] ?? ''}',
       diploma: m['diploma'] is Map ? _m(m['diploma']) : null,
       kind: '${m['kind']}',
     );
@@ -326,13 +355,20 @@ class EtudeService {
   /// Débloque un contenu avec des pièces ou des pubs en réserve. Retourne true quand il est débloqué.
   /// [format] pour les pubs : rewarded (avec récompense) ou interstitial (plein écran).
   Future<bool> unlock(String item, {required String via, String format = 'rewarded'}) async {
-    final m = await _call('etudeUnlock', {'item': item, 'via': via, 'format': format});
-    if (m['state'] is Map) _publish(_m(m['state']));
+    final m = await _api('POST', '/etude/unlock', body: {'item': item, 'via': via == 'coins' ? 'coins' : (via == 'daily' ? 'daily' : 'ads')}, pay: via == 'coins');
+    if (m['state'] is Map) _publish(_stateJson(_m(m['state'])));
     return m['unlocked'] == true;
   }
 
-  /// Vue d'ensemble pour les admins.
-  Future<Map<String, dynamic>> admin() => _call('etudeAdmin');
+  /// Vue d'ensemble pour les admins : pas encore dans l'API (voir lacunes_api_jeux_medias.md).
+  Future<Map<String, dynamic>> admin() async => throw EtudeException('UNAVAILABLE Les outils d administration d Étude ne sont pas encore disponibles.');
 
-  Future<Map<String, dynamic>> verifyDiploma(String serial) => _call('etudeVerifyDiploma', {'serial': serial});
+  Future<Map<String, dynamic>> verifyDiploma(String serial) async {
+    try {
+      final r = await JeuxApi.client.get('/etude/diplomas/verify', query: {'serial': serial});
+      return JeuxApi.map(r);
+    } on ApiException catch (e) {
+      throw _fail(e);
+    }
+  }
 }

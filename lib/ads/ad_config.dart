@@ -1,10 +1,9 @@
-import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/regie_api.dart';
 import 'dart:io' show Platform;
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
-/// Réglages publicitaires lus dans Firestore (`AppConfig/ads`) : interrupteur général,
+/// Réglages publicitaires lus dans la configuration publique de l'API (`GET /config`, section `ads`) : interrupteur général,
 /// pourcentage d'utilisateurs, fréquences et identifiants d'emplacements AdMob.
 /// Modifiables sans publier de mise à jour (voir tools/ads/set_config.js).
 class AdConfig {
@@ -13,7 +12,7 @@ class AdConfig {
 
   static AdConfig current = AdConfig._({});
   static DateTime? _loadedAt;
-  /// Vrai quand la configuration Firestore a bien été lue au moins une fois (sinon valeurs par défaut : pubs coupées).
+  /// Vrai quand la configuration a bien été lue au moins une fois (sinon valeurs par défaut : pubs coupées).
   static bool get loaded => _loadedAt != null;
 
   /// Identifiants de test officiels de Google (jamais de vraie pub pendant le développement).
@@ -49,8 +48,7 @@ class AdConfig {
     final at = _loadedAt;
     if (!force && at != null && DateTime.now().difference(at) < const Duration(minutes: 10)) return;
     try {
-      final doc = await FirebaseFirestore.instance.collection('AppConfig').doc('ads').getM('ad_config.dart:51');
-      current = AdConfig._(doc.data() ?? {});
+      current = AdConfig._(await RegieApi.configSection('ads', force: force));
       _loadedAt = DateTime.now();
     } catch (_) {/* garde la configuration précédente (par défaut : pubs coupées) */}
   }

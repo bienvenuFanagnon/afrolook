@@ -4,7 +4,6 @@
 import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
@@ -27,7 +26,6 @@ Widget userServiceWidget(UserServiceData data,double height,width,BuildContext c
   late UserAuthProvider authProvider =
   Provider.of<UserAuthProvider>(context, listen: false);
   String searchQuery = '';
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
   return GestureDetector(
     onTap: () async {
       await    postProvider.getUserServiceById(data.id!).then((value) async {

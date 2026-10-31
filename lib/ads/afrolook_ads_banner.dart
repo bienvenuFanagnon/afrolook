@@ -53,7 +53,7 @@ class AfrolookAdsBanner extends StatefulWidget {
     this.refresh = const Duration(seconds: 60),
     this.closable = false,
     this.headers,
-    this.apiBase = 'https://us-central1-afrolooki.cloudfunctions.net',
+    this.apiBase = 'https://api.afrolookmedia.com/v1/ads',
   });
 
   /// Mini bannière fixe en bas d'un écran : 320 × 50, fermable, centrée, avec la marge de sécurité de l'écran.
@@ -64,7 +64,7 @@ class AfrolookAdsBanner extends StatefulWidget {
     this.slot = 'bottom',
     this.refresh = const Duration(seconds: 60),
     this.headers,
-    this.apiBase = 'https://us-central1-afrolooki.cloudfunctions.net',
+    this.apiBase = 'https://api.afrolookmedia.com/v1/ads',
   })  : size = AdsBannerSize.mini,
         closable = true;
 
@@ -140,7 +140,7 @@ class _AfrolookAdsBannerState extends State<AfrolookAdsBanner> {
         'vid': widget.visitorId,
       };
       final extra = widget.headers == null ? <String, String>{} : await widget.headers!();
-      final res = await http.get(Uri.parse('${widget.apiBase}/adsServe').replace(queryParameters: q), headers: extra).timeout(const Duration(seconds: 8));
+      final res = await http.get(Uri.parse('${widget.apiBase}/serve').replace(queryParameters: q), headers: extra).timeout(const Duration(seconds: 8));
       if (res.statusCode != 200 || !mounted) return;
       final j = jsonDecode(res.body);
       final ad = j is Map ? j['ad'] : null;

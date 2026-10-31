@@ -1,11 +1,10 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/contenuPayant/content_detail_page.dart';
 import 'package:afrotok/pages/contenuPayant/widgets/boost_modal.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/theme/app_colors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/contenu_payant_api.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -169,15 +168,23 @@ class _ContentsTabState extends State<_ContentsTab> {
           ),
         ),
         Expanded(
-          child: StreamBuilder<QuerySnapshot>(
-            stream: _buildQuery().snapshotsM('admin_content_page.dart:172'),
+          child: StreamBuilder<LegacySnap>(
+            stream: _contentStream,
             builder: (context, snap) {
+              if (snap.hasError) {
+                return Center(
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    Text(ContenuPayantApi.message(snap.error!), textAlign: TextAlign.center),
+                    const SizedBox(height: 8),
+                    OutlinedButton(onPressed: () => setState(() => _stream = null), child: const Text('Réessayer')),
+                  ]),
+                );
+              }
               if (!snap.hasData) {
                 return const Center(child: CircularProgressIndicator());
               }
               var items = snap.data!.docs
-                  .map((d) => ContentPaie.fromJson(
-                      {...d.data() as Map<String, dynamic>, 'id': d.id}))
+                  .map((d) => ContentPaie.fromJson({...d.data(), 'id': d.id}))
                   .toList();
 
               if (_search.isNotEmpty) {
@@ -212,24 +219,22 @@ class _ContentsTabState extends State<_ContentsTab> {
     );
   }
 
-  Query<Map<String, dynamic>> _buildQuery() {
-    Query<Map<String, dynamic>> q =
-        FirebaseFirestore.instance.collection('ContentPaies');
-    switch (_filter) {
-      case 'boosted':
-        q = q
-            .where('isBoosted', isEqualTo: true)
-            .orderBy('boostEndDate', descending: true);
-        break;
-      case 'free':
-        q = q
-            .where('isFree', isEqualTo: true)
-            .orderBy('createdAt', descending: true);
-        break;
-      default:
-        q = q.orderBy('createdAt', descending: true);
+  // Lecture mise en cache : relancée seulement quand le filtre change ou après « Réessayer »
+  String? _streamKey;
+  Stream<LegacySnap>? _stream;
+
+  Stream<LegacySnap> get _contentStream {
+    if (_stream == null || _streamKey != _filter) {
+      _streamKey = _filter;
+      _stream = Stream.fromFuture(() async {
+        final snap = await ContenuPayantApi.snap(limit: 50);
+        final docs = List<LegacyDoc>.of(snap.docs);
+        if (_filter == 'boosted') docs.removeWhere((d) => d.data()['isBoosted'] != true);
+        if (_filter == 'free') docs.removeWhere((d) => d.data()['isFree'] != true);
+        return LegacySnap(docs);
+      }());
     }
-    return q.limit(80);
+    return _stream!;
   }
 }
 
@@ -288,17 +293,10 @@ class _AdminContentTile extends StatelessWidget {
 
   Future<void> _toggleBoost(BuildContext context) async {
     if (content.isBoostActive) {
-      // Désactiver le boost
-      await FirebaseFirestore.instance
-          .collection('ContentPaies')
-          .doc(content.id)
-          .update({
-        'isBoosted': false,
-        'boostEndDate': null,
-      });
+      // L'arrêt d'un boost par l'équipe n'a pas de point d'accès dans l'API (voir lacunes_api_canaux.md) : le boost s'arrête à son échéance.
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Boost désactivé')),
+          const SnackBar(content: Text('Arrêt anticipé du boost indisponible pour le moment : il prend fin à son échéance.')),
         );
       }
     } else {
@@ -330,16 +328,17 @@ class _AdminContentTile extends StatelessWidget {
       ),
     );
     if (confirm != true || content.id == null) return;
-    await FirebaseFirestore.instance
-        .collection('ContentPaies')
-        .doc(content.id)
-        .delete();
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Contenu supprimé')),
-      );
+    try {
+      await ContenuPayantApi.delete(content.id!);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Contenu supprimé')),
+        );
+      }
+      onDeleted();
+    } catch (e) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ContenuPayantApi.message(e))));
     }
-    onDeleted();
   }
 
   @override
@@ -518,36 +517,17 @@ class _CommentsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('ContentComments')
-          .orderBy('createdAt', descending: true)
-          .limit(100)
-          .snapshotsM('admin_content_page.dart:525'),
-      builder: (context, snap) {
-        if (!snap.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final docs = snap.data!.docs;
-        if (docs.isEmpty) {
-          return Center(
-            child: Text('Aucun commentaire',
-                style: TextStyle(color: colors.textSecondary)),
-          );
-        }
-        return ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          itemCount: docs.length,
-          itemBuilder: (_, i) {
-            final d = docs[i].data() as Map<String, dynamic>;
-            return _AdminCommentTile(
-              docId: docs[i].id,
-              data: d,
-              colors: colors,
-            );
-          },
-        );
-      },
+    // L'API lit les commentaires contenu par contenu (GET /paid-contents/{id}/comments) ; une liste globale pour l'équipe est à ajouter
+    // (voir lacunes_api_canaux.md). En attendant, la modération se fait depuis la fiche de chaque contenu.
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Text(
+          'La liste globale des commentaires n\'est pas encore disponible. Ouvre un contenu pour modérer ses commentaires.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: colors.textSecondary),
+        ),
+      ),
     );
   }
 }
@@ -564,17 +544,11 @@ class _AdminCommentTile extends StatelessWidget {
   });
 
   Future<void> _delete(BuildContext context) async {
-    await FirebaseFirestore.instance
-        .collection('ContentComments')
-        .doc(docId)
-        .delete();
-    // Décrémenter le compteur
-    final contentId = data['contentId'] as String?;
-    if (contentId != null) {
-      await FirebaseFirestore.instance
-          .collection('ContentPaies')
-          .doc(contentId)
-          .update({'comments': FieldValue.increment(-1)});
+    try {
+      await ContenuPayantApi.deleteComment(docId);
+    } catch (e) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ContenuPayantApi.message(e))));
+      return;
     }
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -665,19 +639,17 @@ class _StatsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('ContentPaies')
-          .snapshotsM('admin_content_page.dart:670'),
+    return FutureBuilder<LegacySnap>(
+      future: ContenuPayantApi.snap(limit: 50),
       builder: (context, snap) {
+        if (snap.hasError) {
+          return Center(child: Text(ContenuPayantApi.message(snap.error!), textAlign: TextAlign.center));
+        }
         if (!snap.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
         final docs = snap.data!.docs;
-        final items = docs
-            .map((d) => ContentPaie.fromJson(
-                {...d.data() as Map<String, dynamic>, 'id': d.id}))
-            .toList();
+        final items = docs.map((d) => ContentPaie.fromJson({...d.data(), 'id': d.id})).toList();
 
         final totalContents = items.length;
         final totalBoosted = items.where((c) => c.isBoostActive).length;

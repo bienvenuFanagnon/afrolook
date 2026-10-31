@@ -1,9 +1,7 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 import 'dart:ui' show PlatformDispatcher;
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'api/api_gateway.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -79,7 +77,7 @@ class CurrencyService extends ChangeNotifier {
 
   Map<String, double> _rates = Map.of(_fallback);
   String _currency = 'XOF';
-  StreamSubscription? _sub;
+  bool? _sub;
   bool _live = false;
 
   /// Devise affichée (ex. XOF, EUR, USD).
@@ -148,12 +146,7 @@ class CurrencyService extends ChangeNotifier {
         await sp.setString(_prefKey, _override!);
       }
     } catch (_) {}
-    try {
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid != null) {
-        await FirebaseFirestore.instance.collection('Users').doc(uid).update({'displayCurrency': _override ?? FieldValue.delete()});
-      }
-    } catch (_) {/* le choix reste valable sur ce téléphone */}
+    // Le choix reste mémorisé sur ce téléphone (l'API n'a pas encore de champ « devise d'affichage » : voir lacunes_api_argent_creations.md).
   }
 
   /// Devises proposées (toutes celles pour lesquelles on a un taux), la devise du pays d'abord.
@@ -178,23 +171,31 @@ class CurrencyService extends ChangeNotifier {
   /// Nom lisible d'une devise (le code seul si on n'a pas de nom).
   static String nameOf(String code) => _names[code] ?? code;
 
-  /// Écoute les taux du jour (à appeler une fois au démarrage).
+  /// Charge les taux du jour (à appeler une fois au démarrage) : réglages publics de l'API (`GET /config`, clé `exchange_rates.rates`).
+  /// Sans taux publiés, les taux de repli restent utilisés.
   void listenRates() {
-    _sub ??= FirebaseFirestore.instance.collection('AppConfig').doc('exchangeRates').snapshotsM('currency_service.dart:182').listen((doc) {
-      final data = doc.data();
-      final rates = data?['rates'];
-      if (rates is Map) {
-        final next = Map.of(_fallback);
-        rates.forEach((k, v) {
-          if (v is num && v > 0) next[k.toString().toUpperCase()] = v.toDouble();
-        });
-        next['XOF'] = 1;
-        next['XAF'] = 1;
-        _rates = next;
-        _live = true;
-        notifyListeners();
+    if (_sub != null) return;
+    _sub = true;
+    () async {
+      try {
+        final r = await ApiGateway.instance.client.get('/config');
+        final data = r is Map ? r['data'] : null;
+        final rates = data is Map && data['exchange_rates'] is Map ? (data['exchange_rates'] as Map)['rates'] : null;
+        if (rates is Map) {
+          final next = Map.of(_fallback);
+          rates.forEach((k, v) {
+            if (v is num && v > 0) next[k.toString().toUpperCase()] = v.toDouble();
+          });
+          next['XOF'] = 1;
+          next['XAF'] = 1;
+          _rates = next;
+          _live = true;
+          notifyListeners();
+        }
+      } catch (_) {
+        _sub = null; // sera retenté au prochain appel
       }
-    }, onError: (_) {});
+    }();
   }
 
   double _rate(String cur) => _rates[cur] ?? _fallback[cur] ?? _fallback['USD']!;

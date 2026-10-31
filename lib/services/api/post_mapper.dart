@@ -1,4 +1,5 @@
 import 'package:afrotok/models/model_data.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 /// Convertit une publication de la nouvelle API en modèle `Post` de l'application (les écrans existants ne changent pas).
 Post postFromApi(Map<String, dynamic> j) {
@@ -40,6 +41,12 @@ Post postFromApi(Map<String, dynamic> j) {
     ..availableCountries = (j['countries'] as List? ?? const []).map((e) => '$e').toList()
     ..postInterests = (j['interests'] as List? ?? const []).map((e) => '$e').toList()
     ..categorie = j['category'] as String?;
+  // Situation de la personne connectée (champs souhaités côté API : voir lacunes_api_publications.md)
+  final me = FirebaseAuth.instance.currentUser?.uid;
+  if (me != null) {
+    post.users_love_id = j['liked_by_me'] == true ? [me] : [];
+    post.users_favorite_id = j['favorited_by_me'] == true ? [me] : [];
+  }
   final sound = j['sound'];
   if (sound is Map) {
     post.artistSoundId = sound['id'] as String?;

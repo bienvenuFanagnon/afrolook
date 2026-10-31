@@ -1,8 +1,6 @@
 ﻿// services/abonnement_service.dart
 
-import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../models/model_data.dart';
@@ -10,7 +8,6 @@ import 'coin_checkout.dart';
 
 
 class AbonnementService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // ── Souscription générique (appelée par la page abonnement) ──────────────
 
@@ -106,9 +103,7 @@ class AbonnementService {
       dureeMois: nouvelAbonnement.dureeMois,
     );
     if (!paid) return {'success': false, 'message': '', 'cancelled': true};
-    await _firestore.collection('Users').doc(user.id).update({
-      'abonnement': nouvelAbonnement.toJson(),
-    });
+    // Le serveur a activé l'abonnement en même temps que le débit : rien à écrire côté application.
     return {
       'success': true,
       'message': 'Abonnement $descriptionLabel activé avec succès !',
@@ -118,28 +113,8 @@ class AbonnementService {
 
   // ── Vérification expiration ───────────────────────────────────────────────
 
-  Future<void> verifierEtMettreAJourAbonnement(String userId) async {
-    try {
-      final userDoc = await _firestore.collection('Users').doc(userId).getM('abonnement_service.dart:122');
-      final userData = userDoc.data();
-      if (userData == null || userData['abonnement'] == null) return;
-
-      final abonnement = AfrolookAbonnement.fromJson(
-          Map<String, dynamic>.from(userData['abonnement']));
-
-      // Seule cette fonction est autorisée à remettre le plan à 'gratuit' dans Firestore.
-      if (abonnement.estExpire) {
-        final gratuit = AfrolookAbonnement.gratuit();
-        await _firestore.collection('Users').doc(userId).update({
-          'abonnement': gratuit.toJson(),
-          'updatedAt': DateTime.now().millisecondsSinceEpoch,
-        });
-        printVm('✅ Abonnement expiré remis à gratuit pour $userId');
-      }
-    } catch (e) {
-      printVm('❌ Erreur vérification abonnement: $e');
-    }
-  }
+  /// L'expiration est gérée par l'API (`GET /me/subscriptions` ne renvoie que les abonnements en cours) : rien à faire ici.
+  Future<void> verifierEtMettreAJourAbonnement(String userId) async {}
 
   // ── Helpers statiques ─────────────────────────────────────────────────────
 

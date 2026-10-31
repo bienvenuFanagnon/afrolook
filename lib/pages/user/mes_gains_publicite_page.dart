@@ -1,9 +1,9 @@
 // lib/pages/remuneration/mes_gains_publicite_page.dart
 
-import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/models/model_data.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import '../../providers/authProvider.dart';
 import 'package:flutter/material.dart';
 import '../../l10n/tr.dart';
 
@@ -21,7 +21,6 @@ class MesGainsPublicitePage extends StatefulWidget {
 
 class _MesGainsPublicitePageState extends State<MesGainsPublicitePage> {
   late Future<UserData> _userFuture;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   void initState() {
@@ -29,13 +28,12 @@ class _MesGainsPublicitePageState extends State<MesGainsPublicitePage> {
     _userFuture = _loadUserData();
   }
 
+  /// Totaux des pubs de soutien : portés par le profil de la personne connectée (l'API ne les expose pas encore pour
+  /// quelqu'un d'autre : voir lacunes_api_argent_creations.md).
   Future<UserData> _loadUserData() async {
-    final doc = await _firestore.collection('Users').doc(widget.userId).getM('mes_gains_publicite_page.dart:32');
-    if (doc.exists) {
-      return UserData.fromJson(doc.data() as Map<String, dynamic>);
-    } else {
-      throw Exception('Utilisateur non trouvé');
-    }
+    final me = Provider.of<UserAuthProvider>(context, listen: false).loginUserData;
+    if (me.id == widget.userId) return me;
+    return UserData()..id = widget.userId;
   }
 
   @override

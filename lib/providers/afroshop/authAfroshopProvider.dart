@@ -1,39 +1,22 @@
-﻿
-
-
-import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
-import 'dart:io';
 import 'package:afrotok/models/model_data.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
-
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'dart:async';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 
-
-
-
-
+/// Compte « boutique » (ancien système UsersShop). L'API n'a pas de comptes boutique séparés : les entreprises de l'API
+/// (`/shop/businesses`) les remplacent. Il ne reste ici que le stockage local du jeton et du premier lancement ; les recherches de
+/// clients boutique renvoient des listes vides (voir lacunes_api_argent_creations.md).
 class UserShopAuthProvider extends ChangeNotifier {
+  late String registerText = "";
+  late String? token;
+  late String loginText = "";
 
-  late String  registerText="";
-  late String?  token;
-  late String  loginText="";
+  late UserShopData loginData = UserShopData();
 
-  late UserShopData loginData=UserShopData();
-
-  late String? error=null;
-  initialisation(){
-  //  registerUser=User();
-  }
-
-
-
+  late String? error = null;
+  initialisation() {}
 
   Future<void> storeToken(String value) async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -45,168 +28,29 @@ class UserShopAuthProvider extends ChangeNotifier {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.setBool('is_first', value);
   }
+
   Future<String?> getToken() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    return  prefs.getString('token');
+    return prefs.getString('token');
   }
 
   Future<bool?> getIfIsFirst() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    printVm('is_first:');
-
-    return  prefs.getBool('is_first');
+    return prefs.getBool('is_first');
   }
 
   deleteToken() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.remove('token');
-
   }
 
+  Future<bool> createUser(UserData data) async => false;
 
+  Future<List<UserShopData>> getUserByPhone(String phone) async => [];
 
+  Future<List<UserShopData>> getAllClient(String phone) async => [];
 
+  Future<List<UserShopData>> getSearchClient(String nom, String phone) async => [];
 
-
-
-
-  Future<bool> createUser(UserData data) async {
-    final FirebaseFirestore firestore = FirebaseFirestore.instance;
-
-    String id = firestore
-        .collection('UsersShop')
-        .doc()
-        .id;
-    data.id=id;
-
-    try{
-      final DocumentReference<Map<String, dynamic>> docRef = FirebaseFirestore.instance.collection('UsersShop').doc(data.id);
-      docRef.set(data.toJson());
-
-
-      //  await firestore.collection('Matches').doc(id).set(data.toJson());
-      printVm("///////////-- SAVE soccer data  --///////////////");
-      return true;
-    }catch(error){
-      return false;
-
-    }
-  }
-
-  Future<List<UserShopData>> getUserByPhone(String phone) async {
-    late List<UserShopData> list= [];
-
-
-    CollectionReference collectionRef =
-    FirebaseFirestore.instance.collection('UsersShop');
-    // Get docs from collection reference
-    QuerySnapshot querySnapshot = await collectionRef.where("phone",isEqualTo: phone!).getM('authAfroshopProvider.dart:102')
-        .then((value){
-      printVm("user by phone");
-
-      printVm(value);      return value;
-    }).catchError((onError){
-
-    });
-
-    // Get data from docs and convert map to List
-    list = querySnapshot.docs.map((doc) =>
-        UserShopData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-
-
-    return list;
-
-  }
-
-  Future<List<UserShopData>> getAllClient(String phone) async {
-    late List<UserShopData> list= [];
-
-
-    CollectionReference collectionRef =
-    FirebaseFirestore.instance.collection('UsersShop');
-    // Get docs from collection reference
-    QuerySnapshot querySnapshot = await collectionRef.where("phone",isNotEqualTo: phone!).getM('authAfroshopProvider.dart:127')
-        .then((value){
-      printVm("user by phone");
-
-      printVm(value);      return value;
-    }).catchError((onError){
-
-    });
-
-    // Get data from docs and convert map to List
-    list = querySnapshot.docs.map((doc) =>
-        UserShopData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-
-
-    return list;
-
-  }
-
-  Future<List<UserShopData>> getSearchClient(String nom,String phone) async {
-    late List<UserShopData> list= [];
-    late List<UserShopData> listClients= [];
-
-
-    CollectionReference collectionRef =
-    FirebaseFirestore.instance.collection('UsersShop');
-    // Get docs from collection reference
-    QuerySnapshot querySnapshot = await collectionRef.where("phone",isNotEqualTo: phone!)
-
-        .getM('authAfroshopProvider.dart:155')
-        .then((value){
-      printVm("user by phone");
-
-      printVm(value);      return value;
-    }).catchError((onError){
-
-    });
-
-    // Get data from docs and convert map to List
-    list = querySnapshot.docs.map((doc) =>
-        UserShopData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-    list.forEach((element) {
-      if (element.nom!.toLowerCase().contains(nom.toLowerCase())) {
-        listClients.add(element);
-      }
-    });
-
-
-    return listClients;
-
-  }
-
-  Future<List<UserShopData>> getAfroshopUserById(String id) async {
-    late List<UserShopData> list= [];
-
-
-    CollectionReference collectionRef =
-    FirebaseFirestore.instance.collection('UsersShop');
-    // Get docs from collection reference
-    QuerySnapshot querySnapshot = await collectionRef.where("id",isEqualTo: id!).getM('authAfroshopProvider.dart:185')
-        .then((value){
-      printVm("user by phone");
-
-      printVm(value);      return value;
-    }).catchError((onError){
-
-    });
-
-    // Get data from docs and convert map to List
-    list = querySnapshot.docs.map((doc) =>
-        UserShopData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-
-
-    return list;
-
-  }
-
-
-
-
-
-
+  Future<List<UserShopData>> getAfroshopUserById(String id) async => [];
 }
-
-
-

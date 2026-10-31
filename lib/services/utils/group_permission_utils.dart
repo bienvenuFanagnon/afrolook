@@ -12,8 +12,8 @@
 //   member_permissions   : Map<userId, {can_write: bool, can_share: bool}>
 //   allow_hidden_msgs    : bool  — messages invisibles activés (Gold)
 
-import 'package:afrotok/services/read_meter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/chat_api.dart';
+import 'package:afrotok/services/api/chat_mapper.dart';
 
 class GroupPermissionUtils {
   // ── Règles de base ────────────────────────────────────────────────────────
@@ -105,17 +105,13 @@ class GroupPermissionUtils {
     return msgData['is_hidden'] == true;
   }
 
-  // ── Chargement depuis Firestore ───────────────────────────────────────────
+  // ── Chargement depuis l'API ───────────────────────────────────────────
 
   /// Charge les données d'un groupe pour vérifier les permissions.
   /// À utiliser depuis les pages externes (post details, produit, live, etc.)
   static Future<Map<String, dynamic>> loadGroupData(String groupId) async {
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('GroupChats')
-          .doc(groupId)
-          .getM('group_permission_utils.dart:116');
-      return doc.data() ?? {};
+      return groupToLegacy(await ChatApi.group(groupId));
     } catch (_) {
       return {};
     }
@@ -140,9 +136,7 @@ class GroupPermissionUtils {
     required String targetUserId,
     required bool value,
   }) async {
-    await FirebaseFirestore.instance.collection('GroupChats').doc(groupId).update({
-      'member_permissions.$targetUserId.can_write': value,
-    });
+    await ChatApi.updateMember(groupId, targetUserId, {'can_write': value});
   }
 
   /// Modifier la permission de partage d'un membre.
@@ -151,9 +145,7 @@ class GroupPermissionUtils {
     required String targetUserId,
     required bool value,
   }) async {
-    await FirebaseFirestore.instance.collection('GroupChats').doc(groupId).update({
-      'member_permissions.$targetUserId.can_share': value,
-    });
+    await ChatApi.updateMember(groupId, targetUserId, {'can_share': value});
   }
 
   /// Modifier la permission d'écriture par défaut (pour tous les membres).
@@ -161,9 +153,7 @@ class GroupPermissionUtils {
     required String groupId,
     required bool value,
   }) async {
-    await FirebaseFirestore.instance.collection('GroupChats').doc(groupId).update({
-      'default_can_write': value,
-    });
+    await ChatApi.updateGroup(groupId, {'default_can_write': value});
   }
 
   /// Modifier la permission de partage par défaut (pour tous les membres).
@@ -171,9 +161,7 @@ class GroupPermissionUtils {
     required String groupId,
     required bool value,
   }) async {
-    await FirebaseFirestore.instance.collection('GroupChats').doc(groupId).update({
-      'default_can_share': value,
-    });
+    await ChatApi.updateGroup(groupId, {'default_can_share': value});
   }
 
   /// Activer/désactiver les messages invisibles.
@@ -181,9 +169,7 @@ class GroupPermissionUtils {
     required String groupId,
     required bool value,
   }) async {
-    await FirebaseFirestore.instance.collection('GroupChats').doc(groupId).update({
-      'allow_hidden_msgs': value,
-    });
+    await ChatApi.updateGroup(groupId, {'allow_hidden_msgs': value});
   }
 
   // ── Interne ───────────────────────────────────────────────────────────────

@@ -1,10 +1,9 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/widgets/safe_network_avatar.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/canaux_api.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -25,7 +24,6 @@ class CanalListPageByUser extends StatefulWidget {
 }
 
 class _CanalListPageByUserState extends State<CanalListPageByUser> {
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
   static final NumberFormat _n = NumberFormat.decimalPattern('fr');
 
   List<Canal> createdCanaux = [];
@@ -41,15 +39,6 @@ class _CanalListPageByUserState extends State<CanalListPageByUser> {
     _loadCanaux();
   }
 
-  Canal _parse(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
-    final canal = Canal.fromJson(doc.data());
-    canal.id = doc.id;
-    canal.adminIds ??= [];
-    canal.allowedPostersIds ??= [];
-    canal.usersSuiviId ??= [];
-    return canal;
-  }
-
   Future<void> _loadCanaux() async {
     setState(() {
       isLoading = createdCanaux.isEmpty && adminCanaux.isEmpty;
@@ -59,30 +48,46 @@ class _CanalListPageByUserState extends State<CanalListPageByUser> {
     try {
       final me = Provider.of<UserAuthProvider>(context, listen: false).loginUserData;
       final uid = me.id!;
-      final canaux = firestore.collection('Canaux');
 
-      // Les deux requêtes en parallèle (avant : l'une après l'autre)
-      final results = await Future.wait([
-        canaux.where('userId', isEqualTo: uid).orderBy('updatedAt', descending: true).limit(50).getM('listCanauxByUser.dart:65'),
-        canaux.where('adminIds', arrayContains: uid).orderBy('updatedAt', descending: true).limit(50).getM('listCanauxByUser.dart:66'),
-      ]);
+      // Mes canaux (propriétaire, administrateur ou abonné) : jusqu'à 100, par pages de 50
+      final mine = <Canal>[];
+      String? cursor;
+      for (var i = 0; i < 2; i++) {
+        final page = await CanauxApi.list(mine: true, cursor: cursor, limit: 50, myId: uid);
+        mine.addAll(page.items);
+        cursor = page.next;
+        if (cursor == null) break;
+      }
 
       // Mes canaux : je suis le créateur, pas besoin de relire ma fiche
-      final created = results[0].docs.map(_parse).toList();
+      final created = mine.where((c) => c.userId == uid).toList();
       for (final c in created) {
         c.user = me;
+        c.adminIds = [uid];
       }
-      final createdIds = created.map((c) => c.id).toSet();
-      final admin = results[1].docs.where((d) => !createdIds.contains(d.id)).map(_parse).toList();
 
       if (!mounted) return;
       setState(() {
         createdCanaux = created;
-        adminCanaux = admin;
         isLoading = false;
       });
 
-      _loadCreators(admin);
+      // Canaux que j'administre sans les avoir créés : la liste ne dit pas si je suis administrateur, on lit les fiches (30 au plus, par groupes de 6)
+      final others = mine.where((c) => c.userId != uid).take(30).toList();
+      final admin = <Canal>[];
+      for (var i = 0; i < others.length; i += 6) {
+        final group = others.skip(i).take(6);
+        final full = await Future.wait(group.map((c) async {
+          try {
+            return await CanauxApi.get(c.id!, myId: uid);
+          } catch (_) {
+            return null;
+          }
+        }));
+        admin.addAll(full.whereType<Canal>().where((c) => c.adminIds?.contains(uid) == true));
+        if (!mounted) return;
+        setState(() => adminCanaux = List.of(admin));
+      }
     } catch (e) {
       printVm('Erreur chargement canaux: $e');
       if (!mounted) return;
@@ -90,27 +95,6 @@ class _CanalListPageByUserState extends State<CanalListPageByUser> {
         isLoading = false;
         hasError = createdCanaux.isEmpty && adminCanaux.isEmpty;
       });
-    }
-  }
-
-  /// Créateurs des canaux administrés : une lecture par créateur distinct, en parallèle, après l'affichage.
-  Future<void> _loadCreators(List<Canal> canals) async {
-    final ids = canals.map((c) => c.userId).whereType<String>().where((id) => id.isNotEmpty).toSet().toList();
-    if (ids.isEmpty) return;
-    try {
-      final docs = await Future.wait(ids.map((id) => firestore.collection('Users').doc(id).getM('listCanauxByUser.dart:100')));
-      final byId = <String, UserData>{
-        for (final d in docs)
-          if (d.exists) d.id: UserData.fromJson(d.data()!),
-      };
-      if (!mounted) return;
-      setState(() {
-        for (final c in canals) {
-          c.user = byId[c.userId] ?? c.user;
-        }
-      });
-    } catch (e) {
-      printVm('Erreur créateurs des canaux: $e');
     }
   }
 

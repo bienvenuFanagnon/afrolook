@@ -1,14 +1,12 @@
 // Musique des templates : pistes gratuites d'Afrolook (Storage studio_music/{id}.m4a, créées par
 // functions/scripts/gen_studio_music.cjs, sans droits d'auteur) et sons des artistes validés (payants, l'artiste est payé).
 
-import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../services/api/music_api.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 
 import '../../../services/music_queue.dart';
@@ -119,7 +117,8 @@ class MontageMusicPlayer {
     final key = 'free:${m.id}';
     if (_urls[key] != null) return _urls[key];
     try {
-      final u = MediaCdn.url(await FirebaseStorage.instance.ref('studio_music/${m.id}.m4a').getDownloadURL());
+      // Musiques gratuites d'Afrolook : adresse donnée par l'API (voir lacunes_api_argent_creations.md)
+      final u = MediaCdn.url(await MusicApi.freeTrackUrl(m.id));
       _urls[key] = u;
       return u;
     } catch (_) {
@@ -159,7 +158,7 @@ class MontageMusicPlayer {
 }
 
 /// Sons d'artistes validés (une lecture, gardée 10 minutes) : partagée avec la musique des chroniques.
-Future<QuerySnapshot> loadArtistSoundsSnapshot() => _MusicSheetState._loadArtists();
+Future<List<ArtistSound>> loadArtistSounds() => _MusicSheetState._loadArtists();
 
 /// Choix de la musique : pistes gratuites, sons des artistes, ou aucune. Renvoie null si on ferme sans choisir,
 /// et un [MusicPick] sinon (music == null : « Sans musique »).
@@ -296,31 +295,14 @@ class _MusicSheetState extends State<_MusicSheet> {
   }
 
   /// Liste des sons d'artistes : une lecture (100 documents au plus) gardée 10 minutes, au lieu d'une écoute en direct à chaque ouverture.
-  static Future<QuerySnapshot>? _artistsFuture;
-  static DateTime? _artistsAt;
-  static Future<QuerySnapshot> _loadArtists() {
-    final at = _artistsAt;
-    if (_artistsFuture != null && at != null && DateTime.now().difference(at) < const Duration(minutes: 10)) return _artistsFuture!;
-    _artistsAt = DateTime.now();
-    final f = FirebaseFirestore.instance
-        .collection('artist_sounds')
-        .where('status', isEqualTo: 'validated')
-        .orderBy('validatedAt', descending: true)
-        .limit(100)
-        .getM('montage_music.dart:308');
-    f.then((_) {}, onError: (Object _) {
-      _artistsFuture = null; // échec : on réessaiera à la prochaine ouverture
-      _artistsAt = null;
-    });
-    return _artistsFuture = f;
-  }
+  static Future<List<ArtistSound>> _loadArtists() => MusicApi.latestCached();
 
   Widget _artists(ScrollController ctrl) {
-    return FutureBuilder<QuerySnapshot>(
+    return FutureBuilder<List<ArtistSound>>(
       future: _loadArtists(),
       builder: (_, snap) {
         final docs = SoundCountries.forViewer<ArtistSound>(
-          [for (final d in snap.data?.docs ?? const <QueryDocumentSnapshot>[]) ArtistSound.fromMap(d.data() as Map<String, dynamic>, d.id)],
+          snap.data ?? const <ArtistSound>[],
           countries: (s) => s.availableCountries,
           owner: (s) => s.userId,
           viewerCountry: SoundCountries.viewerCountry(context),

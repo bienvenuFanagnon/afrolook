@@ -1,5 +1,5 @@
 import 'package:afrotok/layout/centered_content.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -83,7 +83,7 @@ class _RewardsPageState extends State<RewardsPage> {
   }
 
   String _error(Object e) {
-    if (e is FirebaseFunctionsException && (e.message ?? '').isNotEmpty) return e.message!;
+    if (e is ApiException && e.message.isNotEmpty) return e.message;
     return context.tr('Impossible d\'obtenir la récompense pour le moment.');
   }
 

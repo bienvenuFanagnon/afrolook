@@ -1,4 +1,5 @@
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import 'package:afrotok/services/api/posts_api.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -40,6 +41,7 @@ class _CommentGiftSheet extends StatefulWidget {
 
 class _CommentGiftSheetState extends State<_CommentGiftSheet> {
   bool _sending = false;
+  String? _giftKey;
   late final List<CoinPack> _packs = CoinPack.giftPacks.take(15).toList();
 
   Future<void> _send(CoinPack pack) async {
@@ -54,13 +56,14 @@ class _CommentGiftSheetState extends State<_CommentGiftSheet> {
     }
     setState(() => _sending = true);
     try {
-      await FirebaseFunctions.instance.httpsCallable('sendCommentGift').call({
-        'commentId': widget.commentId,
-        if (widget.replyId != null) 'replyId': widget.replyId,
+      // Clé d'idempotence conservée tant que l'envoi n'a pas abouti : un nouvel essai ne débite jamais deux fois
+      _giftKey ??= ApiClient.newIdempotencyKey();
+      await CommentsApi.gift(widget.replyId ?? widget.commentId, {
         'coins': pack.coins,
-        'giftIcon': pack.icon,
-        'giftLabel': pack.label,
-      });
+        'icon': pack.icon,
+        'label': pack.label,
+      }, idempotencyKey: _giftKey);
+      _giftKey = null;
       final uid = auth.loginUserData.id;
       if (uid != null) await coinProvider.refreshBalance(uid);
       if (!mounted) return;
@@ -68,14 +71,15 @@ class _CommentGiftSheetState extends State<_CommentGiftSheet> {
       if (parent.mounted) {
         showSupportedModal(parent, pseudo: widget.authorPseudo, emoji: pack.icon, detail: '${pack.label} · ${pack.coins} 🪙');
       }
-    } on FirebaseFunctionsException catch (e) {
+    } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _sending = false);
-      if (e.code == 'resource-exhausted') {
+      if (e.isInsufficientCoins) {
+        _giftKey = null;
         Navigator.of(context).pop();
         showInsufficientCoinsForLikeDialog(context: parent, user: auth.loginUserData, coinProvider: coinProvider, authProvider: auth);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? context.tr('Envoi impossible'))));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
       }
     } catch (_) {
       if (mounted) setState(() => _sending = false);

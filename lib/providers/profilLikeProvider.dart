@@ -1,9 +1,7 @@
 // providers/profile_like_provider.dart
-import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/api_gateway.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:flutter/foundation.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-// models/profile_like_model.dart
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/model_data.dart';
 import 'authProvider.dart';
@@ -12,7 +10,7 @@ class ProfileLike {
   String? id;
   String likedUserId; // Utilisateur qui est liké
   String likerUserId; // Utilisateur qui like
-  Timestamp createdAt;
+  DateTime createdAt;
 
   ProfileLike({
     this.id,
@@ -20,49 +18,19 @@ class ProfileLike {
     required this.likerUserId,
     required this.createdAt,
   });
-
-  Map<String, dynamic> toMap() {
-    return {
-      'likedUserId': likedUserId,
-      'likerUserId': likerUserId,
-      'createdAt': createdAt,
-    };
-  }
-
-  factory ProfileLike.fromMap(Map<String, dynamic> map, String id) {
-    return ProfileLike(
-      id: id,
-      likedUserId: map['likedUserId'] ?? '',
-      likerUserId: map['likerUserId'] ?? '',
-      createdAt: map['createdAt'] ?? Timestamp.now(),
-    );
-  }
 }
+
+/// J'aime sur un profil (API : PUT/DELETE/GET /v1/users/{id}/like). Ces routes sont à ajouter côté API
+/// (voir lacunes_api_utilisateurs.md) ; en cas d'erreur, l'écran affiche le message et propose de réessayer.
 class ProfileLikeProvider with ChangeNotifier {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  ApiClient get _c => ApiGateway.instance.client;
 
   // Like un profil
   Future<void> likeProfile(String likedUserId, String likerUserId) async {
     try {
-      // Vérifier si le like existe déjà
-      final existingLike = await _firestore
-          .collection('profile_likes')
-          .where('likedUserId', isEqualTo: likedUserId)
-          .where('likerUserId', isEqualTo: likerUserId)
-          .getM('profilLikeProvider.dart:51');
-
-      if (existingLike.docs.isEmpty) {
-        final like = ProfileLike(
-          likedUserId: likedUserId,
-          likerUserId: likerUserId,
-          createdAt: Timestamp.now(),
-        );
-
-        await _firestore.collection('profile_likes').add(like.toMap());
-
-        // Mettre à jour le compteur de likes du profil
-        await _incrementProfileLikes(likedUserId);
-      }
+      await _c.put('/users/$likedUserId/like');
+      addPointsForAction(UserAction.likeProfil);
+      addPointsForOtherUserAction(likedUserId, UserAction.autre);
     } catch (error) {
       throw Exception('Erreur like profil: $error');
     }
@@ -71,18 +39,7 @@ class ProfileLikeProvider with ChangeNotifier {
   // Unlike un profil
   Future<void> unlikeProfile(String likedUserId, String likerUserId) async {
     try {
-      final likeQuery = await _firestore
-          .collection('profile_likes')
-          .where('likedUserId', isEqualTo: likedUserId)
-          .where('likerUserId', isEqualTo: likerUserId)
-          .getM('profilLikeProvider.dart:77');
-
-      for (var doc in likeQuery.docs) {
-        await doc.reference.delete();
-      }
-
-      // Mettre à jour le compteur de likes du profil
-      await _decrementProfileLikes(likedUserId);
+      await _c.delete('/users/$likedUserId/like');
     } catch (error) {
       throw Exception('Erreur unlike profil: $error');
     }
@@ -91,13 +48,8 @@ class ProfileLikeProvider with ChangeNotifier {
   // Vérifier si l'utilisateur a déjà liké le profil
   Future<bool> hasLikedProfile(String likedUserId, String likerUserId) async {
     try {
-      final likeQuery = await _firestore
-          .collection('profile_likes')
-          .where('likedUserId', isEqualTo: likedUserId)
-          .where('likerUserId', isEqualTo: likerUserId)
-          .getM('profilLikeProvider.dart:97');
-
-      return likeQuery.docs.isNotEmpty;
+      final r = ApiClient.data(await _c.get('/users/$likedUserId/like')) as Map;
+      return r['liked'] == true;
     } catch (error) {
       throw Exception('Erreur vérification like: $error');
     }
@@ -106,35 +58,22 @@ class ProfileLikeProvider with ChangeNotifier {
   // Obtenir le nombre de likes d'un profil
   Future<int> getProfileLikesCount(String userId) async {
     try {
-      final userDoc = await _firestore.collection('Users').doc(userId).getM('profilLikeProvider.dart:108');
-      return userDoc.data()?['profileLikesCount'] ?? 0;
+      final r = ApiClient.data(await _c.get('/users/$userId/like')) as Map;
+      return (r['count'] as num?)?.toInt() ?? 0;
     } catch (error) {
       throw Exception('Erreur comptage likes: $error');
     }
   }
 
-  // Incrémenter le compteur de likes
-  Future<void> _incrementProfileLikes(String userId) async {
-    await _firestore.collection('Users').doc(userId).update({
-      'profileLikesCount': FieldValue.increment(1),
-    });
-    addPointsForAction(UserAction.likeProfil);
-    addPointsForOtherUserAction(userId, UserAction.autre);
-  }
-
-  // Décrémenter le compteur de likes
-  Future<void> _decrementProfileLikes(String userId) async {
-    await _firestore.collection('Users').doc(userId).update({
-      'profileLikesCount': FieldValue.increment(-1),
-    });
-  }
-
-  // Stream du nombre de likes d'un profil
-  Stream<int> getProfileLikesStream(String userId) {
-    return _firestore
-        .collection('Users')
-        .doc(userId)
-        .snapshotsM('profilLikeProvider.dart:136')
-        .map((snapshot) => snapshot.data()?['profileLikesCount'] ?? 0);
+  // Nombre de likes d'un profil (relu toutes les 30 s ; pas de temps réel côté API)
+  Stream<int> getProfileLikesStream(String userId) async* {
+    while (true) {
+      try {
+        yield await getProfileLikesCount(userId);
+      } catch (_) {
+        yield 0;
+      }
+      await Future<void>.delayed(const Duration(seconds: 30));
+    }
   }
 }

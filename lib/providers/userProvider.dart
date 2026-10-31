@@ -3,6 +3,8 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
 import 'package:afrotok/services/user/userService.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -48,33 +50,18 @@ setMessageNonLu(int nbr){
   Future<List<UserData>> searchUsersByPseudo(String query) async {
     if (query.isEmpty) return [];
     try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('Users')
-          .where('pseudo', isGreaterThanOrEqualTo: query)
-          .where('pseudo', isLessThanOrEqualTo: query + 'z')
-          .limit(10)
-          .getM('userProvider.dart:55');
-      return snapshot.docs
-          .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
+      return (await UsersApi.searchUsers(query, limit: 10)).map(userSummaryFromApi).toList();
     } catch (e) {
       printVm('Erreur recherche créateur: $e');
       return [];
     }
   }
   Future<bool> updateUser(UserData user) async {
-    try{
-
-
-
-      await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(user.id)
-          .update(user.toJson());
-      //printVm("user update : ${user!.toJson()}");
+    try {
+      await UsersApi.updateMe(userUpdateBody(user));
       return true;
-    }catch(e){
-      printVm("erreur update post : ${e}");
+    } catch (e) {
+      printVm("erreur update profil : ${e}");
       return false;
     }
   }
@@ -325,239 +312,51 @@ setMessageNonLu(int nbr){
 
   }
   Future<bool> getUsersProfile(String currentUserId,BuildContext context) async {
-    late UserAuthProvider authProvider =
-    Provider.of<UserAuthProvider>(context, listen: false);
     listUsers = [];
-    bool hasData=false;
-    try{
-      CollectionReference userCollect =
-      FirebaseFirestore.instance.collection('Users');
-      // Get docs from collection reference
-      QuerySnapshot querySnapshotUser = await userCollect
-      // .where("id",isNotEqualTo: currentUserId)
-          .orderBy('pseudo').startAt([Random().nextDouble()])
-          //.orderBy('popularite', descending: true)
-          .limit(3)
-
-          .getM('userProvider.dart:341');
-
-      // Afficher la liste
-      listUsers = querySnapshotUser.docs.map((doc) =>
-          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-      listUsers.forEach((loginUserData) async {
-
-        loginUserData.popularite=(loginUserData.abonnes!+loginUserData.likes!+loginUserData.jaimes!)/(authProvider.appDefaultData.nbr_abonnes!+authProvider.appDefaultData.nbr_likes!+authProvider.appDefaultData.nbr_loves!);
-        loginUserData.compteTarif=loginUserData.popularite!*80;
-        await firestore.collection('Users').doc( loginUserData!.id).update( loginUserData!.toJson());
-        if (loginUserData.id==currentUserId) {
-          listUsers.remove(loginUserData);
-        }
-      });
-
-      // for(UserData user in listUsers){
-      //   user.abonnes=user.userAbonnesIds==null?0:user.userAbonnesIds!.length;
-      //   updateUser(user);
-      //
-      //
-      // }
-
-      listUserAnnonces=listUsers;
-      printVm('list users ${listUsers.length}');
-      hasData=true;
-
-    }catch(e){
+    try {
+      listUsers = (await UsersApi.suggestions(limit: 6)).map(userSummaryFromApi).where((u) => u.id != currentUserId).take(3).toList();
+      listUserAnnonces = listUsers;
+      return true;
+    } catch (e) {
       printVm("erreur ${e}");
-      hasData=false;
+      return false;
     }
-
-
-
-    //notifyListeners();
-    return hasData;
   }
   Future<bool> getUsers(String currentUserId,BuildContext context) async {
-    late UserAuthProvider authProvider =
-    Provider.of<UserAuthProvider>(context, listen: false);
     listUsers = [];
-    bool hasData=false;
-    try{
-      CollectionReference userCollect =
-      FirebaseFirestore.instance.collection('Users');
-      // Get docs from collection reference
-      QuerySnapshot querySnapshotUser = await userCollect
-         // .where("id",isNotEqualTo: currentUserId)
-          .orderBy('popularite', descending: true)
-          .limit(30)
-          .getM('userProvider.dart:390');
-
-      // Afficher la liste
-      listUsers = querySnapshotUser.docs.map((doc) =>
-          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-      listUsers.forEach((loginUserData) async {
-
-        loginUserData.popularite=(loginUserData.abonnes!+loginUserData.likes!+loginUserData.jaimes!)/(authProvider.appDefaultData.nbr_abonnes!+authProvider.appDefaultData.nbr_likes!+authProvider.appDefaultData.nbr_loves!);
-        loginUserData.compteTarif=loginUserData.popularite!*80;
-        await firestore.collection('Users').doc( loginUserData!.id).update( loginUserData!.toJson());
-        if (loginUserData.id==currentUserId) {
-          listUsers.remove(loginUserData);
-        }
-      });
-
-
-
-
-      printVm('list users ${listUsers.length}');
-      hasData=true;
-
-    }catch(e){
+    try {
+      listUsers = (await UsersApi.suggestions(limit: 30)).map(userSummaryFromApi).where((u) => u.id != currentUserId).toList();
+      return true;
+    } catch (e) {
       printVm("erreur ${e}");
-      hasData=false;
+      return false;
     }
-
-
-
-    //notifyListeners();
-    return hasData;
   }
   Future<List<UserData>> updateTopUsersPopularity(AppDefaultData appData) async {
-    List<UserData> topUsers = [];
-
-    try {
-      // 🔥 Vérifier que appTotalPoints n'est pas nul ou zéro
-      if (appData.appTotalPoints == 0) {
-        printVm("❌ ERREUR : appTotalPoints = 0, impossible de calculer la popularité.");
-        return [];
-      }
-
-      // 📌 Récupérer Top 10
-      final QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-          .collection('Users')
-          .orderBy('totalPoints', descending: true)
-          .limit(10)
-          .getM('userProvider.dart:436');
-
-      topUsers = querySnapshot.docs
-          .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
-
-      // 📌 Mise à jour simultanée avec Batch
-      WriteBatch batch = FirebaseFirestore.instance.batch();
-
-      for (UserData user in topUsers) {
-        // printVm("user totalPoints : ${user.totalPoints}");
-        int userPoints = user.totalPoints ?? 0;
-
-        // 🧮 Calcul de popularité (0 à 1)
-        double popularite = (userPoints / appData.appTotalPoints)*100;
-
-        // Limiter à 5 chiffres après virgule
-        popularite = double.parse(popularite.toStringAsFixed(2));
-
-        // 📌 Référence Firestore
-        DocumentReference userRef =
-        FirebaseFirestore.instance.collection('Users').doc(user.id);
-        // printVm("user totalPoints popularite: ${popularite}");
-
-        batch.update(userRef, {
-          "popularite": popularite,
-        });
-
-        user.popularite = popularite; // mettre à jour localement aussi
-      }
-
-      // 🚀 Lancer l’update
-      await batch.commit();
-
-      printVm("🔥 Popularité mise à jour pour les Top 10 utilisateurs.");
-
-      return topUsers;
-
-    } catch (e) {
-      printVm("❌ Erreur updateTopUsersPopularity : $e");
-      return [];
-    }
+    // La popularité est calculée par le serveur : l'application ne l'écrit plus, elle lit seulement le classement.
+    return getTopAfrolookeur();
   }
 
   Future<List<UserData>> getTopAfrolookeur() async {
-
-    listAllUsers = [];
-    bool hasData=false;
-    try{
-      CollectionReference userCollect =
-      FirebaseFirestore.instance.collection('Users');
-      // Get docs from collection reference
-      QuerySnapshot querySnapshotUser = await userCollect
-
-          .orderBy('totalPoints', descending: true)
-          // .orderBy('popularite', descending: true)
-          .limit(10)
-          .getM('userProvider.dart:493');
-
-      // Afficher la liste
-      listAllUsers = querySnapshotUser.docs.map((doc) =>
-          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-
-
-      // for(UserData user in listAllUsers){
-      //   user.abonnes=user.userAbonnesIds==null?0:user.userAbonnesIds!.length;
-      //   updateUser(user);
-      //
-      //
-      // }
-
-
-   //   printVm('list users ${listAllUsers.length}');
-      hasData=true;
+    try {
+      listAllUsers = (await UsersApi.topUsers(limit: 10)).map(userSummaryFromApi).toList();
       return listAllUsers;
-    }catch(e){
+    } catch (e) {
       printVm("erreur ${e}");
-      hasData=false;
+      listAllUsers = [];
       return [];
     }
-
   }
   Future<List<UserData>> getUserAbonnes(String userId) async {
     try {
-      // 1. Récupérer l’utilisateur
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(userId)
-          .getM('userProvider.dart:524');
-
-      if (!userDoc.exists) return [];
-
-      Map<String, dynamic> data = userDoc.data() as Map<String, dynamic>;
-
-      // 2. Récupérer la liste des IDs abonnés
-      List<String> abonnesIds = List<String>.from(data['userAbonnesIds'] ?? []);
-
-      if (abonnesIds.isEmpty) return [];
-
-      // 3. Limiter à 1000 max
-      if (abonnesIds.length > 1000) {
-        abonnesIds = abonnesIds.sublist(0, 1000);
-      }
-
-      // 4. Firestore limitation: IN maximum 10 (ou 30 selon config)
-      // Donc on doit faire des batches
-      List<UserData> abonnesList = [];
-
-      const int batchSize = 10;
-      for (var i = 0; i < abonnesIds.length; i += batchSize) {
-        var batchIds = abonnesIds.skip(i).take(batchSize).toList();
-
-        QuerySnapshot batchSnapshot = await FirebaseFirestore.instance
-            .collection('Users')
-            .where('id', whereIn: batchIds)
-            .getM('userProvider.dart:551');
-
-        abonnesList.addAll(
-          batchSnapshot.docs.map((doc) =>
-              UserData.fromJson(doc.data() as Map<String, dynamic>)),
-        );
-      }
-
-      return abonnesList;
+      final out = <UserData>[];
+      String? cursor;
+      do {
+        final page = await UsersApi.followers(userId, cursor: cursor, limit: 100);
+        out.addAll(page.items.map(userSummaryFromApi));
+        cursor = page.next;
+      } while (cursor != null && out.length < 1000);
+      return out;
     } catch (e) {
       printVm("Erreur getUserAbonnes: $e");
       return [];
@@ -565,229 +364,57 @@ setMessageNonLu(int nbr){
   }
 
   Future<List<UserData>> getUsersBatch(List<String> userIds) async {
-    List<UserData> listUsers = [];
-
-    printVm('🔍 getUsersBatch appelé avec ${userIds.length} userIds');
-    printVm('🔍 userIds: $userIds');
-
-    if (userIds.isEmpty) {
-      printVm('⚠️ Liste userIds vide');
-      return listUsers;
-    }
-
+    final users = <UserData>[];
     try {
-      CollectionReference userCollect = FirebaseFirestore.instance.collection('Users');
-
-      const batchSize = 10;
-      int batchCount = 0;
-
-      for (int i = 0; i < userIds.length; i += batchSize) {
-        batchCount++;
-        final end = i + batchSize < userIds.length ? i + batchSize : userIds.length;
-        final batchIds = userIds.sublist(i, end);
-
-        printVm('\n📦 Batch $batchCount (${batchIds.length} IDs): $batchIds');
-
-        if (batchIds.isEmpty) continue;
-
-        try {
-          QuerySnapshot querySnapshotUser = await userCollect
-              .where('id', whereIn: batchIds)
-              .getM('userProvider.dart:595');
-
-          printVm('📊 Documents trouvés: ${querySnapshotUser.docs.length}');
-
-          // DEBUG: Afficher chaque document
-          for (var doc in querySnapshotUser.docs) {
-            printVm('📄 Document ID: ${doc.id}');
-            printVm('📄 Document data: ${doc.data()}');
-
-            try {
-              final data = doc.data() as Map<String, dynamic>;
-              final user = UserData.fromJson(data);
-
-              printVm('✅ User créé:');
-              printVm('   - id: ${user.id}');
-              printVm('   - pseudo: ${user.pseudo}');
-              printVm('   - imageUrl: ${user.imageUrl}');
-              printVm('   - abonnes: ${user.abonnes}');
-              printVm('   - isVerify: ${user.isVerify}');
-
-              listUsers.add(user);
-            } catch (e) {
-              printVm('❌ Erreur création UserData: $e');
-              printVm('❌ Données problématiques: ${doc.data()}');
-            }
-          }
-
-          // Petite pause pour éviter les timeouts
-          if (i + batchSize < userIds.length) {
-            await Future.delayed(Duration(milliseconds: 50));
-          }
-
-        } catch (e) {
-          printVm('❌ Erreur batch $batchCount: $e');
-        }
+      for (var i = 0; i < userIds.length; i += 50) {
+        final rows = await UsersApi.lookup(userIds.sublist(i, i + 50 < userIds.length ? i + 50 : userIds.length));
+        users.addAll(rows.map(userFromApi));
       }
-
-      printVm('\n📊 Récapitulatif:');
-      printVm('✅ Total utilisateurs récupérés: ${listUsers.length} sur ${userIds.length}');
-
-      if (listUsers.isNotEmpty) {
-        printVm('👥 Utilisateurs obtenus:');
-        for (var user in listUsers) {
-          printVm('   - ${user.pseudo} (id: ${user.id})');
-        }
-
-        // Trier par popularité
-        listUsers.sort((a, b) {
-          final aFollowers = a.followersCount;
-          final bFollowers = b.followersCount;
-          return bFollowers.compareTo(aFollowers);
-        });
-
-        printVm('📈 Tri effectué par popularité');
-      } else {
-        printVm('⚠️ AUCUN utilisateur récupéré!');
-        printVm('⚠️ Possible causes:');
-        printVm('   - IDs incorrects dans Firestore');
-        printVm('   - Champ "id" différent dans Firestore');
-        printVm('   - Structure de données différente');
-      }
-
+      users.sort((a, b) => b.followersCount.compareTo(a.followersCount));
     } catch (e) {
-      printVm('❌ Erreur globale getUsersBatch: $e');
-      printVm('❌ StackTrace: ${e.toString()}');
+      printVm('❌ Erreur getUsersBatch: $e');
     }
-
-    return listUsers;
+    return users;
   }
-  Stream<List<UserData>> streamProfileUsers(
-      String currentUserId,
-      BuildContext context,
-      int limit,
-      ) {
-    late UserAuthProvider authProvider =
-    Provider.of<UserAuthProvider>(context, listen: false);
-
-    CollectionReference userCollect =
-    FirebaseFirestore.instance.collection('Users');
-
-    return userCollect.snapshotsM('userProvider.dart:675').map((snapshot) {
-      List<DocumentSnapshot> users = snapshot.docs;
-      users.shuffle(); // mélanger
-      List<DocumentSnapshot> usersDocs = users.take(limit).toList();
-
-      return usersDocs
-          .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
-    });
+  Stream<List<UserData>> streamProfileUsers(String currentUserId, BuildContext context, int limit) async* {
+    try {
+      final rows = (await UsersApi.suggestions(limit: limit + 1)).map(userSummaryFromApi).where((u) => u.id != currentUserId).toList()..shuffle();
+      yield rows.take(limit).toList();
+    } catch (e) {
+      printVm("erreur ${e}");
+      yield <UserData>[];
+    }
   }
 
   Future<List<UserData>> getProfileUsers(String currentUserId,BuildContext context,int limit) async {
-    late UserAuthProvider authProvider =
-    Provider.of<UserAuthProvider>(context, listen: false);
     listUsers = [];
-    alphabet.shuffle();
-    // alphabet = alphabet.sublist(0,alphabet.length>5?6:alphabet.length>2?3:alphabet.length>10?11: alphabet.length>15?16: alphabet.length>20?20: alphabet.length>25?26:alphabet.length>30?30: alphabet.length>35?36: alphabet.length>40?41:alphabet.length>50?50: alphabet.length>60?61:alphabet.length>70?70: alphabet.length>80?81: alphabet.length>90?91:alphabet.length>100?100:1);
-
-    bool hasData=false;
-    try{
-      CollectionReference userCollect =
-      FirebaseFirestore.instance.collection('Users');
-      // Get docs from collection reference
-      //  QuerySnapshot querySnapshotUser = await userCollect
-      //     //.where("id",isNotEqualTo: currentUserId)
-      // //  .where("id",isNotEqualTo: currentUserId)
-      //    //  .orderBy('pseudo').startAt([Random().nextDouble()])
-      //  .orderBy('createdAt', descending: true)
-      //     .where('id', whereIn: alphabet)
-      //      .limit(limit)
-      //      .getM('userProvider.dart:705');
-
-      // Générer une valeur aléatoire pour le point de départ
-      // double randomStartPoint = Random().nextDouble();
-      // // Récupérer les utilisateurs de manière aléatoire
-      // QuerySnapshot querySnapshotUser = await userCollect
-      //     // .orderBy('createdAt', descending: true)
-      //     .startAt([randomStartPoint])
-      //     .limit(limit)
-      //     .getM('userProvider.dart:714');
-
-      QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('Users').getM('userProvider.dart:716');
-      List<DocumentSnapshot> users = querySnapshot.docs;
-      users.shuffle(); // Mélanger la liste pour obtenir des utilisateurs aléatoires
-      List<DocumentSnapshot> usersDocs= users.take(limit).toList();
-
-      // Afficher la liste
-      // listUsers = querySnapshotUser.docs.map((doc) =>
-      listUsers = usersDocs.map((doc) =>
-          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-      // for(UserData user in listUsers){
-      //   user.abonnes=user.userAbonnesIds==null?0:user.userAbonnesIds!.length;
-      //   updateUser(user);
-      //
-      //
-      // }
-
-
-      // listUsers.shuffle();
-      listUsers.shuffle();
-
-
-
-      printVm('list users ${listUsers.length}');
-      hasData=true;
-
-    }catch(e){
-      printVm("erreur ${e}");
-      hasData=false;
+    try {
+      listUsers = (await UsersApi.suggestions(limit: limit + 1)).map(userSummaryFromApi).where((u) => u.id != currentUserId).take(limit).toList();
+    } catch (e) {
+      printVm("erreur ");
     }
-
-
-
-    //notifyListeners();
     return listUsers;
   }
 
   Future<List<UserData>> getUsersFilter(String filter,userId) async {
-    //listUsers=[];
-    final users = FirebaseFirestore.instance.collection('Users')
-        .where('id', isNotEqualTo: userId)
-        .limit(100)
-        .getM('userProvider.dart:757');
-
-    // Afficher la liste
-    users.then((snapshot) {
-      snapshot.docs.forEach((doc) {
-        //printVm(doc.data());
-        listUsers.add(  UserData.fromJson(doc.data() as Map<String, dynamic>));
-
-      });
-    });
-    return listUsers.where((user) => user.pseudo!.toLowerCase().contains(filter.toLowerCase())).toList();
-
+    if (filter.isEmpty) return [];
+    try {
+      listUsers = (await UsersApi.searchUsers(filter, limit: 50)).map(userSummaryFromApi).where((u) => u.id != userId).toList();
+    } catch (e) {
+      printVm("erreur ${e}");
+    }
+    return listUsers.where((user) => (user.pseudo ?? '').toLowerCase().contains(filter.toLowerCase())).toList();
   }
 
   Stream<UserData> getStreamUser(String user_id) async* {
-
-    // Définissez la requête
-    var friendsStream = FirebaseFirestore.instance.collection('Users').where("id",isEqualTo:user_id ).snapshotsM('userProvider.dart:774');
-
-// Obtenez la liste des utilisateurs
-    //List<DocumentSnapshot> users = await usersQuery.sget();
-    List<UserData> users = [];
-    UserData userData=UserData();
-
-
-    await for (var friendSnapshot in friendsStream) {
-
-      for (var friendDoc in friendSnapshot.docs) {
-
-          userData=UserData.fromJson(friendDoc.data());
-
+    // L'API n'a pas de temps réel : le profil est relu toutes les 30 s.
+    while (true) {
+      try {
+        yield userFromApi(await UsersApi.publicProfile(user_id));
+      } catch (e) {
+        printVm("erreur ${e}");
       }
-      yield userData;
+      await Future<void>.delayed(const Duration(seconds: 30));
     }
   }
   Stream<Chat> getStreamChat(String chat_id) async* {
@@ -815,21 +442,18 @@ setMessageNonLu(int nbr){
 
   Future<bool> getOtherAbonnes(String userId) async {
     otherAbonnes = [];
-    bool hasData=false;
-    CollectionReference userCollect =
-    FirebaseFirestore.instance.collection('Abonnements');
-    // Get docs from collection reference
-    QuerySnapshot querySnapshotUser = await userCollect.where("abonne_user_id",isEqualTo: userId).getM('userProvider.dart:821');
-    // Afficher la liste
-    List<UserAbonnes> userListAbonnes = querySnapshotUser.docs.map((doc) =>
-        UserAbonnes.fromJson(doc.data() as Map<String, dynamic>)).toList();
-    otherAbonnes=userListAbonnes;
-
-
-
-
+    try {
+      String? cursor;
+      do {
+        final page = await UsersApi.following(userId, cursor: cursor, limit: 100);
+        otherAbonnes.addAll(page.items.map((j) => UserAbonnes(id: '${j['id']}', compteUserId: '${j['id']}', abonneUserId: userId)));
+        cursor = page.next;
+      } while (cursor != null && otherAbonnes.length < 1000);
+    } catch (e) {
+      printVm("erreur ${e}");
+    }
     notifyListeners();
-    return hasData;
+    return otherAbonnes.isNotEmpty;
   }
 
   Future<bool> getUserEntreprise(String userId) async {
@@ -896,106 +520,46 @@ setMessageNonLu(int nbr){
 
 
   Future<bool> sendInvitation(Invitation invitation,BuildContext context) async {
-    late UserAuthProvider authProvider =
-    Provider.of<UserAuthProvider>(context, listen: false);
-    bool resp=false;
-
-  try{
-    // Vérifie qu'aucune invitation ENCOURS n'existe déjà entre ces deux utilisateurs
-    final existing = await firestore
-        .collection('Invitations')
-        .where('sender_id', isEqualTo: invitation.senderId)
-        .where('receiver_id', isEqualTo: invitation.receiverId)
-        .where('status', isEqualTo: InvitationStatus.ENCOURS.name)
-        .limit(1)
-        .getM('userProvider.dart:910');
-
-    if (existing.docs.isNotEmpty) {
-      return false; // doublon — invitation déjà en cours
+    bool resp = false;
+    try {
+      // Les règles (doublon, blocage, 7 jours après un refus, plafond quotidien) sont appliquées par le serveur.
+      final r = await UsersApi.invite(invitation.receiverId ?? '', message: invitation.message);
+      invitation.id = (r['id'] ?? invitation.id) as String?;
+      resp = true;
+    } catch (e) {
+      printVm("erreur invitation : ${UsersApi.message(e)}");
+      lastInvitationError = UsersApi.message(e);
     }
-
-  String id = firestore
-      .collection('Invitations')
-      .doc()
-      .id;
-    invitation.id = id;
-    authProvider.loginUserData!.pointContribution=authProvider.loginUserData!.pointContribution!+1;
-
-    await firestore.collection('Invitations').doc(id).set(invitation.toJson());
-    await firestore.collection('Users').doc( authProvider.loginUserData!.id).update( authProvider.loginUserData!.toJson());
-    resp=true;
-
-}   on FirebaseException catch(error){
-    resp=false;
-  }
-
     notifyListeners();
     return resp;
   }
 
+  /// Dernier message d'erreur (français) renvoyé par l'API pour une invitation refusée.
+  String? lastInvitationError;
+
   Future<bool> sendAbonnementRequest(UserAbonnes abonnes,UserData user,BuildContext context) async {
-
-    bool resp=false;
-    late UserAuthProvider authProvider =
-    Provider.of<UserAuthProvider>(context, listen: false);
-    String id = firestore
-        .collection('Abonnements')
-        .doc()
-        .id;
-    abonnes.id = id;
-    user.abonnes=user.abonnes!+1;
-    authProvider.loginUserData!.pointContribution=authProvider.loginUserData!.pointContribution!+4;
-    try{
-
-
-      await firestore.collection('Abonnements').doc(id).set(abonnes.toJson());
-      await firestore.collection('Users').doc( authProvider.loginUserData!.id).update( authProvider.loginUserData!.toJson());
-      await firestore.collection('Users').doc( user.id).update( user.toJson());
-
-      authProvider.getCurrentUser(authProvider.loginUserData!.id!);
-      resp=true;
-
-    }   on FirebaseException catch(error){
-      resp=false;
+    bool resp = false;
+    try {
+      final already = await UsersApi.follow(user.id!);
+      if (!already) user.abonnes = (user.abonnes ?? 0) + 1;
+      resp = true;
+    } catch (e) {
+      printVm("erreur abonnement : ${UsersApi.message(e)}");
     }
-
     notifyListeners();
     return resp;
   }
 
   Future<bool> acceptInvitation(Invitation invitation) async {
-
-    bool resp=false;
-
+    bool resp = false;
     try {
-      invitation.status=InvitationStatus.ACCEPTER.name;
-      invitation.updatedAt=DateTime.now().millisecondsSinceEpoch;
-
-      await  firestore.collection('Invitations').doc(invitation.id).update(invitation.toJson());
-      String id = firestore
-          .collection('Friends')
-          .doc()
-          .id;
-      Friends friends=Friends();
-      friends.id=id;
-      friends.friendId=invitation.senderId;
-      friends.currentUserId=invitation.receiverId;
-      friends.createdAt=DateTime.now().millisecondsSinceEpoch;
-      friends.updatedAt=DateTime.now().millisecondsSinceEpoch;
-
-
-
-
-
-        await firestore.collection('Friends').doc(id).set(friends.toJson());
-
-      resp=true;
+      await UsersApi.acceptInvitation(invitation.id!); // le serveur crée l'amitié une seule fois et notifie l'expéditeur
+      invitation.status = InvitationStatus.ACCEPTER.name;
+      invitation.updatedAt = DateTime.now().millisecondsSinceEpoch;
+      resp = true;
     } catch (e) {
-
       printVm(e);
-      resp=false;
     }
-
     notifyListeners();
     return resp;
   }
@@ -1020,23 +584,15 @@ setMessageNonLu(int nbr){
   }
 
   Future<bool> refuserInvitation(Invitation invitation) async {
-
-    bool resp=false;
-
+    bool resp = false;
     try {
-      invitation.status=InvitationStatus.REFUSER.name;
-      invitation.updatedAt=DateTime.now().millisecondsSinceEpoch; // sert au délai de 7 jours avant une nouvelle invitation
-
-      await  firestore.collection('Invitations').doc(invitation.id).update(invitation.toJson());
-
-
-      resp=true;
+      await UsersApi.refuseInvitation(invitation.id!);
+      invitation.status = InvitationStatus.REFUSER.name;
+      invitation.updatedAt = DateTime.now().millisecondsSinceEpoch;
+      resp = true;
     } catch (e) {
-
       printVm(e);
-      resp=false;
     }
-
     notifyListeners();
     return resp;
   }

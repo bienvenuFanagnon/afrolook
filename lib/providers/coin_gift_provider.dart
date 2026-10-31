@@ -1,24 +1,15 @@
 ﻿// providers/coin_gift_provider.dart
 
-import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import '../models/coin_pack.dart';
 import '../models/model_data.dart';
+import '../services/api/wallet_api.dart';
 import '../services/coin_gift_service.dart';
 import 'authProvider.dart';
 
-// providers/coins/coin_gift_provider.dart
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:provider/provider.dart';
-import '../models/model_data.dart';
-import '../services/coin_gift_service.dart';
-import 'authProvider.dart';
 class CoinGiftUserProvider with ChangeNotifier {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   UserAuthProvider? _authProvider;
   UserData? _currentUser;
 
@@ -34,76 +25,26 @@ class CoinGiftUserProvider with ChangeNotifier {
   bool get isCurrentUserLoaded =>
       _currentUser?.id != null && _currentUser!.id!.isNotEmpty;
 
-  // Rafraîchir le solde
+  // Rafraîchir le solde : lu sur l'API (jamais calculé dans l'application)
   Future<void> refreshBalance(String userId) async {
-    final doc = await _firestore.collection('Users').doc(userId).getM('coin_gift_provider.dart:38');
-    if (doc.exists) {
-      final updatedUser = UserData.fromJson(doc.data() as Map<String, dynamic>);
-      _currentUser = updatedUser;
-
-      if (_authProvider != null && _authProvider!.loginUserData?.id == userId) {
-        _authProvider!.loginUserData = updatedUser;
-      }
-      notifyListeners();
-    }
-  }
-
-  // 🔥 NOUVEAU : Récupérer les cadeaux d'un post (Version Future pour PostGiftsList)
-  Future<List<PostGift>> getPostGifts(String postId) async {
     try {
-      final snapshot = await _firestore
-          .collection('PostGifts')
-          .where('postId', isEqualTo: postId)
-          .orderBy('createdAt', descending: true)
-          .getM('coin_gift_provider.dart:57');
-
-      return snapshot.docs
-          .map((doc) => PostGift.fromJson(doc.data()))
-          .toList();
+      final me = _authProvider?.loginUserData;
+      final target = (me != null && me.id == userId) ? me : _currentUser;
+      if (target == null) return;
+      await WalletApi.instance.syncInto(target);
+      _currentUser = target;
+      notifyListeners();
     } catch (e) {
-      printVm('Erreur getPostGifts: $e');
-      return [];
+      printVm('refreshBalance (API) : $e');
     }
   }
 
-  // Version agrégée (groupée par type)
-  Future<List<PostGift>> getPostGiftsAggregated(String postId) async {
-    final snapshot = await _firestore
-        .collection('PostGifts')
-        .where('postId', isEqualTo: postId)
-        .getM('coin_gift_provider.dart:73');
+  /// Cadeaux d'une publication. Aucun point d'accès dans l'API pour l'instant (voir lacunes_api_argent_creations.md) : liste vide.
+  Future<List<PostGift>> getPostGifts(String postId) async => <PostGift>[];
 
-    final Map<String, PostGift> aggregated = {};
+  Future<List<PostGift>> getPostGiftsAggregated(String postId) async => <PostGift>[];
 
-    for (var doc in snapshot.docs) {
-      final gift = PostGift.fromJson(doc.data());
-      final key = '${gift.giftIcon}_${gift.giftLabel}_${gift.coinsAmount}';
-
-      if (aggregated.containsKey(key)) {
-        aggregated[key]!.quantity = (aggregated[key]!.quantity ?? 0) + 1;
-        aggregated[key]!.totalCoins = (aggregated[key]!.totalCoins ?? 0) + (gift.coinsAmount ?? 0);
-      } else {
-        gift.quantity = 1;
-        gift.totalCount = 1;
-        gift.totalCoins = gift.coinsAmount;
-        aggregated[key] = gift;
-      }
-    }
-
-    return aggregated.values.toList();
-  }
-
-  // Version Stream (pour ceux qui veulent du temps réel)
-  Stream<List<PostGift>> getPostGiftsStream(String postId) {
-    return _firestore
-        .collection('PostGifts')
-        .where('postId', isEqualTo: postId)
-        .orderBy('createdAt', descending: true)
-        .snapshotsM('coin_gift_provider.dart:101')
-        .map((snapshot) => snapshot.docs
-        .map((doc) => PostGift.fromJson(doc.data()))
-        .toList());
-  }
+  Stream<List<PostGift>> getPostGiftsStream(String postId) => Stream.value(<PostGift>[]);
 
   // Acheter des pièces
   Future<bool> purchaseCoins({
@@ -120,7 +61,6 @@ class CoinGiftUserProvider with ChangeNotifier {
         userReceived: userReceived,
         coinsAmount: coinsAmount,
         fcfaCost: fcfaCost,
-        firestore: _firestore,
         authProvider: Provider.of<UserAuthProvider>(context, listen: false),
         balanceKey: balanceKey,
       );
@@ -135,31 +75,8 @@ class CoinGiftUserProvider with ChangeNotifier {
     }
   }
 
-  // Offre one-shot : 10 pièces gratuites (jamais utilisée)
-  Future<bool> claimFreeCoins(String userId) async {
-    try {
-      final ref = _firestore.collection('Users').doc(userId);
-      bool credited = false;
-      await _firestore.runTransaction((tx) async {
-        final snap = await tx.get(ref);
-        final already = snap.data()?['hasClaimedFreeCoins'] as bool? ?? false;
-        if (already) return; // sécurité : déjà réclamé
-        final current = (snap.data()?['giftCoinsBalance'] as num?)?.toInt() ?? 0;
-        tx.update(ref, {
-          'giftCoinsBalance': current + 10,
-          'hasClaimedFreeCoins': true,
-          // Bonus offert : dépensable, mais pas convertible en argent.
-          ...CoinGiftService.lockFieldsAfterPurchase(snap.data(), 10),
-        });
-        credited = true;
-      });
-      if (credited) await refreshBalance(userId);
-      return credited;
-    } catch (e) {
-      debugPrint('claimFreeCoins error: $e');
-      return false;
-    }
-  }
+  // Offre one-shot : 10 pièces gratuites. Pas encore de point d'accès dans l'API (voir lacunes_api_argent_creations.md) : non disponible.
+  Future<bool> claimFreeCoins(String userId) async => false;
 
   // Envoyer un like avec des pièces
   Future<bool> sendLikeWithCoins({
@@ -169,17 +86,6 @@ class CoinGiftUserProvider with ChangeNotifier {
     required BuildContext context,
     VoidCallback? onReadyToAnimate,
   }) async {
-    // Likes gratuits : le créateur n'a pas activé les likes payants sur ce post → ni débit, ni animation « pièces »
-    if (!post.isMonetized) {
-      final postId = post.id;
-      if (postId == null) return true;
-      await _firestore.collection('Posts').doc(postId).update({
-        'loves': FieldValue.increment(1),
-        'users_love_id': FieldValue.arrayUnion([senderId]),
-        'popularity': FieldValue.increment(1),
-      });
-      return true;
-    }
     await ensureCurrentUser();
     // Vérification locale : si solde suffisant, animation immédiate avant la requête Firebase
     if (giftCoinsBalance >= 2) {
@@ -189,7 +95,6 @@ class CoinGiftUserProvider with ChangeNotifier {
       final result = await CoinGiftService.sendLikeWithCoins(
         senderId: senderId,
         receiverId: receiverId,
-        firestore: _firestore,
         authProvider: _authProvider!,
         post: post,
         context: context,
@@ -223,7 +128,6 @@ class CoinGiftUserProvider with ChangeNotifier {
         senderId: senderId,
         receiverId: receiverId,
         coinsAmount: coinsAmount,
-        firestore: _firestore,
         authProvider: authProvider,
         post: post,
         context: context,

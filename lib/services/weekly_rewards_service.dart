@@ -1,5 +1,8 @@
-import 'package:afrotok/services/read_meter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/canaux_api.dart';
+import 'package:afrotok/services/api/posts_api.dart';
+import 'package:afrotok/services/api/regie_api.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
 import '../models/model_data.dart';
 
 // ─── Modèles ─────────────────────────────────────────────────────────────────
@@ -36,13 +39,13 @@ class WeeklyPostRanking {
   factory WeeklyPostRanking.fromMap(Map<String, dynamic> m) {
     return WeeklyPostRanking(
       rank: (m['rank'] as num?)?.toInt() ?? 0,
-      postId: m['postId'] as String? ?? '',
-      authorId: m['authorId'] as String? ?? '',
+      postId: (m['post_id'] ?? m['postId']) as String? ?? '',
+      authorId: (m['author_id'] ?? m['authorId']) as String? ?? '',
       score: (m['score'] as num?)?.toInt() ?? 0,
-      uniqueViews: (m['uniqueViews'] as num?)?.toInt() ?? 0,
-      uniqueComments: (m['uniqueComments'] as num?)?.toInt() ?? 0,
-      uniqueLikes: (m['uniqueLikes'] as num?)?.toInt() ?? 0,
-      rewardedCoins: (m['rewardedCoins'] as num?)?.toInt() ?? 0,
+      uniqueViews: ((m['unique_views'] ?? m['uniqueViews']) as num?)?.toInt() ?? 0,
+      uniqueComments: ((m['unique_comments'] ?? m['uniqueComments']) as num?)?.toInt() ?? 0,
+      uniqueLikes: ((m['unique_likes'] ?? m['uniqueLikes']) as num?)?.toInt() ?? 0,
+      rewardedCoins: ((m['rewarded_coins'] ?? m['rewardedCoins']) as num?)?.toInt() ?? 0,
       paid: m['paid'] as bool? ?? false,
     );
   }
@@ -76,13 +79,13 @@ class WeeklyCreatorRanking {
   factory WeeklyCreatorRanking.fromMap(Map<String, dynamic> m) {
     return WeeklyCreatorRanking(
       rank: (m['rank'] as num?)?.toInt() ?? 0,
-      entityId: m['entityId'] as String? ?? '',
-      isCanal: m['isCanal'] as bool? ?? false,
+      entityId: (m['entity_id'] ?? m['entityId']) as String? ?? '',
+      isCanal: (m['is_channel'] ?? m['isCanal']) as bool? ?? false,
       score: (m['score'] as num?)?.toDouble() ?? 0,
-      postCount: (m['postCount'] as num?)?.toInt() ?? 0,
-      uniqueLovers: (m['uniqueLovers'] as num?)?.toInt() ?? 0,
-      uniqueCommenters: (m['uniqueCommenters'] as num?)?.toInt() ?? 0,
-      totalViews: (m['totalViews'] as num?)?.toInt() ?? 0,
+      postCount: ((m['post_count'] ?? m['postCount']) as num?)?.toInt() ?? 0,
+      uniqueLovers: ((m['unique_lovers'] ?? m['uniqueLovers']) as num?)?.toInt() ?? 0,
+      uniqueCommenters: ((m['unique_commenters'] ?? m['uniqueCommenters']) as num?)?.toInt() ?? 0,
+      totalViews: ((m['total_views'] ?? m['totalViews']) as num?)?.toInt() ?? 0,
     );
   }
 
@@ -111,9 +114,9 @@ class WeeklyCommentatorRanking {
   factory WeeklyCommentatorRanking.fromMap(Map<String, dynamic> m) {
     return WeeklyCommentatorRanking(
       rank: (m['rank'] as num?)?.toInt() ?? 0,
-      userId: m['userId'] as String? ?? '',
-      commentCount: (m['commentCount'] as num?)?.toInt() ?? 0,
-      rewardedCoins: (m['rewardedCoins'] as num?)?.toInt() ?? 0,
+      userId: (m['user_id'] ?? m['userId']) as String? ?? '',
+      commentCount: ((m['comment_count'] ?? m['commentCount']) as num?)?.toInt() ?? 0,
+      rewardedCoins: ((m['rewarded_coins'] ?? m['rewardedCoins']) as num?)?.toInt() ?? 0,
       paid: m['paid'] as bool? ?? false,
     );
   }
@@ -125,8 +128,6 @@ class WeeklyRewardsService {
   static final WeeklyRewardsService _instance = WeeklyRewardsService._();
   factory WeeklyRewardsService() => _instance;
   WeeklyRewardsService._();
-
-  final _db = FirebaseFirestore.instance;
 
   // ── Cache en mémoire (durée de session) ────────────────────────────────────
   final Map<String, List<WeeklyPostRanking>> _postsCache = {};
@@ -160,15 +161,17 @@ class WeeklyRewardsService {
     return DateTime.utc(monday.year, monday.month, monday.day).millisecondsSinceEpoch;
   }
 
-  // ── Vérification traitement ─────────────────────────────────────────────────
+  // ── Accès à l'API : GET /weekly/{kind}?week= ────────────────────────────────
 
-  /// Vérifie si la semaine a déjà été traitée (lock existant).
+  Future<Map<String, dynamic>> _fetch(String kind, String weekId) async => RegieApi.getMap('/weekly/$kind', query: {'week': weekId});
+
+  List<Map<String, dynamic>> _rankings(Map<String, dynamic> d) =>
+      ((d['rankings'] as List?) ?? const []).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+
+  /// Vérifie si la semaine a déjà été calculée (et donc payée) pour ce type (`posts`, `commentators`, `creators`).
   Future<bool> isWeekProcessed(String weekId, String type) async {
-    final doc = await _db
-        .collection('WeeklyRewardLocks')
-        .doc('${weekId}_$type')
-        .getM('weekly_rewards_service.dart:169');
-    return doc.exists;
+    final d = await _fetch(type == 'commentators' || type == 'creators' ? type : 'posts', weekId);
+    return d['computed_at'] != null;
   }
 
   // ── Top Posts ───────────────────────────────────────────────────────────────
@@ -176,55 +179,30 @@ class WeeklyRewardsService {
   /// Retourne le top 20 posts de la semaine (avec enrichissement Post + auteur).
   Future<List<WeeklyPostRanking>> getWeeklyTopPosts({String? weekId}) async {
     final wid = weekId ?? getCurrentWeekId();
-
     final hit = _postsCache[wid];
     if (hit != null) return hit;
-
-    final doc = await _db.collection('WeeklyTopPosts').doc(wid).getM('weekly_rewards_service.dart:182');
-    if (!doc.exists) return [];
-
-    final rawList = (doc.data()?['rankings'] as List<dynamic>?) ?? [];
-    final rankings = rawList
-        .map((e) => WeeklyPostRanking.fromMap(e as Map<String, dynamic>))
-        .toList();
-
-    // Enrichissement : récupération des posts et auteurs en parallèle
+    final rankings = _rankings(await _fetch('posts', wid)).map(WeeklyPostRanking.fromMap).toList();
     await _enrichPostRankings(rankings);
-
     _postsCache[wid] = rankings;
     return rankings;
   }
 
+  Future<UserData?> _user(String id) async {
+    try {
+      return userFromApi(await UsersApi.publicProfile(id));
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> _enrichPostRankings(List<WeeklyPostRanking> rankings) async {
     if (rankings.isEmpty) return;
-
     final postIds = rankings.map((r) => r.postId).where((id) => id.isNotEmpty).toList();
     final authorIds = rankings.map((r) => r.authorId).where((id) => id.isNotEmpty).toSet().toList();
-
-    // Posts
-    final Map<String, Post> postsById = {};
-    for (int i = 0; i < postIds.length; i += 10) {
-      final chunk = postIds.sublist(i, i + 10 > postIds.length ? postIds.length : i + 10);
-      final snap = await _db.collection('Posts').where(FieldPath.documentId, whereIn: chunk).getM('weekly_rewards_service.dart:207');
-      for (final d in snap.docs) {
-        final p = Post.fromJson(d.data());
-        p.id = d.id;
-        postsById[d.id] = p;
-      }
-    }
-
-    // Auteurs
-    final Map<String, UserData> usersById = {};
-    for (int i = 0; i < authorIds.length; i += 10) {
-      final chunk = authorIds.sublist(i, i + 10 > authorIds.length ? authorIds.length : i + 10);
-      final snap = await _db.collection('Users').where(FieldPath.documentId, whereIn: chunk).getM('weekly_rewards_service.dart:219');
-      for (final d in snap.docs) {
-        final u = UserData.fromJson(d.data());
-        u.id = d.id;
-        usersById[d.id] = u;
-      }
-    }
-
+    final posts = await PostsApi.getMany(postIds);
+    final postsById = {for (final p in posts) if (p.id != null) p.id!: p};
+    final users = await Future.wait(authorIds.map(_user));
+    final usersById = {for (var i = 0; i < authorIds.length; i++) if (users[i] != null) authorIds[i]: users[i]!};
     for (final r in rankings) {
       r.post = postsById[r.postId];
       r.author = usersById[r.authorId];
@@ -233,67 +211,39 @@ class WeeklyRewardsService {
 
   // ── Top Commentateurs ───────────────────────────────────────────────────────
 
-  /// Retourne la semaine la plus récente qui a des données dans WeeklyTopCommentators.
-  /// Retourne null si aucune donnée n'existe.
+  /// Retourne la semaine la plus récente (parmi les huit dernières) qui a un classement de commentateurs, ou null.
   Future<String?> getLatestCommentatorsWeekId() async {
-    final snap = await _db
-        .collection('WeeklyTopCommentators')
-        .orderBy('computedAt', descending: true)
-        .limit(1)
-        .getM('weekly_rewards_service.dart:242');
-    if (snap.docs.isEmpty) return null;
-    return snap.docs.first.data()['weekId'] as String?;
+    final ids = await getAvailableWeekIds('commentators');
+    return ids.isEmpty ? null : ids.first;
   }
 
   /// Retourne le classement complet des commentateurs pour la semaine donnée.
   Future<List<WeeklyCommentatorRanking>> getWeeklyTopCommentators({String? weekId}) async {
     final wid = weekId ?? getCurrentWeekId();
-
     final hit = _commentatorsCache[wid];
     if (hit != null) return hit;
-
-    final doc = await _db.collection('WeeklyTopCommentators').doc(wid).getM('weekly_rewards_service.dart:254');
-    if (!doc.exists) return [];
-
-    final rawList = (doc.data()?['rankings'] as List<dynamic>?) ?? [];
-    final rankings = rawList
-        .map((e) => WeeklyCommentatorRanking.fromMap(e as Map<String, dynamic>))
-        .toList();
-
-    await _enrichCommentatorRankings(rankings);
-
+    final rankings = _rankings(await _fetch('commentators', wid)).map(WeeklyCommentatorRanking.fromMap).toList();
+    await Future.wait(rankings.map((r) async => r.user = await _user(r.userId)));
     _commentatorsCache[wid] = rankings;
     return rankings;
   }
 
-  Future<void> _enrichCommentatorRankings(List<WeeklyCommentatorRanking> rankings) async {
-    if (rankings.isEmpty) return;
+  // ── Semaines disponibles ────────────────────────────────────────────────────
 
-    final userIds = rankings.map((r) => r.userId).where((id) => id.isNotEmpty).toList();
-    for (int i = 0; i < userIds.length; i += 10) {
-      final chunk = userIds.sublist(i, i + 10 > userIds.length ? userIds.length : i + 10);
-      final snap = await _db.collection('Users').where(FieldPath.documentId, whereIn: chunk).getM('weekly_rewards_service.dart:274');
-      final usersById = {for (final d in snap.docs) d.id: UserData.fromJson(d.data())..id = d.id};
-      for (final r in rankings) {
-        if (usersById.containsKey(r.userId)) r.user = usersById[r.userId];
-      }
-    }
-  }
-
-  // ── Semaines disponibles (Top Posts / Top Créateurs / Top Commentateurs) ────
-
-  /// Semaines ayant un classement dans [collection] (WeeklyTopPosts, WeeklyTopCreators,
-  /// WeeklyTopCommentators), de la plus récente à la plus ancienne ; les semaines sans classement sont ignorées.
+  /// Semaines ayant un classement pour [collection] (`posts`, `creators`, `commentators`, ou les anciens noms WeeklyTopPosts…),
+  /// de la plus récente à la plus ancienne, parmi les huit dernières semaines.
   Future<List<String>> getAvailableWeekIds(String collection) async {
-    final snap = await _db
-        .collection(collection)
-        .orderBy(FieldPath.documentId, descending: true)
-        .limit(60)
-        .getM('weekly_rewards_service.dart:291');
-    return snap.docs
-        .where((d) => ((d.data()['rankings'] as List?) ?? const []).isNotEmpty)
-        .map((d) => d.id)
-        .toList();
+    final kind = collection.toLowerCase().contains('creator') ? 'creators' : (collection.toLowerCase().contains('commentator') ? 'commentators' : 'posts');
+    final now = DateTime.now().toUtc();
+    final ids = <String>[for (var i = 0; i < 8; i++) _weekIdForDate(now.subtract(Duration(days: 7 * i)))];
+    final ok = await Future.wait(ids.map((id) async {
+      try {
+        return _rankings(await _fetch(kind, id)).isNotEmpty;
+      } catch (_) {
+        return false;
+      }
+    }));
+    return [for (var i = 0; i < ids.length; i++) if (ok[i]) ids[i]];
   }
 
   /// « 2026-W39 » → « Septembre 2026 — 4e semaine du mois ».
@@ -323,19 +273,14 @@ class WeeklyRewardsService {
   Future<List<WeeklyCreatorRanking>> getWeeklyTopCreators({required String weekId}) async {
     final hit = _creatorsCache[weekId];
     if (hit != null) return hit;
-    final doc = await _db.collection('WeeklyTopCreators').doc(weekId).getM('weekly_rewards_service.dart:325');
-    if (!doc.exists) return [];
-    final rawList = (doc.data()?['rankings'] as List<dynamic>?) ?? [];
-    final rankings = rawList.map((e) => WeeklyCreatorRanking.fromMap(e as Map<String, dynamic>)).toList();
+    final rankings = _rankings(await _fetch('creators', weekId)).map(WeeklyCreatorRanking.fromMap).toList();
     await Future.wait(rankings.map((r) async {
       if (r.entityId.isEmpty) return;
       try {
-        final d = await _db.collection(r.isCanal ? 'Canaux' : 'Users').doc(r.entityId).getM('weekly_rewards_service.dart:332');
-        if (!d.exists) return;
         if (r.isCanal) {
-          r.canal = Canal.fromJson({...d.data()!, 'id': d.id});
+          r.canal = await CanauxApi.get(r.entityId);
         } else {
-          r.user = UserData.fromJson(d.data()!)..id = d.id;
+          r.user = await _user(r.entityId);
         }
       } catch (_) {}
     }));

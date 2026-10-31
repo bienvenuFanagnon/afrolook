@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:app_tracking_transparency/app_tracking_transparency.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrotok/services/api/regie_api.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -322,8 +322,9 @@ class AdmobService {
   /// Demande au serveur d'accorder 1 jour sans pub (plafonné par jour). Retourne la fin (ms) ou null.
   static Future<int?> claimAdFreeDay() async {
     try {
-      final res = await FirebaseFunctions.instance.httpsCallable('grantAdFreeDay').call();
-      return (res.data is Map ? (res.data['until'] as num?)?.toInt() : null);
+      final r = await RegieApi.rewardsClaim('adfree_24h');
+      final until = r['until'];
+      return until is num ? until.toInt() : (until is String ? DateTime.tryParse(until)?.millisecondsSinceEpoch : null);
     } catch (_) {
       return null;
     }

@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -101,8 +101,8 @@ class _GroupRewardBarState extends State<GroupRewardBar> {
       }
     } catch (e) {
       if (mounted) {
-        _say(e is FirebaseFunctionsException && (e.message ?? '').isNotEmpty
-            ? e.message!
+        _say(e is ApiException && e.message.isNotEmpty
+            ? e.message
             : tr('Impossible d\'obtenir la récompense pour le moment.'));
       }
     } finally {

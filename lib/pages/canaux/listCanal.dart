@@ -3,7 +3,8 @@ import 'package:afrotok/widgets/safe_network_avatar.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
+import 'package:afrotok/services/api/canaux_api.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/services/coin_checkout.dart';
 
@@ -13,7 +14,6 @@ import '../../../providers/authProvider.dart';
 
 import '../../../providers/userProvider.dart';
 
-import '../../providers/postProvider.dart';
 
 import '../../theme/app_colors.dart';
 
@@ -46,8 +46,6 @@ class _CanalListPageState extends State<CanalListPage> {
 
   late UserAuthProvider authProvider;
   late UserProvider userProvider;
-  late PostProvider postProvider;
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
@@ -60,13 +58,15 @@ class _CanalListPageState extends State<CanalListPage> {
   bool _isLoading = false;
   bool _isLoadingMore = false;
   String _searchQuery = '';
+  String? _nextCursor; // page suivante (API)
+  String? _error; // message d'erreur (bouton « Réessayer »)
+  Timer? _searchDebounce;
 
   @override
   void initState() {
     super.initState();
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     userProvider = Provider.of<UserProvider>(context, listen: false);
-    postProvider = Provider.of<PostProvider>(context, listen: false);
 
     _loadInitialCanals();
     _scrollController.addListener(_scrollListener);
@@ -74,14 +74,14 @@ class _CanalListPageState extends State<CanalListPage> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _scrollController.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
   void _scrollListener() {
-    if (_scrollController.position.pixels ==
-        _scrollController.position.maxScrollExtent) {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 80) {
       _loadMoreCanals();
     }
   }
@@ -89,72 +89,61 @@ class _CanalListPageState extends State<CanalListPage> {
   Future<void> _loadInitialCanals() async {
     setState(() {
       _isLoading = true;
+      _error = null;
     });
 
     try {
-      final canals = await postProvider.getCanauxLimited(_currentLimit);
+      final page = await CanauxApi.list(search: _searchQuery, limit: _currentLimit, myId: authProvider.loginUserData.id);
+      if (!mounted) return;
       setState(() {
-        _allCanals = canals;
-        _displayedCanals = canals;
-        _filteredCanals = canals;
+        _allCanals = page.items;
+        _displayedCanals = page.items;
+        _filteredCanals = page.items;
+        _nextCursor = page.next;
         _isLoading = false;
       });
     } catch (e) {
       printVm('Erreur chargement initial: $e');
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
+        _error = CanauxApi.message(e);
       });
     }
   }
 
   Future<void> _loadMoreCanals() async {
-    if (_isLoadingMore) return;
+    if (_isLoadingMore || _isLoading || _nextCursor == null) return;
 
     setState(() {
       _isLoadingMore = true;
     });
 
     try {
-      final newLimit = _currentLimit + _loadMoreLimit;
-      final moreCanals = await postProvider.getCanauxLimited(newLimit);
-
+      final page = await CanauxApi.list(search: _searchQuery, cursor: _nextCursor, limit: _loadMoreLimit + 5, myId: authProvider.loginUserData.id);
+      if (!mounted) return;
+      final known = _allCanals.map((c) => c.id).toSet();
       setState(() {
-        _allCanals = moreCanals;
-        _currentLimit = newLimit;
-
-        // Appliquer le filtre de recherche si actif
-        if (_searchQuery.isNotEmpty) {
-          _filteredCanals = _allCanals.where((canal) =>
-          canal.titre!.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-              canal.description!.toLowerCase().contains(_searchQuery.toLowerCase())
-          ).toList();
-        } else {
-          _filteredCanals = _allCanals;
-        }
-
+        _allCanals = [..._allCanals, ...page.items.where((c) => !known.contains(c.id))];
+        _filteredCanals = _allCanals;
+        _nextCursor = page.next;
         _isLoadingMore = false;
       });
     } catch (e) {
       printVm('Erreur chargement supplémentaire: $e');
-      setState(() {
-        _isLoadingMore = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingMore = false;
+        });
+      }
     }
   }
 
+  /// La recherche se fait sur le serveur (titre), après une courte pause de frappe.
   void _searchCanals(String query) {
-    setState(() {
-      _searchQuery = query;
-      if (query.isEmpty) {
-        _filteredCanals = _allCanals;
-      } else {
-        _filteredCanals = _allCanals.where((canal) =>
-        canal.titre!.toLowerCase().contains(query.toLowerCase()) ||
-            (canal.description != null &&
-                canal.description!.toLowerCase().contains(query.toLowerCase()))
-        ).toList();
-      }
-    });
+    _searchQuery = query.trim();
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 400), _loadInitialCanals);
   }
 
   Widget _buildCanalCard(Canal canal) {
@@ -416,6 +405,22 @@ class _CanalListPageState extends State<CanalListPage> {
             child: _isLoading
                 ? Center(
               child: CircularProgressIndicator(color: _colors.primary),
+            )
+                : _error != null
+                ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, color: _colors.danger, size: 48),
+                  SizedBox(height: 12),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(_error!, textAlign: TextAlign.center, style: TextStyle(color: _colors.textSecondary)),
+                  ),
+                  SizedBox(height: 12),
+                  OutlinedButton(onPressed: _loadInitialCanals, child: Text(context.tr('Réessayer'))),
+                ],
+              ),
             )
                 : _filteredCanals.isEmpty
                 ? Center(

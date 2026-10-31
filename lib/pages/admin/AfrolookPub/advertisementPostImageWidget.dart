@@ -4,7 +4,7 @@ import 'package:afrotok/services/ads_engine_service.dart';
 import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/models/model_data.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/regie_api.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:intl/intl.dart';
@@ -44,7 +44,6 @@ class AdvertisementPostImageWidget extends StatefulWidget {
 
 class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWidget> {
   late UserAuthProvider authProvider;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Timer? _visibilityTimer;
   bool _hasRecordedView = false;
@@ -77,17 +76,10 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
     });
 
     try {
-      final postRef = _firestore.collection('Posts').doc(widget.post.id);
       if (_isLiked) {
-        await postRef.update({
-          'loves': FieldValue.increment(1),
-          'users_love_id': FieldValue.arrayUnion([uid]),
-        });
+        await RegieApi.put('/posts/${widget.post.id}/reaction');
       } else {
-        await postRef.update({
-          'loves': FieldValue.increment(-1),
-          'users_love_id': FieldValue.arrayRemove([uid]),
-        });
+        await RegieApi.delete('/posts/${widget.post.id}/reaction');
       }
     } catch (_) {
       if (mounted) {

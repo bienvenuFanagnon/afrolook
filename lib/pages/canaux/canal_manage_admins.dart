@@ -1,10 +1,9 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/widgets/safe_network_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/canaux_api.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/authProvider.dart';
@@ -28,7 +27,6 @@ class CanalManageAdminsPage extends StatefulWidget {
 }
 
 class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   late UserAuthProvider _authProvider;
   late UserProvider _userProvider;
 
@@ -36,13 +34,15 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
   final TextEditingController _pseudoController = TextEditingController();
   List<UserData> _searchResults = [];
   bool _isSearching = false;
-  bool _searchByEmail = true;
+  bool _searchByEmail = false; // la recherche par email n'existe plus (les membres sont lus sur l'API : pseudo seulement)
 
   late AppColors _colors;
   late AppLocalizations _l10n;
 
   bool _isOwner = false;
   List<UserData> _currentAdmins = [];
+  List<UserData> _members = []; // membres du canal (API)
+  String? _loadError;
   bool _isLoadingAdmins = true;
 
   @override
@@ -71,25 +71,47 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
   Future<void> _loadCurrentAdmins() async {
     setState(() {
       _isLoadingAdmins = true;
+      _loadError = null;
     });
 
     try {
-      if (widget.canal.adminIds!.isNotEmpty) {
-        _currentAdmins = await _fetchUsersByIds(widget.canal.adminIds!);
+      // Les membres viennent de l'API (administrateurs du canal seulement), par pages de 100 (1 000 au plus)
+      final members = <UserData>[];
+      final admins = <String>{widget.canal.userId!};
+      final posters = <String>{widget.canal.userId!};
+      String? cursor;
+      for (var i = 0; i < 10; i++) {
+        final page = await CanauxApi.members(widget.canal.id!, cursor: cursor, limit: 100);
+        for (final m in page.items) {
+          final u = UserData()
+            ..id = '${m['user_id']}'
+            ..pseudo = '${m['username'] ?? ''}'
+            ..imageUrl = '${m['avatar_url'] ?? ''}';
+          members.add(u);
+          if (m['is_admin'] == true) admins.add(u.id!);
+          if (m['can_post'] == true || m['is_admin'] == true) posters.add(u.id!);
+        }
+        cursor = page.next;
+        if (cursor == null) break;
       }
+      widget.canal.adminIds = admins.toList();
+      widget.canal.allowedPostersIds = posters.toList();
+      _members = members;
+      _currentAdmins = members.where((u) => admins.contains(u.id)).toList();
     } catch (e) {
       printVm('Erreur chargement admins: $e');
+      _loadError = CanauxApi.message(e);
     } finally {
-      setState(() {
-        _isLoadingAdmins = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingAdmins = false;
+        });
+      }
     }
   }
 
   Future<void> _searchUsers() async {
-    final query = _searchByEmail
-        ? _emailController.text.trim()
-        : _pseudoController.text.trim();
+    final query = _pseudoController.text.trim().toLowerCase();
 
     if (query.isEmpty) {
       setState(() {
@@ -98,63 +120,29 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
       return;
     }
 
+    // Recherche parmi les membres déjà chargés (seuls les membres du canal peuvent être nommés)
+    final users = _members
+        .where((user) => user.id != widget.canal.userId) // Exclure le créateur
+        .where((user) => !widget.canal.adminIds!.contains(user.id)) // Exclure les admins existants
+        .where((user) => (user.pseudo ?? '').toLowerCase().contains(query))
+        .take(20)
+        .toList();
+
     setState(() {
-      _isSearching = true;
+      _searchResults = users;
+      _isSearching = false;
     });
-
-    try {
-      String searchField = _searchByEmail ? 'email' : 'pseudo';
-      String searchQuery = query.toLowerCase();
-
-      final querySnapshot = await _firestore
-          .collection('Users')
-          .where(searchField, isGreaterThanOrEqualTo: searchQuery)
-          .where(searchField, isLessThanOrEqualTo: '$searchQuery\uf8ff')
-          .limit(20)
-          .getM('canal_manage_admins.dart:113');
-
-      final users = querySnapshot.docs
-          .map((doc) => UserData.fromJson(doc.data()))
-          .where((user) => user.id != widget.canal.userId) // Exclure le créateur
-          .where((user) => !widget.canal.adminIds!.contains(user.id)) // Exclure les admins existants
-          .where((user) => widget.canal.usersSuiviId?.contains(user.id) == true) // Seulement les membres du canal
-          .toList();
-
-      setState(() {
-        _searchResults = users;
-        _isSearching = false;
-      });
-    } catch (e) {
-      printVm('Erreur recherche utilisateurs: $e');
-      setState(() {
-        _isSearching = false;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.tr('❌ Erreur lors de la recherche')),
-          backgroundColor: _colors.danger,
-        ),
-      );
-    }
   }
 
   Future<void> _addAdmin(UserData user) async {
     try {
       if (!widget.canal.adminIds!.contains(user.id)) {
-        // Ajouter comme admin
+        // Le propriétaire nomme l'administrateur (il peut alors aussi publier) : droits fixés par l'API
+        await CanauxApi.updateMember(widget.canal.id!, user.id!, isAdmin: true);
         widget.canal.adminIds!.add(user.id!);
-
-        // Ajouter aussi aux allowedPostersIds si pas déjà présent
         if (!widget.canal.allowedPostersIds!.contains(user.id)) {
           widget.canal.allowedPostersIds!.add(user.id!);
         }
-
-        await _firestore.collection('Canaux').doc(widget.canal.id).update({
-          'adminIds': widget.canal.adminIds,
-          'allowedPostersIds': widget.canal.allowedPostersIds,
-          'updatedAt': DateTime.now().microsecondsSinceEpoch,
-        });
 
         // Mettre à jour la liste locale
         setState(() {
@@ -162,8 +150,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
           _searchResults.removeWhere((u) => u.id == user.id);
         });
 
-        // Créer une notification pour l'utilisateur
-        await _createAdminNotification(user);
+        // La notification « vous êtes administrateur » est envoyée par le serveur
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -177,7 +164,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
       printVm('Erreur ajout admin: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(context.tr('❌ Erreur lors de l\'ajout')),
+          content: Text(CanauxApi.message(e, fallback: context.tr('❌ Erreur lors de l\'ajout'))),
           backgroundColor: _colors.danger,
         ),
       );
@@ -197,15 +184,9 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
         return;
       }
 
+      // Retirer l'administration ne retire pas le droit de publier (règle de l'API)
+      await CanauxApi.updateMember(widget.canal.id!, user.id!, isAdmin: false);
       widget.canal.adminIds!.remove(user.id);
-
-      // Ne pas retirer des allowedPostersIds ici
-      // L'utilisateur peut toujours poster même s'il n'est plus admin
-
-      await _firestore.collection('Canaux').doc(widget.canal.id).update({
-        'adminIds': widget.canal.adminIds,
-        'updatedAt': DateTime.now().microsecondsSinceEpoch,
-      });
 
       // Mettre à jour la liste locale
       setState(() {
@@ -223,7 +204,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
       printVm('Erreur retrait admin: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(context.tr('❌ Erreur lors du retrait')),
+          content: Text(CanauxApi.message(e, fallback: context.tr('❌ Erreur lors du retrait'))),
           backgroundColor: _colors.danger,
         ),
       );
@@ -232,16 +213,13 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
 
   Future<void> _togglePostingPermission(UserData user) async {
     try {
-      if (widget.canal.allowedPostersIds!.contains(user.id)) {
-        widget.canal.allowedPostersIds!.remove(user.id);
-      } else {
+      final allow = !widget.canal.allowedPostersIds!.contains(user.id);
+      await CanauxApi.updateMember(widget.canal.id!, user.id!, canPost: allow);
+      if (allow) {
         widget.canal.allowedPostersIds!.add(user.id!);
+      } else {
+        widget.canal.allowedPostersIds!.remove(user.id);
       }
-
-      await _firestore.collection('Canaux').doc(widget.canal.id).update({
-        'allowedPostersIds': widget.canal.allowedPostersIds,
-        'updatedAt': DateTime.now().microsecondsSinceEpoch,
-      });
 
       setState(() {});
 
@@ -258,7 +236,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
       printVm('Erreur mise à jour permission: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(context.tr('❌ Erreur lors de la mise à jour')),
+          content: Text(CanauxApi.message(e, fallback: context.tr('❌ Erreur lors de la mise à jour'))),
           backgroundColor: _colors.danger,
         ),
       );
@@ -267,12 +245,9 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
 
   Future<void> _toggleAllowAllMembersToPost() async {
     try {
-      widget.canal.allowAllMembersToPost = !widget.canal.allowAllMembersToPost!;
-
-      await _firestore.collection('Canaux').doc(widget.canal.id).update({
-        'allowAllMembersToPost': widget.canal.allowAllMembersToPost,
-        'updatedAt': DateTime.now().microsecondsSinceEpoch,
-      });
+      final next = !(widget.canal.allowAllMembersToPost ?? false);
+      await CanauxApi.update(widget.canal.id!, {'allow_all_members_to_post': next});
+      widget.canal.allowAllMembersToPost = next;
 
       setState(() {});
 
@@ -289,69 +264,10 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
       printVm('Erreur mise à jour permissions générales: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(context.tr('❌ Erreur lors de la mise à jour')),
+          content: Text(CanauxApi.message(e, fallback: context.tr('❌ Erreur lors de la mise à jour'))),
           backgroundColor: _colors.danger,
         ),
       );
-    }
-  }
-
-  Future<void> _createAdminNotification(UserData user) async {
-    try {
-      final notification = NotificationData(
-        id: _firestore.collection('Notifications').doc().id,
-        titre: 'Gestion Canal 📺',
-        media_url: widget.canal.urlImage,
-        type: NotificationType.INVITATION.name,
-        description: 'Vous avez été nommé administrateur du canal #${widget.canal.titre}!',
-        users_id_view: [],
-        user_id: _authProvider.loginUserData.id!,
-        receiver_id: user.id!,
-        post_id: "",
-        post_data_type: "",
-        updatedAt: DateTime.now().microsecondsSinceEpoch,
-        createdAt: DateTime.now().microsecondsSinceEpoch,
-        status: PostStatus.VALIDE.name,
-      );
-
-      await _firestore.collection('Notifications').doc(notification.id).set(notification.toJson());
-
-      // Envoyer notification push
-      if (user.oneIgnalUserid != null) {
-        _authProvider.sendNotification(
-          userIds: [user.oneIgnalUserid!],
-          smallImage: widget.canal.urlImage!,
-          send_user_id: _authProvider.loginUserData.id!,
-          recever_user_id: user.id!,
-          message: '🎖️ Vous êtes maintenant administrateur du canal #${widget.canal.titre}!',
-          type_notif: NotificationType.INVITATION.name,
-          post_id: "",
-          post_type: "",
-          chat_id: "",
-        );
-      }
-    } catch (e) {
-      printVm('Erreur création notification: $e');
-    }
-  }
-
-  Future<List<UserData>> _fetchUsersByIds(List<String> userIds) async {
-    if (userIds.isEmpty) return [];
-
-    try {
-      final List<Future<UserData?>> futures = userIds.map((id) async {
-        final doc = await _firestore.collection('Users').doc(id).getM('canal_manage_admins.dart:342');
-        if (doc.exists) {
-          return UserData.fromJson(doc.data()!);
-        }
-        return null;
-      }).toList();
-
-      final results = await Future.wait(futures);
-      return results.whereType<UserData>().toList();
-    } catch (e) {
-      printVm('Erreur récupération utilisateurs: $e');
-      return [];
     }
   }
 
@@ -442,26 +358,6 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
             children: [
               Expanded(
                 child: ChoiceChip(
-                  label: Text(_l10n.canalSearchByEmail),
-                  selected: _searchByEmail,
-                  onSelected: (selected) {
-                    setState(() {
-                      _searchByEmail = selected;
-                      _searchResults = [];
-                      _emailController.clear();
-                      _pseudoController.clear();
-                    });
-                  },
-                  selectedColor: _colors.primary,
-                  backgroundColor: _colors.surfaceVariant,
-                  labelStyle: TextStyle(
-                    color: _searchByEmail ? _colors.onPrimary : _colors.textSecondary,
-                  ),
-                ),
-              ),
-              SizedBox(width: 8),
-              Expanded(
-                child: ChoiceChip(
                   label: Text(_l10n.canalSearchByPseudo),
                   selected: !_searchByEmail,
                   onSelected: (selected) {
@@ -486,7 +382,7 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
 
           // Champ de recherche
           TextField(
-            controller: _searchByEmail ? _emailController : _pseudoController,
+            controller: _pseudoController,
             style: TextStyle(color: _colors.textPrimary),
             decoration: InputDecoration(
               hintText: _searchByEmail
@@ -582,6 +478,11 @@ class _CanalManageAdminsPageState extends State<CanalManageAdminsPage> {
           Center(
             child: CircularProgressIndicator(color: _colors.primary),
           )
+        else if (_loadError != null)
+          Column(children: [
+            Text(_loadError!, textAlign: TextAlign.center, style: TextStyle(color: _colors.textSecondary)),
+            TextButton(onPressed: _loadCurrentAdmins, child: Text(context.tr('Réessayer'))),
+          ])
         else if (_currentAdmins.isEmpty)
           Container(
             padding: EdgeInsets.all(16),

@@ -1,26 +1,19 @@
-import 'package:afrotok/services/read_meter.dart';
-import 'package:afrotok/pages/coins/coin_recharge_screen.dart';
-import 'package:afrotok/providers/coin_gift_provider.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import '../../widgets/safe_network_avatar.dart';
 import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
-import 'dart:math';
 import 'package:afrotok/pages/userPosts/userPostForm.dart';
 
 import 'package:afrotok/pages/canaux/editCanal.dart';
 
-import 'package:afrotok/providers/postProvider.dart';
 
-import 'package:auto_animated/auto_animated.dart';
 
 import 'package:flutter/material.dart';
-import 'package:afrotok/utils/platform_guard.dart';
 import 'package:afrotok/services/coin_checkout.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrotok/services/api/canaux_api.dart';
+import 'package:afrotok/services/api/canaux_pay.dart';
 
 import 'package:provider/provider.dart';
 
@@ -36,8 +29,6 @@ import '../../l10n/app_localizations.dart';
 
 import '../component/showImage.dart';
 
-import '../paiement/newDepot.dart';
-import '../coins/coin_recharge_screen.dart';
 
 import '../userPosts/postWidgets/postWidgetPage.dart';
 
@@ -66,8 +57,6 @@ class _CanalDetailsState extends State<CanalDetails> {
 
   late UserAuthProvider authProvider;
   late UserProvider userProvider;
-  late PostProvider postProvider;
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
   final StreamController<List<Post>> _streamController = StreamController<List<Post>>();
   final ScrollController _scrollController = ScrollController();
@@ -78,9 +67,13 @@ class _CanalDetailsState extends State<CanalDetails> {
   bool _isLoadingPosts = false;
   bool _isLoadingMorePosts = false;
   bool _hasMorePosts = true;
+  String? _postsCursor; // curseur de la page suivante (API)
+  String? _postsError; // message d'erreur de chargement (bouton « Réessayer »)
+  Map<String, dynamic>? _lockedMeta; // canal privé non abonné : members_only, locked_count, price_coins, subscription_type
+  Set<String> _freeIds = {}; // publications gratuites (aperçu) du canal privé
 
   bool isFollowing = false;
-  bool _followCheckDone = false; // true dès que Firestore a confirmé l'état d'abonnement
+  bool _followCheckDone = false; // true dès que l'API a confirmé l'état d'abonnement
   bool _isProcessingSubscription = false;
   bool _isProcessingUnfollow = false;
   bool _monthlySubscriptionExpired = false;
@@ -91,25 +84,22 @@ class _CanalDetailsState extends State<CanalDetails> {
     super.initState();
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     userProvider = Provider.of<UserProvider>(context, listen: false);
-    postProvider = Provider.of<PostProvider>(context, listen: false);
 
     checkIfFollowing();
     _checkMonthlyExpiry();
     _loadInitialPosts();
     _scrollController.addListener(_scrollListener);
-    // Recharger depuis Firestore si le canal passé est incomplet (ex: depuis le feed)
+    // Recharger depuis l'API si le canal passé est incomplet (ex: depuis le feed)
     _reloadCanalIfIncomplete();
   }
 
   Future<void> _reloadCanalIfIncomplete() async {
     final canalId = widget.canal.id;
     if (canalId == null || canalId.isEmpty) return;
-    // Toujours recharger depuis Firestore pour avoir les données complètes et à jour
+    // Toujours recharger depuis l'API pour avoir les données complètes et à jour (et MA situation : membre, administrateur, échéance)
     try {
-      final doc = await firestore.collection('Canaux').doc(canalId).getM('detailsCanal.dart:108')
-          .timeout(const Duration(seconds: 8));
-      if (!doc.exists || !mounted) return;
-      final full = Canal.fromJson(doc.data()!);
+      final full = await CanauxApi.get(canalId, myId: authProvider.loginUserData.id).timeout(const Duration(seconds: 12));
+      if (!mounted) return;
       setState(() {
         widget.canal.titre = full.titre ?? widget.canal.titre;
         widget.canal.urlImage = full.urlImage ?? widget.canal.urlImage;
@@ -133,13 +123,15 @@ class _CanalDetailsState extends State<CanalDetails> {
         widget.canal.publication = full.publication ?? widget.canal.publication;
         widget.canal.categories = full.categories;
         widget.canal.mainCategory = full.mainCategory;
+        widget.canal.canalScore = full.canalScore;
+        widget.canal.user = full.user ?? widget.canal.user;
+        isFollowing = widget.canal.usersSuiviId?.contains(authProvider.loginUserData.id) == true;
+        _monthlySubscriptionExpired = false;
       });
-      checkIfFollowing();
       _checkMonthlyExpiry();
       if (mounted) setState(() => _followCheckDone = true);
-      _loadOwner();
     } catch (e) {
-      printVm('Erreur rechargement canal depuis Firestore: $e');
+      printVm('Erreur rechargement canal depuis l\'API: $e');
       // Même en cas d'erreur, déverrouiller le bouton pour ne pas bloquer l'UI
       if (mounted) setState(() => _followCheckDone = true);
     }
@@ -162,49 +154,62 @@ class _CanalDetailsState extends State<CanalDetails> {
   }
 
   Future<void> _loadInitialPosts() async {
+    final id = widget.canal.id;
+    if (id == null) return;
     setState(() {
       _isLoadingPosts = true;
+      _postsError = null;
     });
 
     try {
-      final posts = await postProvider.getCanalPostsLimited(_currentPostLimit, widget.canal);
+      final page = await CanauxApi.posts(id, limit: _currentPostLimit);
+      if (!mounted) return;
       setState(() {
-        _allPosts = posts;
-        _hasMorePosts = posts.length == _currentPostLimit;
+        _allPosts = page.posts;
+        _postsCursor = page.next;
+        _lockedMeta = page.meta;
+        _freeIds = page.freeIds;
+        _hasMorePosts = page.next != null;
         _isLoadingPosts = false;
       });
       _streamController.add(_allPosts);
     } catch (e) {
       printVm('Erreur chargement posts: $e');
+      if (!mounted) return;
       setState(() {
         _isLoadingPosts = false;
+        _postsError = CanauxApi.message(e);
       });
     }
   }
 
   Future<void> _loadMorePosts() async {
-    if (_isLoadingMorePosts || !_hasMorePosts) return;
+    final id = widget.canal.id;
+    if (id == null || _isLoadingMorePosts || !_hasMorePosts || _postsCursor == null) return;
 
     setState(() {
       _isLoadingMorePosts = true;
     });
 
     try {
-      final newLimit = _currentPostLimit + _postsLoadMoreLimit;
-      final morePosts = await postProvider.getCanalPostsLimited(newLimit, widget.canal);
-
+      final page = await CanauxApi.posts(id, cursor: _postsCursor, limit: _postsLoadMoreLimit + 5);
+      if (!mounted) return;
+      final known = _allPosts.map((p) => p.id).toSet();
       setState(() {
-        _allPosts = morePosts;
-        _currentPostLimit = newLimit;
-        _hasMorePosts = morePosts.length == newLimit;
+        _allPosts = [..._allPosts, ...page.posts.where((p) => !known.contains(p.id))];
+        _postsCursor = page.next;
+        _freeIds = {..._freeIds, ...page.freeIds};
+        _hasMorePosts = page.next != null;
         _isLoadingMorePosts = false;
       });
       _streamController.add(_allPosts);
     } catch (e) {
       printVm('Erreur chargement posts supplémentaires: $e');
-      setState(() {
-        _isLoadingMorePosts = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingMorePosts = false;
+        });
+      }
     }
   }
 
@@ -226,19 +231,6 @@ class _CanalDetailsState extends State<CanalDetails> {
     final now = DateTime.now().millisecondsSinceEpoch;
     if ((expiresAt as int) < now) {
       setState(() => _monthlySubscriptionExpired = true);
-    }
-  }
-
-  /// Charge la fiche du propriétaire (photo, pseudo) si elle manque.
-  Future<void> _loadOwner() async {
-    final ownerId = widget.canal.userId;
-    if (ownerId == null || ownerId.isEmpty || widget.canal.user != null) return;
-    try {
-      final doc = await firestore.collection('Users').doc(ownerId).getM('detailsCanal.dart:236');
-      if (!doc.exists || !mounted) return;
-      setState(() => widget.canal.user = UserData.fromJson(doc.data()!)..id = doc.id);
-    } catch (e) {
-      printVm('Propriétaire du canal : $e');
     }
   }
 
@@ -324,15 +316,11 @@ class _CanalDetailsState extends State<CanalDetails> {
     try {
       final String userId = authProvider.loginUserData.id!;
 
-      // Retirer l'utilisateur des abonnés
+      // Se désabonner (API)
+      await CanauxApi.leave(widget.canal.id!);
       widget.canal.usersSuiviId!.remove(userId);
-      await firestore.collection('Canaux').doc(widget.canal.id).update({
-        'usersSuiviId': widget.canal.usersSuiviId,
-      });
-      // Supprimer du doc User (dénormalisation symétrique)
-      firestore.collection('Users').doc(userId).update({
-        'canauxSuivisIds': FieldValue.arrayRemove([widget.canal.id]),
-      }).catchError((_) {});
+      widget.canal.suivi = ((widget.canal.suivi ?? 1) - 1).clamp(0, 1 << 30);
+      if (widget.canal.isPrivate) _loadInitialPosts(); // un canal privé n'affiche plus que les publications gratuites
 
       // Mettre à jour l'état local
       setState(() {
@@ -355,7 +343,7 @@ class _CanalDetailsState extends State<CanalDetails> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            context.tr('❌ Erreur lors du désabonnement'),
+            CanauxApi.message(e, fallback: context.tr('❌ Erreur lors du désabonnement')),
             style: TextStyle(color: _colors.onPrimary),
           ),
           backgroundColor: _colors.danger,
@@ -428,25 +416,8 @@ class _CanalDetailsState extends State<CanalDetails> {
     if (!step2 || !mounted) return;
 
     try {
-      final canalId = widget.canal.id!;
-
-      // Supprimer tous les posts du canal
-      await _deleteBatchQuery(
-        firestore.collection('Posts').where('canal_id', isEqualTo: canalId),
-      );
-
-      // Supprimer l'entrée CanalNames
-      final namesSnap = await firestore
-          .collection('CanalNames')
-          .where('name', isEqualTo: widget.canal.titre)
-          .limit(1)
-          .getM('detailsCanal.dart:442');
-      for (final doc in namesSnap.docs) {
-        await doc.reference.delete();
-      }
-
-      // Supprimer le document canal
-      await firestore.collection('Canaux').doc(canalId).delete();
+      // Suppression par l'API (le titre redevient libre ; les publications du canal ne sont plus visibles)
+      await CanauxApi.delete(widget.canal.id!);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -454,29 +425,15 @@ class _CanalDetailsState extends State<CanalDetails> {
         );
         Navigator.of(context).popUntil((r) => r.isFirst);
       }
-    } catch (_) {
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(context.tr('Erreur lors de la suppression')),
+            content: Text(CanauxApi.message(e, fallback: context.tr('Erreur lors de la suppression'))),
             backgroundColor: _colors.danger,
           ),
         );
       }
-    }
-  }
-
-  Future<void> _deleteBatchQuery(Query<Map<String, dynamic>> query) async {
-    const batchSize = 400;
-    while (true) {
-      final snap = await query.limit(batchSize).getM('detailsCanal.dart:471');
-      if (snap.docs.isEmpty) break;
-      final batch = firestore.batch();
-      for (final doc in snap.docs) {
-        batch.delete(doc.reference);
-      }
-      await batch.commit();
-      if (snap.docs.length < batchSize) break;
     }
   }
 
@@ -552,30 +509,17 @@ class _CanalDetailsState extends State<CanalDetails> {
     });
 
     try {
-      // Paiement en pièces (serveur) : débit, 70 % au créateur en Pièces gagnées, parrainages, part de l'app
-      final paid = await CoinCheckout.pay(context,
+      // Paiement en pièces par l'API (point d'achat unique) : le serveur débite, partage et enregistre l'abonnement (et son échéance si mensuel)
+      final paid = await CanauxPay.buy(context,
           kind: 'canal', refId: widget.canal.id, coins: widget.canal.subscriptionPriceCoins, label: context.tr('Abonnement au canal'));
       if (!paid) {
         if (mounted) setState(() => _isProcessingSubscription = false);
         return;
       }
-
-      // Pour abonnement mensuel : enregistrer la date d'expiration (+30 jours)
-      if (widget.canal.subscriptionType == 'mensuel') {
-        final expiresAt = DateTime.now().add(const Duration(days: 30)).millisecondsSinceEpoch;
-        final userId = authProvider.loginUserData.id!;
-        await firestore.collection('Canaux').doc(widget.canal.id).update({
-          'monthlySubscriptions.$userId': expiresAt,
-        });
-        widget.canal.monthlySubscriptions ??= {};
-        widget.canal.monthlySubscriptions![userId] = expiresAt;
-        setState(() => _monthlySubscriptionExpired = false);
-      }
-
-      // Suivre le canal (ou maintenir l'abonnement)
-      if (!isAlreadySubscribed) {
-        await _followCanal();
-      }
+      if (mounted) setState(() => _monthlySubscriptionExpired = false);
+      await _reloadCanalIfIncomplete();
+      _loadInitialPosts(); // toutes les publications du canal sont maintenant visibles
+      addPointsForAction(UserAction.abonne);
 
       final isMensuel = widget.canal.subscriptionType == 'mensuel';
       String successMessage = isMensuel
@@ -600,7 +544,7 @@ class _CanalDetailsState extends State<CanalDetails> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            context.tr('❌ Erreur lors de l\'abonnement'),
+            CanauxApi.message(e, fallback: context.tr('❌ Erreur lors de l\'abonnement')),
             style: TextStyle(color: _colors.onPrimary),
           ),
           backgroundColor: _colors.danger,
@@ -635,57 +579,12 @@ class _CanalDetailsState extends State<CanalDetails> {
       return;
     }
 
-    // Ajouter l'utilisateur aux abonnés
+    // S'abonner (API). La notification au propriétaire est envoyée par le serveur.
+    await CanauxApi.join(widget.canal.id!);
     widget.canal.usersSuiviId!.add(userId);
-    await firestore.collection('Canaux').doc(widget.canal.id).update({
-      'usersSuiviId': widget.canal.usersSuiviId,
-    });
-    // Dénormalisation : stocker l'ID du canal dans le doc User pour un accès O(1)
-    // (permet d'éviter la requête Canaux.where(arrayContains) aux prochaines sessions)
-    firestore.collection('Users').doc(userId).update({
-      'canauxSuivisIds': FieldValue.arrayUnion([widget.canal.id]),
-    }).catchError((_) {});
+    widget.canal.suivi = (widget.canal.suivi ?? 0) + 1;
     addPointsForAction(UserAction.abonne);
     addPointsForOtherUserAction(widget.canal.userId!, UserAction.autre);
-
-    // Créer la notification
-    final NotificationData notif = NotificationData(
-      id: firestore.collection('Notifications').doc().id,
-      titre: 'Canal 📺',
-      media_url: authProvider.loginUserData.imageUrl,
-      type: NotificationType.ACCEPTINVITATION.name,
-      description: '@${authProvider.loginUserData.pseudo!} suit votre canal #${widget.canal.titre!} 📺!',
-      users_id_view: [],
-      user_id: userId,
-      receiver_id: widget.canal.userId!,
-      post_id: "",
-      post_data_type: "",
-      updatedAt: DateTime.now().microsecondsSinceEpoch,
-      createdAt: DateTime.now().microsecondsSinceEpoch,
-      status: PostStatus.VALIDE.name,
-    );
-
-    await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-
-    // Envoyer notification push
-    if (widget.canal.user != null && widget.canal.user!.oneIgnalUserid != null) {
-      await authProvider.sendNotification(
-        userIds: [widget.canal.user!.oneIgnalUserid!],
-        smallImage: widget.canal.urlImage!,
-        send_user_id: userId,
-        recever_user_id: widget.canal.userId!,
-        message: '📢📺 @${authProvider.loginUserData.pseudo!} suit votre canal #${widget.canal.titre!} 📺!',
-        type_notif: NotificationType.ACCEPTINVITATION.name,
-        post_id: "",
-        post_type: "",
-        chat_id: "",
-      );
-    }
-
-    // Backfill 50 posts récents du canal dans unreadPosts du nouvel abonné
-    FirebaseFunctions.instance
-        .httpsCallable('backfillPostsOnFollow')
-        .call({'followedCanalId': widget.canal.id}).ignore();
 
     setState(() {
       isFollowing = true;
@@ -893,7 +792,7 @@ class _CanalDetailsState extends State<CanalDetails> {
             // Ligne principale : Follow/Unfollow + menu 3-points
             Row(
               children: [
-                // Bouton Follow/Unfollow — affiché uniquement après vérification Firestore
+                // Bouton Follow/Unfollow — affiché uniquement après vérification de l'API
                 if (!isOwner)
                   Expanded(
                     child: SizedBox(
@@ -1437,6 +1336,25 @@ class _CanalDetailsState extends State<CanalDetails> {
               ),
             ),
           );
+        } else if (_postsError != null) {
+          return SliverToBoxAdapter(
+            child: Container(
+              height: 200,
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error, color: _colors.danger, size: 40),
+                    const SizedBox(height: 12),
+                    Text(_postsError!, textAlign: TextAlign.center, style: TextStyle(color: _colors.textSecondary)),
+                    const SizedBox(height: 12),
+                    OutlinedButton(onPressed: _loadInitialPosts, child: Text(context.tr('Réessayer'))),
+                  ],
+                ),
+              ),
+            ),
+          );
         } else if (snapshot.hasError) {
           return SliverToBoxAdapter(
             child: Container(
@@ -1456,6 +1374,8 @@ class _CanalDetailsState extends State<CanalDetails> {
               ),
             ),
           );
+        } else if ((!snapshot.hasData || snapshot.data!.isEmpty) && _lockedCount > 0) {
+          return SliverToBoxAdapter(child: _buildLockedCard());
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return SliverToBoxAdapter(
             child: Container(
@@ -1485,22 +1405,29 @@ class _CanalDetailsState extends State<CanalDetails> {
           return SliverList(
             delegate: SliverChildBuilderDelegate(
                   (context, index) {
-                if (index == posts.length) {
+                if (index == posts.length && _isLoadingMorePosts) {
                   return _buildLoadMoreIndicator();
                 }
+                if (index >= posts.length) return _buildLockedCard();
 
                 final post = posts[index];
                 return Container(
                   margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: HomePostUsersWidget(
-                    post: post,
-                    color: _colors.primary,
-                    height: MediaQuery.of(context).size.height,
-                    width: _contentWidth,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildFreePreviewSwitch(post),
+                      HomePostUsersWidget(
+                        post: post,
+                        color: _colors.primary,
+                        height: MediaQuery.of(context).size.height,
+                        width: _contentWidth,
+                      ),
+                    ],
                   ),
                 );
               },
-              childCount: posts.length + (_isLoadingMorePosts ? 1 : 0),
+              childCount: posts.length + (_isLoadingMorePosts ? 1 : 0) + (_lockedCount > 0 ? 1 : 0),
             ),
           );
         }
@@ -1509,6 +1436,89 @@ class _CanalDetailsState extends State<CanalDetails> {
           child: SizedBox.shrink(),
         );
       },
+    );
+  }
+
+  /// Nombre de publications réservées aux abonnés que je ne peux pas voir (canal privé, personne non abonnée).
+  int get _lockedCount => (_lockedMeta?['members_only'] == true) ? ((_lockedMeta?['locked_count'] as num?)?.toInt() ?? 0) : 0;
+
+  /// « Abonne-toi pour voir N publications » : prix et type d'abonnement viennent du serveur (meta de la liste).
+  Widget _buildLockedCard() {
+    final n = _lockedCount;
+    final coins = (_lockedMeta?['price_coins'] as num?)?.toInt() ?? widget.canal.subscriptionPriceCoins;
+    final monthly = _lockedMeta?['subscription_type'] == 'monthly';
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: _colors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _colors.primary.withOpacity(0.4)),
+      ),
+      child: Column(children: [
+        Icon(Icons.lock_rounded, color: _colors.primary, size: 30),
+        const SizedBox(height: 8),
+        Text(
+          n == 1 ? context.tr('Abonne-toi pour voir 1 publication') : context.tr('Abonne-toi pour voir {a} publications', {'a': n}),
+          textAlign: TextAlign.center,
+          style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 15),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          monthly
+              ? context.tr('{a} par mois', {'a': CoinCheckout.coinsLabel(coins)})
+              : context.tr('Accès à vie : {a}', {'a': CoinCheckout.coinsLabel(coins)}),
+          style: TextStyle(color: _colors.textSecondary, fontSize: 12.5),
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          height: 44,
+          child: ElevatedButton(
+            onPressed: _isProcessingSubscription ? null : _handleFollowAction,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _colors.primary,
+              foregroundColor: _colors.onPrimary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+            ),
+            child: Text(context.tr('S\'abonner'), style: const TextStyle(fontWeight: FontWeight.w800)),
+          ),
+        ),
+      ]),
+    );
+  }
+
+  /// Pour le créateur et les administrateurs d'un canal privé : choisir publication par publication ce qui est gratuit ou réservé aux abonnés.
+  Widget _buildFreePreviewSwitch(Post post) {
+    final me = authProvider.loginUserData.id;
+    final isAdmin = me != null && (me == widget.canal.userId || widget.canal.adminIds?.contains(me) == true);
+    if (!widget.canal.isPrivate || !isAdmin || post.id == null) return const SizedBox.shrink();
+    final free = _freeIds.contains(post.id);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(children: [
+        Icon(free ? Icons.public : Icons.lock_outline, size: 16, color: _colors.textSecondary),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            free ? context.tr('Gratuite : visible de tout le monde') : context.tr('Réservée aux abonnés'),
+            style: TextStyle(color: _colors.textSecondary, fontSize: 12),
+          ),
+        ),
+        Switch(
+          value: free,
+          activeColor: _colors.primary,
+          onChanged: (v) async {
+            try {
+              await CanauxApi.setFreePreview(widget.canal.id!, post.id!, v);
+              if (!mounted) return;
+              setState(() => v ? _freeIds.add(post.id!) : _freeIds.remove(post.id));
+            } catch (e) {
+              if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(CanauxApi.message(e))));
+            }
+          },
+        ),
+      ]),
     );
   }
 
@@ -1643,8 +1653,7 @@ class _CanalDetailsState extends State<CanalDetails> {
   Future<int?> _unlockQuote() {
     return _quoteFuture ??= () async {
       try {
-        final r = await FirebaseFunctions.instance.httpsCallable('canalUnlockQuote').call({'canalId': widget.canal.id});
-        return (Map<String, dynamic>.from(r.data as Map)['coins'] as num?)?.toInt();
+        return (await CanauxApi.unlockQuote(widget.canal.id!))['coins'] as int?;
       } catch (_) {
         return null;
       }
@@ -1670,44 +1679,17 @@ class _CanalDetailsState extends State<CanalDetails> {
     if (ok != true || !mounted) return;
     setState(() => _unlocking = true);
     try {
-      await FirebaseFunctions.instance.httpsCallable('unlockCanal').call({'canalId': widget.canal.id});
-      final uid = authProvider.loginUserData.id;
-      if (uid != null) {
-        try { await Provider.of<CoinGiftUserProvider>(context, listen: false).refreshBalance(uid); } catch (_) {}
-      }
+      final paid = await CanauxPay.buy(context, kind: 'canal_unlock', refId: widget.canal.id, coins: cost, label: context.tr('Débloquer le canal'));
       if (!mounted) return;
       setState(() {
-        widget.canal.isBlocked = false;
+        if (paid) widget.canal.isBlocked = false;
         _unlocking = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Canal débloqué !'))));
-    } on FirebaseFunctionsException catch (e) {
+      if (paid) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Canal débloqué !'))));
+    } catch (e) {
       if (!mounted) return;
       setState(() => _unlocking = false);
-      if (e.code == 'resource-exhausted') {
-        showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            backgroundColor: _colors.surface,
-            title: Text(context.tr('Solde insuffisant'), style: TextStyle(color: _colors.textPrimary)),
-            content: Text(context.tr('Il te faut {a} pièces pour débloquer ce canal.', {'a': cost}), style: TextStyle(color: _colors.textSecondary)),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: Text(context.tr('Annuler'))),
-              FilledButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const CoinRechargeScreen()));
-                },
-                child: Text(context.tr('Acheter des pièces')),
-              ),
-            ],
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? context.tr('Déblocage impossible'))));
-      }
-    } catch (_) {
-      if (mounted) setState(() => _unlocking = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(CanauxApi.message(e, fallback: context.tr('Déblocage impossible')))));
     }
   }
 

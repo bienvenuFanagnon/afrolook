@@ -4,7 +4,7 @@
 import '../../../widgets/music/music_overlay.dart';
 import 'dart:io';
 
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -410,10 +410,10 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     } catch (e) {
       if (!mounted) return;
       Navigator.of(context, rootNavigator: true).pop();
-      if (e is FirebaseFunctionsException && e.code == 'resource-exhausted') {
+      if (e is ApiException && e.isInsufficientCoins) {
         _say('Solde insuffisant : il te faut ${s.music?.useCoins ?? 0} pièces pour ce son. Recharge ou choisis une musique gratuite.');
       } else {
-        _say(e is FirebaseFunctionsException ? (e.message ?? 'Le montage a échoué.') : 'Le montage a échoué. Vérifie ta connexion et réessaie.');
+        _say(e is ApiException ? (e.message.isNotEmpty ? e.message : 'Le montage a échoué.') : 'Le montage a échoué. Vérifie ta connexion et réessaie.');
       }
     } finally {
       step.dispose();

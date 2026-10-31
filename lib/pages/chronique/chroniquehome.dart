@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -36,7 +35,7 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> with SingleTicker
   late final AnimationController _spin = AnimationController(vsync: this, duration: const Duration(seconds: 8))..repeat();
 
   final Map<String, List<Chronique>> _groups = {};
-  DocumentSnapshot? _last;
+  Object? _last; // curseur de la page suivante (API)
   bool _loading = false;
   bool _firstLoad = true;
   bool _hasMore = true;

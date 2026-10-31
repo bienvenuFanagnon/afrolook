@@ -1,3 +1,12 @@
+import 'package:afrotok/services/api/chat_api.dart';
+import 'package:afrotok/services/api/chat_mapper.dart';
+import 'package:afrotok/services/api/jeux_api.dart';
+import 'package:afrotok/services/api/lives_mapper.dart';
+import 'package:afrotok/services/api/post_mapper.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
+import 'package:afrotok/services/api/contenu_payant_api.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:afrotok/services/read_meter.dart';
 import '../../../services/media_shrink.dart';
 import 'package:afrotok/layout/centered_content.dart';
@@ -235,18 +244,14 @@ class _GroupChatPageState extends State<GroupChatPage> {
     try {
       final myId = _auth.loginUserData.id!;
       final isAppAdmin = _auth.loginUserData.role == 'ADM';
-      final groupDoc = await _firestore.collection('GroupChats').doc(widget.groupId).getM('group_chat_page.dart:237');
-      final data = groupDoc.data() ?? {};
-      final userDoc = await _firestore.collection('Users').doc(myId).getM('group_chat_page.dart:239');
-      final mutedGroups = (userDoc.data()?['muted_groups'] as List<dynamic>? ?? []).cast<String>();
-      final memberDoc = await _firestore
-          .collection('GroupChats')
-          .doc(widget.groupId)
-          .collection('members')
-          .doc(myId)
-          .getM('group_chat_page.dart:246');
-      final role = memberDoc.data()?['role'] as String? ?? 'member';
-      final perms = (memberDoc.data()?['permissions'] as Map<String, dynamic>?) ?? {};
+      // Groupe, rôle et droits d'écriture / de partage : calculés par l'API (règle d'accès en lecture jamais retirée)
+      final data = groupToLegacy(await ChatApi.group(widget.groupId));
+      final sp = await SharedPreferences.getInstance();
+      final mutedGroups = sp.getStringList('muted_groups') ?? const <String>[];
+      final role = (data['me_role'] as String?) ?? 'member';
+      final perms = <String, dynamic>{'can_write': data['me_can_write'] == true, 'can_share': data['me_can_share'] == true};
+      data['member_permissions'] = {myId: perms};
+      data['member_ids'] = data['me_is_member'] == true ? <String>[myId] : <String>[];
       if (mounted) {
         setState(() {
           _groupData = data;
@@ -263,7 +268,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
       await _checkOwnerPremium(data);
       _loadGroupAdminIds();
 
-      // Vérifier l'adhésion pour les groupes gratuits (sauf ADM)
+      // Adhésion pour les groupes gratuits (sauf ADM)
       if (mounted && !isAppAdmin) {
         final ownerId = data['owner_id'] as String?;
         final isPrivate = data['is_private'] == true;
@@ -281,11 +286,10 @@ class _GroupChatPageState extends State<GroupChatPage> {
     final myId = _auth.loginUserData.id!;
     final newMuted = !_isMuted;
     try {
-      await _firestore.collection('Users').doc(myId).update({
-        'muted_groups': newMuted
-            ? FieldValue.arrayUnion([widget.groupId])
-            : FieldValue.arrayRemove([widget.groupId]),
-      });
+      final sp = await SharedPreferences.getInstance();
+      final list = [...(sp.getStringList('muted_groups') ?? const <String>[])]..remove(widget.groupId);
+      if (newMuted) list.add(widget.groupId);
+      await sp.setStringList('muted_groups', list);
       if (mounted) setState(() => _isMuted = newMuted);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(newMuted
@@ -297,40 +301,10 @@ class _GroupChatPageState extends State<GroupChatPage> {
   }
 
   Future<void> _checkOwnerPremium(Map<String, dynamic> data) async {
-    final ownerId = data['owner_id'] as String?;
-    if (ownerId == null) {
-      if (mounted) setState(() => _ownerChecked = true);
-      return;
-    }
-    try {
-      final ownerDoc = await _firestore.collection('Users').doc(ownerId).getM('group_chat_page.dart:305');
-      final ownerData = ownerDoc.data() ?? {};
-      final abonnementJson = ownerData['abonnement'] as Map<String, dynamic>?;
-
-      bool isStillActive = false;
-      bool ownerGold = ownerData['role'] == 'ADM'; // admin = Gold à vie
-      if (abonnementJson != null) {
-        final ab = AfrolookAbonnement.fromJson(abonnementJson);
-        // Premium OU Gold permettent de garder un groupe actif
-        isStillActive = ab.estPremium;
-        if (ab.estGold) ownerGold = true;
-      }
-      if (mounted) setState(() { _ownerIsGold = ownerGold; _ownerChecked = true; });
-
-      final isFrozenNow = _groupData['is_frozen'] == true;
-      if (!isStillActive && !isFrozenNow) {
-        await _firestore.collection('GroupChats').doc(widget.groupId).update({'is_frozen': true});
-        if (mounted) setState(() => _isFrozen = true);
-      } else if (isStillActive && isFrozenNow) {
-        await _firestore.collection('GroupChats').doc(widget.groupId).update({'is_frozen': false});
-        if (mounted) setState(() => _isFrozen = false);
-      }
-
-      // Vérifier l'abonnement payant si groupe privé
-      if (mounted) await _checkPaidSubscription(data);
-    } catch (_) {
-      if (mounted && !_ownerChecked) setState(() => _ownerChecked = true);
-    }
+    // Le gel du groupe (plan du propriétaire échu) est calculé par l'API : plus d'écriture côté application.
+    final goldOptions = data['is_official'] == true || data['allow_external_links'] == true || data['allow_hidden_msgs'] == true || data['join_code'] != null;
+    if (mounted) setState(() { _ownerIsGold = goldOptions || _isAppAdmin; _ownerChecked = true; _isFrozen = data['is_frozen'] == true; });
+    if (mounted) await _checkPaidSubscription(data);
   }
 
   /// Pour les groupes privés payants : vérifie si l'utilisateur est abonné.
@@ -346,11 +320,12 @@ class _GroupChatPageState extends State<GroupChatPage> {
     final price = (data['subscription_price'] as num?)?.toDouble() ?? 0.0;
     if (price <= 0) return; // groupe privé gratuit
 
-    final paidSubs = (data['paid_subscribers'] as Map<String, dynamic>?) ?? {};
-    final expiryMs = paidSubs[myId] as int?;
-    final now = DateTime.now().millisecondsSinceEpoch;
+    // Abonnement payé et sa date de fin : calculés par l'API (accès en lecture conservé même échu)
+    final active = data['me_subscription_active'] == true;
+    final exp = data['me_expires_at'];
+    final expiryMs = exp == null ? null : DateTime.tryParse('$exp')?.millisecondsSinceEpoch;
 
-    if (expiryMs == null || expiryMs < now) {
+    if (!active) {
       // Abonnement absent ou expiré — afficher dialog de renouvellement
       if (mounted) _showGroupSubscriptionDialog(data, price, expiryMs);
     }
@@ -547,22 +522,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
   Future<void> _joinGroup() async {
     final myId = _auth.loginUserData.id!;
     try {
-      await _firestore
-          .collection('GroupChats')
-          .doc(widget.groupId)
-          .collection('members')
-          .doc(myId)
-          .set({
-        'user_id': myId,
-        'pseudo': _auth.loginUserData.pseudo ?? '',
-        'image_url': _auth.loginUserData.imageUrl ?? '',
-        'role': 'member',
-        'joined_at': DateTime.now().millisecondsSinceEpoch,
-      });
-      await _firestore.collection('GroupChats').doc(widget.groupId).update({
-        'member_ids': FieldValue.arrayUnion([myId]),
-        'member_count': FieldValue.increment(1),
-      });
+      await JeuxApi.client.post('/groups/${widget.groupId}/join'); // l'API vérifie les règles d'entrée (limite de membres, groupe payant, blocage)
       // Mettre à jour l'état local pour éviter un rechargement complet
       if (mounted) {
         setState(() {
@@ -750,31 +710,8 @@ class _GroupChatPageState extends State<GroupChatPage> {
     }
 
     try {
-      final now = DateTime.now();
-      final expiryMs = now.add(const Duration(days: 30)).millisecondsSinceEpoch;
-
-      // Mettre à jour paid_subscribers
-      await _firestore.collection('GroupChats').doc(widget.groupId).update({
-        'paid_subscribers.$myId': expiryMs,
-      });
-
-      // Ajouter comme membre si pas encore dans le groupe (cas arrivée via lien avant paiement)
-      final memberIds = (_groupData['member_ids'] as List<dynamic>? ?? []).cast<String>();
-      if (!memberIds.contains(myId)) {
-        final myPseudo = _auth.loginUserData.pseudo ?? '';
-        final myImageUrl = _auth.loginUserData.imageUrl ?? '';
-        await _firestore.collection('GroupChats').doc(widget.groupId).collection('members').doc(myId).set({
-          'user_id': myId,
-          'pseudo': myPseudo,
-          'image_url': myImageUrl,
-          'role': 'member',
-          'joined_at': now.millisecondsSinceEpoch,
-        });
-        await _firestore.collection('GroupChats').doc(widget.groupId).update({
-          'member_ids': FieldValue.arrayUnion([myId]),
-          'member_count': FieldValue.increment(1),
-        });
-      }
+      // L'abonnement et l'adhésion sont enregistrés par l'API lors de l'achat
+      _loadGroup();
 
       if (mounted) {
         setState(() => _isPaymentProcessing = false);
@@ -901,9 +838,9 @@ class _GroupChatPageState extends State<GroupChatPage> {
   Future<void> _showSenderProfile(String userId) async {
     if (userId.isEmpty) return;
     try {
-      final doc = await _firestore.collection('Users').doc(userId).getM('group_chat_page.dart:903');
-      if (!doc.exists || !mounted) return;
-      final user = UserData.fromJson(doc.data()!);
+      final user = userFromApi(await UsersApi.publicProfile(userId));
+      user.id ??= userId;
+      if (!mounted) return;
       final size = MediaQuery.of(context).size;
       showUserDetailsModalDialog(user, size.width, size.height, context);
     } catch (_) {}
@@ -911,17 +848,21 @@ class _GroupChatPageState extends State<GroupChatPage> {
 
   Future<void> _loadGroupAdminIds() async {
     try {
-      final snap = await _firestore
-          .collection('GroupChats')
-          .doc(widget.groupId)
-          .collection('members')
-          .where('role', whereIn: ['admin', 'owner'])
-          .getM('group_chat_page.dart:918');
+      final ids = <String>[];
+      String? cursor;
+      for (var i = 0; i < 5; i++) {
+        final page = await ChatApi.members(widget.groupId, cursor: cursor, limit: 100);
+        for (final m in page.items) {
+          if (m['role'] == 'admin' || m['role'] == 'owner') ids.add('${m['user_id']}');
+        }
+        cursor = page.next;
+        if (cursor == null) break;
+      }
       if (!mounted) return;
       setState(() {
         _groupAdminIds
           ..clear()
-          ..addAll(snap.docs.map((d) => d.id));
+          ..addAll(ids);
         _groupAdminIdsLoaded = true;
       });
     } catch (_) {}
@@ -929,25 +870,18 @@ class _GroupChatPageState extends State<GroupChatPage> {
 
   void _loadBadgesFor(Set<String> userIds) {
     final toLoad = userIds.where((id) => !_senderBadgeCache.containsKey(id)).toList();
-    if (toLoad.isEmpty) return;
-    for (var i = 0; i < toLoad.length; i += 10) {
-      final chunk = toLoad.sublist(i, i + 10 > toLoad.length ? toLoad.length : i + 10);
-      _firestore
-          .collection('Users')
-          .where(FieldPath.documentId, whereIn: chunk)
-          .getM('group_chat_page.dart:937')
-          .then((snap) {
+    for (final id in toLoad.take(30)) {
+      _senderBadgeCache[id] = const {}; // évite de redemander pendant la requête
+      UsersApi.publicProfile(id).then((j) {
         if (!mounted) return;
+        final u = userFromApi(j);
         setState(() {
-          for (final doc in snap.docs) {
-            final d = doc.data();
-            _senderBadgeCache[doc.id] = {
-              'isVerify': d['isVerify'] == true,
-              'officialBadge': d['officialBadge'] == true,
-              'officialAccountType': d['officialAccountType'],
-              'isPremium': d['abonnement']?['estPremium'] == true,
-            };
-          }
+          _senderBadgeCache[id] = {
+            'isVerify': u.isVerify == true,
+            'officialBadge': u.officialBadge == true,
+            'officialAccountType': u.officialAccountType,
+            'isPremium': u.abonnement?.estPremium == true,
+          };
         });
       }).catchError((_) {});
     }
@@ -1031,11 +965,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
           .where((id) => id.isNotEmpty && id != myId)
           .toList();
 
-      _firestore.collection('GroupChats').doc(widget.groupId).update({
-        'last_message': text,
-        'last_message_at': now,
-        'updated_at': now,
-      }).catchError((e) => debugPrint('[GroupChatPage] last_message update failed: $e'));
+      /* résumé du groupe (dernier message, non lus) : tenu par l'API */
 
       _updateUnreadCounts(otherMembers);
 
@@ -1106,11 +1036,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
           .toList();
 
       final lastMsg = caption.isNotEmpty ? '📷 $caption' : '📷 Photo';
-      _firestore.collection('GroupChats').doc(widget.groupId).update({
-        'last_message': lastMsg,
-        'last_message_at': now,
-        'updated_at': now,
-      }).catchError((e) => debugPrint('[GroupChatPage] last_message (image) failed: $e'));
+      /* résumé du groupe (dernier message, non lus) : tenu par l'API */
 
       _updateUnreadCounts(otherMembersImg);
 
@@ -1187,12 +1113,6 @@ class _GroupChatPageState extends State<GroupChatPage> {
           .cast<String>()
           .where((id) => id.isNotEmpty && id != myId)
           .toList();
-
-      _firestore.collection('GroupChats').doc(widget.groupId).update({
-        'last_message': '📷 ${urls.length} photo(s)',
-        'last_message_at': now,
-        'updated_at': now,
-      }).catchError((e) => debugPrint('[GroupChatPage] last_message (multi_image) update failed: $e'));
 
       _updateUnreadCounts(otherMembers);
     } catch (e) {
@@ -1320,24 +1240,12 @@ class _GroupChatPageState extends State<GroupChatPage> {
           .toList();
 
       final lastMsg = caption.isNotEmpty ? '🎥 $caption' : '🎥 Vidéo';
-      _firestore.collection('GroupChats').doc(widget.groupId).update({
-        'last_message': lastMsg,
-        'last_message_at': now,
-        'updated_at': now,
-        'video_daily_stats': {
-          'date': todayStr,
-          'bytes': usedBytes + sizeBytes,
-        },
-      }).then((_) {
-        if (mounted) {
-          setState(() {
-            _groupData['video_daily_stats'] = {
-              'date': todayStr,
-              'bytes': usedBytes + sizeBytes,
-            };
-          });
-        }
-      }).catchError((e) => debugPrint('[GroupChatPage] last_message (video) update failed: $e'));
+// Quota vidéo du jour : gardé sur l'appareil pour cette session (le compteur du groupe n'est plus écrit dans Firestore)
+      if (mounted) {
+        setState(() {
+          _groupData['video_daily_stats'] = {'date': todayStr, 'bytes': usedBytes + sizeBytes};
+        });
+      }
 
       _updateUnreadCounts(otherMembers);
     } catch (e) {
@@ -1363,9 +1271,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
       // Mettre a jour last_message si c'est le dernier
       final lastMsg = _groupData['last_message'] as String?;
       if (lastMsg == msg['message']) {
-        await _firestore.collection('GroupChats').doc(widget.groupId).update({
-          'last_message': 'Message supprime',
-        });
+        /* résumé du groupe : tenu par l'API */
       }
     } catch (_) {}
   }
@@ -1435,28 +1341,14 @@ class _GroupChatPageState extends State<GroupChatPage> {
       // Mettre à jour last_message si c'était le dernier
       final lastMsg = _groupData['last_message'] as String?;
       if (lastMsg == msg['message']) {
-        await _firestore.collection('GroupChats').doc(widget.groupId).update({
-          'last_message': '',
-        });
+        /* résumé du groupe : tenu par l'API */
       }
     } catch (_) {}
   }
 
   // ─── UNREAD COUNTS (chunked pour groupes avec 500+ membres) ──────────────────
 
-  void _updateUnreadCounts(List<String> memberIds) {
-    if (memberIds.isEmpty) return;
-    const chunkSize = 400;
-    for (var i = 0; i < memberIds.length; i += chunkSize) {
-      final chunk = memberIds.sublist(i, min(i + chunkSize, memberIds.length));
-      final unreadUpdate = <String, dynamic>{};
-      for (final id in chunk) {
-        unreadUpdate['unread_counts.$id'] = FieldValue.increment(1);
-      }
-      _firestore.collection('GroupChats').doc(widget.groupId).update(unreadUpdate)
-          .catchError((e) => debugPrint('[GroupChatPage] unread_counts update failed: $e | chunk[$i..${i + chunk.length - 1}]'));
-    }
-  }
+  void _updateUnreadCounts(List<String> memberIds) {} // non lus de groupe : à fournir par l'API (voir lacunes_api_jeux_medias.md)
 
   Future<void> _markMessagesRead() async {
     final myId = _auth.loginUserData.id!;
@@ -1476,10 +1368,6 @@ class _GroupChatPageState extends State<GroupChatPage> {
           'image_url': _auth.loginUserData.imageUrl ?? '',
           'last_read_at': now,
         }),
-        _firestore
-            .collection('GroupChats')
-            .doc(widget.groupId)
-            .update({'unread_counts.$myId': 0}),
       ]);
     } catch (_) {}
   }
@@ -1638,12 +1526,10 @@ class _GroupChatPageState extends State<GroupChatPage> {
     final confirm = await _showConfirmDialog('$action le groupe', desc);
     if (!confirm) return;
     try {
-      final newBlocked = !_isBlocked;
-      await _firestore
-          .collection('GroupChats')
-          .doc(widget.groupId)
-          .update({'is_blocked': newBlocked});
-      if (mounted) setState(() => _isBlocked = newBlocked);
+      // Le blocage d'un groupe par l'équipe n'est pas encore dans l'API (voir lacunes_api_jeux_medias.md)
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cette action sera disponible prochainement.'), backgroundColor: Colors.orange));
+      }
     } catch (_) {}
   }
 
@@ -1933,18 +1819,13 @@ class _GroupChatPageState extends State<GroupChatPage> {
               ),
             ],
           ),
-          content: FutureBuilder<QuerySnapshot>(
-            future: _firestore
-                .collection('GroupChats')
-                .doc(widget.groupId)
-                .collection('members')
-                .getM('group_chat_page.dart:1940'),
+          content: FutureBuilder<List<Map<String, dynamic>>>(
+            future: ChatApi.members(widget.groupId, limit: 100).then((p) => p.items.map(memberToLegacy).toList()),
             builder: (_, snap) {
               if (snap.connectionState == ConnectionState.waiting) {
                 return const SizedBox(height: 80, child: Center(child: CircularProgressIndicator(strokeWidth: 2)));
               }
-              final members = (snap.data?.docs ?? [])
-                  .map((d) => d.data() as Map<String, dynamic>)
+              final members = (snap.data ?? const <Map<String, dynamic>>[])
                   .where((m) => (m['user_id'] as String? ?? '') != sendBy)
                   .toList();
 
@@ -3814,9 +3695,10 @@ class _GroupChatPageState extends State<GroupChatPage> {
         break;
       case 'vip':
         try {
-          final doc = await _firestore.collection('ContentPaie').doc(itemId).getM('group_chat_page.dart:3816');
-          if (!doc.exists || !mounted) return;
-          final content = ContentPaie.fromJson(doc.data()!);
+          final got = await ContenuPayantApi.get(itemId);
+          if (got == null) return;
+          final content = got.content;
+          if (!mounted) return;
           Navigator.push(context, MaterialPageRoute(
             builder: (_) => ContentDetailScreen(content: content),
           ));
@@ -3824,9 +3706,10 @@ class _GroupChatPageState extends State<GroupChatPage> {
         break;
       case 'live':
         try {
-          final doc = await _firestore.collection('lives').doc(itemId).getM('group_chat_page.dart:3826');
-          if (!doc.exists || !mounted) return;
-          final live = PostLive.fromMap(doc.data()!);
+          final apiLive = await LivesApi.get(itemId);
+          if (!mounted) return;
+          final host = userFromApi(await UsersApi.publicProfile('${apiLive['host_id']}'));
+          final live = postLiveFromApi(apiLive, hostName: host.pseudo ?? '', hostImage: host.imageUrl ?? '');
           if (live.isLive) {
             Navigator.push(context, MaterialPageRoute(
               builder: (_) => LivePage(
@@ -3848,9 +3731,8 @@ class _GroupChatPageState extends State<GroupChatPage> {
 
   Future<void> _openSharedPost(String postId, {String dataType = 'IMAGE'}) async {
     try {
-      final doc = await _firestore.collection('Posts').doc(postId).getM('group_chat_page.dart:3850');
-      if (!doc.exists || !mounted) return;
-      final post = Post.fromJson(doc.data()!);
+      final post = postFromApi(JeuxApi.map(await JeuxApi.client.get('/posts/$postId')));
+      if (!mounted) return;
       final type = post.dataType ?? dataType;
       if (type == 'VIDEO') {
         Navigator.push(context, MaterialPageRoute(
@@ -4486,9 +4368,9 @@ class _GroupChatSharedVideoWidgetState extends State<_GroupChatSharedVideoWidget
 
   Future<void> _fetchUrl() async {
     try {
-      final doc = await FirebaseFirestore.instance.collection('Posts').doc(widget.postId).getM('group_chat_page.dart:4488');
+      final post = postFromApi(JeuxApi.map(await JeuxApi.client.get('/posts/${widget.postId}')));
       if (!mounted) return;
-      final url = doc.data()?['url_media'] as String?;
+      final url = post.url_media;
       if (url != null && url.isNotEmpty) {
         setState(() { _videoUrl = url; _loading = false; });
         _initVideo(url);

@@ -1,9 +1,8 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/authProvider.dart' show UserAuthProvider;
 import 'package:afrotok/theme/app_colors.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/contenu_payant_api.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -18,8 +17,29 @@ class CreatorPromoCodesPage extends StatefulWidget {
   State<CreatorPromoCodesPage> createState() => _CreatorPromoCodesPageState();
 }
 
+/// Prévient la liste qu'un code a changé (création, activation) : elle se relit sur l'API.
+final ValueNotifier<int> _promoChanged = ValueNotifier<int>(0);
+
 class _CreatorPromoCodesPageState extends State<CreatorPromoCodesPage> {
   late AppColors _colors;
+  late Future<List<PromoCode>> _future;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = ContenuPayantApi.promoCodes(widget.content.id!);
+    _promoChanged.addListener(_reload);
+  }
+
+  @override
+  void dispose() {
+    _promoChanged.removeListener(_reload);
+    super.dispose();
+  }
+
+  void _reload() {
+    if (mounted) setState(() => _future = ContenuPayantApi.promoCodes(widget.content.id!));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,19 +63,23 @@ class _CreatorPromoCodesPageState extends State<CreatorPromoCodesPage> {
           ),
         ],
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('PromoCodes')
-            .where('creatorId', isEqualTo: uid)
-            .where('contentId', isEqualTo: widget.content.id)
-            .orderBy('createdAt', descending: true)
-            .snapshotsM('creator_promo_codes_page.dart:51'),
+      body: FutureBuilder<List<PromoCode>>(
+        future: _future,
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
             return Center(
                 child: CircularProgressIndicator(color: _colors.primary));
           }
-          final docs = snap.data?.docs ?? [];
+          if (snap.hasError) {
+            return Center(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Text(ContenuPayantApi.message(snap.error!), textAlign: TextAlign.center, style: TextStyle(color: _colors.textSecondary)),
+                const SizedBox(height: 8),
+                OutlinedButton(onPressed: _reload, child: const Text('Réessayer')),
+              ]),
+            );
+          }
+          final docs = snap.data ?? [];
           if (docs.isEmpty) {
             return _buildEmpty();
           }
@@ -64,9 +88,7 @@ class _CreatorPromoCodesPageState extends State<CreatorPromoCodesPage> {
             itemCount: docs.length,
             separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (context, i) {
-              final data = docs[i].data() as Map<String, dynamic>;
-              data['id'] = docs[i].id;
-              final code = PromoCode.fromJson(data);
+              final code = docs[i];
               return _PromoCodeTile(
                   code: code,
                   colors: _colors,
@@ -294,10 +316,10 @@ class _PromoCodeTile extends StatelessWidget {
 
   Future<void> _toggleActive(PromoCode code) async {
     if (code.id == null) return;
-    await FirebaseFirestore.instance
-        .collection('PromoCodes')
-        .doc(code.id)
-        .update({'isActive': !code.isActive});
+    try {
+      await ContenuPayantApi.setPromoActive(code.id!, !code.isActive);
+      _promoChanged.value++;
+    } catch (_) {}
   }
 
   Future<void> _confirmDelete(BuildContext context, PromoCode code) async {
@@ -317,11 +339,12 @@ class _PromoCodeTile extends StatelessWidget {
         ],
       ),
     );
+    // L'API ne supprime pas un code : il est désactivé (il ne sert plus et reste dans l'historique des ventes)
     if (ok == true && code.id != null) {
-      await FirebaseFirestore.instance
-          .collection('PromoCodes')
-          .doc(code.id)
-          .delete();
+      try {
+        await ContenuPayantApi.setPromoActive(code.id!, false);
+        _promoChanged.value++;
+      } catch (_) {}
     }
   }
 }
@@ -598,44 +621,11 @@ class _CreatePromoSheetState extends State<_CreatePromoSheet> {
     });
 
     try {
-      // Vérifier unicité du code pour ce contenu + ce créateur
-      final existing = await FirebaseFirestore.instance
-          .collection('PromoCodes')
-          .where('creatorId', isEqualTo: widget.creatorId)
-          .where('contentId', isEqualTo: widget.content.id)
-          .where('code', isEqualTo: code)
-          .limit(1)
-          .getM('creator_promo_codes_page.dart:607');
-
-      if (existing.docs.isNotEmpty) {
-        setState(() {
-          _error = 'Ce code existe déjà pour ce contenu.';
-          _saving = false;
-        });
-        return;
-      }
-
+      // L'unicité du code pour ce contenu est vérifiée par l'API (409 « code_taken »)
       final maxUses = int.tryParse(_maxUsesCtrl.text.trim());
-      final data = PromoCode(
-        creatorId: widget.creatorId,
-        contentId: widget.content.id,
-        code: code,
-        type: _type,
-        value: value,
-        maxUses: maxUses,
-        usedCount: 0,
-        expiresAt:
-            _expiresAt?.millisecondsSinceEpoch,
-        isActive: true,
-        createdAt: DateTime.now().millisecondsSinceEpoch,
-      );
-
-      final ref = await FirebaseFirestore.instance
-          .collection('PromoCodes')
-          .add(data.toJson());
-
-      // Enregistrer l'id dans le document
-      await ref.update({'id': ref.id});
+      await ContenuPayantApi.createPromo(widget.content.id!,
+          code: code, type: _type, value: value.round(), maxUses: maxUses, expiresAt: _expiresAt);
+      _promoChanged.value++;
 
       if (!mounted) return;
       Navigator.pop(context);
@@ -646,7 +636,7 @@ class _CreatePromoSheetState extends State<_CreatePromoSheet> {
       );
     } catch (e) {
       setState(() {
-        _error = 'Erreur : $e';
+        _error = ContenuPayantApi.message(e);
         _saving = false;
       });
     }

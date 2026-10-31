@@ -1,8 +1,7 @@
-import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/regie_api.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
@@ -31,9 +30,8 @@ class _AdminCanauxPageState extends State<AdminCanauxPage> {
   bool _loadingMore = false;
   bool _hasMore = false;
   String _query = '';
-  DocumentSnapshot<Map<String, dynamic>>? _cursor;
-  List<QueryDocumentSnapshot<Map<String, dynamic>>> _docs = [];
-  List<DocumentSnapshot<Map<String, dynamic>>> _extra = []; // recherche par identifiant
+  String? _cursor;
+  List<Map<String, dynamic>> _docs = [];
 
   @override
   void initState() {
@@ -48,38 +46,11 @@ class _AdminCanauxPageState extends State<AdminCanauxPage> {
     super.dispose();
   }
 
-  Query<Map<String, dynamic>> _buildQuery() {
-    final col = FirebaseFirestore.instance.collection('Canaux');
-    if (_query.isNotEmpty) {
-      final q = _query.toLowerCase();
-      return col.orderBy('titre').startAt([q]).endAt(['$q']);
-    }
-    final now = DateTime.now().millisecondsSinceEpoch;
-    switch (_filter) {
-      case _Filter.blocked:
-        return col.where('isBlocked', isEqualTo: true);
-      case _Filter.soon:
-        return col
-            .where('lastPostAt', isGreaterThan: now - 20 * _dayMs)
-            .where('lastPostAt', isLessThanOrEqualTo: now - 15 * _dayMs)
-            .orderBy('lastPostAt');
-      case _Filter.popular:
-        return col.where('isPopular', isEqualTo: true);
-      case _Filter.verified:
-        return col.where('isVerify', isEqualTo: true);
-      case _Filter.isPrivate:
-        return col.where('isPrivate', isEqualTo: true);
-      case _Filter.all:
-        return col.orderBy('createdAt', descending: true);
-    }
-  }
-
   Future<void> _load({bool reset = false}) async {
     if (reset) {
       setState(() {
         _loading = true;
         _docs = [];
-        _extra = [];
         _cursor = null;
         _hasMore = false;
       });
@@ -88,21 +59,18 @@ class _AdminCanauxPageState extends State<AdminCanauxPage> {
       setState(() => _loadingMore = true);
     }
     try {
-      var q = _buildQuery().limit(_pageSize);
-      if (!reset && _cursor != null) q = q.startAfterDocument(_cursor!);
-      final snap = await q.getM('admin_canaux_page.dart:92');
-      // Recherche par identifiant exact (un identifiant de canal fait 20 caractères)
-      var extra = <DocumentSnapshot<Map<String, dynamic>>>[];
-      if (reset && _query.length >= 15 && !_query.contains(' ')) {
-        final byId = await FirebaseFirestore.instance.collection('Canaux').doc(_query).getM('admin_canaux_page.dart:96');
-        if (byId.exists) extra = [byId];
-      }
+      final r = await RegieApi.get('/channels', query: {
+        'limit': _pageSize,
+        if (_query.isNotEmpty) 'search': _query,
+        if (!reset && _cursor != null) 'cursor': _cursor,
+      });
+      final rows = ((r is Map ? r['data'] : null) as List? ?? const []).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      final next = r is Map ? r['next_cursor'] as String? : null;
       if (!mounted) return;
       setState(() {
-        _docs = reset ? snap.docs : [..._docs, ...snap.docs];
-        if (reset) _extra = extra;
-        if (snap.docs.isNotEmpty) _cursor = snap.docs.last;
-        _hasMore = snap.docs.length == _pageSize;
+        _docs = reset ? rows : [..._docs, ...rows];
+        _cursor = next;
+        _hasMore = next != null;
         _loading = false;
         _loadingMore = false;
       });
@@ -112,7 +80,7 @@ class _AdminCanauxPageState extends State<AdminCanauxPage> {
         _loading = false;
         _loadingMore = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur de chargement : $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur de chargement : ${RegieApi.err(e)}')));
     }
   }
 
@@ -129,15 +97,25 @@ class _AdminCanauxPageState extends State<AdminCanauxPage> {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    final items = <DocumentSnapshot<Map<String, dynamic>>>[
-      ..._extra,
-      ..._docs.where((d) => !_extra.any((e) => e.id == d.id)),
-    ];
-    // Bloqués : les plus récemment bloqués d'abord (tri côté client, pas d'index nécessaire)
-    if (_query.isEmpty && _filter == _Filter.blocked) {
-      items.sort((a, b) => ((b.data()?['blockedAt'] as num?) ?? 0).compareTo((a.data()?['blockedAt'] as num?) ?? 0));
-    }
-
+    // L'API liste les canaux visibles ; les filtres ci-dessous s'appliquent aux canaux déjà chargés.
+    final items = _query.isNotEmpty
+        ? _docs
+        : _docs.where((d) {
+            switch (_filter) {
+              case _Filter.all:
+                return true;
+              case _Filter.blocked:
+                return d['is_blocked'] == true;
+              case _Filter.soon:
+                return false; // nécessite la date du dernier post, non fournie dans la liste
+              case _Filter.popular:
+                return d['is_popular'] == true;
+              case _Filter.verified:
+                return d['is_verified'] == true;
+              case _Filter.isPrivate:
+                return d['is_private'] == true;
+            }
+          }).toList();
     return Scaffold(
       backgroundColor: c.background,
       appBar: AppBar(
@@ -250,7 +228,7 @@ class _AdminCanauxPageState extends State<AdminCanauxPage> {
 }
 
 class _CanalTile extends StatelessWidget {
-  final DocumentSnapshot<Map<String, dynamic>> doc;
+  final Map<String, dynamic> doc;
   const _CanalTile({required this.doc});
 
   static const int _dayMs = 24 * 60 * 60 * 1000;
@@ -258,14 +236,13 @@ class _CanalTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    final d = doc.data() ?? {};
-    final titre = (d['titre'] ?? '').toString();
-    final followers = _followers(d);
-    final posts = (d['publication'] as num?)?.toInt() ?? 0;
-    final blocked = d['isBlocked'] == true;
-    final popularUntil = (d['popularUntil'] as num?)?.toInt() ?? 0;
-    final popular = d['isPopular'] == true && (popularUntil == 0 || popularUntil > DateTime.now().millisecondsSinceEpoch);
-    final lastPostAt = _ms(d['lastPostAt']);
+    final d = doc;
+    final titre = (d['title'] ?? '').toString();
+    final followers = (d['followers_count'] as num?)?.toInt() ?? 0;
+    final posts = (d['posts_count'] as num?)?.toInt() ?? 0;
+    final blocked = d['is_blocked'] == true;
+    final popular = d['is_popular'] == true;
+    final lastPostAt = DateTime.tryParse('${d['last_post_at']}')?.millisecondsSinceEpoch ?? 0;
     final days = lastPostAt > 0 ? ((DateTime.now().millisecondsSinceEpoch - lastPostAt) / _dayMs).floor() : null;
 
     return Card(
@@ -277,37 +254,25 @@ class _CanalTile extends StatelessWidget {
         side: BorderSide(color: blocked ? c.danger.withOpacity(0.5) : c.border),
       ),
       child: ListTile(
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AdminCanalDetailPage(canalId: doc.id))),
-        leading: SafeNetworkAvatar(url: d['urlImage'] as String?, radius: 22, backgroundColor: c.surfaceVariant, iconColor: c.textSecondary),
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AdminCanalDetailPage(canalId: '${doc['id']}'))),
+        leading: SafeNetworkAvatar(url: d['image_url'] as String?, radius: 22, backgroundColor: c.surfaceVariant, iconColor: c.textSecondary),
         title: Row(children: [
           Flexible(child: NameTag(label: '#$titre', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700))),
-          if (d['isVerify'] == true) ...[const SizedBox(width: 4), Icon(Icons.verified_rounded, size: 15, color: c.info)],
+          if (d['is_verified'] == true) ...[const SizedBox(width: 4), Icon(Icons.verified_rounded, size: 15, color: c.info)],
         ]),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 3),
           child: Wrap(spacing: 6, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
             Text('$followers abonnés · $posts posts${days == null ? '' : ' · dernier post il y a $days j'}',
                 style: TextStyle(color: c.textSecondary, fontSize: 12)),
-            if (blocked) _badge(c.danger, d['blockReason'] == 'admin' ? 'Bloqué (admin)' : 'Bloqué'),
+            if (blocked) _badge(c.danger, d['block_reason'] == 'admin' ? 'Bloqué (admin)' : 'Bloqué'),
             if (popular) _badge(c.warning, 'Mis en avant'),
-            if (d['isPrivate'] == true) _badge(c.info, 'Privé'),
+            if (d['is_private'] == true) _badge(c.info, 'Privé'),
           ]),
         ),
         trailing: Icon(Icons.chevron_right_rounded, color: c.textSecondary),
       ),
     );
-  }
-
-  static int _followers(Map<String, dynamic> d) {
-    final list = d['usersSuiviId'];
-    final n = list is List ? list.length : 0;
-    final suivi = (d['suivi'] as num?)?.toInt() ?? 0;
-    return n > suivi ? n : suivi;
-  }
-
-  static int _ms(dynamic v) {
-    final n = (v as num?)?.toInt() ?? 0;
-    return n > 100000000000000 ? n ~/ 1000 : n;
   }
 
   Widget _badge(Color color, String text) => Container(

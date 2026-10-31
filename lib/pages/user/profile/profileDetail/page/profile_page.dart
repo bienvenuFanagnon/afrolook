@@ -8,7 +8,7 @@ import 'dart:async';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/users_api.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 import 'package:flutter/cupertino.dart';
@@ -46,7 +46,6 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   late UserAuthProvider authProvider;
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
   bool change_profil_loading = false;
   bool isEditMode = false;
   File? _imageFile;
@@ -76,47 +75,9 @@ class _ProfilePageState extends State<ProfilePage> {
   static const Color primaryRed = Color(0xFFE53935);
   static const Color accentRed = Color(0xFFFF5252);
   Future<void> _createProfileUpdatePost(String newImageUrl) async {
-    try {
-      printVm('📝 Création d\'un post de mise à jour de profil');
-
-      String postId = FirebaseFirestore.instance.collection('Posts').doc().id;
-      authProvider.loginUserData.imageUrl=newImageUrl;
-      Post post = Post();
-      post.user_id = authProvider.loginUserData.id;
-      post.description = "👤 @${authProvider.loginUserData.pseudo} a mis à jour sa photo de profil";
-      post.updatedAt = DateTime.now().microsecondsSinceEpoch;
-      post.createdAt = DateTime.now().microsecondsSinceEpoch;
-      post.status = PostStatus.VALIDE.name;
-      post.type = PostType.POST.name;
-      post.dataType = PostDataType.IMAGE.name;
-      post.typeTabbar = 'LOOK'; // Type par défaut
-      post.comments = 0;
-      post.likes = 0;
-      post.loves = 0;
-      post.feedScore = 0.0;
-      post.id = postId;
-      post.images = [newImageUrl];
-      if (authProvider.loginUserData.countryData?['countryCode'] != null) {
-        String countryCode =authProvider.loginUserData.countryData!['countryCode']!;
-        post.availableCountries = [countryCode];
-
-      }
-      // Visibilité : Tous les pays
-
-      // Sauvegarder le post
-      await FirebaseFirestore.instance
-          .collection('Posts')
-          .doc(postId)
-          .set(post.toJson());
-
-      printVm('✅ Post de mise à jour de profil créé avec succès');
-
-      // Notifier les abonnés (optionnel)
-      _notifyFollowersAboutProfileUpdate(postId);
-
-    } catch (e) {
-      printVm('❌ Erreur lors de la création du post: $e');
-    }
+    // La publication automatique « photo de profil mise à jour » n'est plus créée depuis l'application
+    // (les publications passent par l'API avec fichiers téléversés ; voir lacunes_api_utilisateurs.md).
+    authProvider.loginUserData.imageUrl = newImageUrl;
   }
 
   void _notifyFollowersAboutProfileUpdate(String postId) async {
@@ -162,14 +123,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _loadPseudoFromServer() async {
     try {
-      final doc = await firestore
-          .collection('Users')
-          .doc(authProvider.loginUserData.id)
-          .getM('profile_page.dart:167');
-      final data = doc.data();
-      final serverPseudo = (data?['pseudo'] as String?) ?? (authProvider.loginUserData.pseudo ?? '');
-      final lastChanged = data?['pseudo_last_changed_at'] as int?;
-      final categoryLastChanged = data?['category_last_changed_at'] as int?;
+      final me = await UsersApi.me();
+      final serverPseudo = (me['username'] as String?) ?? (authProvider.loginUserData.pseudo ?? '');
+      final lastChanged = DateTime.tryParse('${me['username_changed_at']}')?.millisecondsSinceEpoch;
+      final categoryLastChanged = DateTime.tryParse('${me['category_changed_at']}')?.millisecondsSinceEpoch;
       if (!mounted) return;
       setState(() {
         _originalPseudo = serverPseudo;
@@ -230,11 +187,7 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() => _pseudoStatus = 'checking');
     _pseudoDebounce = Timer(const Duration(milliseconds: 600), () async {
       try {
-        final snap = await firestore.collection('Pseudo').getM('profile_page.dart:232');
-        final taken = snap.docs.any((doc) {
-          final name = normalizePseudo(doc.data()['name'] as String? ?? '');
-          return name == formatted;
-        });
+        final taken = !(await UsersApi.usernameAvailable(formatted));
         if (mounted) setState(() => _pseudoStatus = taken ? 'taken' : 'available');
       } catch (_) {
         if (mounted) setState(() => _pseudoStatus = 'same');
@@ -315,10 +268,7 @@ class _ProfilePageState extends State<ProfilePage> {
        _createProfileUpdatePost(downloadUrl);
 
       // Mettre à jour seulement l'URL de l'image
-      await firestore.collection('Users').doc(authProvider.loginUserData.id).update({
-        'imageUrl': downloadUrl,
-        'updatedAt': DateTime.now().millisecondsSinceEpoch,
-      });
+      await UsersApi.updateMe({'avatar_url': downloadUrl});
 
       // Mettre à jour le provider
       authProvider.loginUserData.imageUrl = downloadUrl;
@@ -440,23 +390,19 @@ class _ProfilePageState extends State<ProfilePage> {
       updates['updatedAt'] = nowMs;
 
       printVm('WM pseudo update → id:${authProvider.loginUserData.id} pseudo_in_updates:${updates.containsKey('pseudo')} new_pseudo:${updates['pseudo']}');
-      await firestore.collection('Users').doc(authProvider.loginUserData.id).update(updates);
-      printVm('WM pseudo update → Firestore OK');
+      // Profil : champs acceptés par PATCH /v1/me (pseudo et catégorie : voir lacunes_api_utilisateurs.md)
+      final body = <String, dynamic>{};
+      if (updates.containsKey('nom') || updates.containsKey('prenom')) {
+        body['display_name'] = '${_prenomController.text} ${_nomController.text}'.trim();
+      }
+      if (updates.containsKey('numero_de_telephone')) body['phone'] = _phoneController.text;
+      if (updates.containsKey('apropos')) body['bio'] = _aproposController.text;
+      if (updates.containsKey('pseudo')) body['username'] = updates['pseudo'];
+      if (updates.containsKey('mainCategory')) body['main_category'] = updates['mainCategory'];
+      if (body.isNotEmpty) await UsersApi.updateMe(body);
+      if (updates.containsKey('interests')) await UsersApi.updateInterests(List<String>.from(_editInterests));
 
       if (pseudoChanged && _pseudoStatus == 'available') {
-        // Supprimer l'ancien document Pseudo
-        final oldSnap = await firestore
-            .collection('Pseudo')
-            .where('name', isEqualTo: _originalPseudo)
-            .limit(1)
-            .getM('profile_page.dart:451');
-        for (final doc in oldSnap.docs) {
-          await doc.reference.delete();
-        }
-        // Créer le nouveau document Pseudo
-        final newPseudoRef = firestore.collection('Pseudo').doc();
-        await newPseudoRef.set(UserPseudo(id: newPseudoRef.id, name: formattedPseudo).toJson());
-
         // Notifier les abonnés du changement de pseudo
         final oldPseudoForNotif = _originalPseudo;
         authProvider.loginUserData.pseudo = formattedPseudo;

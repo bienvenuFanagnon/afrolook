@@ -1,5 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/users_api.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -63,15 +63,11 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
     });
     AdmobService.warmUpInterstitial(context.read<UserAuthProvider>().loginUserData); // prête pour l'ouverture d'une source
     try {
-      final db = FirebaseFirestore.instance;
-      final res = await Future.wait([
-        db.collection('Follows').doc('${a.agent.userId}_$uid').get(),
-        db.collection('Users').doc(a.agent.userId).get(),
-      ]);
+      final p = await UsersApi.publicProfile(a.agent.userId);
       if (mounted) {
         setState(() {
-          _following = res[0].exists;
-          _followers = ((res[1].data() ?? const {})['abonnes'] as num?)?.toInt() ?? 0;
+          _following = p['is_following'] == true;
+          _followers = (p['followers_count'] as num?)?.toInt() ?? 0;
         });
       }
     } catch (_) {}

@@ -25,7 +25,9 @@ import '../../l10n/app_localizations.dart';
 
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Chats et Messages restent sur Firebase
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
 
 import 'package:afrotok/constant/sizeText.dart';
 
@@ -98,7 +100,6 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
   bool inviteTap = false;
   bool abonneTap = false;
 
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
   bool isLike=false;
 
@@ -236,19 +237,8 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
       }
 
       /////////////ami//////////
-      CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-      QuerySnapshot querySnapshotUserSender = await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.id?'${amigo.id}':'${authProvider.loginUserData.id!}').getM('detailsOtherUser.dart:239');
-      // Afficher la liste
-      QuerySnapshot querySnapshotUserReceiver= await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.id?'${authProvider.loginUserData.id!}':'${amigo.id}').getM('detailsOtherUser.dart:241');
-
-
-      List<UserData> receiverUserList = querySnapshotUserReceiver.docs.map((doc) =>
-          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-      usersChat.receiver=receiverUserList.first;
-
-      List<UserData> senderUserList = querySnapshotUserSender.docs.map((doc) =>
-          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-      usersChat.sender=senderUserList.first;
+      usersChat.receiver = userFromApi(await UsersApi.publicProfile(authProvider.loginUserData.id == amigo.id ? '${authProvider.loginUserData.id!}' : '${amigo.id}'));
+      usersChat.sender = authProvider.loginUserData;
 
     }
 
@@ -482,28 +472,7 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
                                     // await userProvider.getUsers(authProvider.loginUserData!.id!);
                                     authProvider.loginUserData.mesInvitationsEnvoyer!.add(invitation);
                                     await authProvider.getCurrentUser(authProvider.loginUserData!.id!);
-                                    NotificationData notif=NotificationData();
-                                    notif.id=firestore
-                                        .collection('Notifications')
-                                        .doc()
-                                        .id;
-                                    notif.titre="Nouvelle Invitation";
-                                    notif.media_url=authProvider.loginUserData.imageUrl;
-                                    notif.type=NotificationType.INVITATION.name;
-                                    notif.description="Une nouvelle invitation vous a été envoyé !";
-                                    notif.users_id_view=[];
-                                    notif.user_id=authProvider.loginUserData.id;
-                                    notif.receiver_id=widget.user.id;
-                                    notif.updatedAt =
-                                        DateTime.now().microsecondsSinceEpoch;
-                                    notif.createdAt =
-                                        DateTime.now().microsecondsSinceEpoch;
-                                    notif.status = PostStatus.VALIDE.name;
-
-                                    // users.add(pseudo.toJson());
-
-                                    await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-                                    printVm("///////////-- save notification --///////////////");
+                                    // La notification INVITATION est envoyée par le serveur.
                                     SnackBar snackBar = SnackBar(
                                       content: Text('invitation envoyée',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
                                     );
@@ -511,24 +480,6 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
 
                                     widget.user.autreInvitationsEnvoyerId!.add(authProvider.loginUserData.id!);
                                     authProvider.loginUserData!.mesInvitationsEnvoyerId!.add(widget.user.id!);
-                                    userProvider.updateUser(widget.user);
-                                    userProvider.updateUser(authProvider.loginUserData!);
-
-                                    if (widget.user.oneIgnalUserid!=null&&widget.user.oneIgnalUserid!.length>5) {
-
-                                      await authProvider.sendNotification(
-                                          userIds: [widget.user.oneIgnalUserid!],
-                                          smallImage: "${authProvider.loginUserData.imageUrl!}",
-                                          send_user_id: "${authProvider.loginUserData.id!}",
-                                          recever_user_id: "${widget.user.id!}",
-                                          message: "📢 @${authProvider.loginUserData.pseudo!} vous a envoyé une invitation !",
-                                          type_notif: NotificationType.INVITATION.name,
-                                          post_id: "",
-                                          post_type: "", chat_id: ''
-                                      );
-
-                                    }
-
 
                                   }  else{
                                     SnackBar snackBar = SnackBar(
@@ -672,7 +623,6 @@ class _UserProfileModalState extends State<UserProfileModal> {
   late UserProvider userProvider;
   bool inviteTap = false;
   bool abonneTap = false;
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
   @override
   void initState() {
@@ -967,21 +917,6 @@ class _UserProfileModalState extends State<UserProfileModal> {
       if (success) {
         authProvider.loginUserData.mesInvitationsEnvoyer!.add(invitation);
         authProvider.loginUserData.mesInvitationsEnvoyerId!.add(user.id!);
-
-        if (user.oneIgnalUserid != null && user.oneIgnalUserid!.isNotEmpty) {
-          await authProvider.sendNotification(
-            appName: '@${authProvider.loginUserData.pseudo!}',
-            userIds: [user.oneIgnalUserid!],
-            smallImage: authProvider.loginUserData.imageUrl!,
-            send_user_id: authProvider.loginUserData.id!,
-            recever_user_id: user.id!,
-            message: "📢 @${authProvider.loginUserData.pseudo!} vous a envoyé une invitation !",
-            type_notif: 'INVITATION',
-            post_id: "",
-            post_type: "",
-            chat_id: '',
-          );
-        }
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

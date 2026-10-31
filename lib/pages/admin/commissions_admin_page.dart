@@ -1,6 +1,5 @@
-import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/regie_api.dart';
 import 'package:afrotok/layout/centered_content.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -8,8 +7,7 @@ import '../../theme/app_colors.dart';
 
 /// Admin — Commissions : ce que l'app gagne réellement, par source et par période.
 ///
-/// Source : CommissionsDaily/{AAAA-MM-JJ}, alimenté par le serveur à chaque paiement en pièces
-/// (payWithCoins, sendLike, sendPostGift, sendLiveGift, DÉFI). Montants en pièces, avec
+/// Source : API `GET /admin/commissions` (calculé par le serveur à chaque paiement en pièces). Montants en pièces, avec
 /// l'équivalent FCFA au taux de conversion (25 pièces = 10 FCFA).
 class CommissionsAdminPage extends StatefulWidget {
   const CommissionsAdminPage({super.key});
@@ -78,31 +76,27 @@ class _CommissionsAdminPageState extends State<CommissionsAdminPage> {
       _Period.thisMonth => DateTime(now.year, now.month, 1),
     };
     try {
-      final snap = await FirebaseFirestore.instance
-          .collection('CommissionsDaily')
-          .where('date', isGreaterThanOrEqualTo: _key(start))
-          .where('date', isLessThanOrEqualTo: _key(now))
-          .getM('commissions_admin_page.dart:80');
+      final r = await RegieApi.getMap('/admin/commissions', query: {'from': _key(start), 'to': _key(now)});
       final totals = <String, int>{};
+      for (final e in (r['coins_by_source'] as List? ?? const []).whereType<Map>()) {
+        final k = '${e['source']}';
+        final v = (e['coins'] as num?)?.round() ?? 0;
+        totals[k] = (totals[k] ?? 0) + v;
+      }
       var salesCoins = 0, salesCount = 0;
       final amounts = <String, double>{}, net = <String, double>{};
-      void addMap(Map<String, double> into, dynamic m) {
-        if (m is Map) m.forEach((k, v) { if (v is num) into['$k'] = (into['$k'] ?? 0) + v.toDouble(); });
+      for (final e in (r['coin_sales'] as List? ?? const []).whereType<Map>()) {
+        final cur = '${e['currency']}';
+        salesCoins += (e['coins'] as num?)?.round() ?? 0;
+        salesCount += (e['sales'] as num?)?.round() ?? 0;
+        amounts[cur] = (amounts[cur] ?? 0) + ((e['amount'] as num?)?.toDouble() ?? 0);
+        net[cur] = (net[cur] ?? 0) + ((e['net_estimate'] as num?)?.toDouble() ?? 0);
       }
-      for (final d in snap.docs) {
-        final data = d.data();
-        data.forEach((k, v) {
-          if (_sources.containsKey(k) && v is num) totals[k] = (totals[k] ?? 0) + v.round();
-        });
-        salesCoins += (data['ventes_pieces'] as num? ?? 0).round();
-        salesCount += (data['ventes_nombre'] as num? ?? 0).round();
-        addMap(amounts, data['ventes_montants']);
-        addMap(net, data['ventes_net_estime']);
-      }
+      final daysCount = (r['coins_by_day'] as List? ?? const []).length;
       if (!mounted) return;
       setState(() {
         _totals = totals;
-        _days = snap.docs.length;
+        _days = daysCount;
         _salesCoins = salesCoins;
         _salesCount = salesCount;
         _salesAmounts = amounts;
@@ -112,7 +106,7 @@ class _CommissionsAdminPageState extends State<CommissionsAdminPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur de chargement : $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur de chargement : ${RegieApi.err(e)}')));
     }
   }
 

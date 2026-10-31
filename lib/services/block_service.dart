@@ -1,22 +1,19 @@
-import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/users_api.dart';
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 /// Utilisateurs bloqués par l'utilisateur connecté (règle App Store 1.2).
 ///
-/// Même format que le chat : `BlockedUsers/<bloqueur>_<bloqué>`. La liste est écoutée en
-/// temps réel : dès qu'un blocage est ajouté, les widgets qui écoutent ce service masquent
-/// immédiatement les contenus de la personne bloquée. La Cloud Function onUserBlocked prévient
-/// l'équipe de modération.
+/// La liste vient de l'API (`GET /v1/blocks`), chargée au démarrage puis tenue à jour localement à chaque blocage / déblocage :
+/// dès qu'un blocage est ajouté, les widgets qui écoutent ce service masquent immédiatement les contenus de la personne bloquée.
+/// Bloquer met fin à l'amitié et annule les invitations en attente (règle du serveur).
 class BlockService extends ChangeNotifier {
   BlockService._();
   static final BlockService instance = BlockService._();
 
   final Set<String> _blocked = {};
-  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _sub;
   String? _uid;
 
   bool isBlocked(String? userId) => userId != null && _blocked.contains(userId);
@@ -26,41 +23,38 @@ class BlockService extends ChangeNotifier {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null || uid == _uid) return;
     _uid = uid;
-    _sub?.cancel();
     _blocked.clear();
-    _sub = FirebaseFirestore.instance
-        .collection('BlockedUsers')
-        .where('blockedBy', isEqualTo: uid)
-        .snapshotsM('block_service.dart:33')
-        .listen((snap) {
+    refresh();
+  }
+
+  /// Recharge la liste depuis l'API (en cas d'échec : la liste actuelle est conservée).
+  Future<void> refresh() async {
+    try {
+      final rows = await UsersApi.blocks();
       _blocked
         ..clear()
-        ..addAll(snap.docs.map((d) => d.data()['blockedUser']).whereType<String>());
+        ..addAll(rows.map((r) => r['id']).whereType<String>());
       notifyListeners();
-    }, onError: (Object e) => debugPrint('BlockService: $e'));
+    } catch (e) {
+      debugPrint('BlockService: $e');
+      _uid = null; // sera retenté au prochain start()
+    }
   }
 
   Future<void> block(String userId, {String? postId}) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null || userId.isEmpty || userId == uid) return;
+    await UsersApi.block(userId, source: postId != null ? 'post' : 'profile', postId: postId);
     _blocked.add(userId);
     notifyListeners();
-    await FirebaseFirestore.instance.collection('BlockedUsers').doc('${uid}_$userId').set({
-      'blockedBy': uid,
-      'blockedUser': userId,
-      'chatId': '',
-      'createdAt': DateTime.now().millisecondsSinceEpoch,
-      'source': postId != null ? 'post' : 'profile',
-      if (postId != null) 'postId': postId,
-    });
   }
 
   Future<void> unblock(String userId) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) return;
+    await UsersApi.unblock(userId);
     _blocked.remove(userId);
     notifyListeners();
-    await FirebaseFirestore.instance.collection('BlockedUsers').doc('${uid}_$userId').delete();
   }
 }
 

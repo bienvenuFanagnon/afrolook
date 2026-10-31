@@ -1,3 +1,10 @@
+import 'package:afrotok/services/api/chat_api.dart';
+import 'package:afrotok/services/api/jeux_api.dart';
+import 'package:afrotok/services/api/lives_mapper.dart';
+import 'package:afrotok/services/api/post_mapper.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
+import 'package:afrotok/services/api/contenu_payant_api.dart';
 import 'package:afrotok/services/read_meter.dart';
 import '../../services/media_shrink.dart';
 import '../../services/chat_request.dart';
@@ -401,12 +408,9 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     } else {
       widget.chat.my_msg_not_read = 0;
     }
-    if (widget.chat.id != null) {
-      _firestore
-          .collection('Chats')
-          .doc(widget.chat.id)
-          .set(widget.chat.toJson(), SetOptions(merge: true))
-          .catchError((_) {});
+    final convId = widget.chat.id;
+    if (convId != null && convId.isNotEmpty && !convId.startsWith('search_')) {
+      ChatApi.markConversationRead(convId).catchError((_) {});
     }
     _loadEphemeralSettings();
   }
@@ -706,32 +710,8 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     } catch (_) {}
   }
 
-  Future<void> _updateStreak() async {
-    try {
-      final today = DateTime.now();
-      final todayStr = '${today.year}-${today.month}-${today.day}';
-      final doc = await _firestore.collection('Chats').doc(widget.chat.id).getM('myChat.dart:712');
-      final data = doc.data();
-      if (data == null) return;
-      final lastDate = data['lastStreakDate'] as String?;
-      final currentStreak = (data['streak'] as int?) ?? 0;
-
-      int newStreak;
-      if (lastDate == null) {
-        newStreak = 1;
-      } else if (lastDate == todayStr) {
-        return; // déjà compté aujourd'hui
-      } else {
-        final last = DateTime.tryParse(lastDate);
-        final diff = last != null ? today.difference(last).inDays : 999;
-        newStreak = diff == 1 ? currentStreak + 1 : 1;
-      }
-      await _firestore.collection('Chats').doc(widget.chat.id).set({
-        'streak': newStreak,
-        'lastStreakDate': todayStr,
-      }, SetOptions(merge: true));
-    } catch (_) {}
-  }
+  // La série (jours consécutifs où les deux ont écrit) est calculée par l'API à chaque message envoyé (POST /conversations/{id}/sent).
+  Future<void> _updateStreak() async {}
 
   // ────────────────────────────────────────────────────────────────────────────
 
@@ -1415,28 +1395,19 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   /// [imageUrl] : photo envoyée, montrée en aperçu dans la notification.
   Future<void> _sendNotification(String messageContent, {String? imageUrl}) async {
     try {
-      final receiverId = widget.chat.senderId == _authProvider.loginUserData.id!
-          ? widget.chat.receiverId!
-          : widget.chat.senderId!;
-
-      // Si le destinataire est activement dans CE chat → pas de notif
-      final chatDoc = await _firestore.collection('Chats').doc(widget.chat.id).getM('myChat.dart:1420');
-      final activeViewers = List<String>.from(chatDoc.data()?['activeViewers'] ?? []);
-      if (activeViewers.contains(receiverId)) return;
-
-      // Envoi à l'identifiant de la personne : fonctionne aussi pour qui n'a pas d'identifiant OneSignal (appareils à jour)
-      final me = _authProvider.loginUserData;
-      final text = String.fromCharCodes(messageContent.replaceAll(RegExp(r'\s+'), ' ').trim().runes.take(120));
-      await _authProvider.sendChatPush(
-        receiverId: receiverId,
-        title: '@${me.pseudo ?? ''}',
-        message: text.isEmpty ? '🗨️ Nouveau message' : text,
-        smallImage: me.imageUrl,
-        image: imageUrl,
-        chatId: widget.chat.id!,
-      );
+      final id = widget.chat.id;
+      if (id == null || id.isEmpty || id.startsWith('search_')) return;
+      final kind = imageUrl != null || messageContent.startsWith('📷')
+          ? 'image'
+          : messageContent.startsWith('🎤')
+              ? 'audio'
+              : messageContent.startsWith('🎥')
+                  ? 'video'
+                  : 'text';
+      // Le texte n'est jamais envoyé à l'API (messages chiffrés de bout en bout) : seulement le type de message
+      await ChatApi.conversationSent(id, kind: kind);
     } catch (e) {
-      printVm("Erreur notification: $e");
+      printVm("Erreur mise à jour de la conversation: $e");
     }
   }
 
@@ -1445,13 +1416,6 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       widget.chat.send_sending = IsSendMessage.NOTSENDING.name;
     } else {
       widget.chat.receiver_sending = IsSendMessage.NOTSENDING.name;
-    }
-
-    if (widget.chat.id != null) {
-      await _firestore
-          .collection('Chats')
-          .doc(widget.chat.id)
-          .set(widget.chat.toJson(), SetOptions(merge: true));
     }
 
     // Scroll vers le bas après l'envoi
@@ -1768,15 +1732,16 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
           Navigator.push(context, MaterialPageRoute(builder: (_) => ChroniqueDetailPage(initialChroniqueId: itemId)));
           break;
         case 'vip':
-          final contentDoc = await _firestore.collection('ContentPaie').doc(itemId).getM('myChat.dart:1773');
-          if (!contentDoc.exists || !mounted) return;
-          final content = ContentPaie.fromJson(contentDoc.data()!);
+          final got = await ContenuPayantApi.get(itemId);
+          if (got == null || !mounted) return;
+          final content = got.content;
           Navigator.push(context, MaterialPageRoute(builder: (_) => ContentDetailScreen(content: content)));
           break;
         case 'live':
-          final liveDoc = await _firestore.collection('lives').doc(itemId).getM('myChat.dart:1779');
-          if (!liveDoc.exists || !mounted) return;
-          final live = PostLive.fromMap(liveDoc.data()!);
+          final apiLive = await LivesApi.get(itemId);
+          if (!mounted) return;
+          final host = userFromApi(await UsersApi.publicProfile('${apiLive['host_id']}'));
+          final live = postLiveFromApi(apiLive, hostName: host.pseudo ?? '', hostImage: host.imageUrl ?? '');
           if (live.isLive) {
             Navigator.push(context, MaterialPageRoute(
               builder: (_) => LivePage(
@@ -1805,9 +1770,8 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       final dataType = data['post_data_type'] as String? ?? 'IMAGE';
       if (postId == null || postId.isEmpty) return;
 
-      final postDoc = await _firestore.collection('Posts').doc(postId).getM('myChat.dart:1810');
-      if (!postDoc.exists || !mounted) return;
-      final post = Post.fromJson(postDoc.data()!);
+      final post = postFromApi(JeuxApi.map(await JeuxApi.client.get('/posts/$postId')));
+      if (!mounted) return;
 
       if (dataType == 'VIDEO') {
         Navigator.push(context, MaterialPageRoute(
@@ -2265,32 +2229,9 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     final msgId = message.id;
     if (msgId.isEmpty) return;
 
-    // ID = messageId_userId → un seul signalement par utilisateur par message
-    final reportId = '${msgId}_$myId';
-
-    try {
-      await _firestore.collection('Reports').doc(reportId).set({
-        'reportedBy': myId,
-        'messageId': msgId,
-        'chatId': _chatId,
-        'reason': reason,
-        'reportedUserId': message.sendBy,
-        'createdAt': DateTime.now().millisecondsSinceEpoch,
-      });
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: Colors.orange,
-          content: Text('Signalement envoyé. Merci.', textAlign: TextAlign.center),
-          duration: Duration(seconds: 3),
-        ),
-      );
-    } catch (e) {
-      debugPrint('⚠️ _reportMessage error ($msgId): $e');
-      if (!mounted) return;
-      _showErrorSnackbar('Erreur lors du signalement');
-    }
+    // Le signalement d'un message n'est pas encore dans l'API (voir lacunes_api_jeux_medias.md)
+    if (!mounted) return;
+    _showErrorSnackbar('Le signalement des messages sera disponible prochainement.');
   }
 
   // ── Blocage utilisateur ─────────────────────────────────────────────────────
@@ -2298,19 +2239,13 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   /// Vérifie les deux directions de blocage au chargement du chat.
   Future<void> _loadBlockStatus() async {
     final myId = _authProvider.loginUserData.id!;
-    final blockByMe = '${myId}_$_otherId';
-    final blockByOther = '${_otherId}_$myId';
-
     try {
-      final results = await Future.wait([
-        _firestore.collection('BlockedUsers').doc(blockByMe).getM('myChat.dart:2308'),
-        _firestore.collection('BlockedUsers').doc(blockByOther).getM('myChat.dart:2309'),
-      ]);
-
+      final blocked = await UsersApi.blocks();
       if (!mounted) return;
       setState(() {
-        _isBlockedByMe    = results[0].exists;
-        _isBlockedByOther = results[1].exists;
+        _isBlockedByMe = blocked.any((b) => '${b['id'] ?? b['user_id'] ?? (b['user'] is Map ? (b['user'] as Map)['id'] : '')}' == _otherId);
+        // Blocage par l'autre personne : l'API refuse l'envoi (403 blocked) sans dire qui a bloqué
+        _isBlockedByOther = false;
       });
     } catch (e) {
       debugPrint('⚠️ _loadBlockStatus error: $e');
@@ -2320,8 +2255,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   Future<void> _loadMyPrivacySettings() async {
     final myId = _authProvider.loginUserData.id!;
     try {
-      final doc = await _firestore.collection('Users').doc(myId).getM('myChat.dart:2325');
-      final privacy = (doc.data()?['privacySettings'] as Map<String, dynamic>?) ?? {};
+      final privacy = await UsersApi.privacy();
       if (mounted) setState(() => _hideReadReceipts = privacy['hideReadReceipts'] == true);
     } catch (e) {
       debugPrint('⚠️ _loadMyPrivacySettings error: $e');
@@ -2334,12 +2268,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     final docId = '${myId}_$_otherId';
 
     try {
-      await _firestore.collection('BlockedUsers').doc(docId).set({
-        'blockedBy': myId,
-        'blockedUser': _otherId,
-        'chatId': _chatId,
-        'createdAt': DateTime.now().millisecondsSinceEpoch,
-      });
+      await UsersApi.block(_otherId, source: 'chat');
 
       if (!mounted) return;
       setState(() => _isBlockedByMe = true);
@@ -2366,7 +2295,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     final docId = '${myId}_$_otherId';
 
     try {
-      await _firestore.collection('BlockedUsers').doc(docId).delete();
+      await UsersApi.unblock(_otherId);
 
       if (!mounted) return;
       setState(() => _isBlockedByMe = false);

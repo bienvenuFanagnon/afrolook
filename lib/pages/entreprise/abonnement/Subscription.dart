@@ -16,7 +16,6 @@ import '../../user/monetisation.dart';
 
 import 'package:flutter/material.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:firebase_storage/firebase_storage.dart';
 
@@ -40,7 +39,6 @@ class PremiumSubscriptionPage extends StatefulWidget {
 }
 
 class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
   late UserAuthProvider authProvider;
   bool isLoading = false;
   int selectedDays = 30;
@@ -770,7 +768,8 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
       final totalPrice = _calculateTotalPrice();
       final productCount = _calculateProductCount().toInt();
       final paid = await CoinCheckout.pay(context,
-          kind: 'entreprise_premium',
+          kind: 'business_premium',
+          refId: widget.entreprise!.id,
           days: selectedDays,
           priceFcfa: totalPrice,
           label: context.tr('Abonnement entreprise Premium — {a} jours', {'a': selectedDays}));
@@ -779,32 +778,7 @@ class _PremiumSubscriptionPageState extends State<PremiumSubscriptionPage> {
         return;
       }
 
-      final now = DateTime.now();
-      final endDate = now.add(Duration(days: selectedDays));
-
-      EntrepriseAbonnement abonnement = EntrepriseAbonnement()
-        ..type = TypeAbonement.PREMIUM.name
-        ..id = firestore.collection('EntrepriseAbonnements').doc().id
-        ..entrepriseId = widget.entreprise!.id!
-        ..description = 'Abonnement Premium - ${selectedDays} jours'
-        ..nombre_pub = productCount
-        ..nombre_image_pub = 5
-        ..nbr_jour_pub_afrolook = 0
-        ..nbr_jour_pub_annonce_afrolook = 0
-        ..userId = widget.user.id!
-        ..afroshop_user_magasin_id = ""
-        ..createdAt = now.millisecondsSinceEpoch
-        ..updatedAt = now.millisecondsSinceEpoch
-        ..star = now.millisecondsSinceEpoch
-        ..end = endDate.millisecondsSinceEpoch
-        ..isFinished = false
-        ..dispo_afrolook = false
-        ..produistIdBoosted = [];
-
-      await firestore.collection('Entreprises').doc(widget.entreprise!.id!).update({
-        'abonnement': abonnement.toJson(),
-        'updatedAt': now.millisecondsSinceEpoch,
-      });
+      // L'abonnement de l'entreprise est activé par l'API en même temps que le paiement : rien à écrire ici.
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

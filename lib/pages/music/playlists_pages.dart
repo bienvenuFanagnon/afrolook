@@ -2,17 +2,16 @@
 // Tout le monde voit le contenu d'une playlist. Acheter une playlist ne débloque PAS ses titres payants :
 // ils restent en extrait de 30 s tant qu'ils ne sont pas achetés séparément. Cet avertissement est toujours visible.
 
-import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../providers/authProvider.dart';
 import '../../services/music_playlists.dart';
+import '../../services/api/music_api.dart';
 import '../../services/music_queue.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/music/streams_text.dart';
@@ -926,8 +925,7 @@ class _TrackPickerState extends State<_TrackPicker> {
   Future<void> _loadCatalog() async {
     var sounds = <MusicTrack>[];
     try {
-      final q = await FirebaseFirestore.instance.collection('artist_sounds').where('status', isEqualTo: 'validated').orderBy('validatedAt', descending: true).limit(150).getM('playlists_pages.dart:925');
-      sounds = [for (final d in q.docs) MusicTrack.fromSound(ArtistSound.fromMap(d.data(), d.id))].where((t) => t.previewUrl != null).toList();
+      sounds = [for (final x in await MusicApi.latestCached()) MusicTrack.fromSound(x)].where((t) => t.previewUrl != null).toList();
     } catch (_) {}
     if (!mounted) return;
     setState(() => _catalog = [...kStudioTracks.map(MusicTrack.fromStudio), ...sounds]);

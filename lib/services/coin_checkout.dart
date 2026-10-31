@@ -1,4 +1,5 @@
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import 'api/wallet_api.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -90,29 +91,26 @@ class CoinCheckout {
     if (confirmed != true || !context.mounted) return false;
 
     try {
-      await FirebaseFunctions.instance.httpsCallable('payWithCoins').call({
-        'kind': kind,
-        if (refId != null) 'refId': refId,
-        if (dureeMois != null) 'dureeMois': dureeMois,
-        if (weeks != null) 'weeks': weeks,
-        if (combined != null) 'combined': combined,
-        if (days != null) 'days': days,
-      });
+      await WalletApi.instance.buy(kind, refId: refId, months: dureeMois, weeks: weeks, combined: combined, days: days);
       if (context.mounted) await refreshBalance(context);
       return true;
-    } on FirebaseFunctionsException catch (e) {
+    } on ApiException catch (e) {
       if (!context.mounted) return false;
-      if (e.code == 'resource-exhausted') {
+      if (e.isInsufficientCoins) {
         await refreshBalance(context);
         if (context.mounted) await insufficient(context, price);
-      } else if (e.code == 'already-exists') {
+      } else if (e.status == 409 && (e.code == 'sticker_owned' || e.code == 'music_owned' || e.code == 'music_job_used')) {
         // Achat déjà fait (ex. pack de stickers déjà possédé) : rien n'est débité.
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(context.tr('Tu possèdes déjà cet achat. Tu n\'as pas été débité.'))),
         );
+      } else if (e.isNetwork) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.tr('Le paiement n\'a pas pu être effectué. Vérifie ta connexion.'))),
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.tr('Le paiement n\'a pas pu être effectué. Tu n\'as pas été débité.'))),
+          SnackBar(content: Text(e.message.isNotEmpty ? e.message : context.tr('Le paiement n\'a pas pu être effectué. Tu n\'as pas été débité.'))),
         );
       }
       return false;

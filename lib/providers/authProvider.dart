@@ -24,6 +24,10 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:afrotok/models/model_data.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart' show ApiException;
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
+import 'package:afrotok/services/followers_count_service.dart';
 import 'package:flutter/cupertino.dart';
 
 import 'package:image_picker/image_picker.dart';
@@ -198,55 +202,30 @@ class UserAuthProvider extends ChangeNotifier {
   /// Opération légère — uniquement le document utilisateur, sans mise à jour Firestore.
   Future<void> ensureUserDataLoaded() async {
     if (isUserDataReady) return;
-    final uid = _auth.currentUser?.uid;
-    if (uid == null) return;
+    if (_auth.currentUser == null) return;
     try {
-      final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).getM('authProvider.dart:239');
-      if (doc.exists) {
-        loginUserData = UserData.fromJson(doc.data()!);
-        notifyListeners();
-      }
+      loginUserData = userFromBootstrap(await UsersApi.bootstrap());
+      notifyListeners();
     } catch (_) {}
   }
 
   Future<void> refreshUserData() async {
     try {
-      // Vérifier si l'utilisateur est connecté
       if (loginUserData.id == null || loginUserData.id!.isEmpty) {
         printVm('❌ Impossible de rafraîchir: Aucun ID utilisateur trouvé');
         return;
       }
-
-
-      // Récupérer les données fraîches depuis Firestore
-      final userDoc = await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(loginUserData.id!)
-          .getM('authProvider.dart:260');
-
-      if (!userDoc.exists) {
-        printVm('❌ Utilisateur non trouvé dans Firestore');
-        return;
-      }
-
-      // Mettre à jour les données locales
-      final updatedData = UserData.fromJson(userDoc.data()!);
-
-      // Conserver certaines données non modifiées dans Firestore
-      updatedData.oneIgnalUserid = loginUserData.oneIgnalUserid;
-
-      // Mettre à jour l'objet principal
-      loginUserData = updatedData;
-
-      // Notifier les listeners du changement
+      // Profil, soldes, abonnements et série viennent de l'API (un seul appel).
+      final updated = userFromBootstrap(await UsersApi.bootstrap());
+      updated.oneIgnalUserid = loginUserData.oneIgnalUserid;
+      updated.followingIds = loginUserData.followingIds;
+      updated.friends = loginUserData.friends;
+      loginUserData = updated;
       notifyListeners();
-
       printVm('✅ Données utilisateur rafraîchies avec succès');
-
     } catch (e) {
       printVm('❌ Erreur lors du rafraîchissement: $e');
       rethrow;
-    } finally {
     }
   }
   /// durée par défaut = 7 jours
@@ -307,16 +286,14 @@ class UserAuthProvider extends ChangeNotifier {
         await firebaseUser.reauthenticateWithCredential(credential);
       }
 
-      // Le serveur vérifie les soldes, désactive la connexion et planifie l'effacement (J+15)
+      // Le serveur vérifie les soldes, coupe l'accès et planifie l'effacement (J+15)
       try {
-        await FirebaseFunctions.instance
-            .httpsCallable('requestAccountDeletion')
-            .call({'acceptLoss': acceptLoss});
-      } on FirebaseFunctionsException catch (e) {
-        if (e.code == 'failed-precondition') {
+        await UsersApi.requestDeletion(acceptLoss: acceptLoss);
+      } on ApiException catch (e) {
+        if (e.status == 409 || e.status == 422) {
           return 'Il reste des soldes sur ton compte : retire-les ou coche la case de renonciation.';
         }
-        return 'Suppression impossible pour le moment. Réessaie plus tard.';
+        return UsersApi.message(e, fallback: 'Suppression impossible pour le moment. Réessaie plus tard.');
       }
 
       await FirebaseAuth.instance.signOut();
@@ -478,192 +455,14 @@ class UserAuthProvider extends ChangeNotifier {
       printVm("❌ Erreur incrementPostTotalInteractions: $e");
     }
   }
-  Future<void> ajouterCommissionParrainViaUserId({
-    required String userId,
-    required double montant,
-  }) async {
-    final firestore = FirebaseFirestore.instance;
+  /// Les commissions de parrainage sont versées par le serveur (grand livre de l'API) : l'application n'écrit plus jamais un solde.
+  Future<void> ajouterCommissionParrainViaUserId({String? userId, String? codeParrainage, double? montant}) async {}
 
-    // 1️⃣ Récupérer l'utilisateur via son ID
-    final userDoc = await firestore.collection('Users').doc(userId).getM('authProvider.dart:519');
+  /// Les commissions de parrainage sont versées par le serveur (grand livre de l'API) : l'application n'écrit plus jamais un solde.
+  Future<void> ajouterCommissionParrain({String? userId, String? codeParrainage, double? montant}) async {}
 
-    if (!userDoc.exists) {
-      printVm("⚠️ Utilisateur introuvable avec cet ID");
-      return;
-    }
-
-    final userData = userDoc.data();
-    if (userData == null || userData['code_parrain'] == null || userData['code_parrain'] == "") {
-      printVm("⚠️ Cet utilisateur n'a pas de parrain");
-      return;
-    }
-
-    final String codeParrain = userData['code_parrain'];
-
-    // 2️⃣ Récupérer le parrain via son code
-    final query = await firestore
-        .collection('Users')
-        .where('code_parrainage', isEqualTo: codeParrain)
-        .limit(1)
-        .getM('authProvider.dart:539');
-
-    if (query.docs.isEmpty) {
-      printVm("⚠️ Aucun parrain trouvé avec ce code");
-      await firestore.collection('AppData').doc(appDefaultData.id).update({
-        'solde_gain': FieldValue.increment(montant * 0.025),
-      });
-      return;
-    }
-
-    final DocumentSnapshot parrainDoc = query.docs.first;
-    final DocumentReference parrainRef = parrainDoc.reference;
-    final String parrainId = parrainDoc.id;
-
-    // 3️⃣ Calcul des 5%
-    final double commission = montant * 0.025;
-
-    // 4️⃣ Incrémentation du solde du parrain
-    await parrainRef.update({
-      "votre_solde_principal": FieldValue.increment(commission),
-      "updatedAt": FieldValue.serverTimestamp(),
-    });
-
-    // 5️⃣ Enregistrement de la transaction GAIN
-    final transactionRef = firestore.collection("TransactionSoldes").doc();
-
-    await transactionRef.set({
-      "id": transactionRef.id,
-      "user_id": parrainId,
-      "type": "GAIN",
-      "statut": "VALIDER",
-      "description": "Commission de parrainage (5%) d'un filleul",
-      "montant": commission,
-      "montant_total": commission,
-      "numero_depot": null,
-      "methode_paiement": "COMMISSION",
-      "frais": 0,
-      "frais_operateur": 0,
-      "frais_gain": 0,
-      "id_transaction_paygate": null,
-      "createdAt": DateTime.now().millisecondsSinceEpoch,
-    });
-
-    printVm("✅ Commission de $commission FCFA ajoutée au parrain et transaction créée.");
-  }
-
-  Future<void> ajouterCommissionParrain({
-    required String codeParrainage,
-    required double montant,
-  }) async
-  {
-    final firestore = FirebaseFirestore.instance;
-
-    // 1️⃣ Récupérer le parrain via son code
-    final query = await firestore
-        .collection('Users')
-        .where('code_parrainage', isEqualTo: codeParrainage)
-        .limit(1)
-        .getM('authProvider.dart:597');
-
-    if (query.docs.isEmpty) {
-      printVm("⚠️ Aucun parrain trouvé avec ce code");
-      return;
-    }
-
-    final DocumentSnapshot parrainDoc = query.docs.first;
-    final DocumentReference parrainRef = parrainDoc.reference;
-    final String parrainId = parrainDoc.id;
-
-    // 2️⃣ Calcul des 5%
-    final double commission = montant * 0.05;
-
-    // 3️⃣ Incrémentation du solde du parrain
-    await parrainRef.update({
-      "votre_solde_principal": FieldValue.increment(commission),
-      "updatedAt": FieldValue.serverTimestamp(),
-    });
-
-    // 4️⃣ Enregistrement de la transaction GAIN
-    final transactionRef =
-    firestore.collection("TransactionSoldes").doc();
-
-    await transactionRef.set({
-      "id": transactionRef.id,
-      "user_id": parrainId,
-      "type": "GAIN", // 👌 Type correct pour commission
-      "statut": "VALIDER",
-      "description": "Commission de parrainage (5%) sur dépôt filleul",
-      "montant": commission,
-      "montant_total": commission,
-      // Tu peux mettre null si pas utilisé
-      "numero_depot": null,
-      "methode_paiement": "COMMISSION",
-      "frais": 0,
-      "frais_operateur": 0,
-      "frais_gain": 0,
-      "id_transaction_paygate": null,
-      "createdAt": DateTime.now().millisecondsSinceEpoch,
-    });
-
-    printVm("✅ Commission de $commission FCFA ajoutée et transaction créée.");
-  }
-
-  Future<void> ajouterCadeauCommissionParrain({
-    required String codeParrainage,
-    required double montant,
-  }) async
-  {
-    final firestore = FirebaseFirestore.instance;
-
-    // 1️⃣ Récupérer le parrain via son code
-    final query = await firestore
-        .collection('Users')
-        .where('code_parrainage', isEqualTo: codeParrainage)
-        .limit(1)
-        .getM('authProvider.dart:654');
-
-    if (query.docs.isEmpty) {
-      printVm("⚠️ Aucun parrain trouvé avec ce code");
-      return;
-    }
-
-    final DocumentSnapshot parrainDoc = query.docs.first;
-    final DocumentReference parrainRef = parrainDoc.reference;
-    final String parrainId = parrainDoc.id;
-
-    // 2️⃣ Calcul des 5%
-    final double commission = montant * 0.025;
-
-    // 3️⃣ Incrémentation du solde du parrain
-    await parrainRef.update({
-      "votre_solde_principal": FieldValue.increment(commission),
-      // "updatedAt": FieldValue.serverTimestamp(),
-    });
-
-    // 4️⃣ Enregistrement de la transaction GAIN
-    final transactionRef =
-    firestore.collection("TransactionSoldes").doc();
-
-    await transactionRef.set({
-      "id": transactionRef.id,
-      "user_id": parrainId,
-      "type": "GAIN", // 👌 Type correct pour commission
-      "statut": "VALIDER",
-      "description": "Commission de parrainage (5%) sur dépôt filleul",
-      "montant": commission,
-      "montant_total": commission,
-      // Tu peux mettre null si pas utilisé
-      "numero_depot": null,
-      "methode_paiement": "COMMISSION",
-      "frais": 0,
-      "frais_operateur": 0,
-      "frais_gain": 0,
-      "id_transaction_paygate": null,
-      "createdAt": DateTime.now().millisecondsSinceEpoch,
-    });
-
-    printVm("✅ Commission de $commission FCFA ajoutée et transaction créée.");
-  }
+  /// Les commissions de parrainage sont versées par le serveur (grand livre de l'API) : l'application n'écrit plus jamais un solde.
+  Future<void> ajouterCadeauCommissionParrain({String? userId, String? codeParrainage, double? montant}) async {}
 
 
   UserData? _userData;
@@ -674,54 +473,21 @@ class UserAuthProvider extends ChangeNotifier {
   String? get userId => _auth.currentUser?.uid;
 
   Future<void> checkAndCleanViewedPosts(String userId) async {
-    try {
-      final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).getM('authProvider.dart:709');
-
-      if (userDoc.exists) {
-        final userData = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
-        final viewedPostIds = userData.viewedPostIds ?? [];
-
-        if (viewedPostIds.length >= 1000) {
-          // Garder seulement les 100 derniers posts vus (ou vider complètement)
-          final List<String> recentViewedIds = viewedPostIds.length > 100
-              ? viewedPostIds.sublist(viewedPostIds.length - 100)
-              : [];
-
-          await FirebaseFirestore.instance.collection('Users').doc(userId).update({
-            'viewedPostIds': recentViewedIds,
-          });
-
-          // Mettre à jour localement
-          loginUserData.viewedPostIds = recentViewedIds;
-
-          printVm("🔄 Nettoyage automatique: viewedPostIds réduit à ${recentViewedIds.length} éléments");
-        }
-      }
-    } catch (e) {
-      printVm('❌ Erreur nettoyage viewedPosts: $e');
-    }
+    // Les publications vues sont tenues par le serveur (post_views) : rien à nettoyer côté application.
   }
   Future<void> fetchUserData() async {
     if (_auth.currentUser != null) {
-      final userDoc = await _firestore.collection('Users').doc(_auth.currentUser!.uid).getM('authProvider.dart:737');
-      if (userDoc.exists) {
-        _userData = UserData.fromJson(userDoc.data()!);
+      try {
+        _userData = userFromBootstrap(await UsersApi.bootstrap());
+      } catch (e) {
+        printVm("Erreur lors du chargement du profil: $e");
       }
     }
-    await _fetchAvailableUsers();
     notifyListeners();
   }
 
   Future<void> _fetchAvailableUsers() async {
-    try {
-      final usersSnapshot = await _firestore.collection('Users').getM('authProvider.dart:748');
-      _availableUsers = usersSnapshot.docs
-          .map((doc) => UserData.fromJson(doc.data()))
-          .where((user) => user.id != _auth.currentUser?.uid)
-          .toList();
-    } catch (e) {
-      printVm("Erreur lors du chargement des utilisateurs: $e");
-    }
+    // La liste complète des comptes n'est plus accessible aux clients : les écrans utilisent les suggestions et la recherche de l'API.
   }
 
   void _showPaymentRequiredDialog(BuildContext context) {
@@ -742,55 +508,16 @@ class UserAuthProvider extends ChangeNotifier {
     );
   }
   Future<bool> incrementAppGain(double amount) async {
-    try {
-      // Récupérer le document unique AppDefaultData
-      DocumentReference appRef = _firestore.collection('AppData').doc(appDefaultData.id!);
-      // Remplace 'APP_ID' par l'ID du document AppDefaultData dans Firestore
-
-      await appRef.update({
-        'solde_gain': FieldValue.increment(amount),
-      });
-
-      printVm("✅ Solde gain de l'application mis à jour avec succès");
-      return true;
-    } catch (e) {
-      printVm("Erreur lors de l'ajout au solde_gain de l'application: $e");
-      return false;
-    }
+    // Le gain de l'application est tenu par le serveur (grand livre) : jamais écrit par l'application.
+    return false;
   }
   Future<void> updateUserBalance(double newBalance) async {
     loginUserData.votre_solde_principal = newBalance;
     notifyListeners();
   }
   Future<bool> deductFromBalance(BuildContext context, double amount) async {
-    _userData = loginUserData;
-    if (_userData == null || _userData!.votre_solde_principal! < amount) {
-      _showPaymentRequiredDialog(context);
-      return false;
-    }
-
-    try {
-      await _firestore.collection('Users').doc(_userData!.id).update({
-        'votre_solde_principal': FieldValue.increment(-amount),
-      });
-
-      _userData!.votre_solde_principal = _userData!.votre_solde_principal! - amount;
-
-      await _firestore.collection('TransactionSoldes').add({
-        'user_id': _userData!.id,
-        'montant': amount,
-        'type': TypeTransaction.DEPENSE.name,
-        'description': 'Participation à un live',
-        'createdAt': DateTime.now().millisecondsSinceEpoch,
-        'statut': StatutTransaction.VALIDER.name,
-      });
-
-      notifyListeners();
-      return true;
-    } catch (e) {
-      printVm("Erreur lors de la déduction du solde: $e");
-      return false;
-    }
+    // Les débits passent uniquement par l'API (achats avec clé d'idempotence) : l'application n'écrit plus un solde.
+    return false;
   }
 
   bool _isLoading = false;
@@ -1040,15 +767,8 @@ class UserAuthProvider extends ChangeNotifier {
     return prefs.getString('token');
   }
   Future<void> ajouterAuSolde(String userId, double montant) async {
-    try {
-      await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(userId)
-          .update({'votre_solde': FieldValue.increment(montant)});
-      printVm('Montant ajouté avec succès.');
-    } catch (e) {
-      printVm("Erreur lors de l'ajout du montant : $e");
-    }
+    // Les soldes sont créditées par le serveur uniquement (grand livre de l'API) : l'application n'écrit plus jamais un solde.
+    printVm("ajouterAuSolde ignoré : les soldes ne s'écrivent plus depuis l'application.");
   }
 
   Future<List<Invitation>> userInvitaionRecu() async {
@@ -1201,58 +921,61 @@ class UserAuthProvider extends ChangeNotifier {
     loginUserNotFound = false;
 
     try {
-      final userSnapshot = await FirebaseFirestore.instance
-          .collection('Users')
-          .where("id", isEqualTo: id)
-          .limit(1)
-          .getM('authProvider.dart:1208');
-
-      if (userSnapshot.docs.isEmpty) {
-        loginUserNotFound = true;
-        return false;
+      // Un seul appel : profil, soldes, abonnements, non lus, série, règle des pubs, rôle (ETag/304 géré par le serveur).
+      loginUserData = userFromBootstrap(await UsersApi.bootstrap());
+      haveData = true; // les étapes suivantes (push, amis, abonnements suivis) ne sont pas bloquantes
+      loginUserData.oneIgnalUserid = OneSignal.User.pushSubscription.id;
+      unawaited(PushService.registerForUser(loginUserData.id ?? '')); // jeton FCM de cet appareil
+      unawaited(_loadSocialGraph());
+      notifyListeners();
+    } on ApiException catch (e, stack) {
+      debugPrint("Erreur de chargement du profil (API): $e");
+      if (e.status == 403 || e.status == 404) {
+        loginUserNotFound = true; // pas de profil : à créer (POST /v1/me/register)
       }
-
-      // 1. Chargement des données utilisateur
-      final userDoc = userSnapshot.docs.first;
-      loginUserData = UserData.fromJson(userDoc.data()..['id'] = userDoc.id);
-      haveData = true; // données chargées : les étapes suivantes (push, série, abonnement) ne sont pas bloquantes
-
-      // 2. Mise à jour sélective des champs sans toucher aux stories
-      final updateData = <String, dynamic>{
-        'oneIgnalUserid': OneSignal.User.pushSubscription.id,
-        // 'popularite': _calculatePopularity(loginUserData!),
-        // 'compteTarif': loginUserData!.popularite! * 80,
-        'last_time_active': DateTime.now().millisecondsSinceEpoch,
-        // Plateforme de l'appareil (statistiques admin : connexions iOS / Android)
-        'platform': kIsWeb ? 'web' : (Platform.isIOS ? 'ios' : 'android'),
-      };
-
-      // 3. Update ciblé pour ne pas écraser les stories
-      await userDoc.reference.update(updateData);
-      unawaited(PushService.registerForUser(userDoc.id)); // jeton FCM de cet appareil
-
-
-      haveData = true;
-
-      // 5. Rafraîchissement des données locales
-      await _refreshUserData(userDoc.reference);
-
-      // 6. Streak — init + vérification quotidienne
-      final uid = loginUserData.id;
-      if (uid != null && uid.isNotEmpty) {
-        await StreakService.initIfNeeded(uid);
-        await StreakService.checkAndResetDaily(uid);
-        // 7. Vérifier et réinitialiser l'abonnement expiré (si besoin)
-        await AbonnementService().verifierEtMettreAJourAbonnement(uid);
-      }
-
+      debugPrint("$stack");
     } catch (e, stack) {
       debugPrint("Erreur de connexion: $e");
       debugPrint("Stack trace: $stack");
-      // haveData reste true si le profil a déjà été chargé avant l'erreur
     }
-
     return haveData;
+  }
+
+  /// Amis et comptes suivis de la personne connectée (API), chargés en arrière-plan après l'ouverture.
+  Future<void> _loadSocialGraph() async {
+    final uid = loginUserData.id;
+    if (uid == null) return;
+    try {
+      final friends = <Friends>[];
+      String? cursor;
+      do {
+        final page = await UsersApi.friends(cursor: cursor, limit: 100);
+        friends.addAll(page.items.map((j) => friendFromApi(j, uid)));
+        cursor = page.next;
+      } while (cursor != null && friends.length < 1000);
+      loginUserData.friends = friends;
+      loginUserData.friendsIds = friends.map((f) => f.friendId).whereType<String>().toList();
+
+      final following = <String>[];
+      cursor = null;
+      do {
+        final page = await UsersApi.following(uid, cursor: cursor, limit: 100);
+        following.addAll(page.items.map((j) => '${j['id']}'));
+        cursor = page.next;
+      } while (cursor != null && following.length < 2000);
+      loginUserData.followingIds = following;
+
+      // Invitations en attente, dans les deux sens (pour les boutons « inviter » / « invitation envoyée »)
+      final sent = await UsersApi.invitations(direction: 'sent', status: 'pending', limit: 100);
+      final received = await UsersApi.invitations(direction: 'received', status: 'pending', limit: 100);
+      loginUserData.mesInvitationsEnvoyerId = sent.items.map((j) => '${(j['user'] as Map)['id']}').toList();
+      loginUserData.mesInvitationsEnvoyer = sent.items.map((j) => invitationFromApi(j, uid, sent: true)).toList();
+      loginUserData.autreInvitationsEnvoyerId = received.items.map((j) => '${(j['user'] as Map)['id']}').toList();
+      loginUserData.autreInvitationsEnvoyer = received.items.map((j) => invitationFromApi(j, uid, sent: false)).toList();
+      notifyListeners();
+    } catch (e) {
+      printVm("Amis / abonnements non chargés : $e");
+    }
   }
 
   double _calculatePopularity(UserData user) {
@@ -1260,68 +983,12 @@ class UserAuthProvider extends ChangeNotifier {
         (appDefaultData.nbr_abonnes! + appDefaultData.nbr_likes! + appDefaultData.nbr_loves!);
   }
 
-  Future<void> _refreshUserData(DocumentReference ref) async {
-    final updatedDoc = await ref.getM('authProvider.dart:1263');
-    loginUserData = UserData.fromJson(updatedDoc.data() as Map<String, dynamic>)
-      ..friends = loginUserData?.friends;
+  Future<void> _refreshUserData(Object? ref) async {
+    final friends = loginUserData.friends;
+    loginUserData = userFromBootstrap(await UsersApi.bootstrap())..friends = friends;
   }
 
-  Future<bool> getLoginUser2(String id) async {
-    await getAppData();
-    late List<UserData> list = [];
-    late bool haveData = false;
-
-    CollectionReference collectionRef =
-    FirebaseFirestore.instance.collection('Users');
-    // Get docs from collection reference
-    QuerySnapshot querySnapshot = await collectionRef.where(
-        "id", isEqualTo: id!).getM('authProvider.dart:1277')
-        .then((value) {
-      printVm(value);
-      return value;
-    }).catchError((onError) {
-
-    });
-
-    // Get data from docs and convert map to List
-    list = querySnapshot.docs.map((doc) =>
-        UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-
-    if (list.isNotEmpty) {
-      loginUserData = list.first;
-      printVm("OneSignal=====");
-//       loginUserData.abonnes=loginUserData.userAbonnesIds==null?0:loginUserData.userAbonnesIds!.length;
-// updateUser(loginUserData);
-
-    //  printVm("OneSignal id : ${OneSignal.User.pushSubscription.id}");
-    //  printVm("OneSignal token : ${OneSignal.User.pushSubscription.token}");
-
-      loginUserData.oneIgnalUserid = OneSignal.User.pushSubscription.id;
-      unawaited(PushService.registerForUser(loginUserData.id ?? '')); // jeton FCM de cet appareil
-
-      loginUserData.popularite =
-          (loginUserData.abonnes! + loginUserData.likes! +
-              loginUserData.jaimes!) /
-              (appDefaultData.nbr_abonnes! + appDefaultData.nbr_likes! +
-                  appDefaultData.nbr_loves!);
-      loginUserData.compteTarif = loginUserData.popularite! * 80;
-      await firestore.collection('Users').doc(loginUserData!.id).update(
-          loginUserData!.toJson());
-      var friendsStream = FirebaseFirestore.instance.collection('Friends');
-      QuerySnapshot friendSnapshot = await friendsStream.where(Filter.or(
-        Filter('current_user_id', isEqualTo: loginUserData.id!),
-        Filter('friend_id', isEqualTo: loginUserData.id!),
-
-      )).getM('authProvider.dart:1313');
-
-      loginUserData.friends = friendSnapshot.docs.map((doc) =>
-          Friends.fromJson(doc.data() as Map<String, dynamic>)).toList();
-      haveData = true;
-    }
-
-
-    return haveData;
-  }
+  Future<bool> getLoginUser2(String id) async => getLoginUser(id);
   Future<bool> updateUser(UserData user) async {
     try{
 
@@ -1340,17 +1007,12 @@ class UserAuthProvider extends ChangeNotifier {
   }
   Future<bool> updateUserCountryCode(UserData user) async {
     try {
-      await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(user.id)
-          .update({
-        "countryData": user.countryData, // ✅ uniquement ce champ
-      });
-
-      printVm("countryData update : ${user.countryData}");
+      final cc = user.countryData?['countryCode'] ?? user.countryData?['code'];
+      if (cc == null || cc.length != 2) return false;
+      await UsersApi.updateMe({'country_code': cc.toUpperCase()});
       return true;
     } catch (e) {
-      printVm("erreur update countryData : $e");
+      printVm("erreur update pays : $e");
       return false;
     }
   }
@@ -1378,35 +1040,12 @@ class UserAuthProvider extends ChangeNotifier {
 
 
   Future<List<UserData>> getUserById(String id) async {
-    //await getAppData();
-    late List<UserData> list = [];
-    late bool haveData = false;
-
-    CollectionReference collectionRef =
-    FirebaseFirestore.instance.collection('Users');
-    // Get docs from collection reference
-    QuerySnapshot querySnapshot = await collectionRef.where(
-        "id", isEqualTo: id!).getM('authProvider.dart:1387')
-        .then((value) {
-      printVm(value);
-      return value;
-    }).catchError((onError) {
-
-    });
-
-    // Get data from docs and convert map to List
-    list = querySnapshot.docs.map((doc) =>
-        UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-    // for(UserData user in list){
-    //   user.abonnes=user.userAbonnesIds==null?0:user.userAbonnesIds!.length;
-    //   updateUser(user);
-    //
-    //
-    // }
-
-
-
-    return list;
+    try {
+      return [userFromApi(await UsersApi.publicProfile(id))];
+    } catch (e) {
+      printVm("erreur profil $id : $e");
+      return [];
+    }
   }
   Future<void> sendPushToSpecificUsers({
     required List<String> userIds,
@@ -2269,25 +1908,17 @@ if(actionType == 'comment'){
   }
 // Récupère tous les utilisateurs (réservé à l'admin)
   Future<List<UserData>> getAllUsers() async {
-    final snapshot = await FirebaseFirestore.instance.collection('Users').getM('authProvider.dart:2270');
-    return snapshot.docs.map((doc) => UserData.fromJson(doc.data())).toList();
+    // La liste complète des comptes n'est plus exposée aux clients (administration : routes /admin de l'API).
+    return [];
   }
 
 // Récupère uniquement les utilisateurs dont l'ID est dans la liste
   Future<List<UserData>> getUsersByIds(List<String> ids) async {
-    // ⚠️ Firebase limite les requêtes whereIn à 10 éléments max
-    final List<UserData> users = [];
-
-    for (var i = 0; i < ids.length; i += 10) {
-      final chunk = ids.sublist(i, i + 10 > ids.length ? ids.length : i + 10);
-      final snapshot = await FirebaseFirestore.instance
-          .collection('Users')
-          .where(FieldPath.documentId, whereIn: chunk)
-          .getM('authProvider.dart:2284');
-
-      users.addAll(snapshot.docs.map((doc) => UserData.fromJson(doc.data())));
+    final users = <UserData>[];
+    for (var i = 0; i < ids.length; i += 50) {
+      final rows = await UsersApi.lookup(ids.sublist(i, i + 50 > ids.length ? ids.length : i + 50));
+      users.addAll(rows.map(userFromApi));
     }
-
     return users;
   }
 
@@ -2352,139 +1983,14 @@ if(actionType == 'comment'){
       return false;
     }
   }
-  Future<bool> abonner2(UserData updateUserData,BuildContext context) async {
-    try{
-      late UserProvider userProvider =
-      Provider.of<UserProvider>(context, listen: false);
-      await getUserById(updateUserData.id!).then(
-              (users) async {
-            if(users.isNotEmpty)
-              updateUserData=users.first;
-            if (!isUserAbonne(updateUserData.userAbonnesIds!,loginUserData.id!)) {
-
-              UserAbonnes userAbonne = UserAbonnes();
-              userAbonne.compteUserId=loginUserData.id;
-              userAbonne.abonneUserId=updateUserData.id;
-
-              userAbonne.createdAt  = DateTime.now().millisecondsSinceEpoch;
-              userAbonne.updatedAt  = DateTime.now().millisecondsSinceEpoch;
-              await  userProvider.sendAbonnementRequest(userAbonne,updateUserData,context).then((value) async {
-                if (value) {
-
-
-                  // await userProvider.getUsers(loginUserData!.id!);
-                  loginUserData.userAbonnes!.add(userAbonne);
-                  // Mettre à jour followingIds sur le document de l'utilisateur courant
-                  await FirebaseFirestore.instance
-                      .collection('Users')
-                      .doc(loginUserData.id)
-                      .update({
-                    'followingIds': FieldValue.arrayUnion([updateUserData.id!]),
-                  });
-                  loginUserData.followingIds ??= [];
-                  if (!loginUserData.followingIds!.contains(updateUserData.id!)) {
-                    loginUserData.followingIds!.add(updateUserData.id!);
-                  }
-                  await getCurrentUser(loginUserData!.id!);
-
-                  // users.first.abonnes=users.first.abonnes!+1;
-                  updateUserData.userAbonnesIds!.add(loginUserData.id!);
-                  // updateUserData.userAbonnesIds!.add(loginUserData.id!);
-
-                  // updateUserData= users.first;
-
-                  updateUserData.abonnes=updateUserData.userAbonnesIds!.length;
-                  // updateUserData.abonnes= updateUserData.abonnes!+1;
-                  // updateUserData= users.first;
-
-                  await updateUser(updateUserData).then((value) async {
-                    if (updateUserData.oneIgnalUserid!=null&&updateUserData.oneIgnalUserid!.length>5) {
-                      await sendNotification(
-                      userIds: [updateUserData.oneIgnalUserid!],
-                      smallImage: "${loginUserData.imageUrl!}",
-                      send_user_id: "${loginUserData.id!}",
-                      recever_user_id: "${updateUserData.id!}",
-                      message: "📢 @${loginUserData.pseudo!} s'est abonné(e) à votre compte !",
-                      type_notif: NotificationType.ABONNER.name,
-                      post_id: "",
-                      post_type: "", chat_id: ''
-                      );
-
-                      NotificationData notif=NotificationData();
-                      notif.id=firestore
-                          .collection('Notifications')
-                          .doc()
-                          .id;
-                      notif.titre="Nouveau Abonnement ✅";
-                      notif.media_url=loginUserData.imageUrl;
-                      notif.type=NotificationType.ABONNER.name;
-                      notif.description="@${loginUserData.pseudo!} s'est abonné(e) à votre compte";
-                      notif.users_id_view=[];
-                      notif.user_id=loginUserData.id;
-                      notif.receiver_id=updateUserData.id;
-                      notif.post_id="";
-                      notif.post_data_type=PostDataType.IMAGE.name!;
-                      notif.updatedAt =
-                          DateTime.now().microsecondsSinceEpoch;
-                      notif.createdAt =
-                          DateTime.now().microsecondsSinceEpoch;
-                      notif.status = PostStatus.VALIDE.name;
-
-                      // users.add(pseudo.toJson());
-
-                      await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-
-
-                    }
-                    SnackBar snackBar = SnackBar(
-                      content: Text('abonné, Bravo ! Vous avez gagné 4 points.',textAlign: TextAlign.center,style: TextStyle(color: Colors.green),),
-                    );
-                    ScaffoldMessenger.of(context).showSnackBar(snackBar);
-
-                    // Backfill 50 posts récents du créateur suivi
-                    FirebaseFunctions.instance
-                        .httpsCallable('backfillPostsOnFollow')
-                        .call({'followedUserId': updateUserData.id}).ignore();
-
-                  },);
-
-
-                }  else{
-                  SnackBar snackBar = SnackBar(
-                    content: Text('une erreur',textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
-                  );
-                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
-
-                }
-              },);
-
-
-     
-            }else{
-              SnackBar snackBar = SnackBar(
-                content: Text('Vous êtes déjà abonné.',textAlign: TextAlign.center,style: TextStyle(color: Colors.red),),
-              );
-              ScaffoldMessenger.of(context).showSnackBar(snackBar);
-            }
-
-          }
-
-
-      );
-      return true;
-    }catch(e){
-      printVm("erreur update Invitations : ${e}");
-      return false;
-    }
-  }
+  Future<bool> abonner2(UserData updateUserData,BuildContext context) async => abonner(updateUserData, context);
 
   Future<bool> abonner(UserData updateUserData, BuildContext context) async {
     try {
       final currentUserId = loginUserData.id!;
       final creatorId = updateUserData.id!;
-      final fs = FirebaseFirestore.instance;
 
-      // Fonction serveur : crée Follows/{créateur}_{abonné}, tient le compteur et followingIds.
+      // L'API crée l'abonnement, tient les compteurs, notifie le créateur (ABONNER) et applique le plafond d'abonnements.
       final bool alreadySubscribed = await FollowService.follow(creatorId);
 
       if (alreadySubscribed) {
@@ -2494,22 +2000,7 @@ if(actionType == 'comment'){
         return true;
       }
 
-      // La transaction est validée : l'abonnement existe. Le reste (relation, points, notification,
-      // mise à jour locale) est secondaire et ne doit jamais afficher « Erreur technique ».
-      try {
-      // Créer le doc de relation dans Abonnements (hors transaction — pas critique)
-      final abonneId = fs.collection('Abonnements').doc().id;
-      final userAbonne = UserAbonnes()
-        ..id = abonneId
-        ..compteUserId = currentUserId
-        ..abonneUserId = creatorId
-        ..createdAt = DateTime.now().millisecondsSinceEpoch
-        ..updatedAt = DateTime.now().millisecondsSinceEpoch;
-      fs.collection('Abonnements').doc(abonneId).set(userAbonne.toJson());
-
       // Mise à jour locale
-      loginUserData.userAbonnes ??= [];
-      loginUserData.userAbonnes!.add(userAbonne);
       loginUserData.followingIds ??= [];
       if (!loginUserData.followingIds!.contains(creatorId)) {
         loginUserData.followingIds!.add(creatorId);
@@ -2519,91 +2010,25 @@ if(actionType == 'comment'){
         updateUserData.userAbonnesIds!.add(currentUserId);
       }
       updateUserData.abonnes = (updateUserData.abonnes ?? 0) + 1;
-
-      addPointsForAction(UserAction.abonne);
-      addPointsForOtherUserAction(creatorId, UserAction.autre);
-
-      // Envoi de notification
-      if (updateUserData.oneIgnalUserid != null && updateUserData.oneIgnalUserid!.length > 5) {
-        await sendNotification(
-          userIds: [updateUserData.oneIgnalUserid!],
-          smallImage: loginUserData.imageUrl!,
-          send_user_id: currentUserId,
-          recever_user_id: creatorId,
-          message: "📢 @${loginUserData.pseudo!} s'est abonné(e) à votre compte !",
-          type_notif: NotificationType.ABONNER.name,
-          post_id: '',
-          post_type: '',
-          chat_id: '',
-        );
-
-        final notif = NotificationData()
-          ..id = fs.collection('Notifications').doc().id
-          ..titre = "Nouvel Abonnement ✅"
-          ..media_url = loginUserData.imageUrl
-          ..type = NotificationType.ABONNER.name
-          ..description = "@${loginUserData.pseudo!} s'est abonné(e) à votre compte"
-          ..user_id = currentUserId
-          ..receiver_id = creatorId
-          ..updatedAt = DateTime.now().microsecondsSinceEpoch
-          ..createdAt = DateTime.now().microsecondsSinceEpoch
-          ..status = PostStatus.VALIDE.name;
-        await fs.collection('Notifications').doc(notif.id).set(notif.toJson());
-      }
-
-      } catch (e, st) {
-        printVm("⚠️ Abonnement enregistré, étapes secondaires échouées : $e\n$st");
-      }
+      FollowersCountService.instance.invalidate(creatorId);
+      notifyListeners();
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Abonné, Bravo ! Vous avez gagné 4 points.', textAlign: TextAlign.center, style: TextStyle(color: Colors.green))),
+        SnackBar(content: Text('Abonné, Bravo !', textAlign: TextAlign.center, style: TextStyle(color: Colors.green))),
       );
       return true;
     } catch (e) {
       printVm("Erreur lors de l'abonnement : $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur technique', textAlign: TextAlign.center, style: TextStyle(color: Colors.red))),
+        SnackBar(content: Text(UsersApi.message(e, fallback: 'Erreur technique'), textAlign: TextAlign.center, style: TextStyle(color: Colors.red))),
       );
       return false;
     }
   }
 
   Future<bool> getUserByPhone(String phone) async {
-    //   await getAppData();
-    late List<UserData> list = [];
-    late bool haveData = false;
-
-    CollectionReference collectionRef =
-    FirebaseFirestore.instance.collection('Users');
-    // Get docs from collection reference
-    QuerySnapshot querySnapshot = await collectionRef.where(
-        "numero_de_telephone", isEqualTo: phone!).getM('authProvider.dart:2578')
-        .then((value) {
-      printVm(value);
-      return value;
-    }).catchError((onError) {
-
-    });
-
-    // Get data from docs and convert map to List
-    list = querySnapshot.docs.map((doc) =>
-        UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-
-    if (list.isNotEmpty) {
-      for(UserData user in list){
-        // user.abonnes=user.userAbonnesIds==null?0:user.userAbonnesIds!.length;
-        // updateUserData(user);
-
-
-      }
-      loginUserData = list.first;
-
-
-      haveData = true;
-    }
-
-
-    return haveData;
+    // La recherche par numéro de téléphone n'existe pas dans l'API (voir lacunes_api_utilisateurs.md).
+    return false;
   }
 
   Future<List<UserIACompte>> getUserIa(String user_id) async {
@@ -2658,81 +2083,25 @@ if(actionType == 'comment'){
 
   Future<bool> getCurrentUser(String currentUserId) async {
     await getAppData();
-    //listUsers = [];
     bool hasData = false;
-
-
-    await userService.getUserData(userId: currentUserId).then((value) async {
-      loginUserData = value;
-      // loginUserData.abonnes=loginUserData.userAbonnesIds==null?0:loginUserData.userAbonnesIds!.length;
-
-      loginUserData.popularite =
-          (loginUserData.abonnes! + loginUserData.likes! +
-              loginUserData.jaimes!) /
-              (appDefaultData.nbr_abonnes! + appDefaultData.nbr_likes! +
-                  appDefaultData.nbr_loves!);
+    try {
+      final friends = loginUserData.friends;
+      final following = loginUserData.followingIds;
+      loginUserData = userFromBootstrap(await UsersApi.bootstrap());
       loginUserData.oneIgnalUserid = OneSignal.User.pushSubscription.id;
-      unawaited(PushService.registerForUser(loginUserData.id ?? '')); // jeton FCM de cet appareil
-
-
-
-      loginUserData.compteTarif = loginUserData.popularite! * 80;
-      await firestore.collection('Users').doc(loginUserData!.id).update(
-          loginUserData!.toJson());
-      var friendsStream = FirebaseFirestore.instance.collection('Friends');
-      QuerySnapshot friendSnapshot = await friendsStream.where(Filter.or(
-        Filter('current_user_id', isEqualTo: loginUserData.id!),
-        Filter('friend_id', isEqualTo: loginUserData.id!),
-
-      )).getM('authProvider.dart:2684');
-
-      loginUserData.friends = friendSnapshot.docs.map((doc) =>
-          Friends.fromJson(doc.data() as Map<String, dynamic>)).toList();
+      if (friends != null) loginUserData.friends = friends;
+      if (following != null && following.isNotEmpty) loginUserData.followingIds = following;
       hasData = true;
-    },);
-
-
+    } catch (e) {
+      printVm("erreur chargement du profil : $e");
+    }
     notifyListeners();
     return hasData;
   }
 
   Future<bool> getCurrentUserByPhone(String phone) async {
-    await getAppData();
-    //listUsers = [];
-    bool hasData = false;
-
-
-    await userService.getUserDataByPhone(phone: phone).then((value) async {
-
-      loginUserData = value;
-      // loginUserData.abonnes=loginUserData.userAbonnesIds==null?0:loginUserData.userAbonnesIds!.length;
-
-      loginUserData.popularite =
-          (loginUserData.abonnes! + loginUserData.likes! +
-              loginUserData.jaimes!) /
-              (appDefaultData.nbr_abonnes! + appDefaultData.nbr_likes! +
-                  appDefaultData.nbr_loves!);
-      loginUserData.oneIgnalUserid = OneSignal.User.pushSubscription.id;
-      unawaited(PushService.registerForUser(loginUserData.id ?? '')); // jeton FCM de cet appareil
-
-      loginUserData.compteTarif = loginUserData.popularite! * 80;
-      await firestore.collection('Users').doc(loginUserData!.id).update(
-          loginUserData!.toJson());
-      var friendsStream = FirebaseFirestore.instance.collection('Friends');
-      QuerySnapshot friendSnapshot = await friendsStream.where(Filter.or(
-        Filter('current_user_id', isEqualTo: loginUserData.id!),
-        Filter('friend_id', isEqualTo: loginUserData.id!),
-
-      )).getM('authProvider.dart:2722');
-
-      loginUserData.friends = friendSnapshot.docs.map((doc) =>
-          Friends.fromJson(doc.data() as Map<String, dynamic>)).toList();
-      hasData = true;
-    },);
-
-
-    notifyListeners();
-    return hasData;
+    // Pas de recherche par téléphone dans l'API : connexion par e-mail / Google uniquement (voir lacunes_api_utilisateurs.md).
+    return false;
   }
   Future<String?> generateText({
     required List<Message> ancienMessages,
@@ -3223,34 +2592,24 @@ if(actionType == 'comment'){
     }
   }
 
-  Stream<UserData> getUserStream() {
+  Stream<UserData> getUserStream() async* {
     final uid = loginUserData.id;
     if (uid == null) throw Exception("User ID manquant");
-    return FirebaseFirestore.instance
-        .collection('Users')
-        .doc(uid)
-        .snapshotsM('authProvider.dart:3277')
-        .map((doc) => UserData.fromJson(doc.data()!));
+    // Pas de temps réel côté API : profil et soldes relus toutes les 20 s tant que l'écran écoute.
+    while (true) {
+      try {
+        yield userFromBootstrap(await UsersApi.bootstrap());
+      } catch (e) {
+        printVm("erreur lecture du profil : $e");
+      }
+      await Future<void>.delayed(const Duration(seconds: 20));
+    }
   }
 
   /// Retourne directement le Stream des données AppDefaultData
-  Stream<AppDefaultData> getAppDataStream() {
-    const documentId = "XgkSxKc10vWsJJ2uBraT"; // ID du document Firestore
-
-    return FirebaseFirestore.instance
-        .collection("AppData")
-        .doc(documentId)
-        .snapshotsM('authProvider.dart:3288')
-        .map((documentSnapshot) {
-      if (documentSnapshot.exists) {
-        final data = documentSnapshot.data() as Map<String, dynamic>;
-        data['id'] = documentSnapshot.id;
-        return AppDefaultData.fromJson(data);
-      } else {
-        // Retourner des données par défaut si le document n'existe pas
-        return AppDefaultData();
-      }
-    });
+  Stream<AppDefaultData> getAppDataStream() async* {
+    // Réglages publics seulement (GET /v1/config) ; les compteurs globaux de l'administration viendront d'une route /admin (voir lacunes_api_utilisateurs.md).
+    yield await authService.getAppData();
   }
 
 
@@ -3288,82 +2647,11 @@ if(actionType == 'comment'){
 Future<void> addPointsForAction(UserAction action) async {
   // Une publication vient de réussir : retour à l'accueil et affichage en tête du fil (voir NewContentBus)
   if (action == UserAction.post) NewContentBus.instance.onPublished();
-  final FirebaseAuth auth = FirebaseAuth.instance;
-  final FirebaseFirestore db = FirebaseFirestore.instance;
-
-  // 1. Récupérer l'utilisateur connecté
-  final currentUser = auth.currentUser;
-  if (currentUser == null) {
-    throw Exception("Aucun utilisateur connecté");
-  }
-
-  final userRef = db.collection("Users").doc(currentUser.uid);
-  final appRef = db.collection("AppData").doc("XgkSxKc10vWsJJ2uBraT");
-
-  // 2. Récupérer points pour l'action
-  int pointsToAdd = ActionPoints.getPoints(action);
-
-  // 3. Récupérer les données actuelles
-  final userSnapshot = await userRef.getM('authProvider.dart:3374');
-  final appSnapshot = await appRef.getM('authProvider.dart:3375');
-
-  int oldUserPoints = (userSnapshot.data() as Map?)?["totalPoints"] ?? 0;
-  int oldAppPoints = (appSnapshot.data() as Map?)?["appTotalPoints"] ?? 0;
-
-  // 4. Calculer nouvelles valeurs
-  int newUserPoints = oldUserPoints + pointsToAdd;
-  int newAppPoints = oldAppPoints + pointsToAdd;
-
-  double newPopularity = newAppPoints == 0
-      ? 0
-      : (newUserPoints / newAppPoints) * 100;
-
-  // 5. Mise à jour Firestore
-  await userRef.update({
-    "totalPoints": newUserPoints,
-    "popularite": newPopularity,
-  });
-
-  await appRef.update({
-    "appTotalPoints": newAppPoints,
-  });
+  // Les points et la popularité ne s'écrivent plus depuis l'application (le serveur les tient ; voir lacunes_api_utilisateurs.md).
 }
 
 Future<void> addPointsForOtherUserAction(String userid,UserAction action) async {
-  final FirebaseFirestore db = FirebaseFirestore.instance;
-
-
-
-  final userRef = db.collection("Users").doc(userid);
-  final appRef = db.collection("AppData").doc("XgkSxKc10vWsJJ2uBraT");
-
-  // 2. Récupérer points pour l'action
-  int pointsToAdd = ActionPoints.getPoints(action);
-
-  // 3. Récupérer les données actuelles
-  final userSnapshot = await userRef.getM('authProvider.dart:3411');
-  final appSnapshot = await appRef.getM('authProvider.dart:3412');
-
-  int oldUserPoints = (userSnapshot.data() as Map?)?["totalPoints"] ?? 0;
-  int oldAppPoints = (appSnapshot.data() as Map?)?["appTotalPoints"] ?? 0;
-
-  // 4. Calculer nouvelles valeurs
-  int newUserPoints = oldUserPoints + pointsToAdd;
-  int newAppPoints = oldAppPoints + pointsToAdd;
-
-  double newPopularity = newAppPoints == 0
-      ? 0
-      : (newUserPoints / newAppPoints) * 100;
-
-  // 5. Mise à jour Firestore
-  await userRef.update({
-    "totalPoints": newUserPoints,
-    "popularite": newPopularity,
-  });
-
-  await appRef.update({
-    "appTotalPoints": newAppPoints,
-  });
+  // Voir addPointsForAction : points tenus par le serveur.
 }
 // 🔹 Classe pour stocker les résultats
 class _UserNotificationResult {

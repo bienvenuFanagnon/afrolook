@@ -1,4 +1,5 @@
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import 'package:afrotok/services/api/users_api.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -19,14 +20,13 @@ class AccountGate {
     final until = _okUntil;
     if (until != null && DateTime.now().isBefore(until)) return true;
     try {
-      final r = await FirebaseFunctions.instance.httpsCallable('accountPublishStatus').call();
-      final st = Map<String, dynamic>.from(r.data as Map);
+      final st = await UsersApi.publishStatus(); // GET /v1/me/publish-status (voir lacunes_api_utilisateurs.md)
       if (st['blocked'] != true) {
         _okUntil = DateTime.now().add(const Duration(minutes: 5));
         return true;
       }
       if (!context.mounted) return false;
-      final ok = await _showBlocked(context, (st['cost'] as num?)?.toInt() ?? 0, (st['daysInactive'] as num?)?.toInt() ?? 20);
+      final ok = await _showBlocked(context, (st['cost'] as num?)?.toInt() ?? 0, (st['days_inactive'] as num?)?.toInt() ?? 20);
       if (ok) _okUntil = DateTime.now().add(const Duration(minutes: 5));
       return ok;
     } catch (_) {
@@ -58,6 +58,7 @@ class _BlockedDialog extends StatefulWidget {
 class _BlockedDialogState extends State<_BlockedDialog> {
   bool _busy = false;
   String? _error;
+  final String _idemKey = ApiClient.newIdempotencyKey(); // gardée tant que la personne n'a pas confirmé ou annulé : jamais de double débit
 
   Future<void> _unlock() async {
     setState(() {
@@ -65,20 +66,20 @@ class _BlockedDialogState extends State<_BlockedDialog> {
       _error = null;
     });
     try {
-      await FirebaseFunctions.instance.httpsCallable('unlockAccount').call();
+      await UsersApi.unlockAccount(idempotencyKey: _idemKey);
       try {
         final coin = Provider.of<CoinGiftUserProvider>(context, listen: false);
         final uid = coin.currentUser?.id;
         if (uid != null) await coin.refreshBalance(uid);
       } catch (_) {}
       if (mounted) Navigator.pop(context, true);
-    } on FirebaseFunctionsException catch (e) {
+    } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
         _busy = false;
-        _error = e.code == 'resource-exhausted'
+        _error = e.isInsufficientCoins
             ? context.tr('Il te faut {a} pièces pour débloquer ton compte.', {'a': widget.cost})
-            : (e.message ?? context.tr('Déblocage impossible'));
+            : (e.message.isNotEmpty ? e.message : context.tr('Déblocage impossible'));
       });
     } catch (_) {
       if (mounted) setState(() => _busy = false);

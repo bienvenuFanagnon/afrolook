@@ -1,7 +1,7 @@
 import 'payment_report.dart';
 import 'dart:async';
 
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -9,6 +9,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/coin_pack.dart';
+import 'api/wallet_api.dart';
 import '../utils/platform_guard.dart';
 
 enum AppleIapEventType { success, canceled, error, pending }
@@ -127,17 +128,16 @@ class AppleIapService extends ChangeNotifier {
     // Pas connecté : on ne termine pas l'achat, Apple le redonnera au prochain lancement.
     if (FirebaseAuth.instance.currentUser == null || purchase.purchaseID == null) return;
     try {
-      final result = await FirebaseFunctions.instance
-          .httpsCallable('verifyApplePurchase')
-          .call({'transactionId': purchase.purchaseID});
+      // Le reçu est relu chez Apple par l'API avant de créditer (jamais côté application).
+      final result = await WalletApi.instance.verifyApple(purchase.purchaseID!);
       await _complete(purchase);
-      final coins = (result.data is Map ? (result.data['coins'] as num?)?.toInt() : null) ?? coinsFor(purchase.productID);
+      final coins = (result['coins'] as num?)?.toInt() ?? coinsFor(purchase.productID);
       onCoinsCredited?.call();
       _finishUi(AppleIapEvent(AppleIapEventType.success, coins: coins));
-    } on FirebaseFunctionsException catch (e) {
-      if (!{'invalid-argument', 'failed-precondition', 'permission-denied'}.contains(e.code)) PaymentReport.send(provider: 'apple', step: 'verify', code: e.code, message: e.message ?? e);
-      const definitive = {'invalid-argument', 'failed-precondition', 'permission-denied'};
-      if (definitive.contains(e.code)) {
+    } on ApiException catch (e) {
+      final definitive = e.status >= 400 && e.status < 500 && e.status != 401 && e.status != 429 && e.code != 'pending';
+      if (!definitive) PaymentReport.send(provider: 'apple', step: 'verify', code: e.code, message: e.message);
+      if (definitive) {
         await _complete(purchase);
         _finishUi(const AppleIapEvent(AppleIapEventType.error,
             message: "Cet achat n'a pas pu être validé. Contacte le support si tu as été débité."));

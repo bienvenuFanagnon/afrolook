@@ -19,8 +19,13 @@ import 'package:cross_file/cross_file.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:audioplayers/audioplayers.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import 'package:afrotok/services/api/api_gateway.dart';
+import 'package:afrotok/services/api/canal_mapper.dart';
+import 'package:afrotok/services/api/posts_api.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
+import 'package:afrotok/widgets/api_error_dialogs.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/services/block_service.dart';
 import 'package:afrotok/pages/defi/defi_ui.dart';
@@ -59,7 +64,6 @@ import '../component/showUserDetails.dart';
 import '../postComments.dart';
 import '../postDetails.dart';
 import '../postDetailsVideo.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 
 import '../../services/utils/abonnement_utils.dart';
 import '../../services/postService/feed_interaction_service.dart';
@@ -353,7 +357,6 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
   // Pour la publication
   final String appId = 'AfrolookApp';
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   bool get _shouldShowAd => (widget.index + 1) % 5 == 0;
 
@@ -605,48 +608,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   }
 
   Future<void> _generateAndUploadThumbnail() async {
-    // VideoThumbnail + dart:io File indisponibles sur Flutter Web
-    if (kIsWeb) return;
-    if (_isGeneratingThumbnail) return;
-    setState(() => _isGeneratingThumbnail = true);
-
-    try {
-      final videoUrl = widget.post.url_media;
-      if (videoUrl == null) return;
-
-      final thumbnailFile = await VideoThumbnail.thumbnailFile(
-        video: videoUrl,
-        thumbnailPath: (await getTemporaryDirectory()).path,
-        imageFormat: ImageFormat.JPEG,
-        maxWidth: 400,
-        quality: 75,
-        timeMs: 1000,
-      );
-
-      if (thumbnailFile == null) return;
-
-      final fileName = 'thumbnails/thumb_${widget.post.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final ref = FirebaseStorage.instance.ref().child(fileName);
-      final bytes = await XFile(thumbnailFile).readAsBytes();
-      final uploadTask = ref.putData(await MediaShrink.bytes(bytes));
-      final snapshot = await uploadTask;
-      final downloadUrl = await snapshot.ref.getDownloadURL();
-
-      await _firestore.collection('Posts').doc(widget.post.id).update({
-        'thumbnail': downloadUrl,
-      });
-
-      if (mounted) {
-        setState(() {
-          _thumbnailUrl = downloadUrl;
-          widget.post.thumbnail = downloadUrl;
-        });
-      }
-    } catch (e) {
-      printVm('Erreur génération miniature: $e');
-    } finally {
-      if (mounted) setState(() => _isGeneratingThumbnail = false);
-    }
+    // Miniature : l'API ne permet pas encore de joindre une miniature à une publication (voir lacunes_api_publications.md).
   }
 
   /// Hydrate _creatorUser / _creatorCanal depuis le snapshot stocké dans le post.
@@ -694,7 +656,6 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   Future<void> _loadCreatorData() async {
     final isCanalPost = widget.post.canal_id != null && widget.post.canal_id!.isNotEmpty;
     if (isCanalPost) {
-      // Réutilise le cache post si déjà chargé (scroll retour = 0 fetch)
       if (widget.post.canal != null) {
         _creatorCanal = widget.post.canal;
         if (mounted) setState(() {});
@@ -702,12 +663,10 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       }
       if (mounted) setState(() => _isLoadingUser = true);
       try {
-        final canalDoc = await _firestore
-            .collection('Canaux')
-            .doc(widget.post.canal_id)
-            .getM('youTube_video_card.dart:707');
-        if (canalDoc.exists) {
-          _creatorCanal = Canal.fromJson(canalDoc.data() as Map<String, dynamic>);
+        final r = await ApiGateway.instance.client.get('/channels/${widget.post.canal_id}');
+        final d = (r as Map)['data'];
+        if (d is Map) {
+          _creatorCanal = canalFromApi(Map<String, dynamic>.from(d));
           widget.post.canal = _creatorCanal;
         }
       } catch (e) {
@@ -716,22 +675,14 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         if (mounted) setState(() => _isLoadingUser = false);
       }
     } else if (widget.post.user_id != null) {
-      // Réutilise le cache post si déjà chargé
       if (widget.post.user != null) {
         _creatorUser = widget.post.user;
         if (mounted) setState(() {});
-        return;
       }
-      if (mounted) setState(() => _isLoadingUser = true);
+      if (mounted && _creatorUser == null) setState(() => _isLoadingUser = true);
       try {
-        final userDoc = await _firestore
-            .collection('Users')
-            .doc(widget.post.user_id)
-            .getM('youTube_video_card.dart:729');
-        if (userDoc.exists) {
-          _creatorUser = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
-          widget.post.user = _creatorUser;
-        }
+        _creatorUser = userFromApi(await UsersApi.publicProfile(widget.post.user_id!));
+        widget.post.user = _creatorUser;
       } catch (e) {
         printVm('Erreur chargement utilisateur: $e');
       } finally {
@@ -1049,15 +1000,14 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
       if (mounted) setState(() => _isLiking = false);
       return;
     }
-    _firestore.collection('Posts').doc(postId).update({
-      'loves': FieldValue.increment(-1),
-      'users_love_id': FieldValue.arrayRemove([userId]),
-      'popularity': FieldValue.increment(-1),
-    }).catchError((_) {
-      if (mounted) setState(() {
-        widget.post.loves = ((widget.post.loves ?? 0) + 1);
-        widget.post.users_love_id?.add(userId);
-      });
+    PostsApi.unlike(postId).catchError((e) {
+      if (mounted) {
+        setState(() {
+          widget.post.loves = ((widget.post.loves ?? 0) + 1);
+          widget.post.users_love_id?.add(userId);
+        });
+        showApiError(context, e);
+      }
     }).whenComplete(() {
       if (mounted) setState(() => _isLiking = false);
     });
@@ -1065,51 +1015,27 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
   void _processLikeBackground(String userId) {
     final postId = widget.post.id;
-    final receiverId = widget.post.user_id;
-    if (postId == null || receiverId == null) {
+    if (postId == null) {
       if (mounted) setState(() => _isLiking = false);
       return;
     }
-
-    _coinProvider.sendLikeWithCoins(
-      senderId: userId,
-      receiverId: receiverId,
-      post: widget.post,
-      context: context,
-      onReadyToAnimate: _triggerSupportMessage,
-    ).then((success) async {
-      if (!success) {
-        await _firestore.collection('Posts').doc(postId).update({
-          'loves': FieldValue.increment(1),
-          'users_love_id': FieldValue.arrayUnion([userId]),
-          'popularity': FieldValue.increment(1),
-        }).catchError((_) {});
-        if (mounted) _showInsufficientCoinsDialog();
-        return;
+    // Le serveur débite 2 pièces (1 au créateur) et refuse (402) si le solde manque : le j'aime est alors annulé à l'écran.
+    PostsApi.like(postId).then((added) async {
+      if (!mounted) return;
+      if (added) {
+        await _coinProvider.refreshBalance(userId);
+        if (mounted) _triggerSupportMessage();
       }
-      if (mounted) {
-        try {
-          addPointsForAction(UserAction.like);
-          addPointsForOtherUserAction(receiverId, UserAction.autre);
-          await _sendLikeNotifications();
-        } catch (_) {}
-      }
-    }).catchError((e) async {
-      debugPrint('Like transaction failed: $e');
-      try {
-        await _firestore.collection('Posts').doc(postId).update({
-          'loves': FieldValue.increment(1),
-          'users_love_id': FieldValue.arrayUnion([userId]),
-          'popularity': FieldValue.increment(1),
-        });
-        if (mounted) {
-          try { await _sendLikeNotifications(); } catch (_) {}
-        }
-      } catch (_) {
-        if (mounted) setState(() {
-          widget.post.loves = ((widget.post.loves ?? 1) - 1).clamp(0, double.maxFinite.toInt());
-          widget.post.users_love_id?.remove(userId);
-        });
+    }).catchError((e) {
+      if (!mounted) return;
+      setState(() {
+        widget.post.loves = ((widget.post.loves ?? 1) - 1).clamp(0, double.maxFinite.toInt());
+        widget.post.users_love_id?.remove(userId);
+      });
+      if (e is ApiException && e.isInsufficientCoins) {
+        _showInsufficientCoinsDialog();
+      } else {
+        showApiError(context, e);
       }
     }).whenComplete(() {
       if (mounted) setState(() => _isLiking = false);
@@ -1130,99 +1056,27 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     );
   }
 
-  Future<void> _sendLikeNotifications() async {
-    final currentTimeMicroseconds = DateTime.now().microsecondsSinceEpoch;
-    final userDoc = await _firestore.collection('Users').doc(widget.post.user_id!).getM('youTube_video_card.dart:1134');
-
-    if (userDoc.exists) {
-      final lastNotificationTime = userDoc.data()?['lastNotificationTime'] ?? 0;
-      const twentyMinutesMicroseconds = 20 * 60 * 1000 * 1000;
-
-      if (currentTimeMicroseconds - lastNotificationTime >= twentyMinutesMicroseconds || lastNotificationTime == 0) {
-        final notificationId = _firestore.collection('Notifications').doc().id;
-        final notification = NotificationData(
-          id: notificationId,
-          titre: "Like ❤️ + 1 pièce",
-          media_url: _authProvider.loginUserData.imageUrl,
-          type: NotificationType.POST.name,
-          description: "@${_authProvider.loginUserData.pseudo!} a aimé votre vidéo et vous a offert 1 pièce !",
-          users_id_view: [],
-          user_id: _authProvider.loginUserData.id!,
-          receiver_id: widget.post.user_id!,
-          post_id: widget.post.id!,
-          post_data_type: PostDataType.VIDEO.name,
-          updatedAt: currentTimeMicroseconds,
-          createdAt: currentTimeMicroseconds,
-          status: PostStatus.VALIDE.name,
-        );
-        await _firestore.collection('Notifications').doc(notificationId).set(notification.toJson());
-
-        final oneSignalId = (userDoc.data()?['oneIgnalUserid'] as String?)
-            ?? _creatorUser?.oneIgnalUserid;
-        if (oneSignalId != null) {
-          await _authProvider.sendNotification(
-            userIds: [oneSignalId],
-            smallImage: _authProvider.loginUserData.imageUrl ?? '',
-            send_user_id: _authProvider.loginUserData.id!,
-            recever_user_id: widget.post.user_id!,
-            message: "📢 @${_authProvider.loginUserData.pseudo ?? ''} a aimé votre vidéo et vous a offert 1 pièce !",
-            type_notif: NotificationType.POST.name,
-            post_id: widget.post.id!,
-            post_type: PostDataType.VIDEO.name,
-            chat_id: '',
-          );
-        }
-
-        await _firestore.collection('Users').doc(widget.post.user_id!).update({
-          'lastNotificationTime': currentTimeMicroseconds
-        });
-      }
-    }
-  }
-
   Future<void> _toggleFavorite() async {
     if (_isProcessingFavorite) return;
     _isProcessingFavorite = true;
-
-    final userId = _authProvider.loginUserData.id!;
     final postId = widget.post.id!;
-
     try {
       if (_isFavorite) {
-        await _firestore.collection('Posts').doc(postId).update({
-          'users_favorite_id': FieldValue.arrayRemove([userId]),
-          'favorites_count': FieldValue.increment(-1),
-        });
+        await PostsApi.unfavorite(postId);
         setState(() {
           _isFavorite = false;
           widget.post.favoritesCount = (widget.post.favoritesCount ?? 0) - 1;
         });
       } else {
-        await _firestore.collection('Posts').doc(postId).update({
-          'users_favorite_id': FieldValue.arrayUnion([userId]),
-          'favorites_count': FieldValue.increment(1),
-        });
+        await PostsApi.favorite(postId);
         setState(() {
           _isFavorite = true;
           widget.post.favoritesCount = (widget.post.favoritesCount ?? 0) + 1;
         });
-
-        if (_creatorUser?.oneIgnalUserid != null) {
-          await _authProvider.sendNotification(
-            userIds: [_creatorUser!.oneIgnalUserid!],
-            smallImage: _authProvider.loginUserData.imageUrl!,
-            send_user_id: userId,
-            recever_user_id: widget.post.user_id!,
-            message: "❤️ @${_authProvider.loginUserData.pseudo} a ajouté votre vidéo à ses favoris",
-            type_notif: NotificationType.FAVORITE.name,
-            post_id: postId,
-            post_type: PostDataType.VIDEO.name,
-            chat_id: '',
-          );
-        }
       }
     } catch (e) {
       printVm('Erreur favori: $e');
+      if (mounted) showApiError(context, e, onRetry: _toggleFavorite);
     } finally {
       _isProcessingFavorite = false;
     }
@@ -1247,10 +1101,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         widget.post.users_partage_id!.add(_authProvider.loginUserData.id!);
       });
 
-      await _firestore.collection('Posts').doc(widget.post.id).update({
-        'partage': FieldValue.increment(1),
-        'users_partage_id': FieldValue.arrayUnion([_authProvider.loginUserData.id]),
-      });
+      unawaited(PostsApi.signal(widget.post.id!, 'share'));
 
       addPointsForAction(UserAction.partagePost);
       addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);
@@ -2207,77 +2058,32 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
   Future<void> _handleRepost() async {
     final me = _authProvider.loginUserData;
-    if (me.id == null) return;
     final originalPost = widget.post;
-    if (originalPost.id == null) return;
+    if (me.id == null || originalPost.id == null) return;
     if (me.id == originalPost.user_id) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Tu ne peux pas republier ton propre post'), duration: Duration(seconds: 2)),
       );
       return;
     }
-    originalPost.users_republier_id ??= [];
-    if (originalPost.users_republier_id!.contains(me.id)) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tu as déjà republié ce post'), duration: Duration(seconds: 2)),
-      );
-      return;
-    }
-    setState(() => originalPost.users_republier_id!.add(me.id!));
-    try {
-      final originalId = originalPost.isRepost == true
-          ? (originalPost.originalPostId ?? originalPost.id!)
-          : originalPost.id!;
-      final fs = FirebaseFirestore.instance;
-      await fs.collection('Posts').doc(originalId).update({
-        'users_republier_id': FieldValue.arrayUnion([me.id]),
-        'partage': FieldValue.increment(1),
-        'popularity': FieldValue.increment(3),
-      });
-    } catch (_) {
-      setState(() => originalPost.users_republier_id!.remove(me.id));
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Erreur : impossible de republier'), duration: Duration(seconds: 2)),
-      );
-    }
+    // La republication n'a pas encore de route côté API (voir lacunes_api_publications.md).
+    unawaited(PostsApi.signal(originalPost.id!, 'share'));
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('La republication sera bientôt disponible.'), duration: Duration(seconds: 2)),
+    );
   }
 
   static const Color _defiYellow = Color(0xFFFF9500);
 
   Future<void> _handleDefiVote() async {
-    if (_isVoting) return;
-    final userId = _authProvider.loginUserData.id;
-    final postId = widget.post.id;
-    if (userId == null || postId == null) return;
+    // Le vote de défi n'a pas encore de route côté API (voir lacunes_api_publications.md).
     if (_hasVotedLocally) {
       DefiDialogs.alreadyVoted(context);
       return;
     }
-
-    setState(() {
-      _isVoting = true;
-      _hasVotedLocally = true;
-      _localDefiVotes++;
-    });
-    _voteAnimController.forward().then((_) => _voteAnimController.reverse());
-
-    try {
-      await FirebaseFunctions.instance.httpsCallable('handleDefiAction').call({
-        'action': 'vote',
-        'postId': postId,
-      });
-      if (mounted) showDefiVoteAnimation(context, anchor: _voteBtnKey);
-    } catch (e) {
-      if (!mounted) return;
-      final alreadyVoted = e is FirebaseFunctionsException && e.code == 'already-exists';
-      setState(() {
-        _localDefiVotes = (_localDefiVotes - 1).clamp(0, 999999);
-        _hasVotedLocally = alreadyVoted;
-      });
-      DefiDialogs.handleError(context, e, isVote: true);
-    } finally {
-      if (mounted) setState(() => _isVoting = false);
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Le vote des défis sera bientôt de retour.'), duration: Duration(seconds: 2)),
+    );
   }
 
   Widget _buildDefiMiniBanner() {
@@ -2289,16 +2095,11 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
     return GestureDetector(
       onTap: isDefiResponse ? () {
-        FirebaseFirestore.instance
-            .collection('Posts')
-            .doc(post.defiResponseToPostId)
-            .getM('youTube_video_card.dart:2294')
-            .then((doc) {
-          if (doc.exists && mounted) {
-            final defiPost = Post.fromJson(doc.data()!);
+        PostsApi.get(post.defiResponseToPostId!).then((defiPost) {
+          if (defiPost != null && mounted) {
             Navigator.push(context, MaterialPageRoute(builder: (_) => DetailsPost(post: defiPost)));
           }
-        });
+        }).catchError((_) {});
       } : null,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -2534,7 +2335,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   Future<void> _loadLastComment() async {
     final postId = widget.post.id;
     if (postId == null || _isLoadingComment) return;
-    // Aucun commentaire annoncé : inutile de lire Firestore pour rien (une lecture par post affiché)
+    // Aucun commentaire annoncé : inutile d'interroger l'API pour rien (une lecture par post affiché)
     if ((widget.post.comments ?? 0) <= 0) return;
     setState(() => _isLoadingComment = true);
     try {
@@ -2549,132 +2350,26 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     if (mounted) setState(() => _isLoadingComment = false);
   }
 
-  void _autoLikeIfNeeded(String userId) {
-    final postId = widget.post.id;
-    if (postId == null) return;
-    final alreadyLiked = widget.post.users_love_id?.contains(userId) ?? false;
-    if (alreadyLiked) return;
-    FirebaseFirestore.instance.collection('Posts').doc(postId).update({
-      'loves': FieldValue.increment(1),
-      'users_love_id': FieldValue.arrayUnion([userId]),
-    }).catchError((_) {});
-    if (mounted) setState(() {
-      widget.post.users_love_id ??= [];
-      widget.post.users_love_id!.add(userId);
-      widget.post.loves = (widget.post.loves ?? 0) + 1;
-    });
-  }
-
   Future<void> _sendQuickComment(String text) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty || _isSendingQuickComment) return;
-    final userId = _authProvider.loginUserData.id;
-    if (userId == null) return;
-
-    setState(() {
-      _isSendingQuickComment = true;
-      _quickCommentController.clear();
-    });
-
+    if (_authProvider.loginUserData.id == null) return;
+    setState(() => _isSendingQuickComment = true);
     try {
-      final comment = PostComment(
-        id: FirebaseFirestore.instance.collection('PostComments').doc().id,
-        user_id: userId,
-        user: _authProvider.loginUserData,
-        post_id: widget.post.id,
-        users_like_id: [],
-        responseComments: [],
-        message: trimmed,
-        loves: 0,
-        likes: 0,
-        comments: 0,
-        createdAt: DateTime.now().microsecondsSinceEpoch,
-        updatedAt: DateTime.now().microsecondsSinceEpoch,
-      );
-
-      final success = await _postProvider.newComment(comment);
-      // 2 pièces (1 au créateur) — publié même sans solde
-      if (success && mounted) CommentCoins.charge(context, widget.post);
-
-      if (success) {
-        if (mounted) {
-          setState(() {
-            _preloadedComments.insert(0, comment);
-            CommentsPrefetch.instance.addLocal(comment.post_id ?? '', comment);
-            _localCommentsCount++;
-            _localInteractionsCount++;
-          });
-        }
-
-        _authProvider.incrementPostTotalInteractions(postId: widget.post.id!);
-        _authProvider.notifySubscribersOfInteraction(
-          actionUserId: userId,
-          postOwnerId: widget.post.user_id!,
-          postId: widget.post.id!,
-          actionType: 'comment',
-          commentaireMessage: trimmed,
-          postDescription: widget.post.description,
-          postImageUrl: widget.post.type != PostDataType.IMAGE.name
-              ? (widget.post.thumbnail != null && widget.post.thumbnail!.isNotEmpty
-                  ? widget.post.thumbnail!
-                  : (widget.post.user?.imageUrl ?? ''))
-              : (widget.post.images != null && widget.post.images!.isNotEmpty
-                  ? widget.post.images!.first
-                  : ''),
-          postDataType: widget.post.dataType,
-        );
-        _autoLikeIfNeeded(userId);
-        FeedInteractionService.onPostCommented(widget.post, userId);
-        try {
-          final result = await StreakService.onCommentSent(
-            userId: userId,
-            postId: widget.post.id!,
-          );
-          if (mounted) context.read<StreakProvider>().updateFromResult(result);
-        } catch (e) {
-          debugPrint('[Streak] erreur quickComment youtube: $e');
-        }
-        _authProvider.checkAndRefreshPostDates(widget.post.id!);
-
-        // Notification au propriétaire du post
-        if (widget.post.user != null && widget.post.user!.id != userId) {
-          try {
-            final msg = "@${_authProvider.loginUserData.pseudo!} a commenté votre publication";
-            final notif = NotificationData(
-              id: FirebaseFirestore.instance.collection('Notifications').doc().id,
-              titre: "Nouvelle interaction",
-              media_url: _authProvider.loginUserData.imageUrl,
-              type: NotificationType.POST.name,
-              description: msg,
-              user_id: userId,
-              receiver_id: widget.post.user!.id!,
-              post_id: widget.post.id!,
-              post_data_type: PostDataType.COMMENT.name,
-              createdAt: DateTime.now().microsecondsSinceEpoch,
-              updatedAt: DateTime.now().microsecondsSinceEpoch,
-              status: PostStatus.VALIDE.name,
-            );
-            await FirebaseFirestore.instance
-                .collection('Notifications')
-                .doc(notif.id)
-                .set(notif.toJson());
-            final receiverUser = await _authProvider.getUserById(widget.post.user!.id!);
-            if (receiverUser.isNotEmpty && receiverUser.first.oneIgnalUserid != null) {
-              await _authProvider.sendNotification(
-                userIds: [receiverUser.first.oneIgnalUserid!],
-                smallImage: _authProvider.loginUserData.imageUrl!,
-                send_user_id: userId,
-                recever_user_id: widget.post.user!.id!,
-                message: msg,
-                type_notif: NotificationType.POST.name,
-                post_id: widget.post.id!,
-                post_type: PostDataType.COMMENT.name,
-                chat_id: '',
-              );
-            }
-          } catch (_) {}
-        }
+      // 10 commentaires gratuits par publication, puis 1 pièce (erreur 402 : proposer de recharger)
+      final sent = await CommentsApi.send(widget.post.id!, body: trimmed);
+      final comment = sent.comment..user = _authProvider.loginUserData;
+      if (mounted) {
+        setState(() {
+          _quickCommentController.clear();
+          _preloadedComments.insert(0, comment);
+          CommentsPrefetch.instance.addLocal(comment.post_id ?? '', comment);
+          _localCommentsCount++;
+          _localInteractionsCount++;
+        });
       }
+    } catch (e) {
+      if (mounted) handleApiError(context, e, onRetry: () => _sendQuickComment(trimmed), fallback: "Erreur lors de l'envoi");
     } finally {
       if (mounted) setState(() => _isSendingQuickComment = false);
     }

@@ -1,20 +1,19 @@
 ﻿// pages/admin/user_search_page.dart
 
-import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/user/profile/retraitAdmin/userAllDetails.dart';
 import 'package:flutter/material.dart';
 import '../../../admin/admin_palette.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../models/model_data.dart';
+import '../../../../services/api/api_gateway.dart';
+import '../../../../services/api/wallet_api.dart';
 // pages/admin/user_search_page.dart
 
 import 'package:afrotok/pages/user/profile/retraitAdmin/userAllDetails.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:iconsax/iconsax.dart';
 
 import '../../../../models/model_data.dart';
@@ -27,7 +26,6 @@ class UserSearchPage extends StatefulWidget {
 }
 
 class _UserSearchPageState extends State<UserSearchPage> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController _searchController = TextEditingController();
 
   List<UserData> _displayedUsers = [];
@@ -43,7 +41,7 @@ class _UserSearchPageState extends State<UserSearchPage> {
   // Contrôleur pour le scroll infini
   final ScrollController _scrollController = ScrollController();
   bool _isLoadingMore = false;
-  DocumentSnapshot? _lastDocument;
+  int _page = 1;
   bool _hasMoreData = true;
 
   @override
@@ -71,6 +69,26 @@ class _UserSearchPageState extends State<UserSearchPage> {
     }
   }
 
+  /// Ligne de l'API d'administration (`GET /admin/users`) → profil d'affichage.
+  UserData _userFromAdmin(Map<String, dynamic> r) {
+    final created = DateTime.tryParse('${r['created_at']}')?.millisecondsSinceEpoch;
+    final u = UserData.fromJson({
+      'id': r['id'],
+      'pseudo': r['username'] ?? r['display_name'] ?? '',
+      'email': r['email'] ?? '',
+      'imageUrl': r['avatar_url'] ?? '',
+      if (created != null) 'createdAt': created,
+    });
+    u.id = '${r['id']}';
+    return u;
+  }
+
+  Future<({List<UserData> users, bool more})> _fetch({String search = '', int page = 1}) async {
+    final r = await ApiGateway.instance.client.get('/admin/users', query: {if (search.isNotEmpty) 'search': search, 'page': page});
+    final rows = WalletApi.list(r);
+    return (users: rows.map(_userFromAdmin).toList(), more: r is Map && r['has_more'] == true);
+  }
+
   Future<void> _loadRecentUsers() async {
     setState(() {
       _isLoading = true;
@@ -79,75 +97,32 @@ class _UserSearchPageState extends State<UserSearchPage> {
     });
 
     try {
-      // ✅ Tri par createdAt (String ISO) en ordre décroissant
-      Query query = _firestore
-          .collection('Users')
-          .orderBy('createdAt', descending: true)
-          .limit(_selectedLimit);
-
-      QuerySnapshot snapshot = await query.getM('searchUserAdmin.dart:87');
-
-      _lastDocument = snapshot.docs.isNotEmpty ? snapshot.docs.last : null;
-      _hasMoreData = snapshot.docs.length == _selectedLimit;
-
-      final users = snapshot.docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>;
-        data['id'] = doc.id;
-        return UserData.fromJson(data);
-      }).toList();
-
+      _page = 1;
+      final res = await _fetch();
+      _hasMoreData = res.more;
       setState(() {
-        _displayedUsers = users;
+        _displayedUsers = res.users;
         _isLoading = false;
       });
-
-      printVm('✅ ${users.length} utilisateurs chargés');
+      printVm('✅ ${res.users.length} utilisateurs chargés');
     } catch (e) {
       printVm('❌ Erreur chargement utilisateurs: $e');
       setState(() => _isLoading = false);
-
-      _showErrorSnackBar('Erreur lors du chargement des utilisateurs');
+      _showErrorSnackBar(WalletApi.message(e, fallback: 'Erreur lors du chargement des utilisateurs'));
     }
   }
 
   Future<void> _loadMoreUsers() async {
-    if (_isLoadingMore || !_hasMoreData || _lastDocument == null) return;
-
-    setState(() {
-      _isLoadingMore = true;
-    });
-
+    if (_isLoadingMore || !_hasMoreData) return;
+    setState(() => _isLoadingMore = true);
     try {
-      Query query = _firestore
-          .collection('Users')
-          .orderBy('createdAt', descending: true)
-          .startAfterDocument(_lastDocument!)
-          .limit(_selectedLimit);
-
-      QuerySnapshot snapshot = await query.getM('searchUserAdmin.dart:126');
-
-      if (snapshot.docs.isNotEmpty) {
-        _lastDocument = snapshot.docs.last;
-        _hasMoreData = snapshot.docs.length == _selectedLimit;
-
-        final moreUsers = snapshot.docs.map((doc) {
-          final data = doc.data() as Map<String, dynamic>;
-          data['id'] = doc.id;
-          return UserData.fromJson(data);
-        }).toList();
-
-        setState(() {
-          _displayedUsers.addAll(moreUsers);
-          _isLoadingMore = false;
-        });
-
-        printVm('✅ ${moreUsers.length} utilisateurs supplémentaires chargés');
-      } else {
-        setState(() {
-          _hasMoreData = false;
-          _isLoadingMore = false;
-        });
-      }
+      final res = await _fetch(page: _page + 1);
+      _page++;
+      _hasMoreData = res.more;
+      setState(() {
+        _displayedUsers.addAll(res.users);
+        _isLoadingMore = false;
+      });
     } catch (e) {
       printVm('❌ Erreur chargement supplémentaire: $e');
       setState(() => _isLoadingMore = false);
@@ -167,41 +142,17 @@ class _UserSearchPageState extends State<UserSearchPage> {
     });
 
     try {
-      QuerySnapshot snapshot;
-
-      if (_searchType == 'email') {
-        // Recherche par email (insensible à la casse)
-        snapshot = await _firestore
-            .collection('Users')
-            .where('email', isEqualTo: query.toLowerCase())
-            .limit(50)
-            .getM('searchUserAdmin.dart:177');
-      } else {
-        // Recherche par pseudo (recherche partielle avec bornes)
-        snapshot = await _firestore
-            .collection('Users')
-            .where('pseudo', isGreaterThanOrEqualTo: query)
-            .where('pseudo', isLessThan: query + 'z')
-            .limit(50)
-            .getM('searchUserAdmin.dart:185');
-      }
-
-      final results = snapshot.docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>;
-        data['id'] = doc.id;
-        return UserData.fromJson(data);
-      }).toList();
-
+      // L'API cherche à la fois dans le pseudo, l'e-mail et l'identifiant
+      final res = await _fetch(search: query.trim());
       setState(() {
-        _displayedUsers = results;
+        _displayedUsers = res.users;
         _isSearching = false;
       });
-
-      printVm('🔍 ${results.length} résultats trouvés pour "$query"');
+      printVm('🔍 ${res.users.length} résultats trouvés pour "$query"');
     } catch (e) {
       printVm('❌ Erreur recherche: $e');
       setState(() => _isSearching = false);
-      _showErrorSnackBar('Erreur lors de la recherche');
+      _showErrorSnackBar(WalletApi.message(e, fallback: 'Erreur lors de la recherche'));
     }
   }
 

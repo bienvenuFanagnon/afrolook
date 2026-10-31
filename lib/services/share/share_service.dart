@@ -1,16 +1,14 @@
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+
+import '../api/api_gateway.dart';
+import '../api/wallet_api.dart';
 
 /// « Partage et gagne » : missions de partage d'annonces (WhatsApp, Telegram, Facebook, TikTok…) payées au clic valide.
-/// Tout est décidé par le serveur (profil validé, campagnes ouvertes, lien personnel, gains) : l'application affiche et ouvre le partage.
+/// Tout est décidé par l'API (profil validé, campagnes ouvertes, lien personnel, gains) : l'application affiche et ouvre le partage.
 class ShareService {
   ShareService._();
 
-  static final FirebaseFunctions _fn = FirebaseFunctions.instanceFor(region: 'us-central1');
-
-  static Future<Map<String, dynamic>> _call(String name, [Map<String, dynamic>? data]) async {
-    final res = await _fn.httpsCallable(name).call(data ?? <String, dynamic>{});
-    return Map<String, dynamic>.from(res.data as Map);
-  }
+  static ApiClient get _c => ApiGateway.instance.client;
 
   /// Derniers gains annoncés par le serveur (utilisés dans les cartes d'entrée, avant d'ouvrir la page).
   static double lastPerClickFcfa = 5;
@@ -25,11 +23,8 @@ class ShareService {
       _enabledAt = now;
       _enabled = () async {
         try {
-          final r = await _call('adsShareList');
+          final r = WalletApi.map(await _c.get('/share/profile'));
           if (r['enabled'] != true) return false;
-          final p = (r['perClickFcfa'] as num?)?.toDouble(), d = (r['dailyCapFcfa'] as num?)?.toDouble();
-          if (p != null && p > 0) lastPerClickFcfa = p;
-          if (d != null && d > 0) lastDailyCapFcfa = d;
           return true;
         } catch (_) {
           _enabledAt = 0; // réessayer au prochain affichage
@@ -50,22 +45,76 @@ class ShareService {
   }
 
   static Future<ShareHome> load() async {
-    final r = await Future.wait([_call('adsShareList'), _call('adsShareProfileMe')]);
-    return ShareHome.fromJson(r[0], r[1]);
+    final r = await Future.wait<dynamic>([_c.get('/share/missions'), _c.get('/share/profile'), _c.get('/share/earnings').catchError((_) => <String, dynamic>{} as dynamic)]);
+    final missions = r[0] is Map ? Map<String, dynamic>.from(r[0] as Map) : <String, dynamic>{};
+    final prof = WalletApi.map(r[1]);
+    final earn = WalletApi.map(r[2]);
+    // Missions : noms de champs de l'ancien écran
+    final items = [
+      for (final m in WalletApi.list(missions))
+        {
+          'campaignId': m['id'],
+          'title': m['title'],
+          'text': m['text'],
+          'image': m['media_url'],
+          'video': '${m['media_url'] ?? ''}'.toLowerCase().endsWith('.mp4'),
+          'coinsPerClick': m['gain_coins_per_click'],
+          'joined': m['joined'] == true,
+          'results': m['results'],
+        },
+    ];
+    final coins = items.isEmpty ? 0.0 : ((items.first['coinsPerClick'] as num?)?.toDouble() ?? 0);
+    if (coins > 0) lastPerClickFcfa = coins / 2.5;
+    final p = prof['profile'];
+    final status = p is Map ? ({'approved': 'active', 'rejected': 'refused'}[p['status']] ?? '${p['status']}') : 'none';
+    final out = ShareHome.fromJson({
+      'enabled': missions['enabled'] == true || prof['enabled'] == true,
+      'profileStatus': status,
+      'perClickFcfa': lastPerClickFcfa,
+      'coinsPerClick': coins,
+      'dailyCapFcfa': lastDailyCapFcfa,
+      'items': items,
+      'me': {
+        'pendingFcfa': ((earn['held_coins'] as num?) ?? 0) / 2.5,
+        'paidCoins': earn['released_coins'] ?? 0,
+        'validClicks': earn['valid_clicks'] ?? 0,
+      },
+    }, {
+      'profile': p is Map ? {...Map<String, dynamic>.from(p), 'status': status, 'reason': p['reject_reason'] ?? p['reason'], 'retained': p['retained_audience'], 'declared': p['declared_audience']} : null,
+      'rules': {'version': prof['rules_version'], 'text': const []},
+    });
+    return out;
   }
 
   /// Envoie le profil ; retourne son état (`pending` ou `active`).
-  static Future<String> saveProfile(Map<String, dynamic> data) async => '${(await _call('adsShareProfileSave', data))['status']}';
-
-  static Future<ShareLink> createLink(String campaignId, String channel, String lang) async {
-    final r = await _call('adsShareCreate', {'campaignId': campaignId, 'channel': channel, 'lang': lang});
-    return ShareLink(url: '${r['url']}', caption: '${r['caption']}', video: r['video'] == true, mediaUrl: '${r['mediaUrl']}', image: '${r['image']}');
+  static Future<String> saveProfile(Map<String, dynamic> data) async {
+    final r = WalletApi.map(await _c.put('/share/profile', body: {
+      'whatsapp': data['whatsapp'],
+      'country': data['country'],
+      if ('${data['city'] ?? ''}'.isNotEmpty) 'city': data['city'],
+      'status_audience': data['statusAudience'],
+      'telegram_audience': data['telegramAudience'],
+      'other_audience': data['otherAudience'],
+      'groups': data['groups'],
+      'about': data['about'],
+      'accept_terms': data['acceptTerms'],
+      'rules_version': data['rulesVersion'],
+    }));
+    return r['status'] == 'approved' ? 'active' : '${r['status']}';
   }
 
-  /// Le partageur déclare combien de personnes ont vu sa publication. Retourne `{counted, proven, plausible}`.
-  static Future<Map<String, dynamic>> reportViews(String campaignId, int views) => _call('adsShareReport', {'campaignId': campaignId, 'views': views});
+  static Future<ShareLink> createLink(String campaignId, String channel, String lang) async {
+    final r = WalletApi.map(await _c.post('/share/links', body: {'campaign_id': campaignId, 'channel': channel}));
+    final media = '${r['media_url'] ?? ''}';
+    return ShareLink(url: '${r['url']}', caption: '${r['caption']}', video: media.toLowerCase().endsWith('.mp4'), mediaUrl: media, image: media);
+  }
 
-  /// Message clair quand le compte lui-même est refusé (le serveur répond « compte : raison »).
+  /// Le partageur déclare combien de personnes ont vu sa publication. Point d'accès prévu : POST /share/report (absent pour l'instant,
+  /// voir lacunes_api_argent_creations.md). Retourne `{counted, proven, plausible}`.
+  static Future<Map<String, dynamic>> reportViews(String campaignId, int views) async =>
+      WalletApi.map(await _c.post('/share/report', body: {'campaign_id': campaignId, 'views': views}));
+
+  /// Message clair quand le compte lui-même est refusé.
   static String? accountReason(String m, String Function(String) tr) {
     if (m.contains('trop récent')) return tr('Ton compte est encore trop récent pour faire des missions. Réessaie dans quelques jours.');
     if (m.contains('e-mail non vérifié')) return tr('Vérifie ton adresse e-mail pour continuer.');
@@ -76,25 +125,31 @@ class ShareService {
 
   /// Message simple et traduit pour une erreur d'envoi du profil : jamais le texte brut de l'erreur ni sa trace.
   static String profileError(Object e, String Function(String) tr) {
-    final m = (e is FirebaseFunctionsException ? '${e.message}' : '').toLowerCase();
+    final code = e is ApiException ? e.code : '';
+    final m = (e is ApiException ? e.message : '').toLowerCase();
+    if (code == 'rules_outdated') return tr('Les règles ont changé : relis-les et accepte la version actuelle.');
+    if (code == 'audience_too_small' || m.contains('audience trop faible')) return tr('Ton audience doit compter au moins 20 personnes (statut, canal, groupes).');
     if (m.contains('whatsapp')) return tr('Ton numéro WhatsApp n\'est pas valide. Écris-le avec l\'indicatif du pays, par exemple +22890123456.');
-    if (m.contains('pays')) return tr('Le pays s\'écrit avec 2 lettres, par exemple TG pour le Togo.');
-    if (m.contains('audience du statut')) return tr('Vérifie le nombre de personnes qui voient ton statut.');
+    if (m.contains('pays') || m.contains('country')) return tr('Le pays s\'écrit avec 2 lettres, par exemple TG pour le Togo.');
     if (m.contains('groupe')) return tr('Chaque groupe doit avoir un nom et entre 1 et 1 024 membres.');
-    if (m.contains('audience trop faible')) return tr('Ton audience doit compter au moins 20 personnes (statut, canal, groupes).');
-    if (m.contains('présente ton audience')) return tr('Présente ton audience en 20 caractères au moins : qui sont-ils, que partages-tu d\'habitude ?');
-    if (m.contains('règles') || m.contains('regles')) return tr('Accepte d\'abord les règles.');
+    if (m.contains('about') || m.contains('présente ton audience')) return tr('Présente ton audience en 20 caractères au moins : qui sont-ils, que partages-tu d\'habitude ?');
     return accountReason(m, tr) ?? tr('Impossible d\'envoyer ton profil pour le moment.');
   }
 
-  /// Message simple pour une erreur du serveur.
+  /// Message simple pour une erreur de l'API.
   static String explain(Object e, String Function(String) tr) {
-    final m = e is FirebaseFunctionsException ? '${e.message}' : '$e';
-    if (m.contains('profil_a_valider')) return tr('Ton profil n\'est pas encore validé.');
-    if (m.contains('regles_a_accepter')) return tr('Accepte d\'abord les règles.');
-    if (m.contains('campagne_complete')) return tr('Cette annonce a déjà assez de partageurs. Essaie une autre.');
-    if (m.contains('limite_du_jour')) return tr('Tu as atteint la limite de partages pour aujourd\'hui.');
-    if (m.contains('campagne_indisponible') || m.contains('indisponible')) return tr('Cette annonce n\'est plus disponible.');
+    final code = e is ApiException ? e.code : '';
+    final m = e is ApiException ? e.message : '$e';
+    switch (code) {
+      case 'profile_not_approved':
+        return tr('Ton profil n\'est pas encore validé.');
+      case 'campaign_closed':
+        return tr('Cette annonce n\'est plus disponible.');
+      case 'link_limit':
+        return tr('Tu as atteint la limite de partages pour aujourd\'hui.');
+      case 'disabled':
+        return tr('Partage et gagne n\'est pas encore ouvert.');
+    }
     if (m.contains('compte')) return accountReason(m, tr) ?? tr('Ton compte ne peut pas faire cette mission pour le moment.');
     return tr('Impossible pour le moment. Réessaie plus tard.');
   }

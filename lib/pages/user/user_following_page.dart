@@ -5,7 +5,10 @@ import 'package:afrotok/pages/canaux/detailsCanal.dart';
 import 'package:afrotok/pages/user/otherUser/otherUser.dart';
 import 'package:afrotok/theme/app_colors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/api_gateway.dart';
+import 'package:afrotok/services/api/canal_mapper.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
 import 'package:flutter/material.dart';
 
 class UserFollowingPage extends StatefulWidget {
@@ -27,7 +30,9 @@ class UserFollowingPage extends StatefulWidget {
 class _UserFollowingPageState extends State<UserFollowingPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  String? _creatorsCursor;
+  bool _hasMoreCreators = true;
+  String? _canalCursor;
 
   // Créateurs
   List<UserData> _creators = [];
@@ -41,7 +46,6 @@ class _UserFollowingPageState extends State<UserFollowingPage>
   List<Canal> _canaux = [];
   bool _loadingCanaux = true;
   bool _loadingMoreCanaux = false;
-  DocumentSnapshot? _lastCanalDoc;
   bool _hasMoreCanaux = true;
 
   @override
@@ -59,87 +63,45 @@ class _UserFollowingPageState extends State<UserFollowingPage>
   }
 
   Future<void> _loadFollowingIds() async {
-    try {
-      final doc =
-          await _firestore.collection('Users').doc(widget.userId).getM('user_following_page.dart:63');
-      final data = doc.data();
-      if (data != null && data['followingIds'] is List) {
-        _followingIds = List<String>.from(data['followingIds']);
-      }
-    } catch (_) {
-      _followingIds = [];
-    }
     await _loadCreatorsPage();
   }
 
   Future<void> _loadCreatorsPage() async {
-    if (_followingIds.isEmpty) {
-      if (mounted) setState(() => _loadingCreators = false);
-      return;
-    }
-
-    final start = _creatorPage * _pageSize;
-    if (start >= _followingIds.length) {
-      if (mounted) setState(() => _loadingCreators = false);
-      return;
-    }
-
-    final end = (start + _pageSize).clamp(0, _followingIds.length);
-    final chunk = _followingIds.sublist(start, end);
-
-    final newUsers = <UserData>[];
-    for (var i = 0; i < chunk.length; i += 10) {
-      final sub = chunk.sublist(i, (i + 10).clamp(0, chunk.length));
-      try {
-        final snap = await _firestore
-            .collection('Users')
-            .where(FieldPath.documentId, whereIn: sub)
-            .getM('user_following_page.dart:96');
-        for (final doc in snap.docs) {
-          final data = doc.data();
-          data['id'] = doc.id;
-          newUsers.add(UserData.fromJson(data));
-        }
-      } catch (_) {}
-    }
-
-    if (mounted) {
-      setState(() {
-        _creators.addAll(newUsers);
-        _loadingCreators = false;
-        _loadingMoreCreators = false;
-      });
+    // Comptes suivis (API : GET /v1/users/{id}/following, curseur)
+    try {
+      final page = await UsersApi.following(widget.userId, cursor: _creatorsCursor, limit: _pageSize);
+      _creatorsCursor = page.next;
+      _hasMoreCreators = page.next != null;
+      final newUsers = page.items.map(userSummaryFromApi).toList();
+      _followingIds.addAll(newUsers.map((u) => u.id!));
+      if (mounted) {
+        setState(() {
+          _creators.addAll(newUsers);
+          _loadingCreators = false;
+          _loadingMoreCreators = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() { _loadingCreators = false; _loadingMoreCreators = false; });
     }
   }
 
   Future<void> _loadMoreCreators() async {
-    if (_loadingMoreCreators) return;
-    final nextStart = (_creatorPage + 1) * _pageSize;
-    if (nextStart >= _followingIds.length) return;
+    if (_loadingMoreCreators || !_hasMoreCreators) return;
     setState(() => _loadingMoreCreators = true);
-    _creatorPage++;
     await _loadCreatorsPage();
   }
 
   Future<void> _loadCanaux() async {
+    // Canaux suivis par la personne connectée (API : GET /v1/channels?mine=1). Ceux d'une autre personne ne sont pas exposés.
     try {
-      Query query = _firestore
-          .collection('Canaux')
-          .where('usersSuiviId', arrayContains: widget.userId)
-          .limit(20);
-
-      final snap = await query.getM('user_following_page.dart:130');
-      final list = snap.docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>;
-        data['id'] = doc.id;
-        return Canal.fromJson(data);
-      }).toList();
-
+      final r = await ApiGateway.instance.client.get('/channels', query: {'mine': 1, 'limit': 20, if (_canalCursor != null) 'cursor': _canalCursor}) as Map;
+      final list = ((r['data'] as List?) ?? const []).map((e) => canalFromApi(Map<String, dynamic>.from(e as Map))).toList();
+      _canalCursor = r['next_cursor'] as String?;
       if (mounted) {
         setState(() {
           _canaux = list;
-          _lastCanalDoc = snap.docs.isNotEmpty ? snap.docs.last : null;
-          _hasMoreCanaux = snap.docs.length == 20;
+          _hasMoreCanaux = _canalCursor != null;
           _loadingCanaux = false;
         });
       }
@@ -149,27 +111,16 @@ class _UserFollowingPageState extends State<UserFollowingPage>
   }
 
   Future<void> _loadMoreCanaux() async {
-    if (_loadingMoreCanaux || !_hasMoreCanaux || _lastCanalDoc == null) return;
+    if (_loadingMoreCanaux || !_hasMoreCanaux || _canalCursor == null) return;
     setState(() => _loadingMoreCanaux = true);
     try {
-      final snap = await _firestore
-          .collection('Canaux')
-          .where('usersSuiviId', arrayContains: widget.userId)
-          .startAfterDocument(_lastCanalDoc!)
-          .limit(20)
-          .getM('user_following_page.dart:159');
-
-      final list = snap.docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>;
-        data['id'] = doc.id;
-        return Canal.fromJson(data);
-      }).toList();
-
+      final r = await ApiGateway.instance.client.get('/channels', query: {'mine': 1, 'limit': 20, 'cursor': _canalCursor}) as Map;
+      final list = ((r['data'] as List?) ?? const []).map((e) => canalFromApi(Map<String, dynamic>.from(e as Map))).toList();
+      _canalCursor = r['next_cursor'] as String?;
       if (mounted) {
         setState(() {
           _canaux.addAll(list);
-          _lastCanalDoc = snap.docs.isNotEmpty ? snap.docs.last : _lastCanalDoc;
-          _hasMoreCanaux = snap.docs.length == 20;
+          _hasMoreCanaux = _canalCursor != null;
           _loadingMoreCanaux = false;
         });
       }
@@ -236,7 +187,7 @@ class _UserFollowingPageState extends State<UserFollowingPage>
       );
     }
 
-    final hasMore = (_creatorPage + 1) * _pageSize < _followingIds.length;
+    final hasMore = _hasMoreCreators;
 
     return ListView.builder(
       itemCount: _creators.length + (hasMore ? 1 : 0),

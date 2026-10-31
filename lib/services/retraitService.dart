@@ -1,17 +1,18 @@
 // services/retraitService.dart
 
-import 'package:afrotok/services/read_meter.dart';
+import 'dart:async';
+
 import 'package:afrotok/pages/component/consoleWidget.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/model_data.dart';
-import '../models/payment_config.dart';
+import 'api/retrait_mapper.dart';
+import 'api/wallet_api.dart';
 
+/// Retraits : demande manuelle via l'API (aucun paiement automatique). L'équipe valide ou annule ; l'API rembourse le solde en cas d'annulation.
 class RetraitService {
-  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  static const String _collectionRetraits = 'TransactionRetraits';
-  static const String _collectionUsers = 'Users';
+  /// Dernière explication d'échec (message en français), lisible par l'écran après un `false`.
+  static String? lastError;
 
-  /// 🎯 Faire une demande de retrait
+  /// Faire une demande de retrait (heures d'ouverture, solde et dette sont vérifiés par l'API).
   static Future<bool> demanderRetrait({
     required String userId,
     required double montant,
@@ -21,193 +22,87 @@ class RetraitService {
     required UserData userData,
     Map<String, dynamic>? extra, // devise, montant local, taux, type de retrait…
   }) async {
+    lastError = null;
     try {
-      // Vérifier les horaires d'ouverture
-      final now = DateTime.now();
-      final weekday = now.weekday; // 1=lun … 7=dim
-      final hour = now.hour;
-      final isOpen = (weekday <= 5 && hour >= 8 && hour < 17) ||
-                     (weekday == 6 && hour >= 8 && hour < 14);
-      if (!isOpen) {
-        throw Exception('Service de retrait fermé. Disponible lun-ven 8h-17h et sam 8h-14h.');
-      }
-
-      // Vérifier le solde
-      if (userData.votre_solde_principal! < montant) {
-        throw Exception('Solde insuffisant');
-      }
-
-      if (montant <= 0) {
-        throw Exception('Montant invalide');
-      }
-
-      // Créer la transaction de retrait
-      final transactionData = TransactionRetrait(
-        userId: userId,
-        userPseudo: userData.pseudo,
-        userEmail: userData.email,
-        userPhone: userData.numeroDeTelephone,
-        montant: montant,
-        methodPaiement: methodPaiement,
-        numeroCompte: numeroCompte,
+      if (montant <= 0) throw Exception('Montant invalide');
+      await WalletApi.instance.requestWithdrawal(
+        amountXof: montant.round(),
+        method: methodPaiement,
+        accountNumber: numeroCompte,
         countryCode: countryCode,
-        description: 'Retrait $methodPaiement - $numeroCompte ($countryCode)',
-        numeroTransaction: _generateTransactionNumber(),
-        createdAt: DateTime.now().millisecondsSinceEpoch,
+        meta: extra,
       );
-
-      // Utiliser une transaction Firestore pour garantir l'intégrité
-      await _firestore.runTransaction((transaction) async {
-        // 1. Bloquer le montant du retrait
-        final userRef = _firestore.collection(_collectionUsers).doc(userId);
-        final userDoc = await transaction.get(userRef);
-
-        // dette laissée par une tâche annulée par un partenaire : pas de retrait tant qu'elle n'est pas remboursée par les prochains gains de tâches
-        final debt = ((userDoc.data()?['offerwallDebtCoins'] ?? 0) as num).toInt();
-        if (debt > 0) throw Exception('Retrait impossible : dette de $debt pièces (tâche annulée par un partenaire)');
-
-        final currentBalance = (userDoc.get('votre_solde_principal') ?? 0.0).toDouble();
-        if (currentBalance < montant) {
-          throw Exception('Solde insuffisant pendant la transaction');
-        }
-
-        // Mettre à jour le solde
-        transaction.update(userRef, {
-          'votre_solde_principal': currentBalance - montant,
-          'updated_at': DateTime.now().millisecondsSinceEpoch,
-        });
-
-        // 2. Enregistrer la demande de retrait
-        final retraitRef = _firestore.collection(_collectionRetraits).doc();
-        transaction.set(retraitRef, {...transactionData.toJson(), ...?extra});
-      });
-
       printVm('✅ Demande de retrait créée: $montant FCFA pour $countryCode');
       return true;
     } catch (e) {
+      lastError = WalletApi.message(e, fallback: 'Demande de retrait impossible');
       printVm('❌ Erreur demande retrait: $e');
       return false;
     }
   }
 
-  /// 🔄 Valider un retrait (Admin)
-  static Future<bool> validerRetrait({
-    required String retraitId,
-    required String adminId,
-  }) async {
+  /// 🔄 Valider un retrait (équipe) : le paiement a été fait à la main.
+  static Future<bool> validerRetrait({required String retraitId, required String adminId}) async {
+    lastError = null;
     try {
-      await _firestore
-          .collection(_collectionRetraits)
-          .doc(retraitId)
-          .update({
-        'statut': 'VALIDER',
-        'processed_by': adminId,
-        'updated_at': DateTime.now().millisecondsSinceEpoch,
-      });
-
-      printVm('✅ Retrait validé: $retraitId');
+      await WalletApi.instance.payWithdrawal(retraitId);
       return true;
     } catch (e) {
+      lastError = WalletApi.message(e);
       printVm('❌ Erreur validation retrait: $e');
       return false;
     }
   }
 
-  /// 🚫 Annuler un retrait (Admin)
-  static Future<bool> annulerRetrait({
-    required String retraitId,
-    required String adminId,
-    required String motif,
-  }) async {
+  /// 🚫 Annuler un retrait (équipe) : le solde est remboursé par l'API.
+  static Future<bool> annulerRetrait({required String retraitId, required String adminId, required String motif}) async {
+    lastError = null;
     try {
-      final retraitDoc = await _firestore
-          .collection(_collectionRetraits)
-          .doc(retraitId)
-          .getM('retraitService.dart:121');
-
-      if (!retraitDoc.exists) {
-        throw Exception('Transaction non trouvée');
-      }
-
-      final retrait = TransactionRetrait.fromJson(retraitDoc.data()!);
-
-      await _firestore.runTransaction((transaction) async {
-        final userRef = _firestore.collection(_collectionUsers).doc(retrait.userId);
-        final userDoc = await transaction.get(userRef);
-
-        final currentBalance = (userDoc.get('votre_solde_principal') ?? 0.0).toDouble();
-
-        transaction.update(userRef, {
-          'votre_solde_principal': currentBalance + retrait.montant!,
-          'updated_at': DateTime.now().millisecondsSinceEpoch,
-        });
-
-        transaction.update(retraitDoc.reference, {
-          'statut': 'ANNULE',
-          'motif_annulation': motif,
-          'processed_by': adminId,
-          'updated_at': DateTime.now().millisecondsSinceEpoch,
-        });
-      });
-
-      printVm('✅ Retrait annulé et solde remboursé: $retraitId');
+      await WalletApi.instance.rejectWithdrawal(retraitId, motif);
       return true;
     } catch (e) {
+      lastError = WalletApi.message(e);
       printVm('❌ Erreur annulation retrait: $e');
       return false;
     }
   }
 
-  /// 📊 Récupérer les retraits d'un utilisateur
-  static Stream<List<TransactionRetrait>> getRetraitsUtilisateur(String userId) {
-    return _firestore
-        .collection(_collectionRetraits)
-        .where('user_id', isEqualTo: userId)
-        .orderBy('created_at', descending: true)
-        .snapshotsM('retraitService.dart:162')
-        .map((snapshot) => snapshot.docs
-        .map((doc) {
-      final data = doc.data();
-      data['id'] = doc.id;
-      return TransactionRetrait.fromJson(data);
-    })
-        .toList());
+  /// Relit [load] tout de suite puis toutes les [every]. Les erreurs sont transmises au flux (l'écran affiche « Réessayer »).
+  static Stream<List<TransactionRetrait>> _poll(Future<List<TransactionRetrait>> Function() load, {Duration every = const Duration(seconds: 30)}) async* {
+    while (true) {
+      yield await load();
+      await Future<void>.delayed(every);
+    }
   }
 
-  /// 🔍 Récupérer les retraits par email (Admin)
+  /// 📊 Mes retraits (côté personne : seuls les 4 derniers chiffres du compte sont renvoyés)
+  static Stream<List<TransactionRetrait>> getRetraitsUtilisateur(String userId) =>
+      _poll(() async => (await WalletApi.instance.myWithdrawals()).map(retraitFromApi).toList());
+
+  static Future<List<TransactionRetrait>> _allAdmin() async {
+    final lists = await Future.wait([
+      WalletApi.instance.adminWithdrawals(status: 'pending'),
+      WalletApi.instance.adminWithdrawals(status: 'paid'),
+      WalletApi.instance.adminWithdrawals(status: 'rejected'),
+    ]);
+    final all = lists.expand((l) => l).map(retraitFromApi).toList()..sort((a, b) => (b.createdAt ?? 0).compareTo(a.createdAt ?? 0));
+    return all;
+  }
+
+  /// 🔍 Retraits recherchés par e-mail, pseudo ou identifiant (équipe). Filtre fait ici : l'API n'a pas encore de recherche (voir lacunes).
   static Stream<List<TransactionRetrait>> searchRetraitsByEmail(String email) {
-    return _firestore
-        .collection(_collectionRetraits)
-        .where('user_email', isEqualTo: email)
-        .orderBy('created_at', descending: true)
-        .snapshotsM('retraitService.dart:178')
-        .map((snapshot) => snapshot.docs
-        .map((doc) {
-      final data = doc.data();
-      data['id'] = doc.id;
-      return TransactionRetrait.fromJson(data);
-    })
+    final q = email.trim().toLowerCase();
+    return _poll(() async => (await _allAdmin())
+        .where((r) => (r.userEmail ?? '').toLowerCase().contains(q) || (r.userPseudo ?? '').toLowerCase().contains(q) || (r.userId ?? '').toLowerCase() == q)
         .toList());
   }
 
-  /// 👑 Récupérer tous les retraits (Admin)
-  static Stream<List<TransactionRetrait>> getAllRetraits() {
-    return _firestore
-        .collection(_collectionRetraits)
-        .orderBy('created_at', descending: true)
-        .snapshotsM('retraitService.dart:193')
-        .map((snapshot) => snapshot.docs
-        .map((doc) {
-      final data = doc.data();
-      data['id'] = doc.id;
-      return TransactionRetrait.fromJson(data);
-    })
-        .toList());
+  /// 🔍 Retraits recherchés par numéro de transaction (« RET… ») ou identifiant de demande (équipe).
+  static Stream<List<TransactionRetrait>> searchRetraitsByNumero(String numero) {
+    final q = numero.trim().toLowerCase();
+    return _poll(() async => (await _allAdmin()).where((r) => (r.numeroTransaction ?? '').toLowerCase() == q || (r.id ?? '').toLowerCase() == q).toList());
   }
 
-  /// 🔢 Générer un numéro de transaction unique
-  static String _generateTransactionNumber() {
-    final now = DateTime.now();
-    return 'RET${now.millisecondsSinceEpoch}';
-  }
+  /// 👑 Tous les retraits (équipe)
+  static Stream<List<TransactionRetrait>> getAllRetraits() => _poll(_allAdmin);
 }

@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/users_api.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -36,8 +36,10 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
       return;
     }
     try {
-      final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).get();
-      final prefs = (doc.data()?['pushPrefs'] as Map?) ?? const {};
+      // Préférences renvoyées par l'API dans le profil (voir lacunes_api_jeux_medias.md) ; valeurs par défaut : tout activé
+      final me = await UsersApi.me();
+      final raw = me['notification_preferences'] ?? me['push_prefs'];
+      final prefs = raw is Map ? raw : const {};
       _reminders = prefs['reminders'] != false;
       _activity = prefs['activity'] != false;
       _news = prefs['news'] != false;
@@ -49,9 +51,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
     final uid = _uid;
     if (uid == null) return;
     try {
-      await FirebaseFirestore.instance.collection('Users').doc(uid).update({
-        'pushPrefs': {'reminders': _reminders, 'activity': _activity, 'news': _news},
-      });
+      await UsersApi.updateNotificationPreferences(reminders: _reminders, activity: _activity, news: _news);
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Enregistrement impossible pour le moment.'))));
     }

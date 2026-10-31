@@ -11,7 +11,9 @@ import 'package:afrotok/pages/postDetails.dart';
 import 'package:afrotok/pages/postDetailsVideo.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/services/block_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/post_mapper.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -39,21 +41,20 @@ class OtherUserPage extends StatefulWidget {
 }
 
 class _OtherUserPageState extends State<OtherUserPage> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final ScrollController _scrollController = ScrollController();
 
   // ── Posts normaux ──────────────────────────────────────────
   List<Post> _posts = [];
   bool _loading = true;
   bool _loadingMore = false;
-  DocumentSnapshot? _lastDocument;
+  String? _cursor; // curseur de l'API (publications)
   String _selectedFilter = 'all';
 
   // ── Publicités (isAdvertisement == true) ───────────────────
   List<Post> _adsPosts = [];
   bool _adsLoading = false;
   bool _adsLoadingMore = false;
-  DocumentSnapshot? _adsLastDocument;
+  String? _adsCursor;
   Map<String, Advertisement> _adsData = {};
 
   // ── Onglet actif ───────────────────────────────────────────
@@ -92,17 +93,12 @@ class _OtherUserPageState extends State<OtherUserPage> {
   Future<void> _loadFollowingStats() async {
     if (widget.otherUser.id == null) return;
     try {
-      final results = await Future.wait([
-        FirebaseFirestore.instance.collection('Users').doc(widget.otherUser.id).getM('otherUser.dart:95'),
-        FirebaseFirestore.instance.collection('Canaux').where('usersSuiviId', arrayContains: widget.otherUser.id).count().getM('otherUser.dart:96'),
-      ]);
-      final userDoc = results[0] as DocumentSnapshot;
-      final canalCount = results[1] as AggregateQuerySnapshot;
-      final followingIds = (userDoc.data() as Map<String, dynamic>?)?['followingIds'] as List<dynamic>? ?? [];
+      // Profil public (API) : nombre d'abonnements et de canaux suivis
+      final p = await UsersApi.publicProfile(widget.otherUser.id!);
       if (mounted) {
         setState(() {
-          _followingCount = followingIds.length;
-          _canalCount = canalCount.count ?? 0;
+          _followingCount = (p['following_count'] as num?)?.toInt() ?? 0;
+          _canalCount = (p['channels_count'] as num?)?.toInt() ?? 0;
         });
       }
     } catch (_) {}
@@ -167,20 +163,8 @@ class _OtherUserPageState extends State<OtherUserPage> {
         return;
       }
 
-      // Mise à jour dans Firestore
+      // Désabonnement par l'API (compteurs tenus par le serveur)
       await FollowService.unfollow(userToUnfollow.id!);
-
-      // Supprimer la relation d'abonnement si elle existe
-      final querySnapshot = await FirebaseFirestore.instance
-          .collection('UserAbonnes')
-          .where('compteUserId', isEqualTo: currentUserId)
-          .where('abonneUserId', isEqualTo: userToUnfollow.id)
-          .limit(1)
-          .getM('otherUser.dart:178');
-
-      for (var doc in querySnapshot.docs) {
-        await doc.reference.delete();
-      }
 
       // Mise à jour locale
       authProvider.loginUserData.userAbonnes?.removeWhere(
@@ -212,21 +196,11 @@ class _OtherUserPageState extends State<OtherUserPage> {
   Future<void> _refreshUserData() async {
     if (widget.otherUser.id == null) return;
     try {
-      final docSnapshot = await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(widget.otherUser.id)
-          .getM('otherUser.dart:217');
-
-      if (docSnapshot.exists && mounted) {
-        final updatedUser = UserData.fromJson(docSnapshot.data()!);
+      final updatedUser = userFromApi(await UsersApi.publicProfile(widget.otherUser.id!), viewerId: authProvider.loginUserData.id);
+      if (mounted) {
         setState(() {
           widget.otherUser.userAbonnesIds = updatedUser.userAbonnesIds;
           widget.otherUser.abonnes = updatedUser.abonnes;
-          widget.otherUser.followingIds = updatedUser.followingIds;
-          widget.otherUser.pointContribution = updatedUser.pointContribution;
-          widget.otherUser.codeParrainage = updatedUser.codeParrainage;
-          widget.otherUser.usersParrainer = updatedUser.usersParrainer;
-          widget.otherUser.usersParrainerActifs = updatedUser.usersParrainerActifs;
           widget.otherUser.userlikes = updatedUser.userlikes;
           _profileLikes = updatedUser.userlikes ?? _profileLikes;
         });
@@ -522,13 +496,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
       final reason = selectedReason == 'Autre' && reasonCtrl.text.trim().isNotEmpty
           ? reasonCtrl.text.trim()
           : selectedReason;
-      await _firestore.collection('UserReports').add({
-        'reportedUserId': widget.otherUser.id,
-        'reportedPseudo': widget.otherUser.pseudo,
-        'reporterUserId': authProvider.loginUserData.id,
-        'reason': reason,
-        'createdAt': DateTime.now().millisecondsSinceEpoch,
-      });
+      await UsersApi.reportUser(widget.otherUser.id!, reason); // POST /v1/users/{id}/report
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: const Text('Signalement envoyé. Merci.'),
@@ -548,17 +516,9 @@ class _OtherUserPageState extends State<OtherUserPage> {
   Future<void> _loadInitialPosts() async {
     try {
       setState(() => _loading = true);
-
-      final query = _firestore
-          .collection('Posts')
-          .where('user_id', isEqualTo: widget.otherUser.id)
-          .orderBy('created_at', descending: true)
-          .limit(_postsPerPage);
-
-      final snapshot = await query.getM('otherUser.dart:557');
-
-      final filteredPosts = snapshot.docs
-          .map((doc) => Post.fromJson({'id': doc.id, ...doc.data()}))
+      final page = await UsersApi.userPosts(widget.otherUser.id!, limit: _postsPerPage, ads: false, dataType: _selectedFilter == 'all' ? null : _selectedFilter);
+      final filteredPosts = page.items
+          .map(postFromApi)
           .where((post) =>
               (post.challenge_id == null || post.challenge_id!.isEmpty) &&
               (post.canal_id == null || post.canal_id!.isEmpty) &&
@@ -568,7 +528,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
 
       setState(() {
         _posts = filteredPosts;
-        _lastDocument = snapshot.docs.isNotEmpty ? snapshot.docs.last : null;
+        _cursor = page.next;
         _loading = false;
       });
     } catch (e) {
@@ -578,39 +538,23 @@ class _OtherUserPageState extends State<OtherUserPage> {
   }
 
   Future<void> _loadMorePosts() async {
-    if (_loadingMore || _lastDocument == null) return;
+    if (_loadingMore || _cursor == null) return;
 
     try {
       setState(() => _loadingMore = true);
-
-      var query = _firestore
-          .collection('Posts')
-          .where('user_id', isEqualTo: widget.otherUser.id)
-          .orderBy('created_at', descending: true)
-          .startAfterDocument(_lastDocument!)
-          .limit(_postsPerPage);
-
-      if (_selectedFilter != 'all') {
-        query = query.where('dataType', isEqualTo: _selectedFilter);
-      }
-
-      final snapshot = await query.getM('otherUser.dart:596');
-
-      if (snapshot.docs.isNotEmpty) {
-        final filteredPosts = snapshot.docs
-            .map((doc) => Post.fromJson({'id': doc.id, ...doc.data()}))
-            .where((post) =>
-                (post.challenge_id == null || post.challenge_id!.isEmpty) &&
-                (post.canal_id == null || post.canal_id!.isEmpty) &&
-                (post.type == PostType.POST.name) &&
-                post.isAdvertisement != true)
-            .toList();
-
-        setState(() {
-          _posts.addAll(filteredPosts);
-          _lastDocument = snapshot.docs.last;
-        });
-      }
+      final page = await UsersApi.userPosts(widget.otherUser.id!, cursor: _cursor, limit: _postsPerPage, ads: false, dataType: _selectedFilter == 'all' ? null : _selectedFilter);
+      final filteredPosts = page.items
+          .map(postFromApi)
+          .where((post) =>
+              (post.challenge_id == null || post.challenge_id!.isEmpty) &&
+              (post.canal_id == null || post.canal_id!.isEmpty) &&
+              (post.type == PostType.POST.name) &&
+              post.isAdvertisement != true)
+          .toList();
+      setState(() {
+        _posts.addAll(filteredPosts);
+        _cursor = page.next;
+      });
     } catch (e) {
       printVm('Erreur chargement plus de posts: $e');
     } finally {
@@ -636,7 +580,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
       _selectedFilter = filter;
       _loading = true;
       _posts.clear();
-      _lastDocument = null;
+      _cursor = null;
     });
     printVm("_selectedFilter : ${_selectedFilter}");
     await _loadInitialPosts();
@@ -653,23 +597,11 @@ class _OtherUserPageState extends State<OtherUserPage> {
   Future<void> _loadInitialAds() async {
     try {
       setState(() => _adsLoading = true);
-      final snapshot = await _firestore
-          .collection('Posts')
-          .where('user_id', isEqualTo: widget.otherUser.id)
-          .where('isAdvertisement', isEqualTo: true)
-          .orderBy('created_at', descending: true)
-          .limit(_postsPerPage)
-          .getM('otherUser.dart:661');
-
-      final posts = snapshot.docs
-          .map((doc) => Post.fromJson({'id': doc.id, ...doc.data()}))
-          .toList();
-
-      await _fetchAdvertisements(posts);
-
+      final page = await UsersApi.userPosts(widget.otherUser.id!, limit: _postsPerPage, ads: true);
+      final posts = page.items.map(postFromApi).toList();
       setState(() {
         _adsPosts = posts;
-        _adsLastDocument = snapshot.docs.isNotEmpty ? snapshot.docs.last : null;
+        _adsCursor = page.next;
         _adsLoading = false;
       });
     } catch (e) {
@@ -679,28 +611,14 @@ class _OtherUserPageState extends State<OtherUserPage> {
   }
 
   Future<void> _loadMoreAds() async {
-    if (_adsLoadingMore || _adsLastDocument == null) return;
+    if (_adsLoadingMore || _adsCursor == null) return;
     try {
       setState(() => _adsLoadingMore = true);
-      final snapshot = await _firestore
-          .collection('Posts')
-          .where('user_id', isEqualTo: widget.otherUser.id)
-          .where('isAdvertisement', isEqualTo: true)
-          .orderBy('created_at', descending: true)
-          .startAfterDocument(_adsLastDocument!)
-          .limit(_postsPerPage)
-          .getM('otherUser.dart:691');
-
-      if (snapshot.docs.isNotEmpty) {
-        final newPosts = snapshot.docs
-            .map((doc) => Post.fromJson({'id': doc.id, ...doc.data()}))
-            .toList();
-        await _fetchAdvertisements(newPosts);
-        setState(() {
-          _adsPosts.addAll(newPosts);
-          _adsLastDocument = snapshot.docs.last;
-        });
-      }
+      final page = await UsersApi.userPosts(widget.otherUser.id!, cursor: _adsCursor, limit: _postsPerPage, ads: true);
+      setState(() {
+        _adsPosts.addAll(page.items.map(postFromApi));
+        _adsCursor = page.next;
+      });
     } catch (e) {
       printVm('Erreur chargement plus de pubs: $e');
     } finally {
@@ -709,27 +627,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
   }
 
   Future<void> _fetchAdvertisements(List<Post> posts) async {
-    final ids = posts
-        .where((p) => p.advertisementId != null && p.advertisementId!.isNotEmpty)
-        .map((p) => p.advertisementId!)
-        .where((id) => !_adsData.containsKey(id))
-        .toList();
-    if (ids.isEmpty) return;
-    for (int i = 0; i < ids.length; i += 30) {
-      final batch = ids.sublist(i, min(i + 30, ids.length));
-      try {
-        final snap = await _firestore
-            .collection('Advertisements')
-            .where(FieldPath.documentId, whereIn: batch)
-            .getM('otherUser.dart:723');
-        for (final doc in snap.docs) {
-          _adsData[doc.id] =
-              Advertisement.fromJson({'id': doc.id, ...doc.data()});
-        }
-      } catch (e) {
-        printVm('Erreur fetch advertisements: $e');
-      }
-    }
+    // Les détails d'une publicité appartiennent à l'annonceur (régie Afrolook Ads) : non exposés sur un profil public.
   }
 
   List<Post> get _filteredPosts {
@@ -801,7 +699,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
     final idsToDelete = Set<String>.from(_selectedPostIds);
     try {
       for (final id in idsToDelete) {
-        await _firestore.collection('Posts').doc(id).delete();
+        await UsersApi.deletePost(id);
       }
       if (mounted) {
         setState(() {

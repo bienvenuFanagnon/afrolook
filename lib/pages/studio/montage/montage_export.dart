@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'dart:ui' as ui;
 
-import 'package:cloud_functions/cloud_functions.dart';
+import '../../../services/api/api_gateway.dart';
+import '../../../services/api/argent_upload.dart';
+import '../../../services/api/music_api.dart';
+import '../../../services/api/wallet_api.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -103,15 +105,14 @@ class MontageExport {
     if (uid == null) throw StateError('Connecte-toi pour créer une vidéo.');
     final jobId = const Uuid().v4().replaceAll('-', '').substring(0, 20);
     onJob?.call(jobId);
-    final dir = FirebaseStorage.instance.ref('studio_uploads/$uid/$jobId');
-    final uploads = <Future<void>>[];
-    void up(String name, Uint8List bytes, String type) => uploads.add(dir.child(name).putData(bytes, SettableMetadata(contentType: type)).then((_) {}));
+    final uploads = <String, Future<String>>{};
+    void up(String name, Uint8List bytes, String type) => uploads[name] = ArgentUpload.bytes(bytes, contentType: type);
 
     onStep('Préparation du fond…');
     final isVideo = s.hasVideo;
     if (isVideo) {
       final f = videoPath != null ? File(videoPath) : await assetToFile(videoAsset!, 'mp4');
-      uploads.add(dir.child('base.mp4').putFile(f, SettableMetadata(contentType: 'video/mp4')).then((_) {}));
+      up('base.mp4', await f.readAsBytes(), 'video/mp4');
       up('under.png', await png(keys.underlay, 540), 'image/png');
     } else {
       up('base.jpg', await jpeg(await png(keys.background, 720), 720, quality: 88), 'image/jpeg');
@@ -131,29 +132,42 @@ class MontageExport {
     up('top.png', await png(keys.foreground, 720), 'image/png');
 
     onStep('Envoi…');
-    await Future.wait(uploads);
+    final ids = <String, String>{};
+    for (final e in uploads.entries) {
+      ids[e.key] = await e.value;
+    }
+
+    // Son d'un artiste : payé (ou tracé s'il est gratuit) par l'API avant le montage, avec l'identifiant du montage
+    var paid = 0;
+    final m = s.music;
+    if (m != null && m.isArtist) {
+      if (m.paid && m.useCoins > 0) {
+        await MusicApi.buyUse(m.id, jobId);
+        paid = m.useCoins;
+      } else {
+        await MusicApi.freeUse(m.id, jobId);
+      }
+      if (paid > 0) onPaid?.call(paid);
+    }
 
     onStep('Montage de la vidéo…');
-    final res = await FirebaseFunctions.instance
-        .httpsCallable('renderStudioMontage', options: HttpsCallableOptions(timeout: const Duration(minutes: 5)))
-        .call({
-      'jobId': jobId,
-      'baseType': isVideo ? 'video' : 'image',
-      'fxFrames': frames,
-      'fxFps': fxFps,
+    // Point d'accès prévu : POST /studio/montages (montage assemblé par le serveur ; absent pour l'instant, voir lacunes_api_argent_creations.md)
+    final res = await ApiGateway.instance.client.post('/studio/montages', body: {
+      'job_id': jobId,
+      'uploads': ids,
+      'base_type': isVideo ? 'video' : 'image',
+      'fx_frames': frames,
+      'fx_fps': fxFps,
       'format': s.post ? 'post' : 'story',
-      'maxSeconds': maxSeconds,
+      'max_seconds': maxSeconds,
       'saturation': s.template.saturation,
       'brightness': s.template.brightness,
-      'hasUnder': isVideo,
-      if (s.music != null) 'music': {'type': s.music!.type, 'id': s.music!.id, 'startMs': s.musicStartMs},
-      'keepAudio': s.keepVideoAudio,
-      if (!isVideo && s.music != null) 'seconds': s.musicSeconds.clamp(5, maxSeconds),
-    });
-    final data = res.data as Map;
-    final url = data['url'] as String;
-    final paid = (data['paidCoins'] as num?)?.toInt() ?? 0;
-    if (paid > 0) onPaid?.call(paid);
+      'has_under': isVideo,
+      if (m != null) 'music': {'type': m.type, 'id': m.id, 'start_ms': s.musicStartMs},
+      'keep_audio': s.keepVideoAudio,
+      if (!isVideo && m != null) 'seconds': s.musicSeconds.clamp(5, maxSeconds),
+    }, idempotencyKey: 'montage:$jobId');
+    final url = WalletApi.map(res)['url'] as String;
 
     onStep('Téléchargement…');
     final r = await http.get(Uri.parse(url));

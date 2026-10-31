@@ -1,7 +1,5 @@
-import 'package:afrotok/services/read_meter.dart';
-import 'dart:async';
+import 'package:afrotok/services/api/users_api.dart';
 import 'package:flutter/foundation.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/streak_service.dart';
 
 class StreakProvider extends ChangeNotifier {
@@ -12,34 +10,18 @@ class StreakProvider extends ChangeNotifier {
   int level = 0;
   String levelLabel = 'Froid';
 
-  StreamSubscription<DocumentSnapshot>? _subscription;
-
-  /// Écoute le document Firestore de l'utilisateur pour rester à jour en temps réel.
-  void listenToUser(String userId) {
-    _subscription?.cancel();
-    _subscription = FirebaseFirestore.instance
-        .collection('Users')
-        .doc(userId)
-        .snapshotsM('streakProvider.dart:22')
-        .listen((doc) {
-      if (!doc.exists) return;
-      final data = doc.data()!;
-      commentStreak = (data['commentStreak'] as num?)?.toInt() ?? 0;
-      bestStreak = (data['bestCommentStreak'] as num?)?.toInt() ?? 0;
-      shields = (data['streakShields'] as num?)?.toInt() ?? 0;
-
-      // Sécurité : si todayCommentDate != aujourd'hui (Firestore pas encore mis à jour
-      // par checkAndResetDaily), afficher 0 pour ne pas montrer le count d'hier.
-      final todayStr = _todayStr();
-      final firestoreDate = data['todayCommentDate'] as String?;
-      todayCount = (firestoreDate == todayStr)
-          ? (data['todayCommentCount'] as num?)?.toInt() ?? 0
-          : 0;
-
+  /// Charge l'état de la série depuis l'API (le serveur la tient à jour et applique les boucliers).
+  Future<void> listenToUser(String userId) async {
+    try {
+      final st = await UsersApi.streak();
+      commentStreak = (st['streak'] as num?)?.toInt() ?? 0;
+      bestStreak = (st['best'] as num?)?.toInt() ?? 0;
+      shields = (st['shields'] as num?)?.toInt() ?? 0;
+      todayCount = (st['today_count'] as num?)?.toInt() ?? 0;
       level = StreakService.streakLevel(commentStreak);
       levelLabel = StreakService.streakLevelLabel(level);
       notifyListeners();
-    });
+    } catch (_) {/* l'état précédent est conservé */}
   }
 
   static String _todayStr() {
@@ -84,9 +66,4 @@ class StreakProvider extends ChangeNotifier {
   /// Le quota du jour est atteint.
   bool get quotaReachedToday => todayCount >= 3;
 
-  @override
-  void dispose() {
-    _subscription?.cancel();
-    super.dispose();
-  }
 }

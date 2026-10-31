@@ -1,8 +1,6 @@
 import 'package:afrotok/services/read_meter.dart';
 import 'dart:math';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -54,16 +52,8 @@ class SocialFollowCard extends StatefulWidget {
   static DateTime? _countsAt;
 
   static Future<void> _refreshCounts() async {
-    final at = _countsAt;
-    if (at != null && DateTime.now().difference(at) < const Duration(minutes: 2)) return;
-    try {
-      final doc = await FirebaseFirestore.instance.collection('AppConfig').doc('socialClicks').getM('social_follow_card.dart:59');
-      final d = doc.data() ?? {};
-      _counts['facebook'] = (d['facebook'] as num?)?.toInt() ?? 0;
-      _counts['tiktok'] = (d['tiktok'] as num?)?.toInt() ?? 0;
-      _counts['whatsapp'] = (d['whatsapp'] as num?)?.toInt() ?? 0;
-      _countsAt = DateTime.now();
-    } catch (_) {}
+    // Compteurs de clics par réseau : pas encore de route côté API (voir lacunes_api_publications.md) ; les valeurs restent à zéro.
+    _countsAt ??= DateTime.now();
   }
 
   /// Tirage « 1re position » fait une seule fois par session (1 ouverture sur 5).
@@ -146,7 +136,7 @@ class _SocialFollowCardState extends State<SocialFollowCard> {
     }
     SocialFollowCard._pending.add(network);
     // Comptage côté serveur (au plus une fois par heure et par réseau) ; l'affichage ne bouge pas.
-    FirebaseFunctions.instance.httpsCallable('recordSocialClick').call({'network': network}).ignore();
+    // Comptage des clics : pas encore de route côté API (voir lacunes_api_publications.md)
     try {
       final sp = await SharedPreferences.getInstance();
       await sp.setInt(SocialFollowCard._kHiddenUntil,

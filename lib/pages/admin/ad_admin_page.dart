@@ -1,17 +1,15 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/ads/ad_config.dart';
 import 'package:afrotok/ads/ad_gate.dart';
 import 'package:afrotok/ads/ad_revenue_tracker.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrotok/services/api/post_mapper.dart';
+import 'package:afrotok/services/api/regie_api.dart';
 import 'package:afrotok/ads/admob_service.dart';
 import 'package:afrotok/ads/appodeal_service.dart';
 import 'package:afrotok/ads/ad_banner.dart';
 import 'package:afrotok/ads/appodeal_widgets.dart';
 import 'package:afrotok/ads/admob_widgets.dart';
 import 'package:afrotok/ads/rewards_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:afrotok/layout/centered_content.dart';
-import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/postDetails.dart';
 import 'package:afrotok/pages/postDetailsVideo.dart';
 import 'package:afrotok/providers/authProvider.dart';
@@ -57,13 +55,11 @@ class _AdAdminPageState extends State<AdAdminPage> {
     });
     try {
       await AdRevenueTracker.flush(); // inclut ce que cet appareil n'a pas encore envoyé
-      final res = await FirebaseFunctions.instance.httpsCallable('adRevenueReport').call({'days': 7});
-      final days = ((res.data as Map)['days'] as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      final res = await RegieApi.getMap('/admin/ads/revenue', query: {'days': 7});
+      final days = ((res['days'] as List?) ?? const []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
       if (mounted) setState(() => _revenueDays = days);
-    } on FirebaseFunctionsException catch (e) {
-      if (mounted) setState(() => _revenueError = e.code == 'not-found' ? 'La fonction adRevenueReport n\'est pas encore déployée.' : 'Refusé (${e.code}) : ${e.message ?? ''}');
     } catch (e) {
-      if (mounted) setState(() => _revenueError = 'Impossible de charger les revenus : $e');
+      if (mounted) setState(() => _revenueError = 'Revenus indisponibles pour le moment : ${RegieApi.err(e)}');
     }
     if (mounted) setState(() => _revenueLoading = false);
   }
@@ -89,8 +85,8 @@ class _AdAdminPageState extends State<AdAdminPage> {
       final id = '${ad['postId'] ?? ''}';
       if (id.isEmpty) return;
       try {
-        final data = (await FirebaseFirestore.instance.collection('Posts').doc(id).getM('ad_admin_page.dart:pushAdPost')).data();
-        if (data == null) return;
+        final data = await RegieApi.getMap('/posts/$id');
+        if (data.isEmpty) return;
         ad['_text'] = '${data['description'] ?? ''}'.replaceAll(RegExp(r'\s+'), ' ').trim();
         ad['_image'] = _previewImage(data);
         ad['_type'] = '${data['dataType'] ?? ''}'.toUpperCase();
@@ -103,11 +99,10 @@ class _AdAdminPageState extends State<AdAdminPage> {
     final id = '${ad['postId'] ?? ''}';
     if (id.isEmpty) return;
     try {
-      final doc = await FirebaseFirestore.instance.collection('Posts').doc(id).getM('ad_admin_page.dart:openAdPost');
-      if (!doc.exists || !mounted) return;
-      final data = Map<String, dynamic>.from(doc.data()!)..['id'] = doc.id;
-      final post = Post.fromJson(data);
-      final isVideo = '${data['dataType'] ?? ''}'.toUpperCase() == 'VIDEO';
+      final data = await RegieApi.getMap('/posts/$id');
+      if (data.isEmpty || !mounted) return;
+      final post = postFromApi(data);
+      final isVideo = (post.dataType ?? '').toUpperCase() == 'VIDEO';
       Navigator.push(context, MaterialPageRoute(builder: (_) => isVideo ? VideoYoutubePageDetails(initialPost: post) : DetailsPost(post: post)));
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Impossible d\'ouvrir la pub : $e')));
@@ -210,14 +205,11 @@ class _AdAdminPageState extends State<AdAdminPage> {
       _pushError = null;
     });
     try {
-      final res = await FirebaseFunctions.instance.httpsCallable('adPushList').call();
-      final ads = ((res.data as Map)['ads'] as List).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      final ads = await RegieApi.getList('/admin/ads/push');
       await _attachPosts(ads);
       if (mounted) setState(() => _pushAds = ads);
-    } on FirebaseFunctionsException catch (e) {
-      if (mounted) setState(() => _pushError = e.code == 'not-found' ? 'La fonction adPushList n\'est pas encore déployée.' : 'Refusé (${e.code}) : ${e.message ?? ''}');
     } catch (e) {
-      if (mounted) setState(() => _pushError = 'Impossible de charger les pubs : $e');
+      if (mounted) setState(() => _pushError = 'Impossible de charger les pubs : ${RegieApi.err(e)}');
     }
     if (mounted) setState(() => _pushLoading = false);
   }
@@ -226,7 +218,7 @@ class _AdAdminPageState extends State<AdAdminPage> {
     final before = ad['pushEnabled'] == true;
     setState(() => ad['pushEnabled'] = enabled);
     try {
-      await FirebaseFunctions.instance.httpsCallable('setAdPush').call({'adId': ad['id'], 'enabled': enabled});
+      await RegieApi.patch('/admin/ads/push/${ad['id']}', body: {'enabled': enabled});
     } catch (_) {
       if (mounted) {
         setState(() => ad['pushEnabled'] = before);
@@ -353,9 +345,8 @@ class _AdAdminPageState extends State<AdAdminPage> {
   /// Récompenses accordées aujourd'hui (AdRewardStats, jour UTC) : pour surveiller l'effet sur les abonnements.
   Future<void> _loadStats() async {
     try {
-      final day = DateTime.now().toUtc().toIso8601String().substring(0, 10).replaceAll('-', '');
-      final doc = await FirebaseFirestore.instance.collection('AdRewardStats').doc(day).getM('ad_admin_page.dart:36');
-      if (mounted) setState(() => _todayStats = doc.data() ?? {});
+      final st = await RegieApi.getMap('/admin/ads/reward-stats');
+      if (mounted) setState(() => _todayStats = st);
     } catch (_) {}
   }
 
@@ -410,7 +401,7 @@ class _AdAdminPageState extends State<AdAdminPage> {
               ),
               child: Column(children: [
                 row('Plateforme', AdConfig.platform),
-                row('Pubs activées (Firestore AppConfig/ads)', c.enabled ? 'oui' : 'non'),
+                row('Pubs activées (réglages du serveur)', c.enabled ? 'oui' : 'non'),
                 row('Pourcentage d\'utilisateurs', '${c.rolloutPercent} %'),
                 row('Mode', c.testMode ? 'TEST' : 'PRODUCTION'),
                 row('SDK prêt (consentement)', AdmobService.ready.value ? 'oui' : 'non'),

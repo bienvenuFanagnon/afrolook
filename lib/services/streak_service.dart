@@ -1,5 +1,4 @@
-import 'package:afrotok/services/read_meter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/users_api.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class StreakResult {
@@ -24,197 +23,53 @@ class StreakResult {
 
 class StreakService {
   static const int _dailyQuota = 3;
-  static const int _maxShields = 3;
-  static const int _shieldEarnIntervalDays = 7;
 
-  static String _todayStr() {
-    final now = DateTime.now();
-    return '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+  static StreakResult _fromApi(Map<String, dynamic> st, {required int previousToday, required int previousStreak, bool alreadyCounted = false}) {
+    final today = (st['today_count'] as num?)?.toInt() ?? 0;
+    final streak = (st['streak'] as num?)?.toInt() ?? 0;
+    final quota = (st['quota'] as num?)?.toInt() ?? _dailyQuota;
+    return StreakResult(
+      quotaReached: !alreadyCounted && today >= quota && previousToday < quota,
+      streakSaved: false,
+      shieldUsed: false,
+      alreadyCounted: alreadyCounted,
+      currentStreak: streak,
+      todayCount: today,
+      shields: (st['shields'] as num?)?.toInt() ?? 0,
+    );
   }
 
-  /// Appelé après chaque commentaire envoyé avec succès.
-  /// Retourne un [StreakResult] pour piloter le toast de célébration.
+  /// Appelé après chaque commentaire envoyé avec succès. La série est calculée par le SERVEUR (au moment du commentaire) :
+  /// ici on relit seulement l'état (`GET /v1/streak`) pour piloter le toast de célébration.
   static Future<StreakResult> onCommentSent({
     required String userId,
     required String postId,
   }) async {
-    final today = _todayStr();
-
-    // ── Déduplication locale : 1 commentaire comptant par post par jour ──────
     final prefs = await SharedPreferences.getInstance();
-    final dedupKey = 'streak_comment_${postId}_${userId}_$today';
-    if (prefs.getBool(dedupKey) == true) {
-      final streak = prefs.getInt('streak_current_$userId') ?? 0;
-      final count = prefs.getInt('streak_today_count_$userId') ?? 0;
-      final shields = prefs.getInt('streak_shields_$userId') ?? 0;
-      return StreakResult(
-        quotaReached: false,
-        streakSaved: false,
-        shieldUsed: false,
-        alreadyCounted: true,
-        currentStreak: streak,
-        todayCount: count,
-        shields: shields,
-      );
-    }
+    final previousToday = prefs.getInt('streak_today_count_$userId') ?? 0;
+    final previousStreak = prefs.getInt('streak_current_$userId') ?? 0;
+    final st = await UsersApi.streak();
+    final r = _fromApi(st, previousToday: previousToday, previousStreak: previousStreak, alreadyCounted: ((st['today_count'] as num?)?.toInt() ?? 0) == previousToday);
+    await prefs.setInt('streak_today_count_$userId', r.todayCount);
+    await prefs.setInt('streak_current_$userId', r.currentStreak);
+    await prefs.setInt('streak_shields_$userId', r.shields);
+    return r;
+  }
 
-    // ── Lire l'état courant depuis Firestore ──────────────────────────────────
-    final userRef = FirebaseFirestore.instance.collection('Users').doc(userId);
-    final doc = await userRef.getM('streak_service.dart:62');
-    final data = doc.data() ?? {};
+  /// Plus rien à faire au démarrage : le serveur remet la série à jour (boucliers compris) à chaque lecture.
+  static Future<void> checkAndResetDaily(String userId) async {}
 
-    int currentStreak = (data['commentStreak'] as num?)?.toInt() ?? 0;
-    int bestStreak = (data['bestCommentStreak'] as num?)?.toInt() ?? 0;
-    int shields = (data['streakShields'] as num?)?.toInt() ?? 0;
-    int todayCount = (data['todayCommentCount'] as num?)?.toInt() ?? 0;
-    String? lastDate = data['todayCommentDate'] as String?;
+  /// Plus rien à initialiser : la série est créée par le serveur.
+  static Future<void> initIfNeeded(String userId) async {}
 
-    // ── Nouveau jour : calculer si la série continue ───────────────────────────
-    bool streakSaved = false;
-    if (lastDate != null && lastDate != today) {
-      final last = DateTime.tryParse(lastDate);
-      final now = DateTime.now();
-      final yesterday = DateTime(now.year, now.month, now.day - 1);
-      final lastDay = last != null ? DateTime(last.year, last.month, last.day) : null;
-
-      if (lastDay != null && lastDay.isAtSameMomentAs(yesterday)) {
-        // Hier → série continue
-        if (todayCount >= _dailyQuota) streakSaved = true;
-      } else {
-        // Plus d'un jour de gap → série cassée
-        currentStreak = 0;
-      }
-
-      todayCount = 0;
-    }
-
-    // ── Incrémenter le compteur du jour ───────────────────────────────────────
-    todayCount++;
-    await prefs.setBool(dedupKey, true);
-    await prefs.setInt('streak_today_count_$userId', todayCount);
-
-    // ── Quota du jour atteint → valider la série ──────────────────────────────
-    // On utilise == et non >= pour n'incrémenter la série qu'une seule fois,
-    // exactement au moment où le quota est atteint (pas pour chaque commentaire suivant).
-    bool quotaReached = false;
-    if (todayCount == _dailyQuota) {
-      quotaReached = true;
-      currentStreak++;
-      if (currentStreak > bestStreak) bestStreak = currentStreak;
-
-      // Gagner un bouclier tous les N jours de série
-      if (currentStreak % _shieldEarnIntervalDays == 0 && shields < _maxShields) {
-        shields++;
-      }
-
-      await prefs.setInt('streak_current_$userId', currentStreak);
-      await prefs.setInt('streak_shields_$userId', shields);
-    }
-
-    // ── Écriture Firestore atomique ────────────────────────────────────────────
+  /// État actuel de la série (API), ou null en cas d'erreur.
+  static Future<StreakResult?> fetch() async {
     try {
-      await userRef.update({
-        'commentStreak': currentStreak,
-        'bestCommentStreak': bestStreak,
-        'streakShields': shields,
-        'todayCommentCount': todayCount,
-        'todayCommentDate': today,
-      });
-    } catch (e) {
-      // Rollback de la clé de dédup pour permettre une nouvelle tentative
-      await prefs.remove(dedupKey);
-      await prefs.setInt('streak_today_count_$userId', todayCount - 1);
-      rethrow;
+      final st = await UsersApi.streak();
+      return _fromApi(st, previousToday: 0, previousStreak: 0, alreadyCounted: true);
+    } catch (_) {
+      return null;
     }
-
-    return StreakResult(
-      quotaReached: quotaReached,
-      streakSaved: streakSaved,
-      shieldUsed: false,
-      alreadyCounted: false,
-      currentStreak: currentStreak,
-      todayCount: todayCount,
-      shields: shields,
-    );
-  }
-
-  /// Appelé au démarrage de l'app. Vérifie si la série est en danger
-  /// et consomme un bouclier si nécessaire.
-  static Future<void> checkAndResetDaily(String userId) async {
-    final today = _todayStr();
-    final prefs = await SharedPreferences.getInstance();
-    final lastChecked = prefs.getString('streak_last_checked_$userId');
-    if (lastChecked == today) return; // déjà vérifié aujourd'hui
-
-    final userRef = FirebaseFirestore.instance.collection('Users').doc(userId);
-    final doc = await userRef.getM('streak_service.dart:149');
-    final data = doc.data();
-    if (data == null) return;
-
-    final lastDate = data['todayCommentDate'] as String?;
-    if (lastDate == null || lastDate == today) {
-      await prefs.setString('streak_last_checked_$userId', today);
-      return;
-    }
-
-    final last = DateTime.tryParse(lastDate);
-    if (last == null) return;
-
-    final now = DateTime.now();
-    final yesterday = DateTime(now.year, now.month, now.day - 1);
-    final lastDay = DateTime(last.year, last.month, last.day);
-    final todayCount = (data['todayCommentCount'] as num?)?.toInt() ?? 0;
-    int shields = (data['streakShields'] as num?)?.toInt() ?? 0;
-
-    // Quota d'hier non atteint → la série est en danger
-    if (!lastDay.isAtSameMomentAs(yesterday) || todayCount < _dailyQuota) {
-      if (shields > 0) {
-        // Bouclier absorbe la coupure
-        shields--;
-        await userRef.update({
-          'streakShields': shields,
-          'todayCommentDate': today,
-          'todayCommentCount': 0,
-        });
-        await prefs.setInt('streak_shields_$userId', shields);
-      } else {
-        // Série cassée
-        await userRef.update({
-          'commentStreak': 0,
-          'todayCommentDate': today,
-          'todayCommentCount': 0,
-        });
-        await prefs.setInt('streak_current_$userId', 0);
-      }
-    } else {
-      // Hier OK (quota atteint), mais on est un nouveau jour : remettre le compteur à 0.
-      // Sans ce else, todayCommentCount reste à 3 en Firestore et le provider croit
-      // que l'utilisateur a déjà commenté aujourd'hui alors qu'il vient juste de se connecter.
-      await userRef.update({
-        'todayCommentDate': today,
-        'todayCommentCount': 0,
-      });
-    }
-    await prefs.setInt('streak_today_count_$userId', 0);
-    await prefs.setString('streak_last_checked_$userId', today);
-  }
-
-  /// Migration douce : crée les champs streak si absents en Firestore.
-  static Future<void> initIfNeeded(String userId) async {
-    final userRef = FirebaseFirestore.instance.collection('Users').doc(userId);
-    final doc = await userRef.getM('streak_service.dart:204');
-    if (!doc.exists) return;
-
-    final data = doc.data()!;
-    if (data.containsKey('commentStreak')) return; // déjà initialisé
-
-    await userRef.update({
-      'commentStreak': 0,
-      'bestCommentStreak': 0,
-      'streakShields': 0,
-      'todayCommentCount': 0,
-      'todayCommentDate': null,
-    });
   }
 
   /// Retourne le niveau de flamme (0-5) selon la série.

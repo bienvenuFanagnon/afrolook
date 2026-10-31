@@ -18,7 +18,11 @@ import 'package:afrotok/pages/home/unitePostPage/chronique_section.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/api_gateway.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;   // seulement pour le modèle Chronique (aucune lecture Firestore)
+import 'package:afrotok/services/api/home_feed_api.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
 
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/userProvider.dart';
@@ -228,7 +232,6 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   late AnimationController _unlikeController;
 
   // Utilitaires
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _currentTitleIndex = 0;
   Timer? _titleTimer;
@@ -1866,16 +1869,8 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   Future<void> _flushAndRefreshUnread() async {
     final userId = authProvider.loginUserData.id;
     if (userId == null || userId.isEmpty) return;
+    // Les posts non vus viennent du serveur à chaque chargement : on envoie seulement les posts vus en attente
     await flushSeenPostsAndCleanMemory(userId, authProvider.loginUserData);
-    try {
-      final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).getM('homeSportPost.dart:1865');
-      final _rawUnread = (userDoc.data()?['unreadPosts'] as Map<String, dynamic>?) ?? {};
-      authProvider.loginUserData.unreadPosts = UserData.parseUnreadTimestamps(_rawUnread);
-      authProvider.loginUserData.repostMeta = UserData.parseUnreadRepostMeta(_rawUnread);
-      printVm('🔄 [SPORT][UNREAD] unreadPosts mis à jour : ${_rawUnread.length} posts non vus');
-    } catch (e) {
-      printVm('⚠️ [SPORT][UNREAD] Impossible de rafraîchir unreadPosts : $e');
-    }
   }
 
   // ── Tier 1 : posts non vus des abonnements ─────────────────────────────────
@@ -1889,25 +1884,6 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       } catch (_) {}
     }
     if (unread.isEmpty) return;
-
-    // Plafond : si > 200, supprimer les plus anciens
-    const int kMaxUnread = 16;
-    if (unread.length > kMaxUnread) {
-      final sorted = unread.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-      final toKeep = sorted.take(kMaxUnread).map((e) => e.key).toSet();
-      final toDelete = unread.keys.where((id) => !toKeep.contains(id)).toList();
-      for (final id in toDelete) { unread.remove(id); }
-      authProvider.loginUserData.unreadPosts = unread;
-      final uid = authProvider.loginUserData.id;
-      if (uid != null) {
-        for (int i = 0; i < toDelete.length; i += 500) {
-          final batch = toDelete.sublist(i, min(i + 500, toDelete.length));
-          final updates = <String, dynamic>{};
-          for (final id in batch) { updates['unreadPosts.$id'] = FieldValue.delete(); }
-          FirebaseFirestore.instance.collection('Users').doc(uid).update(updates).catchError((_) {});
-        }
-      }
-    }
 
     try {
       // DECOUVERTE = pas de filtre catégorie (tous les posts non vus),
@@ -2060,11 +2036,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     _persistSeenSport({postId});
     final userId = authProvider.loginUserData.id;
     if (userId != null && userId.isNotEmpty) {
-      FirebaseFirestore.instance
-          .collection('Users')
-          .doc(userId)
-          .update({'unreadPosts.$postId': FieldValue.delete()})
-          .catchError((e) { printVm('⚠️ [SPORT][SEEN] Firestore delete échoué : $e'); });
+      HomeFeedApi.markSeen({postId}).catchError((e) { printVm('⚠️ [SPORT][SEEN] marquage échoué : $e'); });
     }
   }
 
@@ -2387,24 +2359,12 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
       if (userIds.isEmpty) return;
 
-      // Firestore whereIn supporte au maximum 30 ids par requête -> on chunk
-      const chunkSize = 30;
-      for (var i = 0; i < userIds.length; i += chunkSize) {
-        final chunk = userIds.sublist(
-          i,
-          (i + chunkSize > userIds.length) ? userIds.length : i + chunkSize,
-        );
-
-        final snapshot = await _firestore
-            .collection('Users')
-            .where(FieldPath.documentId, whereIn: chunk)
-            .getM('homeSportPost.dart:2389');
-
-        for (final doc in snapshot.docs) {
-          final userData = UserData.fromJson(doc.data());
-          _userDataCache[doc.id] = userData;
-          _userVerificationStatus[doc.id] = userData.isVerify ?? false;
-        }
+      for (final id in userIds) {
+        try {
+          final userData = userFromApi(await UsersApi.publicProfile(id));
+          _userDataCache[id] = userData;
+          _userVerificationStatus[id] = userData.isVerify ?? false;
+        } catch (_) {}
       }
 
       if (mounted) {
@@ -2746,46 +2706,18 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   /// Exécute la requête Firestore pour une fenêtre mensuelle donnée et
   /// retourne les posts valides trouvés (sans les ajouter au cache).
   Future<List<Post>> _fetchOldPostsForWindow(DateTime startDate) async {
-    final DateTime endDate = DateTime(startDate.year, startDate.month + 1, 1);
-
-    final int startMicros = startDate.microsecondsSinceEpoch;
-    final int endMicros = endDate.microsecondsSinceEpoch;
-
-    printVm("📜 Chargement anciens posts entre $startDate et $endDate");
-
-    Query query = _firestore.collection('Posts');
-
-    query = query
-        .where("typeTabbar", isEqualTo: _selectedPostType)
-        .where("created_at", isGreaterThanOrEqualTo: startMicros)
-        .where("created_at", isLessThan: endMicros)
-        .orderBy("created_at")
-        .limit(30); // on prend large pour filtrer ensuite
-
-    final snapshot = await query.getM('homeSportPost.dart:2753');
-
-    if (snapshot.docs.isEmpty) {
-      printVm("⚠️ Aucun post trouvé dans cette période");
-      return [];
-    }
-
-    List<Post> validOldPosts = [];
-
-    for (final doc in snapshot.docs) {
-      final post = Post.fromJson(doc.data() as Map<String, dynamic>);
-      post.id = doc.id;
-
+    printVm("📜 Chargement d'anciens posts (thème $_selectedPostType)");
+    // Les fenêtres mensuelles n'existent pas côté serveur : on prend une page de découverte du thème (voir lacunes_api_publications.md)
+    final page = await HomeFeedApi.discover(category: _selectedPostType, limit: 30);
+    final validOldPosts = <Post>[];
+    for (final post in page.posts) {
       if (_loadedPostIds.contains(post.id)) continue;
       if (_oldPostsCache.any((p) => p.id == post.id)) continue;
       if (post.isAdvertisement == true) continue;
-
       post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
-
       validOldPosts.add(post);
-
       if (validOldPosts.length >= 12) break;
     }
-
     return validOldPosts;
   }
 
@@ -3164,18 +3096,6 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                 onPressed: _hasSubscribedFromEndFeed
                     ? () async {
                         setState(() => _isReloadingAfterSubscribe = true);
-                        final userId = authProvider.loginUserData.id;
-                        if (userId != null) {
-                          try {
-                            final doc = await FirebaseFirestore.instance
-                                .collection('Users')
-                                .doc(userId)
-                                .getM('homeSportPost.dart:3136');
-                            final _rawUnread = (doc.data()?['unreadPosts'] as Map<String, dynamic>?) ?? {};
-                            authProvider.loginUserData.unreadPosts = UserData.parseUnreadTimestamps(_rawUnread);
-                            authProvider.loginUserData.repostMeta = UserData.parseUnreadRepostMeta(_rawUnread);
-                          } catch (_) {}
-                        }
                         _resetPagination(clearPosts: true);
                         await _loadInitialPosts();
                         if (mounted) {
@@ -3561,20 +3481,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         }
       });
 
-      final batch = _firestore.batch();
-
-      final postRef = _firestore.collection('Posts').doc(post.id);
-      batch.update(postRef, {
-        'vues': FieldValue.increment(1),
-        'users_vue_id': FieldValue.arrayUnion([currentUserId]),
-      });
-
-      final userRef = _firestore.collection('Users').doc(currentUserId);
-      batch.update(userRef, {
-        'viewedPostIds': FieldValue.arrayUnion([post.id!]),
-      });
-
-      await batch.commit();
+      await ApiGateway.instance.markViewed(post.id!);   // vue (unique, gains compris) comptée par le serveur
 
       authProvider.loginUserData.viewedPostIds ??= [];
       if (!authProvider.loginUserData.viewedPostIds!.contains(post.id!)) {
@@ -3657,22 +3564,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       });
 
       // Mise à jour Firestore avec batch pour atomicité
-      final batch = _firestore.batch();
-
-      // 1. Incrémenter les vues du post
-      final postRef = _firestore.collection('Posts').doc(post.id);
-      batch.update(postRef, {
-        'vues': FieldValue.increment(1),
-        'users_vue_id': FieldValue.arrayUnion([currentUserId]),
-      });
-
-      // 2. Ajouter l'ID du post à l'historique de l'utilisateur
-      final userRef = _firestore.collection('Users').doc(currentUserId);
-      batch.update(userRef, {
-        'viewedPostIds': FieldValue.arrayUnion([post.id!]),
-      });
-
-      await batch.commit();
+      await ApiGateway.instance.markViewed(post.id!);   // vue (unique, gains compris) comptée par le serveur
 
       // Mettre à jour le provider local
       authProvider.loginUserData.viewedPostIds ??= [];
@@ -3707,19 +3599,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         }
       });
 
-      final batch = _firestore.batch();
-      final postRef = _firestore.collection('Posts').doc(post.id);
-      batch.update(postRef, {
-        'vues': FieldValue.increment(1),
-        'users_vue_id': FieldValue.arrayUnion([currentUserId]),
-      });
-
-      final userRef = _firestore.collection('Users').doc(currentUserId);
-      batch.update(userRef, {
-        'viewedPostIds': FieldValue.arrayUnion([post.id!]),
-      });
-
-      await batch.commit();
+      await ApiGateway.instance.markViewed(post.id!);   // vue (unique, gains compris) comptée par le serveur
 
       authProvider.loginUserData.viewedPostIds ??= [];
       if (!authProvider.loginUserData.viewedPostIds!.contains(post.id!)) {

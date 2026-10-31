@@ -1,5 +1,6 @@
 import 'package:afrotok/services/read_meter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -71,16 +72,10 @@ class _ActiveCreatorsSectionWidgetState extends State<ActiveCreatorsSectionWidge
       Map<String, int> freshCounts = {};
       Map<String, int> freshCanalCounts = {};
       try {
-        final doc = await FirebaseFirestore.instance.collection('Users').doc(userId).getM('active_creators_section_widget.dart:73');
-        final rawCreator = doc.data()?['newPostsByCreator'] as Map<String, dynamic>? ?? {};
+        final r = ApiClient.data(await ApiGateway.instance.client.get('/feed/unread-counts'));
+        final rawCreator = (r is Map ? r['by_creator'] : null) as Map<String, dynamic>? ?? {};
         freshCounts = Map<String, int>.fromEntries(
           rawCreator.entries
-              .where((e) => (e.value as num? ?? 0).toInt() > 0)
-              .map((e) => MapEntry(e.key, (e.value as num).toInt())),
-        );
-        final rawCanal = doc.data()?['newPostsByCanal'] as Map<String, dynamic>? ?? {};
-        freshCanalCounts = Map<String, int>.fromEntries(
-          rawCanal.entries
               .where((e) => (e.value as num? ?? 0).toInt() > 0)
               .map((e) => MapEntry(e.key, (e.value as num).toInt())),
         );

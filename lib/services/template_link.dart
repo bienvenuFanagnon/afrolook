@@ -4,7 +4,7 @@
 //   c:{style}         carte Afrolook d'un style, ex. c:music
 //   c:{style}:{modèle} carte d'un style avec un modèle de formulaire, ex. c:neon:birthday
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/regie_api.dart';
 
 import '../pages/cards/card_models.dart';
 import '../pages/studio/montage/montage_catalog.dart';
@@ -92,7 +92,7 @@ class PostTemplateLink {
     if (src == null || !had) return;
     () async {
       try {
-        await FirebaseFirestore.instance.collection('Posts').doc(src).update({'templateTries': FieldValue.increment(1)});
+        await RegieApi.post('/posts/$src/template-try'); // route à fournir : voir lacunes_api_regie_admin.md
       } catch (_) {}
     }();
   }

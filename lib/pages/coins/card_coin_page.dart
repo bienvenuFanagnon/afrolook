@@ -1,5 +1,5 @@
 import 'package:afrotok/layout/centered_content.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -112,8 +112,8 @@ class _CardCoinPageState extends State<CardCoinPage> {
         coins: p.coins, firstName: _first.text.trim(), lastName: _last.text.trim(), phone: digits,
         city: _city.text.trim(), zip: _zip.text.trim(), country: _country,
       );
-    } on FirebaseFunctionsException catch (e) {
-      if (mounted) setState(() { _busy = false; _error = e.message ?? context.tr('Le paiement par carte a échoué. Réessaie.'); });
+    } on ApiException catch (e) {
+      if (mounted) setState(() { _busy = false; _error = (e.message.isNotEmpty ? e.message : null) ?? context.tr('Le paiement par carte a échoué. Réessaie.'); });
     } catch (_) {
       if (mounted) setState(() { _busy = false; _error = context.tr('Le paiement par carte a échoué. Réessaie.'); });
     }

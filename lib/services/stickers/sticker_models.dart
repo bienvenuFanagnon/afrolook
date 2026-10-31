@@ -1,11 +1,9 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 /// Identifiant du pack officiel Afrolook (voir docs/STICKERS_SPEC.md).
 const String kOfficialStickerPackId = 'official_universel';
 
 int _asInt(dynamic v, [int fallback = 0]) => v is num ? v.toInt() : fallback;
 
-/// Un sticker (document `Stickers/{id}`).
+/// Un sticker (API : /stickers).
 class StickerItem {
   final String id;
   final String packId;
@@ -49,63 +47,35 @@ class StickerItem {
     this.source = 'pack',
   });
 
-  factory StickerItem.fromFirestore(DocumentSnapshot doc) {
-    final d = (doc.data() as Map<String, dynamic>?) ?? const {};
+  /// Sticker de l'API (`GET /stickers/packs/{id}` → `stickers[]`). [source] : 'pack' ou 'mine'.
+  factory StickerItem.fromApi(Map<String, dynamic> d, {String source = 'pack'}) {
     final rawCaptions = d['captions'];
     final rawKeywords = d['keywords'];
     final url = (d['url'] ?? '').toString();
+    final thumb = (d['thumb_url'] ?? '').toString();
     return StickerItem(
-      id: doc.id,
-      packId: (d['packId'] ?? '').toString(),
-      order: _asInt(d['order']),
+      id: '${d['id']}',
+      packId: (d['pack_id'] ?? '').toString(),
+      order: _asInt(d['sort']),
       category: (d['category'] ?? '').toString(),
-      captions: rawCaptions is Map
-          ? {
-              for (final e in rawCaptions.entries)
-                if (e.value != null && e.value.toString().trim().isNotEmpty)
-                  e.key.toString(): e.value.toString(),
-            }
-          : const {},
-      keywords: rawKeywords is List ? rawKeywords.map((e) => e.toString()).toList() : const [],
-      url: url,
-      thumbUrl: (d['thumbUrl'] ?? '').toString().isNotEmpty ? d['thumbUrl'].toString() : url,
-      storagePath: d['storagePath']?.toString(),
-      sizeBytes: _asInt(d['sizeBytes']),
-      durationMs: _asInt(d['durationMs']),
-      animated: d['animated'] != false,
-      giftPriceCoins: _asInt(d['giftPriceCoins']),
-      status: (d['status'] ?? 'active').toString(),
-      creatorId: d['creatorId']?.toString(),
-      w: _asInt(d['w'], 512),
-      h: _asInt(d['h'], 512),
-    );
-  }
-
-  /// Sticker personnel (`UserStickers/{id}`, source 'mine').
-  factory StickerItem.fromUserSticker(DocumentSnapshot doc) {
-    final d = (doc.data() as Map<String, dynamic>?) ?? const {};
-    final url = (d['url'] ?? '').toString();
-    final thumb = (d['thumbUrl'] ?? '').toString();
-    final rawCaptions = d['captions'];
-    return StickerItem(
-      id: doc.id,
-      url: url,
-      thumbUrl: thumb.isNotEmpty ? thumb : url,
-      storagePath: d['storagePath']?.toString(),
-      sizeBytes: _asInt(d['sizeBytes']),
-      durationMs: _asInt(d['durationMs']),
-      animated: d['animated'] != false,
-      status: (d['status'] ?? 'pending').toString(),
-      creatorId: d['ownerId']?.toString(),
       captions: rawCaptions is Map
           ? {
               for (final e in rawCaptions.entries)
                 if (e.value != null && e.value.toString().trim().isNotEmpty) e.key.toString(): e.value.toString(),
             }
           : const {},
-      w: _asInt(d['w'], 512),
-      h: _asInt(d['h'], 512),
-      source: 'mine',
+      keywords: rawKeywords is List ? rawKeywords.map((e) => e.toString()).toList() : const [],
+      url: url,
+      thumbUrl: thumb.isNotEmpty ? thumb : url,
+      sizeBytes: _asInt(d['size_bytes']),
+      durationMs: _asInt(d['duration_ms']),
+      animated: d['animated'] != false,
+      giftPriceCoins: _asInt(d['gift_price_coins']),
+      status: (d['status'] ?? 'active').toString(),
+      creatorId: d['owner_id']?.toString(),
+      w: _asInt(d['width'], 512),
+      h: _asInt(d['height'], 512),
+      source: source,
     );
   }
 
@@ -124,7 +94,7 @@ class StickerItem {
       };
 }
 
-/// Un pack (document `StickerPacks/{id}`).
+/// Un pack (API : /stickers/packs).
 class StickerPack {
   final String id;
   final String name;
@@ -139,6 +109,9 @@ class StickerPack {
   final String coverUrl;
   final int salesCount;
 
+  /// Pack gratuit, à moi, ou déjà acheté (calculé par l'API).
+  final bool owned;
+
   const StickerPack({
     required this.id,
     this.name = '',
@@ -152,26 +125,25 @@ class StickerPack {
     this.order = 0,
     this.coverUrl = '',
     this.salesCount = 0,
+    this.owned = false,
   });
 
-  factory StickerPack.fromFirestore(DocumentSnapshot doc) {
-    final d = (doc.data() as Map<String, dynamic>?) ?? const {};
+  /// Pack de l'API (`GET /stickers/packs`).
+  factory StickerPack.fromApi(Map<String, dynamic> d) {
     final rawNames = d['names'];
     return StickerPack(
-      id: doc.id,
+      id: '${d['id']}',
       name: (d['name'] ?? '').toString(),
-      names: rawNames is Map
-          ? {for (final e in rawNames.entries) e.key.toString(): e.value.toString()}
-          : const {},
+      names: rawNames is Map ? {for (final e in rawNames.entries) e.key.toString(): e.value.toString()} : const {},
       kind: (d['kind'] ?? 'official').toString(),
       region: (d['region'] ?? 'universal').toString(),
-      creatorId: (d['creatorId'] ?? '').toString(),
-      priceCoins: _asInt(d['priceCoins']),
+      creatorId: (d['creator_id'] ?? '').toString(),
+      priceCoins: _asInt(d['price_coins']),
       status: (d['status'] ?? 'active').toString(),
-      stickerCount: _asInt(d['stickerCount']),
-      order: _asInt(d['order']),
-      coverUrl: (d['coverUrl'] ?? '').toString(),
-      salesCount: _asInt(d['salesCount']),
+      stickerCount: _asInt(d['sticker_count']),
+      coverUrl: (d['cover_url'] ?? '').toString(),
+      salesCount: _asInt(d['sales_count']),
+      owned: d['owned'] == true,
     );
   }
 
@@ -238,18 +210,18 @@ class StickerAccess {
   factory StickerAccess.fromMap(Map<dynamic, dynamic> m) {
     final rawRecents = m['recents'];
     return StickerAccess(
-      tier: (m['tier'] ?? 'gratuit').toString(),
-      canSend: m['canSend'] != false,
+      tier: (m['tier'] ?? 'free').toString() == 'free' ? 'gratuit' : (m['tier'] ?? 'gratuit').toString(),
+      canSend: (m['can_send'] ?? m['canSend']) != false,
       reason: m['reason']?.toString(),
-      perPostMax: _asInt(m['perPostMax']),
-      perDayMax: _asInt(m['perDayMax']),
-      dayUsed: _asInt(m['dayUsed']),
-      postUsed: _asInt(m['postUsed']),
-      bonusRemaining: _asInt(m['bonusRemaining']),
+      perPostMax: _asInt(m['per_post_max'] ?? m['perPostMax']),
+      perDayMax: _asInt(m['per_day_max'] ?? m['perDayMax']),
+      dayUsed: _asInt(m['day_used'] ?? m['dayUsed']),
+      postUsed: _asInt(m['post_used'] ?? m['postUsed']),
+      bonusRemaining: _asInt(m['bonus_left'] ?? m['bonusRemaining']),
       recents: rawRecents is List
           ? rawRecents.whereType<Map>().map((r) {
               return StickerRecentStatus(
-                stickerId: (r['stickerId'] ?? '').toString(),
+                stickerId: (r['sticker_id'] ?? r['stickerId'] ?? '').toString(),
                 source: (r['source'] ?? 'pack').toString(),
                 usable: r['usable'] != false,
                 reason: r['reason']?.toString(),

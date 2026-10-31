@@ -1,10 +1,10 @@
-import 'package:afrotok/services/read_meter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../l10n/tr.dart';
+import '../../services/api/api_gateway.dart';
+import '../../services/api/wallet_api.dart';
 import '../../services/coin_checkout.dart';
 import '../../theme/app_colors.dart';
 import 'studio/new_pack_wizard.dart';
@@ -22,7 +22,7 @@ class _StickerStudioPageState extends State<StickerStudioPage> {
   bool _loading = true;
   bool _error = false;
   int _monthCoins = 0;
-  List<QueryDocumentSnapshot<Map<String, dynamic>>> _packs = [];
+  List<Map<String, dynamic>> _packs = [];
 
   @override
   void initState() {
@@ -41,25 +41,35 @@ class _StickerStudioPageState extends State<StickerStudioPage> {
       _error = false;
     });
     try {
-      final db = FirebaseFirestore.instance;
       final res = await Future.wait([
-        db.collection('TransactionSoldes').where('user_id', isEqualTo: uid).limit(300).getM('sticker_studio_page.dart:45'),
-        db.collection('StickerPacks').where('creatorId', isEqualTo: uid).getM('sticker_studio_page.dart:46'),
+        WalletApi.instance.transactions(scope: 'coins', limit: 100),
+        ApiGateway.instance.client.get('/stickers/packs', query: {'mine': true}),
       ]);
       final now = DateTime.now();
-      final start = DateTime(now.year, now.month, 1).millisecondsSinceEpoch;
+      final start = DateTime(now.year, now.month, 1);
       var sum = 0.0;
-      for (final d in res[0].docs) {
-        final m = d.data();
-        final kind = m['purchaseKind'];
-        if (m['type'] != 'GAIN_PIECES' || (kind != 'sticker_pack' && kind != 'sticker_gift')) continue;
-        var created = (m['createdAt'] as num?)?.toInt() ?? 0;
-        if (created > 100000000000000) created ~/= 1000;
-        if (created < start) continue;
-        sum += (m['montant'] as num?)?.toDouble() ?? 0;
+      // Gains du mois sur les packs et les cadeaux de stickers (mouvements de pièces gagnées dont le libellé parle de stickers)
+      for (final m in (res[0] as ({List<Map<String, dynamic>> items, String? next})).items) {
+        final key = '${m['description_key'] ?? ''}${m['kind'] ?? ''}'.toLowerCase();
+        final created = DateTime.tryParse('${m['created_at']}');
+        final coins = (m['coins'] as num?)?.toDouble() ?? 0;
+        if (!key.contains('sticker') || created == null || created.toLocal().isBefore(start) || coins <= 0) continue;
+        sum += coins;
       }
-      final packs = res[1].docs.toList()
-        ..sort((a, b) => ((b.data()['createdAt'] as num?) ?? 0).compareTo((a.data()['createdAt'] as num?) ?? 0));
+      final packs = [
+        for (final m in WalletApi.list(res[1]))
+          {
+            'id': m['id'],
+            'name': m['name'],
+            'status': m['status'] == 'rejected' ? 'rejected' : m['status'],
+            'needsReview': false,
+            'priceCoins': m['price_coins'],
+            'stickerCount': m['sticker_count'],
+            'salesCount': m['sales_count'],
+            'rejectReason': m['reject_reason'],
+            'coverUrl': m['cover_url'],
+          },
+      ];
       if (!mounted) return;
       setState(() {
         _monthCoins = sum.round();
@@ -126,7 +136,7 @@ class _StickerStudioPageState extends State<StickerStudioPage> {
                       child: Text(context.tr('Tu n\'as pas encore déposé de pack'), style: TextStyle(color: c.textSecondary)),
                     )
                   else
-                    for (final p in _packs) _packTile(c, p.data(), p.id),
+                    for (final p in _packs) _packTile(c, p, '${p['id']}'),
                   const SizedBox(height: 20),
                   _rules(c),
                 ],
@@ -187,13 +197,13 @@ class _StickerStudioPageState extends State<StickerStudioPage> {
     ctrl.dispose();
     if (value == null || value == current) return;
     try {
-      await FirebaseFunctions.instance.httpsCallable('updateStickerPackPrice').call({'packId': packId, 'priceCoins': value});
+      await ApiGateway.instance.client.patch('/stickers/packs/$packId/price', body: {'price_coins': value});
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Prix modifié'))));
       _load();
-    } on FirebaseFunctionsException catch (e) {
+    } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? context.tr('Le prix n\'a pas pu être modifié.'))));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message.isNotEmpty ? e.message : context.tr('Le prix n\'a pas pu être modifié.'))));
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Le prix n\'a pas pu être modifié.'))));

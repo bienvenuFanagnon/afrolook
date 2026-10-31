@@ -1,7 +1,8 @@
 import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -24,8 +25,10 @@ class LinkPreviewService {
   static Future<Map<String, dynamic>?> fetch(String url, {bool forCard = false}) async {
     final key = forCard ? 'card:$url' : url;
     if (_cache.containsKey(key)) return _cache[key];
-    final res = await FirebaseFunctions.instanceFor(region: 'us-central1').httpsCallable('fetchLinkPreview', options: HttpsCallableOptions(timeout: const Duration(seconds: 25))).call({'url': url, if (forCard) 'purpose': 'card'});
-    final raw = (res.data as Map?)?['preview'];
+    // Route souhaitée côté API : GET /link-preview?url=&purpose=card → {data:{preview:{...}}} (voir lacunes_api_publications.md)
+    final res = await ApiGateway.instance.client.get('/link-preview', query: {'url': url, if (forCard) 'purpose': 'card'});
+    final d = ApiClient.data(res);
+    final raw = d is Map ? d['preview'] : null;
     final out = raw is Map ? Map<String, dynamic>.from(raw) : null;
     _cache[key] = out;
     return out;

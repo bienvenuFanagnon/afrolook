@@ -1,5 +1,8 @@
-import 'package:afrotok/services/read_meter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import 'package:afrotok/services/api/api_gateway.dart';
+import 'package:afrotok/services/api/canal_mapper.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
 import '../models/model_data.dart';
 
 class ActiveCreator {
@@ -24,41 +27,39 @@ class ActiveCanal {
   const ActiveCanal({required this.canal, this.lastActivityUs = 0});
 }
 
-/// Service "Vos Créateurs actifs".
+/// Service "Vos Créateurs actifs" (API).
 ///
-/// Architecture scalable (10 000 following+) :
-///
-///  Priorité :
-///  1. CF hot-set (newPostsByCreator) → query posts uniquement pour ces créateurs
-///     → O(k) avec k = nb créateurs actifs récents (typiquement < 50)
-///  2. Requête globale Posts filtrée côté client pour les followings
-///     → 1 seule requête Firestore, indépendant du nb de followings
-///  3. Découverte plateforme (creators récents de la plateforme)
-///
-///  created_at = microsecondes entières (int), PAS Timestamp.
+/// Les nouveautés par créateur sont calculées par le serveur à la lecture (`GET /v1/feed/unread-counts` : publications des comptes suivis
+/// non vues, 30 jours). Plus aucun compteur n'est écrit dans le profil : « marquer comme vu » passe par `POST /v1/feed/seen`.
 class ActiveCreatorsService {
-  final FirebaseFirestore _db;
+  ActiveCreatorsService();
 
-  ActiveCreatorsService({FirebaseFirestore? db})
-      : _db = db ?? FirebaseFirestore.instance;
+  ApiClient get _c => ApiGateway.instance.client;
 
-  // ── Résolution principale ─────────────────────────────────────────────────────
-  //
-  // Stratégie pour la section home (round cards) :
-  //
-  //   Phase A — CF hot-set : créateurs avec newPostsByCreator > 0
-  //             → query directe pour récupérer lastActivityUs + unseen réels
-  //
-  //   Phase B — Direct chunk query sur les followings restants
-  //             → whereIn par batch de 30, parallèle, jusqu'à 150 IDs supplémentaires
-  //             → couvre les followings actifs non détectés par le CF
-  //
-  //   Phase C — Fallback plateforme si aucun following actif
-  //
-  //  Pourquoi PAS la requête globale ?
-  //  → Une requête globalelimitée à 500 posts peut rater des créateurs suivis si la
-  //    plateforme publie plus de 500 posts par jour. La page liste n'a jamais ce
-  //    problème car elle fait des whereIn directs sur les IDs suivis.
+  /// Nombre de nouveautés par créateur suivi (serveur).
+  Future<Map<String, int>> _unreadByCreator() async {
+    try {
+      final r = await _c.get('/feed/unread-counts') as Map;
+      final by = Map<String, dynamic>.from(((r['data'] as Map?)?['by_creator'] as Map?) ?? const {});
+      return by.map((k, v) => MapEntry(k, (v as num).toInt()));
+    } catch (_) {
+      return {};
+    }
+  }
+
+  /// Créateurs suivis par la personne connectée (résumés), du plus récemment suivi au plus ancien.
+  Future<List<UserData>> _followedSummaries(String userId, {int max = 150}) async {
+    final out = <UserData>[];
+    String? cursor;
+    try {
+      do {
+        final page = await UsersApi.following(userId, cursor: cursor, limit: 100);
+        out.addAll(page.items.map(userSummaryFromApi));
+        cursor = page.next;
+      } while (cursor != null && out.length < max);
+    } catch (_) {}
+    return out;
+  }
 
   Future<List<ActiveCreator>> resolve(
     UserData me, {
@@ -66,109 +67,27 @@ class ActiveCreatorsService {
     List<String>? followingIds,
     Map<String, int>? freshCounts,
   }) async {
-    // freshCounts prioritaire sur me.newPostsByCreator (evite données stale du cache local)
-    final cfCounts = Map<String, int>.from(freshCounts ?? me.newPostsByCreator ?? {});
-
-    // ── Créateurs avec posts non vus (hot-set CF) ────────────────────────────
-    final hotIds = cfCounts.entries
-        .where((e) => e.value > 0)
-        .map((e) => e.key)
-        .toList();
-
-    final List<ActiveCreator> result = [];
+    final counts = Map<String, int>.from(freshCounts ?? await _unreadByCreator());
+    final hotIds = counts.entries.where((e) => e.value > 0).map((e) => e.key).toList();
+    final result = <ActiveCreator>[];
 
     if (hotIds.isNotEmpty) {
       final users = await _fetchUsers(hotIds);
-      final creators = users
-          .where((u) => u.id != null)
-          .map((u) => ActiveCreator(
-                user: u,
-                unseenCount: cfCounts[u.id!] ?? 0,
-                lastActivityUs: 0,
-              ))
-          .toList()
-        ..sort((a, b) => b.unseenCount.compareTo(a.unseenCount));
-      result.addAll(creators);
+      result.addAll(users.where((u) => u.id != null).map((u) => ActiveCreator(user: u, unseenCount: counts[u.id!] ?? 0)));
+      result.sort((a, b) => b.unseenCount.compareTo(a.unseenCount));
     }
 
-    // ── Compléter avec des followings récents (0 unseen) si besoin ──────────
-    // Une seule requête Users — pas de requête Posts.
-    if (result.length < limit) {
-      final following = followingIds?.isNotEmpty == true
-          ? followingIds!
-          : (me.followingIds ?? []);
+    if (result.length < limit && me.id != null) {
       final shown = <String>{...hotIds};
-      final toFetch = following
-          .where((id) => !shown.contains(id))
-          .take(limit - result.length)
-          .toList();
-      if (toFetch.isNotEmpty) {
-        final users = await _fetchUsers(toFetch);
-        result.addAll(users
-            .where((u) => u.id != null)
-            .map((u) =>
-                ActiveCreator(user: u, unseenCount: 0, lastActivityUs: 0)));
-      }
+      final followed = await _followedSummaries(me.id!, max: limit + shown.length);
+      result.addAll(followed.where((u) => u.id != null && !shown.contains(u.id)).take(limit - result.length).map((u) => ActiveCreator(user: u, unseenCount: 0)));
     }
 
-    if (result.isEmpty) {
-      return fetchPlatformRecentCreators(me.id ?? '', limit: limit);
-    }
-
-    return result.take(limit).toList()
-      ..sort((a, b) {
-        if (a.unseenCount > 0 && b.unseenCount == 0) return -1;
-        if (b.unseenCount > 0 && a.unseenCount == 0) return 1;
-        return b.lastActivityUs.compareTo(a.lastActivityUs);
-      });
+    if (result.isEmpty) return fetchPlatformRecentCreators(me.id ?? '', limit: limit);
+    return result.take(limit).toList();
   }
 
-  /// Requête Posts par créateur (whereIn, chunked, parallèle).
-  /// Mutate [latestUs] et [unseenPerCreator] in-place.
-  Future<void> _queryPostsByCreators(
-    List<String> ids,
-    int sinceUs,
-    Set<String> viewedSet,
-    Map<String, int> latestUs,
-    Map<String, int> unseenPerCreator, {
-    int postsPerCreator = 15,
-  }) async {
-    final futures = <Future<void>>[];
-    for (int i = 0; i < ids.length; i += 30) {
-      final chunk = ids.sublist(i, (i + 30).clamp(0, ids.length));
-      futures.add(() async {
-        try {
-          final snap = await _db
-              .collection('Posts')
-              .where('user_id', whereIn: chunk)
-              .where('created_at', isGreaterThan: sinceUs)
-              .orderBy('created_at', descending: true)
-              .limit(chunk.length * postsPerCreator)
-              .getM('active_creators_service.dart:146');
-          for (final doc in snap.docs) {
-            final data = doc.data();
-            final uid = data['user_id'] as String? ?? '';
-            if (uid.isEmpty) continue;
-            final ts = (data['created_at'] as num?)?.toInt() ?? 0;
-            if (!latestUs.containsKey(uid) || ts > (latestUs[uid] ?? 0)) {
-              latestUs[uid] = ts;
-            }
-            if (!viewedSet.contains(doc.id)) {
-              unseenPerCreator[uid] = (unseenPerCreator[uid] ?? 0) + 1;
-            }
-          }
-        } catch (_) {}
-      }());
-    }
-    await Future.wait(futures);
-  }
-
-  // ── fetchFollowedRecentCreators (pagination liste détaillée) ─────────────────
-  //
-  // Utilisé par ActiveCreatorsListPage pour la pagination "voir plus".
-  // Chunks whereIn 30 en parallèle — pour de grandes listes on exclut les IDs
-  // déjà affichés et on utilise un curseur beforeUs.
-
+  /// Créateurs ayant des nouveautés, les plus nombreuses d'abord. [beforeUs] n'est pas géré (la liste du serveur est complète).
   Future<List<ActiveCreator>> fetchFollowedRecentCreators(
     List<String> abonnesIds, {
     int dayRange = 30,
@@ -177,223 +96,65 @@ class ActiveCreatorsService {
     Set<String> excludeIds = const {},
     List<String> viewedPostIds = const [],
   }) async {
-    if (abonnesIds.isEmpty) return [];
-
-    final sinceUs = DateTime.now()
-        .subtract(Duration(days: dayRange))
-        .microsecondsSinceEpoch;
-
-    final Map<String, int> latestUs = {};
-    final Map<String, int> unseenPerCreator = {};
-    final viewedSet = Set<String>.from(viewedPostIds);
-
-    final futures = <Future<void>>[];
-    for (int i = 0; i < abonnesIds.length; i += 30) {
-      final chunk = abonnesIds.sublist(
-          i, (i + 30).clamp(0, abonnesIds.length));
-      futures.add(() async {
-        try {
-          Query<Map<String, dynamic>> q = _db
-              .collection('Posts')
-              .where('user_id', whereIn: chunk)
-              .where('created_at', isGreaterThan: sinceUs)
-              .orderBy('created_at', descending: true);
-          if (beforeUs != null) {
-            q = q.where('created_at', isLessThan: beforeUs);
-          }
-          q = q.limit(limit * 3);
-          final snap = await q.getM('active_creators_service.dart:204');
-
-          for (final doc in snap.docs) {
-            final data = doc.data();
-            final uid = data['user_id'] as String? ?? '';
-            if (uid.isEmpty || excludeIds.contains(uid)) continue;
-            final ts = (data['created_at'] as num?)?.toInt() ?? 0;
-            if (!latestUs.containsKey(uid) || ts > latestUs[uid]!) {
-              latestUs[uid] = ts;
-            }
-            if (!viewedSet.contains(doc.id)) {
-              unseenPerCreator[uid] = (unseenPerCreator[uid] ?? 0) + 1;
-            }
-          }
-        } catch (_) {}
-      }());
-    }
-    await Future.wait(futures);
-
-    if (latestUs.isEmpty) return [];
-
-    final sorted = latestUs.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    final ids = sorted.take(limit).map((e) => e.key).toList();
+    if (abonnesIds.isEmpty || beforeUs != null) return [];
+    final counts = await _unreadByCreator();
+    final ids = abonnesIds.where((id) => !excludeIds.contains(id) && (counts[id] ?? 0) > 0).toList()
+      ..sort((a, b) => (counts[b] ?? 0).compareTo(counts[a] ?? 0));
     if (ids.isEmpty) return [];
-    final users = await _fetchUsers(ids);
-
-    return users
-        .where((u) => u.id != null)
-        .map((u) => ActiveCreator(
-              user: u,
-              unseenCount: unseenPerCreator[u.id!] ?? 0,
-              lastActivityUs: latestUs[u.id!] ?? 0,
-            ))
-        .toList();
+    final users = await _fetchUsers(ids.take(limit).toList());
+    return users.where((u) => u.id != null).map((u) => ActiveCreator(user: u, unseenCount: counts[u.id!] ?? 0)).toList();
   }
 
-  // ── Découverte plateforme ─────────────────────────────────────────────────────
-
-  Future<List<ActiveCreator>> fetchPlatformRecentCreators(
-    String currentUserId, {
-    int dayRange = 30,
-    int limit = 10,
-  }) async {
-    final sinceUs = DateTime.now()
-        .subtract(Duration(days: dayRange))
-        .microsecondsSinceEpoch;
-
+  /// Découverte plateforme : nouveaux créateurs conseillés par le serveur (`GET /v1/discover/newcomers`).
+  Future<List<ActiveCreator>> fetchPlatformRecentCreators(String currentUserId, {int dayRange = 30, int limit = 10}) async {
     try {
-      final snap = await _db
-          .collection('Posts')
-          .where('created_at', isGreaterThan: sinceUs)
-          .orderBy('created_at', descending: true)
-          .limit(100)
-          .getM('active_creators_service.dart:258');
-
-      final Map<String, int> latestUs = {};
-      for (final doc in snap.docs) {
-        final data = doc.data();
-        final uid = data['user_id'] as String? ?? '';
-        if (uid.isEmpty || uid == currentUserId) continue;
-        if (!latestUs.containsKey(uid)) {
-          latestUs[uid] = (data['created_at'] as num?)?.toInt() ?? 0;
-        }
-      }
-
-      if (latestUs.isEmpty) return [];
-
-      final sorted = latestUs.entries.toList()
-        ..sort((a, b) => b.value.compareTo(a.value));
-      final ids = sorted.take(limit).map((e) => e.key).toList();
-      final users = await _fetchUsers(ids);
-
-      return users
+      final r = await _c.get('/discover/newcomers') as Map;
+      final rows = ((r['data'] as List?) ?? const []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      return rows
+          .map((j) => userSummaryFromApi(j['author'] is Map ? Map<String, dynamic>.from(j['author'] as Map) : j))
           .where((u) => u.id != null && u.id != currentUserId)
-          .map((u) => ActiveCreator(
-                user: u,
-                unseenCount: 0,
-                lastActivityUs: latestUs[u.id!] ?? 0,
-              ))
+          .take(limit)
+          .map((u) => ActiveCreator(user: u, unseenCount: 0))
           .toList();
     } catch (_) {
       return [];
     }
   }
 
-  // ── Canaux ───────────────────────────────────────────────────────────────────
+  // ── Canaux ──
 
   Future<List<Canal>> fetchCanaux(List<String> canalIds) async {
-    final List<Canal> result = [];
-    for (int i = 0; i < canalIds.length; i += 10) {
-      final chunk = canalIds.sublist(i, (i + 10).clamp(0, canalIds.length));
+    final res = await Future.wait(canalIds.map((id) async {
       try {
-        final snap = await _db
-            .collection('Canaux')
-            .where(FieldPath.documentId, whereIn: chunk)
-            .getM('active_creators_service.dart:300');
-        for (final d in snap.docs) {
-          final data = Map<String, dynamic>.from(d.data());
-          data['id'] = d.id;
-          result.add(Canal.fromJson(data));
-        }
-      } catch (_) {}
-    }
-    return result;
+        final r = await _c.get('/channels/$id') as Map;
+        return canalFromApi(Map<String, dynamic>.from((r['data'] ?? r) as Map));
+      } catch (_) {
+        return null;
+      }
+    }));
+    return res.whereType<Canal>().toList();
   }
 
-  Future<List<ActiveCanal>> fetchFollowedRecentCanaux(
-    List<String> canalIds, {
-    int dayRange = 30,
-    int limit = 10,
-  }) async {
+  Future<List<ActiveCanal>> fetchFollowedRecentCanaux(List<String> canalIds, {int dayRange = 30, int limit = 10}) async {
     if (canalIds.isEmpty) return [];
-
-    final sinceUs = DateTime.now()
-        .subtract(Duration(days: dayRange))
-        .microsecondsSinceEpoch;
-
-    final Map<String, int> latestUs = {};
-
-    for (int i = 0; i < canalIds.length; i += 10) {
-      final chunk = canalIds.sublist(i, (i + 10).clamp(0, canalIds.length));
-      try {
-        final snap = await _db
-            .collection('Posts')
-            .where('canal_id', whereIn: chunk)
-            .where('created_at', isGreaterThan: sinceUs)
-            .orderBy('created_at', descending: true)
-            .getM('active_creators_service.dart:332');
-
-        for (final doc in snap.docs) {
-          final data = doc.data();
-          final cid = data['canal_id'] as String? ?? '';
-          if (cid.isEmpty) continue;
-          final ts = (data['created_at'] as num?)?.toInt() ?? 0;
-          if (!latestUs.containsKey(cid) || ts > latestUs[cid]!) {
-            latestUs[cid] = ts;
-          }
-        }
-      } catch (_) {}
-    }
-
-    if (latestUs.isEmpty) return [];
-
-    final sorted = latestUs.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    final ids = sorted.take(limit).map((e) => e.key).toList();
-    final canaux = await fetchCanaux(ids);
-
-    return canaux
-        .where((c) => c.id != null)
-        .map((c) => ActiveCanal(
-              canal: c,
-              lastActivityUs: latestUs[c.id!] ?? 0,
-            ))
-        .toList()
-      ..sort((a, b) => b.lastActivityUs.compareTo(a.lastActivityUs));
-  }
-
-  Future<List<ActiveCanal>> fetchFollowedCanauxDirect(
-    List<String> canalIds, {
-    int limit = 5,
-  }) async {
     final canaux = await fetchCanaux(canalIds.take(limit).toList());
-    return canaux
-        .map((c) => ActiveCanal(
-              canal: c,
-              lastActivityUs: (c.updatedAt ?? 0) * 1000,
-            ))
-        .toList()
+    return canaux.where((c) => c.id != null).map((c) => ActiveCanal(canal: c, lastActivityUs: (c.updatedAt ?? 0) * 1000)).toList()
       ..sort((a, b) => b.lastActivityUs.compareTo(a.lastActivityUs));
   }
 
-  /// Récupère les IDs des créateurs que [userId] SUIT (abonnements, pas abonnés).
-  /// Source : collection Abonnements, champ compte_user_id == userId.
+  Future<List<ActiveCanal>> fetchFollowedCanauxDirect(List<String> canalIds, {int limit = 5}) async {
+    final canaux = await fetchCanaux(canalIds.take(limit).toList());
+    return canaux.map((c) => ActiveCanal(canal: c, lastActivityUs: (c.updatedAt ?? 0) * 1000)).toList()
+      ..sort((a, b) => b.lastActivityUs.compareTo(a.lastActivityUs));
+  }
+
+  /// IDs des créateurs que [userId] SUIT (abonnements).
   Future<List<String>> fetchFollowingIds(String userId) async {
     if (userId.isEmpty) return [];
-    try {
-      final snap = await _db
-          .collection('Abonnements')
-          .where('compte_user_id', isEqualTo: userId)
-          .getM('active_creators_service.dart:385');
-      return snap.docs
-          .map((d) => d.data()['abonne_user_id'] as String? ?? '')
-          .where((id) => id.isNotEmpty)
-          .toList();
-    } catch (_) {
-      return [];
-    }
+    return (await _followedSummaries(userId, max: 5000)).map((u) => u.id).whereType<String>().toList();
   }
 
-  /// Canaux suivis par personne : gardés 30 minutes (la liste change rarement ; chaque lecture coûte un document par canal).
+  /// Canaux suivis par personne : gardés 30 minutes.
   static final Map<String, ({int at, List<String> ids})> _canalIdsCache = {};
 
   Future<List<String>> fetchFollowedCanalIds(String userId) async {
@@ -401,11 +162,8 @@ class ActiveCreatorsService {
     final cached = _canalIdsCache[userId];
     if (cached != null && DateTime.now().millisecondsSinceEpoch - cached.at < 30 * 60 * 1000) return cached.ids;
     try {
-      final snap = await _db
-          .collection('Canaux')
-          .where('usersSuiviId', arrayContains: userId)
-          .getM('active_creators_service.dart:401');
-      final ids = snap.docs.map((d) => d.id).toList();
+      final r = await _c.get('/channels', query: {'mine': 1, 'limit': 50}) as Map;
+      final ids = ((r['data'] as List?) ?? const []).map((e) => (e as Map)['id'] as String).toList();
       _canalIdsCache[userId] = (at: DateTime.now().millisecondsSinceEpoch, ids: ids);
       return ids;
     } catch (_) {
@@ -413,109 +171,27 @@ class ActiveCreatorsService {
     }
   }
 
-  Future<void> resetCreatorCounter(
-    String currentUserId,
-    String creatorId,
-  ) async {
-    if (currentUserId.isEmpty || creatorId.isEmpty) return;
-    try {
-      await _db.collection('Users').doc(currentUserId).update({
-        'newPostsByCreator.$creatorId': FieldValue.delete(),
-      });
-    } catch (_) {}
-  }
+  /// Le serveur calcule les nouveautés à la lecture : plus de compteur à remettre à zéro dans le profil.
+  Future<void> resetCreatorCounter(String currentUserId, String creatorId) async {}
 
-  Future<void> resetCanalCounter(
-    String currentUserId,
-    String canalId,
-  ) async {
-    if (currentUserId.isEmpty || canalId.isEmpty) return;
-    try {
-      await _db.collection('Users').doc(currentUserId).update({
-        'newPostsByCanal.$canalId': FieldValue.delete(),
-      });
-    } catch (_) {}
-  }
+  Future<void> resetCanalCounter(String currentUserId, String canalId) async {}
 
-  Future<List<UserData>> fetchUsersById(List<String> ids) =>
-      _fetchUsers(ids);
+  Future<List<UserData>> fetchUsersById(List<String> ids) => _fetchUsers(ids);
 
-  // ── Recalibration des compteurs non vus ──────────────────────────────────────
-  //
-  // Pour chaque créateur de [creatorIds] ayant un compteur > 0, interroge
-  // Firestore pour compter les posts réels non vus (non présents dans
-  // [viewedPostIds]) créés après [userCreatedAtMs].
-  // Retourne une Map creatorId → unseenCount (seulement ceux > 0).
-
-  /// Posts récents de chaque groupe de créateurs, gardés 10 minutes pour tous les écrans (accueil, retour dans l'application, conversations) :
-  /// le décompte des « non vus » est recalculé localement à chaque appel (viewedPostIds peut avoir changé) sans relire Firestore.
-  static final Map<String, ({int at, List<({String id, String uid})> posts})> _recentPostsCache = {};
-
-  /// Fenêtre des posts comptés comme « nouveaux » : au-delà, un badge n'a plus de sens (et chaque post lu coûte une lecture).
-  static const int _recalibrateWindowDays = 14;
-  static const int _recalibratePerChunk = 100;
-
+  /// Nouveautés par créateur (serveur) : seulement les créateurs de [creatorIds] ayant des publications non vues.
   Future<Map<String, int>> recalibrateUnseenCounts({
     required List<String> creatorIds,
     required Set<String> viewedPostIds,
     required int userCreatedAtMs,
   }) async {
     if (creatorIds.isEmpty) return {};
-
-    final nowMs = DateTime.now().millisecondsSinceEpoch;
-    final windowStartMs = nowMs - _recalibrateWindowDays * 24 * 3600 * 1000;
-    final fromMs = userCreatedAtMs > windowStartMs ? userCreatedAtMs : windowStartMs;
-    final sinceUs = fromMs * 1000;
-
-    final key = (List<String>.of(creatorIds)..sort()).join(',');
-    final cached = _recentPostsCache[key];
-    List<({String id, String uid})> posts;
-
-    if (cached != null && nowMs - cached.at < 10 * 60 * 1000) {
-      posts = cached.posts;
-    } else {
-      posts = [];
-      var failed = false;
-      final futures = <Future<void>>[];
-      for (int i = 0; i < creatorIds.length; i += 10) {
-        final chunk = creatorIds.sublist(i, (i + 10).clamp(0, creatorIds.length));
-        futures.add(() async {
-          try {
-            final snap = await _db
-                .collection('Posts')
-                .where('user_id', whereIn: chunk)
-                .where('created_at', isGreaterThanOrEqualTo: sinceUs)
-                .orderBy('created_at', descending: true)
-                .limit(_recalibratePerChunk)
-                .getM('active_creators_service.dart:465');
-            for (final doc in snap.docs) {
-              final uid = doc.data()['user_id'] as String? ?? '';
-              if (uid.isNotEmpty) posts.add((id: doc.id, uid: uid));
-            }
-          } catch (_) {
-            failed = true;
-          }
-        }());
-      }
-      await Future.wait(futures);
-      if (!failed) _recentPostsCache[key] = (at: nowMs, posts: posts);
-    }
-
-    final Map<String, int> unseenPerCreator = {};
-    for (final p in posts) {
-      if (!viewedPostIds.contains(p.id)) unseenPerCreator[p.uid] = (unseenPerCreator[p.uid] ?? 0) + 1;
-    }
-    return unseenPerCreator;
+    final counts = await _unreadByCreator();
+    final wanted = creatorIds.toSet();
+    return {for (final e in counts.entries) if (wanted.contains(e.key) && e.value > 0) e.key: e.value};
   }
 
-  // ── Marquer tous les posts d'un créateur comme vus ───────────────────────────
-  //
-  // Identique au "tout marquer comme lu" des notifications.
-  // 1. Récupère tous les post IDs du créateur depuis [userCreatedAtMs].
-  // 2. Ajoute les nouveaux IDs dans viewedPostIds (arrayUnion, chunks de 400).
-  // 3. Remet newPostsByCreator.{creatorId} à 0.
-  // Retourne les IDs effectivement ajoutés (non déjà vus).
-
+  /// Marque comme vues les publications d'un créateur (`POST /v1/feed/seen`, par lots de 100). Retourne les IDs marqués.
+  /// L'API n'a pas de filtre « par créateur » : on parcourt jusqu'à 10 pages du fil des abonnements (voir lacunes_api_utilisateurs.md).
   Future<List<String>> markAllPostsSeenForCreator({
     required String userId,
     required String creatorId,
@@ -523,73 +199,35 @@ class ActiveCreatorsService {
     required Set<String> alreadyViewedIds,
   }) async {
     if (userId.isEmpty || creatorId.isEmpty) return [];
-
-    final sinceUs = userCreatedAtMs > 0 ? userCreatedAtMs * 1000 : 0;
-    final List<String> newIds = [];
-
+    final ids = <String>[];
+    String? cursor;
     try {
-      // Récupère tous les post IDs du créateur (pages de 500)
-      DocumentSnapshot? lastDoc;
-      bool hasMore = true;
-      while (hasMore) {
-        var q = _db
-            .collection('Posts')
-            .where('user_id', isEqualTo: creatorId)
-            .orderBy('created_at', descending: true)
-            .limit(500);
-        if (sinceUs > 0) {
-          q = q.where('created_at', isGreaterThanOrEqualTo: sinceUs);
+      for (var page = 0; page < 10; page++) {
+        final r = await _c.get('/feed', query: {'limit': 50, 'tier': 1, if (cursor != null) 'cursor': cursor}) as Map;
+        for (final p in (r['data'] as List? ?? const [])) {
+          final m = p as Map;
+          final authorId = (m['author_id'] ?? (m['author'] as Map?)?['id'] ?? (m['user'] as Map?)?['id']) as String?;
+          if (authorId == creatorId && !alreadyViewedIds.contains(m['id'])) ids.add(m['id'] as String);
         }
-        if (lastDoc != null) q = q.startAfterDocument(lastDoc!);
-
-        final snap = await q.getM('active_creators_service.dart:514');
-        for (final doc in snap.docs) {
-          if (!alreadyViewedIds.contains(doc.id)) {
-            newIds.add(doc.id);
-          }
-        }
-        lastDoc = snap.docs.isNotEmpty ? snap.docs.last : null;
-        hasMore = snap.docs.length == 500;
+        cursor = r['next_cursor'] as String?;
+        if (cursor == null) break;
       }
-
-      if (newIds.isEmpty) {
-        // Rien de nouveau, reset quand même le compteur CF
-        await _db.collection('Users').doc(userId).update({
-          'newPostsByCreator.$creatorId': FieldValue.delete(),
-        });
-        return [];
-      }
-
-      // arrayUnion en chunks de 400 (sécurité taille doc)
-      final userRef = _db.collection('Users').doc(userId);
-      for (int i = 0; i < newIds.length; i += 400) {
-        final chunk = newIds.sublist(i, (i + 400).clamp(0, newIds.length));
-        await userRef.update({
-          'viewedPostIds': FieldValue.arrayUnion(chunk),
-          'newPostsByCreator.$creatorId': FieldValue.delete(),
-        });
+      for (var i = 0; i < ids.length; i += 100) {
+        await _c.post('/feed/seen', body: {'post_ids': ids.sublist(i, (i + 100).clamp(0, ids.length))});
       }
     } catch (_) {}
-
-    return newIds;
+    return ids;
   }
 
+  /// Profils publics (API : GET /users/{id}, en parallèle ; route à confirmer, voir lacunes_api_utilisateurs.md).
   Future<List<UserData>> _fetchUsers(List<String> ids) async {
-    final List<UserData> users = [];
-    for (int i = 0; i < ids.length; i += 10) {
-      final chunk = ids.sublist(i, (i + 10).clamp(0, ids.length));
+    final res = await Future.wait(ids.map((id) async {
       try {
-        final snap = await _db
-            .collection('Users')
-            .where(FieldPath.documentId, whereIn: chunk)
-            .getM('active_creators_service.dart:554');
-        for (final d in snap.docs) {
-          final data = Map<String, dynamic>.from(d.data());
-          data['id'] = d.id;
-          users.add(UserData.fromJson(data));
-        }
-      } catch (_) {}
-    }
-    return users;
+        return userFromApi(await UsersApi.publicProfile(id));
+      } catch (_) {
+        return null;
+      }
+    }));
+    return res.whereType<UserData>().toList();
   }
 }

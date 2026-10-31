@@ -1,4 +1,5 @@
-import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/layout/centered_content.dart';
@@ -6,7 +7,6 @@ import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import '../admin/admin_palette.dart';
 import 'package:flutter/services.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:iconsax/iconsax.dart';
 
@@ -44,7 +44,6 @@ class UserTransactionsPage extends StatefulWidget {
 
 class _UserTransactionsPageState extends State<UserTransactionsPage>
     with SingleTickerProviderStateMixin {
-  final _db             = FirebaseFirestore.instance;
   final _scrollCtrl     = ScrollController();
 
   UserData? _userData;
@@ -128,9 +127,9 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
 
   Future<void> _loadUserData() async {
     try {
-      final doc = await _db.collection('Users').doc(widget.userId).getM('userTransactionListe.dart:130');
-      if (doc.exists) setState(() => _userData = UserData.fromJson(doc.data()!));
-    } catch (e) { printVm('UserTx user load error: $e'); }
+      final profile = await UsersApi.publicProfile(widget.userId);
+      if (mounted) setState(() => _userData = userFromApi(profile));
+    } catch (e) { debugPrint('UserTx user load error: $e'); }
     setState(() => _isLoadingUser = false);
     _reload();
   }
@@ -138,17 +137,19 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
   Future<void> _reload() async {
     setState(() { _isLoadingTx = true; _allTx = []; _filteredTx = []; _displayedTx = []; });
     try {
-      final snap = await _db
-          .collection('TransactionSoldes')
-          .where('user_id', isEqualTo: widget.userId)
-          .orderBy('createdAt', descending: true)
-          .getM('userTransactionListe.dart:144');
-      _allTx = snap.docs.map((d) {
-        final data = d.data();
-        data['id'] = d.id;
-        return TransactionSolde.fromJson(data);
-      }).toList();
-    } catch (e) { printVm('UserTx load error: $e'); }
+      // Ses propres transactions : /wallet/transactions ; celles d'une autre personne : route d'administration.
+      final myId = (await UsersApi.me())['id'];
+      final out = <TransactionSolde>[];
+      String? cursor;
+      do {
+        final page = myId == widget.userId
+            ? await UsersApi.transactions(cursor: cursor, limit: 100)
+            : await UsersApi.adminUserTransactions(widget.userId, cursor: cursor, limit: 100);
+        out.addAll(page.items.map((j) => transactionFromApi(j, widget.userId)));
+        cursor = page.next;
+      } while (cursor != null && out.length < 1000);
+      _allTx = out;
+    } catch (e) { debugPrint('UserTx load error: $e'); }
     setState(() => _isLoadingTx = false);
     _applyFilters();
   }

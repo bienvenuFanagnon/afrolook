@@ -1,7 +1,7 @@
 // Réglages du paiement par carte bancaire (site web) : interrupteur, frais, marge, taux FCFA/USD, packs et limites.
-// Lus et écrits par les Cloud Functions cardCoinAdminConfig (document AppConfig/cardPayments) : effet immédiat, sans redéployer.
+// Lus et écrits par l'API (GET et PUT /admin/payments/cards/config) : effet immédiat, sans redéployer.
 
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrotok/services/api/regie_api.dart';
 import 'package:flutter/material.dart';
 
 import 'admin_palette.dart';
@@ -33,7 +33,8 @@ class _CardPaymentsAdminDialogState extends State<CardPaymentsAdminDialog> {
   bool _saving = false;
   String? _error;
 
-  HttpsCallable get _fn => FirebaseFunctions.instance.httpsCallable('cardCoinAdminConfig');
+  static String _snake(String k) => k.replaceAllMapped(RegExp(r'[A-Z]'), (m) => '_${m[0]!.toLowerCase()}');
+
 
   @override
   void initState() {
@@ -55,17 +56,17 @@ class _CardPaymentsAdminDialogState extends State<CardPaymentsAdminDialog> {
   void _fill(Map c) {
     _enabled = c['enabled'] != false;
     for (final k in _fields.keys) {
-      _ctl[k]!.text = _num(c[k]);
+      _ctl[k]!.text = _num(c[_snake(k)]);
     }
     _packs.text = ((c['packs'] as List?) ?? const []).join(', ');
   }
 
   Future<void> _load() async {
     try {
-      final r = (await _fn.call({})).data as Map;
-      if (mounted) setState(() { _fill(r['config'] as Map); _loading = false; });
+      final r = await RegieApi.getMap('/admin/payments/cards/config');
+      if (mounted) setState(() { _fill(r); _loading = false; });
     } catch (e) {
-      if (mounted) setState(() { _error = 'Lecture impossible : $e'; _loading = false; });
+      if (mounted) setState(() { _error = 'Lecture impossible : ${RegieApi.err(e)}'; _loading = false; });
     }
   }
 
@@ -78,15 +79,15 @@ class _CardPaymentsAdminDialogState extends State<CardPaymentsAdminDialog> {
       };
       for (final k in _fields.keys) {
         final v = double.tryParse(_ctl[k]!.text.trim().replaceAll(',', '.'));
-        if (v != null) set[k] = v;
+        if (v != null) set[_snake(k)] = (k == 'feePct' || k == 'marginPct') ? v : v.round();
       }
-      final r = (await _fn.call({'set': set})).data as Map;
+      final r = await RegieApi.put('/admin/payments/cards/config', body: set);
       if (!mounted) return;
-      _fill(r['config'] as Map);
+      _fill(Map<String, dynamic>.from(((r is Map ? r['data'] : null) ?? const {}) as Map));
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Réglages carte enregistrés.')));
     } catch (e) {
-      if (mounted) setState(() { _saving = false; _error = 'Enregistrement impossible : $e'; });
+      if (mounted) setState(() { _saving = false; _error = 'Enregistrement impossible : ${RegieApi.err(e)}'; });
     }
   }
 

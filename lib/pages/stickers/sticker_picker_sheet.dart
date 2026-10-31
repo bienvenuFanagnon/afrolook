@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -178,16 +178,16 @@ class _StickerPickerSheetState extends State<StickerPickerSheet> with SingleTick
     try {
       await _service.sendGift(target: target, stickerId: s.id);
       await CoinCheckout.refreshBalance(rootCtx);
-    } on FirebaseFunctionsException catch (e) {
+    } on ApiException catch (e) {
       await rollback();
       if (!rootCtx.mounted) return;
-      if (e.code == 'resource-exhausted') {
+      if (e.isInsufficientCoins) {
         await CoinCheckout.insufficient(rootCtx, price);
       } else {
         ScaffoldMessenger.of(rootCtx).showSnackBar(SnackBar(
-          content: Text(e.code == 'unavailable' || e.code == 'unimplemented' || (e.message ?? '').isEmpty
+          content: Text(e.status >= 500 || e.isNetwork || e.message.isEmpty
               ? tr('Envoi impossible pour le moment. Tes pièces ont été rendues.')
-              : e.message!),
+              : e.message),
         ));
       }
     } catch (_) {

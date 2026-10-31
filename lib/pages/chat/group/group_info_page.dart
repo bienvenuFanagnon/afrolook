@@ -1,15 +1,13 @@
-import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/chat_api.dart';
+import 'package:afrotok/services/api/chat_mapper.dart';
 import '../../../services/media_shrink.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'group_revenue_card.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
-import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import '../../../services/coin_checkout.dart';
 import 'package:flutter/services.dart';
@@ -48,7 +46,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
   static const _pageSize = 10;
   bool _hasMoreMembers = false;
   bool _loadingMoreMembers = false;
-  DocumentSnapshot? _lastMemberDoc;
+  String? _lastMemberDoc; // curseur de l'API
 
   // Recherche membres (admin/owner)
   final _searchCtrl = TextEditingController();
@@ -69,44 +67,28 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
     super.dispose();
   }
 
+  /// Droits par membre au format attendu par l'écran des permissions (calculés par l'API : can_write / can_share).
+  Map<String, dynamic> _permsOf(List<Map<String, dynamic>> members) => {
+        for (final m in members)
+          if (m['can_write'] != null || m['can_share'] != null) '${m['user_id']}': {'can_write': m['can_write'], 'can_share': m['can_share']},
+      };
+
   Future<void> _loadGroup() async {
     try {
-      final myId = _auth.loginUserData.id!;
-      final groupDoc = await FirebaseFirestore.instance
-          .collection('GroupChats')
-          .doc(widget.groupId)
-          .getM('group_info_page.dart:77');
-
-      // Charger les 10 premiers membres + le membre courant (pour connaître son rôle)
-      final membersRef = FirebaseFirestore.instance
-          .collection('GroupChats')
-          .doc(widget.groupId)
-          .collection('members');
-
-      final firstPageSnap = await membersRef
-          .orderBy('joined_at')
-          .limit(_pageSize)
-          .getM('group_info_page.dart:88');
-
-      final members = firstPageSnap.docs.map((d) => d.data()).toList();
-
-      // Récupérer le rôle du membre courant (peut ne pas être dans la 1ère page)
-      String myRole = 'member';
-      final myInPage = members.where((m) => m['user_id'] == myId);
-      if (myInPage.isNotEmpty) {
-        myRole = myInPage.first['role'] as String? ?? 'member';
-      } else {
-        final myDoc = await membersRef.doc(myId).getM('group_info_page.dart:98');
-        if (myDoc.exists) myRole = myDoc.data()?['role'] as String? ?? 'member';
-      }
+      final group = groupToLegacy(await ChatApi.group(widget.groupId));
+      final page = await ChatApi.members(widget.groupId, limit: _pageSize);
+      final members = page.items.map(memberToLegacy).toList();
+      group['member_permissions'] = _permsOf(members);
+      // Rôle de la personne connectée : calculé par l'API (propriétaire, administrateur ou membre)
+      final myRole = (group['me_role'] as String?) ?? 'member';
 
       if (mounted) {
         setState(() {
-          _groupData = groupDoc.data() ?? {};
+          _groupData = group;
           _members = members;
           _myRole = myRole;
-          _lastMemberDoc = firstPageSnap.docs.isNotEmpty ? firstPageSnap.docs.last : null;
-          _hasMoreMembers = firstPageSnap.docs.length >= _pageSize;
+          _lastMemberDoc = page.next;
+          _hasMoreMembers = page.next != null;
           _loading = false;
         });
       }
@@ -119,20 +101,14 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
     if (_loadingMoreMembers || !_hasMoreMembers || _lastMemberDoc == null) return;
     setState(() => _loadingMoreMembers = true);
     try {
-      final snap = await FirebaseFirestore.instance
-          .collection('GroupChats')
-          .doc(widget.groupId)
-          .collection('members')
-          .orderBy('joined_at')
-          .startAfterDocument(_lastMemberDoc!)
-          .limit(_pageSize)
-          .getM('group_info_page.dart:128');
-
+      final page = await ChatApi.members(widget.groupId, cursor: _lastMemberDoc, limit: _pageSize);
+      final more = page.items.map(memberToLegacy).toList();
       if (mounted) {
         setState(() {
-          _members.addAll(snap.docs.map((d) => d.data()));
-          _lastMemberDoc = snap.docs.isNotEmpty ? snap.docs.last : _lastMemberDoc;
-          _hasMoreMembers = snap.docs.length >= _pageSize;
+          _members.addAll(more);
+          _groupData['member_permissions'] = {...(_groupData['member_permissions'] as Map? ?? {}), ..._permsOf(more)};
+          _lastMemberDoc = page.next;
+          _hasMoreMembers = page.next != null;
           _loadingMoreMembers = false;
         });
       }
@@ -149,43 +125,18 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
     }
     setState(() { _isSearching = true; _searchLoading = true; _searchResults = []; });
 
-    final db = FirebaseFirestore.instance;
-    final membersRef = db.collection('GroupChats').doc(widget.groupId).collection('members');
-    final memberIds = (_groupData['member_ids'] as List<dynamic>? ?? []).cast<String>().toSet();
+    final q = query.toLowerCase();
     final results = <Map<String, dynamic>>[];
-    final seen = <String>{};
-
-    // 1. Recherche par pseudo dans la sous-collection members
     try {
-      final pseudoSnap = await membersRef
-          .where('pseudo', isGreaterThanOrEqualTo: query)
-          .where('pseudo', isLessThanOrEqualTo: '$query')
-          .limit(20)
-          .getM('group_info_page.dart:163');
-      for (final d in pseudoSnap.docs) {
-        final uid = d.data()['user_id'] as String? ?? d.id;
-        if (!seen.contains(uid)) { seen.add(uid); results.add(d.data()); }
-      }
-    } catch (_) {}
-
-    // 2. Recherche par email dans Users → vérifier membership
-    try {
-      final emailSnap = await db
-          .collection('Users')
-          .where('email', isEqualTo: query.toLowerCase())
-          .limit(5)
-          .getM('group_info_page.dart:176');
-      for (final d in emailSnap.docs) {
-        final uid = d.id;
-        if (!seen.contains(uid) && memberIds.contains(uid)) {
-          // Récupérer la fiche member pour avoir le rôle
-          final memberDoc = await membersRef.doc(uid).getM('group_info_page.dart:181');
-          final memberData = memberDoc.data();
-          if (memberData != null) {
-            seen.add(uid);
-            results.add(memberData);
-          }
+      // L'API ne filtre pas encore les membres par pseudo : on parcourt les pages (jusqu'à 500 membres)
+      String? cursor;
+      for (var i = 0; i < 5; i++) {
+        final page = await ChatApi.members(widget.groupId, cursor: cursor, limit: 100);
+        for (final m in page.items.map(memberToLegacy)) {
+          if ('${m['pseudo']}'.toLowerCase().contains(q)) results.add(m);
         }
+        cursor = page.next;
+        if (cursor == null) break;
       }
     } catch (_) {}
 
@@ -206,16 +157,9 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
     setState(() => _uploadingImage = true);
     try {
       final bytes = await picked.readAsBytes();
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child('group_covers/${widget.groupId}.jpg');
-      await ref.putData(await MediaShrink.bytes(bytes));
-      final url = await ref.getDownloadURL();
-
-      await FirebaseFirestore.instance
-          .collection('GroupChats')
-          .doc(widget.groupId)
-          .update({'image_url': url});
+      final uploadId = await ChatApi.uploadImage(await MediaShrink.bytes(bytes));
+      final updated = await ChatApi.updateGroup(widget.groupId, {'image_upload_id': uploadId});
+      final url = updated['image_url'] as String?;
 
       if (mounted) {
         setState(() => _groupData['image_url'] = url);
@@ -332,36 +276,9 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
 
                             setModal(() { saving = true; errorMsg = null; });
 
-                            // Vérifier unicité + noms officiels réservés
+                            // L'API vérifie l'unicité du nom (noms officiels réservés compris)
                             try {
-                              final snap = await FirebaseFirestore.instance
-                                  .collection('GroupChats')
-                                  .where('name', isEqualTo: newName)
-                                  .limit(2)
-                                  .getM('group_info_page.dart:340');
-
-                              // Exclure le groupe courant
-                              final conflicts = snap.docs
-                                  .where((d) => d.id != widget.groupId)
-                                  .toList();
-
-                              if (conflicts.isNotEmpty) {
-                                final isOfficial =
-                                    conflicts.first.data()['is_official'] == true;
-                                setModal(() {
-                                  saving = false;
-                                  errorMsg = isOfficial
-                                      ? 'Ce nom est réservé à un groupe officiel Afrolook.'
-                                      : 'Ce nom est déjà pris par un autre groupe.';
-                                });
-                                return;
-                              }
-
-                              // Appliquer le renommage
-                              await FirebaseFirestore.instance
-                                  .collection('GroupChats')
-                                  .doc(widget.groupId)
-                                  .update({'name': newName});
+                              await ChatApi.updateGroup(widget.groupId, {'name': newName});
 
                               if (mounted) {
                                 setState(() => _groupData['name'] = newName);
@@ -380,7 +297,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                             } catch (e) {
                               setModal(() {
                                 saving = false;
-                                errorMsg = 'Erreur : $e';
+                                errorMsg = ChatApi.message(e, fallback: 'Ce nom est déjà pris par un autre groupe.');
                               });
                             }
                           },
@@ -414,26 +331,20 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
   }
 
   Future<void> _removeMember(String userId) async {
-    await FirebaseFirestore.instance
-        .collection('GroupChats')
-        .doc(widget.groupId)
-        .collection('members')
-        .doc(userId)
-        .delete();
-    await FirebaseFirestore.instance.collection('GroupChats').doc(widget.groupId).update({
-      'member_count': FieldValue.increment(-1),
-      'member_ids': FieldValue.arrayRemove([userId]),
-    });
+    try {
+      await ChatApi.removeMember(widget.groupId, userId);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ChatApi.message(e)), backgroundColor: Colors.red));
+    }
     _loadGroup();
   }
 
   Future<void> _promoteToAdmin(String userId) async {
-    await FirebaseFirestore.instance
-        .collection('GroupChats')
-        .doc(widget.groupId)
-        .collection('members')
-        .doc(userId)
-        .update({'role': 'admin'});
+    try {
+      await ChatApi.updateMember(widget.groupId, userId, {'role': 'admin'});
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ChatApi.message(e)), backgroundColor: Colors.red));
+    }
     _loadGroup();
   }
 
@@ -471,16 +382,12 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
     );
     if (!confirmed) return;
 
-    await FirebaseFirestore.instance
-        .collection('GroupChats')
-        .doc(widget.groupId)
-        .collection('members')
-        .doc(myId)
-        .delete();
-    await FirebaseFirestore.instance.collection('GroupChats').doc(widget.groupId).update({
-      'member_count': FieldValue.increment(-1),
-      'member_ids': FieldValue.arrayRemove([myId]),
-    });
+    try {
+      await ChatApi.leaveGroup(widget.groupId);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ChatApi.message(e)), backgroundColor: Colors.red));
+      return;
+    }
 
     // Notifier le propriétaire
     _notifyOwnerMemberLeft(myId, myPseudo);
@@ -488,27 +395,8 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
     if (mounted) Navigator.of(context).popUntil((r) => r.isFirst);
   }
 
-  Future<void> _notifyOwnerMemberLeft(String leaverId, String leaverPseudo) async {
-    try {
-      final ownerId = _groupData['owner_id'] as String?;
-      if (ownerId == null || ownerId == leaverId) return;
-      final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(ownerId).getM('group_info_page.dart:494');
-      final oneSignalId = ownerDoc.data()?['oneIgnalUserid'] as String?;
-      if (oneSignalId == null || oneSignalId.length <= 5) return;
-      final groupName = _groupData['name'] as String? ?? widget.groupName;
-      await _auth.sendNotification(
-        userIds: [oneSignalId],
-        smallImage: '',
-        send_user_id: leaverId,
-        recever_user_id: ownerId,
-        message: '@$leaverPseudo a quitté le groupe "$groupName"',
-        type_notif: NotificationType.MESSAGE.name,
-        post_id: '',
-        post_type: '',
-        chat_id: widget.groupId,
-      );
-    } catch (_) {}
-  }
+  // Le propriétaire est prévenu par le serveur quand un membre quitte le groupe.
+  Future<void> _notifyOwnerMemberLeft(String leaverId, String leaverPseudo) async {}
 
   Future<void> _showAddMemberSheet() async {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
@@ -617,40 +505,12 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
 
   Future<void> _addMember(String userId, String pseudo, String imageUrl, String oneSignalId) async {
     try {
-      final groupName = _groupData['name'] as String? ?? widget.groupName;
-      await FirebaseFirestore.instance
-          .collection('GroupChats')
-          .doc(widget.groupId)
-          .collection('members')
-          .doc(userId)
-          .set({
-        'user_id': userId,
-        'pseudo': pseudo,
-        'image_url': imageUrl,
-        'role': 'member',
-        'joined_at': DateTime.now().millisecondsSinceEpoch,
-      });
-      await FirebaseFirestore.instance.collection('GroupChats').doc(widget.groupId).update({
-        'member_count': FieldValue.increment(1),
-        'member_ids': FieldValue.arrayUnion([userId]),
-      });
-      // Notification
-      if (oneSignalId.length > 5) {
-        final myId = _auth.loginUserData.id!;
-        await _auth.sendNotification(
-          userIds: [oneSignalId],
-          smallImage: _auth.loginUserData.imageUrl ?? '',
-          send_user_id: myId,
-          recever_user_id: userId,
-          message: 'Vous avez été ajouté au groupe "$groupName"',
-          type_notif: NotificationType.MESSAGE.name,
-          post_id: '',
-          post_type: '',
-          chat_id: widget.groupId,
-        );
-      }
+      // L'API contrôle les droits, la limite de membres du plan et les blocages, puis prévient la personne ajoutée
+      await ChatApi.addMember(widget.groupId, userId);
       _loadGroup();
-    } catch (_) {}
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ChatApi.message(e)), backgroundColor: Colors.red));
+    }
   }
 
   Future<void> _toggleReadOnly(bool value) async {
@@ -661,10 +521,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
       return;
     }
     try {
-      await FirebaseFirestore.instance
-          .collection('GroupChats')
-          .doc(widget.groupId)
-          .update({'is_read_only': value});
+      await ChatApi.updateGroup(widget.groupId, {'is_read_only': value});
       if (mounted) {
         setState(() => _groupData = {..._groupData, 'is_read_only': value});
       }
@@ -783,13 +640,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
     if (!step2 || !mounted) return;
 
     try {
-      final db = FirebaseFirestore.instance;
-      final gid = widget.groupId;
-
-      await _deleteBatchQuery(db.collection('GroupMessages').where('group_id', isEqualTo: gid));
-      await _deleteBatchQuery(db.collection('GroupChats').doc(gid).collection('members'));
-      await db.collection('GroupKeys').doc(gid).delete();
-      await db.collection('GroupChats').doc(gid).delete();
+      await ChatApi.deleteGroup(widget.groupId);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -803,20 +654,6 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
           const SnackBar(content: Text('Erreur lors de la suppression'), backgroundColor: Colors.red),
         );
       }
-    }
-  }
-
-  Future<void> _deleteBatchQuery(Query<Map<String, dynamic>> query) async {
-    const batchSize = 400;
-    while (true) {
-      final snap = await query.limit(batchSize).getM('group_info_page.dart:811');
-      if (snap.docs.isEmpty) break;
-      final batch = FirebaseFirestore.instance.batch();
-      for (final doc in snap.docs) {
-        batch.delete(doc.reference);
-      }
-      await batch.commit();
-      if (snap.docs.length < batchSize) break;
     }
   }
 
@@ -1567,10 +1404,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                 ? Switch(
                     value: _groupData['allow_external_links'] == true,
                     onChanged: (v) async {
-                      await FirebaseFirestore.instance
-                          .collection('GroupChats')
-                          .doc(widget.groupId)
-                          .update({'allow_external_links': v});
+                      await ChatApi.updateGroup(widget.groupId, {'allow_external_links': v});
                       if (mounted) setState(() => _groupData['allow_external_links'] = v);
                     },
                     activeColor: Colors.blue,
@@ -1772,21 +1606,15 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
   }
 
   Future<void> _setDefaultPerm(String field, bool value) async {
-    await FirebaseFirestore.instance
-        .collection('GroupChats')
-        .doc(widget.groupId)
-        .update({field: value});
+    await ChatApi.updateGroup(widget.groupId, {field: value});
     if (mounted) setState(() => _groupData[field] = value);
   }
 
   Future<void> _regenerateJoinCode() async {
     try {
-      final newCode = _generateJoinCode();
-      final newExpiry = DateTime.now().add(const Duration(days: 30)).millisecondsSinceEpoch;
-      await FirebaseFirestore.instance.collection('GroupChats').doc(widget.groupId).update({
-        'join_code': newCode,
-        'join_code_expires_at': newExpiry,
-      });
+      final r = await ChatApi.regenerateInvitationCode(widget.groupId);
+      final newCode = r['join_code'];
+      final newExpiry = r['join_code_expires_at'] == null ? null : DateTime.tryParse('${r['join_code_expires_at']}')?.millisecondsSinceEpoch;
       if (mounted) {
         setState(() {
           _groupData['join_code'] = newCode;
@@ -1799,19 +1627,9 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
     } catch (_) {}
   }
 
-  String _generateJoinCode() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    final rng = Random.secure();
-    return List.generate(8, (_) => chars[rng.nextInt(chars.length)]).join();
-  }
-
   Future<void> _togglePrivate(bool value, double currentPrice) async {
     try {
-      await FirebaseFirestore.instance.collection('GroupChats').doc(widget.groupId).update({
-        'is_private': value,
-        if (!value) 'subscription_price': 0.0,
-        if (!value) 'subscription_price_coins': 0,
-      });
+      await ChatApi.updateGroup(widget.groupId, {'is_private': value});
       if (mounted) setState(() => _groupData['is_private'] = value);
       if (value && currentPrice <= 0) await _showEditPriceSheet();
     } catch (_) {}
@@ -1870,10 +1688,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                   onPressed: () async {
                     final coins = int.tryParse(controller.text.trim()) ?? 0;
                     final fcfa = coins / CoinCheckout.coinsPerFcfa;
-                    await FirebaseFirestore.instance.collection('GroupChats').doc(widget.groupId).update({
-                      'subscription_price_coins': coins,
-                      'subscription_price': fcfa,
-                    });
+                    await ChatApi.updateGroup(widget.groupId, {'price_coins': coins});
                     if (mounted) {
                       setState(() {
                         _groupData['subscription_price_coins'] = coins;
@@ -2138,10 +1953,10 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                                 ),
                                 onChanged: locked ? null : (val) {
                                   setStateDialog(() => perms[e.key] = val);
-                                  FirebaseFirestore.instance
-                                      .collection('GroupChats')
-                                      .doc(widget.groupId)
-                                      .update({'member_permissions.$userId.${e.key}': val});
+                                  // l'API gère can_write et can_share ; les autres droits (supprimer, épingler, inviter) : voir lacunes_api_jeux_medias.md
+                                  if (e.key == 'can_write' || e.key == 'can_share') {
+                                    ChatApi.updateMember(widget.groupId, userId, {e.key: val}).catchError((Object _) {});
+                                  }
                                   final mp = Map<String, dynamic>.from(
                                       (_groupData['member_permissions'] as Map<String, dynamic>?) ?? {});
                                   mp[userId] = {...(mp[userId] as Map<String, dynamic>? ?? {}), e.key: val};

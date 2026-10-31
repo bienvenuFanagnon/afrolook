@@ -3,7 +3,8 @@ import 'package:afrotok/pages/userPosts/postWidgets/postWidgetPage.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/api_gateway.dart';
+import 'package:afrotok/services/api/post_mapper.dart';
 
 import 'package:provider/provider.dart';
 
@@ -23,12 +24,12 @@ class FavoritePostsPage extends StatefulWidget {
 }
 
 class _FavoritePostsPageState extends State<FavoritePostsPage> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   late UserAuthProvider _authProvider;
   late PostProvider _postProvider;
 
-  // Tous les IDs (triés du plus récent au plus ancien)
-  List<String> _allIds = [];
+  // Curseur de la page suivante (API) ; null = plus rien à charger
+  String? _nextCursor;
+  bool _more = false;
   // Posts déjà chargés
   List<Post> _favoritePosts = [];
   bool _isLoading = true;
@@ -56,39 +57,25 @@ class _FavoritePostsPageState extends State<FavoritePostsPage> {
 
   /// Charge la liste des IDs depuis le document utilisateur, puis la première page.
   Future<void> _loadInitial() async {
-    setState(() { _isLoading = true; _hasError = false; _allIds = []; _favoritePosts = []; _loadedCount = 0; });
-    try {
-      final userId = _authProvider.loginUserData.id!;
-      final userDoc = await _firestore.collection('Users').doc(userId).getM('favorites_posts.dart:61');
-      final ids = List<String>.from(userDoc.data()?['favoritePostsIds'] ?? []);
-      _allIds = ids.reversed.toList(); // plus récent en premier
-      await _fetchNextPage();
-    } catch (e) {
-      printVm('Erreur chargement favoris: $e');
-      if (mounted) setState(() { _hasError = true; _isLoading = false; });
-    }
+    setState(() { _isLoading = true; _hasError = false; _nextCursor = null; _more = false; _favoritePosts = []; _loadedCount = 0; });
+    await _fetchNextPage();
   }
 
   /// Charge la prochaine tranche de _pageSize posts.
   Future<void> _fetchNextPage() async {
-    final chunk = _allIds.skip(_loadedCount).take(_pageSize).toList();
-    if (chunk.isEmpty) {
-      if (mounted) setState(() { _isLoading = false; _isLoadingMore = false; });
-      return;
-    }
     try {
-      final snap = await _firestore.collection('Posts').where(FieldPath.documentId, whereIn: chunk).getM('favorites_posts.dart:79');
-      final posts = <Post>[];
-      for (final doc in snap.docs) {
-        try {
-          final p = Post.fromJson(doc.data()); p.id = doc.id; posts.add(p);
-        } catch (e) { printVm('Favori illisible ${doc.id}: $e'); }
-      }
-      // Trier selon l'ordre des IDs (plus récent d'abord)
-      posts.sort((a, b) => chunk.indexOf(a.id ?? '').compareTo(chunk.indexOf(b.id ?? '')));
+      // Route souhaitée côté API : GET /me/favorites/posts?limit=&cursor= (voir lacunes_api_publications.md)
+      final r = await ApiGateway.instance.client.get('/me/favorites/posts', query: {'limit': _pageSize, if (_nextCursor != null) 'cursor': _nextCursor}) as Map;
+      final posts = ((r['data'] as List?) ?? const [])
+          .whereType<Map>()
+          .map((m) => postFromApi(Map<String, dynamic>.from(m)))
+          .where((p) => p.id != null)
+          .toList();
       if (mounted) setState(() {
         _favoritePosts.addAll(posts);
-        _loadedCount += chunk.length;
+        _loadedCount += posts.length;
+        _nextCursor = r['next_cursor'] as String?;
+        _more = _nextCursor != null;
         _isLoading = false;
         _isLoadingMore = false;
       });
@@ -98,7 +85,7 @@ class _FavoritePostsPageState extends State<FavoritePostsPage> {
     }
   }
 
-  bool get _hasMore => _loadedCount < _allIds.length;
+  bool get _hasMore => _more;
 
   Future<void> _loadMore() async {
     if (_isLoadingMore || !_hasMore) return;
@@ -155,7 +142,7 @@ class _FavoritePostsPageState extends State<FavoritePostsPage> {
           : ElevatedButton.icon(
               onPressed: _loadMore,
               icon: Icon(Icons.expand_more),
-              label: Text('Charger plus (${_allIds.length - _loadedCount} restants)'),
+              label: Text('Charger plus'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _primaryColor,
                 foregroundColor: Colors.white,
@@ -290,7 +277,7 @@ class _FavoritePostsPageState extends State<FavoritePostsPage> {
         children: [
           Text('${_favoritePosts.length} affiché${_favoritePosts.length > 1 ? 's' : ''}',
               style: TextStyle(color: _textColor, fontSize: 13, fontWeight: FontWeight.w600)),
-          Text('${_allIds.length} au total',
+          Text(_hasMore ? "et d'autres…" : 'Tout est affiché',
               style: TextStyle(color: _accentColor, fontSize: 13, fontWeight: FontWeight.bold)),
         ],
       ),
@@ -317,10 +304,10 @@ class _FavoritePostsPageState extends State<FavoritePostsPage> {
             onPressed: _loadInitial,
             tooltip: 'Rafraîchir',
           ),
-          if (_allIds.isNotEmpty)
+          if (_favoritePosts.isNotEmpty)
             Padding(
               padding: EdgeInsets.only(right: 16, top: 16),
-              child: Text('${_allIds.length}',
+              child: Text('${_favoritePosts.length}${_hasMore ? '+' : ''}',
                   style: TextStyle(color: _accentColor, fontSize: 16, fontWeight: FontWeight.bold)),
             ),
         ],
@@ -329,7 +316,7 @@ class _FavoritePostsPageState extends State<FavoritePostsPage> {
           ? _buildLoadingState()
           : _hasError
               ? _buildErrorState()
-              : _allIds.isEmpty
+              : _favoritePosts.isEmpty
                   ? _buildEmptyState()
                   : Column(children: [
                       _buildStatsHeader(),

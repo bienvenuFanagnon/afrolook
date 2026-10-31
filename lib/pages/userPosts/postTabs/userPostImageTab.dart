@@ -8,15 +8,14 @@ import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrotok/services/api/post_publisher.dart';
+import 'package:afrotok/widgets/api_error_dialogs.dart';
 import 'package:afrotok/pages/defi/defi_ui.dart';
 
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/userPosts/postWidgets/defi_config_section.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 
-import 'package:firebase_storage/firebase_storage.dart';
 
 import 'package:flutter/foundation.dart';
 
@@ -1513,133 +1512,36 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
           },
         );
 
-        String postId = widget.presetPostId ?? FirebaseFirestore.instance.collection('Posts').doc().id;
-
-        Post post = Post()
-          ..monetized = _isDefiContext ? false : _monetized
-          ..user_id = authProvider.loginUserData.id
-          ..description = _descriptionController.text
-          ..updatedAt = DateTime.now().microsecondsSinceEpoch
-          ..createdAt = DateTime.now().microsecondsSinceEpoch
-          ..status = PostStatus.VALIDE.name
-          ..type = _selectedPostType == 'DEFI' ? PostType.DEFI.name : PostType.POST.name
-          ..comments = 0
-          ..typeTabbar = _selectedPostType
-          ..nombrePersonneParJour = 60
-          ..dataType = PostDataType.IMAGE.name
-          ..likes = 0
-          ..feedScore = 0.0
-          ..loves = 0
-          ..id = postId
-          ..images = []
-          ..isAdvertisement = _isAdvertisement // Nouveau champ
-         ..eventDate = _selectedPostType == 'EVENEMENT' ? _selectedEventDate?.millisecondsSinceEpoch : null;
-
-        // if (_selectAllCountries) {
-        //   post.availableCountries = ['ALL'];
-        // } else {
-        //   post.availableCountries = _selectedCountries.map((c) => c.code).toList();
-        // }
-        post.availableCountries = _selectedCountries.map((c) => c.code).toList();
-
-        if (_selectedPostType == 'DEFI' && _defiConfig != null) {
-          post.defiConfigMap = _defiConfig!.toJson();
-        }
-
-        if (widget.canal != null) {
-          post.canal_id = widget.canal!.id;
-          post.categorie = "CANAL";
-        }
-        if (widget.defiPostId != null) {
-          post.defiResponseToPostId = widget.defiPostId;
-        }
-
-        List<String> imageUrls = [];
-        for (int i = 0; i < _selectedImages.length; i++) {
-          final String uniqueFileName = Uuid().v4();
-          Reference storageReference = FirebaseStorage.instance.ref().child('post_media/$uniqueFileName.jpg');
-
-          final tempDir = await getTemporaryDirectory();
-          final file = File('${tempDir.path}/$uniqueFileName.jpg');
-          await file.writeAsBytes(_selectedImages[i]);
-
-          await storageReference.putFile(await MediaShrink.file(file));
-          String fileURL = await storageReference.getDownloadURL();
-          imageUrls.add(fileURL);
-        }
-
-        post.images = imageUrls;
-        post.creatorSnapshot = Post.buildCreatorSnapshot(authProvider.loginUserData);
-
-        // Participation DÉFI : la Cloud Function paie et crée le post dans une seule transaction
-        if (widget.defiPostId != null) {
-          try {
-            await FirebaseFunctions.instance.httpsCallable('handleDefiAction').call({
-              'action': 'participate',
-              'postId': widget.defiPostId,
-              'post': post.toJson(),
-            });
-          } catch (e) {
-            if (mounted) Navigator.of(context, rootNavigator: true).pop();
-            setState(() => onTap = false);
-            if (mounted) DefiDialogs.handleError(context, e, isVote: false);
-            return;
-          }
-        } else if (post.type == PostType.DEFI.name) {
-          // Création DÉFI : la Cloud Function débite la cagnotte et crée le post dans une seule transaction
-          try {
-            await FirebaseFunctions.instance.httpsCallable('handleDefiAction').call({
-              'action': 'create',
-              'postId': postId,
-              'post': {...post.toJson(), 'defi_config': post.defiConfigMap},
-            });
-          } catch (e) {
-            if (mounted) Navigator.of(context, rootNavigator: true).pop();
-            setState(() => onTap = false);
-            if (mounted) DefiDialogs.handleError(context, e, isVote: false, isCreation: true);
-            return;
-          }
-        } else {
-          await FirebaseFirestore.instance.collection('Posts').doc(postId).set({...post.toJson(), ...PostTemplateLink.fields()});
-          StudioSoundLink.linkIfPending(postId); // post fait avec un son d'artiste : lien vérifié par le serveur
-          PostTemplateLink.published(); // post fait avec un template : « Essayer ce template » sous le post
-        }
-        if (widget.canal != null && (_selectedPostType ?? '').isNotEmpty) {
-          FirebaseFirestore.instance.collection('Canaux').doc(widget.canal!.id!).update({
-            'categories': FieldValue.arrayUnion([_selectedPostType!]),
-          }).catchError((_) {});
-        }
-        await PostCooldownService.markPosted();
-
-        // Si c'est une publicité, créer l'entrée dans Advertisement
-        if (_isAdvertisement) {
-          String advertisementId = FirebaseFirestore.instance.collection('Advertisements').doc().id;
-          int now = DateTime.now().microsecondsSinceEpoch;
-
-          Advertisement ad = Advertisement(
-            id: advertisementId,
-            postId: postId,
-            actionType: _selectedActionType,
-            actionUrl: _actionUrlController.text,
-            actionButtonText: _actionTypes[_selectedActionType]!['label'],
-            durationDays: _selectedDurationDays,
-            startDate: now,
-            endDate: now + (_selectedDurationDays! * 24 * 60 * 60 * 1000000),
-            status: 'pending', // En attente de validation admin
-            isRenewable: true,
-            renewalCount: 0,
-            createdBy: authProvider.loginUserData.id,
-            createdAt: now,
-            updatedAt: now,
+        // Défis et publicités : pas encore de route côté API (voir lacunes_api_publications.md)
+        if (widget.defiPostId != null || _selectedPostType == 'DEFI' || _isAdvertisement) {
+          if (mounted) Navigator.of(context, rootNavigator: true).pop();
+          setState(() => onTap = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Les défis et les publicités ne sont pas encore disponibles dans cette version.', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))),
           );
-
-          await FirebaseFirestore.instance.collection('Advertisements').doc(advertisementId).set(ad.toJson());
-
-          // Mettre à jour le post avec l'ID de la publicité
-          await FirebaseFirestore.instance.collection('Posts').doc(postId).update({
-            'advertisementId': advertisementId,
-          });
+          return;
         }
+
+        // Images réduites puis envoyées directement au stockage via l'API (URL signée), puis création de la publication
+        final List<File> imageFiles = [];
+        for (int i = 0; i < _selectedImages.length; i++) {
+          final tempDir = await getTemporaryDirectory();
+          final file = File('${tempDir.path}/${Uuid().v4()}.jpg');
+          await file.writeAsBytes(_selectedImages[i]);
+          imageFiles.add(await MediaShrink.file(file));
+        }
+        final Post post = await PostPublisher.publish(
+          description: _descriptionController.text,
+          files: imageFiles,
+          category: _selectedPostType,
+          monetized: _monetized,
+          countries: _selectedCountries.map((c) => c.code).toList(),
+          canal: widget.canal,
+        );
+        final String postId = post.id!;
+        StudioSoundLink.linkIfPending(postId); // post fait avec un son d'artiste : lien vérifié par le serveur
+        PostTemplateLink.published(); // post fait avec un template : « Essayer ce template » sous le post
+        await PostCooldownService.markPosted();
 
         printVm('✅ Post créé avec ID: $postId, ${_selectedImages.length} images${_isAdvertisement ? ' (Publicité en attente)' : ''}');
 
@@ -1649,7 +1551,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
           final subscriber = AbonnementUtils.isPremiumActive(u.abonnement) || u.role == UserRole.ADM.name;
           if (!subscriber && u.multiPhotoCredits > 0 && u.id != null) {
             u.multiPhotoCredits -= 1;
-            FirebaseFirestore.instance.collection('Users').doc(u.id).update({'multiPhotoCredits': FieldValue.increment(-1)}).ignore();
+            // Le crédit « pubs » n'a pas encore de route côté API (voir lacunes_api_publications.md)
             _setupRestrictions();
           }
         }
@@ -1682,11 +1584,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
           );
 
           widget.canal!.updatedAt = DateTime.now().microsecondsSinceEpoch;
-          widget.canal!.publication = (widget.canal!.publication ?? 0) + 1;
-          FirebaseFirestore.instance.collection('Canaux').doc(widget.canal!.id).update({
-            'updatedAt': widget.canal!.updatedAt,
-            'publication': widget.canal!.publication,
-          });
+          widget.canal!.publication = (widget.canal!.publication ?? 0) + 1;   // le serveur tient le compteur du canal
         } else {
           authProvider.sendPushNotificationToUsers(
             sender: authProvider.loginUserData,
@@ -1750,7 +1648,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
         setState(() => onTap = false);
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur lors de la publication. Veuillez réessayer.', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))),
+          SnackBar(content: Text(apiErrorText(e, fallback: 'Erreur lors de la publication. Veuillez réessayer.'), textAlign: TextAlign.center, style: TextStyle(color: _c.danger))),
         );
       }
     }

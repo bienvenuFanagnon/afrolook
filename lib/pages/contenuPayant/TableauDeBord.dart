@@ -1,4 +1,3 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'dart:async';
@@ -15,7 +14,7 @@ import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/providers/contenuPayantProvider.dart';
 import 'package:afrotok/theme/app_colors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/contenu_payant_api.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -73,16 +72,9 @@ class _DashboardContentScreenState extends State<DashboardContentScreen>
     final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     final user = authProvider.loginUserData;
     if (user.id == null || user.isCreatorProfileEnabled == true) return;
-    try {
-      await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(user.id)
-          .update({'isCreatorProfileEnabled': true});
-      user.isCreatorProfileEnabled = true;
-      if (mounted) setState(() {});
-    } catch (_) {
-      // silencieux — l'activation sera retentée à la prochaine visite
-    }
+    // L'activation du profil créateur n'a pas de champ dans l'API (voir lacunes_api_canaux.md) : elle reste locale à la session.
+    user.isCreatorProfileEnabled = true;
+    if (mounted) setState(() {});
   }
 
   @override
@@ -100,14 +92,10 @@ class _DashboardContentScreenState extends State<DashboardContentScreen>
     if (contentId == null || !mounted) return;
     await prefs.remove('pending_content_deeplink');
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('ContentPaies')
-          .doc(contentId)
-          .getM('TableauDeBord.dart:105');
-      if (!doc.exists || !mounted) return;
-      final content = ContentPaie.fromJson({...doc.data()!, 'id': doc.id});
+      final r = await ContenuPayantApi.get(contentId);
+      if (r == null || !mounted) return;
       Navigator.push(context,
-          MaterialPageRoute(builder: (_) => ContentDetailPage(content: content)));
+          MaterialPageRoute(builder: (_) => ContentDetailPage(content: r.content)));
     } catch (_) {}
   }
 
@@ -134,14 +122,11 @@ class _DashboardContentScreenState extends State<DashboardContentScreen>
       await prefs.setInt('${key}_ts', DateTime.now().millisecondsSinceEpoch);
     }
 
-    // Charger le contenu depuis Firestore
+    // Charger le contenu depuis l'API
     ContentPaie? content;
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('ContentPaies')
-          .doc(contentId)
-          .getM('TableauDeBord.dart:142');
-      if (!doc.exists) {
+      final r = await ContenuPayantApi.get(contentId);
+      if (r == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
             content: Text('Contenu introuvable pour ce lien.'),
@@ -150,7 +135,7 @@ class _DashboardContentScreenState extends State<DashboardContentScreen>
         }
         return;
       }
-      content = ContentPaie.fromJson({...doc.data()!, 'id': doc.id});
+      content = r.content;
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -182,32 +167,12 @@ class _DashboardContentScreenState extends State<DashboardContentScreen>
         return;
       }
       if (q.startsWith('@') && q.length > 1) {
-        // Creator search
-        final pseudo = q.substring(1);
-        final snap = await FirebaseFirestore.instance
-            .collection('Users')
-            .where('pseudo', isGreaterThanOrEqualTo: pseudo)
-            .where('pseudo', isLessThan: pseudo + '')
-            .limit(20)
-            .getM('TableauDeBord.dart:191');
-        if (!snap.docs.isEmpty) {
-          final ids = snap.docs.map((d) => d.id).toList();
-          if (mounted) setState(() {
-            _searchQuery = '';
-            _creatorFilterIds = ids;
-          });
-          return;
-        }
-        // Try email
-        final snap2 = await FirebaseFirestore.instance
-            .collection('Users')
-            .where('email', isEqualTo: pseudo)
-            .limit(5)
-            .getM('TableauDeBord.dart:205');
+        // Recherche d'un créateur : l'API ne propose pas encore de recherche de personnes ici ; on cherche le pseudo dans les titres et mots-clics
+        // (voir lacunes_api_canaux.md).
         if (mounted) {
           setState(() {
-            _searchQuery = '';
-            _creatorFilterIds = snap2.docs.map((d) => d.id).toList();
+            _searchQuery = q.substring(1);
+            _creatorFilterIds = null;
           });
         }
       } else {
@@ -225,27 +190,23 @@ class _DashboardContentScreenState extends State<DashboardContentScreen>
       _creatorFilterIds == null &&
       _selectedCategory == null;
 
-  Query<Map<String, dynamic>> get _query {
-    Query<Map<String, dynamic>> q =
-        FirebaseFirestore.instance.collection('ContentPaies');
-    if (_filterType != null) {
-      q = q.where('contentType',
-          isEqualTo: _filterType!.toString().split('.').last);
+  // Lecture mise en cache : la même requête n'est relancée que si le filtre de type ou le tri change (et non à chaque reconstruction)
+  String? _streamKey;
+  Stream<LegacySnap>? _stream;
+
+  Stream<LegacySnap> get _contentStream {
+    final key = '${_filterType}|$_sortMode';
+    if (_stream == null || _streamKey != key) {
+      _streamKey = key;
+      _stream = Stream.fromFuture(() async {
+        final snap = await ContenuPayantApi.snap(type: _filterType, limit: 50);
+        final docs = List<LegacyDoc>.of(snap.docs);
+        if (_sortMode == 'free') docs.removeWhere((d) => d.data()['isFree'] != true);
+        if (_sortMode == 'popular') docs.sort((a, b) => ((b.data()['views'] as int?) ?? 0).compareTo((a.data()['views'] as int?) ?? 0));
+        return LegacySnap(docs);
+      }());
     }
-    switch (_sortMode) {
-      case 'recent':
-        q = q.orderBy('createdAt', descending: true);
-        break;
-      case 'popular':
-        q = q.orderBy('views', descending: true);
-        break;
-      case 'free':
-        q = q
-            .where('isFree', isEqualTo: true)
-            .orderBy('createdAt', descending: true);
-        break;
-    }
-    return q.limit(100);
+    return _stream!;
   }
 
   List<ContentPaie> _applyFilters(List<ContentPaie> items) {
@@ -445,19 +406,27 @@ class _DashboardContentScreenState extends State<DashboardContentScreen>
             ),
           ),
         ],
-        body: StreamBuilder<QuerySnapshot>(
-          stream: _query.snapshotsM('TableauDeBord.dart:448'),
+        body: StreamBuilder<LegacySnap>(
+          stream: _contentStream,
           builder: (context, snap) {
             if (snap.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
+            }
+            if (snap.hasError) {
+              return Center(
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Text(ContenuPayantApi.message(snap.error!), textAlign: TextAlign.center),
+                  const SizedBox(height: 8),
+                  OutlinedButton(onPressed: () => setState(() => _stream = null), child: const Text('Réessayer')),
+                ]),
+              );
             }
             if (!snap.hasData || snap.data!.docs.isEmpty) {
               return _emptyState(colors);
             }
 
             final raw = snap.data!.docs
-                .map((d) => ContentPaie.fromJson(
-                    {...d.data() as Map<String, dynamic>, 'id': d.id}))
+                .map((d) => ContentPaie.fromJson({...d.data(), 'id': d.id}))
                 .toList();
 
             final items = _applyFilters(raw);

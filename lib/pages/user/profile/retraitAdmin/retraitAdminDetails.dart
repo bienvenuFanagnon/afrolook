@@ -342,6 +342,10 @@ class _AdminRetraitDetailPageState extends State<AdminRetraitDetailPage> {
           ),
         );
         Navigator.pop(context);
+      } else if (!success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(RetraitService.lastError ?? 'Opération impossible'), backgroundColor: Colors.red),
+        );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -430,6 +434,10 @@ class _AdminRetraitDetailPageState extends State<AdminRetraitDetailPage> {
           ),
         );
         Navigator.pop(context);
+      } else if (!success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(RetraitService.lastError ?? 'Opération impossible'), backgroundColor: Colors.red),
+        );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

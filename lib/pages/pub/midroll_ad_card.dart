@@ -1,4 +1,3 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 
 import 'package:afrotok/models/model_data.dart';
@@ -11,7 +10,9 @@ import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/services/utils/abonnement_utils.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/canaux_api.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
@@ -77,26 +78,15 @@ class _MidrollAdCardState extends State<MidrollAdCard> {
   /// son BuildContext ne permet plus de naviguer (le bouton d'action fermait la pub sans rien ouvrir).
   Future<void> _navigateToAdOwner(NavigatorState nav, String ownerId, String? ownerType) async {
     try {
-      final fs = FirebaseFirestore.instance;
       switch (ownerType) {
         case 'canal':
-          final doc = await fs.collection('Canaux').doc(ownerId).getM('midroll_ad_card.dart:82');
-          if (!doc.exists) return;
-          final data = Map<String, dynamic>.from(doc.data()!);
-          data['id'] = doc.id;
-          nav.push(MaterialPageRoute(
-            builder: (_) => CanalDetails(canal: Canal.fromJson(data)),
-          ));
+          final canal = await CanauxApi.get(ownerId);
+          nav.push(MaterialPageRoute(builder: (_) => CanalDetails(canal: canal)));
           break;
         case 'user':
         default:
-          final doc = await fs.collection('Users').doc(ownerId).getM('midroll_ad_card.dart:92');
-          if (!doc.exists) return;
-          final data = Map<String, dynamic>.from(doc.data()!);
-          data['id'] = doc.id;
-          nav.push(MaterialPageRoute(
-            builder: (_) => OtherUserPage(otherUser: UserData.fromJson(data)),
-          ));
+          final user = userFromApi(await UsersApi.publicProfile(ownerId));
+          nav.push(MaterialPageRoute(builder: (_) => OtherUserPage(otherUser: user)));
       }
     } catch (e) {
       debugPrint('_navigateToAdOwner error: $e');

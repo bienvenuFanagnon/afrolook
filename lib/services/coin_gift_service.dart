@@ -1,26 +1,13 @@
-
-
-import 'package:afrotok/services/read_meter.dart';
 import 'dart:math';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter/material.dart';
 
 import '../models/coin_pack.dart';
 import '../models/model_data.dart';
 import '../providers/authProvider.dart';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:afrotok/models/model_data.dart';
-import 'package:afrotok/providers/authProvider.dart';
-
-// services/coin_gift_service.dart
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import '../models/model_data.dart';
-import '../providers/authProvider.dart';
-import 'inactiveUserReminderHelperService.dart';
+import 'api/api_gateway.dart';
+import 'api/wallet_api.dart';
 import '../l10n/tr.dart';
 
 class CoinGiftService {
@@ -62,22 +49,20 @@ class CoinGiftService {
     required String userReceived,  // L'utilisateur qui REÇOIT les pièces
     required int coinsAmount,
     required double fcfaCost,
-    required FirebaseFirestore firestore,
     required UserAuthProvider authProvider,
     String balanceKey = 'votre_solde_depot', // solde débité : votre_solde_depot ou votre_solde_principal
   }) async {
-    // Prix du pack, débit, crédit des pièces (Pièces de dépôt), transactions et suivi des ventes :
-    // calculés par le serveur (buyCoinsWithBalance). Un e-mail est envoyé aux admins à chaque achat.
+    // Prix du pack, débit, crédit des pièces (Pièces de dépôt), transactions : calculés par l'API.
     try {
-      await FirebaseFunctions.instance.httpsCallable('buyCoinsWithBalance').call({
-        'coins': coinsAmount,
-        'balanceKey': balanceKey,
-        if (userReceived != userPaid) 'beneficiaryId': userReceived,
-      });
-    } on FirebaseFunctionsException catch (e) {
-      if (e.code == 'resource-exhausted') throw Exception('Solde insuffisant');
-      if (e.code == 'not-found') throw Exception('Destinataire introuvable');
-      throw Exception(e.message ?? 'Achat impossible');
+      await WalletApi.instance.buyCoinsWithBalance(
+        coins: coinsAmount,
+        balance: balanceKey == 'votre_solde_principal' ? 'payout' : 'deposit',
+        beneficiaryId: userReceived != userPaid ? userReceived : null,
+      );
+    } on ApiException catch (e) {
+      if (e.code == 'insufficient_funds') throw Exception('Solde insuffisant');
+      if (e.code == 'unknown_beneficiary') throw Exception('Destinataire introuvable');
+      throw Exception(WalletApi.message(e, fallback: 'Achat impossible'));
     }
   }
 
@@ -88,112 +73,25 @@ class CoinGiftService {
   static Future<bool> sendLikeWithCoins({
     required String senderId,
     required String receiverId,
-    required FirebaseFirestore firestore,
     required UserAuthProvider authProvider,
     required Post post,
     required BuildContext context,
   }) async {
-    // 2 pièces : 1 au créateur, 1 à l'app — calculé par le serveur (sendLike)
+    // 2 pièces : 1 au créateur, 1 à la plateforme — l'API décide (publication monétisée ou non) et annule le « j'aime » si le solde ne suffit pas
     try {
-      await FirebaseFunctions.instance.httpsCallable('sendLike').call({'postId': post.id});
-    } on FirebaseFunctionsException catch (e) {
-      if (e.code == 'resource-exhausted') return false; // solde insuffisant
+      await ApiGateway.instance.client.put('/posts/${post.id}/reaction');
+    } on ApiException catch (e) {
+      if (e.isInsufficientCoins) return false; // solde insuffisant
       rethrow;
     }
-    // Vérifier si le propriétaire est inactif (en arrière-plan)
-    _checkAndSendReminderIfInactive(receiverId);
     return true;
   }
 
-  /// Vérification en arrière-plan (non bloquante)
-  static void _checkAndSendReminderIfInactive(String userId) {
-    // Exécution en arrière-plan sans attendre
-    Future.microtask(() async {
-      try {
-        // 1. Vérifier si l'utilisateur est inactif (depuis Firestore)
-        final isInactive = await InactiveUserReminderService.isUserInactive(userId);
-        if (!isInactive) return;
-
-        // 2. Vérifier la limite mensuelle (depuis Firestore)
-        final canReceive = await InactiveUserReminderService.canReceiveReminder(userId);
-        if (!canReceive) return;
-
-        // 3. Récupérer les données utilisateur
-        final userData = await InactiveUserReminderService.getUserEmailData(userId);
-        if (userData == null) return;
-        if (userData['userEmail'] == null || userData['userEmail'].isEmpty) return;
-
-        // 4. Appeler la Cloud Function
-        final result = await FirebaseFunctions.instance
-            .httpsCallable('sendInactiveUserReminder')
-            .call({'userId': userId, 'userData': userData});
-
-        if (result.data['success'] == true) {
-          printVm('✅ Email de rappel envoyé à ${userData['userEmail']}');
-        }
-      } catch (e) {
-        printVm('❌ Erreur _checkAndSendReminderIfInactive: $e');
-      }
-    });
-  }
-
-  /// Envoyer une notification de cadeau
-  static Future<void> _sendGiftNotification({
-    required String receiverId,
-    required String receiverOneSignalId,
-    required String senderName,
-    required int coinsAmount,
-    required String postId,
-    required String postDataType,
-    required UserAuthProvider authProvider,
-    required BuildContext context,
-  }) async {
-    // Notification Firebase
-    final notificationId = FirebaseFirestore.instance.collection('Notifications').doc().id;
-    final notification = NotificationData(
-      id: notificationId,
-      titre: '🎁 Cadeau reçu !',
-      media_url: authProvider.loginUserData.imageUrl ?? '',
-      type: NotificationType.POST.name,
-      description: '@${senderName} vous a envoyé un cadeau de ${coinsAmount} pièces ! 🎉',
-      users_id_view: [],
-      user_id: authProvider.loginUserData.id!,
-      receiver_id: receiverId,
-      post_id: postId,
-      post_data_type: postDataType,
-      updatedAt: DateTime.now().millisecondsSinceEpoch,
-      createdAt: DateTime.now().millisecondsSinceEpoch,
-      status: PostStatus.VALIDE.name,
-    );
-
-    await FirebaseFirestore.instance
-        .collection('Notifications')
-        .doc(notificationId)
-        .set(notification.toJson());
-
-    // Push notification
-    if (receiverOneSignalId != null && receiverOneSignalId.isNotEmpty) {
-      await authProvider.sendNotification(
-        userIds: [receiverOneSignalId],
-        smallImage: authProvider.loginUserData.imageUrl ?? '',
-        send_user_id: authProvider.loginUserData.id!,
-        recever_user_id: receiverId,
-        message: '🎁 @${senderName} vous a envoyé un cadeau de ${coinsAmount} pièces !',
-        type_notif: NotificationType.POST.name,
-        post_id: postId,
-        post_type: postDataType,
-        chat_id: '',
-      );
-    }
-  }
-
-  /// Envoi d'un cadeau en pièces : débit, 70 % au créateur, parrainages et part de l'app
-  /// sont calculés par le serveur (sendPostGift) ; l'app gère la notification.
+  /// Envoi d'un cadeau en pièces : débit, part du créateur, parrainages et part gardée sont calculés par l'API.
   static Future<void> sendGift({
     required String senderId,
     required String receiverId,
     required int coinsAmount,
-    required FirebaseFirestore firestore,
     required UserAuthProvider authProvider,
     required Post post,
     required BuildContext context,
@@ -201,32 +99,13 @@ class CoinGiftService {
     int quantity = 1,
     VoidCallback? onSuccess,
   }) async {
-    final receiverDoc = await firestore.collection('Users').doc(receiverId).getM('coin_gift_service.dart:203');
-    final receiverOneSignalId = receiverDoc.data()?['oneIgnalUserid'] ?? '';
-
     try {
-      await FirebaseFunctions.instance.httpsCallable('sendPostGift').call({
-        'postId': post.id,
-        'coins': coinsAmount,
-        'giftIcon': giftPack.icon,
-        'giftLabel': giftPack.label,
-      });
-    } on FirebaseFunctionsException catch (e) {
-      if (e.code == 'resource-exhausted') throw Exception('Pièces insuffisantes');
+      await WalletApi.instance.giftPost(post.id!, coins: coinsAmount, icon: giftPack.icon, label: giftPack.label);
+    } on ApiException catch (e) {
+      if (e.isInsufficientCoins) throw Exception('Pièces insuffisantes');
       rethrow;
     }
-
-    await _sendGiftNotification(
-      receiverId: receiverId,
-      receiverOneSignalId: receiverOneSignalId,
-      senderName: authProvider.loginUserData.pseudo ?? context.tr('Un utilisateur'),
-      coinsAmount: coinsAmount,
-      postId: post.id!,
-      postDataType: post.dataType ?? PostDataType.IMAGE.name,
-      authProvider: authProvider,
-      context: context,
-    );
-
+    // La notification « cadeau reçu » est envoyée par l'API (voir lacunes_api_argent_creations.md).
     onSuccess?.call();
   }
 
@@ -250,7 +129,6 @@ class CoinGiftService {
     required CoinPack giftPack,
     required int coinsAmount,
     required int quantity,
-    required FirebaseFirestore firestore,
   }) {
     Future.microtask(() async {
       try {
@@ -262,67 +140,19 @@ class CoinGiftService {
         final message =
             '$randomLine\n'
             '${giftPack.icon} ${giftPack.label}$qtyText · $coinsAmount 🪙';
-
-        final commentId = firestore.collection('PostComments').doc().id;
-        final now = DateTime.now().microsecondsSinceEpoch;
-
-        await firestore.collection('PostComments').doc(commentId).set({
-          'id': commentId,
-          'user_id': senderId,
-          'post_id': postId,
-          'message': message,
-          'created_at': now,
-          'updated_at': now,
-          'loves': 0,
-          'likes': 0,
-          'comments': 0,
-          'users_like_id': [],
-          'responseComments': [],
-          'isAutoGiftComment': true,
-        });
-
-        await firestore.collection('Posts').doc(postId).update({
-          'comments': FieldValue.increment(1),
-        });
+        await ApiGateway.instance.client.post('/posts/$postId/comments', body: {'body': message});
       } catch (e) {
         printVm('⚠️ _postGiftAutoComment: $e');
       }
     });
   }
 
-  /// Conversion de pièces en FCFA (ajout au solde principal)
-  static Future<void> convertCoinsToFcfa({
-    required String userId,
-    required int coinsAmount,
-    required FirebaseFirestore firestore,
-  }) async {
-    final double fcfaGain = coinsToFcfa(coinsAmount);
-    final userRef = firestore.collection('Users').doc(userId);
-
-    return firestore.runTransaction((tx) async {
-      final userSnap = await tx.get(userRef);
-      if (!userSnap.exists) throw Exception('Utilisateur introuvable');
-      final currentCoins = (userSnap.data()?['giftCoinsBalance'] ?? 0) as int;
-      if (currentCoins < coinsAmount) throw Exception('Pièces insuffisantes');
-
-      tx.update(userRef, {
-        'giftCoinsBalance': FieldValue.increment(-coinsAmount),
-        'votre_solde_principal': FieldValue.increment(fcfaGain),
-        'totalGiftCoinsConverted': FieldValue.increment(coinsAmount),
-        'updatedAt': DateTime.now().millisecondsSinceEpoch,
-      });
-
-      final transaction = TransactionSolde()
-        ..id = firestore.collection('TransactionSoldes').doc().id
-        ..user_id = userId
-        ..type = TypeTransaction.CONVERSION_PIECES.name
-        ..statut = StatutTransaction.VALIDER.name
-        ..description = 'Conversion de $coinsAmount pièces en FCFA'
-        ..montant = fcfaGain
-        ..methode_paiement = "pieces"
-        ..createdAt = DateTime.now().millisecondsSinceEpoch;
-
-      tx.set(firestore.collection('TransactionSoldes').doc(transaction.id), transaction.toJson());
-    });
+  /// Conversion de pièces gagnées en FCFA à retirer (calcul et vérifications faits par l'API).
+  static Future<void> convertCoinsToFcfa({required int coinsAmount}) async {
+    try {
+      await WalletApi.instance.convert(coinsAmount);
+    } on ApiException catch (e) {
+      throw Exception(WalletApi.message(e, fallback: 'Conversion impossible'));
+    }
   }
 }

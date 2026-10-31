@@ -1,10 +1,9 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/contenuPayant/content_detail_page.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/theme/app_colors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/contenu_payant_api.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/utils/platform_guard.dart';
 import 'package:provider/provider.dart';
@@ -12,26 +11,34 @@ import 'package:provider/provider.dart';
 class BoostedContentStripWidget extends StatelessWidget {
   const BoostedContentStripWidget({Key? key}) : super(key: key);
 
+  // Une seule lecture par minute pour tous les affichages de la bande (les contenus boostés sont servis en premier par l'API)
+  static Future<LegacySnap>? _cache;
+  static DateTime? _cacheAt;
+
+  static Future<LegacySnap> _boosted() {
+    final at = _cacheAt;
+    if (_cache == null || at == null || DateTime.now().difference(at) > const Duration(minutes: 1)) {
+      _cacheAt = DateTime.now();
+      _cache = ContenuPayantApi.snap(limit: 20).then((s) => LegacySnap(s.docs.where((d) => d.data()['isBoosted'] == true).take(10).toList())).catchError((_) {
+        _cache = null;
+        return LegacySnap(<LegacyDoc>[]);
+      });
+    }
+    return _cache!;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (kIsAppleStore) return const SizedBox.shrink(); // contenus payants masqués sur iPhone
     final colors = AppColors.of(context);
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('ContentPaies')
-          .where('isBoosted', isEqualTo: true)
-          .where('boostEndDate',
-              isGreaterThan: DateTime.now().millisecondsSinceEpoch)
-          .orderBy('boostEndDate', descending: true)
-          .limit(10)
-          .snapshotsM('boosted_content_strip.dart:26'),
+    return FutureBuilder<LegacySnap>(
+      future: _boosted(),
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return const SizedBox.shrink();
         }
         final items = snapshot.data!.docs
-            .map((d) => ContentPaie.fromJson(
-                {...d.data() as Map<String, dynamic>, 'id': d.id}))
+            .map((d) => ContentPaie.fromJson({...d.data(), 'id': d.id}))
             .toList();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,

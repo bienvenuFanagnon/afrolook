@@ -1,318 +1,121 @@
-import 'package:afrotok/services/read_meter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
+
+import 'package:afrotok/services/api/api_gateway.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
 
 import '../../models/official_account/official_account_enums.dart';
 import '../../models/official_account/official_account_request.dart';
-import '../../models/model_data.dart' show TypeTransaction, OfficialSubscription;
+import '../../models/model_data.dart' show OfficialSubscription;
 
-/// Montant mensuel de l'abonnement officiel en FCFA.
-const _kSubscriptionAmount = 5000.0;
-
-/// Nom de la collection Firestore principale.
-const _kCollection = 'OfficialAccountRequests';
-
-/// Service métier pour les demandes de compte officiel.
-/// Toutes les interactions avec Firestore sont centralisées ici.
+/// Service métier pour les demandes de compte officiel (API).
+///
+/// ATTENTION : l'API n'a pas encore ces routes (voir lacunes_api_utilisateurs.md, section « Comptes officiels »). Les appels sont prêts ;
+/// tant que les routes n'existent pas, les écrans affichent l'erreur / « Réessayer » (aucun retour à Firebase).
 class OfficialAccountService {
   OfficialAccountService._();
   static final OfficialAccountService instance = OfficialAccountService._();
 
-  final _db = FirebaseFirestore.instance;
+  ApiClient get _c => ApiGateway.instance.client;
 
-  CollectionReference<Map<String, dynamic>> get _col =>
-      _db.collection(_kCollection);
+  static Map<String, dynamic> _m(dynamic r) => Map<String, dynamic>.from(ApiClient.data(r) as Map);
+  static List<OfficialAccountRequest> _list(dynamic r) {
+    final data = (r is Map ? r['data'] : r) as List? ?? const [];
+    return data.map((e) {
+      final m = Map<String, dynamic>.from(e as Map);
+      return OfficialAccountRequest.fromMap(m, '${m['id'] ?? ''}');
+    }).toList();
+  }
 
-  // ── Soumission ──────────────────────────────────────────────────────────────
+  // ── Soumission ──
 
-  /// Soumet une nouvelle demande et retourne l'ID du document créé.
+  /// Soumet une nouvelle demande et retourne son identifiant (POST /official-accounts/requests).
   Future<String> submitRequest(OfficialAccountRequest request) async {
-    final doc = _col.doc(request.id.isEmpty ? _col.doc().id : request.id);
     final data = request.toMap();
-    data['id'] = doc.id;
-    await doc.set(data);
-    return doc.id;
+    final r = _m(await _c.post('/official-accounts/requests', body: data));
+    return '${r['id'] ?? request.id}';
   }
 
-  // ── Lecture utilisateur ─────────────────────────────────────────────────────
+  // ── Lecture utilisateur ──
 
-  /// Demande en cours (la plus récente) pour un utilisateur.
+  /// Demande en cours (la plus récente) pour un utilisateur (GET /official-accounts/requests/mine).
   Future<OfficialAccountRequest?> getMyRequest(String userId) async {
-    final snap = await _col
-        .where('userId', isEqualTo: userId)
-        .orderBy('createdAt', descending: true)
-        .limit(1)
-        .getM('official_account_service.dart:43');
-    if (snap.docs.isEmpty) return null;
-    final doc = snap.docs.first;
-    return OfficialAccountRequest.fromMap(doc.data(), doc.id);
+    final r = await _c.get('/official-accounts/requests/mine');
+    final data = ApiClient.data(r);
+    if (data == null || (data is List && data.isEmpty)) return null;
+    final m = Map<String, dynamic>.from((data is List ? data.first : data) as Map);
+    return OfficialAccountRequest.fromMap(m, '${m['id'] ?? ''}');
   }
 
-  /// Stream temps-réel de la demande en cours d'un utilisateur.
-  Stream<OfficialAccountRequest?> watchMyRequest(String userId) =>
-      _col
-          .where('userId', isEqualTo: userId)
-          .orderBy('createdAt', descending: true)
-          .limit(1)
-          .snapshotsM('official_account_service.dart:55')
-          .map((snap) {
-        if (snap.docs.isEmpty) return null;
-        final doc = snap.docs.first;
-        return OfficialAccountRequest.fromMap(doc.data(), doc.id);
-      });
+  /// Suivi de la demande : relecture toutes les 30 s (pas de temps réel côté API).
+  Stream<OfficialAccountRequest?> watchMyRequest(String userId) => _poll(() => getMyRequest(userId));
 
-  // ── Lecture admin ───────────────────────────────────────────────────────────
+  // ── Lecture admin ──
 
-  /// Stream filtré par statut (admin).
-  Stream<List<OfficialAccountRequest>> watchByStatus(
-          OfficialAccountStatus status) =>
-      _col
-          .where('status', isEqualTo: status.id)
-          .orderBy('createdAt', descending: true)
-          .snapshotsM('official_account_service.dart:70')
-          .map((snap) => snap.docs
-              .map((d) => OfficialAccountRequest.fromMap(d.data(), d.id))
-              .toList());
+  Stream<List<OfficialAccountRequest>> watchByStatus(OfficialAccountStatus status) => watchFiltered(status: status);
 
-  /// Stream filtré par statut + catégorie (admin).
-  Stream<List<OfficialAccountRequest>> watchFiltered({
-    OfficialAccountStatus? status,
-    OfficialAccountCategory? category,
-  }) {
-    Query<Map<String, dynamic>> q = _col;
-    if (status != null) q = q.where('status', isEqualTo: status.id);
-    if (category != null) q = q.where('category', isEqualTo: category.id);
-    return q
-        .orderBy('createdAt', descending: true)
-        .snapshotsM('official_account_service.dart:85')
-        .map((snap) => snap.docs
-            .map((d) => OfficialAccountRequest.fromMap(d.data(), d.id))
-            .toList());
+  Stream<List<OfficialAccountRequest>> watchFiltered({OfficialAccountStatus? status, OfficialAccountCategory? category}) => _poll(() async => _list(await _c.get('/admin/official-accounts/requests', query: {if (status != null) 'status': status.id, if (category != null) 'category': category.id})));
+
+  Stream<T> _poll<T>(Future<T> Function() load) async* {
+    while (true) {
+      yield await load();
+      await Future<void>.delayed(const Duration(seconds: 30));
+    }
   }
 
-  // ── Actions admin ───────────────────────────────────────────────────────────
+  // ── Actions admin ──
 
-  /// Change le statut d'une demande et historise l'action.
+  /// Change le statut d'une demande (le serveur historise l'action et met à jour le profil : badge, vérification, droits de monétisation).
   Future<void> updateStatus({
     required OfficialAccountRequest request,
     required OfficialAccountStatus newStatus,
     required String adminId,
     String? note,
-  }) async {
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final action = OfficialAccountAction(
-      action: newStatus.label,
-      note: note,
-      adminId: adminId,
-      timestamp: now,
-    );
-
-    final updatedHistory = [...request.actionHistory, action];
-
-    // Mise à jour de la demande
-    await _col.doc(request.id).update({
-      'status': newStatus.id,
-      'adminNote': note ?? request.adminNote,
-      'actionHistory': updatedHistory.map((a) => a.toMap()).toList(),
-      'updatedAt': now,
-      'processedAt': now,
-      'processedBy': adminId,
-    });
-
-    // Mise à jour du profil utilisateur
-    final isApproved = newStatus == OfficialAccountStatus.approved;
-    final isSuspended = newStatus == OfficialAccountStatus.suspended;
-    final isRejected = newStatus == OfficialAccountStatus.rejected;
-
-    final userUpdate = <String, dynamic>{
-      'officialAccountRequestId': request.id,
-    };
-
-    if (isApproved) {
-      final category = request.category;
-      userUpdate.addAll({
-        'officialAccountType': category.id,
-        'officialAccountStatus': 'approved',
-        'officialBadge': true,
-        'isVerify': true,
-        'officialName': request.officialName,
-        'officialDescription': request.description,
-        'officialCountry': request.country,
-        'officialCity': request.city,
-        'officialWebsite': request.website,
-        'broadcastDomains':
-            request.broadcastDomains.map((d) => d.id).toList(),
-        'officialSocialLinks':
-            request.socialNetworks.map((s) => s.toMap()).toList(),
-        // Monétisation
-        'canMonetize': category.canMonetize,
-        'canReceiveGiftCommission': category.canMonetize,
-        'canDoParrainage': category.canMonetize,
-        // Recherche par nom officiel
-        'officialNameSlug': officialNameToSlug(request.officialName),
-        'officialSearchKeywords': officialNameToKeywords(request.officialName),
-      });
-    } else if (isSuspended) {
-      userUpdate.addAll({
-        'officialAccountStatus': 'suspended',
-        'officialBadge': false,
-        'isVerify': false,
-      });
-    } else if (isRejected) {
-      // On ne retire pas le badge s'il était déjà approuvé — l'admin peut changer d'avis
-      userUpdate['officialAccountStatus'] = 'rejected';
-    }
-
-    await _db.collection('Users').doc(request.userId).update(userUpdate);
-  }
-
-  /// Demande des informations complémentaires (note obligatoire).
-  Future<void> requestMoreInfo({
-    required OfficialAccountRequest request,
-    required String adminId,
-    required String note,
   }) =>
-      updateStatus(
-        request: request,
-        newStatus: OfficialAccountStatus.moreInfoNeeded,
-        adminId: adminId,
-        note: note,
-      );
+      _c.post('/admin/official-accounts/requests/${request.id}/decision', body: {'status': newStatus.id, if (note != null) 'note': note});
 
-  /// Passe la demande en "En cours d'analyse".
-  Future<void> startReview({
-    required OfficialAccountRequest request,
-    required String adminId,
-  }) =>
-      updateStatus(
-        request: request,
-        newStatus: OfficialAccountStatus.underReview,
-        adminId: adminId,
-      );
+  Future<void> requestMoreInfo({required OfficialAccountRequest request, required String adminId, required String note}) =>
+      updateStatus(request: request, newStatus: OfficialAccountStatus.moreInfoNeeded, adminId: adminId, note: note);
 
-  // ── Mise à jour d'une demande existante (moreInfoNeeded) ───────────────────
+  Future<void> startReview({required OfficialAccountRequest request, required String adminId}) =>
+      updateStatus(request: request, newStatus: OfficialAccountStatus.underReview, adminId: adminId);
 
-  /// Met à jour les champs modifiables d'une demande et repasse le statut à
-  /// `pending` pour que l'admin la revoie.
-  Future<void> updateRequest({
-    required String requestId,
-    required String userId,
-    required Map<String, dynamic> updatedFields,
-  }) async {
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final action = OfficialAccountAction(
-      action: 'Mise à jour par l\'utilisateur',
-      note: null,
-      adminId: userId,
-      timestamp: now,
-    );
+  // ── Mise à jour d'une demande existante (moreInfoNeeded) ──
 
-    await _col.doc(requestId).update({
-      ...updatedFields,
-      'status': OfficialAccountStatus.pending.id,
-      'adminNote': null,
-      'updatedAt': now,
-      'actionHistory': FieldValue.arrayUnion([action.toMap()]),
-    });
-  }
+  Future<void> updateRequest({required String requestId, required String userId, required Map<String, dynamic> updatedFields}) =>
+      _c.patch('/official-accounts/requests/$requestId', body: updatedFields);
 
-  // ── Unicité du nom officiel ─────────────────────────────────────────────────
+  // ── Unicité du nom officiel ──
 
-  /// Vérifie que le slug n'est pas déjà utilisé par un compte approuvé ou une
-  /// demande en cours (pending / underReview / approved).
-  /// Retourne `true` si le nom est disponible.
+  /// `true` si le nom est disponible (GET /official-accounts/name-available?slug=).
   Future<bool> isNameAvailable(String slug) async {
     if (slug.isEmpty) return false;
-
-    // 1. Profils déjà approuvés
-    final usersSnap = await _db
-        .collection('Users')
-        .where('officialNameSlug', isEqualTo: slug)
-        .limit(1)
-        .getM('official_account_service.dart:230');
-    if (usersSnap.docs.isNotEmpty) return false;
-
-    // 2. Demandes en cours
-    final reqSnap = await _col
-        .where('officialNameSlug', isEqualTo: slug)
-        .where('status', whereIn: ['pending', 'underReview', 'approved'])
-        .limit(1)
-        .getM('official_account_service.dart:238');
-    return reqSnap.docs.isEmpty;
+    final r = _m(await _c.get('/official-accounts/name-available', query: {'slug': slug}));
+    return r['available'] == true;
   }
 
-  // ── Abonnement mensuel ──────────────────────────────────────────────────────
+  // ── Abonnement mensuel ──
 
-  /// Prélève 5 000 FCFA sur le solde de l'utilisateur.
-  ///
-  /// Retourne `true` si le paiement a réussi, `false` si le solde est insuffisant.
-  /// Lance une exception en cas d'erreur Firestore.
-  /// [paidWithCoins] : déjà payé en pièces via payWithCoins (iPhone) — pas de débit FCFA ici,
-  /// et pas de renouvellement automatique (il serait prélevé hors App Store).
-  Future<bool> paySubscription(String userId, {bool paidWithCoins = false}) async {
-    final userRef = _db.collection('Users').doc(userId);
-    final txRef = _db.collection('TransactionSoldes').doc();
-    final now = DateTime.now().millisecondsSinceEpoch;
-
-    bool success = false;
-
-    await _db.runTransaction((tx) async {
-      final userSnap = await tx.get(userRef);
-      final balance = (userSnap.data()?['votre_solde_principal'] ?? 0.0) as num;
-
-      if (!paidWithCoins && balance < _kSubscriptionAmount) {
-        success = false;
-        return;
-      }
-
-      final nextDue = DateTime.now().add(const Duration(days: 30));
-      final sub = OfficialSubscription(
-        active: true,
-        lastPaidAt: DateTime.now(),
-        nextDueAt: nextDue,
-        autoPayEnabled: !paidWithCoins,
-      );
-
-      // Débit solde
-      tx.update(userRef, {
-        if (!paidWithCoins) 'votre_solde_principal': FieldValue.increment(-_kSubscriptionAmount),
-        'officialSubscription': sub.toJson(),
-        'officialAccountStatus': 'approved',
-        'officialBadge': true,
-        'isVerify': true,
-      });
-
-      // Transaction (en pièces, elle est déjà enregistrée par payWithCoins)
-      if (!paidWithCoins) tx.set(txRef, {
-        'id': txRef.id,
-        'user_id': userId,
-        'type': TypeTransaction.ABONNEMENT_OFFICIEL.name,
-        'statut': 'VALIDER',
-        'description': 'Abonnement compte officiel — mensuel',
-        'montant': _kSubscriptionAmount,
-        'montant_total': _kSubscriptionAmount,
-        'frais': 0,
-        'methode_paiement': 'SOLDE',
-        'numero_depot': null,
-        'createdAt': now,
-        'updatedAt': now,
-        'reference': 'ABON_OFF_$now',
-      });
-
-      success = true;
-    });
-
-    return success;
+  /// Paiement de l'abonnement officiel par le serveur (solde, ou pièces déjà payées si [paidWithCoins]). Clé d'idempotence conservée par appel.
+  /// Retourne `false` si le solde est insuffisant.
+  Future<bool> paySubscription(String userId, {bool paidWithCoins = false, String? idempotencyKey}) async {
+    try {
+      await _c.pay('/official-accounts/subscription', body: {'paid_with_coins': paidWithCoins}, idempotencyKey: idempotencyKey);
+      return true;
+    } on ApiException catch (e) {
+      if (e.isInsufficientCoins || e.status == 402) return false;
+      rethrow;
+    }
   }
 
-  /// Retourne l'abonnement en cours d'un utilisateur (snapshot unique).
+  /// Abonnement en cours (GET /official-accounts/subscription).
   Future<OfficialSubscription?> getSubscription(String userId) async {
-    final snap = await _db.collection('Users').doc(userId).getM('official_account_service.dart:308');
-    final data = snap.data()?['officialSubscription'];
+    final data = ApiClient.data(await _c.get('/official-accounts/subscription'));
     if (data == null) return null;
     return OfficialSubscription.fromJson(Map<String, dynamic>.from(data as Map));
   }
 
-  // ── Utilitaire ──────────────────────────────────────────────────────────────
+  // ── Utilitaire ──
 
-  String newId() => _col.doc().id;
+  /// Identifiant provisoire de brouillon (l'identifiant définitif est attribué par le serveur).
+  String newId() => '';
 }

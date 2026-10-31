@@ -1,10 +1,9 @@
 import 'dart:async';
 
-import 'package:afrotok/services/read_meter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/post_mapper.dart';
+import 'package:afrotok/services/api/regie_api.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -84,14 +83,11 @@ class NewContentBus {
       await Future.delayed(const Duration(milliseconds: 1200));
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid == null) return;
-      final snap = await FirebaseFirestore.instance
-          .collection('Posts')
-          .where('user_id', isEqualTo: uid)
-          .orderBy('created_at', descending: true)
-          .limit(1)
-          .getM('new_content_bus.dart:latest');
-      if (snap.docs.isEmpty) return;
-      final post = Post.fromJson(snap.docs.first.data())..id = snap.docs.first.id;
+      final r = await RegieApi.get('/feed', query: {'limit': 5});
+      final rows = ((r is Map ? r['data'] : null) as List? ?? const []).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      final mine = rows.where((j) => '${j['author_id'] ?? j['user_id']}' == uid).toList();
+      if (mine.isEmpty) return;
+      final post = postFromApi(mine.first);
       // seulement un post tout juste publié (jamais un ancien post si la publication n'a pas créé de post)
       var created = post.createdAt ?? 0;
       if (created > 100000000000000) created ~/= 1000; // microsecondes → millisecondes

@@ -5,7 +5,8 @@ import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/models/model_data.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
 
 import 'package:flutter/material.dart';
 
@@ -53,14 +54,13 @@ class _AddListAmisState extends State<AddListAmis> with AutomaticKeepAliveClient
 
   // États de pagination normale
   List<UserData> _users = [];
-  DocumentSnapshot? _lastDocument;
+  int _suggestionsLimit = 0;
   bool _hasMoreData = true;
   bool _isLoadingMore = false;
   bool _isInitialLoading = true;
   static const int _pageSize = 12;
 
   // États de pagination recherche
-  DocumentSnapshot? _lastSearchDocument;
   bool _hasMoreSearchData = true;
   bool _isLoadingMoreSearch = false;
 
@@ -121,7 +121,7 @@ class _AddListAmisState extends State<AddListAmis> with AutomaticKeepAliveClient
       _isInitialLoading = true;
       _users.clear();
       _loadedUserIds.clear();
-      _lastDocument = null;
+      _suggestionsLimit = 0;
       _hasMoreData = true;
     });
 
@@ -136,71 +136,40 @@ class _AddListAmisState extends State<AddListAmis> with AutomaticKeepAliveClient
     });
 
     try {
-      // Requête SANS where sur l'ID
-      Query query = FirebaseFirestore.instance
-          .collection('Users')
-          .limit(_pageSize);
+      // Suggestions de profils (API : GET /v1/users/suggestions). L'API renvoie la liste jusqu'à `limit` : on agrandit la fenêtre à chaque page.
+      if (reset) _suggestionsLimit = 0;
+      _suggestionsLimit += _pageSize;
+      final rows = (await UsersApi.suggestions(limit: _suggestionsLimit)).map(userSummaryFromApi).toList();
+      final newUsers = rows.where((user) => user.id != authProvider.loginUserData.id && !_loadedUserIds.contains(user.id)).toList();
 
-      if (!reset && _lastDocument != null) {
-        query = query.startAfterDocument(_lastDocument!);
-      }
-
-      final snapshot = await query.getM('addListAmis.dart:147');
-
-      if (snapshot.docs.isNotEmpty) {
-        // Filtrer l'utilisateur connecté localement
-        final newUsers = snapshot.docs
-            .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
-            .where((user) =>
-        user.id != authProvider.loginUserData.id! &&
-            !_loadedUserIds.contains(user.id))
-            .toList();
-
-        if (newUsers.isNotEmpty) {
-          setState(() {
-            if (reset) {
-              _users = newUsers;
-              _loadedUserIds = newUsers.map((u) => u.id!).toSet();
-            } else {
-              _users.addAll(newUsers);
-              _loadedUserIds.addAll(newUsers.map((u) => u.id!));
-            }
-            _lastDocument = snapshot.docs.last;
-            _hasMoreData = snapshot.docs.length == _pageSize;
-          });
-
-          _preloadLikeStates(newUsers);
+      setState(() {
+        if (reset) {
+          _users = newUsers;
+          _loadedUserIds = newUsers.map((u) => u.id!).toSet();
         } else {
-          // Si tous les nouveaux utilisateurs sont des doublons ou l'utilisateur connecté
-          if (snapshot.docs.length == _pageSize) {
-            _lastDocument = snapshot.docs.last;
-            _loadMoreUsers();
-          } else {
-            setState(() {
-              _hasMoreData = false;
-            });
-          }
+          _users.addAll(newUsers);
+          _loadedUserIds.addAll(newUsers.map((u) => u.id!));
         }
-      } else {
-        setState(() {
-          _hasMoreData = false;
-        });
-      }
+        _hasMoreData = rows.length >= _suggestionsLimit && newUsers.isNotEmpty;
+      });
+      _preloadLikeStates(newUsers);
     } catch (e) {
       printVm('Erreur chargement: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur de chargement: ${e.toString()}'),
+            content: Text(UsersApi.message(e, fallback: 'Erreur de chargement. Réessaie.')),
             backgroundColor: Colors.red,
           ),
         );
       }
     } finally {
-      setState(() {
-        _isLoadingMore = false;
-        _isInitialLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingMore = false;
+          _isInitialLoading = false;
+        });
+      }
     }
   }
 
@@ -221,35 +190,28 @@ class _AddListAmisState extends State<AddListAmis> with AutomaticKeepAliveClient
       _hasSearched = true;
       _currentSearchQuery = query;
       _isSearchLoading = true;
+      _hasMoreSearchData = true;
     });
 
     try {
       // Nettoyer la query (enlever le @ si présent)
       String searchQuery = query.startsWith('@') ? query.substring(1) : query;
 
-      // Recherche Firebase directe sur le pseudo exact
-      QuerySnapshot snapshot = await FirebaseFirestore.instance
-          .collection('Users')
-          .where('pseudo', isEqualTo: searchQuery) // ✅ Recherche exacte sur le pseudo
-          .limit(10) // Au cas où plusieurs utilisateurs ont le même pseudo
-          .getM('addListAmis.dart:234');
-
-      // Filtrer pour enlever l'utilisateur connecté
-      List<UserData> results = snapshot.docs
-          .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
-          .where((user) => user.id != authProvider.loginUserData.id!)
+      // Recherche par pseudo (API : GET /v1/users/search?q=)
+      final results = (await UsersApi.searchUsers(searchQuery, limit: _pageSize * 2))
+          .map(userSummaryFromApi)
+          .where((user) => user.id != authProvider.loginUserData.id)
           .toList();
 
       setState(() {
         _searchResults = results;
         _isSearchLoading = false;
+        _hasMoreSearchData = false; // l'API renvoie déjà la liste complète des correspondances
       });
 
-      // Précharger les likes si on a des résultats
       if (results.isNotEmpty) {
         _preloadLikeStates(results);
       }
-
     } catch (e) {
       printVm("Erreur recherche: $e");
       setState(() {
@@ -259,58 +221,8 @@ class _AddListAmisState extends State<AddListAmis> with AutomaticKeepAliveClient
   }
   // Charger plus de résultats de recherche (uniquement depuis Firebase)
   Future<void> _loadMoreSearchResults() async {
-    if (_isLoadingMoreSearch || !_hasMoreSearchData || _currentSearchQuery.isEmpty) return;
-
-    setState(() {
-      _isLoadingMoreSearch = true;
-    });
-
-    try {
-      String searchQuery = _currentSearchQuery.startsWith('@')
-          ? _currentSearchQuery.substring(1)
-          : _currentSearchQuery;
-      searchQuery = searchQuery.toLowerCase();
-
-      // Charger plus d'utilisateurs depuis Firebase
-      QuerySnapshot snapshot = await FirebaseFirestore.instance
-          .collection('Users')
-          .limit(30)
-          .getM('addListAmis.dart:277');
-
-      // Éviter les doublons avec les résultats existants
-      final existingIds = _searchResults.map((u) => u.id).toSet();
-
-      List<UserData> newResults = snapshot.docs
-          .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
-          .where((user) =>
-      !existingIds.contains(user.id) &&
-          user.id != authProvider.loginUserData.id! &&
-          (user.pseudo?.toLowerCase().contains(searchQuery) == true ||
-              (user.prenom?.toLowerCase().contains(searchQuery) ?? false) ||
-              (user.nom?.toLowerCase().contains(searchQuery) ?? false)))
-          .take(_pageSize)
-          .toList();
-
-      if (newResults.isNotEmpty) {
-        setState(() {
-          _searchResults.addAll(newResults);
-          _hasMoreSearchData = newResults.length == _pageSize;
-        });
-
-        _preloadLikeStates(newResults);
-      } else {
-        setState(() {
-          _hasMoreSearchData = false;
-        });
-      }
-
-    } catch (e) {
-      printVm('Erreur chargement plus de résultats: $e');
-    } finally {
-      setState(() {
-        _isLoadingMoreSearch = false;
-      });
-    }
+    // La recherche de l'API renvoie déjà toutes les correspondances : rien de plus à charger.
+    if (mounted) setState(() => _hasMoreSearchData = false);
   }
 
   Future<void> _preloadLikeStates(List<UserData> users) async {

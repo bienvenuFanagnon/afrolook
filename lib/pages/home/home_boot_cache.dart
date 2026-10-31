@@ -1,5 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;   // modèle Chronique uniquement (aucune lecture Firestore)
 import 'dart:convert';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/model_data.dart';

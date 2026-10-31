@@ -1,7 +1,6 @@
-import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/users_api.dart';
 import 'dart:convert';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -46,9 +45,7 @@ class EncryptionService {
     await _storage.write(key: storageKey, value: base64Encode(keyPairData.bytes));
 
     final publicKey = await keyPair.extractPublicKey();
-    await FirebaseFirestore.instance.collection('UserKeys').doc(userId).set({
-      'public_key': base64Encode(publicKey.bytes),
-    }, SetOptions(merge: true));
+    await UsersApi.publishKey(base64Encode(publicKey.bytes)); // annuaire de clés de l'API (l'application n'écrit plus UserKeys)
 
     return keyPair;
   }
@@ -74,11 +71,8 @@ class EncryptionService {
 
       String? otherPublicB64;
       for (int attempt = 0; attempt < maxRetries; attempt++) {
-        final otherDoc = await FirebaseFirestore.instance
-            .collection('UserKeys')
-            .doc(otherUserId)
-            .getM('encryption_service.dart:79');
-        otherPublicB64 = otherDoc.data()?['public_key'] as String?;
+        final otherKey = await UsersApi.userKey(otherUserId);
+        otherPublicB64 = otherKey?['public_key'] as String?;
         if (otherPublicB64 != null) break;
 
         if (attempt < maxRetries - 1) {

@@ -10,7 +10,9 @@ import 'package:afrotok/layout/responsive_layout.dart';
 
 
 import 'package:afrotok/services/api.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Chats et Messages restent sur Firebase
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -267,62 +269,28 @@ class _MesAmisState extends State<MesAmis> {
 
   Stream<List<Friends>> getFriendsData() async* {
     final currentUserId = authProvider.loginUserData.id!;
-
-    // Définissez la requête
-    var friendsStream = FirebaseFirestore.instance.collection('Friends').where( Filter.or(
-        Filter('current_user_id', isEqualTo:  currentUserId),
-        Filter('friend_id', isEqualTo:  currentUserId),
-
-    )).snapshotsM('mesAmis.dart:275');
-
-    await for (var friendSnapshot in friendsStream) {
-      if (friendSnapshot.docs.isEmpty) {
-        _friendsCache = [];
-        listfirends = [];
-        userProvider.countFriends = 0;
-        yield [];
-        continue;
-      }
-
-      // Associe chaque ami (Friends doc) à l'id de l'autre utilisateur
-      final Map<String, Friends> friendByUserId = {};
-      for (var friendDoc in friendSnapshot.docs) {
-        final friend = Friends.fromJson(friendDoc.data());
-        final otherUserId = currentUserId == friendDoc["current_user_id"]
-            ? friendDoc["friend_id"] as String
-            : friendDoc["current_user_id"] as String;
-        friendByUserId[otherUserId] = friend;
-      }
-
-      // Récupération groupée des profils (par lots de 10, en parallèle)
-      final ids = friendByUserId.keys.toList();
-      final List<Future<QuerySnapshot>> batchFutures = [];
-      for (int i = 0; i < ids.length; i += 10) {
-        final batch = ids.skip(i).take(10).toList();
-        batchFutures.add(
-          FirebaseFirestore.instance.collection('Users').where('id', whereIn: batch).getM('mesAmis.dart:302'),
-        );
-      }
-      final batchResults = await Future.wait(batchFutures);
-
-      final List<Friends> friends = [];
-      final Set<String> seenPseudos = {};
-      for (var snapshot in batchResults) {
-        for (var doc in snapshot.docs) {
-          final userData = UserData.fromJson(doc.data() as Map<String, dynamic>);
-          final friend = friendByUserId[userData.id];
-          if (friend != null && !seenPseudos.contains(userData.pseudo)) {
-            friend.friend = userData;
-            friends.add(friend);
-            seenPseudos.add(userData.pseudo!);
+    // Amis (API : GET /v1/friends), relus toutes les 30 s ; plus de temps réel Firestore.
+    while (true) {
+      try {
+        final friends = <Friends>[];
+        final seenPseudos = <String>{};
+        String? cursor;
+        do {
+          final page = await UsersApi.friends(cursor: cursor, limit: 100);
+          for (final j in page.items) {
+            final f = friendFromApi(j, currentUserId);
+            if (f.friend?.pseudo != null && seenPseudos.add(f.friend!.pseudo!)) friends.add(f);
           }
-        }
+          cursor = page.next;
+        } while (cursor != null && friends.length < 1000);
+        listfirends = friends;
+        userProvider.countFriends = friends.length;
+        _friendsCache = friends;
+        yield friends;
+      } catch (e) {
+        yield _friendsCache ?? <Friends>[];
       }
-
-      listfirends = friends;
-      userProvider.countFriends = friends.length;
-      _friendsCache = friends;
-      yield friends;
+      await Future<void>.delayed(const Duration(seconds: 30));
     }
   }
 
@@ -410,19 +378,10 @@ if (await friendsStream.isEmpty) {
   }
 
   /////////////ami//////////
-  CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-  QuerySnapshot querySnapshotUserSender = await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.friendId?'${amigo.friendId}':'${amigo.currentUserId}').getM('mesAmis.dart:413');
-  // Afficher la liste
-  QuerySnapshot querySnapshotUserReceiver= await friendCollect.where("id",isEqualTo:authProvider.loginUserData.id==amigo.friendId?'${amigo.currentUserId}':'${amigo.friendId}').getM('mesAmis.dart:415');
-
-
-  List<UserData> receiverUserList = querySnapshotUserReceiver.docs.map((doc) =>
-      UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-  usersChat.receiver=receiverUserList.first;
-
-  List<UserData> senderUserList = querySnapshotUserSender.docs.map((doc) =>
-      UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-  usersChat.sender=senderUserList.first;
+  final myId = authProvider.loginUserData.id;
+  final otherId = myId == amigo.friendId ? '${amigo.currentUserId}' : '${amigo.friendId}';
+  usersChat.receiver = userFromApi(await UsersApi.publicProfile(otherId));
+  usersChat.sender = authProvider.loginUserData;
 
 }
 

@@ -1,12 +1,11 @@
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:afrotok/models/model_data.dart';
-import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/theme/app_colors.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import 'package:afrotok/services/api/contenu_payant_api.dart';
 import 'package:flutter/material.dart';
 import '../../../utils/platform_guard.dart';
 import '../../../services/coin_checkout.dart';
-import 'package:provider/provider.dart';
 
 class BoostModal extends StatefulWidget {
   final ContentPaie content;
@@ -70,12 +69,8 @@ class _BoostModalState extends State<BoostModal> {
     setState(() => _loading = true);
 
     try {
-      final callable = FirebaseFunctions.instance.httpsCallable('secureBoost');
-      await callable.call({
-        'contentId': widget.content.id,
-        'durationDays': _selectedDays,
-        if (payWithCoins) 'payWithCoins': true,
-      });
+      // Boost par l'API (prix, solde et gratuité de l'équipe vérifiés par le serveur ; clé d'idempotence conservée)
+      await ContenuPayantApi.boost(widget.content.id!, _selectedDays, withCoins: payWithCoins);
       if (payWithCoins && mounted) await CoinCheckout.refreshBalance(context);
       if (mounted) Navigator.pop(context);
       messenger.showSnackBar(SnackBar(
@@ -84,14 +79,14 @@ class _BoostModalState extends State<BoostModal> {
             : 'Contenu boosté pendant ${_labels[_selectedDays]} !'),
         backgroundColor: const Color(0xFF25D366),
       ));
-    } on FirebaseFunctionsException catch (e) {
-      if (payWithCoins && e.code == 'resource-exhausted' && mounted) {
+    } on ApiException catch (e) {
+      if (payWithCoins && (e.isInsufficientCoins || e.code == 'insufficient_funds') && mounted) {
         await CoinCheckout.insufficient(context, CoinCheckout.coinsFor((_prices[_selectedDays] ?? 0).toDouble()));
         return;
       }
       if (mounted) Navigator.pop(context);
       messenger.showSnackBar(SnackBar(
-        content: Text(e.message ?? 'Erreur lors du boost.'),
+        content: Text(e.message.isNotEmpty ? e.message : 'Erreur lors du boost.'),
         backgroundColor: Colors.red,
       ));
     } catch (e) {

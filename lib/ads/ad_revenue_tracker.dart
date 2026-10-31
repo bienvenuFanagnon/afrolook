@@ -1,10 +1,11 @@
 import 'dart:async';
 
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import 'package:afrotok/services/api/regie_api.dart';
 import 'package:flutter/foundation.dart';
 
 /// Revenus publicitaires estimés par emplacement (événements « paid » d'AdMob et d'Appodeal). Les montants s'additionnent en mémoire puis partent au
-/// serveur toutes les 5 minutes (fonction recordAdRevenue, qui garde un total par jour) : l'écran admin « Revenus » les affiche emplacement par
+/// serveur toutes les 5 minutes (route /ads/revenue, qui garde un total par jour) : l'écran admin « Revenus » les affiche emplacement par
 /// emplacement. Jamais bloquant : un échec réessaie plus tard, sans effet pour la personne.
 class AdRevenueTracker {
   AdRevenueTracker._();
@@ -34,15 +35,23 @@ class AdRevenueTracker {
       return {'p': parts[0], 'c': parts[1], 'm': e.value.micros.round(), 'n': e.value.n};
     }).toList();
     try {
-      await FirebaseFunctions.instance.httpsCallable('recordAdRevenue').call({'items': items});
+      await RegieApi.post('/ads/revenue', body: {'items': items});
+    } on ApiException catch (e) {
+      // route absente du serveur : on abandonne ces montants (indicatifs) au lieu de les réessayer sans fin
+      if (e.status == 404 || e.status == 501) return;
+      _restore(snapshot);
     } catch (e) {
       // pas de perte : on remet les montants pour le prochain envoi
-      for (final en in snapshot.entries) {
-        final a = _acc.putIfAbsent(en.key, () => _Acc());
-        a.micros += en.value.micros;
-        a.n += en.value.n;
-      }
+      _restore(snapshot);
       if (kDebugMode) debugPrint('AdRevenueTracker : envoi différé ($e)');
+    }
+  }
+
+  static void _restore(Map<String, _Acc> snapshot) {
+    for (final en in snapshot.entries) {
+      final a = _acc.putIfAbsent(en.key, () => _Acc());
+      a.micros += en.value.micros;
+      a.n += en.value.n;
     }
   }
 }

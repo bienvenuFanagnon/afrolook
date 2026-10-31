@@ -1,12 +1,12 @@
-import 'package:afrotok/services/read_meter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import 'package:afrotok/services/api/api_gateway.dart';
+import 'package:afrotok/services/api/regie_api.dart';
 import 'package:flutter/foundation.dart';
 
 import '../models/model_data.dart';
 import 'ad_gate.dart';
 
-/// Offre « sans pub » des modules Quiz, Étude et Contes (réglages dans AppConfig/modules).
+/// Offre « sans pub » des modules Quiz, Étude et Contes (réglages publics de l'API : section `modules` de GET /config).
 class ModuleAdFreeOffer {
   const ModuleAdFreeOffer({this.price = 500, this.days = 30, this.enabled = true});
   final int price, days;
@@ -44,7 +44,7 @@ class ModuleAds {
     final at = _offerAt;
     if (_offer != null && at != null && DateTime.now().difference(at).inMinutes < 15) return _offer!;
     try {
-      final d = (await FirebaseFirestore.instance.collection('AppConfig').doc('modules').getM('module_ads.dart:46')).data() ?? {};
+      final d = await RegieApi.configSection('modules');
       _offer = ModuleAdFreeOffer(
         price: (d['adFreePrice'] as num?)?.toInt() ?? 500,
         days: (d['adFreeDays'] as num?)?.toInt() ?? 30,
@@ -60,13 +60,16 @@ class ModuleAds {
   /// Achète le pass en pièces. Met à jour le profil local et retourne la date de fin.
   static Future<DateTime> buy(UserData user) async {
     try {
-      final res = await FirebaseFunctions.instance.httpsCallable('moduleAdFreeBuy').call(<String, dynamic>{});
-      final until = ((res.data as Map)['until'] as num).toInt();
+      // Achat en pièces : la clé d'idempotence évite tout double débit si la requête est rejouée.
+      final res = ApiClient.data(await ApiGateway.instance.client.pay('/purchases', body: {'kind': 'module_ad_free'}));
+      final raw = res is Map ? res['until'] : null;
+      final until = raw is num ? raw.toInt() : (DateTime.tryParse('$raw')?.millisecondsSinceEpoch ?? 0);
+      if (until <= 0) throw ModuleAdFreeException('Achat enregistré, mais la date de fin est inconnue. Rouvre l’application.');
       user.modulesAdFreeUntil = until;
       changes.value++;
       return DateTime.fromMillisecondsSinceEpoch(until);
-    } on FirebaseFunctionsException catch (e) {
-      throw ModuleAdFreeException((e.message ?? e.code).trim());
+    } on ApiException catch (e) {
+      throw ModuleAdFreeException(e.isInsufficientCoins ? 'Solde insuffisant' : e.message);
     }
   }
 }

@@ -1,445 +1,54 @@
 import 'package:afrotok/services/read_meter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
-
-import 'package:afrotok/models/chatmodels/message.dart';
-import 'package:afrotok/models/model_data.dart';
-
+import 'package:afrotok/services/api/chat_api.dart';
+import 'package:afrotok/services/api/chat_mapper.dart';
+import 'package:afrotok/services/api/users_api.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:afrotok/models/chatmodels/message.dart';
 
 import 'package:afrotok/models/model_data.dart';
 
-// class ChatService {
-//   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-//
-//   // Cache pour optimiser les performances
-//   final Map<String, Message> _lastMessagesCache = {};
-//   final Map<String, UserData> _usersCache = {};
-//
-//   // Configuration de pagination - variables non privées
-//   static const int initialLimit = 3;
-//   static const int incrementStep = 3;
-//   static const int maxLimit = 10;
-//   static const int infinityLimit = 20;
-//
-//   // Récupérer les conversations avec pagination OPTIMISÉE
-//   Stream<List<ChatWithLastMessage>> getChatsPaginated({
-//     required String currentUserId,
-//     required int limit,
-//   }) {
-//     printVm('🔄 [CHAT_SERVICE] Début getChatsPaginated - limit: $limit, user: $currentUserId');
-//
-//     try {
-//       return _firestore
-//           .collection('Chats')
-//           .where(Filter.or(
-//         Filter('receiver_id', isEqualTo: currentUserId),
-//         Filter('sender_id', isEqualTo: currentUserId),
-//       ))
-//           .where("type", isEqualTo: ChatType.USER.name)
-//           .orderBy('updated_at', descending: true)
-//           .limit(limit)
-//           .snapshotsM('chat_service.dart:43')
-//           .asyncMap((chatSnapshot) async {
-//         printVm('📨 [CHAT_SERVICE] Reçu ${chatSnapshot.docs.length} chats de Firestore');
-//
-//         List<ChatWithLastMessage> listChats = [];
-//
-//         // Utiliser Future.wait pour charger en parallèle
-//         List<Future<ChatWithLastMessage?>> futures = [];
-//
-//         for (var chatDoc in chatSnapshot.docs) {
-//           futures.add(_processChatDocument(chatDoc, currentUserId));
-//         }
-//
-//         final results = await Future.wait(futures);
-//         listChats.addAll(results.whereType<ChatWithLastMessage>());
-//
-//         printVm('✅ [CHAT_SERVICE] Traitement terminé - ${listChats.length} chats avec derniers messages');
-//         return listChats;
-//       });
-//     } catch (e) {
-//       printVm('❌ [CHAT_SERVICE] Erreur dans getChatsPaginated: $e');
-//       return Stream.value([]);
-//     }
-//   }
-//
-//   // Traiter un document chat de manière asynchrone
-//   Future<ChatWithLastMessage?> _processChatDocument(
-//       QueryDocumentSnapshot chatDoc, String currentUserId) async {
-//     try {
-//       Chat chat = Chat.fromJson(chatDoc.data() as Map<String, dynamic>);
-//       printVm('🔍 [CHAT_SERVICE] Traitement chat: ${chat.id} - docId: ${chat.docId}');
-//
-//       final otherUserId = currentUserId == chat.receiverId
-//           ? chat.senderId
-//           : chat.receiverId;
-//
-//       printVm('👤 [CHAT_SERVICE] otherUserId: $otherUserId pour chat ${chat.id}');
-//
-//       if (otherUserId != null) {
-//         final userData = await _getUserData(otherUserId);
-//         if (userData != null) {
-//           chat.chatFriend = userData;
-//           chat.receiver = userData;
-//
-//           // Récupérer le dernier message en parallèle
-//           printVm('📝 [CHAT_SERVICE] Récupération dernier message pour chat ${chat.id}');
-//           final lastMessage = await _getLastMessageForChat(chat.docId!);
-//
-//           if (lastMessage != null) {
-//             printVm('✅ [CHAT_SERVICE] Dernier message trouvé pour ${chat.id}: ${lastMessage.messageType} - "${lastMessage.message}"');
-//           } else {
-//             printVm('⚠️ [CHAT_SERVICE] Aucun dernier message trouvé pour ${chat.id}');
-//           }
-//
-//           return ChatWithLastMessage(
-//             chat: chat,
-//             lastMessage: lastMessage,
-//           );
-//         } else {
-//           printVm('❌ [CHAT_SERVICE] UserData non trouvé pour $otherUserId');
-//         }
-//       } else {
-//         printVm('❌ [CHAT_SERVICE] otherUserId est null pour chat ${chat.id}');
-//       }
-//       return null;
-//     } catch (e) {
-//       printVm("❌ [CHAT_SERVICE] Erreur processing chat: $e");
-//       return null;
-//     }
-//   }
-//
-//   // Récupérer le dernier message d'un chat - OPTIMISÉ avec logs détaillés
-//   Future<Message?> _getLastMessageForChat(String chatId) async {
-//     printVm('🔍 [LAST_MESSAGE] Recherche dernier message pour chat: $chatId');
-//
-//     if (_lastMessagesCache.containsKey(chatId)) {
-//       printVm('💾 [LAST_MESSAGE] Utilisation cache pour chat: $chatId');
-//       return _lastMessagesCache[chatId];
-//     }
-//
-//     try {
-//       printVm('📡 [LAST_MESSAGE] Requête Firestore pour chat: $chatId');
-//
-//       final querySnapshot = await _firestore
-//           .collection('Messages')
-//           .where('chat_id', isEqualTo: chatId)
-//           .where('is_valide', isEqualTo: true)
-//           .orderBy('create_at_time_spam', descending: true)
-//           .limit(1)
-//           .getM('chat_service.dart:132');
-//
-//       printVm('📊 [LAST_MESSAGE] Résultat Firestore: ${querySnapshot.docs.length} messages trouvés');
-//
-//       if (querySnapshot.docs.isNotEmpty) {
-//         final doc = querySnapshot.docs.first;
-//         final messageData = doc.data();
-//
-//         printVm('📄 [LAST_MESSAGE] Données brutes du message:');
-//         printVm('   - ID: ${doc.id}');
-//         printVm('   - chat_id: ${messageData['chat_id']}');
-//         printVm('   - message: ${messageData['message']}');
-//         printVm('   - message_type: ${messageData['message_type']}');
-//         printVm('   - send_by: ${messageData['send_by']}');
-//         printVm('   - create_at_time_spam: ${messageData['create_at_time_spam']}');
-//         printVm('   - is_valide: ${messageData['is_valide']}');
-//         printVm('   - message_state: ${messageData['message_state']}');
-//
-//         try {
-//           final message = Message.fromJson(messageData);
-//           _lastMessagesCache[chatId] = message;
-//
-//           printVm('✅ [LAST_MESSAGE] Message créé avec succès:');
-//           printVm('   - Type: ${message.messageType}');
-//           printVm('   - Contenu: ${message.message}');
-//           printVm('   - Date: ${message.createdAt}');
-//           printVm('   - État: ${message.message_state}');
-//
-//           return message;
-//         } catch (e) {
-//           printVm('❌ [LAST_MESSAGE] Erreur création Message.fromJson: $e');
-//           printVm('❌ [LAST_MESSAGE] Données problématiques: $messageData');
-//           return null;
-//         }
-//       } else {
-//         printVm('⚠️ [LAST_MESSAGE] Aucun message valide trouvé pour chat: $chatId');
-//         printVm('ℹ️ [LAST_MESSAGE] Vérifier que:');
-//         printVm('   - Le chat_id $chatId existe dans la collection Messages');
-//         printVm('   - Les messages ont is_valide = true');
-//         printVm('   - Il y a des messages avec create_at_time_spam');
-//       }
-//     } catch (e) {
-//       printVm("❌ [LAST_MESSAGE] Erreur récupération dernier message pour $chatId: $e");
-//       printVm("❌ [LAST_MESSAGE] Stack trace: ${e.toString()}");
-//     }
-//
-//     return null;
-//   }
-//
-//   // Récupérer les données utilisateur - OPTIMISÉ
-//   Future<UserData?> _getUserData(String userId) async {
-//     printVm('👤 [USER_DATA] Recherche utilisateur: $userId');
-//
-//     if (_usersCache.containsKey(userId)) {
-//       printVm('💾 [USER_DATA] Utilisation cache pour user: $userId');
-//       return _usersCache[userId];
-//     }
-//
-//     try {
-//       printVm('📡 [USER_DATA] Requête Firestore pour user: $userId');
-//       final userDoc = await _firestore
-//           .collection('Users')
-//           .doc(userId)
-//           .getM('chat_service.dart:195');
-//
-//       if (userDoc.exists) {
-//         final userData = UserData.fromJson(userDoc.data()!);
-//         _usersCache[userId] = userData;
-//         printVm('✅ [USER_DATA] Utilisateur trouvé: ${userData.pseudo}');
-//         return userData;
-//       } else {
-//         printVm('❌ [USER_DATA] Utilisateur non trouvé: $userId');
-//       }
-//     } catch (e) {
-//       printVm("❌ [USER_DATA] Erreur récupération utilisateur $userId: $e");
-//     }
-//
-//     return null;
-//   }
-//
-//   // Recherche de conversations - OPTIMISÉE
-//   Future<List<Chat>> searchChats({
-//     required String query,
-//     required String currentUserId,
-//   }) async {
-//     printVm('🔍 [SEARCH] Recherche avec query: "$query"');
-//
-//     if (query.isEmpty) return [];
-//
-//     try {
-//       // Charger en parallèle
-//       final [chatsSnapshot, usersSnapshot] = await Future.wait([
-//         _firestore
-//             .collection('Chats')
-//             .where(Filter.or(
-//           Filter('receiver_id', isEqualTo: currentUserId),
-//           Filter('sender_id', isEqualTo: currentUserId),
-//         ))
-//             .where("type", isEqualTo: ChatType.USER.name)
-//             .getM('chat_service.dart:231'),
-//         _firestore
-//             .collection('Users')
-//             .where('pseudo', isGreaterThanOrEqualTo: query)
-//             .where('pseudo', isLessThan: query + 'z')
-//             .getM('chat_service.dart:236'),
-//       ]);
-//
-//       printVm('📊 [SEARCH] Résultats: ${chatsSnapshot.docs.length} chats, ${usersSnapshot.docs.length} users');
-//
-//       List<Chat> foundChats = [];
-//
-//       // Traiter les conversations existantes
-//       for (var chatDoc in chatsSnapshot.docs) {
-//         Chat chat = Chat.fromJson(chatDoc.data() as Map<String, dynamic>);
-//
-//         final otherUserId = currentUserId == chat.receiverId
-//             ? chat.senderId
-//             : chat.receiverId;
-//
-//         if (otherUserId != null) {
-//           final userData = await _getUserData(otherUserId);
-//           if (userData != null) {
-//             chat.chatFriend = userData;
-//             chat.receiver = userData;
-//
-//             if (userData.pseudo!.toLowerCase().contains(query.toLowerCase())) {
-//               foundChats.add(chat);
-//               printVm('✅ [SEARCH] Chat trouvé: ${userData.pseudo}');
-//             }
-//           }
-//         }
-//       }
-//
-//       // Ajouter les utilisateurs trouvés qui n'ont pas de conversation
-//       for (var userDoc in usersSnapshot.docs) {
-//         UserData userData = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
-//
-//         if (userData.id == currentUserId) continue;
-//
-//         bool alreadyInResults = foundChats.any((chat) =>
-//         chat.chatFriend != null && chat.chatFriend!.id == userData.id);
-//
-//         if (!alreadyInResults) {
-//           Chat newChat = Chat(
-//             id: 'search_${userData.id}',
-//             senderId: currentUserId,
-//             receiverId: userData.id!,
-//             lastMessage: 'Démarrer une conversation',
-//             type: ChatType.USER.name,
-//             createdAt: DateTime.now().millisecondsSinceEpoch,
-//             updatedAt: DateTime.now().millisecondsSinceEpoch,
-//             receiver: userData,
-//           );
-//           foundChats.add(newChat);
-//           printVm('➕ [SEARCH] Nouveau chat de recherche: ${userData.pseudo}');
-//         }
-//       }
-//
-//       printVm('🎯 [SEARCH] Recherche terminée: ${foundChats.length} résultats');
-//       return foundChats;
-//     } catch (e) {
-//       printVm("❌ [SEARCH] Erreur de recherche: $e");
-//       return [];
-//     }
-//   }
-//
-//   // Créer ou récupérer une conversation
-//   Future<Chat> createOrGetChat({
-//     required Chat chat,
-//     required String currentUserId,
-//   }) async {
-//     printVm('💬 [CREATE_CHAT] Création/récupération chat: ${chat.id}');
-//
-//     if (chat.id!.startsWith('search_')) {
-//       printVm('🔍 [CREATE_CHAT] Recherche chat existant...');
-//
-//       final existingChats = await _firestore
-//           .collection('Chats')
-//           .where(Filter.or(
-//         Filter('docId', isEqualTo: '${chat.senderId}${chat.receiverId}'),
-//         Filter('docId', isEqualTo: '${chat.receiverId}${chat.senderId}'),
-//       ))
-//           .limit(1)
-//           .getM('chat_service.dart:315');
-//
-//       if (existingChats.docs.isNotEmpty) {
-//         printVm('✅ [CREATE_CHAT] Chat existant trouvé');
-//         Chat existingChat = Chat.fromJson(existingChats.docs.first.data());
-//         existingChat.chatFriend = chat.chatFriend;
-//         existingChat.receiver = chat.receiver;
-//         return existingChat;
-//       } else {
-//         printVm('➕ [CREATE_CHAT] Création nouveau chat');
-//         String chatId = _firestore.collection('Chats').doc().id;
-//         Chat newChat = Chat(
-//           docId: '${chat.senderId}${chat.receiverId}',
-//           id: chatId,
-//           senderId: chat.senderId!,
-//           receiverId: chat.receiverId!,
-//           lastMessage: '',
-//           type: ChatType.USER.name,
-//           createdAt: DateTime.now().millisecondsSinceEpoch,
-//           updatedAt: DateTime.now().millisecondsSinceEpoch,
-//           receiver: chat.chatFriend,
-//         );
-//
-//         await _firestore
-//             .collection('Chats')
-//             .doc(chatId)
-//             .set(newChat.toJson());
-//
-//         return newChat;
-//       }
-//     }
-//     printVm('✅ [CREATE_CHAT] Retour chat existant: ${chat.id}');
-//     return chat;
-//   }
-//
-//   // Vider le cache si nécessaire
-//   void clearCache() {
-//     printVm('🗑️ [CACHE] Vidage du cache');
-//     _lastMessagesCache.clear();
-//     _usersCache.clear();
-//   }
-// }
-
-// Helper class
-
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-import 'package:afrotok/models/chatmodels/message.dart';
-
-import 'package:afrotok/models/model_data.dart';
-
+/// Conversations 1 à 1. La LISTE (ordre, personne, non lus, série, demande, blocage) vient de l'API ; seuls les MESSAGES restent sur Firebase
+/// (collection Messages) : l'aperçu du dernier message est déchiffré par l'application, l'API ne stocke jamais le texte.
 class ChatService {
-  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
   // Configuration de pagination - lots de 5
   static const int pageSize = 5;
 
-  // Pour la pagination infinie
-  DocumentSnapshot? _lastDocument;
+  // Pour la pagination infinie (curseur fourni par l'API)
+  String? _cursor;
   bool _hasMore = true;
 
   // Cache
   final Map<String, Message> _lastMessagesCache = {};
-  final Map<String, UserData> _usersCache = {};
 
-  // Récupérer les conversations avec pagination par lots de 5
+  // Récupérer les conversations avec pagination par lots de 5 (erreur de l'API : remontée, jamais d'ancienne source)
   Future<List<ChatWithLastMessage>> getNextChatsBatch({
     required String currentUserId,
     bool loadMore = false,
   }) async {
     if (!loadMore) {
-      _lastDocument = null;
+      _cursor = null;
       _hasMore = true;
     }
 
     if (!_hasMore) return [];
 
-    try {
-      printVm('🔄 [CHAT_SERVICE] Chargement lot suivant - loadMore: $loadMore');
+    printVm('🔄 [CHAT_SERVICE] Chargement lot suivant - loadMore: $loadMore');
+    final page = await ChatApi.conversations(cursor: _cursor, limit: pageSize);
+    _cursor = page.next;
+    _hasMore = page.next != null;
 
-      var query = _firestore
-          .collection('Chats')
-          .where(Filter.or(
-        Filter('receiver_id', isEqualTo: currentUserId),
-        Filter('sender_id', isEqualTo: currentUserId),
-      ))
-          .where("type", isEqualTo: ChatType.USER.name)
-          .orderBy('updated_at', descending: true)
-          .limit(pageSize);
-
-      if (loadMore && _lastDocument != null) {
-        query = query.startAfterDocument(_lastDocument!);
-      }
-
-      final chatSnapshot = await query.getM('chat_service.dart:409');
-
-      if (chatSnapshot.docs.isEmpty) {
-        _hasMore = false;
-        return [];
-      }
-
-      _lastDocument = chatSnapshot.docs.last;
-      _hasMore = chatSnapshot.docs.length == pageSize;
-
-      List<ChatWithLastMessage> listChats = [];
-
-      // Traiter les chats en parallèle
-      List<Future<ChatWithLastMessage?>> futures = [];
-
-      for (var chatDoc in chatSnapshot.docs) {
-        futures.add(_processChatDocument(chatDoc, currentUserId));
-      }
-
-      final results = await Future.wait(futures);
-      listChats.addAll(results.whereType<ChatWithLastMessage>());
-
-      printVm('✅ [CHAT_SERVICE] Lot chargé: ${listChats.length} chats');
-      return listChats;
-    } catch (e) {
-      printVm('❌ [CHAT_SERVICE] Erreur: $e');
-      return [];
-    }
+    final futures = page.items.map((j) => _process(chatFromConversation(j, currentUserId)));
+    final results = await Future.wait(futures);
+    final listChats = results.whereType<ChatWithLastMessage>().toList();
+    printVm('✅ [CHAT_SERVICE] Lot chargé: ${listChats.length} chats');
+    return listChats;
   }
 
-  // Stream pour écouter les mises à jour des messages (lu/non lu)
+  // Stream pour écouter les mises à jour des messages (lu/non lu) : les messages restent sur Firebase
   Stream<Map<String, dynamic>> getMessageUpdatesStream(String currentUserId) {
-    return _firestore
+    return FirebaseFirestore.instance
         .collection('Messages')
         .where('receiverBy', isEqualTo: currentUserId)
         .where('is_valide', isEqualTo: true)
@@ -462,45 +71,20 @@ class ChatService {
     });
   }
 
-  // Traiter un document chat
-  Future<ChatWithLastMessage?> _processChatDocument(
-      QueryDocumentSnapshot chatDoc, String currentUserId) async {
-    try {
-      Chat chat = Chat.fromJson(chatDoc.data() as Map<String, dynamic>);
-
-      final otherUserId = currentUserId == chat.receiverId
-          ? chat.senderId
-          : chat.receiverId;
-
-      if (otherUserId != null) {
-        final userData = await _getUserData(otherUserId);
-        if (userData != null) {
-          chat.chatFriend = userData;
-          chat.receiver = userData;
-
-          final lastMessage = await _getLastMessageForChat(chat.docId!);
-
-          return ChatWithLastMessage(
-            chat: chat,
-            lastMessage: lastMessage,
-          );
-        }
-      }
-      return null;
-    } catch (e) {
-      printVm("❌ [CHAT_SERVICE] Erreur: $e");
-      return null;
-    }
+  Future<ChatWithLastMessage> _process(Chat chat) async {
+    final lastMessage = await _getLastMessageForChat(chat.docId ?? chat.id ?? '');
+    return ChatWithLastMessage(chat: chat, lastMessage: lastMessage);
   }
 
-  // Récupérer le dernier message
+  // Récupérer le dernier message (sur Firebase, avec les messages)
   Future<Message?> _getLastMessageForChat(String chatId) async {
+    if (chatId.isEmpty) return null;
     if (_lastMessagesCache.containsKey(chatId)) {
       return _lastMessagesCache[chatId];
     }
 
     try {
-      final querySnapshot = await _firestore
+      final querySnapshot = await FirebaseFirestore.instance
           .collection('Messages')
           .where('chat_id', isEqualTo: chatId)
           .where('is_valide', isEqualTo: true)
@@ -520,238 +104,85 @@ class ChatService {
     return null;
   }
 
-  // Récupérer les données utilisateur
-  Future<UserData?> _getUserData(String userId) async {
-    if (_usersCache.containsKey(userId)) {
-      return _usersCache[userId];
-    }
-
-    try {
-      final userDoc = await _firestore
-          .collection('Users')
-          .doc(userId)
-          .getM('chat_service.dart:532');
-
-      if (userDoc.exists) {
-        final userData = UserData.fromJson(userDoc.data()!);
-        _usersCache[userId] = userData;
-        return userData;
-      }
-    } catch (e) {
-      printVm("❌ [USER_DATA] Erreur: $e");
-    }
-
-    return null;
-  }
-
-  // RECHERCHE DE CONVERSATIONS
+  // RECHERCHE DE CONVERSATIONS : parmi mes conversations puis parmi mes amis (la recherche de tous les comptes n'est pas encore dans l'API)
   Future<List<Chat>> searchChats({
     required String query,
     required String currentUserId,
   }) async {
     printVm('🔍 [SEARCH] Recherche avec query: "$query"');
-
     if (query.isEmpty) return [];
+    final q = query.toLowerCase();
 
-    try {
-      final List<Future> futures = [];
+    final found = <Chat>[];
+    final seen = <String>{};
 
-      // Rechercher les chats existants
-      final chatsFuture = _firestore
-          .collection('Chats')
-          .where(Filter.or(
-        Filter('receiver_id', isEqualTo: currentUserId),
-        Filter('sender_id', isEqualTo: currentUserId),
-      ))
-          .where("type", isEqualTo: ChatType.USER.name)
-          .getM('chat_service.dart:566');
-
-      // Rechercher les utilisateurs
-      final usersFuture = _firestore
-          .collection('Users')
-          .where('pseudo', isGreaterThanOrEqualTo: query)
-          .where('pseudo', isLessThan: query + 'z')
-          .limit(20)
-          .getM('chat_service.dart:574');
-
-      futures.add(chatsFuture);
-      futures.add(usersFuture);
-
-      final results = await Future.wait(futures);
-      final chatsSnapshot = results[0] as QuerySnapshot;
-      final usersSnapshot = results[1] as QuerySnapshot;
-
-      printVm('📊 [SEARCH] Résultats: ${chatsSnapshot.docs.length} chats, ${usersSnapshot.docs.length} users');
-
-      List<Chat> foundChats = [];
-
-      // Traiter les conversations existantes
-      for (var chatDoc in chatsSnapshot.docs) {
-        Chat chat = Chat.fromJson(chatDoc.data() as Map<String, dynamic>);
-
-        final otherUserId = currentUserId == chat.receiverId
-            ? chat.senderId
-            : chat.receiverId;
-
-        if (otherUserId != null) {
-          final userData = await _getUserData(otherUserId);
-          if (userData != null && userData.pseudo != null) {
-            chat.chatFriend = userData;
-            chat.receiver = userData;
-
-            if (userData.pseudo!.toLowerCase().contains(query.toLowerCase())) {
-              foundChats.add(chat);
-              printVm('✅ [SEARCH] Chat trouvé: ${userData.pseudo}');
-            }
-          }
-        }
+    // Conversations existantes (trois pages au plus)
+    String? cursor;
+    for (var i = 0; i < 3; i++) {
+      final page = await ChatApi.conversations(cursor: cursor, limit: 50);
+      for (final j in page.items) {
+        final chat = chatFromConversation(j, currentUserId);
+        final pseudo = chat.chatFriend?.pseudo ?? '';
+        if (pseudo.toLowerCase().contains(q) && seen.add(chat.receiverId ?? '')) found.add(chat);
       }
-
-      // Ajouter les utilisateurs trouvés qui n'ont pas de conversation
-      for (var userDoc in usersSnapshot.docs) {
-        UserData userData = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
-
-        if (userData.id == currentUserId) continue;
-
-        bool alreadyInResults = foundChats.any((chat) =>
-        chat.chatFriend != null && chat.chatFriend!.id == userData.id);
-
-        if (!alreadyInResults && userData.pseudo != null) {
-          Chat newChat = Chat(
-            id: 'search_${userData.id}',
-            senderId: currentUserId,
-            receiverId: userData.id!,
-            lastMessage: 'Démarrer une conversation',
-            type: ChatType.USER.name,
-            createdAt: DateTime.now().millisecondsSinceEpoch,
-            updatedAt: DateTime.now().millisecondsSinceEpoch,
-            receiver: userData,
-            chatFriend: userData,
-          );
-          foundChats.add(newChat);
-          printVm('➕ [SEARCH] Nouveau chat de recherche: ${userData.pseudo}');
-        }
-      }
-
-      printVm('🎯 [SEARCH] Recherche terminée: ${foundChats.length} résultats');
-      return foundChats;
-    } catch (e) {
-      printVm("❌ [SEARCH] Erreur de recherche: $e");
-      return [];
+      cursor = page.next;
+      if (cursor == null) break;
     }
+
+    // Amis sans conversation : on propose de démarrer
+    try {
+      final friends = await UsersApi.friends(limit: 50);
+      for (final f in friends.items) {
+        final id = '${f['id'] ?? f['user_id'] ?? ''}';
+        final pseudo = '${f['username'] ?? f['pseudo'] ?? ''}';
+        if (id.isEmpty || id == currentUserId || !pseudo.toLowerCase().contains(q) || !seen.add(id)) continue;
+        final user = UserData()
+          ..id = id
+          ..pseudo = pseudo
+          ..imageUrl = '${f['avatar_url'] ?? ''}';
+        found.add(Chat(
+          id: 'search_$id',
+          senderId: currentUserId,
+          receiverId: id,
+          lastMessage: 'Démarrer une conversation',
+          type: ChatType.USER.name,
+          createdAt: DateTime.now().millisecondsSinceEpoch,
+          updatedAt: DateTime.now().millisecondsSinceEpoch,
+          receiver: user,
+          chatFriend: user,
+        ));
+      }
+    } catch (e) {
+      printVm('⚠️ [SEARCH] amis indisponibles : $e');
+    }
+    printVm('🎯 [SEARCH] Recherche terminée: ${found.length} résultats');
+    return found;
   }
 
-  // CRÉER OU RÉCUPÉRER UNE CONVERSATION
+  // CRÉER OU RÉCUPÉRER UNE CONVERSATION (l'API garde une seule conversation par paire de personnes)
   Future<Chat> createOrGetChat({
     required Chat chat,
     required String currentUserId,
   }) async {
-    printVm('💬 [CREATE_CHAT] Création/récupération chat');
-
-    // Si c'est un chat de recherche (préfixe search_)
-    if (chat.id != null && chat.id!.startsWith('search_')) {
-      printVm('🔍 [CREATE_CHAT] Recherche chat existant...');
-
-      final String docId1 = '${chat.senderId}${chat.receiverId}';
-      final String docId2 = '${chat.receiverId}${chat.senderId}';
-
-      final existingChats = await _firestore
-          .collection('Chats')
-          .where(Filter.or(
-        Filter('docId', isEqualTo: docId1),
-        Filter('docId', isEqualTo: docId2),
-      ))
-          .limit(1)
-          .getM('chat_service.dart:664');
-
-      if (existingChats.docs.isNotEmpty) {
-        printVm('✅ [CREATE_CHAT] Chat existant trouvé');
-        Chat existingChat = Chat.fromJson(existingChats.docs.first.data());
-        existingChat.chatFriend = chat.chatFriend;
-        existingChat.receiver = chat.receiver;
-        existingChat.id ??= existingChats.docs.first.id;
-        existingChat.docId ??= docId1;
-        return existingChat;
-      } else {
-        printVm('➕ [CREATE_CHAT] Création nouveau chat');
-        String chatId = _firestore.collection('Chats').doc().id;
-        Chat newChat = Chat(
-          docId: docId1,
-          id: chatId,
-          senderId: chat.senderId!,
-          receiverId: chat.receiverId!,
-          lastMessage: '',
-          type: ChatType.USER.name,
-          createdAt: DateTime.now().millisecondsSinceEpoch,
-          updatedAt: DateTime.now().millisecondsSinceEpoch,
-          receiver: chat.chatFriend,
-          chatFriend: chat.chatFriend,
-        );
-
-        await _firestore
-            .collection('Chats')
-            .doc(chatId)
-            .set(newChat.toJson());
-
-        return newChat;
-      }
-    }
-
-    // Si le chat a un ID valide, le retourner directement
-    if (chat.id != null && !chat.id!.startsWith('search_')) {
-      // Mettre à jour les infos utilisateur si nécessaire
-      if (chat.chatFriend != null) {
-        chat.receiver = chat.chatFriend;
-      }
+    final isSearch = chat.id != null && chat.id!.startsWith('search_');
+    if (!isSearch && chat.id != null && chat.id!.isNotEmpty) {
+      if (chat.chatFriend != null) chat.receiver = chat.chatFriend;
       return chat;
     }
-
-    // Par défaut, essayer de trouver par docId
-    final String docId1 = '${chat.senderId}${chat.receiverId}';
-    final String docId2 = '${chat.receiverId}${chat.senderId}';
-
-    final existingChats = await _firestore
-        .collection('Chats')
-        .where(Filter.or(
-      Filter('docId', isEqualTo: docId1),
-      Filter('docId', isEqualTo: docId2),
-    ))
-        .limit(1)
-        .getM('chat_service.dart:719');
-
-    if (existingChats.docs.isNotEmpty) {
-      Chat existingChat = Chat.fromJson(existingChats.docs.first.data());
-      existingChat.chatFriend = chat.chatFriend;
-      existingChat.receiver = chat.receiver;
-      existingChat.id ??= existingChats.docs.first.id;
-      existingChat.docId ??= docId1;
-      return existingChat;
+    final otherId = chat.receiverId == currentUserId ? chat.senderId : chat.receiverId;
+    if (otherId == null || otherId.isEmpty) throw StateError('Personne inconnue');
+    final opened = chatFromConversation(await ChatApi.openConversation(otherId), currentUserId);
+    if (chat.chatFriend != null && (opened.chatFriend?.pseudo ?? '').isEmpty) {
+      opened.chatFriend = chat.chatFriend;
+      opened.receiver = chat.chatFriend;
     }
-
-    // Créer un nouveau chat
-    String chatId = _firestore.collection('Chats').doc().id;
-    Chat newChat = Chat(
-      docId: docId1,
-      id: chatId,
-      senderId: chat.senderId!,
-      receiverId: chat.receiverId!,
-      lastMessage: '',
-      type: ChatType.USER.name,
-      createdAt: DateTime.now().millisecondsSinceEpoch,
-      updatedAt: DateTime.now().millisecondsSinceEpoch,
-      receiver: chat.chatFriend,
-      chatFriend: chat.chatFriend,
-    );
-
-    await _firestore.collection('Chats').doc(chatId).set(newChat.toJson());
-    return newChat;
+    return opened;
   }
 
   // Vider le cache
   void clearCache() {
     _lastMessagesCache.clear();
-    _usersCache.clear();
-    _lastDocument = null;
+    _cursor = null;
     _hasMore = true;
   }
 
@@ -759,7 +190,7 @@ class ChatService {
 
   // Réinitialiser la pagination
   void resetPagination() {
-    _lastDocument = null;
+    _cursor = null;
     _hasMore = true;
   }
 }

@@ -1,5 +1,4 @@
-import 'package:afrotok/services/read_meter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../services/api/stickers_admin_api.dart';
 import 'package:flutter/material.dart';
 
 import '../../../theme/app_colors.dart';
@@ -20,9 +19,9 @@ class _AdminStickerPackPageState extends State<AdminStickerPackPage> {
   bool _busy = false;
   int _reload = 0;
 
-  Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> _stickers() async {
-    final q = await FirebaseFirestore.instance.collection('Stickers').where('packId', isEqualTo: widget.packId).getM('admin_sticker_pack_page.dart:23');
-    final l = q.docs.toList()..sort((a, b) => ((a.data()['order'] as num?) ?? 0).compareTo((b.data()['order'] as num?) ?? 0));
+  Future<List<StickerDoc>> _stickers() async {
+    final l = await StickersAdminApi.stickersOfPack(widget.packId);
+    l.sort((a, b) => ((a.data()['order'] as num?) ?? 0).compareTo((b.data()['order'] as num?) ?? 0));
     return l;
   }
 
@@ -80,9 +79,9 @@ class _AdminStickerPackPageState extends State<AdminStickerPackPage> {
         title: const Text('Fiche du pack', style: TextStyle(fontWeight: FontWeight.w700)),
         actions: [IconButton(icon: const Icon(Icons.refresh_rounded), onPressed: () => setState(() => _reload++))],
       ),
-      body: FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      body: FutureBuilder<StickerDoc?>(
         key: ValueKey('p$_reload'),
-        future: FirebaseFirestore.instance.collection('StickerPacks').doc(widget.packId).getM('admin_sticker_pack_page.dart:84'),
+        future: StickersAdminApi.packById(widget.packId),
         builder: (ctx, snap) {
           if (snap.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
           final p = snap.data?.data();
@@ -136,7 +135,7 @@ class _AdminStickerPackPageState extends State<AdminStickerPackPage> {
         const SizedBox(height: 14),
         Text('Stickers du pack', style: TextStyle(color: c.textPrimary, fontSize: 15, fontWeight: FontWeight.w800)),
         const SizedBox(height: 8),
-        FutureBuilder<List<QueryDocumentSnapshot<Map<String, dynamic>>>>(
+        FutureBuilder<List<StickerDoc>>(
           key: ValueKey('s$_reload'),
           future: _stickers(),
           builder: (ctx, snap) {
@@ -152,7 +151,7 @@ class _AdminStickerPackPageState extends State<AdminStickerPackPage> {
     );
   }
 
-  Widget _stickerCard(AppColors c, QueryDocumentSnapshot<Map<String, dynamic>> d) {
+  Widget _stickerCard(AppColors c, StickerDoc d) {
     final s = d.data();
     final st = (s['status'] ?? '').toString();
     final gift = (s['giftPriceCoins'] as num?)?.toInt() ?? 0;

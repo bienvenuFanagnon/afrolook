@@ -10,7 +10,8 @@ import '../../../utils/tx_amount.dart';
 import 'package:intl/intl.dart';
 
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
 
 import 'package:iconsax/iconsax.dart';
 
@@ -74,9 +75,8 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
 
   // Pagination Firestore
   final int _pageSize = 10;
-  List<QueryDocumentSnapshot> _allDocs = [];
   List<TransactionSolde> _transactions = [];
-  DocumentSnapshot? _lastDocument;
+  String? _cursor;
   bool _hasMore = true;
   bool _isLoading = false;
   bool _isLoadingMore = false;
@@ -111,47 +111,21 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
     }
   }
 
-  /// Construction de la requête de base
-  Query _buildBaseQuery() {
-    Query query = FirebaseFirestore.instance
-        .collection("TransactionSoldes")
-        .orderBy("createdAt", descending: true);
-
-    // Filtre par utilisateur si sélectionné
-    if (_selectedUserId != null && _selectedUserId!.isNotEmpty) {
-      printVm("🔍 Filtre par user_id: $_selectedUserId");
-      query = query.where("user_id", isEqualTo: _selectedUserId);
-    }
-
-    return query;
-  }
-
   /// Comptes réels Firestore par groupe (count aggregation)
   Future<void> _loadGroupCounts() async {
     try {
-      final col = FirebaseFirestore.instance.collection("TransactionSoldes");
-      Query base = col;
-      if (_selectedUserId != null && _selectedUserId!.isNotEmpty) {
-        base = base.where("user_id", isEqualTo: _selectedUserId);
-      }
-
       int knownTotal = 0;
       final Map<String, int> counts = {};
-
       for (final entry in _txGroups.entries) {
         if (entry.key == 'Autres') continue;
         final types = entry.value;
         if (types.isEmpty) { counts[entry.key] = 0; continue; }
-        final snap = await base.where("type", whereIn: types).count().getM('adminprofil.dart:144');
-        final c = snap.count ?? 0;
+        final c = await UsersApi.adminTransactionsCount(userId: _selectedUserId, kinds: types);
         counts[entry.key] = c;
         knownTotal += c;
       }
-
-      // Autres = total - groupes connus
-      final totalSnap = await base.count().getM('adminprofil.dart:151');
-      counts['Autres'] = ((totalSnap.count ?? 0) - knownTotal).clamp(0, 999999);
-
+      final total = await UsersApi.adminTransactionsCount(userId: _selectedUserId);
+      counts['Autres'] = (total - knownTotal).clamp(0, 999999);
       if (mounted) setState(() => _txGroupCounts.addAll(counts));
     } catch (e) {
       printVm("❌ Erreur count groupes: $e");
@@ -166,8 +140,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
       _isLoading = true;
       _isInitialLoad = true;
       _transactions = [];
-      _allDocs = [];
-      _lastDocument = null;
+      _cursor = null;
       _hasMore = true;
       _txGroupShownCount.clear();
     });
@@ -176,21 +149,10 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
     printVm("🔍 Filtres - Type: $_selectedType, StartDate: $_startDate, EndDate: $_endDate, UserId: $_selectedUserId");
 
     try {
-      Query query = _buildBaseQuery();
-      query = query.limit(_pageSize);
-
-      final snapshot = await query.getM('adminprofil.dart:181');
-      printVm("📊 Nombre de documents reçus: ${snapshot.docs.length}");
-
-      _allDocs = snapshot.docs;
-      _transactions = _applyLocalFilters(snapshot.docs);
-
-      if (snapshot.docs.isNotEmpty) {
-        _lastDocument = snapshot.docs.last;
-        _hasMore = snapshot.docs.length == _pageSize;
-      } else {
-        _hasMore = false;
-      }
+      final page = await UsersApi.adminTransactions(userId: _selectedUserId, limit: _pageSize);
+      _transactions = _applyLocalFilters(page.items);
+      _cursor = page.next;
+      _hasMore = page.next != null;
 
       printVm("📊 Transactions après filtre local: ${_transactions.length}");
       printVm("📊 hasMore: $_hasMore");
@@ -218,24 +180,12 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
     });
 
     printVm("🚀 Chargement de la page suivante...");
-    printVm("📄 LastDocument: ${_lastDocument?.id}");
 
     try {
-      Query query = _buildBaseQuery();
-      query = query.startAfterDocument(_lastDocument!).limit(_pageSize);
-
-      final snapshot = await query.getM('adminprofil.dart:226');
-      printVm("📊 Nouveaux documents reçus: ${snapshot.docs.length}");
-
-      if (snapshot.docs.isNotEmpty) {
-        _allDocs.addAll(snapshot.docs);
-        final newTransactions = _applyLocalFilters(snapshot.docs);
-        _transactions.addAll(newTransactions);
-        _lastDocument = snapshot.docs.last;
-        _hasMore = snapshot.docs.length == _pageSize;
-      } else {
-        _hasMore = false;
-      }
+      final page = await UsersApi.adminTransactions(userId: _selectedUserId, cursor: _cursor, limit: _pageSize);
+      _transactions.addAll(_applyLocalFilters(page.items));
+      _cursor = page.next;
+      _hasMore = page.next != null;
 
       printVm("📊 Total transactions: ${_transactions.length}");
       printVm("📊 hasMore: $_hasMore");
@@ -251,13 +201,11 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
   }
 
   /// Appliquer les filtres locaux (date et type)
-  List<TransactionSolde> _applyLocalFilters(List<QueryDocumentSnapshot> docs) {
+  List<TransactionSolde> _applyLocalFilters(List<Map<String, dynamic>> rows) {
     final filtered = <TransactionSolde>[];
 
-    for (var doc in docs) {
-      final data = doc.data() as Map<String, dynamic>;
-      data['id'] = doc.id;
-      final transaction = TransactionSolde.fromJson(data);
+    for (var row in rows) {
+      final transaction = transactionFromApi(row, '${row['user_id'] ?? ''}');
 
       // Filtre par date
       if (_startDate != null || _endDate != null) {
@@ -292,8 +240,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
 
     // Réinitialiser tout
     _transactions = [];
-    _allDocs = [];
-    _lastDocument = null;
+    _cursor = null;
     _hasMore = true;
     _isLoadingMore = false;
 
@@ -320,15 +267,11 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
     });
 
     try {
-      final userQuery = await FirebaseFirestore.instance
-          .collection("Users")
-          .where("email", isEqualTo: _emailController.text.trim())
-          .limit(1)
-          .getM('adminprofil.dart:326');
+      final found = await UsersApi.adminUserByEmail(_emailController.text.trim());
 
-      if (userQuery.docs.isNotEmpty) {
-        final userId = userQuery.docs.first.id;
-        final userData = UserData.fromJson(userQuery.docs.first.data());
+      if (found != null) {
+        final userId = '${found['id']}';
+        final userData = userFromApi(found);
 
         setState(() {
           _selectedUserId = userId;
@@ -917,14 +860,7 @@ class _TransactionsListPageState extends State<TransactionsListPage> {
     UserData? userData;
     if (transaction.user_id != null && transaction.user_id!.isNotEmpty) {
       try {
-        final userDoc = await FirebaseFirestore.instance
-            .collection("Users")
-            .doc(transaction.user_id)
-            .getM('adminprofil.dart:922');
-
-        if (userDoc.exists) {
-          userData = UserData.fromJson(userDoc.data()!);
-        }
+        userData = userFromApi(await UsersApi.publicProfile(transaction.user_id!));
       } catch (e) {
         printVm("❌ Erreur chargement utilisateur: $e");
       }

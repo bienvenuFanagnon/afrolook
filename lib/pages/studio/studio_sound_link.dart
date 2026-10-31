@@ -1,8 +1,8 @@
-// Lien entre un montage du Studio fait avec un son d'artiste et le post publié ensuite : le serveur vérifie que le
-// montage est bien celui de la personne (voir la fonction artistSoundLinkPost), puis le post apparaît dans la liste
+// Lien entre un montage du Studio fait avec un son d'artiste et le post publié ensuite : l'API vérifie que le
+// montage est bien celui de la personne (POST /music/uses/{jobId}/link), puis le post apparaît dans la liste
 // « posts faits avec ce son » de la page du son.
 
-import 'package:cloud_functions/cloud_functions.dart';
+import '../../services/api/music_api.dart';
 
 class StudioSoundLink {
   StudioSoundLink._();
@@ -21,7 +21,7 @@ class StudioSoundLink {
     _jobId = null;
     () async {
       try {
-        await FirebaseFunctions.instance.httpsCallable('artistSoundLinkPost').call({'postId': postId, 'jobId': job});
+        await MusicApi.linkPost(job, postId);
       } catch (_) {}
     }();
   }

@@ -1,0 +1,52 @@
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/services/api/api_gateway.dart';
+import 'package:afrotok/services/api/post_mapper.dart';
+
+/// Lectures d'accueil via l'API : publications de découverte, posts vus, nouveautés par créateur.
+/// Aucun retour à Firebase en cas d'erreur : l'exception remonte à l'écran.
+class HomeFeedApi {
+  HomeFeedApi._();
+
+  static ApiClient get _c => ApiGateway.instance.client;
+
+  /// Une page de découverte (niveau 3 du serveur : publications non vues, pays proche en premier).
+  /// [category] et [country] sont envoyés au serveur (filtres souhaités : voir lacunes_api_publications.md) ET appliqués ici,
+  /// pour que le résultat soit correct même tant que le serveur les ignore.
+  static Future<({List<Post> posts, String? next})> discover({String? category, String? country, String? cursor, int limit = 20, int tier = 3}) async {
+    final r = await _c.get('/feed', query: {
+      'tier': tier,
+      'limit': limit,
+      if (cursor != null) 'cursor': cursor,
+      if (category != null && category.isNotEmpty) 'category': category,
+      if (country != null && country.isNotEmpty) 'country': country,
+    }) as Map;
+    var posts = ((r['data'] as List?) ?? const []).whereType<Map>().map((m) => postFromApi(Map<String, dynamic>.from(m))).where((p) => p.id != null).toList();
+    for (final p in posts) {
+      p.typeTabbar ??= p.categorie;
+    }
+    if (category != null && category.isNotEmpty) {
+      posts = posts.where((p) => p.categorie == category || p.typeTabbar == category).toList();
+    }
+    if (country != null && country.isNotEmpty) {
+      posts = posts.where((p) => p.availableCountries == null || p.availableCountries!.isEmpty || p.availableCountries!.contains('ALL') || p.availableCountries!.contains(country)).toList();
+    }
+    return (posts: posts, next: r['next_cursor'] as String?);
+  }
+
+  /// Marque des publications comme vues (100 par envoi).
+  static Future<void> markSeen(Iterable<String> ids) async {
+    final list = ids.toSet().toList();
+    for (var i = 0; i < list.length; i += 100) {
+      await _c.post('/feed/seen', body: {'post_ids': list.sublist(i, i + 100 > list.length ? list.length : i + 100)});
+    }
+  }
+
+  /// Nouveautés non vues par créateur suivi.
+  static Future<Map<String, int>> unreadByCreator() async {
+    final d = ApiClient.data(await _c.get('/feed/unread-counts'));
+    final m = d is Map ? d['by_creator'] : null;
+    if (m is! Map) return {};
+    return m.map((k, v) => MapEntry('$k', (v as num).toInt())).cast<String, int>()..removeWhere((_, v) => v <= 0);
+  }
+}

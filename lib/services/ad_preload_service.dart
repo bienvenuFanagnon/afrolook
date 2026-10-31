@@ -1,14 +1,8 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 import 'dart:math';
-import 'package:afrotok/pages/component/consoleWidget.dart';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:video_player/video_player.dart';
 
 import '../models/model_data.dart';
-import '../utils/media_cdn.dart';
 import 'media_cache_service.dart';
 
 /// Service singleton qui pré-initialise les contrôleurs vidéo des pubs actives.
@@ -29,60 +23,10 @@ class AdPreloadService {
   bool get isLoaded => _isLoaded;
   List<Advertisement> get activeAds => _ads.values.toList();
 
+  /// Les annonces ne sont plus lues dans une base du téléphone : le serveur choisit l'annonce à chaque emplacement (`/ads/app/serve`).
+  /// Ce service ne garde donc que les contrôleurs vidéo déjà préparés ; il n'y a plus rien à précharger au démarrage.
   Future<void> preload() async {
-    if (_isLoaded) return;
-    try {
-      final now = DateTime.now().millisecondsSinceEpoch;
-      final snap = await FirebaseFirestore.instance
-          .collection('Advertisements')
-          .where('status', isEqualTo: 'active')
-          .limit(10)
-          .getM('ad_preload_service.dart:38');
-
-      final videoUrls = <String>[];
-      for (final doc in snap.docs) {
-        final ad = Advertisement.fromJson(doc.data());
-        ad.id = doc.id;
-        if (ad.postId == null) continue;
-        if (ad.endDate != null && ad.endDate! < now) continue;
-
-        final postDoc = await FirebaseFirestore.instance
-            .collection('Posts')
-            .doc(ad.postId)
-            .getM('ad_preload_service.dart:49');
-        if (!postDoc.exists) continue;
-
-        final postData = postDoc.data()!;
-        final mediaUrl = postData['url_media'] as String?;
-        if (mediaUrl == null || mediaUrl.isEmpty) continue;
-
-        final type = postData['type'] as String?;
-        _ads[doc.id] = ad;
-
-        // Image de la pub (ou aperçu de la vidéo) déjà sur le téléphone avant qu'on arrive à l'emplacement
-        final images = (postData['images'] is List) ? List<String>.from(postData['images']) : const <String>[];
-        final still = type == 'VIDEO' ? (postData['thumbnail'] as String? ?? '') : (images.isNotEmpty ? images.first : mediaUrl);
-        if (still.isNotEmpty) DefaultCacheManager().downloadFile(MediaCdn.url(still)).then((_) {}, onError: (_) {});
-
-        // Seules les premières vidéos sont préparées en mémoire (un décodeur par vidéo) ; toutes sont téléchargées dans le cache dédié
-        if (type == 'VIDEO') videoUrls.add(mediaUrl);
-        if (type == 'VIDEO' && _controllers.length >= maxControllers) {
-          // pas de décodeur de plus : le fichier est téléchargé plus bas
-        } else if (type == 'VIDEO') {
-          try {
-            final ctrl = await MediaCacheService.adVideoController(mediaUrl);
-            await ctrl.initialize();
-            await ctrl.setVolume(0);
-            await ctrl.setLooping(true);
-            _controllers[doc.id] = ctrl;
-          } catch (_) {}
-        }
-      }
-      _isLoaded = true;
-      unawaited(MediaCacheService.prefetchAdVideos(videoUrls));
-    } catch (e) {
-      printVm('AdPreloadService.preload error: $e');
-    }
+    _isLoaded = true;
   }
 
   /// Télécharge sur le téléphone les vidéos des pubs déjà connues (liste du fournisseur d'authentification : chargée avant même que l'on ouvre

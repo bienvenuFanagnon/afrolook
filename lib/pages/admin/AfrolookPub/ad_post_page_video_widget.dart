@@ -8,7 +8,7 @@ import 'package:afrotok/services/media_cache_service.dart';
 import 'dart:math';
 import 'package:afrotok/pages/pub/native_ad_widget.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/regie_api.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -352,12 +352,11 @@ class _AdPostWidgetState extends State<AdPostWidget> {
       _likesCount += _isLiked ? 1 : -1;
     });
     try {
-      await FirebaseFirestore.instance.collection('Posts').doc(post.id).update({
-        'loves': FieldValue.increment(_isLiked ? 1 : -1),
-        'users_love_id': _isLiked
-            ? FieldValue.arrayUnion([uid])
-            : FieldValue.arrayRemove([uid]),
-      });
+      if (_isLiked) {
+        await RegieApi.put('/posts/${post.id}/reaction');
+      } else {
+        await RegieApi.delete('/posts/${post.id}/reaction');
+      }
     } catch (_) {
       if (mounted) setState(() { _isLiked = !_isLiked; _likesCount += _isLiked ? 1 : -1; });
     } finally {

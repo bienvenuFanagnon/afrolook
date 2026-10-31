@@ -1,9 +1,8 @@
-import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/jeux_api.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -273,7 +272,7 @@ class QuizAttempt {
   final List<Map<String, dynamic>> details;
 }
 
-/// Accès au serveur du quiz : toutes les règles (corrections, points, cœurs, série) sont côté serveur.
+/// Accès à l'API du quiz : toutes les règles (corrections, points, cœurs, série, anti-triche) sont côté serveur.
 class QuizService {
   QuizService._();
   static final QuizService instance = QuizService._();
@@ -287,21 +286,28 @@ class QuizService {
 
   String? get uid => FirebaseAuth.instance.currentUser?.uid;
 
-  Future<Map<String, dynamic>> _call(String name, [Map<String, dynamic>? data]) async {
-    // Serveur momentanément saturé (quota CPU, aucune instance libre) : la requête est refusée AVANT d'être
-    // exécutée, on peut donc la rejouer sans risque de doublon (2 nouvelles tentatives : 1 s puis 2 s).
-    for (var attempt = 0;; attempt++) {
-      try {
-        final res = await FirebaseFunctions.instance.httpsCallable(name).call(data ?? {});
-        return Map<String, dynamic>.from(res.data as Map);
-      } on FirebaseFunctionsException catch (e) {
-        final refused = e.code == 'resource-exhausted' || e.code == 'unavailable';
-        if (refused && attempt < 2) {
-          await Future.delayed(Duration(seconds: attempt + 1));
-          continue;
-        }
-        throw QuizException((e.message ?? e.code).trim());
-      }
+  /// Codes de l'API -> mots-clés historiques attendus par les écrans (recherche par `contains`).
+  static const _alias = {'report_limit': 'TOO_MANY', 'etude_off': 'QUIZ_OFF', 'quiz_off': 'QUIZ_OFF', 'no_ad': 'NO_ADS'};
+
+  QuizException _fail(ApiException e) {
+    final code = e.code.toLowerCase();
+    return QuizException('${e.code.toUpperCase()} ${_alias[code] ?? ''} ${e.message}'.trim());
+  }
+
+  static const _deep = {'state', 'question', 'attempts', 'daily'};
+  static const _keep = {'inventory', 'equipped'};
+
+  Future<Map<String, dynamic>> _call(String method, String path, {Map<String, dynamic>? body, Map<String, dynamic>? query, bool pay = false}) async {
+    try {
+      final c = JeuxApi.client;
+      final dynamic r = switch (method) {
+        'GET' => await c.get(path, query: query),
+        'PUT' => await c.put(path, body: body),
+        _ => pay ? await c.pay(path, body: body) : await c.post(path, body: body),
+      };
+      return JeuxApi.camelKeys(JeuxApi.map(r), deep: _deep, keep: _keep);
+    } on ApiException catch (e) {
+      throw _fail(e);
     }
   }
 
@@ -309,8 +315,9 @@ class QuizService {
     final at = _configAt;
     if (!force && at != null && DateTime.now().difference(at).inMinutes < 10) return _config;
     try {
-      final snap = await FirebaseFirestore.instance.collection('AppConfig').doc('quiz').getM('quiz_service.dart:311');
-      _config = QuizConfig.fromMap(snap.data() ?? {});
+      final r = await JeuxApi.client.get('/config');
+      final q = JeuxApi.map(r)['quiz'];
+      if (q is Map) _config = QuizConfig.fromMap(JeuxApi.camelKeys(q, keep: {'shop'}));
       _configAt = DateTime.now();
     } catch (e) {
       debugPrint('[Quiz] config : $e');
@@ -326,12 +333,12 @@ class QuizService {
 
   Future<QuizState> refresh() async {
     await loadConfig();
-    final m = await _call('quizGetState');
+    final m = await _call('GET', '/quiz/state');
     return _publish(m);
   }
 
   Future<QuizLevelStart> startLevel(int n) async {
-    final m = await _call('quizStartLevel', {'n': n});
+    final m = await _call('POST', '/quiz/levels/$n/start');
     final s = _publish(m);
     return QuizLevelStart(
       n,
@@ -344,7 +351,7 @@ class QuizService {
   }
 
   Future<QuizAnswerResult> answer(int n, int i, int choice) async {
-    final m = await _call('quizAnswer', {'n': n, 'i': i, 'choice': choice});
+    final m = await _call('POST', '/quiz/levels/$n/answer', body: {'i': i, 'choice': choice});
     final cur = state.value;
     if (cur != null) state.value = QuizState.fromMap({..._toMap(cur), 'hearts': m['hearts']}, enabled: cur.enabled);
     return QuizAnswerResult(_b(m['correct']), _i(m['correctIndex']), '${m['explanation']}', _i(m['hearts']));
@@ -360,7 +367,7 @@ class QuizService {
       };
 
   Future<QuizFinish> finishLevel(int n) async {
-    final m = await _call('quizFinishLevel', {'n': n});
+    final m = await _call('POST', '/quiz/levels/$n/finish');
     final s = _publish(m);
     return QuizFinish(
       pass: _b(m['pass']),
@@ -376,25 +383,26 @@ class QuizService {
   }
 
   Future<int> doublePoints(int n) async {
-    final m = await _call('quizDoublePoints', {'n': n});
+    final m = await _call('POST', '/quiz/levels/$n/double');
     _publish(m);
     return _i(m['extra']);
   }
 
-  Future<QuizState> refillHeart() async => _publish(await _call('quizRefillHeart'));
+  Future<QuizState> refillHeart() async => _publish(await _call('POST', '/quiz/hearts/refill'));
 
   /// Recharge de cœurs avec des pièces : [pack] « one » (1 cœur) ou « full » (tous les cœurs manquants).
-  Future<QuizState> buyHearts(String pack) async => _publish(await _call('quizBuyHearts', {'pack': pack}));
+  Future<QuizState> buyHearts(String pack) async => _publish(await _call('POST', '/quiz/hearts', body: {'pack': pack}, pay: true));
 
-  /// Temps passé dans le quiz (statistiques admin) ; sans importance si ça échoue.
+  /// Temps passé dans le quiz (statistiques) ; sans importance si ça échoue.
   Future<void> ping(int seconds) async {
     try {
-      await _call('quizPing', {'sec': seconds});
+      await _call('POST', '/quiz/ping');
     } catch (_) {}
   }
 
-  /// Outils admin (réservés au rôle ADM côté serveur).
-  Future<Map<String, dynamic>> admin(Map<String, dynamic> data) => _call('quizAdmin', data);
+  /// Outils d'administration du quiz : pas encore disponibles dans l'API (voir lacunes_api_jeux_medias.md).
+  Future<Map<String, dynamic>> admin(Map<String, dynamic> data) async =>
+      throw QuizException('UNAVAILABLE Les outils d\'administration du quiz ne sont pas encore disponibles.');
 
   // ── Avertissement accepté et signalements ──
   static const consentVersion = 1;
@@ -408,8 +416,8 @@ class QuizService {
     try {
       final sp = await SharedPreferences.getInstance();
       if (sp.getBool(_consentKey) == true) return true;
-      final d = await FirebaseFirestore.instance.collection('QuizConsent').doc(id).getM('quiz_service.dart:410');
-      final v = d.data()?['version'];
+      final d = await _call('GET', '/quiz/consent');
+      final v = d['version'];
       if (v is num && v >= consentVersion) {
         await sp.setBool(_consentKey, true);
         return true;
@@ -420,7 +428,7 @@ class QuizService {
     return false;
   }
 
-  /// Enregistre l'acceptation (preuve datée côté serveur : QuizConsent/{uid}).
+  /// Enregistre l'acceptation (preuve datée côté serveur).
   Future<void> acceptConsent() async {
     final id = uid;
     if (id == null) return;
@@ -429,11 +437,7 @@ class QuizService {
       await sp.setBool(_consentKey, true);
     } catch (_) {}
     try {
-      await FirebaseFirestore.instance.collection('QuizConsent').doc(id).set({
-        'version': consentVersion,
-        'acceptedAt': FieldValue.serverTimestamp(),
-        'platform': defaultTargetPlatform.name,
-      });
+      await _call('POST', '/quiz/consent', body: {'version': consentVersion, 'platform': defaultTargetPlatform.name});
     } catch (e) {
       debugPrint('[Quiz] consentement non enregistré : $e');
     }
@@ -450,7 +454,7 @@ class QuizService {
     required String reason,
     String comment = '',
   }) async {
-    await _call('quizReport', {
+    await _call('POST', '/quiz/reports', body: {
       'kind': kind,
       'n': n ?? 0,
       'q': question,
@@ -462,13 +466,9 @@ class QuizService {
     });
   }
 
-  // ── Grand Défi ──
-  Future<QuizChalReply> _chal(String action, [Map<String, dynamic>? extra]) async {
-    final m = await _call('quizChallenge', {'action': action, ...?extra});
-    final st = m['state'];
-    if (st is Map) _publish(Map<String, dynamic>.from(st));
-    return QuizChalReply.fromMap(m);
-  }
+  // ── Grand Défi : pas encore dans l'API (voir lacunes_api_jeux_medias.md) ──
+  Future<QuizChalReply> _chal(String action, [Map<String, dynamic>? extra]) async =>
+      throw QuizException('QUIZ_OFF UNAVAILABLE Le Grand Défi n\'est pas encore disponible.');
 
   Future<QuizChalReply> challengeInfo() => _chal('info');
   Future<QuizChalReply> challengeStart({bool extra = false}) => _chal('start', {'extra': extra});
@@ -489,7 +489,7 @@ class QuizService {
         questions: (m['questions'] as List).map((e) => QuizQuestion.fromMap(Map<String, dynamic>.from(e as Map))).toList(),
         results: (m['results'] as List)
             .map((e) {
-              final r = Map<String, dynamic>.from(e as Map);
+              final r = JeuxApi.camelKeys(e as Map);
               return QuizAnswerResult(_b(r['correct']), _i(r['correctIndex']), '${r['explanation']}', 0);
             })
             .toList(),
@@ -502,7 +502,7 @@ class QuizService {
     if (!force && _dailyFuture != null && at != null && DateTime.now().difference(at).inMinutes < 5) return _dailyFuture!;
     _dailyAt = DateTime.now();
     final f = () async {
-      final m = await _call('quizDailyGet');
+      final m = await _call('GET', '/quiz/daily');
       try {
         final sp = await SharedPreferences.getInstance();
         await sp.setString('quiz_daily_cache', jsonEncode({'uid': uid, 'data': m}));
@@ -535,7 +535,7 @@ class QuizService {
 
   /// Retourne le résultat de la réponse ; [gain] > 0 quand c'était la dernière question du jour.
   Future<({QuizAnswerResult result, bool finished, int gain, int correctCount})> dailyAnswer(int i, int choice) async {
-    final m = await _call('quizDailyAnswer', {'i': i, 'choice': choice});
+    final m = await _call('POST', '/quiz/daily/answer', body: {'i': i, 'choice': choice});
     _dailyFuture = null;
     SharedPreferences.getInstance().then((sp) => sp.remove('quiz_daily_cache')).catchError((Object _) => false);
     final st = m['state'];
@@ -548,18 +548,18 @@ class QuizService {
     );
   }
 
-  Future<QuizState> buy(String itemId) async => _publish(await _call('quizShopBuy', {'itemId': itemId}));
+  Future<QuizState> buy(String itemId) async => _publish(await _call('POST', '/quiz/shop/buy', body: {'item_id': itemId}));
 
   Future<QuizState> equip(String slot, String? itemId) async =>
-      _publish(await _call('quizEquip', {'slot': slot, 'itemId': itemId}));
+      _publish(await _call('POST', '/quiz/shop/equip', body: {'slot': slot, 'item_id': itemId}));
 
   /// Rang de la semaine ; 0 si aucun point.
   Future<({int rank, int points, String weekId})> myRank() async {
-    final m = await _call('quizMyRank');
+    final m = await _call('GET', '/quiz/rank');
     return (rank: _i(m['rank']), points: _i(m['points']), weekId: '${m['weekId']}');
   }
 
-  // ── Lectures directes (règles Firestore : classement public, historique du joueur) ──────────
+  // ── Classements et historique ──────────
 
   static String currentWeekId() {
     final now = DateTime.now().toUtc();
@@ -571,19 +571,27 @@ class QuizService {
     return '${thursday.year}-W${week.toString().padLeft(2, '0')}';
   }
 
+  Map<String, dynamic>? _board;
+  DateTime? _boardAt;
+
+  /// Classement de la semaine (joueurs et pays) : une seule requête partagée par les deux listes.
+  Future<Map<String, dynamic>> _leaderboard() async {
+    final at = _boardAt;
+    if (_board != null && at != null && DateTime.now().difference(at).inSeconds < 20) return _board!;
+    final m = await _call('GET', '/quiz/leaderboard');
+    _board = m;
+    _boardAt = DateTime.now();
+    return m;
+  }
+
   Future<List<QuizWeeklyEntry>> weeklyTop({int limit = 50}) async {
-    final snap = await FirebaseFirestore.instance
-        .collection('QuizWeekly')
-        .where('weekId', isEqualTo: currentWeekId())
-        .orderBy('points', descending: true)
-        .limit(limit)
-        .getM('quiz_service.dart:579');
-    return snap.docs.map((d) {
-      final x = d.data();
+    final m = await _leaderboard();
+    return ((m['players'] as List?) ?? const []).take(limit).map((e) {
+      final x = JeuxApi.camelKeys(e as Map);
       return QuizWeeklyEntry(
-        uid: '${x['uid']}',
-        name: '${x['name'] ?? ''}',
-        photo: '${x['photo'] ?? ''}',
+        uid: '${x['userId']}',
+        name: '${x['username'] ?? ''}',
+        photo: '${x['avatarUrl'] ?? ''}',
         country: '${x['country'] ?? ''}',
         points: _i(x['points']),
         frame: '${x['frame'] ?? ''}',
@@ -593,34 +601,15 @@ class QuizService {
   }
 
   Future<List<QuizCountryRow>> countryBoard() async {
-    final snap = await FirebaseFirestore.instance.collection('QuizCountryBoard').doc(currentWeekId()).getM('quiz_service.dart:595');
-    final list = (snap.data()?['countries'] as List?) ?? const [];
-    return list.map((e) {
-      final m = Map<String, dynamic>.from(e as Map);
-      return QuizCountryRow('${m['code']}', '${m['name']}', _i(m['points']));
+    final m = await _leaderboard();
+    return ((m['countries'] as List?) ?? const []).map((e) {
+      final x = Map<String, dynamic>.from(e as Map);
+      final code = '${x['code']}';
+      return QuizCountryRow(code, code, _i(x['points']));
     }).toList();
   }
 
-  Future<List<QuizAttempt>> history({int limit = 100}) async {
-    final u = uid;
-    if (u == null) return const [];
-    final snap = await FirebaseFirestore.instance
-        .collection('QuizAttempts')
-        .where('uid', isEqualTo: u)
-        .orderBy('at', descending: true)
-        .limit(limit)
-        .getM('quiz_service.dart:611');
-    return snap.docs.map((d) {
-      final x = d.data();
-      return QuizAttempt(
-        n: _i(x['n']),
-        theme: '${x['theme'] ?? ''}',
-        passed: x['passed'] == true,
-        correct: _i(x['correct']),
-        gain: _i(x['gain']),
-        at: _i(x['at']),
-        details: ((x['details'] as List?) ?? const []).map((e) => Map<String, dynamic>.from(e as Map)).toList(),
-      );
-    }).toList();
-  }
+  /// Historique des niveaux du joueur : pas encore dans l'API (voir lacunes_api_jeux_medias.md).
+  Future<List<QuizAttempt>> history({int limit = 100}) async =>
+      throw QuizException('UNAVAILABLE L\'historique des questions n\'est pas encore disponible.');
 }

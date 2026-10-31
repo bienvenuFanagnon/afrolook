@@ -4,8 +4,9 @@ import 'package:afrotok/widgets/name_tag.dart';
 import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrotok/services/api/canaux_api.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -81,21 +82,8 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
     final alreadyFollowing = Set<String>.from(me.followingIds ?? []);
     alreadyFollowing.add(myId);
 
-    // Re-lire canauxSuivisIds depuis Firestore : le provider peut être périmé
-    // si l'utilisateur s'est abonné à un canal depuis une autre page.
-    Set<String> subscribedCanalIds = Set<String>.from(me.canauxSuivisIds ?? []);
-    if (myId.isNotEmpty) {
-      try {
-        final userSnap = await FirebaseFirestore.instance
-            .collection('Users')
-            .doc(myId)
-            .getM('feed_end_discovery_section.dart:91')
-            .timeout(const Duration(seconds: 10));
-        final freshIds = List<String>.from(userSnap.data()?['canauxSuivisIds'] ?? []);
-        subscribedCanalIds = Set<String>.from(freshIds);
-        auth.loginUserData.canauxSuivisIds = freshIds;
-      } catch (_) {}
-    }
+    // Canaux déjà suivis : liste du profil connecté (l'API exclut aussi les canaux dont la personne est déjà membre)
+    final Set<String> subscribedCanalIds = Set<String>.from(me.canauxSuivisIds ?? []);
 
     final usersFuture = _fetchUsers(alreadyFollowing).catchError((_) => <UserData>[]);
     final canauxFuture = _fetchCanaux(subscribedCanalIds, myId).catchError((_) => <Canal>[]);
@@ -121,39 +109,15 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
   }
 
   Future<List<UserData>> _fetchUsers(Set<String> exclude) async {
-    final pageType = widget.pageType;
-    QuerySnapshot<Map<String, dynamic>> snap;
-    try {
-      if (pageType != null && pageType.isNotEmpty) {
-        // where + orderBy sur le MÊME champ = index single-field automatique
-        snap = await FirebaseFirestore.instance
-            .collection('Users')
-            .where('mainCategory', isEqualTo: pageType)
-            .limit(50)
-            .getM('feed_end_discovery_section.dart:132')
-            .timeout(const Duration(seconds: 15));
-      } else {
-        // orderBy abonnes seul = index single-field automatique, limite haute pour plus de variété
-        snap = await FirebaseFirestore.instance
-            .collection('Users')
-            .orderBy('abonnes', descending: true)
-            .limit(50)
-            .getM('feed_end_discovery_section.dart:140')
-            .timeout(const Duration(seconds: 15));
-      }
-    } catch (_) {
-      return [];
-    }
-
-    final all = snap.docs
-        .map((d) {
-          try { return UserData.fromJson(d.data())..id = d.id; } catch (_) { return null; }
+    // Suggestions de profils du serveur (GET /users/suggestions : voir lacunes_api_publications.md)
+    final rows = await UsersApi.suggestions(limit: 50);
+    final all = rows
+        .map((m) {
+          try { return userSummaryFromApi(m); } catch (_) { return null; }
         })
         .whereType<UserData>()
         .where((u) => u.id != null && !exclude.contains(u.id))
         .toList();
-
-    // Tri par abonnés décroissant, shuffle du top 30 pour variété
     all.sort((a, b) => (b.abonnes ?? 0).compareTo(a.abonnes ?? 0));
     final top = all.take(30).toList();
     top.shuffle(Random());
@@ -162,44 +126,11 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
 
   Future<List<Canal>> _fetchCanaux(Set<String> alreadySubscribed, String myId) async {
     final pageType = widget.pageType;
-    QuerySnapshot<Map<String, dynamic>> snap;
-    try {
-      if (pageType != null && pageType.isNotEmpty) {
-        // where sur mainCategory uniquement (single index), filtre status côté client
-        snap = await FirebaseFirestore.instance
-            .collection('Canaux')
-            .where('mainCategory', isEqualTo: pageType)
-            .limit(40)
-            .getM('feed_end_discovery_section.dart:172')
-            .timeout(const Duration(seconds: 15));
-      } else {
-        // orderBy suivi seul = index single-field automatique
-        snap = await FirebaseFirestore.instance
-            .collection('Canaux')
-            .orderBy('suivi', descending: true)
-            .limit(40)
-            .getM('feed_end_discovery_section.dart:180')
-            .timeout(const Duration(seconds: 15));
-      }
-    } catch (_) {
-      return [];
-    }
-
-    final all = snap.docs
-        .map((d) {
-          try { return Canal.fromJson(d.data())..id = d.id; } catch (_) { return null; }
-        })
-        .whereType<Canal>()
-        .where((c) {
-          if (c.id == null) return false;
-          // Vérifier aussi usersSuiviId pour les anciens abonnements
-          // (canauxSuivisIds sur User est récent et peut être absent)
-          final inUserList = alreadySubscribed.contains(c.id);
-          final inCanalList = c.usersSuiviId?.contains(myId) == true;
-          return !inUserList && !inCanalList;
-        })
-        .toList();
-
+    final page = await CanauxApi.list(category: (pageType != null && pageType.isNotEmpty) ? CanauxApi.apiCategory(pageType) : null, limit: 40, myId: myId);
+    final all = page.items.where((c) {
+      if (c.id == null) return false;
+      return !alreadySubscribed.contains(c.id) && c.usersSuiviId?.contains(myId) != true;
+    }).toList();
     all.sort((a, b) => (b.suivi ?? 0).compareTo(a.suivi ?? 0));
     return all;
   }
@@ -220,10 +151,6 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
       if (!auth.loginUserData.followingIds!.contains(uid)) {
         auth.loginUserData.followingIds!.add(uid);
       }
-      // Backfill 50 posts récents du créateur suivi dans unreadPosts du nouvel abonné
-      FirebaseFunctions.instance
-          .httpsCallable('backfillPostsOnFollow')
-          .call({'followedUserId': uid}).ignore();
       widget.onSubscribed?.call();
     } catch (_) {
       if (mounted) setState(() => _followedIds.remove(uid));
@@ -238,26 +165,13 @@ class _FeedEndDiscoverySectionState extends State<FeedEndDiscoverySection> {
     if (myId.isEmpty) return;
 
     setState(() => _subscribedCanalIds.add(cid));
-    final fs = FirebaseFirestore.instance;
     try {
-      await Future.wait([
-        fs.collection('Canaux').doc(cid).update({
-          'usersSuiviId': FieldValue.arrayUnion([myId]),
-          'suivi': FieldValue.increment(1),
-        }),
-        fs.collection('Users').doc(myId).update({
-          'canauxSuivisIds': FieldValue.arrayUnion([cid]),
-        }),
-      ]);
+      await CanauxApi.join(cid);
       // Mettre à jour en mémoire pour que le bouton reflète l'état immédiatement
       auth.loginUserData.canauxSuivisIds ??= [];
       if (!auth.loginUserData.canauxSuivisIds!.contains(cid)) {
         auth.loginUserData.canauxSuivisIds!.add(cid);
       }
-      // Backfill posts du canal dans unreadPosts de l'abonné
-      FirebaseFunctions.instance
-          .httpsCallable('backfillCanalPostsOnFollow')
-          .call({'canalId': cid}).ignore();
       widget.onSubscribed?.call();
     } catch (_) {
       if (mounted) setState(() => _subscribedCanalIds.remove(cid));

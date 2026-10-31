@@ -1,4 +1,3 @@
-import 'package:afrotok/services/read_meter.dart';
 import '../../services/media_shrink.dart';
 import '../../utils/count_format.dart';
 import 'dart:async';
@@ -6,16 +5,13 @@ import 'dart:io';
 
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/canaux_api.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
-import 'package:video_compress/video_compress.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
 import '../../providers/authProvider.dart';
@@ -88,7 +84,6 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
   int _pageCount = 0;
 
   final ImagePicker _picker = ImagePicker();
-  final FirebaseStorage _storage = FirebaseStorage.instance;
 
   @override
   void initState() {
@@ -427,35 +422,22 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
     }
   }
 
+  /// Envoie un fichier par URL signée et renvoie son IDENTIFIANT D'ENVOI (pas une adresse) : les fichiers payants partent en PRIVÉ
+  /// (jamais d'adresse publique), seule la miniature est publique.
   Future<String?> _uploadFile(File file, String fileName, String folder) async {
     try {
-      final Reference storageRef = _storage.ref().child('$folder/$fileName');
-      final UploadTask uploadTask = storageRef.putFile(await MediaShrink.file(file));
-
-      final completer = Completer<TaskSnapshot>();
-
-      uploadTask.snapshotEvents.listen(
-              (TaskSnapshot snapshot) {
-            final progress = snapshot.bytesTransferred / snapshot.totalBytes;
-            setState(() {
-              _uploadProgress = progress;
-              _uploadMessage = 'Upload ${_getUploadMessage(folder)}... ${(progress * 100).toStringAsFixed(0)}%';
-            });
-
-            if (snapshot.state == TaskState.success) {
-              completer.complete(snapshot);
-            }
-          },
-          onError: (error) {
-            completer.completeError(error);
-          }
-      );
-
-      final TaskSnapshot snapshot = await completer.future;
-      final String downloadUrl = await snapshot.ref.getDownloadURL();
-
-      return downloadUrl;
+      final isPublic = folder == 'thumbnails';
+      final toSend = isPublic ? await MediaShrink.file(file) : file;
+      return await CanauxApi.upload(toSend, private: !isPublic, onProgress: (progress) {
+        if (!mounted) return;
+        setState(() {
+          _uploadProgress = progress;
+          _uploadMessage = 'Upload ${_getUploadMessage(folder)}... ${(progress * 100).toStringAsFixed(0)}%';
+        });
+      });
     } catch (e) {
+      printVm('Envoi impossible: $e');
+      if (mounted) setState(() => _uploadMessage = CanauxApi.message(e));
       return null;
     }
   }
@@ -488,48 +470,8 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
     }
   }
 
-// Fonction pour récupérer un ContentPaie par ID et envoyer une notification
-  Future<void> notifyNewEpisode(String serieId,UserAuthProvider userProvider) async {
-    try {
-      // Récupérer le document depuis Firestore
-      final docSnapshot = await FirebaseFirestore.instance
-          .collection('ContentPaies')
-          .doc(serieId)
-          .getM('contentForm.dart:497');
-
-      if (!docSnapshot.exists) {
-        printVm('Document $serieId non trouvé');
-        return;
-      }
-
-      // Convertir le snapshot en objet ContentPaie
-      final content = ContentPaie.fromJson(docSnapshot.data()!);
-
-      // Préparer le message de notification
-      final message = "Business 🔥 - Nouvel épisode ajouté à la série '${content.title}' ! Regardez maintenant.";
-
-      // Récupérer les utilisateurs à notifier
-      final userIds = await userProvider.getAllUsersOneSignaUserId();
-
-      if (userIds.isNotEmpty) {
-        await userProvider.sendNotification(
-          userIds: userIds,
-          smallImage: content.thumbnailUrl,
-          send_user_id: userProvider.loginUserData!.id!,
-          recever_user_id: '',
-          message: message,
-          type_notif: NotificationType.POST.name,
-          post_id: content.id ?? '',
-          post_type: _getPostType(content.contentType),
-          chat_id: '',
-        );
-      }
-
-      printVm("Notification envoyée pour l'épisode: ${content.title}");
-    } catch (e) {
-      printVm("Erreur lors de l'envoi de la notification: $e");
-    }
-  }
+// Les épisodes de série n'ont pas encore de point d'accès dans l'API : plus de notification de nouvel épisode.
+  Future<void> notifyNewEpisode(String serieId,UserAuthProvider userProvider) async {}
 
   Future<void> _saveContent() async {
     if (!_formKey.currentState!.validate()) return;
@@ -613,7 +555,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
 
       // Étape 1: Upload des fichiers
       final Map<String, String> uploadedUrls = await _uploadFiles();
-      final String videoUrl = uploadedUrls['videoUrl']!;
+      final String videoUrl = uploadedUrls['videoUrl']!; // identifiants d'envoi (voir _uploadFile)
       final String pdfUrl = uploadedUrls['pdfUrl']!;
       final String thumbnailUrl = uploadedUrls['thumbnailUrl']!;
       final String fileUrl = uploadedUrls['fileUrl']!;
@@ -647,7 +589,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
         );
 
         success = await contentProvider.addEpisode(episode);
-        notifyNewEpisode(widget.seriesId!,userProvider);
+        if (!success) throw Exception('L\'ajout d\'épisodes n\'est pas encore disponible. Réessaie après la prochaine mise à jour.');
       } else {
         // Création/mise à jour d'un contenu
         final flashPrice = _flashSaleEnabled && _flashPriceCtrl.text.isNotEmpty

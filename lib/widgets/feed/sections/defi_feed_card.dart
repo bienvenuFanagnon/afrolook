@@ -1,6 +1,5 @@
 import 'package:afrotok/services/read_meter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -56,30 +55,9 @@ class _DefiFeedCardState extends State<DefiFeedCard> {
   }
 
   static Future<void> _load() async {
-    try {
-      final snap = await FirebaseFirestore.instance
-          .collection('Posts')
-          .where('type', isEqualTo: PostType.DEFI.name)
-          .where('defi_config.status', isEqualTo: 'en_cours')
-          .limit(40)
-          .getM('defi_feed_card.dart:64');
-      final now = DateTime.now().millisecondsSinceEpoch;
-      final list = <Post>[];
-      for (final d in snap.docs) {
-        final p = Post.fromJson({...d.data(), 'id': d.id});
-        final cfg = p.defiConfig;
-        if (cfg == null || cfg.endDate <= now) continue;
-        if (p.status != null && p.status != PostStatus.VALIDE.name) continue;
-        list.add(p);
-      }
-      // les plus proches de la fin d'abord : c'est eux qu'il ne faut pas rater
-      list.sort((a, b) => a.defiConfig!.endDate.compareTo(b.defiConfig!.endDate));
-      _active = list;
-      _loadedAt = DateTime.now();
-    } catch (e) {
-      debugPrint('DefiFeedCard._load : $e');
-      _loadedAt = DateTime.now().subtract(const Duration(minutes: 3)); // on réessaiera dans une minute
-    }
+    // Les défis en cours n'ont pas encore de route côté API (voir lacunes_api_publications.md) : aucune carte de défi en attendant.
+    _active = [];
+    _loadedAt = DateTime.now();
   }
 
   Post? _pick() {

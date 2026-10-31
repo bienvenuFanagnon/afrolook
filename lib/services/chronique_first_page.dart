@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 import '../pages/chronique/chroniqueform.dart';
@@ -12,7 +11,7 @@ class ChroniqueFirstPage {
   static const Duration maxAge = Duration(minutes: 2);
 
   static List<Chronique> _items = const [];
-  static DocumentSnapshot? _last;
+  static Object? _last; // curseur de la page suivante (API) ; tout autre type est ignoré par le fournisseur
   static bool _hasMore = false;
   static DateTime? _at;
 
@@ -20,7 +19,7 @@ class ChroniqueFirstPage {
   /// (sans cela, une chronique publiée n'apparaissait qu'au redémarrage de l'application).
   static final ValueNotifier<int> changes = ValueNotifier<int>(0);
 
-  static void save(List<Chronique> items, DocumentSnapshot? last, {required bool hasMore}) {
+  static void save(List<Chronique> items, Object? last, {required bool hasMore}) {
     _items = List.unmodifiable(items);
     _last = last;
     _hasMore = hasMore;
@@ -28,7 +27,7 @@ class ChroniqueFirstPage {
   }
 
   /// Page encore fraîche (et chroniques non expirées), sinon null.
-  static ({List<Chronique> items, DocumentSnapshot? last, bool hasMore})? fresh() {
+  static ({List<Chronique> items, Object? last, bool hasMore})? fresh() {
     final at = _at;
     if (at == null || _items.isEmpty || DateTime.now().difference(at) > maxAge) return null;
     final alive = _items.where((c) => !c.isExpired).toList();

@@ -8,6 +8,7 @@ import '../../../models/model_data.dart';
 import '../../../models/payment_config.dart';
 import '../../../providers/authProvider.dart';
 import '../../../services/payment_methods_config_service.dart';
+import '../../../services/api/wallet_api.dart';
 import '../../../services/retraitService.dart';
 import '../../../theme/app_colors.dart';
 import '../../../l10n/tr.dart';
@@ -15,7 +16,7 @@ import '../../../services/currency_service.dart';
 import '../../../utils/tx_amount.dart';
 
 /// Formulaire de demande de retrait (thèmes clair et sombre via [AppColors]).
-/// La demande est enregistrée dans Firestore puis traitée manuellement.
+/// La demande est enregistrée par l'API puis traitée manuellement par l'équipe.
 class UserDemandeRetraitPage extends StatefulWidget {
   @override
   _UserDemandeRetraitPageState createState() => _UserDemandeRetraitPageState();
@@ -57,6 +58,13 @@ class _UserDemandeRetraitPageState extends State<UserDemandeRetraitPage> {
   void initState() {
     super.initState();
     _loadCountries();
+    // Soldes relus sur l'API (jamais calculés dans l'application)
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        await WalletApi.instance.syncInto(Provider.of<UserAuthProvider>(context, listen: false).loginUserData);
+        if (mounted) setState(() {});
+      } catch (_) {}
+    });
   }
 
   @override
@@ -893,6 +901,9 @@ class _UserDemandeRetraitPageState extends State<UserDemandeRetraitPage> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text(context.tr('Demande de retrait envoyée')), duration: Duration(seconds: 4)));
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => UserRetraitListPage()));
+      } else if (!success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(RetraitService.lastError ?? context.tr('Demande de retrait impossible')), duration: const Duration(seconds: 5)));
       }
     } catch (e) {
       if (mounted) {

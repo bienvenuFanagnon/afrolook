@@ -2,7 +2,8 @@ import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 import 'dart:math';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/api_gateway.dart';
+import 'package:afrotok/services/api/post_mapper.dart';
 import 'package:flutter/material.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -48,7 +49,6 @@ class FollowingUnseenFeedPage extends StatefulWidget {
 }
 
 class _FollowingUnseenFeedPageState extends State<FollowingUnseenFeedPage> {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
   final ScrollController _scrollController = ScrollController();
   final Random _random = Random();
   final Map<String, Timer> _visibilityTimers = {};
@@ -58,7 +58,7 @@ class _FollowingUnseenFeedPageState extends State<FollowingUnseenFeedPage> {
   bool _loading = true;
   bool _loadingMore = false;
   bool _hasMore = true;
-  int? _lastTimestampUs; // curseur pagination (microsecondes)
+  String? _cursor; // curseur de l'API
 
   static const _pageSize = 10;
 
@@ -100,93 +100,22 @@ class _FollowingUnseenFeedPageState extends State<FollowingUnseenFeedPage> {
 
   // ── Chargement ───────────────────────────────────────────────────────────────
 
-  /// Découpe une liste en chunks de taille [size].
-  List<List<T>> _chunks<T>(List<T> list, int size) {
-    final result = <List<T>>[];
-    for (var i = 0; i < list.length; i += size) {
-      result.add(list.sublist(i, (i + size).clamp(0, list.length)));
-    }
-    return result;
-  }
-
-  /// Exécute les queries créateurs ET canaux en parallèle et fusionne les résultats.
-  Future<List<Post>> _fetchFromFirestore({int? beforeUs}) async {
-    final creatorIds = widget.unseenCreatorIds;
-    final canalIds = widget.followedCanalIds;
-
-    if (creatorIds.isEmpty && canalIds.isEmpty) return [];
-
-    final allFutures = <Future<List<Post>>>[];
-
-    // ── Requête A : posts des créateurs (par user_id) ────────────────────────
-    for (final chunk in _chunks(creatorIds, 30)) {
-      allFutures.add(_queryPosts(
-        field: 'user_id',
-        ids: chunk,
-        beforeUs: beforeUs,
-      ));
-    }
-
-    // ── Requête B : posts des canaux (par canal_id) ──────────────────────────
-    for (final chunk in _chunks(canalIds, 30)) {
-      allFutures.add(_queryPosts(
-        field: 'canal_id',
-        ids: chunk,
-        beforeUs: beforeUs,
-      ));
-    }
-
-    final results = await Future.wait(allFutures);
-    final seen = <String>{};
-    final merged = results
-        .expand((e) => e)
-        .where((p) => p.id != null && seen.add(p.id!)) // déduplique
-        .toList()
-      ..sort((a, b) => (b.createdAt ?? 0).compareTo(a.createdAt ?? 0));
-
-    return merged.take(_pageSize).toList();
-  }
-
-  Future<List<Post>> _queryPosts({
-    required String field,
-    required List<String> ids,
-    int? beforeUs,
-  }) async {
-    if (ids.isEmpty) return [];
-    try {
-      Query q = _db
-          .collection('Posts')
-          .where(field, whereIn: ids)
-          .orderBy('created_at', descending: true);
-
-      if (beforeUs != null) {
-        q = q.where('created_at', isLessThan: beforeUs);
-      }
-      q = q.limit(_pageSize * 2);
-
-      final snap = await q.getM('following_unseen_feed_page.dart:166');
-      return snap.docs.map((d) {
-        final data = Map<String, dynamic>.from(d.data() as Map);
-        data['id'] = d.id;
-        return Post.fromJson(data);
-      }).toList();
-    } catch (_) {
-      return [];
-    }
+  /// Publications NON VUES des comptes suivis (API : GET /v1/feed, niveau 1, curseur).
+  Future<List<Post>> _fetchPage() async {
+    final r = await ApiGateway.instance.client.get('/feed', query: {'limit': _pageSize, 'tier': 1, if (_cursor != null) 'cursor': _cursor}) as Map;
+    _cursor = r['next_cursor'] as String?;
+    return ((r['data'] as List?) ?? const []).map((e) => postFromApi(Map<String, dynamic>.from(e as Map))).where((p) => p.id != null).toList();
   }
 
   Future<void> _loadPage() async {
     setState(() => _loading = true);
+    _cursor = null;
     try {
-      final posts = await _fetchFromFirestore();
+      final posts = await _fetchPage();
       if (mounted) {
         setState(() {
           _posts = posts;
-          _hasMore = posts.length == _pageSize;
-          if (posts.isNotEmpty) {
-            // createdAt est en ms dans le modèle → convertir en µs pour Firestore
-            _lastTimestampUs = (posts.last.createdAt ?? 0) * 1000;
-          }
+          _hasMore = _cursor != null;
         });
       }
     } catch (_) {}
@@ -194,17 +123,15 @@ class _FollowingUnseenFeedPageState extends State<FollowingUnseenFeedPage> {
   }
 
   Future<void> _loadMorePosts() async {
-    if (_loadingMore || !_hasMore || _lastTimestampUs == null) return;
+    if (_loadingMore || !_hasMore || _cursor == null) return;
     setState(() => _loadingMore = true);
     try {
-      final more = await _fetchFromFirestore(beforeUs: _lastTimestampUs);
+      final more = await _fetchPage();
+      final known = _posts.map((p) => p.id).toSet();
       if (mounted) {
         setState(() {
-          _posts.addAll(more);
-          _hasMore = more.length == _pageSize;
-          if (more.isNotEmpty) {
-            _lastTimestampUs = (more.last.createdAt ?? 0) * 1000;
-          }
+          _posts.addAll(more.where((p) => !known.contains(p.id)));
+          _hasMore = _cursor != null;
         });
       }
     } catch (_) {}
@@ -234,17 +161,7 @@ class _FollowingUnseenFeedPageState extends State<FollowingUnseenFeedPage> {
     if (_sessionViewedIds.contains(postId)) return;
     _sessionViewedIds.add(postId);
 
-    try {
-      final batch = _db.batch();
-      batch.update(_db.collection('Posts').doc(postId), {
-        'users_vue_id': FieldValue.arrayUnion([widget.currentUserId]),
-      });
-      batch.update(
-          _db.collection('Users').doc(widget.currentUserId), {
-        'viewedPostIds': FieldValue.arrayUnion([postId]),
-      });
-      await batch.commit();
-    } catch (_) {}
+    await ApiGateway.instance.markViewed(postId); // vue comptée par le serveur
   }
 
   // ── Widget post (tous types) ──────────────────────────────────────────────────

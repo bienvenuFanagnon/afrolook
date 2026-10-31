@@ -11,7 +11,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import 'api/api_gateway.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -87,13 +88,22 @@ class OfflineMusic {
 
   static bool has(String soundId) => ids.value.contains(soundId);
 
-  static String _friendly(FirebaseFunctionsException e) {
-    final m = '${e.message}';
-    if (m.contains('ACHAT_REQUIS')) return 'Achète ce titre pour le télécharger.';
-    if (m.contains('APPAREILS')) return 'Ce titre est déjà téléchargé sur 3 appareils. Supprime-le d’un autre appareil pour continuer.';
-    if (m.contains('LIMITE_JOUR')) return 'Limite de téléchargements du jour atteinte. Reviens demain.';
-    if (m.contains('RETIRE')) return 'Ce titre n’est plus disponible.';
-    if (e.code == 'unauthenticated') return 'Connecte-toi pour télécharger.';
+  /// Licence de lecture hors ligne. Point d'accès prévu : POST /music/sounds/{id}/license (absent pour l'instant, voir lacunes_api_argent_creations.md).
+  static Future<Map<String, dynamic>> _license(String soundId, {bool renew = false}) async {
+    final r = await ApiGateway.instance.client.post('/music/sounds/$soundId/license', body: {'device_id': await deviceId(), if (renew) 'renew': true});
+    final d = ApiClient.data(r);
+    return Map<String, dynamic>.from(d as Map);
+  }
+
+  static bool _purchaseNeeded(ApiException e) => e.status == 402 || e.code == 'payment_required' || e.code == 'purchase_required';
+  static bool _gone(ApiException e) => e.status == 404 || e.status == 410 || _purchaseNeeded(e);
+
+  static String _friendly(ApiException e) {
+    if (_purchaseNeeded(e)) return 'Achète ce titre pour le télécharger.';
+    if (e.code == 'too_many_devices') return 'Ce titre est déjà téléchargé sur 3 appareils. Supprime-le d’un autre appareil pour continuer.';
+    if (e.code == 'daily_limit') return 'Limite de téléchargements du jour atteinte. Reviens demain.';
+    if (e.status == 404 || e.status == 410) return 'Ce titre n’est plus disponible ou le téléchargement n’est pas encore ouvert.';
+    if (e.isUnauthorized) return 'Connecte-toi pour télécharger.';
     return 'Téléchargement impossible pour le moment.';
   }
 
@@ -103,7 +113,7 @@ class OfflineMusic {
     if (!supported) return const OfflineResult.fail('Le téléchargement n’est disponible que dans l’application mobile.');
     if (uid == null) return const OfflineResult.fail('Connecte-toi pour télécharger.');
     try {
-      final lic = Map<String, dynamic>.from((await FirebaseFunctions.instance.httpsCallable('musicLicense').call({'soundId': soundId, 'deviceId': await deviceId()})).data as Map);
+      final lic = await _license(soundId);
       final url = lic['url'] as String?;
       final keyB64 = lic['key'] as String?;
       if (url == null || keyB64 == null) return const OfflineResult.fail('Téléchargement impossible pour le moment.');
@@ -137,8 +147,8 @@ class OfflineMusic {
       onProgress?.call(1);
       await refresh();
       return const OfflineResult.ok();
-    } on FirebaseFunctionsException catch (e) {
-      return OfflineResult.fail(_friendly(e), needsPurchase: '${e.message}'.contains('ACHAT_REQUIS'));
+    } on ApiException catch (e) {
+      return OfflineResult.fail(_friendly(e), needsPurchase: _purchaseNeeded(e));
     } on DioException {
       return const OfflineResult.fail('Téléchargement interrompu. Vérifie ta connexion.');
     } catch (_) {
@@ -184,14 +194,13 @@ class OfflineMusic {
       final left = ((meta['expiresAt'] as num?)?.toInt() ?? 0) - now;
       if (left < _renewBeforeDays * 24 * 3600 * 1000) {
         try {
-          final r = Map<String, dynamic>.from((await FirebaseFunctions.instance.httpsCallable('musicLicense').call({'soundId': soundId, 'deviceId': await deviceId(), 'renew': true})).data as Map);
+          final r = await _license(soundId, renew: true);
           meta['expiresAt'] = r['expiresAt'];
           meta['key'] = r['key'] ?? meta['key'];
           await _store.write(key: _metaKey(uid, soundId), value: jsonEncode(meta));
-        } on FirebaseFunctionsException catch (e) {
-          final m = '${e.message}';
+        } on ApiException catch (e) {
           // Plus de droit sur ce titre : on l'efface de l'appareil. Une simple panne réseau n'efface rien.
-          if (m.contains('ACHAT_REQUIS') || m.contains('RETIRE') || e.code == 'not-found') {
+          if (_gone(e)) {
             await remove(soundId);
             return 'Ce titre n’est plus disponible : il a été retiré de ton appareil.';
           }

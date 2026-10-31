@@ -1,15 +1,11 @@
-import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/chat_api.dart';
 import '../../../services/media_shrink.dart';
 import 'package:afrotok/services/account_gate.dart';
 import 'package:afrotok/services/creation_fee.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
-import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import '../../../services/coin_checkout.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -63,37 +59,19 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
 
   Future<void> _loadFriends() async {
     try {
-      final myId = _auth.loginUserData.id!;
-      // Charge les conversations 1-1 pour récupérer la liste d'amis
-      final snap = await FirebaseFirestore.instance
-          .collection('Chats')
-          .where(Filter.or(
-            Filter('receiver_id', isEqualTo: myId),
-            Filter('sender_id', isEqualTo: myId),
-          ))
-          .where('type', isEqualTo: 'USER')
-          .orderBy('updated_at', descending: true)
-          .limit(50)
-          .getM('create_group_page.dart:76');
-
+      // Les personnes avec qui j'ai une conversation (liste fournie par l'API)
+      final page = await ChatApi.conversations(limit: 50);
       final friends = <UserData>[];
       final seen = <String>{};
-      for (final doc in snap.docs) {
-        final data = doc.data();
-        final otherId = data['sender_id'] == myId
-            ? data['receiver_id'] as String?
-            : data['sender_id'] as String?;
-        if (otherId == null || seen.contains(otherId)) continue;
-        seen.add(otherId);
-        final userDoc = await FirebaseFirestore.instance
-            .collection('Users')
-            .doc(otherId)
-            .getM('create_group_page.dart:90');
-        if (userDoc.exists) {
-          friends.add(UserData.fromJson(userDoc.data()!));
-        }
+      for (final c in page.items) {
+        final other = c['other'] is Map ? Map<String, dynamic>.from(c['other'] as Map) : <String, dynamic>{};
+        final otherId = other['id'] as String?;
+        if (otherId == null || otherId.isEmpty || !seen.add(otherId)) continue;
+        friends.add(UserData()
+          ..id = otherId
+          ..pseudo = (other['username'] as String?) ?? ''
+          ..imageUrl = (other['avatar_url'] as String?) ?? '');
       }
-
       if (mounted) setState(() { _friends = friends; _loadingFriends = false; });
     } catch (_) {
       if (mounted) setState(() => _loadingFriends = false);
@@ -142,155 +120,54 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
         ? (double.tryParse(_priceController.text.trim()) ?? 0.0)
         : 0.0;
 
-    final myId = _auth.loginUserData.id!;
-
-    // Vérifier que le nom n'est pas déjà pris
-    final nameSnap = await FirebaseFirestore.instance
-        .collection('GroupChats')
-        .where('name', isEqualTo: name)
-        .limit(1)
-        .getM('create_group_page.dart:151');
-    if (!mounted) return;
-    if (nameSnap.docs.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Ce nom de groupe est déjà pris. Choisissez un autre nom.'),
-        backgroundColor: Colors.red,
-        duration: Duration(seconds: 3),
-      ));
-      return;
-    }
-
-    // Premier groupe gratuit, groupes suivants : 500 pièces chacun
+    // Premier groupe gratuit, groupes suivants : 500 pièces chacun (l'API vérifie aussi le nom déjà pris et les droits)
     if (!await CreationFee.ensurePaid(context, 'group')) return;
     if (!mounted) return;
 
     setState(() => _isCreating = true);
 
     try {
-      final groupId = FirebaseFirestore.instance.collection('GroupChats').doc().id;
-      final now = DateTime.now().millisecondsSinceEpoch;
-
-      String? imageUrl;
+      String? uploadId;
       if (_groupImageBytes != null) {
-        final ref = FirebaseStorage.instance.ref().child('group_images/$groupId.jpg');
-        await ref.putData(await MediaShrink.bytes(_groupImageBytes!));
-        imageUrl = await ref.getDownloadURL();
+        uploadId = await ChatApi.uploadImage(await MediaShrink.bytes(_groupImageBytes!));
       }
+      final created = await ChatApi.createGroup(
+        name: name,
+        description: _descController.text.trim(),
+        isPrivate: _isPrivate && isGold,
+        priceCoins: subscriptionPrice.round(),
+        imageUploadId: uploadId,
+      );
+      final groupId = '${created['id']}';
 
-      final keyData = _generateGroupKey();
-      final joinCode = isGold ? _generateJoinCode() : null;
-      final joinCodeExpiresAt = isGold
-          ? DateTime.now().add(const Duration(days: 30)).millisecondsSinceEpoch
-          : null;
-
-      final allMemberIds = [myId, ..._selectedMembers.map((m) => m.id!).where((id) => id.isNotEmpty)];
-
-      final isAdminOwner = AbonnementUtils.isAdmin(myRole);
-
-      await FirebaseFirestore.instance.collection('GroupChats').doc(groupId).set({
-        'id': groupId,
-        'name': name,
-        'description': _descController.text.trim(),
-        'image_url': imageUrl,
-        'owner_id': myId,
-        'member_ids': allMemberIds,
-        'is_frozen': false,
-        'is_private': _isPrivate && isGold,
-        // Prix en pièces (+ équivalent FCFA pour les anciennes versions de l'app)
-        'subscription_price_coins': subscriptionPrice.round(),
-        'subscription_price': subscriptionPrice / CoinCheckout.coinsPerFcfa,
-        'join_code': joinCode,
-        'join_code_expires_at': joinCodeExpiresAt,
-        'paid_subscribers': {},
-        'created_at': now,
-        'updated_at': now,
-        'last_message': '',
-        'last_message_at': now,
-        'member_count': allMemberIds.length,
-        'ephemeral_duration': 0,
-        // Groupes créés par un admin = groupes officiels de la plateforme
-        if (isAdminOwner) 'is_official': true,
-      });
-
-      // Clé de groupe
-      await FirebaseFirestore.instance.collection('GroupKeys').doc(groupId).set({
-        'group_id': groupId,
-        'key_data': keyData,
-        'created_at': now,
-      });
-
-      // Ajouter l'owner comme membre
-      await FirebaseFirestore.instance
-          .collection('GroupChats')
-          .doc(groupId)
-          .collection('members')
-          .doc(myId)
-          .set({
-        'user_id': myId,
-        'pseudo': _auth.loginUserData.pseudo ?? '',
-        'image_url': _auth.loginUserData.imageUrl ?? '',
-        'role': 'owner',
-        'joined_at': now,
-      });
-
-      // Ajouter les membres sélectionnés
+      // Ajouter les membres sélectionnés (l'API refuse les personnes qui ont bloqué ou qui ne peuvent pas être ajoutées)
+      var refused = 0;
       for (final member in _selectedMembers) {
-        await FirebaseFirestore.instance
-            .collection('GroupChats')
-            .doc(groupId)
-            .collection('members')
-            .doc(member.id)
-            .set({
-          'user_id': member.id,
-          'pseudo': member.pseudo ?? '',
-          'image_url': member.imageUrl ?? '',
-          'role': 'member',
-          'joined_at': now,
-        });
+        if (member.id == null || member.id!.isEmpty) continue;
+        try {
+          await ChatApi.addMember(groupId, member.id!);
+        } catch (_) {
+          refused++;
+        }
       }
-
-      // Message système de création
-      final msgId = FirebaseFirestore.instance.collection('GroupMessages').doc().id;
-      await FirebaseFirestore.instance.collection('GroupMessages').doc(msgId).set({
-        'id': msgId,
-        'group_id': groupId,
-        'send_by': 'system',
-        'message': '🎉 Groupe créé par @${_auth.loginUserData.pseudo ?? ''}',
-        'message_type': 'text',
-        'is_valide': true,
-        'is_encrypted': false,
-        'create_at_time_spam': now,
-        'createdAt': FieldValue.serverTimestamp(),
-        'message_state': 'LU',
-      });
-
-      await FirebaseFirestore.instance.collection('GroupChats').doc(groupId).update({
-        'last_message': '🎉 Groupe créé',
-        'last_message_at': now,
-      });
 
       if (mounted) {
+        if (refused > 0) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(refused == 1 ? "Une personne n'a pas pu être ajoutée au groupe." : "$refused personnes n'ont pas pu être ajoutées au groupe."),
+            backgroundColor: Colors.orange,
+          ));
+        }
         Navigator.pop(context, groupId);
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isCreating = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(ChatApi.message(e, fallback: 'Le groupe n\'a pas pu être créé. Réessayez.')), backgroundColor: Colors.red),
         );
       }
     }
-  }
-
-  String _generateGroupKey() {
-    final rand = DateTime.now().microsecondsSinceEpoch.toRadixString(16).padLeft(16, '0');
-    return rand * 2;
-  }
-
-  String _generateJoinCode() {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    final rng = Random.secure();
-    return List.generate(8, (_) => chars[rng.nextInt(chars.length)]).join();
   }
 
   @override

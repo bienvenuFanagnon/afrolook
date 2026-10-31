@@ -1,4 +1,3 @@
-import 'package:afrotok/services/read_meter.dart';
 import '../ads/ad_slot.dart';
 import 'package:afrotok/pages/canaux/detailsCanal.dart';
 import '../l10n/tr.dart';
@@ -14,24 +13,25 @@ import 'package:afrotok/pages/postDetails.dart';
 import 'package:afrotok/pages/postDetailsVideo.dart';
 import 'package:afrotok/pages/post_video_format_tel_details.dart';
 import 'package:afrotok/providers/postProvider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/api_gateway.dart';
+import 'package:afrotok/services/api/canal_mapper.dart';
+import 'package:afrotok/services/api/posts_api.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
+import 'package:afrotok/widgets/api_error_dialogs.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../providers/authProvider.dart';
 import '../providers/userProvider.dart';
-import '../services/postService/feed_interaction_service.dart';
-import '../services/streak_service.dart';
 import '../services/utils/abonnement_utils.dart';
 import '../widgets/user_badge_widget.dart';
 import '../theme/app_colors.dart';
 import '../l10n/app_localizations.dart';
 import 'dart:async';
-import 'dart:math';
 import 'dart:ui' as ui;
 
-import 'coins/post_gifts_list.dart';
 import '../services/comment_coins.dart';
 import '../services/comments_prefetch.dart';
 import '../widgets/post_coins_earned.dart';
@@ -69,7 +69,6 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
   late UserAuthProvider authProvider;
   late UserProvider userProvider;
   late PostProvider postProvider;
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
   PostComment commentSelectedToReply = PostComment();
   bool replying = false;
@@ -82,7 +81,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
   bool _isLoadingMore = false;
   bool _hasMoreComments = true;
 
-  DocumentSnapshot? _lastCommentDocument;
+  String? _lastCommentDocument;   // curseur de la page suivante (API)
   final int _commentsPageSize = CommentsPrefetch.pageSize;
   // Page suivante lue en avance : « Voir plus » l'affiche aussitôt, puis la suivante se prépare
   Future<CommentPage>? _readAhead;
@@ -241,35 +240,8 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     });
   }
 
-  /// Stickers-cadeaux du post (`CommentGifts` avec `stickerId`) : une seule lecture, groupés par commentaire.
-  Future<void> _loadStickerGifts() async {
-    try {
-      final snap = await FirebaseFirestore.instance
-          .collection('CommentGifts')
-          .where('postId', isEqualTo: widget.post.id)
-          .limit(300)
-          .getM('postComments.dart:250');
-      final docs = snap.docs.where((d) => (d.data()['stickerId'] ?? '').toString().isNotEmpty).toList()
-        ..sort((a, b) {
-          final x = (a.data()['createdAt'] as num?) ?? 0;
-          final y = (b.data()['createdAt'] as num?) ?? 0;
-          return x.compareTo(y);
-        });
-      final map = <String, List<({String thumb, String url})>>{};
-      for (final d in docs) {
-        final m = d.data();
-        final url = (m['stickerUrl'] ?? '').toString();
-        final thumb = (m['stickerThumbUrl'] ?? '').toString();
-        if (url.isEmpty && thumb.isEmpty) continue;
-        final cid = (m['commentId'] ?? '').toString();
-        final rid = (m['replyId'] ?? '').toString();
-        map.putIfAbsent(rid.isEmpty ? cid : '$cid|$rid', () => []).add((thumb: thumb.isNotEmpty ? thumb : url, url: url));
-      }
-      if (mounted) setState(() => _stickerGifts = map);
-    } catch (e) {
-      debugPrint('[Stickers] cadeaux de commentaires indisponibles: $e');
-    }
-  }
+  /// Stickers-cadeaux du post : l'API ne les expose pas encore en lecture (voir lacunes_api_publications.md) ; rien n'est affiché en attendant.
+  Future<void> _loadStickerGifts() async {}
 
   /// « Offrir un sticker » : sélecteur ouvert sur les stickers-cadeaux, pour ce commentaire (ou cette réponse).
   Future<void> _offerSticker(String commentId, {String? replyId}) async {
@@ -389,10 +361,9 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
   void _ensureCanalLoaded() {
     final canalId = widget.post.canal_id;
     if (canalId == null || canalId.isEmpty || widget.post.canal != null) return;
-    FirebaseFirestore.instance.collection('Canaux').doc(canalId).getM('postComments.dart:391').then((doc) {
-      if (doc.exists && mounted) {
-        setState(() => widget.post.canal = Canal.fromJson(doc.data()!));
-      }
+    ApiGateway.instance.client.get('/channels/$canalId').then((r) {
+      final d = (r as Map)['data'];
+      if (d is Map && mounted) setState(() => widget.post.canal = canalFromApi(Map<String, dynamic>.from(d)));
     }).catchError((_) {});
   }
 
@@ -438,7 +409,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     final postId = widget.post.id;
     final after = _lastCommentDocument;
     if (postId == null || after == null || !_hasMoreComments) return;
-    _readAheadAfterId = after.id;
+    _readAheadAfterId = after;
     final f = CommentsPrefetch.instance.loadPage(postId, after: after, limit: _commentsPageSize);
     f.then((_) {}, onError: (_) {});
     _readAhead = f;
@@ -453,7 +424,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     }
     CommentPage page;
     final ahead = _readAhead;
-    if (ahead != null && _lastCommentDocument != null && _readAheadAfterId == _lastCommentDocument!.id) {
+    if (ahead != null && _lastCommentDocument != null && _readAheadAfterId == _lastCommentDocument) {
       _readAhead = null;
       try {
         page = await ahead;
@@ -488,7 +459,6 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     return deduplicated.length;
   }
 
-  Future<UserData?> _loadUserData(String userId) => CommentsPrefetch.instance.user(userId);
 
   Future<void> _loadUserDataForInitialComments() async {
     await CommentsPrefetch.instance.fillAuthors(comments);
@@ -518,143 +488,76 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
   }
 
   Future<void> _likeComment(PostComment comment) async {
-    try {
-      final userId = authProvider.loginUserData.id!;
-      final isLiked = comment.users_like_id?.contains(userId) ?? false;
-
+    final userId = authProvider.loginUserData.id!;
+    final isLiked = comment.users_like_id?.contains(userId) ?? false;
+    // Affichage immédiat, annulé si l'API refuse
+    setState(() {
       if (isLiked) {
         comment.users_like_id?.remove(userId);
         comment.likes = (comment.likes ?? 1) - 1;
-        setState(() {});
       } else {
-        comment.users_like_id?.add(userId);
+        (comment.users_like_id ??= []).add(userId);
         comment.likes = (comment.likes ?? 0) + 1;
-        setState(() {});
-        if (comment.user!.id != userId) {
-          // Like payant : 2 pièces (1 à l'auteur), une seule fois ; sans solde le like reste compté
-          unawaited(CommentCoins.like(context,
-              commentId: comment.id!, authorId: comment.user!.id!, authorPseudo: comment.user?.pseudo ?? ''));
-          await _sendLikeNotification(comment.user!.id!, comment);
+      }
+    });
+    try {
+      if (isLiked) {
+        await CommentsApi.unlike(comment.id!);
+      } else {
+        final r = await CommentsApi.like(comment.id!);
+        if (comment.user?.id != userId && mounted) {
+          unawaited(CommentCoins.afterLike(context, r, authorPseudo: comment.user?.pseudo ?? ''));
         }
       }
-      await postProvider.updateComment(comment);
-    } catch (_) {}
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        if (isLiked) {
+          (comment.users_like_id ??= []).add(userId);
+          comment.likes = (comment.likes ?? 0) + 1;
+        } else {
+          comment.users_like_id?.remove(userId);
+          comment.likes = (comment.likes ?? 1) - 1;
+        }
+      });
+      showApiError(context, e);
+    }
   }
 
   Future<void> _likeReply(PostComment parentComment, ResponsePostComment reply) async {
-    try {
-      final userId = authProvider.loginUserData.id!;
-      final isLiked = reply.users_like_id?.contains(userId) ?? false;
-
+    final userId = authProvider.loginUserData.id!;
+    final isLiked = reply.users_like_id?.contains(userId) ?? false;
+    setState(() {
       if (isLiked) {
         reply.users_like_id?.remove(userId);
         reply.likes = (reply.likes ?? 1) - 1;
-        setState(() {});
       } else {
-        reply.users_like_id?.add(userId);
+        (reply.users_like_id ??= []).add(userId);
         reply.likes = (reply.likes ?? 0) + 1;
-        setState(() {});
-        if (reply.user_id != userId) {
-          unawaited(CommentCoins.like(context,
-              commentId: parentComment.id!, replyId: reply.id, authorId: reply.user_id!, authorPseudo: reply.user_pseudo ?? ''));
-          await _sendLikeNotification(reply.user_id!, parentComment, isReply: true, reply: reply);
+      }
+    });
+    try {
+      if (isLiked) {
+        await CommentsApi.unlike(reply.id!);
+      } else {
+        final r = await CommentsApi.like(reply.id!);
+        if (reply.user_id != userId && mounted) {
+          unawaited(CommentCoins.afterLike(context, r, authorPseudo: reply.user_pseudo ?? ''));
         }
       }
-      await postProvider.updateComment(parentComment);
-    } catch (_) {}
-  }
-
-  Future<void> _sendLikeNotification(String receiverId, PostComment comment,
-      {bool isReply = false, ResponsePostComment? reply}) async {
-    try {
-      final action = isReply ? 'reponse' : 'commentaire';
-      final msg = "@${authProvider.loginUserData.pseudo!} a aime votre $action";
-      final notif = NotificationData(
-        id: firestore.collection('Notifications').doc().id,
-        titre: "Nouveau like",
-        media_url: authProvider.loginUserData.imageUrl,
-        type: NotificationType.POST.name,
-        description: msg,
-        user_id: authProvider.loginUserData.id,
-        receiver_id: receiverId,
-        post_id: widget.post.id!,
-        post_data_type: PostDataType.COMMENT.name,
-        createdAt: DateTime.now().microsecondsSinceEpoch,
-        updatedAt: DateTime.now().microsecondsSinceEpoch,
-        status: PostStatus.VALIDE.name,
-      );
-      await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-
-      authProvider.getUserById(receiverId).then((value) async {
-        final List<UserData> receiverUser = value;
-        if (receiverUser.isNotEmpty && receiverUser.first.oneIgnalUserid != null) {
-          authProvider.sendNotification(
-            userIds: [receiverUser.first.oneIgnalUserid!],
-            smallImage: authProvider.loginUserData.imageUrl!,
-            send_user_id: authProvider.loginUserData.id!,
-            recever_user_id: receiverId,
-            message: msg,
-            type_notif: NotificationType.POST.name,
-            post_id: widget.post.id!,
-            post_type: PostDataType.COMMENT.name,
-            chat_id: '',
-          );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        if (isLiked) {
+          (reply.users_like_id ??= []).add(userId);
+          reply.likes = (reply.likes ?? 0) + 1;
+        } else {
+          reply.users_like_id?.remove(userId);
+          reply.likes = (reply.likes ?? 1) - 1;
         }
       });
-    } catch (_) {}
-  }
-
-  /// Identifiants des utilisateurs cités (@pseudo) dans un message, sans doublon.
-  Set<String> _mentionedUserIds(String message) {
-    final ids = <String>{};
-    for (final username in _extractMentionedUsers(message)) {
-      final u = users.firstWhere((u) => u.pseudo == username, orElse: () => UserData());
-      if (u.id != null) ids.add(u.id!);
+      showApiError(context, e);
     }
-    return ids;
-  }
-
-  Future<void> _sendMentionNotifications(String message, {Set<String> alreadyNotified = const {}}) async {
-    try {
-      final done = <String>{...alreadyNotified};
-      final mentionedUsers = _extractMentionedUsers(message);
-      for (final username in mentionedUsers) {
-        final user = users.firstWhere((u) => u.pseudo == username, orElse: () => UserData());
-        if (user.id != null && user.id != authProvider.loginUserData.id && !done.contains(user.id)) {
-          done.add(user.id!);
-          final msg = "@${authProvider.loginUserData.pseudo!} vous a mentionne dans un commentaire";
-          final mentionNotif = NotificationData(
-            id: firestore.collection('Notifications').doc().id,
-            titre: "Vous avez ete mentionne",
-            media_url: authProvider.loginUserData.imageUrl,
-            type: NotificationType.MESSAGE.name,
-            description: msg,
-            user_id: authProvider.loginUserData.id,
-            receiver_id: user.id!,
-            post_id: widget.post.id!,
-            post_data_type: PostDataType.COMMENT.name,
-            createdAt: DateTime.now().microsecondsSinceEpoch,
-            updatedAt: DateTime.now().microsecondsSinceEpoch,
-            status: PostStatus.VALIDE.name,
-          );
-          await firestore.collection('Notifications').doc(mentionNotif.id).set(mentionNotif.toJson());
-
-          if (user.oneIgnalUserid != null) {
-            await authProvider.sendNotification(
-              userIds: [user.oneIgnalUserid!],
-              smallImage: authProvider.loginUserData.imageUrl!,
-              send_user_id: authProvider.loginUserData.id!,
-              recever_user_id: user.id!,
-              message: msg,
-              type_notif: NotificationType.MESSAGE.name,
-              post_id: widget.post.id!,
-              post_type: PostDataType.COMMENT.name,
-              chat_id: '',
-            );
-          }
-        }
-      }
-    } catch (_) {}
   }
 
   List<String> _extractMentionedUsers(String message) {
@@ -699,54 +602,9 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
 
   // ─── TOP GIFTERS ─────────────────────────────────────────────────────────────
 
+  /// Classement des donateurs : l'API ne l'expose pas encore (voir lacunes_api_publications.md).
   Future<void> _loadTopGifters() async {
-    if (widget.post.id == null) return;
-    try {
-      final snapshot = await firestore
-          .collection('PostGifts')
-          .where('postId', isEqualTo: widget.post.id!)
-          .getM('postComments.dart:707');
-
-      final Map<String, _GifterEntry> byUser = {};
-      for (var doc in snapshot.docs) {
-        final data = doc.data();
-        final senderId = data['senderId'] as String?;
-        if (senderId == null) continue;
-        final coins = (data['coinsAmount'] as int?) ?? 0;
-        final qty = (data['quantity'] as int?) ?? 1;
-        final icon = (data['giftIcon'] as String?) ?? '🎁';
-        final label = (data['giftLabel'] as String?) ?? 'Cadeau';
-        final total = coins * qty;
-
-        byUser.putIfAbsent(senderId, () => _GifterEntry(senderId: senderId));
-        byUser[senderId]!.totalCoins += total;
-        final existing = byUser[senderId]!.giftBreakdown.indexWhere(
-            (g) => g.icon == icon && g.coins == coins);
-        if (existing >= 0) {
-          final old = byUser[senderId]!.giftBreakdown[existing];
-          byUser[senderId]!.giftBreakdown[existing] =
-              (icon: old.icon, label: old.label, qty: old.qty + qty, coins: old.coins);
-        } else {
-          byUser[senderId]!.giftBreakdown
-              .add((icon: icon, label: label, qty: qty, coins: coins));
-        }
-      }
-
-      final sorted = byUser.values.toList()
-        ..sort((a, b) => b.totalCoins.compareTo(a.totalCoins));
-
-      for (var entry in sorted.take(10)) {
-        try {
-          final userDoc =
-              await firestore.collection('Users').doc(entry.senderId).getM('postComments.dart:740');
-          if (userDoc.exists) entry.userData = UserData.fromJson(userDoc.data()!);
-        } catch (_) {}
-      }
-
-      if (mounted) setState(() { _topGifters = sorted; _giftersLoaded = true; });
-    } catch (_) {
-      if (mounted) setState(() => _giftersLoaded = true);
-    }
+    if (mounted) setState(() => _giftersLoaded = true);
   }
 
   Widget _buildGiftersSection() {
@@ -1599,11 +1457,9 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
               (canalName != null && postCanal.titre == canalName))) {
         canal = postCanal;
       } else if (canalId != null && canalId.isNotEmpty) {
-        final d = await FirebaseFirestore.instance.collection('Canaux').doc(canalId).getM('postComments.dart:1601');
-        if (d.exists) canal = Canal.fromJson(d.data()!);
-      } else if (canalName != null && canalName.isNotEmpty) {
-        final q = await FirebaseFirestore.instance.collection('Canaux').where('titre', isEqualTo: canalName).limit(1).getM('postComments.dart:1604');
-        if (q.docs.isNotEmpty) canal = Canal.fromJson(q.docs.first.data());
+        final r = await ApiGateway.instance.client.get('/channels/$canalId');
+        final d = (r as Map)['data'];
+        if (d is Map) canal = canalFromApi(Map<String, dynamic>.from(d));
       }
       if (canal != null && mounted) {
         Navigator.push(context, MaterialPageRoute(builder: (_) => CanalDetails(canal: canal!)));
@@ -1616,10 +1472,12 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
   /// Ouvre le modal de profil d'un utilisateur (charge le profil s'il manque).
   Future<void> _openUserModal(String? userId, UserData? user) async {
     try {
+      // L'API fournit pseudo et avatar avec chaque commentaire ; le profil complet n'a pas de route de lecture (voir lacunes_api_publications.md).
       var u = user;
-      if (u == null && userId != null && userId.isNotEmpty) {
-        final d = await FirebaseFirestore.instance.collection('Users').doc(userId).getM('postComments.dart:1620');
-        if (d.exists) u = UserData.fromJson(d.data()!);
+      if (userId != null && userId.isNotEmpty) {
+        try {
+          u = userFromApi(await UsersApi.publicProfile(userId));
+        } catch (_) {/* on garde pseudo et avatar fournis avec le commentaire */}
       }
       if (u != null && mounted) {
         showUserDetailsModalDialog(u, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, context);
@@ -1973,219 +1831,54 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
 
   Future<void> _sendComment({StickerItem? sticker}) async {
     if (sticker == null && _textController.text.trim().isEmpty) return;
+    final postId = widget.post.id;
+    if (postId == null) return;
 
-    setState(() => _isLoading = true);
     final textComment = _textController.text.trim();
-
-    _textController.clear();
-    _focusNode.unfocus();
-    if (_showEmojiPicker) setState(() => _showEmojiPicker = false);
+    final replyTo = replying ? commentSelectedToReply : null;
+    final replyPseudo = replyUser_pseudo;
+    setState(() => _isLoading = true);
 
     try {
-      bool success = false;
-      String receiverId = '';
-      String action = '';
-      String? _canalName;
-      String? _canalImage;
+      // Quota : 10 gratuits par publication, puis 1 pièce (le serveur débite ; erreur 402 si le solde manque)
+      final sent = await CommentsApi.send(
+        postId,
+        body: textComment.isEmpty ? null : textComment,
+        parentId: replyTo?.id,
+        sticker: sticker == null ? null : {'id': sticker.id, 'source': sticker.source},
+      );
+      // Succès : on vide la saisie seulement maintenant (en cas d'erreur le texte reste, pour réessayer)
+      _textController.clear();
+      _focusNode.unfocus();
+      if (_showEmojiPicker) _showEmojiPicker = false;
 
-      if (replying) {
-        // Même logique que pour les commentaires simples : si l'utilisateur est
-        // owner/admin du canal auquel appartient le post, la réponse s'affiche
-        // au nom du canal plutôt qu'au nom de la personne.
-        String? _replyCanalName;
-        String? _replyCanalImage;
-        final replyUserId = authProvider.loginUserData.id;
-        final replyCanal = widget.post.canal;
-        final replyCanalId = widget.post.canal_id;
-        if (replyCanalId != null && replyCanalId.isNotEmpty && replyCanal != null) {
-          final isOwner = replyCanal.userId == replyUserId;
-          final isAdmin = replyCanal.adminIds?.contains(replyUserId) == true;
-          if (isOwner || isAdmin) {
-            _replyCanalName = replyCanal.titre;
-            _replyCanalImage = replyCanal.urlImage;
-          }
-        }
-
-        final response = ResponsePostComment(
-          user_id: replyUserId,
-          user_logo_url: _replyCanalImage ?? authProvider.loginUserData.imageUrl,
-          user_pseudo: _replyCanalName ?? authProvider.loginUserData.pseudo,
-          id: FirebaseFirestore.instance.collection('PostComments').doc().id,
-          media: sticker?.toMedia(),
-          post_comment_id: commentSelectedToReply.id,
-          user_reply_pseudo: replyUser_pseudo,
-          message: textComment,
-          createdAt: DateTime.now().microsecondsSinceEpoch,
-          updatedAt: DateTime.now().microsecondsSinceEpoch,
-          canal_name: _replyCanalName,
-          canal_image: _replyCanalImage,
-        );
-        commentSelectedToReply.responseComments ??= [];
-        commentSelectedToReply.responseComments!.add(response);
-
-        success = await postProvider.updateComment(commentSelectedToReply);
-        receiverId = replyUser_id;
-        action = sticker != null ? "répondu par un sticker à votre commentaire" : "répondu à votre commentaire";
-
-        if (success) {
-          FeedInteractionService.onPostCommented(widget.post, authProvider.loginUserData.id!);
-          _updateCommentLocally(commentSelectedToReply);
-        }
+      if (replyTo != null) {
+        final reply = sent.reply..user_reply_pseudo = replyPseudo;
+        replyTo.responseComments ??= [];
+        replyTo.responseComments!.add(reply);
+        replyTo.comments = (replyTo.comments ?? 0) + 1;
+        _updateCommentLocally(replyTo);
       } else {
-        // Identité canal : si le post appartient à un canal et que l'utilisateur
-        // en est owner ou admin, le commentaire s'affiche au nom du canal.
-        final userId = authProvider.loginUserData.id;
-        final canal = widget.post.canal;
-        final canalId = widget.post.canal_id;
-        if (canalId != null && canalId.isNotEmpty && canal != null) {
-          final isOwner = canal.userId == userId;
-          final isAdmin = canal.adminIds?.contains(userId) == true;
-          if (isOwner || isAdmin) {
-            _canalName = canal.titre;
-            _canalImage = canal.urlImage;
-          }
-        }
-
-        final comment = PostComment(
-          media: sticker?.toMedia(),
-          id: FirebaseFirestore.instance.collection('PostComments').doc().id,
-          user_id: authProvider.loginUserData.id,
-          user: authProvider.loginUserData,
-          post_id: widget.post.id,
-          users_like_id: [],
-          responseComments: [],
-          message: textComment,
-          loves: 0,
-          likes: 0,
-          comments: 0,
-          createdAt: DateTime.now().microsecondsSinceEpoch,
-          updatedAt: DateTime.now().microsecondsSinceEpoch,
-          canal_id: _canalName != null ? canalId : null,
-          canal_name: _canalName,
-          canal_image: _canalImage,
+        final comment = sent.comment..user = authProvider.loginUserData;
+        _addCommentLocally(comment);
+        widget.post.comments = (widget.post.comments ?? 0) + 1;
+      }
+      if (sent.paidCoins > 0 && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Commentaire envoyé : ${sent.paidCoins} pièce débitée.'), duration: const Duration(seconds: 2)),
         );
-        success = await postProvider.newComment(comment);
-        if (widget.post.user != null) receiverId = widget.post.user!.id!;
-        action = _canalName != null
-            ? (sticker != null
-                ? "Le canal #$_canalName a envoyé un sticker sur votre publication"
-                : "Le canal #$_canalName a commenté votre publication")
-            : (sticker != null ? "envoyé un sticker sur votre publication" : "commenté votre publication");
-        if (success) {
-          _addCommentLocally(comment);
-          widget.post.comments = (widget.post.comments ?? 0) + 1;
-          // Like automatique silencieux — commenter = intérêt garanti
-          _autoLikeIfNeeded();
-          // 2 pièces (1 au créateur) — publié même sans solde ; réponses gratuites
-          CommentCoins.charge(context, widget.post).then((_) { if (mounted) setState(() {}); });
-        }
       }
-
-      // Notifications et effets secondaires isolés — une erreur ici ne doit
-      // pas afficher de toast (le commentaire est déjà enregistré).
-      if (success) {
-        try {
-          authProvider.incrementPostTotalInteractions(
-            postId: widget.post.id!,
-            userId: authProvider.loginUserData.id!,
-            interactionType: 'comment',
-          );
-          await StreakService.onCommentSent(
-            userId: authProvider.loginUserData.id!,
-            postId: widget.post.id!,
-          ).catchError((e) => debugPrint('[Streak] erreur onCommentSent: $e'));
-
-          // Pour les posts de canal, utiliser l'image du canal comme contexte
-          // visuel dans la notification aux abonnés.
-          final isCanalPost = (widget.post.canal_id ?? '').isNotEmpty;
-          final notifImageUrl = widget.post.type != PostDataType.IMAGE.name
-              ? (widget.post.thumbnail?.isNotEmpty == true
-                  ? widget.post.thumbnail!
-                  : (widget.post.canal?.urlImage ?? widget.post.user?.imageUrl ?? ''))
-              : (widget.post.images?.isNotEmpty == true
-                  ? widget.post.images!.first
-                  : '');
-          final me = authProvider.loginUserData.id!;
-          final isReply = replying;
-          // Personnes déjà prévenues : jamais soi-même, jamais deux fois la même personne
-          final notified = <String>{me};
-          final mentionIds = _mentionedUserIds(textComment)..remove(me);
-          if (!isReply) {
-            // Les abonnés de l'auteur (sauf le propriétaire du post et les personnes citées, prévenus à part).
-            // Une réponse à un commentaire ne prévient pas les abonnés.
-            authProvider.notifySubscribersOfInteraction(
-              actionUserId: me,
-              postOwnerId: widget.post.user_id!,
-              postId: widget.post.id!,
-              actionType: 'comment',
-              commentaireMessage: textComment,
-              isSticker: sticker != null,
-              excludeUserIds: [widget.post.user_id!, ...mentionIds],
-              postDescription: widget.post.description,
-              postImageUrl: notifImageUrl,
-              postDataType: widget.post.dataType,
-            );
-            FeedInteractionService.onPostCommented(widget.post, me);
-          }
-
-          // Destinataire direct : le propriétaire du post (commentaire) ou l'auteur du commentaire (réponse)
-          if (receiverId.isNotEmpty && !notified.contains(receiverId)) {
-            notified.add(receiverId);
-            await _sendCommentNotification(
-              receiverId, action, textComment,
-              displayName: isReply
-                  ? null
-                  : (_canalName != null
-                      ? '#$_canalName'
-                      : (isCanalPost && widget.post.canal?.titre != null
-                          ? '#${widget.post.canal!.titre}'
-                          : null)),
-              displayImage: isReply
-                  ? null
-                  : (_canalImage ?? (isCanalPost ? widget.post.canal?.urlImage : null)),
-            );
-          }
-          await _sendMentionNotifications(textComment, alreadyNotified: notified);
-          authProvider.checkAndRefreshPostDates(widget.post.id!);
-        } catch (e) {
-          debugPrint('[Comments] notification error: $e');
-        }
-      }
-
+      // Notifications, série, goûts du fil : gérés par le serveur à l'envoi du commentaire.
       setState(() {
         replying = false;
-        replyingTo = "";
+        replyingTo = '';
         _isLoading = false;
       });
-    } catch (_) {
-      // Seul l'échec réel d'envoi (postProvider.newComment / updateComment)
-      // affiche un toast d'erreur.
+    } catch (e) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Erreur lors de l\'envoi'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      handleApiError(context, e, onRetry: () => _sendComment(sticker: sticker), fallback: "Erreur lors de l'envoi");
     }
-  }
-
-  void _autoLikeIfNeeded() {
-    final uid = authProvider.loginUserData.id;
-    final postId = widget.post.id;
-    if (uid == null || postId == null) return;
-    final alreadyLiked = widget.post.users_love_id?.contains(uid) ?? false;
-    if (alreadyLiked) return;
-    // Like silencieux sans notification ni paiement
-    FirebaseFirestore.instance.collection('Posts').doc(postId).update({
-      'loves': FieldValue.increment(1),
-      'users_love_id': FieldValue.arrayUnion([uid]),
-    }).catchError((_) {});
-    widget.post.users_love_id ??= [];
-    widget.post.users_love_id!.add(uid);
-    widget.post.loves = (widget.post.loves ?? 0) + 1;
   }
 
   void _addCommentLocally(PostComment newComment) {
@@ -2200,130 +1893,42 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     });
   }
 
-  Future<void> _sendCommentNotification(
-    String receiverId,
-    String action,
-    String message, {
-    String? displayName,
-    String? displayImage,
-  }) async {
-    try {
-      final name = displayName ?? "@${authProvider.loginUserData.pseudo!}";
-      final image = displayImage ?? authProvider.loginUserData.imageUrl ?? '';
-      final msg = displayName != null ? action : "$name a $action";
-      final notif = NotificationData(
-        id: firestore.collection('Notifications').doc().id,
-        titre: "Nouvelle interaction",
-        media_url: image,
-        type: NotificationType.POST.name,
-        description: msg,
-        user_id: authProvider.loginUserData.id,
-        receiver_id: receiverId,
-        post_id: widget.post.id!,
-        post_data_type: PostDataType.COMMENT.name,
-        createdAt: DateTime.now().microsecondsSinceEpoch,
-        updatedAt: DateTime.now().microsecondsSinceEpoch,
-        status: PostStatus.VALIDE.name,
-      );
-      await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-
-      final receiverUser = await authProvider.getUserById(receiverId);
-      if (receiverUser.isNotEmpty && receiverUser.first.oneIgnalUserid != null) {
-        await authProvider.sendNotification(
-          userIds: [receiverUser.first.oneIgnalUserid!],
-          smallImage: image,
-          send_user_id: authProvider.loginUserData.id!,
-          recever_user_id: receiverId,
-          message: msg,
-          type_notif: NotificationType.POST.name,
-          post_id: widget.post.id!,
-          post_type: PostDataType.COMMENT.name,
-          chat_id: '',
-        );
-      }
-    } catch (_) {}
-  }
-
   Future<void> _deleteComment(PostComment comment) async {
     setState(() => _isLoading = true);
     try {
-      await FirebaseFirestore.instance.collection('PostComments').doc(comment.id).delete();
+      await CommentsApi.delete(comment.id!);
       setState(() => comments.removeWhere((c) => c.id == comment.id));
       if (widget.post.id != null) CommentsPrefetch.instance.invalidate(widget.post.id!);
-      await FirebaseFirestore.instance
-          .collection("Posts")
-          .doc(widget.post.id)
-          .update({"comments": FieldValue.increment(-1)});
-
+      widget.post.comments = ((widget.post.comments ?? 1) - 1).clamp(0, 1 << 31);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Commentaire supprime'), backgroundColor: Colors.green, duration: Duration(seconds: 2)),
+          const SnackBar(content: Text('Commentaire supprimé'), backgroundColor: Colors.green, duration: Duration(seconds: 2)),
         );
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
-        );
-      }
+      if (mounted) showApiError(context, e, onRetry: () => _deleteComment(comment));
     }
-    setState(() => _isLoading = false);
+    if (mounted) setState(() => _isLoading = false);
   }
 
   Future<void> _deleteResponse(PostComment parentComment, ResponsePostComment response) async {
     setState(() => _isLoading = true);
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('PostComments')
-          .doc(parentComment.id)
-          .getM('postComments.dart:2278');
-
-      if (!doc.exists) throw Exception('Commentaire parent non trouve');
-
-      final firebaseComment = PostComment.fromJson(doc.data() as Map<String, dynamic>);
-      final initialCount = firebaseComment.responseComments?.length ?? 0;
-
-      firebaseComment.responseComments?.removeWhere((r) {
-        if (r.message != response.message) return false;
-        if (r.user_id != response.user_id) return false;
-        if (r.createdAt != null && response.createdAt != null && r.createdAt != response.createdAt) return false;
-        if (r.user_pseudo != response.user_pseudo) return false;
-        return true;
-      });
-
-      if (firebaseComment.responseComments?.length == initialCount) {
-        throw Exception('Reponse non trouvee');
-      }
-
-      await FirebaseFirestore.instance.collection('PostComments').doc(parentComment.id).update({
-        'responseComments': firebaseComment.responseComments != null
-            ? firebaseComment.responseComments!.map((r) => r.toJson()).toList()
-            : [],
-      });
-
+      await CommentsApi.delete(response.id!);
       setState(() {
-        final parentIndex = comments.indexWhere((c) => c.id == parentComment.id);
-        if (parentIndex != -1) comments[parentIndex] = firebaseComment;
+        parentComment.responseComments?.removeWhere((r) => r.id == response.id);
+        parentComment.comments = ((parentComment.comments ?? 1) - 1).clamp(0, 1 << 31);
       });
-
-      await FirebaseFirestore.instance
-          .collection("Posts")
-          .doc(widget.post.id)
-          .update({"comments": FieldValue.increment(-1)});
-
+      if (widget.post.id != null) CommentsPrefetch.instance.invalidate(widget.post.id!);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Reponse supprimee'), backgroundColor: Colors.green, duration: Duration(seconds: 2)),
+          const SnackBar(content: Text('Réponse supprimée'), backgroundColor: Colors.green, duration: Duration(seconds: 2)),
         );
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur: $e'), backgroundColor: Colors.red),
-        );
-      }
+      if (mounted) showApiError(context, e, onRetry: () => _deleteResponse(parentComment, response));
     }
-    setState(() => _isLoading = false);
+    if (mounted) setState(() => _isLoading = false);
   }
 
   // ─── BUILD ───────────────────────────────────────────────────────────────────

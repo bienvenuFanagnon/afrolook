@@ -45,6 +45,10 @@ import '../../../theme/app_colors.dart';
 import '../../../l10n/app_localizations.dart';
 
 import '../../../services/chat_service.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart' show ApiException;
+import '../../../services/api/chat_api.dart';
+import '../../../services/api/chat_mapper.dart';
+import '../../../services/api/users_api.dart';
 
 
 import '../../../pages/chat/myChat.dart';
@@ -120,9 +124,9 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   bool _loadingGroups = false;
   String get _groupCacheKey => 'group_list_${authProvider.loginUserData.id ?? ''}';
 
-  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _groupsStreamSub;
+  StreamSubscription<dynamic>? _groupsStreamSub;
   // Second stream pour les groupes dont l'utilisateur est propriétaire (ADM non dans member_ids)
-  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _ownedGroupsStreamSub;
+  StreamSubscription<dynamic>? _ownedGroupsStreamSub;
 
   // Groupes Gold (carousel pub) — géré par GoldGroupsProvider
 
@@ -279,52 +283,46 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   }
 
   void _initGroupsStream() {
-    final myId = authProvider.loginUserData.id!;
     _groupsStreamSub?.cancel();
     _ownedGroupsStreamSub?.cancel();
     if (mounted) setState(() => _loadingGroups = true);
-
-    // Stream 1 : groupes où l'utilisateur est membre
-    _groupsStreamSub = FirebaseFirestore.instance
-        .collection('GroupChats')
-        .where('member_ids', arrayContains: myId)
-        .snapshotsM('listUserConv.dart:290')
-        .listen((snap) {
-      _memberGroups = snap.docs.map((d) => d.data()).toList();
-      _mergeAndSetGroups();
-    }, onError: (_) {
-      if (mounted) setState(() => _loadingGroups = false);
-    });
-
-    // Stream 2 : groupes dont l'utilisateur est propriétaire
-    // (utile pour ADM qui entre dans ses propres groupes sans être dans member_ids)
-    _ownedGroupsStreamSub = FirebaseFirestore.instance
-        .collection('GroupChats')
-        .where('owner_id', isEqualTo: myId)
-        .snapshotsM('listUserConv.dart:303')
-        .listen((snap) {
-      _ownedGroups = snap.docs.map((d) => d.data()).toList();
-      _mergeAndSetGroups();
-    }, onError: (_) {});
-
-    _loadGoldGroups();
+    _loadGroups();
   }
 
+  /// Liste des groupes de la personne : fournie par l'API (appartenance, rôle, droits). Seul le dernier message est lu sur Firebase (messages).
   Future<void> _loadGroups() async {
     try {
-      final myId = authProvider.loginUserData.id!;
-      final snap = await FirebaseFirestore.instance
-          .collection('GroupChats')
-          .where('member_ids', arrayContains: myId)
-          .getM('listUserConv.dart:318');
-      // Met à jour _memberGroups et passe par _mergeAndSetGroups pour ne pas
-      // écraser les _ownedGroups (groupes propriétaire non dans member_ids)
-      _memberGroups = snap.docs.map((d) => d.data()).toList();
+      final list = await ChatApi.groups();
+      final groups = list.map(groupToLegacy).toList();
+      _memberGroups = groups;
+      _ownedGroups = const [];
       _mergeAndSetGroups();
+      unawaited(_enrichGroupsWithLastMessage(groups));
     } catch (e) {
       if (mounted) setState(() => _loadingGroups = false);
     }
     _loadGoldGroups();
+  }
+
+  /// Aperçu du dernier message de chaque groupe : les messages restent sur Firebase (GroupMessages).
+  Future<void> _enrichGroupsWithLastMessage(List<Map<String, dynamic>> groups) async {
+    await Future.wait(groups.take(40).map((g) async {
+      try {
+        final snap = await FirebaseFirestore.instance
+            .collection('GroupMessages')
+            .where('group_id', isEqualTo: g['id'])
+            .orderBy('create_at_time_spam', descending: true)
+            .limit(1)
+            .get();
+        if (snap.docs.isEmpty) return;
+        final m = snap.docs.first.data();
+        final type = m['message_type'] as String? ?? 'text';
+        final text = (m['message'] as String? ?? '');
+        g['last_message'] = type == 'text' ? (text.startsWith('enc:v1:') ? '🔒 Message chiffré' : text) : (type == 'image' ? '📷 Image' : '🎤 Audio');
+        g['last_message_at'] = (m['create_at_time_spam'] as num?)?.toInt() ?? 0;
+      } catch (_) {}
+    }));
+    if (mounted) _mergeAndSetGroups();
   }
 
   void _loadGoldGroups() {
@@ -338,141 +336,56 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     if (!mounted) return;
     setState(() { _codeSearching = true; _codeSearchResult = null; _codeSearchError = null; });
     try {
-      final snap = await FirebaseFirestore.instance
-          .collection('GroupChats')
-          .where('join_code', isEqualTo: trimmed)
-          .limit(1)
-          .getM('listUserConv.dart:344');
-
-      if (snap.docs.isEmpty) {
-        if (mounted) setState(() { _codeSearchError = 'Aucun groupe trouvé pour ce code.'; _codeSearching = false; });
-        return;
-      }
-
-      final groupData = snap.docs.first.data();
-
-      // Vérifier que le code n'a pas expiré (30 jours)
-      final codeExpiresAt = groupData['join_code_expires_at'] as int?;
-      if (codeExpiresAt != null && codeExpiresAt < DateTime.now().millisecondsSinceEpoch) {
-        if (mounted) setState(() { _codeSearchError = 'Ce code a expiré. Demandez un nouveau code au propriétaire.'; _codeSearching = false; });
-        return;
-      }
-
-      // Vérifier que le groupe n'est pas gelé
-      if (groupData['is_frozen'] == true) {
-        if (mounted) setState(() { _codeSearchError = 'Ce groupe est suspendu. Le propriétaire doit renouveler son plan Gold.'; _codeSearching = false; });
-        return;
-      }
-
-      // Vérifier que le propriétaire est toujours Gold
-      final ownerId = groupData['owner_id'] as String?;
-      if (ownerId != null) {
-        final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(ownerId).getM('listUserConv.dart:369');
-        final ab = ownerDoc.data()?['abonnement'] as Map<String, dynamic>?;
-        if (ab == null || ab['type'] != 'gold') {
-          if (mounted) setState(() { _codeSearchError = 'Le propriétaire de ce groupe n\'est plus Gold.'; _codeSearching = false; });
-          return;
-        }
-        final dateFinStr = ab['dateFin'] as String?;
-        final dateFin = dateFinStr != null ? DateTime.tryParse(dateFinStr) : null;
-        if (dateFin == null || dateFin.isBefore(DateTime.now())) {
-          if (mounted) setState(() { _codeSearchError = 'Le propriétaire de ce groupe n\'est plus Gold.'; _codeSearching = false; });
-          return;
-        }
-      }
-
+      // L'API contrôle le code (expiration, groupe suspendu, propriétaire Gold) et ne renvoie que l'aperçu public du groupe
+      final g = await ChatApi.invitationPreview(trimmed);
+      final groupData = <String, dynamic>{
+        'id': g['id'],
+        'name': g['name'] ?? '',
+        'image_url': g['image_url'],
+        'is_private': g['is_private'] == true,
+        'subscription_price': g['price_coins'] ?? 0,
+        'subscription_price_coins': g['price_coins'] ?? 0,
+        'member_count': g['member_count'] ?? 0,
+        'me_is_member': g['is_member'] == true,
+        'join_code': trimmed,
+      };
       if (mounted) setState(() { _codeSearchResult = groupData; _codeSearching = false; });
     } catch (e) {
-      if (mounted) setState(() { _codeSearchError = 'Erreur de recherche.'; _codeSearching = false; });
+      final msg = e is ApiException && e.status == 404 ? 'Aucun groupe trouvé pour ce code.' : ChatApi.message(e, fallback: 'Erreur de recherche.');
+      if (mounted) setState(() { _codeSearchError = msg; _codeSearching = false; });
     }
   }
 
   Future<void> _joinGroupByCode(Map<String, dynamic> groupData) async {
-    final myId = authProvider.loginUserData.id!;
     final groupId = groupData['id'] as String?;
     if (groupId == null) return;
+    final name = groupData['name'] as String? ?? '';
+    final image = groupData['image_url'] as String?;
 
-    final memberIds = (groupData['member_ids'] as List<dynamic>? ?? []).cast<String>();
-    if (memberIds.contains(myId)) {
-      // Déjà membre — ouvrir directement
-      if (mounted) {
-        _openGroupChat(groupId, groupData['name'] as String? ?? '', groupData['image_url'] as String?, onReturn: _loadGroups);
-      }
+    if (groupData['me_is_member'] == true) {
+      // Déjà membre : ouvrir directement
+      if (mounted) _openGroupChat(groupId, name, image, onReturn: _loadGroups);
       return;
     }
 
-    // Vérifier la limite de membres (Premium owner : 100 max, Gold : illimité)
-    final ownerId = groupData['owner_id'] as String? ?? '';
-    if (ownerId.isNotEmpty) {
-      try {
-        final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(ownerId).getM('listUserConv.dart:407');
-        if (ownerDoc.exists) {
-          final ownerAbJson = ownerDoc.data()?['abonnement'] as Map<String, dynamic>?;
-          final ownerAb = ownerAbJson != null ? AfrolookAbonnement.fromJson(ownerAbJson) : null;
-          final maxMembers = AbonnementUtils.maxGroupMembers(ownerAb);
-          final currentCount = groupData['member_count'] as int?
-              ?? (groupData['member_ids'] as List<dynamic>? ?? []).length;
-          if (maxMembers != null && currentCount >= maxMembers) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                content: Text('Ce groupe est complet (100 membres maximum pour ce plan).'),
-                backgroundColor: Colors.red,
-              ));
-            }
-            return;
-          }
-        }
-      } catch (_) {}
-    }
-
-    // Groupe privé payant : vérifier que l'utilisateur a un abonnement actif
-    final isPrivate = groupData['is_private'] == true;
-    final price = (groupData['subscription_price'] as num?)?.toDouble() ?? 0.0;
-    if (isPrivate && price > 0) {
-      final paidSubs = (groupData['paid_subscribers'] as Map<String, dynamic>?) ?? {};
-      final expiryMs = paidSubs[myId] as int?;
-      final isPaid = expiryMs != null && expiryMs > DateTime.now().millisecondsSinceEpoch;
-      if (!isPaid) {
-        // Ouvrir le groupe sans ajouter comme membre — le paiement sera demandé à l'entrée
-        if (mounted) {
-          setState(() { _codeSearchResult = null; _codeSearchController.clear(); });
-          _openGroupChat(groupId, groupData['name'] as String? ?? '', groupData['image_url'] as String?, onReturn: _loadGroups);
-        }
-        return;
-      }
-    }
-
     try {
-      final now = DateTime.now().millisecondsSinceEpoch;
-      final myPseudo = authProvider.loginUserData.pseudo ?? '';
-      final myImageUrl = authProvider.loginUserData.imageUrl ?? '';
-
-      await FirebaseFirestore.instance
-          .collection('GroupChats')
-          .doc(groupId)
-          .collection('members')
-          .doc(myId)
-          .set({
-        'user_id': myId,
-        'pseudo': myPseudo,
-        'image_url': myImageUrl,
-        'role': 'member',
-        'joined_at': now,
-      });
-      await FirebaseFirestore.instance.collection('GroupChats').doc(groupId).update({
-        'member_ids': FieldValue.arrayUnion([myId]),
-        'member_count': FieldValue.increment(1),
-      });
-
+      // L'API applique les règles : limite de membres du plan, groupe payant (402), blocage, code expiré
+      await ChatApi.joinByCode('${groupData['join_code'] ?? ''}');
       if (mounted) {
         setState(() { _codeSearchResult = null; _codeSearchController.clear(); });
         _loadGroups();
-        _openGroupChat(groupId, groupData['name'] as String? ?? '', groupData['image_url'] as String?, onReturn: _loadGroups);
+        _openGroupChat(groupId, name, image, onReturn: _loadGroups);
       }
     } catch (e) {
+      if (e is ApiException && e.code == 'payment_required' && mounted) {
+        // Groupe payant : on ouvre le groupe sans ajouter la personne, le paiement est demandé à l'entrée
+        setState(() { _codeSearchResult = null; _codeSearchController.clear(); });
+        _openGroupChat(groupId, name, image, onReturn: _loadGroups);
+        return;
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(ChatApi.message(e)), backgroundColor: Colors.red),
         );
       }
     }
@@ -536,8 +449,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     try {
       final uid = authProvider.loginUserData.id;
       if (uid == null) return;
-      final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).getM('listUserConv.dart:538');
-      final privacy = (doc.data()?['privacySettings'] as Map<String, dynamic>?) ?? {};
+      final privacy = await UsersApi.privacy();
       final isPremium = authProvider.loginUserData.abonnement?.estPremium == true;
       if (isPremium && privacy['biometricLock'] == true) {
         if (mounted) setState(() => _isLocked = true);
@@ -564,83 +476,55 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     }
   }
 
+  Timer? _convPoll;
+
   void _initChatsStream() {
     if (mounted) setState(() => _isRefreshing = true);
-    _chatsStream = FirebaseFirestore.instance
-        .collection('Chats')
-        .where(Filter.or(
-          Filter('receiver_id', isEqualTo: authProvider.loginUserData.id!),
-          Filter('sender_id', isEqualTo: authProvider.loginUserData.id!),
-        ))
-        .where("type", isEqualTo: ChatType.USER.name)
-        .orderBy('updated_at', descending: true)
-        .limit(50)
-        .snapshotsM('listUserConv.dart:577')
-        .asyncMap(_processChatsSnapshot);
+    _chatsStream = _chatsFromApi();
+    _convPoll?.cancel();
+    _convPoll = Timer.periodic(const Duration(seconds: 45), (_) {
+      if (mounted) _refreshChatsFromApi();
+    });
   }
 
-  Future<List<ChatWithLastMessage>> _processChatsSnapshot(QuerySnapshot snapshot) async {
+  Stream<List<ChatWithLastMessage>> _chatsFromApi() async* {
+    yield await _fetchChats();
+  }
+
+  Future<void> _refreshChatsFromApi() async {
+    try {
+      await _fetchChats();
+    } catch (_) {}
+  }
+
+  /// Conversations de l'API (ordre, personne, non lus, série, demande) ; l'aperçu du dernier message est lu sur Firebase avec les messages.
+  Future<List<ChatWithLastMessage>> _fetchChats() async {
     final myId = authProvider.loginUserData.id!;
-
-    // 1. Parse tous les docs + collecter les IDs distincts des autres users
-    final chats = <Chat>[];
-    final otherIds = <String>{};
-    for (final doc in snapshot.docs) {
-      final chat = Chat.fromJson(doc.data() as Map<String, dynamic>);
-      // Demande refusée : disparaît de la liste de la personne qui l'a refusée (l'autre voit « refusée » dans la discussion)
-      if (chat.requestStatus == 'refused' && chat.requestFrom != null && chat.requestFrom != myId) continue;
-      chats.add(chat);
-      final oid = myId == chat.receiverId ? chat.senderId : chat.receiverId;
-      if (oid != null) otherIds.add(oid);
+    try {
+      final page = await ChatApi.conversations(limit: 50);
+      final result = <ChatWithLastMessage>[];
+      for (final j in page.items) {
+        final chat = chatFromConversation(j, myId);
+        // Demande refusée : disparaît de la liste de la personne qui l'a refusée (l'autre voit « refusée » dans la discussion)
+        if (chat.requestStatus == 'refused' && chat.requestFrom != null && chat.requestFrom != myId) continue;
+        result.add(ChatWithLastMessage(chat: chat, lastMessage: null));
+      }
+      result.sort((a, b) => (b.chat.updatedAt ?? 0).compareTo(a.chat.updatedAt ?? 0));
+      _firebaseLoaded = true;
+      if (mounted) {
+        setState(() {
+          _chats = result;
+          _isLoading = false;
+          _isRefreshing = false;
+          _hasMore = page.next != null;
+        });
+      }
+      _saveConvCache(result);
+      return result;
+    } catch (e) {
+      if (mounted) setState(() { _isLoading = false; _isRefreshing = false; });
+      rethrow;
     }
-
-    // 2. Batch fetch — 1 requête whereIn par tranche de 10 (au lieu de N requêtes)
-    final userMap = <String, UserData>{};
-    final ids = otherIds.toList();
-    final batchFutures = <Future<void>>[];
-    for (int i = 0; i < ids.length; i += 10) {
-      final chunk = ids.sublist(i, (i + 10).clamp(0, ids.length));
-      batchFutures.add(() async {
-        try {
-          final snap = await FirebaseFirestore.instance
-              .collection('Users')
-              .where(FieldPath.documentId, whereIn: chunk)
-              .getM('listUserConv.dart:607');
-          for (final d in snap.docs) {
-            final data = Map<String, dynamic>.from(d.data() as Map<String, dynamic>);
-            data['id'] = d.id;
-            userMap[d.id] = UserData.fromJson(data);
-          }
-        } catch (_) {}
-      }());
-    }
-    await Future.wait(batchFutures);
-
-    // 3. Construire les résultats sans requête Messages :
-    //    ConversationList lit chat.lastMessage (string) directement depuis le doc
-    final result = <ChatWithLastMessage>[];
-    for (final chat in chats) {
-      final oid = myId == chat.receiverId ? chat.senderId : chat.receiverId;
-      if (oid == null) continue;
-      final user = userMap[oid];
-      if (user == null) continue;
-      chat.chatFriend = user;
-      chat.receiver = user;
-      result.add(ChatWithLastMessage(chat: chat, lastMessage: null));
-    }
-
-    result.sort((a, b) => (b.chat.updatedAt ?? 0).compareTo(a.chat.updatedAt ?? 0));
-    _firebaseLoaded = true;
-    if (mounted) {
-      setState(() {
-        _chats = result;
-        _isLoading = false;
-        _isRefreshing = false;
-        _hasMore = false;
-      });
-    }
-    _saveConvCache(result);
-    return result;
   }
 
   // Stream pour écouter les nouveaux messages en temps réel et mettre à jour l'affichage
@@ -909,6 +793,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   @override
   void dispose() {
     _groupsStreamSub?.cancel();
+    _convPoll?.cancel();
     _ownedGroupsStreamSub?.cancel();
     _searchController.dispose();
     _scrollController.dispose();
@@ -1940,20 +1825,6 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       final batch = firestore.batch();
       for (final doc in directSnap.docs) {
         batch.update(doc.reference, {'message_state': MessageState.LU.name});
-      }
-
-      // 2. GroupChats — remettre unread_counts.$userId à 0
-      final groupSnap = await firestore
-          .collection('GroupChats')
-          .where('member_ids', arrayContains: userId)
-          .getM('listUserConv.dart:1948');
-
-      for (final doc in groupSnap.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        final unreadCounts = data['unread_counts'] as Map<String, dynamic>? ?? {};
-        if ((unreadCounts[userId] as int? ?? 0) > 0) {
-          batch.update(doc.reference, {'unread_counts.$userId': 0});
-        }
       }
 
       await batch.commit();

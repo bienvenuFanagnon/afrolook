@@ -1,6 +1,6 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/chat_api.dart';
+import 'package:afrotok/services/api/lives_mapper.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
@@ -18,7 +18,6 @@ class UserLivesPage extends StatefulWidget {
 
 class _UserLivesPageState extends State<UserLivesPage> {
   final RefreshController _refreshController = RefreshController(initialRefresh: false);
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   List<PostLive> _userLives = [];
@@ -35,13 +34,18 @@ class _UserLivesPageState extends State<UserLivesPage> {
     try {
       final user = _auth.currentUser;
       if (user == null) return;
-      final querySnapshot = await _firestore
-          .collection('lives')
-          .where('hostId', isEqualTo: user.uid)
-          .orderBy('startTime', descending: true)
-          .getM('mesLives.dart:41');
+      final me = context.read<UserAuthProvider>().loginUserData;
+      final results = await Future.wait([
+        LivesApi.list(status: 'live', hostId: user.uid, limit: 50),
+        LivesApi.list(status: 'ended', hostId: user.uid, limit: 50),
+      ]);
+      final lives = [...results[0].items, ...results[1].items]
+          .map((j) => postLiveFromApi(j, hostName: me.pseudo ?? '', hostImage: me.imageUrl ?? ''))
+          .toList()
+        ..sort((a, b) => b.startTime.compareTo(a.startTime));
+      if (!mounted) return;
       setState(() {
-        _userLives = querySnapshot.docs.map((doc) => PostLive.fromMap(doc.data())).toList();
+        _userLives = lives;
         _isLoading = false;
       });
     } catch (e) {
@@ -65,11 +69,10 @@ class _UserLivesPageState extends State<UserLivesPage> {
         );
         return;
       }
-      await _firestore.collection('lives').doc(live.liveId).delete();
+      // La suppression d'un live terminé n'existe pas encore dans l'API (voir lacunes_api_jeux_medias.md)
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Live supprimé avec succès'), backgroundColor: Colors.green),
+        const SnackBar(content: Text('La suppression des lives terminés sera disponible prochainement.'), backgroundColor: Colors.orange),
       );
-      await _loadUserLives();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erreur lors de la suppression: $e'), backgroundColor: Colors.red),

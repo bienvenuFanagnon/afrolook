@@ -1,10 +1,9 @@
 // Écoutes (streams) de chaque titre, en direct : les sons d'artistes (champ streamCount du son) et les musiques gratuites
 // d'Afrolook (MusicStudioStats). Tout widget qui montre un titre affiche son nombre d'écoutes avec [StreamsText].
 
-import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'api/music_api.dart';
 import 'package:flutter/foundation.dart';
 
 import 'music_queue.dart';
@@ -19,8 +18,7 @@ class StreamCounts {
   static final ValueNotifier<Map<String, int>> likes = ValueNotifier<Map<String, int>>(const {});
 
   static final Map<String, int> _refs = {};
-  static final Map<String, StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>> _subs = {};
-  static StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _studioSub;
+  static final Set<String> _fetched = {};
 
   /// Écoutes d'un titre : valeur en direct si on l'a, sinon celle du son chargé, sinon 0.
   static int of(MusicTrack t) => counts.value[t.key] ?? t.sound?.streamCount ?? 0;
@@ -46,17 +44,16 @@ class StreamCounts {
     }
     final key = t.key;
     _refs[key] = (_refs[key] ?? 0) + 1;
-    if (_subs.containsKey(key)) return;
-    try {
-      _subs[key] = FirebaseFirestore.instance.collection('artist_sounds').doc(t.id).snapshotsM('stream_counts.dart:39').listen((d) {
-        if (d.exists) {
-          _set(key, (d.data()?['streamCount'] as num?)?.toInt() ?? 0);
-          setLikes(key, (d.data()?['likeCount'] as num?)?.toInt() ?? 0);
-        }
-      }, onError: (_) {});
-    } catch (_) {
-      // Firebase pas prêt (aperçus, tests) : on garde la valeur du son
-    }
+    if (!_fetched.add(key)) return;
+    // Compteurs relus sur l'API (une fois par titre et par session ; plus de lecture en direct)
+    MusicApi.sound(t.id).then((s) {
+      if (s != null) {
+        _set(key, s.streamCount);
+        setLikes(key, s.likeCount);
+      }
+    }).catchError((_) {
+      _fetched.remove(key);
+    });
   }
 
   static void release(MusicTrack t) {
@@ -68,24 +65,10 @@ class StreamCounts {
       return;
     }
     _refs.remove(key);
-    _subs.remove(key)?.cancel();
   }
 
-  static void _startStudio() {
-    if (_studioSub != null) return;
-    try {
-      _studioSub = FirebaseFirestore.instance.collection('MusicStudioStats').snapshotsM('stream_counts.dart:62').listen((s) {
-        final m = {...counts.value};
-        final l = {...likes.value};
-        for (final d in s.docs) {
-          m['music_free:${d.id}'] = (d.data()['streamCount'] as num?)?.toInt() ?? 0;
-          l['music_free:${d.id}'] = (d.data()['likeCount'] as num?)?.toInt() ?? 0;
-        }
-        counts.value = m;
-        likes.value = l;
-      }, onError: (_) {});
-    } catch (_) {}
-  }
+  /// Les écoutes des musiques gratuites d'Afrolook ne sont pas encore exposées par l'API (voir lacunes_api_argent_creations.md).
+  static void _startStudio() {}
 
   /// 950 → « 950 » ; 1 234 → « 1,2 k » ; 1 500 000 → « 1,5 M ».
   static String fmt(int n) {

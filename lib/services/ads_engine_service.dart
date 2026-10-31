@@ -1,12 +1,10 @@
 import 'dart:async';
-import 'dart:convert';
 
-import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:afrotok/services/api/regie_api.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 
-/// Comptage des vues et des clics de pub dans l'application : tout passe par le moteur d'Afrolook Ads (fonctions adsServe / adsEvent).
+/// Comptage des vues et des clics de pub dans l'application : tout passe par le moteur d'Afrolook Ads (API : /ads/app/serve et /ads/app/event).
 ///
 /// L'application garde son propre choix de l'annonce à afficher ; elle demande seulement au serveur un JETON DE COMPTAGE pour cette annonce.
 /// Le serveur vérifie : application authentique (App Check), utilisateur connecté (jeton d'identité), annonce active, durée de visibilité,
@@ -16,7 +14,6 @@ class AdsEngineService {
   AdsEngineService._();
   static final AdsEngineService instance = AdsEngineService._();
 
-  static const String _base = 'https://us-central1-afrolooki.cloudfunctions.net';
   static const String _pub = 'afrolook';
 
   /// Dernier jeton obtenu pour chaque annonce (sert aussi au clic qui suit la vue).
@@ -68,36 +65,21 @@ class AdsEngineService {
     }
   }
 
-  Future<Map<String, String>> _headers() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) throw StateError('utilisateur non connecté');
-    final idToken = await user.getIdToken();
-    String? appCheck;
-    try { appCheck = await FirebaseAppCheck.instance.getToken(); } catch (_) {/* appareil sans attestation : le serveur refusera */}
-    return {'Authorization': 'Bearer $idToken', if (appCheck != null) 'X-Firebase-AppCheck': appCheck, 'Content-Type': 'text/plain'};
-  }
-
+  /// Le serveur choisit l'annonce (route de l'application, visiteur = compte connecté) ; le jeton est lié à CETTE annonce.
+  /// Si le serveur en a choisi une autre que celle affichée, rien n'est compté (voir lacunes_api_regie_admin.md : paramètre `ad`).
   Future<_Ticket?> _serve(String adId, String format, String slot) async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return null;
-    final uri = Uri.parse('$_base/adsServe').replace(queryParameters: {
-      'pub': _pub, 'fmt': format, 'slot': slot.replaceAll(RegExp(r'[^a-z0-9_-]'), '').padRight(1, 'x'), 'ad': adId, 'vid': uid,
+    if (FirebaseAuth.instance.currentUser == null) return null;
+    final j = await RegieApi.adsServe({
+      'pub': _pub, 'fmt': format, 'slot': slot.replaceAll(RegExp(r'[^a-z0-9_-]'), '').padRight(1, 'x'), 'ad': adId,
     });
-    final res = await http.get(uri, headers: await _headers()).timeout(const Duration(seconds: 8));
-    if (res.statusCode != 200) return null;
-    final j = jsonDecode(res.body);
-    final ad = j is Map ? j['ad'] : null;
-    if (ad is! Map || ad['token'] is! String || ad['event'] is! String) return null;
-    return _Ticket(token: ad['token'] as String, event: ad['event'] as String, viewMs: (ad['viewMs'] as num?)?.toInt() ?? 1000);
+    final ad = j['ad'];
+    if (ad is! Map || ad['token'] is! String) return null;
+    if ('${ad['id']}' != adId) return null;
+    return _Ticket(token: ad['token'] as String, event: '', viewMs: (ad['viewMs'] as num?)?.toInt() ?? 1000);
   }
 
   Future<void> _post(_Ticket t, String kind, {int? ms}) async {
-    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
-    await http.post(
-      Uri.parse(t.event),
-      headers: await _headers(),
-      body: jsonEncode({'t': t.token, 'e': kind, if (ms != null) 'ms': ms, 'vid': uid}),
-    ).timeout(const Duration(seconds: 8));
+    await RegieApi.adsEvent({'t': t.token, 'e': kind, if (ms != null) 'ms': ms});
   }
 }
 

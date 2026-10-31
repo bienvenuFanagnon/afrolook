@@ -1,7 +1,9 @@
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import 'api/wallet_api.dart';
 
 /// Un pack de pièces vendu par carte bancaire (prix en dollars, frais compris).
 class CardPack {
@@ -29,10 +31,6 @@ class CardCoins {
 
   static bool get available => kIsWeb;
 
-  static final HttpsCallable _quote = FirebaseFunctions.instance.httpsCallable('cardCoinQuote');
-  static final HttpsCallable _start = FirebaseFunctions.instance.httpsCallable('cardCoinStart');
-  static final HttpsCallable _status = FirebaseFunctions.instance.httpsCallable('cardCoinStatus');
-
   /// Remplace l'appel serveur dans les tests.
   @visibleForTesting
   static Future<CardQuote?> Function()? quoteOverride;
@@ -41,15 +39,15 @@ class CardCoins {
     if (quoteOverride != null) return quoteOverride!();
     if (!available) return null;
     try {
-      final r = (await _quote.call()).data as Map;
+      final r = await WalletApi.instance.cardQuote();
       return CardQuote(
         enabled: r['enabled'] == true,
-        termsVersion: '${r['termsVersion']}',
-        feePct: (r['feePct'] as num).toDouble(),
-        xofPerUsd: (r['xofPerUsd'] as num).toDouble(),
+        termsVersion: '${r['terms_version']}',
+        feePct: (r['fee_pct'] as num).toDouble(),
+        xofPerUsd: (r['xof_per_usd'] as num).toDouble(),
         packs: [
           for (final p in (r['packs'] as List))
-            CardPack(coins: (p['coins'] as num).toInt(), total: (p['total'] as num).toDouble(), xof: (p['xof'] as num).toDouble()),
+            CardPack(coins: (p['coins'] as num).toInt(), total: (p['total_cents'] as num).toDouble() / 100, xof: (p['xof'] as num).toDouble()),
         ],
       );
     } catch (_) {
@@ -58,7 +56,7 @@ class CardCoins {
   }
 
   /// Crée la commande, mémorise son identifiant puis ouvre la page de paiement sécurisée FeexPay dans le même onglet.
-  /// Lance une [FirebaseFunctionsException] dont le message est affichable à la personne.
+  /// Lance une [ApiException] dont le message est affichable à la personne.
   static Future<void> pay({
     required int coins,
     required String firstName,
@@ -68,20 +66,19 @@ class CardCoins {
     required String zip,
     required String country,
   }) async {
-    final r = (await _start.call({
-      'coins': coins, 'firstName': firstName, 'lastName': lastName, 'phone': phone,
+    final r = await WalletApi.instance.startCard({
+      'coins': coins, 'first_name': firstName, 'last_name': lastName, 'phone': phone,
       'city': city, 'zip': zip, 'country': country, 'terms': true,
-    }))
-        .data as Map;
+    });
     try {
-      (await SharedPreferences.getInstance()).setString(_pendingKey, '${r['orderId']}|${DateTime.now().millisecondsSinceEpoch}');
+      (await SharedPreferences.getInstance()).setString(_pendingKey, '${r['order_id']}|${DateTime.now().millisecondsSinceEpoch}');
     } catch (_) {}
-    await launchUrl(Uri.parse('${r['paymentUrl']}'), webOnlyWindowName: '_self');
+    await launchUrl(Uri.parse('${r['payment_url']}'), webOnlyWindowName: '_self');
   }
 
   /// Statut de la commande : `paid`, `failed`, `pending`… (le serveur vérifie auprès de FeexPay avant de créditer).
   static Future<({String status, int coins})> status(String orderId) async {
-    final r = (await _status.call({'orderId': orderId})).data as Map;
+    final r = await WalletApi.instance.cardStatus(orderId);
     return (status: '${r['status']}', coins: (r['coins'] as num?)?.toInt() ?? 0);
   }
 
@@ -113,8 +110,8 @@ class CardCoins {
           await prefs?.remove(_pendingKey);
           return 0;
         }
-      } on FirebaseFunctionsException catch (e) {
-        if (e.code == 'not-found' || e.code == 'permission-denied') {
+      } on ApiException catch (e) {
+        if (e.status == 404 || e.status == 403) {
           await prefs?.remove(_pendingKey);
           return null;
         }

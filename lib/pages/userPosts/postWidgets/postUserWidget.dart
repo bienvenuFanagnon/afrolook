@@ -9,7 +9,7 @@ import 'package:afrotok/pages/userPosts/textBullePensee.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:animated_icon/animated_icon.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/posts_api.dart';
 import 'package:country_flags/country_flags.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -64,18 +64,8 @@ Future<void> deletePost(Post post, BuildContext context) async {
 
     if (!canDelete) return;
 
-    // Supprime le document dans Firestore
-    await FirebaseFirestore.instance
-        .collection('Posts')
-        .doc(post.id)
-        .delete();
-
-    // 🔹 Retirer l'ID de allPostIds
-    final appDefaultRef = FirebaseFirestore.instance.collection('AppData').doc(appId); // Remplace par ton docId réel
-
-    await appDefaultRef.update({
-      'allPostIds': FieldValue.arrayRemove([post.id]),
-    });
+    // Suppression par l'API (le serveur retire aussi la publication de tous les fils)
+    await PostsApi.delete(post.id!);
 
     // SnackBar de succès
     ScaffoldMessenger.of(context).showSnackBar(

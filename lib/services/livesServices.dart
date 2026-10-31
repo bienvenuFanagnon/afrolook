@@ -1,14 +1,13 @@
-﻿// services/live_service.dart
+// services/live_service.dart
 
-import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/model_data.dart';
 import '../pages/LiveAgora/livesAgora.dart';
 
 class LiveService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // Vérifier si l'utilisateur peut créer un live
@@ -23,8 +22,7 @@ class LiveService {
       }
 
       // Récupérer les stats de live de l'utilisateur
-      final userDoc = await _firestore.collection('Users').doc(userId).getM('livesServices.dart:25');
-      final userData = UserData.fromJson(userDoc.data()!);
+      final userData = userFromBootstrap(await UsersApi.bootstrap());
 
       // Si admin, toujours autorisé
       if (userData.role == UserRole.ADM.name) {
@@ -47,10 +45,6 @@ class LiveService {
       // Mettre à jour les stats si premium
       if (isPremiumActive && !liveStats.isPremium) {
         liveStats.updateForPremium(premium: true);
-        // Sauvegarder la mise à jour
-        await _firestore.collection('Users').doc(userId).update({
-          'liveStats': liveStats.toJson(),
-        });
       }
 
       // Vérifier si peut créer un live
@@ -77,30 +71,8 @@ class LiveService {
     }
   }
 
-  // Incrémenter le compteur de lives
-  Future<void> incrementLiveCount() async {
-    try {
-      final userId = _auth.currentUser?.uid;
-      if (userId == null) return;
-
-      final userDoc = await _firestore.collection('Users').doc(userId).getM('livesServices.dart:85');
-      final userData = UserData.fromJson(userDoc.data()!);
-
-      // Si admin, ne pas incrémenter
-      if (userData.role == UserRole.ADM.name) return;
-
-      final liveStats = userData.liveStats ?? LiveStats.defaultForUser(userId);
-      liveStats.incrementLiveCount();
-
-      // Mettre à jour dans Firestore
-      await _firestore.collection('Users').doc(userId).update({
-        'liveStats': liveStats.toJson(),
-      });
-
-    } catch (e) {
-      printVm('Erreur incrémentation live: $e');
-    }
-  }
+  // Le compteur de lives est tenu par l'API (un live est enregistré par POST /v1/lives) : rien à écrire côté application
+  Future<void> incrementLiveCount() async {}
 
   // Obtenir les restrictions de live
   Future<Map<String, dynamic>> getLiveRestrictions() async {
@@ -110,8 +82,7 @@ class LiveService {
         return _getDefaultRestrictions(false);
       }
 
-      final userDoc = await _firestore.collection('Users').doc(userId).getM('livesServices.dart:112');
-      final userData = UserData.fromJson(userDoc.data()!);
+      final userData = userFromBootstrap(await UsersApi.bootstrap());
 
       // Si admin, toutes les fonctionnalités
       if (userData.role == UserRole.ADM.name) {

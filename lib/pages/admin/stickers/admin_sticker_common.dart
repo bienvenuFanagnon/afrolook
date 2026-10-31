@@ -1,9 +1,10 @@
-import 'package:afrotok/services/read_meter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../services/api/stickers_admin_api.dart';
+import '../../../services/api/users_api.dart';
+import '../../../services/api/wallet_api.dart';
 import '../../../theme/app_colors.dart';
 import '../../user/profile/retraitAdmin/userAllDetails.dart';
 import 'admin_sticker_detail_page.dart';
@@ -68,8 +69,9 @@ Future<String> stickerPseudo(String? uid) async {
   final cached = _pseudoCache[uid];
   if (cached != null) return cached;
   try {
-    final u = await FirebaseFirestore.instance.collection('Users').doc(uid).getM('admin_sticker_common.dart:70');
-    final p = (u.data()?['pseudo'] ?? '').toString();
+    final u = await UsersApi.publicProfile(uid);
+    final m = u['user'] is Map ? Map<String, dynamic>.from(u['user'] as Map) : u;
+    final p = (m['username'] ?? m['display_name'] ?? '').toString();
     final v = p.isEmpty ? uid : '@$p';
     _pseudoCache[uid] = v;
     return v;
@@ -83,8 +85,8 @@ Future<String> stickerPackName(String? packId) async {
   final cached = _packNameCache[packId];
   if (cached != null) return cached;
   try {
-    final p = await FirebaseFirestore.instance.collection('StickerPacks').doc(packId).getM('admin_sticker_common.dart:85');
-    final v = (p.data()?['name'] ?? packId).toString();
+    final p = await StickersAdminApi.packById(packId);
+    final v = (p?.data()['name'] ?? packId).toString();
     _packNameCache[packId] = v;
     return v;
   } catch (_) {
@@ -228,16 +230,11 @@ Future<bool> stickerAdminAction(
   String? reason,
 }) async {
   try {
-    await FirebaseFunctions.instance.httpsCallable('adminStickerAction').call({
-      if (packId != null) 'packId': packId,
-      if (stickerId != null) 'stickerId': stickerId,
-      'action': action,
-      if (reason != null && reason.isNotEmpty) 'reason': reason,
-    });
+    await StickersAdminApi.action(packId: packId, stickerId: stickerId, action: action, reason: reason);
     return true;
-  } on FirebaseFunctionsException catch (e) {
+  } on ApiException catch (e) {
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Échec : ${e.message ?? e.code}'), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Échec : ${WalletApi.message(e)}'), backgroundColor: Colors.red));
     }
     return false;
   } catch (e) {
@@ -263,8 +260,8 @@ class StickerCompareView extends StatelessWidget {
     final c = AppColors.of(context);
     final originId = (sticker['copyOf'] ?? '').toString();
     if (originId.isEmpty) return const SizedBox.shrink();
-    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      future: FirebaseFirestore.instance.collection('Stickers').doc(originId).getM('admin_sticker_common.dart:266'),
+    return FutureBuilder<StickerDoc?>(
+      future: StickersAdminApi.stickerById(originId).catchError((_) => null as StickerDoc?),
       builder: (ctx, snap) {
         final origin = snap.data?.data();
         final myAt = (sticker['createdAt'] as num?)?.toInt() ?? 0;

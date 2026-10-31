@@ -7,7 +7,7 @@ import 'package:afrotok/services/weekly_rewards_service.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/theme/app_colors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/canaux_api.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -78,7 +78,7 @@ class WeeklyTopCreatorsWidget extends StatefulWidget {
         '${now.day.toString().padLeft(2, '0')}';
   }
 
-  // ── Logique Firestore (statique, sans setState) ──────────────────────────
+  // ── Logique (statique, sans setState) ──────────────────────────
 
   static Map<String, int> _lastWeekRangeMicros() {
     final now = DateTime.now();
@@ -598,18 +598,11 @@ class _WeeklyTopCreatorsWidgetState extends State<WeeklyTopCreatorsWidget> {
     canal.suivi = (canal.suivi ?? 0) + 1;
     if (mounted) setState(() {});
 
-    final fs = FirebaseFirestore.instance;
-    fs.collection('Canaux').doc(canal.id).update({
-      'usersSuiviId': FieldValue.arrayUnion([currentId]),
-      'suivi': FieldValue.increment(1),
-    }).catchError((_) {
+    CanauxApi.join('${canal.id}').catchError((_) {
       canal.usersSuiviId?.remove(currentId);
       canal.suivi = (canal.suivi ?? 1) - 1;
       if (mounted) setState(() {});
     });
-    fs.collection('Users').doc(currentId).update({
-      'canauxSuivisIds': FieldValue.arrayUnion([canal.id]),
-    }).catchError((_) {});
   }
 
   // ── Vérifications état ────────────────────────────────────────────────────

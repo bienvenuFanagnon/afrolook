@@ -1,7 +1,6 @@
-import 'package:afrotok/services/read_meter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../../../services/api/stickers_admin_api.dart';
 import '../../../theme/app_colors.dart';
 import 'admin_sticker_common.dart';
 
@@ -20,19 +19,12 @@ class _AdminStickerDetailPageState extends State<AdminStickerDetailPage> {
   int _reload = 0;
 
   Future<_Extra> _loadExtra(Map<String, dynamic> s) async {
-    final db = FirebaseFirestore.instance;
     var reports = 0;
-    try {
-      final r = await db.collection('StickerReports').where('stickerId', isEqualTo: widget.stickerId).count().getM('admin_sticker_detail_page.dart:25');
-      reports = r.count ?? 0;
-    } catch (_) {}
     final actions = <Map<String, dynamic>>[];
     try {
-      final ids = <String>{widget.stickerId, if ((s['packId'] ?? '').toString().isNotEmpty) s['packId'].toString()};
-      for (final id in ids) {
-        final q = await db.collection('AdminActions').where('targetId', isEqualTo: id).limit(50).getM('admin_sticker_detail_page.dart:32');
-        actions.addAll(q.docs.map((d) => d.data()));
-      }
+      final h = await StickersAdminApi.history(widget.stickerId);
+      reports = h.reports;
+      actions.addAll(h.actions);
       actions.sort((a, b) => ((b['at'] as num?) ?? 0).compareTo((a['at'] as num?) ?? 0));
     } catch (_) {}
     return _Extra(reports, actions);
@@ -68,11 +60,12 @@ class _AdminStickerDetailPageState extends State<AdminStickerDetailPage> {
         title: const Text('Fiche du sticker', style: TextStyle(fontWeight: FontWeight.w700)),
         actions: [IconButton(icon: const Icon(Icons.refresh_rounded), onPressed: () => setState(() => _reload++))],
       ),
-      body: FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      body: FutureBuilder<StickerDoc?>(
         key: ValueKey(_reload),
-        future: FirebaseFirestore.instance.collection('Stickers').doc(widget.stickerId).getM('admin_sticker_detail_page.dart:72'),
+        future: StickersAdminApi.stickerById(widget.stickerId),
         builder: (ctx, snap) {
           if (snap.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
+          if (snap.hasError) return Center(child: Text('Chargement impossible. Réessaie avec le bouton d\'actualisation.', style: TextStyle(color: c.textSecondary)));
           final s = snap.data?.data();
           if (s == null) return Center(child: Text('Sticker introuvable', style: TextStyle(color: c.textSecondary)));
           return _body(c, s);

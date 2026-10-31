@@ -1,7 +1,9 @@
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../l10n/tr.dart';
+import '../../services/api/api_gateway.dart';
+import '../../services/api/wallet_api.dart';
 import 'card_models.dart';
 
 enum CardKind { capture, publish }
@@ -78,6 +80,8 @@ class CardQuote {
 
   factory CardQuote.fromMap(Map m) {
     int n(Object? v) => (v as num?)?.toInt() ?? 0;
+    // La date de fin du pass arrive en texte (ISO) ou en millisecondes
+    int _ms(Object? v) => v is num ? v.toInt() : (DateTime.tryParse('${v ?? ''}')?.millisecondsSinceEpoch ?? 0);
     final month = (m['month'] as Map?) ?? const {};
     final prices = (m['prices'] as Map?) ?? const {};
     final opt = (m['options'] as Map?) ?? const {};
@@ -92,24 +96,31 @@ class CardQuote {
     return CardQuote(
       enabled: m['enabled'] != false,
       plan: (m['plan'] as String?) ?? 'free',
-      passUntil: n(m['passUntil']),
-      trialLeft: n(m['trialLeft']),
-      adCredits: n(m['adCredits']),
+      passUntil: _ms(m['pass_until'] ?? m['passUntil']),
+      trialLeft: n(m['trial_left'] ?? m['trialLeft']),
+      adCredits: n(m['ad_credits'] ?? m['adCredits']),
       balance: n(m['balance']),
       captures: n(month['captures']),
       publishes: n(month['publishes']),
-      capturesMax: n(month['capturesMax']),
-      publishesMax: n(month['publishesMax']),
+      capturesMax: n(month['captures_max'] ?? month['capturesMax']),
+      publishesMax: n(month['publishes_max'] ?? month['publishesMax']),
       priceCapture: n(prices['capture']),
       pricePublish: n(prices['publish']),
-      priceProStyle: n(prices['proStyle']),
+      priceProStyle: n(prices['pro_style'] ?? prices['proStyle']),
       passPrice: n(prices['pass']),
-      passDays: n(prices['passDays']),
-      proStyles: m['proStyles'] is List ? (m['proStyles'] as List).map((e) => '$e').toList() : CardStyleIdX.defaultPro,
+      passDays: n(prices['pass_days'] ?? prices['passDays']),
+      proStyles: (m['pro_styles'] ?? m['proStyles']) is List ? ((m['pro_styles'] ?? m['proStyles']) as List).map((e) => '$e').toList() : CardStyleIdX.defaultPro,
       options: {CardKind.capture: pair('capture'), CardKind.publish: pair('publish')},
-      promoFlagCountry: (m['promo'] is Map && (m['promo'] as Map)['flagFree'] == true) ? '${(m['promo'] as Map)['country'] ?? ''}' : null,
+      promoFlagCountry: (m['promo'] is Map && ((m['promo'] as Map)['flag_free'] == true || (m['promo'] as Map)['flagFree'] == true)) ? '${(m['promo'] as Map)['country'] ?? ''}' : null,
     );
   }
+
+  /// Même devis avec le solde de pièces lu sur l'API.
+  static CardQuote withBalance(CardQuote q, int balance) => CardQuote(
+        enabled: q.enabled, plan: q.plan, passUntil: q.passUntil, trialLeft: q.trialLeft, adCredits: q.adCredits, balance: balance,
+        captures: q.captures, publishes: q.publishes, capturesMax: q.capturesMax, publishesMax: q.publishesMax, priceCapture: q.priceCapture,
+        pricePublish: q.pricePublish, priceProStyle: q.priceProStyle, passPrice: q.passPrice, passDays: q.passDays, proStyles: q.proStyles,
+        options: q.options, promoFlagCountry: q.promoFlagCountry);
 
   /// Devis utilisé tant que le serveur n'a pas répondu (ou hors connexion) : tout est présenté « payant », le serveur tranche.
   static CardQuote fallback() => CardQuote.fromMap({
@@ -136,12 +147,20 @@ class CardsDisabled implements Exception {}
 class CardService {
   CardService._();
 
-  static final _fn = FirebaseFunctions.instance;
+  /// Styles Pro connus (dernier devis) : l'API décide elle-même si un style est Pro d'après son nom.
+  static List<String> _proStyles = CardStyleIdX.defaultPro;
 
   static Future<CardQuote> quote() async {
     try {
-      final r = await _fn.httpsCallable('cardQuote').call();
-      return CardQuote.fromMap(Map<String, dynamic>.from(r.data as Map));
+      final r = WalletApi.map(await ApiGateway.instance.client.get('/cards/quote'));
+      final q = CardQuote.fromMap(r);
+      _proStyles = q.proStyles;
+      // Solde de pièces lu sur l'API (jamais calculé ici)
+      int balance = 0;
+      try {
+        balance = (await WalletApi.instance.wallet()).totalCoins;
+      } catch (_) {}
+      return CardQuote.withBalance(q, balance);
     } catch (e) {
       debugPrint('[Cartes] devis : $e');
       return CardQuote.fallback();
@@ -149,17 +168,21 @@ class CardService {
   }
 
   /// Enregistre l'usage et débite si besoin. À appeler AVANT de sortir l'image ; lève [CardInsufficient] si le solde ne suffit pas.
-  static Future<CardCost> commit(CardKind kind, {required bool pro}) async {
+  /// [style] : nom du style de carte (l'API en déduit seule s'il est Pro) ; à défaut, un style Pro connu si [pro].
+  static Future<CardCost> commit(CardKind kind, {required bool pro, String? style}) async {
+    final st = style ?? (pro && _proStyles.isNotEmpty ? _proStyles.first : 'classic');
     try {
-      final r = await _fn.httpsCallable('cardCommit').call({'kind': kind.name, 'pro': pro});
-      final m = Map<String, dynamic>.from(r.data as Map);
-      return CardCost((m['via'] as String?) ?? 'coins', (m['paid'] as num?)?.toInt() ?? 0);
-    } on FirebaseFunctionsException catch (e) {
-      if (e.code == 'resource-exhausted') {
-        final d = e.details is Map ? e.details as Map : const {};
-        throw CardInsufficient((d['coins'] as num?)?.toInt() ?? 0, (d['balance'] as num?)?.toInt() ?? 0);
+      final m = await WalletApi.instance.pay('card:${kind.name}:$st:${DateTime.now().millisecondsSinceEpoch ~/ 60000}', '/cards/commit', body: {'kind': kind.name, 'style': st});
+      return CardCost((m['via'] as String?) ?? 'coins', ((m['paid'] ?? m['coins']) as num?)?.toInt() ?? 0);
+    } on ApiException catch (e) {
+      if (e.isInsufficientCoins) {
+        int balance = 0;
+        try {
+          balance = (await WalletApi.instance.wallet()).totalCoins;
+        } catch (_) {}
+        throw CardInsufficient(e.coins ?? 0, balance);
       }
-      if (e.message == 'CARDS_OFF') throw CardsDisabled();
+      if (e.code == 'cards_off') throw CardsDisabled();
       rethrow;
     }
   }
@@ -167,12 +190,16 @@ class CardService {
   /// Pass Studio : retourne la date de fin (ms).
   static Future<int> buyPass() async {
     try {
-      final r = await _fn.httpsCallable('cardPassBuy').call();
-      return ((r.data as Map)['until'] as num?)?.toInt() ?? 0;
-    } on FirebaseFunctionsException catch (e) {
-      if (e.code == 'resource-exhausted') {
-        final d = e.details is Map ? e.details as Map : const {};
-        throw CardInsufficient((d['coins'] as num?)?.toInt() ?? 0, (d['balance'] as num?)?.toInt() ?? 0);
+      await WalletApi.instance.buy('card_pass');
+      final q = await quote();
+      return q.passUntil;
+    } on ApiException catch (e) {
+      if (e.isInsufficientCoins) {
+        int balance = 0;
+        try {
+          balance = (await WalletApi.instance.wallet()).totalCoins;
+        } catch (_) {}
+        throw CardInsufficient(e.coins ?? 0, balance);
       }
       rethrow;
     }
@@ -181,7 +208,7 @@ class CardService {
   /// Envoie à l'administration la vraie cause d'une erreur de création de carte (sans bloquer ni échouer).
   static Future<void> report(String where, Object error, StackTrace? stack, {String? style, String? format, bool hasMedia = false, bool vote = false}) async {
     try {
-      await _fn.httpsCallable('cardReport').call({
+      await ApiGateway.instance.client.post('/cards/errors', body: {
         'where': where,
         'type': error.runtimeType.toString(),
         'msg': error.toString(),
@@ -189,8 +216,6 @@ class CardService {
         'os': '${defaultTargetPlatform.name}${kIsWeb ? ' web' : ''}',
         'style': style ?? '',
         'format': format ?? '',
-        'hasMedia': hasMedia,
-        'vote': vote,
       });
     } catch (_) {/* le rapport ne doit jamais gêner */}
   }

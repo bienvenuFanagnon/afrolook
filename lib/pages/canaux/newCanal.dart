@@ -1,7 +1,5 @@
-import 'package:afrotok/services/read_meter.dart';
 import '../../services/media_shrink.dart';
 import 'package:afrotok/services/account_gate.dart';
-import 'package:afrotok/services/creation_fee.dart';
 import 'package:afrotok/widgets/name_preview.dart';
 import 'package:afrotok/utils/pseudo_format.dart';
 import '../../utils/platform_guard.dart';
@@ -9,9 +7,9 @@ import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/models/model_data.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import 'package:afrotok/services/api/canaux_api.dart';
+import 'package:afrotok/services/api/canaux_pay.dart';
 
 import 'package:flutter/material.dart';
 
@@ -21,7 +19,6 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 import 'package:provider/provider.dart';
 
-import 'package:path/path.dart' as Path;
 
 import '../../../providers/authProvider.dart';
 
@@ -54,7 +51,6 @@ class _NewCanalState extends State<NewCanal> {
 
   late UserAuthProvider authProvider = Provider.of<UserAuthProvider>(context, listen: false);
   late UserProvider userProvider = Provider.of<UserProvider>(context, listen: false);
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
   bool onTapCreatePro = false;
   bool _isPrivate = false;
   // 'gratuit' | 'unique' | 'mensuel'
@@ -94,27 +90,8 @@ class _NewCanalState extends State<NewCanal> {
     });
   }
 
-  Future<bool> verifierCanalName(String nom) async {
-    // Règle des noms de canaux : minuscules avec points (on teste aussi l'ancienne forme à underscores).
-    final n = normalizePseudo(nom);
-    final snapshot = await firestore.collection("CanalNames")
-        .where('name', whereIn: [n, n.replaceAll('.', '_')])
-        .limit(1)
-        .getM('newCanal.dart:102');
-    bool existe = snapshot.docs.isNotEmpty;
-
-    if (!existe) {
-      return false;
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.tr('Le titre existe déjà'), style: TextStyle(color: _colors.danger)),
-          backgroundColor: _colors.accent,
-        ),
-      );
-      return true;
-    }
-  }
+  /// Le titre doit rester unique : c'est l'API qui le vérifie à la création (message « Ce nom de canal est déjà pris. »).
+  Future<bool> verifierCanalName(String nom) async => false;
 
   Widget _buildImageSection() {
     return Container(
@@ -624,74 +601,42 @@ class _NewCanalState extends State<NewCanal> {
       }
 
       if (!await verifierCanalName(normalizePseudo(_titreController.text))) {
-        // Premier canal gratuit, canaux suivants : 500 pièces chacun
-        if (!await CreationFee.ensurePaid(context, 'canal')) return;
         try {
           setState(() {
             onTapCreatePro = true;
           });
 
-          String id = FirebaseFirestore.instance.collection('Canaux').doc().id;
-          // Création du canal avec les nouveaux champs
-          Canal canal = Canal(
-            titre: normalizePseudo(_titreController.text),
-            type: "CANAL",
-            isVerify: false,
-            id: id,
-            userId: authProvider.loginUserData.id!,
-            description: _descriptionController.text,
-            updatedAt: DateTime.now().microsecondsSinceEpoch,
-            createdAt: DateTime.now().microsecondsSinceEpoch,
-            usersSuiviId: [],
-            isPrivate: _isPrivate,
-            // Prix saisi en pièces (+ équivalent FCFA pour les anciennes versions de l'app)
-            subscriptionPriceCoinsRaw: _isPrivate ? (double.tryParse(_priceController.text) ?? 0).round() : 0,
-            subscriptionPrice: _isPrivate ? (double.tryParse(_priceController.text) ?? 0) / 2.5 : 0.0,
-            subscriptionType: _isPrivate ? _subscriptionType : 'gratuit',
-            monthlySubscriptions: {},
-            subscribersId: [],
-            adminIds: [authProvider.loginUserData.id!],
-            allowedPostersIds: [authProvider.loginUserData.id!],
-            allowAllMembersToPost: false,
-            mainCategory: _selectedMainCategory,
-            categoryUpdatedAt: _selectedMainCategory != null
-                ? DateTime.now().millisecondsSinceEpoch
-                : null,
-          );
+          // Envoi des deux images (URL signée, dépôt direct, confirmation)
+          final imageId = await CanauxApi.upload(await MediaShrink.file(File(imageProfile!.path)));
+          final coverId = await CanauxApi.upload(await MediaShrink.file(File(imageCouverture!.path)));
 
-          // Upload image de profil
-          Reference storageReferenceProfile = FirebaseStorage.instance
-              .ref()
-              .child('canal_media/${Path.basename(File(imageProfile!.path).path)}');
-          UploadTask uploadTaskProfile = storageReferenceProfile.putFile(await MediaShrink.file(File(imageProfile!.path)));
-          await uploadTaskProfile.whenComplete(() async {
-            await storageReferenceProfile.getDownloadURL().then((fileURL) {
-              canal.urlImage = fileURL;
-            });
-          });
+          final isPrivate = _isPrivate;
+          final priceCoins = isPrivate ? (double.tryParse(_priceController.text) ?? 0).round() : 0;
+          Future<Canal> create() => CanauxApi.create(
+                title: normalizePseudo(_titreController.text),
+                description: _descriptionController.text,
+                isPrivate: isPrivate,
+                subscriptionType: isPrivate ? _subscriptionType : 'gratuit',
+                priceCoins: priceCoins,
+                mainCategory: CanauxApi.apiCategory(_selectedMainCategory),
+                imageUploadId: imageId,
+                coverUploadId: coverId,
+                myId: authProvider.loginUserData.id,
+              );
 
-          // Upload image de couverture
-          Reference storageReferenceCouverture = FirebaseStorage.instance
-              .ref()
-              .child('canal_media/${Path.basename(File(imageCouverture!.path).path)}');
-          UploadTask uploadTaskCouverture = storageReferenceCouverture.putFile(await MediaShrink.file(File(imageCouverture!.path)));
-          await uploadTaskCouverture.whenComplete(() async {
-            await storageReferenceCouverture.getDownloadURL().then((fileURL) {
-              canal.urlCouverture = fileURL;
-            });
-          });
-
-          // Sauvegarde dans Firestore
-          await FirebaseFirestore.instance.collection('Canaux').doc(canal.id!).set(canal.toJson());
-
-          // Mise à jour de l'utilisateur
-          await firestore.collection('Users').doc(authProvider.loginUserData!.id).update(authProvider.loginUserData!.toJson());
-
-          // Sauvegarde du nom du canal
-          UserPseudo pseudo = UserPseudo();
-          pseudo.id = firestore.collection('CanalNames').doc().id;
-          pseudo.name = normalizePseudo(_titreController.text);
-          await firestore.collection('CanalNames').doc(pseudo.id).set(pseudo.toJson());
+          try {
+            await create();
+          } on ApiException catch (e) {
+            // Premier canal gratuit, canaux suivants : 500 pièces chacun (ticket de création acheté par l'API, puis nouvel essai)
+            if (e.code != 'creation_credit_required') rethrow;
+            final paid = await CanauxPay.buy(context,
+                kind: 'canal_create', coins: e.coins ?? 500, label: context.tr('Créer un canal supplémentaire'));
+            if (!paid) {
+              if (mounted) setState(() => onTapCreatePro = false);
+              return;
+            }
+            await create();
+          }
 
           // Succès
           ScaffoldMessenger.of(context).showSnackBar(
@@ -719,23 +664,25 @@ class _NewCanalState extends State<NewCanal> {
 
           // Retour à la page précédente après un délai
           Future.delayed(Duration(seconds: 2), () {
-            Navigator.of(context).pop();
+            if (mounted) Navigator.of(context).pop();
           });
 
         } catch (e) {
           printVm('Erreur création canal: $e');
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                context.tr('Erreur lors de la création du canal'),
-                style: TextStyle(color: _colors.onPrimary),
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  CanauxApi.message(e, fallback: context.tr('Erreur lors de la création du canal')),
+                  style: TextStyle(color: _colors.onPrimary),
+                ),
+                backgroundColor: _colors.danger,
               ),
-              backgroundColor: _colors.danger,
-            ),
-          );
-          setState(() {
-            onTapCreatePro = false;
-          });
+            );
+            setState(() {
+              onTapCreatePro = false;
+            });
+          }
         }
       }
     }

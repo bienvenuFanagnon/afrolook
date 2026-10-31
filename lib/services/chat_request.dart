@@ -1,11 +1,9 @@
-import 'package:afrotok/services/read_meter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/users_api.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 
 import '../models/model_data.dart';
 import '../providers/authProvider.dart';
-import '../providers/userProvider.dart';
 
 /// Demande de discussion (réponse à une chronique) : la discussion existe dès l'envoi, avec le premier message visible, mais seule la personne
 /// qui a répondu peut écrire tant que l'autre n'a pas accepté. Accepter ou refuser se fait depuis la discussion ou la page Invitations ;
@@ -19,57 +17,30 @@ class ChatRequestService {
   /// Vrai pour la personne qui a écrit en premier (elle attend la réponse).
   static bool iAmRequester(Chat c, String? myId) => c.requestFrom != null && c.requestFrom == myId;
 
-  static Future<Invitation?> _invitation(Chat chat) async {
-    final id = chat.requestInvitationId;
-    if (id == null || id.isEmpty) return null;
-    final doc = await FirebaseFirestore.instance.collection('Invitations').doc(id).getM('chat_request.dart:24');
-    if (!doc.exists) return null;
-    return Invitation.fromJson(doc.data()!, reference: doc.reference)..id = doc.id;
+  /// Invitation en attente reçue de la personne qui a écrit en premier (l'API ne donne pas son identifiant dans la conversation).
+  static Future<String?> _pendingInvitationId(Chat chat, String? myId) async {
+    final from = chat.requestFrom;
+    if (from == null || from == myId) return null;
+    String? cursor;
+    for (var i = 0; i < 3; i++) {
+      final page = await UsersApi.invitations(direction: 'received', status: 'pending', cursor: cursor, limit: 50);
+      for (final j in page.items) {
+        final other = j['user'] is Map ? Map<String, dynamic>.from(j['user'] as Map) : <String, dynamic>{};
+        if (other['id'] == from) return j['id'] as String?;
+      }
+      cursor = page.next;
+      if (cursor == null) break;
+    }
+    return null;
   }
 
-  static Future<void> _setStatus(Chat chat, String status) async {
-    chat.requestStatus = status;
-    if (chat.id == null) return;
-    await FirebaseFirestore.instance.collection('Chats').doc(chat.id).update({'request_status': status, 'updated_at': DateTime.now().millisecondsSinceEpoch});
-  }
-
-  /// Accepte : l'invitation passe à ACCEPTER (amis, comme sur la page Invitations), la discussion devient normale, la personne est prévenue.
+  /// Accepte : l'invitation passe à « acceptée » (amis, comme sur la page Invitations), la discussion devient normale, la personne est prévenue par l'API.
   static Future<bool> accept(BuildContext context, Chat chat) async {
-    final auth = context.read<UserAuthProvider>();
-    final users = context.read<UserProvider>();
-    final me = auth.loginUserData;
-    final fs = FirebaseFirestore.instance;
+    final me = context.read<UserAuthProvider>().loginUserData;
     try {
-      final inv = await _invitation(chat);
-      final senderId = chat.requestFrom ?? inv?.senderId;
-      if (inv != null && inv.status == InvitationStatus.ENCOURS.name) {
-        if (!await users.acceptInvitation(inv)) return false;
-      }
-      if (senderId != null) {
-        me.friendsIds ??= [];
-        if (!me.friendsIds!.contains(senderId)) me.friendsIds!.add(senderId);
-        await fs.collection('Users').doc(me.id).update({'friendsIds': FieldValue.arrayUnion([senderId])});
-      }
-      await _setStatus(chat, 'accepted');
-      if (senderId != null) {
-        try {
-          final other = (await fs.collection('Users').doc(senderId).getM('chat_request.dart:55')).data();
-          final player = other?['oneIgnalUserid'];
-          if (player != null && player.toString().isNotEmpty) {
-            await auth.sendNotification(
-              userIds: [player],
-              smallImage: me.imageUrl ?? '',
-              send_user_id: me.id!,
-              recever_user_id: senderId,
-              message: '✅ @${me.pseudo} a accepté votre invitation !',
-              type_notif: NotificationType.ACCEPTINVITATION.name,
-              post_id: '',
-              post_type: '',
-              chat_id: chat.id ?? '',
-            );
-          }
-        } catch (_) {}
-      }
+      final id = await _pendingInvitationId(chat, me.id);
+      if (id != null) await UsersApi.acceptInvitation(id);
+      chat.requestStatus = 'accepted';
       return true;
     } catch (_) {
       return false;
@@ -78,13 +49,11 @@ class ChatRequestService {
 
   /// Refuse : la discussion disparaît de la liste de la personne qui refuse ; l'autre voit « refusée » et peut réessayer après 7 jours.
   static Future<bool> refuse(BuildContext context, Chat chat) async {
-    final users = context.read<UserProvider>();
+    final me = context.read<UserAuthProvider>().loginUserData;
     try {
-      final inv = await _invitation(chat);
-      if (inv != null && inv.status == InvitationStatus.ENCOURS.name) {
-        if (!await users.refuserInvitation(inv)) return false;
-      }
-      await _setStatus(chat, 'refused');
+      final id = await _pendingInvitationId(chat, me.id);
+      if (id != null) await UsersApi.refuseInvitation(id);
+      chat.requestStatus = 'refused';
       return true;
     } catch (_) {
       return false;

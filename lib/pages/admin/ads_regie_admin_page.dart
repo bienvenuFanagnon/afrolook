@@ -1,4 +1,5 @@
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrotok/services/api/regie_admin_api.dart';
+import 'package:afrotok/services/api/regie_api.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -33,35 +34,23 @@ class _AdsRegieAdminPageState extends State<AdsRegieAdminPage> {
     _load();
   }
 
-  Future<Map<String, dynamic>> _call(String name, [Map<String, dynamic>? data]) async {
-    final res = await FirebaseFunctions.instanceFor(region: 'us-central1').httpsCallable(name).call(data ?? <String, dynamic>{});
-    return Map<String, dynamic>.from(res.data as Map);
-  }
-
-  String _err(Object e) => e is FirebaseFunctionsException ? (e.message ?? e.code) : e.toString();
-
-  List<Map<String, dynamic>> _list(Object? v) => (v as List? ?? const []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+  String _err(Object e) => RegieApi.err(e);
 
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final logoStatus = switch (_filter) { 'all' => 'all', 'active' => 'approved', 'refused' => 'rejected', _ => 'pending' };
-      final campStatus = switch (_filter) { 'all' => 'all', 'active' => 'active', 'refused' => 'refused', 'suspended' => 'paused', _ => 'pending' };
-      final r = await Future.wait([
-        _filter == 'suspended' ? Future.value(<String, dynamic>{'items': <dynamic>[]}) : _call('adsAdvAdminList', {'status': logoStatus}),
-        _call('adsPubAdminList', {'status': _filter}),
-        _call('adsPubAdminList', {'alerts': true, 'status': 'open'}).catchError((_) => <String, dynamic>{'alerts': <dynamic>[]}),
-        _call('adsPubAdminList', {'sharers': true, 'status': _filter}).catchError((_) => <String, dynamic>{'sharers': <dynamic>[]}),
-        _call('adsPubAdminList', {'campaigns': true, 'status': campStatus}).catchError((_) => <String, dynamic>{'campaigns': <dynamic>[]}),
-      ]);
+      final q = await RegieAdminApi.queue(pendingOnly: _filter == 'pending');
+      // L'API ne liste que les éléments en attente : les autres filtres affichent donc une liste vide.
+      final only = _filter == 'pending' || _filter == 'all';
+      List<Map<String, dynamic>> pick(String k) => only ? (q[k] ?? const []) : <Map<String, dynamic>>[];
       if (!mounted) return;
       setState(() {
-        _logos = _list(r[0]['items']);
-        _profiles = _list(r[1]['profiles']);
-        _props = _list(r[1]['properties']);
-        _alerts = _list(r[2]['alerts']);
-        _sharers = _list(r[3]['sharers']);
-        _camps = _list(r[4]['campaigns']);
+        _logos = pick('advertisers');
+        _profiles = pick('profiles');
+        _props = pick('properties');
+        _alerts = const [];
+        _sharers = pick('sharers');
+        _camps = pick('campaigns');
         _loading = false;
       });
     } catch (e) {
@@ -92,28 +81,23 @@ class _AdsRegieAdminPageState extends State<AdsRegieAdminPage> {
     String? reason;
     if (!approve) { reason = await _askReason('Refuser le profil'); if (reason == null) return; }
     try {
-      await _call('adsAdvAdminReview', {'uid': p['uid'], 'decision': approve ? 'approve' : 'reject', if (reason != null) 'reason': reason});
+      await RegieAdminApi.decide('advertiser', '${p['uid']}', approve ? 'approve' : 'reject', reason: reason);
       _toast(approve ? 'Profil validé' : 'Profil refusé');
       _load();
     } catch (e) { _toast(_err(e)); }
   }
 
   /// Alerte de la surveillance : vérifiée (rien d'anormal), bloquer les paiements de la plateforme, ou lever le blocage.
+  /// Alertes de surveillance : pas encore proposées par l'API (voir lacunes_api_regie_admin.md).
   Future<void> _alertDecision(Map<String, dynamic> a, String decision) async {
-    String? reason;
-    if (decision == 'hold') { reason = await _askReason('Bloquer les paiements', label: 'Pourquoi bloquer ? (gardé dans le journal)'); if (reason == null) return; }
-    try {
-      await _call('adsPubAdminReview', {'target': 'alert', 'id': a['id'], 'decision': decision, if (reason != null) 'reason': reason});
-      _toast('Décision enregistrée');
-      _load();
-    } catch (e) { _toast(_err(e)); }
+    _toast('Les alertes de surveillance ne sont pas encore disponibles dans cette version.');
   }
 
   Future<void> _profileDecision(Map<String, dynamic> p, String decision) async {
     String? reason;
     if (decision == 'refuse' || decision == 'suspend') { reason = await _askReason(decision == 'refuse' ? 'Refuser le profil' : 'Suspendre le profil'); if (reason == null) return; }
     try {
-      await _call('adsPubAdminReview', {'target': 'profile', 'id': p['uid'], 'decision': decision, if (reason != null) 'reason': reason});
+      await RegieAdminApi.decide('profile', '${p['uid']}', decision, reason: reason);
       _toast('Décision enregistrée');
       _load();
     } catch (e) { _toast(_err(e)); }
@@ -121,7 +105,6 @@ class _AdsRegieAdminPageState extends State<AdsRegieAdminPage> {
 
   Future<void> _propDecision(Map<String, dynamic> p, String decision) async {
     String? reason;
-    int? counted;
     if (decision == 'refuse' || decision == 'suspend') {
       reason = await _askReason(decision == 'refuse' ? 'Refuser ce site ou cette application' : 'Suspendre la diffusion');
       if (reason == null) return;
@@ -144,10 +127,9 @@ class _AdsRegieAdminPageState extends State<AdsRegieAdminPage> {
         ),
       );
       if (ok != true) return;
-      counted = int.tryParse(ctl.text.trim());
     }
     try {
-      await _call('adsPubAdminReview', {'target': 'property', 'id': p['id'], 'decision': decision, if (reason != null) 'reason': reason, if (counted != null) 'audienceCounted': counted});
+      await RegieAdminApi.decide('property', '${p['id']}', decision, reason: reason);
       _toast('Décision enregistrée');
       _load();
     } catch (e) {
@@ -183,7 +165,7 @@ class _AdsRegieAdminPageState extends State<AdsRegieAdminPage> {
       retained = int.tryParse(ctl.text.trim());
     }
     try {
-      await _call('adsPubAdminReview', {'target': 'sharer', 'id': p['uid'], 'decision': decision, if (reason != null) 'reason': reason, if (retained != null) 'audienceRetained': retained});
+      await RegieAdminApi.decide('sharer', '${p['uid']}', decision, reason: reason, retained: retained);
       _toast('Décision enregistrée');
       _load();
     } catch (e) { _toast(_err(e)); }
@@ -198,7 +180,7 @@ class _AdsRegieAdminPageState extends State<AdsRegieAdminPage> {
       if (reason == null) return;
     }
     try {
-      await _call('adsPubAdminReview', {'target': 'campaign', 'id': p['id'], 'decision': decision, if (reason != null) 'reason': reason});
+      await RegieAdminApi.decide('campaign', '${p['id']}', decision, reason: reason);
       _toast('Décision enregistrée');
       _load();
     } catch (e) { _toast(_err(e)); }
@@ -340,7 +322,7 @@ class _AdsRegieAdminPageState extends State<AdsRegieAdminPage> {
           ]),
           _kv(c, 'Identifiant', '${p['id']}'),
           _kv(c, 'Diffuseur', '${p['ownerName']} · ${p['ownerEmail']}'),
-          _kv(c, 'Profil du diffuseur', switch ('${p['ownerStatus']}') { 'active' => 'Validé', 'pending' => 'En attente (à valider d\'abord)', 'refused' => 'Refusé', 'suspended' => 'Suspendu', _ => 'Aucun' }),
+          if (p['ownerStatus'] != null) _kv(c, 'Profil du diffuseur', switch ('${p['ownerStatus']}') { 'active' => 'Validé', 'pending' => 'En attente (à valider d\'abord)', 'refused' => 'Refusé', 'suspended' => 'Suspendu', _ => 'Aucun' }),
           _link(c, '${p['url']}'.isNotEmpty ? '${p['url']}' : '', '${p['url'] ?? ''}'),
           _link(c, '${p['androidUrl']}'.isNotEmpty ? 'Google Play' : '', '${p['androidUrl'] ?? ''}'),
           _link(c, '${p['iosUrl']}'.isNotEmpty ? 'App Store' : '', '${p['iosUrl'] ?? ''}'),

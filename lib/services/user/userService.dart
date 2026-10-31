@@ -1,9 +1,9 @@
-import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
 import 'dart:io';
 
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/services/api.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -24,160 +24,21 @@ class UserService {
   late int countFriends=0;
 
   late List<Message> listMessage = [];
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
-  Future<List<UserData>> getUsers(
-      {required String userId}) async {
-    //error=null;
-    listUser = [];
+  /// Liste de personnes : l'API n'a pas (encore) de liste générale ; voir lacunes_api_utilisateurs.md (recherche).
+  Future<List<UserData>> getUsers({required String userId}) async => [];
+
+  /// Profil public d'une personne (API : GET /v1/users/{id}).
+  Future<UserData> getUserData({required String userId}) async {
     try {
-
-      // Obtenir la liste des utilisateurs
-      final snapshot = await FirebaseFirestore.instance
-          .collection('Users')
-          .where('id', isNotEqualTo: userId)
-          .limit(20)
-          .getM('userService.dart:38');
-
-      // Afficher la liste
-      snapshot.docs.forEach((doc) {
-        printVm(doc.data());
-        listUser.add(UserData.fromJson(doc.data() as Map<String, dynamic>));
-      });
-
-        return listUser;
-
+      return userFromApi(await UsersApi.publicProfile(userId));
     } catch (e) {
-      // Erreur de connexion
-      // error = "Erreur de connexion: $e";
-      printVm("erreur ${e}");
-      return [];
-    }
-  }
-
-  Future<UserData> getUserData(
-      {required String userId}) async {
-    //error=null;
-    UserData userData=UserData();
-    try {
-
-      //  utilisateurs connecte
-
-      CollectionReference userCollect =
-      FirebaseFirestore.instance.collection('Users');
-      // Get docs from collection reference
-      QuerySnapshot querySnapshotUser = await userCollect.where("id",isEqualTo: userId!).getM('userService.dart:67');
-      // Afficher la liste
-      List<UserData> userList = querySnapshotUser.docs.map((doc) =>
-          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-    userData=userList.first;
-
-      ///////mes invitation/////
-      CollectionReference collectionRef =
-      FirebaseFirestore.instance.collection('Invitations');
-      // Get docs from collection reference
-      QuerySnapshot querySnapshotInv = await collectionRef.where("sender_id",isEqualTo: userId!).getM('userService.dart:77');
-
-      List<Invitation> inviteList = querySnapshotInv.docs.map((doc) =>
-          Invitation.fromJson(doc.data() as Map<String, dynamic>)).toList();
-      userData.mesInvitationsEnvoyer=inviteList;
-
-      ///////autre invitation/////
-      CollectionReference collectionRefAutreInv =
-      FirebaseFirestore.instance.collection('Invitations');
-      // Get docs from collection reference
-      QuerySnapshot querySnapshotAutreInv = await collectionRefAutreInv.where("receiver_id",isEqualTo: userId!).getM('userService.dart:87');
-
-      List<Invitation> autreinviteList = querySnapshotInv.docs.map((doc) =>
-          Invitation.fromJson(doc.data() as Map<String, dynamic>)).toList();
-      userData.autreInvitationsEnvoyer=autreinviteList;
-
-      //////////abonnement////////////////
-
-      CollectionReference userCollectAbonnes =
-      FirebaseFirestore.instance.collection('Abonnements');
-      // Get docs from collection reference
-      QuerySnapshot querySnapshotAbone = await userCollectAbonnes.where("compte_user_id",isEqualTo: userId).getM('userService.dart:98');
-      // Afficher la liste
-      List<UserAbonnes> userListAbonnes = querySnapshotAbone.docs.map((doc) =>
-          UserAbonnes.fromJson(doc.data() as Map<String, dynamic>)).toList();
-
-      userData.userAbonnes=userListAbonnes;
-
-
-
-
-      return userData;
-
-    } catch (e) {
-      // Erreur de connexion
-      // error = "Erreur de connexion: $e";
       printVm("erreur ${e}");
       return UserData();
     }
   }
 
-  Future<UserData> getUserDataByPhone(
-      {required String phone}) async {
-    //error=null;
-    UserData userData=UserData();
-    try {
-
-      //  utilisateurs connecte
-
-      CollectionReference userCollect =
-      FirebaseFirestore.instance.collection('Users');
-      // Get docs from collection reference
-      QuerySnapshot querySnapshotUser = await userCollect.where("numero_de_telephone",isEqualTo: phone!).getM('userService.dart:129');
-      // Afficher la liste
-      List<UserData> userList = querySnapshotUser.docs.map((doc) =>
-          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-      userData=userList.first;
-
-      ///////mes invitation/////
-      CollectionReference collectionRef =
-      FirebaseFirestore.instance.collection('Invitations');
-      // Get docs from collection reference
-      QuerySnapshot querySnapshotInv = await collectionRef.where("sender_id",isEqualTo: userData.id!).getM('userService.dart:139');
-
-      List<Invitation> inviteList = querySnapshotInv.docs.map((doc) =>
-          Invitation.fromJson(doc.data() as Map<String, dynamic>)).toList();
-      userData.mesInvitationsEnvoyer=inviteList;
-
-      ///////autre invitation/////
-      CollectionReference collectionRefAutreInv =
-      FirebaseFirestore.instance.collection('Invitations');
-      // Get docs from collection reference
-      QuerySnapshot querySnapshotAutreInv = await collectionRefAutreInv.where("receiver_id",isEqualTo: userData.id!!).getM('userService.dart:149');
-
-      List<Invitation> autreinviteList = querySnapshotInv.docs.map((doc) =>
-          Invitation.fromJson(doc.data() as Map<String, dynamic>)).toList();
-      userData.autreInvitationsEnvoyer=autreinviteList;
-
-      //////////abonnement////////////////
-
-      CollectionReference userCollectAbonnes =
-      FirebaseFirestore.instance.collection('Abonnements');
-      // Get docs from collection reference
-      QuerySnapshot querySnapshotAbone = await userCollectAbonnes.where("compte_user_id",isEqualTo: userData.id!).getM('userService.dart:160');
-      // Afficher la liste
-      List<UserAbonnes> userListAbonnes = querySnapshotAbone.docs.map((doc) =>
-          UserAbonnes.fromJson(doc.data() as Map<String, dynamic>)).toList();
-
-      userData.userAbonnes=userListAbonnes;
-
-
-
-
-      return userData;
-
-    } catch (e) {
-      // Erreur de connexion
-      // error = "Erreur de connexion: $e";
-      printVm("erreur ${e}");
-      return UserData();
-    }
-  }
-
+  /// Recherche par numéro de téléphone : non fournie par l'API (voir lacunes_api_utilisateurs.md). Renvoie un profil vide.
+  Future<UserData> getUserDataByPhone({required String phone}) async => UserData();
 
   Future<List<Message>> getMessageByChat(
       {required int chatId}) async {
@@ -214,112 +75,37 @@ class UserService {
     }
   }
 
-  Future<bool> abonne({required String compte_user_id, required String abonne_user_id})async{
-    //error=null;
+  Future<bool> abonne({required String compte_user_id, required String abonne_user_id}) async {
     try {
-      final response = await http.post(
-        Uri.parse(ApiConstantData.abonner),
-        headers: {"Content-Type": "application/json"},
-        body: json.encode({
-          'compte_user_id': compte_user_id,
-          'abonne_user_id': abonne_user_id,
-        }),
-      );
-      printVm("code ${response.statusCode}");
-      //printVm("abonnee user data ${jsonDecode(response.body)}");
-
-      if (response.statusCode == 200|| response.statusCode == 201){
-
-
-        return true;
-
-
-
-      } else {
-        // Gérer les erreurs en fonction du code de statut
-        //error = "Erreur lors de la création du compte";
-        return false;
-      }
+      await UsersApi.follow(compte_user_id);
+      return true;
     } catch (e) {
-      // Erreur de connexion
-      // error = "Erreur de connexion: $e";
       printVm("erreur ${e}");
       return false;
     }
-
   }
-  Future<bool> sendInvitation({required String receiver_id, required String sender_id})async{
-    //error=null;
+
+
+  Future<bool> sendInvitation({required String receiver_id, required String sender_id}) async {
     try {
-      final response = await http.post(
-        Uri.parse(ApiConstantData.newInvitation),
-        headers: {"Content-Type": "application/json"},
-        body: json.encode({
-          'receiver_id': receiver_id,
-          'sender_id': sender_id,
-        }),
-      );
-      printVm("code ${response.statusCode}");
-     // printVm("invitation user data ${jsonDecode(response.body)}");
-
-      if (response.statusCode == 200|| response.statusCode == 201){
-
-
-        return true;
-
-
-
-      } else {
-        // Gérer les erreurs en fonction du code de statut
-        //error = "Erreur lors de la création du compte";
-        return false;
-      }
+      await UsersApi.invite(receiver_id);
+      return true;
     } catch (e) {
-      // Erreur de connexion
-      // error = "Erreur de connexion: $e";
       printVm("erreur ${e}");
       return false;
     }
-
   }
 
 
-
-  Future<bool> acceptInvitation({required String invitation_id, required String user_accepter_id})async{
-    //error=null;
+  Future<bool> acceptInvitation({required String invitation_id, required String user_accepter_id}) async {
     try {
-      final response = await http.post(
-        Uri.parse(ApiConstantData.acceptInvitation),
-        headers: {"Content-Type": "application/json"},
-        body: json.encode({
-          'invitation_id': invitation_id,
-          'user_accepter_id': user_accepter_id,
-        }),
-      );
-      printVm("code ${response.statusCode}");
-     // printVm("invitation user data ${jsonDecode(response.body)}");
-
-      if (response.statusCode == 200|| response.statusCode == 201){
-
-
-        return true;
-
-
-
-      } else {
-        // Gérer les erreurs en fonction du code de statut
-        //error = "Erreur lors de la création du compte";
-        return false;
-      }
+      await UsersApi.acceptInvitation(invitation_id);
+      return true;
     } catch (e) {
-      // Erreur de connexion
-      // error = "Erreur de connexion: $e";
       printVm("erreur ${e}");
       return false;
     }
-
   }
-
 
 
   Future<bool> sendSimpleMessage({required Message message,required String receiver_id,required String sender_id})async{

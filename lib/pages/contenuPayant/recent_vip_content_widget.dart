@@ -1,15 +1,13 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'dart:io';
 import 'dart:math';
 import 'package:afrotok/pages/component/consoleWidget.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/contenu_payant_api.dart';
 
 import 'dart:typed_data';
 
 import 'package:afrotok/models/model_data.dart';
 
 import 'package:afrotok/pages/contenuPayant/content_detail_page.dart';
-import 'package:afrotok/providers/contenuPayantProvider.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -68,17 +66,9 @@ class _RecentVIPContentWidgetState extends State<RecentVIPContentWidget> {
     // Récupérer 2 contenus par catégorie en parallèle
     final futures = pickedTypes.map((type) async {
       try {
-        final snap = await FirebaseFirestore.instance
-            .collection('ContentPaies')
-            .where('contentType', isEqualTo: type.toString().split('.').last)
-            .where('isSeries', isEqualTo: false)
-            .limit(6)
-            .getM('recent_vip_content_widget.dart:75');
-        final docs = snap.docs..shuffle(rng);
-        return docs
-            .take(2)
-            .map((d) => ContentPaie.fromJson({...d.data(), 'id': d.id}))
-            .toList();
+        final page = await ContenuPayantApi.list(type: type, limit: 12);
+        final docs = page.items.where((c) => !c.isSeries).toList()..shuffle(rng);
+        return docs.take(2).toList();
       } catch (_) {
         return <ContentPaie>[];
       }

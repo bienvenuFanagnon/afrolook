@@ -15,7 +15,8 @@ import 'package:video_player/video_player.dart';
 import 'dart:io';
 import 'package:provider/provider.dart';
 // models/chronique_model.dart
-import 'package:cloud_firestore/cloud_firestore.dart';
+// Timestamp : simple type de date (les chroniques sont lues et écrites par l'API) ; les commentaires restent sur Firebase.
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
 
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
@@ -533,54 +534,8 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
     final chroniqueProvider = Provider.of<ChroniqueProvider>(context, listen: false);
 
     try {
-      final activeCount = await chroniqueProvider.getUserActiveChroniquesCount(authProvider.loginUserData.id!);
-      final abonnement = authProvider.loginUserData.abonnement;
-      final isPremium = abonnement?.estPremium == true;
-
-      if (activeCount >= 2 && !isPremium) {
-        final coins = authProvider.loginUserData.coinsBalance ?? 0;
-        if (coins < 10) {
-          _showErrorDialog(
-            'Vous avez atteint la limite de 2 chroniques gratuites.\n\n'
-            'Pour publier davantage, passez en Premium ou rechargez vos pièces (il vous faut 10 pièces).',
-          );
-          setState(() => _isUploading = false);
-          return;
-        }
-        final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('Chronique supplémentaire'),
-            content: const Text(
-              'Vous avez déjà 2 chroniques actives (limite gratuite).\n\n'
-              'Publier cette chronique coûte 10 pièces.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Annuler'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Payer 10 pièces'),
-              ),
-            ],
-          ),
-        );
-        if (confirmed != true) {
-          setState(() => _isUploading = false);
-          return;
-        }
-        await FirebaseFirestore.instance
-            .collection('Users')
-            .doc(authProvider.loginUserData.id!)
-            .update({'coinsBalance': FieldValue.increment(-10)});
-        authProvider.loginUserData.coinsBalance = (coins - 10);
-      } else if (activeCount >= 5 && isPremium) {
-        _showErrorDialog('Vous avez déjà 5 chroniques actives. Attendez que certaines expirent.');
-        setState(() => _isUploading = false);
-        return;
-      }
+      // Le plafond de chroniques actives par personne est appliqué par le serveur (message clair si atteint) ;
+      // l'ancien paiement de 10 pièces au-delà de 2 chroniques n'existe plus (voir lacunes_api_canaux.md).
 
       if (widget.beforePublish != null && !await widget.beforePublish!()) {
         if (mounted) setState(() => _isUploading = false);
@@ -626,7 +581,7 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
       }
     } catch (e) {
       printVm("Erreur chronique form : $e");
-      _showErrorDialog('Erreur lors de la publication: $e');
+      _showErrorDialog(e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _isUploading = false);
     }

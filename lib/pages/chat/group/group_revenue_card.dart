@@ -1,5 +1,4 @@
-import 'package:afrotok/services/read_meter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/jeux_api.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -30,19 +29,10 @@ class _GroupRevenueCardState extends State<GroupRevenueCard> {
 
   Future<void> _load() async {
     try {
-      final snap = await FirebaseFirestore.instance
-          .collection('TransactionSoldes')
-          .where('user_id', isEqualTo: widget.ownerId)
-          .where('purchaseKind', isEqualTo: 'group')
-          .where('purchaseRefId', isEqualTo: widget.groupId)
-          .getM('group_revenue_card.dart:37');
-      var coins = 0, n = 0;
-      for (final d in snap.docs) {
-        final t = d.data();
-        if (t['type'] != 'GAIN_PIECES') continue;
-        coins += (t['montant'] as num? ?? 0).round();
-        n++;
-      }
+      // Gains du groupe : route à ajouter à l'API (voir lacunes_api_jeux_medias.md) ; sans elle la carte reste masquée.
+      final m = JeuxApi.map(await JeuxApi.client.get('/groups/${widget.groupId}/earnings'));
+      final coins = JeuxApi.asInt(m['coins']);
+      final n = JeuxApi.asInt(m['entries']);
       if (mounted) setState(() { _coins = coins; _entries = n; _loaded = true; });
     } catch (_) {
       if (mounted) setState(() => _loaded = true);

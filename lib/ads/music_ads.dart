@@ -4,7 +4,8 @@
 import 'dart:async';
 import 'rewarded_ads.dart';
 
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import 'package:afrotok/services/api/regie_api.dart';
 
 import '../models/model_data.dart';
 import '../pages/studio/artist_sound_common.dart';
@@ -55,17 +56,16 @@ class MusicAds {
     }
     for (var i = 0; i < 4; i++) {
       try {
-        await FirebaseFunctions.instance.httpsCallable('musicAdListen').call({'soundId': soundId});
+        await RegieApi.post('/music/sounds/$soundId/ad-listen');
         final url = await fetchFullListenUrl(soundId);
         return url == null ? const MusicAdListen(MusicAdOutcome.failed) : MusicAdListen(MusicAdOutcome.ok, url);
-      } on FirebaseFunctionsException catch (e) {
-        final m = '${e.message}';
-        if (m.contains('NO_ADS') && i < 3) {
+      } on ApiException catch (e) {
+        if ((e.code == 'not_enough_ads' || e.code == 'no_ads') && i < 3) {
           await Future<void>.delayed(const Duration(seconds: 2));
           continue;
         }
-        if (m.contains('LIMITE_JOUR')) return const MusicAdListen(MusicAdOutcome.limit);
-        if (m.contains('RETIRE')) return const MusicAdListen(MusicAdOutcome.unavailable);
+        if (e.code == 'daily_limit' || e.code == 'limit_reached' || e.status == 429) return const MusicAdListen(MusicAdOutcome.limit);
+        if (e.status == 404 || e.code == 'not_found') return const MusicAdListen(MusicAdOutcome.unavailable);
         return const MusicAdListen(MusicAdOutcome.failed);
       } catch (_) {
         return const MusicAdListen(MusicAdOutcome.failed);
@@ -102,7 +102,7 @@ class MusicAds {
     final events = List<Map<String, Object>>.from(_buf);
     _buf.clear();
     try {
-      await FirebaseFunctions.instance.httpsCallable('musicAdPaid').call({'events': events});
+      await RegieApi.post('/ads/revenue', body: {'items': [for (final e in events) {'p': e['p'], 'c': e['c'], 'm': e['v'], 'n': 1}]});
     } catch (_) {/* indicatif : on abandonne sans bruit */}
   }
 }

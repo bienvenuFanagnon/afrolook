@@ -2,11 +2,10 @@ import 'package:afrotok/layout/centered_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:cloud_functions/cloud_functions.dart';
-import '../../models/model_data.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import '../../services/api/wallet_api.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/coin_gift_provider.dart';
-import '../../services/coin_gift_service.dart';
 import '../../theme/app_colors.dart';
 import '../../l10n/tr.dart';
 import '../../services/currency_service.dart';
@@ -61,13 +60,18 @@ class _CoinConversionPageState extends State<CoinConversionPage>
   Future<void> _loadBalance() async {
     final authPro = Provider.of<UserAuthProvider>(context, listen: false);
     final coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
-    await coinProvider.refreshBalance(authPro.loginUserData!.id!);
-    final user = coinProvider.currentUser;
-    if (user != null) {
+    try {
+      // Soldes lus sur l'API (jamais calculés ici) : seules les pièces gagnées sont convertibles.
+      final w = await WalletApi.instance.syncInto(authPro.loginUserData);
+      coinProvider.refreshFromAuth();
+      if (!mounted) return;
       setState(() {
-        _totalCoins = user.giftCoinsBalance ?? 0;
-        _coinsBalance = user.convertibleGiftCoins;
+        _totalCoins = w.totalCoins;
+        _coinsBalance = w.convertibleCoins;
       });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _errorMessage = WalletApi.message(e));
     }
   }
 
@@ -113,9 +117,7 @@ class _CoinConversionPageState extends State<CoinConversionPage>
     setState(() => _isLoading = true);
     try {
       // Côté serveur : vérifie que seules des pièces gagnées sont converties.
-      await FirebaseFunctions.instance
-          .httpsCallable('convertGiftCoins')
-          .call({'coinsAmount': _coinsToConvert});
+      await WalletApi.instance.convert(_coinsToConvert);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -133,14 +135,16 @@ class _CoinConversionPageState extends State<CoinConversionPage>
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
-      final notConvertible = e is FirebaseFunctionsException && e.code == 'failed-precondition';
+      final notConvertible = e is ApiException && (e.code == 'insufficient_funds' || e.code == 'debt_outstanding');
       if (notConvertible) await _loadBalance();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(notConvertible
               ? context.tr('Seules tes pièces gagnées sont convertibles : {a} pièces maximum.', {'a': _fmt(_coinsBalance)})
-              : context.tr('La conversion n\'a pas pu être effectuée. Vérifie ta connexion et réessaie.')),
+              : (e is ApiException && !e.isNetwork && e.message.isNotEmpty
+                  ? e.message
+                  : context.tr('La conversion n\'a pas pu être effectuée. Vérifie ta connexion et réessaie.'))),
           backgroundColor: Colors.red,
         ),
       );

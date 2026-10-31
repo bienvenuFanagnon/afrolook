@@ -10,7 +10,12 @@ import 'package:afrotok/pages/home/unitePostPage/chronique_section.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/api_gateway.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;   // seulement pour le modèle Chronique (aucune lecture Firestore)
+import 'package:afrotok/services/api/home_feed_api.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
+import 'package:afrotok/services/feed/feed_repository.dart';
 
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/userProvider.dart';
@@ -93,9 +98,9 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
   bool _isLoadingBackground = false;
 
   // Système hybride de chargement
-  DocumentSnapshot? _lastCountryDocument;
-  DocumentSnapshot? _lastAllDocument;
-  DocumentSnapshot? _lastOtherDocument;
+  String? _countryCursor;
+  String? _allCursor;
+  String? _otherCursor;
   Set<String> _loadedPostIds = Set();
   int _totalPostsLoaded = 0;
   int _backgroundPostsLoaded = 0;
@@ -142,7 +147,6 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
   late AnimationController _unlikeController;
 
   // Utilitaires
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
@@ -259,9 +263,9 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
   void _resetPagination() {
     _posts.clear();
     _loadedPostIds.clear();
-    _lastCountryDocument = null;
-    _lastAllDocument = null;
-    _lastOtherDocument = null;
+    _countryCursor = null;
+    _allCursor = null;
+    _otherCursor = null;
     _totalPostsLoaded = 0;
     _backgroundPostsLoaded = 0;
     _hasMorePosts = true;
@@ -1228,78 +1232,26 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
 
     try {
       printVm('🎯 Chargement posts - Type: $postType - Pays: ${countryCode ?? "ALL"}');
-
-      Query query = _firestore.collection('Posts');
-
-      // 1. Filtrer par TYPE (requête Firebase)
-      query = query.where("typeTabbar", isEqualTo: postType);
-
-      // 2. Filtrer par PAYS si spécifié
-      if (countryCode != null) {
-        // Essayer différents noms de champs pour le pays
-        try {
-          query = query.where("available_countries", arrayContains: countryCode);
-        } catch (e) {
-          try {
-            query = query.where("availableCountries", arrayContains: countryCode);
-          } catch (e2) {
-            query = query.where("country", isEqualTo: countryCode);
-          }
-        }
-      }
-      else {
-        // Sinon, charger les posts disponibles dans tous les pays
-        try {
-          query = query.where("available_countries", arrayContains: "ALL");
-        } catch (e) {
-          try {
-            query = query.where("availableCountries", arrayContains: "ALL");
-          } catch (e2) {
-            query = query.where("is_available_in_all_countries", isEqualTo: true);
-          }
-        }
-      }
-
-      // 3. Trier par date
-      query = query.orderBy("created_at", descending: true);
-
-      // 4. Pagination
-      if (!isInitialLoad && _lastCountryDocument != null) {
-        query = query.startAfterDocument(_lastCountryDocument!);
-      }
-
-      // 5. Limite
-      query = query.limit(limit * 2);
-
-      final snapshot = await query.getM('HomePostType.dart:1270');
-      printVm('snapshot.docs.length: ${snapshot.docs.length}');
-
-      if (snapshot.docs.isNotEmpty) {
-        _lastCountryDocument = snapshot.docs.last;
-      }
+      // Découverte du serveur filtrée par thème et par pays (curseur de page conservé entre deux appels)
+      final page = await HomeFeedApi.discover(
+        category: postType,
+        country: countryCode ?? 'ALL',
+        cursor: isInitialLoad ? null : _countryCursor,
+        limit: limit * 2,
+      );
+      _countryCursor = page.next;
 
       int added = 0;
-
-      for (var doc in snapshot.docs) {
+      for (final post in page.posts) {
         if (added >= limit) break;
-
-        try {
-          final post = Post.fromJson(doc.data() as Map<String, dynamic>);
-          post.id = doc.id;
-
-          if (!loadedIds.contains(post.id) && !_loadedPostIds.contains(post.id)) {
-            post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
-            newPosts.add(post);
-            loadedIds.add(post.id!);
-            added++;
-          }
-        } catch (e) {
-          printVm('Erreur parsing post: $e');
+        if (!loadedIds.contains(post.id) && !_loadedPostIds.contains(post.id)) {
+          post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
+          newPosts.add(post);
+          loadedIds.add(post.id!);
+          added++;
         }
       }
-
       printVm('✅ $added posts chargés (Type: $postType, Pays: ${countryCode ?? "ALL"})');
-
     } catch (e) {
       printVm('❌ Erreur chargement posts: $e');
     }
@@ -1526,38 +1478,17 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
 
   Future<void> _loadChroniquesInBackground() async {
     if (_isLoadingChroniques) return;
-
     setState(() {
       _isLoadingChroniques = true;
     });
-
     try {
-      final snapshot = await _firestore.collection('chroniques')
-          .orderBy('createdAt', descending: true)
-          .limit(6)
-          .getM('HomePostType.dart:1528');
-
-      final List<Chronique> validChroniques = [];
-
-      for (final doc in snapshot.docs) {
-        try {
-          final chronique = Chronique.fromMap(doc.data(), doc.id);
-          if (!chronique.isExpired) {
-            validChroniques.add(chronique);
-          }
-        } catch (e) {
-          printVm('❌ Erreur parsing chronique: $e');
-        }
-      }
-
+      final validChroniques = (await FeedRepository().fetchChroniques(limit: 6)).where((c) => !c.isExpired).toList();
       setState(() {
         _chroniques = validChroniques;
       });
-
       if (validChroniques.isNotEmpty) {
         _loadChroniqueUserDataInBackground(validChroniques);
       }
-
     } catch (e) {
       printVm('❌ Erreur chargement chroniques: $e');
     } finally {
@@ -1573,9 +1504,8 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
 
       for (final userId in userIds) {
         if (!_userDataCache.containsKey(userId)) {
-          final userDoc = await _firestore.collection('Users').doc(userId).getM('HomePostType.dart:1566');
-          if (userDoc.exists) {
-            final userData = UserData.fromJson(userDoc.data()!);
+          {
+            final userData = userFromApi(await UsersApi.publicProfile(userId));
             _userDataCache[userId] = userData;
             _userVerificationStatus[userId] = userData.isVerify ?? false;
           }
@@ -2592,19 +2522,7 @@ class _HomeConstPostTypePageState extends State<HomeConstPostTypePage>
         }
       });
 
-      final batch = _firestore.batch();
-      final postRef = _firestore.collection('Posts').doc(post.id);
-      batch.update(postRef, {
-        'vues': FieldValue.increment(1),
-        'users_vue_id': FieldValue.arrayUnion([currentUserId]),
-      });
-
-      final userRef = _firestore.collection('Users').doc(currentUserId);
-      batch.update(userRef, {
-        'viewedPostIds': FieldValue.arrayUnion([post.id!]),
-      });
-
-      await batch.commit();
+      await ApiGateway.instance.markViewed(post.id!);   // vue (unique, gains compris) comptée par le serveur
 
       authProvider.loginUserData.viewedPostIds ??= [];
       if (!authProvider.loginUserData.viewedPostIds!.contains(post.id!)) {

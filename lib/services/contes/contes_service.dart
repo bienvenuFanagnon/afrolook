@@ -1,8 +1,7 @@
-import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/jeux_api.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
@@ -272,27 +271,25 @@ class ContesService {
   String? get uid => FirebaseAuth.instance.currentUser?.uid;
   ContesCatalog get cachedCatalog => _catalog;
 
-  static const _refused = {'resource-exhausted', 'unavailable'};
-  // refus voulus par le serveur (jamais rejoués) : solde, limites, pubs, quota de lectures offertes
-  static final _business = RegExp(r'insuffisant|imite|rapide|FREE_USED|NO_ADS|CONTES_OFF', caseSensitive: false);
+  static const _alias = {'contes_off': 'CONTES_OFF', 'free_used': 'FREE_USED', 'no_ads': 'NO_ADS'};
 
-  Future<Map<String, dynamic>> _call(String name, [Map<String, dynamic>? data]) async {
-    // Serveur momentanément saturé : la requête est refusée avant d'être exécutée, on la rejoue (1 s puis 2 s).
-    for (var attempt = 0;; attempt++) {
-      try {
-        final res = await FirebaseFunctions.instance.httpsCallable(name).call(data ?? {});
-        return Map<String, dynamic>.from(res.data as Map);
-      } on FirebaseFunctionsException catch (e) {
-        if (_refused.contains(e.code) && attempt < 2 && !_business.hasMatch(e.message ?? '')) {
-          await Future<void>.delayed(Duration(seconds: attempt + 1));
-          continue;
-        }
-        throw ConteException((e.message ?? e.code).trim());
-      }
+  ConteException _fail(ApiException e) => ConteException('${e.code.toUpperCase()} ${_alias[e.code.toLowerCase()] ?? ''} ${e.message}'.trim());
+
+  /// Appel de l'API ; renvoie le champ `data`. Pas de retour à Firebase : l'erreur est remontée à l'écran.
+  Future<Map<String, dynamic>> _api(String method, String path, {Map<String, dynamic>? body, Map<String, dynamic>? query, bool pay = false}) async {
+    try {
+      final c = JeuxApi.client;
+      final dynamic r = switch (method) {
+        'GET' => await c.get(path, query: query),
+        _ => pay ? await c.pay(path, body: body) : await c.post(path, body: body),
+      };
+      return JeuxApi.map(r);
+    } on ApiException catch (e) {
+      throw _fail(e);
     }
   }
 
-  /// Recueils et fiches : une lecture pour la liste des recueils, puis un document par bloc de 40 contes.
+  /// Recueils et fiches : une seule requête (les textes ne sont pas dedans).
   Future<ContesCatalog> catalog({bool force = false}) {
     final at = _catalogAt;
     if (_catalogLang != trCurrentLanguage) force = true; // la langue a changé : titres et accroches à relire
@@ -301,10 +298,7 @@ class ContesService {
   }
 
   Future<ContesCatalog> _loadCatalog() async {
-    final fs = FirebaseFirestore.instance;
-    final meta = await fs.collection('ContesIndex').doc('meta').getM('contes_service.dart:304');
-    final m = meta.data() ?? {};
-    final chunks = (m['chunks'] as num?)?.toInt() ?? 0;
+    final m = await _api('GET', '/contes/catalog');
     final collections = ((m['collections'] as List?) ?? const []).map((e) {
       final c = e as Map;
       return ConteCollection(
@@ -319,14 +313,12 @@ class ContesService {
       );
     }).toList()
       ..sort((a, b) => a.order.compareTo(b.order));
-    final docs = await Future.wait([for (var i = 0; i < chunks; i++) fs.collection('ContesIndex').doc('c$i').getM('contes_service.dart:321')]);
     final cards = <ConteCard>[];
-    for (final d in docs) {
-      for (final raw in ((d.data()?['cards'] as List?) ?? const [])) {
-        final c = raw as Map;
-        if (c['active'] == false) continue;
-        cards.add(ConteCard.fromMap(c));
-      }
+    for (final raw in ((m['stories'] as List?) ?? const [])) {
+      final c = Map<String, dynamic>.from(raw as Map);
+      if (c['active'] == false) continue;
+      if ((c['c'] ?? '').toString().isEmpty && c['collection_id'] != null) c['c'] = c['collection_id'];
+      cards.add(ConteCard.fromMap(c));
     }
     cards.sort((a, b) => a.order.compareTo(b.order));
     _catalog = ContesCatalog(collections: collections, cards: cards);
@@ -335,12 +327,39 @@ class ContesService {
     return _catalog;
   }
 
+  /// Adapte l'état de l'API au format de [ContesState].
+  Map<String, dynamic> _stateJson(Map<String, dynamic> m) {
+    final c = (m['config'] is Map) ? Map<String, dynamic>.from(m['config'] as Map) : <String, dynamic>{};
+    return {
+      'reads': m['reads'],
+      'done': m['done'],
+      'unlockedStories': m['unlocked_stories'],
+      'unlockedCollections': m['unlocked_collections'],
+      'adsPaid': m['ads_paid'],
+      'passUntil': m['pass_until'],
+      'freeLeft': m['free_left'],
+      'dailyId': m['daily_id'],
+      'cfg': {
+        'enabled': c['enabled'],
+        'feedEnabled': c['feed_enabled'],
+        'priceCourt': c['price_court'],
+        'priceLong': c['price_long'],
+        'priceChapitre': c['price_chapitre'],
+        'priceRecueil': c['price_recueil'],
+        'pricePass': c['price_pass'],
+        'passHours': c['pass_hours'],
+        'feedFirstAfter': c['feed_first_after'],
+        'feedSecondAfter': c['feed_second_after'],
+      },
+    };
+  }
+
   DateTime? _stateAt;
   Future<ContesState>? _stateFuture;
 
   Future<ContesState> loadState() async {
-    final m = await _call('conteGetState');
-    final s = ContesState.fromMap(m);
+    final m = await _api('GET', '/contes/state');
+    final s = ContesState.fromMap(_stateJson(m));
     state.value = s;
     _stateAt = DateTime.now();
     return s;
@@ -362,7 +381,7 @@ class ContesService {
     final u = uid;
     final cached = _fullCache[id];
     if (cached != null && !cached.locked && cached.lang == card.lang && (cached.cacheUntil <= 0 || cached.cacheUntil > DateTime.now().millisecondsSinceEpoch)) {
-      unawaited(_call('conteTouch', {'id': id}).catchError((_) => <String, dynamic>{}));
+      unawaited(_api('POST', '/contes/$id/touch').catchError((_) => <String, dynamic>{}));
       _markRead(id);
       return cached;
     }
@@ -374,14 +393,14 @@ class ContesService {
           pages: disk.pages, adsPaid: 0, morale: disk.morale, lang: disk.lang, rev: disk.rev, cacheUntil: disk.until,
         );
         _fullCache[id] = o;
-        unawaited(_call('conteTouch', {'id': id}).catchError((_) => <String, dynamic>{}));
+        unawaited(_api('POST', '/contes/$id/touch').catchError((_) => <String, dynamic>{}));
         _markRead(id);
         return o;
       }
       if (disk != null) unawaited(ContesCache.remove(u, id));
     }
-    final m = await _call('conteOpen', {'id': id, 'lang': trCurrentLanguage});
-    final o = ConteOpen.fromMap(m);
+    final m = await _api('GET', '/contes/$id', query: {'lang': trCurrentLanguage});
+    final o = ConteOpen.fromMap({...m, 'cacheUntil': m['cache_until']});
     if (!o.locked) {
       _fullCache[id] = o;
       if (u != null && o.cacheUntil >= 0) {
@@ -406,8 +425,8 @@ class ContesService {
 
   /// Déblocage (item « st:<id> », « co:<recueil> » ou « pass »). Retourne true quand le contenu est débloqué.
   Future<bool> unlock(String item, {String via = 'coins', String format = 'rewarded'}) async {
-    final m = await _call('conteUnlock', {'item': item, 'via': via, 'format': format});
-    if (m['state'] is Map) state.value = ContesState.fromMap(m['state'] as Map);
+    final m = await _api('POST', '/contes/unlock', body: {'item': item, 'via': via}, pay: via == 'coins');
+    if (m['state'] is Map) state.value = ContesState.fromMap(_stateJson(Map<String, dynamic>.from(m['state'] as Map)));
     final unlocked = m['unlocked'] == true;
     if (unlocked && item.startsWith('st:')) _fullCache.remove(item.substring(3));
     if (unlocked) _fullCache.clear();
@@ -416,7 +435,7 @@ class ContesService {
 
   Future<void> finish(String id) async {
     try {
-      await _call('conteFinish', {'id': id});
+      await _api('POST', '/contes/$id/finish');
     } catch (_) {}
     final s = state.value;
     if (s != null) {
@@ -431,16 +450,14 @@ class ContesService {
 
   /// Mesure légère (carte du fil, page d'abandon, son) : jamais bloquante.
   void track(String event, {String? id, int? page}) {
-    unawaited(_call('conteTrack', {'event': event, if (id != null) 'id': id, if (page != null) 'page': page}).catchError((e) {
+    unawaited(_api('POST', '/contes/track', body: {'event': event}).catchError((e) {
       debugPrint('[Contes] track $event : $e');
       return <String, dynamic>{};
     }));
   }
 
-  /// Admin : tableau de bord et réglages d'un conte.
-  Future<Map<String, dynamic>> admin() => _call('conteAdmin');
-  Future<void> adminStory(String id, Map<String, dynamic> patch) async {
-    await _call('conteAdminStory', {'id': id, 'patch': patch});
-    _catalogAt = null;
-  }
+  /// Admin : pas encore dans l'API (voir lacunes_api_jeux_medias.md).
+  Future<Map<String, dynamic>> admin() async => throw ConteException('UNAVAILABLE Les outils d administration des contes ne sont pas encore disponibles.');
+  Future<void> adminStory(String id, Map<String, dynamic> patch) async =>
+      throw ConteException('UNAVAILABLE Les outils d administration des contes ne sont pas encore disponibles.');
 }

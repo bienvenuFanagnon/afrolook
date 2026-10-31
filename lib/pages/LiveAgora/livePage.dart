@@ -9,7 +9,8 @@ import 'dart:ui';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:afrotok/providers/authProvider.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrotok/services/api/chat_api.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart' show ApiException;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/utils/platform_guard.dart';
@@ -772,14 +773,9 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     required bool isHost,
   }) async {
     try {
-      final callable = FirebaseFunctions.instance.httpsCallable('generateAgoraToken');
-      final result = await callable.call({
-        'channelName': channelName,
-        'uid': uid.toString(),
-        'role': isHost ? 'host' : 'audience',
-      });
-
-      return result.data['token'] as String;
+      // Jeton généré par l'API : refusé sur un live payant sans entrée payée (402 entry_required)
+      final result = await LivesApi.token(widget.liveId, uid: uid, role: isHost ? 'host' : 'audience');
+      return result['token'] as String;
     } catch (e) {
       printVm("❌ Erreur récupération token Agora: $e");
       return null;
@@ -995,14 +991,9 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
       // Débit, 70 % à l'hôte, parrainages et part de l'app : calculés par le serveur (sendLiveGift)
       try {
-        await FirebaseFunctions.instance.httpsCallable('sendLiveGift').call({
-          'liveId': widget.liveId,
-          'coins': coinsAmount,
-          'giftIcon': gift.icon,
-          'giftName': gift.name,
-        });
-      } on FirebaseFunctionsException catch (e) {
-        if (e.code == 'resource-exhausted') {
+        await LivesApi.gift(widget.liveId, coins: coinsAmount, icon: gift.icon, label: gift.name);
+      } on ApiException catch (e) {
+        if (e.isInsufficientCoins) {
           if (mounted) await CoinCheckout.insufficient(context, coinsAmount);
           return;
         }
@@ -1360,6 +1351,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     _firestore.collection('lives').doc(widget.liveId).update({
       'lastHeartbeatAt': FieldValue.serverTimestamp(),
     }).catchError((_) {});
+    if (widget.isHost) LivesApi.heartbeat(widget.liveId, viewers: _viewerCount, likes: _likeCount).catchError((_) {}); // l'API termine un live sans signal
   }
 
   void _endLive() async {
@@ -1367,6 +1359,11 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     _endHandled = true;
     _durationTimer?.cancel();
     try {
+      if (widget.isHost) {
+        try {
+          await LivesApi.end(widget.liveId);
+        } catch (_) {}
+      }
       await _firestore.collection('lives').doc(widget.liveId).update({
         'isLive': false,
         'endTime': DateTime.now(),

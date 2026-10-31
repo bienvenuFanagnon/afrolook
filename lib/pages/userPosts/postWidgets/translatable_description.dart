@@ -1,4 +1,5 @@
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:flutter/material.dart';
 
 import '../../../l10n/app_localizations.dart';
@@ -57,14 +58,12 @@ class _TranslatableDescriptionState extends State<TranslatableDescription> {
 
     setState(() => _isLoading = true);
     try {
-      final callable = FirebaseFunctions.instance.httpsCallable('translatePostDescription');
-      final result = await callable.call(<String, dynamic>{
-        'postId': widget.postId,
-        'text': widget.text,
-        'targetLang': widget.targetLang,
+      // Route souhaitée côté API : POST /posts/{id}/translate {target_lang} → {data:{translated_text}} (voir lacunes_api_publications.md)
+      final result = await ApiGateway.instance.client.post('/posts/${widget.postId}/translate', body: {
+        'target_lang': widget.targetLang,
       });
-
-      final translated = (result.data as Map?)?['translatedText'] as String?;
+      final d = ApiClient.data(result);
+      final translated = d is Map ? d['translated_text'] as String? : null;
       if (!mounted) return;
 
       if (translated != null && translated.trim().isNotEmpty) {

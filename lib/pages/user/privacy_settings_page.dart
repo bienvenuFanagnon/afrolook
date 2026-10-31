@@ -1,5 +1,5 @@
 import 'package:afrotok/services/read_meter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/users_api.dart';
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:provider/provider.dart';
@@ -40,8 +40,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
   Future<void> _loadSettings() async {
     final uid = _authProvider.loginUserData.id!;
     try {
-      final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).getM('privacy_settings_page.dart:42');
-      final privacy = (doc.data()?['privacySettings'] as Map<String, dynamic>?) ?? {};
+      final privacy = await UsersApi.privacy(); // GET /v1/me/privacy (voir lacunes_api_utilisateurs.md)
       if (!mounted) return;
       setState(() {
         _ghostMode        = privacy['ghostMode']        == true;
@@ -60,9 +59,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage> {
 
     final uid = _authProvider.loginUserData.id!;
     try {
-      await FirebaseFirestore.instance.collection('Users').doc(uid).update({
-        'privacySettings.$field': value,
-      });
+      await UsersApi.savePrivacy({field: value}); // PUT /v1/me/privacy
     } catch (e) {
       debugPrint('⚠️ PrivacySettingsPage._saveField ($field): $e');
       if (!mounted) return;

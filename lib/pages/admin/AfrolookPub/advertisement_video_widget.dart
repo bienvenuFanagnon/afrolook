@@ -4,7 +4,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:afrotok/models/model_data.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/regie_api.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -48,7 +48,6 @@ class AdvertisementVideoWidget extends StatefulWidget {
 
 class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
   late UserAuthProvider authProvider;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   Timer? _visibilityTimer;
   bool _hasRecordedView = false;
@@ -126,17 +125,10 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
     });
 
     try {
-      final postRef = _firestore.collection('Posts').doc(widget.post.id);
       if (_isLiked) {
-        await postRef.update({
-          'loves': FieldValue.increment(1),
-          'users_love_id': FieldValue.arrayUnion([uid]),
-        });
+        await RegieApi.put('/posts/${widget.post.id}/reaction');
       } else {
-        await postRef.update({
-          'loves': FieldValue.increment(-1),
-          'users_love_id': FieldValue.arrayRemove([uid]),
-        });
+        await RegieApi.delete('/posts/${widget.post.id}/reaction');
       }
     } catch (_) {
       if (mounted) {

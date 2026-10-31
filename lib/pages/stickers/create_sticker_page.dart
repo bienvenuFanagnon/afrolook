@@ -1,12 +1,11 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 import 'dart:io' show File;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import '../../services/api/api_gateway.dart';
+import '../../services/api/argent_upload.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -86,6 +85,8 @@ class _CreateStickerPageState extends State<CreateStickerPage> {
       if (mounted) setState(() => _loadedCount = true);
     }
   }
+
+  String? _refusedMessage;
 
   String _kb(int bytes) => '${(bytes / 1024).round()} Ko';
 
@@ -232,30 +233,23 @@ class _CreateStickerPageState extends State<CreateStickerPage> {
     }
 
     setState(() => _status = context.tr('Envoi…'));
-    final uid = _uid;
-    final db = FirebaseFirestore.instance;
-    final ref = db.collection('UserStickers').doc();
-    final path = 'user_stickers/$uid/${ref.id}.webp';
-    final file = FirebaseStorage.instance.ref(path);
-    await file.putData(data, SettableMetadata(contentType: mime));
-    final url = await file.getDownloadURL();
-    await ref.set({
-      'ownerId': uid,
-      'storagePath': path,
-      'url': url,
-      'thumbUrl': url,
-      'createdAt': DateTime.now().millisecondsSinceEpoch,
-    });
-
-    if (mounted) setState(() => _status = context.tr('Vérification par Afrolook…'));
-    final verdict = await _waitVerdict(ref);
+    String verdict;
+    try {
+      final uploadId = await ArgentUpload.bytes(data, contentType: mime);
+      if (mounted) setState(() => _status = context.tr('Vérification par Afrolook…'));
+      await ApiGateway.instance.client.post('/stickers/mine', body: {'upload_id': uploadId});
+      verdict = 'ok';
+    } on ApiException catch (e) {
+      verdict = e.isNetwork || e.status >= 500 ? 'timeout' : 'refused';
+      if (verdict == 'refused' && mounted) _refusedMessage = e.message;
+    }
     if (!mounted) return;
     if (verdict == 'ok') {
       _finish(true, data.length);
     } else if (verdict == 'refused') {
       setState(() {
         _added = false;
-        _resultText = context.tr('Refusé (quota, poids ou abonnement)');
+        _resultText = _refusedMessage ?? context.tr('Refusé (quota, poids ou abonnement)');
       });
       _loadCount();
     } else {
@@ -277,26 +271,6 @@ class _CreateStickerPageState extends State<CreateStickerPage> {
           ' · ' +
           context.tr('Il te reste {a} sur {b}', {'a': left, 'b': _quota});
     });
-  }
-
-  /// Le serveur passe le document à `active` ou le supprime : on écoute quelques secondes.
-  Future<String> _waitVerdict(DocumentReference<Map<String, dynamic>> ref) async {
-    final done = Completer<String>();
-    var seen = false;
-    final sub = ref.snapshotsM('create_sticker_page.dart:285').listen((s) {
-      if (done.isCompleted) return;
-      if (s.exists) {
-        seen = true;
-        if (s.data()?['status'] == 'active') done.complete('ok');
-      } else if (seen) {
-        done.complete('refused');
-      }
-    }, onError: (_) {
-      if (!done.isCompleted) done.complete('timeout');
-    });
-    final res = await done.future.timeout(const Duration(seconds: 20), onTimeout: () => 'timeout');
-    await sub.cancel();
-    return res;
   }
 
   /// Capture la zone de recadrage carrée (512 px) en PNG.
@@ -354,38 +328,22 @@ class _CreateStickerPageState extends State<CreateStickerPage> {
     }
 
     setState(() => _status = context.tr('Envoi…'));
-    final uid = _uid;
-    final id = FirebaseFirestore.instance.collection('UserStickers').doc().id;
-    final path = 'sticker_video_uploads/$uid/$id.mp4';
-    final ref = FirebaseStorage.instance.ref(path);
-    await ref.putFile(out, SettableMetadata(contentType: 'video/mp4'));
-
-    if (mounted) setState(() => _status = context.tr('Conversion en sticker animé…'));
     try {
-      await FirebaseFunctions.instance
-          .httpsCallable('convertStickerVideo')
-          .call<dynamic>({'path': path}).timeout(const Duration(seconds: 150));
-    } on FirebaseFunctionsException catch (e) {
-      try {
-        await ref.delete();
-      } catch (_) {}
+      final uploadId = await ArgentUpload.bytes(await out.readAsBytes(), contentType: 'video/mp4');
+      if (mounted) setState(() => _status = context.tr('Conversion en sticker animé…'));
+      // Point d'accès prévu : POST /stickers/mine/video (conversion côté serveur ; absent pour l'instant, voir lacunes_api_argent_creations.md)
+      await ApiGateway.instance.client.post('/stickers/mine/video', body: {'upload_id': uploadId}).timeout(const Duration(seconds: 150));
+    } on ApiException catch (e) {
       if (!mounted) return;
       String msg;
-      switch (e.code) {
-        case 'resource-exhausted':
-          msg = context.tr('Quota atteint : supprime un sticker pour en créer un autre.');
-          break;
-        case 'permission-denied':
-          msg = context.tr('Les stickers sont réservés aux abonnés Premium');
-          break;
-        case 'unavailable':
-        case 'unimplemented':
-        case 'not-found':
-        case 'deadline-exceeded':
-          msg = context.tr('La conversion des vidéos n\'est pas disponible pour le moment. Réessaie plus tard ou choisis une image ou un GIF.');
-          break;
-        default:
-          msg = (e.message ?? '').isNotEmpty ? e.message! : context.tr('Création impossible. Vérifie ta connexion et réessaie.');
+      if (e.code == 'quota_reached') {
+        msg = context.tr('Quota atteint : supprime un sticker pour en créer un autre.');
+      } else if (e.code == 'not_subscribed') {
+        msg = context.tr('Les stickers sont réservés aux abonnés Premium');
+      } else if (e.status == 404 || e.status == 501 || e.status == 503) {
+        msg = context.tr('La conversion des vidéos n\'est pas disponible pour le moment. Réessaie plus tard ou choisis une image ou un GIF.');
+      } else {
+        msg = e.message.isNotEmpty ? e.message : context.tr('Création impossible. Vérifie ta connexion et réessaie.');
       }
       setState(() => _error = msg);
       return;

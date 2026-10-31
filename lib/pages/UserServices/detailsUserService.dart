@@ -1,6 +1,6 @@
 import 'package:afrotok/services/read_meter.dart';
 import '../../theme/app_colors.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/users_api.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:like_button/like_button.dart';
@@ -29,7 +29,6 @@ class DetailUserServicePage extends StatefulWidget {
 class _DetailUserServicePageState extends State<DetailUserServicePage> {
   late PostProvider postProvider;
   late UserAuthProvider authProvider;
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
   bool _isLoading = false;
 
   @override
@@ -158,46 +157,8 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
       await authProvider.createServiceLink(true, widget.data).then((url) async {
         await _launchWhatsApp(widget.data.contact!, widget.data, url);
 
-        // Notification au créateur du service
-        CollectionReference userCollect = FirebaseFirestore.instance.collection('Users');
-        QuerySnapshot querySnapshotUser = await userCollect
-            .where("id", isEqualTo: widget.data.user!.id!)
-            .getM('detailsUserService.dart:164');
-
-        List<UserData> listUsers = querySnapshotUser.docs
-            .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
-            .toList();
-
-        if (listUsers.isNotEmpty && listUsers.first.oneIgnalUserid != null) {
-          NotificationData notif = NotificationData();
-          notif.id = firestore.collection('Notifications').doc().id;
-          notif.titre = "🛠️ Nouvelle demande de service";
-          notif.media_url = authProvider.loginUserData.imageUrl;
-          notif.type = NotificationType.SERVICE.name;
-          notif.description = "@${authProvider.loginUserData.pseudo!} est intéressé(e) par votre service";
-          notif.users_id_view = [];
-          notif.user_id = authProvider.loginUserData.id;
-          notif.receiver_id = widget.data.user!.id!;
-          notif.post_id = widget.data.id!;
-          notif.post_data_type = PostDataType.IMAGE.name!;
-          notif.updatedAt = DateTime.now().millisecondsSinceEpoch;
-          notif.createdAt = DateTime.now().millisecondsSinceEpoch;
-          notif.status = PostStatus.VALIDE.name;
-
-          await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-
-          await authProvider.sendNotification(
-            userIds: [widget.data.user!.oneIgnalUserid!],
-            smallImage: authProvider.loginUserData.imageUrl!,
-            send_user_id: authProvider.loginUserData.id!,
-            recever_user_id: widget.data.user!.id!,
-            message: "📢 @${authProvider.loginUserData.pseudo!} veut votre service 💼",
-            type_notif: NotificationType.SERVICE.name,
-            post_id: widget.data.id!,
-            post_type: PostDataType.IMAGE.name,
-            chat_id: '',
-          );
-        }
+        // Notification au créateur du service : envoyée par le serveur
+        try { await UsersApi.contactService(widget.data.id!); } catch (_) {}
       });
     } catch (e) {
       printVm('Error contacting service: $e');
@@ -309,18 +270,7 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
       widget.data.like = (widget.data.like ?? 0) + 1;
     });
     try {
-      final ref = FirebaseFirestore.instance.collection('UserServices').doc(serviceId);
-      // Transaction : le like n'est compté que si cet utilisateur n'est pas déjà dans la liste,
-      // et le compteur est recalculé à partir de la liste (jamais d'incrément à l'aveugle).
-      final total = await FirebaseFirestore.instance.runTransaction<int>((tx) async {
-        final snap = await tx.get(ref);
-        final ids = List<String>.from((snap.data()?['usersLikeId'] as List?) ?? const []);
-        if (!ids.contains(uid)) {
-          ids.add(uid);
-          tx.update(ref, {'usersLikeId': FieldValue.arrayUnion([uid]), 'like': ids.length});
-        }
-        return ids.length;
-      });
+      final total = await UsersApi.likeService(serviceId);
       if (mounted) setState(() => widget.data.like = total);
     } catch (_) {
       if (mounted) {

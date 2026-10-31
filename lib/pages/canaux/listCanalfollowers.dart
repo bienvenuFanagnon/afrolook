@@ -1,10 +1,9 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/canaux_api.dart';
 
 import '../../models/model_data.dart';
 
@@ -14,12 +13,17 @@ import '../../l10n/app_localizations.dart';
 import '../../l10n/tr.dart';
 
 class ChannelFollowersPage extends StatefulWidget {
+  /// Ancienne liste d'identifiants (n'est plus utilisée : les abonnés sont lus par page sur l'API à partir de [canalId]).
   final List<String> userIds;
   final String channelName;
 
+  /// Identifiant du canal : nécessaire pour lire les abonnés sur l'API (administrateurs du canal et équipe seulement).
+  final String? canalId;
+
   ChannelFollowersPage({
-    required this.userIds,
+    this.userIds = const [],
     required this.channelName,
+    this.canalId,
   });
 
   @override
@@ -29,13 +33,12 @@ class ChannelFollowersPage extends StatefulWidget {
 class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
   final ScrollController _scrollController = ScrollController();
   final List<UserData> _displayedUsers = [];
-  int _currentPage = 0;
-  final int _pageSize = 10;
+  String? _cursor; // page suivante (API)
+  String? _error;
+  final int _pageSize = 30;
   bool _isLoading = false;
   bool _hasMore = true;
   bool _initialLoadComplete = false;
-
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   late AppColors _colors;
 
@@ -52,108 +55,38 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
     super.dispose();
   }
 
-  Future<List<UserData>> _getUsersBatch(List<String> userIds) async {
-    List<UserData> listUsers = [];
-
-    if (userIds.isEmpty) return listUsers;
-
-    try {
-      CollectionReference userCollect = _firestore.collection('Users');
-      const batchSize = 10;
-
-      for (int i = 0; i < userIds.length; i += batchSize) {
-        final end = i + batchSize < userIds.length ? i + batchSize : userIds.length;
-        final batchIds = userIds.sublist(i, end);
-
-        if (batchIds.isEmpty) continue;
-
-        try {
-          QuerySnapshot querySnapshotUser = await userCollect
-              .where(FieldPath.documentId, whereIn: batchIds)
-              .getM('listCanalfollowers.dart:72');
-
-          for (var doc in querySnapshotUser.docs) {
-            try {
-              final data = doc.data() as Map<String, dynamic>;
-              final user = UserData.fromJson(data);
-              listUsers.add(user);
-            } catch (e) {
-              printVm('Erreur création UserData: $e');
-            }
-          }
-
-          if (i + batchSize < userIds.length) {
-            await Future.delayed(Duration(milliseconds: 50));
-          }
-        } catch (e) {
-          printVm('Erreur batch: $e');
-        }
-      }
-
-      listUsers.sort((a, b) {
-        final aFollowers = a.followersCount;
-        final bFollowers = b.followersCount;
-        return bFollowers.compareTo(aFollowers);
-      });
-
-    } catch (e) {
-      printVm('Erreur globale _getUsersBatch: $e');
-    }
-
-    return listUsers;
-  }
-
   Future<void> _loadInitialUsers() async {
-    if (widget.userIds.isEmpty) {
-      if (mounted) setState(() { _initialLoadComplete = true; });
+    if (widget.canalId == null) {
+      if (mounted) setState(() { _initialLoadComplete = true; _hasMore = false; });
       return;
     }
-
-    if (mounted) setState(() { _isLoading = true; });
-
-    try {
-      await _loadNextPage();
-    } catch (e) {
-      printVm('Erreur _loadInitialUsers: $e');
-    } finally {
-      if (mounted) setState(() { _isLoading = false; _initialLoadComplete = true; });
-    }
+    if (mounted) setState(() { _isLoading = true; _error = null; });
+    await _loadNextPage();
+    if (mounted) setState(() { _isLoading = false; _initialLoadComplete = true; });
   }
 
   Future<void> _loadNextPage() async {
-    if (!_hasMore) return;
+    if (!_hasMore || widget.canalId == null) return;
 
     if (mounted) setState(() { _isLoading = true; });
 
     try {
-      final startIndex = _currentPage * _pageSize;
-      final endIndex = startIndex + _pageSize;
-      final end = endIndex > widget.userIds.length ? widget.userIds.length : endIndex;
-
-      if (startIndex >= widget.userIds.length) {
-        if (mounted) setState(() { _hasMore = false; _isLoading = false; });
-        return;
-      }
-
-      final pageUserIds = widget.userIds.sublist(startIndex, end);
-      if (pageUserIds.isEmpty) {
-        if (mounted) setState(() { _hasMore = false; _isLoading = false; });
-        return;
-      }
-
-      final List<UserData> newUsers = await _getUsersBatch(pageUserIds);
-
+      final page = await CanauxApi.members(widget.canalId!, cursor: _cursor, limit: _pageSize);
+      final users = page.items.map((m) => UserData()
+        ..id = '${m['user_id']}'
+        ..pseudo = '${m['username'] ?? ''}'
+        ..imageUrl = '${m['avatar_url'] ?? ''}').toList();
       if (mounted) {
         setState(() {
-          _displayedUsers.addAll(newUsers);
-          _currentPage++;
-          _hasMore = endIndex < widget.userIds.length;
+          _displayedUsers.addAll(users);
+          _cursor = page.next;
+          _hasMore = page.next != null;
           _isLoading = false;
         });
       }
     } catch (e) {
       printVm('Erreur _loadNextPage: $e');
-      if (mounted) setState(() { _isLoading = false; });
+      if (mounted) setState(() { _isLoading = false; _error = CanauxApi.message(e); _hasMore = false; });
     }
   }
 
@@ -171,10 +104,11 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
     if (mounted) {
       setState(() {
         _displayedUsers.clear();
-        _currentPage = 0;
+        _cursor = null;
         _hasMore = true;
         _initialLoadComplete = false;
         _isLoading = true;
+        _error = null;
       });
     }
 
@@ -209,6 +143,19 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
   Widget _buildBody(double width, double height, AppLocalizations l10n) {
     if (_isLoading && !_initialLoadComplete) {
       return _buildLoading(l10n);
+    }
+
+    if (_error != null && _displayedUsers.isEmpty) {
+      return Center(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Text(_error!, textAlign: TextAlign.center, style: TextStyle(color: _colors.textSecondary)),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton(onPressed: _refreshData, child: Text(context.tr('Réessayer'))),
+        ]),
+      );
     }
 
     if (_displayedUsers.isEmpty && _initialLoadComplete) {

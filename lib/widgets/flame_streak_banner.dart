@@ -1,7 +1,6 @@
-import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/users_api.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/streakProvider.dart';
@@ -130,21 +129,15 @@ class _FlameStreakBannerState extends State<FlameStreakBanner>
   // Fallback : top 5 par meilleure série all-time si aucune donnée hebdo disponible
   Future<void> _loadTopUsersFallback() async {
     try {
-      final snap = await FirebaseFirestore.instance
-          .collection('Users')
-          .where('bestCommentStreak', isGreaterThan: 0)
-          .orderBy('bestCommentStreak', descending: true)
-          .limit(5)
-          .getM('flame_streak_banner.dart:137');
+      final rows = (await UsersApi.streakLeaderboard()).take(5).toList();
       if (!mounted) return;
       setState(() {
-        _topUsers = snap.docs.map((d) {
-          final data = d.data();
+        _topUsers = rows.map((data) {
           return _BannerUser(
-            id: d.id,
-            pseudo: data['pseudo'] as String? ?? '',
-            imageUrl: data['imageUrl'] as String?,
-            commentCount: (data['bestCommentStreak'] as num?)?.toInt() ?? 0,
+            id: '${data['user_id']}',
+            pseudo: data['username'] as String? ?? '',
+            imageUrl: data['avatar_url'] as String?,
+            commentCount: (data['best'] as num?)?.toInt() ?? 0,
           );
         }).toList();
         _topUsersIsFallback = true;

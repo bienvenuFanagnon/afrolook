@@ -1,6 +1,7 @@
 // Pays où un titre est proposé : même grille que les posts (Gratuit 1 pays, Premium 20, Gold tous), sans pièces en plus.
 
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import '../../services/api/music_api.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -63,10 +64,10 @@ class SoundCountries {
   /// Change les pays d'un titre déjà déposé (le serveur applique la grille).
   static Future<String> save(String soundId, List<String> countries) async {
     try {
-      await FirebaseFunctions.instance.httpsCallable('artistSoundCountries').call({'soundId': soundId, 'countries': countries});
+      await MusicApi.update(soundId, {'countries': countries});
       return 'Pays mis à jour.';
-    } on FirebaseFunctionsException catch (e) {
-      return e.message ?? 'Modification impossible.';
+    } on ApiException catch (e) {
+      return MusicApi.message(e, fallback: 'Modification impossible.');
     } catch (_) {
       return 'Modification impossible. Vérifie ta connexion.';
     }

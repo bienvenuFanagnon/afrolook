@@ -1,4 +1,6 @@
-import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/chat_api.dart';
+import 'package:afrotok/services/api/chat_mapper.dart';
+import 'package:afrotok/services/api/posts_api.dart';
 import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -9,7 +11,6 @@ import 'package:app_links/app_links.dart';
 
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -267,21 +268,15 @@ class NavigationService {
     );
 
     try {
-      final postDoc = await FirebaseFirestore.instance
-          .collection('Posts')
-          .doc(postId)
-          .getM('navigation_service.dart:272');
+      final post = await PostsApi.get(postId);
 
-      if (!postDoc.exists) {
+      if (post == null) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Post non trouvé')),
         );
         return;
       }
-
-      final post = Post.fromJson(postDoc.data() as Map<String, dynamic>);
-      post.id = postDoc.id;
 
       Navigator.pop(context);
 
@@ -314,38 +309,10 @@ class NavigationService {
     );
 
     try {
-      final chatDoc = await FirebaseFirestore.instance
-          .collection('Chats')
-          .doc(chatId)
-          .getM('navigation_service.dart:319');
-
-      if (!chatDoc.exists) {
-        Navigator.pop(context);
-        return;
-      }
-
-      final chat = Chat.fromJson(chatDoc.data() as Map<String, dynamic>);
-
-      final userDoc = await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(sendUserId)
-          .getM('navigation_service.dart:331');
-
-      if (userDoc.exists) {
-        chat.chatFriend = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
-        chat.receiver = chat.chatFriend;
-      }
-
-      final messagesSnapshot = await FirebaseFirestore.instance
-          .collection('Messages')
-          .where('chat_id', isEqualTo: chatId)
-          .orderBy('createdAt', descending: true)
-          .limit(50)
-          .getM('navigation_service.dart:343');
-
-      chat.messages = messagesSnapshot.docs
-          .map((doc) => Message.fromJson(doc.data() as Map<String, dynamic>))
-          .toList();
+      // La conversation vient de l'API ; les messages eux-mêmes restent lus par l'écran de discussion (Firebase).
+      final conv = await ChatApi.openConversation(sendUserId);
+      final myId = FirebaseAuth.instance.currentUser?.uid ?? '';
+      final chat = chatFromConversation(conv, myId);
 
       Navigator.pop(context);
 

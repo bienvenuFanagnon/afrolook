@@ -1,4 +1,4 @@
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -214,11 +214,11 @@ class _StickerPackPageState extends State<StickerPackPage> {
     try {
       await _service.reportCopy(stickerId: s.id, note: note);
       if (mounted) _snack(context.tr('Merci, ton signalement a été envoyé'));
-    } on FirebaseFunctionsException catch (e) {
+    } on ApiException catch (e) {
       if (!mounted) return;
-      _snack(e.code == 'unavailable' || e.code == 'unimplemented'
+      _snack(e.status >= 500 || e.isNetwork
           ? context.tr('Signalement indisponible pour le moment')
-          : (e.message ?? context.tr('Signalement impossible')));
+          : (e.message.isNotEmpty ? e.message : context.tr('Signalement impossible')));
     } catch (_) {
       if (mounted) _snack(context.tr('Signalement impossible. Vérifie ta connexion.'));
     }

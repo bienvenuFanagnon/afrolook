@@ -1,5 +1,11 @@
 ﻿// app_link_service.dart
-import 'package:afrotok/services/read_meter.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import 'package:afrotok/services/api/chat_api.dart';
+import 'package:afrotok/services/api/contenu_payant_api.dart';
+import 'package:afrotok/services/api/lives_mapper.dart';
+import 'package:afrotok/services/api/regie_api.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
 import 'dart:async';
 import 'package:afrotok/pages/contenuPayant/contentDetailsEbook.dart';
 import 'package:afrotok/pages/home/homeScreen.dart';
@@ -9,7 +15,6 @@ import 'coin_checkout.dart';
 import 'package:app_links/app_links.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../models/model_data.dart';
@@ -449,54 +454,24 @@ class AppLinkService {
     }
 
     try {
-      final snap = await FirebaseFirestore.instance
-          .collection('GroupChats')
-          .where('join_code', isEqualTo: joinCode)
-          .limit(1)
-          .getM('linkService.dart:450');
-
-      if (snap.docs.isEmpty) {
+      final Map<String, dynamic> groupData;
+      try {
+        groupData = Map<String, dynamic>.from(await ChatApi.invitationPreview(joinCode));
+      } on ApiException catch (e) {
         dismissLoading();
-        if (context.mounted) _showGroupLinkDialog(context, title: 'Groupe introuvable', message: 'Ce lien d\'invitation n\'est plus valide.');
-        return;
-      }
-
-      final groupDoc = snap.docs.first;
-      final groupData = groupDoc.data();
-      final groupId = groupDoc.id;
-      groupData['id'] = groupId;
-
-      // Code expiré
-      final codeExpiresAt = groupData['join_code_expires_at'] as int?;
-      if (codeExpiresAt != null && codeExpiresAt < now) {
-        dismissLoading();
-        if (context.mounted) _showGroupLinkDialog(context, title: 'Lien expiré', message: 'Ce lien d\'invitation de 30 jours a expiré. Demandez un nouveau code au propriétaire du groupe.');
-        return;
-      }
-
-      // Groupe gelé
-      if (groupData['is_frozen'] == true) {
-        dismissLoading();
-        if (context.mounted) _showGroupLinkDialog(context, title: groupData['name'] as String? ?? 'Groupe', message: 'Ce groupe est actuellement suspendu. Le propriétaire doit renouveler son abonnement Gold pour rouvrir les accès.');
-        return;
-      }
-
-      // Vérifier que le proprio est encore actif
-      final ownerId = groupData['owner_id'] as String?;
-      if (ownerId != null) {
-        final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(ownerId).getM('linkService.dart:481');
-        final ownerData = ownerDoc.data();
-        if (ownerData != null) {
-          final ab = AfrolookAbonnement.fromJson(ownerData['abonnement'] as Map<String, dynamic>? ?? {});
-          if (!ab.estPremium) {
-            dismissLoading();
-            if (context.mounted) _showGroupLinkDialog(context, title: groupData['name'] as String? ?? 'Groupe', message: 'Le propriétaire de ce groupe n\'a plus de plan actif. Le groupe est temporairement en lecture seule.');
-            return;
-          }
+        if (context.mounted) {
+          _showGroupLinkDialog(context,
+              title: e.code == 'code_expired' ? 'Lien expiré' : (e.code == 'group_frozen' ? 'Groupe suspendu' : 'Groupe introuvable'),
+              message: e.message);
         }
+        return;
       }
+      final groupId = '${groupData['id']}';
+      groupData['join_code'] = joinCode;
+      groupData['subscription_price_coins'] = groupData['price_coins'];
+      groupData['subscription_price'] = groupData['price_coins'];
 
-      final memberIds = (groupData['member_ids'] as List<dynamic>? ?? []).cast<String>();
+      final memberIds = <String>[if (groupData['is_member'] == true) myId];
       final groupName = groupData['name'] as String? ?? '';
       final groupImage = groupData['image_url'] as String?;
 
@@ -595,28 +570,7 @@ class AppLinkService {
     Map<String, dynamic> groupData = const {},
   }) async {
     try {
-      // Vérifier la limite de membres (Premium owner : 100 max, Gold : illimité)
-      final ownerId = groupData['owner_id'] as String? ?? '';
-      if (ownerId.isNotEmpty) {
-        final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(ownerId).getM('linkService.dart:595');
-        if (ownerDoc.exists) {
-          final ownerAbJson = ownerDoc.data()?['abonnement'] as Map<String, dynamic>?;
-          final ownerAb = ownerAbJson != null ? AfrolookAbonnement.fromJson(ownerAbJson) : null;
-          final maxMembers = AbonnementUtils.maxGroupMembers(ownerAb);
-          final currentCount = groupData['member_count'] as int?
-              ?? (groupData['member_ids'] as List<dynamic>? ?? []).length;
-          if (maxMembers != null && currentCount >= maxMembers) {
-            if (context.mounted) {
-              _showGroupLinkDialog(context,
-                title: 'Groupe complet',
-                message: 'Ce groupe a atteint sa limite de $maxMembers membres (plan Premium).',
-              );
-            }
-            return;
-          }
-        }
-      }
-
+      // La limite de membres du plan du propriétaire est contrôlée par le serveur au moment de rejoindre.
       // Groupe privé payant : ne pas ajouter comme membre avant paiement
       final isPrivate = groupData['is_private'] == true;
       final price = (groupData['subscription_price'] as num?)?.toDouble() ?? 0.0;
@@ -635,17 +589,13 @@ class AppLinkService {
         }
       }
 
-      final now = DateTime.now().millisecondsSinceEpoch;
-      final myPseudo = authProvider.loginUserData.pseudo ?? '';
-      final myImageUrl = authProvider.loginUserData.imageUrl ?? '';
-
-      await FirebaseFirestore.instance
-          .collection('GroupChats').doc(groupId).collection('members').doc(myId)
-          .set({'user_id': myId, 'pseudo': myPseudo, 'image_url': myImageUrl, 'role': 'member', 'joined_at': now});
-      await FirebaseFirestore.instance.collection('GroupChats').doc(groupId).update({
-        'member_ids': FieldValue.arrayUnion([myId]),
-        'member_count': FieldValue.increment(1),
-      });
+      final code = '${groupData['join_code'] ?? ''}';
+      try {
+        await ChatApi.joinByCode(code);
+      } on ApiException catch (e) {
+        if (context.mounted) _showGroupLinkDialog(context, title: e.code == 'group_full' ? 'Groupe complet' : 'Impossible de rejoindre', message: e.message);
+        return;
+      }
 
       if (context.mounted) {
         Navigator.push(context, MaterialPageRoute(
@@ -684,21 +634,13 @@ class AppLinkService {
     final userProvider = Provider.of<UserProvider>(context, listen: false);
 
     try {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(userId)
-          .getM('linkService.dart:684');
-
-      if (userDoc.exists) {
-        // Convertir les données Firebase en objet UserData
-        final userData = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
-
-        Navigator.pushNamed(
-            context,
-            '/profile',
-            arguments: {'userId': userId, 'userData': userData}
-        );
-      }
+      final userData = userFromApi(await UsersApi.publicProfile(userId));
+      if (!context.mounted) return;
+      Navigator.pushNamed(
+          context,
+          '/profile',
+          arguments: {'userId': userId, 'userData': userData}
+      );
     } catch (e) {
       printVm('Erreur chargement profil: $e');
     }
@@ -707,31 +649,12 @@ class AppLinkService {
   // Navigation vers ContentPaie
   Future<void> _navigateToContentPaie(BuildContext context, String contentId) async {
     try {
-      final contentDoc = await FirebaseFirestore.instance
-          .collection('ContentPaies')
-          .doc(contentId)
-          .getM('linkService.dart:707');
-
-      if (contentDoc.exists) {
-        // Convertir les données Firebase en objet ContentPaie
-        final contentData = ContentPaie.fromJson(contentDoc.data() as Map<String, dynamic>);
-        if(contentData.contentType == ContentType.EBOOK){
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => EbookDetailScreen(content: contentData),
-            ),
-          );
-        }else{
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ContentDetailScreen(content: contentData),
-            ),
-          );
-        }
-
-
+      final contentData = contentPaieFromApi(await RegieApi.getMap('/paid-contents/$contentId'), myId: ContenuPayantApi.myId);
+      if (!context.mounted) return;
+      if (contentData.contentType == ContentType.EBOOK) {
+        Navigator.push(context, MaterialPageRoute(builder: (context) => EbookDetailScreen(content: contentData)));
+      } else {
+        Navigator.push(context, MaterialPageRoute(builder: (context) => ContentDetailScreen(content: contentData)));
       }
     } catch (e) {
       printVm('Erreur chargement ContentPaie: $e');
@@ -743,18 +666,16 @@ class AppLinkService {
     final user = FirebaseAuth.instance.currentUser;
 
     try {
-      final liveDoc = await FirebaseFirestore.instance
-          .collection('lives')
-          .doc(liveId)
-          .getM('linkService.dart:743');
-
-      if (!liveDoc.exists) {
-        // Live non trouvé
-        _showLiveEndedDialog(context, "Ce live n'existe plus.");
-        return;
+      final PostLive liveData;
+      try {
+        liveData = postLiveFromApi(await LivesApi.get(liveId));
+      } on ApiException catch (e) {
+        if (e.isNotFound) {
+          _showLiveEndedDialog(context, "Ce live n'existe plus.");
+          return;
+        }
+        rethrow;
       }
-
-      final liveData = PostLive.fromMap(liveDoc.data() as Map<String, dynamic>);
 
       // Vérifier si le live est encore encours
       final now = DateTime.now();
@@ -845,26 +766,7 @@ class AppLinkService {
 
     try {
       // Récupérer l'article depuis Firebase
-      final articleDoc = await FirebaseFirestore.instance
-          .collection('Articles')
-          .doc(articleId)
-          .getM('linkService.dart:845');
-
-      if (articleDoc.exists) {
-        // Convertir en objet Article (à adapter selon votre classe Article)
-        // final articleData = Article.fromJson(articleDoc.data() as Map<String, dynamic>);
-
-        // Récupérer les données de l'utilisateur
-        // final userData = await _getUserData(articleData.userId);
-
-        // Naviguer vers la page de détail de l'article
-        // Navigator.push(
-        //   context,
-        //   MaterialPageRoute(
-        //     builder: (context) => ArticleDetailPage(article: articleData),
-        //   ),
-        // );
-      }
+      // Les articles n'ont plus de page de détail : rien à ouvrir.
     } catch (e) {
       printVm('Erreur chargement article: $e');
     }
@@ -874,23 +776,7 @@ class AppLinkService {
   Future<void> _navigateToService(BuildContext context, String serviceId) async {
     try {
       // Récupérer le service depuis Firebase
-      final serviceDoc = await FirebaseFirestore.instance
-          .collection('Services')
-          .doc(serviceId)
-          .getM('linkService.dart:874');
-
-      if (serviceDoc.exists) {
-        // Convertir en objet Service (à adapter selon votre classe Service)
-        // final serviceData = Service.fromJson(serviceDoc.data() as Map<String, dynamic>);
-
-        // Naviguer vers la page de détail du service
-        // Navigator.push(
-        //   context,
-        //   MaterialPageRoute(
-        //     builder: (context) => ServiceDetailPage(service: serviceData),
-        //   ),
-        // );
-      }
+      // Les services n'ont plus de page de détail : rien à ouvrir.
     } catch (e) {
       printVm('Erreur chargement service: $e');
     }
@@ -899,14 +785,7 @@ class AppLinkService {
   // Méthode utilitaire pour récupérer les données utilisateur
   Future<UserData?> _getUserData(String userId) async {
     try {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(userId)
-          .getM('linkService.dart:899');
-
-      if (userDoc.exists) {
-        return UserData.fromJson(userDoc.data() as Map<String, dynamic>);
-      }
+      return userFromApi(await UsersApi.publicProfile(userId));
     } catch (e) {
       printVm('Erreur récupération utilisateur: $e');
     }

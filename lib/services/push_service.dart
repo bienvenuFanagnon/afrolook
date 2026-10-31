@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:afrotok/models/model_data.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/users_api.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:ui' show PlatformDispatcher;
 
@@ -98,9 +98,7 @@ class PushService {
     try {
       final token = await FirebaseMessaging.instance.getToken();
       if (token != null) {
-        await FirebaseFirestore.instance.collection('Users').doc(userId).update({
-          'fcmTokens': FieldValue.arrayRemove([token]),
-        });
+        await UsersApi.deleteDevice(token); // l'API retire ce jeton : l'appareil ne reçoit plus les notifications de ce compte
       }
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_savedKey);
@@ -134,13 +132,7 @@ class PushService {
       final lang = _currentLang(prefs);
       final marker = '$userId|$token|$tz|$lang';
       if (prefs.getString(_savedKey) == marker) return; // déjà enregistré : aucune écriture
-      await FirebaseFirestore.instance.collection('Users').doc(userId).update({
-        'fcmTokens': FieldValue.arrayUnion([token]),
-        'fcmTokenUpdatedAt': DateTime.now().millisecondsSinceEpoch,
-        'tzOffsetMin': tz,
-        'appLang': lang,
-        'pushReady': true,
-      });
+      await UsersApi.registerDevice(fcmToken: token, platform: defaultTargetPlatform.name, timezoneOffsetMin: tz, language: lang);
       await prefs.setString(_savedKey, marker);
     } catch (e) {
       debugPrint('⚠️ PushService._save : $e');

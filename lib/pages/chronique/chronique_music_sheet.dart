@@ -1,9 +1,9 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
-import 'package:cloud_firestore/cloud_firestore.dart' hide Source;
+import '../../services/api/chroniques_api.dart';
+import '../../services/api/chroniques_mapper.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -157,10 +157,16 @@ class _MusicSheetState extends State<_MusicSheet> {
       _errorArtists = false;
     });
     try {
-      final snap = await loadArtistSoundsSnapshot();
+      // Sons d'artistes validés visibles pour moi (l'API applique déjà les pays), jusqu'à 200
+      final rows = <Map<String, dynamic>>[];
+      for (var page = 1; page <= 4; page++) {
+        final r = await ChroniquesApi.musicSounds(page: page);
+        rows.addAll(r.items);
+        if (!r.hasMore) break;
+      }
       if (!mounted) return;
       final sounds = SoundCountries.forViewer<ArtistSound>(
-        [for (final d in snap.docs) ArtistSound.fromMap(d.data() as Map<String, dynamic>, d.id)],
+        [for (final j in rows) ArtistSound.fromMap(artistSoundMapFromApi(j), '${j['id']}')],
         countries: (s) => s.availableCountries,
         owner: (s) => s.userId,
         viewerCountry: SoundCountries.viewerCountry(context),
@@ -190,11 +196,11 @@ class _MusicSheetState extends State<_MusicSheet> {
       _errorLibrary = false;
     });
     try {
-      final snap = await FirebaseFirestore.instance.collection('MusicLibrary').where('uid', isEqualTo: uid).limit(50).getM('chronique_music_sheet.dart:190');
+      final rows = await ChroniquesApi.musicLibrary();
       if (!mounted) return;
       setState(() => _library = [
-            for (final d in snap.docs)
-              _Pick(key: 'lib:${d.data()['soundId']}', title: '${d.data()['title'] ?? 'Titre'}', subtitle: '${(d.data()['userPseudo'] ?? '').toString().isEmpty ? 'Acheté' : '@${d.data()['userPseudo']}'} · acheté', durationMs: 0, url: null),
+            for (final d in rows)
+              _Pick(key: 'lib:${d['id']}', title: '${d['title'] ?? 'Titre'}', subtitle: '${((d['artist'] as Map?)?['username'] ?? '').toString().isEmpty ? 'Acheté' : '@${(d['artist'] as Map)['username']}'} · acheté', durationMs: 0, url: null),
           ]);
     } catch (_) {
       if (mounted) setState(() => _errorLibrary = true);
@@ -207,12 +213,12 @@ class _MusicSheetState extends State<_MusicSheet> {
     setState(() => _busyKey = p.key);
     try {
       final id = p.key.substring(4);
-      final doc = await FirebaseFirestore.instance.collection('artist_sounds').doc(id).getM('chronique_music_sheet.dart:207');
-      if (!doc.exists || doc.data()!['status'] != 'validated' || ((doc.data()!['previewUrl'] ?? '') as String).isEmpty) {
+      final j = await ChroniquesApi.musicSound(id);
+      if (j == null || ((j['preview_url'] ?? '') as String).isEmpty) {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ce titre n\'est plus disponible.')));
         return;
       }
-      final full = _fromSound(ArtistSound.fromMap(doc.data()!, doc.id));
+      final full = _fromSound(ArtistSound.fromMap(artistSoundMapFromApi(j), id));
       // on garde la ligne de la bibliothèque mais avec l'extrait, la durée et le prix réels
       _select(_Pick(key: p.key, title: full.title, subtitle: full.subtitle, durationMs: full.durationMs, coins: full.coins, source: full.source, url: full.url));
     } catch (_) {

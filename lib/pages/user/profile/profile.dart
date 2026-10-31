@@ -5,7 +5,7 @@ import 'package:afrotok/utils/count_format.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/models/model_data.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/users_api.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/utils/platform_guard.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
@@ -68,8 +68,7 @@ class _UserProfilState extends State<UserProfil> {
   Future<bool> _checkTeamMember(String uid) async {
     if (uid.isEmpty) return false;
     try {
-      final doc = await FirebaseFirestore.instance.collection('TeamMembers').doc(uid).getM('profile.dart:70');
-      return doc.exists;
+      return (await UsersApi.capabilities())['is_staff'] == true;
     } catch (_) {
       return false;
     }

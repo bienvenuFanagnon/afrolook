@@ -1,98 +1,35 @@
-import 'package:afrotok/services/read_meter.dart';
-import 'dart:io';
-
 import 'package:afrotok/models/model_data.dart';
-import 'package:afrotok/services/api.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:dio/dio.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-import 'dart:async';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:afrotok/services/api/api_gateway.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
 
 import '../../pages/component/consoleWidget.dart';
 
-
 class AuthService {
-  late UserData loginUser2=UserData();
-  late UserData loginUser=UserData();
+  late UserData loginUser2 = UserData();
+  late UserData loginUser = UserData();
   late List<UserPhoneNumber> listNumber = [];
   late List<UserPseudo> listPseudo = [];
   late List<UserGlobalTag> listUserGlobalTag = [];
-  late int codeError=0;
+  late int codeError = 0;
 
-
+  /// Réglages PUBLICS de l'application (`GET /v1/config`). Les clés, vérifications, compteurs et soldes globaux ne sont jamais envoyés aux clients.
   Future<AppDefaultData> getAppData() async {
-    final FirebaseFirestore firestore = FirebaseFirestore.instance;
-
-    // ID statique du document
-    const String staticId = "XgkSxKc10vWsJJ2uBraT";
-    final DocumentReference docRef = firestore.collection('AppData').doc(staticId);
-
-    AppDefaultData appData = AppDefaultData();
-
+    final appData = AppDefaultData();
     try {
-      // Vérifier si le document existe
-      DocumentSnapshot snapshot = await docRef.getM('authService.dart:37');
-
-      if (snapshot.exists) {
-        // Si trouvé → on récupère
-        appData = AppDefaultData.fromJson(snapshot.data() as Map<String, dynamic>);
-        appData.id = snapshot.id;
-      } else {
-        // Sinon → on crée avec l’ID statique
-        appData.id = staticId;
-        await docRef.set(appData.toJson());
-        printVm("Nouveau AppData créé avec l’ID statique : $staticId");
-      }
+      final cfg = Map<String, dynamic>.from(ApiClient.data(await ApiGateway.instance.client.get('/config')) as Map);
+      final app = (cfg['app'] as Map?) ?? const {};
+      appData.app_link = app['android_link'] as String?;
+      appData.ios_link = app['ios_link'] as String?;
+      appData.app_logo = (app['logo'] as String?) ?? appData.app_logo;
+      appData.app_version_code = (app['version_code'] as num?)?.toInt() ?? appData.app_version_code;
+      appData.app_version_code_officiel = (app['version_code_official'] as num?)?.toInt() ?? appData.app_version_code_officiel;
+      if (app['use_cdn'] is bool) appData.useCDN = app['use_cdn'] as bool;
+      final challenge = (cfg['challenge'] as Map?) ?? const {};
+      final start = challenge['start_date'];
+      if (start is num) appData.challengeStartDate = start.toInt();
     } catch (e) {
-      printVm("Erreur lors de la récupération ou création du document : $e");
+      printVm("Erreur lors de la lecture de la configuration : $e");
     }
-
     return appData;
   }
-
-
-  Future<AppDefaultData> getAppData1() async {
-
-    final FirebaseFirestore firestore = FirebaseFirestore.instance;
-    CollectionReference collection =
-    FirebaseFirestore.instance.collection('AppData');
-    AppDefaultData appData=AppDefaultData();
-    try {
-      // Obtenir les documents de la collection
-      QuerySnapshot querySnapshot = await collection.getM('authService.dart:65');
-
-      // Vérifier s'il y a des documents
-      if (querySnapshot.docs.isNotEmpty) {
-        // Récupérer le premier document
-        DocumentSnapshot premierDocument = querySnapshot.docs.first;
-appData=AppDefaultData.fromJson(premierDocument.data() as Map<String, dynamic>);
-
-      } else {
-        AppDefaultData appData=AppDefaultData();
-        String id = firestore
-            .collection('AppData')
-            .doc()
-            .id;
-        appData.id =id;
-        printVm("La collection est vide");
-        await firestore.collection('AppData').doc(appData.id).set(appData.toJson()).then((value) {
-          printVm('new app data');
-        },);
-
-
-      }
-    } catch (e) {
-      printVm("Erreur lors de la récupération du premier document : $e");
-
-    }
-   return appData;
-
-  }
-
-
-
 }

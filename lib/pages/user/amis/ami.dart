@@ -1,7 +1,6 @@
 import 'package:afrotok/utils/count_format.dart';
 import 'package:afrotok/pages/user/amis/mesAmis.dart';
 import 'package:afrotok/services/api.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:contained_tab_bar_view_with_custom_page_navigator/contained_tab_bar_view_with_custom_page_navigator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';

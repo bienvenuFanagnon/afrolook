@@ -1,4 +1,3 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/services/ads_engine_service.dart';
 import 'ad_actions.dart';
 import '../../ads/ad_gate.dart';
@@ -7,7 +6,7 @@ import 'dart:math';
 import 'package:video_player/video_player.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/regie_api.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -124,20 +123,17 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
     try {
       final ad = Advertisement.fromJson(adData['ad'] as Map<String, dynamic>);
       if (ad.ownerId?.isEmpty != false) return;
-      final fs = FirebaseFirestore.instance;
       int? count;
       switch (ad.ownerType) {
         case 'canal':
-          final doc = await fs.collection('Canaux').doc(ad.ownerId).getM('afrolook_inline_ad.dart:129');
-          count = doc.data()?['suivi'] as int?;
+          count = (await RegieApi.getMap('/channels/${ad.ownerId}'))['followers_count'] as int?;
           break;
         case 'group':
-          final doc = await fs.collection('Groups').doc(ad.ownerId).getM('afrolook_inline_ad.dart:133');
-          count = doc.data()?['member_count'] as int?;
+          count = (await RegieApi.getMap('/groups/${ad.ownerId}'))['member_count'] as int?;
           break;
         default:
-          final doc = await fs.collection('Users').doc(ad.ownerId).getM('afrolook_inline_ad.dart:137');
-          count = doc.data()?['abonnes'] as int?;
+          final u = await RegieApi.getMap('/users/${ad.ownerId}');
+          count = (u['followers_count'] ?? u['followers']) as int?;
       }
       if (mounted && count != null) setState(() => _liveFollowers = count);
     } catch (_) {}

@@ -1,9 +1,10 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:typed_data';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../services/api/users_api.dart';
+import '../../services/api/users_mapper.dart';
+import 'package:uuid/uuid.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -63,8 +64,7 @@ class CardEntry {
     UserData? author = post.user;
     if (author == null && (post.user_id ?? '').isNotEmpty) {
       try {
-        final d = await FirebaseFirestore.instance.collection('Users').doc(post.user_id).getM('card_entry.dart:65');
-        if (d.exists) author = UserData.fromJson({...d.data()!, 'id': d.id});
+        author = userFromApi(await UsersApi.publicProfile(post.user_id!));
       } catch (_) {}
     }
     final isVideo = post.dataType == PostDataType.VIDEO.name;
@@ -147,7 +147,7 @@ class CardEntry {
     final source = CardSource.draft(pseudo: me.pseudo ?? 'afrolook', avatar: avatar, verified: me.isVerify == true, text: text, imageBytes: images, followers: me.followersCount, profileId: me.id, country: me.countryData?['countryCode']);
     _markOpened();
     // Participation à un DÉFI : l'identifiant du futur post est réservé tout de suite, pour que le QR code « Vote pour moi » de la carte y mène.
-    final presetPostId = defiPostId != null ? FirebaseFirestore.instance.collection('Posts').doc().id : null;
+    final presetPostId = defiPostId != null ? const Uuid().v4().replaceAll('-', '').substring(0, 20) : null;
     final result = await nav.push<Object?>(MaterialPageRoute(builder: (_) => CardStudioPage(source: source, compose: true, canal: canal, defiPostId: defiPostId, presetPostId: presetPostId, initialStyle: style, initialCountry: country, askLink: askLink, initialTemplate: template)));
     if (result is! CardResult || !nav.mounted) return;
     final quote = await CardService.quote();

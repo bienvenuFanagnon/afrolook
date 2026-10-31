@@ -1,14 +1,11 @@
-import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/regie_api.dart';
 import 'rewarded_ads.dart';
 import 'ad_gate.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 
 import '../models/model_data.dart';
 import '../services/utils/abonnement_utils.dart';
 import 'ad_config.dart';
-import 'admob_service.dart';
 
 /// Une offre de la page Récompenses (le serveur reste seul juge : catalogue, plafonds, rôles).
 class RewardOffer {
@@ -37,19 +34,43 @@ class RewardsStatus {
 class RewardsService {
   RewardsService._();
 
-  // Réglages Firestore (AppConfig/rewards) : interrupteur, plafond de pubs, offres (activation, pubs, limites)
+  // Réglages et état du jour, lus sur le serveur (GET /rewards/state) : interrupteur, plafond de pubs, offres (activation, pubs, limites)
   static Map<String, dynamic> _cfg = {};
   static DateTime? _cfgAt;
+  static RewardsStatus _lastStatus = RewardsStatus.empty;
+  static bool _serverSsv = false;
+
+  /// Vérification AdMob côté serveur active ? (le serveur est seul juge)
+  static bool get serverSsv => _serverSsv;
 
   static Future<void> loadConfig({bool force = false}) async {
     final at = _cfgAt;
     if (!force && at != null && DateTime.now().difference(at) < const Duration(minutes: 5)) return;
     try {
-      final doc = await FirebaseFirestore.instance.collection('AppConfig').doc('rewards').getM('rewards_service.dart:46');
-      _cfg = doc.data() ?? {};
-      _cfgAt = DateTime.now();
+      _applyState(await RegieApi.rewardsState());
     } catch (_) {}
   }
+
+  static void _applyState(Map<String, dynamic> d) {
+    final offersRaw = d['offers'] is Map ? Map<String, dynamic>.from(d['offers'] as Map) : <String, dynamic>{};
+    final offers = <String, dynamic>{};
+    final claims = <String, int>{};
+    for (final id in _knownIds) {
+      final o = offersRaw[id];
+      if (o is Map) {
+        offers[id] = {'enabled': true, 'ads': o['ads'], 'cap': o['cap'], 'hours': o['hours'], 'coins': o['coins']};
+        claims[id] = (o['claimed_today'] as num?)?.toInt() ?? 0;
+      } else {
+        offers[id] = {'enabled': false};
+      }
+    }
+    _cfg = {'enabled': offersRaw.isNotEmpty || d['offers'] == null, 'maxAdsPerDay': d['max_ads_per_day'], 'offers': offers};
+    _serverSsv = d['ssv'] == true;
+    _lastStatus = RewardsStatus((d['watched'] as num?)?.toInt() ?? 0, (d['pending'] as num?)?.toInt() ?? 0, claims);
+    _cfgAt = DateTime.now();
+  }
+
+  static const _knownIds = ['premium_5h', 'premium_10h', 'premium_24h', 'adfree_24h', 'coins_2', 'flame_shield', 'stickers_3', 'photos_3', 'card_capture'];
 
   static bool get enabledByConfig => _cfg['enabled'] != false;
   static int get maxAdsPerDay => ((_cfg['maxAdsPerDay'] as num?)?.toInt() ?? 10).clamp(1, 30);
@@ -97,16 +118,10 @@ class RewardsService {
     return all.where((o) => !(o.premium && paidPremium) && !(o.freeOnly && anyPremium)).toList();
   }
 
-  static String _utcDay() => DateTime.now().toUtc().toIso8601String().substring(0, 10).replaceAll('-', '');
-
   static Future<RewardsStatus> status(String uid) async {
     try {
-      final doc = await FirebaseFirestore.instance.collection('AdRewards').doc('${uid}_${_utcDay()}').getM('rewards_service.dart:102');
-      final d = doc.data() ?? {};
-      final claims = <String, int>{};
-      final raw = d['claims'];
-      if (raw is Map) raw.forEach((k, v) => claims['$k'] = (v as num).toInt());
-      return RewardsStatus((d['adsWatched'] as num?)?.toInt() ?? 0, (d['pending'] as num?)?.toInt() ?? 0, claims);
+      _applyState(await RegieApi.rewardsState());
+      return _lastStatus;
     } catch (_) {
       return RewardsStatus.empty;
     }
@@ -114,37 +129,19 @@ class RewardsService {
 
   /// Déclare une pub regardée (mode sans vérification AdMob). Retourne les pubs en réserve.
   static Future<int?> recordView() async {
-    final res = await FirebaseFunctions.instance.httpsCallable('recordAdView').call();
-    return (res.data is Map ? (res.data['pending'] as num?)?.toInt() : null);
+    final res = await RegieApi.rewardsView();
+    return (res['pending'] as num?)?.toInt();
   }
 
-  /// Échange des pubs en réserve contre une offre. Lève [FirebaseFunctionsException] si refusé.
-  static Future<Map<String, dynamic>> claim(String offerId) async {
-    final res = await FirebaseFunctions.instance.httpsCallable('claimReward').call({'offerId': offerId});
-    return Map<String, dynamic>.from(res.data as Map);
-  }
+  /// Échange des pubs en réserve contre une offre. Lève une [ApiException] (message en français) si le serveur refuse.
+  static Future<Map<String, dynamic>> claim(String offerId) => RegieApi.rewardsClaim(offerId);
 
-  /// Plafond de pièces gagnées avec des pubs par semaine (AppConfig/rewards.coinsMaxPerWeek, 20 par défaut côté serveur).
+  /// Plafond de pièces gagnées avec des pubs par semaine (réglage `rewards.coinsMaxPerWeek`, 20 par défaut côté serveur).
   static int get coinsMaxPerWeek => ((_cfg['coinsMaxPerWeek'] as num?)?.toInt() ?? 20).clamp(0, 1000);
 
-  /// Clé de la semaine ISO courante (UTC), identique à celle du serveur (`weekKey` de functions/src/ads/rewards.ts).
-  static String weekKey([DateTime? now]) {
-    final n = (now ?? DateTime.now()).toUtc();
-    final day = DateTime.utc(n.year, n.month, n.day);
-    final date = day.add(Duration(days: 4 - day.weekday));
-    final week = ((date.difference(DateTime.utc(date.year, 1, 1)).inDays + 1) / 7).ceil();
-    return '${date.year}W${week.toString().padLeft(2, '0')}';
-  }
-
-  /// Pièces déjà gagnées avec des pubs cette semaine.
-  static Future<int> coinsThisWeek(String uid) async {
-    try {
-      final doc = await FirebaseFirestore.instance.collection('AdRewardsWeek').doc('${uid}_${weekKey()}').getM('rewards_service.dart:140');
-      return (doc.data()?['coins'] as num?)?.toInt() ?? 0;
-    } catch (_) {
-      return 0;
-    }
-  }
+  /// Pièces déjà gagnées avec des pubs cette semaine : le serveur applique lui-même le plafond hebdomadaire et refuse au-delà
+  /// (`coins_week`) ; la valeur n'est pas exposée par l'API (voir lacunes_api_regie_admin.md), donc 0 ici.
+  static Future<int> coinsThisWeek(String uid) async => 0;
 
   /// Pièces cadeau données par l'offre « coins_2 » (réglable côté serveur : AppConfig/rewards.offers.coins_2.coins).
   static int get coinOfferCoins {
@@ -167,7 +164,7 @@ class RewardsService {
 
   /// Parcours complet d'une récompense depuis un autre écran que la page Récompenses :
   /// regarde les pubs nécessaires, les compte (vérification AdMob ou déclaration), puis réclame l'offre.
-  /// Retourne `false` si aucune pub n'était disponible. Lève [FirebaseFunctionsException] si le serveur refuse.
+  /// Retourne `false` si aucune pub n'était disponible. Lève une [ApiException] si le serveur refuse.
   static Future<bool> watchAndClaim(String offerId, String uid) async {
     final o = offerById(offerId);
     if (o == null) return false;
@@ -175,7 +172,7 @@ class RewardsService {
     while (pending < o.ads) {
       final earned = await RewardedAds.watch(userId: uid);
       if (!earned) return false;
-      if (AdConfig.current.ssvEnabled) {
+      if (_serverSsv || AdConfig.current.ssvEnabled) {
         final target = pending + 1;
         for (var i = 0; i < 8; i++) {
           pending = (await status(uid)).pending;

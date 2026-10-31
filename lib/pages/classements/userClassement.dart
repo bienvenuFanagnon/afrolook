@@ -4,7 +4,8 @@ import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/jeux_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
 
 import 'package:provider/provider.dart';
 
@@ -35,7 +36,6 @@ class _UserClassementState extends State<UserClassement> {
   bool _isLoading = true;
   String? _errorMessage;
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   void initState() {
@@ -52,23 +52,13 @@ class _UserClassementState extends State<UserClassement> {
     });
 
     try {
-      // Requête Firestore: trier par popularité décroissant et limiter à 10
-      QuerySnapshot userSnapshot = await _firestore
-          .collection('Users')
-          .orderBy('totalPoints', descending: true)
-          .limit(10)
-          .getM('userClassement.dart:59');
-
-      final List<UserData> fetchedUsers = [];
-
-      for (var doc in userSnapshot.docs) {
-        final userData = doc.data() as Map<String, dynamic>;
-
-        // Construction de l'objet UserData
-        final user = UserData.fromJson(userData);
-
-        fetchedUsers.add(user);
-      }
+      // Les 10 comptes ayant le plus de points : classement calculé par l'API (route à ajouter, voir lacunes_api_jeux_medias.md)
+      final rows = JeuxApi.list(await JeuxApi.client.get('/users/top', query: {'by': 'points', 'limit': 10}));
+      final List<UserData> fetchedUsers = rows.map((j) {
+        final u = userSummaryFromApi(j);
+        u.totalPoints = JeuxApi.asInt(j['points'] ?? j['total_points']);
+        return u;
+      }).toList();
 
       setState(() {
         _topUsers = fetchedUsers;

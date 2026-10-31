@@ -19,13 +19,20 @@ import 'package:afrotok/l10n/tr.dart';
 import 'package:afrotok/pages/notification_settings_page.dart';
 import 'package:afrotok/widgets/feed/sections/social_follow_card.dart';
 import 'package:afrotok/pages/music/music_page.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrotok/services/api/chat_api.dart';
+import 'package:afrotok/services/api/chat_mapper.dart';
+import 'package:afrotok/services/api/jeux_api.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
+import 'package:afrotok/services/api/canal_mapper.dart';
+import 'package:afrotok/services/api/post_mapper.dart';
+import 'package:afrotok/services/api/lives_mapper.dart';
+import 'package:afrotok/services/api/chat_api.dart' show LivesApi;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:afrotok/pages/studio/artist_marketplace.dart';
 import 'package:afrotok/pages/user/userPubs/user_my_advertisements_page.dart';
 import 'package:afrotok/pages/admin/AfrolookPub/afrolookAdminPubPage.dart';
 import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -52,7 +59,6 @@ class MesNotification extends StatefulWidget {
 class _MesNotificationState extends State<MesNotification> {
   late AppColors _colors;
   late AppLocalizations _l10n;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final Map<String, UserData> _userCache = {};
   final Map<String, Canal> _canalCache = {};
   bool _isHandlingNotification = false;
@@ -68,41 +74,23 @@ class _MesNotificationState extends State<MesNotification> {
   bool _isLoading = false;
   bool _isLoadingMore = false;
   bool _hasMore = true;
-  DocumentSnapshot? _lastDoc;
+  String? _nextCursor;
 
   int get _totalUnreadCount => _notifications.where((n) => !(n.is_open ?? true)).length;
 
   Future<void> _loadInitialNotifications() async {
     if (!mounted) return;
     setState(() => _isLoading = true);
-    final userId = _authProvider.loginUserData.id!;
     try {
-      final snap = await _firestore
-          .collection('Notifications')
-          .where('receiver_id', isEqualTo: userId)
-          .orderBy('created_at', descending: true)
-          .limit(_pageSize)
-          .getM('mes_notifications.dart:73');
-
-      final items = snap.docs
-          .map((d) => NotificationData.fromJson(d.data() as Map<String, dynamic>))
-          .toList();
-
-      for (final n in items) {
-        if (n.canal_id != null && n.canal_id!.isNotEmpty) {
-          _loadCanalData(n.canal_id!);
-        }
-        if (n.user_id != null && n.user_id!.isNotEmpty) {
-          _loadUserData(n.user_id!);
-        }
-      }
-
+      final page = await ChatApi.notifications(limit: _pageSize);
+      final items = page.items.map(notificationFromApi).toList();
+      _prefetchRefs(items);
       if (!mounted) return;
       setState(() {
         _notifications = items;
         _isLoading = false;
-        _hasMore = snap.docs.length >= _pageSize;
-        if (snap.docs.isNotEmpty) _lastDoc = snap.docs.last;
+        _nextCursor = page.next;
+        _hasMore = page.next != null;
         // Auto-ouvrir le groupe avec la notification la plus récente (même tri que l'UI)
         String? mostRecentGroup;
         int mostRecentTs = 0;
@@ -116,45 +104,39 @@ class _MesNotificationState extends State<MesNotification> {
         for (final g in _groupTypes.keys) {
           _groupExpanded[g] = g == mostRecentGroup;
         }
+        _recomputeGroupStats();
       });
     } catch (e) {
       printVm("Erreur chargement notifications: $e");
       if (mounted) setState(() => _isLoading = false);
+      _showErrorSnackBar(ChatApi.message(e, fallback: _l10n.notifErrorOpening));
+    }
+  }
+
+  void _prefetchRefs(List<NotificationData> items) {
+    for (final n in items) {
+      if (n.canal_id != null && n.canal_id!.isNotEmpty) {
+        _loadCanalData(n.canal_id!);
+      } else if (n.user_id != null && n.user_id!.isNotEmpty) {
+        _loadUserData(n.user_id!);
+      }
     }
   }
 
   Future<void> _loadMoreNotifications() async {
-    if (_isLoadingMore || !_hasMore || _lastDoc == null) return;
+    if (_isLoadingMore || !_hasMore || _nextCursor == null) return;
     setState(() => _isLoadingMore = true);
-    final userId = _authProvider.loginUserData.id!;
     try {
-      final snap = await _firestore
-          .collection('Notifications')
-          .where('receiver_id', isEqualTo: userId)
-          .orderBy('created_at', descending: true)
-          .startAfterDocument(_lastDoc!)
-          .limit(_pageSize)
-          .getM('mes_notifications.dart:125');
-
-      final items = snap.docs
-          .map((d) => NotificationData.fromJson(d.data() as Map<String, dynamic>))
-          .toList();
-
-      for (final n in items) {
-        if (n.canal_id != null && n.canal_id!.isNotEmpty) {
-          _loadCanalData(n.canal_id!);
-        }
-        if (n.user_id != null && n.user_id!.isNotEmpty) {
-          _loadUserData(n.user_id!);
-        }
-      }
-
+      final page = await ChatApi.notifications(cursor: _nextCursor, limit: _pageSize);
+      final items = page.items.map(notificationFromApi).toList();
+      _prefetchRefs(items);
       if (!mounted) return;
       setState(() {
         _notifications = [..._notifications, ...items];
         _isLoadingMore = false;
-        _hasMore = snap.docs.length >= _pageSize;
-        if (snap.docs.isNotEmpty) _lastDoc = snap.docs.last;
+        _nextCursor = page.next;
+        _hasMore = page.next != null;
+        _recomputeGroupStats();
       });
     } catch (e) {
       printVm("Erreur chargement plus de notifications: $e");
@@ -163,58 +145,22 @@ class _MesNotificationState extends State<MesNotification> {
   }
 
   final Map<String, int> _groupUnreadCounts = {};
-  // 2 notifications préchargées par groupe pour garantir l'affichage même si
-  // le groupe n'a pas de notification dans le batch global des 60 dernières.
+  // Notifications d'aperçu par groupe (tirées des pages déjà chargées)
   final Map<String, List<NotificationData>> _groupSamples = {};
 
-  Future<void> _loadGroupCounts() async {
-    final userId = _authProvider.loginUserData.id!;
-    await Future.wait(_groupTypes.entries.map((entry) async {
-      try {
-        final snap = await _firestore
-            .collection('Notifications')
-            .where('receiver_id', isEqualTo: userId)
-            .where('is_open', isEqualTo: false)
-            .where('type', whereIn: entry.value)
-            .count()
-            .getM('mes_notifications.dart:168');
-        if (mounted) setState(() => _groupUnreadCounts[entry.key] = snap.count ?? 0);
-      } catch (_) {}
-    }));
+  /// Compteurs et aperçus par groupe, calculés sur les notifications chargées (l'API ne filtre pas encore par type : voir lacunes_api_jeux_medias.md).
+  void _recomputeGroupStats() {
+    for (final entry in _groupTypes.entries) {
+      final mine = _notifications.where((n) => entry.value.contains((n.type ?? '').toUpperCase())).toList()
+        ..sort((a, b) => (b.createdAt ?? 0).compareTo(a.createdAt ?? 0));
+      _groupUnreadCounts[entry.key] = mine.where((n) => !(n.is_open ?? true)).length;
+      _groupSamples[entry.key] = mine.take(10).toList();
+    }
   }
 
-  /// Charge 2 notifications par groupe en parallèle.
-  /// Utilisé pour afficher quelque chose même quand le groupe n'est pas
-  /// présent dans les 60 notifications du batch global.
-  Future<void> _loadGroupSamples() async {
-    final userId = _authProvider.loginUserData.id!;
-    await Future.wait(_groupTypes.entries.map((entry) async {
-      try {
-        // Pas d'orderBy ici : whereIn + orderBy exige un index composite Firestore.
-        // On récupère jusqu'à 10 docs sans tri puis on trie côté client.
-        final snap = await _firestore
-            .collection('Notifications')
-            .where('receiver_id', isEqualTo: userId)
-            .where('type', whereIn: entry.value)
-            .limit(10)
-            .getM('mes_notifications.dart:188');
-        final items = snap.docs
-            .map((d) => NotificationData.fromJson(d.data() as Map<String, dynamic>))
-            .toList()
-          ..sort((a, b) => (b.createdAt ?? 0).compareTo(a.createdAt ?? 0));
-        for (final n in items) {
-          if (n.canal_id != null && n.canal_id!.isNotEmpty) {
-            _loadCanalData(n.canal_id!);
-          } else if (n.user_id != null && n.user_id!.isNotEmpty) {
-            _loadUserData(n.user_id!);
-          }
-        }
-        if (mounted) setState(() => _groupSamples[entry.key] = items);
-      } catch (e) {
-        printVm('Erreur samples groupe ${entry.key}: $e');
-      }
-    }));
-  }
+  Future<void> _loadGroupCounts() async {}
+
+  Future<void> _loadGroupSamples() async {}
 
   late UserAuthProvider _authProvider;
   late PostProvider _postProvider;
@@ -303,51 +249,46 @@ class _MesNotificationState extends State<MesNotification> {
   }
 
 
-  Future<void> _loadUserData(String userId) async {
-    if (_userCache.containsKey(userId)) return;
-
+  Future<UserData?> _fetchUser(String userId) async {
+    if (_userCache.containsKey(userId)) return _userCache[userId];
     try {
-      final userSnapshot = await _firestore
-          .collection('Users')
-          .where("id", isEqualTo: userId)
-          .limit(1)
-          .getM('mes_notifications.dart:301');
-
-      if (userSnapshot.docs.isNotEmpty) {
-        final userData = UserData.fromJson(userSnapshot.docs.first.data() as Map<String, dynamic>);
-        _userCache[userId] = userData;
-
-        // Mettre à jour les notifications avec les données utilisateur
-        for (var notif in _notifications) {
-          if (notif.user_id == userId && notif.canal_id == null) {
-            notif.userData = userData;
-          }
-        }
-        setState(() {});
-      }
+      final u = userFromApi(await UsersApi.publicProfile(userId));
+      u.id ??= userId;
+      _userCache[userId] = u;
+      return u;
     } catch (e) {
       printVm("Erreur chargement user $userId: $e");
+      return null;
     }
   }
 
-  Future<void> _loadCanalData(String canalId) async {
-    if (_canalCache.containsKey(canalId)) return;
-
+  Future<Canal?> _fetchCanal(String canalId) async {
+    if (_canalCache.containsKey(canalId)) return _canalCache[canalId];
     try {
-      final canalSnapshot = await _firestore
-          .collection('Canaux')
-          .where("id", isEqualTo: canalId)
-          .limit(1)
-          .getM('mes_notifications.dart:328');
-
-      if (canalSnapshot.docs.isNotEmpty) {
-        final canalData = Canal.fromJson(canalSnapshot.docs.first.data() as Map<String, dynamic>);
-        _canalCache[canalId] = canalData;
-        setState(() {});
-      }
+      final c = canalFromApi(JeuxApi.map(await JeuxApi.client.get('/channels/$canalId')));
+      c.id ??= canalId;
+      _canalCache[canalId] = c;
+      return c;
     } catch (e) {
       printVm("Erreur chargement canal $canalId: $e");
+      return null;
     }
+  }
+
+  Future<void> _loadUserData(String userId) async {
+    final userData = await _fetchUser(userId);
+    if (userData == null || !mounted) return;
+    // Mettre à jour les notifications avec les données utilisateur
+    for (var notif in _notifications) {
+      if (notif.user_id == userId && notif.canal_id == null) {
+        notif.userData = userData;
+      }
+    }
+    setState(() {});
+  }
+
+  Future<void> _loadCanalData(String canalId) async {
+    if (await _fetchCanal(canalId) != null && mounted) setState(() {});
   }
 
   Widget _getNotificationIcon(NotificationData notification) {
@@ -449,10 +390,7 @@ class _MesNotificationState extends State<MesNotification> {
     try {
       // Marquer comme lu dans Firestore
       if (!notification.is_open!) {
-        await _firestore.collection('Notifications').doc(notification.id).update({
-          'is_open': true,
-          'users_id_view': FieldValue.arrayUnion([_authProvider.loginUserData.id!])
-        }).timeout(const Duration(seconds: 5));
+        await ChatApi.markNotificationRead(notification.id!).timeout(const Duration(seconds: 5));
 
         // Mettre à jour localement
         setState(() {
@@ -650,11 +588,11 @@ class _MesNotificationState extends State<MesNotification> {
           // Sinon, ouvrir le profil de l'abonné.
           final abonnerCanalId = notification.canal_id;
           if (abonnerCanalId != null && abonnerCanalId.isNotEmpty) {
-            final canalDoc = await _firestore.collection('Canaux').doc(abonnerCanalId).getM('mes_notifications.dart:575');
+            final canalFound = await _fetchCanal(abonnerCanalId);
             _hideLoadingOverlay();
             if (!mounted) return;
-            if (canalDoc.exists) {
-              final canal = Canal.fromJson({...canalDoc.data()!, 'id': canalDoc.id});
+            if (canalFound != null) {
+              final canal = canalFound;
               Navigator.push(context, MaterialPageRoute(
                 builder: (_) => CanalDetails(canal: canal),
               )).then((_) => setState(() => _isHandlingNotification = false));
@@ -665,17 +603,7 @@ class _MesNotificationState extends State<MesNotification> {
             final subscriberUserId = notification.user_id;
             if (subscriberUserId != null && subscriberUserId.isNotEmpty) {
               // Récupérer depuis le cache ou Firestore
-              if (!_userCache.containsKey(subscriberUserId)) {
-                final userSnap = await _firestore.collection('Users')
-                    .where('id', isEqualTo: subscriberUserId)
-                    .limit(1)
-                    .getM('mes_notifications.dart:594');
-                if (userSnap.docs.isNotEmpty) {
-                  _userCache[subscriberUserId] = UserData.fromJson(
-                    userSnap.docs.first.data() as Map<String, dynamic>,
-                  );
-                }
-              }
+              await _fetchUser(subscriberUserId);
               _hideLoadingOverlay();
               if (!mounted) return;
               _showUserProfile(subscriberUserId);
@@ -688,11 +616,11 @@ class _MesNotificationState extends State<MesNotification> {
         case 'FOLLOW_CANAL':
           final canalId = notification.canal_id;
           if (canalId != null && canalId.isNotEmpty) {
-            final doc = await _firestore.collection('Canaux').doc(canalId).getM('mes_notifications.dart:613');
+            final canalFound = await _fetchCanal(canalId);
             _hideLoadingOverlay();
             if (!mounted) return;
-            if (doc.exists) {
-              final canal = Canal.fromJson({...doc.data()!, 'id': doc.id});
+            if (canalFound != null) {
+              final canal = canalFound;
               Navigator.push(context, MaterialPageRoute(
                 builder: (_) => CanalDetails(canal: canal),
               )).then((_) => setState(() => _isHandlingNotification = false));
@@ -763,24 +691,23 @@ class _MesNotificationState extends State<MesNotification> {
         setState(() => _isHandlingNotification = false);
         return;
       }
-      final doc = await _firestore.collection('lives').doc(liveId).getM('mes_notifications.dart:673');
+      final apiLive = await LivesApi.get(liveId);
       _hideLoadingOverlay();
       if (!mounted) return;
-      if (doc.exists) {
-        final live = PostLive.fromMap(doc.data()!);
-        if (live.isLive) {
-          Navigator.push(context, MaterialPageRoute(
-            builder: (_) => LivePage(
-              liveId: live.liveId!,
-              isHost: false,
-              hostName: live.hostName ?? '',
-              hostImage: live.hostImage ?? '',
-              isInvited: false,
-              postLive: live,
-            ),
-          )).then((_) => setState(() => _isHandlingNotification = false));
-          return;
-        }
+      final host = await _fetchUser('${apiLive['host_id']}');
+      final live = postLiveFromApi(apiLive, hostName: host?.pseudo ?? '', hostImage: host?.imageUrl ?? '');
+      if (live.isLive) {
+        Navigator.push(context, MaterialPageRoute(
+          builder: (_) => LivePage(
+            liveId: live.liveId!,
+            isHost: false,
+            hostName: live.hostName ?? '',
+            hostImage: live.hostImage ?? '',
+            isInvited: false,
+            postLive: live,
+          ),
+        )).then((_) => setState(() => _isHandlingNotification = false));
+        return;
       }
       // Live terminé ou introuvable → liste des lives
       Navigator.push(context, MaterialPageRoute(builder: (_) => LiveListPage()))
@@ -797,28 +724,10 @@ class _MesNotificationState extends State<MesNotification> {
   /// Récupère un post directement par son ID (lecture unique, sans filtre type).
   Future<Post?> _fetchPostById(String postId) async {
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('Posts')
-          .doc(postId)
-          .getM('mes_notifications.dart:710')
-          .timeout(const Duration(seconds: 8));
-      if (!doc.exists) return null;
-      final post = Post.fromJson(doc.data()!);
-      post.id = doc.id;
-      // Charger les données utilisateur si elles ne sont pas intégrées dans le document
-      if (post.user == null) {
-        final userId = (doc.data()!['user_id'] as String?) ?? '';
-        if (userId.isNotEmpty) {
-          try {
-            final userDoc = await FirebaseFirestore.instance
-                .collection('Users')
-                .doc(userId)
-                .getM('mes_notifications.dart:723')
-                .timeout(const Duration(seconds: 5));
-            if (userDoc.exists) post.user = UserData.fromJson(userDoc.data()!);
-          } catch (_) {}
-        }
-      }
+      final j = JeuxApi.map(await JeuxApi.client.get('/posts/$postId')).cast<String, dynamic>();
+      if (j.isEmpty) return null;
+      final post = postFromApi(j);
+      post.id = postId;
       return post;
     } catch (_) {
       return null;
@@ -1312,7 +1221,7 @@ class _MesNotificationState extends State<MesNotification> {
   Future<void> _markAllOnServer(String userId) async {
     final prefs = await SharedPreferences.getInstance();
     try {
-      await FirebaseFunctions.instance.httpsCallable('markAllNotificationsRead').call();
+      await ChatApi.markAllNotificationsRead();
       await prefs.remove('$_pendingMarkKey$userId');
     } catch (e) {
       printVm("Tout marquer comme vu (serveur) : $e — sera refait plus tard");

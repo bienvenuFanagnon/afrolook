@@ -5,11 +5,10 @@
 // Un toucher sur « lecture » lance la file : le lecteur flottant prend le relais, avec suivant et aléatoire.
 // Aucune carte n'apparaît s'il n'y a pas de titre proposé dans le pays de la personne.
 
-import 'package:afrotok/services/read_meter.dart';
 import 'dart:math' as math;
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../services/api/music_api.dart';
 import 'package:flutter/material.dart';
 
 import '../../services/music_queue.dart';
@@ -33,14 +32,7 @@ class _FeedSounds {
     final fresh = _cachedAt != null && DateTime.now().difference(_cachedAt!).inMinutes < 10;
     if (_cache != null && fresh) return _cache!;
     _cachedAt = DateTime.now();
-    return _cache = FirebaseFirestore.instance
-        .collection('artist_sounds')
-        .where('status', isEqualTo: 'validated')
-        .orderBy('validatedAt', descending: true)
-        .limit(60)
-        .getM('feed_sound_card.dart:39')
-        .then((s) => [for (final d in s.docs) ArtistSound.fromMap(d.data(), d.id)].where((x) => x.previewUrl != null).toList())
-        .catchError((_) => <ArtistSound>[]);
+    return _cache = MusicApi.latestValidated(limit: 60).catchError((_) => <ArtistSound>[]);
   }
 
   /// [count] titres pour la carte numéro [slot] : chaque carte du fil propose d'autres titres que la précédente.

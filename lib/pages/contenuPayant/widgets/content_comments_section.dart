@@ -1,8 +1,7 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/theme/app_colors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/contenu_payant_api.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -20,6 +19,11 @@ class ContentCommentsSection extends StatefulWidget {
 class _ContentCommentsSectionState extends State<ContentCommentsSection> {
   final _controller = TextEditingController();
   bool _sending = false;
+  late Future<LegacySnap> _comments = ContenuPayantApi.comments(widget.contentId, limit: 30);
+
+  void _reload() {
+    if (mounted) setState(() => _comments = ContenuPayantApi.comments(widget.contentId, limit: 30));
+  }
 
   static const int _maxChars = 100;
 
@@ -52,22 +56,11 @@ class _ContentCommentsSectionState extends State<ContentCommentsSection> {
 
     setState(() => _sending = true);
     try {
-      await FirebaseFirestore.instance.collection('ContentComments').add({
-        'contentId': widget.contentId,
-        'userId': user.id ?? '',
-        'pseudo': user.pseudo ?? 'Utilisateur',
-        'avatarUrl': user.imageUrl ?? '',
-        'text': text,
-        'createdAt': DateTime.now().millisecondsSinceEpoch,
-      });
-      await FirebaseFirestore.instance
-          .collection('ContentPaies')
-          .doc(widget.contentId)
-          .update({
-        'comments': FieldValue.increment(1),
-      });
+      await ContenuPayantApi.addComment(widget.contentId, text);
       _controller.clear();
-    } catch (_) {
+      _reload();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ContenuPayantApi.message(e))));
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -75,55 +68,17 @@ class _ContentCommentsSectionState extends State<ContentCommentsSection> {
 
   Future<void> _deleteComment(String docId) async {
     try {
-      await FirebaseFirestore.instance
-          .collection('ContentComments')
-          .doc(docId)
-          .delete();
-      await FirebaseFirestore.instance
-          .collection('ContentPaies')
-          .doc(widget.contentId)
-          .update({'comments': FieldValue.increment(-1)});
-    } catch (_) {}
+      await ContenuPayantApi.deleteComment(docId);
+      _reload();
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ContenuPayantApi.message(e))));
+    }
   }
 
+  /// La modification d'un commentaire n'existe pas dans l'API (voir lacunes_api_canaux.md) : supprimer puis réécrire.
   Future<void> _editComment(String docId, String current) async {
-    final colors = AppColors.of(context);
-    final ctrl = TextEditingController(text: current);
-    final result = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: colors.surface,
-        title: Text('Modifier le commentaire',
-            style: TextStyle(color: colors.textPrimary, fontSize: 14)),
-        content: TextField(
-          controller: ctrl,
-          maxLines: 3,
-          maxLength: _isAdmin ? null : _maxChars,
-          style: TextStyle(color: colors.textPrimary, fontSize: 13),
-          decoration: InputDecoration(
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text('Annuler', style: TextStyle(color: colors.textSecondary)),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
-            style: ElevatedButton.styleFrom(backgroundColor: colors.primary),
-            child: const Text('Enregistrer', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-    ctrl.dispose();
-    if (result != null && result.isNotEmpty) {
-      await FirebaseFirestore.instance
-          .collection('ContentComments')
-          .doc(docId)
-          .update({'text': result, 'editedAt': DateTime.now().millisecondsSinceEpoch});
-    }
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pour modifier ce commentaire, supprime-le puis réécris-le.')));
   }
 
   @override
@@ -155,13 +110,8 @@ class _ContentCommentsSectionState extends State<ContentCommentsSection> {
           ),
         ),
         const SizedBox(height: 10),
-        StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('ContentComments')
-              .where('contentId', isEqualTo: widget.contentId)
-              .orderBy('createdAt', descending: true)
-              .limit(30)
-              .snapshotsM('content_comments_section.dart:163'),
+        FutureBuilder<LegacySnap>(
+          future: _comments,
           builder: (context, snap) {
             if (!snap.hasData || snap.data!.docs.isEmpty) {
               return Padding(
@@ -176,7 +126,7 @@ class _ContentCommentsSectionState extends State<ContentCommentsSection> {
             }
             return Column(
               children: snap.data!.docs.map((d) {
-                final data = d.data() as Map<String, dynamic>;
+                final data = d.data();
                 final docId = d.id;
                 final commentUserId = data['userId'] as String? ?? '';
                 final canEdit = commentUserId == _currentUserId;

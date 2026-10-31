@@ -1,4 +1,3 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/pages/coins/apple_coin_store_view.dart';
 import 'package:afrotok/pages/coins/play_coin_store_view.dart';
@@ -11,7 +10,7 @@ import '../../models/coin_pack.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/coin_gift_provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../services/api/users_api.dart';
 import '../paiement/newDepot.dart';
 import 'card_coin_page.dart';
 import '../../theme/app_colors.dart';
@@ -62,21 +61,20 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
       _targetUserAvatar = null;
     });
     try {
-      final query = await FirebaseFirestore.instance
-          .collection('Users')
-          .where('email', isEqualTo: email)
-          .limit(1)
-          .getM('coin_recharge_screen.dart:68');
-      if (query.docs.isEmpty) {
+      // Recherche de la personne par l'API (voir lacunes_api_argent_creations.md : il faut une recherche par e-mail exact).
+      // On n'accepte un résultat que si l'e-mail renvoyé correspond exactement : jamais de cadeau à la mauvaise personne.
+      final rows = await UsersApi.searchUsers(email, limit: 5);
+      final found = rows.where((u) => '${u['email'] ?? ''}'.toLowerCase() == email.toLowerCase()).toList();
+      if (found.isEmpty) {
         setState(() { _isSearching = false; _userFound = false; });
         _showErrorDialog(context.tr('Aucun utilisateur trouvé avec cet email'));
         return;
       }
-      final userDoc = query.docs.first;
+      final u = found.first;
       setState(() {
-        _targetUserId = userDoc.id;
-        _targetUserName = userDoc.data()['pseudo'] ?? context.tr('Utilisateur');
-        _targetUserAvatar = userDoc.data()['imageUrl'];
+        _targetUserId = '${u['id']}';
+        _targetUserName = '${u['username'] ?? u['display_name'] ?? u['pseudo'] ?? context.tr('Utilisateur')}';
+        _targetUserAvatar = (u['avatar_url'] ?? u['imageUrl']) as String?;
         _userFound = true;
         _isSearching = false;
       });

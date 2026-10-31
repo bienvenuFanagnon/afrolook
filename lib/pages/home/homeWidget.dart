@@ -11,9 +11,7 @@ import 'package:video_thumbnail/video_thumbnail.dart';
 
 import 'package:path_provider/path_provider.dart';
 
-import 'package:firebase_storage/firebase_storage.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 String getTabBarTypeMessage(String type,Post post) {
   // switch (type) {
@@ -79,22 +77,8 @@ async {
     if (fileName != null) {
       File file = File(fileName);
 
-      // 3. Uploader vers Firebase Storage
-      Reference ref = FirebaseStorage.instance
-          .ref()
-          .child('thumbnails')
-          .child('$postId.jpg');
-
-      UploadTask uploadTask = ref.putFile(await MediaShrink.file(file));
-      TaskSnapshot snapshot = await uploadTask;
-      String downloadUrl = await snapshot.ref.getDownloadURL();
-
-      // 4. Mettre à jour Firestore
-      await FirebaseFirestore.instance.collection('Posts').doc(postId).update({
-        'thumbnail': downloadUrl,
-      });
-
-      printVm("✅ Thumbnail mis à jour avec succès : $downloadUrl");
+      // 3. Envoi de la miniature : l'API ne permet pas encore de la joindre à une publication (voir lacunes_api_publications.md)
+      printVm("Miniature générée localement : $fileName");
     }
   } catch (e) {
     printVm("❌ Erreur lors de la génération du thumbnail: $e");

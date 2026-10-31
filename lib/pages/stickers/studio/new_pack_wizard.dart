@@ -1,14 +1,14 @@
 import 'dart:typed_data';
 
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../../l10n/tr.dart';
+import '../../../services/api/api_gateway.dart';
+import '../../../services/api/argent_upload.dart';
 import '../../../theme/app_colors.dart';
 
 const int _kMaxBytes = 600 * 1024;
@@ -218,50 +218,39 @@ class _NewPackWizardState extends State<NewPackWizard> {
     });
     final lang = trCurrentLanguage;
     try {
-      const uuid = Uuid();
       final payload = <Map<String, dynamic>>[];
       for (var n = 0; n < _items.length; n++) {
         final it = _items[n];
-        final path = 'sticker_submissions/$uid/${uuid.v4()}.webp';
-        final task = FirebaseStorage.instance.ref(path).putData(it.bytes, SettableMetadata(contentType: it.contentType));
-        task.snapshotEvents.listen((s) {
-          if (!mounted || s.totalBytes == 0) return;
-          setState(() => _progress = (n + s.bytesTransferred / s.totalBytes) / _items.length);
+        final uploadId = await ArgentUpload.bytes(it.bytes, contentType: it.contentType, onProgress: (v) {
+          if (mounted) setState(() => _progress = (n + v) / _items.length);
         });
-        await task;
         final cap = it.caption.text.trim();
         payload.add({
-          'path': path,
+          'upload_id': uploadId,
           'category': it.category,
           'captions': cap.isEmpty ? <String, String>{} : {lang: cap},
           'keywords': cap.isEmpty ? <String>[] : _keywords(cap),
-          'giftPriceCoins': _parse(it.gift.text).clamp(0, 500),
+          'gift_price_coins': _parse(it.gift.text).clamp(0, 500),
         });
       }
       if (mounted) setState(() => _progress = 1);
-      final r = await FirebaseFunctions.instance.httpsCallable('submitStickerPack').call({
+      final r = await ApiGateway.instance.client.post('/stickers/packs', body: {
         'name': _nameCtrl.text.trim(),
         'region': _region,
-        'priceCoins': _parse(_priceCtrl.text).clamp(0, 1000),
+        'price_coins': _parse(_priceCtrl.text).clamp(0, 1000),
         'stickers': payload,
       });
-      final needsReview = (r.data is Map) && (r.data as Map)['needsReview'] == true;
+      final needsReview = (r is Map) && ((r['data'] is Map ? r['data'] : r) as Map)['needs_review'] == true;
       if (!mounted) return;
       var msg = context.tr('Pack envoyé : il sera vérifié avant publication');
       if (needsReview) msg += '. ${context.tr('Une vérification supplémentaire est nécessaire')}';
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), duration: const Duration(seconds: 5)));
       Navigator.pop(context, true);
-    } on FirebaseFunctionsException catch (e) {
+    } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
         _busy = false;
-        _error = _serverError(e);
-      });
-    } on FirebaseException catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _busy = false;
-        _error = context.tr('Envoi des fichiers impossible, vérifie ta connexion et réessaie');
+        _error = e.isNetwork ? context.tr('Envoi des fichiers impossible, vérifie ta connexion et réessaie') : _serverError(e);
       });
     } catch (_) {
       if (!mounted) return;
@@ -272,18 +261,14 @@ class _NewPackWizardState extends State<NewPackWizard> {
     }
   }
 
-  String _serverError(FirebaseFunctionsException e) {
+  String _serverError(ApiException e) {
     switch (e.code) {
-      case 'permission-denied':
+      case 'not_eligible':
         return context.tr('Pour déposer un pack, il faut un abonnement Premium ou Gold et un compte de plus de 30 jours');
-      case 'already-exists':
-        return context.tr('Un de tes stickers est une copie exacte d\'un sticker déjà présent dans Afrolook');
-      case 'resource-exhausted':
+      case 'too_many_pending':
         return context.tr('Tu as déjà 3 packs en attente de validation');
-      case 'invalid-argument':
-        return e.message ?? context.tr('Pack invalide');
       default:
-        return e.message ?? context.tr('Une erreur est survenue, réessaie');
+        return e.message.isNotEmpty ? e.message : context.tr('Une erreur est survenue, réessaie');
     }
   }
 

@@ -5,7 +5,9 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/api_gateway.dart';
+import 'package:afrotok/services/api/post_mapper.dart';
+import 'package:afrotok/services/api/users_api.dart';
 import 'package:flutter/material.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -40,7 +42,6 @@ class CreatorUnseenPostsPage extends StatefulWidget {
 }
 
 class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
   final _service = ActiveCreatorsService();
   final ScrollController _scrollController = ScrollController();
   final Random _random = Random();
@@ -50,7 +51,7 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
   List<Post> _posts = [];
   bool _loading = true;
   bool _loadingMore = false;
-  DocumentSnapshot? _lastDoc;
+  String? _cursor; // curseur de l'API (publications du créateur)
   bool _hasMore = true;
   static const _pageSize = 10;
 
@@ -103,50 +104,29 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
     }
   }
 
-  // created_at Firestore = microsecondes ; UserData.createdAt = millisecondes après parsing
-  int get _sinceUs =>
-      widget.userCreatedAtMs > 0 ? widget.userCreatedAtMs * 1000 : 0;
-
-  Query<Map<String, dynamic>> get _baseQuery {
-    var q = _db
-        .collection('Posts')
-        .where('user_id', isEqualTo: widget.creator.id)
-        .orderBy('created_at', descending: true);
-    if (_sinceUs > 0) {
-      q = q.where('created_at', isGreaterThanOrEqualTo: _sinceUs);
-    }
-    return q;
-  }
-
-  List<Post> _filterUnseen(List<QueryDocumentSnapshot<Map<String, dynamic>>> docs) {
+  /// Publications d'un créateur (API : GET /v1/users/{id}/posts), sans les posts de canaux ni ceux déjà vus.
+  Future<({List<Post> unseen, String? next})> _fetchPage(String? cursor) async {
+    final page = await UsersApi.userPosts(widget.creator.id!, cursor: cursor, limit: _pageSize * 3);
     final viewedSet = Set<String>.from(widget.viewedPostIds);
-    return docs.map((d) {
-      final data = Map<String, dynamic>.from(d.data());
-      data['id'] = d.id;
-      return Post.fromJson(data);
-    }).where((p) {
-      if (p.id == null) return false;
-      if (viewedSet.contains(p.id)) return false;
-      // Exclure les posts de canaux — cette page n'affiche que les posts directs du créateur
-      if (p.canal_id != null && p.canal_id!.isNotEmpty) return false;
+    final unseen = page.items.map(postFromApi).where((p) {
+      if (p.id == null || viewedSet.contains(p.id)) return false;
+      if (p.canal_id != null && p.canal_id!.isNotEmpty) return false; // cette page n'affiche que les posts directs du créateur
+      if (widget.userCreatedAtMs > 0 && (p.createdAt ?? 0) < widget.userCreatedAtMs) return false;
       return true;
     }).toList();
+    return (unseen: unseen, next: page.next);
   }
 
   Future<void> _loadPosts() async {
     setState(() => _loading = true);
     try {
-      // On charge plus de docs par page pour compenser le filtre côté client
-      final snap = await _baseQuery.limit(_pageSize * 3).getM('creator_unseen_posts_page.dart:139');
-
+      final r = await _fetchPage(null);
       if (mounted) {
-        final unseen = _filterUnseen(snap.docs);
         setState(() {
-          _posts = unseen;
-          _lastDoc = snap.docs.isNotEmpty ? snap.docs.last : null;
-          _hasMore = snap.docs.length == _pageSize * 3;
-          // Recalcul du compteur réel (posts vraiment non vus)
-          _localUnseenCount = unseen.length;
+          _posts = r.unseen;
+          _cursor = r.next;
+          _hasMore = r.next != null;
+          _localUnseenCount = r.unseen.length;
         });
       }
     } catch (_) {}
@@ -154,20 +134,15 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
   }
 
   Future<void> _loadMorePosts() async {
-    if (_lastDoc == null || !_hasMore) return;
+    if (_cursor == null || !_hasMore) return;
     setState(() => _loadingMore = true);
     try {
-      final snap = await _baseQuery
-          .startAfterDocument(_lastDoc!)
-          .limit(_pageSize * 3)
-          .getM('creator_unseen_posts_page.dart:162');
-
+      final r = await _fetchPage(_cursor);
       if (mounted) {
-        final newPosts = _filterUnseen(snap.docs);
         setState(() {
-          _posts.addAll(newPosts);
-          _lastDoc = snap.docs.isNotEmpty ? snap.docs.last : _lastDoc;
-          _hasMore = snap.docs.length == _pageSize * 3;
+          _posts.addAll(r.unseen);
+          _cursor = r.next;
+          _hasMore = r.next != null;
         });
       }
     } catch (_) {}
@@ -212,33 +187,8 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
       });
     }
 
-    try {
-      // Enregistrer la vue sur le post et dans les vues utilisateur
-      final batch = _db.batch();
-      batch.update(_db.collection('Posts').doc(postId), {
-        'users_vue_id': FieldValue.arrayUnion([widget.currentUserId]),
-      });
-      batch.update(_db.collection('Users').doc(widget.currentUserId), {
-        'viewedPostIds': FieldValue.arrayUnion([postId]),
-      });
-      await batch.commit();
-
-      // Décrémenter le compteur créateur uniquement pour les posts non vus
-      if (wasUnseen) {
-        final creatorId = widget.creator.id ?? '';
-        if (creatorId.isNotEmpty) {
-          if (_localUnseenCount <= 0) {
-            // Tous les posts non vus ont été scrollés → reset complet
-            _service.resetCreatorCounter(widget.currentUserId, creatorId);
-          } else {
-            // Encore des posts non vus → décrémenter de 1
-            _db.collection('Users').doc(widget.currentUserId).update({
-              'newPostsByCreator.$creatorId': FieldValue.increment(-1),
-            });
-          }
-        }
-      }
-    } catch (_) {}
+    // La vue est comptée par le serveur (POST /v1/posts/{id}/view) ; les nouveautés par créateur sont recalculées à la lecture.
+    await ApiGateway.instance.markViewed(postId);
   }
 
   // ── Tout marquer comme vu ─────────────────────────────────────────────────────

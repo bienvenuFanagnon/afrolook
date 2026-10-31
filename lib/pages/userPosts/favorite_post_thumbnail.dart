@@ -16,7 +16,8 @@ import '../../providers/authProvider.dart';
 
 import 'package:provider/provider.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
 
 import '../postDetails.dart';
 
@@ -56,7 +57,6 @@ class _FavoritePostThumbnailWidgetState extends State<FavoritePostThumbnailWidge
   bool _isGeneratingThumbnail = false;
   bool _isLoadingUser = false;
   UserData? _currentUser;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   void initState() {
@@ -78,10 +78,10 @@ class _FavoritePostThumbnailWidgetState extends State<FavoritePostThumbnailWidge
     });
 
     try {
-      final userDoc = await _firestore.collection('Users').doc(widget.post.user_id!).getM('favorite_post_thumbnail.dart:80');
-      if (userDoc.exists) {
+      final user = userFromApi(await UsersApi.publicProfile(widget.post.user_id!));
+      if (mounted) {
         setState(() {
-          _currentUser = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
+          _currentUser = user;
           widget.post.user = _currentUser;
         });
       }

@@ -1,11 +1,12 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+// Les MESSAGES des discussions restent sur Firebase (collection Messages) ; tout le reste passe par l'API.
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import '../../services/api/chat_api.dart';
+import '../../services/api/chat_mapper.dart';
+import '../../services/api/chroniques_api.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../../theme/app_colors.dart';
 import '../../utils/media_cdn.dart';
@@ -81,12 +82,12 @@ class _ReplySheetState extends State<_ReplySheet> {
         await _sendToFriend(text);
         return;
       }
-      final r = (await FirebaseFunctions.instance.httpsCallable('chroniqueReplyInvite').call({'chroniqueId': c.id, 'message': text})).data as Map;
+      // Règles appliquées par le serveur : une seule invitation en attente, 7 jours après un refus, 10 par jour, refus si blocage
+      final status = await ChroniquesApi.reply(c.id!, text);
       if (!mounted) return;
-      switch (r['status']) {
+      switch (status) {
         case 'sent':
           context.read<UserAuthProvider>().loginUserData.mesInvitationsEnvoyerId?.add(c.userId);
-          _chatId = r['chatId'] as String?;
           setState(() => _step = _Step.sent);
           break;
         case 'pending':
@@ -95,36 +96,31 @@ class _ReplySheetState extends State<_ReplySheet> {
         case 'incoming':
           setState(() => _step = _Step.incoming);
           break;
+        case 'accepted':
+          _friends = true;
+          setState(() => _step = _Step.sent);
+          break;
         case 'friends':
           _friends = true;
           await _sendToFriend(text);
           return;
       }
-    } on FirebaseFunctionsException catch (e) {
-      if (mounted) setState(() => _error = e.message ?? 'Envoi impossible. Réessayez.');
-    } catch (_) {
-      if (mounted) setState(() => _error = 'Envoi impossible. Vérifiez votre connexion.');
+    } catch (e) {
+      if (mounted) setState(() => _error = ChroniquesApi.message(e, fallback: 'Envoi impossible. Réessayez.'));
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
-  /// Déjà amis : trouve ou crée la discussion, y met la chronique citée puis le message, et l'ouvre.
+  /// Déjà amis : ouvre (ou retrouve) la discussion sur l'API, y met la chronique citée puis le message (Messages, sur Firebase), et l'ouvre.
   Future<void> _sendToFriend(String text) async {
     final fs = FirebaseFirestore.instance;
     final me = context.read<UserAuthProvider>().loginUserData;
     final myId = me.id!;
     final other = c.userId;
     final now = DateTime.now().millisecondsSinceEpoch;
-    final found = await fs.collection('Chats').where('docId', whereIn: ['$other$myId', '$myId$other']).limit(1).getM('chronique_reply_sheet.dart:118');
-    Chat chat;
-    if (found.docs.isNotEmpty) {
-      chat = Chat.fromJson(found.docs.first.data());
-    } else {
-      final id = fs.collection('Chats').doc().id;
-      chat = Chat(docId: '$other$myId', id: id, senderId: myId, receiverId: other, lastMessage: text, type: ChatType.USER.name, createdAt: now, updatedAt: now);
-      await fs.collection('Chats').doc(id).set(chat.toJson());
-    }
+    final conv = await ChatApi.openConversation(other);
+    final chat = chatFromConversation(conv, myId);
     final chatDocId = chat.docId ?? chat.id; // les messages d'une discussion portent son « docId » (voir myChat._chatId)
     Map<String, dynamic> base(String id, int at) => {
           'id': id, 'send_by': myId, 'receiverBy': other, 'chat_id': chatDocId, 'is_valide': true, 'is_deleted': false, 'is_encrypted': false,
@@ -140,21 +136,11 @@ class _ReplySheetState extends State<_ReplySheet> {
       'item_title': 'Chronique', 'item_subtitle': 'Réponse à votre chronique', 'item_thumbnail': _thumb,
     });
     batch.set(fs.collection('Messages').doc(textId), {...base(textId, now + 1), 'message_type': 'text', 'message': text});
-    batch.update(fs.collection('Chats').doc(chat.id), {
-      'last_message': text, 'updated_at': now, (chat.senderId == myId ? 'your_msg_not_read' : 'my_msg_not_read'): FieldValue.increment(2),
-    });
     await batch.commit();
-    Map<String, dynamic>? owner;
+    // Aperçu, non lus, série et notification : gérés par l'API (une fois par message envoyé)
     try {
-      owner = (await fs.collection('Users').doc(other).getM('chronique_reply_sheet.dart:148')).data();
-      if (owner != null) chat.receiver = UserData.fromJson({...owner, 'id': other});
-      final player = owner?['oneIgnalUserid'];
-      if (player != null && mounted) {
-        await context.read<UserAuthProvider>().sendNotification(
-              appName: '@${me.pseudo}', userIds: [player], smallImage: me.imageUrl ?? '', send_user_id: myId, recever_user_id: other,
-              message: '@${me.pseudo} répond à votre chronique : $text', type_notif: NotificationType.MESSAGE.name, post_id: '', post_type: '', chat_id: chat.id ?? '',
-            );
-      }
+      await ChatApi.conversationSent(chat.id!);
+      await ChatApi.conversationSent(chat.id!);
     } catch (_) {}
     if (!mounted) return;
     final nav = Navigator.of(context);
@@ -162,45 +148,6 @@ class _ReplySheetState extends State<_ReplySheet> {
     nav.push(MaterialPageRoute(builder: (_) => MyChat(title: 'Chat avec ${c.userPseudo}', chat: chat)));
   }
 
-  /// Ouvre la discussion temporaire (par son identifiant, sinon en la cherchant) : le premier message y est visible, la suite attend l'acceptation.
-  Future<void> _openPendingChat({String? chatId}) async {
-    final fs = FirebaseFirestore.instance;
-    final myId = context.read<UserAuthProvider>().loginUserData.id!;
-    try {
-      DocumentSnapshot<Map<String, dynamic>>? doc;
-      if (chatId != null && chatId.isNotEmpty) {
-        doc = await fs.collection('Chats').doc(chatId).getM('chronique_reply_sheet.dart:171');
-      } else {
-        final q = await fs.collection('Chats').where('docId', whereIn: ['${c.userId}$myId', '$myId${c.userId}']).limit(1).getM('chronique_reply_sheet.dart:173');
-        if (q.docs.isNotEmpty) doc = q.docs.first;
-      }
-      if (doc == null || !doc.exists) return;
-      final chat = Chat.fromJson(doc.data()!);
-      final owner = (await fs.collection('Users').doc(c.userId).getM('chronique_reply_sheet.dart:178')).data();
-      if (owner != null) chat.receiver = UserData.fromJson({...owner, 'id': c.userId});
-      if (!mounted) return;
-      final nav = Navigator.of(context);
-      nav.pop();
-      nav.push(MaterialPageRoute(builder: (_) => MyChat(title: 'Chat avec ${c.userPseudo}', chat: chat)));
-    } catch (_) {
-      if (mounted) setState(() => _error = 'Discussion introuvable pour le moment.');
-    }
-  }
-
-  String? _chatId;
-
-  Widget _openChatButton(AppColors colors) => Padding(
-        padding: const EdgeInsets.only(top: 10),
-        child: SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: () => _openPendingChat(chatId: _chatId),
-            icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
-            label: const Text('Voir la discussion', style: TextStyle(fontWeight: FontWeight.w700)),
-            style: OutlinedButton.styleFrom(foregroundColor: colors.textPrimary, side: BorderSide(color: colors.border), padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-          ),
-        ),
-      );
 
   @override
   Widget build(BuildContext context) {
@@ -220,12 +167,10 @@ class _ReplySheetState extends State<_ReplySheet> {
             const SizedBox(height: 12),
             if (_step == _Step.form) ..._form(colors, left),
             if (_step == _Step.pending) ...[
-              _state(colors, Icons.hourglass_top_rounded, 'En attente de sa réponse', 'Votre message est visible dans la discussion. Vous pourrez continuer dès que @${c.userPseudo} aura accepté.'),
-              _openChatButton(colors),
+              _state(colors, Icons.hourglass_top_rounded, 'En attente de sa réponse', 'Votre demande est envoyée. Vous pourrez discuter dès que @${c.userPseudo} aura accepté.'),
             ],
             if (_step == _Step.sent) ...[
               _state(colors, Icons.check_circle_rounded, 'Message envoyé', '@${c.userPseudo} le voit dans ses demandes et choisit d\'accepter ou non. Vous serez prévenu.'),
-              _openChatButton(colors),
             ],
             if (_step == _Step.incoming) ...[
               _state(colors, Icons.mail_rounded, '@${c.userPseudo} vous a déjà invité', 'Acceptez son invitation pour ouvrir la discussion.'),

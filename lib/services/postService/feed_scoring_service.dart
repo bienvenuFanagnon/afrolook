@@ -1,9 +1,7 @@
 import 'dart:math';
 
 import 'package:afrotok/models/model_data.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:afrotok/models/model_data.dart';
 
 class FeedScoringService {
@@ -59,18 +57,6 @@ class FeedScoringService {
     return exp(-ageInHours / halfLife);
   }
 
-  // Méthode pour mettre à jour le score d'un post
-  static Future<void> updatePostScore(Post post) async {
-    final newScore = calculateFeedScore(post, 0); // Score de base
-
-    // Mettre à jour dans Firestore
-    await FirebaseFirestore.instance
-        .collection('Posts')
-        .doc(post.id)
-        .update({
-      'feedScore': newScore,
-      'lastScoreUpdate': DateTime.now().millisecondsSinceEpoch,
-      'recentEngagement': (post.likes ?? 0) + (post.comments ?? 0) + (post.partage ?? 0)
-    });
-  }
+  // Le score des publications est mis à jour par le serveur : plus d'écriture côté application.
+  static Future<void> updatePostScore(Post post) async {}
 }

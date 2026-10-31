@@ -1,4 +1,3 @@
-import 'package:afrotok/services/read_meter.dart';
 import '../../services/media_shrink.dart';
 import 'package:afrotok/widgets/name_preview.dart';
 import 'package:afrotok/utils/pseudo_format.dart';
@@ -6,9 +5,8 @@ import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/models/model_data.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:afrotok/services/api/canaux_api.dart';
+import 'package:afrotok/services/api/canaux_mapper.dart';
 
 import 'package:flutter/material.dart';
 
@@ -18,7 +16,6 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 import 'package:provider/provider.dart';
 
-import 'package:path/path.dart' as Path;
 
 import '../../../providers/authProvider.dart';
 
@@ -46,7 +43,6 @@ class _EditCanalState extends State<EditCanal> {
 
   late UserAuthProvider authProvider = Provider.of<UserAuthProvider>(context, listen: false);
   late UserProvider userProvider = Provider.of<UserProvider>(context, listen: false);
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
   bool onTapUpdate = false;
 
   late AppColors _colors;
@@ -775,76 +771,44 @@ class _EditCanalState extends State<EditCanal> {
           onTapUpdate = true;
         });
 
-        // Upload nouvelle image de profil si modifiée
-        if (imageProfile != null) {
-          Reference storageReferenceProfile = FirebaseStorage.instance
-              .ref()
-              .child('canal_media/${Path.basename(File(imageProfile!.path).path)}');
-          UploadTask uploadTaskProfile = storageReferenceProfile.putFile(await MediaShrink.file(File(imageProfile!.path)));
-          await uploadTaskProfile.whenComplete(() async {
-            await storageReferenceProfile.getDownloadURL().then((fileURL) {
-              widget.canal.urlImage = fileURL;
-            });
-          });
-        }
+        // Nouvelles images (envoi par URL signée) si modifiées
+        String? imageId;
+        String? coverId;
+        if (imageProfile != null) imageId = await CanauxApi.upload(await MediaShrink.file(File(imageProfile!.path)));
+        if (imageCouverture != null) coverId = await CanauxApi.upload(await MediaShrink.file(File(imageCouverture!.path)));
 
-        // Upload nouvelle image de couverture si modifiée
-        if (imageCouverture != null) {
-          Reference storageReferenceCouverture = FirebaseStorage.instance
-              .ref()
-              .child('canal_media/${Path.basename(File(imageCouverture!.path).path)}');
-          UploadTask uploadTaskCouverture = storageReferenceCouverture.putFile(await MediaShrink.file(File(imageCouverture!.path)));
-          await uploadTaskCouverture.whenComplete(() async {
-            await storageReferenceCouverture.getDownloadURL().then((fileURL) {
-              widget.canal.urlCouverture = fileURL;
-            });
-          });
-        }
-
-        // Mise à jour des informations du canal
+        // Seuls les champs modifiés partent : titre, prix et confidentialité sont réservés au propriétaire (l'API refuse sinon)
         final oldTitle = widget.canal.titre ?? '';
         final newTitle = normalizePseudo(_titreController.text);
-        if (newTitle != normalizePseudo(oldTitle) || (newTitle != oldTitle && newTitle.isNotEmpty)) {
-          if (newTitle != normalizePseudo(oldTitle)) {
-            // Nom réellement changé : il doit rester unique
-            final dup = await FirebaseFirestore.instance.collection('CanalNames')
-                .where('name', whereIn: [newTitle, newTitle.replaceAll('.', '_')]).limit(1).getM('editCanal.dart:810');
-            if (dup.docs.isNotEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Le titre existe déjà'))));
-              setState(() => onTapUpdate = false);
-              return;
-            }
-          }
-          // Mise à jour de l'annuaire des noms
-          final old = await FirebaseFirestore.instance.collection('CanalNames').where('name', isEqualTo: oldTitle).limit(1).getM('editCanal.dart:818');
-          if (old.docs.isNotEmpty) {
-            await old.docs.first.reference.update({'name': newTitle});
-          } else {
-            await FirebaseFirestore.instance.collection('CanalNames').add({'name': newTitle});
-          }
-        }
-        widget.canal.titre = newTitle;
-        widget.canal.description = _descriptionController.text;
-        widget.canal.isPrivate = _isPrivate;
-        widget.canal.setPriceCoins(_isPrivate ? (double.tryParse(_priceController.text) ?? 0).round() : 0);
-        widget.canal.subscriptionType = _isPrivate ? _subscriptionType : 'gratuit';
-        widget.canal.updatedAt = DateTime.now().microsecondsSinceEpoch;
-        // Mettre à jour mainCategory seulement si le cooldown est passé et valeur changée
-        if (!_categoryLocked && _selectedMainCategory != widget.canal.mainCategory) {
-          widget.canal.mainCategory = _selectedMainCategory;
-          if (_selectedMainCategory != null) {
-            widget.canal.categoryUpdatedAt = DateTime.now().millisecondsSinceEpoch;
-          }
-        }
+        final newPrice = _isPrivate ? (double.tryParse(_priceController.text) ?? 0).round() : 0;
+        final newType = _isPrivate ? _subscriptionType : 'gratuit';
+        final fields = <String, dynamic>{
+          if (newTitle.isNotEmpty && newTitle != oldTitle) 'title': newTitle,
+          if (_descriptionController.text != (widget.canal.description ?? '')) 'description': _descriptionController.text,
+          if (_isPrivate != widget.canal.isPrivate) 'is_private': _isPrivate,
+          if (_isPrivate && (newType != widget.canal.subscriptionType || _isPrivate != widget.canal.isPrivate)) 'subscription_type': apiSubscriptionType(newType, true),
+          if (_isPrivate && (newPrice != widget.canal.subscriptionPriceCoins || _isPrivate != widget.canal.isPrivate)) 'price_coins': newPrice,
+          // Catégorie principale : une fois tous les 7 jours (contrôlé par l'API)
+          if (!_categoryLocked && _selectedMainCategory != widget.canal.mainCategory && CanauxApi.apiCategory(_selectedMainCategory) != null) 'main_category': _selectedMainCategory,
+          if (imageId != null) 'image_upload_id': imageId,
+          if (coverId != null) 'cover_upload_id': coverId,
+        };
 
-        // Si le canal devient public, on garde les abonnés existants mais sans frais
-        if (!_isPrivate) {
-          // On conserve les abonnés existants, mais le canal devient gratuit
-          // Les abonnés actuels gardent l'accès gratuitement
+        // Si le canal devient public, les abonnés actuels gardent l'accès gratuitement
+        if (fields.isNotEmpty) {
+          final updated = await CanauxApi.update(widget.canal.id!, fields, myId: authProvider.loginUserData.id);
+          widget.canal
+            ..titre = updated.titre
+            ..description = updated.description
+            ..urlImage = updated.urlImage
+            ..urlCouverture = updated.urlCouverture
+            ..isPrivate = updated.isPrivate
+            ..subscriptionType = updated.subscriptionType
+            ..subscriptionPriceCoinsRaw = updated.subscriptionPriceCoinsRaw
+            ..subscriptionPrice = updated.subscriptionPrice
+            ..mainCategory = updated.mainCategory;
+          if (fields.containsKey('main_category')) widget.canal.categoryUpdatedAt = DateTime.now().millisecondsSinceEpoch;
         }
-
-        // Sauvegarde dans Firestore
-        await FirebaseFirestore.instance.collection('Canaux').doc(widget.canal.id).update(widget.canal.toJson());
 
         // Succès
         ScaffoldMessenger.of(context).showSnackBar(
@@ -869,7 +833,7 @@ class _EditCanalState extends State<EditCanal> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              context.tr('Erreur lors de la mise à jour du canal'),
+              CanauxApi.message(e, fallback: context.tr('Erreur lors de la mise à jour du canal')),
               style: TextStyle(color: _colors.onPrimary),
             ),
             backgroundColor: _colors.danger,

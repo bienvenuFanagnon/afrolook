@@ -1,4 +1,5 @@
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import 'package:afrotok/services/api/regie_api.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -64,18 +65,35 @@ class _NewsAdminPageState extends State<NewsAdminPage> {
     super.dispose();
   }
 
+  /// Adaptateur vers l'API (`/admin/news/*`). Les fonctions que l'API n'a pas encore répondent « pas encore disponible ».
   Future<Map<String, dynamic>> _call(String name, [Map<String, dynamic>? data]) async {
-    final res = await FirebaseFunctions.instance.httpsCallable(name).call(data ?? <String, dynamic>{});
-    return Map<String, dynamic>.from(res.data as Map);
+    switch (name) {
+      case 'newsSourcesTest':
+        return {'sources': await RegieApi.getList('/admin/news/sources')};
+      case 'newsLogs':
+        return {'logs': await RegieApi.getList('/admin/news/log', query: {'limit': data?['limit'] ?? 50}), 'health': <String, dynamic>{}};
+      case 'newsSetConfig':
+        final on = data?['sourcesOn'];
+        if (on is Map && on.isNotEmpty) {
+          final e = on.entries.first;
+          await RegieApi.patch('/admin/news/sources/${e.key}', body: {'active': e.value == true});
+          return {};
+        }
+        break;
+      case 'newsDeleteArticle':
+        await RegieApi.delete('/admin/news/articles/${data?['id']}');
+        return {};
+      case 'newsExtendArticle':
+        await RegieApi.post('/admin/news/articles/${data?['id']}/extend', body: {'days': data?['days'] ?? 7});
+        return {};
+      case 'newsPublishManual':
+        final r = await RegieApi.post('/admin/news/articles', body: data);
+        return r is Map && r['data'] is Map ? Map<String, dynamic>.from(r['data'] as Map) : {};
+    }
+    throw ApiException(status: 501, code: 'not_available', message: 'Cette fonction n’est pas encore disponible dans la nouvelle version.');
   }
 
-  String _err(Object e) {
-    if (e is FirebaseFunctionsException) {
-      if (e.code == 'not-found') return 'Fonction pas encore déployée.';
-      return '${e.code} : ${e.message ?? ''}';
-    }
-    return '$e';
-  }
+  String _err(Object e) => RegieApi.err(e);
 
   Future<void> _loadStats() async {
     setState(() => _loading = true);

@@ -1,5 +1,6 @@
 import 'package:afrotok/services/read_meter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/api_gateway.dart';
+import 'package:afrotok/services/api/post_mapper.dart';
 import 'package:flutter/material.dart';
 
 import '../../../models/model_data.dart';
@@ -69,21 +70,11 @@ class _FeedDiscoverySectionState extends State<FeedDiscoverySection> {
     var pool = widget.seed.where(_eligible).where((p) => !seen.contains(p.id)).toList();
     if (pool.isEmpty) {
       try {
-        // orderBy created_at seul : index automatique (le thème et le statut sont filtrés côté client, comme la page Découvrir)
-        final snap = await FirebaseFirestore.instance
-            .collection('Posts')
-            .orderBy('created_at', descending: true)
-            .limit(40)
-            .getM('feed_discovery_section.dart:load');
-        pool = snap.docs
-            .map((d) {
-              try {
-                return Post.fromJson(d.data())..id = d.id;
-              } catch (_) {
-                return null;
-              }
-            })
-            .whereType<Post>()
+        // Découverte du serveur (niveau 3) : publications non vues, pays proche en premier
+        final r = await ApiGateway.instance.client.get('/feed', query: {'tier': 3, 'limit': 40}) as Map;
+        pool = ((r['data'] as List?) ?? const [])
+            .whereType<Map>()
+            .map((m) => postFromApi(Map<String, dynamic>.from(m)))
             .where(_eligible)
             .where((p) => !seen.contains(p.id))
             .toList();

@@ -1,9 +1,8 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import '../api/api_gateway.dart';
+import '../api/users_api.dart';
+import '../api/wallet_api.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../models/model_data.dart';
@@ -44,7 +43,7 @@ class StickerService {
   StickerService._();
   static final StickerService instance = StickerService._();
 
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  dynamic get _c => ApiGateway.instance.client;
 
   List<StickerItem>? _officialCache;
   Future<List<StickerItem>>? _officialLoading;
@@ -59,14 +58,7 @@ class StickerService {
   }
 
   Future<List<StickerItem>> _fetchOfficial() async {
-    // Seulement des égalités : pas d'index composite requis, tri fait ici.
-    final snap = await _db
-        .collection('Stickers')
-        .where('packId', isEqualTo: kOfficialStickerPackId)
-        .where('status', isEqualTo: 'active')
-        .getM('sticker_service.dart:66');
-    final items = snap.docs.map(StickerItem.fromFirestore).where((s) => s.url.isNotEmpty).toList()
-      ..sort((a, b) => a.order.compareTo(b.order));
+    final items = await loadPackStickers(kOfficialStickerPackId);
     _officialCache = items;
     return items;
   }
@@ -74,8 +66,8 @@ class StickerService {
   /// Le pack officiel lui-même (pour son nom localisé), null si absent.
   Future<StickerPack?> loadOfficialPack() async {
     try {
-      final doc = await _db.collection('StickerPacks').doc(kOfficialStickerPackId).getM('sticker_service.dart:76');
-      return doc.exists ? StickerPack.fromFirestore(doc) : null;
+      final d = WalletApi.map(await _c.get('/stickers/packs/$kOfficialStickerPackId'));
+      return d.isEmpty ? null : StickerPack.fromApi(d);
     } catch (_) {
       return null;
     }
@@ -115,41 +107,38 @@ class StickerService {
     }).toList();
   }
 
-  /// Appel du callable `stickerAccess` ; null en cas d'échec (mode dégradé).
+  /// Quotas et droits (`GET /stickers/access`) ; null en cas d'échec (mode dégradé : l'API tranchera).
   Future<StickerAccess?> fetchAccess({String? postId}) async {
     try {
-      final res = await FirebaseFunctions.instance
-          .httpsCallable('stickerAccess')
-          .call<dynamic>({if (postId != null) 'postId': postId})
-          .timeout(const Duration(seconds: 12));
-      final data = res.data;
-      if (data is Map) return StickerAccess.fromMap(data);
+      final r = await _c.get('/stickers/access', query: {if (postId != null) 'post_id': postId}) as dynamic;
+      final d = WalletApi.map(r);
+      if (d.isNotEmpty) return StickerAccess.fromMap(d);
     } catch (e) {
-      debugPrint('[Stickers] stickerAccess indisponible: $e');
+      debugPrint('[Stickers] accès indisponible: $e');
     }
     return null;
   }
 
-  /// Récents de l'utilisateur (12 max) : stickers de packs (`Stickers`) et personnels (`UserStickers`),
-  /// dans l'ordre du plus récent au plus ancien.
+  /// Récents de l'utilisateur (12 max), du plus récent au plus ancien. L'API donne les identifiants ; le détail est retrouvé dans
+  /// le pack officiel, les cadeaux et mes stickers (voir lacunes_api_argent_creations.md : il manque `GET /stickers/{id}`).
   Future<List<StickerItem>> loadRecents(String uid) async {
     try {
-      final snap = await _db
-          .collection('Users')
-          .doc(uid)
-          .collection('StickerRecents')
-          .orderBy('lastUsedAt', descending: true)
-          .limit(12)
-          .getM('sticker_service.dart:142');
-      final docs = await Future.wait(snap.docs.map((r) async {
-        final mine = (r.data()['source'] ?? 'pack') == 'mine';
-        final d = await _db.collection(mine ? 'UserStickers' : 'Stickers').doc(r.id).getM('sticker_service.dart:145');
-        if (!d.exists) return null;
-        return mine ? StickerItem.fromUserSticker(d) : StickerItem.fromFirestore(d);
-      }));
+      final access = await fetchAccess();
+      if (access == null || access.recents.isEmpty) return const [];
+      final known = <String, StickerItem>{};
+      for (final s in await loadOfficialStickers()) {
+        known[s.id] = s;
+      }
+      for (final s in _giftCache ?? const <StickerItem>[]) {
+        known[s.id] = s;
+      }
+      final mine = access.recents.any((r) => r.source == 'mine') ? await loadUserStickers(uid) : const <StickerItem>[];
+      for (final s in mine) {
+        known[s.id] = s;
+      }
       return [
-        for (final s in docs)
-          if (s != null && s.url.isNotEmpty) s,
+        for (final r in access.recents)
+          if (known[r.stickerId] != null) known[r.stickerId]!,
       ];
     } catch (e) {
       debugPrint('[Stickers] récents indisponibles: $e');
@@ -174,38 +163,23 @@ class StickerService {
 
   // ── Packs ──────────────────────────────────────────────────────────────────
 
-  /// Packs actifs de créateurs et du monde (égalités / `in` seulement : pas d'index composite ; tri côté app).
+  Future<List<StickerPack>> _packs() async => WalletApi.list(await _c.get('/stickers/packs')).map(StickerPack.fromApi).toList();
+
+  /// Packs actifs de créateurs et du monde (tri côté application).
   Future<List<StickerPack>> loadWorldPacks({int limit = 150}) async {
-    final snap = await _db
-        .collection('StickerPacks')
-        .where('status', isEqualTo: 'active')
-        .where('kind', whereIn: const ['creator', 'world'])
-        .limit(limit)
-        .getM('sticker_service.dart:183');
-    final packs = snap.docs.map(StickerPack.fromFirestore).toList()
+    final packs = (await _packs()).where((p) => p.kind == 'creator' || p.kind == 'world').take(limit).toList()
       ..sort((a, b) => a.order != b.order ? a.order.compareTo(b.order) : b.salesCount.compareTo(a.salesCount));
     return packs;
   }
 
   /// Packs de créateurs (`kind == 'creator'`) triés par ventes décroissantes.
-  Future<List<StickerPack>> loadCreatorPacks({int limit = 100}) async {
-    final snap = await _db
-        .collection('StickerPacks')
-        .where('status', isEqualTo: 'active')
-        .where('kind', isEqualTo: 'creator')
-        .limit(limit)
-        .getM('sticker_service.dart:196');
-    return snap.docs.map(StickerPack.fromFirestore).toList()..sort((a, b) => b.salesCount.compareTo(a.salesCount));
-  }
+  Future<List<StickerPack>> loadCreatorPacks({int limit = 100}) async =>
+      (await _packs()).where((p) => p.kind == 'creator').take(limit).toList()..sort((a, b) => b.salesCount.compareTo(a.salesCount));
 
-  /// Identifiants des packs achetés par l'utilisateur (`StickerOwnership`).
+  /// Identifiants des packs utilisables par la personne (gratuits, à elle ou achetés) — calculé par l'API.
   Future<Set<String>> loadOwnedPackIds(String uid) async {
     try {
-      final snap = await _db.collection('StickerOwnership').where('userId', isEqualTo: uid).limit(200).getM('sticker_service.dart:203');
-      return {
-        for (final d in snap.docs)
-          if ((d.data()['packId'] ?? '').toString().isNotEmpty) d.data()['packId'].toString(),
-      };
+      return {for (final p in await _packs()) if (p.owned) p.id};
     } catch (e) {
       debugPrint('[Stickers] achats indisponibles: $e');
       return {};
@@ -214,42 +188,36 @@ class StickerService {
 
   /// Packs (actifs) correspondant à ces identifiants.
   Future<List<StickerPack>> loadPacksByIds(Iterable<String> ids) async {
-    final docs = await Future.wait(ids.toSet().map((id) => _db.collection('StickerPacks').doc(id).getM('sticker_service.dart:216')));
-    return [
-      for (final d in docs)
-        if (d.exists) StickerPack.fromFirestore(d),
-    ].where((p) => p.status == 'active').toList();
+    final wanted = ids.toSet();
+    return (await _packs()).where((p) => wanted.contains(p.id) && p.status == 'active').toList();
   }
 
-  /// Stickers actifs d'un pack, triés par `order`.
-  Future<List<StickerItem>> loadPackStickers(String packId) async {
-    final snap = await _db
-        .collection('Stickers')
-        .where('packId', isEqualTo: packId)
-        .where('status', isEqualTo: 'active')
-        .getM('sticker_service.dart:229');
-    return snap.docs.map(StickerItem.fromFirestore).where((s) => s.url.isNotEmpty).toList()
-      ..sort((a, b) => a.order.compareTo(b.order));
-  }
+  final Map<String, Future<List<StickerItem>>> _packCache = {};
 
-  /// Aperçu (4 miniatures) d'un pack : cache mémoire pour ne pas relire à chaque affichage.
-  final Map<String, Future<List<StickerItem>>> _previewCache = {};
-  Future<List<StickerItem>> packPreview(String packId) {
-    return _previewCache.putIfAbsent(packId, () async {
-      try {
-        final snap = await _db
-            .collection('Stickers')
-            .where('packId', isEqualTo: packId)
-            .where('status', isEqualTo: 'active')
-            .limit(12)
-            .getM('sticker_service.dart:244');
-        final list = snap.docs.map(StickerItem.fromFirestore).where((s) => s.thumbUrl.isNotEmpty).toList()
-          ..sort((a, b) => a.order.compareTo(b.order));
-        return list.take(4).toList();
-      } catch (_) {
-        return const <StickerItem>[];
-      }
+  /// Stickers actifs d'un pack, triés par `order` (un appel par pack et par session).
+  Future<List<StickerItem>> loadPackStickers(String packId) {
+    return _packCache[packId] ??= () async {
+      final d = WalletApi.map(await _c.get('/stickers/packs/$packId'));
+      final list = [for (final m in (d['stickers'] as List? ?? const [])) if (m is Map) StickerItem.fromApi(Map<String, dynamic>.from(m))]
+          .where((s) => s.url.isNotEmpty)
+          .toList()
+        ..sort((a, b) => a.order.compareTo(b.order));
+      return list;
+    }()
+        .catchError((Object e) {
+      _packCache.remove(packId);
+      throw e;
     });
+  }
+
+  /// Aperçu (4 miniatures) d'un pack.
+  Future<List<StickerItem>> packPreview(String packId) async {
+    try {
+      final list = (await loadPackStickers(packId)).where((s) => s.thumbUrl.isNotEmpty).toList();
+      return list.take(4).toList();
+    } catch (_) {
+      return const <StickerItem>[];
+    }
   }
 
   // ── Créateurs ──────────────────────────────────────────────────────────────
@@ -262,12 +230,12 @@ class StickerService {
     final missing = wanted.where((id) => !_creatorCache.containsKey(id) && id != 'afrolook').toList();
     await Future.wait(missing.map((id) async {
       try {
-        final d = await _db.collection('Users').doc(id).getM('sticker_service.dart:264');
-        final m = d.data() ?? const <String, dynamic>{};
+        final m = await UsersApi.publicProfile(id);
+        final u = m['user'] is Map ? Map<String, dynamic>.from(m['user'] as Map) : m;
         _creatorCache[id] = StickerCreatorInfo(
           id: id,
-          pseudo: (m['pseudo'] ?? '').toString(),
-          verified: m['isVerify'] == true,
+          pseudo: (u['username'] ?? u['display_name'] ?? '').toString(),
+          verified: u['is_verified'] == true || u['verified'] == true,
         );
       } catch (_) {
         _creatorCache[id] = StickerCreatorInfo(id: id);
@@ -292,36 +260,26 @@ class StickerService {
     loadGiftStickers().catchError((_) => <StickerItem>[]);
   }
 
-  /// Stickers-cadeaux : `giftPriceCoins > 0`, statut actif, pack actif. Un seul filtre d'inégalité (pas d'index composite).
+  /// Stickers-cadeaux (prix de cadeau > 0) des packs actifs. Il n'existe pas encore de liste dédiée dans l'API
+  /// (voir lacunes_api_argent_creations.md : `GET /stickers/gifts`) : on parcourt les packs.
   Future<List<StickerItem>> loadGiftStickers({int limit = 200}) async {
-    final snap = await _db.collection('Stickers').where('giftPriceCoins', isGreaterThan: 0).limit(limit).getM('sticker_service.dart:296');
-    final items = snap.docs
-        .map(StickerItem.fromFirestore)
-        .where((s) => s.status == 'active' && s.url.isNotEmpty)
-        .toList();
-    final packs = await loadPacksByIds(items.map((s) => s.packId).where((id) => id.isNotEmpty));
-    final active = packs.map((p) => p.id).toSet();
-    final list = items.where((s) => active.contains(s.packId)).toList()
+    final packs = (await _packs()).where((p) => p.status == 'active').take(25).toList();
+    final lists = await Future.wait(packs.map((p) => loadPackStickers(p.id).catchError((_) => <StickerItem>[])));
+    final list = [for (final l in lists) ...l.where((s) => s.giftPriceCoins > 0)].take(limit).toList()
       ..sort((a, b) => a.giftPriceCoins.compareTo(b.giftPriceCoins));
     _giftCache = list;
     return list;
   }
 
-  /// Offre un sticker-cadeau. Lève `FirebaseFunctionsException` (`resource-exhausted` = solde insuffisant).
+  /// Offre un sticker-cadeau (clé d'idempotence conservée). Lève une `ApiException` (402 = solde insuffisant).
   Future<void> sendGift({required StickerGiftTarget target, required String stickerId}) async {
-    await FirebaseFunctions.instance.httpsCallable('stickerGiftSend').call<dynamic>({
-      'commentId': target.commentId,
-      if (target.replyId != null) 'replyId': target.replyId,
-      'stickerId': stickerId,
-    });
+    await WalletApi.instance.pay('stickergift:${target.replyId ?? target.commentId}:$stickerId', '/stickers/gifts',
+        body: {'comment_id': target.replyId ?? target.commentId, 'sticker_id': stickerId});
   }
 
   /// Signale un sticker copié.
   Future<void> reportCopy({required String stickerId, String? note}) async {
-    await FirebaseFunctions.instance.httpsCallable('reportStickerCopy').call<dynamic>({
-      'stickerId': stickerId,
-      if (note != null && note.trim().isNotEmpty) 'note': note.trim(),
-    });
+    await _c.post('/stickers/$stickerId/report', body: {if (note != null && note.trim().isNotEmpty) 'note': note.trim()});
   }
 
   // ── Mes stickers (UserStickers) ────────────────────────────────────────────
@@ -337,31 +295,12 @@ class StickerService {
 
   /// Stickers personnels actifs, du plus récent au plus ancien.
   Future<List<StickerItem>> loadUserStickers(String uid) async {
-    final snap = await _db
-        .collection('UserStickers')
-        .where('ownerId', isEqualTo: uid)
-        .where('status', isEqualTo: 'active')
-        .limit(60)
-        .getM('sticker_service.dart:344');
-    final docs = snap.docs.toList()
-      ..sort((a, b) {
-        final x = (a.data()['createdAt'] is num) ? (a.data()['createdAt'] as num) : 0;
-        final y = (b.data()['createdAt'] is num) ? (b.data()['createdAt'] as num) : 0;
-        return y.compareTo(x);
-      });
-    return docs.map(StickerItem.fromUserSticker).where((s) => s.url.isNotEmpty).toList();
+    final r = await _c.get('/stickers/mine');
+    return WalletApi.list(r).map((m) => StickerItem.fromApi({...m, 'owner_id': uid}, source: 'mine')).where((s) => s.url.isNotEmpty).toList();
   }
 
-  /// Supprime un sticker personnel : document, puis fichier Storage.
+  /// Supprime un sticker personnel.
   Future<void> deleteUserSticker(StickerItem s) async {
-    await _db.collection('UserStickers').doc(s.id).delete();
-    final path = s.storagePath;
-    if (path != null && path.isNotEmpty) {
-      try {
-        await FirebaseStorage.instance.ref(path).delete();
-      } catch (e) {
-        debugPrint('[Stickers] fichier déjà supprimé ou inaccessible: $e');
-      }
-    }
+    await _c.delete('/stickers/mine/${s.id}');
   }
 }

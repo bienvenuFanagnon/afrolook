@@ -11,7 +11,8 @@ import 'package:afrotok/pages/component/showUserDetails.dart';
 
 import 'package:afrotok/services/api.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
 
 import 'package:flutter/material.dart';
 
@@ -67,7 +68,7 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
   bool _isLoading = false;
   bool _isLoadingMore = false;
   bool _hasMore = true;
-  DocumentSnapshot? _lastDocument;
+  String? _cursor; // curseur de l'API
   static const int _pageSize = 10; // Pagination par 10
 
   // États de traitement
@@ -127,7 +128,7 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
       _isInitialLoading = true;
       _errorMessage = null;
       _invitations.clear();
-      _lastDocument = null;
+      _cursor = null;
       _hasMore = true;
     });
 
@@ -143,56 +144,10 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
     });
 
     try {
-      final firestore = FirebaseFirestore.instance;
-
-      // Construire la requête
-      Query query = firestore
-          .collection('Invitations')
-          .where('receiver_id', isEqualTo: authProvider.loginUserData.id!)
-          .where('status', isEqualTo: InvitationStatus.ENCOURS.name)
-          .orderBy('created_at', descending: true)
-          .limit(_pageSize);
-
-      if (!reset && _lastDocument != null) {
-        query = query.startAfterDocument(_lastDocument!);
-      }
-
-      final snapshot = await query.getM('pageMesInvitations.dart:159');
-
-      if (snapshot.docs.isEmpty) {
-        setState(() {
-          _hasMore = false;
-          _isLoadingMore = false;
-          _isLoading = false;
-          _isInitialLoading = false;
-        });
-        return;
-      }
-
-      // Récupérer les données des utilisateurs pour chaque invitation
-      final List<Invitation> newInvitations = [];
-
-      for (var doc in snapshot.docs) {
-        try {
-          final invitation = Invitation.fromJson(doc.data() as Map<String, dynamic>);
-
-          // Récupérer les infos de l'utilisateur qui a envoyé l'invitation
-          final userSnapshot = await firestore
-              .collection('Users')
-              .where('id', isEqualTo: invitation.senderId)
-              .limit(1)
-              .getM('pageMesInvitations.dart:183');
-
-          if (userSnapshot.docs.isNotEmpty) {
-            invitation.inviteUser = UserData.fromJson(
-              userSnapshot.docs.first.data() as Map<String, dynamic>,
-            );
-            newInvitations.add(invitation);
-          }
-        } catch (e) {
-          printVm('Erreur chargement invitation: $e');
-        }
-      }
+      // Invitations reçues en attente (API : GET /v1/invitations), profil de l'expéditeur inclus.
+      final myId = authProvider.loginUserData.id!;
+      final page = await UsersApi.invitations(direction: 'received', status: 'pending', cursor: reset ? null : _cursor, limit: _pageSize);
+      final newInvitations = page.items.map((j) => invitationFromApi(j, myId, sent: false)).toList();
 
       setState(() {
         if (reset) {
@@ -200,26 +155,23 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
         } else {
           _invitations.addAll(newInvitations);
         }
-        // Déduplication par senderId : garder uniquement la plus récente par expéditeur
         final seen = <String>{};
         _invitations = _invitations.where((inv) {
           final key = inv.senderId ?? '';
           return key.isNotEmpty && seen.add(key);
         }).toList();
-        _lastDocument = snapshot.docs.last;
-        _hasMore = snapshot.docs.length == _pageSize;
+        _cursor = page.next;
+        _hasMore = page.next != null;
         _isLoadingMore = false;
         _isLoading = false;
         _isInitialLoading = false;
       });
 
-      // Mettre à jour le compteur
       userProvider.countInvitations = _invitations.length;
-
     } catch (e) {
       printVm('Erreur chargement invitations: $e');
       setState(() {
-        _errorMessage = 'Impossible de charger vos invitations';
+        _errorMessage = UsersApi.message(e, fallback: 'Impossible de charger vos invitations');
         _isLoadingMore = false;
         _isLoading = false;
         _isInitialLoading = false;
@@ -229,7 +181,7 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
 
   Future<void> _refreshInvitations() async {
     setState(() {
-      _lastDocument = null;
+      _cursor = null;
       _hasMore = true;
     });
     await _loadInitialInvitations();
@@ -253,43 +205,7 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
         authProvider.loginUserData.friendsIds ??= [];
         authProvider.loginUserData.friendsIds!.add(invitation.inviteUser!.id!);
 
-        // Sauvegarde
-        await userProvider.updateUser(authProvider.loginUserData);
-
-        // Notification
-        if (invitation.inviteUser!.oneIgnalUserid?.isNotEmpty ?? false) {
-          await authProvider.sendNotification(
-            userIds: [invitation.inviteUser!.oneIgnalUserid!],
-            smallImage: authProvider.loginUserData.imageUrl!,
-            send_user_id: authProvider.loginUserData.id!,
-            recever_user_id: invitation.inviteUser!.id!,
-            message: "✅ @${authProvider.loginUserData.pseudo!} a accepté votre invitation !",
-            type_notif: NotificationType.ACCEPTINVITATION.name,
-            post_id: "",
-            post_type: "",
-            chat_id: '',
-          );
-        }
-
-        // Notification dans Firestore
-        final firestore = FirebaseFirestore.instance;
-        final notif = NotificationData(
-          id: firestore.collection('Notifications').doc().id,
-          titre: "Invitation acceptée ✅",
-          media_url: authProvider.loginUserData.imageUrl,
-          type: NotificationType.ACCEPTINVITATION.name,
-          description: "@${authProvider.loginUserData.pseudo!} a accepté votre invitation !",
-          users_id_view: [],
-          user_id: authProvider.loginUserData.id,
-          receiver_id: invitation.inviteUser!.id!,
-          post_id: "",
-          post_data_type: "",
-          updatedAt: DateTime.now().microsecondsSinceEpoch,
-          createdAt: DateTime.now().microsecondsSinceEpoch,
-          status: PostStatus.VALIDE.name,
-        );
-
-        await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
+        // Le serveur a créé l'amitié et notifié l'expéditeur (ACCEPTINVITATION) : rien d'autre à envoyer.
 
         // Retirer l'invitation de la liste
         setState(() {

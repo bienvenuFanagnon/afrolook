@@ -1,5 +1,6 @@
 import 'package:afrotok/services/read_meter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../models/model_data.dart';
@@ -36,17 +37,12 @@ class _FeedRecommendedProfilesWidgetState
       final myId = me.id ?? '';
       final following = Set<String>.from(me.followingIds ?? []);
 
-      // Sans orderBy pour éviter de nécessiter un index composite Firestore
-      final snap = await FirebaseFirestore.instance
-          .collection('Users')
-          .where('isCreator', isEqualTo: true)
-          .limit(50)
-          .getM('feed_recommended_profiles_widget.dart:43');
-
-      final results = snap.docs
-          .map((d) {
+      // Suggestions de profils du serveur (route GET /users/suggestions : voir lacunes_api_publications.md)
+      final rows = await UsersApi.suggestions(limit: 50);
+      final results = rows
+          .map((m) {
             try {
-              return UserData.fromJson(d.data())..id = d.id;
+              return userSummaryFromApi(m);
             } catch (_) {
               return null;
             }

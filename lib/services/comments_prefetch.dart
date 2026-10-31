@@ -1,8 +1,7 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 import 'dart:collection';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/posts_api.dart';
 
 import '../models/model_data.dart';
 
@@ -10,7 +9,7 @@ import '../models/model_data.dart';
 class CommentPage {
   CommentPage({required this.comments, required this.last, required this.hasMore});
   final List<PostComment> comments;
-  final DocumentSnapshot? last;
+  final String? last;   // curseur de la page suivante (API)
   final bool hasMore;
 }
 
@@ -29,15 +28,10 @@ class CommentsPrefetch {
   /// Auteurs chargés d'avance dans le fil : les 3 premiers commentaires.
   static const int feedAuthors = 3;
   static const Duration _ttl = Duration(minutes: 5);
-  static const Duration _userTtl = Duration(minutes: 10);
   static const int _maxPosts = 40;
-  static const int _maxUsers = 300;
 
   final LinkedHashMap<String, _Entry> _cache = LinkedHashMap();
   final Map<String, Future<CommentPage>> _inflight = {};
-  final LinkedHashMap<String, _CachedUser> _users = LinkedHashMap();
-
-  FirebaseFirestore get _db => FirebaseFirestore.instance;
 
   /// Première page déjà prête et encore fraîche, sinon null.
   CommentPage? peek(String postId) {
@@ -79,55 +73,18 @@ class CommentsPrefetch {
     }
   }
 
-  /// Une page de commentaires, du plus récent au plus ancien. [authors] : combien d'auteurs charger tout de suite (le reste suit à la demande).
-  Future<CommentPage> loadPage(String postId, {DocumentSnapshot? after, int limit = pageSize, int? authors}) async {
-    Query<Map<String, dynamic>> q = _db
-        .collection('PostComments')
-        .where('post_id', isEqualTo: postId)
-        .orderBy('created_at', descending: true)
-        .limit(limit);
-    if (after != null) q = q.startAfterDocument(after);
-    final snap = await q.getM('comments_prefetch.dart:89');
-    final comments = snap.docs.map((d) {
-      final data = Map<String, dynamic>.from(d.data());
-      data['id'] = d.id;
-      return PostComment.fromJson(data);
-    }).toList();
-    final upTo = authors == null ? comments.length : authors.clamp(0, comments.length);
-    await fillAuthors(comments.take(upTo));
-    return CommentPage(comments: comments, last: snap.docs.isEmpty ? null : snap.docs.last, hasMore: snap.docs.length >= limit);
+  /// Une page de commentaires, du plus récent au plus ancien (API). [after] : curseur renvoyé par la page précédente.
+  /// Les auteurs viennent déjà avec les commentaires (pas de lecture de profil séparée).
+  Future<CommentPage> loadPage(String postId, {String? after, int limit = pageSize, int? authors}) async {
+    final page = await CommentsApi.list(postId, cursor: after, limit: limit);
+    return CommentPage(comments: page.comments, last: page.nextCursor, hasMore: page.nextCursor != null);
   }
 
-  /// Renseigne `comment.user` (profils en cache, un seul appel par auteur, en parallèle).
-  Future<void> fillAuthors(Iterable<PostComment> comments) async {
-    final list = comments.where((c) => c.user == null && (c.user_id ?? '').isNotEmpty).toList();
-    if (list.isEmpty) return;
-    final ids = list.map((c) => c.user_id!).toSet();
-    final loaded = <String, UserData?>{};
-    await Future.wait(ids.map((id) async => loaded[id] = await user(id)));
-    for (final c in list) {
-      c.user = loaded[c.user_id];
-    }
-  }
+  /// Les auteurs sont fournis par l'API avec les commentaires : rien à compléter.
+  Future<void> fillAuthors(Iterable<PostComment> comments) async {}
 
-  /// Profil d'un auteur, avec cache (10 minutes).
-  Future<UserData?> user(String userId) async {
-    if (userId.isEmpty) return null;
-    final hit = _users[userId];
-    if (hit != null && DateTime.now().difference(hit.at) < _userTtl) return hit.user;
-    try {
-      final doc = await _db.collection('Users').doc(userId).getM('comments_prefetch.dart:118');
-      final u = doc.exists ? UserData.fromJson(doc.data()!) : null;
-      _users.remove(userId);
-      _users[userId] = _CachedUser(u, DateTime.now());
-      while (_users.length > _maxUsers) {
-        _users.remove(_users.keys.first);
-      }
-      return u;
-    } catch (_) {
-      return null;
-    }
-  }
+  /// Profil d'un auteur : déjà fourni par l'API avec chaque commentaire, rien à relire ici.
+  Future<UserData?> user(String userId) async => null;
 
   /// Un commentaire vient d'être posté : il passe en tête de la page en cache (sinon la page suivante le redonnerait en double).
   void addLocal(String postId, PostComment comment) {
@@ -145,11 +102,5 @@ class CommentsPrefetch {
 class _Entry {
   _Entry(this.page, this.at);
   final CommentPage page;
-  final DateTime at;
-}
-
-class _CachedUser {
-  _CachedUser(this.user, this.at);
-  final UserData? user;
   final DateTime at;
 }

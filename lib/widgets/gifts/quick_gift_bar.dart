@@ -9,7 +9,6 @@ import '../../pages/coins/coin_gift_dialog.dart';
 import '../../pages/coins/coin_recharge_screen.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/coin_gift_provider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/coin_gift_service.dart';
 import '../../services/quick_gift_service.dart';
 import '../../theme/app_colors.dart';
@@ -119,7 +118,6 @@ class _CadeauBadgeState extends State<CadeauBadge> {
       giftPack: _quickGift!,
       coinsAmount: _quickGift!.coins,
       quantity: 1,
-      firestore: FirebaseFirestore.instance,
     );
 
     unawaited(coinProvider.sendGift(
@@ -298,7 +296,6 @@ class _QuickGiftBarState extends State<QuickGiftBar> {
       giftPack: pack,
       coinsAmount: pack.coins,
       quantity: 1,
-      firestore: FirebaseFirestore.instance,
     );
 
     // 3. Transaction Firestore en arrière-plan total (fire-and-forget)

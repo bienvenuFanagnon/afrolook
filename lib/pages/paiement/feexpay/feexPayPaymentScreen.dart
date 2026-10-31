@@ -5,9 +5,9 @@ import 'package:afrotok/services/payment_methods_config_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import '../../../services/api/wallet_api.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -265,74 +265,25 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final functions = FirebaseFunctions.instance;
-      final callable = functions.httpsCallable('executeAfrolookFeexpayPayment');
-
-      final needsReturnUrl = _operatorsNeedingReturnUrl.contains(operatorCode);
-      final feexpayFeePercent = _feexpayFees[operatorCode] ?? 0;
-
-      final userPays = widget.amount;
-      final amountToSendToFeexPay = (userPays / (1 + feexpayFeePercent / 100)).ceil();
-
-      printVm('=== CALCUL DES FRAIS AFROLOOK ===');
-      printVm('Opérateur: $_selectedOperator ($operatorCode)');
-      printVm('Frais FeexPay: $feexpayFeePercent%');
-      printVm('Montant à payer: $userPays FCFA');
-      printVm('Montant à envoyer: $amountToSendToFeexPay FCFA');
-
-      final params = {
-        'token': widget.token,
-        'shopId': widget.shopId,
-        'amount': amountToSendToFeexPay,
-        'phoneNumber': phone,
-        'operatorCode': operatorCode,
-        'operatorName': _selectedOperator,
-        'country': _selectedCountry,
-        'callbackInfo': jsonEncode(widget.callbackInfo),
-      };
-
-      if (needsReturnUrl) {
-        params['returnUrl'] = widget.redirectUrl;
-      }
-
-      if (needsOtp) {
-        params['otp'] = _otpController.text.trim();
-      }
-
-      final result = await callable(params);
-
-      if (result.data['success'] == true) {
-        final reference = result.data['reference'];
-        final paymentUrl = result.data['paymentUrl'];
-
-        final transactionId = widget.callbackInfo['transactionId'];
-
-        await FirebaseFirestore.instance
-            .collection('pending_afrolook_feexpay_deposits')
-            .doc(transactionId)
-            .update({
-          'reference': reference,
-          'status': 'processing',
-          'updatedAt': FieldValue.serverTimestamp(),
-          'amountSentToFeexPay': amountToSendToFeexPay,
-          'feexpayFeePercent': feexpayFeePercent,
-          'operatorCode': operatorCode,
-          'operatorName': _selectedOperator,
-        });
-
-        if (paymentUrl != null && paymentUrl.isNotEmpty) {
-          if (await canLaunchUrl(Uri.parse(paymentUrl))) {
-            await launchUrl(Uri.parse(paymentUrl), mode: LaunchMode.externalApplication);
-          }
-        }
-
-        _showSuccessDialog(context.tr('Paiement initié avec succès !'), () {
-          Navigator.pop(context);
-          _showWaitingScreen(reference);
-        });
-      } else {
-        _showErrorDialog(result.data['message'] ?? context.tr('Échec du paiement'));
-      }
+      final api = WalletApi.instance;
+      // 1) dépôt créé par l'API (montant payé, frais et montant crédité calculés par le serveur) ; 2) paiement lancé chez l'opérateur
+      final created = await api.createDeposit(widget.amount, operatorCode!);
+      final depositId = '${created['id']}';
+      final result = await api.executeDeposit(
+        depositId,
+        phone: phone,
+        operatorCode: operatorCode,
+        operatorName: _selectedOperator,
+        country: _selectedCountry,
+        otp: needsOtp ? _otpController.text.trim() : null,
+      );
+      if (!mounted) return;
+      _showSuccessDialog('${result['message'] ?? context.tr('Paiement initié avec succès !')}', () {
+        Navigator.pop(context);
+        _showWaitingScreen(depositId);
+      });
+    } on ApiException catch (e) {
+      _showErrorDialog(WalletApi.message(e, fallback: context.tr('Erreur technique. Veuillez réessayer.')));
     } catch (e) {
       printVm('Erreur: $e');
       _showErrorDialog(context.tr('Erreur technique. Veuillez réessayer.'));
@@ -613,23 +564,14 @@ class _PaymentWaitingScreenState extends State<PaymentWaitingScreen> {
     }
 
     try {
-      final functions = FirebaseFunctions.instance;
-      final callable = functions.httpsCallable('checkAfrolookFeexpayTransactionStatus');
+      final d = await WalletApi.instance.depositStatus(widget.reference);
+      final status = d['status'];
+      final success = status == 'completed';
+      final pending = status == 'processing' || status == 'created';
+      final message = d['failure_reason'] ?? '';
+      final result = (data: {'reason': d['failure_reason'], 'message': d['failure_reason']});
 
-      final result = await callable({
-        'reference': widget.reference,
-        'transKey': widget.transKey,
-      });
-
-      final status = result.data['status'];
-      final success = result.data['success'] == true;
-      final pending = result.data['pending'] == true;
-      final message = result.data['message'] ?? '';
-
-      printVm('=== VÉRIFICATION #$_checkCount/$_maxChecks ===');
-      printVm('Status: $status');
-      printVm('Success: $success');
-      printVm('Pending: $pending');
+      printVm('=== VÉRIFICATION #$_checkCount/$_maxChecks === Statut: $status');
 
       if (status == 'completed' || success == true) {
         if (mounted) {

@@ -4,7 +4,9 @@ import 'package:afrotok/widgets/name_tag.dart';
 import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/canaux_api.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -68,19 +70,12 @@ class _FeedSportDiscoverySectionState
   }
 
   Future<List<UserData>> _fetchSportUsers(Set<String> exclude) async {
-    // Tri par creatorScore desc : les créateurs sport les mieux notés en premier
-    final snap = await FirebaseFirestore.instance
-        .collection('Users')
-        .where('status', isEqualTo: 'VALIDE')
-        .where('interests', arrayContainsAny: _sportInterestCodes)
-        .orderBy('creatorScore', descending: true)
-        .limit(30)
-        .getM('feed_sport_discovery_section.dart:77');
-
-    final all = snap.docs
-        .map((d) {
+    // Suggestions de profils du serveur (GET /users/suggestions : voir lacunes_api_publications.md)
+    final rows = await UsersApi.suggestions(limit: 30);
+    final all = rows
+        .map((m) {
           try {
-            return UserData.fromJson(d.data())..id = d.id;
+            return userSummaryFromApi(m);
           } catch (_) {
             return null;
           }
@@ -88,33 +83,13 @@ class _FeedSportDiscoverySectionState
         .whereType<UserData>()
         .where((u) => u.id != null && !exclude.contains(u.id))
         .toList();
-
-    // Légère randomisation dans le top pour varier les suggestions
     final top = all.take(15).toList()..shuffle(Random());
     return top.take(5).toList();
   }
 
   Future<List<Canal>> _fetchSportCanaux(String myId) async {
-    // Tri par canalScore desc : les canaux sport les plus actifs et appréciés en premier
-    final snap = await FirebaseFirestore.instance
-        .collection('Canaux')
-        .where('categories', arrayContains: 'SPORT')
-        .orderBy('canalScore', descending: true)
-        .limit(20)
-        .getM('feed_sport_discovery_section.dart:103');
-
-    final all = snap.docs
-        .map((d) {
-          try {
-            return Canal.fromJson(d.data())..id = d.id;
-          } catch (_) {
-            return null;
-          }
-        })
-        .whereType<Canal>()
-        .where((c) => !(c.usersSuiviId?.contains(myId) ?? false))
-        .toList();
-
+    final page = await CanauxApi.list(category: 'SPORT', limit: 20, myId: myId);
+    final all = page.items.where((c) => !(c.usersSuiviId?.contains(myId) ?? false)).toList();
     final top = all.take(10).toList()..shuffle(Random());
     return top.take(3).toList();
   }

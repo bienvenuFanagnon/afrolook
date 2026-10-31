@@ -1,4 +1,3 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -118,25 +117,9 @@ class _CommentsSheetState extends State<_CommentsSheet> {
     } catch (_) {}
   }
 
-  /// Prévient l'auteur du commentaire (une lecture de son profil pour retrouver son identifiant de notification).
-  Future<void> _notifyLike(ChroniqueMessage m) async {
-    final me = _auth.loginUserData;
-    final doc = await FirebaseFirestore.instance.collection('Users').doc(m.userId).getM('chronique_comments_sheet.dart:123');
-    final player = doc.data()?['oneIgnalUserid'];
-    if (player == null) return;
-    await _auth.sendNotification(
-      appName: '@${me.pseudo}',
-      userIds: [player],
-      smallImage: me.imageUrl ?? '',
-      send_user_id: me.id!,
-      recever_user_id: m.userId,
-      message: '🙏 a aimé votre commentaire',
-      type_notif: 'COMMENT_LIKE',
-      post_id: widget.chronique.id!,
-      post_type: 'CHRONIQUE',
-      chat_id: '',
-    );
-  }
+  /// Prévient l'auteur du commentaire : l'identifiant de notification n'est plus lu sur le profil Firebase ; l'envoi est à faire par le serveur
+  /// (voir lacunes_api_canaux.md). En attendant, aucune notification n'est envoyée pour ce j'aime.
+  Future<void> _notifyLike(ChroniqueMessage m) async {}
 
   Future<void> _delete(ChroniqueMessage m) async {
     final ok = await showDialog<bool>(

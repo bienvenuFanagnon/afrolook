@@ -1,6 +1,5 @@
-// ad_config_service.dart — config tarifaire centralisée (Firestore)
-import 'package:afrotok/services/read_meter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+// ad_config_service.dart — config tarifaire centralisée (réglages publics de l'API : GET /config, clé `ad_durations`)
+import 'package:afrotok/services/api/regie_api.dart';
 
 class AdDuration {
   final int weeks;
@@ -19,9 +18,6 @@ class AdDuration {
 }
 
 class AdConfigService {
-  static const _collection = 'AdConfig';
-  static const _docId = 'pricing';
-
   static const List<AdDuration> _defaults = [
     AdDuration(weeks: 1,  price: 1500,  label: '1 semaine'),
     AdDuration(weeks: 2,  price: 2500,  label: '2 semaines'),
@@ -45,19 +41,15 @@ class AdConfigService {
       return _cached!;
     }
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection(_collection)
-          .doc(_docId)
-          .getM('ad_config_service.dart:50');
-      if (doc.exists && doc.data()?['durations'] != null) {
-        final list = (doc.data()!['durations'] as List)
-            .map((e) => AdDuration.fromJson(e as Map<String, dynamic>))
-            .toList();
+      final cfg = await RegieApi.config();
+      final raw = cfg['ad_durations'];
+      if (raw is List && raw.isNotEmpty) {
+        final list = raw.whereType<Map>().map((e) => AdDuration.fromJson(Map<String, dynamic>.from(e))).toList();
         _cached = list;
         _cacheTime = DateTime.now();
         return list;
       }
-    } catch (_) {}
+    } catch (_) {/* tarifs par défaut (affichage seul : le serveur reste juge du prix à l'achat) */}
     return _defaults;
   }
 
@@ -73,15 +65,9 @@ class AdConfigService {
     return '${weeks ~/ 52} an(s)';
   }
 
+  /// Enregistre les tarifs (administrateur). Passe par le serveur : réglage `ad_durations`.
   static Future<void> update(List<AdDuration> durations, String adminId) async {
-    await FirebaseFirestore.instance
-        .collection(_collection)
-        .doc(_docId)
-        .set({
-      'durations': durations.map((d) => d.toJson()).toList(),
-      'updatedAt': DateTime.now().millisecondsSinceEpoch,
-      'updatedBy': adminId,
-    }, SetOptions(merge: true));
+    await RegieApi.put('/admin/settings/ad_durations', body: {'value': durations.map((d) => d.toJson()).toList()});
     _cached = durations;
     _cacheTime = DateTime.now();
   }

@@ -1,0 +1,269 @@
+import 'dart:io';
+
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/services/api/api_gateway.dart';
+import 'package:afrotok/services/api/post_mapper.dart';
+import 'package:afrotok/services/api/posts_mapper.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+
+/// Accès à l'API pour les publications (création, lecture, réactions, favoris, signalement) : aucun retour à Firebase en cas d'erreur.
+/// Les erreurs sont des [ApiException] (code stable + message en français) : l'écran les affiche et propose « Réessayer ».
+class PostsApi {
+  PostsApi._();
+
+  static ApiClient get _c => ApiGateway.instance.client;
+
+  static Map<String, dynamic> _asMap(dynamic r) {
+    final d = ApiClient.data(r);
+    return d is Map ? Map<String, dynamic>.from(d) : <String, dynamic>{};
+  }
+
+  // ── Lecture ──
+  /// Une publication (null si introuvable ou supprimée).
+  static Future<Post?> get(String id) async {
+    try {
+      return postFromApi(_asMap(await _c.get('/posts/$id')));
+    } on ApiException catch (e) {
+      if (e.status == 404) return null;
+      rethrow;
+    }
+  }
+
+  /// Plusieurs publications (les introuvables sont ignorées), en parallèle.
+  static Future<List<Post>> getMany(Iterable<String> ids) async {
+    final out = await Future.wait(ids.map((id) async {
+      try {
+        return await get(id);
+      } catch (e) {
+        if (kDebugMode) debugPrint('❌ API PUBLICATION $id : $e');
+        return null;
+      }
+    }));
+    return out.whereType<Post>().toList();
+  }
+
+  // ── Écriture ──
+  /// Crée une publication. [uploadIds] : fichiers déjà téléversés et confirmés ([UploadsApi.upload]).
+  static Future<Post> create({
+    String? description,
+    String? linkUrl,
+    String? category,
+    bool? isMonetized,
+    List<String> uploadIds = const [],
+    List<String> countries = const [],
+    List<String> interests = const [],
+    String? channelId,
+    bool? freePreview,
+  }) async {
+    final body = <String, dynamic>{
+      if (description != null && description.trim().isNotEmpty) 'description': description.trim(),
+      if (linkUrl != null && linkUrl.trim().isNotEmpty) 'link_url': linkUrl.trim(),
+      if (category != null && category.isNotEmpty) 'category': category,
+      if (isMonetized != null) 'is_monetized': isMonetized,
+      if (uploadIds.isNotEmpty) 'upload_ids': uploadIds,
+      if (countries.isNotEmpty) 'countries': countries,
+      if (interests.isNotEmpty) 'interests': interests,
+      if (channelId != null && channelId.isNotEmpty) 'channel_id': channelId,
+      if (freePreview != null) 'free_preview': freePreview,
+    };
+    // Clé d'idempotence : un nouvel essai réseau ne crée pas deux publications.
+    final r = await _c.post('/posts', body: body, idempotencyKey: ApiClient.newIdempotencyKey());
+    return postFromApi(_asMap(r));
+  }
+
+  static Future<Post> update(String id, {String? description, String? linkUrl, String? category}) async {
+    final r = await _c.patch('/posts/$id', body: {
+      if (description != null) 'description': description,
+      if (linkUrl != null) 'link_url': linkUrl,
+      if (category != null) 'category': category,
+    });
+    return postFromApi(_asMap(r));
+  }
+
+  static Future<void> delete(String id) async {
+    await _c.delete('/posts/$id');
+  }
+
+  // ── Réactions ──
+  /// J'aime. Erreur 402 `insufficient_coins` possible (pièces insuffisantes) : [ApiException.isInsufficientCoins].
+  /// Renvoie false si la personne avait déjà aimé.
+  static Future<bool> like(String id) async => _asMap(await _c.put('/posts/$id/reaction'))['already'] != true;
+
+  static Future<void> unlike(String id) async {
+    await _c.delete('/posts/$id/reaction');
+  }
+
+  static Future<void> favorite(String id) async {
+    await _c.put('/posts/$id/favorite');
+  }
+
+  static Future<void> unfavorite(String id) async {
+    await _c.delete('/posts/$id/favorite');
+  }
+
+  /// [type] : `standard` ou `wrong_category`.
+  static Future<void> report(String id, {String type = 'standard'}) async {
+    await _c.post('/posts/$id/report', body: {'type': type});
+  }
+
+  /// Signal de goût pour le fil : share, click, watch, skip, hide. Jamais bloquant (erreur ignorée).
+  static Future<void> signal(String id, String type) async {
+    try {
+      await _c.post('/posts/$id/signal', body: {'type': type});
+    } catch (e) {
+      if (kDebugMode) debugPrint('API signal $type $id : $e');
+    }
+  }
+
+  /// Cadeau à une publication. [body] : voir `GiftController@toPost` (clé d'idempotence conservée par l'écran).
+  static Future<Map<String, dynamic>> gift(String id, Map<String, dynamic> body, {String? idempotencyKey}) async =>
+      _asMap(await _c.pay('/posts/$id/gifts', body: body, idempotencyKey: idempotencyKey));
+}
+
+/// Commentaires : 10 gratuits par publication, puis 1 pièce (erreur 402 `insufficient_coins` → proposer de recharger).
+class CommentsApi {
+  CommentsApi._();
+
+  static ApiClient get _c => ApiGateway.instance.client;
+
+  /// Une page de commentaires racine (du plus récent au plus ancien) ; les premières réponses de chacun sont chargées avec.
+  static Future<ApiCommentPage> list(String postId, {String? cursor, int limit = 10, bool withReplies = true}) async {
+    final r = await _c.get('/posts/$postId/comments', query: {'limit': limit, if (cursor != null) 'cursor': cursor});
+    final rows = ((r as Map)['data'] as List? ?? const []).whereType<Map>().map((m) => Map<String, dynamic>.from(m)).toList();
+    final comments = rows.map(commentFromApi).toList();
+    if (withReplies) {
+      await Future.wait(comments.where((c) => (c.comments ?? 0) > 0).map((c) async {
+        try {
+          c.responseComments = await replies(c.id!);
+        } catch (e) {
+          if (kDebugMode) debugPrint('❌ API RÉPONSES ${c.id} : $e');
+        }
+      }));
+    }
+    return ApiCommentPage(comments, r['next_cursor'] as String?);
+  }
+
+  static Future<List<ResponsePostComment>> replies(String commentId, {int limit = 50}) async {
+    final r = await _c.get('/comments/$commentId/replies', query: {'limit': limit});
+    final rows = ((r as Map)['data'] as List? ?? const []).whereType<Map>();
+    return rows.map((m) => replyFromApi(Map<String, dynamic>.from(m))).toList();
+  }
+
+  /// Envoie un commentaire (ou une réponse si [parentId]). [CommentSent.paidCoins] = pièces débitées (0 ou 1).
+  static Future<CommentSent> send(String postId, {String? body, String? parentId, Map<String, dynamic>? sticker}) async {
+    final r = await _c.post('/posts/$postId/comments', body: {
+      if (body != null) 'body': body,
+      if (parentId != null) 'parent_id': parentId,
+      if (sticker != null) 'sticker': sticker,
+    }, idempotencyKey: ApiClient.newIdempotencyKey());
+    final m = Map<String, dynamic>.from(r as Map);
+    final quota = m['quota'] is Map ? Map<String, dynamic>.from(m['quota'] as Map) : <String, dynamic>{};
+    return CommentSent(Map<String, dynamic>.from(m['data'] as Map), quota);
+  }
+
+  static Future<CommentQuota> quota(String postId) async {
+    final d = ApiClient.data(await _c.get('/posts/$postId/comment-quota'));
+    return CommentQuota.fromJson(d is Map ? Map<String, dynamic>.from(d) : const {});
+  }
+
+  static Future<void> delete(String commentId) async {
+    await _c.delete('/comments/$commentId');
+  }
+
+  /// J'aime un commentaire ou une réponse. Réponse : {ok, already, paid, reason} (reason = insufficient ou own : le j'aime reste compté).
+  static Future<Map<String, dynamic>> like(String commentId) async {
+    final d = ApiClient.data(await _c.put('/comments/$commentId/like'));
+    return d is Map ? Map<String, dynamic>.from(d) : <String, dynamic>{};
+  }
+
+  static Future<void> unlike(String commentId) async {
+    await _c.delete('/comments/$commentId/like');
+  }
+
+  /// Cadeau (sticker ou pièces) sur un commentaire : voir `GiftController@toComment`.
+  static Future<Map<String, dynamic>> gift(String commentId, Map<String, dynamic> body, {String? idempotencyKey}) async {
+    final d = ApiClient.data(await _c.pay('/comments/$commentId/gifts', body: body, idempotencyKey: idempotencyKey));
+    return d is Map ? Map<String, dynamic>.from(d) : <String, dynamic>{};
+  }
+}
+
+class ApiCommentPage {
+  ApiCommentPage(this.comments, this.nextCursor);
+  final List<PostComment> comments;
+  final String? nextCursor;
+}
+
+class CommentSent {
+  CommentSent(this.json, this.quota);
+  final Map<String, dynamic> json;
+  final Map<String, dynamic> quota;
+  PostComment get comment => commentFromApi(json);
+  ResponsePostComment get reply => replyFromApi(json);
+  int get paidCoins => (quota['paid_coins'] as num?)?.toInt() ?? 0;
+}
+
+/// Quota de commentaires d'une publication.
+class CommentQuota {
+  CommentQuota({required this.freeLeft, required this.price, required this.raw});
+  final int freeLeft;
+  final int price;
+  final Map<String, dynamic> raw;
+  factory CommentQuota.fromJson(Map<String, dynamic> j) => CommentQuota(
+        freeLeft: (j['free_left'] as num?)?.toInt() ?? 0,
+        price: (j['price'] as num?)?.toInt() ?? (j['price_coins'] as num?)?.toInt() ?? 1,
+        raw: j,
+      );
+}
+
+/// Téléversements : URL signée, dépôt direct sur R2, confirmation. Renvoie l'identifiant à passer à [PostsApi.create].
+class UploadsApi {
+  UploadsApi._();
+
+  static ApiClient get _c => ApiGateway.instance.client;
+
+  static const _mime = {
+    'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png', 'webp': 'image/webp', 'gif': 'image/gif',
+    'mp4': 'video/mp4', 'mov': 'video/quicktime', 'webm': 'video/webm',
+    'mp3': 'audio/mpeg', 'm4a': 'audio/mp4', 'aac': 'audio/aac', 'wav': 'audio/wav', 'ogg': 'audio/ogg',
+  };
+
+  static String contentTypeFor(String path) {
+    final i = path.lastIndexOf('.');
+    final ext = i < 0 ? '' : path.substring(i + 1).toLowerCase();
+    return _mime[ext] ?? 'application/octet-stream';
+  }
+
+  /// Téléverse un fichier local. [onProgress] : 0.0 à 1.0.
+  static Future<String> upload(File file, {String? contentType, bool private = false, void Function(double)? onProgress}) async {
+    final bytes = await file.readAsBytes();
+    return uploadBytes(bytes, contentType: contentType ?? contentTypeFor(file.path), private: private, onProgress: onProgress);
+  }
+
+  static Future<String> uploadBytes(Uint8List bytes, {required String contentType, bool private = false, void Function(double)? onProgress}) async {
+    final r = await _c.post('/uploads', body: {'content_type': contentType, 'size': bytes.length, if (private) 'private': true});
+    final d = Map<String, dynamic>.from(ApiClient.data(r) as Map);
+    final id = d['upload_id'] as String;
+    final headers = Map<String, dynamic>.from(d['headers'] as Map? ?? {'Content-Type': contentType});
+    final res = await Dio().put<dynamic>(
+      d['url'] as String,
+      data: Stream.fromIterable([bytes]),
+      options: Options(
+        headers: {...headers, Headers.contentLengthHeader: bytes.length},
+        validateStatus: (_) => true,
+        sendTimeout: const Duration(minutes: 10),
+        receiveTimeout: const Duration(minutes: 2),
+      ),
+      onSendProgress: (sent, total) {
+        if (onProgress != null && total > 0) onProgress(sent / total);
+      },
+    );
+    final code = res.statusCode ?? 0;
+    if (code < 200 || code >= 300) {
+      throw ApiException(status: code, code: 'upload_failed', message: "L'envoi du fichier a échoué. Réessayez.");
+    }
+    await _c.post('/uploads/$id/complete');
+    return id;
+  }
+}

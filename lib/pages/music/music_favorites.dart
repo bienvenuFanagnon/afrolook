@@ -1,51 +1,44 @@
 // Favoris de la page Musique : un cœur sur n'importe quel titre (musique gratuite d'Afrolook ou son d'artiste).
-// Collection MusicFavorites/{uid}_{kind}_{id} : chaque personne lit et écrit seulement les siens (règles Firestore).
+// Liste privée, gardée par l'API (GET/PUT/DELETE /music/favorites) : chaque personne ne voit que les siens.
 
-import 'package:afrotok/services/read_meter.dart';
-import 'dart:async';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
+import '../../services/api/music_api.dart';
 
 class MusicFavorites {
   MusicFavorites._();
 
   /// Clés « kind:id » des favoris de la personne connectée.
   static final ValueNotifier<Set<String>> keys = ValueNotifier<Set<String>>({});
-  static StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _sub;
   static String? _uid;
 
   static String? get uid => FirebaseAuth.instance.currentUser?.uid;
 
-  /// Démarre (ou relance après un changement de compte) l'écoute des favoris.
+  /// Démarre (ou relance après un changement de compte) le chargement des favoris.
   static void start() {
     final u = uid;
     if (u == null) return;
-    if (_uid == u && _sub != null) return;
-    _sub?.cancel();
+    if (_uid == u) return;
     _uid = u;
-    _sub = FirebaseFirestore.instance.collection('MusicFavorites').where('uid', isEqualTo: u).snapshotsM('music_favorites.dart:27').listen((s) {
-      keys.value = {for (final d in s.docs) '${d.data()['kind']}:${d.data()['id']}'};
-    }, onError: (_) {});
+    keys.value = {};
+    MusicApi.favorites().then((rows) {
+      keys.value = {for (final r in rows) '${r['kind']}:${r['item_id']}'};
+    }).catchError((_) {
+      _uid = null; // sera retenté
+    });
   }
 
   static bool isFav(String kind, String id) => keys.value.contains('$kind:$id');
 
-  /// Ajoute ou retire un favori ; [title] sert à l'affichage de l'onglet Favoris.
+  /// Ajoute ou retire un favori ([title] n'est plus enregistré : l'API relit le titre).
   static Future<void> toggle(String kind, String id, {required String title}) async {
-    final u = uid;
-    if (u == null) return;
-    final ref = FirebaseFirestore.instance.collection('MusicFavorites').doc('${u}_${kind}_$id');
+    if (uid == null) return;
     final on = isFav(kind, id);
-    // Mise à jour immédiate de l'écran, le serveur confirme ensuite
+    // Mise à jour immédiate de l'écran, l'API confirme ensuite
     keys.value = on ? ({...keys.value}..remove('$kind:$id')) : {...keys.value, '$kind:$id'};
     try {
-      if (on) {
-        await ref.delete();
-      } else {
-        await ref.set({'uid': u, 'kind': kind, 'id': id, 'title': title, 'createdAt': Timestamp.now()});
-      }
+      await MusicApi.setFavorite(kind, id, !on);
     } catch (_) {
       keys.value = on ? {...keys.value, '$kind:$id'} : ({...keys.value}..remove('$kind:$id'));
     }

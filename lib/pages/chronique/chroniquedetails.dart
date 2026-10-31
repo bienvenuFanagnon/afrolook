@@ -19,7 +19,6 @@ import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/services/media_cache_service.dart';
 import 'package:afrotok/services/ad_preload_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -32,7 +31,6 @@ import '../component/showUserDetails.dart';
 import '../user/detailsOtherUser.dart';
 import 'chroniqueform.dart';// pages/chronique/chronique_detail_page.dart
 // pages/chronique/chronique_detail_page.dart
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -42,18 +40,6 @@ import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/chroniqueProvider.dart';
 import '../component/showUserDetails.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import 'package:video_player/video_player.dart';
-
-import '../../models/model_data.dart';
-import '../../providers/authProvider.dart';
-import '../../providers/chroniqueProvider.dart';
-import '../component/showUserDetails.dart';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -64,9 +50,17 @@ import '../../providers/authProvider.dart';
 import '../../providers/chroniqueProvider.dart';
 import '../component/showUserDetails.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:video_player/video_player.dart';
+
+import '../../models/model_data.dart';
+import '../../providers/authProvider.dart';
+import '../../providers/chroniqueProvider.dart';
+import '../component/showUserDetails.dart';
+
+import 'package:flutter/material.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -78,7 +72,6 @@ import '../../providers/chroniqueProvider.dart';
 import '../component/showUserDetails.dart';
 
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -89,11 +82,13 @@ import '../../providers/authProvider.dart';
 import '../../providers/chroniqueProvider.dart';
 import '../component/showUserDetails.dart';
 import 'chroniqueform.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp; // simple type de date
+import '../../services/api/canaux_api.dart';
+import '../../services/api/api_gateway.dart';
 // pages/chronique/chronique_detail_page.dart
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -186,7 +181,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
   List<Chronique> _allChroniques = [];
   bool _isLoading = true;
   bool _hasMore = true;
-  DocumentSnapshot? _lastDocument;
+  String? _cursor; // page suivante (API)
   final int _batchSize = 5;
   bool _isLoadingMore = false;
 
@@ -297,29 +292,21 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
       _isLoading = true;
       _allChroniques.clear();
       _hasMore = true;
-      _lastDocument = null;
+      _cursor = null;
     });
 
     try {
       final chroniqueProvider = Provider.of<ChroniqueProvider>(context, listen: false);
-      final result = await chroniqueProvider.getActiveChroniquesBatch(
-        limit: _batchSize,
-        lastDocument: _lastDocument,
-      );
+      final page = await chroniqueProvider.getActiveChroniquesBatch(limit: _batchSize, cursor: _cursor);
+      final result = page.items;
 
       if (result.isNotEmpty) {
-        DocumentSnapshot? newLastDocument;
-        if (result.last.id != null) {
-          newLastDocument = await FirebaseFirestore.instance
-              .collection('chroniques')
-              .doc(result.last.id)
-              .getM('chroniquedetails.dart:289');
-        }
+        final newCursor = page.next;
 
         setState(() {
           _allChroniques = result;
-          _lastDocument = newLastDocument;
-          _hasMore = result.length == _batchSize;
+          _cursor = newCursor;
+          _hasMore = newCursor != null;
         });
 
         _initializeLikesData();
@@ -381,24 +368,16 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
 
     try {
       final chroniqueProvider = Provider.of<ChroniqueProvider>(context, listen: false);
-      final result = await chroniqueProvider.getActiveChroniquesBatch(
-        limit: _batchSize,
-        lastDocument: _lastDocument,
-      );
+      final page = await chroniqueProvider.getActiveChroniquesBatch(limit: _batchSize, cursor: _cursor);
+      final result = page.items;
 
       if (result.isNotEmpty) {
-        DocumentSnapshot? newLastDocument;
-        if (result.last.id != null) {
-          newLastDocument = await FirebaseFirestore.instance
-              .collection('chroniques')
-              .doc(result.last.id)
-              .getM('chroniquedetails.dart:368');
-        }
+        final newCursor = page.next;
 
         setState(() {
           _allChroniques.addAll(result);
-          _lastDocument = newLastDocument;
-          _hasMore = result.length == _batchSize;
+          _cursor = newCursor;
+          _hasMore = newCursor != null;
         });
       } else {
         setState(() => _hasMore = false);
@@ -438,12 +417,13 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
       if (mounted) setState(() => _chroniqueOwner = cached);
       return;
     }
-    final userDoc = await FirebaseFirestore.instance.collection('Users').doc(currentChronique.userId).getM('chroniquedetails.dart:414');
-    if (userDoc.exists && mounted) {
-      final owner = UserData.fromJson(userDoc.data()!);
-      _ownerCache[currentChronique.userId] = owner;
-      setState(() => _chroniqueOwner = owner);
-    }
+    // Pseudo et photo viennent de la chronique elle-même (API) ; plus de lecture du profil Firebase
+    final owner = UserData()
+      ..id = currentChronique.userId
+      ..pseudo = currentChronique.userPseudo
+      ..imageUrl = currentChronique.userImageUrl;
+    _ownerCache[currentChronique.userId] = owner;
+    if (mounted) setState(() => _chroniqueOwner = owner);
   }
 
   static final Map<String, UserData> _ownerCache = {};
@@ -496,6 +476,11 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
     }
 
     unawaited(_startMusic(currentChronique));
+    if (currentChronique.commentCount == 0 && currentChronique.lastCommentText == null) {
+      chroniqueProvider.loadCommentInfo(currentChronique).then((_) {
+        if (mounted) setState(() {});
+      });
+    }
 
     _markAsViewed(currentChronique);
     _updateCurrentLikeStatus(currentChronique);
@@ -662,23 +647,8 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
       }
     }
   }
-  Future<void> _sendNotification(UserAuthProvider authProvider, Chronique chronique, String message, String type) async {
-    final ownerDoc = await FirebaseFirestore.instance.collection('Users').doc(chronique.userId).getM('chroniquedetails.dart:639');
-    if (ownerDoc.exists && ownerDoc.data()!['oneIgnalUserid'] != null) {
-      await authProvider.sendNotification(
-        appName: '@${authProvider.loginUserData.pseudo!}',
-        userIds: [ownerDoc.data()!['oneIgnalUserid']],
-        smallImage: authProvider.loginUserData.imageUrl!,
-        send_user_id: authProvider.loginUserData.id!,
-        recever_user_id: chronique.userId,
-        message: message,
-        type_notif: type,
-        post_id: chronique.id!,
-        post_type: 'CHRONIQUE',
-        chat_id: '',
-      );
-    }
-  }
+  /// La notification « a aimé votre chronique » doit être envoyée par le serveur (voir lacunes_api_canaux.md) : plus de lecture du profil Firebase ici.
+  Future<void> _sendNotification(UserAuthProvider authProvider, Chronique chronique, String message, String type) async {}
 
   void _deleteChronique(Chronique chronique) async {
     final me = authProvider.loginUserData;
@@ -783,10 +753,12 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
   }
 
   void _showUserProfile(String userId) async {
-    final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).getM('chroniquedetails.dart:759');
-    if (userDoc.exists) {
-      showUserDetailsModalDialog(UserData.fromJson(userDoc.data()!), MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, context);
-    }
+    final c = _allChroniques.where((x) => x.userId == userId).cast<Chronique?>().firstWhere((_) => true, orElse: () => null);
+    final user = UserData()
+      ..id = userId
+      ..pseudo = c?.userPseudo ?? ''
+      ..imageUrl = c?.userImageUrl ?? '';
+    showUserDetailsModalDialog(user, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, context);
   }
 
   // ============================================================
@@ -804,44 +776,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
         return;
       }
 
-      // Fallback Firestore si le provider n'a pas encore chargé
-      final snap = await FirebaseFirestore.instance
-          .collection('Advertisements')
-          .where('status', isEqualTo: 'active')
-          .limit(5)
-          .getM('chroniquedetails.dart:785');
-
-      final ads = <Advertisement>[];
-      final futures = <Future<void>>[];
-
-      for (final doc in snap.docs) {
-        final ad = Advertisement.fromJson(doc.data());
-        ad.id = doc.id;
-        ads.add(ad);
-
-        if (ad.postId != null) {
-          futures.add(
-            FirebaseFirestore.instance.collection('Posts').doc(ad.postId).getM('chroniquedetails.dart:797').then((postDoc) {
-              if (!postDoc.exists) return;
-              final post = Post.fromJson(postDoc.data()!);
-              post.id = postDoc.id;
-              _adPosts[ad.id!] = post;
-              final images = post.images;
-              final url = (images != null && images.isNotEmpty) ? images.first : post.url_media;
-              if (url != null && url.isNotEmpty) _adImageUrls[ad.id!] = url;
-              final isVideo = post.dataType == PostDataType.VIDEO.name ||
-                  (post.url_media ?? '').contains('.mp4') ||
-                  (post.url_media ?? '').contains('.mov');
-              if (isVideo && post.url_media != null) {
-                VideoPreloadManager.preload(post.id ?? ad.id!, post.url_media);
-              }
-            }).catchError((_) {}),
-          );
-        }
-      }
-
-      await Future.wait(futures);
-      if (mounted && ads.isNotEmpty) _applyAds(ads);
+      // Pas de repli sur Firebase : les publicités viennent du fournisseur (API) ; sans elles, aucune pub n'est insérée
     } catch (_) {}
   }
 
@@ -893,14 +828,12 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
     final id = ad.ownerId;
     if (id == null || id.isEmpty || !mounted) return;
     try {
-      final fs = FirebaseFirestore.instance;
       switch (ad.ownerType) {
         case 'canal':
-          final doc = await fs.collection('Canaux').doc(id).getM('chroniquedetails.dart:872');
-          if (!doc.exists || !context.mounted) return;
-          final data = Map<String, dynamic>.from(doc.data()!)..['id'] = doc.id;
+          final canal = await CanauxApi.get(id, myId: authProvider.loginUserData.id);
+          if (!context.mounted) return;
           Navigator.push(context, MaterialPageRoute(
-            builder: (_) => CanalDetails(canal: Canal.fromJson(data)),
+            builder: (_) => CanalDetails(canal: canal),
           ));
           break;
         case 'group':
@@ -914,11 +847,13 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
           ));
           break;
         default:
-          final doc = await fs.collection('Users').doc(id).getM('chroniquedetails.dart:890');
-          if (!doc.exists || !context.mounted) return;
-          final data = Map<String, dynamic>.from(doc.data()!)..['id'] = doc.id;
+          if (!context.mounted) return;
+          final u = UserData()
+            ..id = id
+            ..pseudo = ad.ownerName ?? ''
+            ..imageUrl = ad.ownerAvatar ?? '';
           Navigator.push(context, MaterialPageRoute(
-            builder: (_) => OtherUserPage(otherUser: UserData.fromJson(data)),
+            builder: (_) => OtherUserPage(otherUser: u),
           ));
       }
     } catch (_) {}
@@ -1429,12 +1364,11 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
     });
 
     try {
-      await FirebaseFirestore.instance.collection('Posts').doc(adPost.id).update({
-        'loves': FieldValue.increment(_adPostLiked ? 1 : -1),
-        'users_love_id': _adPostLiked
-            ? FieldValue.arrayUnion([uid])
-            : FieldValue.arrayRemove([uid]),
-      });
+      if (_adPostLiked) {
+        await ApiGateway.instance.client.put('/posts/${adPost.id}/reaction');
+      } else {
+        await ApiGateway.instance.client.delete('/posts/${adPost.id}/reaction');
+      }
     } catch (_) {
       if (mounted) {
         setState(() {

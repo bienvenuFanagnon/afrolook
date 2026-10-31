@@ -5,7 +5,9 @@ import '../../utils/platform_guard.dart';
 import 'dart:async';
 import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // uniquement l'état en direct du live (spectateurs, commentaires), qui reste sur Firebase
+import 'package:afrotok/services/api/chat_api.dart';
+import 'package:afrotok/services/api/lives_mapper.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +27,7 @@ class CreateLivePage extends StatefulWidget {
 
 class _CreateLivePageState extends State<CreateLivePage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  String? _coverUploadId;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController _titleController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -78,16 +81,12 @@ class _CreateLivePageState extends State<CreateLivePage> {
     final user = _auth.currentUser;
     if (user == null) return;
     try {
-      final snap = await _firestore
-          .collection('lives')
-          .where('hostId', isEqualTo: user.uid)
-          .where('isLive', isEqualTo: true)
-          .limit(1)
-          .getM('create_live_page.dart:85');
-      if (snap.docs.isEmpty || !mounted) return;
-      final doc = snap.docs.first;
-      final data = doc.data();
-      final title = (data['title'] as String?)?.trim();
+      final page = await LivesApi.list(status: 'live', hostId: user.uid, limit: 1);
+      if (page.items.isEmpty || !mounted) return;
+      final apiLive = page.items.first;
+      final me = Provider.of<UserAuthProvider>(context, listen: false).loginUserData;
+      final liveId = '${apiLive['id']}';
+      final title = (apiLive['title'] as String?)?.trim();
 
       final choice = await showDialog<String>(
         context: context,
@@ -113,17 +112,20 @@ class _CreateLivePageState extends State<CreateLivePage> {
           context,
           MaterialPageRoute(
             builder: (context) => LivePage(
-              liveId: doc.id,
+              liveId: liveId,
               isHost: true,
-              hostName: data['hostName'] ?? 'Hôte',
-              hostImage: data['hostImage'] ?? '',
+              hostName: me.pseudo ?? 'Hôte',
+              hostImage: me.imageUrl ?? '',
               isInvited: false,
-              postLive: PostLive.fromMap(data),
+              postLive: postLiveFromApi(apiLive, hostName: me.pseudo ?? '', hostImage: me.imageUrl ?? ''),
             ),
           ),
         );
       } else if (choice == 'terminer') {
-        await doc.reference.update({'isLive': false, 'endTime': DateTime.now()});
+        await LivesApi.end(liveId);
+        try {
+          await _firestore.collection('lives').doc(liveId).update({'isLive': false, 'endTime': DateTime.now()});
+        } catch (_) {}
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Live terminé : tu peux en créer un nouveau.')),
@@ -1665,13 +1667,8 @@ class _CreateLivePageState extends State<CreateLivePage> {
     });
     setState(() => _isUploadingCover = true);
     try {
-      final liveId = _firestore.collection('Lives').doc().id;
-      final ref = FirebaseStorage.instance
-          .ref()
-          .child('live_covers/${_auth.currentUser!.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg');
-      await ref.putFile(await MediaShrink.file(_coverImageFile!));
-      final url = await ref.getDownloadURL();
-      if (mounted) setState(() => _coverImageUrl = url);
+      final shrunk = await MediaShrink.file(_coverImageFile!);
+      _coverUploadId = await ChatApi.uploadImage(await shrunk.readAsBytes());
     } catch (_) {} finally {
       if (mounted) setState(() => _isUploadingCover = false);
     }
@@ -1778,71 +1775,40 @@ class _CreateLivePageState extends State<CreateLivePage> {
     }
 
     try {
-      // Vérifier si l'utilisateur a déjà un live actif
-      final activeLiveQuery = await _firestore
-          .collection('lives')
-          .where('hostId', isEqualTo: user.uid)
-          .where('isLive', isEqualTo: true)
-          .limit(1)
-          .getM('create_live_page.dart:1786');
-
-      if (activeLiveQuery.docs.isNotEmpty) {
-        final existingLiveId = activeLiveQuery.docs.first.id;
-        final liveData = activeLiveQuery.docs.first.data();
-
+      // Un seul live actif par hôte : l'API termine l'ancien en démarrant un nouveau, on prévient quand même la personne
+      final already = await LivesApi.list(status: 'live', hostId: user.uid, limit: 1);
+      if (already.items.isNotEmpty && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Vous avez déjà un live en cours'),
-            backgroundColor: Colors.orange,
-            duration: Duration(seconds: 3),
-          ),
+          const SnackBar(content: Text('Votre live précédent a été terminé pour démarrer celui-ci'), backgroundColor: Colors.orange, duration: Duration(seconds: 3)),
         );
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => LivePage(
-              liveId: existingLiveId,
-              isHost: true,
-              hostName: liveData['hostName'] ?? 'Hôte',
-              hostImage: liveData['hostImage'] ?? '',
-              isInvited: false,
-              postLive: PostLive.fromMap(liveData),
-            ),
-          ),
-        );
-        return;
       }
 
-      // Créer le nouveau live
       final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-      final String liveId = _firestore.collection('lives').doc().id;
       final isAdmin = _liveRestrictions['isAdmin'] == true;
-      // Création du live
-      final PostLive newLive = PostLive(
-        liveId: liveId,
-        hostId: user.uid,
-        hostName: authProvider.loginUserData.pseudo! ?? 'Utilisateur',
-        hostImage: authProvider.loginUserData.imageUrl! ?? 'https://via.placeholder.com/150',
+      final fee = _isPaidLive ? (double.tryParse(_participationFeeController.text) ?? 0).round() : 0;
+      // Le serveur plafonne la durée (30 min, 60 min pour l'équipe) et garde l'accès payant ; l'état en direct est ensuite recopié sur Firebase
+      final apiLive = await LivesApi.start(
         title: _titleController.text.trim(),
-        startTime: DateTime.now(),
-        liveDurationMinutes: isAdmin?60:30,
-        coverImage: _coverImageUrl,
-        // Paramètres live payant
-        isPaidLive: _isPaidLive,
-        // Prix saisi en pièces (+ équivalent FCFA pour les anciennes versions de l'app)
-        participationFeeCoinsRaw: _isPaidLive ? (double.tryParse(_participationFeeController.text) ?? 0).round() : 0,
-        participationFee: _isPaidLive ? (double.tryParse(_participationFeeController.text) ?? 0) / 2.5 : 0.0,
-        freeTrialMinutes: _isPaidLive ? int.parse(_freeTrialController.text) : 0,
-
-        // Comportement après essai
-        audioBehaviorAfterTrial: _audioBehavior,
-        audioReductionPercent: _audioReductionPercent,
-        blurVideoAfterTrial: _blurVideoAfterTrial,
-        showPaymentModalAfterTrial: _showPaymentModalAfterTrial,
+        coverUploadId: _coverUploadId,
+        durationMinutes: isAdmin ? 60 : 30,
+        isPaid: _isPaidLive && fee > 0,
+        feeCoins: fee,
+        freeTrialMinutes: _isPaidLive ? (int.tryParse(_freeTrialController.text) ?? 0) : 0,
+        options: {
+          'audioBehaviorAfterTrial': _audioBehavior,
+          'audioReductionPercent': _audioReductionPercent,
+          'blurVideoAfterTrial': _blurVideoAfterTrial,
+          'showPaymentModalAfterTrial': _showPaymentModalAfterTrial,
+        },
+      );
+      final String liveId = '${apiLive['id']}';
+      final PostLive newLive = postLiveFromApi(
+        apiLive,
+        hostName: authProvider.loginUserData.pseudo ?? 'Utilisateur',
+        hostImage: authProvider.loginUserData.imageUrl ?? '',
       );
 
-      // Sauvegarder dans Firestore
+      // État en direct (spectateurs, pause, texte épinglé, commentaires) : reste sur Firebase, avec le même identifiant que dans l'API
       await _firestore.collection('lives').doc(liveId).set(newLive.toMap());
 
       // Calculer la qualité selon les choix et restrictions
@@ -1856,8 +1822,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
         await _liveService.incrementLiveCount();
       }
 
-      // Envoyer les notifications
-      _sendNotifications(authProvider, newLive);
+      // Les notifications aux abonnés sont envoyées par le serveur
 
       // Navigation vers le live (le verrou reste posé jusqu'à la fermeture de la page)
       created = true;

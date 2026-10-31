@@ -1,10 +1,9 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/contenuPayant/content_detail_page.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/theme/app_colors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/contenu_payant_api.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -19,45 +18,16 @@ class _MyPurchasesPageState extends State<MyPurchasesPage> {
   AppColors get _colors => AppColors.of(context);
 
   Future<List<ContentPaie>> _loadPurchases(String uid) async {
-    // 1. Charger tous les achats de l'utilisateur
-    final purchaseSnap = await FirebaseFirestore.instance
-        .collection('ContentPaie_purchases')
-        .where('userId', isEqualTo: uid)
-        .orderBy('purchaseDate', descending: true)
-        .getM('my_purchases_page.dart:26');
-
-    if (purchaseSnap.docs.isEmpty) return [];
-
-    // 2. Récupérer les ids de contenu uniques
-    final contentIds = purchaseSnap.docs
-        .map((d) => d.data()['contentId'] as String?)
-        .whereType<String>()
-        .toSet()
-        .toList();
-
-    if (contentIds.isEmpty) return [];
-
-    // 3. Charger les docs contenu en parallèle (par lots de 10 — limite Firestore whereIn)
-    final contents = <ContentPaie>[];
-    for (var i = 0; i < contentIds.length; i += 10) {
-      final chunk = contentIds.sublist(i, (i + 10).clamp(0, contentIds.length));
-      final snap = await FirebaseFirestore.instance
-          .collection('ContentPaies')
-          .where(FieldPath.documentId, whereIn: chunk)
-          .getM('my_purchases_page.dart:46');
-      for (final doc in snap.docs) {
-        contents.add(ContentPaie.fromJson({...doc.data(), 'id': doc.id}));
-      }
+    // Mes achats (API) : contenus que j'ai achetés, plus récents d'abord
+    final all = <ContentPaie>[];
+    String? cursor;
+    for (var i = 0; i < 4; i++) {
+      final page = await ContenuPayantApi.list(purchased: true, cursor: cursor, limit: 50);
+      all.addAll(page.items);
+      cursor = page.next;
+      if (cursor == null) break;
     }
-
-    // Respecter l'ordre chronologique des achats
-    contents.sort((a, b) {
-      final ia = contentIds.indexOf(a.id ?? '');
-      final ib = contentIds.indexOf(b.id ?? '');
-      return ia.compareTo(ib);
-    });
-
-    return contents;
+    return all;
   }
 
   @override

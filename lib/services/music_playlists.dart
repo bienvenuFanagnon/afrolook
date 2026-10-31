@@ -2,14 +2,14 @@
 // Tout le monde voit une playlist et son contenu ; l'accès (ajout à la bibliothèque) est gratuit ou payant selon le créateur.
 // Les titres payants d'artistes y sont permis mais signalés : acheter la playlist ne donne pas le titre complet des titres payants.
 
-import 'package:afrotok/services/read_meter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'dart:async';
+
+import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../pages/studio/artist_marketplace.dart';
 import '../pages/studio/montage/montage_music.dart';
 import '../utils/media_cdn.dart';
+import 'api/music_api.dart';
 import 'music_queue.dart';
 
 const kPlaylistMinPrice = 20;
@@ -34,20 +34,21 @@ class MusicPlaylist {
     this.status = 'active',
   });
 
+  /// Une playlist de l'API (`GET /music/playlists`).
   factory MusicPlaylist.fromMap(Map<String, dynamic> m, String id) => MusicPlaylist(
         id: id,
-        ownerId: '${m['ownerId'] ?? ''}',
-        ownerPseudo: '${m['ownerPseudo'] ?? ''}',
+        ownerId: '${m['owner_id'] ?? ''}',
+        ownerPseudo: '${m['owner_pseudo'] ?? ''}',
         title: '${m['title'] ?? 'Playlist'}',
         description: '${m['description'] ?? ''}',
         access: m['access'] == 'paid' ? 'paid' : 'free',
-        priceCoins: (m['priceCoins'] as num?)?.toInt() ?? 0,
-        trackIds: [for (final t in (m['trackIds'] as List? ?? const [])) '$t'],
-        paidCount: (m['paidCount'] as num?)?.toInt() ?? 0,
-        coverUrl: m['coverUrl'] == null ? null : MediaCdn.url(m['coverUrl'] as String),
-        addCount: (m['addCount'] as num?)?.toInt() ?? 0,
-        earnedCoins: (m['earnedCoins'] as num?)?.toInt() ?? 0,
-        streamCount: (m['streamCount'] as num?)?.toInt() ?? 0,
+        priceCoins: (m['price_coins'] as num?)?.toInt() ?? 0,
+        trackIds: [for (final t in (m['track_ids'] as List? ?? const [])) '$t'],
+        paidCount: (m['paid_count'] as num?)?.toInt() ?? 0,
+        coverUrl: m['cover_url'] == null ? null : MediaCdn.url(m['cover_url'] as String),
+        addCount: (m['add_count'] as num?)?.toInt() ?? 0,
+        earnedCoins: (m['earned_coins'] as num?)?.toInt() ?? 0,
+        streamCount: (m['stream_count'] as num?)?.toInt() ?? 0,
         status: '${m['status'] ?? 'active'}',
       );
 
@@ -86,49 +87,50 @@ class PlaylistLoad {
 class MusicPlaylists {
   MusicPlaylists._();
 
-  static final _db = FirebaseFirestore.instance;
   static final Map<String, Future<PlaylistLoad>> _loaded = {};
+  static final StreamController<void> _changes = StreamController<void>.broadcast();
 
-  /// Playlists à découvrir (les plus récemment modifiées).
-  static Stream<List<MusicPlaylist>> discover() => _db
-      .collection('MusicPlaylists')
-      .where('status', isEqualTo: 'active')
-      .orderBy('updatedAt', descending: true)
-      .limit(60)
-      .snapshotsM('music_playlists.dart:97')
-      .map((s) => [for (final d in s.docs) MusicPlaylist.fromMap(d.data(), d.id)]);
+  /// Émet tout de suite puis après chaque changement fait depuis cet appareil (créer, ajouter, supprimer).
+  static Stream<T> _live<T>(Future<T> Function() load) async* {
+    yield await load();
+    await for (final _ in _changes.stream) {
+      yield await load();
+    }
+  }
+
+  static List<MusicPlaylist> _parse(List<Map<String, dynamic>> rows) => [for (final m in rows) MusicPlaylist.fromMap(m, '${m['id']}')];
+
+  /// Playlists à découvrir.
+  static Stream<List<MusicPlaylist>> discover() => _live(() async => _parse(await MusicApi.playlists()));
 
   /// Mes playlists.
   static Stream<List<MusicPlaylist>> mine() {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return const Stream.empty();
-    return _db.collection('MusicPlaylists').where('ownerId', isEqualTo: uid).where('status', isEqualTo: 'active').snapshotsM('music_playlists.dart:104').map((s) {
-      final l = [for (final d in s.docs) MusicPlaylist.fromMap(d.data(), d.id)];
+    if (FirebaseAuth.instance.currentUser == null) return const Stream.empty();
+    return _live(() async {
+      final l = _parse(await MusicApi.playlists(mine: true));
       l.sort((a, b) => b.title.compareTo(a.title) * -1);
       return l;
     });
   }
 
-  /// Playlists ajoutées à ma bibliothèque (identifiants + titre au moment de l'ajout).
+  /// Playlists ajoutées à ma bibliothèque (identifiants + titre + prix).
   static Stream<List<({String id, String title, int price})>> library() {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return const Stream.empty();
-    return _db.collection('MusicPlaylistLibrary').where('uid', isEqualTo: uid).snapshotsM('music_playlists.dart:115').map((s) {
-      final d = s.docs.map((x) => x.data()).toList()..sort((a, b) => ((b['createdAt'] as num?) ?? 0).compareTo((a['createdAt'] as num?) ?? 0));
-      return [for (final x in d) (id: '${x['playlistId']}', title: '${x['title'] ?? 'Playlist'}', price: (x['price'] as num?)?.toInt() ?? 0)];
-    });
+    if (FirebaseAuth.instance.currentUser == null) return const Stream.empty();
+    return _live(() async => [for (final p in _parse(await MusicApi.playlists(added: true))) (id: p.id, title: p.title, price: p.priceCoins)]);
   }
 
   static Stream<bool> inLibrary(String playlistId) {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return Stream.value(false);
-    return _db.collection('MusicPlaylistLibrary').doc('${uid}_$playlistId').snapshotsM('music_playlists.dart:124').map((d) => d.exists);
+    if (FirebaseAuth.instance.currentUser == null) return Stream.value(false);
+    return _live(() async {
+      final p = await MusicApi.playlist(playlistId);
+      return (p?['me'] as Map?)?['added'] == true;
+    });
   }
 
   static Future<MusicPlaylist?> get(String id) async {
     try {
-      final d = await _db.collection('MusicPlaylists').doc(id).getM('music_playlists.dart:129');
-      return d.exists ? MusicPlaylist.fromMap(d.data()!, d.id) : null;
+      final m = await MusicApi.playlist(id);
+      return m == null ? null : MusicPlaylist.fromMap(m, id);
     } catch (_) {
       return null;
     }
@@ -147,11 +149,8 @@ class MusicPlaylists {
     for (var i = 0; i < soundIds.length; i += 10) {
       await Future.wait(soundIds.skip(i).take(10).map((id) async {
         try {
-          final d = await _db.collection('artist_sounds').doc(id).getM('music_playlists.dart:149');
-          if (d.exists && d.data()!['status'] == 'validated') {
-            final s = ArtistSound.fromMap(d.data()!, d.id);
-            if (s.previewUrl != null) byId['a:$id'] = MusicTrack.fromSound(s);
-          }
+          final snd = await MusicApi.sound(id);
+          if (snd != null && snd.status == 'validated' && snd.previewUrl != null) byId['a:$id'] = MusicTrack.fromSound(snd);
         } catch (_) {}
       }));
     }
@@ -173,39 +172,39 @@ class MusicPlaylists {
 
   static String ref(MusicTrack t) => t.kind == 'free' ? 'f:${t.id}' : 'a:${t.id}';
 
-  static Future<Map<String, dynamic>> _call(String name, Map<String, dynamic> data) async {
-    final r = await FirebaseFunctions.instance.httpsCallable(name).call(data);
-    return Map<String, dynamic>.from(r.data as Map);
-  }
-
-  /// Crée (playlistId null) ou modifie une playlist. Renvoie l'identifiant, ou lève FirebaseFunctionsException.
+  /// Crée (playlistId null) ou modifie une playlist. Renvoie l'identifiant, ou lève une [ApiException].
   static Future<String> save({String? playlistId, required String title, String description = '', required bool paid, int price = 0, required List<String> trackIds}) async {
-    final d = await _call('playlistSave', {'playlistId': playlistId, 'title': title, 'description': description, 'access': paid ? 'paid' : 'free', 'priceCoins': price, 'trackIds': trackIds});
+    final d = await MusicApi.savePlaylist(playlistId: playlistId, title: title, description: description, paid: paid, price: price, trackIds: trackIds);
     _loaded.clear();
+    _changes.add(null);
     return '${d['id']}';
   }
 
-  /// Ajoute à la bibliothèque (paie si la playlist est payante). Renvoie {ok, already?, price, ownerCoins, paidCount}.
-  static Future<Map<String, dynamic>> add(String playlistId) => _call('playlistAdd', {'playlistId': playlistId});
+  /// Ajoute à la bibliothèque (achat en pièces si la playlist est payante). Renvoie {ok, already?, price}.
+  static Future<Map<String, dynamic>> add(String playlistId) async {
+    final p = await MusicApi.playlist(playlistId);
+    final price = (p?['price_coins'] as num?)?.toInt() ?? 0;
+    final isOwner = (p?['me'] as Map?)?['is_owner'] == true;
+    final r = (p?['access'] == 'paid' && price > 0 && !isOwner) ? await MusicApi.buyPlaylist(playlistId) : await MusicApi.addFreePlaylist(playlistId);
+    _changes.add(null);
+    return {'ok': true, 'price': price, ...r};
+  }
 
   static Future<void> delete(String playlistId) async {
-    await _call('playlistDelete', {'playlistId': playlistId});
+    await MusicApi.deletePlaylist(playlistId);
     _loaded.clear();
+    _changes.add(null);
   }
 
-  /// Retire une playlist de ma bibliothèque (sans remboursement).
+  /// Retirer une playlist de ma bibliothèque : pas encore de point d'accès dans l'API (voir lacunes_api_argent_creations.md).
   static Future<void> removeFromLibrary(String playlistId) async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
-    await _db.collection('MusicPlaylistLibrary').doc('${uid}_$playlistId').delete();
+    await MusicApi.removePlaylistFromLibrary(playlistId);
+    _changes.add(null);
   }
 
-  /// Message lisible pour une erreur de fonction.
+  /// Message lisible pour une erreur de l'API.
   static String message(Object e) {
-    if (e is FirebaseFunctionsException) {
-      if (e.code == 'resource-exhausted' && (e.message ?? '').contains('Solde')) return 'Solde de pièces insuffisant.';
-      return e.message ?? 'Action impossible.';
-    }
-    return 'Action impossible. Vérifie ta connexion.';
+    if (e is ApiException && e.isInsufficientCoins) return 'Solde de pièces insuffisant.';
+    return MusicApi.message(e, fallback: 'Action impossible.');
   }
 }

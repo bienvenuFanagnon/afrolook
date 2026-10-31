@@ -1,4 +1,3 @@
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Gestion du cooldown de publication.
@@ -7,8 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 ///   1. Cache local (SharedPreferences) — lecture synchrone après init, 0 réseau.
 ///      Partagé entre tous les onglets. Mis à jour par [markPosted()] après chaque
 ///      publication réussie.
-///   2. Vérification serveur (Cloud Function) — appelée uniquement si le cache local
-///      ne détecte pas de cooldown actif.
+///   2. Vérification serveur : faite par l'API à la création de la publication.
 ///
 /// Cooldown : 5 minutes pour tous les utilisateurs non-premium.
 class PostCooldownService {
@@ -44,28 +42,8 @@ class PostCooldownService {
       return (canPost: false, remainingSeconds: localRemaining);
     }
 
-    // 2. Vérification serveur — timeout court pour ne pas bloquer l'UI
-    try {
-      final callable = FirebaseFunctions.instance
-          .httpsCallable('checkPostCooldownServer');
-      final result = await callable.call().timeout(const Duration(seconds: 5));
-      final data = result.data as Map<String, dynamic>;
-      final canPost = data['canPost'] as bool? ?? true;
-      final remaining = data['remainingSeconds'] as int? ?? 0;
-
-      // Serveur dit non → synchroniser le cache local pour les autres onglets
-      if (!canPost && remaining > 0) {
-        final prefs = await SharedPreferences.getInstance();
-        final simulatedLast =
-            DateTime.now().millisecondsSinceEpoch - (_cooldownMs - remaining * 1000);
-        await prefs.setInt(_kKey, simulatedLast);
-      }
-
-      return (canPost: canPost, remainingSeconds: remaining);
-    } catch (_) {
-      // Erreur réseau : on laisse passer pour ne pas bloquer l'UX
-      return (canPost: true, remainingSeconds: 0);
-    }
+    // Le serveur applique ses propres limites à la création (erreur 429 affichée par l'écran de publication).
+    return (canPost: true, remainingSeconds: 0);
   }
 
   static String formatRemaining(int seconds) {

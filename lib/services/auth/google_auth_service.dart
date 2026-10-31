@@ -1,5 +1,5 @@
-import 'package:afrotok/services/read_meter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import 'package:afrotok/services/api/users_api.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -55,8 +55,13 @@ class GoogleAuthService {
 
   /// Le profil Afrolook existe-t-il déjà pour ce compte ?
   static Future<bool> hasProfile(String uid) async {
-    final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).getM('google_auth_service.dart:57');
-    return doc.exists;
+    try {
+      await UsersApi.me(); // 403 « profile_missing » tant que POST /v1/me/register n'a pas été appelé
+      return true;
+    } on ApiException catch (e) {
+      if (e.status == 403 || e.status == 404) return false;
+      rethrow;
+    }
   }
 
   /// Quitte Google et Firebase (annulation en cours d'inscription).

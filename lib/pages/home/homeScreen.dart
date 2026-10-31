@@ -46,6 +46,9 @@ import 'package:flutter/foundation.dart';
 
 import 'package:flutter/material.dart';
 import 'package:afrotok/providers/postProvider.dart';
+import 'package:afrotok/services/api/canaux_api.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:afrotok/constant/logo.dart';
 import 'package:afrotok/constant/sizeText.dart';
@@ -1200,21 +1203,19 @@ class _MyHomePageState extends State<MyHomePage>
       case 'creator':
         final userId = data['userId'] as String?;
         if (userId != null && userId.isNotEmpty) {
-          FirebaseFirestore.instance.collection('Users').doc(userId).getM('homeScreen.dart:1182').then((doc) {
-            if (!mounted || !doc.exists) return;
-            final user = UserData.fromJson(doc.data()!);
-            Navigator.push(context, MaterialPageRoute(builder: (_) => OtherUserPage(otherUser: user)));
-          });
+          UsersApi.publicProfile(userId).then((json) {
+            if (!mounted) return;
+            Navigator.push(context, MaterialPageRoute(builder: (_) => OtherUserPage(otherUser: userFromApi(json))));
+          }).catchError((_) {});
         }
         break;
       case 'canal':
         final canalId = data['canalId'] as String?;
         if (canalId != null && canalId.isNotEmpty) {
-          FirebaseFirestore.instance.collection('Canaux').doc(canalId).getM('homeScreen.dart:1192').then((doc) {
-            if (!mounted || !doc.exists) return;
-            final canal = Canal.fromJson({...doc.data()!, 'id': doc.id});
+          CanauxApi.get(canalId, myId: authProvider.loginUserData.id).then((canal) {
+            if (!mounted) return;
             Navigator.push(context, MaterialPageRoute(builder: (_) => CanalDetails(canal: canal)));
-          });
+          }).catchError((_) {});
         }
         break;
     }
@@ -1273,11 +1274,10 @@ class _MyHomePageState extends State<MyHomePage>
       case 'creator':
         if (dest.creatorId != null) {
           _navigateViaNotifications(() {
-            FirebaseFirestore.instance.collection('Users').doc(dest.creatorId).getM('homeScreen.dart:1255').then((doc) {
-              if (!mounted || !doc.exists) return;
-              final user = UserData.fromJson(doc.data()!);
-              Navigator.push(context, MaterialPageRoute(builder: (_) => OtherUserPage(otherUser: user)));
-            });
+            UsersApi.publicProfile(dest.creatorId!).then((json) {
+              if (!mounted) return;
+              Navigator.push(context, MaterialPageRoute(builder: (_) => OtherUserPage(otherUser: userFromApi(json))));
+            }).catchError((_) {});
           });
         }
         break;

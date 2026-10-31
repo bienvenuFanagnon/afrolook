@@ -1,5 +1,6 @@
 import 'package:afrotok/services/read_meter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/api_gateway.dart';
+import 'package:afrotok/services/api/post_mapper.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -25,7 +26,7 @@ class _DiscoveryFeedPageState extends State<DiscoveryFeedPage> {
   List<Post> _posts = [];
   bool _loading = true;
   bool _hasMore = true;
-  DocumentSnapshot? _lastDoc;
+  String? _cursor;
   static const int _pageSize = 5;
 
   @override
@@ -60,26 +61,12 @@ class _DiscoveryFeedPageState extends State<DiscoveryFeedPage> {
   Future<void> _fetchFromFirestore({bool reset = false}) async {
     if (!_hasMore && !reset) return;
     try {
-      // orderBy created_at seul = index single-field auto-créé par Firestore,
-      // aucun index composite requis. typeTabbar et status filtrés côté client.
-      Query query = FirebaseFirestore.instance
-          .collection('Posts')
-          .orderBy('created_at', descending: true)
-          .limit(_pageSize);
-
-      if (!reset && _lastDoc != null) {
-        query = query.startAfterDocument(_lastDoc!);
-      }
-
-      final snap = await query.getM('discovery_feed_page.dart:73');
-      final fetched = snap.docs.map((d) {
-        try {
-          return Post.fromJson(d.data() as Map<String, dynamic>)..id = d.id;
-        } catch (_) {
-          return null;
-        }
-      }).whereType<Post>()
-          .where((p) => widget.pageType == null || p.typeTabbar == widget.pageType)
+      // Découverte du serveur (niveau 3) : publications non vues, pays proche en premier
+      final r = await ApiGateway.instance.client.get('/feed', query: {'tier': 3, 'limit': _pageSize, if (!reset && _cursor != null) 'cursor': _cursor}) as Map;
+      final fetched = ((r['data'] as List?) ?? const [])
+          .whereType<Map>()
+          .map((m) => postFromApi(Map<String, dynamic>.from(m)))
+          .where((p) => p.id != null && (widget.pageType == null || p.typeTabbar == widget.pageType))
           .toList();
 
       if (!mounted) return;
@@ -90,8 +77,8 @@ class _DiscoveryFeedPageState extends State<DiscoveryFeedPage> {
           final existingIds = _posts.map((p) => p.id).toSet();
           _posts.addAll(fetched.where((p) => !existingIds.contains(p.id)));
         }
-        _lastDoc = snap.docs.isNotEmpty ? snap.docs.last : null;
-        _hasMore = snap.docs.length == _pageSize;
+        _cursor = r['next_cursor'] as String?;
+        _hasMore = _cursor != null;
         _loading = false;
       });
     } catch (e) {

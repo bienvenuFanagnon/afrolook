@@ -1,10 +1,10 @@
+import 'package:afrotok/services/api/users_api.dart';
 import '../../services/media_shrink.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/pages/userPosts/hashtag/textHashTag/views/widgets/loading_indicator.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:firebase_storage/firebase_storage.dart';
 
@@ -28,7 +28,6 @@ import 'package:afrotok/models/model_data.dart';
 
 import 'package:afrotok/providers/authProvider.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:firebase_storage/firebase_storage.dart';
 
@@ -56,7 +55,6 @@ class UserServiceForm extends StatefulWidget {
 
 class _UserServiceFormState extends State<UserServiceForm> {
   final _formKey = GlobalKey<FormState>();
-  final _firestore = FirebaseFirestore.instance;
   late UserServiceData _userService;
   XFile? _coverImage;
   bool _isLoading = false;
@@ -308,7 +306,7 @@ class _UserServiceFormState extends State<UserServiceForm> {
 
       // Gérer l'upload de l'image
       if (_coverImage != null) {
-        final String serviceId = _userService.id ?? _firestore.collection('UserServices').doc().id;
+        final String serviceId = _userService.id ?? 'service_${DateTime.now().microsecondsSinceEpoch}'; // nom de fichier provisoire
         final String? imageUrl = await _uploadImage(File(_coverImage!.path), serviceId);
         if (imageUrl != null) {
           _userService.imageCourverture = imageUrl;
@@ -318,7 +316,6 @@ class _UserServiceFormState extends State<UserServiceForm> {
       // Mettre à jour les timestamps
       final now = DateTime.now().millisecondsSinceEpoch;
       if (_userService.id == null) {
-        _userService.id = _firestore.collection('UserServices').doc().id;
         _userService.createdAt = now;
         _userService.userId = authProvider.loginUserData.id;
         _userService.disponible = true;
@@ -331,7 +328,8 @@ class _UserServiceFormState extends State<UserServiceForm> {
       _userService.city = _selectedCity;
 
       // Sauvegarder
-      await _firestore.collection('UserServices').doc(_userService.id).set(_userService.toJson());
+      final saved = await UsersApi.saveService(_userService.toJson(), id: _userService.id);
+      _userService.id = (saved['id'] as String?) ?? _userService.id;
 
       _showSuccessSnackBar(
           widget.isEditing ? 'Service modifié avec succès!' : 'Service créé avec succès!'

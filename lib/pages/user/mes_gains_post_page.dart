@@ -1,10 +1,9 @@
-import 'package:afrotok/services/read_meter.dart';
-import 'package:afrotok/services/postService/view_earnings_filter.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:flutter/material.dart';
+import '../../services/api/api_gateway.dart';
+import '../../services/api/wallet_api.dart';
 import '../../services/monetization_config.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -12,7 +11,6 @@ import 'package:provider/provider.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
-import '../../services/postService/post_view_service.dart';
 import '../../theme/app_colors.dart';
 import '../postDetails.dart';
 import '../postDetailsVideo.dart';
@@ -45,7 +43,12 @@ Map<String, dynamic> _getTier(double score) {
   return _scoreTiers.last;
 }
 
+/// Gains des vues lus sur l'API (`GET /wallet/earnings/views`) : le serveur compte les vues et calcule le montant, l'application affiche seulement.
+Map<String, dynamic>? _apiEarn;
+
 double _fcfaPerView(double creatorScore) {
+  final r = _apiEarn?['rate_xof_per_view'];
+  if (r is num) return r.toDouble();
   final t = _getTier(creatorScore);
   return _baseViewRate * (t['multiplier'] as double);
 }
@@ -56,11 +59,11 @@ double _fcfaPerView(double creatorScore) {
 int _excludedViews = 0;
 
 int _pendingViews(UserData user) =>
-    ((user.totalPostUniqueViews ?? 0) - _excludedViews - (user.totalViewsEarningsCredited ?? 0)).clamp(0, 1 << 40);
+    (_apiEarn?['pending_views'] is num) ? (_apiEarn!['pending_views'] as num).toInt() : ((user.totalPostUniqueViews ?? 0) - _excludedViews - (user.totalViewsEarningsCredited ?? 0)).clamp(0, 1 << 40);
 
 /// Gains encaissables (FCFA) — même calcul que la Cloud Function cashViewEarnings.
 double _availableEarnings(UserData user) =>
-    (_pendingViews(user) * _fcfaPerView(user.creatorScore ?? 0) * 100).floorToDouble() / 100;
+    (_apiEarn?['available_xof'] is num) ? (_apiEarn!['available_xof'] as num).toDouble() : (_pendingViews(user) * _fcfaPerView(user.creatorScore ?? 0) * 100).floorToDouble() / 100;
 
 class MesGainsPage extends StatefulWidget {
   final String userId;
@@ -72,7 +75,6 @@ class MesGainsPage extends StatefulWidget {
 }
 
 class _MesGainsPageState extends State<MesGainsPage> {
-  final _firestore = FirebaseFirestore.instance;
   final _amountController = TextEditingController();
 
   bool _isMigrating = false;
@@ -93,7 +95,6 @@ class _MesGainsPageState extends State<MesGainsPage> {
   void initState() {
     super.initState();
     MonetizationConfig.load().then((_) { if (mounted) setState(() {}); });
-    ViewEarningsFilter.nonMonetizedViews(widget.userId).then((n) { _excludedViews = n; if (mounted) setState(() {}); });
     WidgetsBinding.instance.addPostFrameCallback((_) => _init());
   }
 
@@ -103,82 +104,52 @@ class _MesGainsPageState extends State<MesGainsPage> {
     super.dispose();
   }
 
+  String? _loadError;
+
   Future<void> _init() async {
     if (widget.isAdminView) {
-      // Mode lecture admin : charger les données de l'utilisateur ciblé depuis Firestore
+      // Vue équipe : les gains d'une autre personne ne sont pas encore exposés par l'API (voir lacunes_api_argent_creations.md).
       setState(() => _isLoadingViewedUser = true);
       try {
-        final snap = await _firestore.collection('Users').doc(widget.userId).getM('mes_gains_post_page.dart:110');
-        if (snap.exists && mounted) {
-          final data = Map<String, dynamic>.from(snap.data()!);
-          data['id'] = snap.id;
-          final rawIds = data['postViewsMonthlyPostIds'] as Map<String, dynamic>?;
+        final r = await ApiGateway.instance.client.get('/admin/users/${widget.userId}');
+        final d = WalletApi.map(r);
+        final u = d['user'] is Map ? Map<String, dynamic>.from(d['user'] as Map) : d;
+        if (mounted) {
           setState(() {
-            _viewedUser = UserData.fromJson(data);
-            _monthlyPostIds = rawIds?.map((k, v) =>
-                MapEntry(k, List<String>.from(v as List? ?? []))) ?? {};
+            _viewedUser = UserData(pseudo: (u['username'] ?? u['display_name'] ?? '') as String?);
+            _viewedUser!.id = widget.userId;
           });
         }
-      } catch (_) {}
+      } catch (e) {
+        _loadError = WalletApi.message(e);
+      }
       if (mounted) setState(() => _isLoadingViewedUser = false);
-      _loadHistory();
       return;
     }
-
-    final auth = Provider.of<UserAuthProvider>(context, listen: false);
-    final user = auth.loginUserData;
-
-    if (user.postViewsMigrationDone != true) {
-      setState(() => _isMigrating = true);
-      await PostViewService.migrateUserPostViews(widget.userId);
-      await auth.refreshUserData();
-      if (mounted) setState(() => _isMigrating = false);
-    } else if (_hasCorruptMonthly(user)) {
-      // Migration déjà faite mais map mensuelle corrompue (dates en µs traitées
-      // en ms lors d'une ancienne version → années comme 57708). On recalcule
-      // uniquement la map mensuelle sans toucher les soldes.
-      setState(() => _isMigrating = true);
-      await PostViewService.fixMonthlyData(widget.userId);
-      await auth.refreshUserData();
-      if (mounted) setState(() => _isMigrating = false);
-    }
-    // Lire postViewsMonthlyPostIds directement depuis Firestore (source fiable des mois)
-    try {
-      final snap = await _firestore.collection('Users').doc(widget.userId).getM('mes_gains_post_page.dart:146');
-      if (snap.exists && mounted) {
-        final raw = snap.data()?['postViewsMonthlyPostIds'] as Map<String, dynamic>?;
-        setState(() {
-          _monthlyPostIds = raw?.map((k, v) =>
-              MapEntry(k, List<String>.from(v as List? ?? []))) ?? {};
-        });
-      }
-    } catch (_) {}
+    await _reloadEarnings();
     _loadHistory();
   }
 
-  bool _hasCorruptMonthly(UserData user) {
-    final monthly = user.postViewsMonthly ?? {};
-    final currentYear = DateTime.now().year;
-    return monthly.keys.any((k) {
-      try { return int.parse(k.split('-').first) > currentYear + 1; }
-      catch (_) { return false; }
-    });
+  /// Relit les gains des vues sur l'API.
+  Future<void> _reloadEarnings() async {
+    try {
+      final e = await WalletApi.instance.viewEarnings();
+      _apiEarn = e;
+      _loadError = null;
+    } catch (e) {
+      _loadError = WalletApi.message(e);
+    }
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadHistory() async {
+    if (widget.isAdminView) return;
     setState(() => _isLoadingHistory = true);
     try {
-      final snap = await _firestore
-          .collection('TransactionSoldes')
-          .where('user_id', isEqualTo: widget.userId)
-          .where('type', isEqualTo: 'ENCAISSEMENT_VUES_POST')
-          .orderBy('createdAt', descending: true)
-          .limit(20)
-          .getM('mes_gains_post_page.dart:176');
-      _history = snap.docs.map((d) {
-        final data = d.data();
-        data['id'] = d.id;
-        return data;
+      final r = await WalletApi.instance.transactions(scope: 'money', limit: 50);
+      _history = r.items.where((t) => t['kind'] == 'view_cashout').take(20).map((t) {
+        final created = DateTime.tryParse('${t['created_at']}')?.millisecondsSinceEpoch;
+        return <String, dynamic>{'id': t['id'], 'montant': t['amount_xof'], 'createdAt': created};
       }).toList();
     } catch (_) {}
     if (mounted) setState(() => _isLoadingHistory = false);
@@ -193,19 +164,18 @@ class _MesGainsPageState extends State<MesGainsPage> {
 
     setState(() => _isEncashing = true);
     try {
-      // Calcul et crédit côté serveur (même compteur que le paiement automatique)
-      await FirebaseFunctions.instanceFor(region: 'europe-west1')
-          .httpsCallable('cashViewEarnings')
-          .call({'amount': input});
+      // Calcul et crédit côté serveur (clé conservée tant que la demande n'est pas confirmée)
+      await WalletApi.instance.cashViews(input.round());
       _amountController.clear();
+      await _reloadEarnings();
       await Provider.of<UserAuthProvider>(context, listen: false).refreshUserData();
       await _loadHistory();
       _snack(t.gainsSuccess(input.toInt()), colors.primary);
-    } on FirebaseFunctionsException catch (e) {
+    } on ApiException catch (e) {
       final msg = switch (e.code) {
-        'failed-precondition' => t.gainsErrInsuff,
-        'resource-exhausted' => t.gainsErrCooldown,
-        'invalid-argument' => t.gainsErrMin,
+        'exceeds_available' => t.gainsErrInsuff,
+        'too_soon' => t.gainsErrCooldown,
+        'below_minimum' => t.gainsErrMin,
         _ => t.gainsErrGeneral,
       };
       _snack(msg, colors.danger);
@@ -253,6 +223,11 @@ class _MesGainsPageState extends State<MesGainsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (_loadError != null) ...[
+                    _infoBox(_loadError!, colors.danger, Icons.error_outline, colors),
+                    TextButton(onPressed: _init, child: Text(context.tr('Réessayer'))),
+                    const SizedBox(height: 8),
+                  ],
                   _statsCard(user, colors, t),
                   const SizedBox(height: 16),
                   _tierInfoCard(user, colors),
@@ -786,7 +761,6 @@ class _MesGainsPageState extends State<MesGainsPage> {
         userId: userId,
         monthKey: monthKey,
         fcfaPerView: rate,
-        firestore: _firestore,
         onPostTap: _openPostDetail,
         formatMonth: _formatMonth,
       ),
@@ -907,7 +881,6 @@ class _MonthPostsSheet extends StatefulWidget {
   final String userId;
   final String monthKey;
   final double fcfaPerView;
-  final FirebaseFirestore firestore;
   final void Function(Post) onPostTap;
   final String Function(String) formatMonth;
 
@@ -915,7 +888,6 @@ class _MonthPostsSheet extends StatefulWidget {
     required this.userId,
     required this.monthKey,
     required this.fcfaPerView,
-    required this.firestore,
     required this.onPostTap,
     required this.formatMonth,
   });
@@ -943,68 +915,18 @@ class _MonthPostsSheetState extends State<_MonthPostsSheet> {
   }
 
   Future<void> _loadInitial() async {
-    final userDoc = await widget.firestore.collection('Users').doc(widget.userId).getM('mes_gains_post_page.dart:945');
-    final data = userDoc.data() ?? {};
-
-    // Vues par post (source de vérité pour l'affichage)
-    final rawPerPost = data['postViewsPerPost'] as Map<String, dynamic>?;
-    _perPostViews = rawPerPost?.map((k, v) => MapEntry(k, (v as num).toInt())) ?? {};
-
-    final monthlyIds = (data['postViewsMonthlyPostIds'] as Map<String, dynamic>?) ?? {};
-    final rawIds = monthlyIds[widget.monthKey];
-    _allPostIds = rawIds is List ? List<String>.from(rawIds.whereType<String>()) : [];
-
-    if (_allPostIds.isNotEmpty) {
-      await _loadNextIdBatch();
-    }
-
+    // Le détail des publications d'un mois n'est pas encore exposé par l'API (voir lacunes_api_argent_creations.md).
     if (mounted) setState(() => _isLoading = false);
-  }
-
-  Future<void> _loadNextIdBatch() async {
-    final end = (_idOffset + _pageSize).clamp(0, _allPostIds.length);
-    final batch = _allPostIds.sublist(_idOffset, end);
-    if (batch.isEmpty) { _hasMore = false; return; }
-
-    final newPosts = <Post>[];
-    for (int i = 0; i < batch.length; i += 30) {
-      final sub = batch.sublist(i, (i + 30).clamp(0, batch.length));
-      final snap = await widget.firestore
-          .collection('Posts')
-          .where(FieldPath.documentId, whereIn: sub)
-          .getM('mes_gains_post_page.dart:974');
-      newPosts.addAll(snap.docs.map((d) {
-        final data = Map<String, dynamic>.from(d.data());
-        data['id'] = d.id;
-        return Post.fromJson(data);
-      }).where((p) {
-        if (p.isAdvertisement == true) return false;
-        // Un post non monétisé ne rapporte rien : il n'apparaît pas dans les gains (ancien post = monétisé)
-        if (p.monetized == false) return false;
-        return true;
-      }));
-    }
-
-    _posts.addAll(newPosts);
-    _posts.sort((a, b) => _viewsOf(b).compareTo(_viewsOf(a)));
-    _idOffset = end;
-    _hasMore = _idOffset < _allPostIds.length;
   }
 
   // Vues réelles d'un post : priorité postViewsPerPost du user > champs post
   int _viewsOf(Post p) =>
       _perPostViews[p.id] ?? p.users_vue_id!.length ?? p.vues ?? 0;
 
-  Future<void> _loadMore() async {
-    if (_isLoadingMore || !_hasMore) return;
-    setState(() => _isLoadingMore = true);
-    await _loadNextIdBatch();
-    if (mounted) setState(() => _isLoadingMore = false);
-  }
+  Future<void> _loadMore() async {}
 
   static DateTime? _parseDate(dynamic value) {
     if (value == null) return null;
-    if (value is Timestamp) return value.toDate();
     final ts = value is int ? value : int.tryParse(value.toString());
     if (ts == null) return null;
     return ts > 9999999999999

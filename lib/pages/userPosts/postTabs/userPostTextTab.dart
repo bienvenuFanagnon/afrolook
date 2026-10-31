@@ -6,10 +6,11 @@ import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/userPosts/postWidgets/defi_config_section.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:afrotok/pages/defi/defi_ui.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'package:afrotok/services/api/post_publisher.dart';
+import 'package:afrotok/widgets/api_error_dialogs.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:flutter/material.dart';
 
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -61,7 +62,6 @@ class _UserPubTextState extends State<UserPubText> {
   late UserAuthProvider authProvider = Provider.of<UserAuthProvider>(context, listen: false);
   late UserProvider userProvider = Provider.of<UserProvider>(context, listen: false);
 
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
   bool onTap = false;
 
   // Contrôle de temps entre les posts
@@ -260,7 +260,7 @@ class _UserPubTextState extends State<UserPubText> {
       setState(() { _linkPreview = p; _linkLoading = false; _linkError = p == null ? 'Aucun aperçu pour ce lien : il sera publié comme simple texte.' : null; });
     } catch (e) {
       if (!mounted || _linkUrl != url) return;
-      final msg = e is FirebaseFunctionsException && e.code == 'resource-exhausted' ? 'Trop d\'aperçus demandés, réessaie dans un moment.' : 'Aperçu indisponible pour le moment : le lien sera publié comme simple texte.';
+      final msg = e is ApiException && e.status == 429 ? 'Trop d\'aperçus demandés, réessaie dans un moment.' : 'Aperçu indisponible pour le moment : le lien sera publié comme simple texte.';
       setState(() { _linkLoading = false; _linkError = msg; });
     }
   }
@@ -1858,87 +1858,28 @@ class _UserPubTextState extends State<UserPubText> {
           },
         );
 
-        String postId = FirebaseFirestore.instance.collection('Posts').doc().id;
-
-        Post post = Post();
-        post.monetized = _isDefiContext ? false : _monetized;
-        post.user_id = authProvider.loginUserData.id;
-        post.description = _descriptionController.text;
-        post.updatedAt = DateTime.now().microsecondsSinceEpoch;
-        post.createdAt = DateTime.now().microsecondsSinceEpoch;
-        post.status = PostStatus.VALIDE.name;
-        post.type = _selectedPostType == 'DEFI' ? PostType.DEFI.name : PostType.POST.name;
-        post.comments = 0;
-        post.nombrePersonneParJour = 60;
-        post.dataType = PostDataType.TEXT.name;
-        post.typeTabbar = _selectedPostType;
-        post.likes = 0;
-        post.loves = 0;
-        post.feedScore = 0.0;
-        post.id = postId;
-        post.images = [];
-        // aperçu du lien : seulement si l'option est cochée et que le lien est toujours dans le texte
-        if (_canLinkPreview && _linkOn && _linkPreview != null && _linkUrl != null && _linkUrl == firstLinkIn(post.description)) {
-          post.linkPreview = _linkPreview;
+        // Défis : pas encore de route côté API (voir lacunes_api_publications.md)
+        if (widget.defiPostId != null || _selectedPostType == 'DEFI') {
+          if (mounted) Navigator.of(context, rootNavigator: true).pop();
+          setState(() => onTap = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Les défis ne sont pas encore disponibles dans cette version.', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))),
+          );
+          return;
         }
 
-        // Quand l'utilisateur coche "Tous les pays"
-        if (_selectAllCountries) {
-          post.availableCountries = ['ALL'];
-        } else {
-          // Quand il sélectionne des pays spécifiques
-          post.availableCountries = _selectedCountries.map((c) => c.code).toList();
-        }
+        // Lien du texte : seulement si l'option d'aperçu est cochée et que le lien est toujours dans le texte
+        final String? linkForPost = (_canLinkPreview && _linkOn && _linkPreview != null && _linkUrl != null && _linkUrl == firstLinkIn(_descriptionController.text)) ? _linkUrl : null;
 
-        if (_selectedPostType == 'DEFI' && _defiConfig != null) {
-          post.defiConfigMap = _defiConfig!.toJson();
-        }
-
-        if (widget.canal != null) {
-          post.canal_id = widget.canal!.id;
-          post.categorie = "CANAL";
-        }
-        if (widget.defiPostId != null) {
-          post.defiResponseToPostId = widget.defiPostId;
-        }
-        post.creatorSnapshot = Post.buildCreatorSnapshot(authProvider.loginUserData);
-
-        // Participation DÉFI : la Cloud Function paie et crée le post dans une seule transaction
-        if (widget.defiPostId != null) {
-          try {
-            await FirebaseFunctions.instance.httpsCallable('handleDefiAction').call({
-              'action': 'participate',
-              'postId': widget.defiPostId,
-              'post': post.toJson(),
-            });
-          } catch (e) {
-            if (mounted) Navigator.of(context, rootNavigator: true).pop();
-            setState(() => onTap = false);
-            if (mounted) DefiDialogs.handleError(context, e, isVote: false);
-            return;
-          }
-        } else if (post.type == PostType.DEFI.name) {
-          // Création DÉFI : la Cloud Function débite la cagnotte et crée le post dans une seule transaction
-          try {
-            await FirebaseFunctions.instance.httpsCallable('handleDefiAction').call({
-              'action': 'create',
-              'postId': postId,
-              'post': {...post.toJson(), 'defi_config': post.defiConfigMap},
-            });
-          } catch (e) {
-            if (mounted) Navigator.of(context, rootNavigator: true).pop();
-            setState(() => onTap = false);
-            if (mounted) DefiDialogs.handleError(context, e, isVote: false, isCreation: true);
-            return;
-          }
-        } else {
-          await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
-        }
-        if (widget.canal != null && (_selectedPostType ?? '').isNotEmpty) {
-          FirebaseFirestore.instance.collection('Canaux').doc(widget.canal!.id!).update({
-            'categories': FieldValue.arrayUnion([_selectedPostType!]),
-          }).catchError((_) {});
-        }
+        final Post post = await PostPublisher.publish(
+          description: _descriptionController.text,
+          linkUrl: linkForPost,
+          category: _selectedPostType,
+          monetized: _monetized,
+          countries: _selectAllCountries ? const ['ALL'] : _selectedCountries.map((c) => c.code).toList(),
+          canal: widget.canal,
+        );
+        final String postId = post.id!;
         await PostCooldownService.markPosted();
 
         printVm('✅ Post texte créé avec ID: $postId, ${_selectAllCountries ? 'Tous pays' : '${_selectedCountries.length} pays'}');
@@ -2076,57 +2017,15 @@ class _UserPubTextState extends State<UserPubText> {
       // Filet de sécurité global : toute exception non capturée réinitialise le bouton
       printVm('❌ Erreur inattendue dans _publishPost: $e');
       if (Navigator.canPop(context)) Navigator.pop(context);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(apiErrorText(e, fallback: 'Erreur lors de la publication. Veuillez réessayer.'), textAlign: TextAlign.center, style: TextStyle(color: _c.danger))),
+        );
+      }
     } finally {
       // Garantit que le bouton se débloque toujours, quoi qu'il arrive
       if (mounted) setState(() => onTap = false);
     }
-  }
-
-  // Méthode pour notifier les abonnés en arrière-plan
-  void _notifySubscribersInBackground(String postId, String authorId) {
-    Future.microtask(() async {
-      try {
-        printVm('🚀 Démarrage notification abonnés pour le post texte $postId');
-        final startTime = DateTime.now();
-
-        await _notificationService.notifySubscribersAboutNewPost(
-          postId: postId,
-          authorId: authorId,
-        );
-
-        final endTime = DateTime.now();
-        final duration = endTime.difference(startTime);
-
-        printVm('✅ Notification abonnés terminée en ${duration.inSeconds} secondes');
-
-        await FirebaseFirestore.instance
-            .collection('NotificationLogs')
-            .doc(postId)
-            .set({
-          'postId': postId,
-          'authorId': authorId,
-          'postType': 'TEXT',
-          'status': 'completed',
-          'durationSeconds': duration.inSeconds,
-          'completedAt': FieldValue.serverTimestamp(),
-        });
-
-      } catch (e) {
-        printVm('⚠️ Erreur lors de la notification des abonnés: $e');
-
-        await FirebaseFirestore.instance
-            .collection('NotificationLogs')
-            .doc(postId)
-            .set({
-          'postId': postId,
-          'authorId': authorId,
-          'postType': 'TEXT',
-          'status': 'failed',
-          'error': e.toString(),
-          'failedAt': FieldValue.serverTimestamp(),
-        });
-      }
-    });
   }
 
   Widget _buildRestrictionsInfo() {

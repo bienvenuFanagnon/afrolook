@@ -2,8 +2,9 @@ import 'package:afrotok/services/read_meter.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import '../../../services/api/api_gateway.dart';
+import '../../../services/api/wallet_api.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -21,6 +22,7 @@ class _PendingTransactionsScreenState extends State<PendingTransactionsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String? _currentUserId;
+  int _reload = 0;
 
   @override
   void initState() {
@@ -91,23 +93,26 @@ class _PendingTransactionsScreenState extends State<PendingTransactionsScreen>
   }
 
   Widget _buildPendingDepositsList() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('pending_afrolook_feexpay_deposits')
-          .where('userId', isEqualTo: _currentUserId)
-          .where('status', whereIn: ['pending', 'processing', 'failed'])
-          .orderBy('createdAt', descending: true)
-          .snapshotsM('pendingTransactionsScreen.dart:99'),
+    // Liste des dépôts en cours de la personne. Point d'accès prévu : GET /payments/deposits?status= (absent pour l'instant,
+    // voir lacunes_api_argent_creations.md) : en cas d'erreur, « Réessayer ».
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      key: ValueKey(_reload),
+      future: ApiGateway.instance.client.get('/payments/deposits', query: {'status': 'open'}).then(WalletApi.list),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Center(child: Text(context.tr('Erreur: {a}', {'a': snapshot.error})));
+          return Center(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Text(snapshot.error is ApiException ? WalletApi.message(snapshot.error!) : context.tr('Erreur: {a}', {'a': snapshot.error})),
+              TextButton(onPressed: () => setState(() => _reload++), child: Text(context.tr('Réessayer'))),
+            ]),
+          );
         }
 
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator(color: Color(0xFFD8A868)));
         }
 
-        final transactions = snapshot.data?.docs ?? [];
+        final transactions = snapshot.data ?? <Map<String, dynamic>>[];
 
         if (transactions.isEmpty) {
           return Center(
@@ -126,14 +131,14 @@ class _PendingTransactionsScreenState extends State<PendingTransactionsScreen>
           padding: EdgeInsets.all(16),
           itemCount: transactions.length,
           itemBuilder: (context, index) {
-            final doc = transactions[index];
-            final data = doc.data() as Map<String, dynamic>;
-            final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
-            final amount = (data['amount'] ?? 0).toDouble();
-            final reference = data['reference'] ?? context.tr('En attente...');
-            final amountWithoutFees = (data['amountWithoutFees'] ?? 0).toDouble();
-            final status = data['status'] ?? 'pending';
-            final depositNumber = data['depositNumber'] ?? '';
+            final data = Map<String, dynamic>.from(transactions[index]);
+            final createdAt = DateTime.tryParse('${data['created_at']}')?.toLocal();
+            final amount = ((data['amount_xof'] ?? 0) as num).toDouble();
+            final reference = '${data['id'] ?? context.tr('En attente...')}';
+            final amountWithoutFees = ((data['credited_xof'] ?? 0) as num).toDouble();
+            final status = '${data['status'] ?? 'pending'}';
+            final depositNumber = '${data['deposit_number'] ?? ''}';
+            data['reference'] = reference;
 
             return _buildTransactionCard(
               depositNumber: depositNumber,
@@ -142,7 +147,6 @@ class _PendingTransactionsScreenState extends State<PendingTransactionsScreen>
               reference: reference,
               createdAt: createdAt,
               status: status,
-              docRef: doc.reference,
               data: data,
             );
           },
@@ -158,7 +162,6 @@ class _PendingTransactionsScreenState extends State<PendingTransactionsScreen>
     required String reference,
     required DateTime? createdAt,
     required String status,
-    required DocumentReference docRef,
     required Map<String, dynamic> data,
   }) {
     final bool isPending = status == 'pending' || status == 'processing';
@@ -193,13 +196,12 @@ class _PendingTransactionsScreenState extends State<PendingTransactionsScreen>
       child: InkWell(
         onTap: isPending
             ? () => _showVerificationDialog({
-          'id': docRef.id,
+          'id': reference,
           'reference': reference,
           'amount': amount,
           'amountWithoutFees': amountWithoutFees,
           'createdAt': createdAt,
           'type': 'afrolook_deposit',
-          'ref': docRef,
           'data': data,
           'depositNumber': depositNumber,
         })
@@ -333,28 +335,17 @@ class _VerificationDialogState extends State<_VerificationDialog> {
     _checkCount++;
 
     try {
-      final functions = FirebaseFunctions.instance;
-      final callable = functions.httpsCallable('checkAfrolookFeexpayTransactionStatus');
-
-      final result = await callable({
-        'reference': reference,
-        'transKey': '',
-      });
-
-      final status = result.data['status'];
-      final success = result.data['success'] == true;
-      final pending = result.data['pending'] == true;
+      final d = await WalletApi.instance.depositStatus('$reference');
+      final status = d['status'];
+      final success = status == 'completed';
+      final pending = status == 'processing' || status == 'created';
+      final result = (data: {'message': d['failure_reason'], 'reason': d['failure_reason']});
 
       if (status == 'completed' || success == true) {
         setState(() {
           _isChecking = false;
           _isSuccess = true;
           _message = context.tr('✅ Paiement confirmé avec succès !');
-        });
-
-        await widget.transaction['ref'].update({
-          'status': 'completed',
-          'processedAt': FieldValue.serverTimestamp(),
         });
 
         widget.onComplete();

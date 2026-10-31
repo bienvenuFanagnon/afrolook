@@ -14,11 +14,11 @@ import 'package:afrotok/pages/contenuPayant/widgets/promo_code_modal.dart';
 import 'package:afrotok/pages/paiement/newDepot.dart';
 import 'package:afrotok/pages/coins/coin_recharge_screen.dart';
 import 'package:chewie/chewie.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/theme/app_colors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import 'package:afrotok/services/api/contenu_payant_api.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/widgets/ios_purchase_unavailable.dart';
 import '../../utils/platform_guard.dart';
@@ -108,10 +108,7 @@ class _ContentDetailPageState extends State<ContentDetailPage> with MusicSuspend
   Future<void> _loadCreatorData() async {
     final ownerId = _content.ownerId;
     if (ownerId == null || ownerId.isEmpty) return;
-    final doc = await FirebaseFirestore.instance.collection('Users').doc(ownerId).getM('content_detail_page.dart:110');
-    if (doc.exists && mounted) {
-      setState(() => _creatorData = UserData.fromJson({...doc.data()!, 'id': doc.id}));
-    }
+    // Pseudo et photo du créateur : à fournir par l'API (voir lacunes_api_canaux.md) ; sans eux l'écran affiche la fiche sans le bandeau créateur.
   }
 
   /// Lance la vidéo pendant 10 secondes à la position [ratio] (0.0 = début, 0.5 = milieu, 0.9 = fin).
@@ -289,11 +286,7 @@ class _ContentDetailPageState extends State<ContentDetailPage> with MusicSuspend
     try {
       // Toujours passer par la Cloud Function — elle gère free/admin/acheté
       // et génère une URL signée Firebase Storage valide 1h.
-      final callable =
-          FirebaseFunctions.instance.httpsCallable('getSecureDownloadUrl');
-      final result = await callable
-          .call({'contentId': _content.id, 'fileKey': 'videoUrl'});
-      final videoUrl = result.data['url'] as String?;
+      final videoUrl = await ContenuPayantApi.access(_content.id!, fileKey: 'video');
 
       if (videoUrl == null || videoUrl.isEmpty || !mounted) {
         _showResultDialog(success: false, message: 'Impossible de charger la vidéo. Vérifiez votre connexion et réessayez.');
@@ -332,11 +325,7 @@ class _ContentDetailPageState extends State<ContentDetailPage> with MusicSuspend
     if (_content.tutorialVideoUrl == null) return;
     setState(() => _initializingTutorial = true);
     try {
-      final callable =
-          FirebaseFunctions.instance.httpsCallable('getSecureDownloadUrl');
-      final result = await callable
-          .call({'contentId': _content.id, 'fileKey': 'tutorialVideoUrl'});
-      final url = result.data['url'] as String?;
+      final url = await ContenuPayantApi.access(_content.id!, fileKey: 'tutorial');
       if (url == null || url.isEmpty || !mounted) return;
 
       _tutorialController = await MediaCacheService.videoController(url);
@@ -389,20 +378,8 @@ class _ContentDetailPageState extends State<ContentDetailPage> with MusicSuspend
   }
 
   Future<void> _trackAffiliateClick(String affiliateId) async {
-    try {
-      final snap = await FirebaseFirestore.instance
-          .collection('AffiliateLinks')
-          .where('affiliateId', isEqualTo: affiliateId)
-          .where('contentId', isEqualTo: _content.id)
-          .limit(1)
-          .getM('content_detail_page.dart:397');
-      if (snap.docs.isNotEmpty) {
-        await snap.docs.first.reference
-            .update({'clicks': FieldValue.increment(1)});
-      }
-    } catch (_) {
-      // Echec silencieux — le tracking de clic est non critique
-    }
+    // Le clic est compté par l'API sur le lien d'affiliation (identifiant de lien) ; le lien partagé ne porte que l'identifiant de la personne
+    // qui partage : le comptage des clics attend la route « clic par partageur » (voir lacunes_api_canaux.md). Non critique.
   }
 
   Future<void> _checkPurchase() async {
@@ -426,17 +403,16 @@ class _ContentDetailPageState extends State<ContentDetailPage> with MusicSuspend
       }
       return;
     }
-    final snap = await FirebaseFirestore.instance
-        .collection('ContentPaie_purchases')
-        .where('userId', isEqualTo: uid)
-        .where('contentId', isEqualTo: _content.id)
-        .limit(1)
-        .getM('content_detail_page.dart:433');
-    if (mounted) {
-      setState(() {
-        _hasPurchased = snap.docs.isNotEmpty;
-        _checkingPurchase = false;
-      });
+    try {
+      final r = await ContenuPayantApi.get(_content.id!);
+      if (mounted) {
+        setState(() {
+          _hasPurchased = r?.hasAccess == true;
+          _checkingPurchase = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _checkingPurchase = false);
     }
   }
 
@@ -456,10 +432,7 @@ class _ContentDetailPageState extends State<ContentDetailPage> with MusicSuspend
     final key = 'viewed_content_$id';
     if (prefs.getBool(key) == true) return; // déjà vu cette session
     await prefs.setBool(key, true);
-    await FirebaseFirestore.instance
-        .collection('ContentPaies')
-        .doc(id)
-        .update({'views': FieldValue.increment(1)});
+    await ContenuPayantApi.view(id); // une vue par personne, comptée par le serveur
   }
 
   Future<void> _buy() async {
@@ -467,15 +440,12 @@ class _ContentDetailPageState extends State<ContentDetailPage> with MusicSuspend
 
     setState(() => _buying = true);
     try {
-      final callable =
-          FirebaseFunctions.instance.httpsCallable('securePurchase');
-      await callable.call({
-        'contentId': _content.id,
-        if (_appliedPromoCode?.id != null) 'promoCodeId': _appliedPromoCode!.id,
-        if (_affiliateId != null) 'affiliateId': _affiliateId,
-        // iPhone : paiement en pièces achetées via l'App Store (règle 3.1.1)
-        if (kIsAppleStore) 'payWithCoins': true,
-      });
+      // Achat par l'API : prix, code promo, affiliation et soldes sont vérifiés par le serveur (clé d'idempotence conservée)
+      await ContenuPayantApi.buy(_content.id!,
+          promoCode: _appliedPromoCode?.code,
+          affiliateId: _affiliateId,
+          // iPhone : paiement en pièces achetées via l'App Store (règle 3.1.1)
+          withCoins: kIsAppleStore);
 
       // Nettoyage du lien d'affiliation
       if (_affiliateId != null) {
@@ -495,11 +465,9 @@ class _ContentDetailPageState extends State<ContentDetailPage> with MusicSuspend
           message: 'Achat réussi ! Votre contenu est maintenant débloqué.',
         );
       }
-    } on FirebaseFunctionsException catch (e) {
-      final raw = e.message ?? '';
-      final isInsufficient = e.code == 'resource-exhausted' ||
-          raw.toLowerCase().contains('solde insuffisant') ||
-          raw.toLowerCase().contains('resource-exhausted');
+    } on ApiException catch (e) {
+      final raw = e.message;
+      final isInsufficient = e.code == 'insufficient_funds' || e.isInsufficientCoins;
       _showResultDialog(
         success: false,
         message: isInsufficient
@@ -570,10 +538,7 @@ class _ContentDetailPageState extends State<ContentDetailPage> with MusicSuspend
     );
     if (confirmed != true || !mounted) return;
     try {
-      await FirebaseFirestore.instance
-          .collection('ContentPaies')
-          .doc(contentId)
-          .delete();
+      await ContenuPayantApi.delete(contentId);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Contenu supprimé'),
@@ -1003,15 +968,11 @@ class _ContentDetailPageState extends State<ContentDetailPage> with MusicSuspend
     setState(() => _content.toggleLike(uid));
 
     try {
-      await FirebaseFirestore.instance
-          .collection('ContentPaies')
-          .doc(_content.id)
-          .update({
-        'likes': FieldValue.increment(wasLiked ? -1 : 1),
-        'likedBy': wasLiked
-            ? FieldValue.arrayRemove([uid])
-            : FieldValue.arrayUnion([uid]),
-      });
+      if (wasLiked) {
+        await ContenuPayantApi.unreact(_content.id!);
+      } else {
+        await ContenuPayantApi.react(_content.id!, 'like');
+      }
     } catch (_) {
       // Rollback optimiste si erreur
       if (mounted) setState(() => _content.toggleLike(uid));
@@ -1408,34 +1369,8 @@ class _ContentDetailPageState extends State<ContentDetailPage> with MusicSuspend
           ),
         ),
         const SizedBox(height: 8),
-        StreamBuilder<QuerySnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('Episodes')
-              .where('seriesId', isEqualTo: _content.id)
-              .orderBy('episodeNumber')
-              .snapshotsM('content_detail_page.dart:1415'),
-          builder: (context, snap) {
-            if (!snap.hasData) {
-              return const Center(
-                  child: Padding(
-                      padding: EdgeInsets.all(20),
-                      child: CircularProgressIndicator()));
-            }
-            final eps = snap.data!.docs
-                .map((d) => Episode.fromJson(
-                    {...d.data() as Map<String, dynamic>, 'id': d.id}))
-                .toList();
-            if (eps.isEmpty) return const SizedBox.shrink();
-            return Column(
-              children: eps
-                  .map((ep) => _EpisodeRow(
-                      episode: ep,
-                      hasPurchased: _hasPurchased,
-                      colors: _colors))
-                  .toList(),
-            );
-          },
-        ),
+        // Les épisodes n'ont pas encore de point d'accès dans l'API (voir lacunes_api_canaux.md)
+        const SizedBox.shrink(),
       ],
     );
   }
@@ -1703,14 +1638,7 @@ class _ContentDetailPageState extends State<ContentDetailPage> with MusicSuspend
     });
 
     try {
-      final callable =
-          FirebaseFunctions.instance.httpsCallable('getSecureDownloadUrl');
-      final result = await callable.call({
-        'contentId': contentId,
-        'fileKey': fileKey,
-      });
-      final signedUrl = result.data['url'] as String?;
-      if (signedUrl == null) throw Exception('URL manquante');
+      final signedUrl = await ContenuPayantApi.access(contentId, fileKey: const {'pdfUrl': 'pdf', 'fileUrl': 'file', 'videoUrl': 'video', 'tutorialVideoUrl': 'tutorial'}[fileKey] ?? fileKey);
 
       if (!mounted) return;
       _showDownloadLinkDialog(signedUrl, fileKey);

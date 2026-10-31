@@ -1,6 +1,5 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/posts_api.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/model_data.dart';
@@ -75,9 +74,8 @@ class AdActions {
 
   static Future<void> _openDefi(String postId) async {
     try {
-      final snap = await FirebaseFirestore.instance.collection('Posts').doc(postId).getM('ad_actions.dart:83');
-      if (!snap.exists) return;
-      final post = Post.fromJson({...snap.data()!, 'id': snap.id});
+      final post = await PostsApi.get(postId);
+      if (post == null) return;
       NavigationService().navigatorKey.currentState?.push(
           MaterialPageRoute(builder: (_) => DetailsPost(post: post)));
     } catch (_) {/* l'ouverture ne doit jamais faire planter une publicité */}

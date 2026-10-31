@@ -1,8 +1,6 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/theme/app_colors.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class PromoCodeModal extends StatefulWidget {
@@ -54,41 +52,21 @@ class _PromoCodeModalState extends State<PromoCodeModal> {
     });
 
     try {
-      final snap = await FirebaseFirestore.instance
-          .collection('PromoCodes')
-          .where('code', isEqualTo: input)
-          .where('isActive', isEqualTo: true)
-          .where('creatorId', isEqualTo: widget.content.ownerId)
-          .limit(1)
-          .getM('promo_code_modal.dart:62');
-
-      if (snap.docs.isEmpty) {
-        setState(() => _errorMsg = 'Code introuvable ou expiré');
+      // L'API n'a pas (encore) de vérification d'un code par l'acheteur (voir lacunes_api_canaux.md) : le code est gardé tel quel et ENVOYÉ avec
+      // l'achat ; le serveur calcule le prix et ignore un code invalide (prix normal). La réduction exacte n'est donc pas affichée ici.
+      if (widget.content.id == null) {
+        setState(() => _errorMsg = 'Contenu introuvable');
         return;
       }
-
-      final code = PromoCode.fromJson(
-          {...snap.docs.first.data(), 'id': snap.docs.first.id});
-
-      if (!code.isValid) {
-        setState(() => _errorMsg = 'Ce code n\'est plus valide');
-        return;
-      }
-
-      if (code.creatorId != widget.content.ownerId) {
-        setState(() => _errorMsg = 'Ce code ne s\'applique pas à ce contenu');
-        return;
-      }
-
-      // Le code doit être lié exactement à ce contenu — pas de code "global"
-      if (code.contentId != widget.content.id) {
-        setState(() => _errorMsg = 'Ce code ne s\'applique pas à ce contenu');
-        return;
-      }
-
-      setState(() => _validCode = code);
+      setState(() => _validCode = PromoCode(
+            creatorId: widget.content.ownerId,
+            contentId: widget.content.id,
+            code: input,
+            type: 'percent',
+            value: 0,
+          ));
     } catch (e) {
-      setState(() => _errorMsg = 'Erreur : $e');
+      setState(() => _errorMsg = 'Une erreur est survenue. Réessaie.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }

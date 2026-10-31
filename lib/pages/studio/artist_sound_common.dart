@@ -1,7 +1,6 @@
 // ignore_for_file: experimental_member_use
 // Éléments communs aux pages des sons d'artistes : prix, lecture d'un extrait, signalement.
 
-import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 
 import 'dart:io';
@@ -14,8 +13,9 @@ import '../../utils/fnv.dart';
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import '../../services/api/api_gateway.dart';
+import '../../services/api/music_api.dart';
 import 'package:flutter/material.dart';
 
 import 'package:path_provider/path_provider.dart';
@@ -30,14 +30,17 @@ class ArtistSoundPricing {
   static int share = 3;
   static bool _loaded = false;
 
+  /// Prix par défaut d'un son d'artiste payant : réglage public de l'API (`GET /config`, clé `studio.artistSoundPrice` / `artistSoundShare`).
   static Future<void> load() async {
     if (_loaded) return;
     try {
-      final d = (await FirebaseFirestore.instance.collection('AppConfig').doc('studio').getM('artist_sound_common.dart:35')).data() ?? {};
+      final r = await ApiGateway.instance.client.get('/config');
+      final root = r is Map ? r['data'] : null;
+      final d = root is Map && root['studio'] is Map ? Map<String, dynamic>.from(root['studio'] as Map) : <String, dynamic>{};
       final p = (d['artistSoundPrice'] as num?)?.round();
-      final s = (d['artistSoundShare'] as num?)?.round();
+      final sh = (d['artistSoundShare'] as num?)?.round();
       if (p != null && p > 0) price = p;
-      if (s != null && s >= 0) share = s.clamp(0, price);
+      if (sh != null && sh >= 0) share = sh.clamp(0, price);
       _loaded = true;
     } catch (_) {}
   }
@@ -53,8 +56,8 @@ Future<String?> fetchFullListenUrl(String soundId) async {
   final hit = _fullUrls[soundId];
   if (hit != null && DateTime.now().difference(hit.at).inMinutes < 8) return hit.url;
   try {
-    final r = await FirebaseFunctions.instance.httpsCallable('musicStreamUrl').call({'soundId': soundId});
-    final url = (r.data as Map)['url'] as String?;
+    final r = await MusicApi.listen(soundId);
+    final url = r['full'] == true ? r['url'] as String? : null;
     if (url != null) _fullUrls[soundId] = (url: url, at: DateTime.now());
     return url;
   } catch (_) {
@@ -434,11 +437,10 @@ Future<void> reportArtistSound(BuildContext context, String soundId, String titl
   if (ok != true || reason == null || !context.mounted) return;
   String msg;
   try {
-    final r = await FirebaseFunctions.instance.httpsCallable('artistSoundReport').call({'soundId': soundId, 'reason': reason, 'note': text});
-    final d = Map<String, dynamic>.from(r.data as Map);
+    final d = await MusicApi.report(soundId, reason: text.isEmpty ? reason : '$reason : $text');
     msg = d['already'] == true ? 'Tu as déjà signalé ce son.' : 'Merci, ton signalement a été envoyé à l’équipe.';
-  } on FirebaseFunctionsException catch (e) {
-    msg = e.message ?? 'Signalement impossible.';
+  } on ApiException catch (e) {
+    msg = MusicApi.message(e, fallback: 'Signalement impossible.');
   } catch (_) {
     msg = 'Signalement impossible. Vérifie ta connexion.';
   }

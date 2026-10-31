@@ -15,7 +15,6 @@ import 'package:afrotok/pages/userPosts/postTabs/userPostAudioTab.dart';
 import 'package:afrotok/pages/userPosts/postTabs/userPostImageTab.dart';
 import 'package:afrotok/pages/userPosts/postTabs/userPostTextTab.dart';
 import 'package:afrotok/pages/userPosts/postTabs/userPostVideoTab.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -66,7 +65,6 @@ class _UserPostFormState extends State<UserPostForm> {
       Provider.of<UserAuthProvider>(context, listen: false);
   late UserProvider userProvider =
       Provider.of<UserProvider>(context, listen: false);
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
   late AppColors _colors;
   static const Color _primaryColor = Color(0xFFE21221);

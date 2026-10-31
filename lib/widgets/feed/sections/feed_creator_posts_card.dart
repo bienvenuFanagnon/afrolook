@@ -1,7 +1,6 @@
 import '../../../services/follow_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrotok/services/api/canaux_api.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -67,7 +66,6 @@ class _FeedCreatorPostsCardState extends State<FeedCreatorPostsCard> {
     setState(() => _following = true);
 
     final isUser = (widget.ad.ownerType ?? '') == 'user';
-    final fs = FirebaseFirestore.instance;
     try {
       if (isUser) {
         await FollowService.follow(ownerId);
@@ -75,19 +73,8 @@ class _FeedCreatorPostsCardState extends State<FeedCreatorPostsCard> {
         if (!auth.loginUserData.followingIds!.contains(ownerId)) {
           auth.loginUserData.followingIds!.add(ownerId);
         }
-        FirebaseFunctions.instance
-            .httpsCallable('backfillPostsOnFollow')
-            .call({'followedUserId': ownerId}).ignore();
       } else {
-        await Future.wait([
-          fs.collection('Canaux').doc(ownerId).update({
-            'usersSuiviId': FieldValue.arrayUnion([myId]),
-            'suivi': FieldValue.increment(1),
-          }),
-          fs.collection('Users').doc(myId).update({
-            'canauxSuivisIds': FieldValue.arrayUnion([ownerId]),
-          }),
-        ]);
+        await CanauxApi.join(ownerId);
       }
       if (mounted) setState(() { _followed = true; _following = false; });
     } catch (_) {

@@ -6,16 +6,15 @@ import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'dart:io';
 import 'package:afrotok/models/model_data.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:afrotok/pages/defi/defi_ui.dart';
 import 'package:afrotok/pages/userPosts/postWidgets/defi_config_section.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 
-import 'package:firebase_storage/firebase_storage.dart';
 
 import 'package:flutter/foundation.dart';
 
+import 'package:afrotok/services/api/post_publisher.dart';
+import 'package:afrotok/widgets/api_error_dialogs.dart';
 import 'package:flutter/material.dart';
 
 import 'package:image_picker/image_picker.dart';
@@ -62,7 +61,6 @@ import '../../../widgets/hashtag_suggestion_bar.dart';
 import '../../user/userAbonnementPage.dart';
 import '../../widgetGlobal.dart';
 import '../../studio/artist_marketplace.dart';
-import '../../../services/artist_sound_usage_service.dart';
 
 class UserPostLookAudioTab extends StatefulWidget {
   final Canal? canal;
@@ -1458,63 +1456,11 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
   }
 
   Future<void> _openArtistSoundPicker() async {
-    final selected = await showModalBottomSheet<ArtistSound>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: _c.background,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.6,
-        minChildSize: 0.4,
-        maxChildSize: 0.9,
-        expand: false,
-        builder: (_, scrollCtrl) => Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Text('Sons des artistes', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w800, fontSize: 16)),
-            ),
-            Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('artist_sounds')
-                    .where('status', isEqualTo: 'validated')
-                    .orderBy('validatedAt', descending: true)
-                    .limit(30)
-                    .snapshotsM('userPostAudioTab.dart:1483'),
-                builder: (_, snap) {
-                  if (!snap.hasData) return Center(child: CircularProgressIndicator(color: _c.primary));
-                  final docs = snap.data!.docs;
-                  if (docs.isEmpty) return Center(child: Text('Aucun son disponible.', style: TextStyle(color: _c.textSecondary)));
-                  return ListView.separated(
-                    controller: scrollCtrl,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: docs.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (_, i) {
-                      final s = ArtistSound.fromMap(docs[i].data() as Map<String, dynamic>, docs[i].id);
-                      return ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: s.coverImageUrl != null
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.network(s.coverImageUrl!, width: 44, height: 44, fit: BoxFit.cover),
-                              )
-                            : Container(width: 44, height: 44, decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(8)), child: Icon(Icons.music_note, color: _c.textSecondary)),
-                        title: Text(s.title, style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
-                        subtitle: Text('@${s.userPseudo}${s.genre != null ? ' · ${s.genre}' : ''}', style: TextStyle(color: _c.textSecondary, fontSize: 11)),
-                        onTap: () => Navigator.pop(ctx, s),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
+    // Les sons d'artistes passent par le module musique (API /music/sounds), pas encore relié à la création d'un post audio
+    // (voir lacunes_api_publications.md).
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Les sons d'artistes arrivent bientôt.", textAlign: TextAlign.center, style: TextStyle(color: _c.textSecondary)), backgroundColor: _c.surface),
     );
-    if (selected != null) setState(() => _selectedArtistSound = selected);
   }
 
   Widget _buildArtistSoundPicker() {
@@ -1747,100 +1693,28 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
         },
       );
 
-      String postId = FirebaseFirestore.instance.collection('Posts').doc().id;
-
-      // Upload audio
-      String audioUrl = await _uploadAudio();
-
-      // Upload image de couverture si présente
-      String? coverImageUrl;
-      if (_coverImage != null) {
-        coverImageUrl = await _uploadCoverImage();
+      // Défis : pas encore de route côté API (voir lacunes_api_publications.md)
+      if (widget.defiPostId != null || _selectedPostType == 'DEFI') {
+        if (mounted) Navigator.of(context, rootNavigator: true).pop();
+        setState(() => onTap = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Les défis ne sont pas encore disponibles dans cette version.', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))),
+        );
+        return;
       }
+      if (_audioFile == null) throw Exception("Aucun audio à envoyer");
 
-      Post post = Post()
-          ..monetized = _isDefiContext ? false : _monetized
-        ..user_id = authProvider.loginUserData.id
-        ..description = _descriptionController.text
-        ..updatedAt = DateTime.now().microsecondsSinceEpoch
-        ..createdAt = DateTime.now().microsecondsSinceEpoch
-        ..status = PostStatus.VALIDE.name
-        ..type = _selectedPostType == 'DEFI' ? PostType.DEFI.name : PostType.POST.name
-        ..comments = 0
-        ..typeTabbar = _selectedPostType
-        ..nombrePersonneParJour = 60
-        ..dataType = "AUDIO"
-        ..likes = 0
-        ..feedScore = 0.0
-        ..loves = 0
-        ..id = postId
-        ..url_media = audioUrl
-        ..images = coverImageUrl != null ? [coverImageUrl] : [];
-
-      if (_selectAllCountries) {
-        post.availableCountries = ['ALL'];
-      } else {
-        post.availableCountries = _selectedCountries.map((c) => c.code).toList();
-      }
-
-      if (_selectedPostType == 'DEFI' && _defiConfig != null) {
-        post.defiConfigMap = _defiConfig!.toJson();
-      }
-
-      if (widget.canal != null) {
-        post.canal_id = widget.canal!.id;
-        post.categorie = "CANAL";
-      }
-      if (widget.defiPostId != null) {
-        post.defiResponseToPostId = widget.defiPostId;
-      }
-      post.creatorSnapshot = Post.buildCreatorSnapshot(authProvider.loginUserData);
-
-      // Participation DÉFI : la Cloud Function paie et crée le post dans une seule transaction
-      if (widget.defiPostId != null) {
-        try {
-          await FirebaseFunctions.instance.httpsCallable('handleDefiAction').call({
-            'action': 'participate',
-            'postId': widget.defiPostId,
-            'post': post.toJson(),
-          });
-        } catch (e) {
-          if (mounted) Navigator.of(context, rootNavigator: true).pop();
-          setState(() => onTap = false);
-          if (mounted) DefiDialogs.handleError(context, e, isVote: false);
-          return;
-        }
-      } else if (post.type == PostType.DEFI.name) {
-        // Création DÉFI : la Cloud Function débite la cagnotte et crée le post dans une seule transaction
-        try {
-          await FirebaseFunctions.instance.httpsCallable('handleDefiAction').call({
-            'action': 'create',
-            'postId': postId,
-            'post': {...post.toJson(), 'defi_config': post.defiConfigMap},
-          });
-        } catch (e) {
-          if (mounted) Navigator.of(context, rootNavigator: true).pop();
-          setState(() => onTap = false);
-          if (mounted) DefiDialogs.handleError(context, e, isVote: false, isCreation: true);
-          return;
-        }
-      } else {
-        await FirebaseFirestore.instance.collection('Posts').doc(postId).set(post.toJson());
-      }
-      if (widget.canal != null && (_selectedPostType ?? '').isNotEmpty) {
-        FirebaseFirestore.instance.collection('Canaux').doc(widget.canal!.id!).update({
-          'categories': FieldValue.arrayUnion([_selectedPostType!]),
-        }).catchError((_) {});
-      }
+      // Audio d'abord (type de la publication), puis image de couverture ; envoi direct au stockage via l'API
+      final Post post = await PostPublisher.publish(
+        description: _descriptionController.text,
+        files: [await MediaShrink.file(_audioFile!), if (_coverImage != null) await MediaShrink.file(_coverImage!)],
+        category: _selectedPostType,
+        monetized: _monetized,
+        countries: _selectAllCountries ? const ['ALL'] : _selectedCountries.map((c) => c.code).toList(),
+        canal: widget.canal,
+      );
+      final String postId = post.id!;
       await PostCooldownService.markPosted();
-
-      // Débit pièces artiste si un son marketplace a été utilisé
-      if (_selectedArtistSound != null) {
-        ArtistSoundUsageService.recordUsage(
-          soundId: _selectedArtistSound!.id,
-          artistId: _selectedArtistSound!.userId,
-        ).catchError((_) {}); // silencieux : ne bloque pas la publication
-      }
 
       // Nettoyage
       _descriptionController.clear();
@@ -1877,14 +1751,7 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
         );
 
         widget.canal!.updatedAt = DateTime.now().microsecondsSinceEpoch;
-        widget.canal!.publication = (widget.canal!.publication ?? 0) + 1;
-        await FirebaseFirestore.instance
-            .collection('Canaux')
-            .doc(widget.canal!.id)
-            .update({
-          'updatedAt': widget.canal!.updatedAt,
-          'publication': widget.canal!.publication,
-        });
+        widget.canal!.publication = (widget.canal!.publication ?? 0) + 1;   // le serveur tient le compteur du canal
       } else {
         authProvider.sendPushNotificationToUsers(
           sender: authProvider.loginUserData,
@@ -1933,42 +1800,9 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
       printVm("❌ Erreur publication: $e");
       if (Navigator.canPop(context)) Navigator.pop(context);
       setState(() => onTap = false);
-      _showErrorSnackbar('Erreur lors de la publication');
+      _showErrorSnackbar(apiErrorText(e, fallback: 'Erreur lors de la publication'));
     }
   }
-
-  Future<String> _uploadAudio() async {
-    if (_audioFile == null) throw Exception("Aucun audio à uploader");
-
-    final String uniqueFileName = Uuid().v4();
-    Reference storageReference = FirebaseStorage.instance
-        .ref()
-        .child('post_audio/$uniqueFileName.m4a');
-
-    final metadata = SettableMetadata(
-      contentType: 'audio/mp4',
-      customMetadata: {
-        'duration': (_audioDuration ?? 0).toString(),
-        'originalName': _audioFileName ?? 'audio.m4a',
-      },
-    );
-
-    await storageReference.putFile(await MediaShrink.file(_audioFile!), metadata);
-    return await storageReference.getDownloadURL();
-  }
-
-  Future<String> _uploadCoverImage() async {
-    if (_coverImage == null) throw Exception("Aucune image à uploader");
-
-    final String uniqueFileName = Uuid().v4();
-    Reference storageReference = FirebaseStorage.instance
-        .ref()
-        .child('post_images/$uniqueFileName.jpg');
-
-    await storageReference.putFile(await MediaShrink.file(_coverImage!));
-    return await storageReference.getDownloadURL();
-  }
-
 
   void _showErrorSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(

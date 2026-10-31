@@ -1,7 +1,7 @@
-import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/model_data.dart';
@@ -85,21 +85,14 @@ class _FlameLeaderboardState extends State<FlameLeaderboard> {
 
   Future<void> _load() async {
     try {
-      final snap = await FirebaseFirestore.instance
-          .collection('Users')
-          .where('bestCommentStreak', isGreaterThan: 0)
-          .orderBy('bestCommentStreak', descending: true)
-          .limit(100)
-          .getM('flame_leaderboard.dart:92');
-
-      final entries = snap.docs.map((d) {
-        final data = d.data();
-        final streak = (data['commentStreak'] as num?)?.toInt() ?? 0;
-        final best   = (data['bestCommentStreak'] as num?)?.toInt() ?? 0;
+      final rows = await UsersApi.streakLeaderboard();
+      final entries = rows.map((data) {
+        final streak = (data['streak'] as num?)?.toInt() ?? 0;
+        final best   = (data['best'] as num?)?.toInt() ?? 0;
         return _LeaderEntry(
-          userId:   d.id,
-          pseudo:   data['pseudo'] as String? ?? 'Utilisateur',
-          imageUrl: data['imageUrl'] as String?,
+          userId:   '${data['user_id']}',
+          pseudo:   data['username'] as String? ?? 'Utilisateur',
+          imageUrl: data['avatar_url'] as String?,
           streak:   streak,
           score:    _computeScore(streak, best),
         );
@@ -146,12 +139,8 @@ class _FlameLeaderboardState extends State<FlameLeaderboard> {
 
   Future<void> _openProfile(BuildContext ctx, String userId) async {
     try {
-      final snap = await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(userId)
-          .getM('flame_leaderboard.dart:151');
-      if (!snap.exists || !ctx.mounted) return;
-      final user = UserData.fromJson(snap.data()!);
+      final user = userFromApi(await UsersApi.publicProfile(userId));
+      if (!ctx.mounted) return;
       final size = MediaQuery.of(ctx).size;
       showUserDetailsModalDialog(user, size.width, size.height, ctx);
     } catch (_) {}

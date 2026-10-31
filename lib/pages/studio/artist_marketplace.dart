@@ -4,28 +4,20 @@
 // puis il est proposé dans le Studio (montages « prêts à poster ») et dans le fil.
 //
 // Sécurité :
-//  - l'original est déposé dans Storage `artist_sound_uploads/{uid}/…`, illisible depuis un téléphone ;
+//  - l'original est déposé en PRIVÉ (envoi direct signé par l'API, clé `p/…`), illisible depuis un téléphone ;
 //  - tout le monde n'entend qu'un extrait public de 30 s (`previewUrl`), fabriqué par le serveur ;
 //  - le serveur compare chaque dépôt aux sons déjà en ligne (même fichier, même morceau ré-encodé ou recadré) ;
-//  - les paiements (utilisation dans le Studio) sont faits par la Cloud Function renderStudioMontage, jamais par le téléphone.
+//  - les paiements (utilisation dans le Studio, achat du titre) sont faits par l'API (/purchases), jamais par le téléphone.
 //
-// Structure Firestore :
-//   artist_sounds/{soundId}
-//     userId, userPseudo, userImageUrl, title, genre, description, coverImageUrl, audioPath (original, privé)
-//     pricing: 'free' | 'paid' ; rightsCertified
-//     status: 'pending_review' | 'validated' | 'refused' | 'suspended'
-//     (serveur) previewUrl, durationMs, audioSha256, duplicates[], processed, reportCount
-//     usageCount, totalEarningsCoins, createdAt, validatedAt
+// Les titres viennent de l'API (GET /music/sounds) ; voir services/api/music_api.dart.
 
-import 'package:afrotok/services/read_meter.dart';
 import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import '../../services/api/music_api.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -91,8 +83,8 @@ class ArtistSound {
   final Object? processed; // true | 'error' | null (analyse du serveur)
   final List<Map<String, dynamic>> duplicates;
   final List<String> availableCountries; // pays où le titre est proposé ('ALL' = tous ; vide = ancien titre, pour tous)
-  final Timestamp createdAt;
-  final Timestamp? validatedAt;
+  final DateTime createdAt;
+  final DateTime? validatedAt;
 
   const ArtistSound({
     required this.id,
@@ -175,8 +167,8 @@ class ArtistSound {
       processed: map['processed'],
       duplicates: [for (final d in (map['duplicates'] as List? ?? const [])) Map<String, dynamic>.from(d as Map)],
       availableCountries: [for (final x in (map['availableCountries'] as List? ?? const [])) '$x'],
-      createdAt: map['createdAt'] ?? Timestamp.now(),
-      validatedAt: map['validatedAt'],
+      createdAt: map['createdAt'] is DateTime ? map['createdAt'] as DateTime : DateTime.now(),
+      validatedAt: map['validatedAt'] is DateTime ? map['validatedAt'] as DateTime : null,
     );
   }
 }
@@ -281,50 +273,21 @@ class _ArtistSoundSubmitPageState extends State<ArtistSoundSubmitPage> {
       _progress = 0;
     });
 
-    final auth = Provider.of<UserAuthProvider>(context, listen: false);
-    final storage = FirebaseStorage.instance;
-
     try {
-      final uid = auth.loginUserData.id!;
-      final ts = DateTime.now().millisecondsSinceEpoch;
-      final ext = _audioFile!.path.contains('.') ? _audioFile!.path.split('.').last.toLowerCase() : 'mp3';
-      // Original : dossier privé (illisible depuis un téléphone) ; le serveur fabrique l'extrait public
-      final audioPath = 'artist_sound_uploads/$uid/$ts.$ext';
-      final audioTask = storage.ref(audioPath).putFile(_audioFile!, SettableMetadata(contentType: 'audio/${ext == 'mp3' ? 'mpeg' : ext}'));
-      audioTask.snapshotEvents.listen((s) {
-        if (mounted && s.totalBytes > 0) setState(() => _progress = s.bytesTransferred / s.totalBytes * 0.85);
-      });
-      await audioTask;
-
-      String? coverUrl;
-      if (_coverFile != null) {
-        final coverTask = storage.ref('artist_sound_covers/$uid/$ts.jpg').putFile(_coverFile!);
-        await coverTask;
-        coverUrl = await coverTask.snapshot.ref.getDownloadURL();
-        if (mounted) setState(() => _progress = 0.95);
-      }
-
-      final sizeMb = (await _audioFile!.stat()).size / (1024 * 1024);
-      await FirebaseFirestore.instance.collection('artist_sounds').add({
-        'userId': uid,
-        'userPseudo': auth.loginUserData.pseudo ?? '',
-        'userImageUrl': auth.loginUserData.imageUrl ?? '',
-        'title': _titleCtrl.text.trim(),
-        if (_genreCtrl.text.trim().isNotEmpty) 'genre': _genreCtrl.text.trim(),
-        if (_descCtrl.text.trim().isNotEmpty) 'description': _descCtrl.text.trim(),
-        'audioPath': audioPath,
-        if (coverUrl != null) 'coverImageUrl': coverUrl,
-        'pricing': _pricing,
-        if (_pricing == 'paid') 'useCoins': _useCoins,
-        'saleCoins': _pricing == 'paid' && _sell ? _saleCoins : 0,
-        'availableCountries': _countries,
-        'fileSizeMb': sizeMb,
-        'status': 'pending_review',
-        'usageCount': 0,
-        'totalEarningsCoins': 0,
-        'rightsCertified': true,
-        'createdAt': Timestamp.now(),
-      });
+      // Original en privé + pochette publique, puis création du titre : tout passe par l'API
+      await MusicApi.create(
+        audio: _audioFile!,
+        cover: _coverFile,
+        title: _titleCtrl.text.trim(),
+        genre: _genreCtrl.text.trim(),
+        description: _descCtrl.text.trim(),
+        useCoins: _pricing == 'paid' ? _useCoins : 0,
+        saleCoins: _pricing == 'paid' && _sell ? _saleCoins : 0,
+        countries: _countries,
+        onProgress: (v) {
+          if (mounted) setState(() => _progress = v * 0.95);
+        },
+      );
 
       if (mounted) {
         await showDialog<void>(
@@ -346,7 +309,7 @@ class _ArtistSoundSubmitPageState extends State<ArtistSoundSubmitPage> {
         if (mounted) Navigator.pop(context);
       }
     } catch (e) {
-      _snack('Envoi impossible : $e');
+      _snack('Envoi impossible : ${MusicApi.message(e)}');
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -585,17 +548,12 @@ class ArtistSoundsFeedWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('artist_sounds')
-          .where('status', isEqualTo: 'validated')
-          .orderBy('validatedAt', descending: true)
-          .limit(40)
-          .snapshotsM('artist_marketplace.dart:588'),
+    return FutureBuilder<List<ArtistSound>>(
+      future: MusicApi.latestCached(),
       builder: (_, snap) {
         if (!snap.hasData) return const SizedBox.shrink();
         final docs = SoundCountries.forViewer<ArtistSound>(
-          [for (final d in snap.data!.docs) ArtistSound.fromMap(d.data() as Map<String, dynamic>, d.id)],
+          snap.data!,
           countries: (s) => s.availableCountries,
           owner: (s) => s.userId,
           viewerCountry: SoundCountries.viewerCountry(context),
@@ -721,13 +679,13 @@ Future<void> startPostWithMusic(BuildContext context, MontageMusic music, {bool 
 /// Ouvre la page d'un son à partir de son identifiant (puce « Musique : titre » sous un post).
 Future<void> openArtistSoundById(BuildContext context, String soundId) async {
   try {
-    final d = await FirebaseFirestore.instance.collection('artist_sounds').doc(soundId).getM('artist_marketplace.dart:718');
+    final d = await MusicApi.sound(soundId);
     if (!context.mounted) return;
-    if (!d.exists || d.data()!['status'] != 'validated') {
+    if (d == null || d.status != 'validated') {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ce son n’est plus disponible.')));
       return;
     }
-    Navigator.push(context, MaterialPageRoute(builder: (_) => ArtistSoundDetailPage(sound: ArtistSound.fromMap(d.data()!, d.id))));
+    Navigator.push(context, MaterialPageRoute(builder: (_) => ArtistSoundDetailPage(sound: d)));
   } catch (_) {
     if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Chargement impossible. Vérifie ta connexion.')));
   }
@@ -745,10 +703,7 @@ class PostSoundCredit extends StatefulWidget {
 
   static final Map<String, Future<ArtistSound?>> _cache = {};
 
-  static Future<ArtistSound?> _load(String id) => _cache[id] ??= FirebaseFirestore.instance.collection('artist_sounds').doc(id).getM('artist_marketplace.dart:742').then((d) {
-        if (!d.exists || d.data()!['status'] != 'validated') return null;
-        return ArtistSound.fromMap(d.data()!, d.id);
-      }).catchError((_) {
+  static Future<ArtistSound?> _load(String id) => _cache[id] ??= MusicApi.sound(id).then((d) => d != null && d.status == 'validated' ? d : null).catchError((_) {
         _cache.remove(id);
         return null as ArtistSound?;
       });
@@ -856,10 +811,10 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
     ArtistSoundPricing.load().then((_) {
       if (mounted) setState(() {});
     });
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid != null && !_own) {
-      FirebaseFirestore.instance.collection('MusicLibrary').doc('${uid}_${widget.sound.id}').getM('artist_marketplace.dart:853').then((d) {
-        if (mounted && d.exists) setState(() => _owned = true);
+    // « Acheté » : relu sur l'API (ma bibliothèque)
+    if (!_own) {
+      MusicApi.sound(widget.sound.id).then((_) {
+        if (mounted && MusicQueue.ownedIds.value.contains(widget.sound.id)) setState(() => _owned = true);
       }).catchError((_) {});
     }
   }
@@ -1299,12 +1254,18 @@ Future<bool> _buyTrackConfirmed(BuildContext context, ArtistSound s, AppColors c
   String msg;
   var done = false;
   try {
-    final r = await FirebaseFunctions.instance.httpsCallable('musicBuy').call({'soundId': s.id});
-    final d = Map<String, dynamic>.from(r.data as Map);
+    await MusicApi.buySound(s.id);
+    MusicQueue.ownedIds.value = {...MusicQueue.ownedIds.value, s.id};
     done = true;
-    msg = d['already'] == true ? 'Ce titre est déjà dans ta bibliothèque.' : '✅ Ajouté à ta bibliothèque. Merci de soutenir l’artiste !';
-  } on FirebaseFunctionsException catch (e) {
-    msg = e.code == 'resource-exhausted' ? 'Solde insuffisant.' : (e.message ?? 'Achat impossible.');
+    msg = '✅ Ajouté à ta bibliothèque. Merci de soutenir l’artiste !';
+  } on ApiException catch (e) {
+    if (e.status == 409 && e.code == 'music_owned') {
+      MusicQueue.ownedIds.value = {...MusicQueue.ownedIds.value, s.id};
+      done = true;
+      msg = 'Ce titre est déjà dans ta bibliothèque.';
+    } else {
+      msg = e.isInsufficientCoins ? 'Solde insuffisant.' : MusicApi.message(e, fallback: 'Achat impossible.');
+    }
   } catch (_) {
     msg = 'Achat impossible. Vérifie ta connexion.';
   }
@@ -1347,8 +1308,6 @@ class MyArtistSoundsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    final auth = Provider.of<UserAuthProvider>(context, listen: false);
-    final uid = auth.loginUserData.id ?? '';
 
     return Scaffold(
       backgroundColor: c.background,
@@ -1365,12 +1324,12 @@ class MyArtistSoundsPage extends StatelessWidget {
           ),
         ],
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('artist_sounds').where('userId', isEqualTo: uid).orderBy('createdAt', descending: true).snapshotsM('artist_marketplace.dart:1343'),
+      body: FutureBuilder<List<ArtistSound>>(
+        future: MusicApi.mySounds(),
         builder: (_, snap) {
           if (snap.hasError) return Center(child: Text('Impossible de charger tes sons.', style: TextStyle(color: c.textSecondary)));
           if (!snap.hasData) return Center(child: CircularProgressIndicator(color: c.primary));
-          final sounds = [for (final d in snap.data!.docs) ArtistSound.fromMap(d.data() as Map<String, dynamic>, d.id)];
+          final sounds = snap.data!;
           final earned = sounds.fold<int>(0, (a, s) => a + s.totalEarningsCoins);
           final uses = sounds.fold<int>(0, (a, s) => a + s.usageCount);
           final streams = sounds.fold<int>(0, (a, s) => a + s.streamCount);
@@ -1522,10 +1481,10 @@ class _MySoundTile extends StatelessWidget {
     if (ok != true || !context.mounted) return;
     String msg;
     try {
-      await FirebaseFunctions.instance.httpsCallable('artistSoundDelete').call({'soundId': sound.id, 'confirm': typed});
+      await MusicApi.delete(sound.id, confirmTitle: typed);
       msg = 'Son supprimé.';
-    } on FirebaseFunctionsException catch (e) {
-      msg = e.message == 'CONFIRMATION_INVALIDE' ? 'Le titre ne correspond pas.' : (e.message ?? 'Suppression impossible.');
+    } on ApiException catch (e) {
+      msg = e.code == 'confirmation_required' ? 'Le titre ne correspond pas.' : MusicApi.message(e, fallback: 'Suppression impossible.');
     } catch (_) {
       msg = 'Suppression impossible. Vérifie ta connexion.';
     }
@@ -1629,20 +1588,20 @@ class AdminArtistSoundsPage extends StatelessWidget {
           ),
         ),
         body: TabBarView(children: [
-          _list(c, FirebaseFirestore.instance.collection('artist_sounds').where('status', isEqualTo: 'pending_review').orderBy('createdAt', descending: true), 'Aucun son en attente.', false),
-          _list(c, FirebaseFirestore.instance.collection('artist_sounds').where('reportCount', isGreaterThan: 0).orderBy('reportCount', descending: true), 'Aucun son signalé.', true),
+          _list(c, (l) => l.where((s) => s.status == 'pending_review').toList(), 'Aucun son en attente.', false),
+          _list(c, (l) => l.where((s) => s.status == 'suspended' || s.reportCount > 0).toList(), 'Aucun son signalé.', true),
         ]),
       ),
     );
   }
 
-  Widget _list(AppColors c, Query q, String empty, bool reports) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: q.snapshotsM('artist_marketplace.dart:1615'),
+  Widget _list(AppColors c, List<ArtistSound> Function(List<ArtistSound>) pick, String empty, bool reports) {
+    return FutureBuilder<List<ArtistSound>>(
+      future: MusicApi.adminQueue(),
       builder: (_, snap) {
-        if (snap.hasError) return Center(child: Text('Chargement impossible (index en cours de création ?).', style: TextStyle(color: c.textSecondary)));
+        if (snap.hasError) return Center(child: Text(MusicApi.message(snap.error!, fallback: 'Chargement impossible.'), style: TextStyle(color: c.textSecondary)));
         if (!snap.hasData) return Center(child: CircularProgressIndicator(color: c.primary));
-        final docs = snap.data!.docs;
+        final docs = pick(snap.data!);
         if (docs.isEmpty) {
           return Center(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -1656,7 +1615,7 @@ class AdminArtistSoundsPage extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           itemCount: docs.length,
           separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (_, i) => _AdminSoundReviewTile(key: ValueKey(docs[i].id), sound: ArtistSound.fromMap(docs[i].data() as Map<String, dynamic>, docs[i].id), colors: c, reports: reports),
+          itemBuilder: (_, i) => _AdminSoundReviewTile(key: ValueKey(docs[i].id), sound: docs[i], colors: c, reports: reports),
         );
       },
     );
@@ -1693,8 +1652,8 @@ class _AdminSoundReviewTileState extends State<_AdminSoundReviewTile> {
     await SoundPreview.stop();
     setState(() => _loading = true);
     try {
-      final r = await FirebaseFunctions.instance.httpsCallable('artistSoundAdminUrl').call({'soundId': widget.sound.id});
-      final url = (r.data as Map)['url'] as String;
+      final url = await MusicApi.adminListenUrl(widget.sound.id);
+      if (url == null) throw Exception('Original indisponible');
       await _full.play(UrlSource(url));
       _full.onPlayerComplete.listen((_) {
         if (mounted) setState(() => _fullPlaying = false);
@@ -1707,10 +1666,12 @@ class _AdminSoundReviewTileState extends State<_AdminSoundReviewTile> {
     }
   }
 
-  Future<void> _set(Map<String, dynamic> data) async {
+  Future<void> _set(String action, {String? reason}) async {
     setState(() => _loading = true);
     try {
-      await FirebaseFirestore.instance.collection('artist_sounds').doc(widget.sound.id).update(data);
+      await MusicApi.adminReview(widget.sound.id, action, reason: reason);
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(MusicApi.message(e, fallback: 'Action impossible.'))));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -1734,7 +1695,7 @@ class _AdminSoundReviewTileState extends State<_AdminSoundReviewTile> {
       );
       if (ok != true) return;
     }
-    await _set({'status': 'validated', 'validatedAt': FieldValue.serverTimestamp(), 'suspendedAt': FieldValue.delete()});
+    await _set(widget.sound.status == 'suspended' ? 'restore' : 'validate');
   }
 
   Future<void> _refuse() async {
@@ -1758,7 +1719,7 @@ class _AdminSoundReviewTileState extends State<_AdminSoundReviewTile> {
     );
     ctl.dispose();
     if (reason == null) return;
-    await _set({'status': 'refused', 'refusalReason': reason.isEmpty ? 'Non conforme' : reason});
+    await _set('refuse', reason: reason.isEmpty ? 'Non conforme' : reason);
   }
 
   Future<void> _deleteAsAdmin() async {
@@ -1777,9 +1738,9 @@ class _AdminSoundReviewTileState extends State<_AdminSoundReviewTile> {
     if (ok != true) return;
     setState(() => _loading = true);
     try {
-      await FirebaseFunctions.instance.httpsCallable('artistSoundDelete').call({'soundId': widget.sound.id});
+      await MusicApi.delete(widget.sound.id);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Suppression impossible : $e')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Suppression impossible : ${MusicApi.message(e)}')));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -1887,25 +1848,11 @@ class _ReportsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = {for (final r in kReportReasons) r.$1: r.$2};
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance.collection('ArtistSoundReports').where('soundId', isEqualTo: soundId).snapshotsM('artist_marketplace.dart:1866'),
-      builder: (_, snap) {
-        final docs = snap.data?.docs ?? const [];
-        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const SizedBox(height: 8),
-          Text('🚩 $count signalement(s)', style: const TextStyle(color: Colors.deepOrange, fontWeight: FontWeight.w800, fontSize: 12.5)),
-          for (final d in docs)
-            Padding(
-              padding: const EdgeInsets.only(top: 3),
-              child: Text(
-                '• ${label[(d.data() as Map)['reason']] ?? (d.data() as Map)['reason']}${((d.data() as Map)['note'] ?? '').toString().isNotEmpty ? ' — « ${(d.data() as Map)['note']} »' : ''}',
-                style: TextStyle(color: colors.textSecondary, fontSize: 11.5),
-              ),
-            ),
-        ]);
-      },
-    );
+    // Le détail des motifs n'est pas encore exposé par l'API (voir lacunes_api_argent_creations.md) : on affiche le nombre.
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const SizedBox(height: 8),
+      Text('🚩 $count signalement(s)', style: const TextStyle(color: Colors.deepOrange, fontWeight: FontWeight.w800, fontSize: 12.5)),
+    ]);
   }
 }
 
@@ -1924,7 +1871,6 @@ class SoundPostsSection extends StatefulWidget {
 class _SoundPostsSectionState extends State<SoundPostsSection> {
   static const _page = 5;
   final List<Post> _posts = [];
-  DocumentSnapshot? _last;
   bool _loading = false;
   bool _more = true;
   bool _failed = false;
@@ -1941,20 +1887,8 @@ class _SoundPostsSectionState extends State<SoundPostsSection> {
       _loading = true;
       _failed = false;
     });
-    try {
-      var q = FirebaseFirestore.instance.collection('Posts').where('artistSoundId', isEqualTo: widget.soundId).orderBy('created_at', descending: true).limit(_page);
-      if (_last != null) q = q.startAfterDocument(_last!);
-      final snap = await q.getM('artist_marketplace.dart:1921');
-      for (final d in snap.docs) {
-        final p = Post.fromJson(d.data());
-        p.id = d.id;
-        _posts.add(p);
-      }
-      if (snap.docs.isNotEmpty) _last = snap.docs.last;
-      _more = snap.docs.length == _page;
-    } catch (_) {
-      _failed = true;
-    }
+    // Les publications faites avec un son ne sont pas encore listées par l'API (voir lacunes_api_argent_creations.md).
+    _more = false;
     if (mounted) setState(() => _loading = false);
   }
 

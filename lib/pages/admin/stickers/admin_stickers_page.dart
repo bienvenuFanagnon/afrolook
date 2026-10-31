@@ -1,7 +1,6 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../services/api/stickers_admin_api.dart';
 import 'package:flutter/material.dart';
 
 import '../../../theme/app_colors.dart';
@@ -74,7 +73,7 @@ class _PacksTabState extends State<_PacksTab> with AutomaticKeepAliveClientMixin
   bool _loading = true;
   bool _error = false;
   String _q = '';
-  List<QueryDocumentSnapshot<Map<String, dynamic>>> _docs = [];
+  List<StickerDoc> _docs = [];
 
   @override
   void initState() {
@@ -88,24 +87,8 @@ class _PacksTabState extends State<_PacksTab> with AutomaticKeepAliveClientMixin
       _error = false;
     });
     try {
-      final col = FirebaseFirestore.instance.collection('StickerPacks');
-      Query<Map<String, dynamic>> q;
-      switch (widget.mode) {
-        case _PackMode.pending:
-          q = col.where('status', isEqualTo: 'pending').limit(200);
-          break;
-        case _PackMode.active:
-          q = col.where('status', isEqualTo: 'active').limit(500);
-          break;
-        case _PackMode.all:
-          q = col.orderBy('createdAt', descending: true).limit(300);
-          break;
-      }
-      final snap = await q.getM('admin_stickers_page.dart:103');
-      final l = snap.docs.toList();
-      if (widget.mode != _PackMode.all) {
-        l.sort((a, b) => ((b.data()['createdAt'] as num?) ?? 0).compareTo((a.data()['createdAt'] as num?) ?? 0));
-      }
+      final l = await StickersAdminApi.packs(switch (widget.mode) { _PackMode.pending => 'pending', _PackMode.active => 'active', _PackMode.all => 'all' });
+      l.sort((a, b) => ((b.data()['createdAt'] as num?) ?? 0).compareTo((a.data()['createdAt'] as num?) ?? 0));
       if (!mounted) return;
       setState(() {
         _docs = l;
@@ -172,7 +155,7 @@ class _PacksTabState extends State<_PacksTab> with AutomaticKeepAliveClientMixin
     ]);
   }
 
-  Widget _packTile(AppColors c, QueryDocumentSnapshot<Map<String, dynamic>> d) {
+  Widget _packTile(AppColors c, StickerDoc d) {
     final p = d.data();
     final status = (p['status'] ?? '').toString();
     final price = (p['priceCoins'] as num?)?.toInt() ?? 0;
@@ -222,7 +205,7 @@ class _ReportsTabState extends State<_ReportsTab> with AutomaticKeepAliveClientM
 
   bool _loading = true;
   bool _error = false;
-  List<QueryDocumentSnapshot<Map<String, dynamic>>> _docs = [];
+  List<StickerDoc> _docs = [];
   final Set<String> _busy = {};
 
   @override
@@ -237,8 +220,7 @@ class _ReportsTabState extends State<_ReportsTab> with AutomaticKeepAliveClientM
       _error = false;
     });
     try {
-      final snap = await FirebaseFirestore.instance.collection('StickerReports').where('status', isEqualTo: 'open').limit(200).getM('admin_stickers_page.dart:239');
-      final l = snap.docs.toList()..sort((a, b) => ((b.data()['createdAt'] as num?) ?? 0).compareTo((a.data()['createdAt'] as num?) ?? 0));
+      final l = (await StickersAdminApi.reports())..sort((a, b) => ((b.data()['createdAt'] as num?) ?? 0).compareTo((a.data()['createdAt'] as num?) ?? 0));
       if (!mounted) return;
       setState(() {
         _docs = l;
@@ -253,16 +235,16 @@ class _ReportsTabState extends State<_ReportsTab> with AutomaticKeepAliveClientM
     }
   }
 
-  Future<void> _close(QueryDocumentSnapshot<Map<String, dynamic>> r, {String resolution = 'dismissed'}) async {
+  Future<void> _close(StickerDoc r, {String resolution = 'dismissed'}) async {
     try {
-      await r.reference.update({'status': 'closed', 'resolution': resolution, 'closedAt': DateTime.now().millisecondsSinceEpoch});
+      await StickersAdminApi.closeReport(r.id, resolution);
       if (mounted) setState(() => _docs = _docs.where((d) => d.id != r.id).toList());
     } catch (e) {
       stickerToast(context, 'Impossible de classer le signalement : $e');
     }
   }
 
-  Future<void> _remove(QueryDocumentSnapshot<Map<String, dynamic>> r) async {
+  Future<void> _remove(StickerDoc r) async {
     final id = (r.data()['stickerId'] ?? '').toString();
     if (id.isEmpty) return;
     final reason = await stickerAskReason(context, 'Retirer le sticker');
@@ -295,7 +277,7 @@ class _ReportsTabState extends State<_ReportsTab> with AutomaticKeepAliveClientM
     );
   }
 
-  Widget _reportCard(AppColors c, QueryDocumentSnapshot<Map<String, dynamic>> r) {
+  Widget _reportCard(AppColors c, StickerDoc r) {
     final d = r.data();
     final stickerId = (d['stickerId'] ?? '').toString();
     final note = (d['note'] ?? '').toString();
@@ -304,8 +286,8 @@ class _ReportsTabState extends State<_ReportsTab> with AutomaticKeepAliveClientM
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: c.border)),
-      child: FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        future: FirebaseFirestore.instance.collection('Stickers').doc(stickerId.isEmpty ? '_' : stickerId).getM('admin_stickers_page.dart:307'),
+      child: FutureBuilder<StickerDoc?>(
+        future: stickerId.isEmpty ? Future.value(null) : StickersAdminApi.stickerById(stickerId).catchError((_) => null as StickerDoc?),
         builder: (ctx, snap) {
           final s = snap.data?.data();
           return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -396,10 +378,8 @@ class _CatalogTabState extends State<_CatalogTab> with AutomaticKeepAliveClientM
   bool _loadingMore = false;
   bool _hasMore = false;
   bool _error = false;
-  DocumentSnapshot<Map<String, dynamic>>? _cursor;
-  List<DocumentSnapshot<Map<String, dynamic>>> _docs = [];
-
-  CollectionReference<Map<String, dynamic>> get _col => FirebaseFirestore.instance.collection('Stickers');
+  int _page = 1;
+  List<StickerDoc> _docs = [];
 
   @override
   void initState() {
@@ -412,23 +392,6 @@ class _CatalogTabState extends State<_CatalogTab> with AutomaticKeepAliveClientM
     _debounce?.cancel();
     _searchCtrl.dispose();
     super.dispose();
-  }
-
-  Query<Map<String, dynamic>> _buildQuery() {
-    switch (_filter) {
-      case _CatFilter.active:
-        return _col.where('status', isEqualTo: 'active');
-      case _CatFilter.pending:
-        return _col.where('status', isEqualTo: 'pending');
-      case _CatFilter.removed:
-        return _col.where('status', whereIn: ['rejected', 'removed']);
-      case _CatFilter.copies:
-        return _col.where('copyOf', isGreaterThan: '');
-      case _CatFilter.official:
-        return _col.where('creatorId', isEqualTo: 'afrolook');
-      case _CatFilter.all:
-        return _col.orderBy('createdAt', descending: true);
-    }
   }
 
   bool _match(Map<String, dynamic> d) {
@@ -454,7 +417,7 @@ class _CatalogTabState extends State<_CatalogTab> with AutomaticKeepAliveClientM
         _loading = true;
         _error = false;
         _docs = [];
-        _cursor = null;
+        _page = 1;
         _hasMore = false;
       });
     } else {
@@ -462,28 +425,12 @@ class _CatalogTabState extends State<_CatalogTab> with AutomaticKeepAliveClientM
       setState(() => _loadingMore = true);
     }
     try {
-      if (_query.isNotEmpty) {
-        final res = await _search(_query);
-        if (!mounted) return;
-        setState(() {
-          _docs = res.where((d) => _match(d.data() ?? {})).toList();
-          _loading = false;
-          _hasMore = false;
-        });
-        return;
-      }
-      var q = _buildQuery().limit(_pageSize);
-      if (!reset && _cursor != null) q = q.startAfterDocument(_cursor!);
-      final snap = await q.getM('admin_stickers_page.dart:476');
+      final res = await StickersAdminApi.catalog(filter: _filter.name, q: _query, page: reset ? 1 : _page + 1);
       if (!mounted) return;
-      final page = snap.docs.toList();
-      if (_filter != _CatFilter.all) {
-        page.sort((a, b) => ((b.data()['createdAt'] as num?) ?? 0).compareTo((a.data()['createdAt'] as num?) ?? 0));
-      }
+      if (!reset) _page++;
       setState(() {
-        _docs = reset ? page : [..._docs, ...page];
-        if (snap.docs.isNotEmpty) _cursor = snap.docs.last;
-        _hasMore = snap.docs.length == _pageSize;
+        _docs = reset ? res.items : [..._docs, ...res.items];
+        _hasMore = res.more;
         _loading = false;
         _loadingMore = false;
       });
@@ -495,68 +442,6 @@ class _CatalogTabState extends State<_CatalogTab> with AutomaticKeepAliveClientM
         _error = true;
       });
     }
-  }
-
-  /// Recherche : identifiant, nom de pack, pseudo du créateur, légende (français).
-  Future<List<DocumentSnapshot<Map<String, dynamic>>>> _search(String raw) async {
-    final q = raw.trim();
-    final lower = q.toLowerCase();
-    final db = FirebaseFirestore.instance;
-    final found = <String, DocumentSnapshot<Map<String, dynamic>>>{};
-    Future<void> guard(Future<void> Function() f) async {
-      try {
-        await f();
-      } catch (_) {}
-    }
-
-    await Future.wait([
-      // 1. Identifiant
-      guard(() async {
-        if (q.length < 8 || q.contains(' ')) return;
-        final d = await _col.doc(q).getM('admin_stickers_page.dart:515');
-        if (d.exists) found[d.id] = d;
-      }),
-      // 2. Nom de pack (filtre côté app sur les packs, puis stickers de ces packs)
-      guard(() async {
-        final packs = await db.collection('StickerPacks').limit(500).getM('admin_stickers_page.dart:520');
-        final ids = packs.docs.where((p) => (p.data()['name'] ?? '').toString().toLowerCase().contains(lower)).map((p) => p.id).take(6).toList();
-        for (var i = 0; i < ids.length; i += 10) {
-          final part = ids.sublist(i, i + 10 > ids.length ? ids.length : i + 10);
-          final s = await _col.where('packId', whereIn: part).limit(100).getM('admin_stickers_page.dart:524');
-          for (final d in s.docs) {
-            found[d.id] = d;
-          }
-        }
-      }),
-      // 3. Pseudo du créateur (préfixe, avec ou sans @)
-      guard(() async {
-        final p = lower.startsWith('@') ? lower.substring(1) : lower;
-        if (p.isEmpty) return;
-        final users = await db.collection('Users').orderBy('pseudo').startAt([p]).endAt(['$p']).limit(8).getM('admin_stickers_page.dart:534');
-        final ids = users.docs.map((u) => u.id).toList();
-        if (lower == 'afrolook') ids.add('afrolook');
-        for (var i = 0; i < ids.length; i += 10) {
-          final part = ids.sublist(i, i + 10 > ids.length ? ids.length : i + 10);
-          final s = await _col.where('creatorId', whereIn: part).limit(100).getM('admin_stickers_page.dart:539');
-          for (final d in s.docs) {
-            found[d.id] = d;
-          }
-        }
-      }),
-      // 4. Légende française (préfixe, quelques variantes de casse)
-      guard(() async {
-        final variants = <String>{q, lower, lower.isEmpty ? '' : lower[0].toUpperCase() + lower.substring(1)};
-        for (final v in variants) {
-          if (v.isEmpty) continue;
-          final s = await _col.orderBy('captions.fr').startAt([v]).endAt(['$v']).limit(60).getM('admin_stickers_page.dart:550');
-          for (final d in s.docs) {
-            found[d.id] = d;
-          }
-        }
-      }),
-    ]);
-    final l = found.values.toList()..sort((a, b) => ((b.data()?['createdAt'] as num?) ?? 0).compareTo((a.data()?['createdAt'] as num?) ?? 0));
-    return l;
   }
 
   void _onSearch(String v) {
@@ -663,7 +548,7 @@ class _CatalogTabState extends State<_CatalogTab> with AutomaticKeepAliveClientM
 }
 
 class _StickerRow extends StatelessWidget {
-  final DocumentSnapshot<Map<String, dynamic>> doc;
+  final StickerDoc doc;
   const _StickerRow({required this.doc});
 
   @override

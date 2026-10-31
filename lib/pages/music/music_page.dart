@@ -3,11 +3,10 @@
 // Dans « Pour toi », la carte « en lecture » (disque vinyle) fait office de lecteur ; dans les autres onglets, le lecteur flottant reste visible.
 // Chaque ligne a son bouton « Post » (créer un post avec ce son) et son bouton lecture ; la file d'attente enchaîne les titres.
 
-import 'package:afrotok/services/read_meter.dart';
 import 'dart:async';
 import 'dart:math';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../services/api/music_api.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -19,7 +18,6 @@ import '../../providers/authProvider.dart';
 import '../../services/music_background.dart';
 import '../../services/music_queue.dart';
 import '../../services/offline_music_service.dart';
-import '../../utils/media_cdn.dart';
 import '../../widgets/music/music_overlay.dart';
 import '../../widgets/music/streams_text.dart';
 import '../../widgets/music/music_like.dart';
@@ -200,15 +198,17 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
       MusicAds.canOfferRewarded(context.read<UserAuthProvider>().loginUserData);
 
   /// Le son (document artist_sounds) d'un titre qui n'a que son identifiant (bibliothèque).
+  Future<List<ArtistSound>>? _libFuture;
+
   Future<ArtistSound?> _soundOf(MusicTrack it) async {
     if (it.sound != null) return it.sound;
     try {
-      final d = await FirebaseFirestore.instance.collection('artist_sounds').doc(it.id).getM('music_page.dart:203');
-      if (!d.exists || d.data()!['status'] != 'validated') {
+      final d = await MusicApi.sound(it.id);
+      if (d == null || d.status != 'validated') {
         if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ce titre n’est plus disponible.')));
         return null;
       }
-      return ArtistSound.fromMap(d.data()!, d.id);
+      return d;
     } catch (_) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Chargement impossible. Vérifie ta connexion.')));
       return null;
@@ -303,25 +303,23 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
       ),
       body: widget.preview != null
           ? _tabsView(c, widget.preview!.sounds, widget.preview!.free, const [], false)
-          : StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('artist_sounds').where('status', isEqualTo: 'validated').orderBy('validatedAt', descending: true).limit(150).snapshotsM('music_page.dart:299'),
+          : FutureBuilder<List<ArtistSound>>(
+              future: MusicApi.latestCached(),
               builder: (_, snap) {
                 final loading = !snap.hasData && !snap.hasError;
                 // Titres proposés dans le pays de la personne (ou à tous) ; ceux visés pour son pays passent devant
                 final sounds = SoundCountries.forViewer<ArtistSound>(
-                  [for (final d in snap.data?.docs ?? const <QueryDocumentSnapshot>[]) ArtistSound.fromMap(d.data() as Map<String, dynamic>, d.id)].where((s) => s.previewUrl != null),
+                  (snap.data ?? const <ArtistSound>[]).where((s) => s.previewUrl != null),
                   countries: (s) => s.availableCountries,
                   owner: (s) => s.userId,
                   viewerCountry: SoundCountries.viewerCountry(context),
                 ).map((s) => MusicTrack.fromSound(s)).toList();
                 final free = kStudioTracks.map(MusicTrack.fromStudio).toList();
                 WidgetsBinding.instance.addPostFrameCallback((_) => MusicQueue.warmList([...sounds, ...free]));
-                return StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseAuth.instance.currentUser == null ? null : FirebaseFirestore.instance.collection('MusicLibrary').where('uid', isEqualTo: FirebaseAuth.instance.currentUser!.uid).snapshotsM('music_page.dart:312'),
+                return FutureBuilder<List<ArtistSound>>(
+                  future: FirebaseAuth.instance.currentUser == null ? null : (_libFuture ??= MusicApi.library()),
                   builder: (_, libSnap) {
-                    final libDocs = [for (final d in libSnap.data?.docs ?? const <QueryDocumentSnapshot>[]) d.data() as Map<String, dynamic>]
-                      ..sort((a, b) => ((b['createdAt'] as num?) ?? 0).compareTo((a['createdAt'] as num?) ?? 0));
-                    final library = libDocs.map((d) => MusicTrack.fromLibrary(d, cover: d['coverImageUrl'] == null ? null : MediaCdn.url(d['coverImageUrl'] as String))).toList();
+                    final library = (libSnap.data ?? const <ArtistSound>[]).map((x) => MusicTrack.fromSound(x, owned: true)).toList();
                     return _tabsView(c, sounds, free, library, loading);
                   },
                 );

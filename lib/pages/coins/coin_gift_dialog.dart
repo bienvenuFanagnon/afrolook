@@ -1,7 +1,7 @@
 // widgets/coin_gift_dialog.dart
 import 'dart:async';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../services/api/wallet_api.dart';
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import 'package:provider/provider.dart';
@@ -494,20 +494,6 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
     // 1. Optimistic update locale du solde affiché + fermeture immédiate
     setState(() => _currentBalance -= totalCost);
 
-    // Poster le commentaire auto immédiatement (vérification locale OK)
-    if (widget.post != null) {
-      final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-      CoinGiftService.postGiftAutoComment(
-        senderId: _coinProvider.currentUser!.id!,
-        senderData: authProvider.loginUserData,
-        postId: widget.post!.id!,
-        giftPack: pack,
-        coinsAmount: totalCost,
-        quantity: _quantity,
-        firestore: FirebaseFirestore.instance,
-      );
-    }
-
     final nav = Navigator.of(context);
     if (mounted) {
       nav.pop();
@@ -521,31 +507,44 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
       }
     }
 
-    if (widget.isLive && widget.liveId != null) {
-      _recordLiveGift(widget.liveId!, totalCost);
-    }
-
     // 2. Enregistrer dans les récents AVANT onGiftSuccess (pour que QuickGiftBar recharge le bon cadeau)
     await QuickGiftService.recordRecentGift(pack);
     widget.onGiftSuccess?.call();
 
-    // 3. Écriture Firestore réelle en arrière-plan (fire-and-forget)
+    // 3. Envoi réel à l'API en arrière-plan (fire-and-forget) : débit, parts et parrainages calculés par le serveur
     final senderId = _coinProvider.currentUser!.id!;
-    unawaited(_coinProvider.sendGift(
-      senderId: senderId,
-      receiverId: widget.receiverId,
-      coinsAmount: totalCost,
-      post: widget.post!,
-      context: context,
-      giftPack: pack,
-      quantity: _quantity,
-      onSuccess: () {
-        _coinProvider.refreshBalance(senderId);
-      },
-    ).then((success) {
+    final sent = (widget.isLive && widget.liveId != null)
+        ? WalletApi.instance.giftLive(widget.liveId!, coins: totalCost, icon: pack.icon, label: pack.label).then((_) => true)
+        : _coinProvider.sendGift(
+            senderId: senderId,
+            receiverId: widget.receiverId,
+            coinsAmount: totalCost,
+            post: widget.post!,
+            context: context,
+            giftPack: pack,
+            quantity: _quantity,
+            onSuccess: () {
+              _coinProvider.refreshBalance(senderId);
+            },
+          );
+    unawaited(sent.then((success) {
       if (!success) {
         debugPrint('❌ Échec de l\'envoi du cadeau (solde insuffisant côté serveur), resynchronisation du solde');
         _coinProvider.refreshBalance(senderId);
+        return;
+      }
+      _coinProvider.refreshBalance(senderId);
+      // Commentaire automatique posté seulement une fois le cadeau confirmé par l'API
+      if (widget.post != null) {
+        final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+        CoinGiftService.postGiftAutoComment(
+          senderId: senderId,
+          senderData: authProvider.loginUserData,
+          postId: widget.post!.id!,
+          giftPack: pack,
+          coinsAmount: totalCost,
+          quantity: _quantity,
+        );
       }
     }).catchError((e) {
       debugPrint('❌ Erreur lors de l\'envoi du cadeau : $e');
@@ -589,17 +588,6 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
         builder: (context) => const CoinRechargeScreen(),
       ),
     ).then((_) => _updateBalance());
-  }
-
-  void _recordLiveGift(String liveId, int coins) async {
-    final firestore = FirebaseFirestore.instance;
-    await firestore.collection('LiveGifts').add({
-      'liveId': liveId,
-      'senderId': _coinProvider.currentUser!.id,
-      'receiverId': widget.receiverId,
-      'coins': coins,
-      'createdAt': DateTime.now().millisecondsSinceEpoch,
-    });
   }
 
   String _formatNumber(int num) {
