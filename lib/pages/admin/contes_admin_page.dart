@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../services/api/learning_admin_api.dart';
 import '../../services/contes/contes_service.dart';
 import '../../theme/app_colors.dart';
 
@@ -7,7 +8,7 @@ int _n(dynamic v) => v is num ? v.toInt() : 0;
 
 /// Admin de La Case aux Contes : lecteurs, lectures, taux de fin, déblocages (pubs, pièces, lectures offertes), carte du fil,
 /// contes les plus lus, points d'abandon, et gestion des contes (masquer, mettre à la une, prix).
-/// Les données viennent de la fonction `conteAdmin` (réservée aux admins).
+/// Les données viennent de l'API (`GET /admin/contes`, `PATCH /admin/contes/{id}`, réservées à l'équipe).
 class ContesAdminPage extends StatefulWidget {
   const ContesAdminPage({super.key});
 
@@ -41,7 +42,7 @@ class _ContesAdminPageState extends State<ContesAdminPage> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _error = '$e');
+      if (mounted) setState(() => _error = LearningAdminApi.errorText(e));
     }
   }
 
@@ -99,7 +100,7 @@ class _ContesAdminPageState extends State<ContesAdminPage> {
     try {
       await ContesService.instance.adminStory(card.id, patch);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Échec : $e')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Échec : ${LearningAdminApi.errorText(e)}')));
       _load();
     }
   }
@@ -243,7 +244,7 @@ class _ContesAdminPageState extends State<ContesAdminPage> {
         if ((d['worstDrop'] as List).isEmpty) Text('Pas assez de lectures pour le moment', style: TextStyle(color: c.textSecondary, fontSize: 13)),
       ])),
       _card(c, 'Gérer les contes', _catalog == null ? const SizedBox.shrink() : _manage(c, _catalog!, cfg)),
-      _card(c, 'Réglages (AppConfig/contes)', Column(children: [
+      _card(c, 'Réglages actuels', Column(children: [
         for (final e in (d['config'] as Map).entries) _row(c, '${e.key}', '${e.value}'),
       ])),
     ];

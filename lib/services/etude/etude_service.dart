@@ -1,4 +1,5 @@
 import 'package:afrotok/services/api/jeux_api.dart';
+import 'package:afrotok/services/api/learning_admin_api.dart';
 import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -360,8 +361,8 @@ class EtudeService {
     return m['unlocked'] == true;
   }
 
-  /// Vue d'ensemble pour les admins : pas encore dans l'API (voir lacunes_api_jeux_medias.md).
-  Future<Map<String, dynamic>> admin() async => throw EtudeException('UNAVAILABLE Les outils d administration d Étude ne sont pas encore disponibles.');
+  /// Vue d'ensemble pour l'équipe : `GET /admin/etude/overview`. Les erreurs sont des [ApiException] (message en français).
+  Future<Map<String, dynamic>> admin() => LearningAdminApi.etudeOverview();
 
   Future<Map<String, dynamic>> verifyDiploma(String serial) async {
     try {

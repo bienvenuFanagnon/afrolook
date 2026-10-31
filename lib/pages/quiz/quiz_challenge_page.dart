@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 
 import '../../ads/ad_gate.dart';
 import '../../ads/admob_service.dart';
+import '../../ads/rewards_service.dart';
 import '../../l10n/tr.dart';
 import '../../providers/authProvider.dart';
 import '../../services/quiz/quiz_service.dart';
@@ -74,6 +75,8 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
         _info = i;
         _phase = _Phase.intro;
       });
+      // Partie laissée en plan : le serveur l'a close au palier garanti (le gain est déjà versé).
+      if (i.ended && i.gain > 0) quizToast(context, context.tr('Ta partie précédente s\'est terminée : +{n} points.', {'n': i.gain}));
     } on QuizException catch (e) {
       if (!mounted) return;
       if (e.code.contains('QUIZ_OFF')) {
@@ -127,7 +130,9 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
       _phase = _Phase.play;
     });
     if (restartTimer) {
-      _startTimer(_info?.seconds ?? 30);
+      // À la reprise d'une partie, le serveur dit combien de secondes il reste ; sinon chrono complet.
+      final total = _info?.seconds ?? 30;
+      _startTimer(total, elapsed: q.secondsLeft >= 0 && q.secondsLeft < total ? (total - q.secondsLeft).toDouble() : 0);
     }
   }
 
@@ -139,10 +144,34 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
     return ok;
   }
 
+  /// Après une pub regardée en entier : la pub est déclarée au serveur (réserve de pubs), puis l'action est demandée. Le serveur
+  /// vérifie la pub parfois avec un petit délai (`NO_ADS` tant qu'elle n'est pas comptée) : on réessaie quelques fois, sans rien débiter.
+  Future<T> _afterAd<T>(Future<T> Function() call) async {
+    try {
+      await RewardsService.recordView();
+    } catch (_) {
+      // la pub est vérifiée par AdMob côté serveur, parfois avec un petit délai
+    }
+    for (var i = 0;; i++) {
+      try {
+        return await call();
+      } on QuizException catch (e) {
+        if (!e.code.contains('NO_ADS') || i >= 3) rethrow;
+        await Future<void>.delayed(const Duration(seconds: 2));
+      }
+    }
+  }
+
   String _errorText(Object e) {
     final code = e is QuizException ? e.code : '';
     if (code.contains('NO_ATTEMPTS')) return context.tr("Tu n'as plus de partie pour aujourd'hui.");
     if (code.contains('ALREADY_ACTIVE')) return context.tr('Une partie est déjà en cours.');
+    if (code.contains('NO_ADS')) return context.tr("La pub n'a pas pu être comptée. Réessaie dans un instant.");
+    if (code.contains('NO_SESSION')) return context.tr("Cette partie n'est plus en cours.");
+    if (code.contains('JOKER_USED')) return context.tr('Tu as déjà utilisé cette aide.');
+    if (code.contains('NO_RESCUE')) return context.tr("La seconde chance n'est plus disponible.");
+    if (code.contains('NOTHING_TO_KEEP')) return context.tr("Tu n'as encore rien à garder.");
+    if (code.contains('QUIZ_OFF')) return context.tr('Le quiz est indisponible pour le moment.');
     return context.tr('Connexion impossible. Vérifie ta connexion.');
   }
 
@@ -154,10 +183,13 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
         if (mounted) setState(() => _busy = false);
         return;
       }
-      final r = await QuizService.instance.challengeStart(extra: extra);
+      // Une partie en plus exige une pub de la réserve (sinon 409 `no_ad`).
+      final r = extra ? await _afterAd(() => QuizService.instance.challengeStart(extra: true)) : await QuizService.instance.challengeStart();
       if (!mounted) return;
       QuizSound.fx(QuizSfx.hi);
       _info = r;
+      // Une partie laissée en plan est close par le serveur au palier garanti au moment où on en commence une autre.
+      if (r.ended && r.gain > 0) quizToast(context, context.tr('Ta partie précédente s\'est terminée : +{n} points.', {'n': r.gain}));
       _show(r.question!);
     } catch (e) {
       if (!mounted) return;
@@ -192,9 +224,10 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
       _busy = true;
       _mood = HawkMood.think;
     });
-    for (var attempt = 0; attempt < 2; attempt++) {
+    // `step` : si la réponse du serveur s'est perdue en route, la même demande renvoie la même réponse (rien n'est compté deux fois).
+    for (var attempt = 0; attempt < 3; attempt++) {
       try {
-        final r = await QuizService.instance.challengeAnswer(choice);
+        final r = await QuizService.instance.challengeAnswer(choice, step: q.step);
         if (!mounted) return;
         QuizSound.fx(r.correct ? QuizSfx.ok : QuizSfx.bad);
         setState(() {
@@ -206,6 +239,10 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
       } on QuizException catch (e) {
         if (e.code.contains('TOO_FAST') && attempt == 0) {
           await Future<void>.delayed(const Duration(milliseconds: 750));
+          continue;
+        }
+        if (e.code.contains('NETWORK') && attempt < 2) {
+          await Future<void>.delayed(const Duration(seconds: 1));
           continue;
         }
         break;
@@ -283,6 +320,12 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
                 color: c.accent,
                 textColor: c.onAccent,
                 onPressed: () => Navigator.pop(ctx, 'rescue'),
+              )
+            else
+              Text(
+                ctx.tr("Aucune pub n'est disponible pour une seconde chance pour le moment."),
+                textAlign: TextAlign.center,
+                style: TextStyle(color: c.textSecondary, fontSize: 12.5, fontWeight: FontWeight.w700),
               ),
             const SizedBox(height: 10),
             QuizChunkyButton(
@@ -305,7 +348,8 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
           await _rescueSheet(r);
           return;
         }
-        final n = await QuizService.instance.challengeRescue();
+        // La seconde chance exige une pub de la réserve (sinon 409 `no_ad`).
+        final n = await _afterAd(() => QuizService.instance.challengeRescue());
         if (!mounted) return;
         QuizSound.fx(QuizSfx.up);
         _info = n;
@@ -319,7 +363,13 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
       if (!mounted) return;
       setState(() => _busy = false);
       quizToast(context, _errorText(e), error: true);
-      _load();
+      // Échec réseau ou pub non comptée : la partie attend toujours la décision du joueur, on la lui repropose (relire l'état la clorait).
+      final code = e is QuizException ? e.code : '';
+      if (code.contains('NO_SESSION') || code.contains('NO_RESCUE')) {
+        _load();
+      } else {
+        await _rescueSheet(r);
+      }
     }
   }
 
@@ -557,6 +607,10 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
             loading: _busy,
             onPressed: () => _start(extra: true),
           ),
+        ] else if (i.extraLeft > 0) ...[
+          const SizedBox(height: 8),
+          Text(context.tr("Aucune pub n'est disponible pour une partie de plus pour le moment."),
+              textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary, fontSize: 12.5, fontWeight: FontWeight.w700)),
         ],
       ],
     ]);
@@ -748,6 +802,12 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
             Text('+${r.gain}', style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: c.textPrimary)),
           ]),
           Text(context.tr('points gagnés'), style: TextStyle(color: c.textSecondary, fontWeight: FontWeight.w700)),
+          if (r.expired)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(context.tr('Le temps était écoulé : tu repars avec ton palier garanti.'),
+                  textAlign: TextAlign.center, style: TextStyle(color: c.danger, fontSize: 12.5, fontWeight: FontWeight.w700)),
+            ),
           if (capped)
             Padding(
               padding: const EdgeInsets.only(top: 6),

@@ -1,4 +1,5 @@
 import 'package:afrotok/services/api/jeux_api.dart';
+import 'package:afrotok/services/api/learning_admin_api.dart';
 import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'dart:async';
 
@@ -256,7 +257,7 @@ class ConteOpen {
       );
 }
 
-/// « La Case aux Contes » : catalogue (lu dans Firestore, mis en cache), état du lecteur et appels au serveur.
+/// « La Case aux Contes » : catalogue (lu dans l'API, mis en cache), état du lecteur et appels au serveur.
 class ContesService {
   ContesService._();
   static final ContesService instance = ContesService._();
@@ -450,14 +451,25 @@ class ContesService {
 
   /// Mesure légère (carte du fil, page d'abandon, son) : jamais bloquante.
   void track(String event, {String? id, int? page}) {
-    unawaited(_api('POST', '/contes/track', body: {'event': event}).catchError((e) {
+    unawaited(_api('POST', '/contes/track', body: contesTrackBody(event, id: id, page: page)).catchError((e) {
       debugPrint('[Contes] track $event : $e');
       return <String, dynamic>{};
     }));
   }
 
-  /// Admin : pas encore dans l'API (voir lacunes_api_jeux_medias.md).
-  Future<Map<String, dynamic>> admin() async => throw ConteException('UNAVAILABLE Les outils d administration des contes ne sont pas encore disponibles.');
-  Future<void> adminStory(String id, Map<String, dynamic> patch) async =>
-      throw ConteException('UNAVAILABLE Les outils d administration des contes ne sont pas encore disponibles.');
+  /// Corps de `POST /contes/track` : à l'abandon (`leave`), l'API compte l'abandon par conte (`id`) et par page (`page`, à partir de 0).
+  @visibleForTesting
+  static Map<String, dynamic> contesTrackBody(String event, {String? id, int? page}) => {
+        'event': event,
+        if (event == 'leave' && id != null && id.isNotEmpty) 'id': id,
+        if (event == 'leave' && id != null && id.isNotEmpty && page != null) 'page': page.clamp(0, 40),
+      };
+
+  /// Admin (équipe) : vue d'ensemble `GET /admin/contes`. Les erreurs sont des [ApiException] (message en français).
+  Future<Map<String, dynamic>> admin() => LearningAdminApi.contesOverview();
+
+  /// Admin : masquer (`active`), mettre à la une (`featured`) ou changer le prix (`price`) d'un conte — `PATCH /admin/contes/{id}`.
+  Future<void> adminStory(String id, Map<String, dynamic> patch) async {
+    await LearningAdminApi.patchConte(id, patch);
+  }
 }

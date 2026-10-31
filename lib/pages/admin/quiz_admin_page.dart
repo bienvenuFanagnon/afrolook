@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../services/api/learning_admin_api.dart';
 import '../../services/quiz/quiz_service.dart';
 import '../../theme/app_colors.dart';
 import '../quiz/widgets/quiz_widgets.dart';
@@ -14,10 +15,18 @@ String _dur(num sec) {
 
 int _n(dynamic v) => v is num ? v.toInt() : 0;
 
+/// Nom d'un joueur du classement du temps passé (`name` peut être absent : on montre le début de l'identifiant).
+String _topName(Map<String, dynamic> u) {
+  final name = '${u['name'] ?? ''}'.trim();
+  if (name.isNotEmpty) return name;
+  final id = '${u['userId'] ?? ''}';
+  return id.isEmpty ? 'Joueur' : id.substring(0, id.length < 8 ? id.length : 8);
+}
+
 String _dayLabel(String d) => d.length == 8 ? '${d.substring(6)}/${d.substring(4, 6)}' : d;
 
 /// Admin du Quiz : qui joue aujourd'hui, combien de temps, sur quels jours, et toutes les questions
-/// (avec leur taux de réussite). Les données viennent de la fonction `quizAdmin` (réservée aux admins).
+/// (avec leur taux de réussite). Les données viennent de l'API (`/admin/quiz/*`, réservée à l'équipe).
 class QuizAdminPage extends StatefulWidget {
   const QuizAdminPage({super.key});
 
@@ -46,7 +55,7 @@ class _QuizAdminPageState extends State<QuizAdminPage> {
       final m = await QuizService.instance.admin({'action': 'stats', 'days': _days});
       if (mounted) setState(() => _stats = m);
     } catch (e) {
-      if (mounted) setState(() => _error = '$e');
+      if (mounted) setState(() => _error = LearningAdminApi.errorText(e));
     }
     if (mounted) setState(() => _loading = false);
   }
@@ -186,7 +195,7 @@ class _QuizAdminPageState extends State<QuizAdminPage> {
                     Text(quizFlag('${u['country'] ?? ''}'), style: const TextStyle(fontSize: 18)),
                     const SizedBox(width: 8),
                     Expanded(
-                      child: Text('${u['name']}'.isEmpty ? '${u['uid']}'.substring(0, 8) : '${u['name']}',
+                      child: Text(_topName(u),
                           maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.w700, color: c.textPrimary)),
                     ),
                     Text(_dur(_n(u['sec'])), style: TextStyle(fontWeight: FontWeight.w900, color: c.primary)),
@@ -215,11 +224,11 @@ class _QuizAdminPageState extends State<QuizAdminPage> {
               Text('Réglages actuels', style: TextStyle(fontWeight: FontWeight.w900, color: c.textPrimary)),
               const SizedBox(height: 6),
               Text(
-                cfg.isEmpty ? 'Valeurs par défaut (rien d\'enregistré dans AppConfig/quiz).' : cfg.entries.where((e) => e.key != 'shop').map((e) => '${e.key} : ${e.value}').join('\n'),
+                cfg.isEmpty ? 'Valeurs par défaut (aucun réglage enregistré sur le serveur).' : cfg.entries.where((e) => e.key != 'shop').map((e) => '${e.key} : ${e.value}').join('\n'),
                 style: TextStyle(color: c.textSecondary, fontSize: 12.5, height: 1.4),
               ),
               const SizedBox(height: 6),
-              Text('Pour les changer : node tools/quiz/set_config.js \'{"interstitialEveryLevels":2}\'', style: TextStyle(color: c.textSecondary, fontSize: 11.5)),
+              Text('Ces réglages se changent côté serveur (réglage « quiz »).', style: TextStyle(color: c.textSecondary, fontSize: 11.5)),
             ])),
         if (s['truncated'] == true)
           Text('Plus de 10 000 joueurs : les totaux sont partiels.', style: TextStyle(color: c.warning, fontSize: 12)),
@@ -304,7 +313,7 @@ class _QuestionsTabState extends State<_QuestionsTab> {
       final m = await QuizService.instance.admin({'action': 'unit', 'u': _unit, 'region': _region});
       if (mounted) setState(() => _data = m);
     } catch (e) {
-      if (mounted) setState(() => _error = '$e');
+      if (mounted) setState(() => _error = LearningAdminApi.errorText(e));
     }
     if (mounted) setState(() => _loading = false);
   }
@@ -357,7 +366,10 @@ class _QuestionsTabState extends State<_QuestionsTab> {
       ]),
       const SizedBox(height: 12),
       if (_loading) const Padding(padding: EdgeInsets.all(24), child: Center(child: CircularProgressIndicator())),
-      if (_error != null) Text(_error!, style: TextStyle(color: c.danger)),
+      if (_error != null) ...[
+        Text(_error!, textAlign: TextAlign.center, style: TextStyle(color: c.danger)),
+        TextButton(onPressed: _load, child: const Text('Réessayer')),
+      ],
       for (final lv in levels) ...[
         Padding(
           padding: const EdgeInsets.only(top: 8, bottom: 6),
@@ -423,7 +435,7 @@ class _ReportsTabState extends State<_ReportsTab> {
       final m = await QuizService.instance.admin({'action': 'reports'});
       if (mounted) setState(() => _reports = (m['reports'] as List).map((e) => Map<String, dynamic>.from(e as Map)).toList());
     } catch (e) {
-      if (mounted) setState(() => _error = '$e');
+      if (mounted) setState(() => _error = LearningAdminApi.errorText(e));
     }
   }
 
@@ -432,14 +444,24 @@ class _ReportsTabState extends State<_ReportsTab> {
       await QuizService.instance.admin({'action': 'resolve', 'qHash': qHash, 'status': status});
       if (mounted) setState(() => _reports?.removeWhere((r) => r['qHash'] == qHash));
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(LearningAdminApi.errorText(e))));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    if (_error != null) return Center(child: Text(_error!, style: TextStyle(color: c.danger)));
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text(_error!, textAlign: TextAlign.center, style: TextStyle(color: c.danger)),
+            TextButton(onPressed: _load, child: const Text('Réessayer')),
+          ]),
+        ),
+      );
+    }
     final list = _reports;
     if (list == null) return const Center(child: CircularProgressIndicator());
     return RefreshIndicator(
@@ -490,7 +512,7 @@ class _ReportsTabState extends State<_ReportsTab> {
               ]),
             ]),
           ),
-        Text('Pour corriger une question : modifier tools/quiz/questions/*.json puis relancer build_levels.js et upload_levels.js.',
+        Text('Pour corriger une question, passer par l\'équipe technique (jeux de questions du serveur).',
             style: TextStyle(color: c.textSecondary, fontSize: 11.5)),
       ]),
     );

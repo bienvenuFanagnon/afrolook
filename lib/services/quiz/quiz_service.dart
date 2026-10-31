@@ -1,4 +1,5 @@
 import 'package:afrotok/services/api/jeux_api.dart';
+import 'package:afrotok/services/api/learning_admin_api.dart';
 import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -124,7 +125,7 @@ class QuizFinish {
   final QuizState state;
 }
 
-/// Réglages du quiz lisibles par l'app (Firestore AppConfig/quiz).
+/// Réglages du quiz lisibles par l'app (clé `quiz` de `GET /config`).
 class QuizConfig {
   const QuizConfig({
     this.enabled = true,
@@ -165,8 +166,11 @@ class QuizDaily {
 
 /// Question du Grand Défi telle que le serveur la donne (sans la réponse).
 class QuizChalQuestion {
-  const QuizChalQuestion({required this.step, required this.q, required this.o, required this.hide, required this.j50, required this.swap, required this.rescue, required this.prize});
+  const QuizChalQuestion({required this.step, required this.q, required this.o, required this.hide, required this.j50, required this.swap, required this.rescue, required this.prize, this.secondsLeft = -1});
   final int step, prize;
+
+  /// Secondes restantes d'après le serveur (utile à la reprise d'une partie) ; -1 si le serveur ne l'a pas donné.
+  final int secondsLeft;
   final String q;
   final List<String> o;
   final List<int> hide;
@@ -180,6 +184,7 @@ class QuizChalQuestion {
         swap: _b(m['swap']),
         rescue: _b(m['rescue']),
         prize: _i(m['prize']),
+        secondsLeft: _i(m['secondsLeft'], -1),
       );
 }
 
@@ -208,9 +213,10 @@ class QuizChalReply {
     this.wins = 0,
     this.capLeft = 0,
     this.active = false,
+    this.replayed = false,
   });
   final QuizChalQuestion? question;
-  final bool correct, late, pending, canRescue, win, ended, expired, active;
+  final bool correct, late, pending, canRescue, win, ended, expired, active, replayed;
   final int correctIndex, floor, gain, reached, prize, seconds, attemptsLeft, extraLeft, best, wins, capLeft;
   final String explanation;
   final List<int> prizes;
@@ -240,6 +246,7 @@ class QuizChalReply {
       wins: _i(m['wins']),
       capLeft: _i(m['capLeft']),
       active: _b(m['active']),
+      replayed: _b(m['replayed']),
     );
   }
 }
@@ -270,6 +277,20 @@ class QuizAttempt {
   final String theme;
   final bool passed;
   final List<Map<String, dynamic>> details;
+
+  /// Une ligne de `GET /quiz/attempts` : `{n, theme, unit, passed, correct, gain, at (ms), doubled, details[{q, a, c, ok}]}`.
+  factory QuizAttempt.fromMap(Map m) => QuizAttempt(
+        n: _i(m['n']),
+        theme: '${m['theme'] ?? ''}',
+        passed: _b(m['passed']),
+        correct: _i(m['correct']),
+        gain: _i(m['gain']),
+        at: _i(m['at']),
+        details: m['details'] is List ? (m['details'] as List).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList() : const [],
+      );
+
+  static List<QuizAttempt> listFrom(dynamic data) =>
+      data is List ? data.whereType<Map>().map(QuizAttempt.fromMap).toList() : const <QuizAttempt>[];
 }
 
 /// Accès à l'API du quiz : toutes les règles (corrections, points, cœurs, série, anti-triche) sont côté serveur.
@@ -400,9 +421,21 @@ class QuizService {
     } catch (_) {}
   }
 
-  /// Outils d'administration du quiz : pas encore disponibles dans l'API (voir lacunes_api_jeux_medias.md).
-  Future<Map<String, dynamic>> admin(Map<String, dynamic> data) async =>
-      throw QuizException('UNAVAILABLE Les outils d\'administration du quiz ne sont pas encore disponibles.');
+  /// Outils d'administration du quiz (équipe) : `action` = `stats` (`days`), `unit` (`u`, `region`), `reports`, `resolve` (`qHash`, `status`).
+  /// Les erreurs sont des [ApiException] (message en français) : voir [LearningAdminApi.errorText].
+  Future<Map<String, dynamic>> admin(Map<String, dynamic> data) async {
+    switch ('${data['action']}') {
+      case 'stats':
+        return LearningAdminApi.quizStats(days: _i(data['days'], 7));
+      case 'unit':
+        return LearningAdminApi.quizUnit(_i(data['u'], 1), region: '${data['region'] ?? 'af'}');
+      case 'reports':
+        return LearningAdminApi.quizReports();
+      case 'resolve':
+        return LearningAdminApi.quizResolve('${data['qHash']}', '${data['status'] ?? 'done'}');
+    }
+    throw ArgumentError('Action d\'administration inconnue : ${data['action']}');
+  }
 
   // ── Avertissement accepté et signalements ──
   static const consentVersion = 1;
@@ -466,14 +499,28 @@ class QuizService {
     });
   }
 
-  // ── Grand Défi : pas encore dans l'API (voir lacunes_api_jeux_medias.md) ──
-  Future<QuizChalReply> _chal(String action, [Map<String, dynamic>? extra]) async =>
-      throw QuizException('QUIZ_OFF UNAVAILABLE Le Grand Défi n\'est pas encore disponible.');
+  // ── Grand Défi : `GET /quiz/challenge` et `POST /quiz/challenge/{start,resume,answer,j50,swap,rescue,giveup,cashout}` ──
+  // Le gain est en POINTS (jamais en pièces). Le serveur n'envoie la bonne réponse (`correctIndex`) qu'APRÈS la réponse.
+  Future<QuizChalReply> _chal(String action, [Map<String, dynamic>? body]) async {
+    final m = action == 'info' ? await _call('GET', '/quiz/challenge') : await _call('POST', '/quiz/challenge/$action', body: body ?? const {});
+    final st = m['state'];
+    if (st is Map) _publish(Map<String, dynamic>.from(st)); // points, série, parties restantes à jour pour l'accueil du quiz
+    return QuizChalReply.fromMap(m);
+  }
+
+  /// Lit une réponse brute (snake_case) du Grand Défi, telle que l'API l'envoie dans `data`.
+  @visibleForTesting
+  static QuizChalReply parseChallenge(Map<String, dynamic> raw) => QuizChalReply.fromMap(JeuxApi.camelKeys(raw, deep: _deep, keep: _keep));
 
   Future<QuizChalReply> challengeInfo() => _chal('info');
+
+  /// Commence une partie. [extra] = partie en plus (le serveur exige une pub de la réserve, sinon `NO_ADS`).
   Future<QuizChalReply> challengeStart({bool extra = false}) => _chal('start', {'extra': extra});
   Future<QuizChalReply> challengeResume() => _chal('resume');
-  Future<QuizChalReply> challengeAnswer(int choice) => _chal('answer', {'choice': choice});
+
+  /// [choice] 0 à 3, ou -1 pour « temps écoulé ». [step] (numéro de la question) évite les décalages et permet de renvoyer
+  /// la même réponse sans rien payer deux fois si la connexion a coupé juste après la réponse du serveur.
+  Future<QuizChalReply> challengeAnswer(int choice, {int? step}) => _chal('answer', {'choice': choice, if (step != null) 'step': step});
   Future<QuizChalReply> challengeFiftyFifty() => _chal('j50');
   Future<QuizChalReply> challengeSwap() => _chal('swap');
   Future<QuizChalReply> challengeRescue() => _chal('rescue');
@@ -609,7 +656,13 @@ class QuizService {
     }).toList();
   }
 
-  /// Historique des niveaux du joueur : pas encore dans l'API (voir lacunes_api_jeux_medias.md).
-  Future<List<QuizAttempt>> history({int limit = 100}) async =>
-      throw QuizException('UNAVAILABLE L\'historique des questions n\'est pas encore disponible.');
+  /// Historique des niveaux terminés du joueur, le plus récent d'abord (`GET /quiz/attempts`).
+  Future<List<QuizAttempt>> history({int limit = 100}) async {
+    try {
+      final r = await JeuxApi.client.get('/quiz/attempts', query: {'limit': limit.clamp(1, 200)});
+      return QuizAttempt.listFrom(JeuxApi.data(r));
+    } on ApiException catch (e) {
+      throw _fail(e);
+    }
+  }
 }
