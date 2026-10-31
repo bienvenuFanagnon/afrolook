@@ -207,7 +207,12 @@ class _SplashChargementState extends State<SplashChargement> {
     if (isValid) {
       final storedUserId = await SessionUserFirebaseService.getStoredUserId();
       if (storedUserId != null) {
-        await _updateUserLastActive(storedUserId);
+        // Mesuré : cette écriture Firestore attendue retardait l'accueil de ~10 s. Avec l'API, la dernière activité est mise à jour par le serveur
+        // à chaque requête authentifiée : plus aucune écriture Firestore ici.
+        if (!ApiGateway.instance.useApi('feed')) {
+          await _updateUserLastActive(storedUserId);
+        }
+        StartupTrace.mark('splash : session vérifiée');
         _handleAuthenticatedUserById(storedUserId);
       }
     }
