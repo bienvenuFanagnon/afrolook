@@ -1,4 +1,4 @@
-import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/defis_api.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -55,9 +55,14 @@ class _DefiFeedCardState extends State<DefiFeedCard> {
   }
 
   static Future<void> _load() async {
-    // Les défis en cours n'ont pas encore de route côté API (voir lacunes_api_publications.md) : aucune carte de défi en attendant.
-    _active = [];
-    _loadedAt = DateTime.now();
+    // Défis en cours lus sur l'API ; en cas d'erreur, aucune carte (jamais bloquant pour le fil) et nouvel essai au prochain emplacement.
+    try {
+      final page = await DefisApi.discover(limit: 20, onlyOngoing: true);
+      _active = page.items;
+      _loadedAt = DateTime.now();
+    } catch (_) {
+      _active = [];
+    }
   }
 
   Post? _pick() {
@@ -105,7 +110,7 @@ class _DefiFeedCardState extends State<DefiFeedCard> {
     final joined = (p.defiParticipantIds ?? const []).contains(me.id);
     final thumb = _thumb(p);
     final title = (p.description ?? '').trim().isEmpty ? context.tr('Un défi t’attend') : p.description!.trim();
-    final people = (p.defiParticipantIds ?? const []).length;
+    final people = p.defiParticipantCount;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(

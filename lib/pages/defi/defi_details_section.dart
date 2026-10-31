@@ -1,4 +1,5 @@
-import 'package:afrotok/services/read_meter.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import 'package:afrotok/services/api/defis_api.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/theme/app_colors.dart';
 import 'package:afrotok/pages/userPosts/postWidgets/postWidgetPage.dart';
@@ -7,8 +8,6 @@ import 'package:afrotok/pages/postDetailsVideo.dart';
 import 'package:afrotok/pages/pub/afrolook_inline_ad.dart';
 import 'package:afrotok/pages/defi/defi_ui.dart';
 import 'package:afrotok/providers/authProvider.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -293,37 +292,21 @@ class _DefiRevenueCardState extends State<DefiRevenueCard> {
     _load();
   }
 
-  // Calculé à partir des transactions du DÉFI : couvre aussi les DÉFIs antérieurs au suivi serveur.
+  String? _error;
+
+  // Gains lus sur l'API (créateur et équipe seulement) : sommes payées par les votants et les participants.
   Future<void> _load() async {
     try {
-      final snap = await FirebaseFirestore.instance
-          .collection('TransactionSoldes')
-          .where('defiPostId', isEqualTo: widget.defiPostId)
-          .getM('defi_details_section.dart:301');
-      var vC = 0, vN = 0, pC = 0, pN = 0;
-      for (final d in snap.docs) {
-        final t = d.data();
-        final amount = (t['montant'] as num? ?? 0).round();
-        final type = '${t['type'] ?? ''}';
-        if (t['methode_paiement'] == 'commission_parrainage' || type == 'GAIN_PIECES') {
-          continue; // versements aux créateurs : pas des recettes du DÉFI
-        } else if (type == 'DEPENSE') {
-          // La cagnotte mise en garantie par le créateur est une dépense : elle n'est PAS un gain du DÉFI.
-          final desc = '${t['description'] ?? ''}';
-          final kind = t['defiKind'] ??
-              (desc.startsWith('Vote') ? 'vote' : (desc.startsWith('Participation') ? 'participation' : null));
-          if (kind == 'vote') { vC += amount; vN++; }
-          else if (kind == 'participation') { pC += amount; pN++; }
-        }
-      }
+      final r = await DefisApi.revenue(widget.defiPostId);
       if (mounted) {
         setState(() {
-          _voteCoins = vC; _voteCount = vN; _partCoins = pC; _partCount = pN;
+          _voteCoins = r.voteCoins; _voteCount = r.voteCount; _partCoins = r.participationCoins; _partCount = r.participationCount;
+          _error = null;
           _loading = false;
         });
       }
-    } catch (_) {
-      if (mounted) setState(() => _loading = false);
+    } catch (e) {
+      if (mounted) setState(() { _error = DefisApi.message(e, fallback: 'Impossible de charger les gains du défi.'); _loading = false; });
     }
   }
 
@@ -371,6 +354,14 @@ class _DefiRevenueCardState extends State<DefiRevenueCard> {
             padding: EdgeInsets.symmetric(vertical: 10),
             child: Center(child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: _yellow))),
           )
+        else if (_error != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(children: [
+              Expanded(child: Text(_error!, style: TextStyle(color: c.textSecondary, fontSize: 12))),
+              TextButton(onPressed: () { setState(() { _loading = true; _error = null; }); _load(); }, child: const Text('Réessayer')),
+            ]),
+          )
         else ...[
           line('Total remporté', '${n.format(total)} pièces', strong: true),
           line('Votes', '${n.format(_voteCoins)} pièces', sub: '$_voteCount vote${_voteCount > 1 ? 's' : ''} payant${_voteCount > 1 ? 's' : ''}'),
@@ -413,30 +404,15 @@ class _DefiResponsesFeedState extends State<DefiResponsesFeed> {
     _loadResponses();
   }
 
+  String? _loadError;
+
+  // Participations déjà classées par le serveur (votes, puis score, puis j'aime, puis ancienneté), comme à la clôture du défi.
   Future<void> _loadResponses() async {
     try {
-      final snap = await FirebaseFirestore.instance
-          .collection('Posts')
-          .where('defi_response_to_post_id', isEqualTo: widget.defiPostId)
-          .limit(50)
-          .getM('defi_details_section.dart:421');
-
-      final posts = snap.docs.map((d) => Post.fromJson(d.data())).toList();
-
-      // Classement : votes DESC → postScore DESC → likes DESC
-      posts.sort((a, b) {
-        final vA = a.defiVotes ?? 0;
-        final vB = b.defiVotes ?? 0;
-        if (vA != vB) return vB.compareTo(vA);
-        final sA = a.postScore ?? 0.0;
-        final sB = b.postScore ?? 0.0;
-        if (sA != sB) return sB.compareTo(sA);
-        return (b.likes ?? 0).compareTo(a.likes ?? 0);
-      });
-
-      if (mounted) setState(() { _responses = posts; _loading = false; });
-    } catch (_) {
-      if (mounted) setState(() => _loading = false);
+      final posts = await DefisApi.participations(widget.defiPostId);
+      if (mounted) setState(() { _responses = posts; _loadError = null; _loading = false; });
+    } catch (e) {
+      if (mounted) setState(() { _loadError = DefisApi.message(e, fallback: 'Impossible de charger les participations.'); _loading = false; });
     }
   }
 
@@ -463,19 +439,16 @@ class _DefiResponsesFeedState extends State<DefiResponsesFeed> {
     });
 
     try {
-      await FirebaseFunctions.instance.httpsCallable('handleDefiAction').call({
-        'action': 'vote',
-        'postId': postId,
-      });
+      await DefisApi.vote(widget.defiPostId, postId);
       if (mounted) showDefiVoteAnimation(context, anchor: btnKey);
     } catch (e) {
       if (!mounted) return;
-      final alreadyVoted = e is FirebaseFunctionsException && e.code == 'already-exists';
+      final alreadyVoted = e is ApiException && e.code == 'already_voted';
       setState(() {
         _localVoteMap.remove(postId);
         if (!alreadyVoted) _votedInSession.remove(postId);
       });
-      DefiDialogs.handleError(context, e, isVote: true);
+      DefiDialogs.handleError(context, e, isVote: true, onRetry: () => _voteForResponse(response, btnKey));
     } finally {
       if (mounted) setState(() => _isVoting = false);
     }
@@ -484,6 +457,16 @@ class _DefiResponsesFeedState extends State<DefiResponsesFeed> {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
+
+    if (_loadError != null && _responses.isEmpty && !_loading) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+        child: Row(children: [
+          Expanded(child: Text(_loadError!, style: TextStyle(color: c.textSecondary, fontSize: 13))),
+          TextButton(onPressed: () { setState(() { _loading = true; _loadError = null; }); _loadResponses(); }, child: const Text('Réessayer')),
+        ]),
+      );
+    }
 
     if (_loading) {
       return const Padding(
@@ -658,12 +641,8 @@ class _DefiResponseBannerState extends State<DefiResponseBanner> {
     final parentId = widget.responsePost.defiResponseToPostId;
     if (parentId == null) { setState(() => _loading = false); return; }
     try {
-      final doc = await FirebaseFirestore.instance.collection('Posts').doc(parentId).getM('defi_details_section.dart:660');
-      if (doc.exists && mounted) {
-        setState(() { _defiPost = Post.fromJson(doc.data()!); _loading = false; });
-      } else {
-        if (mounted) setState(() => _loading = false);
-      }
+      final defi = await DefisApi.get(parentId);
+      if (mounted) setState(() { _defiPost = defi; _loading = false; });
     } catch (_) {
       if (mounted) setState(() => _loading = false);
     }
@@ -687,19 +666,16 @@ class _DefiResponseBannerState extends State<DefiResponseBanner> {
     setState(() { _isVoting = true; _hasVoted = true; _localVotes++; });
 
     try {
-      await FirebaseFunctions.instance.httpsCallable('handleDefiAction').call({
-        'action': 'vote',
-        'postId': postId,
-      });
+      await DefisApi.vote(widget.responsePost.defiResponseToPostId!, postId);
       if (mounted) showDefiVoteAnimation(context, anchor: _voteBtnKey);
     } catch (e) {
       if (!mounted) return;
-      final alreadyVoted = e is FirebaseFunctionsException && e.code == 'already-exists';
+      final alreadyVoted = e is ApiException && e.code == 'already_voted';
       setState(() {
         _localVotes = (_localVotes - 1).clamp(0, 999999);
         _hasVoted = alreadyVoted;
       });
-      DefiDialogs.handleError(context, e, isVote: true);
+      DefiDialogs.handleError(context, e, isVote: true, onRetry: _handleVote);
     } finally {
       if (mounted) setState(() => _isVoting = false);
     }

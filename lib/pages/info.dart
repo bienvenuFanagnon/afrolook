@@ -1,3 +1,4 @@
+import 'package:afrotok/services/api/admin_complements_api.dart';
 ﻿import 'dart:math';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
@@ -221,7 +222,7 @@ class _AppInfosState extends State<AppInfos> {
             _buildWeeklyRewardsInfo(),
             Expanded(
               child: userProvider.listInfos.isEmpty && !userProvider.isLoading
-                  ? _buildEmptyState()
+                  ? _buildEmptyState(userProvider)
                   : ListView.builder(
                 controller: _scrollController,
                 physics: AlwaysScrollableScrollPhysics(),
@@ -288,7 +289,30 @@ class _AppInfosState extends State<AppInfos> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(UserProvider userProvider) {
+    final error = userProvider.infosError;
+    if (error != null) {
+      // Erreur de chargement : message clair + « Réessayer » (jamais un écran vide trompeur)
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.cloud_off_rounded, size: 56, color: Colors.green),
+              SizedBox(height: 16),
+              Text(error, textAlign: TextAlign.center, style: TextStyle(color: Colors.yellow, fontSize: 15)),
+              SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () => userProvider.getAllInfos(),
+                icon: Icon(Icons.refresh_rounded),
+                label: Text('Réessayer'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -364,7 +388,7 @@ class _AppInfosState extends State<AppInfos> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: Colors.red,
-            content: Text('Erreur lors de la suppression'),
+            content: Text(AdminComplementsApi.message(e, fallback: 'Erreur lors de la suppression')),
           ),
         );
       }
@@ -385,7 +409,7 @@ class _AppInfosState extends State<AppInfos> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: Colors.red,
-          content: Text('Erreur lors de la modification'),
+          content: Text(AdminComplementsApi.message(e, fallback: 'Erreur lors de la modification')),
         ),
       );
     }

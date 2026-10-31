@@ -1689,6 +1689,8 @@ class Post {
 
   // Présent sur un post DEFI : utilisateurs ayant déjà participé (écrit par la Cloud Function)
   List<String>? defiParticipantIds = [];
+  /// Nombre de participants (renseigné par l'API ; la liste des identifiants n'est plus envoyée aux autres personnes).
+  int defiParticipantCount = 0;
 
   // Présent sur un post DEFI clôturé : gagnants et gains versés (écrit par la Cloud Function)
   List<DefiWinner> defiWinners = [];

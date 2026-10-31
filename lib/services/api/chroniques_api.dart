@@ -48,7 +48,12 @@ class ChroniquesApi {
 
   /// Création. [body] suit le contrat de `POST /v1/chronicles` (type, text, media_upload_id, cover_upload_id, poster_upload_id, music…).
   /// Peut lever une [ApiException] : `too_many_active` (429), `payment_required` (402, musique d'artiste), `music_unavailable`…
-  static Future<Chronique> create(Map<String, dynamic> body, {String? myId}) async => chroniqueFromApi(_map(await _c.post('/chronicles', body: body)), myId: myId);
+  /// [idempotencyKey] : OBLIGATOIRE pour une chronique supplémentaire payante (garder la même clé tant que la personne n'a pas confirmé ou annulé).
+  static Future<Chronique> create(Map<String, dynamic> body, {String? myId, String? idempotencyKey}) async =>
+      chroniqueFromApi(_map(await _c.post('/chronicles', body: body, idempotencyKey: idempotencyKey)), myId: myId);
+
+  /// Chroniques gratuites restantes et prix de la suivante : `{free_left (null = illimité), fee_coins, fee_due}`.
+  static Future<Map<String, dynamic>> fee() async => _map(await _c.get('/chronicles/fee'));
 
   static Future<void> delete(String id) => _c.delete('/chronicles/$id');
 

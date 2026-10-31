@@ -1,5 +1,4 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -7,10 +6,11 @@ import '../../l10n/tr.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../../services/ad_config_service.dart';
+import '../../services/api/defis_api.dart';
 import '../../services/coin_checkout.dart';
+import '../../widgets/api_error_dialogs.dart';
 import '../../theme/app_colors.dart';
 import '../../utils/platform_guard.dart';
-import '../pub/ad_actions.dart';
 import '../user/userPubs/user_create_advertisement_page.dart';
 import 'defi_ui.dart';
 
@@ -23,10 +23,10 @@ Widget boostPageFor(Post post) => post.type == PostType.DEFI.name ? DefiBoostPag
 class DefiBoost {
   DefiBoost._();
 
-  /// Le créateur d'un DÉFI en cours, avec une image ou une vidéo à montrer dans la publicité.
+  /// Le créateur d'un DÉFI en cours, avec une image ou une vidéo à montrer dans la publicité (l'API n'accepte le boost que de son auteur).
   static bool canBoost(Post post, UserData me) {
     if (post.type != PostType.DEFI.name || post.defiConfig == null || isDefiOver(post)) return false;
-    if (post.user_id != me.id && me.role != UserRole.ADM.name) return false;
+    if (post.user_id != me.id) return false;
     final t = post.dataType;
     return t == PostDataType.IMAGE.name || t == PostDataType.VIDEO.name;
   }
@@ -136,46 +136,29 @@ class _DefiBoostPageState extends State<DefiBoostPage> {
     if (!_allCountries && _countries.isEmpty) return _say(tr('Choisis au moins un pays'));
     if (_text.text.trim().isEmpty) return _say(tr('Écris un court texte pour la publicité'));
     final price = AdConfigService.toMap(_durations)[_weeks!] ?? 0;
-    final me = context.read<UserAuthProvider>().loginUserData;
-    final isAdmin = me.role == UserRole.ADM.name;
-    if (!isAdmin) {
-      final paid = await CoinCheckout.pay(context, kind: 'ad', priceFcfa: price.toDouble(), label: 'Publicité du défi', weeks: _weeks);
-      if (!paid || !mounted) return;
+    final c = AppColors.of(context);
+    // Confirmation du prix (affiché pour information : le serveur recalcule le prix et fait foi)
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: c.surface,
+        title: Text(ctx.tr('Payer la publicité du défi'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800)),
+        content: Text(_fmt(price), style: TextStyle(color: c.textPrimary, fontSize: 22, fontWeight: FontWeight.w800)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(ctx.tr('Annuler'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(ctx.tr('Payer'))),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) {
+      DefisApi.forget('boost:${widget.post.id}');
+      return;
     }
     setState(() => _busy = true);
     try {
-      final now = DateTime.now().microsecondsSinceEpoch;
-      final days = _weeks! * 7;
-      final countries = _allCountries ? AfricanCountry.everyCountry.map((c) => c.code).toList() : _countries.toList();
-      final db = FirebaseFirestore.instance;
-      final adId = db.collection('Advertisements').doc().id;
-      final owner = '${me.prenom ?? ''} ${me.nom ?? ''}'.trim().isNotEmpty ? '${me.prenom ?? ''} ${me.nom ?? ''}'.trim() : (me.pseudo ?? '');
-      final ad = Advertisement(
-        id: adId,
-        postId: widget.post.id,
-        actionType: 'defi',
-        actionUrl: '${AdActions.defiScheme}${widget.post.id}',
-        actionButtonText: 'Participer',
-        durationDays: days,
-        startDate: now,
-        endDate: now + (days * 24 * 60 * 60 * 1000000),
-        status: 'pending',
-        isRenewable: true,
-        renewalCount: 0,
-        pricePaid: price,
-        createdBy: me.id,
-        createdAt: now,
-        updatedAt: now,
-        ownerType: 'challenge',
-        ownerId: widget.post.id,
-        ownerName: owner.isEmpty ? null : owner,
-        ownerAvatar: (me.imageUrl ?? '').isEmpty ? null : me.imageUrl,
-      );
-      final json = ad.toJson()
-        ..['boostType'] = 'defi'
-        ..['availableCountries'] = countries
-        ..['description'] = _text.text.trim();
-      await db.collection('Advertisements').doc(adId).set(json);
+      final countries = _allCountries ? const <String>[] : _countries.toList();
+      // Une seule opération côté serveur : débit en pièces ET annonce en attente de validation par l'équipe.
+      await DefisApi.boost(widget.post.id!, weeks: _weeks!, countries: countries, text: _text.text.trim());
       if (!mounted) return;
       await showDialog<void>(
         context: context,
@@ -189,7 +172,7 @@ class _DefiBoostPageState extends State<DefiBoostPage> {
       if (mounted) Navigator.pop(context);
     } catch (e) {
       debugPrint('DefiBoostPage._submit : $e');
-      if (mounted) _say(tr('Impossible d’envoyer la demande. Réessaie.'));
+      if (mounted) handleApiError(context, e, onRetry: _submit, fallback: 'Impossible d’envoyer la demande. Réessaie.');
     } finally {
       if (mounted) setState(() => _busy = false);
     }

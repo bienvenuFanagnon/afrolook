@@ -1,10 +1,10 @@
-import 'package:afrotok/services/read_meter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../../models/model_data.dart';
+import '../../services/api/defis_api.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/feed/post_renderer.dart';
 
+/// Découverte des DÉFIS (API) : du plus récent au plus ancien, par pages. Aucun repli sur Firebase : en cas d'erreur, message clair + « Réessayer ».
 class DefiDiscoverPage extends StatefulWidget {
   const DefiDiscoverPage({super.key});
 
@@ -16,7 +16,8 @@ class _DefiDiscoverPageState extends State<DefiDiscoverPage> {
   final List<Post> _posts = [];
   bool _loading = true;
   bool _loadingMore = false;
-  DocumentSnapshot? _lastDoc;
+  String? _next;
+  String? _error;
   static const int _pageSize = 15;
   final ScrollController _scroll = ScrollController();
 
@@ -41,61 +42,65 @@ class _DefiDiscoverPageState extends State<DefiDiscoverPage> {
 
   Future<void> _loadPosts() async {
     try {
-      final snap = await FirebaseFirestore.instance
-          .collection('Posts')
-          .where('type', isEqualTo: PostType.DEFI.name)
-          .orderBy('created_at', descending: true)
-          .limit(_pageSize)
-          .getM('defi_discover_page.dart:48');
-
-      final posts = snap.docs.map((d) => Post.fromJson(d.data())).toList();
+      final page = await DefisApi.discover(limit: _pageSize);
       if (mounted) {
         setState(() {
-          _posts.addAll(posts);
-          _lastDoc = snap.docs.isNotEmpty ? snap.docs.last : null;
+          _posts
+            ..clear()
+            ..addAll(page.items);
+          _next = page.next;
+          _error = null;
           _loading = false;
         });
       }
     } catch (e) {
-      debugPrint('❌ DefiDiscoverPage._loadPosts error: $e');
-      if (mounted) setState(() => _loading = false);
+      debugPrint('❌ DefiDiscoverPage._loadPosts : $e');
+      if (mounted) {
+        setState(() {
+          _error = DefisApi.message(e, fallback: 'Impossible de charger les défis. Réessaie.');
+          _loading = false;
+        });
+      }
     }
   }
 
   Future<void> _loadMore() async {
-    if (_lastDoc == null || _loadingMore) return;
+    if (_next == null || _loadingMore) return;
     setState(() => _loadingMore = true);
     try {
-      final snap = await FirebaseFirestore.instance
-          .collection('Posts')
-          .where('type', isEqualTo: PostType.DEFI.name)
-          .orderBy('created_at', descending: true)
-          .startAfterDocument(_lastDoc!)
-          .limit(_pageSize)
-          .getM('defi_discover_page.dart:74');
-
-      final posts = snap.docs.map((d) => Post.fromJson(d.data())).toList();
+      final page = await DefisApi.discover(cursor: _next, limit: _pageSize);
       if (mounted) {
         setState(() {
-          _posts.addAll(posts);
-          _lastDoc = snap.docs.isNotEmpty ? snap.docs.last : null;
+          _posts.addAll(page.items);
+          _next = page.next;
           _loadingMore = false;
         });
       }
-    } catch (_) {
-      if (mounted) setState(() => _loadingMore = false);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loadingMore = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(DefisApi.message(e, fallback: 'Impossible de charger la suite. Réessaie.')),
+          backgroundColor: Colors.red,
+          action: SnackBarAction(label: 'Réessayer', textColor: Colors.white, onPressed: _loadMore),
+        ));
+      }
     }
   }
 
   Future<void> _refresh() async {
-    setState(() { _posts.clear(); _lastDoc = null; _loading = true; });
+    setState(() {
+      _posts.clear();
+      _next = null;
+      _error = null;
+      _loading = true;
+    });
     await _loadPosts();
   }
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    final size = MediaQuery.of(context).size;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -116,7 +121,20 @@ class _DefiDiscoverPageState extends State<DefiDiscoverPage> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: Color(0xFFFFE14D)))
-          : RefreshIndicator(
+          : _error != null && _posts.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(Icons.cloud_off_outlined, color: colors.textSecondary, size: 56),
+                      const SizedBox(height: 12),
+                      Text(_error!, textAlign: TextAlign.center, style: TextStyle(color: colors.textSecondary, fontSize: 15)),
+                      const SizedBox(height: 16),
+                      FilledButton.icon(onPressed: _refresh, icon: const Icon(Icons.refresh), label: const Text('Réessayer')),
+                    ]),
+                  ),
+                )
+              : RefreshIndicator(
               onRefresh: _refresh,
               color: const Color(0xFFFFE14D),
               child: _posts.isEmpty

@@ -8,8 +8,8 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 
+import '../../../services/api/admin_complements_api.dart';
 import '../../../models/official_account/official_account_enums.dart';
 import '../../../models/official_account/official_account_request.dart';
 import '../../../providers/authProvider.dart';
@@ -130,6 +130,9 @@ class _RequestOfficialAccountPageState
     }
     super.dispose();
   }
+
+  /// Identifiant de l'envoi PRIVÉ de la pièce d'identité (null si aucun nouvel envoi : en édition, l'ancienne pièce reste en place).
+  String? get _newDocumentUploadId => (_idDocumentUrl != null && !_idDocumentUrl!.startsWith('http')) ? _idDocumentUrl : null;
 
   bool get _needsIdVerification => _category?.requiresIdVerification == true;
 
@@ -303,22 +306,20 @@ class _RequestOfficialAccountPageState
         await OfficialAccountService.instance.updateRequest(
           requestId: widget.existingRequest!.id,
           userId: me.id ?? '',
-          updatedFields: {
-            'description': _description.text.trim(),
-            'country': _selectedCountry ?? '',
-            'city': _city.text.trim(),
-            'phone': _phoneFullNumber,
-            'email': _email.text.trim(),
-            'website': _website.text.trim(),
-            'broadcastDomains': _domains.map((d) => d.id).toList(),
-            'socialNetworks': _socialNetworks.map((s) => s.toMap()).toList(),
-            'birthDate': _birthDate != null
-                ? DateFormat('yyyy-MM-dd').format(_birthDate!)
-                : null,
-            'idDocumentType': _idType?.id,
-            'idNumber': _idNumber.text.trim().isEmpty ? null : _idNumber.text.trim(),
-            'idDocumentUrl': _idDocumentUrl,
-          },
+          fields: AdminComplementsApi.requestBody(
+            description: _description.text.trim(),
+            country: _selectedCountry ?? '',
+            city: _city.text.trim(),
+            phone: _phoneFullNumber,
+            email: _email.text.trim(),
+            website: _website.text.trim(),
+            domains: _domains.toList(),
+            networks: _socialNetworks,
+            birthDate: _birthDate != null ? DateFormat('yyyy-MM-dd').format(_birthDate!) : null,
+            idType: _idType,
+            idNumber: _idNumber.text.trim(),
+            idDocumentUploadId: _newDocumentUploadId,
+          ),
         );
         if (mounted) {
           Navigator.pop(context);
@@ -358,7 +359,7 @@ class _RequestOfficialAccountPageState
           updatedAt: now,
           termsAcceptedAt: now,
         );
-        await OfficialAccountService.instance.submitRequest(request);
+        await OfficialAccountService.instance.submitRequest(request, idDocumentUploadId: _newDocumentUploadId);
         if (mounted) {
           Navigator.pop(context);
           _showSubmittedModal(context);
@@ -367,7 +368,7 @@ class _RequestOfficialAccountPageState
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(AdminComplementsApi.message(e)), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -1418,15 +1419,15 @@ class _StepIdentityState extends State<_StepIdentity> {
 
     setState(() { _uploading = true; _fileName = file.name; });
     try {
-      final ref = FirebaseStorage.instance
-          .ref('id_documents/${DateTime.now().millisecondsSinceEpoch}_${file.name}');
-      await ref.putFile(await MediaShrink.file(File(path)));
-      final url = await ref.getDownloadURL();
-      widget.onDocumentUploaded(url);
+      // Stockage PRIVÉ (jamais d'adresse publique) : on garde l'identifiant de l'envoi, que le serveur rattache à la demande
+      final isPdf = path.toLowerCase().endsWith('.pdf');
+      final bytes = isPdf ? await File(path).readAsBytes() : await (await MediaShrink.file(File(path))).readAsBytes();
+      final uploadId = await AdminComplementsApi.uploadPrivateDocument(bytes, path);
+      widget.onDocumentUploaded(uploadId);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur upload : $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(AdminComplementsApi.message(e, fallback: "L'envoi du fichier a échoué. Réessaie.")), backgroundColor: Colors.red),
         );
       }
     } finally {

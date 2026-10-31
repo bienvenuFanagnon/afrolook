@@ -1,59 +1,56 @@
 import 'dart:async';
 
-import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:afrolook_api_client/afrolook_api_client.dart';
+import 'package:afrotok/services/api/admin_complements_api.dart';
 
 import '../../models/official_account/official_account_enums.dart';
 import '../../models/official_account/official_account_request.dart';
 import '../../models/model_data.dart' show OfficialSubscription;
 
-/// Service métier pour les demandes de compte officiel (API).
-///
-/// ATTENTION : l'API n'a pas encore ces routes (voir lacunes_api_utilisateurs.md, section « Comptes officiels »). Les appels sont prêts ;
-/// tant que les routes n'existent pas, les écrans affichent l'erreur / « Réessayer » (aucun retour à Firebase).
+/// Service métier pour les demandes de compte officiel (API : `/official-accounts/*` et `/admin/official-accounts/*`).
+/// Les règles (nom unique, une demande à la fois, 18 ans, décisions, badge et droits de monétisation) sont appliquées par le serveur.
+/// Aucune lecture Firebase : une erreur est transmise à l'écran (message en français + « Réessayer »).
 class OfficialAccountService {
   OfficialAccountService._();
   static final OfficialAccountService instance = OfficialAccountService._();
 
-  ApiClient get _c => ApiGateway.instance.client;
-
-  static Map<String, dynamic> _m(dynamic r) => Map<String, dynamic>.from(ApiClient.data(r) as Map);
-  static List<OfficialAccountRequest> _list(dynamic r) {
-    final data = (r is Map ? r['data'] : r) as List? ?? const [];
-    return data.map((e) {
-      final m = Map<String, dynamic>.from(e as Map);
-      return OfficialAccountRequest.fromMap(m, '${m['id'] ?? ''}');
-    }).toList();
-  }
-
   // ── Soumission ──
 
-  /// Soumet une nouvelle demande et retourne son identifiant (POST /official-accounts/requests).
-  Future<String> submitRequest(OfficialAccountRequest request) async {
-    final data = request.toMap();
-    final r = _m(await _c.post('/official-accounts/requests', body: data));
-    return '${r['id'] ?? request.id}';
-  }
+  /// Soumet une nouvelle demande et retourne son identifiant. [idDocumentUploadId] : envoi PRIVÉ de la pièce d'identité déjà terminé.
+  Future<String> submitRequest(OfficialAccountRequest request, {String? idDocumentUploadId}) => AdminComplementsApi.submitOfficial(AdminComplementsApi.requestBody(
+        category: request.category,
+        officialName: request.officialName,
+        description: request.description,
+        country: request.country,
+        city: request.city,
+        phone: request.phone,
+        email: request.email,
+        website: request.website,
+        domains: request.broadcastDomains,
+        networks: request.socialNetworks,
+        birthDate: request.birthDate,
+        idType: request.idDocumentType,
+        idNumber: request.idNumber,
+        idDocumentUploadId: idDocumentUploadId,
+        acceptTerms: true,
+      ));
 
   // ── Lecture utilisateur ──
 
-  /// Demande en cours (la plus récente) pour un utilisateur (GET /official-accounts/requests/mine).
-  Future<OfficialAccountRequest?> getMyRequest(String userId) async {
-    final r = await _c.get('/official-accounts/requests/mine');
-    final data = ApiClient.data(r);
-    if (data == null || (data is List && data.isEmpty)) return null;
-    final m = Map<String, dynamic>.from((data is List ? data.first : data) as Map);
-    return OfficialAccountRequest.fromMap(m, '${m['id'] ?? ''}');
-  }
+  /// Demande en cours (la plus récente) de la personne connectée.
+  Future<OfficialAccountRequest?> getMyRequest(String userId) => AdminComplementsApi.myOfficialRequest();
 
   /// Suivi de la demande : relecture toutes les 30 s (pas de temps réel côté API).
   Stream<OfficialAccountRequest?> watchMyRequest(String userId) => _poll(() => getMyRequest(userId));
 
   // ── Lecture admin ──
 
+  Future<List<OfficialAccountRequest>> listFiltered({OfficialAccountStatus? status, OfficialAccountCategory? category}) =>
+      AdminComplementsApi.adminOfficialRequests(status: status, category: category);
+
   Stream<List<OfficialAccountRequest>> watchByStatus(OfficialAccountStatus status) => watchFiltered(status: status);
 
-  Stream<List<OfficialAccountRequest>> watchFiltered({OfficialAccountStatus? status, OfficialAccountCategory? category}) => _poll(() async => _list(await _c.get('/admin/official-accounts/requests', query: {if (status != null) 'status': status.id, if (category != null) 'category': category.id})));
+  Stream<List<OfficialAccountRequest>> watchFiltered({OfficialAccountStatus? status, OfficialAccountCategory? category}) => _poll(() => listFiltered(status: status, category: category));
 
   Stream<T> _poll<T>(Future<T> Function() load) async* {
     while (true) {
@@ -64,14 +61,15 @@ class OfficialAccountService {
 
   // ── Actions admin ──
 
-  /// Change le statut d'une demande (le serveur historise l'action et met à jour le profil : badge, vérification, droits de monétisation).
+  /// Change le statut d'une demande. Le serveur historise l'action (qui, quand, motif), met à jour le profil (badge, vérification,
+  /// droits de monétisation) et prévient la personne par notification.
   Future<void> updateStatus({
     required OfficialAccountRequest request,
     required OfficialAccountStatus newStatus,
     required String adminId,
     String? note,
   }) =>
-      _c.post('/admin/official-accounts/requests/${request.id}/decision', body: {'status': newStatus.id, if (note != null) 'note': note});
+      AdminComplementsApi.adminOfficialDecide(request.id, newStatus, note: note);
 
   Future<void> requestMoreInfo({required OfficialAccountRequest request, required String adminId, required String note}) =>
       updateStatus(request: request, newStatus: OfficialAccountStatus.moreInfoNeeded, adminId: adminId, note: note);
@@ -81,25 +79,24 @@ class OfficialAccountService {
 
   // ── Mise à jour d'une demande existante (moreInfoNeeded) ──
 
-  Future<void> updateRequest({required String requestId, required String userId, required Map<String, dynamic> updatedFields}) =>
-      _c.patch('/official-accounts/requests/$requestId', body: updatedFields);
+  /// Complète la demande quand l'équipe a demandé des informations : elle repasse « en attente ». [fields] : noms de champs de l'API.
+  Future<void> updateRequest({required String requestId, required String userId, required Map<String, dynamic> fields}) =>
+      AdminComplementsApi.updateOfficial(requestId, fields);
 
   // ── Unicité du nom officiel ──
 
-  /// `true` si le nom est disponible (GET /official-accounts/name-available?slug=).
+  /// `true` si le nom est disponible.
   Future<bool> isNameAvailable(String slug) async {
     if (slug.isEmpty) return false;
-    final r = _m(await _c.get('/official-accounts/name-available', query: {'slug': slug}));
-    return r['available'] == true;
+    return AdminComplementsApi.nameAvailable(slug);
   }
 
   // ── Abonnement mensuel ──
 
-  /// Paiement de l'abonnement officiel par le serveur (solde, ou pièces déjà payées si [paidWithCoins]). Clé d'idempotence conservée par appel.
-  /// Retourne `false` si le solde est insuffisant.
-  Future<bool> paySubscription(String userId, {bool paidWithCoins = false, String? idempotencyKey}) async {
+  /// Paiement de l'abonnement officiel en pièces (clé d'idempotence conservée par l'appelant). Retourne `false` si le solde est insuffisant.
+  Future<bool> paySubscription(String userId, {String? idempotencyKey}) async {
     try {
-      await _c.pay('/official-accounts/subscription', body: {'paid_with_coins': paidWithCoins}, idempotencyKey: idempotencyKey);
+      await AdminComplementsApi.paySubscription(idempotencyKey ?? ApiClient.newIdempotencyKey());
       return true;
     } on ApiException catch (e) {
       if (e.isInsufficientCoins || e.status == 402) return false;
@@ -107,15 +104,11 @@ class OfficialAccountService {
     }
   }
 
-  /// Abonnement en cours (GET /official-accounts/subscription).
+  /// Abonnement en cours (null si jamais payé).
   Future<OfficialSubscription?> getSubscription(String userId) async {
-    final data = ApiClient.data(await _c.get('/official-accounts/subscription'));
-    if (data == null) return null;
-    return OfficialSubscription.fromJson(Map<String, dynamic>.from(data as Map));
+    final s = await AdminComplementsApi.subscription();
+    if (s['next_due_at'] == null && s['last_paid_at'] == null) return null;
+    int? ms(Object? v) => v is String ? DateTime.tryParse(v)?.millisecondsSinceEpoch : null;
+    return OfficialSubscription.fromJson({'active': s['active'] == true, 'lastPaidAt': ms(s['last_paid_at']), 'nextDueAt': ms(s['next_due_at']), 'autoPayEnabled': false});
   }
-
-  // ── Utilitaire ──
-
-  /// Identifiant provisoire de brouillon (l'identifiant définitif est attribué par le serveur).
-  String newId() => '';
 }

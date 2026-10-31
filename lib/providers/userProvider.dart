@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/services/api/admin_complements_api.dart';
 import 'package:afrotok/services/api/users_api.dart';
 import 'package:afrotok/services/api/users_mapper.dart';
 import 'package:afrotok/services/api/shop_api.dart';
@@ -94,39 +95,101 @@ Future<bool> updateEntreprise(EntrepriseData entrepriseData) async {
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
-Future<List<Information>> getAllInfos({bool loadMore = false, int limit = 5}) async {
-    // Les « Informations » de l'application n'ont pas encore de route dans l'API (voir lacunes_api_compte_boosts.md) : liste vide.
-    _listInfos = [];
-    _hasMore = false;
+  /// Dernière erreur de chargement des informations (message en français) ; null si tout va bien. L'écran propose « Réessayer ».
+  String? infosError;
+  int _infosPage = 0;
+  final Set<String> _likedInfoIds = {};
+
+  /// Informations de l'application (API : GET /infos). `loadMore` : page suivante. Ordre décidé par le serveur
+  /// (mises en avant d'abord, puis les plus récentes).
+  Future<List<Information>> getAllInfos({bool loadMore = false, int limit = 5}) async {
+    if (_isLoading) return _listInfos;
+
+    _isLoading = true;
+    infosError = null;
+    if (!loadMore) {
+      _infosPage = 0;
+      _hasMore = true;
+    }
+    notifyListeners();
+
+    try {
+      final r = await AdminComplementsApi.infos(type: 'APPINFO', page: _infosPage + 1, limit: limit);
+      final fresh = r.items.map(Information.fromJson).toList();
+      for (final m in r.items) {
+        final id = '${m['id']}';
+        m['is_liked'] == true ? _likedInfoIds.add(id) : _likedInfoIds.remove(id);
+      }
+      _infosPage += 1;
+      _listInfos = loadMore ? [..._listInfos, ...fresh] : fresh;
+      _hasMore = r.hasMore;
+    } catch (e) {
+      infosError = AdminComplementsApi.message(e);
+      printVm('Error loading infos: $e');
+    }
+
+    _isLoading = false;
     notifyListeners();
     return _listInfos;
   }
 
-// Informations : pas de route dans l'API pour l'instant (voir lacunes_api_compte_boosts.md).
-  Future<void> incrementViews(String infoId) async {}
+  Future<void> incrementViews(String infoId) async {
+    try {
+      await AdminComplementsApi.viewInfo(infoId);
+    } catch (e) {
+      printVm('Error incrementing views: $e');
+    }
+  }
 
-// Informations : pas de route dans l'API pour l'instant (voir lacunes_api_compte_boosts.md).
-  Future<void> toggleLike(String infoId, String userId) async {}
+  /// Bascule le j'aime (le serveur compte une seule fois par personne). Lève l'erreur pour que l'écran l'annonce.
+  Future<void> toggleLike(String infoId, String userId) async {
+    final liked = !_likedInfoIds.contains(infoId);
+    final likes = await AdminComplementsApi.setInfoLike(infoId, liked);
+    liked ? _likedInfoIds.add(infoId) : _likedInfoIds.remove(infoId);
+    final i = _listInfos.indexWhere((x) => x.id == infoId);
+    if (i >= 0) _listInfos[i].likes = likes;
+  }
 
-// Informations : pas de route dans l'API pour l'instant (voir lacunes_api_compte_boosts.md).
-  Future<bool> isLiked(String infoId, String userId) async => false;
+  Future<bool> isLiked(String infoId, String userId) async => _likedInfoIds.contains(infoId);
 
-  // Fonctions admin
-// Informations : pas de route dans l'API pour l'instant (voir lacunes_api_compte_boosts.md).
-  Future<void> deleteInfo(String infoId) async {}
+  // Fonctions admin (droit « content.moderate » : sinon le serveur répond « introuvable »)
+  Future<void> deleteInfo(String infoId) async {
+    await AdminComplementsApi.deleteInfo(infoId);
+    _listInfos.removeWhere((info) => info.id == infoId);
+    notifyListeners();
+  }
 
-// Informations : pas de route dans l'API pour l'instant (voir lacunes_api_compte_boosts.md).
-  Future<void> toggleFeatured(String infoId, bool featured) async {}
+  Future<void> toggleFeatured(String infoId, bool featured) async {
+    await AdminComplementsApi.setInfoFeatured(infoId, featured);
+    await getAllInfos();
+  }
 
   void resetPagination() {
+    _infosPage = 0;
     _hasMore = true;
     _isLoading = false;
   }
 
+  /// Annonces valides (API : GET /annonces) : le serveur compte une vue par lecture et retire celles dont la durée est dépassée.
+  Future<List<Annonce>> getAllAnnonces() async {
+    try {
+      listAnnonces = (await AdminComplementsApi.annonces()).map(Annonce.fromJson).toList();
+    } catch (e) {
+      printVm('Error loading annonces: $e');
+      listAnnonces = [];
+    }
+    return listAnnonces;
+  }
 
-
-// Informations : pas de route dans l'API pour l'instant (voir lacunes_api_compte_boosts.md).
-  Future<List<Information>> getGratuitInfos() async => listInfos;
+  /// Informations gratuites (API : GET /infos?type=GRATUIT). Retourne la liste affichée par les écrans qui l'utilisaient.
+  Future<List<Information>> getGratuitInfos() async {
+    try {
+      return (await AdminComplementsApi.infos(type: 'GRATUIT', limit: 50)).items.map(Information.fromJson).toList();
+    } catch (e) {
+      printVm('Error loading infos gratuites: $e');
+      return [];
+    }
+  }
   Future<bool> getUsersProfile(String currentUserId,BuildContext context) async {
     listUsers = [];
     try {

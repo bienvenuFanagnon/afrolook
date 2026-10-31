@@ -1,11 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../l10n/tr.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
+import '../../services/api/defis_api.dart';
 import '../../theme/app_colors.dart';
 import '../../services/utils/abonnement_utils.dart';
 import '../userPosts/postWidgets/defi_config_section.dart';
@@ -15,7 +15,7 @@ const Color _defiOrange = Color(0xFFFF9500);
 
 /// Transformer un post déjà publié en DÉFI, depuis le menu « ⋯ » du post.
 /// Mêmes règles qu'un nouveau DÉFI (cagnotte débitée sur le solde, frais de participation et de vote, date de fin, gagnants) :
-/// la Cloud Function `handleDefiAction` (action « convert ») contrôle tout côté serveur.
+/// l'API (`POST /v1/defis/convert`) contrôle tout côté serveur et débite la cagnotte dans la même opération.
 class DefiConvert {
   DefiConvert._();
 
@@ -100,10 +100,6 @@ class _DefiConvertPageState extends State<DefiConvertPage> {
     final config = _config;
     if (config == null || _busy) return;
     final auth = context.read<UserAuthProvider>();
-    if (config.cagnottePieces > (auth.loginUserData.giftCoinsBalance ?? 0)) {
-      DefiDialogs.insufficientBalance(context, isVote: false, isCreation: true);
-      return;
-    }
     final c = AppColors.of(context);
     final ok = await showDialog<bool>(
       context: context,
@@ -123,15 +119,17 @@ class _DefiConvertPageState extends State<DefiConvertPage> {
         ],
       ),
     );
-    if (ok != true || !mounted) return;
+    if (ok != true || !mounted) {
+      DefisApi.forget('convert:${widget.post.id}');
+      return;
+    }
     setState(() => _busy = true);
     try {
-      await FirebaseFunctions.instance.httpsCallable('handleDefiAction').call({
-        'action': 'convert',
-        'postId': widget.post.id,
-        'defi_config': config.toJson(),
-        if (_desc.text.trim() != (widget.post.description ?? '').trim()) 'description': _desc.text.trim(),
-      });
+      await DefisApi.convert(
+        widget.post.id!,
+        config,
+        description: _desc.text.trim() != (widget.post.description ?? '').trim() ? _desc.text.trim() : null,
+      );
       if (!mounted) return;
       auth.refreshUserData();
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('Ton post est devenu un défi 🏆 La communauté est prévenue.'))));
@@ -139,7 +137,7 @@ class _DefiConvertPageState extends State<DefiConvertPage> {
     } catch (e) {
       if (mounted) {
         setState(() => _busy = false);
-        DefiDialogs.handleError(context, e, isVote: false, isCreation: true);
+        DefiDialogs.handleError(context, e, isVote: false, isCreation: true, onRetry: _launch);
       }
     }
   }

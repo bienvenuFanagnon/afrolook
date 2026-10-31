@@ -43,18 +43,22 @@ class MonetizationConfig {
       final r = await ApiGateway.instance.client.get('/config');
       final root = r is Map ? r['data'] : null;
       final data = root is Map && root['monetization'] is Map ? Map<String, dynamic>.from(root['monetization'] as Map) : <String, dynamic>{};
-      baseViewRate = (data['baseViewRate'] as num?)?.toDouble() ?? defaultBaseViewRate;
-      final raw = data['scoreTiers'] as List?;
+      // Format de l'API : base_rate_xof + tiers[{min_score, multiplier, label}] (ancien format baseViewRate / scoreTiers accepté)
+      baseViewRate = ((data['base_rate_xof'] ?? data['baseViewRate']) as num?)?.toDouble() ?? defaultBaseViewRate;
+      final raw = (data['tiers'] ?? data['scoreTiers']) as List?;
       tiers = raw != null && raw.isNotEmpty
-          ? (raw.map((e) => ScoreTier.fromJson(Map<String, dynamic>.from(e as Map))).toList()
+          ? (raw.map((e) {
+              final m = Map<String, dynamic>.from(e as Map);
+              return ScoreTier.fromJson({'minScore': m['min_score'] ?? m['minScore'], 'multiplier': m['multiplier'], 'label': m['label']});
+            }).toList()
             ..sort((a, b) => b.minScore.compareTo(a.minScore)))
           : defaultTiers;
       _loadedAt = DateTime.now();
     } catch (_) {}
   }
 
-  /// Enregistre le barème (admin). Point d'accès prévu : PUT /admin/settings/monetization (absent pour l'instant,
-  /// voir lacunes_api_argent_creations.md) : l'erreur est transmise à l'écran.
+  /// Enregistre le barème (admin). PUT /admin/settings/monetization (droit « config.edit », connexion récente exigée) :
+  /// l'erreur est transmise à l'écran.
   static Future<void> save({required double base, required List<ScoreTier> newTiers, String? adminId}) async {
     final sorted = [...newTiers]..sort((a, b) => b.minScore.compareTo(a.minScore));
     await ApiGateway.instance.client.put('/admin/settings/monetization', body: {

@@ -6,7 +6,7 @@ import 'package:afrotok/pages/userPosts/userPostForm.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/services/coin_checkout.dart';
 import 'package:afrotok/theme/app_colors.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -108,37 +108,43 @@ class DefiDialogs {
         onAction: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CoinRechargeScreen())),
       );
 
-  static Future<void> genericError(BuildContext context, {required bool isVote, bool isCreation = false}) => _show(
+  static Future<void> genericError(BuildContext context, {required bool isVote, bool isCreation = false, String? message, VoidCallback? onRetry}) => _show(
         context,
         icon: Icons.error_outline,
         title: isCreation ? 'Création impossible' : isVote ? 'Vote impossible' : 'Participation impossible',
-        message: isCreation
-            ? "Ton DÉFI n'a pas pu être créé. Vérifie ta connexion et la configuration du DÉFI, puis réessaie. Tu n'as pas été débité."
-            : isVote
-                ? "Ton vote n'a pas pu être enregistré. Vérifie ta connexion et réessaie."
-                : "Ta participation n'a pas pu être enregistrée. Vérifie ta connexion et réessaie. Tu n'as pas été débité.",
+        message: message ??
+            (isCreation
+                ? "Ton DÉFI n'a pas pu être créé. Vérifie ta connexion et la configuration du DÉFI, puis réessaie. Tu n'as pas été débité."
+                : isVote
+                    ? "Ton vote n'a pas pu être enregistré. Vérifie ta connexion et réessaie."
+                    : "Ta participation n'a pas pu être enregistrée. Vérifie ta connexion et réessaie. Tu n'as pas été débité."),
+        actionLabel: onRetry == null ? null : 'Réessayer',
+        onAction: onRetry,
       );
 
-  /// Traduit une erreur de handleDefiAction en message compréhensible.
-  static Future<void> handleError(BuildContext context, Object error, {required bool isVote, bool isCreation = false}) {
-    final code = error is FirebaseFunctionsException ? error.code : '';
-    switch (code) {
-      case 'already-exists':
-        if (isCreation) return genericError(context, isVote: false, isCreation: true);
-        return isVote ? alreadyVoted(context) : alreadyParticipated(context);
-      case 'resource-exhausted':
+  /// Traduit une erreur de l'API des DÉFIS en message compréhensible. [onRetry] : proposé pour une erreur réseau ou serveur.
+  static Future<void> handleError(BuildContext context, Object error, {required bool isVote, bool isCreation = false, VoidCallback? onRetry}) {
+    if (error is! ApiException) {
+      return genericError(context, isVote: isVote, isCreation: isCreation, onRetry: onRetry);
+    }
+    switch (error.code) {
+      case 'already_voted':
+        return alreadyVoted(context);
+      case 'already_participating':
+        return alreadyParticipated(context);
+      case 'creator_cannot_vote':
+        return creatorCannotVote(context);
+      case 'defi_ended':
+        return defiEnded(context);
+      case 'insufficient_coins':
         // Vote et participation : fenêtre commune « Pas assez de pièces » (prix envoyé par le serveur)
-        final details = (error as FirebaseFunctionsException).details;
-        final coins = details is Map ? (details['coins'] as num?)?.round() : null;
+        final coins = error.coins;
         if (!isCreation && coins != null && coins > 0) return CoinCheckout.insufficient(context, coins);
         return insufficientBalance(context, isVote: isVote, isCreation: isCreation);
-      case 'permission-denied':
-        if (isVote) return creatorCannotVote(context);
-        return genericError(context, isVote: isVote, isCreation: isCreation);
-      case 'failed-precondition':
-        return defiEnded(context);
       default:
-        return genericError(context, isVote: isVote, isCreation: isCreation);
+        // Refus clair de l'API (message en français) ; « Réessayer » seulement si l'échec peut venir du réseau ou du serveur.
+        final transient = error.isNetwork || error.status >= 500;
+        return genericError(context, isVote: isVote, isCreation: isCreation, message: error.message, onRetry: transient ? onRetry : null);
     }
   }
 }

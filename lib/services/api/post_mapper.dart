@@ -47,6 +47,7 @@ Post postFromApi(Map<String, dynamic> j) {
     post.users_love_id = j['liked_by_me'] == true ? [me] : [];
     post.users_favorite_id = j['favorited_by_me'] == true ? [me] : [];
   }
+  _applyDefi(post, j, me);
   final sound = j['sound'];
   if (sound is Map) {
     post.artistSoundId = sound['id'] as String?;
@@ -58,4 +59,45 @@ Post postFromApi(Map<String, dynamic> j) {
     ..imageUrl = (author['avatar_url'] as String?) ?? '';
   post.user = u;
   return post;
+}
+
+/// Données d'un défi (bloc `defi`) ou d'une participation (bloc `defi_response`) : reconstruit ce que les écrans lisaient avant dans le document Firestore.
+void _applyDefi(Post post, Map<String, dynamic> j, String? me) {
+  final d = j['defi'];
+  if (d is Map) {
+    final over = d['status'] == 'ended';
+    final endMs = DateTime.tryParse('${d['ends_at']}')?.millisecondsSinceEpoch ?? 0;
+    post.type = 'DEFI';
+    post.defiConfigMap = {
+      'cagnotte_pieces': d['jackpot_coins'],
+      'participation_fee': d['participation_fee'],
+      'vote_fee': d['vote_fee'],
+      'winners_count': d['winners_count'],
+      'reward_split': d['reward_split'],
+      'end_date': endMs,
+      'status': over ? 'termine' : 'en_cours',
+      if (over) 'payout_status': 'paye',
+    };
+    post.defiParticipantCount = (d['participants_count'] as num?)?.toInt() ?? 0;
+    post.defiParticipantIds = d['participated_by_me'] == true && me != null ? [me] : [];
+    post.defiVoterIds = d['voted_by_me'] == true && me != null ? [me] : [];
+    post.defiWinners = (d['winners'] as List? ?? const []).whereType<Map>().map((w) {
+      final m = Map<String, dynamic>.from(w);
+      return DefiWinner(
+        userId: '${m['user_id']}',
+        postId: '${m['post_id']}',
+        rank: (m['rank'] as num?)?.toInt() ?? 0,
+        coins: (m['coins'] as num?)?.toInt() ?? 0,
+        votes: (m['votes'] as num?)?.toInt() ?? 0,
+        pseudo: '${m['username'] ?? ''}',
+        imageUrl: '${m['avatar_url'] ?? ''}',
+      );
+    }).toList();
+  }
+  final r = j['defi_response'];
+  if (r is Map) {
+    post.defiResponseToPostId = '${r['defi_id']}';
+    post.defiVotes = (r['votes_count'] as num?)?.toInt() ?? 0;
+    post.defiVoterIds = r['voted_by_me'] == true && me != null ? [me] : [];
+  }
 }

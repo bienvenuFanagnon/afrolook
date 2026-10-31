@@ -23,6 +23,9 @@ import '../../providers/authProvider.dart';
 import '../../services/new_content_bus.dart';
 import '../../providers/chroniqueProvider.dart';
 import '../../theme/app_colors.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart' show ApiClient, ApiException;
+import '../../services/api/chroniques_api.dart';
+import '../../widgets/api_error_dialogs.dart' show showRechargeDialog;
 import 'chronique_music.dart';
 import 'chronique_overlay_text.dart';
 import 'chronique_music_sheet.dart';
@@ -330,6 +333,7 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
   static const int _maxTextLength = 1000;
   VideoPlayerController? _videoController;
   bool _isUploading = false;
+  String? _feeKey; // clé d'idempotence de la chronique payante en cours (conservée entre deux tentatives)
   double _uploadProgress = 0.0;
 
   // Palette riche — toutes lisibles avec texte blanc
@@ -534,8 +538,29 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
     final chroniqueProvider = Provider.of<ChroniqueProvider>(context, listen: false);
 
     try {
-      // Le plafond de chroniques actives par personne est appliqué par le serveur (message clair si atteint) ;
-      // l'ancien paiement de 10 pièces au-delà de 2 chroniques n'existe plus (voir lacunes_api_canaux.md).
+      // 2 chroniques actives gratuites, puis 10 pièces par chronique (sauf Premium / Gold) : le serveur décide, l'écran prévient et garde la MÊME clé
+      // d'idempotence tant que la personne n'a pas confirmé ou annulé (aucun double débit en cas de coupure réseau).
+      String? feeKey;
+      final fee = await ChroniquesApi.fee();
+      if (fee['fee_due'] == true) {
+        final coins = (fee['fee_coins'] as num?)?.toInt() ?? 10;
+        final ok = await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Chronique supplémentaire'),
+            content: Text('Vous avez déjà 2 chroniques actives (limite gratuite).\n\nPublier cette chronique coûte $coins pièces. Les abonnés Premium et Gold publient sans limite.'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
+              FilledButton(onPressed: () => Navigator.pop(context, true), child: Text('Payer $coins pièces')),
+            ],
+          ),
+        );
+        if (ok != true) {
+          if (mounted) setState(() => _isUploading = false);
+          return;
+        }
+        feeKey = _feeKey ??= ApiClient.newIdempotencyKey();
+      }
 
       if (widget.beforePublish != null && !await widget.beforePublish!()) {
         if (mounted) setState(() => _isUploading = false);
@@ -557,10 +582,12 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
         music: _selectedType == ChroniqueType.AUDIO ? null : _music,
         textX: _overlayX,
         textY: _overlayY,
+        idempotencyKey: feeKey,
         onProgress: (progress) {
           setState(() => _uploadProgress = progress);
         },
       );
+      _feeKey = null; // publiée : la prochaine chronique aura sa propre clé
       NewContentBus.instance.onChroniquePublished(); // retour à l'accueil, la chronique apparaît dans la barre
       addPointsForAction(UserAction.post);
       // Notification fire-and-forget via Cloud Function (abonnés uniquement, comme les posts)
@@ -581,7 +608,11 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
       }
     } catch (e) {
       printVm("Erreur chronique form : $e");
-      _showErrorDialog(e.toString().replaceFirst('Exception: ', ''));
+      if (e is ApiException && e.isInsufficientCoins) {
+        showRechargeDialog(context, message: e.message);
+      } else {
+        _showErrorDialog(e.toString().replaceFirst('Exception: ', ''));
+      }
     } finally {
       if (mounted) setState(() => _isUploading = false);
     }

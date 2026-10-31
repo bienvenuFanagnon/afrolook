@@ -151,7 +151,7 @@ class MontageExport {
     }
 
     onStep('Montage de la vidéo…');
-    // Point d'accès prévu : POST /studio/montages (montage assemblé par le serveur ; absent pour l'instant, voir lacunes_api_argent_creations.md)
+    // POST /studio/montages : montage assemblé par le serveur (ffmpeg), calques envoyés par /uploads
     final res = await ApiGateway.instance.client.post('/studio/montages', body: {
       'job_id': jobId,
       'uploads': ids,

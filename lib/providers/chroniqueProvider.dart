@@ -46,6 +46,7 @@ class ChroniqueProvider with ChangeNotifier {
     ChroniqueMusic? music,
     double? textX,
     double? textY,
+    String? idempotencyKey,
     required Function(double) onProgress,
   }) async {
     try {
@@ -116,7 +117,7 @@ class ChroniqueProvider with ChangeNotifier {
         if (musicBody != null) 'music': musicBody,
       };
 
-      final created = await ChroniquesApi.create(body, myId: userId);
+      final created = await ChroniquesApi.create(body, myId: userId, idempotencyKey: idempotencyKey);
       if (music != null) _musicJobs.remove(music.id); // le montage est consommé : la prochaine publication paiera de nouveau
       ChroniqueFirstPage.clear();
       return created.mediaUrl;
