@@ -686,7 +686,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   }
   void _initializeData() async {
     final userId = authProvider.loginUserData.id;
-    if (userId != null && userId.isNotEmpty) {
+    // Mesuré sur téléphone : cette lecture + cette écriture Firestore (ancien système des posts non vus) retardaient les premiers posts de ~1,3 s.
+    // Avec l'API, c'est le serveur qui sait ce qui a été vu : plus aucune lecture ni écriture Firestore ici.
+    if (userId != null && userId.isNotEmpty && !ApiGateway.instance.useApi('feed')) {
       // 0. Rafraîchir unreadPosts depuis Firestore AVANT le flush :
       //    loginUserData est chargé une seule fois à la connexion, mais de nouveaux
       //    posts d'abonnements peuvent être arrivés depuis. Sans ce refresh, Tier 1

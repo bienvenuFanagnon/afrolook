@@ -143,9 +143,23 @@ class _SplashChargementState extends State<SplashChargement> {
     StartupTrace.mark('écran de lancement affiché');
     // La première page du feed se prépare PENDANT le chargement (aucune attente artificielle)
     ApiGateway.instance.prefetchHome();
+    // Le profil complet est lu EN PARALLÈLE (au lieu d'attendre la fin de la vérification de session : ~1 s gagnée, comportement identique)
+    _earlyProfile = _fetchProfileEarly();
 
     // Lancer la vérification directement dans initState
     _startSessionCheck();
+  }
+
+  Future<DocumentSnapshot<Map<String, dynamic>>?>? _earlyProfile;
+
+  Future<DocumentSnapshot<Map<String, dynamic>>?> _fetchProfileEarly() async {
+    try {
+      final id = await SessionUserFirebaseService.getStoredUserId();
+      if (id == null || id.isEmpty) return null;
+      return await FirebaseFirestore.instance.collection('Users').doc(id).getM('splashChargement.dart:early').timeout(const Duration(seconds: 2));
+    } catch (_) {
+      return null; // la lecture classique prend le relais
+    }
   }
 
   // Vérification de session basée uniquement sur SharedPreferences
@@ -546,11 +560,14 @@ class _SplashChargementState extends State<SplashChargement> {
       // ni compteurs...). On relit donc le document utilisateur complet avant d'ouvrir l'accueil — ce qui
       // réchauffe aussi la connexion Firestore — avec un délai court : hors ligne ou réseau lent, on garde le cache.
       try {
-        final doc = await FirebaseFirestore.instance
-            .collection('Users')
-            .doc(userId)
-            .getM('splashChargement.dart:537')
-            .timeout(const Duration(seconds: 2));
+        final early = await _earlyProfile;
+        final doc = (early != null && early.id == userId)
+            ? early
+            : await FirebaseFirestore.instance
+                .collection('Users')
+                .doc(userId)
+                .getM('splashChargement.dart:537')
+                .timeout(const Duration(seconds: 2));
         final data = doc.data();
         if (data != null) {
           authProvider.loginUserData = UserData.fromJson(data..['id'] = doc.id);
