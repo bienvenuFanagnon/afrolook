@@ -1,4 +1,5 @@
 import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:afrotok/services/api/startup_trace.dart';
 import 'dart:async';
 import 'dart:convert';
@@ -198,6 +199,10 @@ Future<void> main() async {
     // Remote Config
     await RemoteConfigService.instance.initialize();
     StartupTrace.mark('  Remote Config chargé');
+
+    // La première page du feed est demandée DÈS MAINTENANT (la personne est déjà connectée, les interrupteurs de modules sont chargés) :
+    // elle voyage pendant que l'application finit de démarrer, au lieu d'attendre l'affichage de l'écran de lancement (~1,5 s gagnée).
+    ApiGateway.instance.prefetchHome();
 
     await DeviceInfoService.initializeDeviceId();
     StartupTrace.mark('  identifiant d\'appareil');

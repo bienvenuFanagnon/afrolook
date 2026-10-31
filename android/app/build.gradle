@@ -129,7 +129,8 @@ android {
             // Signing with the debug keys for now, so `flutter run --release` works.
 //            signingConfig signingConfigs.debug
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro', 'r8-missing-rules.pro'
-            signingConfig signingConfigs.release
+            // Essais de vitesse sur le téléphone du propriétaire : -PdebugSignRelease=true signe avec la clé de TEST (l'application s'installe par-dessus la version de test et garde la session). Jamais pour une version publiée.
+            signingConfig project.hasProperty('debugSignRelease') ? signingConfigs.debug : signingConfigs.release
         }
     }
 }
