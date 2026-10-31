@@ -35,7 +35,6 @@ import 'package:afrotok/pages/music/music_page.dart';
 import 'package:afrotok/pages/quiz/quiz_etude_hub_page.dart';
 import 'package:afrotok/pages/news/news_journal_page.dart';
 import 'package:afrotok/pages/regles_confidentialite_page.dart';
-import 'package:afrotok/pages/chat/chatXilo.dart';
 import 'package:afrotok/pages/chronique/mychroniquepage.dart';
 import 'package:afrotok/pages/classements/userClassement.dart';
 
@@ -453,17 +452,6 @@ class _MyHomePageState extends State<MyHomePage>
 
 
 
-  void _showChatXiloDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return ChatXiloPage(
-          userName: authProvider.loginUserData.pseudo!,
-          userGender: authProvider.loginUserData.genre!,
-        );
-      },
-    );
-  }
 
 
 

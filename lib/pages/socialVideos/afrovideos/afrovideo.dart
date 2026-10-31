@@ -31,8 +31,6 @@ import '../../UserServices/listUserService.dart';
 import '../../afroshop/marketPlace/acceuil/home_afroshop.dart';
 import '../../afroshop/marketPlace/component.dart';
 import '../../afroshop/marketPlace/modalView/ArticleBottomSheet.dart';
-import '../../chat/chatXilo.dart';
-import '../../chat/entrepriseChat.dart';
 import '../../component/consoleWidget.dart';
 import '../../postComments.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -527,26 +525,13 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
       },
     );
   }
-  void _showChatXiloDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return ChatXiloPage(
-          userName: authProvider.loginUserData.pseudo!,
-          userGender: authProvider.loginUserData.genre!,
-        );
-      },
-    );
-  }
 
   Future<void> _checkAndShowDialog() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String lastShownDate = prefs.getString('lastShownDateVideo') ?? '';
 
     String todayDate = DateTime.now().toIso8601String().split('T')[0];
-    _showChatXiloDialog();
     if (lastShownDate != todayDate) {
-      _showChatXiloDialog();
 
       // Show the dialog
       Timer(Duration(seconds: 20), () {
@@ -1264,47 +1249,6 @@ class _AfroVideoState extends State<AfroVideo> with WidgetsBindingObserver, Tick
                                                   SizedBox(height: 5,),
                                                   Row(
                                                     children: [
-                                                      Container(
-                                                        //width: 50,
-                                                        height: 30,
-                                                        margin: EdgeInsets.zero,
-                                                        decoration: BoxDecoration(
-                                                            color: Colors.blue,
-                                                            borderRadius: BorderRadius.all(Radius.circular(20))),
-
-                                                        child: Padding(
-                                                          padding: const EdgeInsets.only(left: 3.0,right: 3),
-                                                          child: TextButton(onPressed: () {
-                                                            printVm('contact tap');
-                                                            getChatsEntrepriseData( datas[index].user!, datas[index], datas[index].entrepriseData!).then((chat) async {
-                                                              userProvider.chat.messages=chat.messages;
-
-                                                              //_chewieController.pause();
-                                                              // videoPlayerController.pause();
-
-
-                                                              Navigator.push(context, PageTransition(type: PageTransitionType.fade, child: EntrepriseMyChat(title: 'mon chat', chat: chat, post: datas[index], isEntreprise: false,)));
-
-
-
-
-
-                                                            },);
-
-                                                          },
-                                                              child: Row(
-                                                                mainAxisAlignment: MainAxisAlignment.center,
-                                                                crossAxisAlignment: CrossAxisAlignment.center,
-                                                                children: [
-                                                                  Icon(AntDesign.message1,color: Colors.white,size: 12,),
-                                                                  SizedBox(width: 5,),
-                                                                  Text("Afrolook",style: TextStyle(color: Colors.white,fontSize: 12,fontWeight: FontWeight.w600),),
-                                                                ],
-                                                              )),
-                                                        ),
-
-                                                      ),
-                                                      SizedBox(width: 10,),
                                                       Container(
                                                         //width: 50,
                                                         height: 30,

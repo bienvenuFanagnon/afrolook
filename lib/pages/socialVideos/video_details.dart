@@ -32,7 +32,6 @@ import '../../providers/afroshop/categorie_produits_provider.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/userProvider.dart';
 import '../afroshop/marketPlace/acceuil/produit_details.dart';
-import '../chat/entrepriseChat.dart';
 import '../component/consoleWidget.dart';
 import '../postComments.dart';
 import '../user/detailsOtherUser.dart';
