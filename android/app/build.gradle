@@ -87,6 +87,10 @@ android {
 
         ndk {
             abiFilters "armeabi-v7a", "arm64-v8a"
+            // Essais sur émulateur x86_64 : ORG_GRADLE_PROJECT_withX86=true (jamais pour les versions publiées)
+            if (project.hasProperty('withX86')) {
+                abiFilters "x86_64"
+            }
         }
 
     }
@@ -100,10 +104,11 @@ android {
         // Supprimez le bloc jniLibs.excludes ou déplacez-le ici si nécessaire
         excludes += [
                 "**/librive_text.so",  // ✅ Exclut explicitement
-                "**/librive.so",
-                "lib/x86/**",
-                "lib/x86_64/**"
+                "**/librive.so"
         ]
+        if (!project.hasProperty('withX86')) {
+            excludes += ["lib/x86/**", "lib/x86_64/**"]
+        }
     }
     signingConfigs {
                release {

@@ -321,8 +321,9 @@ class _SplashChargementState extends State<SplashChargement> {
     // de façon synchrone sans aucun setState.
     final userId = authProvider.loginUserData.id ?? '';
     if (userId.isNotEmpty) {
-      await HomeBootCache.preload(userId);
+      await StartupTrace.time('splash : HomeBootCache.preload', () => HomeBootCache.preload(userId));
     }
+    StartupTrace.mark('splash : navigation vers l\'accueil');
     if (!mounted) return;
     final user = authProvider.loginUserData;
     if (user.isSuspended) {
@@ -576,10 +577,10 @@ class _SplashChargementState extends State<SplashChargement> {
     printVm("🌐 [SPLASH] Cache miss — chargement Firestore pour $userId");
     try {
       setState(() => _loadingText = "Chargement des données...");
-      await authProvider.getAppData();
+      await StartupTrace.time('splash : getAppData', () => authProvider.getAppData());
 
       setState(() => _loadingText = "Connexion...");
-      final success = await authProvider.getLoginUser(userId);
+      final success = await StartupTrace.time('splash : getLoginUser', () => authProvider.getLoginUser(userId));
       if (!success) {
         if (authProvider.loginUserNotFound) {
           // Le profil n'existe plus : la session enregistrée n'est plus valable.
@@ -1479,7 +1480,7 @@ class _SplashChargementState extends State<SplashChargement> {
 //
 //     try {
 //       setState(() => _loadingText = "Chargement des données...");
-//       await authProvider.getAppData();
+//       await StartupTrace.time('splash : getAppData', () => authProvider.getAppData());
 //
 //       setState(() => _loadingText = "Connexion...");
 //       final success = await authProvider.getLoginUser(user.uid);

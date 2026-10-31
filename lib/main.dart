@@ -125,8 +125,12 @@ Future<void> main() async {
     originalOnError?.call(details);
   };
 
+  // Étapes INDÉPENDANTES lancées ENSEMBLE (au lieu de l'une après l'autre, ~4,8 s mesurées en debug) : le premier écran n'attend que la plus longue.
+  // La chaîne qui dépend de Firebase garde son ordre interne.
+
   // Lecture de la musique quand l'écran est éteint ou l'application fermée (notification + écran verrouillé)
-  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+  Future<void> initAudio() async {
+    if (kIsWeb || !(Platform.isAndroid || Platform.isIOS)) return;
     // just_audio_background remplace la plateforme audio AVANT de finir son initialisation : si celle-ci échoue ou traîne
     // (service Android absent, build sans les éléments natifs…), le lecteur resterait bloqué pour toujours. On garde donc la
     // plateforme d'origine et on la remet en place en cas d'échec : la musique joue alors normalement, sans notification.
@@ -142,98 +146,114 @@ Future<void> main() async {
       JustAudioPlatform.instance = audioPlatform;
       printVm("Lecture en arrière-plan indisponible (lecture simple conservée) : $e");
     }
+    StartupTrace.mark('  lecteur audio initialisé');
   }
 
   // Initialisation caméras (mobile uniquement — sur web, permission demandée à l'usage)
-  if (!kIsWeb) {
-    try {
-      _cameras = await availableCameras();
-    } catch (e) {
-      printVm("Erreur initialisation caméra : $e");
+  Future<void> initCameras() async {
+    if (!kIsWeb) {
+      try {
+        _cameras = await availableCameras();
+      } catch (e) {
+        printVm("Erreur initialisation caméra : $e");
+        _cameras = [];
+      }
+    } else {
       _cameras = [];
     }
-  } else {
-    _cameras = [];
+    StartupTrace.mark('  caméras listées');
   }
 
-  // Initialisation Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  // App Check — active l'attestation pour protéger Firestore/Functions
-  // Android : Play Integrity (prod) / Debug (dev)
-  // iOS     : App Attest (prod, iOS 14+) / Debug (dev)
-  // Non-fatal : si Play Integrity / App Attest échoue (appareil incompatible,
-  // debug build en prod, émulateur…) l'app reste fonctionnelle.
-  try {
-    await FirebaseAppCheck.instance.activate(
-      androidProvider: kReleaseMode
-          ? AndroidProvider.playIntegrity
-          : AndroidProvider.debug,
-      appleProvider: kReleaseMode
-          ? AppleProvider.appAttest
-          : AppleProvider.debug,
+  Future<void> initFirebaseChain() async {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
     );
-  } catch (e) {
-    printVm("App Check activation failed (non-fatal): $e");
+    StartupTrace.mark('  Firebase initialisé');
+
+    // App Check — active l'attestation pour protéger Firestore/Functions
+    // Android : Play Integrity (prod) / Debug (dev)
+    // iOS     : App Attest (prod, iOS 14+) / Debug (dev)
+    // Non-fatal : si Play Integrity / App Attest échoue (appareil incompatible,
+    // debug build en prod, émulateur…) l'app reste fonctionnelle.
+    try {
+      await FirebaseAppCheck.instance.activate(
+        androidProvider: kReleaseMode
+            ? AndroidProvider.playIntegrity
+            : AndroidProvider.debug,
+        appleProvider: kReleaseMode
+            ? AppleProvider.appAttest
+            : AppleProvider.debug,
+      );
+    } catch (e) {
+      printVm("App Check activation failed (non-fatal): $e");
+    }
+    StartupTrace.mark('  App Check activé');
+
+    // Initialisation AdMob (configuration Firestore, consentement, SDK) — sans bloquer le démarrage.
+    // Doit venir APRÈS Firebase.initializeApp : sinon la configuration est illisible et les pubs restent coupées.
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      unawaited(AdService.init());
+    }
+
+    // Remote Config
+    await RemoteConfigService.instance.initialize();
+    StartupTrace.mark('  Remote Config chargé');
+
+    await DeviceInfoService.initializeDeviceId();
+    StartupTrace.mark('  identifiant d\'appareil');
+
+    // OneSignal
+    if (!kIsWeb) {
+      OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
+      OneSignal.initialize("b1b8e6b8-b9f4-4c48-b5ac-6ccae1423c98");
+      OneSignal.Notifications.requestPermission(true);
+    }
+
+    if (!kIsWeb) initLocalNotifications();
+
+    // Notifications push FCM (canal principal ; OneSignal reste en secours) : écoute, affichage, jeton
+    if (!kIsWeb) unawaited(PushService.init());
+    StartupTrace.mark('  notifications (OneSignal, locales, FCM)');
+
+    // Devise d'affichage : pays du téléphone jusqu'à la connexion, taux du jour en direct
+    CurrencyService.instance
+      ..setCountry(null)
+      ..loadOverride()
+      ..listenRates();
   }
-
-  // Initialisation AdMob (configuration Firestore, consentement, SDK) — sans bloquer le démarrage.
-  // Doit venir APRÈS Firebase.initializeApp : sinon la configuration est illisible et les pubs restent coupées.
-  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-    unawaited(AdService.init());
-  }
-
-  // Remote Config
-  await RemoteConfigService.instance.initialize();
-
-  await DeviceInfoService.initializeDeviceId();
-
-  // OneSignal
-  if (!kIsWeb) {
-    OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
-    OneSignal.initialize("b1b8e6b8-b9f4-4c48-b5ac-6ccae1423c98");
-    OneSignal.Notifications.requestPermission(true);
-  }
-
-  if (!kIsWeb) initLocalNotifications();
-
-  // Notifications push FCM (canal principal ; OneSignal reste en secours) : écoute, affichage, jeton
-  if (!kIsWeb) unawaited(PushService.init());
 
   // Workmanager — Android uniquement (iOS : BGTaskScheduler nécessite enregistrement natif non supporté)
-  if (!kIsWeb && Platform.isAndroid) {
-    await Workmanager().initialize(
-      callbackDispatcher,
-      isInDebugMode: false,
-    );
-    if (kReleaseMode) {
-      // PRODUCTION : tâche périodique toutes les 15 min
-      await Workmanager().registerPeriodicTask(
-        afrolookTask,
-        afrolookTask,
-        frequency: const Duration(minutes: 15),
-        initialDelay: const Duration(seconds: 10),
-        existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
+  Future<void> initWorkmanager() async {
+    if (!kIsWeb && Platform.isAndroid) {
+      await Workmanager().initialize(
+        callbackDispatcher,
+        isInDebugMode: false,
+      );
+      if (kReleaseMode) {
+        // PRODUCTION : tâche périodique toutes les 15 min
+        await Workmanager().registerPeriodicTask(
+          afrolookTask,
+          afrolookTask,
+          frequency: const Duration(minutes: 15),
+          initialDelay: const Duration(seconds: 10),
+          existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
+        );
+      }
+    }
+    StartupTrace.mark('  Workmanager');
+  }
+
+  // FlutterDownloader
+  Future<void> initDownloader() async {
+    if (!kIsWeb) {
+      await FlutterDownloader.initialize(
+        debug: !kReleaseMode,
+        ignoreSsl: !kReleaseMode,
       );
     }
   }
 
-  // FlutterDownloader
-  if (!kIsWeb) {
-    await FlutterDownloader.initialize(
-      debug: !kReleaseMode,
-      ignoreSsl: !kReleaseMode,
-    );
-  }
-
-  // Devise d'affichage : pays du téléphone jusqu'à la connexion, taux du jour en direct
-  CurrencyService.instance
-    ..setCountry(null)
-    ..loadOverride()
-    ..listenRates();
-
+  await Future.wait([initAudio(), initCameras(), initFirebaseChain(), initWorkmanager(), initDownloader()]);
   StartupTrace.mark('runApp');
   runApp(const MyApp());
 }
