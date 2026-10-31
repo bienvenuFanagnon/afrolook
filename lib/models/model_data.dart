@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/pages/LiveAgora/livesAgora.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp; // simple type de date (anciennes valeurs en cache) ; aucune lecture Firestore
 
 import 'package:flutter/material.dart';
 
@@ -232,7 +232,7 @@ class Invitation {
   int? createdAt;
   int? updatedAt;
   UserData? inviteUser;
-  final DocumentReference? reference;
+  final Object? reference;
 
   // Invitation née d'une réponse privée à une chronique (écrite par le serveur, jamais réécrite par l'application)
   String? chroniqueId;
@@ -252,9 +252,6 @@ class Invitation {
   Invitation.fromMap(Map<String, dynamic> map, {this.reference})
       : inviteUser = map['user_invite'];
 
-  Invitation.fromSnapshot(DocumentSnapshot snapshot)
-      : this.fromMap(snapshot!.data()! as Map<String, dynamic>,
-            reference: snapshot.reference);
   Invitation.fromJson(Map<String, dynamic> json, {this.reference}) {
     id = json['id'];
     senderId = json['sender_id'];
@@ -916,7 +913,7 @@ class UserData {
   List<Invitation>? autreInvitationsEnvoyer = [];
   List<String>? mesInvitationsEnvoyerId = [];
   List<String>? autreInvitationsEnvoyerId = [];
-  DocumentReference? reference;
+  Object? reference;
   Map<String, String>? countryData;
   List<dynamic>? stories = [];
   List<String> viewedVideos = [];

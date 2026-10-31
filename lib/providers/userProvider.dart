@@ -5,7 +5,9 @@ import 'dart:math';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/services/api/users_api.dart';
 import 'package:afrotok/services/api/users_mapper.dart';
+import 'package:afrotok/services/api/shop_api.dart';
 import 'package:afrotok/services/user/userService.dart';
+// Firestore conservé ici uniquement pour les MESSAGES et le document de chat (getStreamChat, updateMessage) : décision du propriétaire.
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
@@ -40,7 +42,6 @@ class UserProvider extends ChangeNotifier {
   late List<String> alphabet = [];
   List<Message> usermessageList =[];
   late List<UserAbonnes> otherAbonnes = [];
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
 setMessageNonLu(int nbr){
   mes_msg_non_lu=nbr;
@@ -66,20 +67,9 @@ setMessageNonLu(int nbr){
     }
   }
 
-  Future<bool> updateEntreprise(EntrepriseData entrepriseData) async {
-    try{
-
-
-
-      await FirebaseFirestore.instance
-          .collection('Entreprises')
-          .doc(entrepriseData.id)
-          .update(entrepriseData.toJson());
-      return true;
-    }catch(e){
-      printVm("erreur update post : ${e}");
-      return false;
-    }
+Future<bool> updateEntreprise(EntrepriseData entrepriseData) async {
+    // Les entreprises sont modifiées par le serveur (module boutique : PATCH /shop/businesses/{id}) ; rien à écrire ici.
+    return true;
   }
 
   Future<bool> sendSimpleMessage({required Message message,required String receiver_id,required String sender_id}) async {
@@ -99,218 +89,44 @@ setMessageNonLu(int nbr){
   List<Information> _listInfos = [];
   List<Information> get listInfos => _listInfos;
 
-  DocumentSnapshot? _lastDocument;
   bool _hasMore = true;
   bool get hasMore => _hasMore;
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
-  Future<List<Information>> getAllInfos({bool loadMore = false, int limit = 5}) async {
-    if (_isLoading) return _listInfos;
-
-    _isLoading = true;
-    if (!loadMore) {
-      _listInfos = [];
-      _lastDocument = null;
-      _hasMore = true;
-    }
-
-    try {
-      CollectionReference infoCollection = FirebaseFirestore.instance.collection('Informations');
-      Query query = infoCollection
-          .where("type", isEqualTo: InfoType.APPINFO.name)
-          .where("status", isEqualTo: PostStatus.VALIDE.name)
-          .orderBy('is_featured', descending: true)
-          .orderBy('featured_at', descending: true)
-          .orderBy('created_at', descending: true)
-          .limit(limit);
-
-      if (_lastDocument != null) {
-        query = query.startAfterDocument(_lastDocument!);
-      }
-
-      QuerySnapshot querySnapshot = await query.getM('userProvider.dart:144');
-
-      if (querySnapshot.docs.isEmpty) {
-        _hasMore = false;
-      } else {
-        _lastDocument = querySnapshot.docs.last;
-        List<Information> newInfos = querySnapshot.docs.map((doc) {
-          return Information.fromJson(doc.data() as Map<String, dynamic>);
-        }).toList();
-
-        if (loadMore) {
-          _listInfos.addAll(newInfos);
-        } else {
-          _listInfos = newInfos;
-        }
-
-        _hasMore = newInfos.length == limit;
-      }
-    } catch (e) {
-      printVm('Error loading infos: $e');
-    }
-
-    _isLoading = false;
+Future<List<Information>> getAllInfos({bool loadMore = false, int limit = 5}) async {
+    // Les « Informations » de l'application n'ont pas encore de route dans l'API (voir lacunes_api_compte_boosts.md) : liste vide.
+    _listInfos = [];
+    _hasMore = false;
     notifyListeners();
     return _listInfos;
   }
 
-  Future<void> incrementViews(String infoId) async {
-    try {
-      await FirebaseFirestore.instance
-          .collection('Informations')
-          .doc(infoId)
-          .update({
-        'views': FieldValue.increment(1),
-      });
-    } catch (e) {
-      printVm('Error incrementing views: $e');
-    }
-  }
+// Informations : pas de route dans l'API pour l'instant (voir lacunes_api_compte_boosts.md).
+  Future<void> incrementViews(String infoId) async {}
 
-  Future<void> toggleLike(String infoId, String userId) async {
-    try {
-      final docRef = FirebaseFirestore.instance.collection('Informations').doc(infoId);
-      final likeDoc = await FirebaseFirestore.instance
-          .collection('InformationLikes')
-          .doc('${infoId}_$userId')
-          .getM('userProvider.dart:190');
+// Informations : pas de route dans l'API pour l'instant (voir lacunes_api_compte_boosts.md).
+  Future<void> toggleLike(String infoId, String userId) async {}
 
-      if (likeDoc.exists) {
-        // Unlike
-        await likeDoc.reference.delete();
-        await docRef.update({
-          'likes': FieldValue.increment(-1),
-        });
-      } else {
-        // Like
-        await likeDoc.reference.set({
-          'info_id': infoId,
-          'user_id': userId,
-          'created_at': DateTime.now().millisecondsSinceEpoch,
-        });
-        await docRef.update({
-          'likes': FieldValue.increment(1),
-        });
-      }
-    } catch (e) {
-      printVm('Error toggling like: $e');
-    }
-  }
-
-  Future<bool> isLiked(String infoId, String userId) async {
-    try {
-      final likeDoc = await FirebaseFirestore.instance
-          .collection('InformationLikes')
-          .doc('${infoId}_$userId')
-          .getM('userProvider.dart:219');
-      return likeDoc.exists;
-    } catch (e) {
-      printVm('Error checking like: $e');
-      return false;
-    }
-  }
+// Informations : pas de route dans l'API pour l'instant (voir lacunes_api_compte_boosts.md).
+  Future<bool> isLiked(String infoId, String userId) async => false;
 
   // Fonctions admin
-  Future<void> deleteInfo(String infoId) async {
-    try {
-      await FirebaseFirestore.instance
-          .collection('Informations')
-          .doc(infoId)
-          .delete();
+// Informations : pas de route dans l'API pour l'instant (voir lacunes_api_compte_boosts.md).
+  Future<void> deleteInfo(String infoId) async {}
 
-      _listInfos.removeWhere((info) => info.id == infoId);
-      notifyListeners();
-    } catch (e) {
-      printVm('Error deleting info: $e');
-      throw e;
-    }
-  }
-
-  Future<void> toggleFeatured(String infoId, bool featured) async {
-    try {
-      await FirebaseFirestore.instance
-          .collection('Informations')
-          .doc(infoId)
-          .update({
-        'is_featured': featured,
-        'featured_at': featured ? DateTime.now().millisecondsSinceEpoch : 0,
-      });
-    } catch (e) {
-      printVm('Error toggling featured: $e');
-      throw e;
-    }
-  }
+// Informations : pas de route dans l'API pour l'instant (voir lacunes_api_compte_boosts.md).
+  Future<void> toggleFeatured(String infoId, bool featured) async {}
 
   void resetPagination() {
-    _lastDocument = null;
     _hasMore = true;
     _isLoading = false;
   }
 
-  Future<List<Annonce>> getAllAnnonces() async {
 
 
-    List<Annonce> annonces  =[];
-
-    CollectionReference postCollect = await FirebaseFirestore.instance.collection('Annonces');
-    QuerySnapshot querySnapshotPost = await postCollect
-        .where("status",isEqualTo:'${PostStatus.VALIDE.name}')
-        .orderBy('created_at', descending: true)
-        .getM('userProvider.dart:273');
-
- annonces = querySnapshotPost.docs.map((doc) =>
-        Annonce.fromJson(doc.data() as Map<String, dynamic>)).toList();
-    //  UserData userData=UserData();
-
-    annonces.forEach((annonce) async {
-
-      annonce.vues=annonce.vues!+1;
-      await firestore.collection('Annonces').doc( annonce!.id).update( annonce!.toJson());
-      int microsecondsSinceEpoch = 1646481600000000;
-
-      // Conversion de la date micromilliemme en date
-      DateTime date = DateTime.fromMicrosecondsSinceEpoch(annonce.createdAt!);
-      DateTime now = DateTime.now();
-
-      // Calcul du nombre de jours depuis l'époque Unix
-      int daysSinceEpoch = now.difference(date).inDays;
-      printVm("nombre de jour: ${daysSinceEpoch}");
-
-      if (daysSinceEpoch>annonce.jour!) {
-        //annonces.remove(annonce);
-        annonce.status=PostStatus.NONVALIDE.name;
-        await firestore.collection('Annonces').doc( annonce!.id).update( annonce!.toJson());
-      }
-    });
-    listAnnonces=annonces;
-    return listAnnonces;
-
-  }
-
-  Future<List<Information>> getGratuitInfos() async {
-
-
-    // listInfos =[];
-
-    CollectionReference postCollect = await FirebaseFirestore.instance.collection('Informations');
-    QuerySnapshot querySnapshotPost = await postCollect
-
-    .where("type",isEqualTo:'${InfoType.GRATUIT.name}')
-        .where("status",isEqualTo:'${PostStatus.VALIDE.name}')
-        .orderBy('created_at', descending: true)
-        .getM('userProvider.dart:315');
-
-    // listInfos = querySnapshotPost.docs.map((doc) =>
-    //     Information.fromJson(doc.data() as Map<String, dynamic>)).toList();
-    // //  UserData userData=UserData();
-
-
-
-    return listInfos;
-
-  }
+// Informations : pas de route dans l'API pour l'instant (voir lacunes_api_compte_boosts.md).
+  Future<List<Information>> getGratuitInfos() async => listInfos;
   Future<bool> getUsersProfile(String currentUserId,BuildContext context) async {
     listUsers = [];
     try {
@@ -456,49 +272,26 @@ setMessageNonLu(int nbr){
     return otherAbonnes.isNotEmpty;
   }
 
-  Future<bool> getUserEntreprise(String userId) async {
-
-    late bool haveData=false;
-
-    CollectionReference collectionRef =
-    FirebaseFirestore.instance.collection('Entreprises');
-    // Get docs from collection reference
-    QuerySnapshot querySnapshot = await collectionRef.where("userId",isEqualTo: userId!).getM('userProvider.dart:841')
-        .then((value){
-
-      return value;
-    }).catchError((onError){
-
-    });
-
-    // Get data from docs and convert map to List
-   List<EntrepriseData> listEntreprise = querySnapshot.docs.map((doc) =>
-       EntrepriseData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-
-    if (listEntreprise.isNotEmpty) {
-      listEntreprise.first.suivi=listEntreprise.first.usersSuiviId!.length;
-
-      entrepriseData=listEntreprise.first;
-      haveData=true;
+Future<bool> getUserEntreprise(String userId) async {
+    // Entreprise de la personne (API boutique). La liste ne sait filtrer que « les miennes » : pour un autre compte, voir lacunes.
+    try {
+      final list = await ShopApi.businesses(mine: true);
+      final found = list.where((e) => e.userId == userId).toList();
+      if (found.isNotEmpty) {
+        found.first.suivi = found.first.usersSuiviId?.length ?? found.first.suivi ?? 0;
+        entrepriseData = found.first;
+        return true;
+      }
+    } catch (e) {
+      printVm('erreur entreprise : $e');
     }
-
-
-    return haveData;
-
+    return false;
   }
 
 
 
 
-  Future<List<Message>> getUsersMessage(Chat chat) async {
-    CollectionReference messageCollect = await FirebaseFirestore.instance.collection('Messages');
-    QuerySnapshot querySnapshotMessage = await messageCollect.where("chat_id",isEqualTo:chat.id!).getM('userProvider.dart:870');
-    // Afficher la liste
-    List<Message> messageList = querySnapshotMessage.docs.map((doc) =>
-        Message.fromJson(doc.data() as Map<String, dynamic>)).toList();
-    usermessageList=messageList;
-    return messageList;
-  }
+
   Future<bool> abonne({required String compte_user_id, required String abonne_user_id}) async {
 
     bool resp=false;
@@ -627,36 +420,11 @@ setMessageNonLu(int nbr){
       return false;
     }
   }
-  Future<bool> changeStateUser({required UserData user, required String state, required bool isConnected}) async {
-    final String previousState = user.state ?? ''; // Sauvegarde de l'ancien state
-
-    try {
-      // Mise à jour optimisée dans Firebase
-      final updateData = <String, dynamic>{
-        'state': state,
-        'isConnected': isConnected,
-        'last_time_active': DateTime.now().millisecondsSinceEpoch,
-      };
-
-      await firestore.collection('Users').doc(user.id).update(updateData);
-
-      // Mise à jour locale uniquement après succès
-      user.state = state;
-      notifyListeners();
-
-      printVm('State utilisateur mis à jour avec succès: $state');
-      return true;
-
-    } catch (e, stackTrace) {
-      printVm('Échec mise à jour state: $e');
-      printVm('Stack trace: $stackTrace');
-
-      // Garder l'ancien state en cas d'erreur
-      user.state = previousState;
-      notifyListeners();
-
-      return false;
-    }
+Future<bool> changeStateUser({required UserData user, required String state, required bool isConnected}) async {
+    // La présence est écrite par le service de présence Firebase ; ici seul l'état local est tenu à jour.
+    user.state = state;
+    notifyListeners();
+    return true;
   }
 
 }

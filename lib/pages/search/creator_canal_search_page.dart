@@ -4,7 +4,8 @@ import 'package:afrotok/widgets/name_tag.dart';
 import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/pub_feed_api.dart';
+import 'package:afrotok/services/api/canaux_api.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -79,57 +80,31 @@ class _CreatorCanalSearchPageState extends State<CreatorCanalSearchPage> {
 
   Future<void> _fetchDefaultsFromFirestore() async {
     try {
-      // Vrais « top » : triés par score dans Firestore (avant : 30 comptes au hasard, triés ensuite)
-      final cSnap = await FirebaseFirestore.instance
-          .collection('Users')
-          .orderBy('creatorScore', descending: true)
-          .limit(30)
-          .getM('creator_canal_search_page.dart:86');
-      final creators = cSnap.docs
-          .map((d) { try { return UserData.fromJson(d.data())..id = d.id; } catch (_) { return null; } })
-          .whereType<UserData>()
-          .where((u) => u.pseudo?.isNotEmpty == true)
-          .toList()
-        ..sort((a, b) => (b.creatorScore ?? 0).compareTo(a.creatorScore ?? 0));
-
-      final kSnap = await FirebaseFirestore.instance
-          .collection('Canaux')
-          .orderBy('canalScore', descending: true)
-          .limit(20)
-          .getM('creator_canal_search_page.dart:98');
-      final canaux = kSnap.docs
-          .map((d) { try { return Canal.fromJson(d.data())..id = d.id; } catch (_) { return null; } })
-          .whereType<Canal>()
-          // Exclure les canaux sans membres
-          .where((c) => c.membersCount > 0)
-          .toList()
+      // Vrais « top » : classement des créateurs et des canaux par l'API
+      final creators = (await PubFeedApi.topUsers(limit: 30)).where((u) => u.pseudo?.isNotEmpty == true).toList();
+      final canalPage = await CanauxApi.list(limit: 20);
+      final canaux = canalPage.items.where((c) => c.membersCount > 0).toList()
         ..sort((a, b) => (b.canalScore ?? 0).compareTo(a.canalScore ?? 0));
-
-      // Canaux mis en avant par l'administration (non expirés) : toujours en tête
-      final popular = <Canal>[];
-      try {
-        final pSnap = await FirebaseFirestore.instance.collection('Canaux').where('isPopular', isEqualTo: true).limit(10).getM('creator_canal_search_page.dart:110');
-        final nowMs = DateTime.now().millisecondsSinceEpoch;
-        for (final d in pSnap.docs) {
-          final data = d.data();
-          final until = (data['popularUntil'] as num?)?.toInt() ?? 0;
-          if (until > 0 && until < nowMs) continue;
-          if (data['isBlocked'] == true) continue;
-          popular.add(Canal.fromJson(data)..id = d.id);
-        }
-      } catch (_) {}
-      final popularIds = popular.map((c) => c.id).toSet();
-      final orderedCanaux = [...popular, ...canaux.where((c) => !popularIds.contains(c.id))];
 
       if (!mounted) return;
       setState(() {
         _topCreators = creators.take(3).toList();
-        _topCanaux = orderedCanaux.take(3).toList();
+        _topCanaux = canaux.take(3).toList();
         _loadingDefault = false;
       });
-    } catch (_) {
-      if (mounted) setState(() => _loadingDefault = false);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loadingDefault = false);
+        _showRetry(PubFeedApi.message(e), _fetchDefaultsFromFirestore);
+      }
     }
+  }
+
+  void _showRetry(String message, VoidCallback retry) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(message),
+      action: SnackBarAction(label: 'Réessayer', onPressed: retry),
+    ));
   }
 
   // ── Recherche Firestore avec debounce ───────────────────────────────────
@@ -150,27 +125,12 @@ class _CreatorCanalSearchPageState extends State<CreatorCanalSearchPage> {
     if (q.isEmpty) return;
 
     try {
-      final userSnap = await FirebaseFirestore.instance
-          .collection('Users')
-          .where('pseudo', isGreaterThanOrEqualTo: q)
-          .where('pseudo', isLessThan: '${q}z')
-          .limit(8)
-          .getM('creator_canal_search_page.dart:157');
-      final users = userSnap.docs
-          .map((d) { try { return UserData.fromJson(d.data())..id = d.id; } catch (_) { return null; } })
-          .whereType<UserData>()
-          .toList();
-
-      final canalSnap = await FirebaseFirestore.instance
-          .collection('Canaux')
-          .where('titre', isGreaterThanOrEqualTo: q)
-          .where('titre', isLessThan: '${q}z')
-          .limit(6)
-          .getM('creator_canal_search_page.dart:168');
-      final canaux = canalSnap.docs
-          .map((d) { try { return Canal.fromJson(d.data())..id = d.id; } catch (_) { return null; } })
-          .whereType<Canal>()
-          .toList();
+      final results = await Future.wait([
+        PubFeedApi.search(q, limit: 8),
+        CanauxApi.list(search: q, limit: 6),
+      ]);
+      final users = results[0] as List<UserData>;
+      final canaux = (results[1] as ({List<Canal> items, String? next})).items;
 
       if (!mounted || _query != q) return;
       setState(() {
@@ -178,8 +138,11 @@ class _CreatorCanalSearchPageState extends State<CreatorCanalSearchPage> {
         _searchCreators = users;
         _searchCanaux = canaux;
       });
-    } catch (_) {
-      if (mounted) setState(() => _searching = false);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _searching = false);
+        _showRetry(PubFeedApi.message(e), _search);
+      }
     }
   }
 

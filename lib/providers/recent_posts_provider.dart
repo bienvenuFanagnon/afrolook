@@ -1,20 +1,19 @@
-﻿// recent_posts_provider.dart
+// recent_posts_provider.dart
 
-import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/home_feed_api.dart';
+import 'package:afrotok/services/api/users_api.dart';
 import 'package:flutter/foundation.dart';
 import 'package:afrotok/models/model_data.dart';
 
 class RecentPostsProvider extends ChangeNotifier {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
   // États
   List<Post> _posts = [];
   List<Post> _filteredPosts = [];
   bool _isLoading = false;
   bool _hasMore = true;
-  DocumentSnapshot? _lastDocument;
+  String? _cursor;   // curseur de la page suivante de l'API
+  String? _error;
 
   // Filtrage par pays
   String? _selectedCountryCode;
@@ -28,6 +27,9 @@ class RecentPostsProvider extends ChangeNotifier {
   List<Post> get posts => _filteredPosts;
   bool get isLoading => _isLoading;
   bool get hasMore => _hasMore;
+
+  /// Message d'erreur en français (null si tout va bien) : l'écran propose « Réessayer » ([refresh]).
+  String? get error => _error;
   String? get selectedCountryCode => _selectedCountryCode;
   bool get showAllCountries => _showAllCountries;
 
@@ -46,7 +48,8 @@ class RecentPostsProvider extends ChangeNotifier {
       notifyListeners();
 
       _posts.clear();
-      _lastDocument = null;
+      _cursor = null;
+      _error = null;
 
       Set<String> loadedIds = {};
       int targetTotal = 6;
@@ -96,6 +99,7 @@ class RecentPostsProvider extends ChangeNotifier {
 
     } catch (e) {
       _isLoading = false;
+      _error = UsersApi.message(e);
       notifyListeners();
       printVm('Error loading initial posts: $e');
     }
@@ -109,60 +113,18 @@ class RecentPostsProvider extends ChangeNotifier {
   }) async {
     if (limit <= 0) return;
 
-    try {
-      Query query = _firestore.collection('Posts')
-          .orderBy('created_at', descending: true)
-          .limit(limit * 2); // Prendre plus pour compenser les filtres
-
-      // Appliquer les filtres spécifiques
-      switch (queryType) {
-        case 'all_countries':
-        // Chercher les deux formats possibles
-          query = query.where('is_available_in_all_countries', isEqualTo: true);
-          break;
-        case 'specific_country':
-        case 'user_country':
-          if (countryCode != null) {
-            // Posts disponibles pour ce pays (tous formats)
-            query = query.where('available_countries', arrayContains: countryCode.toUpperCase());
-          }
-          break;
-      }
-
-      final snapshot = await query.getM('recent_posts_provider.dart:131');
-
-      if (snapshot.docs.isNotEmpty && _lastDocument == null) {
-        _lastDocument = snapshot.docs.last;
-      }
-
-      int added = 0;
-      for (var doc in snapshot.docs) {
-        if (added >= limit) break;
-
-        try {
-          final post = Post.fromJson(doc.data() as Map<String, dynamic>);
-          post.id = doc.id;
-
-          if (!loadedIds.contains(post.id)) {
-            // Normaliser le pays
-            if (queryType == 'all_countries') {
-              // post.isAvailableInAllCountries = true;
-            }
-
-            _posts.add(post);
-            loadedIds.add(post.id!);
-            added++;
-          }
-        } catch (e) {
-          printVm('Error parsing post ${doc.id}: $e');
-        }
-      }
-
-      printVm('✅ Batch $queryType: $added posts ajoutés');
-
-    } catch (e) {
-      printVm('❌ Error batch $queryType: $e');
+    final country = (queryType == 'all_countries') ? 'ALL' : countryCode?.toUpperCase();
+    final page = await HomeFeedApi.discover(country: country, cursor: _cursor, limit: (limit * 2).clamp(1, 50));
+    if (queryType == 'all_countries' && _cursor == null) _cursor = page.next;
+    int added = 0;
+    for (final post in page.posts) {
+      if (added >= limit) break;
+      if (post.id == null || loadedIds.contains(post.id)) continue;
+      _posts.add(post);
+      loadedIds.add(post.id!);
+      added++;
     }
+    printVm('✅ Batch $queryType: $added posts ajoutés');
   }
 
 
@@ -189,57 +151,26 @@ class RecentPostsProvider extends ChangeNotifier {
 
   // Charger plus de posts
   Future<void> loadMorePosts() async {
-    if (_isLoading || !_hasMore || _lastDocument == null) return;
+    if (_isLoading || !_hasMore || _cursor == null) return;
 
     try {
       _isLoading = true;
       notifyListeners();
 
-      Query query = _firestore.collection('Posts')
-
-          .orderBy('created_at', descending: true)
-          .startAfterDocument(_lastDocument!)
-          .limit(_limit);
-
-      final snapshot = await query.getM('recent_posts_provider.dart:203');
-
-      if (snapshot.docs.isNotEmpty) {
-        _lastDocument = snapshot.docs.last;
-
-        for (var doc in snapshot.docs) {
-          try {
-            final post = Post.fromJson(doc.data() as Map<String, dynamic>);
-            post.id = doc.id;
-
-            // Appliquer le filtre actuel
-            if (_showAllCountries) {
-              // Inclure tous les posts
-              if (!_posts.any((p) => p.id == post.id)) {
-                _posts.add(post);
-              }
-            } else if (_selectedCountryCode != null) {
-              // Vérifier si le post est disponible dans le pays sélectionné
-              final isAvailable = post.isAvailableInAllCountries == true ||
-                  (post.availableCountries?.contains(_selectedCountryCode!.toUpperCase()) ?? false);
-
-              if (isAvailable && !_posts.any((p) => p.id == post.id)) {
-                _posts.add(post);
-              }
-            }
-          } catch (e) {
-            printVm('Error parsing post ${doc.id}: $e');
-          }
-        }
+      final page = await HomeFeedApi.discover(cursor: _cursor, limit: _limit);
+      _cursor = page.next;
+      for (final post in page.posts) {
+        if (post.id == null || _posts.any((p) => p.id == post.id)) continue;
+        if (_showAllCountries || isPostAvailableInSelectedCountry(post)) _posts.add(post);
       }
-
-      _hasMore = snapshot.docs.length == _limit;
+      _hasMore = page.next != null;
       _filteredPosts = List.from(_posts);
 
       _isLoading = false;
       notifyListeners();
-
     } catch (e) {
       _isLoading = false;
+      _error = UsersApi.message(e);
       notifyListeners();
       printVm('Error loading more posts: $e');
     }

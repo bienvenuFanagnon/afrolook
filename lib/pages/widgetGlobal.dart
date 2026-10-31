@@ -1,6 +1,6 @@
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/users_api.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -486,13 +486,15 @@ Future<void> showInterestsOnboardingModal(BuildContext context) async {
   final prefs = await SharedPreferences.getInstance();
   if (prefs.getBool(_kPrefInterestsOnboardingShown) ?? false) return;
 
-  // Vérification Firestore directe pour éviter la race condition au démarrage
-  final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).getM('widgetGlobal.dart:489');
-  if (!doc.exists) return;
-  final firestoreInterests = (doc.data()?['interests'] as List<dynamic>?)
-          ?.map((e) => e.toString())
-          .toList() ??
-      [];
+  // Vérification auprès de l'API pour éviter la race condition au démarrage (en cas d'erreur : on ne montre pas la fenêtre)
+  List<String> firestoreInterests;
+  try {
+    final b = await UsersApi.bootstrap();
+    firestoreInterests = (b['interests'] as List?)?.map((e) => e.toString()).toList() ?? [];
+  } catch (e) {
+    printVm('Erreur lecture intérêts: $e');
+    return;
+  }
   if (firestoreInterests.isNotEmpty) {
     // Sync en mémoire si pas encore chargé
     if (authProvider.loginUserData.interests?.isEmpty ?? true) {
@@ -561,16 +563,19 @@ class _InterestsOnboardingModalState extends State<_InterestsOnboardingModal>
     try {
       final uid = widget.authProvider.loginUserData.id;
       if (uid != null) {
-        await FirebaseFirestore.instance
-            .collection('Users')
-            .doc(uid)
-            .update({'interests': _selected});
+        await UsersApi.updateInterests(_selected.toList());
         widget.authProvider.loginUserData.interests = List.from(_selected);
       }
       await widget.prefs.setBool(_kPrefInterestsOnboardingShown, true);
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       printVm('Erreur sauvegarde intérêts: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(UsersApi.message(e)),
+          action: SnackBarAction(label: 'Réessayer', onPressed: _save),
+        ));
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -712,10 +717,14 @@ Future<void> showCreatorCategoryOnboardingModal(BuildContext context) async {
   final prefs = await SharedPreferences.getInstance();
   if (prefs.getBool(_kPrefCreatorCategoryOnboardingShown) ?? false) return;
 
-  // Vérification Firestore pour éviter race condition au démarrage
-  final doc = await FirebaseFirestore.instance.collection('Users').doc(uid).getM('widgetGlobal.dart:715');
-  if (!doc.exists) return;
-  final firestoreCategory = doc.data()?['mainCategory'] as String?;
+  // Vérification auprès de l'API pour éviter la race condition au démarrage
+  String? firestoreCategory;
+  try {
+    firestoreCategory = (await UsersApi.me())['main_category'] as String?;
+  } catch (e) {
+    printVm('Erreur lecture catégorie: $e');
+    return;
+  }
   if (firestoreCategory != null && firestoreCategory.isNotEmpty) {
     if (authProvider.loginUserData.mainCategory == null) {
       authProvider.loginUserData.mainCategory = firestoreCategory;

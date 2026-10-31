@@ -1,4 +1,4 @@
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrotok/services/api/compte_api.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -57,9 +57,7 @@ class _TeamHubPageState extends State<TeamHubPage> {
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final fn = FirebaseFunctions.instance.httpsCallable('getTeamHubData');
-      final res = await fn.call({'period': _period});
-      final data = Map<String, dynamic>.from(res.data);
+      final data = await CompteApi.teamHub(_period);
       final profile = Map<String, dynamic>.from(data['profile'] ?? {});
       final wData = Map<String, dynamic>.from(data['widgets'] ?? {});
 
@@ -83,12 +81,9 @@ class _TeamHubPageState extends State<TeamHubPage> {
         _widgets = List<String>.from(profile['widgets'] ?? []);
         _inscriptions = insc;
       });
-    } on FirebaseFunctionsException catch (e) {
-      if (!mounted) return;
-      setState(() { _loading = false; _error = e.code; });
     } catch (e) {
       if (!mounted) return;
-      setState(() { _loading = false; _error = e.toString(); });
+      setState(() { _loading = false; _error = CompteApi.message(e); });
     }
   }
 
@@ -131,7 +126,7 @@ class _TeamHubPageState extends State<TeamHubPage> {
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Icon(Icons.lock_outline_rounded, size: 48, color: Colors.grey[400]),
           const SizedBox(height: 12),
-          Text(_error == 'permission-denied' ? 'Accès non autorisé' : 'Erreur : $_error',
+          Text(_error ?? '',
               textAlign: TextAlign.center, style: TextStyle(color: Colors.grey[500])),
           const SizedBox(height: 16),
           ElevatedButton(onPressed: _load, child: const Text('Réessayer')),

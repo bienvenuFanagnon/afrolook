@@ -34,7 +34,8 @@ import '../../services/media_cache_service.dart';
 
 import 'package:chewie/chewie.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/publications_api.dart';
+import 'package:afrotok/services/api/pub_videos_api.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -109,7 +110,6 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
   final FocusNode _focusNode = FocusNode();
   late UserAuthProvider authProvider;
   late PostProvider postProvider;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   late SharedPreferences _prefs;
   int _itemsSinceLastLoad = 0;
@@ -122,7 +122,9 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
   bool _isLoadingMore = false;
   final int _batchSize = 10;
   final int _preloadThreshold = 2;
-  DocumentSnapshot? _lastDocument;
+  String? _vibesCursor;
+  String? _oldVibesCursor;
+  bool _oldVibesExhausted = false;
 
   // Video controllers
   VideoPlayerController? _currentVideoController;
@@ -146,7 +148,6 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
   final List<double> giftPrices = [10, 25, 50, 100, 200, 300, 500, 700, 1500, 2000, 2500, 5000, 7000, 10000, 15000, 20000, 30000, 50000, 75000, 100000];
   final List<String> giftIcons = ['🌹','❤️','👑','💎','🏎️','⭐','🍫','🧰','🌵','🍕','🍦','💻','🚗','🏠','🛩️','🛥️','🏰','💎','🏎️','🚗'];
 
-  final Map<String, StreamSubscription<DocumentSnapshot>> _postSubscriptions = {};
   final GlobalKey<RewardedAdWidgetState> _rewardedAdKey = GlobalKey();
   bool _showRewardedAd = false;
   Timer? _suggestionModalTimer;
@@ -165,7 +166,6 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
   Timer? _oldVibesLoadTimer;
 
   // Cache des fenêtres mensuelles déjà testées et trouvées vides (clé = startDate du mois)
-  final Set<DateTime> _emptyOldVibesWindows = {};
   Set<String> _usedOldVibeIds = {};
 
   @override
@@ -213,15 +213,16 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
     final userId = authProvider.loginUserData.id;
     if (userId == null || widget.initialVibe == null) return;
 
-    final postDoc = await _firestore.collection('Posts').doc(widget.initialVibe!.id).getM('vibesPage.dart:197');
-    if (postDoc.exists) {
-      final data = postDoc.data();
-      final usersFavorite = List<String>.from(data?['users_favorite_id'] ?? []);
-      final favoritesCount = data?['favorites_count'] ?? 0;
-      setState(() {
-        _isFavorite = usersFavorite.contains(userId);
-        _favoritesCount = favoritesCount;
-      });
+    try {
+      final fresh = await PubApi.fresh(widget.initialVibe!.id!);
+      if (fresh != null && mounted) {
+        setState(() {
+          _isFavorite = fresh.users_favorite_id?.contains(userId) ?? false;
+          _favoritesCount = fresh.favoritesCount ?? _favoritesCount;
+        });
+      }
+    } catch (e) {
+      printVm('Erreur favori (lecture): $e');
     }
   }
 
@@ -237,39 +238,21 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
 
     try {
       if (_isFavorite) {
-        await _firestore.collection('Posts').doc(widget.initialVibe!.id).update({
-          'users_favorite_id': FieldValue.arrayRemove([userId]),
-          'favorites_count': FieldValue.increment(-1),
-        });
+        await PubApi.setFavorite(widget.initialVibe!.id!, false);
         setState(() {
           _isFavorite = false;
           _favoritesCount--;
         });
       } else {
-        await _firestore.collection('Posts').doc(widget.initialVibe!.id).update({
-          'users_favorite_id': FieldValue.arrayUnion([userId]),
-          'favorites_count': FieldValue.increment(1),
-        });
+        await PubApi.setFavorite(widget.initialVibe!.id!, true);
         setState(() {
           _isFavorite = true;
           _favoritesCount++;
         });
-        if (widget.initialVibe!.user_id != userId) {
-          await authProvider.sendNotification(
-            userIds: [widget.initialVibe!.user?.oneIgnalUserid ?? ''],
-            smallImage: authProvider.loginUserData.imageUrl ?? '',
-            send_user_id: userId,
-            recever_user_id: widget.initialVibe!.user_id!,
-            message: "📌 @${authProvider.loginUserData.pseudo} a ajouté votre vibe aux favoris",
-            type_notif: NotificationType.FAVORITE.name,
-            post_id: widget.initialVibe!.id!,
-            post_type: PostDataType.VIDEO.name,
-            chat_id: '',
-          );
-        }
       }
     } catch (e) {
       printVm("Erreur favori: $e");
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(PubApi.message(e))));
     } finally {
       _isFavoriteProcessing = false;
     }
@@ -292,7 +275,6 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
     _oldVibesLoadTimer?.cancel();
     _pageController.dispose();
     _disposeCurrentVideo();
-    _postSubscriptions.forEach((key, subscription) => subscription.cancel());
     _focusNode.dispose();
     super.dispose();
   }
@@ -371,17 +353,6 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
     });
     for (var idx in toRemove) _preloadedControllers.remove(idx);
 
-    // Limite le nombre de listeners Firestore actifs au voisinage affiché
-    final keepIds = <String>{};
-    for (int i = max(0, minKeep); i <= min(_feedItems.length - 1, maxKeep); i++) {
-      final item = _feedItems[i];
-      if (item is Post && item.id != null) keepIds.add(item.id!);
-    }
-    final subsToRemove = _postSubscriptions.keys.where((id) => !keepIds.contains(id)).toList();
-    for (final id in subsToRemove) {
-      _postSubscriptions[id]?.cancel();
-      _postSubscriptions.remove(id);
-    }
   }
 
   Future<void> _initializeVideo(Post post, {int? index}) async {
@@ -453,14 +424,15 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
     setState(() => _isLoadingFeed = true);
     _itemsSinceLastLoad = 0;
     _maxVideosReached = false;
-    _lastDocument = null;
+    _vibesCursor = null;
+    _oldVibesCursor = null;
+    _oldVibesExhausted = false;
     _usedOldVibeIds.clear();
 
     if (widget.initialVibe != null && !_loadedPostIds.contains(widget.initialVibe!.id)) {
       _loadedPostIds.add(widget.initialVibe!.id!);
       _vibePosts.add(widget.initialVibe!);
       await _loadPostRelations(widget.initialVibe!);
-      _subscribeToPostUpdates(widget.initialVibe!);
     }
 
     await _loadMoreVibes(isInitial: true);
@@ -475,79 +447,20 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
     }
   }
 
-  /// Choisit une fenêtre mensuelle aléatoire (1-6 mois) en évitant si possible
-  /// les fenêtres déjà connues comme vides.
-  DateTime _pickRandomOldVibesWindowStart(Random random) {
-    DateTime? candidate;
-
-    for (int attempt = 0; attempt < 5; attempt++) {
-      int monthsBack = random.nextInt(6) + 1;
-      final now = DateTime.now();
-      final DateTime endDate = DateTime(now.year, now.month - monthsBack, 1);
-      final DateTime startDate = DateTime(endDate.year, endDate.month - 1, 1);
-
-      if (!_emptyOldVibesWindows.contains(startDate)) {
-        return startDate;
-      }
-      candidate = startDate;
-    }
-
-    return candidate!;
-  }
-
-  Future<List<Post>> _fetchOldVibesForWindow(DateTime startDate) async {
-    final DateTime endDate = DateTime(startDate.year, startDate.month + 1, 1);
-    final int startMicros = startDate.microsecondsSinceEpoch;
-    final int endMicros = endDate.microsecondsSinceEpoch;
-
-    Query query = _firestore.collection('Posts')
-        .where("dataType", isEqualTo: PostDataType.VIDEO.name)
-        .where("typeTabbar", isEqualTo: "VIBE")
-        .where("created_at", isGreaterThanOrEqualTo: startMicros)
-        .where("created_at", isLessThan: endMicros)
-        .orderBy("created_at")
-        .limit(30);
-
-    final snapshot = await query.getM('vibesPage.dart:492');
-    if (snapshot.docs.isEmpty) return [];
-
-    List<Post> validOldVibes = [];
-    for (final doc in snapshot.docs) {
-      final post = Post.fromJson(doc.data() as Map<String, dynamic>);
-      post.id = doc.id;
-      if (_loadedPostIds.contains(post.id)) continue;
-      if (_oldVibesCache.any((p) => p.id == post.id)) continue;
-      if (post.isAdvertisement == true) continue;
-      validOldVibes.add(post);
-      if (validOldVibes.length >= 12) break;
-    }
-    return validOldVibes;
+  /// Anciennes vibes : pages suivantes du fil de l'API (le serveur renvoie des publications non vues).
+  Future<List<Post>> _fetchOldVibes() async {
+    if (_oldVibesExhausted) return [];
+    final r = await PubVideosApi.videos(category: 'VIBE', cursor: _oldVibesCursor, limit: 12, exclude: {..._loadedPostIds, ..._oldVibesCache.map((p) => p.id!)});
+    _oldVibesCursor = r.next;
+    if (r.next == null) _oldVibesExhausted = true;
+    return r.posts.where((p) => p.isAdvertisement != true).toList();
   }
 
   Future<void> _loadOldVibesInBackground() async {
     if (_isLoadingOldVibes) return;
     _isLoadingOldVibes = true;
     try {
-      final random = Random();
-
-      // Jusqu'à 3 fenêtres tentées dans cette même passe : la fenêtre
-      // initiale + jusqu'à 2 fallbacks si vide/quasi-vide (<3 posts).
-      const int maxFallbacks = 2;
-      List<Post> validOldVibes = [];
-
-      for (int attempt = 0; attempt <= maxFallbacks; attempt++) {
-        final startDate = _pickRandomOldVibesWindowStart(random);
-        final found = await _fetchOldVibesForWindow(startDate);
-
-        if (found.length < 3) {
-          _emptyOldVibesWindows.add(startDate);
-        }
-
-        if (found.isNotEmpty) {
-          validOldVibes = found;
-          break;
-        }
-      }
+      final validOldVibes = await _fetchOldVibes();
 
       if (validOldVibes.isNotEmpty) {
         validOldVibes.shuffle();
@@ -628,14 +541,14 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
   Future<void> _loadPostRelations(Post post) async {
     if (post.user_id != null && post.user == null) {
       try {
-        final userDoc = await _firestore.collection('Users').doc(post.user_id).getM('vibesPage.dart:606');
-        if (userDoc.exists) post.user = UserData.fromJson(userDoc.data()!);
+        final u = await PubApi.user(post.user_id!);
+        if (u != null) post.user = u;
       } catch (e) { printVm('Erreur chargement user: $e'); }
     }
     if (post.canal_id != null && post.canal_id!.isNotEmpty && post.canal == null) {
       try {
-        final canalDoc = await _firestore.collection('Canaux').doc(post.canal_id).getM('vibesPage.dart:612');
-        if (canalDoc.exists) post.canal = Canal.fromJson(canalDoc.data()!);
+        final c = await PubApi.canal(post.canal_id!, myId: authProvider.loginUserData.id);
+        if (c != null) post.canal = c;
       } catch (e) { printVm('Erreur chargement canal: $e'); }
     }
     if (mounted) setState(() {});
@@ -654,7 +567,6 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
             _loadedPostIds.add(post.id!);
             _vibePosts.add(post);
             await _loadPostRelations(post);
-            _subscribeToPostUpdates(post);
           }
         }
         if (_vibePosts.length >= _maxVideosLimit) _maxVideosReached = true;
@@ -668,86 +580,10 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
   }
 
   Future<List<Post>> _fetchSuggestedVibesBatch({required int limit, required Set<String> excludeIds}) async {
-    List<Post> results = [];
-    Set<String> ids = Set.from(excludeIds);
-    int attempts = 0;
-    const maxAttempts = 5;
-
-    while (results.length < limit && attempts < maxAttempts) {
-      attempts++;
-      final random = Random();
-      int strategy = random.nextInt(3);
-
-      Future<List<Post>> fetchOrdered(String field, bool descending, int fetchLimit) async {
-        final snap = await _firestore
-            .collection('Posts')
-            .where('dataType', isEqualTo: PostDataType.VIDEO.name)
-            .where('typeTabbar', isEqualTo: "VIBE")
-            .where('status', isEqualTo: PostStatus.VALIDE.name)
-            .orderBy(field, descending: descending)
-            .limit(fetchLimit)
-            .getM('vibesPage.dart:664');
-        return snap.docs.map((doc) {
-          final p = Post.fromJson(doc.data());
-          p.id = doc.id;
-          return p;
-        }).toList();
-      }
-
-      Future<List<Post>> fetchRandom(int fetchLimit) async {
-        final snap = await _firestore
-            .collection('Posts')
-            .where('dataType', isEqualTo: PostDataType.VIDEO.name)
-            .where('typeTabbar', isEqualTo: "VIBE")
-            .where('status', isEqualTo: PostStatus.VALIDE.name)
-            .limit(50)
-            .getM('vibesPage.dart:679');
-        List<Post> posts = snap.docs.map((doc) {
-          final p = Post.fromJson(doc.data());
-          p.id = doc.id;
-          return p;
-        }).toList();
-        posts.shuffle();
-        return posts.take(fetchLimit).toList();
-      }
-
-      List<Post> candidates = [];
-      if (attempts == 1) {
-        candidates = await fetchOrdered('created_at', true, limit * 2);
-      } else if (attempts == 2) {
-        candidates = await fetchRandom(limit * 2);
-      } else {
-        candidates = await fetchOrdered('popularity', true, limit * 3);
-      }
-
-      for (var p in candidates) {
-        if (p.id != null && !ids.contains(p.id)) {
-          ids.add(p.id!);
-          results.add(p);
-          if (results.length >= limit) break;
-        }
-      }
-    }
-    results.shuffle();
-    return results;
-  }
-
-  void _subscribeToPostUpdates(Post post) {
-    if (post.id == null || _postSubscriptions.containsKey(post.id)) return;
-    final subscription = _firestore.collection('Posts').doc(post.id).snapshotsM('vibesPage.dart:712').listen((snapshot) {
-      if (snapshot.exists && mounted) {
-        final updatedPost = Post.fromJson(snapshot.data() as Map<String, dynamic>);
-        setState(() {
-          final index = _vibePosts.indexWhere((p) => p.id == post.id);
-          if (index != -1) {
-            updatedPost.user = _vibePosts[index].user;
-            updatedPost.canal = _vibePosts[index].canal;
-            _vibePosts[index] = updatedPost;
-          }
-        });
-      }
-    });
-    _postSubscriptions[post.id!] = subscription;
+    final r = await PubVideosApi.videos(category: 'VIBE', cursor: _vibesCursor, limit: limit, exclude: excludeIds);
+    _vibesCursor = r.next;
+    if (r.next == null && r.posts.isEmpty) return [];
+    return r.posts.where((p) => p.status == null || p.status == PostStatus.VALIDE.name).toList();
   }
 
   Future<void> _incrementViews() async {
@@ -762,11 +598,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
         widget.initialVibe!.vues = (widget.initialVibe!.vues ?? 0) + 1;
         widget.initialVibe!.users_vue_id!.add(currentUserId);
       });
-      await _firestore.collection('Posts').doc(widget.initialVibe!.id).update({
-        'vues': FieldValue.increment(1),
-        'users_vue_id': FieldValue.arrayUnion([currentUserId]),
-        'popularity': FieldValue.increment(2),
-      });
+      await PubApi.view(widget.initialVibe!.id!);
     } catch (e) { printVm("Erreur vues: $e"); }
   }
 
@@ -777,10 +609,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
     try {
       await _markPostAsSeen(post);
       if (post.users_vue_id != null && post.users_vue_id!.contains(currentUserId)) return;
-      await _firestore.collection('Posts').doc(post.id).update({
-        'vues': FieldValue.increment(1),
-        'users_vue_id': FieldValue.arrayUnion([currentUserId]),
-      });
+      await PubApi.view(post.id!);
       setState(() {
         post.vues = (post.vues ?? 0) + 1;
         post.users_vue_id = [...?post.users_vue_id, currentUserId];
@@ -795,9 +624,6 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
     final hasSeen = _prefs.getBool(key) ?? false;
     if (!hasSeen) {
       await _prefs.setBool(key, true);
-      await _firestore.collection('Users').doc(currentUserId).update({
-        'viewedPostIds': FieldValue.arrayUnion([post.id]),
-      });
     }
   }
 
@@ -1062,10 +888,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
       final shareUrl = post.thumbnail ?? '';
       final linkService = AppLinkService();
       await linkService.shareContent(type: AppLinkType.post, id: post.id!, message: post.description ?? '', mediaUrl: shareUrl);
-      await _firestore.collection('Posts').doc(post.id).update({
-        'partage': FieldValue.increment(1),
-        'users_partage_id': FieldValue.arrayUnion([authProvider.loginUserData.id]),
-      });
+      await PubApi.share(post.id!);
       setState(() => post.partage = (post.partage ?? 0) + 1);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vibe partagée !'), backgroundColor: Colors.green));
     } catch (e) { printVm('Erreur partage: $e'); } finally { setState(() => _isSharing = false); }
@@ -1096,10 +919,15 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
 
   Future<void> _deletePost(Post post) async {
     try {
-      await _firestore.collection('Posts').doc(post.id).delete();
+      await PubApi.delete(post.id!);
+      _vibePosts.removeWhere((p) => p.id == post.id);
+      if (mounted) setState(_rebuildFeedItems);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vibe supprimée')));
       if (_vibePosts.length == 1) Navigator.pop(context);
-    } catch (e) { printVm('Erreur suppression: $e'); }
+    } catch (e) {
+      printVm('Erreur suppression: $e');
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(PubApi.message(e))));
+    }
   }
 
   Future<void> _loadSupportModalSeen() async {
@@ -1113,13 +941,16 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
   }
 
   Future<void> _onSupportAdRewarded(Post post) async {
-    final currentUserId = authProvider.loginUserData.id;
-    final creatorId = post.user_id!;
-    await _firestore.collection('Posts').doc(post.id).update({'adSupportCount': FieldValue.increment(1)});
-    await _firestore.collection('Users').doc(creatorId).update({'totalCoinsEarnedFromAdSupport': FieldValue.increment(1)});
-    await _firestore.collection('Users').doc(currentUserId).update({'totalAdViewsSupported': FieldValue.increment(1)});
-    await _firestore.collection('post_supports').add({'postId': post.id, 'userId': currentUserId, 'supportedAt': DateTime.now().millisecondsSinceEpoch});
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Merci ! Le créateur a reçu 10 pièces.'), backgroundColor: Colors.green));
+    try {
+      await PubApi.supportAd(post.id!);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(PubApi.message(e, fallback: 'Soutien impossible pour le moment. Réessaie plus tard.'))));
+        setState(() { _isSupporting = false; _showRewardedAd = false; });
+      }
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Merci ! Le créateur a reçu ton soutien.'), backgroundColor: Colors.green));
     setState(() { _isSupporting = false; _showRewardedAd = false; });
   }
 

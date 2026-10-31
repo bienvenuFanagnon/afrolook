@@ -15,7 +15,6 @@ import 'package:deeplynks/deeplynks_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_dynamic_links/firebase_dynamic_links.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
@@ -23,10 +22,11 @@ import 'package:http/http.dart' as http;
 
 import 'dart:convert';
 import 'package:afrotok/models/model_data.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:afrolook_api_client/afrolook_api_client.dart' show ApiException;
 import 'package:afrotok/services/api/users_api.dart';
 import 'package:afrotok/services/api/users_mapper.dart';
+import 'package:afrotok/services/api/chat_api.dart';
+import 'package:afrotok/services/api/chat_mapper.dart';
 import 'package:afrotok/services/followers_count_service.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -44,8 +44,6 @@ import '../services/streak_service.dart';
 import '../services/user/userService.dart';
 import '../services/ad_preload_service.dart';
 import '../services/ad_rotation_service.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 class UserAuthProvider extends ChangeNotifier {
   late AuthService authService = AuthService();
@@ -72,8 +70,6 @@ class UserAuthProvider extends ChangeNotifier {
   late List<UserPseudo> listPseudo = [];
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
-  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   // final FirebaseFunctions functions = FirebaseFunctions.instance;
 
 
@@ -86,112 +82,11 @@ class UserAuthProvider extends ChangeNotifier {
   List<Map<String, dynamic>> get advertisements => _advertisements;
 
 
-  Future<void> loadAdvertisements() async {
-    final _swAds = Stopwatch()..start();
-    final prefs = await SharedPreferences.getInstance();
-
-    // ── Compteur de sessions ──────────────────────────────────────────────────
-    final sessionCount = (prefs.getInt(_kAdSessionKey) ?? 0) + 1;
-    await prefs.setInt(_kAdSessionKey, sessionCount);
-    final shouldRefreshFromFirestore = sessionCount % _kAdRefreshEvery == 0;
-
-    // ── Sessions intermédiaires : cache local + re-shuffle ──────────────────
-    if (!shouldRefreshFromFirestore) {
-      final cached = prefs.getString(_kAdsCacheKey);
-      if (cached != null) {
-        try {
-          final list = (jsonDecode(cached) as List)
-              .cast<Map<String, dynamic>>();
-          list.shuffle();
-          _advertisements = list;
-          notifyListeners();
-          await AdRotationService.instance.init();
-          AdRotationService.instance.onAdsReloaded();
-          AdPreloadService.prefetchFromAds(_advertisements);
-          AdPreloadService.instance.preload();
-          printVm('📦 [Pub] session $sessionCount/$_kAdRefreshEvery — cache local (${list.length} pubs, re-shuffled) [${_swAds.elapsedMilliseconds}ms]');
-          return;
-        } catch (_) {
-          // Cache corrompu → on re-fetch quand même
-        }
-      }
-    }
-
-    // ── Session de refresh (toutes les $_kAdRefreshEvery sessions) ou pas de cache ─
-    try {
-      printVm('🔄 [Pub] session $sessionCount — re-fetch Firestore');
-      final now = DateTime.now().microsecondsSinceEpoch;
-      final adsSnapshot = await _firestore
-          .collection('Advertisements')
-          .where('status', isEqualTo: 'active')
-          .where('endDate', isGreaterThan: now)
-          .getM('authProvider.dart:160');
-
-      if (adsSnapshot.docs.isEmpty) {
-        _advertisements = [];
-        notifyListeners();
-        return;
-      }
-
-      List<Map<String, dynamic>> tempAds = [];
-
-      // Séparer les entity-boosts (pas de postId) des pubs avec post
-      final List<Map<String, dynamic>> adsWithPost = [];
-      for (var adDoc in adsSnapshot.docs) {
-        final ad = Advertisement.fromJson(adDoc.data());
-        final adDescription = adDoc.data()['description'] as String? ?? '';
-        if (ad.postId == null) {
-          if (ad.ownerName?.isNotEmpty == true) {
-            final adJson = ad.toJson();
-            adJson['adDescription'] = adDescription;
-            tempAds.add({'ad': adJson, 'isEntityBoost': true});
-          }
-        } else {
-          adsWithPost.add({'adData': adDoc.data(), 'adDescription': adDescription});
-        }
-      }
-
-      // Récupérer tous les posts en PARALLÈLE (au lieu d'un par un)
-      if (adsWithPost.isNotEmpty) {
-        final postFutures = adsWithPost.map((entry) {
-          final ad = Advertisement.fromJson(entry['adData'] as Map<String, dynamic>);
-          return _firestore.collection('Posts').doc(ad.postId).getM('authProvider.dart:190');
-        }).toList();
-        final postDocs = await Future.wait(postFutures);
-        for (int i = 0; i < postDocs.length; i++) {
-          final postDoc = postDocs[i];
-          if (!postDoc.exists) continue;
-          final entry = adsWithPost[i];
-          final ad = Advertisement.fromJson(entry['adData'] as Map<String, dynamic>);
-          final adDescription = entry['adDescription'] as String;
-          final post = Post.fromJson(postDoc.data()!);
-          // publicité d'un DÉFI : plus diffusée une fois le DÉFI terminé
-          if (ad.actionType == 'defi' && (post.defiConfig == null || post.defiConfig!.status != 'en_cours' || post.defiConfig!.endDate <= DateTime.now().millisecondsSinceEpoch)) continue;
-          post.advertisementId = ad.id;
-          post.isAdvertisement = true;
-          final adJson = ad.toJson();
-          adJson['adDescription'] = adDescription;
-          tempAds.add({'ad': adJson, 'post': post.toJson()});
-        }
-      }
-      tempAds.shuffle();
-      _advertisements = tempAds;
-
-      // Persister le nouveau cache
-      try {
-        await prefs.setString(_kAdsCacheKey, jsonEncode(tempAds));
-      } catch (_) {}
-
-      notifyListeners();
-      await AdRotationService.instance.init();
-      AdRotationService.instance.onAdsReloaded();
-      AdPreloadService.instance.invalidate();
-      AdPreloadService.prefetchFromAds(_advertisements);
-      AdPreloadService.instance.preload();
-      printVm('✅ [Pub] ${tempAds.length} pubs chargées depuis Firestore [${_swAds.elapsedMilliseconds}ms]');
-    } catch (e) {
-      printVm('Erreur chargement pubs: $e');
-    }
+Future<void> loadAdvertisements() async {
+    // Les annonces de la régie Afrolook Ads sont choisies par le serveur (GET /ads/app/serve) au moment de l'affichage :
+    // plus de liste à charger ni de cache d'annonces côté application (voir lacunes_api_compte_boosts.md).
+    _advertisements = [];
+    notifyListeners();
   }
 
   /// Rafraîchit les données de l'utilisateur connecté depuis Firestore
@@ -235,36 +130,11 @@ class UserAuthProvider extends ChangeNotifier {
   static void setRefreshDuration(Duration duration) {
     postRefreshDuration = duration;
   }
-  Future<bool> changeStateUser({required UserData user, required String state, required bool isConnected}) async {
-    final String previousState = user.state ?? ''; // Sauvegarde de l'ancien state
-
-    try {
-      // Mise à jour optimisée dans Firebase
-      final updateData = <String, dynamic>{
-        'state': state,
-        'isConnected': isConnected,
-        // 'last_time_active': FieldValue.serverTimestamp()
-      };
-
-      await firestore.collection('Users').doc(user.id).update(updateData);
-
-      // Mise à jour locale uniquement après succès
-      user.state = state;
-      notifyListeners();
-
-      printVm('State utilisateur mis à jour avec succès: $state');
-      return true;
-
-    } catch (e, stackTrace) {
-      printVm('Échec mise à jour state: $e');
-      printVm('Stack trace: $stackTrace');
-
-      // Garder l'ancien state en cas d'erreur
-      user.state = previousState;
-      notifyListeners();
-
-      return false;
-    }
+Future<bool> changeStateUser({required UserData user, required String state, required bool isConnected}) async {
+    // La présence reste gérée par le service de présence Firebase ; ici seul l'état local est tenu à jour.
+    user.state = state;
+    notifyListeners();
+    return true;
   }
 
   /// Supprime définitivement le compte Firebase Auth + marque le document Firestore
@@ -381,79 +251,20 @@ class UserAuthProvider extends ChangeNotifier {
       }
     }
   }  /// Fonction principale
-   Future<void> checkAndRefreshPostDates(String postId) async {
-    try {
-      printVm("✅ Post checkAndRefreshPostDates $postId encours de changement de date");
-
-      final doc = await _firestore
-          .collection('Posts')
-          .doc(postId)
-          .getM('authProvider.dart:445');
-
-      if (!doc.exists) return;
-
-      final data = doc.data()!;
-      final int? updatedAt = data['updated_at'];
-      printVm("✅ Post checkAndRefreshPostDates updatedAt $updatedAt");
-
-      if (updatedAt == null) return;
-
-      final now = DateTime.now().microsecondsSinceEpoch;
-
-      final age = now - updatedAt;
-
-      if (age >= postRefreshDuration.inMicroseconds) {
-
-        await _firestore
-            .collection('Posts')
-            .doc(postId)
-            .update({
-          // 'created_at': now,
-          'updated_at': now,
-        });
-
-        printVm("✅ Post checkAndRefreshPostDates $postId rafraîchi automatiquement");
-      }
-
-    } catch (e) {
-      printVm("❌ checkAndRefreshPostDates error: $e");
-    }
+Future<void> checkAndRefreshPostDates(String postId) async {
+    // Le rafraîchissement des dates d'une publication est décidé par le serveur.
   }
 
   initializeData() {
     registerUser = UserData();
   }
-  Future<void> incrementPostTotalInteractions({
+Future<void> incrementPostTotalInteractions({
     required String postId,
     int incrementValue = 1,
     String? userId,
     String? interactionType,
   }) async {
-    try {
-      // Déduplication : une seule fois par utilisateur par type d'interaction
-      if (userId != null && interactionType != null) {
-        final prefs = await SharedPreferences.getInstance();
-        final key = '${interactionType}_once_${postId}_$userId';
-        if (prefs.getBool(key) == true) {
-          printVm("⏭️ $interactionType déjà compté pour $postId");
-          return;
-        }
-        await prefs.setBool(key, true);
-      }
-
-      await FirebaseFirestore.instance
-          .collection('Posts')
-          .doc(postId)
-          .update({
-        'totalInteractions': FieldValue.increment(incrementValue),
-        'updatedAt': DateTime.now().microsecondsSinceEpoch,
-      });
-
-      printVm("✅ totalInteractions +$incrementValue pour le post $postId");
-
-    } catch (e) {
-      printVm("❌ Erreur incrementPostTotalInteractions: $e");
-    }
+    // Les interactions sont comptées par le serveur (vues, j'aime, commentaires, partages) : rien à écrire depuis l'application.
   }
   /// Les commissions de parrainage sont versées par le serveur (grand livre de l'API) : l'application n'écrit plus jamais un solde.
   Future<void> ajouterCommissionParrainViaUserId({String? userId, String? codeParrainage, double? montant}) async {}
@@ -792,17 +603,11 @@ class UserAuthProvider extends ChangeNotifier {
 
   }
 
-  Future<void> updateAppData(AppDefaultData appDefaultData) async {
-    printVm("app data : ${appDefaultData!.toJson()}");
-
-    await firestore.collection('AppData').doc(appDefaultData!.id).update(
-        appDefaultData!.toJson());
+Future<void> updateAppData(AppDefaultData appDefaultData) async {
+    // Les compteurs et soldes globaux de l'application appartiennent au serveur : jamais écrits par un téléphone.
   }
-  Future<void> updateEntreprise(EntrepriseData data) async {
-    printVm("entreprise  data : ${data!.toJson()}");
-
-    await firestore.collection('Entreprises').doc(data!.id).update(
-        data!.toJson());
+Future<void> updateEntreprise(EntrepriseData data) async {
+    // Les entreprises (abonnement, quota, boosts) sont modifiées uniquement par le serveur (module boutique).
   }
 
 
@@ -813,30 +618,7 @@ class UserAuthProvider extends ChangeNotifier {
     return users_id.any((item) => item == userIdToCheck);
   }
 
-  Stream<List<NotificationData>> getListNotificationAuth2(String user_id) async* {
-    var postStream = FirebaseFirestore.instance.collection('Notifications')
-        .where("receiver_id",isEqualTo:'${user_id}')
 
-        .orderBy('created_at', descending: true)
-
-        .snapshotsM('authProvider.dart:1133');
-    List<NotificationData> notifications = [];
-    //  UserData userData=UserData();
-    await for (var snapshot in postStream) {
-      notifications = [];
-
-      for (var post in snapshot.docs) {
-        //  printVm("post : ${jsonDecode(post.toString())}");
-        NotificationData notification = NotificationData.fromJson(post.data());
-        // listConstposts=posts;
-
-        if (!isIn(notification.users_id_view!, loginUserData.id!)) {
-          notifications.add(notification);
-        }
-      }
-      yield notifications;
-    }
-  }
   // Un seul abonnement Firestore par personne, partagé par tous les écrans (badges de l'accueil…) : avant, chaque reconstruction d'écran
   // créait un nouveau flux et relisait les 12 notifications. Les nouveaux écrans reçoivent aussitôt la dernière valeur connue.
   final Map<String, rx.BehaviorSubject<List<NotificationData>>> _notificationSubjects = {};
@@ -868,26 +650,16 @@ class UserAuthProvider extends ChangeNotifier {
     _notificationSubjects.clear();
   }
 
-  Stream<List<NotificationData>> _notificationStream(String user_id) async* {
-    var postStream = FirebaseFirestore.instance
-        .collection('Notifications')
-        .where("receiver_id", isEqualTo: user_id)
-        .orderBy('created_at', descending: true)
-        .limit(12)                              // 🔥 Limite à 12 résultats
-        .snapshotsM('authProvider.dart:1157');
-
-    await for (var snapshot in postStream) {
-      List<NotificationData> notifications = [];
-
-      for (var post in snapshot.docs) {
-        NotificationData notification = NotificationData.fromJson(post.data());
-
-        if (!isIn(notification.users_id_view!, loginUserData.id!)) {
-          notifications.add(notification);
-        }
+Stream<List<NotificationData>> _notificationStream(String user_id) async* {
+    // Pas de temps réel côté API : les notifications non lues sont relues toutes les 30 s tant qu'un écran écoute.
+    while (true) {
+      try {
+        final page = await ChatApi.notifications(limit: 12, unreadOnly: true);
+        yield page.items.map(notificationFromApi).toList();
+      } catch (e) {
+        printVm('Notifications non chargées : $e');
       }
-
-      yield notifications;
+      await Future<void>.delayed(const Duration(seconds: 30));
     }
   }
 
@@ -1016,22 +788,7 @@ class UserAuthProvider extends ChangeNotifier {
       return false;
     }
   }
-  Future<bool> updateTransactionSolde(TransactionSolde trans) async {
-    try{
 
-
-
-      await FirebaseFirestore.instance
-          .collection('TransactionSoldes')
-          .doc(trans.id)
-          .update(trans.toJson());
-      printVm("trans update : ${trans!.toJson()}");
-      return true;
-    }catch(e){
-      printVm("erreur update post : ${e}");
-      return false;
-    }
-  }
 
   bool isUserAbonne(List<String> abonnesIds, String userId) {
     return abonnesIds.contains(userId);
@@ -1047,123 +804,13 @@ class UserAuthProvider extends ChangeNotifier {
       return [];
     }
   }
-  Future<void> sendPushToSpecificUsers({
-    required List<String> userIds,
-    required UserData sender,
-    required String message,
-    required String typeNotif,
-    String? postId,
-    String? postType,
-    String? chatId,
-    String? smallImage,
-  }) async
-  {
-    try {
-      if (userIds.isEmpty) {
-        printVm("📭 Aucun utilisateur cible.");
-        return;
-      }
 
-      // 🔹 Nettoyage des doublons
-      final targetUserIds = userIds.toSet().toList();
-
-      final appName = "@${sender.pseudo}";
-
-      final currentTime = DateTime.now().millisecondsSinceEpoch;
-      final notifTime = DateTime.now().microsecondsSinceEpoch;
-      final throttleMs = _throttleForType(typeNotif);
-
-      final List<String> validOneSignalIds = [];
-
-      const batchSize = 100;
-
-      for (var i = 0; i < targetUserIds.length; i += batchSize) {
-        final end = i + batchSize > targetUserIds.length
-            ? targetUserIds.length
-            : i + batchSize;
-
-        final batchIds = targetUserIds.sublist(i, end);
-
-        final usersBatch = await getUsersByIds(batchIds);
-
-        final batchResults = await Future.wait(
-          usersBatch.map((user) => _processUserNotification(
-            user: user,
-            sender: sender,
-            appName: appName,
-            isChannel: false,
-            canal: null,
-            truncatedMessage: message,
-            postId: postId,
-            postType: postType,
-            notifTime: notifTime,
-            currentTime: currentTime,
-            throttleMs: throttleMs,
-            smallImage: smallImage,
-          )),
-        );
-
-        for (final result in batchResults) {
-          if (result.isValid) {
-            validOneSignalIds.add(result.oneSignalId);
-          }
-        }
-      }
-
-      // 🔥 Envoi direct push
-      if (validOneSignalIds.isNotEmpty) {
-        await _sendPushNotificationNow(
-          appName: appName,
-          userIds: validOneSignalIds,
-          smallImage: smallImage ?? sender.imageUrl ?? "",
-          senderId: sender.id!,
-          message: message,
-          typeNotif: typeNotif,
-          postId: postId,
-          postType: postType,
-          chatId: chatId,
-        );
-      }
-
-      printVm("✅ Push envoyée à ${targetUserIds.length} utilisateurs !");
-    } catch (e) {
-      printVm("❌ Erreur envoi push : $e");
-    }
-  }
-  Future<List<String>> getAllUsersOneSignaUserId() async {
-    late List<UserData> list = [];
-
-    CollectionReference collectionRef =
-    FirebaseFirestore.instance.collection('Users');
-    // Get docs from collection reference
-    QuerySnapshot querySnapshot = await collectionRef.getM('authProvider.dart:1498').then((value) {
-      return value;
-    }).catchError((onError) {});
-
-    // Get data from docs and convert map to List
-    list = querySnapshot.docs
-        .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
-        .toList();
-    late List<String> listOSUserid = [];
-
-    for (UserData u in list) {
-      if (u.oneIgnalUserid!=null&&u.oneIgnalUserid!.length>5) {
-        listOSUserid.add(u.oneIgnalUserid!);
-        printVm("onesignaluser size : ${listOSUserid.length}");
-
-          // u.abonnes=u.userAbonnesIds==null?0:u.userAbonnesIds!.length;
-          // updateUser(u);
-
-
-
-
-      }
-    }
-
-    return listOSUserid;
+Future<List<String>> getAllUsersOneSignaUserId() async {
+    // Les envois groupés sont faits par le serveur : l'application ne connaît plus les identifiants de notification des autres.
+    return [];
   }
 
-  Future<void> sendPushNotificationToUsers({
+Future<void> sendPushNotificationToUsers({
     required UserData sender,
     required String message,
     required String typeNotif,
@@ -1174,204 +821,12 @@ class UserAuthProvider extends ChangeNotifier {
     bool isChannel = false,
     String? channelTitle,
     Canal? canal,
-  })
-  async {
-    try {
-      // Déterminer le type de cible
-      String targetType = "subscribers";
-      List<String>? specificUserIds;
-
-      if (sender.role == UserRole.ADM.name) {
-        targetType = "all";
-      } else if (isChannel && canal != null) {
-        targetType = "channel";
-      }
-
-      // ✅ Appel à la fonction cloud - tout est géré côté serveur
-      final result = await FirebaseFunctions.instance
-          .httpsCallable('sendBulkNotification')
-          .call({
-        'senderId': sender.id,
-        'message': message,
-        'typeNotif': typeNotif,
-        'postId': postId,
-        'postType': postType,
-        'chatId': chatId,
-        'smallImage': smallImage,
-        'isChannel': isChannel,
-        'channelTitle': channelTitle,
-        'canalId': canal?.id,
-        'targetType': targetType,
-        'specificUserIds': specificUserIds,
-      });
-
-      printVm('✅ Notifications traitées: ${result.data}');
-
-      // Afficher les stats
-      final data = result.data as Map;
-      printVm('📊 Statistiques:');
-      printVm('   - Notifications enregistrées: ${data['notificationsSaved']}');
-      printVm('   - Push notifications envoyées: ${data['pushSent']}');
-      printVm('   - Push limitées (1h): ${data['pushLimited']}');
-
-    } catch (e) {
-      printVm('❌ Erreur: $e');
-    }
-  }
-  Future<void> incrementCreatorCoins({
-    required String postId,
-    required String creatorId,
-    required String currentUserId,
   }) async {
-    try {
-      final postRef = _firestore.collection('Posts').doc(postId);
-      final creatorRef = _firestore.collection('Users').doc(creatorId);
-      final viewerRef = _firestore.collection('Users').doc(currentUserId);
-
-      // Mise à jour atomique possible avec batch
-      final batch = _firestore.batch();
-
-      // 1️⃣ Incrémenter le compteur de soutien du post
-      batch.update(postRef, {
-        'adSupportCount': FieldValue.increment(1),
-      });
-
-      // 2️⃣ Créditer le créateur
-      batch.update(creatorRef, {
-        'totalCoinsEarnedFromAdSupport': FieldValue.increment(1),
-      });
-
-      // 3️⃣ Incrémenter le compteur du spectateur
-      batch.update(viewerRef, {
-        'totalAdViewsSupported': FieldValue.increment(1),
-      });
-
-      // Exécuter toutes les mises à jour ensemble
-      await batch.commit();
-
-      printVm('✅ Post $postId: +1 adSupport, Créateur $creatorId: +1 coin, Spectateur $currentUserId: +1 vue');
-    } catch (e, stack) {
-      printVm("❌ Erreur lors de l'incrémentation des coins/compteurs: $e");
-      printVm(stack);
-    }
+    // Les notifications d'une nouvelle publication aux abonnés sont émises par le serveur (budget quotidien, langues, aperçus).
   }
-  Future<void> sendPushNotificationToUsers2({
-    required UserData sender,
-    required String message,
-    required String typeNotif,
-    String? postId,
-    String? postType,
-    String? chatId,
-    String? smallImage,
-    bool isChannel = false,
-    String? channelTitle,
-    Canal? canal,
-  })
-  async {
-    try {
-      // 🔹 Étape 1 : Préparer les IDs cibles
-      List<String> targetUserIds = [];
 
-      if (sender.role == UserRole.ADM.name) {
-        final allUsers = await getAllUsers();
-        targetUserIds = allUsers.map((u) => u.id!).toList();
-      } else {
-        if (sender.userAbonnesIds != null && sender.userAbonnesIds!.isNotEmpty) {
-          targetUserIds.addAll(sender.userAbonnesIds!);
-        }
 
-        if (isChannel && canal != null) {
-          if (canal.usersSuiviId != null) {
-            targetUserIds.addAll(canal.usersSuiviId!);
-          }
-          if (canal.subscribersId != null) {
-            targetUserIds.addAll(canal.subscribersId!);
-          }
-        }
-      }
-
-      // Éliminer les doublons
-      targetUserIds = targetUserIds.toSet().toList();
-
-      if (targetUserIds.isEmpty) {
-        printVm("📭 Aucun utilisateur cible trouvé.");
-        return;
-      }
-
-      // 🔹 Étape 2 : Séparer les opérations Firestore et Push
-      final appName = isChannel && channelTitle != null && channelTitle.isNotEmpty
-          ? "#$channelTitle"
-          : "@${sender.pseudo}";
-
-      final truncatedMessage = message.length > 200
-          ? message.substring(0, 200)
-          : message;
-
-      final currentTime = DateTime.now().millisecondsSinceEpoch;
-      final notifTime = DateTime.now().microsecondsSinceEpoch;
-      final throttleMs = _throttleForType(typeNotif);
-
-      // 🔹 Étape 3 : Traiter en parallèle
-      final List<String> validOneSignalIds = [];
-
-      // Récupérer les utilisateurs par lots
-      const batchSize = 100;
-      for (var i = 0; i < targetUserIds.length; i += batchSize) {
-        final end = i + batchSize > targetUserIds.length
-            ? targetUserIds.length
-            : i + batchSize;
-        final batchIds = targetUserIds.sublist(i, end);
-
-        final usersBatch = await getUsersByIds(batchIds);
-
-        // Traiter ce lot
-        final batchResults = await Future.wait(
-            usersBatch.map((user) => _processUserNotification(
-              user: user,
-              sender: sender,
-              appName: appName,
-              isChannel: isChannel,
-              canal: canal,
-              truncatedMessage: truncatedMessage,
-              postId: postId,
-              postType: postType,
-              notifTime: notifTime,
-              currentTime: currentTime,
-              throttleMs: throttleMs,
-              smallImage: smallImage,
-            ))
-        );
-
-        // Collecter les IDs OneSignal valides
-        for (final result in batchResults) {
-          if (result.isValid) {
-            validOneSignalIds.add(result.oneSignalId);
-          }
-        }
-      }
-
-      // 🔹 Étape 4 : Envoyer la push notification sans attendre Firestore
-      if (validOneSignalIds.isNotEmpty) {
-        unawaited(_sendPushNotificationNow(
-          appName: appName,
-          userIds: validOneSignalIds,
-          smallImage: smallImage ?? sender.imageUrl ?? "",
-          senderId: sender.id!,
-          message: message,
-          typeNotif: typeNotif,
-          postId: postId,
-          postType: postType,
-          chatId: chatId,
-        ));
-      }
-
-      printVm("✅ Notifications traitées pour ${targetUserIds.length} utilisateurs !");
-
-    } catch (e) {
-      printVm("❌ Erreur lors de l'envoi de la notification : $e");
-    }
-  }
-  Future<int> notifySubscribersOfInteraction({
+Future<int> notifySubscribersOfInteraction({
     required String actionUserId,
     required String postOwnerId,
     required String postId,
@@ -1383,207 +838,8 @@ class UserAuthProvider extends ChangeNotifier {
     bool isSticker = false,
     List<String> excludeUserIds = const [],
   }) async {
-    int notifiedCount = 0;
-    try {
-      printVm('🔔 [notifySubscribers] Début pour action $actionType, post $postId');
-
-      // 1. Récupérer les infos du post (pour le canal)
-      final postDoc = await FirebaseFirestore.instance
-          .collection('Posts')
-          .doc(postId)
-          .getM('authProvider.dart:1753');
-
-      if (!postDoc.exists) {
-        printVm('❌ [notifySubscribers] Post $postId introuvable');
-        return 0;
-      }
-
-      final postData = postDoc.data()!;
-      final canalId = postData['canal_id'] as String?;
-
-      // 2. Infos de l'utilisateur qui agit
-      final actionUserDoc = await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(actionUserId)
-          .getM('authProvider.dart:1767');
-
-      if (!actionUserDoc.exists) {
-        printVm('❌ [notifySubscribers] Utilisateur action $actionUserId introuvable');
-        return 0;
-      }
-
-      final actionUserData = actionUserDoc.data()!;
-      final actionUserPseudo = actionUserData['pseudo'] ?? 'Utilisateur';
-      final actionUserImage = actionUserData['imageUrl'] ?? '';
-
-      // 3. Récupérer les abonnés de l'utilisateur acteur (ses followers)
-      final List<String> followerIds = List<String>.from(actionUserData['userAbonnesIds'] ?? []);
-      printVm('📢 [notifySubscribers] Utilisateur $actionUserPseudo a ${followerIds.length} abonnés');
-
-      if (followerIds.isEmpty) {
-        printVm('⚠️ [notifySubscribers] Aucun abonné pour l\'utilisateur acteur, arrêt');
-        return 0;
-      }
-
-      // 4. Récupérer le nom du propriétaire du post pour le message
-      String ownerName = '';
-      if (canalId != null && canalId.isNotEmpty) {
-        final canalDoc = await FirebaseFirestore.instance
-            .collection('Canaux')
-            .doc(canalId)
-            .getM('authProvider.dart:1793');
-        if (canalDoc.exists) {
-          ownerName = '#${canalDoc.data()!['titre'] ?? "Canal"}';
-        } else {
-          ownerName = 'un canal';
-        }
-      } else {
-        final postOwnerDoc = await FirebaseFirestore.instance
-            .collection('Users')
-            .doc(postOwnerId)
-            .getM('authProvider.dart:1803');
-        if (postOwnerDoc.exists) {
-          ownerName = '@${postOwnerDoc.data()!['pseudo'] ?? 'Utilisateur'}';
-        } else {
-          ownerName = 'quelqu\'un';
-        }
-      }
-
-      // 5. Message selon le type d'action
-      String actionMessage = "a aimé";
-      String actionTitle = "Like ❤️";
-      String finalPostDataType = postDataType ?? 'IMAGE';
-
-      switch (actionType) {
-        case 'comment':
-          actionTitle = "Commentaire 💬";
-          String shortMsg = (commentaireMessage ?? '').trim();
-          if (shortMsg.length > 50) shortMsg = shortMsg.substring(0, 50) + '...';
-          if (isSticker) {
-            actionMessage = shortMsg.isEmpty ? "a envoyé un sticker sur" : "a envoyé un sticker (\"$shortMsg\") sur";
-          } else {
-            actionMessage = shortMsg.isEmpty ? "a commenté" : "a commenté : \"$shortMsg\" sur";
-          }
-          finalPostDataType = 'COMMENT';
-          break;
-        case 'favorite':
-          actionTitle = "Favoris ⭐";
-          actionMessage = "a ajouté en favoris";
-          break;
-        case 'share':
-          actionTitle = "Partage 🔄";
-          actionMessage = "a partagé";
-          break;
-        default:
-          actionTitle = "Like ❤️";
-          actionMessage = "a aimé";
-          break;
-      }
-
-      // 6. Troncature de la description
-      String finalDescription = postDescription ?? '';
-      if (finalDescription.length > 100) finalDescription = finalDescription.substring(0, 100) + '...';
-
-      String imageUrl = postImageUrl ?? actionUserImage;
-      final currentTime = DateTime.now().microsecondsSinceEpoch;
-      const twentyMinutesMicros = 20 * 60 * 1000 * 1000; // 20 minutes en microsecondes
-
-      // 7. Traiter les abonnés par lots (max 30 pour 'whereIn')
-      for (int i = 0; i < followerIds.length; i += 30) {
-        final end = (i + 30) > followerIds.length ? followerIds.length : i + 30;
-        final batchIds = followerIds.sublist(i, end);
-
-        final usersBatch = await FirebaseFirestore.instance
-            .collection('Users')
-            .where('id', whereIn: batchIds)
-            .getM('authProvider.dart:1858');
-
-        final List<String> oneSignalIds = [];
-
-        for (var userDoc in usersBatch.docs) {
-          final userId = userDoc.id;
-          // Ne pas notifier l'utilisateur qui a fait l'action
-          if (userId == actionUserId || excludeUserIds.contains(userId)) continue;
-
-          final userData = userDoc.data();
-          final lastNotifTime = userData['lastNotificationTime'] as int? ?? 0;
-
-          // ✅ Vérifier le délai de 20 minutes
-          if (currentTime - lastNotifTime < twentyMinutesMicros && lastNotifTime != 0) {
-            printVm('⏭️ [notifySubscribers] Utilisateur $userId déjà notifié il y a moins de 20 min, ignoré');
-            continue;
-          }
-
-          // Créer la notification Firestore
-          final notifId = FirebaseFirestore.instance.collection('Notifications').doc().id;
-          final target = postOwnerId == actionUserId ? 'son propre post' : 'le post de $ownerName';
-          final description = "@$actionUserPseudo $actionMessage $target : \"$finalDescription\"";
-if(actionType == 'comment'){
-  final notification = NotificationData(
-    id: notifId,
-    titre: actionTitle,
-    media_url: imageUrl,
-    type: NotificationType.POST.name,
-    description: description,
-    users_id_view: [],
-    user_id: actionUserId,
-    receiver_id: userId,
-    post_id: postId,
-    post_data_type: finalPostDataType,
-    createdAt: currentTime,
-    updatedAt: currentTime,
-    status: PostStatus.VALIDE.name,
-  );
-
-  await FirebaseFirestore.instance
-      .collection('Notifications')
-      .doc(notifId)
-      .set(notification.toJson());
-
-}
-
-          // Mettre à jour le timestamp de la dernière notification
-          await FirebaseFirestore.instance
-              .collection('Users')
-              .doc(userId)
-              .update({'lastNotificationTime': currentTime});
-
-          notifiedCount++;
-
-          // Préparer les push notifications
-          final oneSignalId = userData['oneIgnalUserid'] as String?;
-          if (oneSignalId != null && oneSignalId.length > 5) {
-            oneSignalIds.add(oneSignalId);
-          }
-        }
-
-        // Envoyer les push notifications (en arrière‑plan)
-        if (oneSignalIds.isNotEmpty) {
-          final pushMessage = "@$actionUserPseudo $actionMessage ${postOwnerId == actionUserId ? 'son propre post' : 'le post de $ownerName'}";
-
-          unawaited(sendNotification(
-            appName: actionTitle,
-            userIds: oneSignalIds,
-            smallImage: imageUrl,
-            send_user_id: actionUserId,
-            recever_user_id: '',
-            message: pushMessage,
-            type_notif: NotificationType.POST.name,
-            post_id: postId,
-            post_type: finalPostDataType,
-            chat_id: '',
-          ));
-        }
-
-        await Future.delayed(const Duration(milliseconds: 100));
-      }
-
-      printVm('✅ [notifySubscribers] Terminé : $notifiedCount abonnés notifiés pour $actionType (sur ${followerIds.length} followers)');
-      return notifiedCount;
-    } catch (e) {
-      printVm('❌ [notifySubscribers] Erreur: $e');
-      return notifiedCount;
-    }
+    // Les notifications d'interaction (j'aime, commentaire…) sont émises par le serveur : rien à envoyer depuis l'application.
+    return 0;
   }
 
   // Future<void> notifySubscribersOfInteraction({
@@ -1751,161 +1007,21 @@ if(actionType == 'comment'){
   //   }
   // }
 // 🔹 Délai minimum entre deux pushs selon le type (0 = immédiat)
-  static int _throttleForType(String typeNotif) {
-    const immediateTypes = {
-      'ABONNER', 'COMMENT', 'MESSAGE', 'PARRAINAGE', 'GAIN',
-      'INVITATION', 'ACCEPTINVITATION',
-    };
-    if (immediateTypes.contains(typeNotif.toUpperCase())) return 0;
-    return 15 * 60 * 1000; // 15 minutes
-  }
+
 
 // 🔹 Fonction helper pour traiter un utilisateur
-  Future<_UserNotificationResult> _processUserNotification({
-    required UserData user,
-    required UserData sender,
-    required String appName,
-    required bool isChannel,
-    required Canal? canal,
-    required String truncatedMessage,
-    required String? postId,
-    required String? postType,
-    required int notifTime,
-    required int currentTime,
-    required int throttleMs,
-    required String? smallImage,
-  })
-  async {
-    try {
-      final lastNotif = user.lastNotificationTime ?? 0;
-      final timeSinceLast = currentTime - lastNotif;
-      final canReceive = sender.role == 'ADM' || throttleMs == 0 || timeSinceLast >= throttleMs;
 
-      // 1. Enregistrer dans Firestore (sans attendre la fin)
-      unawaited(_saveToFirestore(
-        sender: sender,
-        user: user,
-        appName: appName,
-        isChannel: isChannel,
-        canal: canal,
-        truncatedMessage: truncatedMessage,
-        postId: postId,
-        postType: postType,
-        notifTime: notifTime,
-        smallImage: smallImage,
-      ));
-
-      // 2. Vérifier si on peut envoyer une push
-      if (canReceive &&
-          user.oneIgnalUserid != null &&
-          user.oneIgnalUserid!.isNotEmpty &&
-          user.oneIgnalUserid!.length > 5) {
-
-        // Mettre à jour le lastNotificationTime
-        unawaited(updateUserLastNotifTime(user.id!, currentTime));
-
-        return _UserNotificationResult(
-          isValid: true,
-          oneSignalId: user.oneIgnalUserid!,
-        );
-      }
-
-      return _UserNotificationResult(isValid: false, oneSignalId: '');
-
-    } catch (e) {
-      printVm("❌ Erreur traitement utilisateur ${user.id}: $e");
-      return _UserNotificationResult(isValid: false, oneSignalId: '');
-    }
-  }
 
 // 🔹 Fonction pour sauvegarder dans Firestore (exécution différée)
-  Future<void> _saveToFirestore({
-    required UserData sender,
-    required UserData user,
-    required String appName,
-    required bool isChannel,
-    required Canal? canal,
-    required String truncatedMessage,
-    required String? postId,
-    required String? postType,
-    required int notifTime,
-    required String? smallImage,
-  })
-  async {
-    try {
-      final firestore = FirebaseFirestore.instance;
-      final notifId = firestore.collection('Notifications').doc().id;
 
-      final notification = NotificationData(
-        id: notifId,
-        titre: "$appName a posté",
-        media_url: isChannel ? canal?.urlImage : smallImage ?? sender.imageUrl,
-        type: NotificationType.POST.name,
-        description: isChannel ? "a posté: $truncatedMessage" : "$appName a posté: $truncatedMessage",
-        user_id: sender.id,
-        receiver_id: user.id,
-        post_id: postId ?? "",
-        post_data_type: postType ?? "",
-        createdAt: notifTime,
-        updatedAt: notifTime,
-        status: PostStatus.VALIDE.name,
-        canal_id: isChannel ? canal?.id : null,
-      );
-
-      await firestore.collection('Notifications').doc(notifId).set(notification.toJson());
-
-    } catch (e) {
-      printVm("❌ Erreur Firestore pour utilisateur ${user.id}: $e");
-    }
-  }
 
 // 🔹 Fonction pour envoyer push notification (exécution différée)
-  Future<void> _sendPushNotificationNow({
-    required String appName,
-    required List<String> userIds,
-    required String smallImage,
-    required String senderId,
-    required String message,
-    required String typeNotif,
-    String? postId,
-    String? postType,
-    String? chatId,
-  })
-  async {
-    try {
-      await sendNotification(
-        appName: appName,
-        userIds: userIds,
-        smallImage: smallImage,
-        send_user_id: senderId,
-        recever_user_id: "",
-        message: message,
-        type_notif: typeNotif,
-        post_id: postId ?? "",
-        post_type: postType ?? "",
-        chat_id: chatId ?? "",
-      );
-
-      printVm("✅ Push notifications envoyées à ${userIds.length} utilisateurs");
-
-    } catch (e) {
-      printVm("❌ Erreur push notification: $e");
-    }
-  }
 
 
 
 
-  Future<void> updateUserLastNotifTime(String userId, int time) async {
-    try {
-      await FirebaseFirestore.instance
-          .collection('Users')
-          .doc(userId)
-          .update({'lastNotificationTime': time});
-    } catch (e) {
-      printVm("⚠️ Erreur maj lastNotificationTime : $e");
-    }
-  }
+
+
 // Récupère tous les utilisateurs (réservé à l'admin)
   Future<List<UserData>> getAllUsers() async {
     // La liste complète des comptes n'est plus exposée aux clients (administration : routes /admin de l'API).
@@ -1924,65 +1040,10 @@ if(actionType == 'comment'){
 
 
 
-  Future<void> sendSingleNotification({
-    required UserData sender,
-    required UserData receiver,
-    required String message,
-    required String typeNotif,
-    String? postId,
-    String? postType,
-    String? chatId,
-    String? smallImage,
-  }) async {
-    final currentTime = DateTime.now().millisecondsSinceEpoch;
-    final throttleMs = _throttleForType(typeNotif);
-    final lastNotif = receiver.lastNotificationTime ?? 0;
-    final canReceive = sender.role == 'ADM' || throttleMs == 0 || (currentTime - lastNotif) >= throttleMs;
-
-    if (!canReceive) {
-      printVm("🚫 ${receiver.pseudo} a déjà reçu une notif il y a moins de ${throttleMs ~/ 60000} min");
-      return;
-    }
-
-    if (receiver.oneIgnalUserid == null || receiver.oneIgnalUserid!.length < 5) {
-      printVm("⚠️ Pas d'ID OneSignal valide pour ${receiver.pseudo}");
-      return;
-    }
-
-    await sendNotification(
-      appName: "#${sender.pseudo}",
-      userIds: [receiver.oneIgnalUserid!],
-      smallImage: smallImage ?? "",
-      send_user_id: sender.id!,
-      recever_user_id: receiver.id!,
-      message: message,
-      type_notif: typeNotif,
-      post_id: postId ?? "",
-      post_type: postType ?? "",
-      chat_id: chatId ?? "",
-    );
-
-    await updateUserLastNotifTime(receiver.id!, currentTime);
-    printVm("✅ Notification envoyée à ${receiver.pseudo}");
-  }
-
-
-  Future<bool> updateNotif(NotificationData notif) async {
-    try{
 
 
 
-      await FirebaseFirestore.instance
-          .collection('Notifications')
-          .doc(notif.id)
-          .update(notif.toJson());
-      //printVm("notif update : ${notif!.toJson()}");
-      return true;
-    }catch(e){
-      printVm("erreur update Invitations : ${e}");
-      return false;
-    }
-  }
+
   Future<bool> abonner2(UserData updateUserData,BuildContext context) async => abonner(updateUserData, context);
 
   Future<bool> abonner(UserData updateUserData, BuildContext context) async {
@@ -2031,53 +1092,9 @@ if(actionType == 'comment'){
     return false;
   }
 
-  Future<List<UserIACompte>> getUserIa(String user_id) async {
-    //   await getAppData();
-    late List<UserIACompte> list = [];
-    late bool haveData = false;
 
-    CollectionReference collectionRef =
-    FirebaseFirestore.instance.collection('User_Ia_Compte');
-    // Get docs from collection reference
-    QuerySnapshot querySnapshot = await collectionRef.where(
-        "userId", isEqualTo: user_id!).getM('authProvider.dart:2616')
-        .then((value) {
-      printVm(value);
-      return value;
-    }).catchError((onError) {
 
-    });
 
-    // Get data from docs and convert map to List
-    list = querySnapshot.docs.map((doc) =>
-        UserIACompte.fromJson(doc.data() as Map<String, dynamic>)).toList();
-
-    if (list.isNotEmpty) {
-      return list;
-    } else {
-      return [];
-    }
-  }
-
-  Future<bool> createUserIaCompte(UserIACompte iaCompte) async {
-    try {
-      String cmtId = FirebaseFirestore.instance
-          .collection('User_Ia_Compte')
-          .doc()
-          .id;
-
-      iaCompte.id = cmtId;
-      await FirebaseFirestore.instance
-          .collection('User_Ia_Compte')
-          .doc(cmtId)
-          .set(iaCompte.toJson());
-      notifyListeners();
-      return true;
-    } catch (e) {
-      printVm("erreur comment : ${e}");
-      return false;
-    }
-  }
 
 
 
@@ -2103,96 +1120,12 @@ if(actionType == 'comment'){
     // Pas de recherche par téléphone dans l'API : connexion par e-mail / Google uniquement (voir lacunes_api_utilisateurs.md).
     return false;
   }
-  Future<String?> generateText({
-    required List<Message> ancienMessages,
-    required String message,
-    required String regle,
-    required UserData user,
-    required UserIACompte ia,
-  }) async
-  {
-    List<Content> historique = [];
-
-    // Ajouter les messages historiques avec leur rôle (par exemple, utilisateur ou assistant)
-    // for (Message msg in ancienMessages) {
-    //   historique.add(Content.text(msg.message!));
-    // }
-
-    // Ajouter les 10 derniers messages seulement si l'historique dépasse 10
-    int startIndex = ancienMessages.length > 10 ? ancienMessages.length - 10 : 0;
-    for (int i = startIndex; i < ancienMessages.length; i++) {
-      historique.add(Content.text(ancienMessages[i].message!));
-    }
-
-    try {
-      // Initialisation du modèle avec des instructions adaptées
-      final model = GenerativeModel(
-        model: 'gemini-2.0-flash-exp',
-        apiKey: appDefaultData.geminiapiKey!,
-        systemInstruction: Content.system(
-          "${regle}. Prenez en compte le genre de la personne avec qui vous discutez : actuellement, vous discutez avec ${user.genre == "Homme" ? 'un homme' : 'une femme'}.",
-        ),
-      );
-
-      // Préparation du message actuel à ajouter à l'historique
-      final prompt = Content.text(message);
-      historique.add(prompt);
-
-      // Initialisation de la conversation avec l'historique complet
-      model.startChat(history: historique);
-
-      // Génération de la réponse
-      final response = await model.generateContent([prompt]);
-      if (response != null) {
-        printVm("Data token: ${response.usageMetadata!.totalTokenCount!}");
-
-        // Mise à jour des jetons restants pour l'utilisateur IA
-        ia.jetons = ia.jetons! - response.usageMetadata!.totalTokenCount!;
-        await firestore.collection('User_Ia_Compte').doc(ia.id!).update(ia.toJson());
-
-        return response.text; // Retourne le texte généré
-      } else {
-        return null; // Si aucune réponse n'est générée
-      }
-    } catch (error) {
-      // Gestion des erreurs
-      printVm("Erreur lors de la génération du texte : $error");
-      return ""; // Ou une autre valeur par défaut
-    }
-  }
 
 
 
 
-  Future<String?> generateText2({required List<Message> ancien_messages,required String message,required String regle,required UserData user,required UserIACompte ia}) async {
-    List<Content> contents=[];
-    for(Message message in ancien_messages){
-      contents.add(Content.text(message.message!));
 
 
-    }
-
-    try {
-      //final model = GenerativeModel(model: 'gemini-pro', apiKey: apiKey);
-      // final model = GenerativeModel(model: 'gemini-1.5-pro-latest', apiKey: apiKey,systemInstruction: Content.system("${regle}. prenez en compte le genre de la personne avec qui vous discuter et actuellement vous discuter avec ${user.genre=="Homme"?'un homme':'une femme'} "));
-      final model = GenerativeModel(model: 'gemini-2.0-flash-exp', apiKey: appDefaultData.geminiapiKey!,systemInstruction: Content.system("${regle}. prenez en compte le genre de la personne avec qui vous discuter et actuellement vous discuter avec ${user.genre=="Homme"?'un homme':'une femme'} "));
-      //final prompt = "pour chaque question voici les regle a respecter "${regle}" voici la question "${message}"";
-      final prompt = "${message}";
-      final content = [Content.text(prompt)];
-      model.startChat(history: contents);
-      final response = await model.generateContent(content);
-      printVm("Data token: ${response!.usageMetadata!.totalTokenCount!}");
-      ia.jetons=ia.jetons!-response!.usageMetadata!.totalTokenCount!;
-      await firestore.collection('User_Ia_Compte').doc(ia.id!).update( ia.toJson());
-
-
-      return response!.text;
-    } catch (error) {
-      // Handle the error here
-      printVm("Error generating story: $error");
-      return ""; // Or return a default value
-    }
-  }
 
   // Create the configuration
 
@@ -2207,46 +1140,17 @@ if(actionType == 'comment'){
 //       'YjEwNmY0MGQtODFhYi00ODBkLWIzZjgtZTVlYTFkMjQxZDA0'; // Replace with your authorization key
 
   // CHANGE THIS parameter to true if you want to test GDPR privacy consent
-  Future<void> sendNotification({  String? appName, // ✅ paramètre optionnel
+Future<void> sendNotification({  String? appName,
     required List<String> userIds, required String smallImage,required String send_user_id, required String recever_user_id,required String message,required String type_notif,required String post_id,required String post_type,required String chat_id}) async
   {
-    final String usedAppName = appName ?? "AfroLook"; // valeur par défaut
-
-    // Le serveur choisit le canal (FCM pour les appareils à jour, sinon OneSignal) et garde les clés :
-    // plus aucune clé OneSignal ni appel direct depuis le téléphone. Envoi sans attendre, comme avant.
-    final validIds = userIds.where((id) => id.isNotEmpty && id.length > 10).toSet().toList();
-    if (validIds.isEmpty) {
-      printVm('⚠️ sendNotification: aucun destinataire valide, abandon');
-      return;
-    }
-    // 200 destinataires au plus par appel (limite du serveur)
-    for (var i = 0; i < validIds.length; i += 200) {
-    unawaited(FirebaseFunctions.instance.httpsCallable('sendPushToUsers').call({
-      'oneSignalIds': validIds.sublist(i, i + 200 > validIds.length ? validIds.length : i + 200),
-      'title': usedAppName,
-      'message': message,
-      'smallImage': smallImage,
-      'data': {
-        'send_user_id': send_user_id,
-        'recever_user_id': recever_user_id,
-        'type_notif': type_notif,
-        'post_id': post_id,
-        'post_type': post_type,
-        'chat_id': chat_id,
-      },
-    }).then((r) {
-      printVm('Notification envoyée : ${r.data}');
-    }).catchError((e) {
-      printVm('❌ Erreur envoi push : $e');
-    }));
-    }
+    // Les notifications sont émises par le serveur (FCM, budget quotidien, aperçus) à la suite de chaque action ; l'application n'en envoie plus.
   }
 
 
   /// Notification d'un message de chat, au format des messageries : titre « @pseudo », texte = début du message.
   /// Envoyée à l'identifiant de la personne (et non à son identifiant OneSignal) : le serveur choisit FCM, sinon OneSignal.
   /// [image] : photo envoyée dans le chat (aperçu) ; [postId]/[postType] : post partagé (aperçu du post).
-  Future<void> sendChatPush({
+Future<void> sendChatPush({
     required String receiverId,
     required String title,
     required String message,
@@ -2256,27 +1160,7 @@ if(actionType == 'comment'){
     String postId = '',
     String postType = '',
   }) async {
-    final me = loginUserData.id;
-    if (me == null || receiverId.isEmpty || receiverId == me) return;
-    try {
-      await FirebaseFunctions.instance.httpsCallable('sendPushToUsers').call({
-        'userIds': [receiverId],
-        'title': title,
-        'message': message,
-        'smallImage': smallImage ?? '',
-        if (image != null && image.isNotEmpty) 'image': image,
-        'data': {
-          'send_user_id': me,
-          'recever_user_id': receiverId,
-          'type_notif': NotificationType.MESSAGE.name,
-          'post_id': postId,
-          'post_type': postType,
-          'chat_id': chatId,
-        },
-      });
-    } catch (e) {
-      printVm('❌ Erreur envoi push message : $e');
-    }
+    // La notification d'un message de chat est émise par le serveur (voir ChatApi.conversationSent) : rien à envoyer ici.
   }
 
   Future<void> checkAppVersionAndProceed(BuildContext context, Function onSuccess) async {
@@ -2435,162 +1319,11 @@ if(actionType == 'comment'){
     );
   }
 
-  Future<Map<String, dynamic>> initiateDeposit(double amount, UserData userdata) async {
-    try {
-      // Appelez cette fonction avant d'appeler initiateDeposit
-      await debugAuthentication();
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        throw Exception('Utilisateur non connecté');
-      }
 
-      final functions = FirebaseFunctions.instance;
-      final callable = functions.httpsCallable('initiateAfrolookDeposit');
 
-      final result = await callable.call(<String, dynamic>{
-        'amount': amount,
-        'userId': user.uid, // Utiliser l'UID de l'utilisateur connecté
-      }).timeout(const Duration(seconds: 30));
 
-      // Vérification de la réponse
-      if (result.data != null &&
-          result.data is Map<String, dynamic> &&
-          result.data['payment_url'] != null) {
 
-        return {
-          'payment_url': result.data['payment_url'],
-          'transaction_id': result.data['transaction_id'],
-          'deposit_number': result.data['deposit_number'],
-          'success': true,
-        };
-      } else {
-        throw Exception('Réponse invalide de la fonction cloud');
-      }
 
-    } on FirebaseAuthException catch (e) {
-      throw Exception('Erreur d\'authentification: ${e.message}');
-    } on FirebaseFunctionsException catch (e) {
-      // Gestion spécifique des erreurs Firebase Functions
-      final code = e.code;
-      final message = e.message ?? 'Erreur inconnue';
-
-      switch (code) {
-        case 'invalid-argument':
-          throw Exception('Montant invalide: $message');
-        case 'unauthenticated':
-          throw Exception('Vous devez être connecté pour effectuer un dépôt');
-        case 'not-found':
-          throw Exception('Utilisateur non trouvé');
-        case 'internal':
-          throw Exception('Erreur interne du serveur: $message');
-        default:
-          throw Exception('Erreur lors du dépôt: $message');
-      }
-    } catch (e) {
-      throw Exception('Erreur lors de l\'initialisation du dépôt: ${e.toString()}');
-    }
-  }
-
-  Future<Map<String, dynamic>> initiateDeposit3(double amount, UserData userdata) async {
-    try {
-
-      // Pour les tests en développement, vous pouvez utiliser l'émulateur
-      // functions.useFunctionsEmulator('localhost', 5001);
-      final user = FirebaseAuth.instance.currentUser;
-      printVm('Erreur Firebase user : ${user!.uid!}');
-      printVm('Erreur Firebase userdata: ${userdata.id}');
-      if (user == null) {
-        throw Exception('Utilisateur non connecté');
-      }
-      final functions = FirebaseFunctions.instance;
-
-      // printVm('Erreur Firebase user : ${user.uid}');
-      // printVm('Erreur Firebase userdata: ${userdata.id}');
-      final callable = functions.httpsCallable('initiateAfrolookDeposit');
-
-      // Appel de la fonction avec timeout
-      final result = await callable.call(<String, dynamic>{
-        'amount': amount,
-        'userId': user.uid,
-      }).timeout(const Duration(seconds: 30));
-
-      // Vérification de la réponse
-      if (result.data != null &&
-          result.data is Map<String, dynamic> &&
-          result.data['payment_url'] != null) {
-
-        return {
-          'payment_url': result.data['payment_url'],
-          'transaction_id': result.data['transaction_id'],
-          'deposit_number': result.data['deposit_number'],
-          'success': true,
-        };
-      } else {
-        throw Exception('Réponse invalide de la fonction cloud');
-      }
-
-    } on FirebaseFunctionsException catch (e) {
-      // Gestion spécifique des erreurs Firebase Functions
-      final code = e.code;
-      final message = e.message ?? 'Erreur inconnue';
-      final details = e.details ?? '';
-      printVm('Erreur Firebase: ${e.code}');
-      printVm('Erreur Firebase: ${e.message}');
-      printVm('Erreur Firebase: ${e.details}');
-      switch (code) {
-        case 'invalid-argument':
-          throw Exception('Montant invalide: $message');
-        case 'unauthenticated':
-          throw Exception('Vous devez être connecté pour effectuer un dépôt');
-        case 'not-found':
-          throw Exception('Utilisateur non trouvé');
-        case 'internal':
-          throw Exception('Erreur interne du serveur: $message');
-        default:
-          throw Exception('Erreur lors du dépôt: $message');
-      }
-
-    } on FirebaseException catch (e) {
-      // Erreurs Firebase générales
-      throw Exception('Erreur Firebase: ${e.message}');
-
-    } catch (e) {
-      // Erreurs générales
-      throw Exception('Erreur lors de l\'initialisation du dépôt: ${e.toString()}');
-    }
-  }
-
-  Future<void> debugAuthentication() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      printVm('=== DEBUG AUTHENTICATION ===');
-      printVm('Current User: ${user?.uid}');
-      printVm('Email: ${user?.email}');
-      printVm('Is Anonymous: ${user?.isAnonymous}');
-
-      if (user != null) {
-        // Vérifier le token d'authentification
-        final idTokenResult = await user.getIdTokenResult(true);
-        printVm('Token expiration: ${idTokenResult.expirationTime}');
-        printVm('Token issued at: ${idTokenResult.issuedAtTime}');
-        printVm('Token claims: ${idTokenResult.claims}');
-        printVm('Token valid: ${idTokenResult.expirationTime!.isAfter(DateTime.now())}');
-
-        // Vérifier les providers d'authentification
-        for (final provider in user.providerData) {
-          printVm('Provider: ${provider.providerId}, UID: ${provider.uid}');
-        }
-      }
-
-      // Vérifier la configuration Firebase
-      final app = Firebase.app();
-      printVm('Firebase App: ${app.name}');
-      printVm('Firebase Options: ${app.options.projectId}');
-
-    } catch (e) {
-      printVm('Error in debugAuthentication: $e');
-    }
-  }
 
   Stream<UserData> getUserStream() async* {
     final uid = loginUserData.id;

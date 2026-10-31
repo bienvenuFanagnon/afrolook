@@ -4,7 +4,6 @@ import 'dart:async';
 
 import 'package:afrotok/pages/auth/authTest/Screens/Signup/signup_up_form_step_2.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:pinput/pinput.dart';
@@ -50,24 +49,8 @@ class _VerificationOtpState extends State<VerificationOtp> {
       // Récupérer l'UID de l'utilisateur actuel
       String uid = user.uid;
 
-      FirebaseFirestore firestore = FirebaseFirestore.instance;
-
-      QuerySnapshot querySnapshot = await firestore
-          .collection('Reservation.Utilisateur') // Remplacez par le nom de votre collection
-          .where('email', isEqualTo: email)
-          .getM('verificationOtps.dart:57');
-
-      if (querySnapshot.docs.isNotEmpty) {
-        QueryDocumentSnapshot userDocument = querySnapshot.docs.first;
-        // Ici, vous pouvez accéder aux données de l'utilisateur via userDocument.data()
-        showWarningDialog(_scaffoldKey!.currentContext!, AppLocalizations.of(context).otpAccountExists);
-        printVm('Utilisateur existe');
-        loading = false;
-      } else {
-
-        loading = false;
-      }
-
+      // La connexion par téléphone est abandonnée : plus de collection de réservation à consulter.
+      loading = false;
     } else {
       // L'utilisateur n'est pas connecté ou le numéro de téléphone n'est pas disponible
 

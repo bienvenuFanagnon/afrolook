@@ -19,7 +19,6 @@ import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/defi/defi_details_section.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 
 import 'dart:math';
 import 'dart:typed_data';
@@ -62,7 +61,9 @@ import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
 
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/publications_api.dart';
+import 'package:afrotok/services/api/pub_videos_api.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart' show ApiException;
 
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -159,7 +160,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   final FocusNode _focusNode = FocusNode();
   late UserAuthProvider authProvider;
   late PostProvider postProvider;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   late SharedPreferences _prefs;
   static const String _kLastSessionTsKey = 'last_session_timestamp';
@@ -181,7 +181,10 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   bool _hasLoadedDiscovery = false;
   bool _isReloadingAfterSubscribe = false;
   final int _preloadThreshold = 2;
-  DocumentSnapshot? _lastDocument;
+  String? _videosCursor; // curseur de l'API pour le fil de vidéos
+  bool _videosExhausted = false;
+  String? _oldVideosCursor;
+  bool _oldVideosExhausted = false;
 
   // Video controllers
   VideoPlayerController? _currentVideoController;
@@ -209,7 +212,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   final List<double> giftPrices = [10, 25, 50, 100, 200, 300, 500, 700, 1500, 2000, 2500, 5000, 7000, 10000, 15000, 20000, 30000, 50000, 75000, 100000];
   final List<String> giftIcons = ['🌹','❤️','👑','💎','🏎️','⭐','🍫','🧰','🌵','🍕','🍦','💻','🚗','🏠','🛩️','🛥️','🏰','💎','🏎️','🚗'];
 
-  final Map<String, StreamSubscription<DocumentSnapshot>> _postSubscriptions = {};
+  final Set<String> _postRefreshed = {};
   final GlobalKey<RewardedAdWidgetState> _rewardedAdKey = GlobalKey();
   bool _showRewardedAd = false;
   Timer? _suggestionModalTimer;
@@ -343,87 +346,20 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     try {
       final random = Random();
 
-      // ------------------------------------------------------------
-      // 1. Choix de la tranche de mois (pondération)
-      // ------------------------------------------------------------
-      int monthsBack;
-      int chance = random.nextInt(100);
-
-      if (chance < 50) {
-        // 50% → 1 à 6 mois
-        monthsBack = random.nextInt(6) + 1;
-      } else if (chance < 80) {
-        // 30% → 6 à 18 mois
-        monthsBack = random.nextInt(12) + 6;
-      } else {
-        // 20% → 18 à 30 mois
-        monthsBack = random.nextInt(12) + 18;
-      }
-
-      final now = DateTime.now();
-      final DateTime endDate = DateTime(
-        now.year,
-        now.month - monthsBack,
-        1,
-      );
-      final DateTime startDate = DateTime(
-        endDate.year,
-        endDate.month - 1,
-        1,
-      );
-
-      final int startMicros = startDate.microsecondsSinceEpoch;
-      final int endMicros = endDate.microsecondsSinceEpoch;
-
-      printVm("📜 Chargement anciennes vidéos entre $startDate et $endDate");
-
-      // ------------------------------------------------------------
-      // 2. Query Firestore (intervalle de temps)
-      // ------------------------------------------------------------
-      Query query = _firestore.collection('Posts');
-
-      // 🔥 Adaptation : on filtre uniquement les vidéos
-      query = query.where("dataType", isEqualTo: PostDataType.VIDEO.name);
-
-      query = query
-          .where("created_at", isGreaterThanOrEqualTo: startMicros)
-          .where("created_at", isLessThan: endMicros)
-          .orderBy("created_at")
-          .limit(30); // on prend large pour filtrer ensuite
-
-      final snapshot = await query.getM('post_video_format_tel_details.dart:392');
-
-      if (snapshot.docs.isEmpty) {
-        printVm("⚠️ Aucune vidéo trouvée dans cette période");
+      // Anciennes vidéos : pages suivantes du fil de l'API (le serveur renvoie des publications non vues)
+      if (_oldVideosExhausted) {
         _isLoadingOldVideos = false;
         return;
       }
+      final r = await PubVideosApi.videos(
+        cursor: _oldVideosCursor,
+        limit: 12,
+        exclude: {..._loadedPostIds, ..._oldVideosCache.map((p) => p.id!)},
+      );
+      _oldVideosCursor = r.next;
+      if (r.next == null) _oldVideosExhausted = true;
+      final validOldVideos = r.posts.where((p) => p.isAdvertisement != true).toList();
 
-      // ------------------------------------------------------------
-      // 3. Transformation + filtrage
-      // ------------------------------------------------------------
-      List<Post> validOldVideos = [];
-
-      for (final doc in snapshot.docs) {
-        final post = Post.fromJson(doc.data() as Map<String, dynamic>);
-        post.id = doc.id;
-
-        if (_loadedPostIds.contains(post.id)) continue;
-        if (_oldVideosCache.any((p) => p.id == post.id)) continue;
-        if (post.isAdvertisement == true) continue;
-        // 🔥 Adaptation : `_checkIfPostSeen` n'existe pas dans cette classe
-        // On peut soit l'ignorer, soit l'implémenter sommairement.
-        // Ici on garde l'appel mais on le commente car la méthode n'est pas définie.
-        // post.hasBeenSeenByCurrentUser = _checkIfPostSeen(post);
-
-        validOldVideos.add(post);
-
-        if (validOldVideos.length >= 12) break;
-      }
-
-      // ------------------------------------------------------------
-      // 4. Ajout au cache
-      // ------------------------------------------------------------
       if (validOldVideos.isNotEmpty) {
         validOldVideos.shuffle();
         _oldVideosCache.addAll(validOldVideos);
@@ -442,17 +378,15 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     final userId = authProvider.loginUserData.id;
     if (userId == null) return;
 
-    final postDoc = await _firestore.collection('Posts').doc(widget.initialPost!.id).getM('post_video_format_tel_details.dart:443');
-    if (!mounted) return;
-    if (postDoc.exists) {
-      final data = postDoc.data();
-      final usersFavorite = List<String>.from(data?['users_favorite_id'] ?? []);
-      final favoritesCount = data?['favorites_count'] ?? 0;
-
+    try {
+      final fresh = await PubApi.fresh(widget.initialPost!.id!);
+      if (!mounted || fresh == null) return;
       setState(() {
-        _isFavorite = usersFavorite.contains(userId);
-        _favoritesCount = favoritesCount;
+        _isFavorite = fresh.users_favorite_id?.contains(userId) ?? false;
+        _favoritesCount = fresh.favoritesCount ?? _favoritesCount;
       });
+    } catch (e) {
+      printVm('Erreur lecture favori: $e');
     }
   }
 
@@ -470,42 +404,24 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     try {
       if (_isFavorite) {
         // Retirer des favoris
-        await _firestore.collection('Posts').doc(widget.initialPost!.id).update({
-          'users_favorite_id': FieldValue.arrayRemove([userId]),
-          'favorites_count': FieldValue.increment(-1),
-        });
+        await PubApi.setFavorite(widget.initialPost!.id!, false);
         setState(() {
           _isFavorite = false;
           _favoritesCount--;
         });
       } else {
         // Ajouter aux favoris
-        await _firestore.collection('Posts').doc(widget.initialPost!.id).update({
-          'users_favorite_id': FieldValue.arrayUnion([userId]),
-          'favorites_count': FieldValue.increment(1),
-        });
+        await PubApi.setFavorite(widget.initialPost!.id!, true);
         setState(() {
           _isFavorite = true;
           _favoritesCount++;
         });
 
-        // Notification
-        if (widget.initialPost!.user_id != userId) {
-          await authProvider.sendNotification(
-            userIds: [widget.initialPost!.user?.oneIgnalUserid ?? ''],
-            smallImage: authProvider.loginUserData.imageUrl ?? '',
-            send_user_id: userId,
-            recever_user_id: widget.initialPost!.user_id!,
-            message: "📌 @${authProvider.loginUserData.pseudo} a ajouté votre vidéo aux favoris",
-            type_notif: NotificationType.FAVORITE.name,
-            post_id: widget.initialPost!.id!,
-            post_type: PostDataType.VIDEO.name,
-            chat_id: '',
-          );
-        }
+        // la notification de favori est envoyée par le serveur
       }
     } catch (e) {
       printVm("Erreur favori: $e");
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(PubApi.message(e))));
     } finally {
       _isFavoriteProcessing = false;
     }
@@ -541,7 +457,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     _removeMidrollListener();
     _pageController.dispose();
     _disposeCurrentVideo();
-    _postSubscriptions.forEach((key, subscription) => subscription.cancel());
     _focusNode.dispose();
     super.dispose();
   }
@@ -877,7 +792,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   Future<void> _initializeFeed() async {
     _itemsSinceLastLoad = 0;
     _maxVideosReached = false;
-    _lastDocument = null;
+    _videosCursor = null;
+    _videosExhausted = false;
     _usedOldVideoIds.clear();
 
     // Si le post initial n'a pas encore été ajouté (cas où widget.initialPost
@@ -927,7 +843,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
     _itemsSinceLastLoad = 0;
     _maxVideosReached = false;
-    _lastDocument = null;
+    _videosCursor = null;
+    _videosExhausted = false;
 
     // RESET sécurité anti doublon old videos
     _usedOldVideoIds.clear();
@@ -987,11 +904,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         widget.initialPost!.users_vue_id ??= [];
         widget.initialPost!.users_vue_id!.add(currentUserId);
       });
-      await _firestore.collection('Posts').doc(widget.initialPost!.id).update({
-        'vues': FieldValue.increment(1),
-        'users_vue_id': FieldValue.arrayUnion([currentUserId]),
-        'popularity': FieldValue.increment(2),
-      });
+      await PubApi.view(widget.initialPost!.id!);
       PostViewService.recordAuthorView(widget.initialPost!, currentUserId);
       printVm('✅ Vue unique enregistrée pour ${widget.initialPost!.id}');
     } catch (e) {
@@ -1096,19 +1009,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   }
 
   Future<void> _loadPromoArticles() async {
-    try {
-      final snap = await FirebaseFirestore.instance
-          .collection('Articles')
-          .where('status', isEqualTo: 'ACTIF')
-          .limit(20)
-          .getM('post_video_format_tel_details.dart:1102');
-      if (!mounted) return;
-      setState(() {
-        _promoArticles = snap.docs
-            .map((d) => ArticleData.fromJson(d.data()))
-            .toList();
-      });
-    } catch (_) {}
+    // Les articles promotionnels (ancienne collection « Articles ») n'ont pas de route dans l'API : voir lacunes. Aucune carte promo pour l'instant.
   }
   void _rebuildFeedItems2() {
     _feedItems.clear();
@@ -1177,9 +1078,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
     if (needUserFetch) {
       try {
-        final userDoc = await _firestore.collection('Users').doc(post.user_id).getM('post_video_format_tel_details.dart:1178');
-        if (userDoc.exists) {
-          post.user = UserData.fromJson(userDoc.data()!);
+        final u = await PubApi.user(post.user_id!);
+        if (u != null) {
+          post.user = u;
           printVm('⏱️ [DETAILS-CARD] id=$postId — user fetch complet — ${_sw.elapsedMilliseconds}ms');
         }
       } catch (e) { printVm('Erreur chargement user: $e'); }
@@ -1187,9 +1088,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
     if (needCanalFetch) {
       try {
-        final canalDoc = await _firestore.collection('Canaux').doc(post.canal_id).getM('post_video_format_tel_details.dart:1188');
-        if (canalDoc.exists) {
-          post.canal = Canal.fromJson(canalDoc.data()!);
+        final c = await PubApi.canal(post.canal_id!, myId: authProvider.loginUserData.id);
+        if (c != null) {
+          post.canal = c;
           printVm('⏱️ [DETAILS-CARD] id=$postId — canal fetch complet — ${_sw.elapsedMilliseconds}ms');
         }
       } catch (e) { printVm('Erreur chargement canal: $e'); }
@@ -1200,40 +1101,23 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
   // ── T1 : vidéos non vues des abonnements ──────────────────────────────────
   Future<void> _loadTier1Videos() async {
-    final unread = authProvider.loginUserData.unreadPosts ?? {};
-    final ids = unread.keys.where((id) => !_loadedPostIds.contains(id)).toList();
-
-    if (ids.isEmpty) {
-      if (mounted) setState(() => _t1Exhausted = true);
-      return;
-    }
-
-    const batchSize = 30;
+    // Vidéos non vues des abonnements : fil « abonnements » de l'API (niveau 1), plusieurs pages si besoin.
     final List<Post> t1Posts = [];
-
-    for (int i = 0; i < ids.length; i += batchSize) {
-      final batch = ids.sublist(i, min(i + batchSize, ids.length));
-      try {
-        final snap = await _firestore
-            .collection('Posts')
-            .where(FieldPath.documentId, whereIn: batch)
-            .where('dataType', isEqualTo: PostDataType.VIDEO.name)
-            .where('status', isEqualTo: PostStatus.VALIDE.name)
-            .getM('post_video_format_tel_details.dart:1220');
-        for (final doc in snap.docs) {
-          final p = Post.fromJson(doc.data() as Map<String, dynamic>);
-          p.id = doc.id;
-          if (!_loadedPostIds.contains(p.id)) t1Posts.add(p);
+    String? cursor;
+    try {
+      for (var page = 0; page < 3 && t1Posts.length < _batchSize; page++) {
+        final r = await PubApi.following(cursor: cursor, limit: 30);
+        cursor = r.next;
+        for (final p in r.posts) {
+          if (p.dataType != PostDataType.VIDEO.name || p.id == null) continue;
+          if (_loadedPostIds.contains(p.id) || t1Posts.any((e) => e.id == p.id)) continue;
+          t1Posts.add(p);
         }
-      } catch (_) {}
+        if (cursor == null) break;
+      }
+    } catch (e) {
+      printVm('Erreur chargement vidéos des abonnements: ${PubApi.message(e)}');
     }
-
-    // Trier par timestamp décroissant (plus récent en premier)
-    t1Posts.sort((a, b) {
-      final ta = unread[a.id] ?? 0;
-      final tb = unread[b.id] ?? 0;
-      return tb.compareTo(ta);
-    });
 
     for (final p in t1Posts) {
       if (p.id != null && !_loadedPostIds.contains(p.id)) {
@@ -1314,15 +1198,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
                                 onPressed: _hasSubscribedFromEndFeed
                                     ? () async {
                                         setState(() => _isReloadingAfterSubscribe = true);
-                                        final userId = authProvider.loginUserData.id;
-                                        if (userId != null) {
-                                          try {
-                                            final doc = await _firestore.collection('Users').doc(userId).getM('post_video_format_tel_details.dart:1318');
-                                            final _rawUnread = (doc.data()?['unreadPosts'] as Map<String, dynamic>?) ?? {};
-                                            authProvider.loginUserData.unreadPosts = UserData.parseUnreadTimestamps(_rawUnread);
-                                            authProvider.loginUserData.repostMeta = UserData.parseUnreadRepostMeta(_rawUnread);
-                                          } catch (_) {}
-                                        }
                                         // Réinitialiser et recharger T1
                                         _videoPosts.clear();
                                         _loadedPostIds.clear();
@@ -1415,6 +1290,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         _loadedPostIds
           ..clear()
           ..addAll(recent);
+        _videosCursor = null;
+        _videosExhausted = false;
         newPosts = await _fetchSuggestedVideosBatch(
           limit: limit ?? _batchSize,
           excludeIds: _loadedPostIds,
@@ -1457,168 +1334,28 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     }
   }
   Future<List<Post>> _fetchSuggestedVideosBatch({required int limit, required Set<String> excludeIds}) async {
-    List<Post> results = [];
-    Set<String> ids = Set.from(excludeIds);
-    int attempts = 0;
-    const maxAttempts = 5; // Augmenté pour plus de chances
+    if (_videosExhausted) return [];
+    final r = await PubVideosApi.videos(cursor: _videosCursor, limit: limit * 2, exclude: excludeIds);
+    _videosCursor = r.next;
+    if (r.next == null) _videosExhausted = true;
 
-    // Récupérer l'ID du dernier créateur/canal affiché
-    String? lastCreatorId;
-    String? lastCanalId;
-
-    if (_videoPosts.isNotEmpty) {
-      final lastPost = _videoPosts.last;
-      lastCreatorId = lastPost.user_id;
-      lastCanalId = lastPost.canal_id;
-    }
-
-    while (results.length < limit && attempts < maxAttempts) {
-      attempts++;
-      final random = Random();
-      int strategy = random.nextInt(3);
-
-      Future<List<Post>> fetchOrdered(String field, bool descending, int fetchLimit) async {
-        final snap = await _firestore
-            .collection('Posts')
-            .where('dataType', isEqualTo: PostDataType.VIDEO.name)
-            .where('status', isEqualTo: PostStatus.VALIDE.name)
-            .orderBy(field, descending: descending)
-            .limit(fetchLimit)
-            .getM('post_video_format_tel_details.dart:1485');
-        return snap.docs.map((doc) {
-          final p = Post.fromJson(doc.data());
-          p.id = doc.id;
-          return p;
-        }).toList();
+    // Éviter 3 mêmes créateurs / canaux à la suite
+    final results = <Post>[];
+    final ids = Set<String>.from(excludeIds);
+    for (final p in r.posts) {
+      if (p.id == null || ids.contains(p.id)) continue;
+      int creatorCount = 0;
+      int canalCount = 0;
+      for (int i = _videoPosts.length - 1; i >= max(0, _videoPosts.length - 2); i--) {
+        if (_videoPosts[i].user_id == p.user_id) creatorCount++;
+        if (_videoPosts[i].canal_id != null && _videoPosts[i].canal_id == p.canal_id) canalCount++;
       }
-
-      Future<List<Post>> fetchRandom(int fetchLimit) async {
-        final snap = await _firestore
-            .collection('Posts')
-            .where('dataType', isEqualTo: PostDataType.VIDEO.name)
-            .where('status', isEqualTo: PostStatus.VALIDE.name)
-            .limit(50)
-            .getM('post_video_format_tel_details.dart:1499');
-        List<Post> posts = snap.docs.map((doc) {
-          final p = Post.fromJson(doc.data());
-          p.id = doc.id;
-          return p;
-        }).toList();
-        posts.shuffle();
-        return posts.take(fetchLimit).toList();
-      }
-
-      List<Post> candidates = [];
-      if (attempts == 1) {
-        // Stratégie principale via FeedRepository (centralisé)
-        candidates = await FeedRepository().fetchByMediaType(
-          PostDataType.VIDEO.name, '', ids, limit: limit * 2,
-        );
-        if (candidates.isEmpty) {
-          candidates = await fetchOrdered('created_at', true, limit * 2);
-        }
-      } else if (attempts == 2) {
-        if (strategy == 0) candidates = await fetchOrdered('popularity', true, limit * 2);
-        else if (strategy == 1) candidates = await fetchOrdered('popularity', false, limit * 2);
-        else candidates = await fetchRandom(limit * 2);
-      } else {
-        candidates = await fetchOrdered('created_at', true, limit * 3);
-      }
-
-      // Filtrer pour éviter 3 mêmes créateurs/canaux à la suite
-      for (var p in candidates) {
-        if (p.id != null && !ids.contains(p.id)) {
-          // Vérifier la répétition du créateur
-          bool sameCreator = (lastCreatorId != null && p.user_id == lastCreatorId);
-          bool sameCanal = (lastCanalId != null && p.canal_id == lastCanalId && p.canal_id != null && p.canal_id!.isNotEmpty);
-
-          // Compter combien de fois ce créateur apparaît dans les 2 dernières vidéos
-          int creatorCount = 0;
-          int canalCount = 0;
-
-          for (int i = _videoPosts.length - 1; i >= max(0, _videoPosts.length - 2); i--) {
-            if (_videoPosts[i].user_id == p.user_id) creatorCount++;
-            if (_videoPosts[i].canal_id != null && _videoPosts[i].canal_id == p.canal_id) canalCount++;
-          }
-
-          // Autoriser si pas déjà 2 fois de suite le même créateur ou canal
-          if (creatorCount < 2 && canalCount < 2) {
-            ids.add(p.id!);
-            results.add(p);
-            lastCreatorId = p.user_id;
-            lastCanalId = p.canal_id;
-            if (results.length >= limit) break;
-          }
-        }
+      if (creatorCount < 2 && canalCount < 2) {
+        ids.add(p.id!);
+        results.add(p);
+        if (results.length >= limit) break;
       }
     }
-
-    results.shuffle();
-    return results;
-  }
-  Future<List<Post>> _fetchSuggestedVideosBatch2({required int limit, required Set<String> excludeIds}) async {
-    List<Post> results = [];
-    Set<String> ids = Set.from(excludeIds);
-    int attempts = 0;
-    const maxAttempts = 3;
-
-    while (results.length < limit && attempts < maxAttempts) {
-      attempts++;
-      final random = Random();
-      int strategy = random.nextInt(3);
-
-      Future<List<Post>> fetchOrdered(String field, bool descending, int fetchLimit) async {
-        final snap = await _firestore
-            .collection('Posts')
-            .where('dataType', isEqualTo: PostDataType.VIDEO.name)
-            .where('status', isEqualTo: PostStatus.VALIDE.name)
-            .orderBy(field, descending: descending)
-            .limit(fetchLimit)
-            .getM('post_video_format_tel_details.dart:1575');
-        return snap.docs.map((doc) {
-          final p = Post.fromJson(doc.data());
-          p.id = doc.id;
-          return p;
-        }).toList();
-      }
-
-      Future<List<Post>> fetchRandom(int fetchLimit) async {
-        final snap = await _firestore
-            .collection('Posts')
-            .where('dataType', isEqualTo: PostDataType.VIDEO.name)
-            .where('status', isEqualTo: PostStatus.VALIDE.name)
-            .limit(50)
-            .getM('post_video_format_tel_details.dart:1589');
-        List<Post> posts = snap.docs.map((doc) {
-          final p = Post.fromJson(doc.data());
-          p.id = doc.id;
-          return p;
-        }).toList();
-        posts.shuffle();
-        return posts.take(fetchLimit).toList();
-      }
-
-      List<Post> candidates = [];
-      if (attempts == 1) {
-        candidates = await fetchOrdered('created_at', true, limit * 2);
-      } else if (attempts == 2) {
-        if (strategy == 0) candidates = await fetchOrdered('popularity', true, limit * 2);
-        else if (strategy == 1) candidates = await fetchOrdered('popularity', false, limit * 2);
-        else candidates = await fetchRandom(limit * 2);
-      } else {
-        candidates = await fetchOrdered('created_at', true, limit * 3);
-      }
-
-      for (var p in candidates) {
-        if (p.id != null && !ids.contains(p.id)) {
-          ids.add(p.id!);
-          results.add(p);
-          if (results.length >= limit) break;
-        }
-      }
-
-    }
-
     results.shuffle();
     return results;
   }
@@ -1631,47 +1368,37 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     _lovesCount[post.id!] = post.loves ?? 0;
   }
 
+  /// Prépare l'état du j'aime puis relit une fois la publication à l'API (pièces reçues, compteurs).
+  /// Plus de flux en direct : l'écran est rafraîchi après chaque action.
   void _subscribeToPostUpdates(Post post) {
-    if (post.id == null || _postSubscriptions.containsKey(post.id)) return;
+    if (post.id == null || !_postRefreshed.add(post.id!)) return;
     _initPostLikeState(post);
-    final subscription = _firestore.collection('Posts').doc(post.id).snapshotsM('post_video_format_tel_details.dart:1635').listen((snapshot) {
-      if (snapshot.exists && mounted) {
-        // Inclure snapshot.id pour que updatedPost.id ne soit jamais null
-        final updatedPost = Post.fromJson({'id': snapshot.id, ...snapshot.data() as Map<String, dynamic>});
-        setState(() {
-          final index = _videoPosts.indexWhere((p) => p.id == post.id);
-          if (index != -1) {
-            updatedPost.user = _videoPosts[index].user;
-            updatedPost.canal = _videoPosts[index].canal;
-            _videoPosts[index] = updatedPost;
-          }
-          // La page lit ses posts dans _feedItems (pas _videoPosts) : sans cette mise à jour,
-          // les pièces reçues restaient figées à la valeur du chargement.
-          final feedIndex = _feedItems.indexWhere((e) => e is Post && e.id == post.id);
-          if (feedIndex != -1) {
-            final old = _feedItems[feedIndex] as Post;
-            updatedPost.user ??= old.user;
-            updatedPost.canal ??= old.canal;
-            _feedItems[feedIndex] = updatedPost;
-          }
-
-          // Mise à jour des Maps depuis Firestore
-          // Ignorer seulement si un like est en vol pour ce post (update optimiste)
-          final userId = authProvider.loginUserData.id;
-          if (userId != null && post.id != null) {
-            final likedInSnapshot = updatedPost.users_love_id?.contains(userId) ?? false;
-            final hasPending = _pendingLikePostIds.contains(post.id);
-            if (!hasPending) {
-              // Pas d'opération en cours → toujours accepter Firestore
-              _likedPosts[post.id!] = likedInSnapshot;
-              _lovesCount[post.id!] = updatedPost.loves ?? 0;
-            }
-            // Sinon : update optimiste en vol → conserver l'état local
-          }
-        });
-      }
+    PubApi.fresh(post.id!).then((updatedPost) {
+      if (updatedPost == null || !mounted) return;
+      setState(() {
+        final index = _videoPosts.indexWhere((p) => p.id == post.id);
+        if (index != -1) {
+          updatedPost.user = _videoPosts[index].user;
+          updatedPost.canal = _videoPosts[index].canal;
+          _videoPosts[index] = updatedPost;
+        }
+        final feedIndex = _feedItems.indexWhere((e) => e is Post && e.id == post.id);
+        if (feedIndex != -1) {
+          final old = _feedItems[feedIndex] as Post;
+          updatedPost.user ??= old.user;
+          updatedPost.canal ??= old.canal;
+          _feedItems[feedIndex] = updatedPost;
+        }
+        final userId = authProvider.loginUserData.id;
+        if (userId != null && post.id != null && !_pendingLikePostIds.contains(post.id)) {
+          _likedPosts[post.id!] = updatedPost.users_love_id?.contains(userId) ?? _likedPosts[post.id!] ?? false;
+          _lovesCount[post.id!] = updatedPost.loves ?? 0;
+        }
+      });
+    }).catchError((e) {
+      _postRefreshed.remove(post.id);
+      printVm('Erreur lecture publication: $e');
     });
-    _postSubscriptions[post.id!] = subscription;
   }
 
   // ==================== VIDEO INIT & PLAYBACK ====================
@@ -1683,10 +1410,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     try {
       await _markPostAsSeen(post);
       if (post.users_vue_id != null && post.users_vue_id!.contains(currentUserId)) return;
-      await _firestore.collection('Posts').doc(post.id).update({
-        'vues': FieldValue.increment(1),
-        'users_vue_id': FieldValue.arrayUnion([currentUserId]),
-      });
+      await PubApi.view(post.id!);
       setState(() {
         post.vues = (post.vues ?? 0) + 1;
         post.users_vue_id = [...?post.users_vue_id, currentUserId];
@@ -1701,10 +1425,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     final key = 'viewed_${post.id}_$currentUserId';
     final hasSeen = _prefs.getBool(key) ?? false;
     if (!hasSeen) {
-      await _prefs.setBool(key, true);
-      await _firestore.collection('Users').doc(currentUserId).update({
-        'viewedPostIds': FieldValue.arrayUnion([post.id]),
-      });
+      await _prefs.setBool(key, true); // la liste des vidéos vues est tenue par le serveur (PubApi.view)
     }
   }
 
@@ -2017,15 +1738,14 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     }
 
     if (alreadyLiked) {
-      _firestore.collection('Posts').doc(post.id).update({
-        'loves': FieldValue.increment(-1),
-        'users_love_id': FieldValue.arrayRemove([userId]),
-        'popularity': FieldValue.increment(-1),
-      }).catchError((_) {
-        if (mounted) setState(() {
-          _likedPosts[post.id!] = true;
-          _lovesCount[post.id!] = previousCount;
-        });
+      PubApi.setLike(post.id!, false).catchError((e) {
+        if (mounted) {
+          setState(() {
+            _likedPosts[post.id!] = true;
+            _lovesCount[post.id!] = previousCount;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(PubApi.message(e))));
+        }
       }).whenComplete(_finalizeLike);
     } else {
       _processLikeBackground(post, userId, alreadyLiked, previousCount);
@@ -2046,11 +1766,10 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     ).then((success) {
       if (!mounted) return;
       if (!success) {
-        // Pas de pièces → like quand même enregistré, modal informatif seulement
-        _firestore.collection('Posts').doc(post.id).update({
-          'loves': FieldValue.increment(1),
-          'users_love_id': FieldValue.arrayUnion([userId]),
-          'popularity': FieldValue.increment(1),
+        // Pas de pièces : le serveur refuse le j'aime ; on annule l'affichage et on propose de recharger
+        setState(() {
+          _likedPosts[post.id!] = false;
+          _lovesCount[post.id!] = previousCount;
         });
         if (mounted) _showInsufficientCoinsForLikeDialog();
         return;
@@ -2061,12 +1780,14 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         _sendLikeNotification(post);
       }
     }).catchError((e) {
-      // Erreur réseau → enregistrer quand même le like sans les coins
-      _firestore.collection('Posts').doc(post.id).update({
-        'loves': FieldValue.increment(1),
-        'users_love_id': FieldValue.arrayUnion([userId]),
-        'popularity': FieldValue.increment(1),
-      }).catchError((_) {});
+      // Erreur : on annule l'affichage et on affiche le message
+      if (mounted) {
+        setState(() {
+          _likedPosts[post.id!] = false;
+          _lovesCount[post.id!] = previousCount;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(PubApi.message(e))));
+      }
     }).whenComplete(() {
       _pendingLikePostIds.remove(post.id);
       if (mounted) setState(() => _isLiking = false);
@@ -2092,10 +1813,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     final isLiked = post.users_love_id?.contains(userId) ?? false;
     if (isLiked) return;
     try {
-      await _firestore.collection('Posts').doc(post.id).update({
-        'loves': FieldValue.increment(1),
-        'users_love_id': FieldValue.arrayUnion([userId]),
-      });
+      await PubApi.setLike(post.id!, true);
       setState(() {
         post.loves = (post.loves ?? 0) + 1;
         post.users_love_id = [...?post.users_love_id, userId];
@@ -2178,16 +1896,11 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     final originalId = post.isRepost == true ? (post.originalPostId ?? post.id!) : post.id!;
     setState(() => post.users_republier_id!.add(me.id!));
     try {
-      await _firestore.collection('Posts').doc(originalId).update({
-        'users_republier_id': FieldValue.arrayUnion([me.id]),
-        'partage': FieldValue.increment(1),
-        'popularity': FieldValue.increment(3),
-      });
-      FirebaseFunctions.instance.httpsCallable('repostFanOut').call({'postId': originalId}).ignore();
+      await PubApi.repost(originalId);
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post republié ✓'), duration: Duration(seconds: 2)));
-    } catch (_) {
+    } catch (e) {
       setState(() => post.users_republier_id!.remove(me.id));
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erreur : impossible de republier'), duration: Duration(seconds: 2)));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(PubApi.message(e, fallback: 'Erreur : impossible de republier')), duration: const Duration(seconds: 3)));
     }
   }
 
@@ -2199,12 +1912,10 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
           : (post.images?.isNotEmpty == true ? post.images!.first : '');
       final linkService = AppLinkService();
       await linkService.shareContent(type: AppLinkType.post, id: post.id!, message: post.description ?? '', mediaUrl: shareUrl);
-      await _firestore.collection('Posts').doc(post.id).update({
-        'partage': FieldValue.increment(1),
-        'users_partage_id': FieldValue.arrayUnion([authProvider.loginUserData.id]),
-      });
+      await PubApi.share(post.id!);
       setState(() {
-        post.partage = (widget.initialPost!.partage ?? 0) + 1;
+        post.partage = (post.partage ?? 0) + 1;
+        post.users_partage_id ??= [];
         post.users_partage_id!.add(authProvider.loginUserData.id!);
       });
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Partagé !'), backgroundColor: AppColors.of(context).primary));
@@ -2358,22 +2069,21 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   Future<void> _reportPostWithScore(Post post, {required bool isAdmin, required String reportType}) async {
     Navigator.pop(context);
     try {
-      final callable = FirebaseFunctions.instanceFor(region: 'europe-west1').httpsCallable('reportPost');
-      await callable.call({'postId': post.id, 'isAdminReport': isAdmin, 'reportType': reportType});
+      await PubApi.report(post.id!, type: reportType == 'wrong_category' ? 'wrong_category' : 'standard');
       if (mounted) {
-        final msg = isAdmin
-            ? (reportType == 'wrong_category' ? 'Post modéré — hors catégorie.' : 'Post modéré.')
-            : (reportType == 'wrong_category' ? 'Signalé comme hors catégorie.' : 'Post signalé.');
+        final msg = reportType == 'wrong_category' ? 'Signalé comme hors catégorie.' : 'Post signalé.';
         final c = AppColors.of(context);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(msg, style: TextStyle(color: c.success)),
         ));
       }
-    } on FirebaseFunctionsException catch (e) {
+    } on ApiException catch (e) {
       if (mounted) {
-        final msg = e.code == 'already-exists' ? 'Tu as déjà signalé ce post.' : (e.message ?? 'Erreur.');
+        final msg = e.status == 409 ? 'Tu as déjà signalé ce post.' : PubApi.message(e, fallback: 'Erreur.');
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
       }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(PubApi.message(e)), backgroundColor: Colors.red));
     }
   }
 
@@ -2422,8 +2132,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     );
 
     try {
-      await _firestore.collection('Posts').doc(post.id).delete();
-      await _firestore.collection('AppData').doc(appId).update({'allPostIds': FieldValue.arrayRemove([post.id])});
+      await PubApi.delete(post.id!);
       if (!mounted) return;
       Navigator.pop(context); // ferme le loader
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -2487,11 +2196,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   }
 
   Future<bool> _hasSupportedToday(String postId, String userId) async {
-    final now = DateTime.now();
-    final startOfDay = DateTime(now.year, now.month, now.day).millisecondsSinceEpoch;
-    final endOfDay = startOfDay + const Duration(days: 1).inMilliseconds;
-    final query = await _firestore.collection('post_supports').where('postId', isEqualTo: postId).where('userId', isEqualTo: userId).where('supportedAt', isGreaterThanOrEqualTo: startOfDay).where('supportedAt', isLessThan: endOfDay).limit(1).getM('post_video_format_tel_details.dart:2491');
-    return query.docs.isNotEmpty;
+    // Le serveur refuse un second soutien le même jour (message affiché après la publicité).
+    return false;
   }
 
   void _showSupportModal(Post post) {
@@ -2531,12 +2237,16 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
   Future<void> _onSupportAdRewarded(Post post) async {
     final currentUserId = authProvider.loginUserData.id;
-    final creatorId = post.user_id!;
-    await _firestore.collection('Posts').doc(post.id).update({'adSupportCount': FieldValue.increment(1)});
-    await _firestore.collection('Users').doc(creatorId).update({'totalCoinsEarnedFromAdSupport': FieldValue.increment(1)});
-    await _firestore.collection('Users').doc(currentUserId).update({'totalAdViewsSupported': FieldValue.increment(1)});
-    await _firestore.collection('post_supports').add({'postId': post.id, 'userId': currentUserId, 'supportedAt': DateTime.now().millisecondsSinceEpoch});
-    _showSuccess('Merci ! Le créateur a reçu 10 pièces.');
+    try {
+      await PubApi.supportAd(post.id!);
+    } catch (e) {
+      if (mounted) {
+        setState(() { _isSupporting = false; _showRewardedAd = false; });
+        _showError(PubApi.message(e, fallback: 'Soutien impossible pour le moment. Réessaie plus tard.'));
+      }
+      return;
+    }
+    _showSuccess('Merci ! Le créateur a reçu 1 pièce.');
     setState(() { _isSupporting = false; _showRewardedAd = false; });
   }
 
@@ -2868,10 +2578,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     if (postId == null) return;
     final alreadyLiked = _likedPosts[postId] ?? (post.users_love_id?.contains(userId) ?? false);
     if (alreadyLiked) return;
-    FirebaseFirestore.instance.collection('Posts').doc(postId).update({
-      'loves': FieldValue.increment(1),
-      'users_love_id': FieldValue.arrayUnion([userId]),
-    }).catchError((_) {});
+    PubApi.setLike(postId, true).catchError((_) {});
     if (mounted) setState(() {
       _likedPosts[postId] = true;
       post.users_love_id = [...?post.users_love_id, userId];
@@ -2893,7 +2600,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     try {
       final comment = PostComment(
         media: sticker?.toMedia(),
-        id: FirebaseFirestore.instance.collection('PostComments').doc().id,
+        id: 'tmp_${DateTime.now().microsecondsSinceEpoch}',
         user_id: userId,
         user: authProvider.loginUserData,
         post_id: post.id,
@@ -2948,21 +2655,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
             final msg = sticker != null
                 ? "@${authProvider.loginUserData.pseudo!} a envoyé un sticker sur votre vidéo"
                 : "@${authProvider.loginUserData.pseudo!} a commenté votre vidéo";
-            final notif = NotificationData(
-              id: FirebaseFirestore.instance.collection('Notifications').doc().id,
-              titre: "Nouvelle interaction",
-              media_url: authProvider.loginUserData.imageUrl,
-              type: NotificationType.POST.name,
-              description: msg,
-              user_id: userId,
-              receiver_id: post.user!.id!,
-              post_id: post.id!,
-              post_data_type: PostDataType.COMMENT.name,
-              createdAt: DateTime.now().microsecondsSinceEpoch,
-              updatedAt: DateTime.now().microsecondsSinceEpoch,
-              status: PostStatus.VALIDE.name,
-            );
-            await FirebaseFirestore.instance.collection('Notifications').doc(notif.id).set(notif.toJson());
+            // la notification enregistrée est créée par le serveur à l'envoi du commentaire
             final receiverUser = await authProvider.getUserById(post.user!.id!);
             if (receiverUser.isNotEmpty && receiverUser.first.oneIgnalUserid != null) {
               await authProvider.sendNotification(
@@ -3336,18 +3029,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     if (_adCache.containsKey(post.id) || _loadingAdIds.contains(post.id)) return;
     _loadingAdIds.add(post.id!);
     try {
-      final snap = await _firestore
-          .collection('Advertisements')
-          .where('postId', isEqualTo: post.id)
-          .where('status', isEqualTo: 'active')
-          .limit(1)
-          .getM('post_video_format_tel_details.dart:3332');
+      // La fiche de la publicité n'est plus lue dans l'application (route à créer côté API : voir lacunes).
       Advertisement? ad;
-      if (snap.docs.isNotEmpty) {
-        ad = Advertisement.fromJson(snap.docs.first.data());
-        ad.id = snap.docs.first.id;
-        _recordAdViewForPost(ad);
-      }
       if (mounted) setState(() => _adCache[post.id!] = ad);
     } catch (_) {
       if (mounted) setState(() => _adCache[post.id!] = null);

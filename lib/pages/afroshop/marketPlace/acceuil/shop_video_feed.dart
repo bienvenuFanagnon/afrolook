@@ -2,7 +2,7 @@ import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../../services/api/shop_api.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -201,10 +201,7 @@ class _ShopVideoItemState extends State<_ShopVideoItem> {
     final title = widget.article.titre ?? 'Produit Afrolook';
     await Share.share('$title — Voir sur Afrolook');
     try {
-      await FirebaseFirestore.instance
-          .collection('Articles')
-          .doc(widget.article.id)
-          .update({'partage': FieldValue.increment(1)});
+      await ShopApi.event(widget.article.id!, 'share');
     } catch (_) {}
   }
 

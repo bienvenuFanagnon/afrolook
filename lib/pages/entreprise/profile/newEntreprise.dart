@@ -4,9 +4,8 @@ import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/models/model_data.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../services/api/shop_api.dart';
 
-import 'package:firebase_storage/firebase_storage.dart';
 
 import 'package:flutter/material.dart';
 
@@ -38,7 +37,6 @@ class _NewEntrepriseState extends State<NewEntreprise> {
 
   late UserProvider userProvider =
   Provider.of<UserProvider>(context, listen: false);
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
   bool onTapCreatePro = false;
 
    XFile? imageProfile;
@@ -55,47 +53,20 @@ class _NewEntrepriseState extends State<NewEntreprise> {
   }
 
   Future<bool> verifierEntrepriseName(String nom) async {
-
-    // Récupérer la liste des utilisateurs
-    CollectionReference pseudos = firestore.collection("EntrepriseNames");
-    QuerySnapshot snapshot = await pseudos.getM('newEntreprise.dart:60');
-    final list = snapshot.docs.map((doc) =>
-        UserPseudo.fromJson(doc.data() as Map<String, dynamic>)).toList();
-    bool existe= list.any((e) => e.name!.toLowerCase()==nom.toLowerCase());
-    // Vérifier si le nom existe déjà
-    //  bool existe = snapshot.docs.any((doc) => doc.data["nom"] == nom);
-
-    if (existe==false) {
-
-      try{
-
-        //
-        // UserPseudo pseudo=UserPseudo();
-        // pseudo.id=firestore
-        //     .collection('EntrepriseNames')
-        //     .doc()
-        //     .id;
-        // pseudo.name=nom;
-        //
-        // // users.add(pseudo.toJson());
-        //
-        // await firestore.collection('EntrepriseNames').doc(pseudo.id).set(pseudo.toJson());
-        // printVm("///////////-- save pseudo --///////////////");
-        return false;
-      } on FirebaseException catch(error){
-        return true;
-      }
-      // Le nom n'existe pas, créer un nouveau document
-
-    } else {
-      // Le nom existe déjà, afficher un message d'erreur
+    // Le nom d'entreprise est unique : l'API refuse aussi un nom déjà pris à la création (message en français).
+    bool existe = false;
+    try {
+      final all = await ShopApi.businesses(search: nom);
+      existe = all.any((e) => (e.titre ?? '').toLowerCase() == nom.toLowerCase());
+    } catch (_) {}
+    if (existe) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Le nom existe déjà",style: TextStyle(color: Colors.red),),
+          content: Text("Le nom existe déjà", style: TextStyle(color: Colors.red)),
         ),
       );
-      return true;
     }
+    return existe;
   }
 
   @override
@@ -172,67 +143,15 @@ class _NewEntrepriseState extends State<NewEntreprise> {
                                 setState(() {
                                   onTapCreatePro=true;
                                 });
-                                String id = FirebaseFirestore.instance
-                                    .collection('Entreprises')
-                                    .doc()
-                                    .id;
-
-                                EntrepriseAbonnement abonnement = EntrepriseAbonnement()
-                                  ..type = TypeAbonement.GRATUIT.name
-                                  ..id = "idabn"
-                                  ..entrepriseId = id
-                                  ..description = "Abonnement gratuit pour entreprise"
-                                  ..nombre_pub = 3
-                                  ..nombre_image_pub = 1
-                                  ..nbr_jour_pub_afrolook = 0
-                                  ..nbr_jour_pub_annonce_afrolook = 0
-                                  ..userId = authProvider.loginUserData.id
-                                  ..afroshop_user_magasin_id = "magasin456"
-                                  ..createdAt = DateTime.now().millisecondsSinceEpoch
-                                  ..updatedAt = DateTime.now().millisecondsSinceEpoch
-                                  ..star = DateTime.now().millisecondsSinceEpoch
-                                  ..end = DateTime.now().add(Duration(days: 365)).millisecondsSinceEpoch
-                                  ..isFinished = false
-                                  ..dispo_afrolook = false;
-
-                                EntrepriseData entreprise=EntrepriseData();
-                                entreprise.titre=_titreController.text;
-                                entreprise.type=TypeEntreprise.personnel.name;
-
-                                entreprise.id=id;
-                                entreprise.userId=authProvider.loginUserData.id!;
-                                entreprise.description=_descriptionController.text;
-                                entreprise.abonnements=[];
-                                entreprise.usersSuiviId=[];
-                                entreprise.produitsIds=[];
-                                // entreprise.abonnements!.add(abonnement);
-
-                                entreprise.abonnement=abonnement;
-
-                                Reference storageReference =
-                                FirebaseStorage.instance.ref().child(
-                                    'post_media/${Path.basename(File(imageProfile!.path).path)}');
-
-                                UploadTask uploadTask = storageReference
-                                    .putFile(await MediaShrink.file(File(imageProfile!.path)!));
-                                await uploadTask.whenComplete(() async {
-                                  await storageReference
-                                      .getDownloadURL()
-                                      .then((fileURL) {
-                                    printVm("url media");
-                                     printVm(fileURL);
-
-                                    entreprise.urlImage= fileURL;
-                                  });
-                                });
-                                printVm(entreprise.toJson());
-
-                                await FirebaseFirestore.instance
-                                    .collection('Entreprises')
-                                    .doc(entreprise.id!)
-                                    .set(entreprise.toJson());
-                                authProvider.loginUserData.hasEntreprise=true;
-                                await firestore.collection('Users').doc( authProvider.loginUserData!.id).update( authProvider.loginUserData!.toJson());
+                                // Entreprise créée par l'API (image envoyée en direct, abonnement gratuit géré par le serveur)
+                                final created = await ShopApi.createBusiness(
+                                  name: _titreController.text,
+                                  type: TypeEntreprise.personnel.name,
+                                  description: _descriptionController.text,
+                                  image: File(imageProfile!.path),
+                                );
+                                printVm('entreprise créée : ${created.id}');
+                                authProvider.loginUserData.hasEntreprise = true;
 
                                 SnackBar snackBar = SnackBar(
                                   content: Text(
@@ -244,17 +163,6 @@ class _NewEntrepriseState extends State<NewEntreprise> {
                                 ScaffoldMessenger.of(context)
                                     .showSnackBar(snackBar);
 
-                                UserPseudo pseudo=UserPseudo();
-                                pseudo.id=firestore
-                                    .collection('EntrepriseNames')
-                                    .doc()
-                                    .id;
-                                pseudo.name=   _titreController.text;
-
-                                // users.add(pseudo.toJson());
-
-                                await firestore.collection('EntrepriseNames').doc(pseudo.id).set(pseudo.toJson());
-                                printVm("///////////-- save pseudo --///////////////");
                                // Navigator.pop(context);
                                 setState(() {
                                   _titreController.text='';

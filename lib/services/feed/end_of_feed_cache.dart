@@ -1,6 +1,6 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'dart:convert';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/canaux_api.dart';
+import 'package:afrotok/services/api/pub_feed_api.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/model_data.dart';
@@ -81,47 +81,18 @@ class EndOfFeedCache {
     try {
       final exclude = {...alreadyFollowing, myId};
 
-      // Créateurs (pas de filtre status — les créateurs ordinaires n'ont pas ce champ)
-      QuerySnapshot<Map<String, dynamic>> userSnap;
-      if (pageType != null && pageType.isNotEmpty) {
-        userSnap = await FirebaseFirestore.instance
-            .collection('Users')
-            .where('mainCategory', isEqualTo: pageType)
-            .limit(60)
-            .getM('end_of_feed_cache.dart:90');
-      } else {
-        userSnap = await FirebaseFirestore.instance
-            .collection('Users')
-            .orderBy('creatorScore', descending: true)
-            .limit(60)
-            .getM('end_of_feed_cache.dart:96');
-      }
-      final creators = userSnap.docs
-          .map((d) {
-            try { return UserData.fromJson(d.data())..id = d.id; } catch (_) { return null; }
-          })
-          .whereType<UserData>()
+      // Créateurs : classement des plus suivis (l'API ne filtre pas par catégorie principale : filtrage local si disponible)
+      var all = await PubFeedApi.topUsers(limit: 60);
+      final creators = all
           .where((u) => u.id != null && !exclude.contains(u.id))
-          .where((u) => (u.creatorScore ?? 0) > 0 || u.followersCount > 0)
+          .where((u) => pageType == null || pageType.isEmpty || u.mainCategory == pageType || u.mainCategory == null || u.mainCategory!.isEmpty)
           .toList()
-        ..sort((a, b) => (b.creatorScore ?? 0).compareTo(a.creatorScore ?? 0));
+        ..sort((a, b) => b.followersCount.compareTo(a.followersCount));
 
-      // Canaux
-      final canalSnap = await FirebaseFirestore.instance
-          .collection('Canaux')
-          .orderBy('canalScore', descending: true)
-          .limit(40)
-          .getM('end_of_feed_cache.dart:113');
-      final canaux = canalSnap.docs
-          .map((d) {
-            try { return Canal.fromJson(d.data())..id = d.id; } catch (_) { return null; }
-          })
-          .whereType<Canal>()
+      // Canaux : les plus suivis
+      final canalPage = await CanauxApi.list(limit: 40, category: CanauxApi.apiCategory(pageType), myId: myId);
+      final canaux = canalPage.items
           .where((c) => c.id != null && !(alreadySubscribedCanalIds?.contains(c.id) ?? false))
-          .where((c) {
-            if (pageType == null || pageType.isEmpty) return true;
-            return c.mainCategory == pageType || (c.categories?.contains(pageType) ?? false);
-          })
           .toList()
         ..sort((a, b) => (b.canalScore ?? 0).compareTo(a.canalScore ?? 0));
 

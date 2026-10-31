@@ -1,6 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:afrotok/services/api/publications_api.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../widgets/feed/sections/social_follow_card.dart';
@@ -22,11 +20,8 @@ Future<bool> openSocial(String network) async {
     opened = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
   } catch (_) {}
   if (opened) {
-    FirebaseFunctions.instance.httpsCallable('recordSocialClick').call({'network': network}).ignore();
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid != null) {
-      FirebaseFirestore.instance.collection('Users').doc(uid).update({'${network}Followed': true}).catchError((_) {});
-    }
+    // Le compteur de clics et le « déjà dirigé vers ce réseau » sont tenus par le serveur (POST /home/social-clicks).
+    PubApi.socialClick(network);
   }
   return opened;
 }

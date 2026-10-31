@@ -9,7 +9,8 @@ import 'package:afrotok/pages/paiement/newDepot.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import '../../../../services/api/shop_api.dart';
 
 import 'package:dropdown_search/dropdown_search.dart';
 
@@ -81,8 +82,6 @@ class _ProduitDetailState extends State<ProduitDetail> {
   late PostProvider postProvider =
   Provider.of<PostProvider>(context, listen: false);
 
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
-
   ArticleData? article;
   EntrepriseData? entrepriseData;
   UserData? proprietaire;
@@ -128,17 +127,11 @@ class _ProduitDetailState extends State<ProduitDetail> {
         _initVideoPlayer(articles.first.videoUrl!);
       }
 
-      // Vérifier si l'utilisateur a déjà liké
-      if (article!.user != null && article!.user!.id != null) {
-        final userDoc = await firestore.collection('Users').doc(authProvider.loginUserData.id).getM('produit_details.dart:132');
-        final userData = userDoc.data();
-        if (userData != null && userData['articles_likes'] != null) {
-          final articlesLikes = List<String>.from(userData['articles_likes'] ?? []);
-          setState(() {
-            isLiked = articlesLikes.contains(article!.id);
-          });
-        }
-      }
+      // Déjà aimé par moi ? (relu sur l'API)
+      try {
+        final mine = await ShopApi.articleWithMe(article!.id!);
+        if (mine != null && mounted) setState(() => isLiked = mine.liked);
+      } catch (_) {}
 
       // Charger le propriétaire
       final users = await authProvider.getUserById(article!.user_id!);
@@ -194,10 +187,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
 
   Future<void> _incrementViews() async {
     try {
-      await firestore.collection('Articles').doc(widget.productId).update({
-        'vues': FieldValue.increment(1),
-        'updatedAt': DateTime.now().millisecondsSinceEpoch,
-      });
+      await ShopApi.event(widget.productId, 'view');
     } catch (e) {
       printVm("Erreur incrémentation vues: $e");
     }
@@ -205,10 +195,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
 
   Future<void> _incrementContacts() async {
     try {
-      await firestore.collection('Articles').doc(article!.id!).update({
-        'contact': FieldValue.increment(1),
-        'updatedAt': DateTime.now().millisecondsSinceEpoch,
-      });
+      await ShopApi.event(article!.id!, 'contact');
       setState(() {
         article!.contact = (article!.contact ?? 0) + 1;
       });
@@ -234,63 +221,10 @@ class _ProduitDetailState extends State<ProduitDetail> {
           article!.partage = (article!.partage ?? 0) + 1;
         });
 
-        // Incrémenter les partages dans Firestore
-        await firestore.collection('Articles').doc(article!.id!).update({
-          'partage': FieldValue.increment(1),
-          'updatedAt': DateTime.now().millisecondsSinceEpoch,
-        });
-
-        // Notification au propriétaire
-        if (article!.user != null) {
-          final userCollect = firestore.collection('Users');
-          final querySnapshotUser = await userCollect
-              .where("id", isEqualTo: article!.user!.id!)
-              .getM('produit_details.dart:247');
-
-          final listUsers = querySnapshotUser.docs
-              .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
-              .toList();
-
-          if (listUsers.isNotEmpty) {
-            if (article!.user!.oneIgnalUserid != null &&
-                article!.user!.oneIgnalUserid!.length > 5) {
-              await authProvider.sendNotification(
-                userIds: [article!.user!.oneIgnalUserid!],
-                smallImage: article!.images?.isNotEmpty == true
-                    ? article!.images!.first
-                    : "",
-                send_user_id: authProvider.loginUserData.id!,
-                recever_user_id: article!.user!.id!,
-                message: "📢 🛒 Un afrolookeur a partagé votre produit 🛒",
-                type_notif: NotificationType.ARTICLE.name,
-                post_id: article!.id!,
-                post_type: PostDataType.IMAGE.name,
-                chat_id: '',
-              );
-
-              final notif = NotificationData();
-              notif.id = firestore.collection('Notifications').doc().id;
-              notif.titre = " 🛒Boutique 🛒";
-              notif.media_url = article!.images?.isNotEmpty == true
-                  ? article!.images!.first
-                  : "";
-              notif.type = NotificationType.ARTICLE.name;
-              notif.description = "Un afrolookeur a partagé votre produit 🛒";
-              notif.users_id_view = [];
-              notif.user_id = authProvider.loginUserData.id;
-              notif.receiver_id = article!.user!.id!;
-              notif.post_id = article!.id!;
-              notif.post_data_type = PostDataType.IMAGE.name!;
-              notif.updatedAt = DateTime.now().microsecondsSinceEpoch;
-              notif.createdAt = DateTime.now().microsecondsSinceEpoch;
-              notif.status = PostStatus.VALIDE.name;
-
-              await firestore.collection('Notifications')
-                  .doc(notif.id)
-                  .set(notif.toJson());
-            }
-          }
-        }
+        // Partage compté par l'API (la notification au vendeur est envoyée par le serveur)
+        try {
+          await ShopApi.event(article!.id!, 'share');
+        } catch (_) {}
 
         // Mettre à jour l'article localement
         final updatedArticles = await categorieProduitProvider.getArticleById(article!.id!);
@@ -344,54 +278,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
           }
         }
 
-        // Notification au propriétaire
-        if (article!.user != null) {
-          final userCollect = firestore.collection('Users');
-          final querySnapshotUser = await userCollect
-              .where("id", isEqualTo: article!.user!.id!)
-              .getM('produit_details.dart:351');
-
-          final listUsers = querySnapshotUser.docs
-              .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
-              .toList();
-
-          if (listUsers.isNotEmpty) {
-            if (article!.user!.oneIgnalUserid != null &&
-                article!.user!.oneIgnalUserid!.length > 5) {
-
-              final notif = NotificationData();
-              notif.id = firestore.collection('Notifications').doc().id;
-              notif.titre = " 🛒Boutique 🛒";
-              notif.media_url = authProvider.loginUserData.imageUrl;
-              notif.type = NotificationType.ARTICLE.name;
-              notif.description = "@${authProvider.loginUserData.pseudo!} veut votre produit 🛒";
-              notif.users_id_view = [];
-              notif.user_id = authProvider.loginUserData.id;
-              notif.receiver_id = article!.user!.id!;
-              notif.post_id = article!.id!;
-              notif.post_data_type = PostDataType.IMAGE.name!;
-              notif.updatedAt = DateTime.now().microsecondsSinceEpoch;
-              notif.createdAt = DateTime.now().microsecondsSinceEpoch;
-              notif.status = PostStatus.VALIDE.name;
-
-              await firestore.collection('Notifications')
-                  .doc(notif.id)
-                  .set(notif.toJson());
-
-              await authProvider.sendNotification(
-                userIds: [article!.user!.oneIgnalUserid!],
-                smallImage: authProvider.loginUserData.imageUrl ?? "",
-                send_user_id: authProvider.loginUserData.id!,
-                recever_user_id: article!.user!.id!,
-                message: "📢 🛒 @${authProvider.loginUserData.pseudo!} veut votre produit 🛒",
-                type_notif: NotificationType.ARTICLE.name,
-                post_id: article!.id!,
-                post_type: PostDataType.IMAGE.name,
-                chat_id: '',
-              );
-            }
-          }
-        }
+        // La notification « veut votre produit » est envoyée par l'API (événement « contact » compté ci-dessus).
       });
 
     } catch (e) {
@@ -501,7 +388,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
 
       try {
         // Suppression réelle du produit
-        await firestore.collection('Articles').doc(article!.id!).delete();
+        await ShopApi.deleteArticle(article!.id!);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(backgroundColor: Colors.green, content: Text('Produit supprimé avec succès')),
@@ -519,32 +406,13 @@ class _ProduitDetailState extends State<ProduitDetail> {
   Future<void> _boostProduct() async {
     if (article == null) return;
 
-    // Vérifications en temps réel avec Firestore
-    final userDoc = await firestore.collection('Users').doc(authProvider.loginUserData.id!).getM('produit_details.dart:522');
-    if (!userDoc.exists) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Utilisateur non trouvé")),
-      );
-      return;
-    }
-
-    final userData = UserData.fromJson(userDoc.data()!);
-
-    final entrepriseDoc = entrepriseData?.id != null
-        ? await firestore.collection('Entreprises').doc(entrepriseData!.id!).getM('produit_details.dart:533')
-        : null;
-
-    final entrepriseDataReal = entrepriseDoc?.exists == true
-        ? EntrepriseData.fromJson(entrepriseDoc!.data()! as Map<String, dynamic>)
-        : null;
-
+    // Droits de boost : décidés par l'API (Premium = gratuit 10 jours, administrateurs = jamais de paiement, sinon payant en pièces)
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
-    final hasPremiumSubscription = entrepriseDataReal?.abonnement?.type == TypeAbonement.PREMIUM.name;
-    final canBoostPremium = hasPremiumSubscription &&
-        (entrepriseDataReal?.abonnement?.produistIdBoosted?.length ?? 0) < 5;
+    final hasPremiumSubscription = authProvider.loginUserData.abonnement?.estPremium == true || authProvider.loginUserData.abonnement?.estGold == true;
+    final canBoostPremium = hasPremiumSubscription;
 
     // FORCER 10 jours pour les abonnements premium
-    if (hasPremiumSubscription && canBoostPremium) {
+    if (hasPremiumSubscription && canBoostPremium && !isAdmin) {
       selectedBoostDays = 10;
     }
 
@@ -580,22 +448,9 @@ class _ProduitDetailState extends State<ProduitDetail> {
         if (!paid) return;
       }
 
-      // Mise à jour du produit
-      await firestore.collection('Articles').doc(article!.id!).update({
-        'booster': 1,
-        'boostEndDate': boostEndDate.millisecondsSinceEpoch,
-        'isBoosted': true,
-        'boostDays': selectedBoostDays,
-        'boostCost': hasPremiumSubscription ? 0.0 : boostCost, // 0 pour les premium
-        'updatedAt': DateTime.now().millisecondsSinceEpoch,
-      });
-
-      // Mise à jour de l'abonnement premium si applicable
-      if (hasPremiumSubscription && entrepriseDataReal != null) {
-        final updatedBoostedProducts = [...(entrepriseDataReal.abonnement?.produistIdBoosted ?? []), article!.id!];
-        await firestore.collection('Entreprises').doc(entrepriseDataReal.id!).update({
-          'abonnement.produistIdBoosted': updatedBoostedProducts,
-        });
+      // Boost gratuit (Premium / administrateur) : activé par l'API ; boost payant : activé par l'achat ci-dessus
+      if (isAdmin || hasPremiumSubscription) {
+        await ShopApi.boostFree(article!.id!, days: isAdmin ? selectedBoostDays : null);
       }
 
       setState(() {
@@ -666,50 +521,20 @@ class _ProduitDetailState extends State<ProduitDetail> {
 
   Future<void> _toggleLike() async {
     try {
-      final userRef = firestore.collection('Users').doc(authProvider.loginUserData.id);
-      final articleRef = firestore.collection('Articles').doc(article!.id);
-
       if (isLiked) {
         // Retirer le like
-        await userRef.update({
-          'articles_likes': FieldValue.arrayRemove([article!.id])
-        });
-        await articleRef.update({
-          'jaime': FieldValue.increment(-1),
-          'updatedAt': DateTime.now().millisecondsSinceEpoch,
-        });
+        await ShopApi.like(article!.id!, false);
         setState(() {
           isLiked = false;
           article!.jaime = (article!.jaime ?? 1) - 1;
         });
       } else {
-        // Ajouter le like
-        await userRef.update({
-          'articles_likes': FieldValue.arrayUnion([article!.id])
-        });
-        await articleRef.update({
-          'jaime': FieldValue.increment(1),
-          'updatedAt': DateTime.now().millisecondsSinceEpoch,
-        });
+        // Ajouter le like (compté une fois par personne par l'API ; notification envoyée par le serveur)
+        await ShopApi.like(article!.id!, true);
         setState(() {
           isLiked = true;
           article!.jaime = (article!.jaime ?? 0) + 1;
         });
-
-        // Envoyer notification au propriétaire
-        if (article!.user != null && article!.user!.oneIgnalUserid != null) {
-          await authProvider.sendNotification(
-            userIds: [article!.user!.oneIgnalUserid!],
-            smallImage: article!.images?.isNotEmpty == true ? article!.images!.first : "",
-            send_user_id: authProvider.loginUserData.id!,
-            recever_user_id: article!.user!.id!,
-            message: "❤️ @${authProvider.loginUserData.pseudo!} aime votre produit",
-            type_notif: NotificationType.ARTICLE.name,
-            post_id: article!.id!,
-            post_type: "PRODUIT",
-            chat_id: '',
-          );
-        }
       }
     } catch (e) {
       printVm("Erreur like: $e");
@@ -747,10 +572,7 @@ class _ProduitDetailState extends State<ProduitDetail> {
                       'Découvrez ce produit sur Afroshop: ${article!.titre}\nPrix: ${article!.prix} FCFA\n$url',
                       subject: 'Produit Afroshop - ${article!.titre}',
                     );
-                    await firestore.collection('Articles').doc(article!.id!).update({
-                      'partage': FieldValue.increment(1),
-                      'updatedAt': DateTime.now().millisecondsSinceEpoch,
-                    });
+                    await ShopApi.event(article!.id!, 'share');
                     if (mounted) setState(() => article!.partage = (article!.partage ?? 0) + 1);
                   } catch (_) {}
                 },
@@ -798,43 +620,21 @@ class _ProduitDetailState extends State<ProduitDetail> {
 
     try {
       final isFollowing = entrepriseData!.usersSuiviId?.contains(authProvider.loginUserData.id!) ?? false;
-      final entrepriseRef = firestore.collection('Entreprises').doc(entrepriseData!.id);
 
       if (isFollowing) {
         // Se désabonner
-        await entrepriseRef.update({
-          'usersSuiviId': FieldValue.arrayRemove([authProvider.loginUserData.id!]),
-          'suivi': FieldValue.increment(-1),
-        });
+        await ShopApi.follow(entrepriseData!.id!, false);
         setState(() {
           entrepriseData!.usersSuiviId?.remove(authProvider.loginUserData.id!);
           entrepriseData!.suivi = (entrepriseData!.suivi ?? 1) - 1;
         });
       } else {
-        // S'abonner
-        await entrepriseRef.update({
-          'usersSuiviId': FieldValue.arrayUnion([authProvider.loginUserData.id!]),
-          'suivi': FieldValue.increment(1),
-        });
+        // S'abonner (la notification au vendeur est envoyée par l'API)
+        await ShopApi.follow(entrepriseData!.id!, true);
         setState(() {
           entrepriseData!.usersSuiviId?.add(authProvider.loginUserData.id!);
           entrepriseData!.suivi = (entrepriseData!.suivi ?? 0) + 1;
         });
-
-        // Envoyer notification
-        if (entrepriseData!.user != null && entrepriseData!.user!.oneIgnalUserid != null) {
-          await authProvider.sendNotification(
-            userIds: [entrepriseData!.user!.oneIgnalUserid!],
-            smallImage: authProvider.loginUserData.imageUrl ?? "",
-            send_user_id: authProvider.loginUserData.id!,
-            recever_user_id: entrepriseData!.user!.id!,
-            message: "🔔 @${authProvider.loginUserData.pseudo!} suit votre entreprise",
-            type_notif: NotificationType.ABONNER.name,
-            post_id: entrepriseData!.id!,
-            post_type: "ENTREPRISE",
-            chat_id: '',
-          );
-        }
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Vous suivez maintenant ${entrepriseData!.titre}")),

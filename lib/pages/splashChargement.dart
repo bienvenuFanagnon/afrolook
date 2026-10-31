@@ -15,7 +15,13 @@ import 'package:intl/intl.dart';
 
 import 'package:video_player/video_player.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
+import 'package:afrotok/services/api/posts_api.dart';
+import 'package:afrotok/services/api/chat_api.dart';
+import 'package:afrotok/services/api/chat_mapper.dart';
+import 'package:afrotok/services/api/contenu_payant_api.dart';
+import 'package:afrotok/services/api/canaux_api.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -150,13 +156,14 @@ class _SplashChargementState extends State<SplashChargement> {
     _startSessionCheck();
   }
 
-  Future<DocumentSnapshot<Map<String, dynamic>>?>? _earlyProfile;
+  Future<UserData?>? _earlyProfile;
 
-  Future<DocumentSnapshot<Map<String, dynamic>>?> _fetchProfileEarly() async {
+  /// Profil complet lu tôt, en parallèle du reste du lancement (GET /bootstrap : profil, soldes, abonnements, série, règle des pubs).
+  Future<UserData?> _fetchProfileEarly() async {
     try {
       final id = await SessionUserFirebaseService.getStoredUserId();
       if (id == null || id.isEmpty) return null;
-      return await FirebaseFirestore.instance.collection('Users').doc(id).getM('splashChargement.dart:early').timeout(const Duration(seconds: 2));
+      return userFromBootstrap(await UsersApi.bootstrap());
     } catch (_) {
       return null; // la lecture classique prend le relais
     }
@@ -256,79 +263,39 @@ class _SplashChargementState extends State<SplashChargement> {
     }
   }
 
-  Future<void> _loadPostData() async {
+Future<void> _loadPostData() async {
     if (_pendingPostId == null) return;
     setState(() { _isLoadingTarget = true; _loadingText = "Chargement du post..."; });
     try {
-      final doc = await FirebaseFirestore.instance.collection('Posts').doc(_pendingPostId).getM('splashChargement.dart:235');
-      if (doc.exists) {
-        final post = Post.fromJson(doc.data() as Map<String, dynamic>);
-        post.id = doc.id;
-        if (post.user_id != null && post.user_id!.isNotEmpty) {
-          final userDoc = await FirebaseFirestore.instance.collection('Users').doc(post.user_id).getM('splashChargement.dart:240');
-          if (userDoc.exists) post.user = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
-        }
-        _loadedPost = post;
-      }
+      final post = await PostsApi.get(_pendingPostId!);
+      if (post != null) _loadedPost = post;
     } catch (e) { printVm("❌ Erreur chargement post : $e"); }
     finally { if (mounted) setState(() => _isLoadingTarget = false); }
   }
 
-  Future<void> _loadChatData() async {
+Future<void> _loadChatData() async {
     if (_pendingChatId == null || _pendingSendUserId == null) return;
     setState(() { _isLoadingTarget = true; _loadingText = "Chargement du chat..."; });
     try {
-      final chatDoc = await FirebaseFirestore.instance.collection('Chats').doc(_pendingChatId).getM('splashChargement.dart:253');
-      if (!chatDoc.exists) return;
-      final chat = Chat.fromJson(chatDoc.data() as Map<String, dynamic>);
-
-      // User + messages en parallèle (indépendants)
-      final results = await Future.wait([
-        FirebaseFirestore.instance.collection('Users').doc(_pendingSendUserId).getM('splashChargement.dart:259'),
-        FirebaseFirestore.instance
-            .collection('Messages')
-            .where('chat_id', isEqualTo: _pendingChatId)
-            .orderBy('createdAt', descending: true)
-            .limit(25)
-            .getM('splashChargement.dart:265'),
-      ]);
-
-      final userDoc = results[0] as DocumentSnapshot;
-      final messagesSnapshot = results[1] as QuerySnapshot;
-
-      if (userDoc.exists) {
-        chat.chatFriend = UserData.fromJson(userDoc.data() as Map<String, dynamic>);
-        chat.receiver = chat.chatFriend;
-      }
-      chat.messages = messagesSnapshot.docs.map((d) => Message.fromJson(d.data() as Map<String, dynamic>)).toList();
-      _loadedChat = chat;
+      // Conversation 1 à 1 ouverte via l'API ; les messages sont lus par l'écran de discussion (Firebase).
+      final j = await ChatApi.openConversation(_pendingSendUserId!);
+      _loadedChat = chatFromConversation(j, authProvider.loginUserData.id ?? '');
     } catch (e) { printVm("❌ Erreur chargement chat : $e"); }
     finally { if (mounted) setState(() => _isLoadingTarget = false); }
   }
 
-  Future<void> _loadContentData() async {
+Future<void> _loadContentData() async {
     if (_pendingContentId == null) return;
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('ContentPaies')
-          .doc(_pendingContentId)
-          .getM('splashChargement.dart:287');
-      if (doc.exists) {
-        _loadedContent = ContentPaie.fromJson({...doc.data()!, 'id': doc.id});
-      }
+      final r = await ContenuPayantApi.get(_pendingContentId!);
+      if (r != null) _loadedContent = r.content;
     } catch (e) { printVm("❌ Erreur chargement contenu : $e"); }
   }
 
-  Future<void> _loadCanalData() async {
+Future<void> _loadCanalData() async {
     if (_pendingCanalId == null) return;
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('Canaux')
-          .doc(_pendingCanalId)
-          .getM('splashChargement.dart:300');
-      if (doc.exists && doc.data() != null) {
-        _loadedCanal = Canal.fromJson({...doc.data()!, 'id': doc.id});
-      }
+      _loadedCanal = await CanauxApi.get(_pendingCanalId!, myId: authProvider.loginUserData.id);
     } catch (e) { printVm("❌ Erreur chargement canal : $e"); }
   }
 
@@ -561,18 +528,11 @@ class _SplashChargementState extends State<SplashChargement> {
       // réchauffe aussi la connexion Firestore — avec un délai court : hors ligne ou réseau lent, on garde le cache.
       try {
         final early = await _earlyProfile;
-        final doc = (early != null && early.id == userId)
+        final full = (early != null && early.id == userId)
             ? early
-            : await FirebaseFirestore.instance
-                .collection('Users')
-                .doc(userId)
-                .getM('splashChargement.dart:537')
-                .timeout(const Duration(seconds: 2));
-        final data = doc.data();
-        if (data != null) {
-          authProvider.loginUserData = UserData.fromJson(data..['id'] = doc.id);
-          printVm('⚡ [SPLASH] Profil complet relu avant la navigation');
-        }
+            : userFromBootstrap(await UsersApi.bootstrap().timeout(const Duration(seconds: 2)));
+        authProvider.loginUserData = full;
+        printVm('⚡ [SPLASH] Profil complet relu avant la navigation');
       } catch (e) {
         printVm('⚠️ [SPLASH] Profil complet non relu (cache gardé): $e');
       }
@@ -640,36 +600,8 @@ class _SplashChargementState extends State<SplashChargement> {
 
   /// Auto-rejoint le groupe officiel Afrolook si l'utilisateur n'en est pas membre.
   /// Silencieux — ne bloque jamais le login.
-  Future<void> _autoJoinAfrolookGroup(String userId) async {
-    try {
-      final groupRef = FirebaseFirestore.instance
-          .collection('GroupChats')
-          .doc(kAfrolookGroupId);
-      final groupDoc = await groupRef.getM('splashChargement.dart:616');
-      if (!groupDoc.exists) return; // groupe pas encore créé
-
-      final memberIds = (groupDoc.data()?['member_ids'] as List<dynamic>? ?? []).cast<String>();
-      if (memberIds.contains(userId)) return; // déjà membre
-
-      final userDoc = await FirebaseFirestore.instance.collection('Users').doc(userId).getM('splashChargement.dart:622');
-      final ud = userDoc.data();
-      final now = DateTime.now().millisecondsSinceEpoch;
-
-      await groupRef.collection('members').doc(userId).set({
-        'user_id': userId,
-        'pseudo': ud?['pseudo'] ?? '',
-        'image_url': ud?['imageUrl'] ?? '',
-        'role': 'member',
-        'joined_at': now,
-      });
-      await groupRef.update({
-        'member_ids': FieldValue.arrayUnion([userId]),
-        'member_count': FieldValue.increment(1),
-      });
-      printVm('✅ [SPLASH] Auto-join groupe Afrolook pour $userId');
-    } catch (e) {
-      printVm('⚠️ [SPLASH] Auto-join Afrolook ignoré : $e');
-    }
+Future<void> _autoJoinAfrolookGroup(String userId) async {
+    // L'inscription au groupe officiel Afrolook est faite par le serveur (voir lacunes_api_compte_boosts.md).
   }
 
   /// Rafraîchit les données utilisateur en arrière-plan après navigation immédiate.
@@ -725,15 +657,8 @@ class _SplashChargementState extends State<SplashChargement> {
     });
   }
 
-  Future<void> _updateUserLastActive(String userId) async {
-    try {
-      await FirebaseFirestore.instance.collection('Users').doc(userId).update({
-        'last_time_active': DateTime.now().millisecondsSinceEpoch,
-      });
-      printVm('✅ last_time_active mis à jour pour: $userId');
-    } catch (e) {
-      printVm('❌ Erreur mise à jour last_time_active: $e');
-    }
+Future<void> _updateUserLastActive(String userId) async {
+    // La dernière activité (last_seen_at) est mise à jour par l'API à chaque ouverture (au plus une fois toutes les 5 minutes).
   }
 
   Future<void> _prepareDestination() async {

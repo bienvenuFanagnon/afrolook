@@ -4,6 +4,9 @@ import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:afrotok/services/api/canal_mapper.dart';
 import 'package:afrotok/services/api/post_mapper.dart';
 import 'package:afrotok/services/api/posts_api.dart';
+import 'package:afrotok/services/api/publications_api.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -11,7 +14,7 @@ import 'dart:math';
 
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/services/user/userService.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // uniquement updateMessage : les MESSAGES des chats restent sur Firebase
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -42,11 +45,10 @@ class PostProvider extends ChangeNotifier {
 
   List<Message> usermessageList =[];
 
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
 
   List<UserServiceData> _userServices = [];
-  DocumentSnapshot? _lastServiceDocument;
+  String? _lastServiceCursor;
   bool _hasMoreServices = true;
   bool _isLoadingServices = false;
   String? _selectedCategory;
@@ -125,7 +127,7 @@ Future<void> _loadSuggestedPosts() async {
 
     if (!loadMore) {
       _userServices = [];
-      _lastServiceDocument = null;
+      _lastServiceCursor = null;
       _hasMoreServices = true;
 
       // Mettre à jour les filtres seulement si de nouvelles valeurs sont fournies
@@ -136,131 +138,21 @@ Future<void> _loadSuggestedPosts() async {
     }
 
     try {
-      CollectionReference servicesCollection =
-      FirebaseFirestore.instance.collection('UserServices');
-
-      // Construction de la requête de base
-      Query query = servicesCollection
-          .where("disponible", isEqualTo: true);
-
-      // IMPORTANT: Vérifier que les champs existent avant d'appliquer les filtres
-      // pour éviter les erreurs "needs an index"
-
-      // Appliquer les filtres avec gestion d'erreurs
-      try {
-        if (_selectedCategory != null && _selectedCategory!.isNotEmpty) {
-          query = query.where("category", isEqualTo: _selectedCategory);
-        }
-      } catch (e) {
-        printVm('⚠️ Erreur filtre catégorie (peut-être besoin d\'index): $e');
-        // Continuer sans ce filtre
-      }
-
-      try {
-        if (_selectedCountry != null && _selectedCountry!.isNotEmpty) {
-          query = query.where("country", isEqualTo: _selectedCountry);
-        }
-      } catch (e) {
-        printVm('⚠️ Erreur filtre pays (peut-être besoin d\'index): $e');
-        // Continuer sans ce filtre
-      }
-
-      try {
-        if (_selectedCity != null && _selectedCity!.isNotEmpty) {
-          query = query.where("city", isEqualTo: _selectedCity);
-        }
-      } catch (e) {
-        printVm('⚠️ Erreur filtre ville (peut-être besoin d\'index): $e');
-        // Continuer sans ce filtre
-      }
-
-      // Trier par date de création
-      query = query.orderBy('createdAt', descending: true).limit(limit);
-
-      // Pagination
-      if (loadMore && _lastServiceDocument != null) {
-        query = query.startAfterDocument(_lastServiceDocument!);
-      }
-
-      // Exécuter la requête
-      QuerySnapshot querySnapshot = await query.getM('postProvider.dart:271');
-
-      if (querySnapshot.docs.isEmpty) {
-        _hasMoreServices = false;
+      final page = await PubApi.services(
+        category: _selectedCategory,
+        country: _selectedCountry,
+        city: _selectedCity,
+        q: _searchQuery,
+        cursor: loadMore ? _lastServiceCursor : null,
+        limit: limit,
+      );
+      _lastServiceCursor = page.next;
+      if (loadMore) {
+        _userServices.addAll(page.items);
       } else {
-        _lastServiceDocument = querySnapshot.docs.last;
-
-        List<UserServiceData> newServices = [];
-
-        // Traiter chaque document
-        for (var doc in querySnapshot.docs) {
-          try {
-            UserServiceData service = UserServiceData.fromJson(
-                doc.data() as Map<String, dynamic>
-            );
-
-            // Ajouter l'ID du document
-            service.id = doc.id;
-
-            // Récupérer les données utilisateur de manière asynchrone mais sans bloquer
-            try {
-              DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
-                  .collection('Users')
-                  .doc(service.userId)
-                  .getM('postProvider.dart:295');
-
-              if (userSnapshot.exists) {
-                UserData user = UserData.fromJson(
-                    userSnapshot.data() as Map<String, dynamic>
-                );
-                service.user = user;
-              }
-            } catch (e) {
-              printVm('❌ Erreur récupération user pour service ${service.id}: $e');
-              // Créer un utilisateur minimal pour éviter les nulls
-              service.user = UserData(
-                // id: service.userId,
-                pseudo: 'Utilisateur',
-              );
-            }
-
-            newServices.add(service);
-          } catch (e) {
-            printVm('❌ Erreur parsing service: $e');
-            continue; // Ignorer ce service et passer au suivant
-          }
-        }
-
-        // Filtrage côté client pour la recherche texte (plus flexible)
-        if (_searchQuery.isNotEmpty) {
-          final searchLower = _searchQuery.toLowerCase().trim();
-          newServices = newServices.where((service) {
-            final titleLower = service.titre?.toLowerCase() ?? '';
-            final descriptionLower = service.description?.toLowerCase() ?? '';
-            final categoryLower = service.category?.toLowerCase() ?? '';
-            final cityLower = service.city?.toLowerCase() ?? '';
-            final countryLower = service.country?.toLowerCase() ?? '';
-            final userPseudo = service.user?.pseudo?.toLowerCase() ?? '';
-
-            return titleLower.contains(searchLower) ||
-                descriptionLower.contains(searchLower) ||
-                categoryLower.contains(searchLower) ||
-                cityLower.contains(searchLower) ||
-                countryLower.contains(searchLower) ||
-                userPseudo.contains(searchLower);
-          }).toList();
-        }
-
-        // Ajouter les nouveaux services à la liste
-        if (loadMore) {
-          _userServices.addAll(newServices);
-        } else {
-          _userServices = newServices;
-        }
-
-        // Déterminer s'il y a plus de services à charger
-        _hasMoreServices = newServices.length == limit;
+        _userServices = page.items;
       }
+      _hasMoreServices = page.next != null && page.items.isNotEmpty;
     } catch (e) {
       printVm('❌ Erreur critique chargement services: $e');
 
@@ -296,7 +188,7 @@ Future<void> _loadSuggestedPosts() async {
   //
   //   if (!loadMore) {
   //     _userServices = [];
-  //     _lastServiceDocument = null;
+  //     _lastServiceCursor = null;
   //     _hasMoreServices = true;
   //     _selectedCategory = category;
   //     _selectedCountry = country;
@@ -399,82 +291,19 @@ Future<void> _loadSuggestedPosts() async {
   //   return _userServices;
   // }
 
-  Future<List<UserServiceData>> getUserServiceById2(String id) async {
-    try {
-      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-          .collection('UserServices')
-          .where("id", isEqualTo: id)
-          .getM('postProvider.dart:492');
 
-      List<UserServiceData> services = querySnapshot.docs.map((doc) =>
-          UserServiceData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-
-      for (var service in services) {
-        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
-            .collection('Users')
-            .doc(service.userId)
-            .getM('postProvider.dart:501');
-
-        if (userSnapshot.exists) {
-          UserData user = UserData.fromJson(
-              userSnapshot.data() as Map<String, dynamic>
-          );
-          service.user = user;
-        }
-      }
-
-      return services;
-    } catch (e) {
-      printVm('Erreur récupération service: $e');
-      return [];
-    }
-  }
-
-  Future<bool> updateUserService2(UserServiceData service, BuildContext context) async {
-    try {
-      await FirebaseFirestore.instance
-          .collection('UserServices')
-          .doc(service.id)
-          .update(service.toJson());
-      return true;
-    } catch (e) {
-      printVm('Erreur mise à jour service: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur lors de la mise à jour'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return false;
-    }
-  }
 
   Future<List<String>> getServiceCities() async {
     try {
-      QuerySnapshot snapshot = await FirebaseFirestore.instance
-          .collection('UserServices')
-          .where("disponible", isEqualTo: true)
-          .where("city", isNotEqualTo: null)
-          .where("city", isNotEqualTo: "")
-          .getM('postProvider.dart:544');
-
-      Set<String> cities = {};
-      for (var doc in snapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        if (data['city'] != null) {
-          cities.add(data['city']);
-        }
-      }
-
-      return cities.toList()..sort();
+      return await PubApi.serviceCities();
     } catch (e) {
-      printVm('Erreur récupération villes: $e');
+      printVm('Erreur récupération villes : $e');
       return [];
     }
   }
 
   void resetServicePagination() {
-    _lastServiceDocument = null;
+    _lastServiceCursor = null;
     _hasMoreServices = true;
     _isLoadingServices = false;
     _selectedCategory = null;
@@ -487,281 +316,25 @@ Future<void> _loadSuggestedPosts() async {
 
   
   /// Profil d'une personne, lu une seule fois (null si introuvable).
-  Future<UserData?> _readUserOnce(String userId) async {
-    final doc = await FirebaseFirestore.instance.collection('Users').doc(userId).getM('postProvider.dart:576');
-    final data = doc.data();
-    return data == null ? null : UserData.fromJson(data);
-  }
 
 Future<void> interactWithPostAndIncrementSolde(String postId, String userId, String interactionType, String currentUserId) async {
     // La monétisation (gains par vue, j'aime, commentaire) est calculée par le serveur : rien à écrire ici.
   }
-  Stream<NotificationData> getListNotification(String user_id) async* {
-    var postStream = FirebaseFirestore.instance
-        .collection('Notifications')
-        .where("receiver_id", isEqualTo: user_id)
-        .orderBy('created_at', descending: true)
-        .limit(100)
-        .snapshotsM('postProvider.dart:1005');
 
-    await for (var snapshot in postStream) {
-      for (var post in snapshot.docs) {
-        NotificationData notification = NotificationData.fromJson(post.data());
-
-        // Récupérer les infos de l'utilisateur associé
-        QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
-            .collection('Users')
-            .where("id", isEqualTo: notification.user_id)
-            .getM('postProvider.dart:1015');
-
-        List<UserData> userList = querySnapshotUser.docs.map((doc) {
-          return UserData.fromJson(doc.data() as Map<String, dynamic>);
-        }).toList();
-
-        if (userList.isNotEmpty) {
-          notification.userData = userList.first;
-        }
-
-        // Émettre chaque notification dès qu'elle est prête
-        yield notification;
-      }
-    }
-  }
-
-  Stream<TransactionSolde> getTransactionsSoldes2(String user_id) async* {
-    var postStream = FirebaseFirestore.instance
-        .collection('TransactionSoldes')
-        .where("user_id", isEqualTo: user_id)
-        .orderBy('createdAt', descending: true)
-        .limit(100)
-        .snapshotsM('postProvider.dart:1037');
-
-    await for (var snapshot in postStream) {
-      for (var post in snapshot.docs) {
-        TransactionSolde notification = TransactionSolde.fromJson(post.data());
-        //
-        // // Récupérer les infos de l'utilisateur associé
-        // QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
-        //     .collection('Users')
-        //     .where("id", isEqualTo: notification.user_id)
-        //     .getM('postProvider.dart:1047');
-        //
-        // List<UserData> userList = querySnapshotUser.docs.map((doc) {
-        //   return UserData.fromJson(doc.data() as Map<String, dynamic>);
-        // }).toList();
-        //
-        // if (userList.isNotEmpty) {
-        //   notification.userData = userList.first;
-        // }
-
-        // Émettre chaque notification dès qu'elle est prête
-        yield notification;
-      }
-    }
-  }
+  /// Transactions de la personne connectée (100 dernières, lues depuis l'API ; l'écran relit pour se rafraîchir).
   Stream<List<TransactionSolde>> getTransactionsSoldes(String user_id) async* {
-    var postStream = FirebaseFirestore.instance
-        .collection('TransactionSoldes')
-        .where("user_id", isEqualTo: user_id)
-        .orderBy('createdAt', descending: true)
-        .limit(100)
-        .snapshotsM('postProvider.dart:1068');
-
-    List<TransactionSolde> transactions = [];
-
-    await for (var snapshot in postStream) {
-      for (var post in snapshot.docs) {
-        TransactionSolde transaction = TransactionSolde.fromJson(post.data());
-        transactions.add(transaction); // Ajouter la transaction à la liste
-      }
-      // Émettre la liste complète des transactions après chaque récupération de snapshot
-      yield transactions;
-    }
+    final page = await PubApi.transactions(user_id, limit: 100);
+    yield page.items;
   }
 
 
-  Stream<Canal> getCanaux2() async* {
-    var postStream =  FirebaseFirestore.instance
-        .collection('Canaux')
-        .orderBy('updated_at', descending: true)
-        .limit(100)
-        .snapshotsM('postProvider.dart:1088');
-
-    await for (var snapshot in postStream) {
-      for (var post in snapshot.docs) {
-        Canal canal = Canal.fromJson(post.data());
 
 
-        // Récupérer les infos de l'utilisateur associé
-        QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
-            .collection('Users')
-            .where("id", isEqualTo: canal.userId)
-            .getM('postProvider.dart:1099');
-
-        List<UserData> userList = querySnapshotUser.docs.map((doc) {
-          return UserData.fromJson(doc.data() as Map<String, dynamic>);
-        }).toList();
-
-        if (userList.isNotEmpty) {
-          canal.user = userList.first;
-        }
-
-        // Émettre chaque notification dès qu'elle est prête
-        yield canal;
-      }
-    }
-  }
-
-  Stream<List<Canal>> getCanaux() async* {
-    var postStream = FirebaseFirestore.instance
-        .collection('Canaux')
-        .orderBy('updatedAt', descending: true)
-        .limit(100)
-        .snapshotsM('postProvider.dart:1120');
-
-    await for (var snapshot in postStream) {
-      List<Canal> canals = [];
-
-      for (var post in snapshot.docs) {
-        Canal canal = Canal.fromJson(post.data());
-
-        // Récupérer les infos de l'utilisateur associé
-        QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
-            .collection('Users')
-            .where("id", isEqualTo: canal.userId)
-            .getM('postProvider.dart:1132');
-
-        List<UserData> userList = querySnapshotUser.docs.map((doc) {
-          return UserData.fromJson(doc.data() as Map<String, dynamic>);
-        }).toList();
-
-        if (userList.isNotEmpty) {
-          canal.user = userList.first;
-        }
-
-        canals.add(canal);
-      }
-      printVm('canals tailles: ${canals.length}');
-
-      yield canals; // Émettre toute la liste au lieu d'un seul canal
-    }
-  }
-
-  Stream<Canal> getCanauxByUser(String user_id) async* {
-    var postStream =  FirebaseFirestore.instance
-        .collection('Canaux')
-        .where("userId", isEqualTo: user_id)
-        .orderBy('updatedAt', descending: true)
-        .limit(100)
-        .snapshotsM('postProvider.dart:1156');
-
-    await for (var snapshot in postStream) {
-      for (var post in snapshot.docs) {
-        Canal canal = Canal.fromJson(post.data());
-
-        // Récupérer les infos de l'utilisateur associé
-        QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
-            .collection('Users')
-            .where("id", isEqualTo: canal.userId)
-            .getM('postProvider.dart:1166');
-
-        List<UserData> userList = querySnapshotUser.docs.map((doc) {
-          return UserData.fromJson(doc.data() as Map<String, dynamic>);
-        }).toList();
-
-        if (userList.isNotEmpty) {
-          canal.user = userList.first;
-        }
-
-        // Émettre chaque notification dès qu'elle est prête
-        yield canal;
-      }
-    }
-  }
 
   // NOUVELLE MÉTHODE : Récupérer tous les canaux où l'utilisateur est impliqué
   // Méthode pour récupérer seulement les canaux administrés
-  Stream<Canal> getAdminCanaux(String userId) async* {
-    try {
-      final adminStream = firestore
-          .collection('Canaux')
-          .where("adminIds", arrayContains: userId)
-          .orderBy('updatedAt', descending: true)
-          .limit(100)
-          .snapshotsM('postProvider.dart:1191');
-
-      await for (var snapshot in adminStream) {
-        for (var doc in snapshot.docs) {
-          final canalData = doc.data() as Map<String, dynamic>;
-
-          // Vérifier que l'utilisateur n'est pas le créateur
-          if (canalData['userId'] != userId) {
-            Canal canal = Canal.fromJson(canalData);
-            canal.id = doc.id;
-
-            // Récupérer les infos du créateur
-            try {
-              final creatorDoc = await firestore
-                  .collection('Users')
-                  .doc(canal.userId)
-                  .getM('postProvider.dart:1207');
-
-              if (creatorDoc.exists) {
-                canal.user = UserData.fromJson(creatorDoc.data()!);
-              }
-            } catch (e) {
-              printVm('Erreur récupération créateur: $e');
-            }
-
-            yield canal;
-          }
-        }
-      }
-    } catch (e) {
-      printVm("Erreur récupération canaux admin: $e");
-      throw e;
-    }
-  }
 
 
-  Stream<List<NotificationData>> getListNotification2(String user_id) async* {
-    var postStream = FirebaseFirestore.instance.collection('Notifications')
-        .where("receiver_id",isEqualTo:'${user_id}')
-
-        .orderBy('created_at', descending: true)
-   .limit(100)
-
-        .snapshotsM('postProvider.dart:1234');
-    List<NotificationData> notifications = [];
-    // //listConstposts =[];
-    //  UserData userData=UserData();
-
-    await for (var snapshot in postStream) {
-      notifications=[];
-
-      for (var post in snapshot.docs) {
-        //  printVm("post : ${jsonDecode(post.toString())}");
-        NotificationData notification=NotificationData.fromJson(post.data());
-        QuerySnapshot querySnapshotUser = await FirebaseFirestore.instance
-            .collection('Users')
-            .where("id", isEqualTo: '${notification.user_id}')
-            .getM('postProvider.dart:1248');
-
-        List<UserData> userList = querySnapshotUser.docs.map((doc) {
-          return UserData.fromJson(doc.data() as Map<String, dynamic>);
-        }).toList();
-
-        if (userList.isNotEmpty) {
-          notification.userData = userList.first;
-        }
-        notifications.add(notification);
-      // listConstposts=posts;
-
-
-      }
-      yield notifications;
-    }
-  }
   bool isIn(List<String> users_id, String userIdToCheck) {
     return users_id.any((item) => item == userIdToCheck);
   }
@@ -801,398 +374,61 @@ Future<List<Post>> getPostsImagesById(String post_id) async {
     }
   }
 
-  Future<List<ArticleData>>
-  getArticleById(String id) async {
 
 
-    List<ArticleData> posts = [];
-    //listConstposts =[];
 
-    CollectionReference postCollect = await FirebaseFirestore.instance.collection('Articles');
-    QuerySnapshot querySnapshotPost = await postCollect
 
-        .where("id",isEqualTo:'${id}')
 
 
-        .getM('postProvider.dart:2270');
 
-    List<ArticleData> postList = querySnapshotPost.docs.map((doc) =>
-        ArticleData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-    //  UserData userData=UserData();
 
 
-    for (ArticleData p in postList) {
-      //  printVm("post : ${jsonDecode(post.toString())}");
 
 
 
-      //get user
-      CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-      QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.user_id}').getM('postProvider.dart:2284');
 
-      List<UserData> userList = querySnapshotUser.docs.map((doc) =>
-          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
 
-//get entreprise
 
-
-      p.user=userList.first;
-      if (p.disponible==PostStatus.NONVALIDE.name) {
-        // posts.add(p);
-      }else if (p.disponible==PostStatus.SUPPRIMER.name) {
-        // posts.add(p);
-      }   else{
-        posts.add(p);
-      }
-
-
-
-
-    }
-
-    return posts;
-
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  Future<List<UserServiceData>>
-  getUserServiceById(String id) async {
-
-
-    List<UserServiceData> posts = [];
-    //listConstposts =[];
-
-    CollectionReference postCollect = await FirebaseFirestore.instance.collection('UserServices');
-    QuerySnapshot querySnapshotPost = await postCollect
-
-        .where("id",isEqualTo:'${id}')
-        .where("disponible",isEqualTo:true)
-
-
-        .getM('postProvider.dart:2338');
-
-    List<UserServiceData> postList = querySnapshotPost.docs.map((doc) =>
-        UserServiceData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-    //  UserData userData=UserData();
-
-
-    for (UserServiceData p in postList) {
-      //  printVm("post : ${jsonDecode(post.toString())}");
-
-
-
-      //get user
-      CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-      QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.userId}').getM('postProvider.dart:2352');
-
-      List<UserData> userList = querySnapshotUser.docs.map((doc) =>
-          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-
-//get entreprise
-
-
-      p.user=userList.first;
-      if (p.disponible==PostStatus.NONVALIDE.name) {
-        // posts.add(p);
-      }else if (p.disponible==PostStatus.SUPPRIMER.name) {
-        // posts.add(p);
-      }   else{
-        posts.add(p);
-      }
-
-
-
-
-    }
-
-    return posts;
-
-  }
-  Future<List<UserServiceData>> getAllUserService() async {
-
-    List<UserServiceData>  listArticles = [];
-    bool hasData=false;
-    try{
-      CollectionReference userCollect =
-      FirebaseFirestore.instance.collection('UserServices');
-      // Get docs from collection reference
-      QuerySnapshot querySnapshotUser = await userCollect
-          .where("disponible",isEqualTo: true)
-          .orderBy('createdAt', descending: true)
-          .limit(150)
-          .getM('postProvider.dart:2389');
-
-      // Afficher la liste
-      listArticles = querySnapshotUser.docs.map((doc) =>
-          UserServiceData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-      for (var article in listArticles) {
-        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.userId).getM('postProvider.dart:2395');
-        UserData user=UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
-        // printVm(' UserServices user ${user.toJson()}');
-
-        article.user = user;
-      }
-      listArticles.shuffle();
-      listArticles.shuffle();
-
-
-
-      printVm('list UserServices ${listArticles.length}');
-      hasData=true;
-      // teams.shuffle();
-
-
-
-
-      return listArticles;
-      // return teams;
-    }catch(e){
-      printVm("erreur ${e}");
-      hasData=false;
-      return [];
-    }
-
+  Future<List<UserServiceData>> getUserServiceById(String id) async {
+    final s = await PubApi.service(id);
+    return s == null || s.disponible == false ? <UserServiceData>[] : [s];
   }
 
   Future<List<Canal>> getCanauxHome() async {
-
-    List<Canal>  listArticles = [];
-    bool hasData=false;
-    try{
-      CollectionReference userCollect =
-      FirebaseFirestore.instance.collection('Canaux');
-      // Get docs from collection reference
-      // orderBy('canalScore') exclut les canaux sans ce champ — on trie client-side
-      QuerySnapshot querySnapshotUser = await userCollect
-          .limit(20)
-          .getM('postProvider.dart:2434');
-
-      // Tri client-side par canalScore (descend) — les canaux sans ce champ passent en dernier
-      listArticles = querySnapshotUser.docs.map((doc) =>
-          Canal.fromJson(doc.data() as Map<String, dynamic>)).toList();
-      listArticles.sort((a, b) {
-        final sa = (a.toJson()['canalScore'] as num?)?.toDouble() ?? 0.0;
-        final sb = (b.toJson()['canalScore'] as num?)?.toDouble() ?? 0.0;
-        return sb.compareTo(sa);
-      });
-      listArticles = listArticles.take(8).toList();
-      for (var article in listArticles) {
-        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.userId).getM('postProvider.dart:2446');
-        UserData user=UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
-        article.user = user;
-      }
-
-      printVm('list UserServices ${listArticles.length}');
-      hasData=true;
-
-
-
-
-      return listArticles;
-      // return teams;
-    }catch(e){
-      printVm("erreur ${e}");
-      hasData=false;
+    try {
+      return await PubApi.topCanaux(myId: FirebaseAuth.instance.currentUser?.uid);
+    } catch (e) {
+      printVm('❌ API canaux (accueil) en échec : $e');
       return [];
     }
-
-  }
-
-  Future<List<UserServiceData>> getAllUserServiceHome() async {
-
-    List<UserServiceData>  listArticles = [];
-    bool hasData=false;
-    try{
-      CollectionReference userCollect =
-      FirebaseFirestore.instance.collection('UserServices');
-      // Get docs from collection reference
-      QuerySnapshot querySnapshotUser = await userCollect
-          .where("disponible",isEqualTo: true)
-          .orderBy('createdAt', descending: true)
-          .limit(10)
-          .getM('postProvider.dart:2479');
-
-      // Afficher la liste
-      listArticles = querySnapshotUser.docs.map((doc) =>
-          UserServiceData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-      for (var article in listArticles) {
-        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.userId).getM('postProvider.dart:2485');
-        UserData user=UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
-        // printVm(' UserServices user ${user.toJson()}');
-
-        article.user = user;
-      }
-      listArticles.shuffle();
-      listArticles.shuffle();
-
-
-
-      printVm('list UserServices ${listArticles.length}');
-      hasData=true;
-      // teams.shuffle();
-
-
-
-
-      return listArticles;
-      // return teams;
-    }catch(e){
-      printVm("erreur ${e}");
-      hasData=false;
-      return [];
-    }
-
-  }
-  Future<List<UserServiceData>> getAllOnlyUserService(String userId) async {
-
-    List<UserServiceData>  listArticles = [];
-    bool hasData=false;
-    try{
-      CollectionReference userCollect =
-      FirebaseFirestore.instance.collection('UserServices');
-      // Get docs from collection reference
-      QuerySnapshot querySnapshotUser = await userCollect
-          .where("disponible",isEqualTo: true)
-          .where("userId",isEqualTo: userId)
-          .orderBy('createdAt', descending: true)
-          .limit(150)
-          .getM('postProvider.dart:2525');
-
-      // Afficher la liste
-      listArticles = querySnapshotUser.docs.map((doc) =>
-          UserServiceData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-      for (var article in listArticles) {
-        DocumentSnapshot userSnapshot = await FirebaseFirestore.instance.collection('Users').doc(article.userId).getM('postProvider.dart:2531');
-        UserData user=UserData.fromJson(userSnapshot.data() as Map<String, dynamic>);
-        // printVm(' UserServices user ${user.toJson()}');
-
-        article.user = user;
-      }
-      listArticles.shuffle();
-
-
-
-      printVm('list UserServices ${listArticles.length}');
-      hasData=true;
-      // teams.shuffle();
-
-
-
-
-      return listArticles;
-      // return teams;
-    }catch(e){
-      printVm("erreur ${e}");
-      hasData=false;
-      return [];
-    }
-
   }
 
 
-  Future<bool> updateUserService(UserServiceData data,BuildContext context) async {
-    try{
 
-
-
-      await FirebaseFirestore.instance
-          .collection('UserServices')
-          .doc(data.id)
-          .update(data.toJson());
-
+  Future<bool> updateUserService(UserServiceData data, BuildContext context) async {
+    try {
+      await UsersApi.saveService(data.toJson(), id: data.id);
       return true;
-    }catch(e){
-      printVm("erreur update  : ${e}");
+    } catch (e) {
+      printVm('erreur update service : ${PubApi.message(e)}');
       return false;
     }
   }
-  Future<bool> updateCanal(Canal data,BuildContext context) async {
-    try{
-
-
-
-      await FirebaseFirestore.instance
-          .collection('Canaux')
-          .doc(data.id)
-          .update(data.toJson());
-
-      return true;
-    }catch(e){
-      printVm("erreur update  : ${e}");
-      return false;
-    }
+  Future<bool> updateCanal(Canal data, BuildContext context) async {
+    // Date de dernière publication et compteur de publications d'un canal : tenus par le serveur à la création de la publication.
+    return true;
   }
 
 
 
 
-  Future<List<EntrepriseData>>
-  getEntreprise(String userId) async {
-
-
-    List<EntrepriseData> posts = [];
-    //listConstposts =[];
-
-    CollectionReference postCollect = await FirebaseFirestore.instance.collection('Entreprises');
-    QuerySnapshot querySnapshotPost = await postCollect
-
-        .where("userId",isEqualTo:'${userId}')
-
-
-        .getM('postProvider.dart:2608');
-
-    List<EntrepriseData> postList = querySnapshotPost.docs.map((doc) =>
-        EntrepriseData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-    //  UserData userData=UserData();
-
-
-    for (EntrepriseData p in postList) {
-      //  printVm("post : ${jsonDecode(post.toString())}");
-
-
-
-      //get user
-      CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Users');
-      QuerySnapshot querySnapshotUser = await friendCollect.where("id",isEqualTo:'${p.userId}').getM('postProvider.dart:2622');
-
-      List<UserData> userList = querySnapshotUser.docs.map((doc) =>
-          UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-
-//get entreprise
-
-      //
-      // p.user=userList.first;
-      // if (p.disponible==PostStatus.NONVALIDE.name) {
-      //   // posts.add(p);
-      // }else if (p.disponible==PostStatus.SUPPRIMER.name) {
-      //   // posts.add(p);
-      // }   else{
-      //   posts.add(p);
-      // }
-
-      printVm("Entrprise : ${p.titre}");
-      posts.add(p);
-
-
-
-
+  Future<List<EntrepriseData>> getEntreprise(String userId) async {
+    try {
+      return await PubApi.businessesOf(userId);
+    } catch (e) {
+      printVm('❌ API entreprises en échec : $e');
+      return [];
     }
-
-    return posts;
-
   }
 Stream<List<Post>> getPostsVideos(int limite) async* {
     // Une page de découverte du serveur (vidéos) ; en cas d'erreur la liste reste vide (aucun retour à Firebase).
@@ -1302,34 +538,6 @@ Future<bool> updateComment(PostComment comment) async {
   }
 
 // Dans PostProvider
-  Future<List<Canal>> getCanauxLimited(int limit) async {
-    // Nouvelle API (si le module « channels » est activé dans Remote Config) ; en cas d'erreur on retombe sur Firebase.
-    if (ApiGateway.instance.useApi('channels')) {
-      try {
-        final r = await ApiGateway.instance.client.get('/channels', query: {'limit': limit > 50 ? 50 : limit});
-        final list = (ApiClient.data(r) as List).cast<Map<String, dynamic>>();
-        return list.map(canalFromApi).toList();
-      } catch (e) {
-        printVm('❌ API CANAUX EN ÉCHEC — aucun retour à Firebase : $e');
-        return [];
-      }
-    }
-    try {
-      QuerySnapshot snapshot = await firestore
-          .collection('Canaux')
-          .orderBy('updatedAt', descending: true)
-          // .orderBy('createdAt', descending: true)
-          .limit(limit)
-          .getM('postProvider.dart:3459');
-
-      return snapshot.docs.map((doc) {
-        return Canal.fromJson(doc.data() as Map<String, dynamic>);
-      }).toList();
-    } catch (e) {
-      printVm('Erreur getCanauxLimited: $e');
-      return [];
-    }
-  }
 
 // Dans PostProvider
 }

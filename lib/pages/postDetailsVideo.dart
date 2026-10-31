@@ -21,7 +21,6 @@ import 'package:afrotok/layout/responsive_layout.dart';
 import 'dart:async';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/defi/defi_details_section.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 
 import 'dart:math';
 
@@ -82,7 +81,8 @@ import 'package:chewie/chewie.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/publications_api.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart' show ApiException;
 
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -103,7 +103,6 @@ import 'package:video_thumbnail/video_thumbnail.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:firebase_storage/firebase_storage.dart';
 
 import 'package:path_provider/path_provider.dart';
 
@@ -149,7 +148,6 @@ class VideoYoutubePageDetails extends StatefulWidget {
 class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with MusicSuspendMixin {
   late UserAuthProvider authProvider;
   late PostProvider postProvider;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   late SharedPreferences _prefs;
   final String _lastViewDatePrefix = 'last_view_date_';
@@ -209,7 +207,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
   bool _midrollVideoInitialized = false;
   VoidCallback? _videoPositionListener;
   // Streams de mise à jour
-  StreamSubscription<DocumentSnapshot>? _postSubscription;
 
   // Suggestions
   Timer? _suggestionModalTimer;
@@ -233,18 +230,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     postProvider = Provider.of<PostProvider>(context, listen: false);
     _currentPost = widget.initialPost;
 
-    // Suivi en direct du post : pièces reçues, likes, commentaires… restent à jour
-    final _livePid = widget.initialPost.id;
-    if (_livePid != null && _livePid.isNotEmpty) {
-      _postSubscription = _firestore.collection('Posts').doc(_livePid).snapshotsM('postDetailsVideo.dart:237').listen((snap) {
-        final data = snap.data();
-        if (!snap.exists || data == null || !mounted) return;
-        final fresh = Post.fromJson({'id': snap.id, ...data});
-        fresh.user ??= _currentPost.user;
-        fresh.canal ??= _currentPost.canal;
-        setState(() => _currentPost = fresh);
-      });
-    }
+    // Données à jour (pièces reçues, j'aime, commentaires) : une lecture à l'ouverture, puis après chaque action
+    _refreshPost();
 
     // Marquer le post comme vu (Tier 1) si l'utilisateur l'ouvre consciemment
     final _pid = widget.initialPost.id;
@@ -609,89 +596,12 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
   }
   // ==================== GÉNÉRATION DE MINIATURE ====================
   Future<void> _ensureThumbnailForPost(Post post) async {
-    // VideoThumbnail + dart:io File ne fonctionnent pas sur Flutter Web
-    if (kIsWeb) return;
-    // Si déjà une thumbnail ou en cours de génération, on ignore
-    if (post.thumbnail != null && post.thumbnail!.isNotEmpty) return;
-    if (_generatingThumbnails.contains(post.id)) return;
-
-    // Si le post n'a pas d'URL vidéo, on ignore
-    if (post.url_media == null || post.url_media!.isEmpty) return;
-
-    _generatingThumbnails.add(post.id!);
-
-    // Mettre à jour l'affichage pour ce post (afficher un indicateur)
-    setState(() {});
-
-    try {
-      // Générer la miniature locale
-      final thumbnailFile = await VideoThumbnail.thumbnailFile(
-        video: post.url_media!,
-        thumbnailPath: (await getTemporaryDirectory()).path,
-        imageFormat: ImageFormat.JPEG,
-        maxWidth: 400,
-        quality: 75,
-        timeMs: 1000,
-      );
-
-      if (thumbnailFile == null) {
-        _generatingThumbnails.remove(post.id);
-        setState(() {});
-        return;
-      }
-
-      // Upload vers Firebase Storage
-      final fileName = 'thumbnails/thumb_${post.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final ref = FirebaseStorage.instance.ref().child(fileName);
-      final bytes = await XFile(thumbnailFile).readAsBytes();
-      final snapshot = await ref.putData(await MediaShrink.bytes(bytes));
-      final downloadUrl = await snapshot.ref.getDownloadURL();
-
-      // Mettre à jour Firestore
-      await _firestore.collection('Posts').doc(post.id).update({
-        'thumbnail': downloadUrl,
-      });
-
-      // Mettre à jour l'objet local dans la liste des suggestions
-      final index = _suggestedVideos.indexWhere((p) => p.id == post.id);
-      if (index != -1) {
-        setState(() {
-          _suggestedVideos[index].thumbnail = downloadUrl;
-        });
-      }
-
-      // Si c'est le post courant (peu probable, mais au cas où)
-      if (_currentPost.id == post.id) {
-        setState(() {
-          _currentPost.thumbnail = downloadUrl;
-        });
-      }
-    } catch (e) {
-      printVm('Erreur génération miniature pour post ${post.id}: $e');
-    } finally {
-      _generatingThumbnails.remove(post.id);
-      setState(() {});
-    }
+    // L'envoi d'une miniature générée sur l'appareil n'a plus de route dans l'API (voir lacunes : thumbnail_upload_id) :
+    // la miniature est fournie par le serveur à la publication. Rien à générer ici.
   }
   Future<void> _loadAdvertisement() async {
-    if (_currentPost.advertisementId == null) return;
-    setState(() => _isLoadingAd = true);
-    try {
-      final adDoc = await _firestore
-          .collection('Advertisements')
-          .doc(_currentPost.advertisementId)
-          .getM('postDetailsVideo.dart:713');
-      if (adDoc.exists) {
-        final ad = Advertisement.fromJson(adDoc.data()!);
-        ad.id = adDoc.id;
-        setState(() => _advertisement = ad);
-        _recordAdView(ad);
-      }
-    } catch (e) {
-      printVm('Erreur chargement publicité: $e');
-    } finally {
-      setState(() => _isLoadingAd = false);
-    }
+    // La fiche d'une publicité n'est plus lue dans l'application (route de lecture à créer côté API : voir lacunes).
+    if (mounted) setState(() => _isLoadingAd = false);
   }
 
   Future<void> _recordAdView(Advertisement ad) async {
@@ -704,20 +614,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
   bool _ownerAdLoaded = false;
 
   Future<void> _loadOwnerAd() async {
-    if (_ownerAdLoaded || _currentPost.id == null) return;
+    // Le boost du propriétaire est géré par Afrolook Ads : aucune lecture directe de la publicité ici.
     _ownerAdLoaded = true;
-    try {
-      final snap = await _firestore
-          .collection('Advertisements')
-          .where('postId', isEqualTo: _currentPost.id)
-          .limit(1)
-          .getM('postDetailsVideo.dart:755');
-      if (snap.docs.isNotEmpty && mounted) {
-        final ad = Advertisement.fromJson(snap.docs.first.data());
-        ad.id = snap.docs.first.id;
-        setState(() => _ownerAdForPost = ad);
-      }
-    } catch (_) {}
   }
 
   // ==================== SUGGESTIONS ====================
@@ -788,11 +686,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
         widget.initialPost.users_vue_id ??= [];
         widget.initialPost.users_vue_id!.add(currentUserId);
       });
-      await _firestore.collection('Posts').doc(widget.initialPost.id).update({
-        'vues': FieldValue.increment(1),
-        'users_vue_id': FieldValue.arrayUnion([currentUserId]),
-        'popularity': FieldValue.increment(2),
-      });
+      await PubApi.view(widget.initialPost.id!);
       PostViewService.recordAuthorView(widget.initialPost, currentUserId);
       printVm('✅ Vue unique enregistrée pour ${widget.initialPost.id}');
     } catch (e) {
@@ -804,7 +698,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
   void dispose() {
     // Pub plein écran à la fermeture de la vidéo (toutes les N vidéos ; plafonds dans AdmobService)
     unawaited(AdmobService.onVideoClosed(authProvider.loginUserData));
-    _postSubscription?.cancel();
     _midrollTimer?.cancel();
     _midrollVideoController?.dispose();
     _midrollVideoController = null;
@@ -834,6 +727,25 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
   /// Vrai quand le chargement du créateur / du canal est terminé (réussi ou non) : tant qu'il ne l'est pas, l'en-tête reste un gabarit neutre.
   bool _relationsDone = false;
 
+  /// Relit la publication depuis l'API (compteurs, j'aime, favori). Erreur : on garde l'affichage actuel.
+  Future<void> _refreshPost() async {
+    final id = widget.initialPost.id;
+    if (id == null || id.isEmpty) return;
+    try {
+      final fresh = await PubApi.fresh(id);
+      if (fresh == null || !mounted) return;
+      fresh.user ??= _currentPost.user;
+      fresh.canal ??= _currentPost.canal;
+      setState(() {
+        _currentPost = fresh;
+        final me = authProvider.loginUserData.id;
+        if (me != null) _isFavorite = fresh.users_favorite_id?.contains(me) ?? _isFavorite;
+      });
+    } catch (e) {
+      printVm('Erreur lecture publication: $e');
+    }
+  }
+
   Future<void> _loadPostRelations() async {
     if (_currentPost.user_id == null) {
       if (mounted) setState(() => _relationsDone = true);
@@ -843,16 +755,17 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     try {
       final hasCanal = _currentPost.canal_id != null && _currentPost.canal_id!.isNotEmpty;
       // créateur et canal chargés en même temps ; rien n'est affiché avant que les deux soient là
-      final results = await Future.wait([
-        _firestore.collection('Users').doc(_currentPost.user_id).getM('postDetailsVideo.dart:879'),
-        if (hasCanal) _firestore.collection('Canaux').doc(_currentPost.canal_id).getM('postDetailsVideo.dart:886'),
+      final results = await Future.wait<Object?>([
+        PubApi.user(_currentPost.user_id!),
+        if (hasCanal) PubApi.canal(_currentPost.canal_id!, myId: authProvider.loginUserData.id),
       ]);
-      if (results[0].exists) {
-        _currentUser = UserData.fromJson(results[0].data()!);
+      final u = results[0] as UserData?;
+      if (u != null) {
+        _currentUser = u;
         _currentPost.user = _currentUser;
       }
-      if (hasCanal && results[1].exists) {
-        _currentCanal = Canal.fromJson(results[1].data()!);
+      if (hasCanal && results[1] != null) {
+        _currentCanal = results[1] as Canal;
         _currentPost.canal = _currentCanal;
       }
     } catch (e) {
@@ -866,11 +779,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     final userId = authProvider.loginUserData.id;
     if (userId == null) return;
     try {
-      final postDoc = await _firestore.collection('Posts').doc(_currentPost.id).getM('postDetailsVideo.dart:904');
-      if (postDoc.exists) {
-        final favorites = List<String>.from(postDoc.data()?['users_favorite_id'] ?? []);
-        setState(() => _isFavorite = favorites.contains(userId));
-      }
+      final fresh = await PubApi.fresh(_currentPost.id!);
+      if (fresh != null && mounted) setState(() => _isFavorite = fresh.users_favorite_id?.contains(userId) ?? false);
     } catch (e) {
       printVm('Erreur vérification favori: $e');
     }
@@ -1065,25 +975,20 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
 
   Future<void> _navigateToAdOwner(BuildContext ctx, String ownerId, String? ownerType) async {
     try {
-      final fs = FirebaseFirestore.instance;
       switch (ownerType) {
         case 'canal':
-          final doc = await fs.collection('Canaux').doc(ownerId).getM('postDetailsVideo.dart:1106');
-          if (!doc.exists || !ctx.mounted) return;
-          final data = Map<String, dynamic>.from(doc.data()!);
-          data['id'] = doc.id;
+          final canal = await PubApi.canal(ownerId, myId: authProvider.loginUserData.id);
+          if (canal == null || !ctx.mounted) return;
           Navigator.push(ctx, MaterialPageRoute(
-            builder: (_) => CanalDetails(canal: Canal.fromJson(data)),
+            builder: (_) => CanalDetails(canal: canal),
           ));
           break;
         case 'user':
         default:
-          final doc = await fs.collection('Users').doc(ownerId).getM('postDetailsVideo.dart:1116');
-          if (!doc.exists || !ctx.mounted) return;
-          final data = Map<String, dynamic>.from(doc.data()!);
-          data['id'] = doc.id;
+          final user = await PubApi.user(ownerId);
+          if (user == null || !ctx.mounted) return;
           Navigator.push(ctx, MaterialPageRoute(
-            builder: (_) => OtherUserPage(otherUser: UserData.fromJson(data)),
+            builder: (_) => OtherUserPage(otherUser: user),
           ));
       }
     } catch (e) {
@@ -1100,10 +1005,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     if (_prefs.getBool(prefKey) ?? false) return;
     await _prefs.setBool(prefKey, true);
 
-    await _firestore.collection('Posts').doc(_currentPost.id).update({
-      'vues': FieldValue.increment(1),
-      'users_vue_id': FieldValue.arrayUnion([userId]),
-    });
+    await PubApi.view(_currentPost.id!);
     setState(() {
       _currentPost.vues = (_currentPost.vues ?? 0) + 1;
       _currentPost.users_vue_id ??= [];
@@ -1120,37 +1022,22 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     final postId = _currentPost.id!;
     try {
       if (_isFavorite) {
-        await _firestore.collection('Posts').doc(postId).update({
-          'users_favorite_id': FieldValue.arrayRemove([userId]),
-          'favorites_count': FieldValue.increment(-1),
-        });
+        await PubApi.setFavorite(postId, false);
         setState(() {
           _isFavorite = false;
           _currentPost.favoritesCount = (_currentPost.favoritesCount ?? 0) - 1;
         });
       } else {
-        await _firestore.collection('Posts').doc(postId).update({
-          'users_favorite_id': FieldValue.arrayUnion([userId]),
-          'favorites_count': FieldValue.increment(1),
-        });
+        await PubApi.setFavorite(postId, true);
         setState(() {
           _isFavorite = true;
           _currentPost.favoritesCount = (_currentPost.favoritesCount ?? 0) + 1;
         });
-        await authProvider.sendNotification(
-          userIds: [_currentPost.user?.oneIgnalUserid ?? ''],
-          smallImage: authProvider.loginUserData.imageUrl!,
-          send_user_id: userId,
-          recever_user_id: _currentPost.user_id!,
-          message: "❤️ @${authProvider.loginUserData.pseudo} a ajouté votre vidéo à ses favoris",
-          type_notif: NotificationType.FAVORITE.name,
-          post_id: postId,
-          post_type: PostDataType.VIDEO.name,
-          chat_id: '',
-        );
+        // notification de favori : envoyée par le serveur
       }
     } catch (e) {
       printVm('Erreur favori: $e');
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(PubApi.message(e))));
     } finally {
       setState(() => _isProcessingFavorite = false);
     }
@@ -1176,15 +1063,14 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     setState(() => _isLiking = false);
 
     if (alreadyLiked) {
-      _firestore.collection('Posts').doc(_currentPost.id).update({
-        'loves': FieldValue.increment(-1),
-        'users_love_id': FieldValue.arrayRemove([userId]),
-        'popularity': FieldValue.increment(-1),
-      }).catchError((_) {
-        if (mounted) setState(() {
-          _currentPost.loves = ((_currentPost.loves ?? 0) + 1);
-          _currentPost.users_love_id?.add(userId);
-        });
+      PubApi.setLike(_currentPost.id!, false).catchError((e) {
+        if (mounted) {
+          setState(() {
+            _currentPost.loves = ((_currentPost.loves ?? 0) + 1);
+            _currentPost.users_love_id?.add(userId);
+          });
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(PubApi.message(e))));
+        }
       });
     } else {
       _processLikeBackground(userId, alreadyLiked);
@@ -1202,42 +1088,19 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     ).then((success) async {
       if (!mounted) return;
       if (!success) {
-        // Pas de pièces : compter quand même le like dans Firestore
-        _firestore.collection('Posts').doc(_currentPost.id).update({
-          'loves': FieldValue.increment(1),
-          'users_love_id': FieldValue.arrayUnion([userId]),
-          'popularity': FieldValue.increment(1),
+        // Pas de pièces : le j'aime n'est pas compté (le serveur refuse sans pièces) ; on annule l'affichage
+        setState(() {
+          _currentPost.loves = ((_currentPost.loves ?? 1) - 1).clamp(0, double.maxFinite.toInt());
+          _currentPost.users_love_id?.remove(userId);
         });
         _showInsufficientCoinsForLikeDialog();
         return;
       }
-      // Succès pièces : popularité + notifications
+      // Succès : popularité, notifications et pièces sont gérées par le serveur
       if (!alreadyLiked) {
         try {
-          await _firestore.collection('Posts').doc(_currentPost.id).update({
-            'popularity': FieldValue.increment(3),
-          });
           addPointsForAction(UserAction.like);
           addPointsForOtherUserAction(_currentPost.user_id!, UserAction.autre);
-          final nowMicro = DateTime.now().microsecondsSinceEpoch;
-          final userDoc = await _firestore.collection('Users').doc(_currentPost.user_id).getM('postDetailsVideo.dart:1258');
-          final lastNotif = userDoc.data()?['lastNotificationTime'] ?? 0;
-          if (nowMicro - lastNotif >= 20 * 60 * 1000000) {
-            await authProvider.sendNotification(
-              userIds: [_currentPost.user?.oneIgnalUserid ?? ''],
-              smallImage: authProvider.loginUserData.imageUrl ?? '',
-              send_user_id: userId,
-              recever_user_id: _currentPost.user_id!,
-              message: "📢 @${authProvider.loginUserData.pseudo} a aimé votre vidéo et vous a offert 1 pièce !",
-              type_notif: NotificationType.POST.name,
-              post_id: _currentPost.id!,
-              post_type: PostDataType.VIDEO.name,
-              chat_id: '',
-            );
-            await _firestore.collection('Users').doc(_currentPost.user_id).update({
-              'lastNotificationTime': nowMicro,
-            });
-          }
         } catch (e) {
           printVm("❌ Erreur post-like vidéo: $e");
         }
@@ -1294,7 +1157,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
       final shareUrl = post.thumbnail ?? post.images?.first ?? '';
       final appLink = AppLinkService();
       await appLink.shareContent(type: AppLinkType.post, id: post.id!, message: post.description ?? '', mediaUrl: shareUrl);
-      await _firestore.collection('Posts').doc(post.id).update({'partage': FieldValue.increment(1), 'users_partage_id': FieldValue.arrayUnion([authProvider.loginUserData.id!])});
+      await PubApi.share(post.id!);
       setState(() => post.partage = (post.partage ?? 0) + 1);
       addPointsForAction(UserAction.partagePost);
     } catch (e) {
@@ -1323,16 +1186,11 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     final originalId = post.isRepost == true ? (post.originalPostId ?? post.id!) : post.id!;
     setState(() => post.users_republier_id!.add(me.id!));
     try {
-      await _firestore.collection('Posts').doc(originalId).update({
-        'users_republier_id': FieldValue.arrayUnion([me.id]),
-        'partage': FieldValue.increment(1),
-        'popularity': FieldValue.increment(3),
-      });
-      FirebaseFunctions.instance.httpsCallable('repostFanOut').call({'postId': originalId}).ignore();
+      await PubApi.repost(originalId);
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post republié ✓'), duration: Duration(seconds: 2)));
-    } catch (_) {
+    } catch (e) {
       setState(() => post.users_republier_id!.remove(me.id));
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erreur : impossible de republier'), duration: Duration(seconds: 2)));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(PubApi.message(e, fallback: 'Erreur : impossible de republier')), duration: const Duration(seconds: 3)));
     }
   }
 
@@ -1489,22 +1347,21 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
   }) async {
     Navigator.pop(sheetContext);
     try {
-      final callable = FirebaseFunctions.instanceFor(region: 'europe-west1').httpsCallable('reportPost');
-      await callable.call({'postId': post.id, 'isAdminReport': isAdmin, 'reportType': reportType});
+      await PubApi.report(post.id!, type: reportType == 'wrong_category' ? 'wrong_category' : 'standard');
       if (mounted) {
-        final msg = isAdmin
-            ? (reportType == 'wrong_category' ? 'Post modéré — hors catégorie.' : 'Post modéré.')
-            : (reportType == 'wrong_category' ? 'Signalé comme hors catégorie.' : 'Post signalé.');
+        final msg = reportType == 'wrong_category' ? 'Signalé comme hors catégorie.' : 'Post signalé.';
         final colors = AppColors.of(context);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text(msg, textAlign: TextAlign.center, style: TextStyle(color: colors.success)),
         ));
       }
-    } on FirebaseFunctionsException catch (e) {
+    } on ApiException catch (e) {
       if (mounted) {
-        final msg = e.code == 'already-exists' ? 'Tu as déjà signalé ce post.' : (e.message ?? 'Erreur.');
+        final msg = e.status == 409 ? 'Tu as déjà signalé ce post.' : PubApi.message(e, fallback: 'Erreur.');
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
       }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(PubApi.message(e)), backgroundColor: Colors.red));
     }
   }
 
@@ -1780,24 +1637,15 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
       canal.suivi = (canal.suivi ?? 0) + 1;
     }
 
-    final fs = FirebaseFirestore.instance;
     try {
-      await fs.runTransaction((txn) async {
-        final snap = await txn.get(fs.collection('Canaux').doc(canal.id));
-        final ids = List<String>.from(snap.data()?['usersSuiviId'] ?? []);
-        if (ids.contains(myId)) return;
-        txn.update(snap.reference, {
-          'usersSuiviId': FieldValue.arrayUnion([myId]),
-          'suivi': FieldValue.increment(1),
-        });
-        txn.update(fs.collection('Users').doc(myId), {
-          'canauxSuivisIds': FieldValue.arrayUnion([canal.id]),
-        });
-      });
-    } catch (_) {
+      await PubApi.followCanal(canal.id!);
+    } catch (e) {
       canal.usersSuiviId?.remove(myId);
       canal.suivi = (canal.suivi ?? 1) - 1;
-      if (mounted) setState(() => _localIsFollowing = false);
+      if (mounted) {
+        setState(() => _localIsFollowing = false);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(PubApi.message(e))));
+      }
     } finally {
       if (mounted) setState(() => _isProcessingFollow = false);
     }
@@ -1944,7 +1792,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     );
 
     try {
-      await _firestore.collection('Posts').doc(_currentPost.id).delete();
+      await PubApi.delete(_currentPost.id!);
       if (!mounted) return;
       Navigator.pop(context); // loader
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -1977,10 +1825,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     if (postId == null) return;
     final alreadyLiked = _currentPost.users_love_id?.contains(userId) ?? false;
     if (alreadyLiked) return;
-    FirebaseFirestore.instance.collection('Posts').doc(postId).update({
-      'loves': FieldValue.increment(1),
-      'users_love_id': FieldValue.arrayUnion([userId]),
-    }).catchError((_) {});
+    PubApi.setLike(postId, true).catchError((_) {});
     if (mounted) setState(() {
       _currentPost.users_love_id ??= [];
       _currentPost.users_love_id!.add(userId);
@@ -2002,7 +1847,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     try {
       final comment = PostComment(
         media: sticker?.toMedia(),
-        id: FirebaseFirestore.instance.collection('PostComments').doc().id,
+        id: 'tmp_${DateTime.now().microsecondsSinceEpoch}',
         user_id: userId,
         user: authProvider.loginUserData,
         post_id: _currentPost.id,
@@ -2059,21 +1904,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
             final msg = sticker != null
                 ? "@${authProvider.loginUserData.pseudo!} a envoyé un sticker sur votre vidéo"
                 : "@${authProvider.loginUserData.pseudo!} a commenté votre vidéo";
-            final notif = NotificationData(
-              id: FirebaseFirestore.instance.collection('Notifications').doc().id,
-              titre: "Nouvelle interaction",
-              media_url: authProvider.loginUserData.imageUrl,
-              type: NotificationType.POST.name,
-              description: msg,
-              user_id: userId,
-              receiver_id: _currentPost.user!.id!,
-              post_id: _currentPost.id!,
-              post_data_type: PostDataType.COMMENT.name,
-              createdAt: DateTime.now().microsecondsSinceEpoch,
-              updatedAt: DateTime.now().microsecondsSinceEpoch,
-              status: PostStatus.VALIDE.name,
-            );
-            await FirebaseFirestore.instance.collection('Notifications').doc(notif.id).set(notif.toJson());
+            // la notification enregistrée est créée par le serveur à l'envoi du commentaire
             final receiverUser = await authProvider.getUserById(_currentPost.user!.id!);
             if (receiverUser.isNotEmpty && receiverUser.first.oneIgnalUserid != null) {
               await authProvider.sendNotification(
@@ -2252,11 +2083,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
   }
 
   Future<bool> _hasSupportedToday() async {
-    final now = DateTime.now();
-    final start = DateTime(now.year, now.month, now.day).millisecondsSinceEpoch;
-    final end = start + Duration(days: 1).inMilliseconds;
-    final query = await _firestore.collection('post_supports').where('postId', isEqualTo: _currentPost.id).where('userId', isEqualTo: authProvider.loginUserData.id).where('supportedAt', isGreaterThanOrEqualTo: start).where('supportedAt', isLessThan: end).getM('postDetailsVideo.dart:2277');
-    return query.docs.isNotEmpty;
+    // Le serveur refuse un second soutien le même jour (erreur affichée après la publicité).
+    return false;
   }
 
   void _showSupportModal() {
@@ -2283,10 +2111,15 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
   }
 
   Future<void> _onSupportAdRewarded() async {
-    final userId = authProvider.loginUserData.id!;
-    await _firestore.collection('Posts').doc(_currentPost.id).update({'adSupportCount': FieldValue.increment(1)});
-    await _firestore.collection('Users').doc(_currentPost.user_id).update({'totalCoinsEarnedFromAdSupport': FieldValue.increment(1)});
-    await _firestore.collection('post_supports').add({'postId': _currentPost.id, 'userId': userId, 'supportedAt': DateTime.now().millisecondsSinceEpoch});
+    try {
+      await PubApi.supportAd(_currentPost.id!);
+    } catch (e) {
+      if (mounted) {
+        setState(() { _isSupporting = false; _showRewardedAd = false; });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(PubApi.message(e, fallback: 'Soutien impossible pour le moment. Réessaie plus tard.')), backgroundColor: Colors.orange));
+      }
+      return;
+    }
     setState(() {
       _currentPost.adSupportCount = (_currentPost.adSupportCount ?? 0) + 1;
       _isSupporting = false;

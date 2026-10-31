@@ -1,6 +1,6 @@
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../services/api/shop_api.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:like_button/like_button.dart';
@@ -45,7 +45,6 @@ class _ArticleTileState extends State<ArticleTile> {
   Provider.of<CategorieProduitProvider>(context, listen: false);
 
   bool _isLoading = false;
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
   AppColors? _clrs;
 
   Widget _buildStatItem(IconData icon, int count, Color color, {VoidCallback? onTap}) {
@@ -104,44 +103,9 @@ class _ArticleTileState extends State<ArticleTile> {
 
   Future<bool> _handleLike() async {
     try {
-      await categorieProduitProvider.getArticleById(widget.article.id!).then((value) {
-        if (value.isNotEmpty) {
-          value.first.jaime = value.first.jaime! + 1;
-          widget.article.jaime = value.first.jaime!;
-          categorieProduitProvider.updateArticle(value.first, context).then((value) async {
-            if (value) {
-              await authProvider.sendNotification(
-                userIds: [widget.article.user!.oneIgnalUserid!],
-                smallImage: "${widget.article.images!.first}",
-                send_user_id: "${authProvider.loginUserData.id!}",
-                recever_user_id: "${widget.article.user!.id!}",
-                message: "📢 🛒 Un afrolookeur aime ❤️ votre produit 🛒",
-                type_notif: NotificationType.ARTICLE.name,
-                post_id: "${widget.article!.id!}",
-                post_type: PostDataType.IMAGE.name,
-                chat_id: '',
-              );
-
-              NotificationData notif = NotificationData();
-              notif.id = firestore.collection('Notifications').doc().id;
-              notif.titre = " 🛒Boutique 🛒";
-              notif.media_url = "${widget.article.images!.first}";
-              notif.type = NotificationType.ARTICLE.name;
-              notif.description = "Un afrolookeur aime ❤️ votre produit 🛒";
-              notif.users_id_view = [];
-              notif.user_id = authProvider.loginUserData.id;
-              notif.receiver_id = widget.article.user!.id!;
-              notif.post_id = widget.article.id!;
-              notif.post_data_type = PostDataType.IMAGE.name!;
-              notif.updatedAt = DateTime.now().microsecondsSinceEpoch;
-              notif.createdAt = DateTime.now().microsecondsSinceEpoch;
-              notif.status = PostStatus.VALIDE.name;
-
-              await firestore.collection('Notifications').doc(notif.id).set(notif.toJson());
-            }
-          });
-        }
-      });
+      // « J'aime » compté une fois par personne par l'API ; la notification au vendeur est envoyée par le serveur
+      await ShopApi.like(widget.article.id!, true);
+      widget.article.jaime = (widget.article.jaime ?? 0) + 1;
       return true;
     } catch (e) {
       return false;
@@ -554,7 +518,6 @@ class _ArticleTileBoosterState extends State<ArticleTileBooster> {
 
   late CategorieProduitProvider categorieProduitProvider =
   Provider.of<CategorieProduitProvider>(context, listen: false);
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -691,7 +654,6 @@ class _ArticleTileSheetBoosterState extends State<ArticleTileSheetBooster> {
 
   late CategorieProduitProvider categorieProduitProvider =
   Provider.of<CategorieProduitProvider>(context, listen: false);
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
   @override
   Widget build(BuildContext context) {

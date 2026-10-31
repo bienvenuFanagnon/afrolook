@@ -3,7 +3,8 @@ import 'package:afrotok/pages/admin/new_category.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/pages/entreprise/abonnement/MySubscription.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../../services/api/shop_api.dart';
 
 import 'package:flutter/material.dart';
 
@@ -45,7 +46,6 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
   late PostProvider postProvider =
   Provider.of<PostProvider>(context, listen: false);
 
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
   EntrepriseData? entrepriseData;
   List<ArticleData> produits = [];
@@ -59,7 +59,7 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
   final int _pageSize = 10;
   bool _hasMoreData = true;
   bool _isLoadingMore = false;
-  DocumentSnapshot? _lastDocument;
+  int _apiPage = 0;
 
   final ScrollController _scrollController = ScrollController();
 
@@ -106,23 +106,13 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
 
   Future<bool> _loadEntrepriseByUserId(String userId) async {
     try {
-      CollectionReference collectionRef = firestore.collection('Entreprises');
-      QuerySnapshot querySnapshot = await collectionRef
-          .where("userId", isEqualTo: userId)
-          .getM('ProfileEntreprise.dart:111');
-
-      List<EntrepriseData> listEntreprise = querySnapshot.docs.map((doc) {
-        final entreprise = EntrepriseData.fromJson(doc.data() as Map<String, dynamic>);
-        entreprise.id = doc.id;
-        return entreprise;
-      }).toList();
-
-      if (listEntreprise.isNotEmpty) {
-        listEntreprise.first.suivi = listEntreprise.first.usersSuiviId?.length ?? 0;
-        entrepriseData = listEntreprise.first;
+      // L'entreprise de la personne (API : /shop/businesses, entreprises à moi ou d'un autre selon l'identifiant du propriétaire)
+      final all = await ShopApi.businesses(mine: userId == FirebaseAuth.instance.currentUser?.uid);
+      final mine = all.where((e) => e.userId == userId).toList();
+      if (mine.isNotEmpty) {
+        entrepriseData = mine.first;
         return true;
       }
-
       return false;
     } catch (e) {
       printVm("Erreur loadEntrepriseByUserId: $e");
@@ -134,7 +124,7 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
     try {
       setState(() {
         produits.clear();
-        _lastDocument = null;
+        _apiPage = 0;
         _hasMoreData = true;
       });
 
@@ -151,41 +141,18 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
     try {
       if (entrepriseData == null) return [];
 
-      Query query = firestore.collection('Articles')
-          .where('disponible', isEqualTo: true)
-          .where('user_id', isEqualTo: entrepriseData!.userId!);
-
+      final r = await ShopApi.articles(ownerId: entrepriseData!.userId!, page: _apiPage + 1, limit: _pageSize);
+      _apiPage++;
+      var articles = r.items;
       switch (_selectedFilter) {
         case 'boostés':
-          query = query.where('booster', isEqualTo: 1);
+          articles = articles.where((a) => a.isBoosted == true).toList();
           break;
         case 'populaires':
-          query = query.orderBy('vues', descending: true);
+          articles.sort((a, b) => (b.vues ?? 0).compareTo(a.vues ?? 0));
           break;
-        case 'récents':
-        default:
-          query = query.orderBy('createdAt', descending: true);
       }
-
-      query = query.limit(_pageSize);
-      if (_lastDocument != null) {
-        query = query.startAfterDocument(_lastDocument!);
-      }
-
-      final snapshot = await query.getM('ProfileEntreprise.dart:174');
-
-      if (snapshot.docs.isNotEmpty) {
-        _lastDocument = snapshot.docs.last;
-      }
-
-      final articles = <ArticleData>[];
-      for (var doc in snapshot.docs) {
-        final article = ArticleData.fromJson(doc.data() as Map<String, dynamic>);
-        article.id = doc.id;
-        articles.add(article);
-      }
-
-      if (snapshot.docs.length < _pageSize) {
+      if (!r.more) {
         _hasMoreData = false;
       }
 

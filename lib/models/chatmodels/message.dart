@@ -21,7 +21,7 @@
  */
 import 'dart:convert';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp; // les messages restent sur Firebase
 import 'package:afrotok/models/chatmodels/reaction.dart';
 import 'package:afrotok/models/chatmodels/reply_message.dart';
 import 'package:flutter/cupertino.dart';

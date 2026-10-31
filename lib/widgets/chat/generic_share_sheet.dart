@@ -3,7 +3,9 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // uniquement pour ÉCRIRE le message (Messages / GroupMessages restent sur Firebase)
+import 'package:afrotok/services/api/chat_api.dart';
+import 'package:afrotok/services/api/chat_mapper.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -69,55 +71,26 @@ class _GenericShareSheetState extends State<GenericShareSheet>
   Future<void> _loadChats() async {
     try {
       final myId = _auth.loginUserData.id!;
-      final snap = await FirebaseFirestore.instance
-          .collection('Chats')
-          .where(Filter.or(
-            Filter('receiver_id', isEqualTo: myId),
-            Filter('sender_id', isEqualTo: myId),
-          ))
-          .where('type', isEqualTo: ChatType.USER.name)
-          .orderBy('updated_at', descending: true)
-          .limit(20)
-          .getM('generic_share_sheet.dart:79');
-
-      final chats = <Chat>[];
-      for (final doc in snap.docs) {
-        final chat = Chat.fromJson(doc.data());
-        final otherId = chat.senderId == myId ? chat.receiverId : chat.senderId;
-        if (otherId != null) {
-          final userDoc = await FirebaseFirestore.instance.collection('Users').doc(otherId).getM('generic_share_sheet.dart:86');
-          if (userDoc.exists) chat.chatFriend = UserData.fromJson(userDoc.data()!);
-        }
-        chats.add(chat);
-      }
+      final page = await ChatApi.conversations(limit: 20);
+      final chats = page.items.map((j) => chatFromConversation(j, myId)).toList();
       if (mounted) setState(() { _chats = chats; _loadingChats = false; });
-    } catch (_) {
-      if (mounted) setState(() => _loadingChats = false);
+    } catch (e) {
+      if (mounted) setState(() { _loadingChats = false; _error = ChatApi.message(e, fallback: 'Impossible de charger tes discussions. Réessaie.'); });
     }
   }
 
   Future<void> _loadGroups() async {
     try {
-      final myId = _auth.loginUserData.id!;
-      final snap = await FirebaseFirestore.instance
-          .collection('GroupChats')
-          .where('member_ids', arrayContains: myId)
-          .getM('generic_share_sheet.dart:103');
-
-      final sorted = snap.docs.map((d) => {'id': d.id, ...d.data()}).toList()
-        ..sort((a, b) {
-          final aAt = (a['last_message_at'] as int?) ?? 0;
-          final bAt = (b['last_message_at'] as int?) ?? 0;
-          return bAt.compareTo(aAt);
-        });
+      final rows = await ChatApi.groups();
+      final groups = rows.map(groupToLegacy).where((g) => g['me_is_member'] == true).toList();
       if (mounted) {
         setState(() {
-          _groups = sorted;
+          _groups = groups;
           _loadingGroups = false;
         });
       }
-    } catch (_) {
-      if (mounted) setState(() => _loadingGroups = false);
+    } catch (e) {
+      if (mounted) setState(() { _loadingGroups = false; _error = ChatApi.message(e, fallback: 'Impossible de charger tes groupes. Réessaie.'); });
     }
   }
 
@@ -133,7 +106,7 @@ class _GenericShareSheetState extends State<GenericShareSheet>
         'id': msgId,
         'send_by': myId,
         'receiverBy': chat.senderId == myId ? chat.receiverId : chat.senderId,
-        'chat_id': chat.id,
+        'chat_id': chat.docId ?? chat.id,
         'message_type': 'link_share',
         'message': widget.title,
         'imageText': widget.thumbnail,
@@ -150,10 +123,8 @@ class _GenericShareSheetState extends State<GenericShareSheet>
         'createdAt': FieldValue.serverTimestamp(),
         'reply_message': {'message': '', 'message_type': 'text', 'messageId': '', 'replyTo': ''},
       });
-      await FirebaseFirestore.instance.collection('Chats').doc(chat.id).update({
-        'last_message': '📎 ${widget.title}',
-        'updated_at': now,
-      });
+      // Aperçu, non lus et notification : gérés par l'API (seul le type est envoyé, jamais le texte)
+      await ChatApi.conversationSent(chat.id!);
       // Prévient la personne : « @pseudo » + titre du contenu partagé (produit, contenu VIP, live)
       final otherId = chat.senderId == myId ? chat.receiverId : chat.senderId;
       if (otherId != null && otherId.isNotEmpty) {
@@ -187,13 +158,7 @@ class _GenericShareSheetState extends State<GenericShareSheet>
 
     // Vérification permissions — ignorée pour l'admin app
     if (!isAppAdmin) {
-      final memberDoc = await FirebaseFirestore.instance
-          .collection('GroupChats')
-          .doc(groupId)
-          .collection('members')
-          .doc(myId)
-          .getM('generic_share_sheet.dart:182');
-      final role = memberDoc.data()?['role'] as String? ?? 'member';
+      final role = group['me_role'] as String? ?? 'member';
       final groupData = await GroupPermissionUtils.loadGroupData(groupId);
       final canShare = GroupPermissionUtils.canShare(
         groupData: groupData,
@@ -218,9 +183,7 @@ class _GenericShareSheetState extends State<GenericShareSheet>
     }
 
     // Charger le rôle pour l'identité d'envoi (owner/admin → groupe, sinon personnel)
-    final memberDoc2 = await FirebaseFirestore.instance
-        .collection('GroupChats').doc(groupId).collection('members').doc(myId).getM('generic_share_sheet.dart:209');
-    final senderRole = memberDoc2.data()?['role'] as String? ?? 'member';
+    final senderRole = group['me_role'] as String? ?? 'member';
     final isOwnerOrAdmin = senderRole == 'owner' || senderRole == 'admin';
 
     setState(() => _sendingId = groupId);
@@ -252,25 +215,7 @@ class _GenericShareSheetState extends State<GenericShareSheet>
         'create_at_time_spam': now,
         'createdAt': FieldValue.serverTimestamp(),
       });
-      final otherMembers = (group['member_ids'] as List<dynamic>? ?? [])
-          .cast<String>()
-          .where((id) => id.isNotEmpty && id != me.id)
-          .toList();
-      await FirebaseFirestore.instance.collection('GroupChats').doc(groupId).update({
-        'last_message': '📎 ${widget.title}',
-        'last_message_at': now,
-        'updated_at': now,
-      });
-      const chunkSize = 400;
-      for (var i = 0; i < otherMembers.length; i += chunkSize) {
-        final chunk = otherMembers.sublist(i, min(i + chunkSize, otherMembers.length));
-        final unreadUpdate = <String, dynamic>{};
-        for (final id in chunk) {
-          unreadUpdate['unread_counts.$id'] = FieldValue.increment(1);
-        }
-        FirebaseFirestore.instance.collection('GroupChats').doc(groupId).update(unreadUpdate)
-            .catchError((e) => debugPrint('[GenericShareSheet] unread_counts update failed: $e | chunk[$i]'));
-      }
+      // Aperçu et non lus du groupe : fournis par l'API (voir lacunes)
       sent = true;
     } catch (e, st) {
       debugPrint('[GenericShareSheet] _sendToGroup error: $e\n$st');

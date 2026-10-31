@@ -1,4 +1,4 @@
-﻿// pages/users/users_list_page.dart
+// pages/users/users_list_page.dart
 
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
@@ -9,7 +9,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/pub_feed_api.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 import '../models/model_data.dart';
@@ -37,7 +37,8 @@ class _UsersListPageState extends State<UsersListPage> with AutomaticKeepAliveCl
   final List<UserData> _users = [];
   bool _isLoading = false;
   bool _hasMore = true;
-  DocumentSnapshot? _lastDocument;
+  final List<UserData> _pool = []; // profils proposés par l'API, servis par lots
+  int _poolOffset = 0;
   static const int _batchSize = 15; // 15 utilisateurs par chargement (3x5)
 
   // États de recherche
@@ -97,7 +98,8 @@ class _UsersListPageState extends State<UsersListPage> with AutomaticKeepAliveCl
       _users.clear();
       _seenUserIds.clear();
       _hasMore = true;
-      _lastDocument = null;
+      _pool.clear();
+      _poolOffset = 0;
     });
 
     try {
@@ -109,6 +111,7 @@ class _UsersListPageState extends State<UsersListPage> with AutomaticKeepAliveCl
     } catch (e) {
       printVm('Erreur chargement initial: $e');
       setState(() => _isLoading = false);
+      _showRetry(PubFeedApi.message(e), _loadInitialUsers);
     }
   }
 
@@ -118,10 +121,7 @@ class _UsersListPageState extends State<UsersListPage> with AutomaticKeepAliveCl
     setState(() => _isLoading = true);
 
     try {
-      final users = await _fetchUsersBatch(
-        limit: _batchSize,
-        lastDocument: _lastDocument,
-      );
+      final users = await _fetchUsersBatch(limit: _batchSize);
 
       if (users.isEmpty) {
         setState(() {
@@ -141,73 +141,36 @@ class _UsersListPageState extends State<UsersListPage> with AutomaticKeepAliveCl
     }
   }
 
-  Future<List<UserData>> _fetchUsersBatch({
-    required int limit,
-    DocumentSnapshot? lastDocument,
-  }) async {
+  void _showRetry(String message, VoidCallback retry) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(message),
+      action: SnackBarAction(label: 'Réessayer', onPressed: retry),
+    ));
+  }
+
+  /// Profils à découvrir, par lots : l'API fournit une réserve (suggestions puis classement), servie 15 par 15.
+  Future<List<UserData>> _fetchUsersBatch({required int limit}) async {
     try {
-      // Récupérer plus d'utilisateurs pour avoir plus de choix
-      final fetchLimit = lastDocument == null ? limit * 3 : limit * 2;
-
-      Query query = FirebaseFirestore.instance
-          .collection('Users')
-          .where('isBlocked', isEqualTo: false)
-          .limit(fetchLimit);
-
-      if (lastDocument != null) {
-        query = query.startAfterDocument(lastDocument);
-      }
-
-      final snapshot = await query.getM('listeUserLikepage.dart:160');
-
-      if (snapshot.docs.isEmpty) {
-        // Recycler quand on arrive en fin de liste
-        if (_seenUserIds.length > limit * 3) {
-          _seenUserIds.clear();
-        }
-        return [];
-      }
-
-      _lastDocument = snapshot.docs.last;
-
-      // Récupérer l'utilisateur connecté
       final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
       final currentUserId = authProvider.loginUserData.id;
 
-      // Filtrer les utilisateurs déjà vus et l'utilisateur connecté
-      final users = snapshot.docs
-          .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
-          .where((user) =>
-      user.id != null &&
-          user.id != currentUserId && // Exclure l'utilisateur connecté
-          !_seenUserIds.contains(user.id))
-          .toList();
-
-      // Si pas assez de nouveaux utilisateurs, prendre quand même en excluant juste l'utilisateur connecté
-      final resultUsers = users.isNotEmpty
-          ? users
-          : snapshot.docs
-          .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
-          .where((user) => user.id != currentUserId)
-          .toList();
-
-      // Mélanger aléatoirement
-      resultUsers.shuffle(Random());
-
-      final result = resultUsers.take(limit).toList();
-
-      // Marquer comme vus (garder seulement les 50 derniers)
-      _seenUserIds.addAll(result.map((user) => user.id!));
-      if (_seenUserIds.length > 50) {
-        final newSet = _seenUserIds.toList().reversed.take(50).toSet();
-        _seenUserIds.clear();
-        _seenUserIds.addAll(newSet);
+      if (_pool.isEmpty) {
+        final results = await Future.wait([PubFeedApi.suggestions(limit: 50), PubFeedApi.topUsers(limit: 50)]);
+        final ids = <String>{};
+        for (final u in [...results[0], ...results[1]]) {
+          if (u.id != null && u.id != currentUserId && ids.add(u.id!)) _pool.add(u);
+        }
+        _pool.shuffle(Random());
+        _poolOffset = 0;
       }
-
+      if (_poolOffset >= _pool.length) return [];
+      final result = _pool.skip(_poolOffset).take(limit).toList();
+      _poolOffset += result.length;
       return result;
     } catch (e) {
       printVm('Erreur fetch users: $e');
-      throw Exception('Erreur fetch users: $e');
+      rethrow;
     }
   }
 
@@ -236,120 +199,26 @@ class _UsersListPageState extends State<UsersListPage> with AutomaticKeepAliveCl
 
       String searchQuery = query.startsWith('@') ? query.substring(1) : query;
 
-      // Recherche exacte sur le pseudo
-      QuerySnapshot exactSnapshot = await FirebaseFirestore.instance
-          .collection('Users')
-          .where('pseudo', isEqualTo: searchQuery)
-          .where('isBlocked', isEqualTo: false)
-          .limit(5)
-          .getM('listeUserLikepage.dart:244');
-
-      List<UserData> exactResults = exactSnapshot.docs
-          .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
-          .where((user) => user.id != currentUserId)
-          .toList();
-
-      // Recherche partielle (commence par) si pas de résultat exact
-      if (exactResults.isEmpty && searchQuery.length >= 2) {
-        QuerySnapshot partialSnapshot = await FirebaseFirestore.instance
-            .collection('Users')
-            .where('pseudo', isGreaterThanOrEqualTo: searchQuery)
-            .where('pseudo', isLessThanOrEqualTo: searchQuery + '\uf8ff')
-            .where('isBlocked', isEqualTo: false)
-            .limit(20)
-            .getM('listeUserLikepage.dart:259');
-
-        List<UserData> partialResults = partialSnapshot.docs
-            .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
-            .where((user) => user.id != currentUserId)
-            .toList();
-
-        // Mélanger les résultats
-        partialResults.shuffle(Random());
-
-        setState(() {
-          _searchResults = partialResults;
-          _isSearchLoading = false;
-        });
-      } else {
-        setState(() {
-          _searchResults = exactResults;
-          _isSearchLoading = false;
-        });
-      }
+      // Recherche par pseudo / nom (API) : le pseudo exact passe en premier (classement du serveur)
+      final results = (await PubFeedApi.search(searchQuery, limit: 30)).where((user) => user.id != currentUserId).toList();
+      setState(() {
+        _searchResults = results;
+        _hasMore = false;
+        _isSearchLoading = false;
+      });
 
     } catch (e) {
       printVm("Erreur recherche: $e");
       setState(() {
         _isSearchLoading = false;
       });
+      _showRetry(PubFeedApi.message(e), () => _performSearch(query));
     }
   }
 
-  // Charger plus de résultats de recherche
+  // La recherche de l'API renvoie ses meilleurs résultats d'un coup : pas de page suivante.
   Future<void> _loadMoreSearchResults() async {
-    if (_isLoading || !_hasMore || _currentSearchQuery.isEmpty) return;
-
-    setState(() => _isLoading = true);
-
-    try {
-      final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-      final currentUserId = authProvider.loginUserData.id;
-
-      String searchQuery = _currentSearchQuery.startsWith('@')
-          ? _currentSearchQuery.substring(1)
-          : _currentSearchQuery;
-
-      Query query = FirebaseFirestore.instance
-          .collection('Users')
-          .where('pseudo', isGreaterThanOrEqualTo: searchQuery)
-          .where('pseudo', isLessThanOrEqualTo: searchQuery + '\uf8ff')
-          .where('isBlocked', isEqualTo: false)
-          .limit(_batchSize * 2);
-
-      if (_lastDocument != null) {
-        query = query.startAfterDocument(_lastDocument!);
-      }
-
-      final snapshot = await query.getM('listeUserLikepage.dart:313');
-
-      if (snapshot.docs.isEmpty) {
-        setState(() {
-          _hasMore = false;
-          _isLoading = false;
-        });
-        return;
-      }
-
-      _lastDocument = snapshot.docs.last;
-
-      // Éviter les doublons avec les résultats existants
-      final existingIds = _searchResults.map((u) => u.id).toSet();
-
-      final newResults = snapshot.docs
-          .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
-          .where((user) =>
-      user.id != currentUserId &&
-          !existingIds.contains(user.id))
-          .toList();
-
-      if (newResults.isNotEmpty) {
-        setState(() {
-          _searchResults.addAll(newResults);
-          _searchResults.shuffle(Random()); // Mélanger
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _hasMore = false;
-          _isLoading = false;
-        });
-      }
-
-    } catch (e) {
-      printVm('Erreur chargement plus de résultats: $e');
-      setState(() => _isLoading = false);
-    }
+    if (mounted) setState(() => _hasMore = false);
   }
 
   String _formatCount(int count) {
@@ -406,7 +275,7 @@ class _UsersListPageState extends State<UsersListPage> with AutomaticKeepAliveCl
                           _hasSearched = false;
                           _currentSearchQuery = '';
                           _searchResults.clear();
-                          _lastDocument = null;
+                          _hasMore = _poolOffset < _pool.length || _pool.isEmpty;
                         });
                       },
                     )
@@ -827,7 +696,7 @@ class _UsersListPageState extends State<UsersListPage> with AutomaticKeepAliveCl
                 _hasSearched = false;
                 _currentSearchQuery = '';
                 _searchResults.clear();
-                _lastDocument = null;
+                _hasMore = _poolOffset < _pool.length || _pool.isEmpty;
               });
             },
             child: const Text(

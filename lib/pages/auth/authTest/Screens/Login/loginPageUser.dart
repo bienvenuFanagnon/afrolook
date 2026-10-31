@@ -12,7 +12,6 @@ import 'package:afrotok/pages/contact.dart';
 import 'package:afrotok/pages/splashChargement.dart';
 import 'package:afrotok/services/sessions/session_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 
 import 'package:afrotok/pages/auth/authTest/Screens/Signup/signup_screen.dart';
 import 'package:dropdown_search/dropdown_search.dart';
@@ -20,7 +19,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 
 import 'package:intl_phone_field/intl_phone_field.dart';

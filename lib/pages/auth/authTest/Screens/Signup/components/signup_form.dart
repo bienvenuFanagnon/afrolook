@@ -13,8 +13,8 @@ import 'package:afrotok/theme/theme_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/pages/auth/eula_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart' show ApiException;
+import 'package:afrotok/services/api/users_api.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:provider/provider.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -49,7 +49,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController code_parrainageController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
   bool get _google => widget.googleUser != null;
 
@@ -77,12 +76,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
     // Règle des pseudos : minuscules avec points. On teste aussi l'ancienne forme (underscores)
     // tant que la migration n'a pas converti tous les comptes.
     final n = normalizePseudo(nom);
-    final snap = await firestore.collection("Pseudo")
-        .where('name', whereIn: [n, n.replaceAll('.', '_')])
-        .limit(1)
-        .getM('signup_form.dart:82');
-
-    if (snap.docs.isEmpty) return false;
+    // Pas encore de session à cette étape : si l'API refuse le contrôle (401/403/404), la création du profil
+    // (POST /me/register) revérifie l'unicité et répond « pseudo déjà pris ».
+    try {
+      final libre = await UsersApi.usernameAvailable(n);
+      if (libre) return false;
+    } on ApiException catch (e) {
+      if (e.status == 401 || e.status == 403 || e.status == 404) return false;
+      rethrow;
+    }
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

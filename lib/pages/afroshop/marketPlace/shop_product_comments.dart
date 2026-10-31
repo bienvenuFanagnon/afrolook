@@ -1,6 +1,5 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../services/api/shop_api.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -22,6 +21,7 @@ class ShopProductComments extends StatefulWidget {
 class _ShopProductCommentsState extends State<ShopProductComments> {
   final TextEditingController _commentController = TextEditingController();
   bool _sending = false;
+  int _reload = 0;
 
   late UserAuthProvider _auth;
 
@@ -43,109 +43,21 @@ class _ShopProductCommentsState extends State<ShopProductComments> {
 
     setState(() => _sending = true);
     try {
-      final me = _auth.loginUserData;
-      final commentId =
-          FirebaseFirestore.instance.collection('ArticleComments').doc().id;
-
-      await FirebaseFirestore.instance
-          .collection('ArticleComments')
-          .doc(commentId)
-          .set({
-        'id': commentId,
-        'article_id': widget.articleId,
-        'user_id': me.id,
-        'pseudo': me.pseudo ?? '',
-        'avatar_url': me.imageUrl ?? '',
-        'text': text,
-        'createdAt': FieldValue.serverTimestamp(),
-        'likes': 0,
-      });
-
-      // Incrémenter le compteur dénormalisé
-      await FirebaseFirestore.instance
-          .collection('Articles')
-          .doc(widget.articleId)
-          .update({'commentaires': FieldValue.increment(1)});
-
+      // Commentaire créé par l'API (compteur et notification au vendeur gérés par le serveur)
+      await ShopApi.addComment(widget.articleId, text);
       _commentController.clear();
-
-      // Notification au propriétaire du produit
-      _notifyProductOwner(me, text);
+      if (mounted) setState(() => _reload++);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur lors de l\'envoi'),
+            content: Text(ShopApi.message(e, fallback: 'Erreur lors de l\'envoi')),
             backgroundColor: Colors.red,
           ),
         );
       }
     } finally {
       if (mounted) setState(() => _sending = false);
-    }
-  }
-
-  Future<void> _notifyProductOwner(UserData me, String commentText) async {
-    try {
-      final snap = await FirebaseFirestore.instance
-          .collection('Articles')
-          .doc(widget.articleId)
-          .getM('shop_product_comments.dart:92');
-      if (!snap.exists) return;
-
-      final data = snap.data()!;
-      final userMap = data['user'] as Map<String, dynamic>?;
-      final ownerId = userMap?['id'] as String? ?? data['user_id'] as String?;
-      final ownerOneSignalId =
-          userMap?['oneIgnalUserid'] as String? ?? userMap?['oneSignalUserId'] as String?;
-      final images = (data['images'] as List?)?.cast<String>() ?? [];
-      final thumbnail = images.isNotEmpty ? images.first : '';
-
-      // Pas de notif si c'est le proprio lui-même qui commente
-      if (ownerId == null || ownerId == me.id) return;
-
-      final pseudo = me.pseudo ?? 'Quelqu\'un';
-      final message = '\u{1F4AC} @$pseudo a commenté votre produit';
-
-      // Push OneSignal
-      if (ownerOneSignalId != null && ownerOneSignalId.isNotEmpty) {
-        await _auth.sendNotification(
-          userIds: [ownerOneSignalId],
-          smallImage: thumbnail,
-          send_user_id: me.id ?? '',
-          recever_user_id: ownerId,
-          message: message,
-          type_notif: NotificationType.ARTICLE.name,
-          post_id: widget.articleId,
-          post_type: PostDataType.IMAGE.name,
-          chat_id: '',
-        );
-      }
-
-      // Enregistrement Firestore
-      final notifId =
-          FirebaseFirestore.instance.collection('Notifications').doc().id;
-      final notif = NotificationData();
-      notif.id = notifId;
-      notif.titre = '\u{1F6D2} Boutique';
-      notif.media_url = thumbnail;
-      notif.type = NotificationType.ARTICLE.name;
-      notif.description = message;
-      notif.users_id_view = [];
-      notif.user_id = me.id;
-      notif.receiver_id = ownerId;
-      notif.post_id = widget.articleId;
-      notif.post_data_type = PostDataType.IMAGE.name!;
-      notif.updatedAt = DateTime.now().microsecondsSinceEpoch;
-      notif.createdAt = DateTime.now().microsecondsSinceEpoch;
-      notif.status = PostStatus.VALIDE.name;
-
-      await FirebaseFirestore.instance
-          .collection('Notifications')
-          .doc(notifId)
-          .set(notif.toJson());
-    } catch (_) {
-      // Erreur silencieuse — le commentaire est déjà sauvegardé
     }
   }
 
@@ -196,12 +108,9 @@ class _ShopProductCommentsState extends State<ShopProductComments> {
 
           // Liste des commentaires
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('ArticleComments')
-                  .where('article_id', isEqualTo: widget.articleId)
-                  .orderBy('createdAt', descending: false)
-                  .snapshotsM('shop_product_comments.dart:203'),
+            child: FutureBuilder<List<ShopComment>>(
+              key: ValueKey(_reload),
+              future: ShopApi.comments(widget.articleId),
               builder: (ctx, snap) {
                 if (snap.connectionState == ConnectionState.waiting) {
                   return Center(
@@ -209,8 +118,16 @@ class _ShopProductCommentsState extends State<ShopProductComments> {
                         color: CustomConstants.kPrimaryColor),
                   );
                 }
+                if (snap.hasError) {
+                  return Center(
+                    child: Column(mainAxisSize: MainAxisSize.min, children: [
+                      Text(ShopApi.message(snap.error!), style: TextStyle(color: colors.textSecondary)),
+                      TextButton(onPressed: () => setState(() => _reload++), child: Text('Réessayer')),
+                    ]),
+                  );
+                }
 
-                final docs = snap.data?.docs ?? [];
+                final docs = (snap.data ?? <ShopComment>[]).reversed.toList();
                 if (docs.isEmpty) {
                   return Center(
                     child: Column(
@@ -234,11 +151,9 @@ class _ShopProductCommentsState extends State<ShopProductComments> {
                   separatorBuilder: (_, __) =>
                       Divider(height: 1, indent: 60, color: colors.border),
                   itemBuilder: (_, i) {
-                    final data =
-                        docs[i].data() as Map<String, dynamic>;
-                    final pseudo = data['pseudo'] as String? ?? '';
-                    final avatar = data['avatar_url'] as String? ?? '';
-                    final text = data['text'] as String? ?? '';
+                    final pseudo = docs[i].pseudo;
+                    final avatar = docs[i].avatar;
+                    final text = docs[i].text;
 
                     return ListTile(
                       leading: CircleAvatar(onBackgroundImageError: (avatar.isNotEmpty

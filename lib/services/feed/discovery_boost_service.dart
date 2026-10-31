@@ -1,7 +1,7 @@
-import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/home_feed_api.dart';
+import 'package:afrotok/services/api/pub_feed_api.dart';
 import 'dart:math';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/model_data.dart';
 
 /// Service de boost de visibilité pour les nouveaux créateurs.
@@ -22,8 +22,6 @@ class DiscoveryBoostService {
   static const int creatorAgeDays = 60;
   static const int injectEvery = 10;
   static const Duration _cacheTtl = Duration(minutes: 20);
-
-  final _db = FirebaseFirestore.instance;
 
   List<Post> _cachedPosts = [];
   DateTime? _cacheTime;
@@ -122,25 +120,14 @@ class DiscoveryBoostService {
     Set<String> seenIds = const {},
     int limit = 18,
   }) async {
-    final freshCutoffUs = DateTime.now()
-        .subtract(const Duration(hours: 72))
-        .microsecondsSinceEpoch;
+    final freshCutoffMs = DateTime.now().subtract(const Duration(hours: 72)).millisecondsSinceEpoch;
 
     try {
-      // Pool A : meilleurs scores (contenu établi)
-      final topSnap = await _db
-          .collection('Posts')
-          .orderBy('postScore', descending: true)
-          .limit(limit * 3)
-          .getM('discovery_boost_service.dart:134');
-
-      // Pool B : nouveaux posts < 72h (cold start)
-      final freshSnap = await _db
-          .collection('Posts')
-          .where('created_at', isGreaterThan: freshCutoffUs)
-          .orderBy('created_at', descending: true)
-          .limit(limit * 2)
-          .getM('discovery_boost_service.dart:142');
+      // Découverte du serveur (déjà classée, publications non vues) : on en tire deux groupes.
+      final page = await HomeFeedApi.discover(tier: 3, limit: (limit * 3).clamp(10, 50));
+      // Groupe A : début de liste (contenu établi) ; groupe B : publications de moins de 72 h (démarrage à froid)
+      final topPool = page.posts.take(limit * 2).toList();
+      final freshPool = page.posts.where((p) => (p.createdAt ?? 0) >= freshCutoffMs).toList();
 
       bool _isEligible(String docId, String uid) {
         if (docId.isEmpty || seenIds.contains(docId)) return false;
@@ -148,29 +135,24 @@ class DiscoveryBoostService {
         return true;
       }
 
-      Post? _toPost(Map<String, dynamic> data, String id) {
-        final postData = Map<String, dynamic>.from(data);
-        postData['id'] = id;
-        final post = Post.fromJson(postData);
-        return _passesCountryFilter(post, userCountry) ? post : null;
-      }
+      Post? _toPost(Post post) => _passesCountryFilter(post, userCountry) ? post : null;
 
       // Un seul post par créateur dans chaque pool
       final topByCreator = <String, Post>{};
-      for (final doc in topSnap.docs) {
-        final uid = doc.data()['user_id'] as String? ?? '';
-        if (!_isEligible(doc.id, uid)) continue;
+      for (final p in topPool) {
+        final uid = p.user_id ?? '';
+        if (!_isEligible(p.id ?? '', uid)) continue;
         if (topByCreator.containsKey(uid)) continue;
-        final post = _toPost(doc.data(), doc.id);
+        final post = _toPost(p);
         if (post != null) topByCreator[uid] = post;
       }
 
       final freshByCreator = <String, Post>{};
-      for (final doc in freshSnap.docs) {
-        final uid = doc.data()['user_id'] as String? ?? '';
-        if (!_isEligible(doc.id, uid)) continue;
+      for (final p in freshPool) {
+        final uid = p.user_id ?? '';
+        if (!_isEligible(p.id ?? '', uid)) continue;
         if (freshByCreator.containsKey(uid)) continue;
-        final post = _toPost(doc.data(), doc.id);
+        final post = _toPost(p);
         if (post != null) freshByCreator[uid] = post;
       }
 
@@ -208,41 +190,25 @@ class DiscoveryBoostService {
     int globalLimit = 400,
     int maxPosts = 50,
   }) async {
-    final sinceUs = DateTime.now()
-        .subtract(const Duration(days: 30))
-        .microsecondsSinceEpoch;
-    // Seuil 60 jours pour l'ancienneté du compte (en ms, Firestore stocke ms ou µs)
+    // Seuil 60 jours pour l'ancienneté du compte (en ms)
     final creatorSinceMs = DateTime.now()
         .subtract(const Duration(days: creatorAgeDays))
         .millisecondsSinceEpoch;
 
     try {
-      // 1. Posts récents (< 7 jours), un seul appel Firestore
-      final snap = await _db
-          .collection('Posts')
-          .where('created_at', isGreaterThan: sinceUs)
-          .orderBy('created_at', descending: true)
-          .limit(globalLimit)
-          .getM('discovery_boost_service.dart:225');
-
-      // 2. Grouper par créateur — garder seulement le post le plus récent
-      //    Exclure : suivis, soi-même, posts vus
+      // 1. Posts de découverte du serveur (jusqu'à 4 pages), un seul post par créateur : le plus récent
       final Map<String, Post> latestByCreator = {};
-      for (final doc in snap.docs) {
-        final data = doc.data();
-        final uid = data['user_id'] as String? ?? '';
-        if (uid.isEmpty || uid == currentUserId || followedSet.contains(uid)) {
-          continue;
+      String? cursor;
+      for (var i = 0; i < 4; i++) {
+        final page = await HomeFeedApi.discover(tier: 3, cursor: cursor, limit: 50);
+        for (final post in page.posts) {
+          final uid = post.user_id ?? '';
+          if (uid.isEmpty || uid == currentUserId || followedSet.contains(uid)) continue;
+          if (latestByCreator.containsKey(uid)) continue;
+          if (_passesCountryFilter(post, userCountry)) latestByCreator[uid] = post;
         }
-        if (latestByCreator.containsKey(uid)) continue;
-
-        final postData = Map<String, dynamic>.from(data);
-        postData['id'] = doc.id;
-        final post = Post.fromJson(postData);
-
-        if (_passesCountryFilter(post, userCountry)) {
-          latestByCreator[uid] = post;
-        }
+        cursor = page.next;
+        if (cursor == null || latestByCreator.length >= globalLimit) break;
       }
 
       if (latestByCreator.isEmpty) return [];
@@ -280,21 +246,10 @@ class DiscoveryBoostService {
   }
 
   Future<List<UserData>> _fetchUsers(List<String> ids) async {
-    final result = <UserData>[];
-    for (int i = 0; i < ids.length; i += 10) {
-      final chunk = ids.sublist(i, (i + 10).clamp(0, ids.length));
-      try {
-        final snap = await _db
-            .collection('Users')
-            .where(FieldPath.documentId, whereIn: chunk)
-            .getM('discovery_boost_service.dart:289');
-        for (final d in snap.docs) {
-          final data = Map<String, dynamic>.from(d.data());
-          data['id'] = d.id;
-          result.add(UserData.fromJson(data));
-        }
-      } catch (_) {}
+    try {
+      return await PubFeedApi.lookup(ids);
+    } catch (_) {
+      return [];
     }
-    return result;
   }
 }

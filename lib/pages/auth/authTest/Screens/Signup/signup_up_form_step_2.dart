@@ -9,13 +9,15 @@ import 'package:afrotok/utils/responsive_sheet.dart';
 
 import 'dart:typed_data';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path/path.dart' as Path;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart' show ApiException;
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/compte_api.dart';
+import 'package:afrotok/services/api/argent_upload.dart';
 import 'package:csc_picker_plus/csc_picker_plus.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
@@ -55,7 +57,6 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
   final TextEditingController adresseController = TextEditingController();
   final TextEditingController aproposController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
   late bool tap = false;
   final _auth = FirebaseAuth.instance;
   bool adreseLoging = false;
@@ -303,57 +304,19 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
     );
   }
 
-  Future<UserData?> verifierParrain(String codeParrain) async {
-    CollectionReference users = firestore.collection("Users");
-    QuerySnapshot snapshot = await users
-        .where("code_parrainage", isEqualTo: codeParrain)
-        .getM('signup_up_form_step_2.dart:309');
-    final list = snapshot.docs.map((doc) =>
-        UserData.fromJson(doc.data() as Map<String, dynamic>)).toList();
-
-    if (list.isNotEmpty) {
-      printVm("user trouver");
-      addPointsForOtherUserAction(list.first.id!, UserAction.autre);
-      return list.first;
-    } else {
-      printVm("user non trouver^^^^^^^^^^^^^^^^^^^^");
-      return null;
-    }
-  }
-
-  /// Crée le compte PUIS envoie la photo : les règles Storage exigent un utilisateur
-  /// connecté (request.auth != null). Si l'upload échoue, le compte tout juste créé
-  /// est supprimé pour que l'utilisateur puisse réessayer avec le même e-mail.
-  Future<User> _createAccountWithPhoto(String email, String password) async {
-    final User user;
+  /// Crée le compte Firebase (ou reprend le compte Google déjà connecté). Le profil est créé ensuite par l'API.
+  Future<User> _createAccount(String email, String password) async {
     if (_google) {
       // Compte Google : déjà créé et connecté, on ne crée rien.
       final current = _auth.currentUser;
       if (current == null) throw FirebaseAuthException(code: 'requires-recent-login');
-      user = current;
-    } else {
-      user = (await _auth.createUserWithEmailAndPassword(email: email, password: password)).user!;
+      return current;
     }
-    try {
-      authProvider.registerUser.imageUrl = await _uploadImage();
-      return user;
-    } catch (e) {
-      await _rollbackAccount(user);
-      rethrow;
-    }
+    return (await _auth.createUserWithEmailAndPassword(email: email, password: password)).user!;
   }
 
-  /// Annule une inscription inachevée : supprime la photo envoyée (si besoin) puis le compte.
+  /// Annule une inscription inachevée : supprime le compte Firebase pour que la personne puisse réessayer avec le même e-mail.
   Future<void> _rollbackAccount(User user) async {
-    final imageUrl = authProvider.registerUser.imageUrl;
-    if (imageUrl != null && imageUrl.isNotEmpty) {
-      try {
-        await FirebaseStorage.instance.refFromURL(imageUrl).delete();
-      } catch (e) {
-        printVm("Suppression de la photo impossible : $e");
-      }
-      authProvider.registerUser.imageUrl = null;
-    }
     if (_google) return; // compte Google : il reste connecté pour réessayer
     try {
       await user.delete();
@@ -362,45 +325,59 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
     }
   }
 
-  // Méthode pour uploader l'image (compatible web et mobile)
+  /// Envoie la photo de profil au stockage (URL signée demandée à l'API) et renvoie l'identifiant d'envoi.
   Future<String> _uploadImage() async {
     try {
-      // Vérifier qu'une image est sélectionnée
       if (_imageBytes == null && _imageFile == null) {
         throw Exception("Aucune image sélectionnée");
       }
-
-      // Générer un nom de fichier unique
-      String fileName = 'profile_${authProvider.registerUser.pseudo}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-
-      Reference storageReference = FirebaseStorage.instance
-          .ref()
-          .child('user_profile/$fileName');
-
-      UploadTask uploadTask;
-
-      if (kIsWeb) {
-        // Pour le web : upload avec les bytes
-        uploadTask = storageReference.putData(await MediaShrink.bytes(_imageBytes!),
-          SettableMetadata(
-            contentType: 'image/jpeg',
-            customMetadata: {'pickedFileName': _imageFileName ?? 'web_image.jpg'},
-          ),
-        );
-      } else {
-        // Pour mobile : upload avec le fichier
-        uploadTask = storageReference.putFile(await MediaShrink.file(_imageFile!),
-          SettableMetadata(contentType: 'image/jpeg'),
-        );
-      }
-
-      TaskSnapshot snapshot = await uploadTask;
-      String downloadUrl = await snapshot.ref.getDownloadURL();
-
-      return downloadUrl;
+      final Uint8List raw = kIsWeb ? _imageBytes! : await _imageFile!.readAsBytes();
+      final bytes = await MediaShrink.bytes(raw);
+      return await ArgentUpload.bytes(bytes, contentType: 'image/jpeg');
     } catch (e) {
       printVm("Erreur lors de l'upload de l'image: $e");
       throw Exception("Échec de l'upload de l'image");
+    }
+  }
+
+  /// Création du profil par l'API (POST /me/register) puis remplissage : photo, centres d'intérêt, ville, genre, bio.
+  /// Un échec de la création annule le compte Firebase tout juste créé (voir [signUp]) ; les compléments sont non bloquants.
+  Future<void> _registerProfile(User user) async {
+    final u = authProvider.registerUser;
+    _applyCountryToUser();
+    final cc = (u.countryData?['countryCode'] ?? '').toString();
+    final name = '${u.prenom ?? ''} ${u.nom ?? ''}'.trim();
+    await CompteApi.register(
+      username: u.pseudo ?? '',
+      displayName: name.isNotEmpty ? name : null,
+      countryCode: cc.length == 2 ? cc.toUpperCase() : null,
+      language: Localizations.localeOf(context).languageCode,
+      referralCode: (u.codeParrain ?? '').trim().isEmpty ? null : u.codeParrain!.trim(),
+    );
+    final gender = switch ((u.genre ?? '').toLowerCase()) {
+      'homme' || 'male' => 'male',
+      'femme' || 'female' => 'female',
+      _ => null,
+    };
+    final city = (u.countryData?['city'] ?? '').toString();
+    final fields = <String, dynamic>{
+      if ((u.apropos ?? '').trim().isNotEmpty) 'bio': u.apropos!.trim(),
+      if (gender != null) 'gender': gender,
+      if (city.isNotEmpty) 'city': city,
+      if ((u.numeroDeTelephone ?? '').trim().isNotEmpty) 'phone': u.numeroDeTelephone!.trim(),
+    };
+    try {
+      if (fields.isNotEmpty) await UsersApi.updateMe(fields);
+      await UsersApi.updateInterests(_selectedInterests);
+    } catch (e) {
+      printVm("Compléments du profil non enregistrés : $e");
+    }
+    try {
+      // La photo est envoyée après la création du profil (l'API refuse tout avant). Route d'association à ouvrir : voir lacunes.
+      final uploadId = await _uploadImage();
+      await UsersApi.updateMe({'avatar_upload_id': uploadId});
+    } catch (e) {
+      printVm("Photo de profil non enregistrée : $e");
     }
   }
 
@@ -470,59 +447,25 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
       authProvider.registerUser.votre_solde = 0.0;
       authProvider.registerUser.interests = List.from(_selectedInterests);
 
-      UserPseudo pseudo = UserPseudo();
-      String id = "";
-      NotificationData notif = NotificationData();
-
-      // Gestion du parrainage
-      if (authProvider.registerUser.codeParrain!.isNotEmpty) {
-        // Création du compte + photo AVANT de chercher le parrain : les règles Firestore
-        // n'autorisent la lecture de Users qu'à un utilisateur connecté.
-        final User newUser = await _createAccountWithPhoto(email, password);
-        final UserData? parrain = await verifierParrain(authProvider.registerUser.codeParrain!);
-
-        if (parrain != null) {
-          id = newUser.uid;
-
-          // Configuration des données
-          await _configureUserDataWithParrainage(id, pseudo, parrain);
-
-          // Rejoindre les groupes officiels en arrière-plan
-          unawaited(_autoJoinOfficialGroups(id));
-
-          // Envoi de la notification de parrainage
-          await _sendParrainageNotification(parrain);
-
-          await _afterAccountCreated(newUser);
-
-        } else {
-          // Code de parrainage invalide : on annule le compte tout juste créé
-          // pour que l'utilisateur puisse corriger le code et réessayer.
-          await _rollbackAccount(newUser);
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              backgroundColor: _colors.danger,
-              content: Text(l10n.signupCodeParrainInvalid, style: TextStyle(color: _colors.onPrimary)),
-            ),
-          );
-          setState(() => tap = false);
-          return;
-        }
-      } else {
-        // Création du compte sans parrainage, puis upload de la photo
-        final User newUser = await _createAccountWithPhoto(email, password);
-
-        id = newUser.uid;
-
-        // Configuration des données
-        await _configureUserDataWithoutParrainage(id, pseudo);
-
-        // Rejoindre les groupes officiels en arrière-plan
-        unawaited(_autoJoinOfficialGroups(id));
-
-        await _afterAccountCreated(newUser);
+      // Compte Firebase, puis profil créé par l'API (le code de parrainage est vérifié et appliqué par le serveur).
+      final User newUser = await _createAccount(email, password);
+      authProvider.registerUser.id = newUser.uid;
+      try {
+        await _registerProfile(newUser);
+      } on ApiException catch (e) {
+        // Pseudo pris, code refusé, réseau coupé… : on annule le compte tout juste créé pour permettre un nouvel essai.
+        await _rollbackAccount(newUser);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: _colors.danger,
+            content: Text(UsersApi.message(e), style: TextStyle(color: _colors.onPrimary)),
+          ),
+        );
+        setState(() => tap = false);
+        return;
       }
+      await _afterAccountCreated(newUser);
 
     } on FirebaseAuthException catch (error) {
       _handleAuthError(error);
@@ -551,48 +494,6 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
     _showSuccessAndNavigate();
   }
 
-  // Configuration des données avec parrainage
-  Future<void> _configureUserDataWithParrainage(String id, UserPseudo pseudo, UserData parrain) async {
-    pseudo.id = firestore.collection('Pseudo').doc().id;
-    pseudo.name = authProvider.registerUser.pseudo;
-    authProvider.registerUser.id = id;
-
-    await authProvider.getAppData();
-
-    // Pays détecté ou sélectionné
-    _applyCountryToUser();
-
-    // Configuration de l'utilisateur
-    authProvider.registerUser.pointContribution = authProvider.appDefaultData.default_point_new_user!;
-    authProvider.registerUser.votre_solde = 5.1;
-    authProvider.registerUser.publi_cash = 5.1;
-
-    // Mise à jour du parrain
-    final usersRef = firestore.collection('Users');
-    final parrainRef = usersRef.doc(parrain.id!);
-
-    await parrainRef.update({
-      'pointContribution': (parrain.pointContribution ?? 0) + authProvider.appDefaultData.default_point_new_user!,
-      'votre_solde': (parrain.votre_solde ?? 0.0) + 5.1,
-      'publi_cash': (parrain.publi_cash ?? 0.0) + 5.1,
-      'usersParrainer': FieldValue.arrayUnion([id]),
-      'userAbonnesIds': FieldValue.arrayUnion([id]),
-      'abonnes': FieldValue.increment(1),
-    });
-
-    // Batch operations
-    final batch = firestore.batch();
-    batch.set(firestore.collection('Users').doc(id), authProvider.registerUser.toJson());
-    batch.set(firestore.collection('Pseudo').doc(pseudo.id), pseudo.toJson());
-
-
-    batch.update(firestore.collection('AppData').doc(authProvider.appDefaultData.id!), {
-      'nbr_abonnes': FieldValue.increment(1),
-    });
-
-    await batch.commit();
-  }
-
   void _applyCountryToUser() {
     final country = _countryValue.isNotEmpty ? _countryValue : (_detectedCountryName ?? '');
     final code = kIsWeb
@@ -605,90 +506,6 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
       'countryCode': code,
       'realCountry': _detectedCountryName ?? country,
     };
-  }
-
-  // Configuration des données sans parrainage
-  Future<void> _configureUserDataWithoutParrainage(String id, UserPseudo pseudo) async {
-    pseudo.id = firestore.collection('Pseudo').doc().id;
-    pseudo.name = authProvider.registerUser.pseudo;
-    authProvider.registerUser.id = id;
-
-    await authProvider.getAppData();
-
-    // Pays détecté ou sélectionné
-    _applyCountryToUser();
-
-    // Configuration de l'utilisateur
-    authProvider.registerUser.pointContribution = authProvider.appDefaultData.default_point_new_user!;
-    authProvider.registerUser.votre_solde = 0.0;
-    authProvider.registerUser.publi_cash = 0.0;
-
-    // Batch operations
-    final batch = firestore.batch();
-    batch.set(firestore.collection('Users').doc(id), authProvider.registerUser.toJson());
-    batch.set(firestore.collection('Pseudo').doc(pseudo.id), pseudo.toJson());
-
-
-    batch.update(firestore.collection('AppData').doc(authProvider.appDefaultData.id!), {
-      'nbr_abonnes': FieldValue.increment(1),
-    });
-
-    await batch.commit();
-  }
-
-  // Rejoindre automatiquement tous les groupes officiels à la création du compte
-  Future<void> _autoJoinOfficialGroups(String userId) async {
-    try {
-      final userDoc = await firestore.collection('Users').doc(userId).getM('signup_up_form_step_2.dart:641');
-      final ud = userDoc.data();
-      final now = DateTime.now().millisecondsSinceEpoch;
-
-      final groupsSnap = await firestore
-          .collection('GroupChats')
-          .where('is_official', isEqualTo: true)
-          .where('is_frozen', isEqualTo: false)
-          .getM('signup_up_form_step_2.dart:649');
-
-      for (final groupDoc in groupsSnap.docs) {
-        try {
-          final memberIds = (groupDoc.data()['member_ids'] as List<dynamic>? ?? []).cast<String>();
-          if (memberIds.contains(userId)) continue;
-
-          final groupRef = firestore.collection('GroupChats').doc(groupDoc.id);
-          await groupRef.collection('members').doc(userId).set({
-            'user_id': userId,
-            'pseudo': ud?['pseudo'] ?? '',
-            'image_url': ud?['imageUrl'] ?? '',
-            'role': 'member',
-            'joined_at': now,
-          });
-          await groupRef.update({
-            'member_ids': FieldValue.arrayUnion([userId]),
-            'member_count': FieldValue.increment(1),
-          });
-          printVm('✅ [SIGNUP] Auto-join groupe officiel "${groupDoc.data()['name']}" pour $userId');
-        } catch (e) {
-          printVm('⚠️ [SIGNUP] Échec auto-join groupe ${groupDoc.id} : $e');
-        }
-      }
-    } catch (e) {
-      printVm('⚠️ [SIGNUP] Auto-join groupes officiels ignoré : $e');
-    }
-  }
-
-  // Envoi de notification de parrainage
-  Future<void> _sendParrainageNotification(UserData parrain) async {
-    await authProvider.sendNotification(
-      userIds: [parrain.oneIgnalUserid!],
-      smallImage: parrain.imageUrl!,
-      send_user_id: authProvider.registerUser.id!,
-      recever_user_id: parrain.id!,
-      message: "🤑 Vous avez gagné 1 abonné grâce à un parrainage !",
-      type_notif: NotificationType.PARRAINAGE.name,
-      post_id: "",
-      post_type: "",
-      chat_id: '',
-    );
   }
 
   // Affichage du succès et navigation

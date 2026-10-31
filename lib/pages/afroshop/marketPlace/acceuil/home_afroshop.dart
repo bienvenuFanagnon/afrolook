@@ -8,7 +8,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import 'package:carousel_slider/carousel_slider.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../../services/api/shop_api.dart';
 
 import 'package:dropdown_search/dropdown_search.dart';
 
@@ -91,7 +91,7 @@ class _HomePageState extends State<HomeAfroshopPage>
   // Pagination
   final int _pageSize = 5;
   int _currentPage = 0;
-  DocumentSnapshot? _lastDocument;
+  int _apiPage = 0;
   AppColors? _clrs;
 
   // CatÃ©gories favorites
@@ -293,7 +293,7 @@ class _HomePageState extends State<HomeAfroshopPage>
         allArticles.clear();
         displayedArticles.clear();
         _currentPage = 0;
-        _lastDocument = null;
+        _apiPage = 0;
         _hasMoreData = true;
       });
 
@@ -313,42 +313,21 @@ class _HomePageState extends State<HomeAfroshopPage>
 
   Future<List<ArticleData>> _fetchProductsBatch() async {
     try {
-      Query query = FirebaseFirestore.instance
-          .collection('Articles')
-          .where('disponible', isEqualTo: true);
-
-      // Appliquer le filtre pays
-      if (selectedCountry.isNotEmpty) {
-        query = query.where('countryData.countryCode', isEqualTo: selectedCountry);
-      }
-
-      // Appliquer le tri
+      final r = await ShopApi.articles(page: _apiPage + 1, limit: _pageSize);
+      _apiPage++;
+      final articles = r.items;
+      // Tri choisi par la personne (l'API renvoie les plus récents d'abord)
       final sortParts = selectedSort.split('_');
-      final sortField = sortParts[0];
-      final sortDirection = sortParts[1];
-      query = query.orderBy(sortField, descending: sortDirection == 'desc');
+      final desc = sortParts.length > 1 && sortParts[1] == 'desc';
+      int key(ArticleData a) => switch (sortParts[0]) {
+            'prix' => a.prix ?? 0,
+            'vues' => a.vues ?? 0,
+            'jaime' => a.jaime ?? 0,
+            _ => a.createdAt ?? 0,
+          };
+      articles.sort((a, b) => desc ? key(b).compareTo(key(a)) : key(a).compareTo(key(b)));
 
-      // Pagination
-      query = query.limit(_pageSize);
-      if (_lastDocument != null) {
-        query = query.startAfterDocument(_lastDocument!);
-      }
-
-      final snapshot = await query.getM('home_afroshop.dart:336');
-
-      if (snapshot.docs.isNotEmpty) {
-        _lastDocument = snapshot.docs.last;
-      }
-
-      final articles = <ArticleData>[];
-      for (var doc in snapshot.docs) {
-        final article = ArticleData.fromJson(doc.data() as Map<String, dynamic>);
-        article.id = doc.id;
-        articles.add(article);
-      }
-
-      // VÃ©rifier s'il reste des donnÃ©es
-      if (snapshot.docs.length < _pageSize) {
+      if (!r.more) {
         _hasMoreData = false;
       }
 
@@ -453,7 +432,7 @@ class _HomePageState extends State<HomeAfroshopPage>
       selectedCountry = country ?? '';
       // RÃ©initialiser la pagination quand le pays change
       _currentPage = 0;
-      _lastDocument = null;
+      _apiPage = 0;
       _hasMoreData = true;
     });
     _loadInitialProducts();
@@ -471,7 +450,7 @@ class _HomePageState extends State<HomeAfroshopPage>
       selectedSort = sort ?? 'createdAt_desc';
       // RÃ©initialiser la pagination quand le tri change
       _currentPage = 0;
-      _lastDocument = null;
+      _apiPage = 0;
       _hasMoreData = true;
     });
     _loadInitialProducts();
@@ -520,7 +499,7 @@ class _HomePageState extends State<HomeAfroshopPage>
             selectedCountry = country;
             selectedSort = sort;
             if (countryChanged || sortChanged) {
-              _currentPage = 0; _lastDocument = null; _hasMoreData = true;
+              _currentPage = 0; _apiPage = 0; _hasMoreData = true;
             }
           });
           if (countryChanged || sortChanged) {
@@ -537,7 +516,7 @@ class _HomePageState extends State<HomeAfroshopPage>
             selectedSort = 'createdAt_desc';
             searchQuery = '';
             _searchController.clear();
-            _currentPage = 0; _lastDocument = null; _hasMoreData = true;
+            _currentPage = 0; _apiPage = 0; _hasMoreData = true;
           });
           _loadInitialProducts();
           Navigator.pop(bsCtx);

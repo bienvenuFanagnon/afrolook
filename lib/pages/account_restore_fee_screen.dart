@@ -1,7 +1,8 @@
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/theme/app_colors.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart' show ApiException;
+import 'package:afrotok/services/api/compte_api.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -63,7 +64,7 @@ class _AccountRestoreFeeScreenState extends State<AccountRestoreFeeScreen> with 
       _error = null;
     });
     try {
-      await FirebaseFunctions.instance.httpsCallable('payRestoreFee').call();
+      await CompteApi.payRestoreFee();
       await context.read<UserAuthProvider>().refreshUserData();
       if (!mounted) return;
       Navigator.pushAndRemoveUntil(
@@ -71,12 +72,12 @@ class _AccountRestoreFeeScreenState extends State<AccountRestoreFeeScreen> with 
         MaterialPageRoute(builder: (_) => MyHomePage(title: '')),
         (_) => false,
       );
-    } on FirebaseFunctionsException catch (e) {
+    } on ApiException catch (e) {
       await _refresh();
       if (mounted) {
-        setState(() => _error = e.code == 'resource-exhausted'
+        setState(() => _error = e.isInsufficientCoins
             ? tr('Solde de pièces insuffisant : recharge ton compte pour continuer.')
-            : (e.message ?? tr('Paiement impossible pour le moment.')));
+            : CompteApi.message(e, fallback: tr('Paiement impossible pour le moment.')));
       }
     } catch (_) {
       if (mounted) setState(() => _error = tr('Paiement impossible pour le moment.'));

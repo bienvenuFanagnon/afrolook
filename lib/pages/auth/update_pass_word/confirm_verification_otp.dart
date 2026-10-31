@@ -4,7 +4,6 @@ import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/auth/authTest/Screens/Signup/signup_up_form_step_2.dart';
 import 'package:awesome_dialog/awesome_dialog.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
 

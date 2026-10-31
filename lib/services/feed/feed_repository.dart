@@ -1,10 +1,15 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:afrotok/services/api/post_mapper.dart';
 import 'dart:math';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/canaux_api.dart';
+import 'package:afrotok/services/api/chroniques_api.dart';
+import 'package:afrotok/services/api/home_feed_api.dart';
+import 'package:afrotok/services/api/posts_api.dart';
+import 'package:afrotok/services/api/shop_api.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/model_data.dart';
 
 import '../../pages/chronique/chroniqueform.dart';
@@ -34,38 +39,75 @@ class FeedQuery {
   });
 }
 
-/// Couche Firestore centralisée — aucune page ne doit requêter Firestore directement.
+/// Couche d'accès au fil, entièrement basée sur l'API (aucune page ne lit les publications directement).
 ///
-/// Toutes les méthodes sont fault-tolerant (try/catch) et retournent [] en cas d'erreur,
-/// pour que le feed dégrade gracieusement plutôt que de crasher.
+/// Toutes les méthodes restent tolérantes : en cas d'erreur de l'API elles journalisent, mémorisent [lastError] (message en français)
+/// et renvoient une liste vide ; l'écran peut afficher [lastError] avec « Réessayer ». Aucun retour à Firebase.
 class FeedRepository {
   static final FeedRepository _instance = FeedRepository._();
   factory FeedRepository() => _instance;
   FeedRepository._();
 
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  /// Dernière erreur de l'API (message prêt à afficher) ; null si le dernier appel a réussi.
+  String? lastError;
+
+  void _fail(String where, Object e) {
+    lastError = UsersApi.message(e);
+    printVm('❌ [FeedRepository] $where : $e');
+  }
 
   /// Feed « pour vous » de l'API : un seul fil (abonnements, goûts, découverte, nouveaux créateurs/canaux), toujours des publications NON VUES.
-  /// [reset] = nouvelle lecture (ouverture, rafraîchir). Aucun retour à Firebase : une panne de l'API se voit (liste vide + erreur dans le journal).
+  /// [reset] = nouvelle lecture (ouverture, rafraîchir).
   Future<List<Post>> _apiForYou(Set<String> excluded, int limit, {required bool reset}) async {
     try {
       final rows = await ApiGateway.instance.forYou(limit: limit, reset: reset);
+      lastError = null;
       return rows.map(postFromApi).where((p) => p.id != null && !excluded.contains(p.id)).toList();
     } catch (e) {
-      printVm('❌ API FEED « POUR VOUS » EN ÉCHEC — aucun retour à Firebase : $e');
+      _fail('fil « pour vous »', e);
       return <Post>[];
     }
   }
 
+  /// Lit des pages du fil de l'API (niveau [tier]) jusqu'à avoir [limit] publications retenues (4 pages au plus).
+  Future<List<Post>> _pages(
+    Set<String> excluded,
+    int limit, {
+    int tier = 3,
+    String? category,
+    String? country,
+    String? mediaType,
+    bool Function(Post)? where,
+  }) async {
+    final out = <Post>[];
+    final seen = <String>{...excluded};
+    String? cursor;
+    try {
+      for (var i = 0; i < 4 && out.length < limit; i++) {
+        final page = await HomeFeedApi.discover(tier: tier, category: category, country: country, cursor: cursor, limit: 50);
+        for (final p in page.posts) {
+          if (p.id == null || seen.contains(p.id)) continue;
+          if (p.status == 'SUPPRIMER') continue;
+          if (mediaType != null && p.dataType != mediaType) continue;
+          if (where != null && !where(p)) continue;
+          seen.add(p.id!);
+          out.add(p);
+          if (out.length >= limit) break;
+        }
+        cursor = page.next;
+        if (cursor == null) break;
+      }
+      lastError = null;
+    } catch (e) {
+      _fail('pages du fil', e);
+    }
+    return out;
+  }
+
   // ── POINT D'ENTRÉE PRINCIPAL ─────────────────────────────────────────────────
 
-  /// Charge un batch de posts selon la composition algorithmique approuvée :
-  /// 30% abonnements · 25% pays · 20% score · 15% découverte · 10% résurgence
+  /// Charge un batch de posts. Accueil : fil « pour vous » du serveur (le mélange est décidé côté serveur) ; autres types : thème / média.
   Future<List<Post>> fetchFeed(FeedQuery query) async {
-    // Nouvelle API (module « feed » activé dans Remote Config) : découverte et tendances = niveau 3 du serveur. Erreur → Firebase.
-    if (query.type == FeedType.home && ApiGateway.instance.useApi('feed')) {
-      return _apiForYou(query.excludeIds, query.targetCount, reset: false);   // pages suivantes
-    }
     final target = query.targetCount;
     final excluded = Set<String>.from(query.excludeIds);
     final nowMs = DateTime.now().millisecondsSinceEpoch;
@@ -73,25 +115,7 @@ class FeedRepository {
 
     switch (query.type) {
       case FeedType.home:
-        // Les 5 seaux tournent en parallèle — chacun ignore les exclusions
-        // inter-seaux (dédup géré après collection).
-        final aboIds = _take(query.subscriptionPostIds, excluded, (target * 0.30).round());
-        final buckets = await Future.wait([
-          loadPostsByIds(aboIds),
-          fetchCountryPosts(query.countryCode, excluded, limit: (target * 0.25).round()),
-          fetchScorePosts(excluded, limit: (target * 0.20).round()),
-          fetchDiscoveryPosts(query.subscriptionPostIds.toSet(), excluded, limit: (target * 0.15).round()),
-          fetchResurgencePosts(excluded, limit: (target * 0.10).round()),
-        ]);
-        // Déduplication : abonnements (seau 0) prioritaires, tendances (seaux 1-4) mélangées
-        final seen = <String>{...excluded};
-        final trendPosts = buckets.sublist(1).expand((b) => b).toList()..shuffle();
-        for (final post in [...buckets[0], ...trendPosts]) {
-          if (post.id != null && seen.add(post.id!)) {
-            results.add(post);
-          }
-        }
-        break;
+        return _apiForYou(excluded, target, reset: false);   // pages suivantes
 
       case FeedType.video:
         results.addAll(await fetchByMediaType('VIDEO', query.countryCode, excluded, limit: target));
@@ -108,7 +132,6 @@ class FeedRepository {
         }
     }
 
-    // Score final et tri
     for (final post in results) {
       post.feedScore = _computeScore(post, nowMs, query.countryCode);
     }
@@ -116,429 +139,119 @@ class FeedRepository {
     return results;
   }
 
-  // ── REQUÊTES SPÉCIALISÉES ────────────────────────────────────────────────────
+  // ── REQUÊTES SPÉCIALISÉES (découverte de l'API) ──────────────────────────────
 
-  /// Posts filtrés par pays (optionnellement filtrés par type média ou tabbar).
-  Future<List<Post>> fetchCountryPosts(
-    String countryCode,
-    Set<String> excluded, {
-    int limit = 10,
-    String? mediaType,
-    String? tabbarType,
-  }) async {
+  /// Posts ouverts au pays donné (optionnellement filtrés par type média ou thème).
+  Future<List<Post>> fetchCountryPosts(String countryCode, Set<String> excluded, {int limit = 10, String? mediaType, String? tabbarType}) async {
     if (countryCode.isEmpty) return [];
-    try {
-      Query<Map<String, dynamic>> q1 = _db
-          .collection('Posts')
-          .where('available_countries', arrayContains: countryCode)
-          .orderBy('created_at', descending: true);
-      Query<Map<String, dynamic>> q2 = _db
-          .collection('Posts')
-          .where('available_countries', arrayContains: 'ALL')
-          .orderBy('created_at', descending: true);
-      if (mediaType != null) {
-        q1 = q1.where('dataType', isEqualTo: mediaType);
-        q2 = q2.where('dataType', isEqualTo: mediaType);
-      }
-      if (tabbarType != null) {
-        q1 = q1.where('typeTabbar', isEqualTo: tabbarType);
-        q2 = q2.where('typeTabbar', isEqualTo: tabbarType);
-      }
-      final results = await Future.wait([
-        q1.limit(limit * 2).getM('feed_repository.dart:129').timeout(const Duration(seconds: 20)),
-        q2.limit(limit).getM('feed_repository.dart:130').timeout(const Duration(seconds: 20)),
-      ]).catchError((_) => <QuerySnapshot<Map<String, dynamic>>>[]);
-      if (results.isEmpty) return [];
-      final allDocs = {...results[0].docs, ...results[1].docs}.toList();
-      return _parsePosts(allDocs, excluded, limit);
-    } catch (e) {
-      printVm('⚠️ [FeedRepository] fetchCountryPosts: $e');
-      return [];
-    }
+    return _pages(excluded, limit, country: countryCode, category: tabbarType, mediaType: mediaType);
   }
 
-  /// Posts avec feedScore élevé (posts populaires).
-  Future<List<Post>> fetchScorePosts(Set<String> excluded, {int limit = 8}) async {
-    try {
-      final snap = await _db
-          .collection('Posts')
-          .where('feedScore', isGreaterThanOrEqualTo: 0.3)
-          .orderBy('feedScore', descending: true)
-          .limit(limit * 3)
-          .getM('feed_repository.dart:149')
-          .timeout(const Duration(seconds: 20));
-      return _parsePosts(snap.docs, excluded, limit);
-    } catch (e) {
-      printVm('⚠️ [FeedRepository] fetchScorePosts: $e');
-      return [];
-    }
-  }
+  /// Posts populaires : le serveur classe déjà la découverte, on prend le début de la liste.
+  Future<List<Post>> fetchScorePosts(Set<String> excluded, {int limit = 8}) => _pages(excluded, limit);
 
   /// Posts récents de créateurs non suivis (découverte).
-  Future<List<Post>> fetchDiscoveryPosts(
-    Set<String> followedPostIds,
-    Set<String> excluded, {
-    int limit = 6,
-  }) async {
-    try {
-      final snap = await _db
-          .collection('Posts')
-          .orderBy('created_at', descending: true)
-          .limit(limit * 3)
-          .getM('feed_repository.dart:169')
-          .timeout(const Duration(seconds: 20));
-      return _parsePosts(
-        snap.docs.where((d) => !followedPostIds.contains(d.id)).toList(),
-        excluded,
-        limit,
-      );
-    } catch (e) {
-      printVm('⚠️ [FeedRepository] fetchDiscoveryPosts: $e');
-      return [];
-    }
+  Future<List<Post>> fetchDiscoveryPosts(Set<String> followedPostIds, Set<String> excluded, {int limit = 6}) =>
+      _pages({...excluded, ...followedPostIds}, limit);
+
+  /// Anciens posts : le serveur ne renvoie que la fenêtre récente (60 jours) ; on garde ceux de plus de 2 semaines.
+  Future<List<Post>> fetchResurgencePosts(Set<String> excluded, {int limit = 4}) {
+    final cutoff = DateTime.now().subtract(const Duration(days: 14)).millisecondsSinceEpoch;
+    return _pages(excluded, limit, where: (p) => (p.createdAt ?? 0) <= cutoff);
   }
 
-  /// Anciens posts de qualité (2–6 mois) pour la résurgence.
-  Future<List<Post>> fetchResurgencePosts(Set<String> excluded, {int limit = 4}) async {
-    try {
-      final now = DateTime.now();
-      final twoMonthsAgo = now.subtract(const Duration(days: 60)).millisecondsSinceEpoch;
-      final sixMonthsAgo = now.subtract(const Duration(days: 180)).millisecondsSinceEpoch;
-      // Un seul champ en filtre de plage (created_at) pour éviter le timeout Firestore.
-      // Le filtre feedScore >= 0.5 est appliqué côté client.
-      final snap = await _db
-          .collection('Posts')
-          .where('created_at', isGreaterThanOrEqualTo: sixMonthsAgo)
-          .where('created_at', isLessThanOrEqualTo: twoMonthsAgo)
-          .orderBy('created_at', descending: true)
-          .limit(limit * 4)
-          .getM('feed_repository.dart:196')
-          .timeout(const Duration(seconds: 20));
-      final qualityDocs = snap.docs
-          .where((d) => (d.data()['feedScore'] as num? ?? 0) >= 0.3)
-          .toList();
-      return _parsePosts(qualityDocs, excluded, limit);
-    } catch (e) {
-      printVm('⚠️ [FeedRepository] fetchResurgencePosts: $e');
-      return [];
+  /// Posts d'un thème (LOOKS, SPORT, EVENEMENT…), ceux du pays de la personne en premier.
+  Future<List<Post>> fetchByTabbarType(String tabbarType, String countryCode, Set<String> excluded, {int limit = 40}) async {
+    final posts = await _pages(excluded, limit, category: tabbarType);
+    if (countryCode.isNotEmpty) {
+      posts.sort((a, b) => (b.isAvailableForCountry(countryCode) ? 1 : 0).compareTo(a.isAvailableForCountry(countryCode) ? 1 : 0));
     }
+    return posts;
   }
 
-  /// Posts filtrés par typeTabbar (LOOKS, SPORT, EVENEMENT…).
-  Future<List<Post>> fetchByTabbarType(
-    String tabbarType,
-    String countryCode,
-    Set<String> excluded, {
-    int limit = 40,
-  }) async {
-    try {
-      final snap = await _db
-          .collection('Posts')
-          .where('typeTabbar', isEqualTo: tabbarType)
-          .orderBy('created_at', descending: true)
-          .limit(limit * 2)
-          .getM('feed_repository.dart:221');
-      final posts = _parsePosts(snap.docs, excluded, limit);
-      // Priorité aux posts du pays de l'utilisateur
-      if (countryCode.isNotEmpty) {
-        posts.sort((a, b) {
-          final aMatch = a.isAvailableForCountry(countryCode) ? 1 : 0;
-          final bMatch = b.isAvailableForCountry(countryCode) ? 1 : 0;
-          return bMatch.compareTo(aMatch);
-        });
-      }
-      return posts;
-    } catch (e) {
-      printVm('⚠️ [FeedRepository] fetchByTabbarType($tabbarType): $e');
-      return [];
-    }
-  }
+  /// Posts d'un type média (VIDEO, AUDIO, IMAGE…).
+  Future<List<Post>> fetchByMediaType(String mediaType, String countryCode, Set<String> excluded, {int limit = 40}) =>
+      _pages(excluded, limit, mediaType: mediaType);
 
-  /// Posts filtrés par type média (VIDEO, AUDIO, IMAGE…).
-  Future<List<Post>> fetchByMediaType(
-    String mediaType,
-    String countryCode,
-    Set<String> excluded, {
-    int limit = 40,
-  }) async {
-    try {
-      final snap = await _db
-          .collection('Posts')
-          .where('dataType', isEqualTo: mediaType)
-          .orderBy('created_at', descending: true)
-          .limit(limit * 2)
-          .getM('feed_repository.dart:251');
-      return _parsePosts(snap.docs, excluded, limit);
-    } catch (e) {
-      printVm('⚠️ [FeedRepository] fetchByMediaType($mediaType): $e');
-      return [];
-    }
-  }
+  /// Posts récents sans filtre pays.
+  Future<List<Post>> fetchRecentPosts(Set<String> excluded, {int limit = 20, String? mediaType, String? tabbarType}) =>
+      _pages(excluded, limit, mediaType: mediaType, category: tabbarType);
 
-  /// Posts récents sans filtre pays (optionnellement filtrés par type média ou tabbar).
-  Future<List<Post>> fetchRecentPosts(
-    Set<String> excluded, {
-    int limit = 20,
-    String? mediaType,
-    String? tabbarType,
-  }) async {
-    try {
-      Query<Map<String, dynamic>> q = _db
-          .collection('Posts')
-          .orderBy('created_at', descending: true);
-      if (mediaType != null) q = q.where('dataType', isEqualTo: mediaType);
-      if (tabbarType != null) q = q.where('typeTabbar', isEqualTo: tabbarType);
-      final snap = await q.limit(limit * 2).getM('feed_repository.dart:272');
-      return _parsePosts(snap.docs, excluded, limit);
-    } catch (e) {
-      printVm('⚠️ [FeedRepository] fetchRecentPosts: $e');
-      return [];
-    }
-  }
+  /// Posts de pays autres que [excludeCountry].
+  Future<List<Post>> fetchOtherCountriesPosts(String excludeCountry, Set<String> excluded, {int limit = 10, String? mediaType, String? tabbarType}) =>
+      _pages(excluded, limit, mediaType: mediaType, category: tabbarType, where: (p) => p.isAdvertisement != true && !p.availableCountries.contains(excludeCountry));
 
-  /// Posts de pays autres que [excludeCountry] (optionnellement filtrés par type).
-  Future<List<Post>> fetchOtherCountriesPosts(
-    String excludeCountry,
-    Set<String> excluded, {
-    int limit = 10,
-    String? mediaType,
-    String? tabbarType,
-  }) async {
-    try {
-      Query<Map<String, dynamic>> q = _db
-          .collection('Posts')
-          .orderBy('created_at', descending: true);
-      if (mediaType != null) q = q.where('dataType', isEqualTo: mediaType);
-      if (tabbarType != null) q = q.where('typeTabbar', isEqualTo: tabbarType);
-      final snap = await q.limit(limit * 4).getM('feed_repository.dart:294');
-      final posts = <Post>[];
-      for (final doc in snap.docs) {
-        if (excluded.contains(doc.id)) continue;
-        if (posts.length >= limit) break;
-        try {
-          final post = Post.fromJson({'id': doc.id, ...doc.data()});
-          if (post.status == 'SUPPRIMER') continue;
-          if (post.isAdvertisement == true) continue;
-          if (post.availableCountries.contains(excludeCountry)) continue;
-          posts.add(post);
-        } catch (_) {}
-      }
-      return posts;
-    } catch (e) {
-      printVm('⚠️ [FeedRepository] fetchOtherCountriesPosts: $e');
-      return [];
-    }
-  }
-
-  /// Charge des posts par leurs IDs (batches de 10 en parallèle, limite Firestore).
-  /// [tabbarType] filtre côté Firestore si fourni (ex. 'SPORT').
+  /// Charge des posts par leurs identifiants (lectures en parallèle). Le thème [tabbarType], s'il est donné, est appliqué ici.
   Future<List<Post>> loadPostsByIds(List<String> ids, {String? tabbarType}) async {
     if (ids.isEmpty) return [];
-    final _swBatch = Stopwatch()..start();
-
-    final batches = <List<String>>[];
-    for (int i = 0; i < ids.length; i += 10) {
-      batches.add(ids.sublist(i, min(i + 10, ids.length)));
+    try {
+      var posts = await PostsApi.getMany(ids);
+      for (final p in posts) {
+        p.typeTabbar ??= p.categorie;
+      }
+      if (tabbarType != null) posts = posts.where((p) => p.typeTabbar == tabbarType || p.categorie == tabbarType).toList();
+      lastError = null;
+      return posts;
+    } catch (e) {
+      _fail('chargement par identifiants', e);
+      return [];
     }
-    printVm('⏱️ [T1] loadPostsByIds: ${ids.length} IDs → ${batches.length} batch(es) en parallèle');
-
-    final results = await Future.wait(
-      batches.asMap().entries.map((entry) async {
-        final idx = entry.key;
-        final batch = entry.value;
-        final _swSingle = Stopwatch()..start();
-        try {
-          Query<Map<String, dynamic>> q = _db
-              .collection('Posts')
-              .where(FieldPath.documentId, whereIn: batch);
-          if (tabbarType != null) q = q.where('typeTabbar', isEqualTo: tabbarType);
-          final snap = await q.getM('feed_repository.dart:336');
-          final posts = snap.docs.map((doc) {
-            try {
-              return Post.fromJson({'id': doc.id, ...doc.data()});
-            } catch (_) {
-              return null;
-            }
-          }).whereType<Post>().toList();
-          printVm('⏱️ [T1] batch[$idx/${batches.length}] ${batch.length} IDs → ${posts.length} posts — ${_swSingle.elapsedMilliseconds}ms');
-          return posts;
-        } catch (e) {
-          printVm('⚠️ [FeedRepository] loadPostsByIds batch[$idx]: $e [${_swSingle.elapsedMilliseconds}ms]');
-          return <Post>[];
-        }
-      }),
-    );
-
-    final allPosts = results.expand((posts) => posts).toList();
-    printVm('⏱️ [T1] loadPostsByIds: ${allPosts.length} posts total — ${_swBatch.elapsedMilliseconds}ms (max des batches parallèles)');
-    return allPosts;
   }
 
   // ── CONTENU GLOBAL (partagé par tous les feeds) ──────────────────────────────
 
   Future<List<Chronique>> fetchChroniques({int limit = 8}) async {
     try {
-      // Le serveur ne renvoie que les chroniques encore actives : on lit `limit` documents, plus `limit * 2` dont une partie périmée.
-      // Même requête (et même index) que la page « Chroniques » : la page lit ensuite la suite à partir du curseur gardé ici.
-      final snap = await _db
-          .collection('chroniques')
-          .where('expiresAt', isGreaterThan: Timestamp.now())
-          .orderBy('createdAt', descending: true)
-          .limit(limit)
-          .getM('feed_repository.dart:369');
-      final valid = <Chronique>[];
-      for (final doc in snap.docs) {
-        try {
-          final c = Chronique.fromMap(doc.data(), doc.id);
-          if (!c.isExpired) valid.add(c);
-        } catch (_) {}
-      }
-      ChroniqueFirstPage.save(valid, snap.docs.isEmpty ? null : snap.docs.last, hasMore: snap.docs.length >= limit);
+      final page = await ChroniquesApi.list(limit: limit, myId: FirebaseAuth.instance.currentUser?.uid);
+      final valid = page.items.where((c) => !c.isExpired).toList();
+      ChroniqueFirstPage.save(valid, page.next, hasMore: page.next != null);
+      lastError = null;
       return valid;
     } catch (e) {
-      printVm('⚠️ [FeedRepository] fetchChroniques: $e');
+      _fail('chroniques', e);
       return [];
     }
   }
 
   Future<List<Canal>> fetchCanaux({int limit = 6}) async {
     try {
-      final snap = await _db
-          .collection('Canal')
-          .orderBy('followers', descending: true)
-          .limit(limit)
-          .getM('feed_repository.dart:391');
-      final result = <Canal>[];
-      for (final doc in snap.docs) {
-        try {
-          result.add(Canal.fromJson({'id': doc.id, ...doc.data()}));
-        } catch (_) {}
-      }
-      return result;
+      final r = await CanauxApi.list(limit: limit, myId: FirebaseAuth.instance.currentUser?.uid);
+      lastError = null;
+      return r.items;
     } catch (e) {
-      printVm('⚠️ [FeedRepository] fetchCanaux: $e');
+      _fail('canaux', e);
       return [];
     }
   }
 
   Future<List<ArticleData>> fetchArticles({int limit = 3}) async {
     try {
-      final snap = await _db
-          .collection('Articles')
-          .orderBy('created_at', descending: true)
-          .limit(limit)
-          .getM('feed_repository.dart:411');
-      final result = <ArticleData>[];
-      for (final doc in snap.docs) {
-        try {
-          result.add(ArticleData.fromJson({'id': doc.id, ...doc.data()}));
-        } catch (_) {}
-      }
-      return result;
+      final r = await ShopApi.articles(limit: limit);
+      lastError = null;
+      return r.items;
     } catch (e) {
-      printVm('⚠️ [FeedRepository] fetchArticles: $e');
+      _fail('articles', e);
       return [];
     }
-  }
-
-  // ── HELPERS ──────────────────────────────────────────────────────────────────
-
-  List<String> _take(List<String> ids, Set<String> excluded, int limit) =>
-      ids.where((id) => !excluded.contains(id)).take(limit).toList();
-
-  void _addAll(List<Post> target, Set<String> excluded, List<Post> source) {
-    for (final post in source) {
-      if (post.id != null && post.id!.isNotEmpty) {
-        excluded.add(post.id!);
-      }
-      target.add(post);
-    }
-  }
-
-  List<Post> _parsePosts(
-    List<QueryDocumentSnapshot<Map<String, dynamic>>> docs,
-    Set<String> excluded,
-    int limit,
-  ) {
-    final result = <Post>[];
-    for (final doc in docs) {
-      if (excluded.contains(doc.id)) continue;
-      if (result.length >= limit) break;
-      try {
-        final post = Post.fromJson({'id': doc.id, ...doc.data()});
-        if (post.status == 'SUPPRIMER') continue;
-        result.add(post);
-      } catch (_) {}
-    }
-    return result;
   }
 
   // ── ABONNEMENTS & BOOST NOUVEAUX POSTS ─────────────────────────────────────
 
-  /// Posts récents (≤ [withinDays] jours) des créateurs suivis, triés du plus récent.
-  /// Utilisé pour garantir ≥10 posts abonnements dans le feed même si FeedPreloadService
-  /// n'est pas encore chargé.
-  Future<List<Post>> fetchFollowingRecentPosts(
-    List<String> followingIds,
-    Set<String> excluded, {
-    int limit = 10,
-    int withinDays = 7,
-  }) async {
+  /// Posts récents (≤ [withinDays] jours) des créateurs suivis (niveau 1 de l'API : publications non vues des abonnements).
+  Future<List<Post>> fetchFollowingRecentPosts(List<String> followingIds, Set<String> excluded, {int limit = 10, int withinDays = 7}) async {
     if (followingIds.isEmpty) return [];
     final since = DateTime.now().subtract(Duration(days: withinDays)).millisecondsSinceEpoch;
-    final posts = <Post>[];
-    final seen = <String>{...excluded};
-
-    // whereIn supporte max 30 ids — on chunk par 10 pour large compatibilité
-    for (int i = 0; i < followingIds.length && posts.length < limit; i += 10) {
-      final chunk = followingIds.sublist(i, min(i + 10, followingIds.length));
-      try {
-        final snap = await _db
-            .collection('Posts')
-            .where('user_id', whereIn: chunk)
-            .orderBy('created_at', descending: true)
-            .limit(limit * 2)
-            .getM('feed_repository.dart:482');
-        for (final doc in snap.docs) {
-          if (posts.length >= limit) break;
-          if (seen.contains(doc.id)) continue;
-          try {
-            final post = Post.fromJson({'id': doc.id, ...doc.data()});
-            if (post.status == 'SUPPRIMER') continue;
-            if ((post.createdAt ?? 0) < since) break; // ordonné desc — inutile de continuer
-            seen.add(doc.id);
-            posts.add(post);
-          } catch (_) {}
-        }
-      } catch (e) {
-        printVm('⚠️ [FeedRepository] fetchFollowingRecentPosts chunk[$i]: $e');
-      }
-    }
+    final posts = await _pages(excluded, limit * 2, tier: 1, where: (p) => (p.createdAt ?? 0) >= since);
     posts.shuffle();
     return posts.take(limit).toList();
   }
 
-  /// Posts très récents (≤ 48h) avec peu de vues — à booster pour donner de l'exposition
-  /// aux nouveaux créateurs et aux posts qui se perdent dans l'algo.
+  /// Posts très récents (≤ 48h) avec peu de vues, pour donner de l'exposition aux nouveaux créateurs.
   Future<List<Post>> fetchNewPostsToBoost(Set<String> excluded, {int limit = 5}) async {
-    final since = DateTime.now()
-        .subtract(const Duration(hours: 48))
-        .millisecondsSinceEpoch;
-    try {
-      final snap = await _db
-          .collection('Posts')
-          .where('created_at', isGreaterThanOrEqualTo: since)
-          .orderBy('created_at', descending: true)
-          .limit(limit * 4)
-          .getM('feed_repository.dart:514');
-      final candidates = _parsePosts(snap.docs, excluded, limit * 4);
-      // Priorité aux posts les moins vus → ceux qui ont besoin d'exposition
-      candidates.sort((a, b) => (a.vues ?? 0).compareTo(b.vues ?? 0));
-      return candidates.take(limit).toList();
-    } catch (e) {
-      printVm('⚠️ [FeedRepository] fetchNewPostsToBoost: $e');
-      return [];
-    }
+    final since = DateTime.now().subtract(const Duration(hours: 48)).millisecondsSinceEpoch;
+    final candidates = await _pages(excluded, limit * 4, where: (p) => (p.createdAt ?? 0) >= since);
+    candidates.sort((a, b) => (a.vues ?? 0).compareTo(b.vues ?? 0));
+    return candidates.take(limit).toList();
   }
 
   // ── SCORING ──────────────────────────────────────────────────────────────────
@@ -584,10 +297,7 @@ class FeedRepository {
     }
   }
 
-  /// Tier 2 — posts dont les intérêts (postInterests) matchent ceux de l'user.
-  /// Index requis : Posts / postInterests (ARRAY_CONTAINS) + created_at (DESC).
-  /// Tous les autres filtres (statut, isAdvertisement, pays) sont faits client-side
-  /// pour ne nécessiter qu'un seul index composite simple.
+  /// Tier 2 — posts selon les centres d'intérêt. Sans thème, ils sont déjà dans le feed « pour vous » (liste vide).
   Future<List<Post>> fetchInterestPosts(
     List<String> interests,
     Set<String> excluded, {
@@ -595,55 +305,12 @@ class FeedRepository {
     int limit = 20,
     String? tabbarType,
   }) async {
-    if (tabbarType == null && ApiGateway.instance.useApi('feed')) {
-      return <Post>[];   // les centres d'intérêt sont déjà dans le feed « pour vous »
-    }
-    if (interests.isEmpty) return [];
-    final _swT2 = Stopwatch()..start();
-    try {
-      final tags = interests.take(10).toList();
-      Query<Map<String, dynamic>> q = _db
-          .collection('Posts')
-          .where('postInterests', arrayContainsAny: tags);
-      if (tabbarType != null) q = q.where('typeTabbar', isEqualTo: tabbarType);
-      printVm('⏱️ [T2] fetchInterestPosts: requête Firestore (tags=${tags.length}, limit×4=${limit * 4})...');
-      final snap = await q
-          .orderBy('created_at', descending: true)
-          .limit(limit * 4)
-          .getM('feed_repository.dart:591');
-      final queryMs = _swT2.elapsedMilliseconds;
-      printVm('⏱️ [T2] fetchInterestPosts: query terminée — ${queryMs}ms — ${snap.docs.length} docs bruts');
-
-      final result = <Post>[];
-      for (final doc in snap.docs) {
-        try {
-          final post = Post.fromJson(doc.data());
-          post.id = doc.id;
-          if (post.id == null || excluded.contains(post.id)) continue;
-          if (post.isAdvertisement == true) continue;
-          if (post.status != null && post.status != 'VALIDE') continue;
-          if (countryCode != null && countryCode.isNotEmpty) {
-            final ok = post.availableCountries.isEmpty ||
-                post.availableCountries.contains('ALL') ||
-                post.availableCountries.contains(countryCode);
-            if (!ok) continue;
-          }
-          result.add(post);
-          if (result.length >= limit) break;
-        } catch (_) {}
-      }
-      printVm('⏱️ [T2] fetchInterestPosts: filtre client → ${result.length}/${snap.docs.length} posts retenus — ${_swT2.elapsedMilliseconds}ms total');
-      return result;
-    } catch (e) {
-      printVm('⚠️ [FeedRepository] fetchInterestPosts: $e [${_swT2.elapsedMilliseconds}ms]');
-      return [];
-    }
+    if (tabbarType == null) return <Post>[];
+    return _pages(excluded, limit, category: tabbarType, country: countryCode, where: (p) => p.isAdvertisement != true && (p.status == null || p.status == 'VALIDE'));
   }
 
-  /// Tier 1 — posts non vus des abonnements.
-  /// [unreadMap] = {postId: createdAtMs} depuis UserData.unreadPosts.
-  /// [repostMeta] = {postId: {ts, reposterUserId, reposterPseudo, reposterImageUrl}} depuis UserData.repostMeta.
-  /// Retourne les [limit] posts les plus récents, en excluant [excluded].
+  /// Tier 1 — posts non vus des abonnements. Accueil : feed « pour vous » ; avec [tabbarType] : niveau 1 filtré par thème.
+  /// [repostMeta] = {postId: {reposterUserId, reposterPseudo, reposterImageUrl}} depuis UserData.repostMeta.
   Future<List<Post>> fetchUnreadSubscriptionPosts(
     Map<String, int> unreadMap,
     Set<String> excluded, {
@@ -651,36 +318,20 @@ class FeedRepository {
     String? tabbarType,
     Map<String, Map<String, dynamic>> repostMeta = const {},
   }) async {
-    if (tabbarType == null && ApiGateway.instance.useApi('feed')) {
+    if (tabbarType == null) {
       return _apiForYou(excluded, limit, reset: true);   // première page : abonnements + goûts + découverte + nouveaux créateurs
     }
-    if (unreadMap.isEmpty) return [];
-    final _swT1 = Stopwatch()..start();
-    // Trier par timestamp desc, prendre les N plus récents
-    final sorted = unreadMap.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    final ids = sorted
-        .where((e) => !excluded.contains(e.key))
-        .take(limit)
-        .map((e) => e.key)
-        .toList();
-    printVm('⏱️ [T1] fetchUnreadSubscriptionPosts: ${unreadMap.length} unread → ${ids.length} IDs sélectionnés (tri: ${_swT1.elapsedMilliseconds}ms)');
-    if (ids.isEmpty) return [];
-    final result = await loadPostsByIds(ids, tabbarType: tabbarType);
-    // Injecter les métadonnées reposter sur les posts republié
-    if (repostMeta.isNotEmpty) {
-      for (final post in result) {
-        final meta = repostMeta[post.id];
-        if (meta != null) {
-          post.isRepost = true;
-          post.reposterUserId = meta['reposterUserId'] as String?;
-          post.reposterPseudo = meta['reposterPseudo'] as String?;
-          post.reposterImageUrl = meta['reposterImageUrl'] as String?;
-          post.originalPostId = post.id;
-        }
+    final result = await _pages(excluded, limit, tier: 1, category: tabbarType);
+    for (final post in result) {
+      final meta = repostMeta[post.id];
+      if (meta != null) {
+        post.isRepost = true;
+        post.reposterUserId = meta['reposterUserId'] as String?;
+        post.reposterPseudo = meta['reposterPseudo'] as String?;
+        post.reposterImageUrl = meta['reposterImageUrl'] as String?;
+        post.originalPostId = post.id;
       }
     }
-    printVm('⏱️ [T1] fetchUnreadSubscriptionPosts: terminé — ${result.length} posts — ${_swT1.elapsedMilliseconds}ms total');
     return result;
   }
 }

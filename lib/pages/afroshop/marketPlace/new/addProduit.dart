@@ -9,7 +9,7 @@ import 'package:afrotok/pages/user/conponent.dart';
 
 import 'package:afrotok/providers/authProvider.dart';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../../services/api/shop_api.dart';
 
 import 'package:country_code_picker/country_code_picker.dart';
 
@@ -17,7 +17,6 @@ import 'package:csc_picker_plus/csc_picker_plus.dart';
 
 import 'package:dropdown_search/dropdown_search.dart';
 
-import 'package:firebase_storage/firebase_storage.dart';
 
 import 'package:flutter/material.dart';
 
@@ -1335,7 +1334,6 @@ class _AddAnnonceState extends State<AddNewProduit> {
       annonceRegisterData.updatedAt = DateTime.now().microsecondsSinceEpoch;
       annonceRegisterData.createdAt = DateTime.now().microsecondsSinceEpoch;
 
-      // Upload de la vidéo (si présente)
       if (_videoFile != null) {
         final sizeBytes = await _videoFile!.length();
         if (sizeBytes > 50 * 1024 * 1024) {
@@ -1348,37 +1346,32 @@ class _AddAnnonceState extends State<AddNewProduit> {
           setState(() { onSaveTap = false; });
           return;
         }
-        final videoRef = FirebaseStorage.instance.ref()
-            .child('videos_article/${Path.basename(_videoFile!.path)}');
-        await videoRef.putFile(await MediaShrink.file(File(_videoFile!.path)));
-        final rawVideoUrl = await videoRef.getDownloadURL();
-        annonceRegisterData.videoUrl = authProvider.convertToCdnUrl(rawVideoUrl, authProvider.appDefaultData);
-        annonceRegisterData.videoDurationSec = _videoDurationSec;
       }
 
-      // Upload des images
-      for (XFile _image in _mediaFileList!) {
-        Reference storageReference = FirebaseStorage.instance.ref().child(
-            'images_article/${Path.basename(File(_image.path).path)}');
-
-        UploadTask uploadTask = storageReference.putFile(await MediaShrink.file(File(_image.path)!));
-        await uploadTask.whenComplete(() async {
-          await storageReference.getDownloadURL().then((fileURL) {
-            final cdnUrl = authProvider.convertToCdnUrl(fileURL, authProvider.appDefaultData);
-            annonceRegisterData.images!.add(cdnUrl);
-          });
-        });
+      // Images et vidéo : envoi direct (URL signée par l'API), puis création de l'article par l'API
+      final imageFiles = <File>[for (final x in _mediaFileList!) await MediaShrink.file(File(x.path))];
+      final File? videoFile = _videoFile == null ? null : await MediaShrink.file(File(_videoFile!.path));
+      String postId = '';
+      bool success = false;
+      try {
+        final created = await ShopApi.createArticle(
+          businessId: widget.entrepriseData.id!,
+          title: annonceRegisterData.titre ?? '',
+          price: annonceRegisterData.prix ?? 0,
+          description: annonceRegisterData.description,
+          categoryId: annonceRegisterData.categorie_id,
+          phone: annonceRegisterData.phone,
+          images: imageFiles,
+          video: videoFile,
+          videoDurationSec: _videoDurationSec,
+        );
+        postId = created.id ?? '';
+        success = true;
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text(ShopApi.message(e, fallback: "Erreur lors de l'ajout du produit"))));
+        }
       }
-
-      // Thumbnail = première image (couverture pour le feed et la grille)
-      if (annonceRegisterData.images!.isNotEmpty) {
-        annonceRegisterData.thumbnailUrl = annonceRegisterData.images!.first;
-      }
-
-      String postId = FirebaseFirestore.instance.collection('Articles').doc().id;
-      annonceRegisterData.id = postId;
-
-      bool success = await categorieProduitProvider.createArticle(annonceRegisterData);
 
       if (success) {
         // Mettre à jour le compteur de produits seulement si l'utilisateur n'est pas admin
@@ -1407,13 +1400,6 @@ class _AddAnnonceState extends State<AddNewProduit> {
         // //   categorieSelected = null;
         // // });
 
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: Colors.red,
-            content: Text("Erreur lors de l'ajout du produit"),
-          ),
-        );
       }
 
     } catch (e) {

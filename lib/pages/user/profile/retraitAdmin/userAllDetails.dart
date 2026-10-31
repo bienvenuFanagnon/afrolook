@@ -1,13 +1,13 @@
 // pages/admin/user_management_page.dart
 
-import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/component/showUserDetails.dart';
 import 'package:flutter/material.dart';
 import '../../../admin/admin_palette.dart';
 import 'package:flutter/services.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+import '../../../../services/api/admin_money_api.dart';
+import '../../../../services/api/wallet_api.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:iconsax/iconsax.dart';
@@ -43,7 +43,6 @@ class UserManagementPage extends StatefulWidget {
 }
 
 class _UserManagementPageState extends State<UserManagementPage> {
-  final _firestore = FirebaseFirestore.instance;
   UserData? _userData;
   bool _isLoading = true;
   bool _isUpdating = false;
@@ -62,21 +61,31 @@ class _UserManagementPageState extends State<UserManagementPage> {
 
   Future<void> _loadUserData() async {
     try {
-      final doc = await _firestore.collection('Users').doc(widget.userId).getM('userAllDetails.dart:64');
-      if (doc.exists) {
-        final data = doc.data()!;
-        data['id'] = doc.id;
-        if (!mounted) return;
-        setState(() { _userData = UserData.fromJson(data); _isLoading = false; });
-        _loadPosts();
-      } else {
-        if (!mounted) return;
-        setState(() => _isLoading = false);
+      final d = await AdminMoneyApi.user(widget.userId);
+      final u = d['user'] is Map ? Map<String, dynamic>.from(d['user'] as Map) : <String, dynamic>{};
+      final created = DateTime.tryParse('${u['created_at']}')?.millisecondsSinceEpoch;
+      final user = UserData.fromJson({
+        'id': widget.userId,
+        'pseudo': u['username'] ?? u['display_name'] ?? '',
+        'email': u['email'] ?? '',
+        'imageUrl': u['avatar_url'] ?? '',
+        if (created != null) 'createdAt': created,
+      });
+      user.id = widget.userId;
+      // Soldes lus sur l'API (jamais calculés ici)
+      if (d['wallet'] is Map) WalletSnapshot.fromJson(Map<String, dynamic>.from(d['wallet'] as Map)).applyTo(user);
+      if (u['status'] == 'suspended') {
+        user.suspendedPermanently = true;
+        user.suspensionReason = user.suspensionReason ?? 'Compte suspendu';
       }
+      if (!mounted) return;
+      setState(() { _userData = user; _isLoading = false; });
+      _loadPosts();
     } catch (e) {
       printVm('Erreur chargement user: $e');
       if (!mounted) return;
       setState(() => _isLoading = false);
+      _showSnack(AdminMoneyApi.message(e, fallback: 'Chargement impossible'), _red);
     }
   }
 
@@ -147,59 +156,14 @@ class _UserManagementPageState extends State<UserManagementPage> {
     if (_isSendingReminder || _userData == null) return;
     setState(() => _isSendingReminder = true);
     try {
-      final userDoc = await _firestore.collection('Users').doc(widget.userId).getM('userAllDetails.dart:149');
-      if (!userDoc.exists) {
-        throw Exception('Utilisateur non trouvé');
-      }
-      final data = userDoc.data()!;
-      final lastTimeActive = data['last_time_active'] ?? 0;
-      final now = DateTime.now().millisecondsSinceEpoch;
-      final daysInactive = ((now - lastTimeActive) / (24 * 60 * 60 * 1000)).floor();
-
-      final sevenDaysAgo = DateTime.now().subtract(const Duration(days: 7)).millisecondsSinceEpoch;
-      final postsSnapshot = await _firestore
-          .collection('Posts')
-          .where('user_id', isEqualTo: widget.userId)
-          .getM('userAllDetails.dart:162');
-
-      int newLikesCount = 0;
-      for (var postDoc in postsSnapshot.docs) {
-        final post = postDoc.data();
-        final postCreatedAt = post['created_at'] ?? 0;
-        if (postCreatedAt > sevenDaysAgo) {
-          newLikesCount += ((post['loves'] ?? 0) as num).toInt();
-        }
-      }
-
-      final userEmailData = {
-        'userId': widget.userId,
-        'userEmail': data['email'] ?? '',
-        'userName': data['pseudo'] ?? 'Utilisateur',
-        'pseudo': data['pseudo'] ?? 'user',
-        'giftCoinsBalance': data['giftCoinsBalance'] ?? 0,
-        'soldePrincipal': data['votre_solde_principal'] ?? 0,
-        'totalCoinsEarned': data['totalCoinsEarnedFromLikes'] ?? 0,
-        'totalLikesReceived': data['totalLikesReceived'] ?? 0,
-        'totalFollowers': (data['userAbonnesIds'] as List?)?.length ?? 0,
-        'daysInactive': daysInactive < 0 ? 3 : daysInactive,
-        'newLikesOnMyPosts': newLikesCount,
-        'newCommentsOnMyPosts': 0,
-      };
-
-      final result = await FirebaseFunctions.instance
-          .httpsCallable('sendInactiveUserReminder')
-          .call({
-        'userId': widget.userId,
-        'userData': userEmailData,
-      });
-
-      if (result.data['success'] == true) {
-        _showSnack('Email envoyé à ${userEmailData['userEmail']}', _green);
+      final r = await AdminMoneyApi.sendReminder(widget.userId);
+      if (r['success'] == false) {
+        _showSnack('${r['message'] ?? 'Erreur lors de l\'envoi'}', _red);
       } else {
-        _showSnack(result.data['message'] ?? 'Erreur lors de l\'envoi', _red);
+        _showSnack('Rappel envoyé à @${_userData?.pseudo ?? ''}', _green);
       }
     } catch (e) {
-      _showSnack('Erreur: $e', _red);
+      _showSnack('Erreur: ${AdminMoneyApi.message(e)}', _red);
     } finally {
       if (mounted) setState(() => _isSendingReminder = false);
     }
@@ -332,22 +296,13 @@ class _UserManagementPageState extends State<UserManagementPage> {
     required String reason,
   }) async {
     try {
-      final data = <String, dynamic>{
-        'suspensionReason': reason,
-        'suspendedPermanently': isPermanent,
-      };
-      if (isPermanent) {
-        data['suspendedUntil'] = null;
-      } else {
-        final until = DateTime.now().add(Duration(days: durationDays!));
-        data['suspendedUntil'] = until.millisecondsSinceEpoch;
-        data['suspendedPermanently'] = false;
-      }
-      await _firestore.collection('Users').doc(widget.userId).update(data);
+      // L'API suspend jusqu'à rétablissement (la durée n'existe pas encore : elle est écrite dans le motif)
+      final motif = isPermanent ? reason : '$reason (durée prévue : $durationDays jours)';
+      await AdminMoneyApi.setStatus(widget.userId, 'suspend', motif.length < 5 ? '$motif.....' : motif);
       _showSnack('Compte suspendu', _red);
       await _loadUserData();
     } catch (e) {
-      _showSnack('Erreur: $e', _red);
+      _showSnack('Erreur: ${AdminMoneyApi.message(e)}', _red);
     }
   }
 
@@ -371,15 +326,11 @@ class _UserManagementPageState extends State<UserManagementPage> {
             onPressed: () async {
               Navigator.pop(ctx);
               try {
-                await _firestore.collection('Users').doc(widget.userId).update({
-                  'suspendedUntil': null,
-                  'suspendedPermanently': false,
-                  'suspensionReason': null,
-                });
+                await AdminMoneyApi.setStatus(widget.userId, 'restore', 'Suspension levée par l\'équipe');
                 _showSnack('Suspension levée', _green);
                 await _loadUserData();
               } catch (e) {
-                _showSnack('Erreur: $e', _red);
+                _showSnack('Erreur: ${AdminMoneyApi.message(e)}', _red);
               }
             },
             child: const Text('Lever', style: TextStyle(color: Colors.white)),
@@ -457,26 +408,11 @@ class _UserManagementPageState extends State<UserManagementPage> {
     if (mounted) setState(() => _postsLoading = true);
     List<Map<String, dynamic>> result = [];
     try {
-      QuerySnapshot<Map<String, dynamic>> snap;
-      try {
-        snap = await _firestore
-            .collection('Posts')
-            .where('user_id', isEqualTo: widget.userId)
-            .orderBy('created_at', descending: true)
-            .limit(30)
-            .getM('userAllDetails.dart:466');
-      } catch (_) {
-        // Index manquant : récupération puis tri côté client
-        snap = await _firestore
-            .collection('Posts')
-            .where('user_id', isEqualTo: widget.userId)
-            .limit(200)
-            .getM('userAllDetails.dart:473');
-      }
-      result = snap.docs.map((d) {
-        final m = Map<String, dynamic>.from(d.data());
-        m['id'] = d.id;
-        return m;
+      result = (await AdminMoneyApi.posts(widget.userId)).map((m) {
+        final x = Map<String, dynamic>.from(m);
+        final ms = DateTime.tryParse('${m['created_at']}')?.millisecondsSinceEpoch;
+        if (ms != null) x['created_at'] = ms;
+        return x;
       }).toList();
       int ts(Map<String, dynamic> m) => ((m['created_at'] ?? 0) as num).toInt();
       result.sort((a, b) => ts(b).compareTo(ts(a)));
@@ -515,7 +451,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
     );
     if (ok != true || !mounted) return;
     try {
-      await _firestore.collection('Posts').doc(id).delete();
+      await AdminMoneyApi.deletePost(id);
       if (!mounted) return;
       setState(() => _posts.removeWhere((p) => p['id'] == id));
       _showSnack('Post supprimé', _green);
@@ -669,15 +605,13 @@ class _UserManagementPageState extends State<UserManagementPage> {
     );
     if (ok != true || !mounted) return;
     try {
-      await FirebaseFunctions.instance
-          .httpsCallable('restoreDeletedAccount')
-          .call({'userId': _userData!.id, 'waiveFee': true});
+      await AdminMoneyApi.restoreDeleted(_userData!.id!, waiveFee: true);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Compte débloqué sans frais')));
       await _loadUserData();
-    } on FirebaseFunctionsException catch (e) {
+    } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? 'Action impossible')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AdminMoneyApi.message(e, fallback: 'Action impossible'))));
     }
   }
 
@@ -718,17 +652,15 @@ class _UserManagementPageState extends State<UserManagementPage> {
     );
     if (ok != true || !mounted) return;
     try {
-      final res = await FirebaseFunctions.instance
-          .httpsCallable('restoreDeletedAccount')
-          .call({'userId': _userData!.id, 'waiveFee': waiveFee});
+      final res = await AdminMoneyApi.restoreDeleted(_userData!.id!, waiveFee: waiveFee);
       if (!mounted) return;
-      final fee = (res.data is Map ? (res.data['feeCoins'] as num?)?.toInt() : null) ?? 0;
+      final fee = ((res['fee_coins'] ?? res['feeCoins']) as num?)?.toInt() ?? 0;
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(fee > 0 ? 'Compte restauré : déblocage de $fee pièces à payer' : 'Compte restauré')));
       await _loadUserData();
-    } on FirebaseFunctionsException catch (e) {
+    } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message ?? 'Restauration impossible')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AdminMoneyApi.message(e, fallback: 'Restauration impossible'))));
     }
   }
 
@@ -776,53 +708,8 @@ class _UserManagementPageState extends State<UserManagementPage> {
     setState(() => _isUpdating = true);
 
     try {
-      final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-      final adminId = authProvider.userId ?? '';
-
-      // 1. Mise à jour Firestore
-      await _firestore.collection('Users').doc(widget.userId).update({
-        'isVerify': newValue,
-        'verifiedAt': newValue ? DateTime.now().millisecondsSinceEpoch : null,
-        'verifiedBy': adminId,
-      });
-
-      // 2. Notification in-app (collection Notifications)
-      final notifId = _firestore.collection('Notifications').doc().id;
-      final notif = NotificationData(
-        id: notifId,
-        titre: newValue ? '✅ Compte certifié !' : 'Certification retirée',
-        media_url: _userData!.imageUrl ?? '',
-        type: NotificationType.CERTIFICATION.name,
-        description: newValue
-            ? 'Félicitations ! Votre compte Afrolook a été certifié. Le badge de vérification ✓ est maintenant visible sur votre profil.'
-            : 'La certification de votre compte a été retirée par l\'administration Afrolook.',
-        users_id_view: [],
-        user_id: adminId,
-        receiver_id: widget.userId,
-        post_id: '',
-        createdAt: DateTime.now().millisecondsSinceEpoch,
-        updatedAt: DateTime.now().millisecondsSinceEpoch,
-      );
-      await _firestore.collection('Notifications').doc(notifId).set(notif.toJson());
-
-      // 3. Push notification OneSignal
-      final osId = _userData!.oneIgnalUserid ?? '';
-      if (osId.length > 5) {
-        await authProvider.sendNotification(
-          appName: 'Afrolook',
-          userIds: [osId],
-          smallImage: _userData!.imageUrl ?? '',
-          send_user_id: adminId,
-          recever_user_id: widget.userId,
-          message: newValue
-              ? '✅ Votre compte Afrolook a été certifié !'
-              : 'La certification de votre compte a été retirée.',
-          type_notif: NotificationType.CERTIFICATION.name,
-          post_id: '',
-          post_type: '',
-          chat_id: '',
-        );
-      }
+      // Certification enregistrée par l'API (la notification au compte est envoyée par le serveur)
+      await AdminMoneyApi.setVerified(widget.userId, newValue);
 
       setState(() {
         _userData!.isVerify = newValue;
@@ -835,7 +722,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
     } catch (e) {
       printVm('Erreur certification: $e');
       setState(() => _isUpdating = false);
-      _showSnack('Erreur lors de la mise à jour', _red);
+      _showSnack(AdminMoneyApi.message(e, fallback: 'Erreur lors de la mise à jour'), _red);
     }
   }
 
@@ -849,36 +736,13 @@ class _UserManagementPageState extends State<UserManagementPage> {
     final adminId = Provider.of<UserAuthProvider>(context, listen: false).userId;
     setState(() => _isUpdating = true);
     try {
-      final current = balanceField == 'votre_solde_depot'
-          ? (_userData!.votre_solde_depot ?? 0.0)
-          : (_userData!.votre_solde_principal ?? 0.0);
-      final newBal = current + amount;
-
-      await _firestore.collection('Users').doc(widget.userId).update({
-        balanceField: newBal,
-        'updated_at': DateTime.now().millisecondsSinceEpoch,
-      });
-      await _firestore.collection('TransactionSoldes').add({
-        'user_id': _userData!.id,
-        'montant': amount.abs(),
-        'type': type,
-        'description': description,
-        'raison': raison,
-        'balance_field': balanceField,
-        'createdAt': DateTime.now().millisecondsSinceEpoch,
-        'statut': StatutTransaction.VALIDER.name,
-        'processed_by': adminId,
-      });
-      setState(() {
-        if (balanceField == 'votre_solde_depot') {
-          _userData!.votre_solde_depot = newBal;
-        } else {
-          _userData!.votre_solde_principal = newBal;
-        }
-      });
+      // Ajustement fait par l'API (écriture comptable, solde relu ensuite)
+      await AdminMoneyApi.adjustWallet(widget.userId,
+          kind: balanceField == 'votre_solde_depot' ? 'deposit_xof' : 'payout_xof', amount: amount, reason: raison.isEmpty ? description : raison);
+      await _loadUserData();
       _showSnack('Opération effectuée !', _green);
     } catch (e) {
-      _showSnack('Erreur : $e', _red);
+      _showSnack('Erreur : ${AdminMoneyApi.message(e)}', _red);
     } finally {
       setState(() => _isUpdating = false);
     }
@@ -892,56 +756,14 @@ class _UserManagementPageState extends State<UserManagementPage> {
   Future<void> _updateCoinsBalance(int amount, String raison, {required bool depot}) async {
     if (_userData == null) return;
     final adminId = Provider.of<UserAuthProvider>(context, listen: false).userId;
-    final userRef = _firestore.collection('Users').doc(widget.userId);
     setState(() => _isUpdating = true);
     try {
-      final updated = await _firestore.runTransaction<UserData>((tx) async {
-        final snap = await tx.get(userRef);
-        final u = UserData.fromJson(snap.data() ?? {});
-        final balance = u.giftCoinsBalance ?? 0;
-        final locked = u.lockedGiftCoins;
-        final convertible = u.convertibleGiftCoins;
-        if (amount < 0 && -amount > (depot ? locked : convertible)) {
-          throw Exception(depot
-              ? 'Pièces de dépôt insuffisantes (${depot ? locked : convertible})'
-              : 'Pièces gagnées insuffisantes ($convertible)');
-        }
-        // Le verrou est « figé » à la valeur actuelle puis ajusté pour les pièces de dépôt.
-        final newLocked = depot ? (locked + amount).clamp(0, 1 << 40) : locked;
-        tx.update(userRef, {
-          'giftCoinsBalance': FieldValue.increment(amount),
-          'lockedCoins': newLocked,
-          'lockedCoinsSpentBaseline': u.totalGiftCoinsSpent ?? 0,
-          'updated_at': DateTime.now().millisecondsSinceEpoch,
-        });
-        final label = depot ? 'pièces de dépôt' : 'pièces gagnées';
-        tx.set(_firestore.collection('TransactionSoldes').doc(), {
-          'user_id': _userData!.id,
-          'montant': amount.abs(),
-          // DEPENSE + « pieces » : montant lu en pièces dans l'historique (TxAmount)
-          'type': amount > 0 ? 'GAIN_PIECES' : 'DEPENSE',
-          'methode_paiement': amount > 0 ? (depot ? 'admin_depot' : 'admin_gagnees') : 'pieces',
-          'description': amount > 0 ? 'Crédit $label (admin)' : 'Débit $label (admin)',
-          'raison': raison,
-          'balance_field': 'giftCoinsBalance',
-          'createdAt': DateTime.now().millisecondsSinceEpoch,
-          'statut': StatutTransaction.VALIDER.name,
-          'processed_by': adminId,
-        });
-        return u
-          ..giftCoinsBalance = balance + amount
-          ..lockedCoins = newLocked
-          ..lockedCoinsSpentBaseline = u.totalGiftCoinsSpent ?? 0;
-      });
-      setState(() {
-        _userData!
-          ..giftCoinsBalance = updated.giftCoinsBalance
-          ..lockedCoins = updated.lockedCoins
-          ..lockedCoinsSpentBaseline = updated.lockedCoinsSpentBaseline;
-      });
+      // Ajustement fait par l'API (refuse si le solde ne suffit pas) ; soldes relus ensuite
+      await AdminMoneyApi.adjustWallet(widget.userId, kind: depot ? 'deposit_coins' : 'earned_coins', amount: amount, reason: raison);
+      await _loadUserData();
       _showSnack('${amount > 0 ? '+' : ''}$amount pièce(s) appliquée(s)', _gold);
     } catch (e) {
-      _showSnack('Erreur : ${e.toString().replaceFirst('Exception: ', '')}', _red);
+      _showSnack('Erreur : ${AdminMoneyApi.message(e)}', _red);
     } finally {
       setState(() => _isUpdating = false);
     }

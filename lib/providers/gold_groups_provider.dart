@@ -1,111 +1,60 @@
-import 'package:afrotok/services/read_meter.dart';
-import 'dart:async';
 import 'dart:math';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/chat_api.dart';
+import 'package:afrotok/services/api/chat_mapper.dart';
+import 'package:afrotok/services/api/jeux_api.dart';
 import 'package:flutter/foundation.dart';
 
+/// Groupes mis en avant (officiels + groupes de comptes Gold), lus depuis l'API.
+/// Route de découverte souhaitée : GET /groups/discover?featured=1 (groupes officiels et Gold non gelés) ; en attendant,
+/// seuls les groupes officiels dont la personne est déjà membre sont affichés. Plus d'écoute temps réel (rafraîchissement à l'ouverture).
 class GoldGroupsProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _groups = [];
   bool _loading = false;
   bool _loaded = false;
-
-  // Stream for official groups (real-time)
-  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _officialSub;
-  List<Map<String, dynamic>> _officialGroups = [];
-  List<Map<String, dynamic>> _goldUserGroups = [];
+  String? _error;
 
   List<Map<String, dynamic>> get groups => _groups;
   bool get loading => _loading;
   bool get isLoaded => _loaded;
 
-  /// Lance l'écoute temps réel des groupes officiels.
-  /// Appeler une fois au démarrage (depuis initState ou un Consumer haut-niveau).
+  /// Message d'erreur en français (null si tout va bien) : l'écran peut proposer « Réessayer » ([load] avec force).
+  String? get error => _error;
+
+  /// Conservé pour compatibilité : le premier chargement suffit désormais.
   void startStream() {
-    if (_officialSub != null) return;
-    _officialSub = FirebaseFirestore.instance
-        .collection('GroupChats')
-        .where('is_official', isEqualTo: true)
-        .where('is_frozen', isEqualTo: false)
-        .limit(20)
-        .snapshotsM('gold_groups_provider.dart:29')
-        .listen((snap) {
-      _officialGroups = snap.docs.map((d) => d.data()).toList();
-      _rebuildGroups();
-    }, onError: (e) {
-      debugPrint('GoldGroupsProvider official stream error: $e');
-    });
+    if (!_loaded && !_loading) load();
   }
 
-  void _rebuildGroups() {
-    final officialIds = _officialGroups.map((g) => g['id'] as String?).toSet();
-    final combined = [
-      ..._officialGroups,
-      ..._goldUserGroups.where((g) => !officialIds.contains(g['id'] as String?)),
-    ];
-    combined.sort((a, b) {
-      final aAt = (a['last_message_at'] as int?) ?? 0;
-      final bAt = (b['last_message_at'] as int?) ?? 0;
-      return bAt.compareTo(aAt);
-    });
-    _groups = combined;
-    _loaded = true;
-    _loading = false;
-    notifyListeners();
-  }
-
-  /// Charge les groupes Gold des utilisateurs (one-time).
-  /// [force] ignore le cache et recharge depuis Firestore.
+  /// Charge les groupes mis en avant. [force] ignore le cache et relit l'API.
   Future<void> load({bool force = false}) async {
-    // Lance le stream si pas encore démarré
-    startStream();
-
     if (_loading) return;
     if (!force && _loaded) return;
 
     _loading = true;
+    _error = null;
     notifyListeners();
 
     try {
-      final usersSnap = await FirebaseFirestore.instance
-          .collection('Users')
-          .where('abonnement.type', isEqualTo: 'gold')
-          .limit(50)
-          .getM('gold_groups_provider.dart:72');
-
-      final now = DateTime.now();
-      final goldUserIds = usersSnap.docs.where((d) {
-        final ab = d.data()['abonnement'] as Map<String, dynamic>?;
-        if (ab == null) return false;
-        final dateFinStr = ab['dateFin'] as String?;
-        if (dateFinStr == null) return false;
-        final dateFin = DateTime.tryParse(dateFinStr);
-        return dateFin != null && dateFin.isAfter(now);
-      }).map((d) => d.id).toList();
-
-      _goldUserGroups = [];
-      if (goldUserIds.isNotEmpty) {
-        final officialIds = _officialGroups.map((g) => g['id'] as String?).toSet();
-        final groupsSnap = await FirebaseFirestore.instance
-            .collection('GroupChats')
-            .where('owner_id', whereIn: goldUserIds.take(10).toList())
-            .where('is_frozen', isEqualTo: false)
-            .limit(20)
-            .getM('gold_groups_provider.dart:92');
-        for (final doc in groupsSnap.docs) {
-          if (!officialIds.contains(doc.id)) _goldUserGroups.add(doc.data());
-        }
-        _goldUserGroups.shuffle(Random());
+      var rows = <Map<String, dynamic>>[];
+      try {
+        rows = JeuxApi.list(await JeuxApi.client.get('/groups/discover', query: {'featured': 1, 'limit': 40}));
+      } catch (e) {
+        // Route de découverte absente (404/405) : repli sur mes groupes officiels (toujours l'API).
+        rows = await ChatApi.groups();
       }
+      final out = rows
+          .where((g) => g['is_official'] == true || g['featured'] == true || g['owner_is_gold'] == true)
+          .where((g) => g['is_frozen'] != true)
+          .map(groupToLegacy)
+          .toList();
+      out.shuffle(Random());
+      _groups = out;
     } catch (e) {
-      debugPrint('GoldGroupsProvider.load error: $e');
+      _error = ChatApi.message(e);
+      debugPrint('GoldGroupsProvider.load : $e');
     }
-
-    _rebuildGroups();
-  }
-
-  @override
-  void dispose() {
-    _officialSub?.cancel();
-    super.dispose();
+    _loaded = true;
+    _loading = false;
+    notifyListeners();
   }
 }

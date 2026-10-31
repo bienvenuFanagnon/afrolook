@@ -49,7 +49,11 @@ import 'package:afrotok/providers/postProvider.dart';
 import 'package:afrotok/services/api/canaux_api.dart';
 import 'package:afrotok/services/api/users_api.dart';
 import 'package:afrotok/services/api/users_mapper.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:afrotok/services/api/chat_api.dart';
+import 'package:afrotok/services/api/pub_feed_api.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart' show ApiException;
+import 'package:afrotok/services/api/chat_mapper.dart';
+import 'package:afrotok/services/api/lives_mapper.dart';
 import 'package:afrotok/constant/logo.dart';
 import 'package:afrotok/constant/sizeText.dart';
 import 'package:afrotok/models/model_data.dart';
@@ -215,7 +219,6 @@ class _MyHomePageState extends State<MyHomePage>
   StreamSubscription<Map<String, dynamic>>? _liveNavSub;
 
   // Liste des onglets avec texte et icônes
-  DocumentSnapshot? lastDocument;
   bool isLoading = false;
   void _changeColor() {
     final List<Color> colors = [
@@ -260,7 +263,7 @@ class _MyHomePageState extends State<MyHomePage>
   late AnimationController _headerCtrl;
   double _scrollAccum = 0;
 
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  Timer? _notifTimer;
   bool _buttonEnabled = true;
   RandomColor _randomColor = RandomColor();
 
@@ -376,52 +379,43 @@ class _MyHomePageState extends State<MyHomePage>
 
     bool _firstEvent = true;
 
-    firestore
-        .collection('Notifications')
-        .where('receiver_id', isEqualTo: currentUserId)
-        .where('is_open', isEqualTo: false)
-        .orderBy('createdAt', descending: true)
-        .limit(100) // pastille « 99+ » : inutile de relire des milliers de notifications à chaque ouverture (coût Firestore)
-        .snapshotsM('homeScreen.dart:373')
-        .listen((snapshot) {
-      if (!mounted) return;
-      const datingTypes = {'DATING_LIKE', 'DATING_MATCH', 'DATING_SUPER_LIKE', 'DATING_MESSAGE'};
-      final datingDocs = snapshot.docs.where((d) {
-        final type = (d.data() as Map<String, dynamic>)['type'] as String? ?? '';
-        return datingTypes.contains(type);
-      }).toList();
-      final nonDatingDocs = snapshot.docs.where((d) {
-        final type = (d.data() as Map<String, dynamic>)['type'] as String? ?? '';
-        return !datingTypes.contains(type);
-      }).toList();
-      final latest = nonDatingDocs.take(2).map((d) {
-        final data = Map<String, dynamic>.from(d.data());
-        data['id'] = d.id;
-        return NotificationData.fromJson(data);
-      }).toList();
-      setState(() {
-        _unreadNotificationsCount = nonDatingDocs.length;
-        _unreadDatingCount = datingDocs.length;
-        _latestUnreadNotifs = latest;
-      });
+    Future<void> refresh() async {
+      try {
+        // Notifications non lues (100 au plus : la pastille affiche « 99+ »), lues via l'API
+        final page = await ChatApi.notifications(unreadOnly: true, limit: 100);
+        if (!mounted) return;
+        const datingTypes = {'DATING_LIKE', 'DATING_MATCH', 'DATING_SUPER_LIKE', 'DATING_MESSAGE'};
+        final all = page.items.map(notificationFromApi).toList();
+        final dating = all.where((n) => datingTypes.contains(n.type)).toList();
+        final nonDating = all.where((n) => !datingTypes.contains(n.type)).toList();
+        setState(() {
+          _unreadNotificationsCount = nonDating.length;
+          _unreadDatingCount = dating.length;
+          _latestUnreadNotifs = nonDating.take(2).toList();
+        });
 
-      if (_unreadNotificationsCount > 0) {
-        if (_firstEvent) {
-          // Premier événement au démarrage : délai 2s pour que l'Overlay soit prêt
+        if (_unreadNotificationsCount > 0) {
+          if (_firstEvent) {
+            // Premier événement au démarrage : délai 2s pour que l'Overlay soit prêt
+            _firstEvent = false;
+            Future.delayed(const Duration(seconds: 2), () {
+              if (mounted) _showNotificationToastIfNeeded();
+            });
+          } else if (_lastToastTime == null) {
+            // Nouvelle notif arrivée pendant la session
+            _showNotificationToastIfNeeded();
+          }
+        } else {
           _firstEvent = false;
-          Future.delayed(const Duration(seconds: 2), () {
-            if (mounted) _showNotificationToastIfNeeded();
-          });
-        } else if (_lastToastTime == null) {
-          // Nouvelle notif arrivée pendant la session
-          _showNotificationToastIfNeeded();
         }
-      } else {
-        _firstEvent = false;
+      } catch (e) {
+        printVm('❌ Erreur de lecture des notifications (API) : $e');
       }
-    }, onError: (e) {
-      printVm('❌ Erreur dans le stream des notifications: $e');
-    });
+    }
+
+    _notifTimer?.cancel();
+    refresh();
+    _notifTimer = Timer.periodic(const Duration(seconds: 60), (_) => refresh());
   }
 
   void _showNotificationToastIfNeeded() {
@@ -775,20 +769,25 @@ class _MyHomePageState extends State<MyHomePage>
 
 
 
-  Stream<int> getNbrInvitation() async* {
-    var invitationsStream = FirebaseFirestore.instance
-        .collection('Invitations')
-        .where('receiver_id', isEqualTo: authProvider.loginUserData.id!)
-        .where('status', isEqualTo: "${InvitationStatus.ENCOURS.name}")
-        .limit(100) // pastille : inutile de relire davantage
-        .snapshotsM('homeScreen.dart:772');
-
-    await for (var invitationsSnapshot in invitationsStream) {
-      final n = invitationsSnapshot.docs.length;
-      userProvider.countInvitations = n;
-      yield n;
+  /// Lecture répétée d'un compteur de l'API (pas de flux temps réel côté serveur) : une valeur tout de suite, puis toutes les [every].
+  Stream<int> _pollCount(Future<int> Function() read, {Duration every = const Duration(seconds: 45)}) async* {
+    while (mounted) {
+      try {
+        yield await read();
+      } catch (e) {
+        printVm('❌ Compteur (API) en échec : $e');
+      }
+      await Future.delayed(every);
     }
   }
+
+  Stream<int> getNbrInvitation() => _pollCount(() async {
+        // Pastille : 100 invitations en attente au plus
+        final page = await UsersApi.invitations(direction: 'received', status: 'pending', limit: 100);
+        final n = page.items.length;
+        userProvider.countInvitations = n;
+        return n;
+      });
 
   // Un seul abonnement pour tout l'écran d'accueil. Avant, chaque reconstruction de la barre de navigation créait de nouveaux
   // abonnements (messages non lus + tous les groupes de la personne) : autant de lectures Firestore facturées en plus.
@@ -814,49 +813,16 @@ class _MyHomePageState extends State<MyHomePage>
     }();
   }
 
-  Stream<int> getNbrMessageNonLu() {
-    final userId = authProvider.loginUserData.id!;
-    final ctrl = StreamController<int>();
-    int directCount = 0;
-    int groupCount = 0;
-
-    final directSub = FirebaseFirestore.instance
-        .collection('Messages')
-        .where('receiverBy', isEqualTo: userId)
-        .where('message_state', isEqualTo: MessageState.NONLU.name)
-        .limit(100) // pastille « 99+ » : inutile de relire des milliers de messages non lus à chaque ouverture
-        .snapshotsM('homeScreen.dart:816')
-        .listen((snap) {
-      directCount = snap.docs.length;
-      printVm("messages directs non lus: $directCount");
-      if (!ctrl.isClosed) ctrl.add(directCount + groupCount);
-    });
-
-    final groupSub = FirebaseFirestore.instance
-        .collection('GroupChats')
-        .where('member_ids', arrayContains: userId)
-        .snapshotsM('homeScreen.dart:826')
-        .listen((snap) {
-      groupCount = 0;
-      for (final doc in snap.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        final unreadCounts = data['unread_counts'] as Map<String, dynamic>? ?? {};
-        groupCount += (unreadCounts[userId] as int?) ?? 0;
-      }
-      printVm("messages groupes non lus: $groupCount");
-      if (!ctrl.isClosed) ctrl.add(directCount + groupCount);
-    });
-
-    ctrl.onCancel = () {
-      directSub.cancel();
-      groupSub.cancel();
-    };
-
-    return ctrl.stream;
-  }
-
-
-
+  /// Messages non lus : conversations 1 à 1 (compteur de l'API) + groupes (compteur de l'API si la route existe, sinon 0 : voir lacunes).
+  Stream<int> getNbrMessageNonLu() => _pollCount(() async {
+        final direct = await ChatApi.unreadConversations();
+        var groups = 0;
+        try {
+          groups = await PubFeedApi.groupsUnread();
+        } catch (_) {}
+        printVm('messages non lus : directs $direct, groupes $groups');
+        return direct + groups;
+      });
 
   Future<bool> hasShownDialogToday() async {
     printVm("====hasShownDialogToday====");
@@ -874,74 +840,6 @@ class _MyHomePageState extends State<MyHomePage>
     }
   }
 
-  Stream<List<Chat>> getAndUpdateChatsData() async* {
-    // Définissez la requête
-    var chatsStream = FirebaseFirestore.instance
-        .collection('Chats')
-        .where(Filter.or(
-      Filter('receiver_id', isEqualTo: '${authProvider.loginUserData.id}'),
-      Filter('sender_id', isEqualTo: '${authProvider.loginUserData.id}'),
-    ))
-        .where("type", isEqualTo: ChatType.USER.name)
-        .orderBy('updated_at', descending: true)
-        .snapshotsM('homeScreen.dart:875');
-
-// Obtenez la liste des utilisateurs
-    //List<DocumentSnapshot> users = await usersQuery.sget();
-    Chat usersChat = Chat();
-    List<Chat> listChats = [];
-
-    await for (var chatSnapshot in chatsStream) {
-      for (var chatDoc in chatSnapshot.docs) {
-        CollectionReference friendCollect =
-        await FirebaseFirestore.instance.collection('Users');
-        QuerySnapshot querySnapshotUser = await friendCollect
-            .where("id",
-            isEqualTo:
-            authProvider.loginUserData.id == chatDoc["receiver_id"]
-                ? chatDoc["sender_id"]
-                : chatDoc["receiver_id"]!)
-            .getM('homeScreen.dart:892');
-        // Afficher la liste
-        List<UserData> userList = querySnapshotUser.docs
-            .map((doc) => UserData.fromJson(doc.data() as Map<String, dynamic>))
-            .toList();
-        //userData=userList.first;
-
-        if (userList.isNotEmpty) {
-          usersChat = Chat.fromJson(chatDoc.data());
-          usersChat.chatFriend = userList.first;
-          usersChat.receiver = userList.first;
-
-          if (usersChat.senderId == authProvider.loginUserData.id!) {
-            //  widget.chat.receiver_sending=false;
-
-            usersChat.send_sending = IsSendMessage.NOTSENDING.name;
-            printVm('dispose update chat sender');
-
-            firestore
-                .collection('Chats')
-                .doc(usersChat.id)
-                .update(usersChat.toJson());
-          } else {
-            usersChat.receiver_sending = IsSendMessage.NOTSENDING.name;
-
-            //widget.chat.send_sending=false;
-            printVm('dispose update chat reicever');
-
-            firestore
-                .collection('Chats')
-                .doc(usersChat.id)
-                .update(usersChat.toJson());
-          }
-
-          //listChats.add(usersChat);
-        }
-      }
-      yield listChats;
-      listChats = [];
-    }
-  }
   Future<void> _checkAndShowDialog() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String lastShownDate = prefs.getString('lastShownDate') ?? '';
@@ -1424,16 +1322,19 @@ class _MyHomePageState extends State<MyHomePage>
       return;
     }
     try {
-      final doc = await FirebaseFirestore.instance
-          .collection('lives')
-          .doc(liveId)
-          .getM('homeScreen.dart:1345');
-      if (!mounted) return;
-      if (!doc.exists) {
-        Navigator.pushNamed(context, '/list_live');
-        return;
+      Map<String, dynamic> row;
+      try {
+        row = await LivesApi.get(liveId);
+      } on ApiException catch (e) {
+        if (!mounted) return;
+        if (e.status == 404) {
+          Navigator.pushNamed(context, '/list_live');
+          return;
+        }
+        rethrow;
       }
-      final live = PostLive.fromMap(doc.data()!);
+      if (!mounted) return;
+      final live = postLiveFromApi(row);
       if (live.isLive) {
         Navigator.push(
           context,
@@ -1546,6 +1447,7 @@ class _MyHomePageState extends State<MyHomePage>
     _invitationsKeepAlive?.cancel();
     _messagesKeepAlive?.cancel();
     WidgetsBinding.instance.removeObserver(this);
+    _notifTimer?.cancel();
     _headerCtrl.dispose();
     // 🔥 Très important : Arrêter le timer à la destruction de la page
     _presenceService.stopHeartbeat();
