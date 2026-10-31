@@ -11,25 +11,21 @@ class HomeFeedApi {
   static ApiClient get _c => ApiGateway.instance.client;
 
   /// Une page de découverte (niveau 3 du serveur : publications non vues, pays proche en premier).
-  /// [category] et [country] sont envoyés au serveur (filtres souhaités : voir lacunes_api_publications.md) ET appliqués ici,
-  /// pour que le résultat soit correct même tant que le serveur les ignore.
+  /// Filtres faits PAR LE SERVEUR (`GET /feed?category=&country=`) : [category] = thème exact (Sport, Looks, Événements…),
+  /// [country] = code pays à 2 lettres (publications visibles dans ce pays ou dans « tous les pays »). Le code « ALL » ou un code
+  /// invalide veut dire « pas de filtre de pays » (le serveur refuse tout autre format).
   static Future<({List<Post> posts, String? next})> discover({String? category, String? country, String? cursor, int limit = 20, int tier = 3}) async {
+    final cc = country?.trim().toUpperCase();
     final r = await _c.get('/feed', query: {
       'tier': tier,
       'limit': limit,
       if (cursor != null) 'cursor': cursor,
       if (category != null && category.isNotEmpty) 'category': category,
-      if (country != null && country.isNotEmpty) 'country': country,
+      if (cc != null && RegExp(r'^[A-Z]{2}$').hasMatch(cc)) 'country': cc,
     }) as Map;
-    var posts = ((r['data'] as List?) ?? const []).whereType<Map>().map((m) => postFromApi(Map<String, dynamic>.from(m))).where((p) => p.id != null).toList();
+    final posts = ((r['data'] as List?) ?? const []).whereType<Map>().map((m) => postFromApi(Map<String, dynamic>.from(m))).where((p) => p.id != null).toList();
     for (final p in posts) {
       p.typeTabbar ??= p.categorie;
-    }
-    if (category != null && category.isNotEmpty) {
-      posts = posts.where((p) => p.categorie == category || p.typeTabbar == category).toList();
-    }
-    if (country != null && country.isNotEmpty) {
-      posts = posts.where((p) => p.availableCountries == null || p.availableCountries!.isEmpty || p.availableCountries!.contains('ALL') || p.availableCountries!.contains(country)).toList();
     }
     return (posts: posts, next: r['next_cursor'] as String?);
   }

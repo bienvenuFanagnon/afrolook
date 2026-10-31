@@ -630,7 +630,10 @@ class LiveProvider extends ChangeNotifier {
     }
   }
 
-  /// Nom et photo de l'hôte (l'API ne les joint pas aux lives) : profil public, gardé en mémoire.
+  /// Dernière erreur de chargement des listes de lives (message en français), null si le dernier chargement a réussi : la page propose « Réessayer ».
+  String? loadError;
+
+  /// Nom et photo de l'hôte : fournis par l'API avec chaque live (`host`). Ce profil public ne sert que de secours si elle ne les envoie pas.
   Future<({String name, String image})> _host(String id) async {
     final c = _hosts[id];
     if (c != null) return c;
@@ -645,8 +648,12 @@ class LiveProvider extends ChangeNotifier {
   Future<List<PostLive>> _convert(List<Map<String, dynamic>> rows) async {
     final out = <PostLive>[];
     for (final j in rows) {
-      final h = await _host('${j['host_id']}');
-      out.add(postLiveFromApi(j, hostName: h.name, hostImage: h.image));
+      if (j['host'] is Map) {
+        out.add(postLiveFromApi(j)); // nom et photo de l'hôte déjà fournis par l'API
+      } else {
+        final h = await _host('${j['host_id']}');
+        out.add(postLiveFromApi(j, hostName: h.name, hostImage: h.image));
+      }
     }
     return out;
   }
@@ -666,9 +673,12 @@ class LiveProvider extends ChangeNotifier {
       _allLives.addAll(await _convert(ended.items));
       _lastAllLiveDoc = ended.next;
       if (ended.next == null || _allLives.length >= maxLives) _allLivesFinished = true;
+      loadError = null;
       notifyListeners();
     } catch (e) {
       printVm("❌ Erreur lors du chargement des lives par batch: $e");
+      loadError = ChatApi.message(e, fallback: 'Les lives ne se chargent pas pour le moment.');
+      notifyListeners();
     }
   }
 
@@ -684,9 +694,12 @@ class LiveProvider extends ChangeNotifier {
       _endedLives.addAll(await _convert(page.items));
       _lastEndedLiveDoc = page.next;
       if (page.next == null || _endedLives.length >= maxLives) _endedLivesFinished = true;
+      loadError = null;
       notifyListeners();
     } catch (e) {
       printVm("Erreur lors du chargement des lives terminés par batch: $e");
+      loadError = ChatApi.message(e, fallback: 'Les lives ne se chargent pas pour le moment.');
+      notifyListeners();
     }
   }
 
@@ -702,9 +715,12 @@ class LiveProvider extends ChangeNotifier {
       _activeLives.addAll(await _convert(page.items));
       _lastActiveLiveDoc = page.next;
       if (page.next == null || _activeLives.length >= maxLives) _activeLivesFinished = true;
+      loadError = null;
       notifyListeners();
     } catch (e) {
       printVm("Erreur lors du chargement des lives actifs par batch: $e");
+      loadError = ChatApi.message(e, fallback: 'Les lives ne se chargent pas pour le moment.');
+      notifyListeners();
     }
   }
 

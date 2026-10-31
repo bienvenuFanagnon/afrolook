@@ -1610,10 +1610,13 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
         ));
         return;
       }
-      if (_defiConfig!.cagnottePieces > (authProvider.loginUserData.giftCoinsBalance ?? 0)) {
-        DefiDialogs.insufficientBalance(context, isVote: false, isCreation: true);
+      if (widget.canal != null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Un DÉFI ne peut pas être publié dans un canal.', textAlign: TextAlign.center),
+        ));
         return;
       }
+      // Le solde est vérifié par le serveur au moment du débit de la cagnotte (402 : on propose de recharger)
     }
     if (onTap) return;
 
@@ -1693,26 +1696,28 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
         },
       );
 
-      // Défis : pas encore de route côté API (voir lacunes_api_publications.md)
-      if (widget.defiPostId != null || _selectedPostType == 'DEFI') {
-        if (mounted) Navigator.of(context, rootNavigator: true).pop();
-        setState(() => onTap = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Les défis ne sont pas encore disponibles dans cette version.', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))),
-        );
-        return;
-      }
       if (_audioFile == null) throw Exception("Aucun audio à envoyer");
 
       // Audio d'abord (type de la publication), puis image de couverture ; envoi direct au stockage via l'API
-      final Post post = await PostPublisher.publish(
-        description: _descriptionController.text,
-        files: [await MediaShrink.file(_audioFile!), if (_coverImage != null) await MediaShrink.file(_coverImage!)],
-        category: _selectedPostType,
-        monetized: _monetized,
-        countries: _selectAllCountries ? const ['ALL'] : _selectedCountries.map((c) => c.code).toList(),
-        canal: widget.canal,
-      );
+      final List<File> audioFiles = [await MediaShrink.file(_audioFile!), if (_coverImage != null) await MediaShrink.file(_coverImage!)];
+      final countryCodes = _selectAllCountries ? const <String>['ALL'] : _selectedCountries.map((c) => c.code).toList();
+      final Post post;
+      if (widget.defiPostId != null) {
+        // Participation à un DÉFI : frais éventuels débités et réponse publiée dans la même opération côté serveur
+        post = await PostPublisher.participateDefi(widget.defiPostId!, description: _descriptionController.text, files: audioFiles, category: _selectedPostType, countries: countryCodes);
+      } else if (_selectedPostType == 'DEFI') {
+        // Création d'un DÉFI : la cagnotte est débitée dans la même opération côté serveur
+        post = await PostPublisher.publishDefi(config: _defiConfig!, description: _descriptionController.text, files: audioFiles, category: _selectedPostType, countries: countryCodes);
+      } else {
+        post = await PostPublisher.publish(
+          description: _descriptionController.text,
+          files: audioFiles,
+          category: _selectedPostType,
+          monetized: _monetized,
+          countries: countryCodes,
+          canal: widget.canal,
+        );
+      }
       final String postId = post.id!;
       await PostCooldownService.markPosted();
 
@@ -1800,7 +1805,13 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
       printVm("❌ Erreur publication: $e");
       if (Navigator.canPop(context)) Navigator.pop(context);
       setState(() => onTap = false);
-      _showErrorSnackbar(apiErrorText(e, fallback: 'Erreur lors de la publication'));
+      if (!mounted) return;
+      if (widget.defiPostId != null || _selectedPostType == 'DEFI') {
+        // Messages propres aux DÉFIS (déjà inscrit, DÉFI terminé, pièces insuffisantes → recharger…) ; « Réessayer » sans double débit
+        DefiDialogs.handleError(context, e, isVote: false, isCreation: widget.defiPostId == null, onRetry: _publishPost);
+      } else {
+        handleApiError(context, e, onRetry: _publishPost, fallback: 'Erreur lors de la publication');
+      }
     }
   }
 

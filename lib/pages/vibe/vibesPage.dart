@@ -888,8 +888,8 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
       final shareUrl = post.thumbnail ?? '';
       final linkService = AppLinkService();
       await linkService.shareContent(type: AppLinkType.post, id: post.id!, message: post.description ?? '', mediaUrl: shareUrl);
-      await PubApi.share(post.id!);
-      setState(() => post.partage = (post.partage ?? 0) + 1);
+      final shared = await PubApi.share(post.id!);
+      setState(() => post.partage = shared.count ?? ((post.partage ?? 0) + (shared.counted ? 1 : 0)));
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vibe partagée !'), backgroundColor: Colors.green));
     } catch (e) { printVm('Erreur partage: $e'); } finally { setState(() => _isSharing = false); }
   }

@@ -27,6 +27,9 @@ class _AccountRestoreFeeScreenState extends State<AccountRestoreFeeScreen> with 
   bool _busy = false;
   String? _error;
 
+  /// Montant du déblocage demandé par l'API (réponse 402 de `POST /me/restore-fee`) quand le profil ne le fournit pas encore.
+  int? _knownFee;
+
   UserData get _user => context.read<UserAuthProvider>().loginUserData;
 
   @override
@@ -73,11 +76,22 @@ class _AccountRestoreFeeScreenState extends State<AccountRestoreFeeScreen> with 
         (_) => false,
       );
     } on ApiException catch (e) {
+      if (e.status == 409 && e.code == 'no_fee_due') {
+        // Plus rien à payer (déjà réglé ailleurs) : le compte est actif, on continue
+        await context.read<UserAuthProvider>().refreshUserData();
+        if (!mounted) return;
+        Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => MyHomePage(title: '')), (_) => false);
+        return;
+      }
       await _refresh();
       if (mounted) {
-        setState(() => _error = e.isInsufficientCoins
-            ? tr('Solde de pièces insuffisant : recharge ton compte pour continuer.')
-            : CompteApi.message(e, fallback: tr('Paiement impossible pour le moment.')));
+        setState(() {
+          // L'API indique le prix dans sa réponse 402 : on le retient pour afficher le montant et ce qu'il manque
+          if (e.isInsufficientCoins && e.coins != null) _knownFee = e.coins;
+          _error = e.isInsufficientCoins
+              ? tr('Solde de pièces insuffisant : recharge ton compte pour continuer.')
+              : CompteApi.message(e, fallback: tr('Paiement impossible pour le moment.'));
+        });
       }
     } catch (_) {
       if (mounted) setState(() => _error = tr('Paiement impossible pour le moment.'));
@@ -90,10 +104,13 @@ class _AccountRestoreFeeScreenState extends State<AccountRestoreFeeScreen> with 
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final user = context.watch<UserAuthProvider>().loginUserData;
-    final fee = user.restoreFeeDue ?? widget.user.restoreFeeDue ?? 0;
+    final profileFee = user.restoreFeeDue ?? widget.user.restoreFeeDue ?? 0;
+    final fee = profileFee > 0 ? profileFee : (_knownFee ?? 0);
+    final feeKnown = fee > 0;
     final balance = user.giftCoinsBalance ?? 0;
     final missing = (fee - balance).clamp(0, 1 << 30);
-    final enough = missing == 0;
+    // Montant encore inconnu : on laisse payer, le serveur dit si le solde suffit
+    final enough = !feeKnown || missing == 0;
 
     return PopScope(
       canPop: false,
@@ -136,7 +153,7 @@ class _AccountRestoreFeeScreenState extends State<AccountRestoreFeeScreen> with 
                         border: Border.all(color: colors.border),
                       ),
                       child: Column(children: [
-                        _row(colors, tr('Déblocage du compte'), '$fee 🪙', bold: true),
+                        _row(colors, tr('Déblocage du compte'), feeKnown ? '$fee 🪙' : tr('Montant calculé au paiement'), bold: true),
                         const SizedBox(height: 8),
                         _row(colors, tr('Ton solde de pièces'), '$balance 🪙'),
                         if (!enough) ...[
@@ -158,7 +175,7 @@ class _AccountRestoreFeeScreenState extends State<AccountRestoreFeeScreen> with 
                               style: _btn(colors),
                               child: _busy
                                   ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: colors.onPrimary))
-                                  : Text(tr('Payer {n} pièces', {'n': fee}), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                                  : Text(feeKnown ? tr('Payer {n} pièces', {'n': fee}) : tr('Payer le déblocage'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
                             )
                           : ElevatedButton.icon(
                               onPressed: _recharge,

@@ -381,17 +381,24 @@ class _MyHomePageState extends State<MyHomePage>
 
     Future<void> refresh() async {
       try {
-        // Notifications non lues (100 au plus : la pastille affiche « 99+ »), lues via l'API
-        final page = await ChatApi.notifications(unreadOnly: true, limit: 100);
-        if (!mounted) return;
+        // Pastille : non lues par type, comptées par le serveur (exactes, au-delà de 99 aussi) ; les 2 dernières ne sont relues que s'il y en a de nouvelles
         const datingTypes = {'DATING_LIKE', 'DATING_MATCH', 'DATING_SUPER_LIKE', 'DATING_MESSAGE'};
-        final all = page.items.map(notificationFromApi).toList();
-        final dating = all.where((n) => datingTypes.contains(n.type)).toList();
-        final nonDating = all.where((n) => !datingTypes.contains(n.type)).toList();
+        final byType = await ChatApi.unreadCountsByType();
+        if (!mounted) return;
+        final dating = byType.entries.where((e) => datingTypes.contains(e.key)).fold<int>(0, (a, e) => a + e.value);
+        final nonDating = byType.entries.where((e) => !datingTypes.contains(e.key)).fold<int>(0, (a, e) => a + e.value);
+        var latest = _latestUnreadNotifs;
+        if (nonDating == 0) {
+          latest = const [];
+        } else if (nonDating != _unreadNotificationsCount || latest.isEmpty) {
+          final page = await ChatApi.notifications(unreadOnly: true, limit: 6);
+          latest = page.items.map(notificationFromApi).where((n) => !datingTypes.contains(n.type)).take(2).toList();
+        }
+        if (!mounted) return;
         setState(() {
-          _unreadNotificationsCount = nonDating.length;
-          _unreadDatingCount = dating.length;
-          _latestUnreadNotifs = nonDating.take(2).toList();
+          _unreadNotificationsCount = nonDating;
+          _unreadDatingCount = dating;
+          _latestUnreadNotifs = latest;
         });
 
         if (_unreadNotificationsCount > 0) {
@@ -813,12 +820,12 @@ class _MyHomePageState extends State<MyHomePage>
     }();
   }
 
-  /// Messages non lus : conversations 1 à 1 (compteur de l'API) + groupes (compteur de l'API si la route existe, sinon 0 : voir lacunes).
+  /// Messages non lus : conversations 1 à 1 (compteur de l'API) + groupes (non lus de chaque groupe hors sourdine, additionnés depuis `GET /groups`).
   Stream<int> getNbrMessageNonLu() => _pollCount(() async {
         final direct = await ChatApi.unreadConversations();
         var groups = 0;
         try {
-          groups = await PubFeedApi.groupsUnread();
+          groups = await ChatApi.unreadGroups();
         } catch (_) {}
         printVm('messages non lus : directs $direct, groupes $groups');
         return direct + groups;

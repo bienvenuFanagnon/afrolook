@@ -65,7 +65,7 @@ class _UserMyAdvertisementsPageState extends State<UserMyAdvertisementsPage> {
         actions: [IconButton(icon: const Icon(Icons.refresh_rounded), onPressed: _load)],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UserCreateAdvertisementPage())),
+        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UserCreateAdvertisementPage())).then((_) => _load()),
         icon: const Icon(Icons.add),
         label: const Text('Nouvelle publicité'),
       ),
@@ -95,7 +95,7 @@ class _UserMyAdvertisementsPageState extends State<UserMyAdvertisementsPage> {
                           final imgs = CompteApi.adImages(a);
                           return InkWell(
                             borderRadius: BorderRadius.circular(14),
-                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserAdDetailPage(advertisementId: '${a['id']}'))),
+                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserAdDetailPage(advertisementId: '${a['id']}'))).then((_) => _load()),
                             child: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: c.border)),
@@ -117,6 +117,7 @@ class _UserMyAdvertisementsPageState extends State<UserMyAdvertisementsPage> {
                                     const SizedBox(height: 4),
                                     Text(CompteApi.statusLabel(a['status'] as String?), style: TextStyle(color: c.textSecondary, fontSize: 12)),
                                     if (a['ends_at'] != null) Text("Jusqu'au ${_date(a['ends_at'])}", style: TextStyle(color: c.textSecondary, fontSize: 12)),
+                                    Text('${(a['views_total'] as num?)?.toInt() ?? 0} vues · ${(a['clicks_total'] as num?)?.toInt() ?? 0} clics', style: TextStyle(color: c.textSecondary, fontSize: 12)),
                                   ]),
                                 ),
                                 Icon(Icons.chevron_right, color: c.textSecondary),

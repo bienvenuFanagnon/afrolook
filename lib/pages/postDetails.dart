@@ -3635,14 +3635,14 @@ class _DetailsPostState extends State<DetailsPost>
         mediaUrl: shareImageUrl,
       );
 
-      // 3. MISE À JOUR FIREBASE & UI (Code existant)
+      // Compteur de partages tenu par le serveur (un partage par personne) : on affiche son chiffre
+      final shared = await PubApi.share(widget.post.id!);
+      if (!mounted) return;
       setState(() {
-        widget.post.partage = (widget.post.partage ?? 0) + 1;
+        widget.post.partage = shared.count ?? ((widget.post.partage ?? 0) + (shared.counted ? 1 : 0));
+        widget.post.users_partage_id ??= [];
         widget.post.users_partage_id!.add(authProvider.loginUserData.id!);
       });
-
-      // Compteur de partages tenu par le serveur
-      await PubApi.share(widget.post.id!);
 
       authProvider.checkAndRefreshPostDates(widget.post.id!);
 

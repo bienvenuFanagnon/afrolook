@@ -108,6 +108,13 @@ class PostsApi {
     await _c.post('/posts/$id/report', body: {'type': type});
   }
 
+  /// Compte un partage (`POST /posts/{id}/share`) : une seule fois par personne et par publication.
+  /// Renvoie le nombre de partages tenu par le serveur et si ce partage vient d'être compté.
+  static Future<({int count, bool counted})> share(String id) async {
+    final d = _asMap(await _c.post('/posts/$id/share'));
+    return (count: (d['count'] as num?)?.toInt() ?? 0, counted: d['already'] != true);
+  }
+
   /// Signal de goût pour le fil : share, click, watch, skip, hide. Jamais bloquant (erreur ignorée).
   static Future<void> signal(String id, String type) async {
     try {

@@ -4,7 +4,6 @@ import 'dart:typed_data';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../services/api/users_api.dart';
 import '../../services/api/users_mapper.dart';
-import 'package:uuid/uuid.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -146,8 +145,10 @@ class CardEntry {
     final avatar = (me.imageUrl ?? '').isNotEmpty ? CachedNetworkImageProvider(me.imageUrl!) : null;
     final source = CardSource.draft(pseudo: me.pseudo ?? 'afrolook', avatar: avatar, verified: me.isVerify == true, text: text, imageBytes: images, followers: me.followersCount, profileId: me.id, country: me.countryData?['countryCode']);
     _markOpened();
-    // Participation à un DÉFI : l'identifiant du futur post est réservé tout de suite, pour que le QR code « Vote pour moi » de la carte y mène.
-    final presetPostId = defiPostId != null ? const Uuid().v4().replaceAll('-', '').substring(0, 20) : null;
+    // Participation à un DÉFI : l'ancien système réservait l'identifiant du futur post pour que le QR code « Vote pour moi » de la carte y mène.
+    // L'API crée elle-même l'identifiant de la participation : tant qu'elle n'accepte pas un identifiant proposé par l'application
+    // (voir connaissances/lacunes_app_defis_boosts.md), la carte n'affiche pas ce bandeau (aucun lien cassé).
+    const String? presetPostId = null;
     final result = await nav.push<Object?>(MaterialPageRoute(builder: (_) => CardStudioPage(source: source, compose: true, canal: canal, defiPostId: defiPostId, presetPostId: presetPostId, initialStyle: style, initialCountry: country, askLink: askLink, initialTemplate: template)));
     if (result is! CardResult || !nav.mounted) return;
     final quote = await CardService.quote();

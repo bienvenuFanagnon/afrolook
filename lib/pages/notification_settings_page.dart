@@ -1,3 +1,4 @@
+import 'package:afrotok/services/api/chat_api.dart';
 import 'package:afrotok/services/api/users_api.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -20,6 +21,7 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
   bool _activity = true;
   bool _news = true;
   bool _loading = true;
+  String? _error;
   String? _uid;
 
   @override
@@ -35,15 +37,21 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
       setState(() => _loading = false);
       return;
     }
+    if (mounted) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
     try {
-      // Préférences renvoyées par l'API dans le profil (voir lacunes_api_jeux_medias.md) ; valeurs par défaut : tout activé
-      final me = await UsersApi.me();
-      final raw = me['notification_preferences'] ?? me['push_prefs'];
-      final prefs = raw is Map ? raw : const {};
+      // Préférences lues sur l'API (GET /me/notification-preferences) ; par défaut du serveur : tout activé
+      final prefs = await ChatApi.notificationPreferences();
       _reminders = prefs['reminders'] != false;
       _activity = prefs['activity'] != false;
       _news = prefs['news'] != false;
-    } catch (_) {}
+    } catch (e) {
+      _error = ChatApi.message(e, fallback: 'Tes préférences ne se chargent pas pour le moment.');
+    }
     if (mounted) setState(() => _loading = false);
   }
 
@@ -69,6 +77,22 @@ class _NotificationSettingsPageState extends State<NotificationSettingsPage> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
+          : _error != null
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline, size: 52, color: colors.danger),
+                    const SizedBox(height: 12),
+                    Text(_error!, textAlign: TextAlign.center, style: TextStyle(color: colors.textPrimary)),
+                    const SizedBox(height: 12),
+                    ElevatedButton.icon(onPressed: _load, icon: const Icon(Icons.refresh_rounded), label: const Text('Réessayer')),
+                  ],
+                ),
+              ),
+            )
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [

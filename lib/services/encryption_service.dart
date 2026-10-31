@@ -1,4 +1,5 @@
 import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/crypto/key_change_tracker.dart';
 import 'dart:convert';
 
 import 'package:cryptography/cryptography.dart';
@@ -50,6 +51,10 @@ class EncryptionService {
     return keyPair;
   }
 
+  /// Paire de clés X25519 de cet appareil pour [userId] (créée et publiée à la première utilisation). Réutilisée par le chiffrement des groupes
+  /// (`GroupCryptoService`) pour ne pas dupliquer le stockage de la clé privée.
+  static Future<SimpleKeyPair> myKeyPair(String userId) => _getOrCreateKeyPair(userId);
+
   /// Calcule (et met en cache) la clé AES-256 dérivée pour la conversation
   /// [chatId] entre [myUserId] et [otherUserId].
   ///
@@ -70,9 +75,11 @@ class EncryptionService {
       final myKeyPair = await _getOrCreateKeyPair(myUserId);
 
       String? otherPublicB64;
+      int otherVersion = 0;
       for (int attempt = 0; attempt < maxRetries; attempt++) {
         final otherKey = await UsersApi.userKey(otherUserId);
         otherPublicB64 = otherKey?['public_key'] as String?;
+        otherVersion = (otherKey?['version'] as num?)?.toInt() ?? 0;
         if (otherPublicB64 != null) break;
 
         if (attempt < maxRetries - 1) {
@@ -85,6 +92,10 @@ class EncryptionService {
         debugPrint('🔒 EncryptionService: clé publique absente pour $otherUserId après $maxRetries tentatives — envoi refusé');
         return null;
       }
+
+      // Avertissement de changement de clé du contact (confiance à la première utilisation) : l'écran de conversation peut lire
+      // KeyChangeTracker.shared.hasWarning(moi, contact) et proposer KeyChangeTracker.shared.acknowledge(...). N'empêche rien ici.
+      await KeyChangeTracker.shared.observe(myUserId, otherUserId, otherPublicB64, otherVersion);
 
       final otherPublicKey = SimplePublicKey(
         base64Decode(otherPublicB64),

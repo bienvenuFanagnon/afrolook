@@ -4,7 +4,9 @@ import 'package:afrotok/services/api/jeux_api.dart';
 /// Convertit les conversations et groupes de l'API vers les modèles / tables que les écrans de chat utilisent déjà.
 
 /// Conversation 1 à 1 de l'API -> [Chat]. Les messages de la discussion sont sur Firebase sous `chat_id` = [Chat.docId].
-/// Pour une conversation importée, l'API peut fournir `legacy_chat_id` (ancien `docId`) : c'est alors lui qui garde l'historique lisible.
+/// Pour une conversation importée, l'API fournit `legacy_chat_ids` (anciens identifiants de la collection `Chats`) : le premier devient [Chat.docId],
+/// ce qui garde l'historique lisible ET la clé de chiffrement de la discussion (dérivée de cet identifiant) ; la liste complète est dans
+/// [Chat.legacyChatIds] pour lire les messages des autres anciens identifiants. `blocked` / `blocked_by_me` : qui a bloqué.
 Chat chatFromConversation(Map<String, dynamic> j, String myId) {
   final other = j['other'] is Map ? Map<String, dynamic>.from(j['other'] as Map) : <String, dynamic>{};
   final otherId = '${other['id'] ?? ''}';
@@ -16,9 +18,13 @@ Chat chatFromConversation(Map<String, dynamic> j, String myId) {
   final req = j['request'] is Map ? Map<String, dynamic>.from(j['request'] as Map) : null;
   final unread = JeuxApi.asInt(j['unread']);
   final id = '${j['id']}';
+  final legacy = <String>[
+    if (j['legacy_chat_ids'] is List) ...(j['legacy_chat_ids'] as List).map((e) => '$e').where((e) => e.isNotEmpty),
+    if (j['legacy_chat_id'] is String && (j['legacy_chat_id'] as String).isNotEmpty) j['legacy_chat_id'] as String,
+  ].toSet().toList();
   final chat = Chat(
     id: id,
-    docId: (j['legacy_chat_id'] as String?)?.isNotEmpty == true ? j['legacy_chat_id'] as String : id,
+    docId: legacy.isNotEmpty ? legacy.first : id,
     senderId: myId,
     receiverId: otherId,
     lastMessage: (j['last_message'] as String?) ?? '',
@@ -32,6 +38,9 @@ Chat chatFromConversation(Map<String, dynamic> j, String myId) {
   );
   chat.streak = JeuxApi.asInt(j['streak']);
   chat.lastMessageIsRead = unread == 0;
+  chat.legacyChatIds = legacy;
+  chat.blocked = j['blocked'] == true;
+  chat.blockedByMe = j['blocked_by_me'] == true;
   if (req != null) {
     chat.requestStatus = req['status'] as String?;
     chat.requestFrom = req['i_am_requester'] == true ? myId : otherId;
@@ -69,6 +78,13 @@ Map<String, dynamic> groupToLegacy(Map<String, dynamic> g) {
     'allow_external_links': g['allow_external_links'] == true,
     'allow_hidden_msgs': g['allow_hidden_msgs'] == true,
     'cannot_leave': g['cannot_leave'] == true,
+    // dernier message (type et date seulement : l'API ne garde jamais le texte), mes non lus et ma sourdine (lignes de `GET /groups` uniquement)
+    'last_message_kind': g['last_message_kind'],
+    'last_sender_id': g['last_sender_id'],
+    'last_message_at': g['last_message_at'] == null ? 0 : JeuxApi.ms(g['last_message_at']),
+    'last_message': groupKindPreview(g['last_message_kind'] as String?),
+    'me_unread': JeuxApi.asInt(g['unread']),
+    'muted': g['muted'] == true,
     // droits CALCULÉS par l'API pour la personne connectée (jamais recalculés dans l'application)
     'me_role': me['role'],
     'me_is_member': me['is_member'] == true,
@@ -79,6 +95,15 @@ Map<String, dynamic> groupToLegacy(Map<String, dynamic> g) {
     'key_epoch': g['key_epoch'],
   };
 }
+
+/// Aperçu d'un dernier message de groupe à partir de son TYPE (vide pour un texte : l'application affiche alors le texte qu'elle déchiffre elle-même).
+String groupKindPreview(String? kind) => switch (kind) {
+      'image' => '📷 Image',
+      'audio' => '🎤 Audio',
+      'video' => '🎬 Vidéo',
+      'file' => '📎 Fichier',
+      _ => '',
+    };
 
 /// Membre de groupe de l'API -> table au format des anciens documents `GroupChats/{id}/members/{uid}`.
 Map<String, dynamic> memberToLegacy(Map<String, dynamic> m) => {
@@ -112,6 +137,19 @@ NotificationData notificationFromApi(Map<String, dynamic> j) {
     updatedAt: created,
     users_id_view: const [],
   );
+  // Auteur embarqué par l'API (`actor`) : plus besoin de lire son profil pour chaque notification
+  final actor = j['actor'];
+  if (actor is Map && actor['id'] != null) {
+    final display = '${actor['display_name'] ?? ''}'.trim();
+    final parts = display.isEmpty ? <String>[] : display.split(' ');
+    n.userData = UserData()
+      ..id = '${actor['id']}'
+      ..pseudo = '${actor['username'] ?? ''}'
+      ..prenom = parts.isEmpty ? null : parts.first
+      ..nom = parts.length > 1 ? parts.sublist(1).join(' ') : null
+      ..imageUrl = '${actor['avatar_url'] ?? ''}';
+    n.user_id = n.userData!.id;
+  }
   if (subjectType == 'channel' || subjectType == 'canal') {
     n.canal_id = subjectId;
   } else if (subjectType != 'conversation' && subjectType != 'group') {

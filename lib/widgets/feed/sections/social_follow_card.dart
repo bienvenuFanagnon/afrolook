@@ -1,6 +1,8 @@
 import 'package:afrotok/services/read_meter.dart';
+import 'dart:async';
 import 'dart:math';
 
+import 'package:afrotok/services/api/publications_api.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -46,14 +48,22 @@ class SocialFollowCard extends StatefulWidget {
   static final Set<String> _pending = {};
   static final ValueNotifier<int> _changes = ValueNotifier(0);
 
-  /// Nombre de clics par réseau (lu sur le serveur : AppConfig/socialClicks).
-  /// Jamais incrémenté localement : la valeur change au prochain chargement.
+  /// Nombre de clics par réseau (lu sur le serveur : GET /home/social-clicks).
+  /// Jamais incrémenté localement : la valeur change au prochain chargement (relu au plus toutes les 10 minutes).
   static final Map<String, int> _counts = {};
   static DateTime? _countsAt;
 
   static Future<void> _refreshCounts() async {
-    // Compteurs de clics par réseau : pas encore de route côté API (voir lacunes_api_publications.md) ; les valeurs restent à zéro.
-    _countsAt ??= DateTime.now();
+    final at = _countsAt;
+    if (at != null && DateTime.now().difference(at) < const Duration(minutes: 10)) return;
+    _countsAt = DateTime.now(); // pas de rafale de requêtes si l'API échoue : nouvel essai dans 10 minutes
+    try {
+      _counts
+        ..clear()
+        ..addAll(await PubApi.socialClicks());
+    } catch (_) {
+      // Simple décor : sans compteur, le bouton s'affiche sans nombre
+    }
   }
 
   /// Tirage « 1re position » fait une seule fois par session (1 ouverture sur 5).
@@ -135,8 +145,8 @@ class _SocialFollowCardState extends State<SocialFollowCard> {
       return;
     }
     SocialFollowCard._pending.add(network);
-    // Comptage côté serveur (au plus une fois par heure et par réseau) ; l'affichage ne bouge pas.
-    // Comptage des clics : pas encore de route côté API (voir lacunes_api_publications.md)
+    // Comptage côté serveur (POST /home/social-clicks, jamais bloquant) ; le bouton disparaît ensuite 1 h.
+    unawaited(PubApi.socialClick(network));
     try {
       final sp = await SharedPreferences.getInstance();
       await sp.setInt(SocialFollowCard._kHiddenUntil,

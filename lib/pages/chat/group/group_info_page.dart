@@ -74,6 +74,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
       };
 
   Future<void> _loadGroup() async {
+    if (_loadError != null && mounted) setState(() { _loadError = null; _loading = true; });
     try {
       final group = groupToLegacy(await ChatApi.group(widget.groupId));
       final page = await ChatApi.members(widget.groupId, limit: _pageSize);
@@ -92,10 +93,13 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
           _loading = false;
         });
       }
-    } catch (_) {
-      if (mounted) setState(() => _loading = false);
+    } catch (e) {
+      // Aucun repli sur une autre source : message clair + « Réessayer »
+      if (mounted) setState(() { _loading = false; _loadError = ChatApi.message(e, fallback: 'Le groupe ne se charge pas pour le moment.'); });
     }
   }
+
+  String? _loadError;
 
   Future<void> _loadMoreMembers() async {
     if (_loadingMoreMembers || !_hasMoreMembers || _lastMemberDoc == null) return;
@@ -125,23 +129,23 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
     }
     setState(() { _isSearching = true; _searchLoading = true; _searchResults = []; });
 
-    final q = query.toLowerCase();
-    final results = <Map<String, dynamic>>[];
+    final seq = ++_searchSeq; // seule la dernière frappe affiche son résultat
+    var results = <Map<String, dynamic>>[];
+    String? failure;
     try {
-      // L'API ne filtre pas encore les membres par pseudo : on parcourt les pages (jusqu'à 500 membres)
-      String? cursor;
-      for (var i = 0; i < 5; i++) {
-        final page = await ChatApi.members(widget.groupId, cursor: cursor, limit: 100);
-        for (final m in page.items.map(memberToLegacy)) {
-          if ('${m['pseudo']}'.toLowerCase().contains(q)) results.add(m);
-        }
-        cursor = page.next;
-        if (cursor == null) break;
-      }
-    } catch (_) {}
+      // Recherche faite par le serveur sur TOUS les membres du groupe (`GET /groups/{id}/members?q=`)
+      final page = await ChatApi.members(widget.groupId, limit: 50, q: query);
+      results = page.items.map(memberToLegacy).toList();
+    } catch (e) {
+      failure = ChatApi.message(e, fallback: 'La recherche ne fonctionne pas pour le moment. Réessaie.');
+    }
 
-    if (mounted) setState(() { _searchResults = results; _searchLoading = false; });
+    if (!mounted || seq != _searchSeq) return;
+    setState(() { _searchResults = results; _searchLoading = false; _searchError = failure; });
   }
+
+  int _searchSeq = 0;
+  String? _searchError;
 
   bool _uploadingImage = false;
 
@@ -705,6 +709,22 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
+          : _loadError != null
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.error_outline_rounded, size: 52, color: _colors.textSecondary),
+                    const SizedBox(height: 12),
+                    Text(_loadError!, textAlign: TextAlign.center, style: TextStyle(color: _colors.textPrimary, fontSize: 15)),
+                    const SizedBox(height: 12),
+                    ElevatedButton.icon(onPressed: _loadGroup, icon: const Icon(Icons.refresh_rounded), label: const Text('Réessayer')),
+                  ],
+                ),
+              ),
+            )
           : CenteredContent(
               maxWidth: AppLayout.isDesktop(context) ? 700 : AppLayout.maxFeedWidth,
               child: ListView(
@@ -863,6 +883,14 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 16),
                       child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                    )
+                  else if (_searchError != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      child: Text(
+                        _searchError!,
+                        style: TextStyle(color: _colors.danger, fontSize: 13),
+                      ),
                     )
                   else if (_searchResults.isEmpty)
                     Padding(

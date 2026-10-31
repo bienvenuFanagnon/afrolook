@@ -1711,10 +1711,13 @@ class _UserPubTextState extends State<UserPubText> {
         ));
         return;
       }
-      if (_defiConfig!.cagnottePieces > (authProvider.loginUserData.giftCoinsBalance ?? 0)) {
-        DefiDialogs.insufficientBalance(context, isVote: false, isCreation: true);
+      if (widget.canal != null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Un DÉFI ne peut pas être publié dans un canal.', textAlign: TextAlign.center),
+        ));
         return;
       }
+      // Le solde est vérifié par le serveur au moment du débit de la cagnotte (402 : on propose de recharger)
     }
     // Protection double-tap : bloquer immédiatement avant tout await
     if (onTap) return;
@@ -1858,27 +1861,27 @@ class _UserPubTextState extends State<UserPubText> {
           },
         );
 
-        // Défis : pas encore de route côté API (voir lacunes_api_publications.md)
-        if (widget.defiPostId != null || _selectedPostType == 'DEFI') {
-          if (mounted) Navigator.of(context, rootNavigator: true).pop();
-          setState(() => onTap = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Les défis ne sont pas encore disponibles dans cette version.', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))),
-          );
-          return;
-        }
-
         // Lien du texte : seulement si l'option d'aperçu est cochée et que le lien est toujours dans le texte
         final String? linkForPost = (_canLinkPreview && _linkOn && _linkPreview != null && _linkUrl != null && _linkUrl == firstLinkIn(_descriptionController.text)) ? _linkUrl : null;
 
-        final Post post = await PostPublisher.publish(
-          description: _descriptionController.text,
-          linkUrl: linkForPost,
-          category: _selectedPostType,
-          monetized: _monetized,
-          countries: _selectAllCountries ? const ['ALL'] : _selectedCountries.map((c) => c.code).toList(),
-          canal: widget.canal,
-        );
+        final countryCodes = _selectAllCountries ? const <String>['ALL'] : _selectedCountries.map((c) => c.code).toList();
+        final Post post;
+        if (widget.defiPostId != null) {
+          // Participation à un DÉFI : frais éventuels débités et réponse publiée dans la même opération côté serveur
+          post = await PostPublisher.participateDefi(widget.defiPostId!, description: _descriptionController.text, linkUrl: linkForPost, category: _selectedPostType, countries: countryCodes);
+        } else if (_selectedPostType == 'DEFI') {
+          // Création d'un DÉFI : la cagnotte est débitée dans la même opération côté serveur
+          post = await PostPublisher.publishDefi(config: _defiConfig!, description: _descriptionController.text, linkUrl: linkForPost, category: _selectedPostType, countries: countryCodes);
+        } else {
+          post = await PostPublisher.publish(
+            description: _descriptionController.text,
+            linkUrl: linkForPost,
+            category: _selectedPostType,
+            monetized: _monetized,
+            countries: countryCodes,
+            canal: widget.canal,
+          );
+        }
         final String postId = post.id!;
         await PostCooldownService.markPosted();
 
@@ -2018,9 +2021,12 @@ class _UserPubTextState extends State<UserPubText> {
       printVm('❌ Erreur inattendue dans _publishPost: $e');
       if (Navigator.canPop(context)) Navigator.pop(context);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(apiErrorText(e, fallback: 'Erreur lors de la publication. Veuillez réessayer.'), textAlign: TextAlign.center, style: TextStyle(color: _c.danger))),
-        );
+        if (widget.defiPostId != null || _selectedPostType == 'DEFI') {
+          // Messages propres aux DÉFIS (déjà inscrit, DÉFI terminé, pièces insuffisantes → recharger…) ; « Réessayer » sans double débit
+          DefiDialogs.handleError(context, e, isVote: false, isCreation: widget.defiPostId == null, onRetry: _publishPost);
+        } else {
+          handleApiError(context, e, onRetry: _publishPost, fallback: 'Erreur lors de la publication. Veuillez réessayer.');
+        }
       }
     } finally {
       // Garantit que le bouton se débloque toujours, quoi qu'il arrive

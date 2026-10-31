@@ -73,10 +73,12 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
           ..imageUrl = (other['avatar_url'] as String?) ?? '');
       }
       if (mounted) setState(() { _friends = friends; _loadingFriends = false; });
-    } catch (_) {
-      if (mounted) setState(() => _loadingFriends = false);
+    } catch (e) {
+      if (mounted) setState(() { _loadingFriends = false; _friendsError = ChatApi.message(e, fallback: 'Tes contacts ne se chargent pas pour le moment.'); });
     }
   }
+
+  String? _friendsError;
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
@@ -422,6 +424,25 @@ class _CreateGroupPageState extends State<CreateGroupPage> {
   Widget _buildFriendsList() {
     if (_loadingFriends) {
       return const Center(child: CircularProgressIndicator());
+    }
+    if (_friendsError != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(_friendsError!, textAlign: TextAlign.center, style: TextStyle(color: _colors.textSecondary)),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: () {
+                setState(() { _loadingFriends = true; _friendsError = null; });
+                _loadFriends();
+              },
+              icon: Icon(Icons.refresh_rounded, color: _colors.primary),
+              label: Text('Réessayer', style: TextStyle(color: _colors.primary)),
+            ),
+          ],
+        ),
+      );
     }
     if (_friends.isEmpty) {
       return Center(

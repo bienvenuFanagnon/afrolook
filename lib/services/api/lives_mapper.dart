@@ -1,9 +1,14 @@
 import 'package:afrotok/pages/LiveAgora/livesAgora.dart';
 import 'package:afrotok/services/api/jeux_api.dart';
 
-/// Live de l'API -> [PostLive]. Le nom et la photo de l'hôte ne font pas partie de la réponse de l'API : ils sont fournis par l'appelant
-/// (profil déjà connu) ou restent vides.
+/// Live de l'API -> [PostLive]. Le nom et la photo de l'hôte sont fournis par l'API (`host: {username, display_name, avatar_url}`) ; [hostName] et
+/// [hostImage] ne servent que de secours quand elle ne les envoie pas (profil déjà connu de l'appelant).
 PostLive postLiveFromApi(Map<String, dynamic> j, {String hostName = '', String hostImage = ''}) {
+  final host = j['host'] is Map ? Map<String, dynamic>.from(j['host'] as Map) : const <String, dynamic>{};
+  final apiName = '${host['username'] ?? ''}'.trim().isNotEmpty ? '${host['username']}'.trim() : '${host['display_name'] ?? ''}'.trim();
+  final apiImage = '${host['avatar_url'] ?? ''}'.trim();
+  hostName = apiName.isNotEmpty ? apiName : hostName;
+  hostImage = apiImage.isNotEmpty ? apiImage : hostImage;
   final started = DateTime.tryParse('${j['started_at']}') ?? DateTime.now();
   final ended = j['ended_at'] == null ? null : DateTime.tryParse('${j['ended_at']}');
   final opts = j['options'] is Map ? Map<String, dynamic>.from(j['options'] as Map) : <String, dynamic>{};

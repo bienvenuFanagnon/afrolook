@@ -27,6 +27,7 @@ import 'package:afrotok/pages/user/monetisation.dart';
 import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:afrotok/services/api/canal_mapper.dart';
 import 'package:afrotok/services/api/posts_api.dart';
+import 'package:afrotok/services/api/publications_api.dart';
 import 'package:afrotok/services/api/users_api.dart';
 import 'package:afrotok/services/api/users_mapper.dart';
 import 'package:afrotok/widgets/api_error_dialogs.dart';
@@ -3234,14 +3235,14 @@ Future<void> _refreshPostStats() async {
         mediaUrl: shareImageUrl,
       );
 
-      // 3. MISE À JOUR FIREBASE & UI (Code existant)
+      // Compteur de partages tenu par le serveur (un partage par personne) : on affiche son chiffre
+      final shared = await PubApi.share(widget.post.id!);
+      if (!mounted) return;
       setState(() {
-        widget.post.partage = (widget.post.partage ?? 0) + 1;
+        widget.post.partage = shared.count ?? ((widget.post.partage ?? 0) + (shared.counted ? 1 : 0));
+        widget.post.users_partage_id ??= [];
         widget.post.users_partage_id!.add(authProvider.loginUserData.id!);
       });
-
-      // Signal de partage pour le fil (le compteur de partages n'a pas encore de route : voir lacunes_api_publications.md)
-      unawaited(PostsApi.signal(widget.post.id!, 'share'));
 
       if (!isIn(widget.post.users_partage_id!, authProvider.loginUserData.id!)) {
 

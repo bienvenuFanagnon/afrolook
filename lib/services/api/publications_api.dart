@@ -54,14 +54,17 @@ class PubApi {
   /// Vue comptée par le serveur (une seule fois par publication et par session ; gains compris).
   static Future<void> view(String postId) => ApiGateway.instance.markViewed(postId);
 
-  // ── Partage et republication (routes à créer : voir lacunes) ──
-  /// Compte un partage. Jamais bloquant : le signal de goût part toujours, le compteur dépend de `POST /posts/{id}/share`.
-  static Future<void> share(String postId) async {
-    unawaited(PostsApi.signal(postId, 'share'));
+  // ── Partage et republication ──
+  /// Compte un partage (`POST /posts/{id}/share`, une fois par personne ; le serveur enregistre aussi le signal de goût pour le fil).
+  /// Jamais bloquant : la personne a déjà partagé, une erreur n'est que journalisée. Renvoie le nombre de partages du serveur
+  /// (null si l'appel a échoué) et [counted] à vrai quand ce partage vient d'être compté.
+  static Future<({int? count, bool counted})> share(String postId) async {
     try {
-      await _c.post('/posts/$postId/share');
+      final r = await PostsApi.share(postId);
+      return (count: r.count, counted: r.counted);
     } catch (e) {
-      if (kDebugMode) debugPrint('API partage $postId : $e');
+      if (kDebugMode) debugPrint('❌ API PARTAGE EN ÉCHEC pour $postId : $e');
+      return (count: null, counted: false);
     }
   }
 
@@ -145,7 +148,13 @@ class PubApi {
 
   // ── Divers ──
 
-  /// Clic sur un réseau social (compteur). Routes souhaitées : POST /home/social-clicks. Jamais bloquant.
+  /// Nombre de clics par réseau (`{facebook: 12, tiktok: 3, …}`), compté par le serveur : GET /home/social-clicks. Lève l'erreur de l'API.
+  static Future<Map<String, int>> socialClicks() async {
+    final d = ApiClient.data(await _c.get('/home/social-clicks'));
+    return d is Map ? d.map((k, v) => MapEntry('$k', (v as num?)?.toInt() ?? 0)) : <String, int>{};
+  }
+
+  /// Clic sur un réseau social (compteur côté serveur : POST /home/social-clicks). Jamais bloquant.
   static Future<void> socialClick(String network) async {
     try {
       await _c.post('/home/social-clicks', body: {'network': network});

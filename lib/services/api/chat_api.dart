@@ -38,9 +38,38 @@ class ChatApi {
   /// À appeler après chaque message envoyé sur Firebase (aperçu, non lus de l'autre, série, notification). [kind] : text, image, audio, video, file.
   static Future<void> conversationSent(String id, {String kind = 'text'}) => _c.post('/conversations/$id/sent', body: {'kind': kind});
 
+  /// Signale un message reçu. Le texte est chiffré : l'API ne garde que l'identifiant du message ([messageId], celui du document Firebase) et le motif.
+  static Future<void> reportMessage(String conversationId, String messageId, {String? reason}) =>
+      _c.post('/conversations/$conversationId/reports', body: {'message_id': messageId, if (reason != null && reason.isNotEmpty) 'reason': reason});
+
   // ── Groupes ─────────────────────────────────────────────────────────────────────────────────
 
+  /// Mes groupes (200 au plus), du plus récemment actif au plus ancien. Chaque ligne porte `last_message_kind`, `last_sender_id`, `last_message_at`,
+  /// `unread` (mes non lus) et `muted` (sourdine).
   static Future<List<Map<String, dynamic>>> groups() async => JeuxApi.list(await _c.get('/groups'));
+
+  /// Rejoint un groupe GRATUIT et public sans code (un groupe privé exige son code d'invitation : 404 sinon).
+  static Future<Map<String, dynamic>> joinFreeGroup(String groupId) async => JeuxApi.map(await _c.post('/groups/$groupId/join'));
+
+  /// À appeler après chaque message envoyé dans un groupe (sur Firebase) : l'API tient le type et la date du dernier message, les non lus des autres
+  /// membres et prévient ceux qui n'ont pas mis le groupe en sourdine. Jamais de texte. [kind] : text, image, audio, video, file.
+  static Future<void> groupSent(String groupId, {String kind = 'text'}) => _c.post('/groups/$groupId/sent', body: {'kind': kind});
+
+  /// Mes non lus du groupe retombent à zéro (à l'ouverture du groupe).
+  static Future<void> markGroupRead(String groupId) => _c.post('/groups/$groupId/read');
+
+  /// Sourdine d'un groupe pour moi : plus de notification, les non lus continuent de compter.
+  static Future<void> muteGroup(String groupId, bool muted) => _c.put('/groups/$groupId/mute', body: {'muted': muted});
+
+  /// Total de mes messages non lus dans les groupes (hors sourdine), additionné depuis la liste de mes groupes.
+  static Future<int> unreadGroups() async {
+    var total = 0;
+    for (final g in await groups()) {
+      if (g['muted'] == true) continue;
+      total += JeuxApi.asInt(g['unread']);
+    }
+    return total;
+  }
 
   static Future<Map<String, dynamic>> group(String id) async => JeuxApi.map(await _c.get('/groups/$id'));
 
@@ -68,8 +97,9 @@ class ChatApi {
 
   static Future<void> deleteGroup(String id) => _c.delete('/groups/$id');
 
-  static Future<({List<Map<String, dynamic>> items, String? next})> members(String id, {String? cursor, int limit = 50}) async {
-    final r = await _c.get('/groups/$id/members', query: {'limit': limit, if (cursor != null) 'cursor': cursor});
+  /// Membres d'un groupe (propriétaire, administrateurs puis les autres). [q] : recherche par pseudo (faite par le serveur, sur tous les membres).
+  static Future<({List<Map<String, dynamic>> items, String? next})> members(String id, {String? cursor, int limit = 50, String? q}) async {
+    final r = await _c.get('/groups/$id/members', query: {'limit': limit, if (cursor != null) 'cursor': cursor, if (q != null && q.trim().isNotEmpty) 'q': q.trim()});
     return (items: JeuxApi.list(r), next: r is Map ? r['next_cursor'] as String? : null);
   }
 
@@ -97,12 +127,28 @@ class ChatApi {
 
   // ── Notifications ───────────────────────────────────────────────────────────────────────────
 
-  static Future<({List<Map<String, dynamic>> items, String? next})> notifications({String? cursor, int limit = 60, bool unreadOnly = false}) async {
-    final r = await _c.get('/notifications', query: {'limit': limit, if (cursor != null) 'cursor': cursor, if (unreadOnly) 'unread': 1});
+  /// Page de notifications. [types] : ne garde que ces types (le serveur filtre : `type[]=FAVORITE&type[]=COMMENT`). Chaque ligne porte l'auteur (`actor`).
+  static Future<({List<Map<String, dynamic>> items, String? next})> notifications({String? cursor, int limit = 60, bool unreadOnly = false, List<String>? types}) async {
+    final r = await _c.get('/notifications', query: {
+      'limit': limit,
+      if (cursor != null) 'cursor': cursor,
+      if (unreadOnly) 'unread': 1,
+      if (types != null && types.isNotEmpty) 'type[]': types,
+    });
     return (items: JeuxApi.list(r), next: r is Map ? r['next_cursor'] as String? : null);
   }
 
   static Future<int> unreadNotifications() async => JeuxApi.asInt(JeuxApi.map(await _c.get('/notifications/unread-count'))['count']);
+
+  /// Notifications non lues par type : `{FAVORITE: 3, COMMENT: 1}` (pastilles de la page et de l'accueil).
+  static Future<Map<String, int>> unreadCountsByType() async =>
+      JeuxApi.map(await _c.get('/notifications/unread-counts-by-type')).map((k, v) => MapEntry(k.toUpperCase(), JeuxApi.asInt(v)));
+
+  /// Préférences de notification : `{reminders, activity, news}` (tout activé par défaut).
+  static Future<Map<String, bool>> notificationPreferences() async {
+    final m = JeuxApi.map(await _c.get('/me/notification-preferences'));
+    return {'reminders': m['reminders'] != false, 'activity': m['activity'] != false, 'news': m['news'] != false};
+  }
 
   static Future<void> markNotificationRead(String id) => _c.post('/notifications/$id/read');
 

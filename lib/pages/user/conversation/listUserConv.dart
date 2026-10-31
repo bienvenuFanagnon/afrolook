@@ -296,17 +296,50 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       final groups = list.map(groupToLegacy).toList();
       _memberGroups = groups;
       _ownedGroups = const [];
+      _groupsError = null;
       _mergeAndSetGroups();
       unawaited(_enrichGroupsWithLastMessage(groups));
     } catch (e) {
-      if (mounted) setState(() => _loadingGroups = false);
+      // Aucun repli sur une autre source : message clair + « Réessayer » (les groupes déjà affichés depuis la mémoire du téléphone restent visibles)
+      if (mounted) {
+        setState(() {
+          _loadingGroups = false;
+          _groupsError = ChatApi.message(e, fallback: 'Tes groupes ne se chargent pas pour le moment. Réessaie.');
+        });
+      }
     }
     _loadGoldGroups();
   }
 
-  /// Aperçu du dernier message de chaque groupe : les messages restent sur Firebase (GroupMessages).
+  /// Message d'erreur (français) du dernier chargement des groupes, null si tout va bien.
+  String? _groupsError;
+
+  /// Bandeau d'erreur des groupes avec « Réessayer ».
+  Widget _buildGroupsErrorBanner() {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(color: _colors.danger.withOpacity(0.08), borderRadius: BorderRadius.circular(12), border: Border.all(color: _colors.danger.withOpacity(0.3))),
+      child: Row(
+        children: [
+          Icon(Icons.error_outline_rounded, color: _colors.danger, size: 20),
+          const SizedBox(width: 8),
+          Expanded(child: Text(_groupsError ?? '', style: TextStyle(color: _colors.textPrimary, fontSize: 13))),
+          TextButton(
+            onPressed: _initGroupsStream,
+            child: Text('Réessayer', style: TextStyle(color: _colors.primary, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Aperçu du dernier message de chaque groupe : les messages restent sur Firebase (GroupMessages). Seuls les groupes dont le dernier message est un
+  /// texte (ou inconnu) sont lus : pour une image, un audio, une vidéo ou un fichier, l'API fournit déjà le type.
   Future<void> _enrichGroupsWithLastMessage(List<Map<String, dynamic>> groups) async {
     await Future.wait(groups.take(40).map((g) async {
+      final kind = g['last_message_kind'] as String?;
+      if (kind != null && kind != 'text') return;
       try {
         final snap = await FirebaseFirestore.instance
             .collection('GroupMessages')
@@ -319,7 +352,8 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         final type = m['message_type'] as String? ?? 'text';
         final text = (m['message'] as String? ?? '');
         g['last_message'] = type == 'text' ? (text.startsWith('enc:v1:') ? '🔒 Message chiffré' : text) : (type == 'image' ? '📷 Image' : '🎤 Audio');
-        g['last_message_at'] = (m['create_at_time_spam'] as num?)?.toInt() ?? 0;
+        // La date du dernier message vient de l'API ; celle de Firebase ne sert que si l'API n'en a pas (groupe importé jamais utilisé depuis)
+        if (((g['last_message_at'] as int?) ?? 0) == 0) g['last_message_at'] = (m['create_at_time_spam'] as num?)?.toInt() ?? 0;
       } catch (_) {}
     }));
     if (mounted) _mergeAndSetGroups();
@@ -483,8 +517,38 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     _chatsStream = _chatsFromApi();
     _convPoll?.cancel();
     _convPoll = Timer.periodic(const Duration(seconds: 45), (_) {
-      if (mounted) _refreshChatsFromApi();
+      if (mounted) {
+        _refreshChatsFromApi();
+        _refreshGroupsQuietly();
+      }
     });
+  }
+
+  /// Relecture silencieuse des groupes (non lus, dernier message) toutes les 45 s : une erreur passagère n'efface rien et n'affiche rien.
+  Future<void> _refreshGroupsQuietly() async {
+    try {
+      final groups = (await ChatApi.groups()).map(groupToLegacy).toList();
+      // Texte du dernier message déjà lu : on le garde tant que le type du dernier message n'a pas changé
+      final previous = {for (final g in _memberGroups) '${g['id']}': g};
+      final changed = <Map<String, dynamic>>[];
+      for (final g in groups) {
+        final old = previous['${g['id']}'];
+        final noApiDate = ((g['last_message_at'] as int?) ?? 0) == 0;
+        if (old == null) {
+          changed.add(g);
+        } else if (noApiDate || old['last_message_at'] == g['last_message_at']) {
+          // Rien de nouveau côté API : on garde le texte (et la date de secours) déjà lus sur Firebase
+          if (((g['last_message_kind'] as String?) ?? 'text') == 'text') g['last_message'] = old['last_message'];
+          if (noApiDate) g['last_message_at'] = old['last_message_at'];
+        } else {
+          changed.add(g);
+        }
+      }
+      _memberGroups = groups;
+      _groupsError = null;
+      _mergeAndSetGroups();
+      unawaited(_enrichGroupsWithLastMessage(changed));
+    } catch (_) {}
   }
 
   Stream<List<ChatWithLastMessage>> _chatsFromApi() async* {
@@ -692,6 +756,14 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
 
   /// Ouvre ou affiche un groupe — inline sur desktop, navigation sur mobile.
   void _openGroupChat(String groupId, String groupName, String? imageUrl, {VoidCallback? onReturn}) {
+    // Mes non lus du groupe retombent à zéro (API) ; sans effet pour un groupe dont je ne suis pas membre
+    for (final g in _groups) {
+      if (g['id'] == groupId) {
+        g['me_unread'] = 0;
+        if (mounted) setState(() {});
+        unawaited(ChatApi.markGroupRead(groupId).catchError((Object _) {}));
+      }
+    }
     if (AppLayout.isWide(context)) {
       setState(() => _activeChatWidget = GroupChatPage(
         key: ValueKey('group_$groupId'),
@@ -1054,6 +1126,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
               }
               if (_chatFilter == 'groups') {
                 if (_loadingGroups) return _buildLoadingSkeleton();
+                if (_groups.isEmpty && _groupsError != null) return Center(child: _buildGroupsErrorBanner());
                 if (_groups.isEmpty) return _buildEmptyState();
                 return _buildGroupsVerticalList();
               }
@@ -1064,6 +1137,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
               }
               final bool stillLoading = (_isLoading || snapshot.connectionState == ConnectionState.waiting) && _chats.isEmpty;
               if (stillLoading) return _buildLoadingSkeleton();
+              if (_chats.isEmpty && _groups.isEmpty && _groupsError != null) return Center(child: _buildGroupsErrorBanner());
               if (_chats.isEmpty && _groups.isEmpty) return _buildEmptyState();
               return _buildMergedList(_chats);
             },
@@ -1321,6 +1395,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       controller: _scrollController,
       padding: const EdgeInsets.symmetric(vertical: 4),
       children: [
+        if (_groupsError != null) _buildGroupsErrorBanner(),
         // ── Recherche par code Gold ───────────────────────────────────────
         _buildCodeSearchBar(),
 
@@ -1529,12 +1604,11 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     final isPrivate = group['is_private'] == true;
     final isOfficial = group['is_official'] == true;
     final price = (group['subscription_price'] as num?)?.toDouble() ?? 0.0;
-    final myId = authProvider.loginUserData.id ?? '';
-    final unreadCounts = group['unread_counts'] as Map<String, dynamic>? ?? {};
-    final unreadCount = (unreadCounts[myId] as int?) ?? 0;
+    final unreadCount = (group['me_unread'] as int?) ?? 0; // mes non lus, comptés par l'API
 
     return GestureDetector(
-      onTap: () => _openGroupChat(groupId, name, imageUrl.isNotEmpty ? imageUrl : null, onReturn: () {
+      // Groupe gratuit dont je ne suis pas membre : il est rejoint sans code (POST /groups/{id}/join), puis ouvert
+      onTap: () => _openOrJoinGroup(group, onReturn: () {
         context.read<GoldGroupsProvider>().load(force: true);
         _loadGroups();
       }),
@@ -1625,9 +1699,8 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     final isFrozen = group['is_frozen'] == true;
     final isOfficial = group['is_official'] == true;
     final memberCount = group['member_count'] as int? ?? 0;
-    final myId = authProvider.loginUserData.id ?? '';
-    final unreadCounts = group['unread_counts'] as Map<String, dynamic>? ?? {};
-    final unreadCount = (unreadCounts[myId] as int?) ?? 0;
+    final unreadCount = (group['me_unread'] as int?) ?? 0; // mes non lus, comptés par l'API
+    final isMuted = group['muted'] == true;
 
     String timeStr = '';
     if (lastMsgAt > 0) {
@@ -1683,6 +1756,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
               ],
             ),
           ),
+          if (isMuted) Padding(padding: const EdgeInsets.only(right: 4), child: Icon(Icons.notifications_off_outlined, size: 14, color: _colors.textSecondary)),
           if (timeStr.isNotEmpty)
             Text(
               timeStr,
@@ -1738,8 +1812,70 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           ],
         ],
       ),
-      onTap: () => _openGroupChat(group['id'] as String, name, imageUrl.isNotEmpty ? imageUrl : null, onReturn: _loadGroups),
+      onTap: () => _openOrJoinGroup(group, onReturn: _loadGroups),
+      onLongPress: () => _showGroupActions(group),
     );
+  }
+
+  /// Menu d'un groupe (appui long) : sourdine (pour moi seulement, les non lus continuent de compter).
+  void _showGroupActions(Map<String, dynamic> group) {
+    final muted = group['muted'] == true;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: _colors.surface,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(muted ? Icons.notifications_active_outlined : Icons.notifications_off_outlined, color: _colors.textPrimary),
+              title: Text(muted ? 'Réactiver les notifications' : 'Mettre en sourdine', style: TextStyle(color: _colors.textPrimary)),
+              subtitle: Text(
+                muted ? 'Tu recevras de nouveau les notifications de ce groupe.' : 'Plus de notification pour ce groupe ; les messages non lus restent comptés.',
+                style: TextStyle(color: _colors.textSecondary, fontSize: 12),
+              ),
+              onTap: () {
+                Navigator.pop(ctx);
+                _setGroupMuted(group, !muted);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _setGroupMuted(Map<String, dynamic> group, bool muted) async {
+    try {
+      await ChatApi.muteGroup('${group['id']}', muted);
+      group['muted'] = muted;
+      if (mounted) setState(() {});
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ChatApi.message(e, fallback: 'La sourdine n\'a pas pu être changée. Réessaie.')), backgroundColor: Colors.red));
+      }
+    }
+  }
+
+  /// Ouvre un groupe. Un groupe GRATUIT et public dont je ne suis pas encore membre est d'abord rejoint, sans code (un groupe privé passe par son code
+  /// d'invitation ou son abonnement : l'écran du groupe demande alors le paiement).
+  Future<void> _openOrJoinGroup(Map<String, dynamic> group, {VoidCallback? onReturn}) async {
+    final id = group['id'] as String? ?? '';
+    if (id.isEmpty) return;
+    if (group['me_is_member'] != true && group['is_private'] != true) {
+      try {
+        await ChatApi.joinFreeGroup(id);
+        group['me_is_member'] = true;
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ChatApi.message(e, fallback: 'Impossible de rejoindre ce groupe. Réessaie.')), backgroundColor: Colors.red));
+        }
+        return;
+      }
+    }
+    if (!mounted) return;
+    final imageUrl = group['image_url'] as String? ?? '';
+    _openGroupChat(id, group['name'] as String? ?? '', imageUrl.isNotEmpty ? imageUrl : null, onReturn: onReturn);
   }
 
   Widget _buildMergedList(List<ChatWithLastMessage> userChats) {
@@ -1776,9 +1912,14 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       itemCount: rows.length + 2, // +1 ad banner, +1 archive tile
       itemBuilder: (context, index) {
         if (index == 0) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: _buildAdBanner(key: 'chat_list_first_ad'),
+          return Column(
+            children: [
+              if (_groupsError != null) _buildGroupsErrorBanner(),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: _buildAdBanner(key: 'chat_list_first_ad'),
+              ),
+            ],
           );
         }
         if (index == rows.length + 1) return _buildArchiveTile();
@@ -2141,8 +2282,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   final Set<String> _pinnedChatIds = {};
 
   Widget _buildChatList(List<ChatWithLastMessage> chats) {
-    final visibleChats = chats.where((c) => !_archivedChatIds.contains(c.chat.docId)).toList();
-    // Épinglés en premier
+    final visibleChats = chats.where((c) => !_archivedChatIds.contains(c.chat.docId)).toList();    // Épinglés en premier
     visibleChats.sort((a, b) {
       final aPinned = _pinnedChatIds.contains(a.chat.docId) ? 0 : 1;
       final bPinned = _pinnedChatIds.contains(b.chat.docId) ? 0 : 1;

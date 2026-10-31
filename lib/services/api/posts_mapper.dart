@@ -1,5 +1,5 @@
 import 'package:afrotok/models/model_data.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:afrotok/services/api/api_identity.dart';
 
 int _micros(dynamic iso) => (DateTime.tryParse('$iso')?.microsecondsSinceEpoch) ?? 0;
 
@@ -58,6 +58,6 @@ ResponsePostComment replyFromApi(Map<String, dynamic> j) {
 
 /// Identifiant de la personne connectée (le j'aime d'un commentaire est reporté dans `users_like_id`, comme avant).
 List<String> _me() {
-  final uid = FirebaseAuth.instance.currentUser?.uid;
+  final uid = ApiIdentity.myId;
   return uid == null ? [] : [uid];
 }

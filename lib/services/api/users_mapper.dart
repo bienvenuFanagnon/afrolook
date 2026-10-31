@@ -1,4 +1,5 @@
 import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/services/api/api_identity.dart';
 
 int _ms(dynamic iso) => DateTime.tryParse('$iso')?.millisecondsSinceEpoch ?? 0;
 int _i(dynamic v) => (v as num?)?.toInt() ?? 0;
@@ -7,6 +8,7 @@ int _i(dynamic v) => (v as num?)?.toInt() ?? 0;
 /// Les soldes viennent TOUJOURS de l'API : pièces de dépôt (non convertibles) + pièces gagnées (convertibles).
 UserData userFromBootstrap(Map<String, dynamic> b) {
   final u = userFromApi(Map<String, dynamic>.from(b['user'] as Map));
+  ApiIdentity.set(u.id); // les convertisseurs de publications comparent « j'aime / favori » à cet identifiant
   final w = (b['wallet'] as Map?) ?? const {};
   final deposit = _i(w['deposit_coins']);
   final earned = _i(w['earned_coins']);
@@ -92,6 +94,11 @@ UserData userFromApi(Map<String, dynamic> j, {String? viewerId}) {
   if (status == 'pending_deletion') {
     u.accountStatus = 'PENDING_DELETION';
     if (j['deletion_scheduled_at'] != null) u.deletionScheduledAt = _ms(j['deletion_scheduled_at']);
+  } else if (status == 'restore_fee_due') {
+    // Compte restauré : bloqué jusqu'au paiement du déblocage (écran des frais de restauration). Le montant n'est pas encore fourni par `/bootstrap`
+    // (voir lacunes_app_groupes_notifs.md) : l'écran le connaît alors par la réponse 402 de `POST /me/restore-fee`.
+    u.accountStatus = 'RESTORE_FEE_DUE';
+    u.restoreFeeDue = _i(j['restore_fee_coins'] ?? j['fee_coins']);
   }
   return u;
 }

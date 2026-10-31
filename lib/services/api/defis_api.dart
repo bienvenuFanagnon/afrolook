@@ -99,8 +99,11 @@ class DefisApi {
 
   /// Crée un défi : la cagnotte est débitée dans la même opération. [content] : description, link_url, upload_ids, countries, interests, category.
   /// Erreurs : 402 `insufficient_coins`, 422 `invalid_config`…
-  static Future<Post> create(Map<String, dynamic> content, DefiConfig config) =>
-      _once('create', (k) async => postFromApi(_map(await _c.pay('/defis', body: {...content, ..._configBody(config)}, idempotencyKey: k))));
+  static Future<Post> create(Map<String, dynamic> content, DefiConfig config) {
+    // Clé liée au contenu et à la configuration : un DÉFI abandonné après une coupure réseau n'est pas « rejoué » à la place d'un autre.
+    final fingerprint = Object.hash(content['description'], content['link_url'], config.cagnottePieces, config.participationFee, config.voteFee, config.winnersCount, config.endDate);
+    return _once('create:$fingerprint', (k) async => postFromApi(_map(await _c.pay('/defis', body: {...content, ..._configBody(config)}, idempotencyKey: k))));
+  }
 
   /// Transforme un post de la personne en défi (mêmes règles que la création). Erreurs : 402, 409 `post_monetized` / `not_convertible`…
   static Future<Post> convert(String postId, DefiConfig config, {String? description}) =>

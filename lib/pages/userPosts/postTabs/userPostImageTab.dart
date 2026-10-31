@@ -1349,10 +1349,13 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
         ));
         return;
       }
-      if (_defiConfig!.cagnottePieces > (authProvider.loginUserData.giftCoinsBalance ?? 0)) {
-        DefiDialogs.insufficientBalance(context, isVote: false, isCreation: true);
+      if (widget.canal != null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Un DÉFI ne peut pas être publié dans un canal.', textAlign: TextAlign.center),
+        ));
         return;
       }
+      // Le solde est vérifié par le serveur au moment du débit de la cagnotte (402 : on propose de recharger)
     }
     // Protection double-tap : bloquer immédiatement avant tout await
     if (onTap) return;
@@ -1512,16 +1515,6 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
           },
         );
 
-        // Défis et publicités : pas encore de route côté API (voir lacunes_api_publications.md)
-        if (widget.defiPostId != null || _selectedPostType == 'DEFI' || _isAdvertisement) {
-          if (mounted) Navigator.of(context, rootNavigator: true).pop();
-          setState(() => onTap = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Les défis et les publicités ne sont pas encore disponibles dans cette version.', textAlign: TextAlign.center, style: TextStyle(color: _c.danger))),
-          );
-          return;
-        }
-
         // Images réduites puis envoyées directement au stockage via l'API (URL signée), puis création de la publication
         final List<File> imageFiles = [];
         for (int i = 0; i < _selectedImages.length; i++) {
@@ -1530,14 +1523,24 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
           await file.writeAsBytes(_selectedImages[i]);
           imageFiles.add(await MediaShrink.file(file));
         }
-        final Post post = await PostPublisher.publish(
-          description: _descriptionController.text,
-          files: imageFiles,
-          category: _selectedPostType,
-          monetized: _monetized,
-          countries: _selectedCountries.map((c) => c.code).toList(),
-          canal: widget.canal,
-        );
+        final countryCodes = _selectedCountries.map((c) => c.code).toList();
+        final Post post;
+        if (widget.defiPostId != null) {
+          // Participation à un DÉFI : frais éventuels débités et réponse publiée dans la même opération côté serveur
+          post = await PostPublisher.participateDefi(widget.defiPostId!, description: _descriptionController.text, files: imageFiles, category: _selectedPostType, countries: countryCodes);
+        } else if (_selectedPostType == 'DEFI') {
+          // Création d'un DÉFI : la cagnotte est débitée dans la même opération côté serveur
+          post = await PostPublisher.publishDefi(config: _defiConfig!, description: _descriptionController.text, files: imageFiles, category: _selectedPostType, countries: countryCodes);
+        } else {
+          post = await PostPublisher.publish(
+            description: _descriptionController.text,
+            files: imageFiles,
+            category: _selectedPostType,
+            monetized: _monetized,
+            countries: countryCodes,
+            canal: widget.canal,
+          );
+        }
         final String postId = post.id!;
         StudioSoundLink.linkIfPending(postId); // post fait avec un son d'artiste : lien vérifié par le serveur
         PostTemplateLink.published(); // post fait avec un template : « Essayer ce template » sous le post
@@ -1647,9 +1650,13 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
 
         setState(() => onTap = false);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(apiErrorText(e, fallback: 'Erreur lors de la publication. Veuillez réessayer.'), textAlign: TextAlign.center, style: TextStyle(color: _c.danger))),
-        );
+        if (!mounted) return;
+        if (widget.defiPostId != null || _selectedPostType == 'DEFI') {
+          // Messages propres aux DÉFIS (déjà inscrit, DÉFI terminé, pièces insuffisantes → recharger…) ; « Réessayer » sans double débit
+          DefiDialogs.handleError(context, e, isVote: false, isCreation: widget.defiPostId == null, onRetry: _publishPost);
+        } else {
+          handleApiError(context, e, onRetry: _publishPost, fallback: 'Erreur lors de la publication. Veuillez réessayer.');
+        }
       }
     }
   }

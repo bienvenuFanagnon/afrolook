@@ -44,7 +44,7 @@ class _DefiConfigSectionState extends State<DefiConfigSection> {
     final vote = int.tryParse(_voteCtrl.text) ?? 0;
 
     // Validation minimale
-    if (_endDate == null || cagnotte < 0) {
+    if (_endDate == null || cagnotte < 0 || cagnotte > 10000000 || participation < 0 || participation > 10000000 || vote > 10000000) {   // plafonds du serveur
       widget.onChanged(null);
       return;
     }
@@ -86,7 +86,7 @@ class _DefiConfigSectionState extends State<DefiConfigSection> {
       context: context,
       initialDate: now.add(const Duration(days: 7)),
       firstDate: now.add(const Duration(days: 1)),
-      lastDate: now.add(const Duration(days: 365)),
+      lastDate: now.add(const Duration(days: 90)), // règle du serveur : 90 jours au plus
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
           colorScheme: ColorScheme.dark(

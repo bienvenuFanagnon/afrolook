@@ -1,4 +1,7 @@
 import 'package:afrotok/services/api/chat_api.dart';
+import 'package:afrotok/services/api/group_keys_api.dart';
+import 'package:afrotok/services/crypto/group_crypto_service.dart';
+import 'package:afrotok/services/crypto/key_change_tracker.dart';
 import 'package:afrotok/services/api/chat_mapper.dart';
 import 'package:afrotok/services/api/jeux_api.dart';
 import 'package:afrotok/services/api/lives_mapper.dart';
@@ -114,6 +117,20 @@ class _GroupChatPageState extends State<GroupChatPage> {
   Map<String, dynamic> _groupData = {};
   List<Map<String, dynamic>> _messages = [];
   bool _isLoadingMessages = true;
+
+  // ── Chiffrement de bout en bout des textes (fiche 34) ──
+  /// Chiffrement activé automatiquement par le propriétaire (groupes privés, payants, petits groupes ; jamais les officiels).
+  static const bool _autoEnableEncryption = true;
+  GroupCryptoService get _crypto => groupCrypto;
+  /// Messages tels que reçus de Firebase (avant déchiffrement).
+  List<Map<String, dynamic>> _rawMessages = [];
+  GroupKeyState? _keyState;
+  /// Pseudos des contacts dont la clé de chiffrement a changé (avertissement non acquitté).
+  List<String> _keyChangeNames = [];
+  List<String> _keyChangeIds = [];
+  Timer? _keyTimer;
+  int _lastKeyRefreshAt = 0;
+  int _decodeRun = 0;
   bool _permissionsLoaded = false;
   final Map<String, Map<String, dynamic>> _senderBadgeCache = {};
   // IDs des membres admin/owner du groupe (pour masquer leur identité dans les bulles)
@@ -176,6 +193,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
   @override
   void dispose() {
     _lpTimer?.cancel();
+    _keyTimer?.cancel();
     _textController.removeListener(_onTextForLink);
     _textController.dispose();
     _scrollController.dispose();
@@ -267,6 +285,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
       }
       await _checkOwnerPremium(data);
       _loadGroupAdminIds();
+      _initCrypto(data);
 
       // Adhésion pour les groupes gratuits (sauf ADM)
       if (mounted && !isAppAdmin) {
@@ -537,6 +556,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
           _groupData['member_count'] =
               ((_groupData['member_count'] as int?) ?? 0) + 1;
         });
+        _initCrypto(_groupData); // nouveau membre : relit les enveloppes (la clé arrive quand un administrateur est en ligne)
       }
     } catch (_) {
       if (mounted) setState(() => _isJoiningGroup = false);
@@ -748,26 +768,220 @@ class _GroupChatPageState extends State<GroupChatPage> {
             // Filtrer les messages invisibles — visibles seulement par l'expéditeur
             .where((d) => GroupPermissionUtils.isMessageVisibleTo(d, myId))
             .toList();
-        final isFirst = !_initialScrollDone;
-        setState(() {
-          _messages = msgs;
-          _isLoadingMessages = false;
-          _initialScrollDone = true;
-        });
-        if (isFirst) {
-          _scrollToBottomInitial();
-        } else {
-          _scrollToBottomIfNearEnd();
-        }
-        _markMessagesRead();
-        // Charger les badges des expéditeurs
-        final senderIds = msgs
-            .map((m) => m['send_by'] as String? ?? '')
-            .where((id) => id.isNotEmpty)
-            .toSet();
-        _loadBadgesFor(senderIds);
+        _rawMessages = msgs;
+        _decodeAndShow();
       }
     });
+  }
+
+  /// Déchiffre les messages reçus (les anciens messages en clair passent tels quels) puis les affiche.
+  /// Rappelé aussi quand les clés de groupe arrivent. Une exécution plus récente annule l'affichage d'une plus ancienne.
+  Future<void> _decodeAndShow() async {
+    final run = ++_decodeRun;
+    final myId = _auth.loginUserData.id ?? '';
+    final raw = _rawMessages;
+    List<Map<String, dynamic>> msgs;
+    try {
+      msgs = await _crypto.openMessages(widget.groupId, myId, raw);
+    } catch (_) {
+      msgs = raw; // ne devrait jamais arriver : openMessages ne lève pas d'exception
+    }
+    if (!mounted || run != _decodeRun) return;
+    final isFirst = !_initialScrollDone;
+    setState(() {
+      _messages = msgs;
+      _isLoadingMessages = false;
+      _initialScrollDone = true;
+    });
+    if (isFirst) {
+      _scrollToBottomInitial();
+    } else {
+      _scrollToBottomIfNearEnd();
+    }
+    _markMessagesRead();
+    // Charger les badges des expéditeurs
+    final senderIds = msgs
+        .map((m) => m['send_by'] as String? ?? '')
+        .where((id) => id.isNotEmpty)
+        .toSet();
+    _loadBadgesFor(senderIds);
+    // Un message chiffré dont la clé manque : une nouvelle époque est peut-être arrivée, on relit les enveloppes (au plus toutes les 15 s)
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+    if (msgs.any((m) => m['_locked'] == true) && nowMs - _lastKeyRefreshAt > 15000) {
+      _lastKeyRefreshAt = nowMs;
+      _refreshKeys();
+    }
+  }
+
+  // ─── CHIFFREMENT DES MESSAGES DE GROUPE (fiche 34) ───────────────────────────────────────────
+
+  /// Charge l'état du chiffrement du groupe. Administrateur / propriétaire : crée l'époque 1 (propriétaire, selon la règle d'activation), change la clé
+  /// après un départ, envoie la clé aux nouveaux membres. Les autres membres relisent simplement leurs enveloppes.
+  Future<void> _initCrypto(Map<String, dynamic> data) async {
+    final myId = _auth.loginUserData.id;
+    if (myId == null || myId.isEmpty) return;
+    try {
+      GroupKeyState st;
+      if (_isAdminOrOwner) {
+        final n = (data['member_count'] as num?)?.toInt();
+        final coins = ((data['subscription_price_coins'] as num?) ?? (data['subscription_price'] as num?) ?? 0).toInt();
+        final mayEnable = _autoEnableEncryption &&
+            _myRole == 'owner' &&
+            GroupCryptoService.shouldAutoEnable(
+              memberCount: n ?? 1000000,
+              isPrivate: data['is_private'] == true,
+              priceCoins: coins,
+              isOfficial: data['is_official'] == true,
+              currentEpoch: 0,
+            );
+        st = (await _crypto.syncAsAdmin(widget.groupId, myId, mayEnable: mayEnable)).state;
+      } else {
+        st = await _crypto.refresh(widget.groupId, myId);
+      }
+      if (!mounted) return;
+      setState(() => _keyState = st);
+      _showKeyChanges(st.changedKeyUsers);
+      _decodeAndShow();
+      _scheduleKeyTimer();
+    } catch (e) {
+      debugPrint('[GroupChatPage] _initCrypto: $e');
+    }
+  }
+
+  Future<void> _refreshKeys() async {
+    final myId = _auth.loginUserData.id;
+    if (myId == null || myId.isEmpty || !mounted) return;
+    try {
+      final before = _keyState;
+      final st = _isAdminOrOwner ? (await _crypto.syncAsAdmin(widget.groupId, myId)).state : await _crypto.refresh(widget.groupId, myId);
+      if (!mounted) return;
+      final changed = before == null || before.hasCurrentKey != st.hasCurrentKey || before.epoch != st.epoch || before.openedEpochs.length != st.openedEpochs.length;
+      setState(() => _keyState = st);
+      _showKeyChanges(st.changedKeyUsers);
+      if (changed) _decodeAndShow();
+      _scheduleKeyTimer();
+    } catch (e) {
+      debugPrint('[GroupChatPage] _refreshKeys: $e');
+    }
+  }
+
+  /// Tant qu'on attend la clé (nouveau membre), ou qu'on est administrateur d'un groupe chiffré (nouveaux membres à servir), on relit toutes les minutes.
+  void _scheduleKeyTimer() {
+    _keyTimer?.cancel();
+    final st = _keyState;
+    if (st == null || !st.isMember || !st.encrypted) return;
+    if (st.waitingForKey || (_isAdminOrOwner && (st.pendingMembers.isNotEmpty || st.rotationRequired))) {
+      _keyTimer = Timer(const Duration(seconds: 60), _refreshKeys);
+    }
+  }
+
+  Future<void> _showKeyChanges(List<String> ids) async {
+    if (ids.isEmpty) {
+      if (_keyChangeIds.isNotEmpty && mounted) setState(() { _keyChangeIds = []; _keyChangeNames = []; });
+      return;
+    }
+    final names = <String>[];
+    for (final id in ids.take(3)) {
+      try {
+        final p = await UsersApi.publicProfile(id);
+        final pseudo = userFromApi(p).pseudo ?? '';
+        if (pseudo.isNotEmpty) names.add('@$pseudo');
+      } catch (_) {}
+    }
+    if (!mounted) return;
+    setState(() { _keyChangeIds = List<String>.from(ids); _keyChangeNames = names; });
+  }
+
+  Future<void> _acknowledgeKeyChanges() async {
+    final myId = _auth.loginUserData.id ?? '';
+    for (final id in _keyChangeIds) {
+      await KeyChangeTracker.shared.acknowledge(myId, id);
+    }
+    if (mounted) setState(() { _keyChangeIds = []; _keyChangeNames = []; });
+  }
+
+  /// Chiffre un message prêt à partir si le groupe est chiffré. Retourne null (et prévient la personne) si la clé est indisponible :
+  /// l'envoi est alors refusé, jamais fait en clair.
+  Future<Map<String, dynamic>?> _sealOrWarn(String msgId, Map<String, dynamic> doc) async {
+    try {
+      return await _crypto.sealMessage(widget.groupId, _auth.loginUserData.id ?? '', msgId, doc);
+    } on GroupKeyUnavailable catch (e) {
+      debugPrint('[GroupChatPage] envoi refusé : $e');
+      _refreshKeys();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Message non envoyé : la clé de chiffrement du groupe n\'est pas encore disponible sur cet appareil. Réessayez dans un instant.'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 4),
+        ));
+      }
+      return null;
+    }
+  }
+
+  /// Bandeau sous la barre : avertissement de changement de clé, attente de la clé, ou rappel du chiffrement.
+  Widget _buildCryptoBanner() {
+    if (_keyChangeIds.isNotEmpty) {
+      final who = _keyChangeNames.isEmpty ? '${_keyChangeIds.length} membre${_keyChangeIds.length > 1 ? 's' : ''}' : _keyChangeNames.join(', ');
+      return Container(
+        width: double.infinity,
+        color: Colors.orange.withOpacity(0.15),
+        padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
+        child: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 18),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'La clé de chiffrement de $who a changé (nouvel appareil ou réinstallation). Vérifiez auprès de cette personne avant de partager une information sensible.',
+                style: TextStyle(color: _colors.textPrimary, fontSize: 12, height: 1.35),
+              ),
+            ),
+            TextButton(onPressed: _acknowledgeKeyChanges, child: const Text('Compris')),
+          ],
+        ),
+      );
+    }
+    final st = _keyState;
+    if (st == null || !st.isMember || !st.encrypted) return const SizedBox.shrink();
+    if (st.waitingForKey) {
+      return Container(
+        width: double.infinity,
+        color: _colors.surfaceVariant,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        child: Row(
+          children: [
+            Icon(st.identityMismatch ? Icons.phonelink_lock_rounded : Icons.hourglass_top_rounded, color: _colors.textSecondary, size: 16),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                st.identityMismatch
+                    ? 'Cet appareil n\'a pas la clé de chiffrement de votre compte : les messages chiffrés restent illisibles ici.'
+                    : 'En attente de la clé de chiffrement du groupe : un administrateur doit se connecter pour vous l\'envoyer.',
+                style: TextStyle(color: _colors.textSecondary, fontSize: 12),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return Container(
+      width: double.infinity,
+      color: _colors.surfaceVariant.withOpacity(0.6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Row(
+        children: [
+          Icon(Icons.lock_rounded, color: _colors.textSecondary, size: 12),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'Les textes de ce groupe sont chiffrés de bout en bout (photos et vidéos : pas encore).',
+              style: TextStyle(color: _colors.textSecondary, fontSize: 11),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // Premier chargement : double postFrame pour attendre le layout complet
@@ -949,12 +1163,25 @@ class _GroupChatPageState extends State<GroupChatPage> {
         msgData['reply_to_id'] = replySnapshot['id'] ?? '';
         msgData['reply_to_message'] = replySnapshot['is_deleted'] == true
             ? 'Message supprime'
-            : (replySnapshot['message'] as String? ?? '');
+            : (replySnapshot['_locked'] == true ? '' : (replySnapshot['message'] as String? ?? ''));
         msgData['reply_to_pseudo'] = replySnapshot['sender_pseudo'] ?? '';
         msgData['reply_to_type'] = replySnapshot['message_type'] ?? 'text';
       }
 
-      await _firestore.collection('GroupMessages').doc(msgId).set(msgData);
+      // Groupe chiffré : texte, citation et aperçu de lien sont chiffrés avant d'aller sur Firebase (jamais en clair)
+      final sealed = await _sealOrWarn(msgId, msgData);
+      if (sealed == null) {
+        if (mounted) {
+          setState(() {
+            _isSending = false;
+            _replyingToMsg = replySnapshot;
+          });
+          _textController.text = text;
+        }
+        return;
+      }
+
+      await _firestore.collection('GroupMessages').doc(msgId).set(sealed);
 
       // Message visible dans le chat — libérer l'UI immédiatement
       if (mounted) setState(() => _isSending = false);
@@ -1005,6 +1232,13 @@ class _GroupChatPageState extends State<GroupChatPage> {
       final now = DateTime.now().millisecondsSinceEpoch;
       final msgId = _firestore.collection('GroupMessages').doc().id;
 
+      // Groupe chiffré : la légende est chiffrée (la photo, pas encore). Vérifié AVANT le téléversement : sans clé, rien n'est envoyé.
+      final sealedCap = await _sealOrWarn(msgId, {'message_type': 'image', if (caption.isNotEmpty) 'caption': caption});
+      if (sealedCap == null) {
+        if (mounted) setState(() => _isSending = false);
+        return;
+      }
+
       final ref = FirebaseStorage.instance
           .ref()
           .child('group_images/${widget.groupId}/$msgId.jpg');
@@ -1019,10 +1253,11 @@ class _GroupChatPageState extends State<GroupChatPage> {
         'sender_image': _senderImage,
         'message': url,
         'message_type': 'image',
-        if (caption.isNotEmpty) 'caption': caption,
+        if (sealedCap['caption'] != null) 'caption': sealedCap['caption'],
+        if (sealedCap['key_epoch'] != null) 'key_epoch': sealedCap['key_epoch'],
         'is_valide': true,
         'is_deleted': false,
-        'is_encrypted': false,
+        'is_encrypted': sealedCap['is_encrypted'] == true,
         'create_at_time_spam': now,
         'createdAt': FieldValue.serverTimestamp(),
         'message_state': 'NONLU',
@@ -1038,7 +1273,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
       final lastMsg = caption.isNotEmpty ? '📷 $caption' : '📷 Photo';
       /* résumé du groupe (dernier message, non lus) : tenu par l'API */
 
-      _updateUnreadCounts(otherMembersImg);
+      _updateUnreadCounts(otherMembersImg, kind: 'image');
 
     } catch (e) {
       debugPrint('[GroupChatPage] _sendImageMessage error: $e');
@@ -1114,7 +1349,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
           .where((id) => id.isNotEmpty && id != myId)
           .toList();
 
-      _updateUnreadCounts(otherMembers);
+      _updateUnreadCounts(otherMembers, kind: 'image');
     } catch (e) {
       debugPrint('[GroupChatPage] _sendMultiImageMessage error: $e');
       if (mounted) setState(() => _isSending = false);
@@ -1209,6 +1444,13 @@ class _GroupChatPageState extends State<GroupChatPage> {
       final now = DateTime.now().millisecondsSinceEpoch;
       final msgId = _firestore.collection('GroupMessages').doc().id;
 
+      // Groupe chiffré : la légende est chiffrée (la vidéo, pas encore). Vérifié AVANT le téléversement.
+      final sealedCap = await _sealOrWarn(msgId, {'message_type': 'video', if (caption.isNotEmpty) 'caption': caption});
+      if (sealedCap == null) {
+        if (mounted) setState(() => _isSending = false);
+        return;
+      }
+
       final ref = FirebaseStorage.instance
           .ref()
           .child('group_videos/${widget.groupId}/$msgId.mp4');
@@ -1223,10 +1465,11 @@ class _GroupChatPageState extends State<GroupChatPage> {
         'sender_image': _senderImage,
         'message': url,
         'message_type': 'video',
-        if (caption.isNotEmpty) 'caption': caption,
+        if (sealedCap['caption'] != null) 'caption': sealedCap['caption'],
+        if (sealedCap['key_epoch'] != null) 'key_epoch': sealedCap['key_epoch'],
         'is_valide': true,
         'is_deleted': false,
-        'is_encrypted': false,
+        'is_encrypted': sealedCap['is_encrypted'] == true,
         'create_at_time_spam': now,
         'createdAt': FieldValue.serverTimestamp(),
         'message_state': 'NONLU',
@@ -1247,7 +1490,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
         });
       }
 
-      _updateUnreadCounts(otherMembers);
+      _updateUnreadCounts(otherMembers, kind: 'video');
     } catch (e) {
       debugPrint('[GroupChatPage] _sendVideoMessage error: $e');
       if (mounted) setState(() => _isSending = false);
@@ -1348,12 +1591,16 @@ class _GroupChatPageState extends State<GroupChatPage> {
 
   // ─── UNREAD COUNTS (chunked pour groupes avec 500+ membres) ──────────────────
 
-  void _updateUnreadCounts(List<String> memberIds) {} // non lus de groupe : à fournir par l'API (voir lacunes_api_jeux_medias.md)
+  /// Non lus des autres membres, type du dernier message et notifications : tenus par l'API (le contenu du message n'y est jamais envoyé).
+  void _updateUnreadCounts(List<String> memberIds, {String kind = 'text'}) {
+    unawaited(ChatApi.groupSent(widget.groupId, kind: kind).catchError((Object _) {}));
+  }
 
   Future<void> _markMessagesRead() async {
     final myId = _auth.loginUserData.id!;
     // Ne pas créer de faux receipts pour les admins non-membres
     if (_isAppAdmin && !_isMember(myId)) return;
+    unawaited(ChatApi.markGroupRead(widget.groupId).catchError((Object _) {}));
     try {
       final now = DateTime.now().millisecondsSinceEpoch;
       await Future.wait([
@@ -2235,6 +2482,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
               _buildNoWritePermissionBanner(),
             if (_isAppAdmin) _buildAdminBanner(),
           ],
+          _buildCryptoBanner(),
           Expanded(
             child: Stack(
               children: [

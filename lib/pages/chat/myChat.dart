@@ -2221,17 +2221,20 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     );
   }
 
-  /// Enregistre le signalement dans la collection `Reports`.
-  /// Écriture Firestore directe — collection admin-only côté client.
-  /// `createdAt` en millisecondes (cohérence avec le reste du projet).
+  /// Signale un message à l'équipe via l'API (`POST /conversations/{id}/reports`) : seuls l'identifiant du message et le motif sont gardés
+  /// (le texte est chiffré, l'équipe ne le lit pas).
   Future<void> _reportMessage(Message message, String reason) async {
-    final myId = _authProvider.loginUserData.id!;
     final msgId = message.id;
-    if (msgId.isEmpty) return;
+    final convId = widget.chat.id;
+    if (msgId.isEmpty || convId == null || convId.isEmpty) return;
 
-    // Le signalement d'un message n'est pas encore dans l'API (voir lacunes_api_jeux_medias.md)
-    if (!mounted) return;
-    _showErrorSnackbar('Le signalement des messages sera disponible prochainement.');
+    try {
+      await ChatApi.reportMessage(convId, msgId, reason: reason);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Merci, le message a été signalé à l\'équipe.')));
+    } catch (e) {
+      if (mounted) _showErrorSnackbar(ChatApi.message(e, fallback: 'Le signalement n\'a pas pu être envoyé. Réessaie.'));
+    }
   }
 
   // ── Blocage utilisateur ─────────────────────────────────────────────────────
@@ -2243,9 +2246,9 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       final blocked = await UsersApi.blocks();
       if (!mounted) return;
       setState(() {
-        _isBlockedByMe = blocked.any((b) => '${b['id'] ?? b['user_id'] ?? (b['user'] is Map ? (b['user'] as Map)['id'] : '')}' == _otherId);
-        // Blocage par l'autre personne : l'API refuse l'envoi (403 blocked) sans dire qui a bloqué
-        _isBlockedByOther = false;
+        _isBlockedByMe = widget.chat.blockedByMe || blocked.any((b) => '${b['id'] ?? b['user_id'] ?? (b['user'] is Map ? (b['user'] as Map)['id'] : '')}' == _otherId);
+        // L'API de la conversation dit s'il y a blocage (`blocked`) et si c'est moi qui ai bloqué (`blocked_by_me`) : sinon c'est l'autre personne
+        _isBlockedByOther = widget.chat.blocked && !_isBlockedByMe;
       });
     } catch (e) {
       debugPrint('⚠️ _loadBlockStatus error: $e');

@@ -23,6 +23,7 @@ import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:afrotok/services/api/canal_mapper.dart';
 import 'package:afrotok/services/api/posts_api.dart';
+import 'package:afrotok/services/api/publications_api.dart';
 import 'package:afrotok/services/api/users_api.dart';
 import 'package:afrotok/services/api/users_mapper.dart';
 import 'package:afrotok/widgets/api_error_dialogs.dart';
@@ -1095,13 +1096,13 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         mediaUrl: shareImageUrl,
       );
 
+      final shared = await PubApi.share(widget.post.id!);
+      if (!mounted) return;
       setState(() {
-        widget.post.partage = (widget.post.partage ?? 0) + 1;
+        widget.post.partage = shared.count ?? ((widget.post.partage ?? 0) + (shared.counted ? 1 : 0));
         widget.post.users_partage_id ??= [];
         widget.post.users_partage_id!.add(_authProvider.loginUserData.id!);
       });
-
-      unawaited(PostsApi.signal(widget.post.id!, 'share'));
 
       addPointsForAction(UserAction.partagePost);
       addPointsForOtherUserAction(widget.post.user_id!, UserAction.autre);

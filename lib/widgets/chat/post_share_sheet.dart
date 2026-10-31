@@ -257,7 +257,8 @@ class _PostShareSheetState extends State<PostShareSheet>
         // Sans createdAt, le message est exclu de la conversation (elle est triée sur ce champ)
         'createdAt': FieldValue.serverTimestamp(),
       });
-      // Aperçu et non lus du groupe : fournis par l'API (voir lacunes)
+      // Type du dernier message, non lus des autres membres et notifications (hors sourdine) : tenus par l'API. Le message est déjà parti.
+      unawaited(ChatApi.groupSent(groupId).catchError((Object _) {}));
       sent = true;
     } catch (e, st) {
       debugPrint('[PostShareSheet] _sendToGroup error: $e\n$st');

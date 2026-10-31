@@ -683,6 +683,29 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
   }
 
   Widget _buildEmptyState(AppColors colors) {
+    final error = context.read<LiveProvider>().loadError;
+    if (error != null) {
+      // Échec du chargement (API) : message clair + « Réessayer », jamais d'ancienne source de données
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline_rounded, size: 56, color: colors.textSecondary.withOpacity(0.6)),
+              const SizedBox(height: 16),
+              Text(error, textAlign: TextAlign.center, style: TextStyle(color: colors.textPrimary, fontSize: 15)),
+              const SizedBox(height: 16),
+              TextButton.icon(
+                onPressed: () => _loadLives(reset: true),
+                icon: Icon(Icons.refresh_rounded, color: colors.accent),
+                label: Text('Réessayer', style: TextStyle(color: colors.accent, fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,

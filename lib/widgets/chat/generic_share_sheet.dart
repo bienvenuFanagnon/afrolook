@@ -215,7 +215,8 @@ class _GenericShareSheetState extends State<GenericShareSheet>
         'create_at_time_spam': now,
         'createdAt': FieldValue.serverTimestamp(),
       });
-      // Aperçu et non lus du groupe : fournis par l'API (voir lacunes)
+      // Type du dernier message, non lus des autres membres et notifications (hors sourdine) : tenus par l'API. Le message est déjà parti.
+      unawaited(ChatApi.groupSent(groupId).catchError((Object _) {}));
       sent = true;
     } catch (e, st) {
       debugPrint('[GenericShareSheet] _sendToGroup error: $e\n$st');

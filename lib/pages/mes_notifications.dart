@@ -76,13 +76,25 @@ class _MesNotificationState extends State<MesNotification> {
   bool _hasMore = true;
   String? _nextCursor;
 
-  int get _totalUnreadCount => _notifications.where((n) => !(n.is_open ?? true)).length;
+  /// Message d'erreur (en français) du dernier chargement raté ; l'écran propose alors « Réessayer ». Aucun retour à Firebase.
+  String? _loadError;
+
+  /// Notifications non lues par type, telles que le serveur les compte (null tant qu'elles ne sont pas arrivées).
+  Map<String, int>? _serverUnreadByType;
+
+  int get _totalUnreadCount => _serverUnreadByType != null
+      ? (_selectedTypeFilter != null ? (_serverUnreadByType![_selectedTypeFilter!] ?? 0) : _serverUnreadByType!.values.fold<int>(0, (a, b) => a + b))
+      : _notifications.where((n) => !(n.is_open ?? true)).length;
 
   Future<void> _loadInitialNotifications() async {
     if (!mounted) return;
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _loadError = null;
+    });
     try {
-      final page = await ChatApi.notifications(limit: _pageSize);
+      // Le serveur filtre par type quand un filtre est choisi
+      final page = await ChatApi.notifications(limit: _pageSize, types: _selectedTypeFilter == null ? null : [_selectedTypeFilter!]);
       final items = page.items.map(notificationFromApi).toList();
       _prefetchRefs(items);
       if (!mounted) return;
@@ -106,18 +118,30 @@ class _MesNotificationState extends State<MesNotification> {
         }
         _recomputeGroupStats();
       });
+      // Compteurs exacts par type et aperçus des groupes absents de cette page (le serveur compte tout, pas seulement les 60 dernières)
+      unawaited(_loadGroupCounts());
+      unawaited(_loadGroupSamples());
     } catch (e) {
       printVm("Erreur chargement notifications: $e");
-      if (mounted) setState(() => _isLoading = false);
-      _showErrorSnackBar(ChatApi.message(e, fallback: _l10n.notifErrorOpening));
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _loadError = ChatApi.message(e, fallback: _l10n.notifErrorOpening);
+        });
+      }
     }
   }
 
   void _prefetchRefs(List<NotificationData> items) {
     for (final n in items) {
+      final embedded = n.userData;
+      if (embedded != null && (embedded.id ?? '').isNotEmpty) {
+        // Auteur déjà fourni par l'API (`actor`) : aucune lecture de profil
+        _userCache.putIfAbsent(embedded.id!, () => embedded);
+      }
       if (n.canal_id != null && n.canal_id!.isNotEmpty) {
         _loadCanalData(n.canal_id!);
-      } else if (n.user_id != null && n.user_id!.isNotEmpty) {
+      } else if (n.user_id != null && n.user_id!.isNotEmpty && !_userCache.containsKey(n.user_id!)) {
         _loadUserData(n.user_id!);
       }
     }
@@ -127,7 +151,7 @@ class _MesNotificationState extends State<MesNotification> {
     if (_isLoadingMore || !_hasMore || _nextCursor == null) return;
     setState(() => _isLoadingMore = true);
     try {
-      final page = await ChatApi.notifications(cursor: _nextCursor, limit: _pageSize);
+      final page = await ChatApi.notifications(cursor: _nextCursor, limit: _pageSize, types: _selectedTypeFilter == null ? null : [_selectedTypeFilter!]);
       final items = page.items.map(notificationFromApi).toList();
       _prefetchRefs(items);
       if (!mounted) return;
@@ -148,19 +172,59 @@ class _MesNotificationState extends State<MesNotification> {
   // Notifications d'aperçu par groupe (tirées des pages déjà chargées)
   final Map<String, List<NotificationData>> _groupSamples = {};
 
-  /// Compteurs et aperçus par groupe, calculés sur les notifications chargées (l'API ne filtre pas encore par type : voir lacunes_api_jeux_medias.md).
+  /// Compteurs et aperçus par groupe. Non lus : comptés par le serveur (tous les types, pas seulement les pages chargées) dès qu'ils sont arrivés,
+  /// sinon sur les notifications chargées. Aperçus : tirés des pages chargées, sinon de la requête par type ([_loadGroupSamples]).
   void _recomputeGroupStats() {
     for (final entry in _groupTypes.entries) {
       final mine = _notifications.where((n) => entry.value.contains((n.type ?? '').toUpperCase())).toList()
         ..sort((a, b) => (b.createdAt ?? 0).compareTo(a.createdAt ?? 0));
-      _groupUnreadCounts[entry.key] = mine.where((n) => !(n.is_open ?? true)).length;
-      _groupSamples[entry.key] = mine.take(10).toList();
+      final server = _serverUnreadByType;
+      _groupUnreadCounts[entry.key] = server != null
+          ? entry.value.fold<int>(0, (a, t) => a + (server[t] ?? 0))
+          : mine.where((n) => !(n.is_open ?? true)).length;
+      if (mine.isNotEmpty) _groupSamples[entry.key] = mine.take(10).toList();
     }
   }
 
-  Future<void> _loadGroupCounts() async {}
+  /// Pastilles : non lus par type, comptés par le serveur.
+  Future<void> _loadGroupCounts() async {
+    try {
+      final counts = await ChatApi.unreadCountsByType();
+      if (!mounted) return;
+      setState(() {
+        _serverUnreadByType = counts;
+        _recomputeGroupStats();
+      });
+    } catch (e) {
+      printVm("Erreur compteurs de notifications par type: $e"); // les pastilles retombent sur les pages chargées
+    }
+  }
 
-  Future<void> _loadGroupSamples() async {}
+  /// Aperçu des groupes qui n'ont rien dans les dernières notifications chargées (les plus anciennes d'un type ne sont pas dans la première page).
+  Future<void> _loadGroupSamples() async {
+    if (_selectedTypeFilter != null) return;
+    final missing = _groupTypes.entries.where((e) => !_notifications.any((n) => e.value.contains((n.type ?? '').toUpperCase()))).toList();
+    if (missing.isEmpty) return;
+    await Future.wait(missing.map((entry) async {
+      try {
+        final page = await ChatApi.notifications(limit: 10, types: entry.value);
+        final items = page.items.map(notificationFromApi).toList();
+        _prefetchRefs(items);
+        if (items.isNotEmpty) _groupSamples[entry.key] = items;
+      } catch (e) {
+        printVm("Erreur aperçu des notifications ${entry.key}: $e");
+      }
+    }));
+    if (mounted) setState(() {});
+  }
+
+  /// Une notification vient d'être lue : le compteur du serveur baisse d'un cran pour son type.
+  void _decrementServerUnread(NotificationData n) {
+    final server = _serverUnreadByType;
+    final t = (n.type ?? '').toUpperCase();
+    if (server != null && (server[t] ?? 0) > 0) server[t] = server[t]! - 1;
+    _recomputeGroupStats();
+  }
 
   late UserAuthProvider _authProvider;
   late PostProvider _postProvider;
@@ -230,18 +294,14 @@ class _MesNotificationState extends State<MesNotification> {
     _postProvider = Provider.of<PostProvider>(context, listen: false);
     _loadAvailableTypes();
     _retryPendingMarkAll(); // termine un « tout marquer comme vu » resté en attente (hors ligne)
-    _loadInitialNotifications();
-    _loadGroupCounts();
-    _loadGroupSamples();
+    _loadInitialNotifications(); // charge ensuite les compteurs par type et les aperçus des groupes
   }
 
   Future<void> _loadAvailableTypes() async {
     try {
-      // Récupérer uniquement les types distincts de l'enum
+      // Types proposés au filtre : ceux des groupes de la page (le serveur filtre sur ces valeurs)
       setState(() {
-        _availableTypes = NotificationType.values
-            .map((e) => e.toString().split('.').last)
-            .toList();
+        _availableTypes = _groupTypes.values.expand((t) => t).toList();
       });
     } catch (e) {
       printVm("Erreur chargement types: $e");
@@ -395,6 +455,7 @@ class _MesNotificationState extends State<MesNotification> {
         // Mettre à jour localement
         setState(() {
           notification.is_open = true;
+          _decrementServerUnread(notification);
         });
       }
 
@@ -1209,6 +1270,12 @@ class _MesNotificationState extends State<MesNotification> {
       for (final notif in _notifications) {
         notif.is_open = true;
       }
+      for (final list in _groupSamples.values) {
+        for (final notif in list) {
+          notif.is_open = true;
+        }
+      }
+      _serverUnreadByType = <String, int>{};
       _groupUnreadCounts.updateAll((key, value) => 0);
     });
     _authProvider.markNotificationsSeenLocally(userId);
@@ -1293,7 +1360,7 @@ class _MesNotificationState extends State<MesNotification> {
               ),
               tooltip: _l10n.notifFilterByType,
             ),
-          if (_notifications.any((n) => !n.is_open!))
+          if (_totalUnreadCount > 0 || _notifications.any((n) => !n.is_open!))
             IconButton(
               onPressed: _markAllAsRead,
               icon: Icon(Icons.done_all, color: _colors.danger),
@@ -1373,6 +1440,32 @@ class _MesNotificationState extends State<MesNotification> {
                 ],
               ),
             ))])
+                : _loadError != null && _notifications.isEmpty
+                ? ListView(children: [
+              // Échec du chargement : message clair + « Réessayer » (jamais d'ancienne source de données)
+              Padding(padding: const EdgeInsets.only(top: 64, left: 24, right: 24), child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline, size: 56, color: _colors.danger),
+                    const SizedBox(height: 14),
+                    Text(
+                      _loadError!,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: _colors.textPrimary, fontSize: 15),
+                    ),
+                    const SizedBox(height: 14),
+                    ElevatedButton.icon(
+                      onPressed: _loadInitialNotifications,
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Réessayer'),
+                      style: ElevatedButton.styleFrom(backgroundColor: _colors.danger, foregroundColor: Colors.white),
+                    ),
+                  ],
+                ),
+              )),
+              const SocialFollowCard(variant: SocialFollowVariant.end),
+            ])
                 : _notifications.isEmpty
                 ? ListView(children: [
               const SocialFollowCard(variant: SocialFollowVariant.end),
@@ -1420,7 +1513,7 @@ class _MesNotificationState extends State<MesNotification> {
                       children: [
                         Expanded(
                           child: Text(
-                            _l10n.notifUnreadCount(_notifications.where((n) => !n.is_open!).length),
+                            _l10n.notifUnreadCount(_totalUnreadCount),
                             style: TextStyle(
                               color: _colors.danger,
                               fontWeight: FontWeight.w600,

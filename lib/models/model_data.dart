@@ -3627,6 +3627,14 @@ class Chat {
   String? requestFrom;
   String? requestInvitationId;
 
+  /// Anciens identifiants de cette discussion (conversations importées de l'ancien système) : les anciens messages Firebase portent l'un d'eux dans
+  /// `chat_id`. Fournis par l'API (`legacy_chat_ids`) ; [docId] vaut déjà le premier. Jamais enregistrés dans le cache local.
+  List<String> legacyChatIds = const [];
+
+  /// Blocage entre les deux personnes (dans un sens ou l'autre) et blocage fait PAR MOI, tels que l'API les renvoie. Jamais enregistrés dans le cache.
+  bool blocked = false;
+  bool blockedByMe = false;
+
   UserData? sender;
   Post? post;
   EntrepriseData? entreprise;
