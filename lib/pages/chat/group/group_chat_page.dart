@@ -119,8 +119,8 @@ class _GroupChatPageState extends State<GroupChatPage> {
   bool _isLoadingMessages = true;
 
   // ── Chiffrement de bout en bout des textes (fiche 34) ──
-  /// Chiffrement activé automatiquement par le propriétaire (groupes privés, payants, petits groupes ; jamais les officiels).
-  static const bool _autoEnableEncryption = true;
+  /// Le chiffrement s'active automatiquement à l'ouverture par le propriétaire (groupes privés, payants, petits groupes ; jamais les officiels), sauf s'il
+  /// l'a désactivé : option `encryption_enabled` du groupe (champ absent = activé), relue avec l'état des clés.
   GroupCryptoService get _crypto => groupCrypto;
   /// Messages tels que reçus de Firebase (avant déchiffrement).
   List<Map<String, dynamic>> _rawMessages = [];
@@ -130,6 +130,10 @@ class _GroupChatPageState extends State<GroupChatPage> {
   List<String> _keyChangeIds = [];
   Timer? _keyTimer;
   int _lastKeyRefreshAt = 0;
+  bool _requestingKey = false;
+  /// L'état du chiffrement n'a pas pu être lu (API injoignable) : bandeau « Réessayer » ; l'envoi reste refusé tant qu'il est inconnu.
+  bool _keyLoadFailed = false;
+  String? _keyRequestError;
   int _decodeRun = 0;
   bool _permissionsLoaded = false;
   final Map<String, Map<String, dynamic>> _senderBadgeCache = {};
@@ -825,7 +829,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
       if (_isAdminOrOwner) {
         final n = (data['member_count'] as num?)?.toInt();
         final coins = ((data['subscription_price_coins'] as num?) ?? (data['subscription_price'] as num?) ?? 0).toInt();
-        final mayEnable = _autoEnableEncryption &&
+        final mayEnable = data['encryption_enabled'] != false &&
             _myRole == 'owner' &&
             GroupCryptoService.shouldAutoEnable(
               memberCount: n ?? 1000000,
@@ -839,12 +843,13 @@ class _GroupChatPageState extends State<GroupChatPage> {
         st = await _crypto.refresh(widget.groupId, myId);
       }
       if (!mounted) return;
-      setState(() => _keyState = st);
+      setState(() { _keyState = st; _keyLoadFailed = false; });
       _showKeyChanges(st.changedKeyUsers);
       _decodeAndShow();
       _scheduleKeyTimer();
     } catch (e) {
       debugPrint('[GroupChatPage] _initCrypto: $e');
+      if (mounted && _keyState == null) setState(() => _keyLoadFailed = true);
     }
   }
 
@@ -870,8 +875,31 @@ class _GroupChatPageState extends State<GroupChatPage> {
     _keyTimer?.cancel();
     final st = _keyState;
     if (st == null || !st.isMember || !st.encrypted) return;
-    if (st.waitingForKey || (_isAdminOrOwner && (st.pendingMembers.isNotEmpty || st.rotationRequired))) {
+    if (!st.encryptionEnabled) return;
+    if (st.waitingForKey || st.myKeyRequest || (_isAdminOrOwner && (st.pendingMembers.isNotEmpty || st.keyRequests.isNotEmpty || st.rotationRequired))) {
       _keyTimer = Timer(const Duration(seconds: 60), _refreshKeys);
+    }
+  }
+
+  /// « Demander la clé » : le membre bloqué signale à l'API qu'il n'a pas la clé ; un administrateur la lui renverra à sa prochaine ouverture du groupe.
+  Future<void> _requestKey() async {
+    final myId = _auth.loginUserData.id;
+    if (myId == null || myId.isEmpty || _requestingKey) return;
+    setState(() { _requestingKey = true; _keyRequestError = null; });
+    try {
+      final st = await _crypto.requestKey(widget.groupId, myId);
+      if (!mounted) return;
+      setState(() { _keyState = st; _requestingKey = false; });
+      _scheduleKeyTimer();
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Demande envoyée. Un administrateur vous enverra la clé dès qu\'il ouvrira le groupe.')));
+    } catch (e) {
+      if (!mounted) return;
+      final msg = e is GroupKeyApiError && e.code == 'encryption_disabled'
+          ? 'Le propriétaire a désactivé le chiffrement de ce groupe.'
+          : e is GroupKeyApiError && e.code == 'not_encrypted'
+              ? 'Ce groupe n\'est pas chiffré.'
+              : (e is GroupKeyApiError && e.message.isNotEmpty ? e.message : ChatApi.message(e, fallback: 'La demande n\'a pas pu être envoyée. Vérifiez votre connexion.'));
+      setState(() { _requestingKey = false; _keyRequestError = msg; });
     }
   }
 
@@ -943,24 +971,85 @@ class _GroupChatPageState extends State<GroupChatPage> {
       );
     }
     final st = _keyState;
+    if (st == null && _keyLoadFailed) {
+      return Container(
+        width: double.infinity,
+        color: _colors.surfaceVariant,
+        padding: const EdgeInsets.fromLTRB(12, 4, 6, 4),
+        child: Row(
+          children: [
+            Icon(Icons.lock_clock_rounded, color: _colors.textSecondary, size: 16),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Le chiffrement du groupe n\'a pas pu être vérifié (connexion). Les messages ne partiront qu\'une fois la vérification faite.',
+                style: TextStyle(color: _colors.textSecondary, fontSize: 12),
+              ),
+            ),
+            TextButton(onPressed: () => _initCrypto(_groupData), child: const Text('Réessayer')),
+          ],
+        ),
+      );
+    }
     if (st == null || !st.isMember || !st.encrypted) return const SizedBox.shrink();
-    if (st.waitingForKey) {
+    if (!st.encryptionEnabled) {
+      return Container(
+        width: double.infinity,
+        color: _colors.surfaceVariant.withOpacity(0.6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        child: Row(
+          children: [
+            Icon(Icons.lock_open_rounded, color: _colors.textSecondary, size: 12),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                'Le propriétaire a désactivé le chiffrement : les nouveaux messages ne sont plus chiffrés. Les anciens restent lisibles.',
+                style: TextStyle(color: _colors.textSecondary, fontSize: 11),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    if (st.waitingForKey || st.canRequestKey) {
+      final String text;
+      if (st.identityMismatch) {
+        text = 'Cet appareil n\'a pas la clé de chiffrement de votre compte : les messages chiffrés restent illisibles ici.';
+      } else if (st.myKeyRequest) {
+        text = 'Demande envoyée : un administrateur vous enverra la clé dès qu\'il ouvrira le groupe.';
+      } else if (st.waitingForKey) {
+        text = 'Cet appareil n\'a pas la clé de chiffrement du groupe : un administrateur doit vous l\'envoyer. Vous pouvez la demander.';
+      } else {
+        text = 'Certains anciens messages sont illisibles sur cet appareil (clé manquante). Vous pouvez demander la clé aux administrateurs.';
+      }
       return Container(
         width: double.infinity,
         color: _colors.surfaceVariant,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(st.identityMismatch ? Icons.phonelink_lock_rounded : Icons.hourglass_top_rounded, color: _colors.textSecondary, size: 16),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                st.identityMismatch
-                    ? 'Cet appareil n\'a pas la clé de chiffrement de votre compte : les messages chiffrés restent illisibles ici.'
-                    : 'En attente de la clé de chiffrement du groupe : un administrateur doit se connecter pour vous l\'envoyer.',
-                style: TextStyle(color: _colors.textSecondary, fontSize: 12),
-              ),
+            Row(
+              children: [
+                Icon(st.identityMismatch ? Icons.phonelink_lock_rounded : Icons.hourglass_top_rounded, color: _colors.textSecondary, size: 16),
+                const SizedBox(width: 8),
+                Expanded(child: Text(text, style: TextStyle(color: _colors.textSecondary, fontSize: 12))),
+                if (st.canRequestKey && !st.myKeyRequest)
+                  TextButton(
+                    onPressed: _requestingKey ? null : _requestKey,
+                    child: _requestingKey
+                        ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Text('Demander la clé'),
+                  ),
+              ],
             ),
+            if (_keyRequestError != null)
+              Row(
+                children: [
+                  Expanded(child: Text(_keyRequestError!, style: const TextStyle(color: Colors.redAccent, fontSize: 11))),
+                  TextButton(onPressed: _requestingKey ? null : _requestKey, child: const Text('Réessayer')),
+                ],
+              ),
           ],
         ),
       );

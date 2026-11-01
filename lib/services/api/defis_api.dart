@@ -113,9 +113,21 @@ class DefisApi {
             ..._configBody(config),
           }, idempotencyKey: k))));
 
-  /// Participe (frais éventuels) et publie la réponse. Erreurs : 402, 409 `already_participating` / `defi_ended`.
-  static Future<Post> participate(String defiId, Map<String, dynamic> content) =>
-      _once('participate:$defiId', (k) async => postFromApi(_map(await _c.pay('/defis/$defiId/participations', body: content, idempotencyKey: k))));
+  /// Réserve l'identifiant de la future participation (`POST /defis/{id}/participations/reserve`, sans paiement) pour que le QR code et le
+  /// lien « Vote pour moi » de la carte puissent être imprimés AVANT la publication. Valable 24 h ; une seule réservation par personne
+  /// et par défi (rappeler la route renvoie la même et repousse l'échéance). À transmettre ensuite comme `id` à [participate].
+  /// Erreurs : 404 défi inconnu, 409 `already_participating` / `defi_ended`.
+  static Future<({String id, DateTime? expiresAt})> reserve(String defiId) async {
+    final d = _map(await _c.post('/defis/$defiId/participations/reserve'));
+    final id = d['id'] as String?;
+    if (id == null || id.isEmpty) throw ApiException(status: 0, code: 'reserve_invalid', message: "La réservation du lien n'a pas abouti. Réessaie.");
+    return (id: id, expiresAt: DateTime.tryParse('${d['expires_at'] ?? ''}'));
+  }
+
+  /// Participe (frais éventuels) et publie la réponse. [id] : identifiant réservé par [reserve] (la publication le porte exactement).
+  /// Erreurs : 402, 409 `already_participating` / `defi_ended` / `id_taken`, 422 `reservation_invalid` (réservation échue ou d'une autre personne).
+  static Future<Post> participate(String defiId, Map<String, dynamic> content, {String? id}) =>
+      _once('participate:$defiId', (k) async => postFromApi(_map(await _c.pay('/defis/$defiId/participations', body: {...content, if (id != null && id.isNotEmpty) 'id': id}, idempotencyKey: k))));
 
   /// Vote pour une participation. Erreurs : 402, 403 `creator_cannot_vote`, 409 `already_voted` / `defi_ended`.
   /// Renvoie le nombre de votes de la participation.

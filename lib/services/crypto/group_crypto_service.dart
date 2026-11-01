@@ -57,6 +57,10 @@ class GroupCryptoService {
   static final _x25519 = X25519();
   static final _aes = AesGcm.with256bits();
   static final _hkdf = Hkdf(hmac: Hmac.sha256(), outputLength: 32);
+  static final _hmac = Hmac.sha256();
+
+  /// Époques passées ré-enveloppées au plus pour un membre qui a demandé la clé (les plus récentes d'abord retenues).
+  static const int _maxRewrapPastEpochs = 20;
 
   /// Clés de groupe ouvertes : `moi|groupe` -> époque -> clé.
   final Map<String, Map<int, SecretKey>> _keys = {};
@@ -64,6 +68,9 @@ class GroupCryptoService {
   final Map<String, Future<GroupKeyState>> _inFlight = {};
   final Set<String> _publishedFor = {};
   final Map<String, int> _myKeyVersion = {};
+
+  /// Clés publiques d'anciennes versions déjà lues : `personne|version` -> réponse de l'annuaire (immuable).
+  final Map<String, Map<String, dynamic>> _versionKeys = {};
 
   static String _ck(String me, String groupId) => '$me|$groupId';
 
@@ -128,10 +135,14 @@ class GroupCryptoService {
 
     final epoch = _asInt(data['epoch']);
     final encrypted = data['encrypted'] == true && epoch > 0;
+    final enabled = data['encryption_enabled'] != false; // champ absent = activé (anciennes réponses)
+    final recordedFingerprint = data['key_fingerprint'] is String && (data['key_fingerprint'] as String).isNotEmpty ? data['key_fingerprint'] as String : null;
     final envelopes = (data['envelopes'] as List? ?? const []).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
     final unreadable = <int>[];
+    var fingerprintMismatch = false;
 
-    // Clés publiques ACTUELLES des administrateurs qui m'ont envoyé des enveloppes : servent à ouvrir les nouvelles, et à avertir si l'une a changé.
+    // Clés publiques ACTUELLES des administrateurs qui m'ont envoyé des enveloppes : servent à avertir si l'une a changé.
+    // Pour OUVRIR une enveloppe on prend la clé de la VERSION utilisée par l'administrateur (`wrapper_key_version`), pas forcément la plus récente.
     final toOpen = envelopes.where((e) => !cache.containsKey(_asInt(e['epoch']))).toList();
     final wrapperIds = envelopes.map((e) => '${e['wrapped_by']}').where((id) => id != me && id.isNotEmpty).toSet();
     final wrapperKeys = wrapperIds.isEmpty ? <String, Map<String, dynamic>>{} : await _safePublicKeys(wrapperIds);
@@ -150,7 +161,7 @@ class GroupCryptoService {
           if (wrapper == me) {
             theirPub = (await pair.extractPublicKey()).bytes;
           } else {
-            final wk = wrapperKeys[wrapper];
+            final wk = await _wrapperPublicKey(wrapper, _asInt(e['wrapper_key_version']), wrapperKeys[wrapper]);
             if (wk == null) throw const FormatException('clé publique du posteur introuvable');
             theirPub = base64Decode('${wk['public_key']}');
           }
@@ -165,8 +176,22 @@ class GroupCryptoService {
         }
       }
     }
+    // Empreinte de l'époque courante : la clé que j'ai (ouverte à l'instant ou gardée sur l'appareil) doit correspondre à celle que l'API a enregistrée.
+    // Sinon deux clés différentes ont circulé pour cette époque : la mienne est écartée (elle sera redemandée / ré-enveloppée par un administrateur).
+    if (encrypted && recordedFingerprint != null && cache.containsKey(epoch)) {
+      final mine = await keyFingerprint(await cache[epoch]!.extractBytes(), groupId: groupId, epoch: epoch);
+      if (mine != recordedFingerprint) {
+        cache.remove(epoch);
+        try {
+          await store.remove(me, groupId, epoch);
+        } catch (_) {}
+        if (!unreadable.contains(epoch)) unreadable.add(epoch);
+        fingerprintMismatch = true;
+      }
+    }
     // une clé gardée sur l'appareil pour une époque dont l'enveloppe n'est plus servie reste utilisable
     final pending = ((data['pending_members'] as List?) ?? const []).map((e) => '$e').toList();
+    final requests = ((data['key_requests'] as List?) ?? const []).map((e) => '$e').toList();
     final st = GroupKeyState(
       encrypted: encrypted || cache.isNotEmpty,
       epoch: encrypted ? epoch : (cache.isEmpty ? 0 : (cache.keys.toList()..sort()).last),
@@ -178,8 +203,33 @@ class GroupCryptoService {
       hasCurrentKey: encrypted ? cache.containsKey(epoch) : true,
       identityMismatch: mismatch,
       isMember: true,
+      encryptionEnabled: enabled,
+      keyFingerprint: recordedFingerprint,
+      fingerprintMismatch: fingerprintMismatch,
+      myKeyRequest: data['my_key_request'] == true,
+      keyRequests: requests,
     );
     return _states[k] = st;
+  }
+
+  /// Clé publique de [userId] pour la VERSION [version] (celle avec laquelle l'enveloppe a été faite). La version actuelle est déjà connue par l'annuaire
+  /// en bloc ([current]) ; une ancienne version est demandée à l'API (`GET /users/{id}/key?version=N`) puis gardée en mémoire (une version ne change jamais).
+  Future<Map<String, dynamic>?> _wrapperPublicKey(String userId, int version, Map<String, dynamic>? current) async {
+    if (current != null && (version <= 0 || _asInt(current['version']) == version)) return current;
+    if (version <= 0) return current;
+    final ck = '$userId|$version';
+    final known = _versionKeys[ck];
+    if (known != null) return known;
+    final fetched = await backend.publicKeyVersion(userId, version);
+    if (fetched != null) _versionKeys[ck] = fetched;
+    return fetched;
+  }
+
+  /// Empreinte d'une clé de groupe pour une époque : HMAC-SHA256 (clé = la clé de groupe) d'un libellé fixe, en base64 (44 caractères). C'est un haché à
+  /// sens unique : l'API peut la comparer d'un administrateur à l'autre sans jamais pouvoir en déduire la clé.
+  static Future<String> keyFingerprint(List<int> groupKey, {required String groupId, required int epoch}) async {
+    final mac = await _hmac.calculateMac(utf8.encode('afrolook_group_keyfp_v1|$groupId|$epoch'), secretKey: SecretKey(groupKey));
+    return base64Encode(mac.bytes);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────────────────────
@@ -187,27 +237,57 @@ class GroupCryptoService {
   // ─────────────────────────────────────────────────────────────────────────────────────────────
 
   /// À appeler quand le chat s'ouvre sur l'appareil d'un administrateur ou du propriétaire :
+  /// - chiffrement désactivé par le propriétaire (`encryption_enabled` faux) : ne fait rien (l'API refuse toute distribution) ;
   /// - groupe non chiffré : crée l'époque 1 si [mayEnable] ;
   /// - changement de clé exigé par l'API (départ ou exclusion) : nouvelle époque pour les membres restants ;
-  /// - nouveaux membres sans enveloppe : leur envoie la clé de l'époque courante.
+  /// - nouveaux membres sans enveloppe et membres qui ont DEMANDÉ la clé ([GroupKeyState.keyRequests]) : leur envoie la clé de l'époque courante
+  ///   (et, pour une demande, des époques passées que cet appareil possède).
   Future<GroupSyncReport> syncAsAdmin(String groupId, String me, {bool mayEnable = false}) async {
     var st = await refresh(groupId, me);
-    if (!st.isMember) return GroupSyncReport(st);
+    if (!st.isMember || !st.encryptionEnabled) return GroupSyncReport(st);
     if (!st.encrypted) {
       if (!mayEnable) return GroupSyncReport(st);
       return _distributeNew(groupId, me, 1, enabled: true);
     }
     if (st.rotationRequired) return _distributeNew(groupId, me, st.epoch + 1, rotated: true);
-    if (st.pendingMembers.isNotEmpty && st.hasCurrentKey) return _distributeToPending(groupId, me, st);
+    if (st.hasCurrentKey && (st.pendingMembers.isNotEmpty || st.keyRequests.isNotEmpty)) return _serveMembers(groupId, me, st);
     return GroupSyncReport(st);
   }
 
   /// Renouvellement volontaire de la clé (par exemple si un membre a perdu la sienne) : nouvelle époque pour les membres actuels.
   Future<GroupSyncReport> rotate(String groupId, String me) async {
     final st = await refresh(groupId, me);
+    if (!st.encryptionEnabled) throw const GroupKeyUnavailable('Le chiffrement est désactivé dans ce groupe.');
     if (!st.encrypted) return _distributeNew(groupId, me, 1, enabled: true);
     return _distributeNew(groupId, me, st.epoch + 1, rotated: true);
   }
+
+  /// Un membre sans clé exploitable (téléphone changé, clé illisible) la DEMANDE : l'API le signale aux administrateurs (`key_requests`), dont l'appareil
+  /// ré-enveloppe la clé pour lui à sa prochaine ouverture du groupe. Retourne le nouvel état. Erreurs : [GroupKeyApiError] (409 `not_encrypted`,
+  /// `encryption_disabled` ; 404 si la personne n'est pas membre).
+  Future<GroupKeyState> requestKey(String groupId, String me) async {
+    try {
+      await _ensureMyKeyPublished(me); // sans clé publique à jour dans l'annuaire, l'administrateur ne pourrait rien envoyer
+    } on GroupKeyIdentityMismatch {
+      // un autre appareil du compte a publié sa clé : la demande resterait sans effet pour cet appareil, on la laisse partir quand même
+    }
+    await backend.requestKey(groupId);
+    return refresh(groupId, me);
+  }
+
+  /// Une course perdue (409 `key_fingerprint_mismatch` ou `invalid_epoch`) : un autre administrateur a créé cette époque avant nous avec une autre clé.
+  /// On n'impose PAS la nôtre : on relit l'enveloppe qu'il nous a envoyée, on garde sa clé, et on sert les membres restants avec elle.
+  Future<GroupSyncReport> _afterLostRace(String groupId, String me, int epoch, {bool enabled = false, bool rotated = false}) async {
+    _keys[_ck(me, groupId)]?.remove(epoch);
+    final st = await refresh(groupId, me);
+    if (st.encrypted && st.encryptionEnabled && st.hasCurrentKey && (st.pendingMembers.isNotEmpty || st.keyRequests.isNotEmpty)) {
+      final r = await _serveMembers(groupId, me, st);
+      return GroupSyncReport(r.state, distributed: r.distributed, missingKeys: r.missingKeys, changedKeyUsers: r.changedKeyUsers, lostRace: true);
+    }
+    return GroupSyncReport(st, lostRace: true);
+  }
+
+  static bool _isRaceError(GroupKeyApiError e) => e.status == 409 && (e.code == 'key_fingerprint_mismatch' || e.code == 'invalid_epoch');
 
   Future<GroupSyncReport> _distributeNew(String groupId, String me, int epoch, {bool enabled = false, bool rotated = false}) async {
     final myVersion = await _ensureMyKeyPublished(me);
@@ -216,6 +296,7 @@ class GroupCryptoService {
     final dir = await _safePublicKeys(ordered);
     final pair = await identity.keyPair(me);
     final groupKey = SecretKeyData.random(length: 32).bytes;
+    final fingerprint = await keyFingerprint(groupKey, groupId: groupId, epoch: epoch);
     final envelopes = <Map<String, dynamic>>[];
     final missing = <String>[];
     final changed = <String>[];
@@ -235,8 +316,13 @@ class GroupCryptoService {
     if (envelopes.isEmpty || envelopes.first['user_id'] != me) {
       throw const GroupKeyUnavailable('Votre clé de chiffrement n\'est pas encore publiée.');
     }
-    for (var i = 0; i < envelopes.length; i += _maxEnvelopesPerCall) {
-      await backend.postEnvelopes(groupId, epoch, envelopes.sublist(i, (i + _maxEnvelopesPerCall).clamp(0, envelopes.length)));
+    try {
+      for (var i = 0; i < envelopes.length; i += _maxEnvelopesPerCall) {
+        await backend.postEnvelopes(groupId, epoch, envelopes.sublist(i, (i + _maxEnvelopesPerCall).clamp(0, envelopes.length)), keyFingerprint: fingerprint);
+      }
+    } on GroupKeyApiError catch (e) {
+      if (_isRaceError(e)) return _afterLostRace(groupId, me, epoch, enabled: enabled, rotated: rotated);
+      rethrow;
     }
     // La clé retenue est TOUJOURS celle de l'enveloppe relue : si un autre administrateur a créé la même époque avant nous, la sienne l'emporte.
     _keys[_ck(me, groupId)]?.remove(epoch);
@@ -244,34 +330,84 @@ class GroupCryptoService {
     return GroupSyncReport(st, enabled: enabled, rotated: rotated, distributed: envelopes.length, missingKeys: missing, changedKeyUsers: changed);
   }
 
-  Future<GroupSyncReport> _distributeToPending(String groupId, String me, GroupKeyState st) async {
-    final key = _keys[_ck(me, groupId)]?[st.epoch];
-    if (key == null) return GroupSyncReport(st);
+  /// Enveloppes de la clé [keyBytes] de l'époque [epoch] pour [ids] (ceux dont la clé publique est dans [dir]).
+  Future<List<Map<String, dynamic>>> _wrapFor(List<int> keyBytes, String groupId, int epoch, String me, int myVersion, SimpleKeyPair pair, Iterable<String> ids, Map<String, Map<String, dynamic>> dir) async {
+    final out = <Map<String, dynamic>>[];
+    for (final uid in ids) {
+      final entry = dir[uid];
+      if (entry == null) continue;
+      out.add({
+        'user_id': uid,
+        'envelope': await wrapKey(keyBytes, myPair: pair, theirPublic: base64Decode('${entry['public_key']}'), groupId: groupId, epoch: epoch, wrapperId: me, recipientId: uid),
+        'wrapper_key_version': myVersion,
+      });
+    }
+    return out;
+  }
+
+  /// Sert les membres qui attendent la clé de l'époque courante ([GroupKeyState.pendingMembers]) et ceux qui l'ont demandée
+  /// ([GroupKeyState.keyRequests], aussi pour les époques passées que cet appareil possède, de la plus ancienne à la plus récente : l'API classe la
+  /// demande comme traitée dès que l'enveloppe de l'époque COURANTE est fraîche, donc elle est posée en dernier).
+  Future<GroupSyncReport> _serveMembers(String groupId, String me, GroupKeyState st) async {
+    final cache = _keys[_ck(me, groupId)];
+    final key = cache?[st.epoch];
+    if (cache == null || key == null) return GroupSyncReport(st);
     final myVersion = await _ensureMyKeyPublished(me);
     final pair = await identity.keyPair(me);
-    final keyBytes = await key.extractBytes();
-    final dir = await _safePublicKeys(st.pendingMembers);
-    final envelopes = <Map<String, dynamic>>[];
+    final targets = {...st.pendingMembers, ...st.keyRequests}.toList();
+    final dir = await _safePublicKeys(targets);
     final missing = <String>[];
     final changed = <String>[];
-    for (final uid in st.pendingMembers) {
+    for (final uid in targets) {
       final entry = dir[uid];
       if (entry == null) {
         missing.add(uid);
         continue;
       }
       if (await tracker.observe(me, uid, '${entry['public_key']}', _asInt(entry['version'])) == KeyCheck.changed) changed.add(uid);
-      envelopes.add({
-        'user_id': uid,
-        'envelope': await wrapKey(keyBytes, myPair: pair, theirPublic: base64Decode('${entry['public_key']}'), groupId: groupId, epoch: st.epoch, wrapperId: me, recipientId: uid),
-        'wrapper_key_version': myVersion,
-      });
     }
-    for (var i = 0; i < envelopes.length; i += _maxEnvelopesPerCall) {
-      await backend.postEnvelopes(groupId, st.epoch, envelopes.sublist(i, (i + _maxEnvelopesPerCall).clamp(0, envelopes.length)));
+    var distributed = 0;
+    var posted = false;
+
+    // époques passées : seulement pour ceux qui ont demandé la clé (l'API ne crée jamais une enveloppe passée pour un membre qui ne l'avait pas)
+    if (st.keyRequests.isNotEmpty) {
+      final past = cache.keys.where((e) => e < st.epoch).toList()..sort();
+      for (final ep in past.skip(past.length > _maxRewrapPastEpochs ? past.length - _maxRewrapPastEpochs : 0)) {
+        final bytes = await cache[ep]!.extractBytes();
+        final fp = await keyFingerprint(bytes, groupId: groupId, epoch: ep);
+        final list = await _wrapFor(bytes, groupId, ep, me, myVersion, pair, st.keyRequests, dir);
+        try {
+          for (var i = 0; i < list.length; i += _maxEnvelopesPerCall) {
+            await backend.postEnvelopes(groupId, ep, list.sublist(i, (i + _maxEnvelopesPerCall).clamp(0, list.length)), keyFingerprint: fp);
+            posted = true;
+          }
+        } on GroupKeyApiError catch (e) {
+          if (e.status == 409) continue; // empreinte différente pour cette ancienne époque : notre clé n'est pas la bonne, on ne la propage pas
+          rethrow;
+        }
+      }
     }
-    final fresh = envelopes.isEmpty ? st : await refresh(groupId, me);
-    return GroupSyncReport(fresh, distributed: envelopes.length, missingKeys: missing, changedKeyUsers: changed);
+
+    // époque courante : en attente + demandeurs
+    final keyBytes = await key.extractBytes();
+    final fp = await keyFingerprint(keyBytes, groupId: groupId, epoch: st.epoch);
+    final current = await _wrapFor(keyBytes, groupId, st.epoch, me, myVersion, pair, targets, dir);
+    try {
+      for (var i = 0; i < current.length; i += _maxEnvelopesPerCall) {
+        await backend.postEnvelopes(groupId, st.epoch, current.sublist(i, (i + _maxEnvelopesPerCall).clamp(0, current.length)), keyFingerprint: fp);
+        posted = true;
+      }
+      distributed = current.length;
+    } on GroupKeyApiError catch (e) {
+      if (_isRaceError(e)) {
+        // notre clé de cette époque n'est pas celle que l'API a enregistrée : on la relit (et elle est écartée si elle ne correspond pas)
+        final fresh = await refresh(groupId, me);
+        return GroupSyncReport(fresh, lostRace: true, missingKeys: missing, changedKeyUsers: changed);
+      }
+      rethrow;
+    }
+    final fresh = posted ? await refresh(groupId, me) : st;
+    return GroupSyncReport(fresh, distributed: distributed, missingKeys: missing, changedKeyUsers: changed);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────────────────────
@@ -279,7 +415,7 @@ class GroupCryptoService {
   // ─────────────────────────────────────────────────────────────────────────────────────────────
 
   /// Chiffre les champs texte d'un document de message prêt à être écrit sur Firebase, si le groupe est chiffré.
-  /// Groupe non chiffré : le document est rendu tel quel. Groupe chiffré mais clé de l'époque courante indisponible (ou état inconnu) :
+  /// Groupe non chiffré (ou chiffrement désactivé par le propriétaire) : le document est rendu tel quel. Groupe chiffré mais clé de l'époque courante indisponible (ou état inconnu) :
   /// lève [GroupKeyUnavailable] — l'appelant DOIT refuser l'envoi, jamais écrire en clair.
   Future<Map<String, dynamic>> sealMessage(String groupId, String me, String msgId, Map<String, dynamic> doc) async {
     final GroupKeyState st;
@@ -288,7 +424,8 @@ class GroupCryptoService {
     } catch (e) {
       throw GroupKeyUnavailable('Impossible de vérifier le chiffrement du groupe ($e).');
     }
-    if (!st.encrypted) return doc;
+    // chiffrement désactivé par le propriétaire (`encryption_enabled` faux) : choix explicite, le message part en clair ; les anciens restent lisibles
+    if (!st.encrypted || !st.encryptionEnabled) return doc;
     final key = _keys[_ck(me, groupId)]?[st.epoch];
     if (!st.hasCurrentKey || key == null) {
       throw const GroupKeyUnavailable('La clé de chiffrement du groupe n\'est pas encore arrivée sur cet appareil.');
@@ -302,7 +439,9 @@ class GroupCryptoService {
     }
 
     final type = '${doc['message_type'] ?? 'text'}';
-    if (type == 'text' && doc[fMessage] is String && (doc[fMessage] as String).isNotEmpty) await seal(fMessage, doc[fMessage] as String);
+    // `message` des partages (publication, lien) = titre / description : chiffré aussi, pour que tout le texte du groupe suive la même règle
+    final textual = type == 'text' || type == 'post' || type == 'link_share';
+    if (textual && doc[fMessage] is String && (doc[fMessage] as String).isNotEmpty) await seal(fMessage, doc[fMessage] as String);
     if (doc[fCaption] is String && (doc[fCaption] as String).isNotEmpty) await seal(fCaption, doc[fCaption] as String);
     if (doc[fReply] is String && (doc[fReply] as String).isNotEmpty) await seal(fReply, doc[fReply] as String);
     if (doc['link_preview'] is Map) {
@@ -477,6 +616,7 @@ class GroupCryptoService {
     _inFlight.clear();
     _publishedFor.clear();
     _myKeyVersion.clear();
+    _versionKeys.clear();
   }
 
   static int _asInt(dynamic v) => v is num ? v.toInt() : (v is String ? int.tryParse(v) ?? 0 : 0);
@@ -496,6 +636,11 @@ class GroupKeyState {
     required this.hasCurrentKey,
     required this.identityMismatch,
     required this.isMember,
+    this.encryptionEnabled = true,
+    this.keyFingerprint,
+    this.fingerprintMismatch = false,
+    this.myKeyRequest = false,
+    this.keyRequests = const [],
   });
 
   /// Le groupe est chiffré (époque courante > 0).
@@ -528,13 +673,32 @@ class GroupKeyState {
   /// Faux quand l'API ne reconnaît pas la personne comme membre du groupe (seules les clés déjà gardées servent).
   final bool isMember;
 
+  /// Option « chiffrement du groupe » (réglée par le propriétaire). Faux : les nouveaux messages partent en clair, les anciens restent lisibles.
+  final bool encryptionEnabled;
+
+  /// Empreinte (haché, jamais la clé) de l'époque courante enregistrée par l'API ; null si inconnue.
+  final String? keyFingerprint;
+
+  /// La clé qu'avait cet appareil pour l'époque courante ne correspondait pas à l'empreinte de l'API : elle a été écartée.
+  final bool fingerprintMismatch;
+
+  /// J'ai une demande de clé en cours (`my_key_request`) : un administrateur doit me ré-envoyer la clé.
+  final bool myKeyRequest;
+
+  /// Administrateurs seulement : membres qui ont demandé la clé (à ré-envelopper pour l'époque courante).
+  final List<String> keyRequests;
+
   /// En attente de la clé de l'époque courante.
-  bool get waitingForKey => encrypted && !hasCurrentKey;
+  bool get waitingForKey => encrypted && encryptionEnabled && !hasCurrentKey;
+
+  /// Le membre est bloqué : il attend la clé, ou certaines de ses enveloppes sont illisibles. Il peut alors « demander la clé »
+  /// (inutile quand l'annuaire contient la clé d'un autre appareil : l'administrateur chiffrerait pour cet autre appareil).
+  bool get canRequestKey => isMember && encrypted && encryptionEnabled && !identityMismatch && (waitingForKey || unreadableEpochs.isNotEmpty);
 }
 
 /// Compte rendu d'une synchronisation faite par un administrateur.
 class GroupSyncReport {
-  const GroupSyncReport(this.state, {this.enabled = false, this.rotated = false, this.distributed = 0, this.missingKeys = const [], this.changedKeyUsers = const []});
+  const GroupSyncReport(this.state, {this.enabled = false, this.rotated = false, this.distributed = 0, this.missingKeys = const [], this.changedKeyUsers = const [], this.lostRace = false});
 
   final GroupKeyState state;
 
@@ -552,6 +716,9 @@ class GroupSyncReport {
 
   /// Destinataires dont la clé publique a changé depuis la dernière fois.
   final List<String> changedKeyUsers;
+
+  /// Un autre administrateur a créé la même époque avec une autre clé (409) : sa clé a été relue et conservée, la nôtre abandonnée.
+  final bool lostRace;
 }
 
 /// Le message ne peut pas être chiffré : l'envoi doit être refusé.
@@ -583,8 +750,15 @@ abstract class GroupKeyBackend {
   /// `GET /v1/groups/{id}/keys`.
   Future<Map<String, dynamic>> fetchKeys(String groupId);
 
-  /// `POST /v1/groups/{id}/keys`.
-  Future<Map<String, dynamic>> postEnvelopes(String groupId, int epoch, List<Map<String, dynamic>> envelopes);
+  /// `POST /v1/groups/{id}/keys`. [keyFingerprint] : empreinte (haché, jamais la clé) de la clé de cette époque ; 409 `key_fingerprint_mismatch` si l'époque
+  /// a déjà une autre empreinte.
+  Future<Map<String, dynamic>> postEnvelopes(String groupId, int epoch, List<Map<String, dynamic>> envelopes, {String? keyFingerprint});
+
+  /// `POST /v1/groups/{id}/keys/request` : « demander la clé » (membre sans clé exploitable).
+  Future<void> requestKey(String groupId);
+
+  /// `GET /v1/users/{id}/key?version=N` : clé publique d'une version précise (null si la version n'existe pas).
+  Future<Map<String, dynamic>?> publicKeyVersion(String userId, int version);
 
   /// Clés publiques ACTUELLES de plusieurs personnes : `userId -> {public_key, version}` (les absents n'ont pas de clé).
   Future<Map<String, Map<String, dynamic>>> publicKeys(List<String> userIds);
@@ -605,6 +779,9 @@ abstract class GroupKeyIdentity {
 abstract class GroupKeyStore {
   Future<Map<int, List<int>>> load(String userId, String groupId);
   Future<void> save(String userId, String groupId, int epoch, List<int> key);
+
+  /// Oublie la clé d'une époque (clé écartée car elle ne correspond pas à l'empreinte de l'API).
+  Future<void> remove(String userId, String groupId, int epoch);
 }
 
 /// Stockage en mémoire (tests).
@@ -616,4 +793,7 @@ class MemoryGroupKeyStore implements GroupKeyStore {
 
   @override
   Future<void> save(String userId, String groupId, int epoch, List<int> key) async => (data['$userId|$groupId'] ??= {})[epoch] = key;
+
+  @override
+  Future<void> remove(String userId, String groupId, int epoch) async => data['$userId|$groupId']?.remove(epoch);
 }

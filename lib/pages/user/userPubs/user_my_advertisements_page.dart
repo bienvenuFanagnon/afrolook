@@ -117,7 +117,7 @@ class _UserMyAdvertisementsPageState extends State<UserMyAdvertisementsPage> {
                                     const SizedBox(height: 4),
                                     Text(CompteApi.statusLabel(a['status'] as String?), style: TextStyle(color: c.textSecondary, fontSize: 12)),
                                     if (a['ends_at'] != null) Text("Jusqu'au ${_date(a['ends_at'])}", style: TextStyle(color: c.textSecondary, fontSize: 12)),
-                                    Text('${(a['views_total'] as num?)?.toInt() ?? 0} vues · ${(a['clicks_total'] as num?)?.toInt() ?? 0} clics', style: TextStyle(color: c.textSecondary, fontSize: 12)),
+                                    Text('${((a['views'] ?? a['views_total']) as num?)?.toInt() ?? 0} vues · ${((a['clicks'] ?? a['clicks_total']) as num?)?.toInt() ?? 0} clics', style: TextStyle(color: c.textSecondary, fontSize: 12)),
                                   ]),
                                 ),
                                 Icon(Icons.chevron_right, color: c.textSecondary),

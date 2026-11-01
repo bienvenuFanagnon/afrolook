@@ -83,11 +83,16 @@ Map<String, dynamic> groupToLegacy(Map<String, dynamic> g) {
     'last_sender_id': g['last_sender_id'],
     'last_message_at': g['last_message_at'] == null ? 0 : JeuxApi.ms(g['last_message_at']),
     'last_message': groupKindPreview(g['last_message_kind'] as String?),
-    'me_unread': JeuxApi.asInt(g['unread']),
-    'muted': g['muted'] == true,
+    // `GET /groups/{id}` les porte dans `me` ; la liste et la découverte au premier niveau
+    'me_unread': JeuxApi.asInt(g['unread'] ?? me['unread']),
+    'muted': g['muted'] == true || me['muted'] == true,
+    // découverte (`GET /groups/discover`) : suis-je membre, propriétaire Gold, groupe mis en avant
+    'is_member': g['is_member'] ?? me['is_member'],
+    'owner_is_gold': g['owner_is_gold'] == true,
+    'featured': g['featured'] == true,
     // droits CALCULÉS par l'API pour la personne connectée (jamais recalculés dans l'application)
     'me_role': me['role'],
-    'me_is_member': me['is_member'] == true,
+    'me_is_member': me['is_member'] == true || g['is_member'] == true,
     'me_can_write': me['can_write'] == true,
     'me_can_share': me['can_share'] == true,
     'me_subscription_active': me['subscription_active'] == true,
@@ -115,7 +120,7 @@ Map<String, dynamic> memberToLegacy(Map<String, dynamic> m) => {
       'can_share': m['can_share'],
       'is_paid': m['is_paid'] == true,
       'expires_at': m['expires_at'],
-      'joined_at': 0,
+      'joined_at': m['joined_at'] == null ? 0 : JeuxApi.ms(m['joined_at']),
     };
 
 /// Notification de l'API -> [NotificationData] (microsecondes pour `createdAt`, comme l'ancien format).
@@ -155,6 +160,11 @@ NotificationData notificationFromApi(Map<String, dynamic> j) {
   } else if (subjectType != 'conversation' && subjectType != 'group') {
     n.post_id = subjectId;
   }
-  n.post_thumbnail = (j['media_url'] as String?);
+  // Contenu de la publication liée (`post_data_type` : IMAGE, VIDEO, AUDIO ou TEXT ; `post_thumbnail` : miniature de la publication, sinon de la
+  // première vidéo, sinon la première image). Absents pour les notifications qui ne portent pas sur une publication.
+  final thumb = (j['post_thumbnail'] as String?) ?? '';
+  n.post_thumbnail = thumb.isNotEmpty ? thumb : (j['media_url'] as String?);
+  final dataType = '${j['post_data_type'] ?? ''}'.toUpperCase();
+  if (dataType.isNotEmpty) n.post_data_type = dataType;
   return n;
 }

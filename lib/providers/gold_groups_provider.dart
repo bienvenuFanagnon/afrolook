@@ -1,12 +1,11 @@
 import 'dart:math';
 import 'package:afrotok/services/api/chat_api.dart';
 import 'package:afrotok/services/api/chat_mapper.dart';
-import 'package:afrotok/services/api/jeux_api.dart';
 import 'package:flutter/foundation.dart';
 
 /// Groupes mis en avant (officiels + groupes de comptes Gold), lus depuis l'API.
-/// Route de découverte souhaitée : GET /groups/discover?featured=1 (groupes officiels et Gold non gelés) ; en attendant,
-/// seuls les groupes officiels dont la personne est déjà membre sont affichés. Plus d'écoute temps réel (rafraîchissement à l'ouverture).
+/// Lus sur GET /groups/discover?featured=1 (groupes officiels et Gold, publics et non gelés, que la personne en soit membre ou non).
+/// Plus d'écoute temps réel (rafraîchissement à l'ouverture).
 class GoldGroupsProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _groups = [];
   bool _loading = false;
@@ -35,18 +34,9 @@ class GoldGroupsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      var rows = <Map<String, dynamic>>[];
-      try {
-        rows = JeuxApi.list(await JeuxApi.client.get('/groups/discover', query: {'featured': 1, 'limit': 40}));
-      } catch (e) {
-        // Route de découverte absente (404/405) : repli sur mes groupes officiels (toujours l'API).
-        rows = await ChatApi.groups();
-      }
-      final out = rows
-          .where((g) => g['is_official'] == true || g['featured'] == true || g['owner_is_gold'] == true)
-          .where((g) => g['is_frozen'] != true)
-          .map(groupToLegacy)
-          .toList();
+      // Groupes à découvrir : officiels et groupes de comptes Gold (publics, non gelés), choisis par le serveur. Aucun repli.
+      final rows = await ChatApi.discoverGroups(featured: true, limit: 40);
+      final out = rows.where((g) => g['is_frozen'] != true).map(groupToLegacy).toList();
       out.shuffle(Random());
       _groups = out;
     } catch (e) {

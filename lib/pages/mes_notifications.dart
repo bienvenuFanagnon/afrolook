@@ -818,6 +818,7 @@ class _MesNotificationState extends State<MesNotification> {
 
       _hideLoadingOverlay();
       final isVideo = post.dataType == PostDataType.VIDEO.name ||
+          notification.post_data_type == 'VIDEO' ||
           (post.url_media?.contains('.mp4') == true) ||
           (post.url_media?.contains('.mov') == true);
       final isComment = notification.post_data_type == 'COMMENT' ||
@@ -1000,8 +1001,40 @@ class _MesNotificationState extends State<MesNotification> {
   }
 
   Widget _buildNotificationTrailing(NotificationData notification, bool isUnread, Color unreadColor) {
-    final hasThumbnail = (notification.post_thumbnail?.isNotEmpty ?? false) &&
-        (notification.post_id?.isNotEmpty ?? false);
+    final hasPost = notification.post_id?.isNotEmpty ?? false;
+    final hasThumbnail = (notification.post_thumbnail?.isNotEmpty ?? false) && hasPost;
+    // Type du contenu (`post_data_type` de l'API : IMAGE, VIDEO, AUDIO ou TEXT) : vidéo = pastille de lecture ; audio ou texte sans miniature = icône
+    final dataType = (notification.post_data_type ?? '').toUpperCase();
+    final typeIcon = switch (dataType) {
+      'VIDEO' => Icons.play_circle_fill_rounded,
+      'AUDIO' => Icons.graphic_eq_rounded,
+      'TEXT' => Icons.notes_rounded,
+      _ => Icons.image,
+    };
+
+    if (!hasThumbnail && hasPost && (dataType == 'AUDIO' || dataType == 'TEXT' || dataType == 'VIDEO')) {
+      return Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(color: _colors.surfaceVariant, borderRadius: BorderRadius.circular(8)),
+            child: Icon(typeIcon, color: _colors.textSecondary, size: 24),
+          ),
+          if (isUnread)
+            Positioned(
+              top: -4,
+              right: -4,
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(color: unreadColor, shape: BoxShape.circle, border: Border.all(color: _colors.surface, width: 1.5)),
+              ),
+            ),
+        ],
+      );
+    }
 
     if (!hasThumbnail) {
       return isUnread
@@ -1036,10 +1069,12 @@ class _MesNotificationState extends State<MesNotification> {
                 color: _colors.surfaceVariant,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(Icons.image, color: _colors.textSecondary, size: 20),
+              child: Icon(typeIcon, color: _colors.textSecondary, size: 20),
             ),
           ),
         ),
+        if (dataType == 'VIDEO')
+          const Positioned.fill(child: Center(child: Icon(Icons.play_circle_fill_rounded, color: Colors.white70, size: 22))),
         if (isUnread)
           Positioned(
             top: -4,

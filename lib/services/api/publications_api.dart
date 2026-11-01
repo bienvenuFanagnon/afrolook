@@ -154,12 +154,16 @@ class PubApi {
     return d is Map ? d.map((k, v) => MapEntry('$k', (v as num?)?.toInt() ?? 0)) : <String, int>{};
   }
 
-  /// Clic sur un réseau social (compteur côté serveur : POST /home/social-clicks). Jamais bloquant.
-  static Future<void> socialClick(String network) async {
+  /// Clic sur un réseau social (POST /home/social-clicks, réponse 202). Le serveur ne compte qu'UN clic par heure, par réseau et par personne :
+  /// renvoie true si ce clic a été compté, false s'il y en a déjà eu un depuis moins d'une heure (ce n'est pas une erreur), null si l'appel a échoué
+  /// (réseau, serveur). Jamais bloquant.
+  static Future<bool?> socialClick(String network) async {
     try {
-      await _c.post('/home/social-clicks', body: {'network': network});
+      final d = ApiClient.data(await _c.post('/home/social-clicks', body: {'network': network}));
+      return d is Map ? d['counted'] != false : true;
     } catch (e) {
       if (kDebugMode) debugPrint('API clic réseau $network : $e');
+      return null;
     }
   }
 

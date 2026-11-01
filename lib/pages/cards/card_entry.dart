@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../services/api/users_api.dart';
 import '../../services/api/users_mapper.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,7 +12,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../l10n/tr.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
+import '../../services/api/defis_api.dart';
 import '../../theme/app_colors.dart';
+import '../defi/defi_ui.dart';
 import 'card_flow.dart';
 import 'card_models.dart';
 import 'card_service.dart';
@@ -139,16 +142,49 @@ class CardEntry {
   static Future<void> openCompose(BuildContext context, {Canal? canal, String? defiPostId, String text = '', List<Uint8List> images = const [], CardStyleId? style, String? country, bool askLink = false, CardTemplateId? template}) =>
       composeOn(Navigator.of(context), canal: canal, defiPostId: defiPostId, text: text, images: images, style: style, country: country, askLink: askLink, template: template);
 
+  /// Réserve l'identifiant de la participation. Aucun repli : en cas d'échec réseau ou serveur, message en français + « Réessayer » ;
+  /// un refus définitif (déjà inscrit, défi terminé) est expliqué puis la création de la carte est abandonnée. Null = abandon.
+  static Future<String?> _reserveDefiId(NavigatorState nav, String defiId) async {
+    while (nav.mounted) {
+      try {
+        return (await DefisApi.reserve(defiId)).id;
+      } catch (e) {
+        if (!nav.mounted) return null;
+        final transient = e is! ApiException || e.isNetwork || e.status >= 500 || e.status == 429;
+        if (!transient) {
+          await DefiDialogs.handleError(nav.context, e, isVote: false);
+          return null;
+        }
+        final retry = await showDialog<bool>(
+          context: nav.context,
+          builder: (ctx) => AlertDialog(
+            title: Text(ctx.tr('Lien « Vote pour moi » indisponible')),
+            content: Text(ctx.tr(e is ApiException && e.message.isNotEmpty ? e.message : 'Impossible de préparer le lien de ta participation. Vérifie ta connexion puis réessaie.')),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(ctx.tr('Annuler'))),
+              FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(ctx.tr('Réessayer'))),
+            ],
+          ),
+        );
+        if (retry != true) return null;
+      }
+    }
+    return null;
+  }
+
   static Future<void> composeOn(NavigatorState nav, {Canal? canal, String? defiPostId, String text = '', List<Uint8List> images = const [], CardStyleId? style, String? country, bool askLink = false, CardTemplateId? template}) async {
     final ctx = nav.context;
     final me = ctx.read<UserAuthProvider>().loginUserData;
     final avatar = (me.imageUrl ?? '').isNotEmpty ? CachedNetworkImageProvider(me.imageUrl!) : null;
     final source = CardSource.draft(pseudo: me.pseudo ?? 'afrolook', avatar: avatar, verified: me.isVerify == true, text: text, imageBytes: images, followers: me.followersCount, profileId: me.id, country: me.countryData?['countryCode']);
     _markOpened();
-    // Participation à un DÉFI : l'ancien système réservait l'identifiant du futur post pour que le QR code « Vote pour moi » de la carte y mène.
-    // L'API crée elle-même l'identifiant de la participation : tant qu'elle n'accepte pas un identifiant proposé par l'application
-    // (voir connaissances/lacunes_app_defis_boosts.md), la carte n'affiche pas ce bandeau (aucun lien cassé).
-    const String? presetPostId = null;
+    // Participation à un DÉFI : l'identifiant de la future participation est réservé AVANT la carte, pour que le QR code et le lien
+    // « Vote pour moi » imprimés dessus mènent à la participation une fois publiée (POST /defis/{id}/participations avec cet `id`).
+    String? presetPostId;
+    if (defiPostId != null) {
+      presetPostId = await _reserveDefiId(nav, defiPostId);
+      if (presetPostId == null || !nav.mounted) return;
+    }
     final result = await nav.push<Object?>(MaterialPageRoute(builder: (_) => CardStudioPage(source: source, compose: true, canal: canal, defiPostId: defiPostId, presetPostId: presetPostId, initialStyle: style, initialCountry: country, askLink: askLink, initialTemplate: template)));
     if (result is! CardResult || !nav.mounted) return;
     final quote = await CardService.quote();

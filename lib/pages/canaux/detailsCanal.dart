@@ -973,6 +973,21 @@ class _CanalDetailsState extends State<CanalDetails> {
               ),
             ],
 
+            // Boost du canal pour les administrateurs du canal (le propriétaire l'a dans son menu) : l'API accepte les deux
+            if (!widget.canal.isBlocked && !isOwner && widget.canal.adminIds?.contains(authProvider.loginUserData.id) == true) ...[
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                height: 45,
+                child: OutlinedButton.icon(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserProfileBoostPage(canal: widget.canal))),
+                  icon: const Icon(Icons.rocket_launch_outlined, size: 18, color: Color(0xFFFFD700)),
+                  label: Text(context.tr('Booster ce canal'), style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.bold)),
+                  style: OutlinedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25))),
+                ),
+              ),
+            ],
+
             // // Boutons d'action
             // Row(
             //   children: [

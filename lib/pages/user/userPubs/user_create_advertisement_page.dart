@@ -14,9 +14,9 @@ import 'package:provider/provider.dart';
 
 import 'boost_widgets.dart';
 
-/// Création d'une publicité payante (`POST /ads/boosts`, cible `post`) :
+/// Création d'une publicité payante (`POST /ads/boosts`, cible `post` ou `new`) :
 ///  - [existingPost] non nul : boost d'une publication de la personne ;
-///  - [existingPost] nul : nouvelle publicité avec ses images ou sa vidéo (la publication est créée, puis boostée).
+///  - [existingPost] nul : nouvelle publicité avec ses images ou sa vidéo (`target = new` : annonce autonome, sans publication dans le fil).
 /// Le débit en pièces et la création de l'annonce se font dans UNE SEULE opération côté serveur ; l'annonce attend ensuite la validation
 /// de l'équipe. Le prix est donné par le serveur ; en cas d'erreur : message en français + « Réessayer », jamais de repli sur Firebase.
 class UserCreateAdvertisementPage extends StatefulWidget {
@@ -47,8 +47,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
   bool _busy = false;
   String _step = '';
 
-  // Reprise après une erreur : ce qui est déjà créé n'est pas recréé
-  String? _postId;
+  // Reprise après une erreur : les fichiers déjà téléversés ne sont pas renvoyés
   List<String> _imageIds = const [];
   String? _videoId;
 
@@ -99,7 +98,6 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
         if (_images.length < _maxImages) _images.add(File(x.path));
       }
       _imageIds = const [];
-      _postId = null;
     });
   }
 
@@ -109,7 +107,6 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
     setState(() {
       _video = File(x.path);
       _videoId = null;
-      _postId = null;
     });
   }
 
@@ -155,61 +152,46 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
       _step = 'Calcul du prix…';
     });
     try {
-      final coins = await BoostUi.quote('ad', _weeks!, _durations, combined: _combined);
+      final coins = await BoostUi.quote('ad', _weeks!, _durations, combined: _isBoost && _combined);
       if (!mounted) return;
       final ok = await BoostUi.confirmPrice(
         context,
-        title: _combined ? 'Publicité + boost de profil' : 'Payer la publicité',
+        title: _isBoost && _combined ? 'Publicité + boost de profil' : 'Payer la publicité',
         coins: coins,
         detail: 'La publicité est validée par l\'équipe avant sa diffusion.',
       );
       if (!ok || !mounted) return;
 
-      String targetId;
-      if (_isBoost) {
-        targetId = widget.existingPost!.id!;
-      } else {
-        if (_postId == null) {
-          setState(() => _step = 'Envoi des fichiers…');
-          if (_imageIds.isEmpty && _videoId == null) {
-            if (_adType == 'image') {
-              final ids = <String>[];
-              for (final f in _images) {
-                ids.add(await UploadsApi.upload(await MediaShrink.file(f)));
-              }
-              _imageIds = ids;
-            } else {
-              _videoId = await UploadsApi.upload(await MediaShrink.file(_video!));
-            }
+      // Nouvelle publicité : les fichiers sont téléversés (puis conservés pour un nouvel essai), l'annonce est créée SEULE par le serveur
+      // (target = new), dans la même opération que le débit : aucune publication visible dans le fil.
+      if (!_isBoost && _imageIds.isEmpty && _videoId == null) {
+        setState(() => _step = 'Envoi des fichiers…');
+        if (_adType == 'image') {
+          final ids = <String>[];
+          for (final f in _images) {
+            ids.add(await UploadsApi.upload(await MediaShrink.file(f)));
           }
-          setState(() => _step = 'Création de la publication…');
-          final post = await PostsApi.create(
-            description: _desc.text,
-            category: 'OFFRES',
-            isMonetized: false,
-            uploadIds: [..._imageIds, if (_videoId != null) _videoId!],
-            countries: _allCountries ? const ['ALL'] : _countries.toList(),
-          );
-          _postId = post.id;
+          _imageIds = ids;
+        } else {
+          _videoId = await UploadsApi.upload(await MediaShrink.file(_video!));
         }
-        targetId = _postId!;
       }
       if (!mounted) return;
       setState(() => _step = 'Paiement…');
       final name = '${me.prenom ?? ''} ${me.nom ?? ''}'.trim();
       // Une seule opération côté serveur : débit en pièces ET annonce en attente de validation par l'équipe
       await BoostsApi.create(
-        target: 'post',
-        targetId: targetId,
+        target: _isBoost ? 'post' : 'new',
+        targetId: _isBoost ? widget.existingPost!.id! : null,
         weeks: _weeks!,
-        combined: _combined,
+        combined: _isBoost && _combined,
         countries: _allCountries ? const [] : _countries.toList(),
         actionText: _actionLabel(),
         actionUrl: _actionUrl(),
         description: _desc.text,
         title: name.isNotEmpty ? name : me.pseudo,
-        imageUploadIds: _imageIds,
-        videoUploadId: _videoId,
+        imageUploadIds: _isBoost ? const [] : _imageIds,
+        videoUploadId: _isBoost ? null : _videoId,
       );
       if (!mounted) return;
       await BoostUi.refreshBalance(context);
@@ -294,12 +276,12 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
         ChoiceChip(
           label: const Text('Images'),
           selected: _adType == 'image',
-          onSelected: _busy ? null : (_) => setState(() => _adType = 'image'),
+          onSelected: _busy ? null : (_) => setState(() { _adType = 'image'; _videoId = null; }),
         ),
         ChoiceChip(
           label: const Text('Vidéo'),
           selected: _adType == 'video',
-          onSelected: _busy ? null : (_) => setState(() => _adType = 'video'),
+          onSelected: _busy ? null : (_) => setState(() { _adType = 'video'; _imageIds = const []; }),
         ),
       ]),
       const SizedBox(height: 10),
@@ -315,7 +297,6 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
                   onTap: _busy ? null : () => setState(() {
                     _images.removeAt(i);
                     _imageIds = const [];
-                    _postId = null;
                   }),
                   child: const CircleAvatar(radius: 10, backgroundColor: Colors.black54, child: Icon(Icons.close, size: 13, color: Colors.white)),
                 ),
@@ -379,11 +360,11 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
             ],
           ]),
         ),
-        _section(c, 'Durée', BoostDurationChips(durations: _durations, selected: _weeks, combined: _combined, color: _primary, onSelected: (w) => setState(() {
+        _section(c, 'Durée', BoostDurationChips(durations: _durations, selected: _weeks, combined: _isBoost && _combined, color: _primary, onSelected: (w) => setState(() {
               _weeks = w;
               if (_images.length > _maxImages) _images.removeRange(_maxImages, _images.length);
             }))),
-        SwitchListTile(
+        if (_isBoost) SwitchListTile(
           contentPadding: EdgeInsets.zero,
           value: _combined,
           onChanged: _busy ? null : (v) => setState(() => _combined = v),

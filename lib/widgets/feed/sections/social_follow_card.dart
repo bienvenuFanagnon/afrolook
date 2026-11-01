@@ -145,13 +145,21 @@ class _SocialFollowCardState extends State<SocialFollowCard> {
       return;
     }
     SocialFollowCard._pending.add(network);
-    // Comptage côté serveur (POST /home/social-clicks, jamais bloquant) ; le bouton disparaît ensuite 1 h.
-    unawaited(PubApi.socialClick(network));
-    try {
-      final sp = await SharedPreferences.getInstance();
-      await sp.setInt(SocialFollowCard._kHiddenUntil,
-          DateTime.now().add(const Duration(hours: 1)).millisecondsSinceEpoch);
-    } catch (_) {}
+    // Comptage côté serveur (POST /home/social-clicks, 202) : un clic compté par heure et par réseau. `counted` = false : déjà compté il y a moins
+    // d'une heure (pas une erreur). Dans les deux cas le bouton disparaît 1 h ; si l'appel a échoué (null), il reste pour un prochain clic.
+    final counted = await PubApi.socialClick(network);
+    if (counted == true) {
+      SocialFollowCard._counts[network] = (SocialFollowCard._counts[network] ?? 0) + 1; // valeur confirmée par le serveur
+    }
+    if (counted != null) {
+      try {
+        final sp = await SharedPreferences.getInstance();
+        await sp.setInt(SocialFollowCard._kHiddenUntil,
+            DateTime.now().add(const Duration(hours: 1)).millisecondsSinceEpoch);
+      } catch (_) {}
+    } else {
+      SocialFollowCard._pending.remove(network);
+    }
     if (mounted) setState(() {});
   }
 

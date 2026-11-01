@@ -136,6 +136,17 @@ class DefiDialogs {
         return creatorCannotVote(context);
       case 'defi_ended':
         return defiEnded(context);
+      case 'id_taken':
+      case 'reservation_invalid':
+        // Lien « Vote pour moi » de la carte : réservation échue (24 h), d'une autre personne ou déjà utilisée. Une nouvelle carte réserve un nouveau lien.
+        return _show(
+          context,
+          icon: Icons.link_off,
+          title: 'Lien de la carte à refaire',
+          message: error.code == 'id_taken'
+              ? "Le lien « Vote pour moi » imprimé sur ta carte est déjà utilisé par une autre publication. Refais ta carte : un nouveau lien sera préparé. Tu n'as pas été débité."
+              : "Le lien « Vote pour moi » imprimé sur ta carte n'est plus valable (réservation expirée). Refais ta carte : un nouveau lien sera préparé. Tu n'as pas été débité.",
+        );
       case 'insufficient_coins':
         // Vote et participation : fenêtre commune « Pas assez de pièces » (prix envoyé par le serveur)
         final coins = error.coins;

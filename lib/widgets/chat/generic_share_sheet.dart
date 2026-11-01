@@ -6,6 +6,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // uniquement pour ÉCRIRE le message (Messages / GroupMessages restent sur Firebase)
 import 'package:afrotok/services/api/chat_api.dart';
 import 'package:afrotok/services/api/chat_mapper.dart';
+import 'package:afrotok/services/api/group_keys_api.dart';
+import 'package:afrotok/services/crypto/group_crypto_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -195,7 +197,8 @@ class _GenericShareSheetState extends State<GenericShareSheet>
       final now = DateTime.now().millisecondsSinceEpoch;
       final msgId = FirebaseFirestore.instance.collection('GroupMessages').doc().id;
 
-      await FirebaseFirestore.instance.collection('GroupMessages').doc(msgId).set({
+      // Groupe chiffré : le message passe par le chiffrement du groupe (comme l'écran de groupe) ; clé absente = envoi refusé, jamais en clair
+      final doc = await groupCrypto.sealMessage(groupId, me.id ?? '', msgId, {
         'id': msgId,
         'group_id': groupId,
         'send_by': me.id,
@@ -215,9 +218,14 @@ class _GenericShareSheetState extends State<GenericShareSheet>
         'create_at_time_spam': now,
         'createdAt': FieldValue.serverTimestamp(),
       });
+      await FirebaseFirestore.instance.collection('GroupMessages').doc(msgId).set(doc);
       // Type du dernier message, non lus des autres membres et notifications (hors sourdine) : tenus par l'API. Le message est déjà parti.
       unawaited(ChatApi.groupSent(groupId).catchError((Object _) {}));
       sent = true;
+    } on GroupKeyUnavailable catch (e) {
+      // groupe chiffré dont la clé n'est pas encore sur cet appareil : jamais d'envoi en clair
+      debugPrint('[GenericShareSheet] envoi refusé : $e');
+      if (mounted) setState(() { _sendingId = null; _error = 'Message non envoyé : la clé de chiffrement du groupe n\'est pas encore disponible sur cet appareil. Ouvrez le groupe puis réessayez.'; });
     } catch (e, st) {
       debugPrint('[GenericShareSheet] _sendToGroup error: $e\n$st');
       if (mounted) setState(() { _sendingId = null; _error = 'Envoi impossible. Vérifie ta connexion puis réessaie.'; });

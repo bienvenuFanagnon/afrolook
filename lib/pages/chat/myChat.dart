@@ -58,6 +58,8 @@ import 'package:cryptography/cryptography.dart';
 import '../userPosts/postWidgets/postUserWidget.dart';
 import '../../services/chat_cache_service.dart';
 import '../../services/encryption_service.dart';
+import '../../services/crypto/key_change_tracker.dart';
+import 'package:rxdart/rxdart.dart' show Rx;
 import '../../widgets/chat/chat_bubble_widget.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -179,6 +181,12 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   /// Clé AES-256 dérivée pour cette conversation (chiffrement au repos).
   /// Si `null` après init, l'envoi de texte est bloqué jusqu'à résolution.
   SecretKey? _chatKey;
+
+  /// Clés des autres anciens identifiants de la discussion (`chat_id` de leurs messages) : `chat_id` -> clé.
+  final Map<String, SecretKey> _legacyChatKeys = {};
+
+  /// La clé publique du contact a changé depuis la dernière fois (avertissement non acquitté, `KeyChangeTracker`).
+  bool _contactKeyChanged = false;
 
   // Blocage utilisateur
   late String _otherId;
@@ -319,16 +327,18 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
 
     try {
       final oldest = _messages.first;
-      final snapshot = await _firestore
-          .collection('Messages')
-          .where('chat_id', isEqualTo: _chatId)
-          .where('is_valide', isEqualTo: true)
-          .orderBy('createdAt', descending: false)
-          .where('createdAt', isLessThan: oldest.createdAt)
-          .limitToLast(_pageSize)
-          .getM('myChat.dart:321');
-
-      final older = snapshot.docs.map((doc) => Message.fromJson(doc.data())).toList();
+      // Un paquet de requêtes par groupe de 10 identifiants (le chat actuel + ses anciens identifiants), fusionnés ensuite par date
+      final pages = <List<Message>>[];
+      for (final ids in _readChatIdChunks()) {
+        final snapshot = await _chatMessagesQuery(ids)
+            .orderBy('createdAt', descending: false)
+            .where('createdAt', isLessThan: oldest.createdAt)
+            .limitToLast(_pageSize)
+            .getM('myChat.dart:321');
+        pages.add(snapshot.docs.map((doc) => Message.fromJson(doc.data())).toList());
+      }
+      final anyFullPage = pages.any((p) => p.length == _pageSize);
+      final older = pages.length == 1 ? pages.first : _mergeChunks(pages);
       await _decryptMessages(older);
 
       if (older.isEmpty) {
@@ -338,7 +348,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         final prevPixels = _scrollController.position.pixels;
 
         _olderMessages = [...older, ..._olderMessages];
-        _hasMoreMessages = older.length == _pageSize;
+        _hasMoreMessages = anyFullPage;
 
         setState(() {
           _messages = _mergeMessages();
@@ -355,6 +365,36 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     } finally {
       if (mounted) setState(() => _isLoadingMore = false);
     }
+  }
+
+  /// Identifiants sous lesquels les messages de cette discussion sont écrits sur Firebase (`chat_id`) : [_chatId] (le premier ancien identifiant), puis
+  /// les autres anciens identifiants de la conversation importée (`Chat.legacyChatIds`). Les nouveaux messages sont toujours écrits avec [_chatId].
+  List<String> get _readChatIds => <String>{_chatId, ...widget.chat.legacyChatIds}.where((e) => e.isNotEmpty).toList();
+
+  /// Les identifiants par paquets de 10 (limite d'un filtre `in` sur les anciens SDK Firestore).
+  List<List<String>> _readChatIdChunks() {
+    final ids = _readChatIds;
+    if (ids.isEmpty) return [<String>[]];
+    return [for (var i = 0; i < ids.length; i += 10) ids.sublist(i, (i + 10).clamp(0, ids.length))];
+  }
+
+  /// Messages valides de ces identifiants. Un seul identifiant : exactement la requête d'origine ; plusieurs : `chat_id in [...]`.
+  Query<Map<String, dynamic>> _chatMessagesQuery(List<String> ids) {
+    final base = _firestore.collection('Messages');
+    final byChat = ids.length == 1 ? base.where('chat_id', isEqualTo: ids.first) : base.where('chat_id', whereIn: ids);
+    return byChat.where('is_valide', isEqualTo: true);
+  }
+
+  /// Fusionne des listes de messages de paquets d'identifiants différents : sans doublon, du plus ancien au plus récent, les [_pageSize] derniers.
+  List<Message> _mergeChunks(List<List<Message>> lists) {
+    final byId = <String, Message>{};
+    for (final l in lists) {
+      for (final m in l) {
+        byId[m.id] = m;
+      }
+    }
+    final merged = byId.values.toList()..sort((a, b) => a.create_at_time_spam.compareTo(b.create_at_time_spam));
+    return merged.length > _pageSize ? merged.sublist(merged.length - _pageSize) : merged;
   }
 
   /// Fusionne les messages chargés par pagination avec la fenêtre récente du
@@ -536,19 +576,69 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
           ? widget.chat.receiverId!
           : widget.chat.senderId!;
       _chatKey = await EncryptionService.getChatKey(_chatId, myId, otherId);
+      // getChatKey a enregistré la clé du contact : un changement non acquitté est signalé par un bandeau
+      final changed = await KeyChangeTracker.shared.hasWarning(myId, otherId);
+      if (mounted && changed != _contactKeyChanged) setState(() => _contactKeyChanged = changed);
     } catch (_) {}
+  }
+
+  /// Bandeau « la clé de chiffrement de ce contact a changé » (nouvel appareil, réinstallation ou usurpation) avec « Compris ».
+  Widget _buildKeyChangeBanner() {
+    if (!_contactKeyChanged) return const SizedBox.shrink();
+    return Container(
+      width: double.infinity,
+      color: Colors.orange.withOpacity(0.15),
+      padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
+      child: Row(
+        children: [
+          const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'La clé de chiffrement de ce contact a changé (nouvel appareil ou réinstallation). Vérifiez auprès de cette personne avant de partager une information sensible.',
+              style: TextStyle(color: _colors.textPrimary, fontSize: 12, height: 1.35),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              await KeyChangeTracker.shared.acknowledge(_authProvider.loginUserData.id ?? '', _otherId);
+              if (mounted) setState(() => _contactKeyChanged = false);
+            },
+            child: const Text('Compris'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Clé d'un message d'un ancien identifiant (sa clé est dérivée de SON `chat_id`) ; null si elle ne peut pas être calculée.
+  Future<SecretKey?> _keyForChatId(String chatId) async {
+    if (chatId.isEmpty || chatId == _chatId) return _chatKey;
+    final known = _legacyChatKeys[chatId];
+    if (known != null) return known;
+    SecretKey? key;
+    try {
+      key = await EncryptionService.getChatKey(chatId, _authProvider.loginUserData.id!, _otherId, maxRetries: 1, retryDelayMs: 0);
+    } catch (_) {}
+    if (key != null) _legacyChatKeys[chatId] = key; // un échec n'est pas mémorisé (réseau)
+    return key;
   }
 
   /// Déchiffre les anciens messages qui portent encore is_encrypted=true.
   Future<void> _decryptMessages(List<Message> messages) async {
     final key = _chatKey;
-    if (key == null) return;
 
     for (final m in messages) {
       if (m.is_encrypted) {
-        try {
-          m.message = await EncryptionService.decryptText(key, m.message);
-        } catch (_) {}
+        // clé de l'identifiant du message (anciens identifiants de la discussion), à défaut celle du premier ancien identifiant
+        final own = await _keyForChatId(m.chat_id);
+        for (final k in <SecretKey?>[own, key]) {
+          if (k == null) continue;
+          try {
+            m.message = await EncryptionService.decryptText(k, m.message);
+            break;
+          } catch (_) {}
+        }
       }
     }
   }
@@ -563,18 +653,16 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
       setState(() => _isLoading = false);
       return;
     }
-    _messagesStream = _firestore
-        .collection('Messages')
-        .where('chat_id', isEqualTo: chatId)
-        .where('is_valide', isEqualTo: true)
-        .orderBy('createdAt', descending: false)
-        .limitToLast(_pageSize)
-        .snapshotsM('myChat.dart:567')
-        .asyncMap((snapshot) async {
-      final messages = snapshot.docs.map((doc) => Message.fromJson(doc.data())).toList();
-      await _decryptMessages(messages);
-      return messages;
-    });
+    // Une requête par paquet de 10 identifiants (chat actuel + anciens identifiants) ; un seul paquet dans le cas courant
+    final streams = <Stream<List<Message>>>[
+      for (final ids in _readChatIdChunks())
+        _chatMessagesQuery(ids).orderBy('createdAt', descending: false).limitToLast(_pageSize).snapshotsM('myChat.dart:567').asyncMap((snapshot) async {
+          final messages = snapshot.docs.map((doc) => Message.fromJson(doc.data())).toList();
+          await _decryptMessages(messages);
+          return messages;
+        }),
+    ];
+    _messagesStream = streams.length == 1 ? streams.first : Rx.combineLatestList<List<Message>>(streams).map(_mergeChunks);
 
     setState(() {
       _isLoading = false;
@@ -3517,6 +3605,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
         ),
         child: Column(
         children: [
+          _buildKeyChangeBanner(),
           Expanded(
             child: Stack(
               children: [

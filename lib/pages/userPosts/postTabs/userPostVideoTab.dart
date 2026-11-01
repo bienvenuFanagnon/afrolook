@@ -1593,13 +1593,23 @@ Future<void> _generateAndUploadThumbnail(String postId, String videoUrl) async {
         void onProgress(double v) {
           if (mounted) setState(() => _uploadProgress = v);
         }
+        // Miniature de la vidéo (choisie par la personne, sinon image tirée de la vidéo) : envoyée à part puis jointe à la publication
+        File? thumbFile;
+        Uint8List? thumbBytes;
+        if (_useCustomThumbnail && _customThumbnailBytes != null) {
+          thumbBytes = _customThumbnailBytes;
+        } else if (_useCustomThumbnail && _customThumbnailFile != null && !kIsWeb) {
+          thumbFile = File(_customThumbnailFile!.path);
+        } else if (!kIsWeb && _localThumbnailPath != null) {
+          thumbFile = File(_localThumbnailPath!);
+        }
         final Post post;
         if (widget.defiPostId != null) {
           // Participation à un DÉFI : frais éventuels débités et réponse publiée dans la même opération côté serveur
-          post = await PostPublisher.participateDefi(widget.defiPostId!, description: _descriptionController.text, files: videoFiles, bytes: videoBytes, bytesContentType: 'video/mp4', category: _selectedPostType, countries: countryCodes, onProgress: onProgress);
+          post = await PostPublisher.participateDefi(widget.defiPostId!, description: _descriptionController.text, files: videoFiles, bytes: videoBytes, bytesContentType: 'video/mp4', category: _selectedPostType, countries: countryCodes, thumbnail: thumbFile, thumbnailBytes: thumbBytes, onProgress: onProgress);
         } else if (_selectedPostType == 'DEFI') {
           // Création d'un DÉFI : la cagnotte est débitée dans la même opération côté serveur
-          post = await PostPublisher.publishDefi(config: _defiConfig!, description: _descriptionController.text, files: videoFiles, bytes: videoBytes, bytesContentType: 'video/mp4', category: _selectedPostType, countries: countryCodes, onProgress: onProgress);
+          post = await PostPublisher.publishDefi(config: _defiConfig!, description: _descriptionController.text, files: videoFiles, bytes: videoBytes, bytesContentType: 'video/mp4', category: _selectedPostType, countries: countryCodes, thumbnail: thumbFile, thumbnailBytes: thumbBytes, onProgress: onProgress);
         } else {
           post = await PostPublisher.publish(
             description: _descriptionController.text,
@@ -1610,6 +1620,9 @@ Future<void> _generateAndUploadThumbnail(String postId, String videoUrl) async {
             monetized: _monetized,
             countries: countryCodes,
             canal: widget.canal,
+            eventDate: _selectedPostType == 'EVENEMENT' ? _selectedEventDate : null,
+            thumbnail: thumbFile,
+            thumbnailBytes: thumbBytes,
             onProgress: onProgress,
           );
         }

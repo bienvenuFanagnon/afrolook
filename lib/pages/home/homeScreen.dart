@@ -820,7 +820,7 @@ class _MyHomePageState extends State<MyHomePage>
     }();
   }
 
-  /// Messages non lus : conversations 1 à 1 (compteur de l'API) + groupes (non lus de chaque groupe hors sourdine, additionnés depuis `GET /groups`).
+  /// Messages non lus : conversations 1 à 1 (compteur de l'API) + groupes (`GET /groups/unread-count`, calculé par le serveur).
   Stream<int> getNbrMessageNonLu() => _pollCount(() async {
         final direct = await ChatApi.unreadConversations();
         var groups = 0;

@@ -56,6 +56,9 @@ class PostsApi {
     List<String> interests = const [],
     String? channelId,
     bool? freePreview,
+    DateTime? eventDate,
+    String? thumbnailUploadId,
+    String? studioTemplate,
   }) async {
     final body = <String, dynamic>{
       if (description != null && description.trim().isNotEmpty) 'description': description.trim(),
@@ -67,6 +70,9 @@ class PostsApi {
       if (interests.isNotEmpty) 'interests': interests,
       if (channelId != null && channelId.isNotEmpty) 'channel_id': channelId,
       if (freePreview != null) 'free_preview': freePreview,
+      if (eventDate != null) 'event_date': eventDate.toUtc().toIso8601String(),
+      if (thumbnailUploadId != null && thumbnailUploadId.isNotEmpty) 'thumbnail_upload_id': thumbnailUploadId,
+      if (studioTemplate != null && studioTemplate.isNotEmpty) 'studio_template': studioTemplate.length > 120 ? studioTemplate.substring(0, 120) : studioTemplate,
     };
     // Clé d'idempotence : un nouvel essai réseau ne crée pas deux publications.
     final r = await _c.post('/posts', body: body, idempotencyKey: ApiClient.newIdempotencyKey());

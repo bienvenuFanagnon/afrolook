@@ -1,4 +1,5 @@
 
+import 'package:afrotok/services/conversation_opener.dart';
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/services/followers_count_service.dart';
@@ -153,97 +154,8 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
   }
 
 
-  Future<Chat> getChatsData(UserData amigo) async {
-
-    // Définissez la requête
-    var friendsStream = FirebaseFirestore.instance.collection('Chats').where( Filter.or(
-      Filter('docId', isEqualTo:  '${amigo.id}${authProvider.loginUserData.id!}'),
-      Filter('docId', isEqualTo:  '${authProvider.loginUserData.id!}${amigo.id}'),
-
-    )).snapshotsM('detailsOtherUser.dart:161');
-
-// Obtenez la liste des utilisateurs
-    //List<DocumentSnapshot> users = await usersQuery.sget();
-    Chat usersChat=Chat();
-
-    if (await friendsStream.isEmpty) {
-      printVm("pas de chat ");
-      String chatId = FirebaseFirestore.instance
-          .collection('Chats')
-          .doc()
-          .id;
-      Chat chat = Chat(
-        docId:'${amigo.id}${authProvider.loginUserData.id!}',
-        id: chatId,
-        senderId: authProvider.loginUserData.id==amigo.id?'${amigo.id}':'${authProvider.loginUserData.id!}',
-        receiverId: authProvider.loginUserData.id==amigo.id?'${authProvider.loginUserData.id!}':'${amigo.id}',
-        lastMessage: 'hi',
-
-        type: ChatType.USER.name,
-        createdAt: DateTime.now().millisecondsSinceEpoch, // Get current time in milliseconds
-        updatedAt: DateTime.now().millisecondsSinceEpoch,
-        // Optional: You can initialize sender and receiver with UserData objects, and messages with a list of Message objects
-      );
-      await FirebaseFirestore.instance.collection('Chats').doc(chatId).set(chat.toJson());
-      usersChat=chat;
-
-    }  else{
-      printVm("le chat existe  ");
-      printVm("stream :${friendsStream}");
-      usersChat= await friendsStream.first.then((value) async {
-        printVm("stream value l :${value.docs.length}");
-        if (value.docs.length<=0) {
-          printVm("pas de chat ");
-
-          String chatId = FirebaseFirestore.instance
-              .collection('Chats')
-              .doc()
-              .id;
-          Chat chat = Chat(
-            docId:'${amigo.id}${authProvider.loginUserData.id!}',
-            id: chatId,
-            senderId: authProvider.loginUserData.id==amigo.id?'${amigo.id}':'${authProvider.loginUserData.id!}',
-            receiverId: authProvider.loginUserData.id==amigo.id?'${authProvider.loginUserData.id!}':'${amigo.id}',
-            lastMessage: 'hi',
-
-            type: ChatType.USER.name,
-            createdAt: DateTime.now().millisecondsSinceEpoch, // Get current time in milliseconds
-            updatedAt: DateTime.now().millisecondsSinceEpoch,
-            // Optional: You can initialize sender and receiver with UserData objects, and messages with a list of Message objects
-          );
-          await FirebaseFirestore.instance.collection('Chats').doc(chatId).set(chat.toJson());
-          usersChat=chat;
-          return chat;
-        }  else{
-          return  Chat.fromJson(value.docs.first.data());
-        }
-
-      });
-      CollectionReference messageCollect = await FirebaseFirestore.instance.collection('Messages');
-      QuerySnapshot querySnapshotMessage = await messageCollect.where("chat_id",isEqualTo:usersChat.id!).getM('detailsOtherUser.dart:221');
-      // Afficher la liste
-      List<Message> messageList = querySnapshotMessage.docs.map((doc) =>
-          Message.fromJson(doc.data() as Map<String, dynamic>)).toList();
-
-
-      if (messageList.isEmpty) {
-        usersChat.messages=[];
-        userProvider.chat=usersChat;
-        printVm("messgae vide ");
-      }else{
-        printVm("have messages");
-        usersChat.messages=messageList;
-        userProvider.chat=usersChat;
-      }
-
-      /////////////ami//////////
-      usersChat.receiver = userFromApi(await UsersApi.publicProfile(authProvider.loginUserData.id == amigo.id ? '${authProvider.loginUserData.id!}' : '${amigo.id}'));
-      usersChat.sender = authProvider.loginUserData;
-
-    }
-
-    return usersChat;
-  }
+  /// Discussion avec [amigo] ouverte sur l'API (une seule conversation par paire) ; bloquée : bandeau qui dit qui a bloqué.
+  Future<Chat> getChatsData(UserData amigo) => ConversationOpener.openAndWarn(context, authProvider.loginUserData.id!, amigo);
   @override
   void initState() {
     // TODO: implement initState
@@ -867,39 +779,8 @@ class _UserProfileModalState extends State<UserProfileModal> {
     return countryNames[countryCode] ?? countryCode;
   }
 
-  Future<Chat> getChatsData(UserData amigo) async {
-    try {
-      var friendsQuery = FirebaseFirestore.instance
-          .collection('Chats')
-          .where('docId', whereIn: [
-        '${amigo.id}${authProvider.loginUserData.id!}',
-        '${authProvider.loginUserData.id!}${amigo.id}'
-      ]);
-
-      var querySnapshot = await friendsQuery.getM('detailsOtherUser.dart:928');
-
-      if (querySnapshot.docs.isEmpty) {
-        String chatId = FirebaseFirestore.instance.collection('Chats').doc().id;
-        Chat chat = Chat(
-          docId: '${amigo.id}${authProvider.loginUserData.id!}',
-          id: chatId,
-          senderId: authProvider.loginUserData.id!,
-          receiverId: amigo.id!,
-          lastMessage: 'Salut! 👋',
-          type: ChatType.USER.name,
-          createdAt: DateTime.now().millisecondsSinceEpoch,
-          updatedAt: DateTime.now().millisecondsSinceEpoch,
-        );
-        await FirebaseFirestore.instance.collection('Chats').doc(chatId).set(chat.toJson());
-        return chat;
-      } else {
-        return Chat.fromJson(querySnapshot.docs.first.data());
-      }
-    } catch (e) {
-      printVm('Erreur getChatsData: $e');
-      rethrow;
-    }
-  }
+  /// Discussion avec [amigo] ouverte sur l'API (une seule conversation par paire) ; bloquée : bandeau qui dit qui a bloqué.
+  Future<Chat> getChatsData(UserData amigo) => ConversationOpener.openAndWarn(context, authProvider.loginUserData.id!, amigo);
 
   Future<void> _sendInvitation(UserData user) async {
     setState(() => inviteTap = true);

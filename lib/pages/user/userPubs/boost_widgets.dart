@@ -23,22 +23,20 @@ class BoostUi {
     'none': 'Aucun bouton',
   };
 
-  /// Estimation d'un prix en pièces à partir du tarif de la durée (affichage seul : le serveur recalcule et fait foi).
+  /// Tarif affiché sur les boutons de durée, à partir du tarif de la durée (affichage seul : le serveur calcule le prix à payer et fait foi).
   static int estimateCoins(List<AdDuration> durations, int weeks, {bool combined = false}) {
     final base = AdConfigService.toMap(durations)[weeks] ?? 0;
     return CoinCheckout.coinsFor((combined ? (base * 1.5).round() : base).toDouble());
   }
 
-  /// Prix en pièces demandé AU SERVEUR (`GET /purchases/quote`) ; à défaut (réseau coupé), l'estimation du tarif affiché.
+  /// Prix en pièces demandé AU SERVEUR (`GET /purchases/quote`, `combined` accepté en texte). Aucune estimation de repli : si le devis
+  /// échoue (réseau, durée refusée…), l'erreur remonte et l'écran affiche un message en français avec « Réessayer ».
   static Future<int> quote(String kind, int weeks, List<AdDuration> durations, {bool combined = false}) async {
-    try {
-      final c = await WalletApi.instance.quote(kind, weeks: weeks, combined: combined ? true : null);
-      if (c > 0) return c;
-    } on ApiException catch (e) {
-      if (e.code == 'invalid_duration') rethrow; // durée refusée : on le dit à la personne
-      // autre échec du devis (réseau, paramètre…) : on affiche l'estimation ; le serveur recalcule le vrai prix au paiement
+    final c = await WalletApi.instance.quote(kind, weeks: weeks, combined: combined ? true : null);
+    if (c <= 0) {
+      throw ApiException(status: 0, code: 'quote_unavailable', message: "Le prix n'a pas pu être calculé pour le moment. Vérifie ta connexion puis réessaie.");
     }
-    return estimateCoins(durations, weeks, combined: combined);
+    return c;
   }
 
   /// Fenêtre de confirmation du prix. Renvoie true si la personne paie (et que son solde suffit).

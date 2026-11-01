@@ -1,3 +1,5 @@
+import 'package:afrotok/services/conversation_opener.dart';
+import 'package:afrotok/services/api/group_keys_api.dart';
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/layout/centered_content.dart';
@@ -350,7 +352,8 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         if (snap.docs.isEmpty) return;
         final m = snap.docs.first.data();
         final type = m['message_type'] as String? ?? 'text';
-        final text = (m['message'] as String? ?? '');
+        // Texte : déchiffré si la clé du groupe est sur l'appareil, sinon « Message chiffré » (jamais de texte chiffré affiché)
+        final text = type == 'text' ? await groupCrypto.previewText('${g['id']}', authProvider.loginUserData.id ?? '', m) : '';
         g['last_message'] = type == 'text' ? (text.startsWith('enc:v1:') ? '🔒 Message chiffré' : text) : (type == 'image' ? '📷 Image' : '🎤 Audio');
         // La date du dernier message vient de l'API ; celle de Firebase ne sert que si l'API n'en a pas (groupe importé jamais utilisé depuis)
         if (((g['last_message_at'] as int?) ?? 0) == 0) g['last_message_at'] = (m['create_at_time_spam'] as num?)?.toInt() ?? 0;
@@ -779,6 +782,12 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     ).then((_) => onReturn?.call());
   }
 
+  /// Discussion bloquée (dans un sens ou dans l'autre) : on dit qui a bloqué ; l'écran de messages désactive l'envoi.
+  void _warnIfBlocked(Chat chat) {
+    final notice = ConversationOpener.blockedNotice(chat);
+    if (notice != null) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(notice), duration: const Duration(seconds: 5)));
+  }
+
   Future<void> _openChat(Chat chat) async {
     try {
       final resultChat = await chatService.createOrGetChat(
@@ -787,6 +796,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       );
 
       if (!mounted) return;
+      _warnIfBlocked(resultChat);
 
       if (AppLayout.isWide(context)) {
         setState(() => _activeChatWidget = MyChat(
@@ -837,6 +847,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       );
 
       if (!mounted) return;
+      _warnIfBlocked(resultChat);
 
       if (AppLayout.isWide(context)) {
         setState(() => _activeChatWidget = MyChat(

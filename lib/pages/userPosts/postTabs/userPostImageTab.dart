@@ -1527,7 +1527,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
         final Post post;
         if (widget.defiPostId != null) {
           // Participation à un DÉFI : frais éventuels débités et réponse publiée dans la même opération côté serveur
-          post = await PostPublisher.participateDefi(widget.defiPostId!, description: _descriptionController.text, files: imageFiles, category: _selectedPostType, countries: countryCodes);
+          post = await PostPublisher.participateDefi(widget.defiPostId!, description: _descriptionController.text, files: imageFiles, category: _selectedPostType, countries: countryCodes, presetId: widget.presetPostId);
         } else if (_selectedPostType == 'DEFI') {
           // Création d'un DÉFI : la cagnotte est débitée dans la même opération côté serveur
           post = await PostPublisher.publishDefi(config: _defiConfig!, description: _descriptionController.text, files: imageFiles, category: _selectedPostType, countries: countryCodes);
@@ -1539,6 +1539,7 @@ class _UserPostLookImageTabState extends State<UserPostLookImageTab> {
             monetized: _monetized,
             countries: countryCodes,
             canal: widget.canal,
+            eventDate: _selectedPostType == 'EVENEMENT' ? _selectedEventDate : null,
           );
         }
         final String postId = post.id!;

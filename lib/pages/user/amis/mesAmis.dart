@@ -1,5 +1,6 @@
 
 
+import 'package:afrotok/services/conversation_opener.dart';
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/services/followers_count_service.dart';
@@ -295,97 +296,11 @@ class _MesAmisState extends State<MesAmis> {
   }
 
 
-  Future<Chat> getChatsData(Friends amigo) async {
-
-    // Définissez la requête
-    var friendsStream = FirebaseFirestore.instance.collection('Chats').where( Filter.or(
-      Filter('docId', isEqualTo:  '${amigo.friendId}${amigo.currentUserId}'),
-      Filter('docId', isEqualTo:  '${amigo.currentUserId}${amigo.friendId}'),
-
-    )).snapshotsM('mesAmis.dart:336');
-
-// Obtenez la liste des utilisateurs
-    //List<DocumentSnapshot> users = await usersQuery.sget();
-    Chat usersChat=Chat();
-
-if (await friendsStream.isEmpty) {
-  printVm("pas de chat ");
-  String chatId = FirebaseFirestore.instance
-      .collection('Chats')
-      .doc()
-      .id;
-  Chat chat = Chat(
-    docId:'${amigo.friendId}${amigo.currentUserId}',
-    id: chatId,
-    senderId: authProvider.loginUserData.id==amigo.friendId?'${amigo.friendId}':'${amigo.currentUserId}',
-    receiverId: authProvider.loginUserData.id==amigo.friendId?'${amigo.currentUserId}':'${amigo.friendId}',
-    lastMessage: 'hi',
-
-    type: ChatType.USER.name,
-    createdAt: DateTime.now().millisecondsSinceEpoch, // Get current time in milliseconds
-    updatedAt: DateTime.now().millisecondsSinceEpoch,
-    // Optional: You can initialize sender and receiver with UserData objects, and messages with a list of Message objects
-  );
-  await FirebaseFirestore.instance.collection('Chats').doc(chatId).set(chat.toJson());
-  usersChat=chat;
-
-}  else{
-  printVm("le chat existe  ");
-  printVm("stream :${friendsStream}");
-  usersChat= await friendsStream.first.then((value) async {
-    printVm("stream value l :${value.docs.length}");
-    if (value.docs.length<=0) {
-      printVm("pas de chat ");
-      String chatId = FirebaseFirestore.instance
-          .collection('Chats')
-          .doc()
-          .id;
-      Chat chat = Chat(
-        docId:'${amigo.friendId}${amigo.currentUserId}',
-        id: chatId,
-        senderId: authProvider.loginUserData.id==amigo.friendId?'${amigo.friendId}':'${amigo.currentUserId}',
-        receiverId: authProvider.loginUserData.id==amigo.friendId?'${amigo.currentUserId}':'${amigo.friendId}',
-        lastMessage: 'hi',
-
-        type: ChatType.USER.name,
-        createdAt: DateTime.now().millisecondsSinceEpoch, // Get current time in milliseconds
-        updatedAt: DateTime.now().millisecondsSinceEpoch,
-        // Optional: You can initialize sender and receiver with UserData objects, and messages with a list of Message objects
-      );
-      await FirebaseFirestore.instance.collection('Chats').doc(chatId).set(chat.toJson());
-      usersChat=chat;
-      return chat;
-    }  else{
-      return  Chat.fromJson(value.docs.first.data());
-    }
-
-  });
-  CollectionReference messageCollect = await FirebaseFirestore.instance.collection('Messages');
-  QuerySnapshot querySnapshotMessage = await messageCollect.where("chat_id",isEqualTo:usersChat.id!).getM('mesAmis.dart:395');
-  // Afficher la liste
-  List<Message> messageList = querySnapshotMessage.docs.map((doc) =>
-      Message.fromJson(doc.data() as Map<String, dynamic>)).toList();
-
-
-  if (messageList.isEmpty) {
-    usersChat.messages=[];
-    userProvider.chat=usersChat;
-    printVm("messgae vide ");
-  }else{
-    printVm("have messages");
-    usersChat.messages=messageList;
-    userProvider.chat=usersChat;
-  }
-
-  /////////////ami//////////
-  final myId = authProvider.loginUserData.id;
-  final otherId = myId == amigo.friendId ? '${amigo.currentUserId}' : '${amigo.friendId}';
-  usersChat.receiver = userFromApi(await UsersApi.publicProfile(otherId));
-  usersChat.sender = authProvider.loginUserData;
-
-}
-
-    return usersChat;
+  /// Discussion avec l'ami ouverte sur l'API ; bloquée : bandeau qui dit qui a bloqué.
+  Future<Chat> getChatsData(Friends amigo) {
+    final myId = authProvider.loginUserData.id!;
+    final other = amigo.friend ?? (UserData()..id = myId == amigo.friendId ? amigo.currentUserId : amigo.friendId);
+    return ConversationOpener.openAndWarn(context, myId, other);
   }
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();

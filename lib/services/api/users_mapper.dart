@@ -95,8 +95,8 @@ UserData userFromApi(Map<String, dynamic> j, {String? viewerId}) {
     u.accountStatus = 'PENDING_DELETION';
     if (j['deletion_scheduled_at'] != null) u.deletionScheduledAt = _ms(j['deletion_scheduled_at']);
   } else if (status == 'restore_fee_due') {
-    // Compte restauré : bloqué jusqu'au paiement du déblocage (écran des frais de restauration). Le montant n'est pas encore fourni par `/bootstrap`
-    // (voir lacunes_app_groupes_notifs.md) : l'écran le connaît alors par la réponse 402 de `POST /me/restore-fee`.
+    // Compte restauré : bloqué jusqu'au paiement du déblocage (écran des frais de restauration). Le montant en pièces est fourni par
+    // `/bootstrap` (`user.restore_fee_coins`) et par `GET /me` (`restore_fee_coins`), dès l'ouverture de l'écran.
     u.accountStatus = 'RESTORE_FEE_DUE';
     u.restoreFeeDue = _i(j['restore_fee_coins'] ?? j['fee_coins']);
   }

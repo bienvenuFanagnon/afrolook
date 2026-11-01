@@ -46,16 +46,17 @@ class BoostsApi {
   static void forget(String action) => _keys.remove(action);
 
   /// Identifiant d'action de [create] (sert aussi à [forget]).
-  static String createAction(String target, String targetId, int weeks, bool combined, String fingerprint) => 'boost:$target:$targetId:$weeks:$combined:$fingerprint';
+  static String createAction(String target, String? targetId, int weeks, bool combined, String fingerprint) => 'boost:$target:$targetId:$weeks:$combined:$fingerprint';
 
   /// Crée l'annonce payante d'une cible qui appartient à la personne et débite les pièces dans la même opération.
-  /// [target] : `post`, `profile`, `canal` ou `group`. [weeks] : durée choisie (les tarifs viennent de `GET /config`, `ad_durations`).
+  /// [target] : `post`, `profile`, `canal`, `group` ou `new` (annonce autonome : [targetId] absent, au moins une image ou une vidéo téléversée ;
+  /// aucune publication n'est créée, rien n'apparaît dans le fil). [weeks] : durée choisie (les tarifs viennent de `GET /config`, `ad_durations`).
   /// [combined] : publication + profil (+ 50 %), pour `post` seulement. [countries] vide = tous les pays.
   /// L'annonce attend la validation de l'équipe (`status` = `pending`). Erreurs : 402 `insufficient_coins`, 404 `target_unavailable`,
-  /// 422 `invalid_duration` / `upload_invalid`.
+  /// 422 `invalid_duration` / `upload_invalid` / `media_required`.
   static Future<Map<String, dynamic>> create({
     required String target,
-    required String targetId,
+    String? targetId,
     required int weeks,
     bool combined = false,
     List<String> countries = const [],
@@ -69,9 +70,9 @@ class BoostsApi {
     final fingerprint = Object.hash(description, actionText, actionUrl, title, countries.join(','), imageUploadIds.join(','), videoUploadId).toString();
     return _once(createAction(target, targetId, weeks, combined, fingerprint), (k) async => _map(await _c.pay('/ads/boosts', body: {
           'target': target,
-          'target_id': targetId,
+          if (targetId != null) 'target_id': targetId,
           'weeks': weeks,
-          if (combined) 'combined': true,
+          if (combined && target != 'new') 'combined': true,
           if (countries.isNotEmpty) 'countries': countries,
           if (actionText != null && actionText.isNotEmpty) 'action_text': actionText,
           if (actionUrl != null && actionUrl.isNotEmpty) 'action_url': actionUrl,

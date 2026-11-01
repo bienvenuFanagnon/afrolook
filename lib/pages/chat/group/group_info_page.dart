@@ -1,5 +1,7 @@
 import 'package:afrotok/services/api/chat_api.dart';
 import 'package:afrotok/services/api/chat_mapper.dart';
+import 'package:afrotok/services/api/group_keys_api.dart';
+import 'package:afrotok/services/api/jeux_api.dart';
 import '../../../services/media_shrink.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/layout/centered_content.dart';
@@ -92,6 +94,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
           _hasMoreMembers = page.next != null;
           _loading = false;
         });
+        if (myRole == 'owner') _loadEncryption(group['encryption_enabled']);
       }
     } catch (e) {
       // Aucun repli sur une autre source : message clair + « Réessayer »
@@ -100,6 +103,113 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
   }
 
   String? _loadError;
+
+  // ── Chiffrement du groupe (propriétaire seulement) : option `encryption_enabled` de l'API ──
+  bool? _encryptionEnabled;
+  bool _encryptionBusy = false;
+  String? _encryptionError;
+
+  /// Lit l'option (champ de la fiche du groupe s'il est fourni, sinon avec les clés du groupe). Erreur : message + « Réessayer », jamais de valeur inventée.
+  Future<void> _loadEncryption([dynamic known]) async {
+    if (known is bool) {
+      if (mounted) setState(() { _encryptionEnabled = known; _encryptionError = null; });
+      return;
+    }
+    if (mounted) setState(() { _encryptionError = null; _encryptionBusy = true; });
+    try {
+      final v = await GroupKeysApi.encryptionEnabled(widget.groupId);
+      if (mounted) setState(() { _encryptionEnabled = v; _encryptionBusy = false; });
+    } catch (e) {
+      if (mounted) setState(() { _encryptionBusy = false; _encryptionError = ChatApi.message(e, fallback: 'L\'état du chiffrement ne se charge pas pour le moment.'); });
+    }
+  }
+
+  /// Active ou désactive le chiffrement du groupe. Désactiver demande une confirmation claire ; l'époque des clés ne revient jamais à 0, les anciens
+  /// messages chiffrés restent lisibles. Activer sur un groupe jamais chiffré crée tout de suite la première clé (choix explicite du propriétaire).
+  Future<void> _toggleEncryption(bool value) async {
+    if (_encryptionBusy) return;
+    if (!value) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Désactiver le chiffrement ?'),
+          content: const Text(
+            'Les nouveaux messages de ce groupe ne seront plus chiffrés de bout en bout : ils seront enregistrés en clair dans la messagerie d\'Afrolook et '
+            'lisibles par l\'équipe technique.\n\n'
+            'Les anciens messages déjà chiffrés restent lisibles par les membres qui ont la clé. Vous pourrez réactiver le chiffrement à tout moment.',
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
+            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Désactiver', style: TextStyle(color: Colors.redAccent))),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
+    setState(() => _encryptionBusy = true);
+    try {
+      await GroupKeysApi.setEncryptionEnabled(widget.groupId, value);
+      if (!mounted) return;
+      setState(() { _encryptionEnabled = value; _encryptionBusy = false; });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _encryptionBusy = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(ChatApi.message(e, fallback: 'Le réglage du chiffrement n\'a pas pu être enregistré.')),
+        action: SnackBarAction(label: 'Réessayer', onPressed: () => _toggleEncryption(value)),
+      ));
+      return;
+    }
+    if (value && JeuxApi.asInt(_groupData['key_epoch']) == 0) await _createFirstKey();
+  }
+
+  /// Première clé du groupe (époque 1), créée depuis l'appareil du propriétaire juste après l'activation.
+  Future<void> _createFirstKey() async {
+    final myId = _auth.loginUserData.id ?? '';
+    if (myId.isEmpty) return;
+    try {
+      final r = await groupCrypto.syncAsAdmin(widget.groupId, myId, mayEnable: true);
+      if (mounted && r.state.epoch > 0) setState(() => _groupData = {..._groupData, 'key_epoch': r.state.epoch});
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: const Text('Le chiffrement est activé, mais la clé du groupe n\'a pas pu être créée pour le moment.'),
+        action: SnackBarAction(label: 'Réessayer', onPressed: _createFirstKey),
+      ));
+    }
+  }
+
+  Widget _buildEncryptionTile() {
+    if (_encryptionError != null) {
+      return ListTile(
+        leading: Icon(Icons.lock_outline_rounded, color: _colors.textSecondary),
+        title: Text('Chiffrement du groupe', style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w600)),
+        subtitle: Text(_encryptionError!, style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
+        trailing: TextButton(onPressed: _loadEncryption, child: const Text('Réessayer')),
+      );
+    }
+    final on = _encryptionEnabled;
+    if (on == null) {
+      return ListTile(
+        leading: Icon(Icons.lock_outline_rounded, color: _colors.textSecondary),
+        title: Text('Chiffrement du groupe', style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w600)),
+        trailing: const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+      );
+    }
+    return SwitchListTile(
+      value: on,
+      activeColor: _colors.primary,
+      secondary: Icon(on ? Icons.lock_rounded : Icons.lock_open_rounded, color: on ? _colors.primary : _colors.textSecondary),
+      title: Text('Chiffrement du groupe', style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w600)),
+      subtitle: Text(
+        on
+            ? 'Les textes sont chiffrés de bout en bout (photos et vidéos : pas encore).'
+            : 'Désactivé : les nouveaux messages sont envoyés sans chiffrement.',
+        style: TextStyle(color: _colors.textSecondary, fontSize: 12),
+      ),
+      onChanged: _encryptionBusy ? null : _toggleEncryption,
+    );
+  }
 
   Future<void> _loadMoreMembers() async {
     if (_loadingMoreMembers || !_hasMoreMembers || _lastMemberDoc == null) return;
@@ -776,6 +886,12 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                   }),
                   Divider(color: _colors.border.withOpacity(0.3)),
                   const SizedBox(height: 8),
+                ],
+
+                // Chiffrement du groupe — propriétaire seulement
+                if (_myRole == 'owner') ...[
+                  _buildEncryptionTile(),
+                  Divider(color: _colors.border.withOpacity(0.3)),
                 ],
 
                 // Boost groupe — visible pour le propriétaire et les admins du groupe

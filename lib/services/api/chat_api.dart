@@ -28,7 +28,8 @@ class ChatApi {
     return (items: JeuxApi.list(r), next: r is Map ? r['next_cursor'] as String? : null);
   }
 
-  /// Ouvre ou crée la conversation avec [userId].
+  /// Ouvre ou crée la conversation avec [userId]. En cas de blocage (dans un sens ou l'autre) la conversation est quand même renvoyée,
+  /// avec `blocked` (vrai) et `blocked_by_me` (vrai seulement pour la personne qui a bloqué) : l'envoi est alors refusé (403 `blocked`).
   static Future<Map<String, dynamic>> openConversation(String userId) async => JeuxApi.map(await _c.post('/conversations', body: {'user_id': userId}));
 
   static Future<int> unreadConversations() async => JeuxApi.asInt(JeuxApi.map(await _c.get('/conversations/unread-count'))['unread']);
@@ -61,15 +62,13 @@ class ChatApi {
   /// Sourdine d'un groupe pour moi : plus de notification, les non lus continuent de compter.
   static Future<void> muteGroup(String groupId, bool muted) => _c.put('/groups/$groupId/mute', body: {'muted': muted});
 
-  /// Total de mes messages non lus dans les groupes (hors sourdine), additionné depuis la liste de mes groupes.
-  static Future<int> unreadGroups() async {
-    var total = 0;
-    for (final g in await groups()) {
-      if (g['muted'] == true) continue;
-      total += JeuxApi.asInt(g['unread']);
-    }
-    return total;
-  }
+  /// Groupes à découvrir (`GET /groups/discover`) : groupes publics non gelés, officiels d'abord puis les plus peuplés, que j'en sois membre ou non.
+  /// [featured] : seulement les officiels et ceux d'un propriétaire Gold. Chaque ligne porte en plus `is_member`, `owner_is_gold` et `featured`.
+  static Future<List<Map<String, dynamic>>> discoverGroups({bool featured = false, int limit = 20}) async =>
+      JeuxApi.list(await _c.get('/groups/discover', query: {if (featured) 'featured': 1, 'limit': limit}));
+
+  /// Total de mes messages non lus dans les groupes (hors sourdine et supprimés), calculé par le serveur (`GET /groups/unread-count`).
+  static Future<int> unreadGroups() async => JeuxApi.asInt(JeuxApi.map(await _c.get('/groups/unread-count'))['unread']);
 
   static Future<Map<String, dynamic>> group(String id) async => JeuxApi.map(await _c.get('/groups/$id'));
 

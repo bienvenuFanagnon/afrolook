@@ -27,8 +27,12 @@ class _AccountRestoreFeeScreenState extends State<AccountRestoreFeeScreen> with 
   bool _busy = false;
   String? _error;
 
-  /// Montant du déblocage demandé par l'API (réponse 402 de `POST /me/restore-fee`) quand le profil ne le fournit pas encore.
+  /// Montant du déblocage demandé par l'API (réponse 402 de `POST /me/restore-fee`) si le profil ne l'a pas fourni (`restore_fee_coins`).
   int? _knownFee;
+
+  /// Relecture du profil (`/bootstrap`, qui porte `restore_fee_coins`) à l'ouverture de l'écran.
+  bool _loadingFee = false;
+  String? _loadError;
 
   UserData get _user => context.read<UserAuthProvider>().loginUserData;
 
@@ -36,6 +40,23 @@ class _AccountRestoreFeeScreenState extends State<AccountRestoreFeeScreen> with 
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadFee());
+  }
+
+  /// Lit le montant du déblocage dès l'ouverture. En cas d'échec : message en français + « Réessayer » (aucun autre recours).
+  Future<void> _loadFee() async {
+    if (!mounted) return;
+    setState(() {
+      _loadingFee = true;
+      _loadError = null;
+    });
+    try {
+      await context.read<UserAuthProvider>().refreshUserData();
+    } catch (e) {
+      if (mounted) setState(() => _loadError = CompteApi.message(e, fallback: tr('Le montant du déblocage ne se charge pas pour le moment.')));
+    } finally {
+      if (mounted) setState(() => _loadingFee = false);
+    }
   }
 
   @override
@@ -153,7 +174,7 @@ class _AccountRestoreFeeScreenState extends State<AccountRestoreFeeScreen> with 
                         border: Border.all(color: colors.border),
                       ),
                       child: Column(children: [
-                        _row(colors, tr('Déblocage du compte'), feeKnown ? '$fee 🪙' : tr('Montant calculé au paiement'), bold: true),
+                        _row(colors, tr('Déblocage du compte'), feeKnown ? '$fee 🪙' : (_loadingFee ? tr('Chargement…') : tr('Montant calculé au paiement')), bold: true),
                         const SizedBox(height: 8),
                         _row(colors, tr('Ton solde de pièces'), '$balance 🪙'),
                         if (!enough) ...[
@@ -162,6 +183,11 @@ class _AccountRestoreFeeScreenState extends State<AccountRestoreFeeScreen> with 
                         ],
                       ]),
                     ),
+                    if (_loadError != null && !feeKnown) ...[
+                      const SizedBox(height: 12),
+                      Text(_loadError!, textAlign: TextAlign.center, style: TextStyle(color: colors.danger, fontSize: 13)),
+                      TextButton(onPressed: _loadingFee ? null : _loadFee, child: Text(tr('Réessayer'))),
+                    ],
                     if (_error != null) ...[
                       const SizedBox(height: 12),
                       Text(_error!, textAlign: TextAlign.center, style: TextStyle(color: colors.danger, fontSize: 13)),

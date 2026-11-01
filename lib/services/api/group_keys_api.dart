@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:afrotok/services/api/chat_api.dart';
+import 'package:afrotok/services/api/jeux_api.dart';
 import 'package:afrotok/services/api/users_api.dart';
 import 'package:afrotok/services/crypto/group_crypto_service.dart';
 import 'package:afrotok/services/crypto/key_change_tracker.dart';
@@ -27,14 +28,44 @@ class GroupKeysApi implements GroupKeyBackend {
     }
   }
 
+  /// `ChatApi.postGroupKeys` n'envoie pas l'empreinte : l'appel est fait ici (même route, même corps, plus `key_fingerprint`).
   @override
-  Future<Map<String, dynamic>> postEnvelopes(String groupId, int epoch, List<Map<String, dynamic>> envelopes) async {
+  Future<Map<String, dynamic>> postEnvelopes(String groupId, int epoch, List<Map<String, dynamic>> envelopes, {String? keyFingerprint}) async {
     try {
-      return await ChatApi.postGroupKeys(groupId, epoch, envelopes);
+      return JeuxApi.map(await JeuxApi.client.post('/groups/$groupId/keys', body: {
+        'epoch': epoch,
+        'envelopes': envelopes,
+        if (keyFingerprint != null) 'key_fingerprint': keyFingerprint,
+      }));
     } on ApiException catch (e) {
       _translate(e);
     }
   }
+
+  @override
+  Future<void> requestKey(String groupId) async {
+    try {
+      await JeuxApi.client.post('/groups/$groupId/keys/request');
+    } on ApiException catch (e) {
+      _translate(e);
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>?> publicKeyVersion(String userId, int version) async {
+    try {
+      return JeuxApi.map(await JeuxApi.client.get('/users/$userId/key', query: {'version': version}));
+    } on ApiException catch (e) {
+      if (e.status == 404) return null;
+      _translate(e);
+    }
+  }
+
+  /// Option « chiffrement » du groupe (`encryption_enabled`), lue avec les clés : vrai si absente. Lève l'erreur de l'API (message à afficher avec « Réessayer »).
+  static Future<bool> encryptionEnabled(String groupId) async => (await ChatApi.groupKeys(groupId))['encryption_enabled'] != false;
+
+  /// Le propriétaire active ou désactive le chiffrement du groupe (`PATCH /groups/{id}`). Désactiver ne remet jamais l'époque à 0.
+  static Future<void> setEncryptionEnabled(String groupId, bool enabled) => ChatApi.updateGroup(groupId, {'encryption_enabled': enabled});
 
   @override
   Future<Map<String, Map<String, dynamic>>> publicKeys(List<String> userIds) async {
@@ -96,6 +127,13 @@ class SecureGroupKeyStore implements GroupKeyStore {
   Future<void> save(String userId, String groupId, int epoch, List<int> key) async {
     final cur = await load(userId, groupId);
     cur[epoch] = key;
+    await _s.write(key: _k(userId, groupId), value: jsonEncode(cur.map((e, v) => MapEntry('$e', base64Encode(v)))));
+  }
+
+  @override
+  Future<void> remove(String userId, String groupId, int epoch) async {
+    final cur = await load(userId, groupId);
+    if (cur.remove(epoch) == null) return;
     await _s.write(key: _k(userId, groupId), value: jsonEncode(cur.map((e, v) => MapEntry('$e', base64Encode(v)))));
   }
 }
