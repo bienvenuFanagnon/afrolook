@@ -179,6 +179,25 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
     }
   }
 
+  // ── Sourdine du groupe (pour moi) : `muted` lu dans la fiche du groupe, écrit par `ChatApi.muteGroup` ──
+  bool _muteBusy = false;
+
+  Future<void> _toggleMute(bool value) async {
+    if (_muteBusy) return;
+    setState(() => _muteBusy = true);
+    try {
+      await ChatApi.muteGroup(widget.groupId, value);
+      if (mounted) setState(() { _groupData = {..._groupData, 'muted': value}; _muteBusy = false; });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _muteBusy = false);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(ChatApi.message(e, fallback: 'La sourdine n\'a pas pu être modifiée. Vérifiez votre connexion.')),
+        action: SnackBarAction(label: 'Réessayer', onPressed: () => _toggleMute(value)),
+      ));
+    }
+  }
+
   Widget _buildEncryptionTile() {
     if (_encryptionError != null) {
       return ListTile(
@@ -886,6 +905,21 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                   }),
                   Divider(color: _colors.border.withOpacity(0.3)),
                   const SizedBox(height: 8),
+                ],
+
+                // Sourdine — tout membre du groupe
+                if (_groupData['me_is_member'] == true) ...[
+                  SwitchListTile(
+                    value: _groupData['muted'] == true,
+                    activeColor: _colors.primary,
+                    secondary: Icon(_groupData['muted'] == true ? Icons.notifications_off_rounded : Icons.notifications_active_outlined,
+                        color: _groupData['muted'] == true ? _colors.primary : _colors.textSecondary),
+                    title: Text('Mettre en sourdine', style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w600)),
+                    subtitle: Text('Plus de notification pour ce groupe ; les messages non lus continuent de compter.',
+                        style: TextStyle(color: _colors.textSecondary, fontSize: 12)),
+                    onChanged: _muteBusy ? null : _toggleMute,
+                  ),
+                  Divider(color: _colors.border.withOpacity(0.3)),
                 ],
 
                 // Chiffrement du groupe — propriétaire seulement
