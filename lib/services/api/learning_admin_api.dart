@@ -68,7 +68,7 @@ class LearningAdminApi {
 
   static Map<String, dynamic> parseContesOverview(Map<String, dynamic> m) {
     final out = JeuxApi.camelKeys(m, deep: {'week', 'perDay', 'topOpened', 'topFinished', 'worstDrop', 'collections', 'catalog'});
-    out['config'] = _asMap(m['config']); // un réglage absent arrive sous la forme d'une liste vide
+    out['config'] = _asMap(m['config']); // toujours un objet depuis le 01/11 (`{}` si le réglage manque) ; l'ancienne liste vide reste tolérée
     out['week'] = _asMap(out['week']);
     for (final k in const ['perDay', 'topOpened', 'topFinished', 'worstDrop']) {
       out[k] = out[k] is List ? out[k] : const [];
@@ -76,7 +76,38 @@ class LearningAdminApi {
     return out;
   }
 
+  /// Contes pour la gestion, masqués compris (`GET /admin/contes/stories?status=all|hidden|active`, équipe seulement).
+  /// Le catalogue public (`GET /contes/catalog`) ne contient que les contes actifs : sans cette liste, un conte masqué ne pouvait plus être réactivé.
+  static Future<List<AdminConte>> contesStories({String status = 'all'}) async =>
+      parseStories(await JeuxApi.client.get('/admin/contes/stories', query: {'status': status}));
+
+  /// Lit `{data:[{id, title, collection_id, active, featured, price, minutes, kind}]}`.
+  static List<AdminConte> parseStories(dynamic response) => JeuxApi.list(response).map(AdminConte.fromJson).where((c) => c.id.isNotEmpty).toList();
+
   /// Masque / démasque un conte (`active`), le met à la une (`featured`) ou change son prix (`price` : 0 à 500, `null` = prix du genre).
   static Future<Map<String, dynamic>> patchConte(String id, Map<String, dynamic> patch) async =>
       JeuxApi.map(await JeuxApi.client.patch('/admin/contes/${Uri.encodeComponent(id)}', body: patch));
+}
+
+/// Un conte vu par l'administration (actif ou masqué).
+class AdminConte {
+  const AdminConte({required this.id, required this.title, required this.collectionId, required this.active, required this.featured, this.price, this.minutes, this.kind});
+
+  final String id, title, collectionId;
+  final bool active, featured;
+
+  /// Prix propre au conte (`null` = prix du genre) ; durée en minutes (peut manquer) ; genre (`gratuit`, `court`, `long`, `chapitre`…).
+  final int? price, minutes;
+  final String? kind;
+
+  factory AdminConte.fromJson(Map<String, dynamic> j) => AdminConte(
+        id: '${j['id'] ?? ''}',
+        title: '${j['title'] ?? j['id'] ?? ''}',
+        collectionId: '${j['collection_id'] ?? ''}',
+        active: j['active'] != false,
+        featured: j['featured'] == true,
+        price: j['price'] is num ? (j['price'] as num).toInt() : null,
+        minutes: j['minutes'] is num ? (j['minutes'] as num).toInt() : null,
+        kind: j['kind'] as String?,
+      );
 }

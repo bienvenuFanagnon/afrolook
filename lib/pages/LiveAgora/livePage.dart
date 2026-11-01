@@ -1,4 +1,6 @@
+import 'package:afrotok/l10n/tr.dart';
 import 'package:afrotok/services/api/api_identity.dart';
+import 'package:afrotok/services/api/live_trial.dart';
 import 'package:afrotok/services/api/users_api.dart';
 import 'package:afrotok/services/api/users_mapper.dart';
 import '../../widgets/music/music_overlay.dart';
@@ -368,10 +370,10 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
     if (ApiIdentity.myId == null) return;
 
-    // L'essai est chronométré par le serveur (le jeton Agora est refusé en 402 quand il est fini) :
-    // on lit seulement l'état (entrée déjà payée, temps restant si l'API le donne) et on affiche le compte à rebours.
-    int minutes = widget.postLive.freeTrialMinutes;
-    int seconds = 0;
+    // L'essai est chronométré par le serveur (le chrono démarre à la première demande de jeton ; le jeton est refusé
+    // en 402 quand il est fini) : on lit `me.trial` (temps restant) et on affiche le compte à rebours.
+    // Sans bloc `trial`, on part de la durée offerte (le serveur refuse le jeton au bon moment).
+    int seconds = widget.postLive.freeTrialMinutes * 60;
     try {
       final live = await LivesApi.get(widget.liveId);
       final me = live['me'];
@@ -379,18 +381,41 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         await _grantFreeAccess(); // entrée déjà payée
         return;
       }
-      final left = me is Map ? me['trial_remaining_seconds'] : null;
-      if (left is num) {
-        minutes = left.toInt() ~/ 60;
-        seconds = left.toInt() % 60;
+      final trial = LiveTrial.fromLive(live);
+      if (trial != null) {
+        if (trial.expired) {
+          _applyTrial(trial);
+          return;
+        }
+        seconds = trial.secondsLeft;
       }
     } catch (e) {
       printVm("❌ Erreur lecture de l'essai gratuit: $e");
     }
     if (!mounted) return;
     setState(() {
-      _remainingTrialMinutes = minutes;
-      _remainingTrialSeconds = seconds;
+      _remainingTrialMinutes = seconds ~/ 60;
+      _remainingTrialSeconds = seconds % 60;
+    });
+    _startTrialTimer();
+  }
+
+  /// Recale le compte à rebours sur ce que dit le serveur (réponse du jeton, détail du live ou refus 402).
+  /// À 0 (essai fini), affiche le verrou « Temps d'essai écoulé » et le paiement de l'entrée.
+  void _applyTrial(LiveTrial trial) {
+    if (!mounted || _shouldSkipTrial()) return;
+    if (trial.expired || trial.secondsLeft <= 0) {
+      _trialTimer?.cancel();
+      setState(() {
+        _remainingTrialMinutes = 0;
+        _remainingTrialSeconds = 0;
+      });
+      _onTrialTimeExpired();
+      return;
+    }
+    setState(() {
+      _remainingTrialMinutes = trial.secondsLeft ~/ 60;
+      _remainingTrialSeconds = trial.secondsLeft % 60;
     });
     _startTrialTimer();
   }
@@ -419,7 +444,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }
 
   void _onTrialTimeExpired() {
-    if (_shouldSkipTrial()) return;
+    if (_shouldSkipTrial() || _showTrialOverlay) return;
 
     _applyPostTrialRestrictions();
     setState(() {
@@ -494,16 +519,20 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       if (paymentSuccess) {
 
         // L'entrée payée est enregistrée par le serveur (paiement en pièces) : rien à écrire ici.
+        _trialTimer?.cancel();
         _removeRestrictions();
         setState(() {
           _remainingTrialMinutes = 999;
           _remainingTrialSeconds = 0;
+          _showTrialOverlay = false;
         });
+        // Entrée payée : le jeton avait été refusé à la fin de l'essai, on le redemande (l'essai vaut alors `null`) et on rejoint.
+        if (!_isInitialized) await _joinAfterPayment();
 
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Accès au live activé !'),
+            content: Text(context.tr('Accès au live activé !')),
             backgroundColor: Colors.green,
           ),
         );
@@ -512,10 +541,35 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       printVm("❌ Erreur paiement participation: $e");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Erreur lors du paiement'),
+          content: Text(context.tr('Erreur lors du paiement')),
           backgroundColor: Colors.red,
         ),
       );
+    }
+  }
+
+  /// Après le paiement de l'entrée : redemande le jeton à l'API et rejoint le canal (le premier jeton avait été refusé en 402).
+  Future<void> _joinAfterPayment() async {
+    try {
+      final token = await _getAgoraToken(channelName: widget.liveId, uid: 0, isHost: false);
+      if (token == null) return;
+      await _engine.joinChannel(
+        token: token,
+        channelId: widget.liveId,
+        uid: 0,
+        options: const ChannelMediaOptions(
+          channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
+          clientRoleType: ClientRoleType.clientRoleAudience,
+          publishCameraTrack: false,
+          publishMicrophoneTrack: false,
+          autoSubscribeAudio: true,
+          autoSubscribeVideo: true,
+        ),
+      );
+      _joinAsSpectator();
+      if (mounted) setState(() => _isInitialized = true);
+    } catch (e) {
+      printVm("❌ Erreur reconnexion après paiement: $e");
     }
   }
 
@@ -751,16 +805,16 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     try {
       // Jeton généré par l'API : refusé sur un live payant sans entrée payée (402 entry_required)
       final result = await LivesApi.token(widget.liveId, uid: uid, role: isHost ? 'host' : 'audience');
+      // Pendant l'essai, la réponse porte `trial` : on recale le compte à rebours sur le serveur (le chrono démarre ici).
+      final trial = LiveTrial.fromJson(result['trial']);
+      if (trial != null && !trial.expired) _applyTrial(trial);
       return result['token'] as String;
     } catch (e) {
       printVm("❌ Erreur récupération token Agora: $e");
       if (e is ApiException && e.status == 402 && mounted) {
-        // Essai gratuit terminé côté serveur : entrée à payer
-        setState(() {
-          _remainingTrialMinutes = 0;
-          _remainingTrialSeconds = 0;
-        });
-        _onTrialTimeExpired();
+        // Essai gratuit terminé côté serveur (`details.trial` : seconds_left 0, expired vrai) : entrée à payer
+        _applyTrial(LiveTrial.fromJson(e.details['trial']) ??
+            const LiveTrial(minutes: 0, secondsLeft: 0, expired: true));
       }
       return null;
     }
@@ -2606,7 +2660,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
             Icon(Icons.lock_clock, size: 64, color: Color(0xFFF9A825)),
             SizedBox(height: 20),
             Text(
-              'Temps d\'essai écoulé',
+              context.tr('Temps d\'essai écoulé'),
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 24,
@@ -2615,7 +2669,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
             ),
             SizedBox(height: 12),
             Text(
-              'Payez ${CoinCheckout.coinsLabel(widget.postLive.participationFeeCoins)} pour continuer à regarder',
+              context.tr('Payez {p} pour continuer à regarder', {'p': CoinCheckout.coinsLabel(widget.postLive.participationFeeCoins)}),
               style: TextStyle(color: Colors.white70, fontSize: 16),
               textAlign: TextAlign.center,
             ),
@@ -2627,7 +2681,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                 padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
               ),
               child: Text(
-                'Payer ${CoinCheckout.fmt(widget.postLive.participationFeeCoins)} pièces',
+                context.tr('Payer l\'entrée : {n} pièces', {'n': CoinCheckout.fmt(widget.postLive.participationFeeCoins)}),
                 style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
               ),
             ),
@@ -2635,7 +2689,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
             TextButton(
               onPressed: _leaveLive,
               child: Text(
-                'Quitter le live',
+                context.tr('Quitter le live'),
                 style: TextStyle(color: Colors.white70),
               ),
             ),

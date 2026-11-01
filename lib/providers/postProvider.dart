@@ -56,6 +56,8 @@ class PostProvider extends ChangeNotifier {
   String _searchQuery = '';
 
   List<UserServiceData> get userServices => _userServices;
+  /// Message en français quand le dernier chargement des services a échoué (l'écran propose « Réessayer »), sinon null.
+  String? servicesError;
   bool get hasMoreServices => _hasMoreServices;
   bool get isLoadingServices => _isLoadingServices;
   String? get selectedCategory => _selectedCategory;
@@ -121,6 +123,7 @@ Future<void> _loadSuggestedPosts() async {
   }) async {
     if (_isLoadingServices) return _userServices;
 
+    servicesError = null;
     _isLoadingServices = true;
     notifyListeners(); // Notifier immédiatement pour afficher le loader
 
@@ -154,6 +157,7 @@ Future<void> _loadSuggestedPosts() async {
       _hasMoreServices = page.next != null && page.items.isNotEmpty;
     } catch (e) {
       printVm('❌ Erreur critique chargement services: $e');
+      servicesError = e is ApiException && !e.isNetwork && e.message.isNotEmpty ? e.message : 'Connexion impossible. Vérifie ta connexion puis réessaie.';
 
       // En cas d'erreur, réinitialiser pour permettre une nouvelle tentative
       if (!loadMore) {
@@ -404,15 +408,6 @@ Future<List<Post>> getPostsImagesById(String post_id) async {
 
 
 
-  Future<bool> updateUserService(UserServiceData data, BuildContext context) async {
-    try {
-      await UsersApi.saveService(data.toJson(), id: data.id);
-      return true;
-    } catch (e) {
-      printVm('erreur update service : ${PubApi.message(e)}');
-      return false;
-    }
-  }
   Future<bool> updateCanal(Canal data, BuildContext context) async {
     // Date de dernière publication et compteur de publications d'un canal : tenus par le serveur à la création de la publication.
     return true;

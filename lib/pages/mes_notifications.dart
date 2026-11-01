@@ -681,6 +681,13 @@ class _MesNotificationState extends State<MesNotification> {
             setState(() => _isHandlingNotification = false);
           }
           break;
+        case 'BOOST_SOUMIS':
+          // Boost à valider (équipe seulement) : file de validation des annonces
+          _hideLoadingOverlay();
+          await Navigator.push(context, MaterialPageRoute(builder: (_) => const AdvertisementManagementPage()));
+          if (mounted) setState(() => _isHandlingNotification = false);
+          break;
+        case 'CANAL_ADMIN':
         case 'FOLLOW_CANAL':
           final canalId = notification.canal_id;
           if (canalId != null && canalId.isNotEmpty) {
@@ -860,13 +867,7 @@ class _MesNotificationState extends State<MesNotification> {
       final services = await _postProvider.getUserServiceById(notification.post_id!);
       if (services.isNotEmpty) {
         final service = services.first;
-        service.vues = (service.vues ?? 0) + 1;
-
-        if (!isIn(service.usersViewId!, _authProvider.loginUserData.id!)) {
-          service.usersViewId!.add(_authProvider.loginUserData.id!);
-        }
-
-        await _postProvider.updateUserService(service, context);
+        // La vue est comptée par le serveur à l'ouverture du détail (une par personne, jamais le créateur).
 
         _hideLoadingOverlay();
         Navigator.push(context, MaterialPageRoute(

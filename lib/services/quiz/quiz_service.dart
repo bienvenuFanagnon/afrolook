@@ -136,9 +136,14 @@ class QuizConfig {
     this.interstitialMaxPerDay = 6,
     this.heartPriceCoins = 25,
     this.heartsFullPriceCoins = 100,
+    this.challengeAdsRequired = true,
     this.shop = const {},
   });
   final bool enabled, adsEnabled, feedCardEnabled;
+
+  /// `quiz.challengeAdsRequired` de `GET /config` : vrai (défaut, aussi quand la clé est absente) = une pub avant une partie en plus
+  /// du Grand Défi et avant la seconde chance ; faux = l'application saute la pub (le serveur ne l'exige plus non plus).
+  final bool challengeAdsRequired;
   final int interstitialEveryLevels, interstitialMaxPerDay, heartPriceCoins, heartsFullPriceCoins;
   final Map<String, Map<String, dynamic>> shop;
 
@@ -150,6 +155,7 @@ class QuizConfig {
         interstitialMaxPerDay: _i(d['interstitialMaxPerDay'], 6).clamp(0, 50),
         heartPriceCoins: _i(d['heartPriceCoins'], 25).clamp(1, 100000),
         heartsFullPriceCoins: _i(d['heartsFullPriceCoins'], 100).clamp(1, 100000),
+        challengeAdsRequired: !(d['challengeAdsRequired'] == false || d['challengeAdsRequired'] == 0 || d['challengeAdsRequired'] == '0' || d['challengeAdsRequired'] == 'false'),
         shop: d['shop'] is Map
             ? (d['shop'] as Map).map((k, v) => MapEntry('$k', v is Map ? Map<String, dynamic>.from(v) : <String, dynamic>{}))
             : const {},

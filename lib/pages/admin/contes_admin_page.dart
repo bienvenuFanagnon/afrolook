@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../services/api/learning_admin_api.dart';
+import '../../l10n/tr.dart';
 import '../../services/contes/contes_service.dart';
 import '../../theme/app_colors.dart';
 
@@ -18,7 +19,8 @@ class ContesAdminPage extends StatefulWidget {
 
 class _ContesAdminPageState extends State<ContesAdminPage> {
   Map<String, dynamic>? _d;
-  ContesCatalog? _catalog;
+  List<AdminConte>? _stories; // tous les contes, masqués compris (GET /admin/contes/stories)
+  String _status = 'all'; // filtre de la liste : all, hidden, active
   String? _error;
   final Map<String, bool> _hidden = {};
   final Map<String, bool> _featured = {};
@@ -34,11 +36,14 @@ class _ContesAdminPageState extends State<ContesAdminPage> {
   Future<void> _load() async {
     setState(() => _error = null);
     try {
-      final r = await Future.wait([ContesService.instance.admin(), ContesService.instance.catalog(force: true)]);
+      final r = await Future.wait<dynamic>([ContesService.instance.admin(), LearningAdminApi.contesStories(status: 'all')]);
       if (mounted) {
         setState(() {
           _d = r[0] as Map<String, dynamic>;
-          _catalog = r[1] as ContesCatalog;
+          _stories = r[1] as List<AdminConte>;
+          _hidden.clear();
+          _featured.clear();
+          _price.clear();
         });
       }
     } catch (e) {
@@ -96,7 +101,7 @@ class _ContesAdminPageState extends State<ContesAdminPage> {
     );
   }
 
-  Future<void> _patch(ConteCard card, Map<String, dynamic> patch) async {
+  Future<void> _patch(AdminConte card, Map<String, dynamic> patch) async {
     try {
       await ContesService.instance.adminStory(card.id, patch);
     } catch (e) {
@@ -105,7 +110,7 @@ class _ContesAdminPageState extends State<ContesAdminPage> {
     }
   }
 
-  Future<void> _editPrice(ConteCard card, int current) async {
+  Future<void> _editPrice(AdminConte card, int current) async {
     final ctrl = TextEditingController(text: '$current');
     final res = await showDialog<String>(
       context: context,
@@ -134,15 +139,44 @@ class _ContesAdminPageState extends State<ContesAdminPage> {
     }
   }
 
-  Widget _manage(AppColors c, ContesCatalog cat, ContesCfg cfg) {
+  /// Prix affiché : celui du conte, sinon celui de son genre.
+  int _priceOf(AdminConte s, ContesCfg cfg) =>
+      _price.containsKey(s.id) ? (_price[s.id] ?? _kindPrice(s, cfg)) : (s.price ?? _kindPrice(s, cfg));
+
+  int _kindPrice(AdminConte s, ContesCfg cfg) => switch (s.kind) {
+        'gratuit' => 0,
+        'long' => cfg.priceLong,
+        'chapitre' => cfg.priceChapitre,
+        _ => cfg.priceCourt,
+      };
+
+  Widget _manage(AppColors c, List<AdminConte> all, ContesCfg cfg) {
     final q = _q.toLowerCase();
-    final cards = cat.cards.where((x) => q.isEmpty || x.title.toLowerCase().contains(q) || x.collectionId.contains(q)).toList();
+    bool isHidden(AdminConte x) => _hidden[x.id] ?? !x.active;
+    final hiddenCount = all.where(isHidden).length;
+    final cards = all
+        .where((x) => _status == 'all' || (_status == 'hidden') == isHidden(x))
+        .where((x) => q.isEmpty || x.title.toLowerCase().contains(q) || x.collectionId.contains(q))
+        .toList();
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       TextField(
         onChanged: (v) => setState(() => _q = v),
-        decoration: InputDecoration(prefixIcon: const Icon(Icons.search_rounded), hintText: 'Chercher un conte', isDense: true, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+        decoration: InputDecoration(prefixIcon: const Icon(Icons.search_rounded), hintText: context.tr('Chercher un conte'), isDense: true, border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
       ),
       const SizedBox(height: 8),
+      Wrap(spacing: 8, children: [
+        for (final e in {
+          'all': context.tr('Tous ({n})', {'n': all.length}),
+          'active': context.tr('Actifs ({n})', {'n': all.length - hiddenCount}),
+          'hidden': context.tr('Masqués ({n})', {'n': hiddenCount}),
+        }.entries)
+          ChoiceChip(label: Text(e.value), selected: _status == e.key, onSelected: (_) => setState(() => _status = e.key)),
+      ]),
+      if (cards.isEmpty)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Text(_status == 'hidden' ? context.tr('Aucun conte masqué.') : context.tr('Aucun conte trouvé.'), style: TextStyle(color: c.textSecondary, fontSize: 13)),
+        ),
       for (final x in cards)
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
@@ -150,12 +184,12 @@ class _ContesAdminPageState extends State<ContesAdminPage> {
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(x.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 13)),
-                Text('${x.collectionId} · ${x.minutes} min · ${_price.containsKey(x.id) ? _price[x.id] : cfg.priceOf(x)} pièces', style: TextStyle(color: c.textSecondary, fontSize: 11.5)),
+                Text('${x.collectionId}${x.minutes == null ? '' : ' · ${x.minutes} min'} · ${_priceOf(x, cfg)} ${context.tr('pièces')}', style: TextStyle(color: c.textSecondary, fontSize: 11.5)),
               ]),
             ),
-            IconButton(visualDensity: VisualDensity.compact, tooltip: 'Prix', icon: Icon(Icons.edit_rounded, size: 18, color: c.textSecondary), onPressed: () => _editPrice(x, _price[x.id] ?? cfg.priceOf(x))),
+            IconButton(visualDensity: VisualDensity.compact, tooltip: context.tr('Prix'), icon: Icon(Icons.edit_rounded, size: 18, color: c.textSecondary), onPressed: () => _editPrice(x, _priceOf(x, cfg))),
             Column(mainAxisSize: MainAxisSize.min, children: [
-              Text('À la une', style: TextStyle(fontSize: 9.5, color: c.textSecondary)),
+              Text(context.tr('À la une'), style: TextStyle(fontSize: 9.5, color: c.textSecondary)),
               Switch(
                 value: _featured[x.id] ?? x.featured,
                 onChanged: (v) {
@@ -165,9 +199,9 @@ class _ContesAdminPageState extends State<ContesAdminPage> {
               ),
             ]),
             Column(mainAxisSize: MainAxisSize.min, children: [
-              Text('Masqué', style: TextStyle(fontSize: 9.5, color: c.textSecondary)),
+              Text(context.tr('Masqué'), style: TextStyle(fontSize: 9.5, color: c.textSecondary)),
               Switch(
-                value: _hidden[x.id] ?? false,
+                value: isHidden(x),
                 onChanged: (v) {
                   setState(() => _hidden[x.id] = v);
                   _patch(x, {'active': !v});
@@ -193,7 +227,7 @@ class _ContesAdminPageState extends State<ContesAdminPage> {
         actions: [IconButton(onPressed: _load, icon: Icon(Icons.refresh_rounded, color: c.textPrimary))],
       ),
       body: _error != null
-          ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [Text(_error!, style: TextStyle(color: c.danger)), TextButton(onPressed: _load, child: const Text('Réessayer'))]))
+          ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [Text(_error!, style: TextStyle(color: c.danger)), TextButton(onPressed: _load, child: Text(context.tr('Réessayer')))]))
           : d == null
               ? const Center(child: CircularProgressIndicator())
               : RefreshIndicator(onRefresh: _load, child: ListView(padding: const EdgeInsets.all(16), children: _sections(c, d))),
@@ -243,7 +277,7 @@ class _ContesAdminPageState extends State<ContesAdminPage> {
           _row(c, '${(t as Map)['title']}', '${_n(t['finishes'])}/${_n(t['opens'])} fins · page ${_n(t['dropPage'])}'),
         if ((d['worstDrop'] as List).isEmpty) Text('Pas assez de lectures pour le moment', style: TextStyle(color: c.textSecondary, fontSize: 13)),
       ])),
-      _card(c, 'Gérer les contes', _catalog == null ? const SizedBox.shrink() : _manage(c, _catalog!, cfg)),
+      _card(c, context.tr('Gérer les contes'), _stories == null ? const SizedBox.shrink() : _manage(c, _stories!, cfg)),
       _card(c, 'Réglages actuels', Column(children: [
         for (final e in (d['config'] as Map).entries) _row(c, '${e.key}', '${e.value}'),
       ])),

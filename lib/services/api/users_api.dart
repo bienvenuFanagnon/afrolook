@@ -219,14 +219,5 @@ class UsersApi {
     }
   }
 
-  // ── Services des utilisateurs (routes à créer : voir lacunes_api_utilisateurs.md) ──
-  /// Crée ou modifie un service. Route souhaitée : POST /services (création) ou PUT /services/{id}. Retourne le service (avec son id).
-  static Future<Map<String, dynamic>> saveService(Map<String, dynamic> body, {String? id}) async =>
-      _map(id == null ? await _c.post('/services', body: body, idempotencyKey: ApiClient.newIdempotencyKey()) : await _c.put('/services/$id', body: body));
-
-  /// J'aime d'un service. Route souhaitée : PUT /services/{id}/like → {like: total}
-  static Future<int> likeService(String id) async => (_map(await _c.put('/services/$id/like'))['like'] as num?)?.toInt() ?? 0;
-
-  /// « Contacter » un service : notifie le créateur (le serveur envoie la notification SERVICE). Route souhaitée : POST /services/{id}/contact
-  static Future<void> contactService(String id) => _c.post('/services/$id/contact');
+  // Services des utilisateurs : voir `services_api.dart` (ServicesApi).
 }

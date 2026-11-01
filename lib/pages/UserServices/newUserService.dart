@@ -1,4 +1,6 @@
-import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart' show ApiClient;
+import 'package:afrotok/l10n/tr.dart';
+import 'package:afrotok/services/api/services_api.dart';
 import '../../services/media_shrink.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:io';
@@ -56,6 +58,8 @@ class _UserServiceFormState extends State<UserServiceForm> {
   final _formKey = GlobalKey<FormState>();
   late UserServiceData _userService;
   XFile? _coverImage;
+  String? _coverUploadId; // envoi de couverture confirmé (gardé pour « Réessayer »)
+  String? _idempotencyKey; // clé de cette création (même clé à chaque tentative)
   bool _isLoading = false;
   String? _selectedCategory;
   String? _selectedCountry;
@@ -149,7 +153,7 @@ class _UserServiceFormState extends State<UserServiceForm> {
                       controller: searchController,
                       style: TextStyle(color: Colors.white),
                       decoration: InputDecoration(
-                        hintText: 'Rechercher...',
+                        hintText: context.tr('Rechercher...'),
                         hintStyle: TextStyle(color: Colors.grey),
                         prefixIcon: Icon(Icons.search, color: Colors.green),
                         border: InputBorder.none,
@@ -259,6 +263,7 @@ class _UserServiceFormState extends State<UserServiceForm> {
     );
     setState(() {
       _coverImage = image;
+      _coverUploadId = null; // nouvelle image : l'ancien envoi ne compte plus
     });
   }
 
@@ -271,17 +276,17 @@ class _UserServiceFormState extends State<UserServiceForm> {
   Future<void> _saveService() async {
     if (!_formKey.currentState!.validate()) return;
     if (!widget.isEditing && _coverImage == null && _userService.imageCourverture == null) {
-      _showErrorSnackBar('Veuillez sélectionner une image de couverture');
+      _showErrorSnackBar(context.tr('Veuillez sélectionner une image de couverture'));
       return;
     }
 
     // Validation des champs de sélection
     if (_selectedCategory == null) {
-      _showErrorSnackBar('Veuillez sélectionner une catégorie');
+      _showErrorSnackBar(context.tr('Veuillez sélectionner une catégorie'));
       return;
     }
     if (_selectedCountry == null) {
-      _showErrorSnackBar('Veuillez sélectionner un pays');
+      _showErrorSnackBar(context.tr('Veuillez sélectionner un pays'));
       return;
     }
 
@@ -290,11 +295,12 @@ class _UserServiceFormState extends State<UserServiceForm> {
     try {
       _formKey.currentState!.save();
 
-      // Envoi de l'image de couverture (identifiant d'envoi joint au service ; l'API renvoie l'adresse définitive)
-      String? coverUploadId;
-      if (_coverImage != null) {
-        coverUploadId = await _uploadImage(File(_coverImage!.path));
+      // Envoi de l'image de couverture (identifiant d'envoi joint au service ; l'API renvoie l'adresse définitive).
+      // L'identifiant est gardé : un « Réessayer » ne renvoie pas l'image une seconde fois.
+      if (_coverImage != null && _coverUploadId == null) {
+        _coverUploadId = await _uploadImage(File(_coverImage!.path));
       }
+      final coverUploadId = _coverUploadId;
 
       // Mettre à jour les timestamps
       final now = DateTime.now().millisecondsSinceEpoch;
@@ -311,12 +317,14 @@ class _UserServiceFormState extends State<UserServiceForm> {
       _userService.city = _selectedCity;
 
       // Sauvegarder
-      final saved = await UsersApi.saveService({..._userService.toJson(), if (coverUploadId != null) 'cover_upload_id': coverUploadId}, id: _userService.id);
-      if (saved['image_url'] is String) _userService.imageCourverture = saved['image_url'] as String;
-      _userService.id = (saved['id'] as String?) ?? _userService.id;
+      // Création : POST /services (même clé d'idempotence à chaque tentative, jamais de doublon) ; modification : PUT /services/{id}
+      _idempotencyKey ??= ApiClient.newIdempotencyKey();
+      final saved = await ServicesApi.save(_userService, coverUploadId: coverUploadId, idempotencyKey: _idempotencyKey);
+      _userService.imageCourverture = saved.imageCourverture ?? _userService.imageCourverture;
+      _userService.id = saved.id ?? _userService.id;
 
       _showSuccessSnackBar(
-          widget.isEditing ? 'Service modifié avec succès!' : 'Service créé avec succès!'
+          widget.isEditing ? context.tr('Service modifié avec succès !') : context.tr('Service créé avec succès !')
       );
 
       Future.delayed(Duration(seconds: 1), () {
@@ -329,9 +337,9 @@ class _UserServiceFormState extends State<UserServiceForm> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: Colors.red,
-            content: Text(UsersApi.message(e, fallback: "Impossible d'enregistrer le service pour le moment."), textAlign: TextAlign.center),
+            content: Text(ServicesApi.message(e, fallback: context.tr("Impossible d'enregistrer le service pour le moment.")), textAlign: TextAlign.center),
             duration: const Duration(seconds: 6),
-            action: SnackBarAction(label: 'Réessayer', textColor: Colors.white, onPressed: _saveService),
+            action: SnackBarAction(label: context.tr('Réessayer'), textColor: Colors.white, onPressed: _saveService),
           ),
         );
       }
@@ -369,7 +377,7 @@ class _UserServiceFormState extends State<UserServiceForm> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: Text(
-          widget.isEditing ? 'Modifier le Service' : 'Nouveau Service',
+          widget.isEditing ? context.tr('Modifier le Service') : context.tr('Nouveau Service'),
           style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold),
         ),
         leading: IconButton(
@@ -389,12 +397,12 @@ class _UserServiceFormState extends State<UserServiceForm> {
               _buildImageSection(),
               SizedBox(height: 20),
               _buildSearchableField(
-                label: 'Catégorie',
+                label: context.tr('Catégorie'),
                 value: _selectedCategory,
-                hintText: 'Sélectionner une catégorie',
+                hintText: context.tr('Sélectionner une catégorie'),
                 onTap: () => _showSearchableBottomSheet(
                   context: context,
-                  title: 'Choisir une catégorie',
+                  title: context.tr('Choisir une catégorie'),
                   items: ServiceConstants.categories,
                   currentValue: _selectedCategory,
                   onSelected: (value) {
@@ -406,12 +414,12 @@ class _UserServiceFormState extends State<UserServiceForm> {
               ),
               SizedBox(height: 16),
               _buildSearchableField(
-                label: 'Pays',
+                label: context.tr('Pays'),
                 value: _selectedCountry,
-                hintText: 'Sélectionner un pays',
+                hintText: context.tr('Sélectionner un pays'),
                 onTap: () => _showSearchableBottomSheet(
                   context: context,
-                  title: 'Choisir un pays',
+                  title: context.tr('Choisir un pays'),
                   items: ServiceConstants.africanCountries,
                   currentValue: _selectedCountry,
                   onSelected: (value) {
@@ -448,7 +456,7 @@ class _UserServiceFormState extends State<UserServiceForm> {
           ),
           SizedBox(height: 16),
           Text(
-            widget.isEditing ? 'Modification en cours...' : 'Création en cours...',
+            widget.isEditing ? context.tr('Modification en cours...') : context.tr('Création en cours...'),
             style: TextStyle(color: Colors.yellow),
           ),
         ],
@@ -461,7 +469,7 @@ class _UserServiceFormState extends State<UserServiceForm> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Image de couverture *',
+          context.tr('Image de couverture *'),
           style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 8),
@@ -496,7 +504,7 @@ class _UserServiceFormState extends State<UserServiceForm> {
                 Icon(Icons.add_a_photo, color: Colors.green, size: 40),
                 SizedBox(height: 8),
                 Text(
-                  'Ajouter une image',
+                  context.tr('Ajouter une image'),
                   style: TextStyle(color: Colors.green),
                 ),
               ],
@@ -507,7 +515,7 @@ class _UserServiceFormState extends State<UserServiceForm> {
           Padding(
             padding: EdgeInsets.only(top: 4),
             child: Text(
-              'Une image attire plus de clients',
+              context.tr('Une image attire plus de clients'),
               style: TextStyle(color: Colors.green, fontSize: 12),
             ),
           ),
@@ -520,7 +528,7 @@ class _UserServiceFormState extends State<UserServiceForm> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Ville (optionnel)',
+          context.tr('Ville (optionnel)'),
           style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 8),
@@ -534,7 +542,7 @@ class _UserServiceFormState extends State<UserServiceForm> {
             style: TextStyle(color: Colors.white),
             decoration: InputDecoration(
               border: OutlineInputBorder(borderSide: BorderSide.none),
-              hintText: 'Ex: Lomé, Dakar, Abidjan...',
+              hintText: context.tr('Ex : Lomé, Dakar, Abidjan...'),
               hintStyle: TextStyle(color: Colors.grey),
               contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
             ),
@@ -552,7 +560,7 @@ class _UserServiceFormState extends State<UserServiceForm> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Contact WhatsApp *',
+          context.tr('Contact WhatsApp *'),
           style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 8),
@@ -574,10 +582,10 @@ class _UserServiceFormState extends State<UserServiceForm> {
             keyboardType: TextInputType.phone,
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Veuillez entrer un numéro de contact';
+                return context.tr('Veuillez entrer un numéro de contact');
               }
-              if (!RegExp(r'^\+?[\d\s\-\(\)]{8,}$').hasMatch(value)) {
-                return 'Numéro invalide';
+              if (value.length > 40 || !RegExp(r'^\+?[\d\s\-\(\)]{8,}$').hasMatch(value)) {
+                return context.tr('Numéro invalide');
               }
               return null;
             },
@@ -595,7 +603,7 @@ class _UserServiceFormState extends State<UserServiceForm> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Titre du service *',
+          context.tr('Titre du service *'),
           style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 8),
@@ -609,17 +617,20 @@ class _UserServiceFormState extends State<UserServiceForm> {
             style: TextStyle(color: Colors.white),
             decoration: InputDecoration(
               border: OutlineInputBorder(borderSide: BorderSide.none),
-              hintText: 'Ex: Plombier professionnel expérimenté',
+              hintText: context.tr('Ex : Plombier professionnel expérimenté'),
               hintStyle: TextStyle(color: Colors.grey),
               contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
             ),
             maxLength: 100,
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Veuillez entrer un titre';
+                return context.tr('Veuillez entrer un titre');
               }
               if (value.length < 5) {
-                return 'Le titre doit faire au moins 5 caractères';
+                return context.tr('Le titre doit faire au moins 5 caractères');
+              }
+              if (value.length > 120) {
+                return context.tr('Le titre est trop long (120 caractères au plus)');
               }
               return null;
             },
@@ -637,7 +648,7 @@ class _UserServiceFormState extends State<UserServiceForm> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Description *',
+          context.tr('Description *'),
           style: TextStyle(color: Colors.yellow, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 8),
@@ -651,7 +662,7 @@ class _UserServiceFormState extends State<UserServiceForm> {
             style: TextStyle(color: Colors.white),
             decoration: InputDecoration(
               border: OutlineInputBorder(borderSide: BorderSide.none),
-              hintText: 'Décrivez votre service, vos compétences, votre expérience...',
+              hintText: context.tr('Décrivez votre service, vos compétences, votre expérience...'),
               hintStyle: TextStyle(color: Colors.grey),
               alignLabelWithHint: true,
               contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
@@ -660,10 +671,13 @@ class _UserServiceFormState extends State<UserServiceForm> {
             maxLength: 500,
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Veuillez entrer une description';
+                return context.tr('Veuillez entrer une description');
               }
               if (value.length < 10) {
-                return 'La description doit faire au moins 10 caractères';
+                return context.tr('La description doit faire au moins 10 caractères');
+              }
+              if (value.length > 3000) {
+                return context.tr('La description est trop longue (3000 caractères au plus)');
               }
               return null;
             },
@@ -698,7 +712,7 @@ class _UserServiceFormState extends State<UserServiceForm> {
           ),
         )
             : Text(
-          widget.isEditing ? 'MODIFIER LE SERVICE' : 'CRÉER LE SERVICE',
+          widget.isEditing ? context.tr('MODIFIER LE SERVICE') : context.tr('CRÉER LE SERVICE'),
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,

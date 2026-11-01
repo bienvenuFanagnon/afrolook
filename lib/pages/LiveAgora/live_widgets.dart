@@ -1,4 +1,5 @@
 // pages/live/live_widgets.dart
+import 'package:afrotok/l10n/tr.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'dart:math';
 
@@ -36,7 +37,7 @@ class PaymentRequiredDialog extends StatelessWidget {
             Icon(Icons.lock, size: 64, color: Color(0xFFF9A825)),
             SizedBox(height: 16),
             Text(
-              'Accès au live payant',
+              context.tr('Accès au live payant'),
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 20,
@@ -45,13 +46,13 @@ class PaymentRequiredDialog extends StatelessWidget {
             ),
             SizedBox(height: 12),
             Text(
-              'Ce live est privé. Payez ${CoinCheckout.coinsLabel(live.participationFeeCoins)} pour continuer à regarder.',
+              context.tr('Ce live est privé. Payez {p} pour continuer à regarder.', {'p': CoinCheckout.coinsLabel(live.participationFeeCoins)}),
               style: TextStyle(color: Colors.white70),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 8),
             Text(
-              '70% pour le créateur',
+              context.tr('70% pour le créateur'),
               style: TextStyle(color: Colors.green, fontSize: 12),
             ),
             SizedBox(height: 24),
@@ -63,7 +64,7 @@ class PaymentRequiredDialog extends StatelessWidget {
                     style: TextButton.styleFrom(
                       padding: EdgeInsets.symmetric(vertical: 12),
                     ),
-                    child: Text('Quitter', style: TextStyle(color: Colors.white70)),
+                    child: Text(context.tr('Quitter'), style: TextStyle(color: Colors.white70)),
                   ),
                 ),
                 SizedBox(width: 12),
@@ -75,7 +76,7 @@ class PaymentRequiredDialog extends StatelessWidget {
                       padding: EdgeInsets.symmetric(vertical: 12),
                     ),
                     child: Text(
-                      'Payer ${CoinCheckout.fmt(live.participationFeeCoins)} pièces',
+                      context.tr('Payer l\'entrée : {n} pièces', {'n': CoinCheckout.fmt(live.participationFeeCoins)}),
                       style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
                     ),
                   ),

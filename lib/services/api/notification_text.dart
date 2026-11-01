@@ -6,20 +6,21 @@ import 'package:flutter/material.dart';
 class NotificationText {
   NotificationText._();
 
-  /// Nouveaux types : mention, j'aime d'un commentaire, republication, soutien par pub, abonné à un canal.
-  static const newTypes = {'MENTION', 'COMMENT_LIKE', 'REPOST', 'SUPPORT', 'FOLLOW_CANAL'};
+  /// Nouveaux types : mention, j'aime d'un commentaire, republication, soutien par pub, abonné à un canal,
+  /// puis (lot « restes ») boost à valider (équipe), nomination comme administrateur d'un canal, intérêt pour un service.
+  static const newTypes = {'MENTION', 'COMMENT_LIKE', 'REPOST', 'SUPPORT', 'FOLLOW_CANAL', 'BOOST_SOUMIS', 'CANAL_ADMIN', 'SERVICE'};
 
   /// Groupes de la page (clé = libellé français, traduit à l'affichage), types rangés dans chacun et filtre « par type » correspondant.
   static const Map<String, List<String>> groupTypes = {
     'J\'aime': ['FAVORITE', 'LIKE', 'COMMENT_LIKE'],
     'Commentaires': ['COMMENT', 'COMMENTAIRE', 'REPLY', 'MENTION'],
-    'Abonnés': ['ABONNER', 'FOLLOW_CANAL', 'INVITATION', 'ACCEPTINVITATION'],
+    'Abonnés': ['ABONNER', 'FOLLOW_CANAL', 'CANAL_ADMIN', 'INVITATION', 'ACCEPTINVITATION'],
     'Messages': ['MESSAGE'],
     'Publications & Lives': ['NEWPOST', 'POST', 'REPOST', 'LIVE', 'CHALLENGE'],
     'Articles & Contenus': ['ARTICLE', 'CHRONIQUE', 'SERVICE'],
     'Récompenses': ['WEEKLY_REWARD'],
     'Gains & Parrainages': ['GAIN', 'PARRAINAGE', 'SUPPORT'],
-    'Afrolook': ['MARKETING', 'COMPTE_OFFICIEL', 'USER'],
+    'Afrolook': ['MARKETING', 'COMPTE_OFFICIEL', 'USER', 'BOOST_SOUMIS'],
   };
 
   /// Phrase affichée après le pseudo de l'auteur, ou null pour garder le texte envoyé par le serveur.
@@ -37,6 +38,13 @@ class NotificationText {
         return tr('vous a soutenu en regardant une pub : +1 pièce');
       case 'FOLLOW_CANAL':
         return b.isEmpty ? tr('suit votre canal') : '${tr('suit votre canal')} « $b »';
+      case 'BOOST_SOUMIS':
+        // body : « Publication : titre — 2 semaines »
+        return b.isEmpty ? tr('a soumis un boost à valider') : '${tr('a soumis un boost à valider')} : $b';
+      case 'CANAL_ADMIN':
+        return b.isEmpty ? tr('vous a nommé administrateur de son canal') : '${tr('vous a nommé administrateur de son canal')} « $b »';
+      case 'SERVICE':
+        return b.isEmpty ? tr('s\'intéresse à votre service') : '${tr('s\'intéresse à votre service')} « $b »';
       case 'LIKE':
         return b.isEmpty ? tr('a aimé votre publication') : null;
       case 'FAVORITE':
@@ -54,6 +62,9 @@ class NotificationText {
         'REPOST' => tr('Republications'),
         'SUPPORT' => tr('Soutiens par pub'),
         'FOLLOW_CANAL' => tr('Abonnés de canal'),
+        'BOOST_SOUMIS' => tr('Boosts à valider'),
+        'CANAL_ADMIN' => tr('Nominations de canal'),
+        'SERVICE' => tr('Intérêt pour un service'),
         _ => type,
       };
 
@@ -64,6 +75,9 @@ class NotificationText {
         'REPOST' => (icon: Icons.repeat, tone: 2),
         'SUPPORT' => (icon: Icons.volunteer_activism, tone: 3),
         'FOLLOW_CANAL' => (icon: Icons.campaign_outlined, tone: 1),
+        'BOOST_SOUMIS' => (icon: Icons.rocket_launch_outlined, tone: 3),
+        'CANAL_ADMIN' => (icon: Icons.admin_panel_settings_outlined, tone: 1),
+        'SERVICE' => (icon: Icons.handyman, tone: 2),
         'LIKE' => (icon: Icons.favorite, tone: 0),
         'REPLY' => (icon: Icons.reply, tone: 1),
         _ => null,

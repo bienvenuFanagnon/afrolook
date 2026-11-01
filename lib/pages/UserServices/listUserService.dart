@@ -1,5 +1,8 @@
-﻿import 'package:afrotok/pages/UserServices/detailsUserService.dart';
+﻿import 'package:afrotok/l10n/tr.dart';
+import 'package:afrotok/pages/UserServices/detailsUserService.dart';
 import 'package:afrotok/providers/authProvider.dart';
+import 'package:afrotok/services/api/publications_api.dart';
+import 'package:afrotok/services/api/services_api.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:like_button/like_button.dart';
@@ -294,24 +297,15 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
         );
         throw Exception('Impossible d\'ouvrir WhatsApp');
       } else {
-        // Incrémenter le compteur WhatsApp
-        final postProvider = Provider.of<PostProvider>(context, listen: false);
-        final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+        // Le clic est compté par le serveur, qui prévient le créateur (une seule fois par personne) : sans effet bloquant.
+        try {
+          final contacts = await ServicesApi.contact(data.id!);
+          if (contacts != null && mounted) setState(() => data.contactWhatsapp = contacts);
+        } catch (e) {
+          printVm('Contact du service non compté : $e');
+        }
 
-        await postProvider.getUserServiceById(data.id!).then((value) async {
-          if (value.isNotEmpty) {
-            data = value.first;
-            data.contactWhatsapp = (data.contactWhatsapp ?? 0) + 1;
-
-            if (!_isIn(data.usersContactId!, authProvider.loginUserData.id!)) {
-              data.usersContactId!.add(authProvider.loginUserData.id!);
-            }
-
-            await postProvider.updateUserService(data, context);
-          }
-        });
-
-        Navigator.pop(context); // Fermer le dialogue de chargement
+        if (mounted) Navigator.pop(context); // Fermer le dialogue de chargement
       }
     } catch (e) {
       Navigator.pop(context); // Fermer le dialogue de chargement en cas d'erreur
@@ -319,7 +313,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
         SnackBar(
           duration: Duration(seconds: 2),
           content: Text(
-            "Erreur lors de l'ouverture de WhatsApp",
+            context.tr("Erreur lors de l'ouverture de WhatsApp"),
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.red),
           ),
@@ -359,48 +353,39 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
       },
     );
 
-    final postProvider = Provider.of<PostProvider>(context, listen: false);
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-
     try {
-      await postProvider.getUserServiceById(service.id!).then((value) async {
-        if (value.isNotEmpty) {
-          service = value.first;
-          service.vues = (service.vues ?? 0) + 1;
-
-          if (!_isIn(service.usersViewId!, authProvider.loginUserData.id!)) {
-            service.usersViewId!.add(authProvider.loginUserData.id!);
-          }
-
-          await postProvider.updateUserService(service, context);
-
-          Navigator.pop(context); // Fermer le dialogue de chargement
-
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => DetailUserServicePage(data: service),
-            ),
-          ).then((_) {
+      // Service relu sur le serveur ; la vue est comptée par l'écran de détail (une par personne).
+      final fresh = await PubApi.service(service.id!);
+      if (!mounted) return;
+      Navigator.pop(context); // Fermer le dialogue de chargement
+      if (fresh != null && fresh.disponible != false) {
+        service = fresh;
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => DetailUserServicePage(data: service),
+          ),
+        ).then((_) {
+          if (mounted) {
             setState(() {
               _isNavigatingToDetail = false;
             });
-          });
-        } else {
-          Navigator.pop(context); // Fermer le dialogue de chargement
-          setState(() {
-            _isNavigatingToDetail = false;
-          });
+          }
+        });
+      } else {
+        setState(() {
+          _isNavigatingToDetail = false;
+        });
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("Service non trouvé"),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.tr('Ce service n\'est plus disponible.')),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     } catch (e) {
+      if (!mounted) return;
       Navigator.pop(context); // Fermer le dialogue de chargement en cas d'erreur
       setState(() {
         _isNavigatingToDetail = false;
@@ -408,8 +393,10 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Erreur lors du chargement du service"),
+          content: Text(ServicesApi.message(e, fallback: context.tr('Impossible de charger ce service pour le moment.'))),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 6),
+          action: SnackBarAction(label: context.tr('Réessayer'), textColor: Colors.white, onPressed: () => _navigateToDetail(service)),
         ),
       );
     }
@@ -428,7 +415,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
         appBar: AppBar(
           backgroundColor: colors.background,
           title: Text(
-            'Services & Jobs 🛠️',
+            context.tr('Services & Jobs 🛠️'),
             style: TextStyle(
               color: colors.accent,
               fontWeight: FontWeight.bold,
@@ -446,12 +433,12 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
               ),
               SizedBox(height: 16),
               Text(
-                'Chargement des services...',
+                context.tr('Chargement des services...'),
                 style: TextStyle(color: colors.accent),
               ),
               SizedBox(height: 8),
               Text(
-                'Recherche dans votre pays',
+                context.tr('Recherche dans votre pays'),
                 style: TextStyle(color: colors.textSecondary, fontSize: 12),
               ),
             ],
@@ -465,7 +452,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
       appBar: AppBar(
         backgroundColor: colors.background,
         title: Text(
-          'Services & Jobs 🛠️',
+          context.tr('Services & Jobs 🛠️'),
           style: TextStyle(
             color: colors.accent,
             fontWeight: FontWeight.bold,
@@ -520,7 +507,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
                     controller: _searchController,
                     style: TextStyle(color: colors.textPrimary),
                     decoration: InputDecoration(
-                      hintText: '🔍 Rechercher services, villes, métiers...',
+                      hintText: context.tr('🔍 Rechercher services, villes, métiers...'),
                       hintStyle: TextStyle(color: colors.textSecondary),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -558,7 +545,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
                       SizedBox(width: 4),
                       Expanded(
                         child: Text(
-                          'Filtre actif: ${postProvider.selectedCountry}',
+                          context.tr('Filtre actif : {p}', {'p': postProvider.selectedCountry}),
                           style: TextStyle(color: colors.supportAccent, fontSize: 12),
                         ),
                       ),
@@ -595,7 +582,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '${postProvider.userServices.length} service(s) trouvé(s)',
+                        context.tr('{n} service(s) trouvé(s)', {'n': postProvider.userServices.length}),
                         style: TextStyle(color: Colors.green, fontSize: 12),
                       ),
                       if (postProvider.selectedCountry != null ||
@@ -604,7 +591,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
                         GestureDetector(
                           onTap: _clearFilters,
                           child: Text(
-                            'Effacer les filtres',
+                            context.tr('Effacer les filtres'),
                             style: TextStyle(color: colors.supportAccent, fontSize: 12),
                           ),
                         ),
@@ -662,7 +649,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
             children: [
               Expanded(
                 child: _buildFilterDropdown(
-                  label: 'Catégorie',
+                  label: context.tr('Catégorie'),
                   items: ServiceConstants.categories,
                   value: postProvider.selectedCategory,
                   onChanged: (value) => _applyFilters(category: value),
@@ -671,7 +658,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
               SizedBox(width: 8),
               Expanded(
                 child: _buildFilterDropdown(
-                  label: 'Pays',
+                  label: context.tr('Pays'),
                   items: ServiceConstants.africanCountries,
                   value: postProvider.selectedCountry,
                   onChanged: (value) => _applyFilters(country: value),
@@ -685,7 +672,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
             builder: (context, snapshot) {
               final cities = snapshot.data ?? [];
               return _buildFilterDropdown(
-                label: 'Ville',
+                label: context.tr('Ville'),
                 items: cities,
                 value: postProvider.selectedCity,
                 onChanged: (value) => _applyFilters(city: value),
@@ -702,7 +689,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
                     foregroundColor: colors.supportAccent,
                     side: BorderSide(color: colors.supportAccent),
                   ),
-                  child: Text('EFFACER'),
+                  child: Text(context.tr('EFFACER')),
                 ),
               ),
               SizedBox(width: 8),
@@ -713,7 +700,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
                   ),
-                  child: Text('APPLIQUER'),
+                  child: Text(context.tr('APPLIQUER')),
                 ),
               ),
             ],
@@ -757,7 +744,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
             items: [
               DropdownMenuItem<String>(
                 value: null,
-                child: Text('Tous', style: TextStyle(color: colors.textSecondary)),
+                child: Text(context.tr('Tous'), style: TextStyle(color: colors.textSecondary)),
               ),
               ...items.map((item) {
                 return DropdownMenuItem<String>(
@@ -787,7 +774,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
           ),
           SizedBox(height: 16),
           Text(
-            'Chargement des services...',
+            context.tr('Chargement des services...'),
             style: TextStyle(color: colors.accent),
           ),
         ],
@@ -801,6 +788,37 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
     final userCountry = authProvider.loginUserData?.countryData?['countryCode'] ?? 'TG';
     final userCountryName = _getCountryNameFromCode(userCountry);
 
+    // Échec du chargement : message en français et « Réessayer » (aucun repli sur une autre source)
+    if (postProvider.servicesError != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.cloud_off, size: 56, color: colors.textSecondary),
+              const SizedBox(height: 12),
+              Text(
+                context.tr(postProvider.servicesError!),
+                style: TextStyle(color: colors.supportAccent, fontSize: 15),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () async {
+                  setState(() => _isLoadingServices = true);
+                  await postProvider.getUserServices();
+                  if (mounted) setState(() => _isLoadingServices = false);
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: colors.accent, foregroundColor: colors.onAccent),
+                child: Text(context.tr('Réessayer')),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Center(
       child: SingleChildScrollView(
         padding: EdgeInsets.all(20),
@@ -811,16 +829,16 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
             SizedBox(height: 16),
             Text(
               postProvider.selectedCountry != null
-                  ? 'Aucun service trouvé pour ${postProvider.selectedCountry}'
-                  : 'Aucun service trouvé',
+                  ? context.tr('Aucun service trouvé pour {p}', {'p': postProvider.selectedCountry})
+                  : context.tr('Aucun service trouvé'),
               style: TextStyle(color: colors.supportAccent, fontSize: 16, fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: 8),
             Text(
               postProvider.selectedCountry != null && postProvider.selectedCountry == userCountryName
-                  ? 'Aucun service disponible dans votre pays pour le moment.\nAffichage de tous les services...'
-                  : 'Essayez de modifier vos filtres ou créez votre propre service',
+                  ? context.tr('Aucun service disponible dans votre pays pour le moment.\nAffichage de tous les services...')
+                  : context.tr('Essayez de modifier vos filtres ou créez votre propre service'),
               style: TextStyle(color: colors.textSecondary),
               textAlign: TextAlign.center,
             ),
@@ -832,7 +850,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
                 ),
-                child: Text('VOIR TOUS LES SERVICES'),
+                child: Text(context.tr('VOIR TOUS LES SERVICES')),
               ),
             ],
             SizedBox(height: 16),
@@ -847,7 +865,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
                 backgroundColor: colors.accent,
                 foregroundColor: colors.onAccent,
               ),
-              child: Text('CRÉER UN SERVICE'),
+              child: Text(context.tr('CRÉER UN SERVICE')),
             ),
           ],
         ),
@@ -867,7 +885,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '${postProvider.userServices.length} service(s) trouvé(s)',
+                  context.tr('{n} service(s) trouvé(s)', {'n': postProvider.userServices.length}),
                   style: TextStyle(color: Colors.green, fontSize: 12),
                 ),
                 if (postProvider.selectedCountry != null ||
@@ -876,7 +894,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
                   GestureDetector(
                     onTap: _clearFilters,
                     child: Text(
-                      'Effacer les filtres',
+                      context.tr('Effacer les filtres'),
                       style: TextStyle(color: colors.supportAccent, fontSize: 12),
                     ),
                   ),
@@ -949,7 +967,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
             ),
             SizedBox(height: 8),
             Text(
-              'Chargement...',
+              context.tr('Chargement...'),
               style: TextStyle(color: Colors.yellow, fontSize: 12),
             ),
           ],
@@ -1063,7 +1081,7 @@ class ServiceGridCard extends StatelessWidget {
                       left: 6,
                       right: 6,
                       child: Text(
-                        service.titre ?? 'Service',
+                        service.titre ?? context.tr('Service'),
                         style: TextStyle(
                           color: colors.accent,
                           fontSize: 10,
@@ -1155,9 +1173,9 @@ class ServiceGridCard extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildCompactStat(Icons.remove_red_eye, service.vues ?? 0, 'Vues'),
-                      _buildCompactStat(FontAwesome.whatsapp, service.contactWhatsapp ?? 0, 'Contacts'),
-                      _buildCompactStat(FontAwesome.heart, service.like ?? 0, 'Likes'),
+                      _buildCompactStat(Icons.remove_red_eye, service.vues ?? 0, context.tr('Vues')),
+                      _buildCompactStat(FontAwesome.whatsapp, service.contactWhatsapp ?? 0, context.tr('Contacts')),
+                      _buildCompactStat(FontAwesome.heart, service.like ?? 0, context.tr('Likes')),
                     ],
                   ),
                 ),
@@ -1236,7 +1254,7 @@ class ServiceGridCard extends StatelessWidget {
               Icon(Icons.work_outline, color: Colors.green, size: 30),
               SizedBox(height: 4),
               Text(
-                'SERVICE',
+                context.tr('SERVICE'),
                 style: TextStyle(
                   color: Colors.green,
                   fontSize: 8,

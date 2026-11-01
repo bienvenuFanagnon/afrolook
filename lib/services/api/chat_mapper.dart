@@ -88,7 +88,10 @@ Map<String, dynamic> groupToLegacy(Map<String, dynamic> g) {
     'muted': g['muted'] == true || me['muted'] == true,
     // découverte (`GET /groups/discover`) : suis-je membre, propriétaire Gold, groupe mis en avant
     'is_member': g['is_member'] ?? me['is_member'],
-    'owner_is_gold': g['owner_is_gold'] == true,
+    'owner_is_gold': g['owner_is_gold'] == true || g['owner_plan'] == 'gold',
+    // formule du propriétaire : « gold », « premium » ou « free » (compte d'équipe administrateur = « gold »). Absente de l'aperçu d'un groupe
+    // privé pour un non-membre : null, jamais « free » par défaut.
+    'owner_plan': const {'gold', 'premium', 'free'}.contains(g['owner_plan']) ? g['owner_plan'] : null,
     'featured': g['featured'] == true,
     // droits CALCULÉS par l'API pour la personne connectée (jamais recalculés dans l'application)
     'me_role': me['role'],

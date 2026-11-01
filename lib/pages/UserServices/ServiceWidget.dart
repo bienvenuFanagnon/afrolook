@@ -1,6 +1,8 @@
 
 
 
+import 'package:afrotok/l10n/tr.dart';
+import 'package:afrotok/services/api/services_api.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -26,12 +28,12 @@ Widget userServiceWidget(UserServiceData data,double height,width,BuildContext c
   late UserAuthProvider authProvider =
   Provider.of<UserAuthProvider>(context, listen: false);
   String searchQuery = '';
-  return GestureDetector(
-    onTap: () async {
-      await    postProvider.getUserServiceById(data.id!).then((value) async {
+  Future<void> open() async {
+      // La vue est comptée par le serveur à l'ouverture du détail (une par personne).
+      try {
+        final value = await postProvider.getUserServiceById(data.id!);
         if (value.isNotEmpty) {
-          data=value.first;
-          data.vues=value.first.vues!+1;
+          data = value.first;
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -39,21 +41,21 @@ Widget userServiceWidget(UserServiceData data,double height,width,BuildContext c
             ),
           );
           Navigator.push(context, MaterialPageRoute(builder: (context) => DetailUserServicePage(data: data),));
-
-          if(!isIn(data.usersViewId!, authProvider.loginUserData!.id!)){
-            data.usersViewId!.add(authProvider.loginUserData!.id!) ;
-
-          }
-          postProvider.updateUserService(data,context).then((value) {
-            if (value) {
-
-
-            }
-          },);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Ce service n\'est plus disponible.'))));
         }
-      },);
-
-    },
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(ServicesApi.message(e, fallback: context.tr('Impossible de charger ce service pour le moment.'))),
+            duration: const Duration(seconds: 6),
+            action: SnackBarAction(label: context.tr('Réessayer'), onPressed: open),
+          ),
+        );
+      }
+  }
+  return GestureDetector(
+    onTap: open,
     child: SizedBox(
       // height: height*0.3,
       width: width*0.2,

@@ -136,6 +136,9 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
     }
   }
 
+  /// Pub exigée avant une partie en plus / la seconde chance ? (`quiz.challengeAdsRequired` de GET /config ; vrai par défaut et si la clé manque.)
+  Future<bool> _adRequired() async => (await QuizService.instance.loadConfig()).challengeAdsRequired;
+
   Future<bool> _watchAd() async {
     final ok = await RewardedAds.watch(userId: QuizService.instance.uid);
     if (!ok && mounted) {
@@ -179,12 +182,18 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
     if (_busy) return;
     setState(() => _busy = true);
     try {
-      if (extra && !await _watchAd()) {
+      // Réglage `quiz.challengeAdsRequired` de GET /config : faux = pas de pub avant une partie en plus.
+      final adRequired = extra && await _adRequired();
+      if (adRequired && !await _watchAd()) {
         if (mounted) setState(() => _busy = false);
         return;
       }
-      // Une partie en plus exige une pub de la réserve (sinon 409 `no_ad`).
-      final r = extra ? await _afterAd(() => QuizService.instance.challengeStart(extra: true)) : await QuizService.instance.challengeStart();
+      // Une partie en plus exige une pub de la réserve (sinon 409 `no_ad`) quand le réglage l'impose.
+      final r = !extra
+          ? await QuizService.instance.challengeStart()
+          : adRequired
+              ? await _afterAd(() => QuizService.instance.challengeStart(extra: true))
+              : await QuizService.instance.challengeStart(extra: true);
       if (!mounted) return;
       QuizSound.fx(QuizSfx.hi);
       _info = r;
@@ -291,7 +300,10 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
 
   Future<void> _rescueSheet(QuizChalReply r) async {
     final c = AppColors.of(context);
-    final canWatch = quizCanOfferRewarded(context);
+    // Réglage `quiz.challengeAdsRequired` : faux = la seconde chance n'exige plus de pub
+    final adRequired = await _adRequired();
+    if (!mounted) return;
+    final canWatch = !adRequired || quizCanOfferRewarded(context);
     final choice = await showModalBottomSheet<String>(
       context: context,
       isDismissible: false,
@@ -315,8 +327,8 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
             const SizedBox(height: 16),
             if (canWatch)
               QuizChunkyButton(
-                label: ctx.tr('Seconde chance · une pub'),
-                icon: Icons.play_circle_rounded,
+                label: adRequired ? ctx.tr('Seconde chance · une pub') : ctx.tr('Seconde chance'),
+                icon: adRequired ? Icons.play_circle_rounded : Icons.replay_rounded,
                 color: c.accent,
                 textColor: c.onAccent,
                 onPressed: () => Navigator.pop(ctx, 'rescue'),
@@ -342,14 +354,14 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
     setState(() => _busy = true);
     try {
       if (choice == 'rescue') {
-        if (!await _watchAd()) {
+        if (adRequired && !await _watchAd()) {
           if (!mounted) return;
           setState(() => _busy = false);
           await _rescueSheet(r);
           return;
         }
-        // La seconde chance exige une pub de la réserve (sinon 409 `no_ad`).
-        final n = await _afterAd(() => QuizService.instance.challengeRescue());
+        // La seconde chance exige une pub de la réserve (sinon 409 `no_ad`) quand `challengeAdsRequired` est vrai.
+        final n = adRequired ? await _afterAd(() => QuizService.instance.challengeRescue()) : await QuizService.instance.challengeRescue();
         if (!mounted) return;
         QuizSound.fx(QuizSfx.up);
         _info = n;
@@ -529,7 +541,9 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
     final i = _info!;
     final active = i.active;
     final free = i.attemptsLeft;
-    final canExtra = free <= 0 && i.extraLeft > 0 && quizCanOfferRewarded(context);
+    // `quiz.challengeAdsRequired` (GET /config, chargé par _load) : faux = la partie en plus ne demande plus de pub
+    final adRequired = QuizService.instance.config.challengeAdsRequired;
+    final canExtra = free <= 0 && i.extraLeft > 0 && (!adRequired || quizCanOfferRewarded(context));
     final prizes = _prizes;
     return ListView(padding: const EdgeInsets.all(16), children: [
       Container(
@@ -600,8 +614,8 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
         if (canExtra) ...[
           const SizedBox(height: 10),
           QuizChunkyButton(
-            label: context.tr('Une partie de plus · une pub'),
-            icon: Icons.play_circle_rounded,
+            label: adRequired ? context.tr('Une partie de plus · une pub') : context.tr('Une partie de plus'),
+            icon: adRequired ? Icons.play_circle_rounded : Icons.replay_rounded,
             color: c.accent,
             textColor: c.onAccent,
             loading: _busy,

@@ -1,7 +1,9 @@
-import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/l10n/tr.dart';
 import '../../theme/app_colors.dart';
-import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/publications_api.dart';
+import 'package:afrotok/services/api/services_api.dart';
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:like_button/like_button.dart';
 import 'package:provider/provider.dart';
@@ -36,26 +38,52 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
     super.initState();
     postProvider = Provider.of<PostProvider>(context, listen: false);
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    _incrementViews();
+    _refreshAndCountView();
   }
 
-  void _incrementViews() async {
-    await postProvider.getUserServiceById(widget.data.id!).then((value) async {
-      if (value.isNotEmpty) {
-        final service = value.first;
-        service.vues = (service.vues ?? 0) + 1;
-
-        if (!_isIn(service.usersViewId!, authProvider.loginUserData.id!)) {
-          service.usersViewId!.add(authProvider.loginUserData.id!);
-        }
-
-        await postProvider.updateUserService(service, context);
-      }
-    });
+  /// Relit le service (compteurs et « j'aime » à jour) puis compte la vue : le serveur n'en compte qu'une par personne, jamais celle du créateur.
+  Future<void> _refreshAndCountView() async {
+    final id = widget.data.id;
+    if (id == null) return;
+    try {
+      final fresh = await PubApi.service(id);
+      if (fresh != null && mounted) setState(() => ServicesApi.merge(widget.data, fresh));
+    } catch (e) {
+      printVm('Lecture du service impossible : $e');
+    }
+    try {
+      final views = await ServicesApi.view(id);
+      if (views != null && mounted) setState(() => widget.data.vues = views);
+    } catch (e) {
+      printVm('Vue du service non comptée : $e');
+    }
   }
 
-  bool _isIn(List<String> users_id, String userIdToCheck) {
-    return users_id.any((item) => item == userIdToCheck);
+  void _showError(Object e, String fallback, {VoidCallback? retry}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: AppColors.of(context).danger,
+        content: Text(ServicesApi.message(e, fallback: fallback)),
+        duration: const Duration(seconds: 6),
+        action: retry == null ? null : SnackBarAction(label: context.tr('Réessayer'), textColor: Colors.white, onPressed: retry),
+      ),
+    );
+  }
+
+  /// Partage du service : lien Afrolook, puis le serveur compte le partage.
+  Future<void> _shareService() async {
+    final id = widget.data.id;
+    if (id == null) return;
+    try {
+      final url = await authProvider.createServiceLink(true, widget.data);
+      final res = await Share.share('${widget.data.titre ?? ''}\n$url');
+      if (res.status == ShareResultStatus.dismissed) return;
+      final shares = await ServicesApi.share(id);
+      if (shares != null && mounted) setState(() => widget.data.partage = shares);
+    } catch (e) {
+      _showError(e, context.tr('Impossible de partager ce service pour le moment.'), retry: _shareService);
+    }
   }
 
   Future<void> _launchWhatsApp(String phone, UserServiceData data, String urlService) async {
@@ -74,7 +102,7 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
         SnackBar(
           duration: Duration(seconds: 2),
           content: Text(
-            "Impossible d'ouvrir WhatsApp",
+            context.tr("Impossible d'ouvrir WhatsApp"),
             textAlign: TextAlign.center,
             style: TextStyle(color: AppColors.of(context).danger),
           ),
@@ -82,21 +110,13 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
       );
       throw Exception('Impossible d\'ouvrir WhatsApp');
     } else {
-      await postProvider.getUserServiceById(data.id!).then((value) async {
-        if (value.isNotEmpty) {
-          final updatedService = value.first;
-          updatedService.contactWhatsapp = (updatedService.contactWhatsapp ?? 0) + 1;
-
-          if (!_isIn(updatedService.usersContactId!, authProvider.loginUserData.id!)) {
-            updatedService.usersContactId!.add(authProvider.loginUserData.id!);
-          }
-
-          await postProvider.updateUserService(updatedService, context);
-          setState(() {
-            widget.data.contactWhatsapp = updatedService.contactWhatsapp;
-          });
-        }
-      });
+      // Le clic est compté par le serveur, qui prévient le créateur (une seule fois par personne). Sans effet bloquant : WhatsApp est déjà ouvert.
+      try {
+        final contacts = await ServicesApi.contact(data.id!);
+        if (contacts != null && mounted) setState(() => widget.data.contactWhatsapp = contacts);
+      } catch (e) {
+        printVm('Contact du service non compté : $e');
+      }
     }
   }
 
@@ -156,9 +176,6 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
     try {
       await authProvider.createServiceLink(true, widget.data).then((url) async {
         await _launchWhatsApp(widget.data.contact!, widget.data, url);
-
-        // Notification au créateur du service : envoyée par le serveur
-        try { await UsersApi.contactService(widget.data.id!); } catch (_) {}
       });
     } catch (e) {
       printVm('Error contacting service: $e');
@@ -178,27 +195,27 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
             Icon(Icons.warning, color: AppColors.of(context).supportAccent),
             SizedBox(width: 10),
             Text(
-              'Confirmer',
+              context.tr('Confirmer'),
               style: TextStyle(color: AppColors.of(context).supportAccent, fontWeight: FontWeight.bold),
             ),
           ],
         ),
         content: Text(
-          'Êtes-vous sûr de vouloir supprimer définitivement ce service ?',
+          context.tr('Êtes-vous sûr de vouloir supprimer définitivement ce service ?'),
           style: TextStyle(color: AppColors.of(context).textPrimary, height: 1.4),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
             child: Text(
-              'ANNULER',
+              context.tr('ANNULER'),
               style: TextStyle(color: AppColors.of(context).primary, fontWeight: FontWeight.bold),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
             child: Text(
-              'SUPPRIMER',
+              context.tr('SUPPRIMER'),
               style: TextStyle(color: AppColors.of(context).danger, fontWeight: FontWeight.bold),
             ),
           ),
@@ -206,31 +223,29 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
       ),
     );
 
-    if (confirmed == true) {
-      setState(() { _isLoading = true; });
+    if (confirmed == true) await _deleteServiceConfirmed();
+  }
 
-      try {
-        widget.data.disponible = false;
-        await postProvider.updateUserService(widget.data, context);
+  Future<void> _deleteServiceConfirmed() async {
+    setState(() { _isLoading = true; });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: Colors.green,
-            content: Text('Service supprimé avec succès !'),
-          ),
-        );
+    try {
+      // Suppression par le serveur (propriétaire ou équipe) : DELETE /services/{id}
+      await ServicesApi.delete(widget.data.id!);
 
-        Navigator.pop(context);
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: AppColors.of(context).danger,
-            content: Text('Erreur lors de la suppression'),
-          ),
-        );
-      } finally {
-        setState(() { _isLoading = false; });
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.green,
+          content: Text(context.tr('Service supprimé avec succès !')),
+        ),
+      );
+
+      Navigator.pop(context);
+    } catch (e) {
+      _showError(e, context.tr('Erreur lors de la suppression'), retry: _deleteServiceConfirmed);
+    } finally {
+      if (mounted) setState(() { _isLoading = false; });
     }
   }
 
@@ -258,7 +273,7 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
     if (uid == null || serviceId == null || _liking) return;
     if (_alreadyLiked) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vous avez déjà aimé ce service'), duration: Duration(seconds: 1)),
+        SnackBar(content: Text(context.tr('Vous avez déjà aimé ce service')), duration: const Duration(seconds: 1)),
       );
       return;
     }
@@ -270,14 +285,20 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
       widget.data.like = (widget.data.like ?? 0) + 1;
     });
     try {
-      final total = await UsersApi.likeService(serviceId);
-      if (mounted) setState(() => widget.data.like = total);
-    } catch (_) {
+      final r = await ServicesApi.like(serviceId);
+      if (mounted) {
+        setState(() {
+          widget.data.like = r.like;
+          if (!r.liked) widget.data.usersLikeId?.remove(uid);
+        });
+      }
+    } catch (e) {
       if (mounted) {
         setState(() {
           widget.data.usersLikeId?.remove(uid);
           widget.data.like = ((widget.data.like ?? 1) - 1).clamp(0, 1 << 30);
         });
+        _showError(e, context.tr('Impossible d\'aimer ce service pour le moment.'), retry: _toggleLike);
       }
     } finally {
       _liking = false;
@@ -312,6 +333,11 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
               onPressed: () => Navigator.pop(context),
             ),
             actions: [
+              IconButton(
+                tooltip: context.tr('Partager'),
+                icon: Icon(Icons.share, color: AppColors.of(context).supportAccent),
+                onPressed: _shareService,
+              ),
               if (_canEditOrDelete) _buildActionMenu(),
             ],
           ),
@@ -348,7 +374,7 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
           ),
           SizedBox(height: 16),
           Text(
-            'Chargement...',
+            context.tr('Chargement...'),
             style: TextStyle(color: AppColors.of(context).supportAccent),
           ),
         ],
@@ -392,7 +418,7 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
                       Icon(Icons.work_outline, color: AppColors.of(context).primary, size: 60),
                       SizedBox(height: 8),
                       Text(
-                        'SERVICE',
+                        context.tr('SERVICE'),
                         style: TextStyle(
                           color: AppColors.of(context).primary,
                           fontSize: 16,
@@ -442,7 +468,7 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
             children: [
               Icon(Icons.edit, color: AppColors.of(context).supportAccent),
               SizedBox(width: 8),
-              Text('Modifier'),
+              Text(context.tr('Modifier')),
             ],
           ),
         ),
@@ -452,7 +478,7 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
             children: [
               Icon(Icons.delete, color: AppColors.of(context).danger),
               SizedBox(width: 8),
-              Text('Supprimer', style: TextStyle(color: AppColors.of(context).danger)),
+              Text(context.tr('Supprimer'), style: TextStyle(color: AppColors.of(context).danger)),
             ],
           ),
         ),
@@ -515,7 +541,7 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
         SizedBox(height: 12),
         // Titre
         Text(
-          widget.data.titre?.toUpperCase() ?? 'TITRE DU SERVICE',
+          widget.data.titre?.toUpperCase() ?? context.tr('TITRE DU SERVICE'),
           style: TextStyle(
             color: AppColors.of(context).supportAccent,
             fontSize: 20,
@@ -557,25 +583,25 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
           _buildStatItem(
             icon: Icons.remove_red_eye,
             value: widget.data.vues ?? 0,
-            label: 'Vues',
+            label: context.tr('Vues'),
             color: AppColors.of(context).primary,
           ),
           _buildStatItem(
             icon: FontAwesome.whatsapp,
             value: widget.data.contactWhatsapp ?? 0,
-            label: 'Contacts',
+            label: context.tr('Contacts'),
             color: AppColors.of(context).primary,
           ),
           _buildStatItem(
             icon: FontAwesome.heart,
             value: widget.data.like ?? 0,
-            label: 'Likes',
+            label: context.tr('Likes'),
             color: AppColors.of(context).danger,
           ),
           _buildStatItem(
             icon: Icons.share,
-            value: widget.data.usersPartageId?.length ?? 0,
-            label: 'Partages',
+            value: widget.data.partage ?? 0,
+            label: context.tr('Partages'),
             color: AppColors.of(context).info,
           ),
         ],
@@ -624,7 +650,7 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Description du service',
+          context.tr('Description du service'),
           style: TextStyle(
             color: AppColors.of(context).supportAccent,
             fontSize: 16,
@@ -639,7 +665,7 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
-            widget.data.description ?? 'Aucune description disponible',
+            widget.data.description ?? context.tr('Aucune description disponible'),
             style: TextStyle(
               color: AppColors.of(context).textPrimary,
               fontSize: 14,
@@ -656,7 +682,7 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Contact',
+          context.tr('Contact'),
           style: TextStyle(
             color: AppColors.of(context).supportAccent,
             fontSize: 16,
@@ -679,7 +705,7 @@ class _DetailUserServicePageState extends State<DetailUserServicePage> {
             ),
             icon: Icon(FontAwesome.whatsapp, size: 24),
             label: Text(
-              'CONTACTER SUR WHATSAPP',
+              context.tr('CONTACTER SUR WHATSAPP'),
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
