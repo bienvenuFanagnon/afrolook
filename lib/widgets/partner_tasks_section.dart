@@ -116,9 +116,9 @@ class _PartnerTasksSectionState extends State<PartnerTasksSection> {
     String label(Map m) {
       final n = (m['tasks'] as num?)?.toInt() ?? 0;
       return switch ((m['example'] as num?)?.toInt() ?? 0) {
-        1 => tr('Si tu fais {n} tâches moyennes dans le mois', {'n': n}),
-        2 => tr('Si tu fais {n} tâches longues dans le mois', {'n': n}),
-        _ => tr('Si tu fais {n} tâches courtes dans le mois', {'n': n}),
+        1 => tr('Si tu fais {n} tâche(s) moyenne(s) dans le mois', {'n': n}),
+        2 => tr('Si tu fais {n} tâche(s) longue(s) dans le mois', {'n': n}),
+        _ => tr('Si tu fais {n} tâche(s) légère(s) dans le mois', {'n': n}),
       };
     }
 
@@ -140,7 +140,7 @@ class _PartnerTasksSectionState extends State<PartnerTasksSection> {
             ]),
           ),
         const SizedBox(height: 4),
-        Text(tr('Exemples non garantis : les offres dépendent de ton pays. Les gains sont versés après {n} jours.', {'n': holdDays}), style: TextStyle(color: c.textSecondary.withOpacity(0.85), fontSize: 11.5, height: 1.3)),
+        Text(tr('Exemples non garantis : ce sont surtout des jeux où il faut atteindre un niveau, en plusieurs jours. Les gains sont versés après {n} jours.', {'n': holdDays}), style: TextStyle(color: c.textSecondary.withOpacity(0.85), fontSize: 11.5, height: 1.3)),
       ]),
     );
   }
@@ -172,11 +172,11 @@ class _PartnerTasksSectionState extends State<PartnerTasksSection> {
           ),
         if (mine != null) ...[
           const SizedBox(height: 6),
-          Text(tr('Avec tes {n} amis, s\'ils font chacun {t} tâches courtes par mois : {x}', {'n': friends, 't': tasks, 'x': _coinsLine((mine['coins'] as num?) ?? 0, (mine['fcfa'] as num?) ?? 0)}),
+          Text(tr('Avec tes {n} amis, s\'ils font chacun {t} tâche(s) légère(s) par mois : {x}', {'n': friends, 't': tasks, 'x': _coinsLine((mine['coins'] as num?) ?? 0, (mine['fcfa'] as num?) ?? 0)}),
               style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 12.5, height: 1.35)),
         ],
         const SizedBox(height: 6),
-        Text(tr('Estimation par mois si tes amis font chacun {t} tâches courtes :', {'t': tasks}), style: TextStyle(color: c.textSecondary, fontSize: 12.5)),
+        Text(tr('Estimation par mois si tes amis font chacun {t} tâche(s) légère(s) :', {'t': tasks}), style: TextStyle(color: c.textSecondary, fontSize: 12.5)),
         for (final s in scenarios.take(3))
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 2),
@@ -244,13 +244,13 @@ class _PartnerTasksSectionState extends State<PartnerTasksSection> {
               child: Row(children: [
                 Icon(Icons.monetization_on_outlined, size: 18, color: c.primary),
                 const SizedBox(width: 8),
-                Expanded(child: Text([tr('Tâche courte'), tr('Tâche moyenne'), tr('Tâche longue')][k], style: TextStyle(color: c.textSecondary, fontSize: 13))),
+                Expanded(child: Text([tr('Tâche légère'), tr('Tâche moyenne'), tr('Tâche longue')][k], style: TextStyle(color: c.textSecondary, fontSize: 13))),
                 Text(tr('{c} pièces (environ {f} F)', {'c': _n.format((examples[k]['coins'] as num?)?.toInt() ?? 0), 'f': _n.format((examples[k]['fcfa'] as num?)?.toInt() ?? 0)}),
                     style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13)),
               ]),
             ),
           const SizedBox(height: 2),
-          Text(tr('Exemples indicatifs : chaque tâche affiche ses pièces exactes, et les gains dépendent de la tâche.'), style: TextStyle(color: c.textSecondary.withOpacity(0.85), fontSize: 11.5, height: 1.3)),
+          Text(tr('Exemples indicatifs : chaque tâche affiche ses pièces exactes. Ce sont surtout des jeux à jouer plusieurs jours pour atteindre un niveau.'), style: TextStyle(color: c.textSecondary.withOpacity(0.85), fontSize: 11.5, height: 1.3)),
         ],
         // « À la fin du mois » : donner envie de rester actif (exemples du serveur, jamais une promesse)
         if (monthly.isNotEmpty) ...[
