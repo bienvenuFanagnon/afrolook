@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:afrotok/services/api/users_api.dart';
+// Présence en ligne : reste sur Firebase (décision du propriétaire). Document léger `UserPresence/{identifiant API}`, écrit par la personne elle-même.
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
@@ -6,6 +8,21 @@ class PresenceService {
   Timer? _heartbeatTimer;
   int _lastSentTimestamp = 0;
   String? _currentUserId;
+
+  // Réglages de confidentialité (mode fantôme, dernière connexion) recopiés dans le document de présence, relus toutes les 10 minutes
+  Map<String, dynamic> _privacy = const {};
+  int _privacyReadAt = 0;
+
+  Future<void> _refreshPrivacy(int now) async {
+    if (now - _privacyReadAt < 600000) return;
+    try {
+      final p = await UsersApi.privacy();
+      _privacy = {'ghostMode': p['ghostMode'] == true, 'hideLastSeen': p['hideLastSeen'] == true};
+      _privacyReadAt = now;
+    } catch (_) {
+      // on garde les derniers réglages connus ; nouvel essai au prochain battement
+    }
+  }
 
   // Démarre le battement de cœur
   void startHeartbeat(String userId) {
@@ -44,12 +61,12 @@ class PresenceService {
     try {
       debugPrint('🔴 [PRESENCE SERVICE] Envoi de l\'état OFFLINE à Firestore...');
       await FirebaseFirestore.instance
-          .collection('Users')
+          .collection('UserPresence')
           .doc(_currentUserId)
-          .update({
+          .set({
         'isConnected': false,
         'last_time_active': DateTime.now().millisecondsSinceEpoch,
-      });
+      }, SetOptions(merge: true));
       // Réinitialiser le cache local
       _lastSentTimestamp = 0;
     } catch (e) {
@@ -73,13 +90,15 @@ class PresenceService {
     try {
       debugPrint('📡 [PRESENCE SERVICE] Écriture Firestore : Toujours en ligne !');
 
+      await _refreshPrivacy(now);
       await FirebaseFirestore.instance
-          .collection('Users')
+          .collection('UserPresence')
           .doc(_currentUserId)
-          .update({
+          .set({
         'isConnected': true,
         'last_time_active': now,
-      });
+        if (_privacy.isNotEmpty) 'privacySettings': _privacy,
+      }, SetOptions(merge: true));
 
       // Mettre à jour le cache local du timestamp uniquement après succès de l'écriture
       _lastSentTimestamp = now;

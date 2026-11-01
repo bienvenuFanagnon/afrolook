@@ -1,4 +1,3 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/services/api/chat_api.dart';
 import 'package:afrotok/services/api/chat_mapper.dart';
@@ -52,7 +51,7 @@ class ChatService {
         .collection('Messages')
         .where('receiverBy', isEqualTo: currentUserId)
         .where('is_valide', isEqualTo: true)
-        .snapshotsM('chat_service.dart:445')
+        .snapshots()
         .map((snapshot) {
       Map<String, dynamic> updates = {};
       for (var doc in snapshot.docs) {
@@ -90,7 +89,7 @@ class ChatService {
           .where('is_valide', isEqualTo: true)
           .orderBy('create_at_time_spam', descending: true)
           .limit(1)
-          .getM('chat_service.dart:508');
+          .get();
 
       if (querySnapshot.docs.isNotEmpty) {
         final message = Message.fromJson(querySnapshot.docs.first.data());

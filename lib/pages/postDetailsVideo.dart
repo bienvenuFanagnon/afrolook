@@ -42,7 +42,9 @@ import 'package:afrotok/services/utils/abonnement_utils.dart';
 
 import 'package:afrotok/pages/pub/afrolook_inline_ad.dart';
 
-import 'package:afrotok/pages/pub/rewarded_ad_widget.dart';
+import 'package:afrotok/l10n/tr.dart';
+import 'package:afrotok/services/api/post_social_api.dart';
+import 'package:afrotok/widgets/post_social_actions.dart';
 import 'package:afrotok/pages/pub/midroll_ad_card.dart';
 import 'package:afrotok/pages/user/userPubs/user_create_advertisement_page.dart';
 
@@ -173,9 +175,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
   bool _isProcessingFavorite = false;
   bool _isSharing = false;
   bool _isSupporting = false;
-  bool _showRewardedAd = false;
   bool? _hasSeenSupportModal;
-  final GlobalKey<RewardedAdWidgetState> _rewardedAdKey = GlobalKey();
 
 
   // Cadeau
@@ -1168,30 +1168,9 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
   }
 
   Future<void> _handleRepost(Post post) async {
-    final me = authProvider.loginUserData;
-    if (me.id == null) return;
-    if (me.id == post.user_id) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tu ne peux pas republier ton propre post'), duration: Duration(seconds: 2)),
-      );
-      return;
-    }
-    post.users_republier_id ??= [];
-    if (post.users_republier_id!.contains(me.id)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tu as déjà republié ce post'), duration: Duration(seconds: 2)),
-      );
-      return;
-    }
-    final originalId = post.isRepost == true ? (post.originalPostId ?? post.id!) : post.id!;
-    setState(() => post.users_republier_id!.add(me.id!));
-    try {
-      await PubApi.repost(originalId);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post republié ✓'), duration: Duration(seconds: 2)));
-    } catch (e) {
-      setState(() => post.users_republier_id!.remove(me.id));
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(PubApi.message(e, fallback: 'Erreur : impossible de republier')), duration: const Duration(seconds: 3)));
-    }
+    await PostSocialActions.repost(context, post, myId: authProvider.loginUserData.id, onDone: () {
+      if (mounted) setState(() {});
+    });
   }
 
   void _showShareOptions(Post post) {
@@ -1222,7 +1201,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
             if (post.user_id != authProvider.loginUserData.id)
               ListTile(
                 leading: Icon(Icons.repeat, color: colors.success),
-                title: Text('Republier', style: TextStyle(color: colors.textPrimary)),
+                title: Text(tr('Republier'), style: TextStyle(color: colors.textPrimary)),
                 onTap: () { Navigator.pop(ctx); _handleRepost(post); },
               ),
             ListTile(
@@ -2075,23 +2054,18 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
 
   Future<void> _handleSupportAd() async {
     final userId = authProvider.loginUserData.id;
-    if (userId == _currentPost.user_id) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Vous ne pouvez pas soutenir votre propre post'), backgroundColor: Colors.orange)); return; }
-    final hasSupported = await _hasSupportedToday();
-    if (hasSupported) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Vous avez déjà soutenu ce post aujourd\'hui'), backgroundColor: Colors.orange)); return; }
+    if (userId == _currentPost.user_id) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('Tu ne peux pas soutenir ta propre publication.')), backgroundColor: Colors.orange)); return; }
+    final hasSupported = await PostSocialApi.supportedToday(_currentPost.id!);
+    if (hasSupported) { if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('Tu as déjà soutenu cette publication aujourd\'hui. Reviens demain !')), backgroundColor: Colors.orange)); return; }
     if (_hasSeenSupportModal == false) { _showSupportModal(); return; }
     _startSupportAd();
-  }
-
-  Future<bool> _hasSupportedToday() async {
-    // Le serveur refuse un second soutien le même jour (erreur affichée après la publicité).
-    return false;
   }
 
   void _showSupportModal() {
     showDialog(context: context, builder: (context) => AlertDialog(
       backgroundColor: AppColors.of(context).surface,
       title: Row(children: [Icon(Icons.volunteer_activism, color: _afroYellow), Text('Soutenir le créateur', style: TextStyle(color: AppColors.of(context).textPrimary))]),
-      content: Text('Regardez une publicité pour offrir 10 pièces au créateur.', style: TextStyle(color: AppColors.of(context).textSecondary)),
+      content: Text(tr('Regarde cette publicité jusqu\'au bout pour offrir 1 pièce au créateur.'), style: TextStyle(color: AppColors.of(context).textSecondary)),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: Text('Plus tard')),
         ElevatedButton(onPressed: () async { Navigator.pop(context); await _markSupportModalSeen(); _startSupportAd(); }, style: ElevatedButton.styleFrom(backgroundColor: _afroYellow), child: Text('Regarder la pub', style: TextStyle(color: Colors.black))),
@@ -2099,33 +2073,14 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     ));
   }
 
-  void _startSupportAd() {
-    setState(() { _isSupporting = true; _showRewardedAd = true; });
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (_rewardedAdKey.currentState != null) {
-        _rewardedAdKey.currentState!.showAd();
-      } else {
-        setState(() { _isSupporting = false; _showRewardedAd = false; });
-      }
+  /// Pub récompensée regardée en entier, déclarée au serveur puis consommée par `POST /posts/{id}/support-ad` (messages et « Réessayer » inclus).
+  Future<void> _startSupportAd() async {
+    if (_isSupporting) return;
+    setState(() => _isSupporting = true);
+    await PostSocialActions.supportWithAd(context, _currentPost, myId: authProvider.loginUserData.id, onSupported: (_) {
+      if (mounted) setState(() {});
     });
-  }
-
-  Future<void> _onSupportAdRewarded() async {
-    try {
-      await PubApi.supportAd(_currentPost.id!);
-    } catch (e) {
-      if (mounted) {
-        setState(() { _isSupporting = false; _showRewardedAd = false; });
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(PubApi.message(e, fallback: 'Soutien impossible pour le moment. Réessaie plus tard.')), backgroundColor: Colors.orange));
-      }
-      return;
-    }
-    setState(() {
-      _currentPost.adSupportCount = (_currentPost.adSupportCount ?? 0) + 1;
-      _isSupporting = false;
-      _showRewardedAd = false;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Merci ! Le créateur a reçu 1 pièce.'), backgroundColor: Colors.green));
+    if (mounted) setState(() => _isSupporting = false);
   }
   Widget _buildAdvertisementHeader() {
     if (!_isAd || _advertisement == null) return const SizedBox.shrink();
@@ -2444,7 +2399,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
             ]),
           ),
           ),  // CenteredContent
-          if (_showRewardedAd) RewardedAdWidget(key: _rewardedAdKey, onUserEarnedReward: (amount, name)  => _onSupportAdRewarded(), onAdDismissed: () => setState(() { _showRewardedAd = false; _isSupporting = false; }), child: SizedBox.shrink()),
           if (_showMidrollAd && !_isUserPremium())
             MidrollAdCard(
               key: ValueKey(_midrollAdData.hashCode),

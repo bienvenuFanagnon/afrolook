@@ -3,9 +3,12 @@ import '../../utils/count_format.dart';
 import 'dart:async';
 import 'dart:io';
 
+import 'package:afrolook_api_client/afrolook_api_client.dart' show ApiException;
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/services/api/canaux_api.dart';
+import 'package:afrotok/services/api/paid_content_b2_api.dart';
+import 'package:afrotok/services/api/paid_file_types.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -246,18 +249,20 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
       _contentType == ContentType.FORMATION;
 
   List<String> get _allowedExtensionsForType {
+    // Types élargis du lot B2 (envoi privé) ; les fichiers .xmp, .cube et .lut n'ont pas de type fiable : à mettre dans une archive.
     switch (_contentType) {
       case ContentType.AUDIO:
-        return ['mp3', 'wav', 'aac'];
+        return PaidFileTypes.audio;
       case ContentType.PRESET:
-        return ['zip', 'xmp', 'cube', 'lut'];
-      case ContentType.PACK_ZIP:
+        return ['zip', '7z', 'rar'];
       case ContentType.FORMATION:
+        return [...PaidFileTypes.archives, ...PaidFileTypes.documents];
+      case ContentType.PACK_ZIP:
       case ContentType.TEMPLATE:
       case ContentType.BUNDLE:
-        return ['zip'];
+        return PaidFileTypes.archives;
       default:
-        return ['zip'];
+        return PaidFileTypes.archives;
     }
   }
 
@@ -572,24 +577,23 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
       bool success = false;
 
       if (widget.isEpisode) {
-        // Création d'un épisode
-        final episode = Episode(
-          seriesId: widget.seriesId!,
+        // Création d'un épisode par l'API (`POST /paid-contents/{série}/episodes`) : fichiers privés par identifiant d'envoi, miniature publique.
+        bool isUploadId(String s) => s.isNotEmpty && !s.startsWith('http') && s != 'private';
+        final isEbook = _contentType == ContentType.EBOOK;
+        await PaidSeriesApi.create(
+          widget.seriesId!,
           title: _titleController.text,
           description: _descriptionController.text,
-          videoUrl: _contentType == ContentType.VIDEO ? videoUrl : null,
-          pdfUrl: _contentType == ContentType.EBOOK ? pdfUrl : null,
-          thumbnailUrl: thumbnailUrl,
-          duration: 0,
-          pageCount: _contentType == ContentType.EBOOK ? _pageCount : 0,
+          contentType: isEbook ? 'ebook' : 'video',
           episodeNumber: _episodeNumber,
-          price: _isFree ? 0 : double.parse(_priceController.text),
           isFree: _isFree,
-          contentType: _contentType,
+          priceXof: _isFree ? 0 : (double.tryParse(_priceController.text) ?? 0).round(),
+          pageCount: isEbook ? _pageCount : null,
+          thumbnailUploadId: isUploadId(thumbnailUrl) ? thumbnailUrl : null,
+          videoUploadId: !isEbook && isUploadId(videoUrl) ? videoUrl : null,
+          pdfUploadId: isEbook && isUploadId(pdfUrl) ? pdfUrl : null,
         );
-
-        success = await contentProvider.addEpisode(episode);
-        if (!success) throw Exception('L\'ajout d\'épisodes n\'est pas encore disponible. Réessaie après la prochaine mise à jour.');
+        success = true;
       } else {
         // Création/mise à jour d'un contenu
         final flashPrice = _flashSaleEnabled && _flashPriceCtrl.text.isNotEmpty
@@ -688,7 +692,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Erreur: ${e.toString()}'),
+          content: Text(e is ApiException ? PaidContentMessages.of(e) : 'Erreur: ${e.toString()}'),
           backgroundColor: _colors.danger,
         ),
       );

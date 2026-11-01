@@ -1,4 +1,3 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'dart:io';
 import 'dart:math';
 
@@ -299,7 +298,7 @@ Future<bool> updateEntreprise(EntrepriseData entrepriseData) async {
   Stream<Chat> getStreamChat(String chat_id) async* {
 
     // Définissez la requête
-    var chatsStream = FirebaseFirestore.instance.collection('Chats').where("id",isEqualTo:chat_id ).snapshotsM('userProvider.dart:795');
+    var chatsStream = FirebaseFirestore.instance.collection('Chats').where("id",isEqualTo:chat_id ).snapshots();
 
 // Obtenez la liste des utilisateurs
     //List<DocumentSnapshot> users = await usersQuery.sget();

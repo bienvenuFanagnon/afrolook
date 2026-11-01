@@ -1,4 +1,5 @@
 import 'package:afrotok/services/api/chat_api.dart';
+import 'package:afrotok/pages/admin/group_block_dialog.dart';
 import 'package:afrotok/services/api/group_keys_api.dart';
 import 'package:afrotok/services/crypto/group_crypto_service.dart';
 import 'package:afrotok/services/crypto/key_change_tracker.dart';
@@ -271,7 +272,13 @@ class _GroupChatPageState extends State<GroupChatPage> {
       final sp = await SharedPreferences.getInstance();
       final mutedGroups = sp.getStringList('muted_groups') ?? const <String>[];
       final role = (data['me_role'] as String?) ?? 'member';
-      final perms = <String, dynamic>{'can_write': data['me_can_write'] == true, 'can_share': data['me_can_share'] == true};
+      final perms = <String, dynamic>{
+        'can_write': data['me_can_write'] == true,
+        'can_share': data['me_can_share'] == true,
+        'can_delete_others': data['me_can_delete_others'] == true,
+        'can_pin': data['me_can_pin'] == true,
+        'can_invite': data['me_can_invite'] == true,
+      };
       data['member_permissions'] = {myId: perms};
       data['member_ids'] = data['me_is_member'] == true ? <String>[myId] : <String>[];
       if (mounted) {
@@ -1855,18 +1862,9 @@ class _GroupChatPageState extends State<GroupChatPage> {
   }
 
   Future<void> _toggleGroupBlock() async {
-    final action = _isBlocked ? 'Débloquer' : 'Bloquer';
-    final desc = _isBlocked
-        ? 'Les membres pourront à nouveau envoyer des messages.'
-        : 'Plus aucun membre ne pourra envoyer de messages dans ce groupe.';
-    final confirm = await _showConfirmDialog('$action le groupe', desc);
-    if (!confirm) return;
-    try {
-      // Le blocage d'un groupe par l'équipe n'est pas encore dans l'API (voir lacunes_api_jeux_medias.md)
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cette action sera disponible prochainement.'), backgroundColor: Colors.orange));
-      }
-    } catch (_) {}
+    // Blocage par l'équipe (`PATCH /admin/groups/{id}`, motif obligatoire) : dialogue dans admin/group_block_dialog.dart
+    final row = await toggleGroupBlock(context, groupId: widget.groupId, groupName: (_groupData['name'] as String?) ?? '', currentlyBlocked: _isBlocked);
+    if (row != null && mounted) setState(() => _isBlocked = row.isBlocked);
   }
 
   // ─── UI HELPERS ──────────────────────────────────────────────────────────────

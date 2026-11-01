@@ -8,7 +8,6 @@ import 'dart:async';
 import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:afrotok/services/api/chroniques_api.dart';
 import 'package:afrotok/services/api/chroniques_mapper.dart';
-import 'package:afrotok/services/read_meter.dart';
 // Les COMMENTAIRES des chroniques (`chronique_messages`) restent sur Firebase (messages en temps réel) : seul Firestore pour cela.
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
@@ -301,7 +300,7 @@ class ChroniqueProvider with ChangeNotifier {
     try {
       await ChroniquesApi.delete(chroniqueId);
       try {
-        final msgs = await _firestore.collection('chronique_messages').where('chroniqueId', isEqualTo: chroniqueId).limit(200).getM('chroniqueProvider.dart:deleteMessages');
+        final msgs = await _firestore.collection('chronique_messages').where('chroniqueId', isEqualTo: chroniqueId).limit(200).get();
         if (msgs.docs.isNotEmpty) {
           final batch = _firestore.batch();
           for (final d in msgs.docs) {
@@ -364,7 +363,7 @@ class ChroniqueProvider with ChangeNotifier {
       final count = await q.count().get();
       c.commentCount = count.count ?? 0;
       if (c.commentCount > 0) {
-        final last = await q.orderBy('createdAt', descending: true).limit(1).getM('chroniqueProvider.dart:lastComment');
+        final last = await q.orderBy('createdAt', descending: true).limit(1).get();
         if (last.docs.isNotEmpty) {
           final m = last.docs.first.data();
           c.lastCommentPseudo = m['userPseudo'] as String?;
@@ -384,7 +383,7 @@ class ChroniqueProvider with ChangeNotifier {
         .orderBy('createdAt', descending: true)
         .limit(commentsPageSize);
     if (after != null) q = q.startAfterDocument(after);
-    final snap = await q.getM('chroniqueProvider.dart:454');
+    final snap = await q.get();
     return (
       items: [for (final d in snap.docs) ChroniqueMessage.fromMap(d.data(), d.id)],
       last: snap.docs.isEmpty ? null : snap.docs.last,
@@ -432,7 +431,7 @@ class ChroniqueProvider with ChangeNotifier {
 
   Future<bool> hasLikedMessage(String messageId, String userId) async {
     try {
-      final doc = await _firestore.collection('chronique_messages').doc(messageId).getM('chroniqueProvider.dart:584');
+      final doc = await _firestore.collection('chronique_messages').doc(messageId).get();
       if (doc.exists) {
         final data = doc.data()!;
         List<String> likers = List<String>.from(data['likers'] ?? []);
@@ -480,7 +479,7 @@ class ChroniqueProvider with ChangeNotifier {
         .collection('chronique_messages')
         .where('chroniqueId', isEqualTo: chroniqueId)
         .orderBy('createdAt', descending: true)
-        .snapshotsM('chroniqueProvider.dart:642')
+        .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) => ChroniqueMessage.fromMap(doc.data(), doc.id)).toList();
     });

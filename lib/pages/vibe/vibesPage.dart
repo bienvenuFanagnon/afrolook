@@ -23,7 +23,7 @@ import 'package:afrotok/pages/pub/banner_ad_widget.dart';
 import 'package:afrotok/pages/pub/native_ad_widget.dart';
 import 'package:afrotok/pages/pub/conditional_ad_banner.dart';
 
-import 'package:afrotok/pages/pub/rewarded_ad_widget.dart';
+import 'package:afrotok/widgets/post_social_actions.dart';
 
 import 'package:afrotok/pages/widgetGlobal.dart';
 
@@ -148,8 +148,6 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
   final List<double> giftPrices = [10, 25, 50, 100, 200, 300, 500, 700, 1500, 2000, 2500, 5000, 7000, 10000, 15000, 20000, 30000, 50000, 75000, 100000];
   final List<String> giftIcons = ['🌹','❤️','👑','💎','🏎️','⭐','🍫','🧰','🌵','🍕','🍦','💻','🚗','🏠','🛩️','🛥️','🏰','💎','🏎️','🚗'];
 
-  final GlobalKey<RewardedAdWidgetState> _rewardedAdKey = GlobalKey();
-  bool _showRewardedAd = false;
   Timer? _suggestionModalTimer;
   bool _hasSeenSuggestionsModal = false;
 
@@ -935,23 +933,14 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
     _hasSeenSupportModal = _prefs.getBool('has_seen_support_modal_$userId') ?? false;
   }
 
-  void _startSupportAd(Post post) {
-    setState(() { _isSupporting = true; _showRewardedAd = true; });
-    WidgetsBinding.instance.addPostFrameCallback((_) => _rewardedAdKey.currentState?.showAd());
-  }
-
-  Future<void> _onSupportAdRewarded(Post post) async {
-    try {
-      await PubApi.supportAd(post.id!);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(PubApi.message(e, fallback: 'Soutien impossible pour le moment. Réessaie plus tard.'))));
-        setState(() { _isSupporting = false; _showRewardedAd = false; });
-      }
-      return;
-    }
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Merci ! Le créateur a reçu ton soutien.'), backgroundColor: Colors.green));
-    setState(() { _isSupporting = false; _showRewardedAd = false; });
+  /// Pub récompensée regardée en entier, déclarée au serveur puis consommée par `POST /posts/{id}/support-ad` (messages et « Réessayer » inclus).
+  Future<void> _startSupportAd(Post post) async {
+    if (_isSupporting) return;
+    setState(() => _isSupporting = true);
+    await PostSocialActions.supportWithAd(context, post, myId: authProvider.loginUserData.id, onSupported: (_) {
+      if (mounted) setState(() {});
+    });
+    if (mounted) setState(() => _isSupporting = false);
   }
 
   Widget _buildVideoPlayer(Post post) {
@@ -1217,17 +1206,6 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
         ),
         if (!(AbonnementUtils.isPremiumActive(authProvider.loginUserData.abonnement) || AbonnementUtils.isAdmin(authProvider.loginUserData.role)))
           const Positioned(bottom: 0, left: 0, right: 0, child: ConditionalAdBanner()),
-        if (_showRewardedAd)
-          RewardedAdWidget(
-            key: _rewardedAdKey,
-            onUserEarnedReward: (amount, name) async {
-              // la page courante vient de _feedItems (qui contient aussi des pubs et des actualités), pas de _vibePosts
-              final current = _currentPage < _feedItems.length ? _feedItems[_currentPage] : null;
-              if (current is Post) await _onSupportAdRewarded(current);
-            },
-            onAdDismissed: () => setState(() { _showRewardedAd = false; _isSupporting = false; }),
-            child: const SizedBox.shrink(),
-          ),
       ],
     );
     if (_isWide) {

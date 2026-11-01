@@ -8,7 +8,7 @@ import 'package:audioplayers/audioplayers.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
 
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:dio/dio.dart';
 
 import 'package:flutter/material.dart';
 
@@ -118,17 +118,25 @@ class _AudioPostCardState extends State<AudioPostCard> {
       }
 
       final optimizedUrl = _optimizeUrl(_audioUrl);
-      // refFromURL n'accepte que les URLs Firebase Storage (gs:// ou firebasestorage.googleapis.com)
-      final isFirebaseUrl = optimizedUrl.startsWith('gs://') ||
+      // Préchargement par simple téléchargement HTTP des anciens liens de stockage (aucun SDK Firebase) ; 10 Mo au plus
+      final isStorageUrl = optimizedUrl.startsWith('https://') &&
           optimizedUrl.contains('firebasestorage.googleapis.com');
 
       Uint8List? data;
-      if (isFirebaseUrl) {
-        final storageRef = FirebaseStorage.instance.refFromURL(optimizedUrl);
+      if (isStorageUrl) {
         const maxSize = 10 * 1024 * 1024; // 10 MB
-        data = await storageRef.getData(maxSize);
+        final cancel = CancelToken();
+        final res = await Dio().get<List<int>>(
+          optimizedUrl,
+          options: Options(responseType: ResponseType.bytes),
+          cancelToken: cancel,
+          onReceiveProgress: (received, total) {
+            if (received > maxSize || total > maxSize) cancel.cancel('trop volumineux');
+          },
+        );
+        if (res.data != null) data = Uint8List.fromList(res.data!);
       }
-      // Si CDN ou autre URL non-Firebase, on ne précharge pas via Storage (la lecture réseau suffira)
+      // Pour tout autre lien (CDN, R2…), pas de préchargement : la lecture réseau suffit
 
       if (data != null) {
         await file.writeAsBytes(data);

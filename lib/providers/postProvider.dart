@@ -1,4 +1,3 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:afrotok/services/api/canal_mapper.dart';
@@ -222,7 +221,7 @@ Future<void> _loadSuggestedPosts() async {
   //       query = query.startAfterDocument(_lastServiceDocument!);
   //     }
   //
-  //     QuerySnapshot querySnapshot = await query.getM('postProvider.dart:418');
+  //     QuerySnapshot querySnapshot = await query.get();
   //
   //     if (querySnapshot.docs.isEmpty) {
   //       _hasMoreServices = false;
@@ -241,7 +240,7 @@ Future<void> _loadSuggestedPosts() async {
   //           DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
   //               .collection('Users')
   //               .doc(service.userId)
-  //               .getM('postProvider.dart:437');
+  //               .get();
   //
   //           if (userSnapshot.exists) {
   //             UserData user = UserData.fromJson(

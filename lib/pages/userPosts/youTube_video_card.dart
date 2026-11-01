@@ -42,6 +42,7 @@ import '../../providers/sound_provider.dart';
 import '../../providers/userProvider.dart';
 import '../canaux/detailsCanal.dart';
 import '../component/consoleWidget.dart';
+import '../../widgets/post_social_actions.dart';
 import '../home/user_presence_widget.dart';
 import '../pub/afrolook_inline_ad.dart';
 import 'dart:async';
@@ -2058,20 +2059,10 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   }
 
   Future<void> _handleRepost() async {
-    final me = _authProvider.loginUserData;
-    final originalPost = widget.post;
-    if (me.id == null || originalPost.id == null) return;
-    if (me.id == originalPost.user_id) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tu ne peux pas republier ton propre post'), duration: Duration(seconds: 2)),
-      );
-      return;
-    }
-    // La republication n'a pas encore de route côté API (voir lacunes_api_publications.md).
-    unawaited(PostsApi.signal(originalPost.id!, 'share'));
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('La republication sera bientôt disponible.'), duration: Duration(seconds: 2)),
-    );
+    // Le serveur enregistre la republication (une par personne), la compte comme un partage et la diffuse aux abonnés.
+    await PostSocialActions.repost(context, widget.post, myId: _authProvider.loginUserData.id, onDone: () {
+      if (mounted) setState(() {});
+    });
   }
 
   static const Color _defiYellow = Color(0xFFFF9500);

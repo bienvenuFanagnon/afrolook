@@ -1,6 +1,5 @@
 
 import 'package:afrotok/services/conversation_opener.dart';
-import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/services/followers_count_service.dart';
 import 'package:afrotok/utils/count_format.dart';
@@ -337,7 +336,7 @@ class _DetailsOtherUserState extends State<DetailsOtherUser> with TickerProvider
                             onPressed: () async {
                               getChatsData(widget.user).then((chat) async {
                                 CollectionReference friendCollect = await FirebaseFirestore.instance.collection('Messages');
-                                QuerySnapshot querySnapshotUser = await friendCollect.where("chat_id",isEqualTo:chat.docId).getM('detailsOtherUser.dart:437');
+                                QuerySnapshot querySnapshotUser = await friendCollect.where("chat_id",isEqualTo:chat.docId).get();
                                 // Afficher la liste
                                 List<Message> messages = querySnapshotUser.docs.map((doc) =>
                                     Message.fromJson(doc.data() as Map<String, dynamic>)).toList();

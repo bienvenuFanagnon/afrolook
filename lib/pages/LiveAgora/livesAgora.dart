@@ -1,6 +1,5 @@
 ﻿// models/live_models.dart
 
-import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -754,7 +753,7 @@ class LiveProvider extends ChangeNotifier {
 
   Future<bool> checkUserPaymentStatus(String liveId, String userId) async {
     try {
-      final doc = await _firestore.collection('lives').doc(liveId).getM('livesAgora.dart:850');
+      final doc = await _firestore.collection('lives').doc(liveId).get();
       if (doc.exists) {
         final data = doc.data()!;
         final userWatchTime = Map<String, dynamic>.from(data['userWatchTime'] ?? {});
@@ -825,7 +824,7 @@ class LiveProvider extends ChangeNotifier {
 
   Future<bool> joinAsParticipant(String liveId, String userId) async {
     try {
-      final liveDoc = await _firestore.collection('lives').doc(liveId).getM('livesAgora.dart:921');
+      final liveDoc = await _firestore.collection('lives').doc(liveId).get();
       if (liveDoc.exists) {
         final live = PostLive.fromMap(liveDoc.data()!);
 

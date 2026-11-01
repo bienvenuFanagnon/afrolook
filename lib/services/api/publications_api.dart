@@ -5,6 +5,7 @@ import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:afrotok/services/api/canaux_api.dart';
 import 'package:afrotok/services/api/home_feed_api.dart';
+import 'package:afrotok/services/api/post_social_api.dart';
 import 'package:afrotok/services/api/posts_api.dart';
 import 'package:afrotok/services/api/shop_api.dart';
 import 'package:afrotok/services/api/post_mapper.dart';
@@ -68,16 +69,14 @@ class PubApi {
     }
   }
 
-  /// Republie une publication (diffusée aux abonnés). Route souhaitée : POST /posts/{id}/repost (un seul repost par personne).
-  static Future<void> repost(String postId) async {
-    await _c.post('/posts/$postId/repost', idempotencyKey: ApiClient.newIdempotencyKey());
-  }
+  /// Republie une publication (`POST /posts/{id}/repost`, une seule fois par personne ; la diffusion aux abonnés est faite par le serveur).
+  /// Messages d'erreur traduits : [PostSocialMessages.repost]. Écrans : préférer `PostSocialActions.repost`.
+  static Future<RepostResult> repost(String postId) => PostSocialApi.repost(postId);
 
-  /// « Soutenir par une publicité » : 1 pièce au créateur, une fois par jour et par publication. Route souhaitée : POST /posts/{id}/support-ad.
-  /// Erreur 429/409 du serveur = déjà soutenu aujourd'hui.
-  static Future<void> supportAd(String postId) async {
-    await _c.post('/posts/$postId/support-ad', idempotencyKey: ApiClient.newIdempotencyKey());
-  }
+  /// « Soutenir par une publicité » : à appeler UNIQUEMENT après une pub récompensée regardée en entier (la pub est déclarée au serveur puis
+  /// consommée : `POST /rewards/views` puis `POST /posts/{id}/support-ad`). Erreurs : [PostSocialMessages.support].
+  /// Écrans : préférer `PostSocialActions.supportWithAd`, qui s'occupe aussi de la pub.
+  static Future<AdSupportResult> supportAd(String postId) => PostSocialApi.supportAfterAd(postId);
 
   static Future<void> report(String postId, {String type = 'standard'}) => PostsApi.report(postId, type: type);
 

@@ -1,3 +1,6 @@
+import 'package:afrolook_api_client/afrolook_api_client.dart' show ApiException;
+import 'package:afrotok/l10n/tr.dart';
+import 'package:afrotok/services/api/paid_content_b2_api.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/theme/app_colors.dart';
@@ -34,6 +37,7 @@ class _PromoCodeModalState extends State<PromoCodeModal> {
   final _ctrl = TextEditingController();
   bool _loading = false;
   PromoCode? _validCode;
+  PromoPreview? _preview;
   String? _errorMsg;
 
   @override
@@ -49,24 +53,36 @@ class _PromoCodeModalState extends State<PromoCodeModal> {
       _loading = true;
       _errorMsg = null;
       _validCode = null;
+      _preview = null;
     });
 
     try {
-      // L'API n'a pas (encore) de vérification d'un code par l'acheteur (voir lacunes_api_canaux.md) : le code est gardé tel quel et ENVOYÉ avec
-      // l'achat ; le serveur calcule le prix et ignore un code invalide (prix normal). La réduction exacte n'est donc pas affichée ici.
       if (widget.content.id == null) {
-        setState(() => _errorMsg = 'Contenu introuvable');
+        setState(() => _errorMsg = tr('Ce contenu n\'est plus disponible.'));
         return;
       }
-      setState(() => _validCode = PromoCode(
-            creatorId: widget.content.ownerId,
-            contentId: widget.content.id,
-            code: input,
-            type: 'percent',
-            value: 0,
-          ));
+      // Aperçu par le serveur (`GET /paid-contents/{id}/promo-codes/{code}`) : ne consomme rien. Un code invalide n'est pas une erreur
+      // de l'API : `valid` est faux et `reason` dit pourquoi. Le prix réellement payé est recalculé par le serveur à l'achat.
+      final p = await PaidExtrasApi.previewPromo(widget.content.id!, input);
+      if (!mounted) return;
+      if (!p.valid) {
+        setState(() => _errorMsg = p.reasonMessage);
+        return;
+      }
+      setState(() {
+        _preview = p;
+        _validCode = PromoCode(
+          creatorId: widget.content.ownerId,
+          contentId: widget.content.id,
+          code: input,
+          type: p.type == 'fixed' ? 'fixed' : 'percent',
+          value: (p.value ?? 0).toDouble(),
+        );
+      });
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _errorMsg = e.status == 429 ? tr('Trop d\'essais. Réessaie dans une minute.') : PaidContentMessages.of(e));
     } catch (e) {
-      setState(() => _errorMsg = 'Une erreur est survenue. Réessaie.');
+      if (mounted) setState(() => _errorMsg = tr('Une erreur est survenue. Réessaie.'));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -81,10 +97,9 @@ class _PromoCodeModalState extends State<PromoCodeModal> {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    final original = widget.content.effectivePrice;
-    final discounted = _validCode != null
-        ? _validCode!.discountedPrice(original)
-        : original;
+    // Prix avant / après donnés par le serveur (FCFA) ; à défaut, calcul local à partir du code
+    final original = _preview?.priceXof.toDouble() ?? widget.content.effectivePrice;
+    final discounted = _preview?.priceAfterXof.toDouble() ?? (_validCode != null ? _validCode!.discountedPrice(original) : original);
     final saving = original - discounted;
 
     return Container(
@@ -115,7 +130,7 @@ class _PromoCodeModalState extends State<PromoCodeModal> {
                   color: const Color(0xFF25D366), size: 20),
               const SizedBox(width: 8),
               Text(
-                'Code promo',
+                tr('Code promo'),
                 style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
@@ -178,7 +193,7 @@ class _PromoCodeModalState extends State<PromoCodeModal> {
                         height: 16,
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: Colors.white))
-                    : const Text('Vérifier',
+                    : Text(tr('Vérifier'),
                         style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w700)),
@@ -226,7 +241,7 @@ class _PromoCodeModalState extends State<PromoCodeModal> {
                           color: Color(0xFF25D366), size: 18),
                       const SizedBox(width: 8),
                       Text(
-                        'Code ${_validCode!.code} valide !',
+                        tr('Code {c} valide !', {'c': _validCode!.code}),
                         style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -241,7 +256,7 @@ class _PromoCodeModalState extends State<PromoCodeModal> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Prix original',
+                            Text(tr('Prix original'),
                                 style: TextStyle(
                                     fontSize: 10,
                                     color: colors.textSecondary)),
@@ -295,7 +310,7 @@ class _PromoCodeModalState extends State<PromoCodeModal> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        'Vous économisez ${saving.toInt()} F',
+                        tr('Tu économises {n} F', {'n': saving.toInt()}),
                         style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -318,7 +333,7 @@ class _PromoCodeModalState extends State<PromoCodeModal> {
                       borderRadius: BorderRadius.circular(12)),
                 ),
                 child: Text(
-                  'Payer ${discounted.toInt()} F avec ce code',
+                  tr('Payer {n} F avec ce code', {'n': discounted.toInt()}),
                   style: const TextStyle(
                       color: Colors.black,
                       fontSize: 14,

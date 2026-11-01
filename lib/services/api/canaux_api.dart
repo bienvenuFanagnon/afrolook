@@ -4,6 +4,7 @@ import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:afrotok/services/api/canaux_mapper.dart';
+import 'package:afrotok/services/api/paid_file_types.dart';
 import 'package:afrotok/services/api/post_mapper.dart';
 import 'package:dio/dio.dart';
 
@@ -42,12 +43,15 @@ class CanauxApi {
   static String? apiCategory(String? c) => c != null && apiCategories.contains(c) ? c : null;
 
   /// Page de canaux. [mine] : seulement ceux dont je suis membre (propriétaire, administrateur ou abonné).
-  static Future<({List<Canal> items, String? next})> list({String? search, String? category, bool mine = false, String? cursor, int limit = 20, String? myId}) async {
+  /// [admin] : seulement ceux que j'administre (les miens et ceux où je suis nommé administrateur, abonnement non échu).
+  /// Chaque canal porte `me {is_owner, is_admin, is_member, can_post, expires_at}` : plus besoin de relire la fiche de chacun.
+  static Future<({List<Canal> items, String? next})> list({String? search, String? category, bool mine = false, bool admin = false, String? cursor, int limit = 20, String? myId}) async {
     final r = await _c.get('/channels', query: {
       'limit': limit,
       if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
       if (category != null && category.isNotEmpty) 'category': category,
       if (mine) 'mine': 1,
+      if (admin) 'admin': 1,
       if (cursor != null) 'cursor': cursor,
     });
     final rows = _list(r);
@@ -165,7 +169,8 @@ class CanauxApi {
   /// [private] : fichier payant (clé privée, jamais d'adresse publique). [onProgress] : 0 à 1.
   static Future<String> upload(File file, {bool private = false, String? contentType, void Function(double)? onProgress}) async {
     final ext = file.path.contains('.') ? file.path.split('.').last.toLowerCase() : '';
-    final type = contentType ?? _types[ext] ?? 'application/octet-stream';
+    // Fichier payant (privé) : types élargis du lot B2 (audio wav/aac/ogg/flac, mov, webm, epub, documents Office, 7z, rar, psd) ; public : types de base.
+    final type = contentType ?? (private ? PaidFileTypes.mimeFor(ext) : null) ?? _types[ext] ?? 'application/octet-stream';
     final size = await file.length();
     final created = _map(await _c.post('/uploads', body: {'content_type': type, 'size': size, if (private) 'private': true}));
     final headers = Map<String, dynamic>.from((created['headers'] as Map?) ?? {'Content-Type': type});

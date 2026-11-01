@@ -1,4 +1,3 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
@@ -71,53 +70,18 @@ class UserPresenceWidget extends StatelessWidget {
     debugPrint(
         '🔄 [PRESENCE WIDGET] Initialisation du Stream pour l\'utilisateur: $userId');
 
-    // Miroir léger `UserPresence/{uid}` (quelques octets) ; repli sur le profil complet s'il n'existe pas encore.
+    // La présence reste sur Firebase : document léger `UserPresence/{identifiant API}` (quelques octets), écrit par la personne elle-même.
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
           .collection('UserPresence')
           .doc(userId)
-          .snapshotsM('user_presence_widget.dart:78'),
+          .snapshots(),
       builder: (context, presence) {
         if (presence.hasData && presence.data!.exists) {
           return _render(
               context, presence.data!.data() as Map<String, dynamic>?);
         }
-        if (presence.connectionState == ConnectionState.waiting)
-          return const SizedBox.shrink();
-        return _legacyProfileStream(context);
-      },
-    );
-  }
-
-  /// Ancien comportement : écoute du profil complet (utilisé tant que le miroir de présence est absent).
-  Widget _legacyProfileStream(BuildContext context) {
-    return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('Users')
-          .doc(userId)
-          .snapshotsM('user_presence_widget.dart:97'),
-      builder: (context, snapshot) {
-        // En cas d'erreur sur le flux
-        if (snapshot.hasError) {
-          debugPrint(
-              '❌ [PRESENCE STREAM ERROR] Erreur pour l\'utilisateur $userId: ${snapshot.error}');
-          return const SizedBox.shrink();
-        }
-
-        // Pendant l'attente du premier signal de données
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          debugPrint(
-              '⏳ [PRESENCE STREAM] En attente des données de Firestore pour $userId...');
-          return const SizedBox.shrink();
-        }
-
-        if (!snapshot.hasData || !snapshot.data!.exists) {
-          debugPrint(
-              '⚠️ [PRESENCE STREAM] Document inexistant ou vide sur Firestore pour l\'ID: $userId');
-          return const SizedBox.shrink();
-        }
-
-        return _render(context, snapshot.data!.data() as Map<String, dynamic>?);
+        return const SizedBox.shrink();
       },
     );
   }

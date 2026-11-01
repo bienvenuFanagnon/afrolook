@@ -1,7 +1,6 @@
 
 
 import 'package:afrotok/services/conversation_opener.dart';
-import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/services/followers_count_service.dart';
 import 'package:afrotok/utils/count_format.dart';
@@ -11,7 +10,6 @@ import 'package:afrotok/layout/responsive_layout.dart';
 
 
 import 'package:afrotok/services/api.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Chats et Messages restent sur Firebase
 import 'package:afrotok/services/api/users_api.dart';
 import 'package:afrotok/services/api/users_mapper.dart';
 import 'package:flutter/material.dart';
@@ -51,7 +49,6 @@ class _MesAmisState extends State<MesAmis> {
 
   late UserProvider userProvider =
   Provider.of<UserProvider>(widget.context, listen: false);
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
   String formatNumber(int number) {
     if (number >= 1000) {
       double nombre = number / 1000;

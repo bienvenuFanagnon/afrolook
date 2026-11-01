@@ -77,7 +77,9 @@ import '../../postDetails.dart';
 import '../../postDetailsVideo.dart';
 import '../../post_video_format_tel_details.dart';
 import '../../pub/afrolook_inline_ad.dart';
-import '../../pub/rewarded_ad_widget.dart';
+import 'package:afrotok/l10n/tr.dart';
+import 'package:afrotok/services/api/post_social_api.dart';
+import 'package:afrotok/widgets/post_social_actions.dart';
 import '../../widgetGlobal.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -163,8 +165,6 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   Random random = Random();
   bool _isLoading = false;
   bool _isProcessingFollow = false;
-  final GlobalKey<RewardedAdWidgetState> _rewardedAdKey = GlobalKey();
-  bool _showRewardedAd = false;
   bool _isSupporting = false;
   bool? _hasSeenSupportModal; // null = pas encore chargé
   // Variables pour stocker les données récupérées individuellement
@@ -510,38 +510,32 @@ Future<void> _handleSupportAd() async {
       );
       return;
     }
-    // Pas encore disponible côté serveur : message clair plutôt qu'une pub sans effet.
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: const Text('Le soutien par publicité sera bientôt de retour.'), backgroundColor: AppColors.of(context).warning, duration: const Duration(seconds: 2)),
-    );
-  }
-  void _startSupportAd() {
-    setState(() {
-      _isSupporting = true;
-      _showRewardedAd = true;
-    });
-    // Attendre que le widget soit monté puis lancer la pub
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (_rewardedAdKey.currentState != null) {
-        _rewardedAdKey.currentState!.showAd();
-
-      } else {
-        setState(() {
-          _isSupporting = false;
-          _showRewardedAd = false;
-        });
+    if (await PostSocialApi.supportedToday(widget.post.id!)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tr('Tu as déjà soutenu cette publication aujourd\'hui. Reviens demain !')), backgroundColor: AppColors.of(context).warning),
+        );
       }
-    });
+      return;
+    }
+    if (_hasSeenSupportModal == null) await _loadSupportModalSeen();
+    if (_hasSeenSupportModal == false) {
+      if (mounted) _showSupportModal();
+      return;
+    }
+    _startSupportAd();
   }
 
-Future<void> _onSupportAdRewarded() async {
-    // Le soutien par publicité n'a pas encore de route côté API (voir lacunes_api_publications.md) : aucun crédit n'est simulé.
-    if (!mounted) return;
-    setState(() {
-      _isSupporting = false;
-      _showRewardedAd = false;
+  /// Pub récompensée regardée en entier, déclarée au serveur puis consommée par `POST /posts/{id}/support-ad` (messages et « Réessayer » inclus).
+  Future<void> _startSupportAd() async {
+    if (_isSupporting) return;
+    setState(() => _isSupporting = true);
+    await PostSocialActions.supportWithAd(context, widget.post, myId: authProvider.loginUserData.id, onSupported: (_) {
+      if (mounted) setState(() {});
     });
+    if (mounted) setState(() => _isSupporting = false);
   }
+
   Widget _buildSupportButton(bool hasAccess) {
     final isOwner = authProvider.loginUserData.id == widget.post.user_id;
     if (isOwner) return const SizedBox.shrink();
@@ -873,20 +867,6 @@ Future<void> _loadCanalData() async {
                         AdSlot(key: ValueKey('post_inline_ad_${widget.post.id}'), kind: AdSlotKind.feed, own: () => const AfrolookInlineAd()),
                         const SizedBox(height: 8),
                       ],
-                      if (_showRewardedAd)
-                        RewardedAdWidget(
-                          key: _rewardedAdKey,
-                          onUserEarnedReward: (amount, name) async {
-                            await _onSupportAdRewarded();
-                          },
-                          onAdDismissed: () {
-                            setState(() {
-                              _showRewardedAd = false;
-                              _isSupporting = false;
-                            });
-                          },
-                          child: const SizedBox.shrink(),
-                        ),
                       const SizedBox(height: 12),
                     ],
                   ),
@@ -958,7 +938,7 @@ Future<void> _loadCanalData() async {
             Icon(Icons.repeat, size: 14, color: colors.textSecondary),
           const SizedBox(width: 5),
           Text(
-            '@$reposterPseudo a republié',
+            tr('@{p} a republié', {'p': reposterPseudo}),
             style: TextStyle(fontSize: 12, color: colors.textSecondary, fontWeight: FontWeight.w500),
           ),
         ],
@@ -969,21 +949,10 @@ Future<void> _loadCanalData() async {
   // ── Logique de republication ─────────────────────────────────────────────────
 Future<void> _handleRepost() async {
     final me = context.read<UserAuthProvider>().loginUserData;
-    final originalPost = widget.post;
-    if (me.id == null || originalPost.id == null) return;
-
-    if (me.id == originalPost.user_id) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tu ne peux pas republier ton propre post'), duration: Duration(seconds: 2)),
-      );
-      return;
-    }
-    // La republication (diffusion aux abonnés) n'a pas encore de route côté API (voir lacunes_api_publications.md).
-    // On enregistre seulement le signal de partage pour le fil, sans prétendre republier.
-    unawaited(PostsApi.signal(originalPost.id!, 'share'));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('La republication sera bientôt disponible.'), duration: Duration(seconds: 2)),
-    );
+    // Le serveur enregistre la republication (une par personne), la compte comme un partage et la diffuse aux abonnés.
+    await PostSocialActions.repost(context, widget.post, myId: me.id, onDone: () {
+      if (mounted) setState(() {});
+    });
   }
 
   // ── Avatar seul (36px) pour la colonne gauche du layout Threads ─────────────

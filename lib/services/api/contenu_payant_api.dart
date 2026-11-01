@@ -237,6 +237,8 @@ class ContenuPayantApi {
         'text': m['text'] ?? '',
         'message': m['text'] ?? '',
         'createdAt': _ms(m['created_at']),
+        // `edited_at` (null si jamais modifié) : la liste l'indique depuis le lot B2
+        'editedAt': m['edited_at'] == null ? null : _ms(m['edited_at']),
       });
     }).toList());
   }

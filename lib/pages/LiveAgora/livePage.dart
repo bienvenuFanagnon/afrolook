@@ -1,4 +1,6 @@
-import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/api_identity.dart';
+import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/users_mapper.dart';
 import '../../widgets/music/music_overlay.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
@@ -277,7 +279,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
   Future<void> _removeUserFromSpectators() async {
     try {
-      final currentUserId = _auth.currentUser?.uid;
+      final currentUserId = ApiIdentity.myId;
       if (currentUserId != null && !widget.isHost && !_isParticipant) {
         await _firestore.collection('lives').doc(widget.liveId).update({
           'spectators': FieldValue.arrayRemove([currentUserId]),
@@ -303,7 +305,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         // Envoyer le like à Firestore (visible par tous les spectateurs)
         await _firestore.collection('live_likes').add({
           'liveId': widget.liveId,
-          'userId': user.uid,
+          'userId': (ApiIdentity.myId ?? user.uid),
           'username': authProvider.loginUserData.pseudo ?? 'Utilisateur',
           'userImage': authProvider.loginUserData.imageUrl ?? '',
           'timestamp': DateTime.now(),
@@ -332,7 +334,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   // ==================== ACCÈS LIBRE POUR HÔTE/PARTICIPANTS/ADMIN ====================
 
   bool _shouldSkipTrial() {
-    final currentUserId = _auth.currentUser?.uid;
+    final currentUserId = ApiIdentity.myId;
     return widget.isHost ||
         _isParticipant ||
         authProvider.loginUserData.role == UserRole.ADM.name ||
@@ -340,7 +342,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }
 
   Future<void> _grantFreeAccess() async {
-    final currentUserId = _auth.currentUser?.uid;
+    final currentUserId = ApiIdentity.myId;
     if (currentUserId == null) return;
 
     try {
@@ -372,11 +374,11 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   void _initializeTrialSystem() async {
     if (!widget.postLive.isPaidLive || _shouldSkipTrial()) return;
 
-    final currentUserId = _auth.currentUser?.uid;
+    final currentUserId = ApiIdentity.myId;
     if (currentUserId == null) return;
 
     try {
-      final liveDoc = await _firestore.collection('lives').doc(widget.liveId).getM('livePage.dart:377');
+      final liveDoc = await _firestore.collection('lives').doc(widget.liveId).get();
       if (liveDoc.exists) {
         final data = liveDoc.data()!;
         final userWatchTime = Map<String, dynamic>.from(data['userWatchTime'] ?? {});
@@ -469,7 +471,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
   Future<void> _updateUserWatchTime() async {
     if (!widget.postLive.isPaidLive) return;
-    final currentUserId = _auth.currentUser?.uid;
+    final currentUserId = ApiIdentity.myId;
     if (currentUserId == null) return;
 
     try {
@@ -511,7 +513,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
       if (paymentSuccess) {
 
-        final currentUserId = _auth.currentUser?.uid;
+        final currentUserId = ApiIdentity.myId;
         if (currentUserId != null) {
           await _firestore.collection('lives').doc(widget.liveId).update({
             'userWatchTime.$currentUserId': 999,
@@ -818,7 +820,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       ));
 
       setState(() => _isScreenSharing = true);
-      await _updateScreenSharingState(isSharing: true, sharerId: _auth.currentUser!.uid);
+      await _updateScreenSharingState(isSharing: true, sharerId: ApiIdentity.myId!);
     } catch (e) {
       printVm("❌ Erreur démarrage partage écran: $e");
     }
@@ -922,7 +924,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         .collection('live_likes')
         .where('liveId', isEqualTo: widget.liveId)
         .orderBy('timestamp', descending: false)
-        .snapshotsM('livePage.dart:928')
+        .snapshots()
         .listen((snapshot) {
       for (var doc in snapshot.docChanges) {
         if (doc.type == DocumentChangeType.added) {
@@ -968,7 +970,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
         _firestore.collection('livecomments').add({
           'liveId': widget.liveId,
-          'userId': user.uid,
+          'userId': (ApiIdentity.myId ?? user.uid),
           'username': authProvider.loginUserData.pseudo ?? 'Utilisateur',
           'userImage': authProvider.loginUserData.imageUrl ?? '',
           'message': message,
@@ -1023,7 +1025,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   // ==================== GESTION FIREBASE STREAM ====================
 
   void _setupFirestoreListeners() {
-    _liveSubscription = _firestore.collection('lives').doc(widget.liveId).snapshotsM('livePage.dart:1034').listen((snapshot) {
+    _liveSubscription = _firestore.collection('lives').doc(widget.liveId).snapshots().listen((snapshot) {
       if (snapshot.exists) {
         final data = snapshot.data()!;
         if (data['isLive'] == false && !_endHandled) {
@@ -1059,7 +1061,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           _isLivePaused = data['isPaused'] == true;
           _pauseMessage = data['pauseMessage'] as String?;
           _topDonors = topDonors;
-          final currentUserId = _auth.currentUser?.uid;
+          final currentUserId = ApiIdentity.myId;
           _isParticipant = currentUserId != null && _participants.contains(currentUserId);
         });
       }
@@ -1078,7 +1080,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         .where('liveId', isEqualTo: widget.liveId)
         .orderBy('timestamp', descending: true)
         .limit(50)
-        .snapshotsM('livePage.dart:1089')
+        .snapshots()
         .listen((snapshot) {
       setState(() {
         _comments = snapshot.docs.map((doc) => LiveComment.fromMap(doc.data())).toList();
@@ -1088,7 +1090,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     _usersSubscription = _firestore
         .collection('lives')
         .doc(widget.liveId)
-        .snapshotsM('livePage.dart:1099')
+        .snapshots()
         .listen((snapshot) {
       if (snapshot.exists) {
         final data = snapshot.data()!;
@@ -1105,7 +1107,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     _typingSubscription = _firestore
         .collection('live_typing')
         .where('liveId', isEqualTo: widget.liveId)
-        .snapshotsM('livePage.dart:1116')
+        .snapshots()
         .listen((snapshot) {
       Map<String, dynamic> newTypingUsers = {};
       for (var doc in snapshot.docs) {
@@ -1124,9 +1126,9 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   void _startTyping() {
     final user = _auth.currentUser;
     if (user != null) {
-      _firestore.collection('live_typing').doc(user.uid).set({
+      _firestore.collection('live_typing').doc(ApiIdentity.myId ?? user.uid).set({
         'liveId': widget.liveId,
-        'userId': user.uid,
+        'userId': (ApiIdentity.myId ?? user.uid),
         'username': authProvider.loginUserData.pseudo ?? 'Utilisateur',
         'timestamp': DateTime.now(),
       });
@@ -1136,7 +1138,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   void _stopTyping() {
     final user = _auth.currentUser;
     if (user != null) {
-      _firestore.collection('live_typing').doc(user.uid).delete();
+      _firestore.collection('live_typing').doc(ApiIdentity.myId ?? user.uid).delete();
     }
   }
 
@@ -1144,10 +1146,10 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
   Future<void> _fetchHostData() async {
     try {
-      final hostDoc = await _firestore.collection('Users').doc(widget.postLive.hostId).getM('livePage.dart:1155');
-      if (hostDoc.exists) {
+      final host = userFromApi(await UsersApi.publicProfile(widget.postLive.hostId!));
+      if (mounted) {
         setState(() {
-          _hostData = UserData.fromJson(hostDoc.data()!);
+          _hostData = host;
         });
       }
     } catch (e) {
@@ -1165,16 +1167,10 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   void _fetchAllUsers() async {
     try {
       final allUserIds = {..._participants, ..._spectators, widget.postLive.hostId!};
-      List<UserData> users = [];
+      final profiles = await UsersApi.lookup(allUserIds.toList());
+      final List<UserData> users = profiles.map((j) => userFromApi(j)).toList();
 
-      for (final userId in allUserIds) {
-        final userDoc = await _firestore.collection('Users').doc(userId).getM('livePage.dart:1179');
-        if (userDoc.exists) {
-          users.add(UserData.fromJson(userDoc.data()!));
-        }
-      }
-
-      setState(() => _allUsers = users);
+      if (mounted) setState(() => _allUsers = users);
     } catch (e) {
       printVm("❌ Erreur récupération utilisateurs: $e");
     }
@@ -1244,12 +1240,12 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       final liveProvider = context.read<LiveProvider>();
 
       if (authProvider.loginUserData.role == UserRole.ADM.name) {
-        // await liveProvider.joinAsSpectator(widget.liveId, _auth.currentUser!.uid);
+        // await liveProvider.joinAsSpectator(widget.liveId, ApiIdentity.myId!);
         await _grantFreeAccess();
         // return;
       }
 
-      await liveProvider.joinAsSpectator(widget.liveId, _auth.currentUser!.uid);
+      await liveProvider.joinAsSpectator(widget.liveId, ApiIdentity.myId!);
     } catch (e) {
       printVm("❌ Erreur rejoindre comme spectateur: $e");
     }
@@ -1489,7 +1485,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       if (!widget.isHost) {
         await _firestore.collection('lives').doc(widget.liveId).update({
           'viewerCount': FieldValue.increment(-1),
-          'spectators': FieldValue.arrayRemove([_auth.currentUser!.uid]),
+          'spectators': FieldValue.arrayRemove([ApiIdentity.myId!]),
         });
       }
       Navigator.pop(context);
@@ -2109,13 +2105,10 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }
   Future<void> _showUserDetailsById(String userId) async {
     try {
-      // Récupérer les données de l'utilisateur depuis Firestore
-      final userDoc = await _firestore.collection('Users').doc(userId).getM('livePage.dart:2115');
+      // Profil public lu dans l'API
+      final userData = userFromApi(await UsersApi.publicProfile(userId));
 
-      if (userDoc.exists) {
-        // Convertir les données en UserData
-        final userData = UserData.fromJson(userDoc.data()!);
-
+      if (mounted) {
         // Récupérer les dimensions de l'écran
         final double width = MediaQuery.of(context).size.width;
         final double height = MediaQuery.of(context).size.height;
@@ -2125,21 +2118,15 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
         // Optionnel : Mettre à jour l'état du follow si nécessaire
         // setState(() => _isFollowing = !_isFollowing);
-      } else {
-        printVm("❌ Utilisateur non trouvé avec l'ID: $userId");
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Utilisateur non trouvé'),
-            backgroundColor: Colors.red,
-          ),
-        );
       }
     } catch (e) {
       printVm("❌ Erreur récupération utilisateur: $e");
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Erreur lors du chargement des informations'),
+          content: Text(UsersApi.message(e, fallback: 'Impossible de charger ce profil pour le moment.')),
           backgroundColor: Colors.red,
+          action: SnackBarAction(label: 'Réessayer', textColor: Colors.white, onPressed: () => _showUserDetailsById(userId)),
         ),
       );
     }

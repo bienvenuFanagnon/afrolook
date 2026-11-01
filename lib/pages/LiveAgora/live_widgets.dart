@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:afrotok/utils/platform_guard.dart';
 import 'package:afrotok/services/coin_checkout.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/model_data.dart';
 import 'livesAgora.dart';
 

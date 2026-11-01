@@ -1,4 +1,6 @@
+import 'package:afrotok/l10n/tr.dart';
 import 'package:afrotok/services/api/chat_api.dart';
+import 'package:afrotok/services/api/groups_b2_models.dart';
 import 'package:afrotok/services/api/chat_mapper.dart';
 import 'package:afrotok/services/api/group_keys_api.dart';
 import 'package:afrotok/services/api/jeux_api.dart';
@@ -72,7 +74,15 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
   /// Droits par membre au format attendu par l'écran des permissions (calculés par l'API : can_write / can_share).
   Map<String, dynamic> _permsOf(List<Map<String, dynamic>> members) => {
         for (final m in members)
-          if (m['can_write'] != null || m['can_share'] != null) '${m['user_id']}': {'can_write': m['can_write'], 'can_share': m['can_share']},
+          '${m['user_id']}': {
+            'can_write': m['can_write'],
+            'can_share': m['can_share'],
+            // droits fins du lot B2 (faux par défaut ; la liste complète des membres n'est donnée qu'aux administrateurs et à l'équipe)
+            'can_delete_others': m['can_delete_others'] == true,
+            'can_pin': m['can_pin'] == true,
+            'can_invite': m['can_invite'] == true,
+            'role': m['role'],
+          },
       };
 
   Future<void> _loadGroup() async {
@@ -828,10 +838,11 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
           style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 17),
         ),
         actions: [
-          if (isOwnerOrAdmin)
+          // `can_invite` ouvre l'ajout de membres à un simple membre (groupe gratuit seulement ; les blocages sont vérifiés par le serveur)
+          if (isOwnerOrAdmin || (_groupData['me_can_invite'] == true && JeuxApi.asInt(_groupData['subscription_price_coins']) == 0))
             IconButton(
               icon: Icon(Icons.person_add_alt_1_rounded, color: _colors.primary),
-              tooltip: 'Ajouter un membre',
+              tooltip: tr('Ajouter un membre'),
               onPressed: _showAddMemberSheet,
             ),
         ],
@@ -2042,20 +2053,22 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
     final defaultWrite = _groupData['default_can_write'] != false;
     final defaultShare = _groupData['default_can_share'] != false;
 
+    // Un administrateur (ou le propriétaire) a toujours tous les droits : on les montre activés et non modifiables
+    final memberIsAdmin = current['role'] == 'admin' || current['role'] == 'owner';
     final perms = <String, bool>{
-      'can_write': current['can_write'] ?? defaultWrite,
-      'can_share': current['can_share'] ?? defaultShare,
-      'can_delete_others': current['can_delete_others'] == true,
-      'can_pin': current['can_pin'] == true,
-      'can_invite': current['can_invite'] == true,
+      'can_write': memberIsAdmin || (current['can_write'] ?? defaultWrite),
+      'can_share': memberIsAdmin || (current['can_share'] ?? defaultShare),
+      'can_delete_others': memberIsAdmin || current['can_delete_others'] == true,
+      'can_pin': memberIsAdmin || current['can_pin'] == true,
+      'can_invite': memberIsAdmin || current['can_invite'] == true,
     };
 
     final labels = <String, String>{
-      'can_write': 'Écrire des messages',
-      'can_share': 'Partager (posts, produits, lives, contenus)',
-      'can_delete_others': 'Supprimer les messages des autres',
-      'can_pin': 'Épingler des messages',
-      'can_invite': 'Inviter des membres',
+      'can_write': tr('Écrire des messages'),
+      'can_share': tr('Partager (posts, produits, lives, contenus)'),
+      'can_delete_others': tr('Supprimer les messages des autres'),
+      'can_pin': tr('Épingler des messages'),
+      'can_invite': tr('Inviter des membres (groupe gratuit)'),
     };
 
     final goldRequired = <String>{'can_write', 'can_share'};
@@ -2097,7 +2110,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Droits de @$pseudo',
+                              tr('Droits de @{p}', {'p': pseudo}),
                               style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w700, fontSize: 15),
                             ),
                           ),
@@ -2129,16 +2142,25 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                                     ],
                                   ],
                                 ),
-                                onChanged: locked ? null : (val) {
-                                  setStateDialog(() => perms[e.key] = val);
-                                  // l'API gère can_write et can_share ; les autres droits (supprimer, épingler, inviter) : voir lacunes_api_jeux_medias.md
-                                  if (e.key == 'can_write' || e.key == 'can_share') {
-                                    ChatApi.updateMember(widget.groupId, userId, {e.key: val}).catchError((Object _) {});
+                                onChanged: (locked || memberIsAdmin) ? null : (val) async {
+                                  final before = perms[e.key] ?? false;
+                                  void apply(bool v) {
+                                    setStateDialog(() => perms[e.key] = v);
+                                    final mp = Map<String, dynamic>.from((_groupData['member_permissions'] as Map<String, dynamic>?) ?? {});
+                                    mp[userId] = {...(mp[userId] as Map<String, dynamic>? ?? {}), e.key: v};
+                                    if (mounted) setState(() => _groupData['member_permissions'] = mp);
                                   }
-                                  final mp = Map<String, dynamic>.from(
-                                      (_groupData['member_permissions'] as Map<String, dynamic>?) ?? {});
-                                  mp[userId] = {...(mp[userId] as Map<String, dynamic>? ?? {}), e.key: val};
-                                  setState(() => _groupData['member_permissions'] = mp);
+
+                                  apply(val);
+                                  // `PATCH /groups/{id}/members/{userId}` : can_write, can_share, can_delete_others, can_pin, can_invite (booléens)
+                                  try {
+                                    await ChatApi.updateMember(widget.groupId, userId, {e.key: val});
+                                  } catch (err) {
+                                    apply(before); // le serveur a refusé : le droit revient à son ancienne valeur
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(GroupMessages.of(err))));
+                                    }
+                                  }
                                 },
                               );
                             }),

@@ -72,22 +72,11 @@ class _CanalListPageByUserState extends State<CanalListPageByUser> {
         isLoading = false;
       });
 
-      // Canaux que j'administre sans les avoir créés : la liste ne dit pas si je suis administrateur, on lit les fiches (30 au plus, par groupes de 6)
-      final others = mine.where((c) => c.userId != uid).take(30).toList();
-      final admin = <Canal>[];
-      for (var i = 0; i < others.length; i += 6) {
-        final group = others.skip(i).take(6);
-        final full = await Future.wait(group.map((c) async {
-          try {
-            return await CanauxApi.get(c.id!, myId: uid);
-          } catch (_) {
-            return null;
-          }
-        }));
-        admin.addAll(full.whereType<Canal>().where((c) => c.adminIds?.contains(uid) == true));
-        if (!mounted) return;
-        setState(() => adminCanaux = List.of(admin));
-      }
+      // Canaux que j'administre sans les avoir créés : la liste donne désormais MA situation (`me.is_admin`, faux si l'abonnement de
+      // l'administrateur est échu) : plus de relecture d'une fiche par canal.
+      final admin = mine.where((c) => c.userId != uid && c.adminIds?.contains(uid) == true).toList();
+      if (!mounted) return;
+      setState(() => adminCanaux = admin);
     } catch (e) {
       printVm('Erreur chargement canaux: $e');
       if (!mounted) return;

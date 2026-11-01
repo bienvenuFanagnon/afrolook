@@ -3,7 +3,7 @@
 // Les titres complets (liens d'écoute temporaires, payants) ne passent PAS par le CDN : leur lien meurt après 10 minutes
 // et un cache public les garderait en ligne.
 
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 import '../services/remote_config_service.dart';
 
@@ -29,7 +29,7 @@ class MediaCdn {
     if (!u.startsWith(_host)) return null;
     String bucket;
     try {
-      bucket = FirebaseStorage.instance.app.options.storageBucket ?? 'afrolooki.appspot.com';
+      bucket = Firebase.app().options.storageBucket ?? 'afrolooki.appspot.com';
     } catch (_) {
       bucket = 'afrolooki.appspot.com';
     }

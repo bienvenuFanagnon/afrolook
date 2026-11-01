@@ -1,4 +1,4 @@
-import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/api_identity.dart';
 import '../../services/media_shrink.dart';
 import 'package:afrotok/services/account_gate.dart';
 import '../../utils/platform_guard.dart';
@@ -9,7 +9,6 @@ import 'package:cloud_firestore/cloud_firestore.dart'; // uniquement l'état en 
 import 'package:afrotok/services/api/chat_api.dart';
 import 'package:afrotok/services/api/lives_mapper.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -81,7 +80,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
     final user = _auth.currentUser;
     if (user == null) return;
     try {
-      final page = await LivesApi.list(status: 'live', hostId: user.uid, limit: 1);
+      final page = await LivesApi.list(status: 'live', hostId: (ApiIdentity.myId ?? user.uid), limit: 1);
       if (page.items.isEmpty || !mounted) return;
       final apiLive = page.items.first;
       final me = Provider.of<UserAuthProvider>(context, listen: false).loginUserData;
@@ -1776,7 +1775,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
 
     try {
       // Un seul live actif par hôte : l'API termine l'ancien en démarrant un nouveau, on prévient quand même la personne
-      final already = await LivesApi.list(status: 'live', hostId: user.uid, limit: 1);
+      final already = await LivesApi.list(status: 'live', hostId: (ApiIdentity.myId ?? user.uid), limit: 1);
       if (already.items.isNotEmpty && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Votre live précédent a été terminé pour démarrer celui-ci'), backgroundColor: Colors.orange, duration: Duration(seconds: 3)),
@@ -2397,10 +2396,10 @@ class _CreateLivePageState extends State<CreateLivePage> {
 //       // 3. VÉRIFIER SI L'UTILISATEUR A DÉJÀ UN LIVE ACTIF
 //       final activeLiveQuery = await _firestore
 //           .collection('lives')
-//           .where('hostId', isEqualTo: user.uid)
+//           .where('hostId', isEqualTo: (ApiIdentity.myId ?? user.uid))
 //           .where('isLive', isEqualTo: true)
 //           .limit(1)
-//           .getM('create_live_page.dart:2437');
+//           .get();
 //
 //       if (activeLiveQuery.docs.isNotEmpty) {
 //         // L'utilisateur a déjà un live actif
@@ -2441,7 +2440,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
 //       // Création du live avec tous les paramètres
 //       final PostLive newLive = PostLive(
 //         liveId: liveId,
-//         hostId: user.uid,
+//         hostId: (ApiIdentity.myId ?? user.uid),
 //         hostName: authProvider.loginUserData.pseudo! ?? 'Utilisateur',
 //         hostImage: authProvider.loginUserData.imageUrl! ?? 'https://via.placeholder.com/150',
 //         title: _titleController.text.trim(),

@@ -9,7 +9,6 @@ import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/postComments.dart';
 import 'package:afrotok/pages/postDetails.dart';
 import 'package:afrotok/pages/postDetailsVideo.dart';
-import 'package:afrotok/pages/socialVideos/video_details.dart';
 import 'package:afrotok/pages/user/amis/mesAmis.dart';
 import 'package:afrotok/pages/user/amis/pageMesInvitations.dart';
 import 'dart:async';
@@ -21,6 +20,7 @@ import 'package:afrotok/widgets/feed/sections/social_follow_card.dart';
 import 'package:afrotok/pages/music/music_page.dart';
 import 'package:afrotok/services/api/chat_api.dart';
 import 'package:afrotok/services/api/chat_mapper.dart';
+import 'package:afrotok/services/api/notification_text.dart';
 import 'package:afrotok/services/api/jeux_api.dart';
 import 'package:afrotok/services/api/users_api.dart';
 import 'package:afrotok/services/api/users_mapper.dart';
@@ -240,17 +240,9 @@ class _MesNotificationState extends State<MesNotification> {
   ];
 
   // ── Groupes accordion ──
-  static const Map<String, List<String>> _groupTypes = {
-    'J\'aime':                    ['FAVORITE'],
-    'Commentaires':               ['COMMENT', 'COMMENTAIRE'],
-    'Abonnés':                    ['ABONNER', 'INVITATION', 'ACCEPTINVITATION'],
-    'Messages':                   ['MESSAGE'],
-    'Publications & Lives':       ['NEWPOST', 'POST', 'LIVE', 'CHALLENGE'],
-    'Articles & Contenus':        ['ARTICLE', 'CHRONIQUE', 'SERVICE'],
-    'Récompenses':                ['WEEKLY_REWARD'],
-    'Gains & Parrainages':        ['GAIN', 'PARRAINAGE'],
-    'Afrolook':                   ['SUPPORT', 'MARKETING', 'COMPTE_OFFICIEL', 'USER'],
-  };
+  // Types du lot B2 rangés : MENTION et REPLY avec les commentaires, COMMENT_LIKE et LIKE avec les j'aime, REPOST avec les publications,
+  // FOLLOW_CANAL avec les abonnés, SUPPORT avec les gains (le créateur reçoit une pièce).
+  static const Map<String, List<String>> _groupTypes = NotificationText.groupTypes;
 
   static const Map<String, IconData> _groupIcons = {
     'J\'aime':                    Icons.favorite_border,
@@ -378,6 +370,17 @@ class _MesNotificationState extends State<MesNotification> {
       case 'COMMENTAIRE':
         return _buildIconContainer(Icons.comment, _colors.info, iconSize);
       default:
+        // MENTION, COMMENT_LIKE, REPOST, SUPPORT, FOLLOW_CANAL, LIKE, REPLY
+        final look = NotificationText.look(notification.type);
+        if (look != null) {
+          final color = switch (look.tone) {
+            0 => _colors.danger,
+            1 => _colors.info,
+            2 => _colors.success,
+            _ => _colors.warning,
+          };
+          return _buildIconContainer(look.icon, color, iconSize);
+        }
         return _buildIconContainer(Icons.notifications, _colors.textSecondary, iconSize);
     }
   }
@@ -527,7 +530,7 @@ class _MesNotificationState extends State<MesNotification> {
     _hideLoadingOverlay();
     if (!mounted) return;
     final title = (n.titre ?? '').trim();
-    final text = (n.description ?? '').trim();
+    final text = (NotificationText.sentence(n.type, body: n.description) ?? n.description ?? '').trim();
     if (title.isNotEmpty || text.isNotEmpty) {
       await showDialog(
         context: context,
@@ -580,6 +583,10 @@ class _MesNotificationState extends State<MesNotification> {
           break;
         case 'REPOST':
         case 'COMMENT_LIKE':
+        case 'MENTION':
+        case 'SUPPORT':
+        case 'LIKE':
+        case 'REPLY':
           if ((notification.post_id ?? '').isNotEmpty) {
             await _handlePostNotification(notification);
           } else {
@@ -1158,7 +1165,7 @@ class _MesNotificationState extends State<MesNotification> {
                         ),
                       ),
                       TextSpan(
-                        text: ' ${notification.description ?? ""}',
+                        text: ' ${NotificationText.sentence(notification.type, body: notification.description) ?? notification.description ?? ""}',
                         style: TextStyle(
                           color: isUnread ? _colors.textPrimary : _colors.textSecondary,
                         ),
@@ -1273,7 +1280,7 @@ class _MesNotificationState extends State<MesNotification> {
 
     return FilterChip(
       label: Text(
-        type,
+        NotificationText.typeLabel(type),
         style: TextStyle(
           fontSize: 12,
           color: isSelected ? _colors.onAccent : (isDefault ? _colors.danger : _colors.textSecondary),
@@ -1565,7 +1572,7 @@ class _MesNotificationState extends State<MesNotification> {
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
-                              _l10n.notifFilterLabel(_selectedTypeFilter ?? ''),
+                              _l10n.notifFilterLabel(NotificationText.typeLabel(_selectedTypeFilter ?? '')),
                               style: TextStyle(
                                 color: _colors.danger,
                                 fontSize: 12,
@@ -1643,7 +1650,7 @@ class _MesNotificationState extends State<MesNotification> {
                                       const SizedBox(width: 10),
                                       Expanded(
                                         child: Text(
-                                          group,
+                                          context.tr(group),
                                           style: TextStyle(
                                             fontWeight: FontWeight.w700,
                                             fontSize: 14,
@@ -1668,7 +1675,7 @@ class _MesNotificationState extends State<MesNotification> {
                                         ),
                                       if (isEmpty)
                                         Text(
-                                          'Vide',
+                                          context.tr('Vide'),
                                           style: TextStyle(color: _colors.textSecondary.withOpacity(0.4), fontSize: 11),
                                         )
                                       else

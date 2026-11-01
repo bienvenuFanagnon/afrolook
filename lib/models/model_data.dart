@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/pages/LiveAgora/livesAgora.dart';
-import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp; // simple type de date (anciennes valeurs en cache) ; aucune lecture Firestore
 
 import 'package:flutter/material.dart';
 
@@ -1549,10 +1548,22 @@ class UserData {
       return value > 9999999999999 ? value ~/ 1000 : value;
     }
 
-    if (value is Timestamp) {
-      return value.millisecondsSinceEpoch;
-    }
+    // Ancienne valeur en cache ayant la forme d'une date (Timestamp ou DateTime) : lue sans dépendre de Firestore
+    final ms = _dateMillis(value);
+    if (ms != null) return ms;
 
+    return null;
+  }
+}
+
+/// Millisecondes d'une valeur « date » (DateTime, ou objet exposant `millisecondsSinceEpoch` comme l'ancien Timestamp) ; null sinon.
+int? _dateMillis(dynamic v) {
+  if (v is DateTime) return v.millisecondsSinceEpoch;
+  if (v == null || v is num || v is String || v is bool || v is Map || v is List) return null;
+  try {
+    final ms = (v as dynamic).millisecondsSinceEpoch;
+    return ms is int ? ms : null;
+  } catch (_) {
     return null;
   }
 }
@@ -1950,7 +1961,8 @@ class Post {
   ///   16 chiffres   → microsecondes → tel quel
   static int? _tsToMs(dynamic v) {
     if (v == null) return null;
-    if (v is Timestamp) return v.microsecondsSinceEpoch;
+    final dateMs = _dateMillis(v);
+    if (dateMs != null) return dateMs * 1000;
     if (v is int) {
       if (v > 9999999999999) return v;              // déjà µs
       if (v < 10000000000)   return v * 1000000;   // s  → µs
@@ -4856,9 +4868,7 @@ class ContentPurchase {
       amountPaid: json['amountPaid']?.toDouble() ?? 0.0,
       ownerEarnings: json['ownerEarnings']?.toDouble() ?? 0.0,
       platformEarnings: json['platformEarnings']?.toDouble() ?? 0.0,
-      purchaseDate: json['purchaseDate'] is Timestamp
-          ? (json['purchaseDate'] as Timestamp).millisecondsSinceEpoch
-          : (json['purchaseDate'] as int? ?? 0),
+      purchaseDate: _dateMillis(json['purchaseDate']) ?? (json['purchaseDate'] as int? ?? 0),
     );
   }
 

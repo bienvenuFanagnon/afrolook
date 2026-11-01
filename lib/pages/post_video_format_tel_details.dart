@@ -41,7 +41,9 @@ import 'package:afrotok/pages/user/userPubs/user_create_advertisement_page.dart'
 import 'package:afrotok/pages/pub/conditional_ad_banner.dart';
 import 'package:afrotok/pages/pub/afrolook_inline_ad.dart';
 
-import 'package:afrotok/pages/pub/rewarded_ad_widget.dart';
+import 'package:afrotok/l10n/tr.dart';
+import 'package:afrotok/services/api/post_social_api.dart';
+import 'package:afrotok/widgets/post_social_actions.dart';
 import 'package:afrotok/pages/pub/midroll_ad_card.dart';
 
 import 'package:afrotok/pages/widgetGlobal.dart';
@@ -213,8 +215,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   final List<String> giftIcons = ['🌹','❤️','👑','💎','🏎️','⭐','🍫','🧰','🌵','🍕','🍦','💻','🚗','🏠','🛩️','🛥️','🏰','💎','🏎️','🚗'];
 
   final Set<String> _postRefreshed = {};
-  final GlobalKey<RewardedAdWidgetState> _rewardedAdKey = GlobalKey();
-  bool _showRewardedAd = false;
   Timer? _suggestionModalTimer;
   bool _hasSeenSuggestionsModal = false;
 
@@ -1878,30 +1878,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
 
   Future<void> _handleRepost(Post post) async {
-    final me = authProvider.loginUserData;
-    if (me.id == null) return;
-    if (me.id == post.user_id) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tu ne peux pas republier ton propre post'), duration: Duration(seconds: 2)),
-      );
-      return;
-    }
-    post.users_republier_id ??= [];
-    if (post.users_republier_id!.contains(me.id)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tu as déjà republié ce post'), duration: Duration(seconds: 2)),
-      );
-      return;
-    }
-    final originalId = post.isRepost == true ? (post.originalPostId ?? post.id!) : post.id!;
-    setState(() => post.users_republier_id!.add(me.id!));
-    try {
-      await PubApi.repost(originalId);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post republié ✓'), duration: Duration(seconds: 2)));
-    } catch (e) {
-      setState(() => post.users_republier_id!.remove(me.id));
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(PubApi.message(e, fallback: 'Erreur : impossible de republier')), duration: const Duration(seconds: 3)));
-    }
+    await PostSocialActions.repost(context, post, myId: authProvider.loginUserData.id, onDone: () {
+      if (mounted) setState(() {});
+    });
   }
 
   void _sharePost(Post post) async {
@@ -1962,7 +1941,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
             if (post.user_id != authProvider.loginUserData.id)
               ListTile(
                 leading: Icon(Icons.repeat, color: colors.success),
-                title: Text('Republier', style: TextStyle(color: colors.textPrimary)),
+                title: Text(tr('Republier'), style: TextStyle(color: colors.textPrimary)),
                 onTap: () { Navigator.pop(context); _handleRepost(post); },
               ).animate().fadeIn(duration: 200.ms, delay: 20.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
 
@@ -2185,19 +2164,14 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
   Future<void> _handleSupportAd(Post post) async {
     final currentUserId = authProvider.loginUserData.id;
-    if (currentUserId == post.user_id) { _showError('Vous ne pouvez pas soutenir votre propre post'); return; }
-    final hasSupported = await _hasSupportedToday(post.id!, currentUserId!);
-    if (hasSupported) { _showError('Vous avez déjà soutenu ce post aujourd\'hui'); return; }
+    if (currentUserId == post.user_id) { _showError(tr('Tu ne peux pas soutenir ta propre publication.')); return; }
+    final hasSupported = await PostSocialApi.supportedToday(post.id!);
+    if (hasSupported) { _showError(tr('Tu as déjà soutenu cette publication aujourd\'hui. Reviens demain !')); return; }
     if (_hasSeenSupportModal == false) {
       _showSupportModal(post);
     } else {
       _startSupportAd(post);
     }
-  }
-
-  Future<bool> _hasSupportedToday(String postId, String userId) async {
-    // Le serveur refuse un second soutien le même jour (message affiché après la publicité).
-    return false;
   }
 
   void _showSupportModal(Post post) {
@@ -2209,7 +2183,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         backgroundColor: colors.surface,
         title: Row(children: [Icon(Icons.volunteer_activism, color: colors.accent), const SizedBox(width: 8), Text('Soutenir le créateur', style: TextStyle(color: colors.textPrimary))]),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          Text('Regardez cette publicité pour offrir 10 pièces au créateur.', style: TextStyle(color: colors.textSecondary)),
+          Text(tr('Regarde cette publicité jusqu\'au bout pour offrir 1 pièce au créateur.'), style: TextStyle(color: colors.textSecondary)),
           const SizedBox(height: 12),
           Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: colors.primary.withOpacity(0.2), borderRadius: BorderRadius.circular(12)), child: Row(children: [Icon(Icons.monetization_on, color: colors.accent), const SizedBox(width: 8), Expanded(child: Text('Les pièces peuvent être converties en argent réel.', style: TextStyle(color: colors.textPrimary)))])),
         ]),
@@ -2228,26 +2202,14 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     _hasSeenSupportModal = true;
   }
 
-  void _startSupportAd(Post post) {
-    setState(() { _isSupporting = true; _showRewardedAd = true; });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _rewardedAdKey.currentState?.showAd();
+  /// Pub récompensée regardée en entier, déclarée au serveur puis consommée par `POST /posts/{id}/support-ad` (messages et « Réessayer » inclus).
+  Future<void> _startSupportAd(Post post) async {
+    if (_isSupporting) return;
+    setState(() => _isSupporting = true);
+    await PostSocialActions.supportWithAd(context, post, myId: authProvider.loginUserData.id, onSupported: (_) {
+      if (mounted) setState(() {});
     });
-  }
-
-  Future<void> _onSupportAdRewarded(Post post) async {
-    final currentUserId = authProvider.loginUserData.id;
-    try {
-      await PubApi.supportAd(post.id!);
-    } catch (e) {
-      if (mounted) {
-        setState(() { _isSupporting = false; _showRewardedAd = false; });
-        _showError(PubApi.message(e, fallback: 'Soutien impossible pour le moment. Réessaie plus tard.'));
-      }
-      return;
-    }
-    _showSuccess('Merci ! Le créateur a reçu 1 pièce.');
-    setState(() { _isSupporting = false; _showRewardedAd = false; });
+    if (mounted) setState(() => _isSupporting = false);
   }
 
   // ==================== UI BUILD ====================
@@ -2302,7 +2264,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
                     const Icon(Icons.repeat, size: 12, color: Colors.white70),
                   const SizedBox(width: 4),
                   Text(
-                    '@${post.reposterPseudo ?? post.reposterUserId ?? 'quelqu\'un'} a republié',
+                    tr('@{p} a republié', {'p': post.reposterPseudo ?? post.reposterUserId ?? tr('quelqu\'un')}),
                     style: const TextStyle(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.w500),
                   ),
                 ],
@@ -3551,14 +3513,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         // Live comments — toujours dans une position fixe du Stack (évite doublon GlobalKey)
         if (!_isLoadingFeed) _buildLiveCommentsOverlay(),
         // Pas de bannière fixe dans la page portrait — la pub passe en midroll modal
-        if (_showRewardedAd)
-          RewardedAdWidget(
-            key: _rewardedAdKey,
-            onUserEarnedReward: (amount, name) async => await _onSupportAdRewarded(_videoPosts[_currentPage]),
-            onAdDismissed: () => setState(() { _showRewardedAd = false; _isSupporting = false; }),
-            child: const SizedBox.shrink(),
-          ),
-
         // Pub midroll — grand format centré, vidéo en pause (gratuit uniquement)
         if (_showMidrollAd && !_isUserPremium())
           MidrollAdCard(

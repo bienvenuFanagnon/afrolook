@@ -6,7 +6,7 @@ import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/pages/userPosts/hashtag/textHashTag/views/widgets/loading_indicator.dart';
 
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:afrotok/services/api/argent_upload.dart';
 
 import 'package:flutter/material.dart';
 
@@ -29,7 +29,6 @@ import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/providers/authProvider.dart';
 
 
-import 'package:firebase_storage/firebase_storage.dart';
 
 import 'package:flutter/material.dart';
 
@@ -263,23 +262,10 @@ class _UserServiceFormState extends State<UserServiceForm> {
     });
   }
 
-  Future<String?> _uploadImage(File imageFile, String serviceId) async {
-    try {
-      final String fileName = '${serviceId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final Reference storageRef = FirebaseStorage.instance
-          .ref()
-          .child('services/$serviceId/$fileName');
-
-      final UploadTask uploadTask = storageRef.putFile(await MediaShrink.file(imageFile),
-        SettableMetadata(contentType: 'image/jpeg'),
-      );
-
-      final TaskSnapshot snapshot = await uploadTask;
-      return await snapshot.ref.getDownloadURL();
-    } catch (e) {
-      printVm('Erreur upload image: $e');
-      return null;
-    }
+  /// Envoie l'image de couverture vers le stockage (URL signée demandée à l'API) et renvoie l'identifiant d'envoi à joindre au service.
+  Future<String> _uploadImage(File imageFile) async {
+    final File small = await MediaShrink.file(imageFile);
+    return ArgentUpload.bytes(await small.readAsBytes(), contentType: ArgentUpload.imageType(small.path));
   }
 
   Future<void> _saveService() async {
@@ -304,13 +290,10 @@ class _UserServiceFormState extends State<UserServiceForm> {
     try {
       _formKey.currentState!.save();
 
-      // Gérer l'upload de l'image
+      // Envoi de l'image de couverture (identifiant d'envoi joint au service ; l'API renvoie l'adresse définitive)
+      String? coverUploadId;
       if (_coverImage != null) {
-        final String serviceId = _userService.id ?? 'service_${DateTime.now().microsecondsSinceEpoch}'; // nom de fichier provisoire
-        final String? imageUrl = await _uploadImage(File(_coverImage!.path), serviceId);
-        if (imageUrl != null) {
-          _userService.imageCourverture = imageUrl;
-        }
+        coverUploadId = await _uploadImage(File(_coverImage!.path));
       }
 
       // Mettre à jour les timestamps
@@ -328,7 +311,8 @@ class _UserServiceFormState extends State<UserServiceForm> {
       _userService.city = _selectedCity;
 
       // Sauvegarder
-      final saved = await UsersApi.saveService(_userService.toJson(), id: _userService.id);
+      final saved = await UsersApi.saveService({..._userService.toJson(), if (coverUploadId != null) 'cover_upload_id': coverUploadId}, id: _userService.id);
+      if (saved['image_url'] is String) _userService.imageCourverture = saved['image_url'] as String;
       _userService.id = (saved['id'] as String?) ?? _userService.id;
 
       _showSuccessSnackBar(
@@ -341,7 +325,16 @@ class _UserServiceFormState extends State<UserServiceForm> {
 
     } catch (e) {
       printVm('Erreur sauvegarde service: $e');
-      _showErrorSnackBar('Erreur lors de la sauvegarde: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.red,
+            content: Text(UsersApi.message(e, fallback: "Impossible d'enregistrer le service pour le moment."), textAlign: TextAlign.center),
+            duration: const Duration(seconds: 6),
+            action: SnackBarAction(label: 'Réessayer', textColor: Colors.white, onPressed: _saveService),
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() { _isLoading = false; });

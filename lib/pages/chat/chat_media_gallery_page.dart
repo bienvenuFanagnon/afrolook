@@ -1,4 +1,3 @@
-import 'package:afrotok/services/read_meter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -71,7 +70,7 @@ class _ChatMediaGalleryPageState extends State<ChatMediaGalleryPage>
         query = query.startAfterDocument(_lastImageDoc!);
       }
 
-      final snap = await query.getM('chat_media_gallery_page.dart:73');
+      final snap = await query.get();
       final newItems = snap.docs
           .map((d) => Message.fromJson(d.data() as Map<String, dynamic>))
           .toList();
@@ -103,7 +102,7 @@ class _ChatMediaGalleryPageState extends State<ChatMediaGalleryPage>
           .where('is_valide', isEqualTo: true)
           .orderBy('create_at_time_spam', descending: true)
           .limit(50)
-          .getM('chat_media_gallery_page.dart:105');
+          .get();
 
       if (mounted) {
         setState(() {

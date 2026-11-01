@@ -11,6 +11,8 @@ import 'package:afrotok/pages/contenuPayant/profileScreenContent.dart';
 import 'package:afrotok/pages/contenuPayant/widgets/boost_modal.dart';
 import 'package:afrotok/pages/contenuPayant/widgets/content_comments_section.dart';
 import 'package:afrotok/pages/contenuPayant/widgets/promo_code_modal.dart';
+import 'package:afrotok/pages/contenuPayant/widgets/series_episodes_section.dart';
+import 'package:afrotok/services/api/paid_content_b2_api.dart';
 import 'package:afrotok/pages/paiement/newDepot.dart';
 import 'package:afrotok/pages/coins/coin_recharge_screen.dart';
 import 'package:chewie/chewie.dart';
@@ -378,8 +380,15 @@ class _ContentDetailPageState extends State<ContentDetailPage> with MusicSuspend
   }
 
   Future<void> _trackAffiliateClick(String affiliateId) async {
-    // Le clic est compté par l'API sur le lien d'affiliation (identifiant de lien) ; le lien partagé ne porte que l'identifiant de la personne
-    // qui partage : le comptage des clics attend la route « clic par partageur » (voir lacunes_api_canaux.md). Non critique.
+    // `POST /paid-contents/{id}/affiliate-click` : compté une fois par personne, par lien et par jour, jamais pour le partageur lui-même
+    // (404 si ce partageur n'a pas de lien pour ce contenu). Non critique : une erreur n'est que journalisée.
+    final id = _content.id;
+    if (id == null) return;
+    try {
+      await PaidExtrasApi.affiliateClick(id, affiliateId);
+    } catch (e) {
+      debugPrint('[Affiliation] clic non compté : $e');
+    }
   }
 
   Future<void> _checkPurchase() async {
@@ -416,13 +425,22 @@ class _ContentDetailPageState extends State<ContentDetailPage> with MusicSuspend
     }
   }
 
-  void _shareContent() {
+  Future<void> _shareContent() async {
     final link =
         'https://afrolookmedia.com/share/contenu/${_content.id}';
-    Share.share(
+    await Share.share(
       '🛍️ ${_content.title}\n\n${_content.description.length > 100 ? _content.description.substring(0, 100) + "..." : _content.description}\n\n$link',
       subject: _content.title,
     );
+    // Compteur de partages tenu par le serveur (une fois par personne). Non critique : le partage a déjà eu lieu.
+    final id = _content.id;
+    if (id == null) return;
+    try {
+      final r = await PaidExtrasApi.share(id);
+      if (mounted && r.sharesCount > 0) setState(() => _content.shares = r.sharesCount);
+    } catch (e) {
+      debugPrint('[Partage] compteur non mis à jour : $e');
+    }
   }
 
   Future<void> _incrementView() async {
@@ -1352,27 +1370,11 @@ class _ContentDetailPageState extends State<ContentDetailPage> with MusicSuspend
     );
   }
 
+  /// Épisodes de la série (`GET /paid-contents/{id}/episodes`) : l'achat se fait sur la série, un épisode gratuit est ouvert à tous.
   Widget _buildEpisodesList() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 16),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            'ÉPISODES',
-            style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1,
-                color: _colors.textSecondary),
-          ),
-        ),
-        const SizedBox(height: 8),
-        // Les épisodes n'ont pas encore de point d'accès dans l'API (voir lacunes_api_canaux.md)
-        const SizedBox.shrink(),
-      ],
-    );
+    final me = Provider.of<UserAuthProvider>(context, listen: false).loginUserData;
+    final isOwner = me.id != null && (me.id == _content.ownerId || me.role == 'ADM');
+    return SeriesEpisodesSection(series: _content, isOwner: isOwner);
   }
 
   Widget _buildBottomBar() {

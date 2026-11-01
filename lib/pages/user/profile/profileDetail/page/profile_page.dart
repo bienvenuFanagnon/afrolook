@@ -1,4 +1,3 @@
-import 'package:afrotok/services/read_meter.dart';
 import '../../../../../services/media_shrink.dart';
 import 'package:afrotok/widgets/name_preview.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
@@ -9,7 +8,7 @@ import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/services/api/users_api.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:afrotok/services/api/argent_upload.dart';
 
 import 'package:flutter/cupertino.dart';
 
@@ -239,36 +238,19 @@ class _ProfilePageState extends State<ProfilePage> {
     });
 
     try {
-      // Générer un nom de fichier unique
-      String fileName = 'profile_${authProvider.loginUserData.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      // Envoi de la photo vers le stockage (URL signée demandée à l'API) : web = octets, mobile = fichier
+      final Uint8List photoBytes = kIsWeb
+          ? await MediaShrink.bytes(_imageBytes!)
+          : await (await MediaShrink.file(_imageFile!)).readAsBytes();
+      final String uploadId = await ArgentUpload.bytes(photoBytes, contentType: 'image/jpeg');
 
-      Reference storageReference = FirebaseStorage.instance
-          .ref()
-          .child('user_profiles/$fileName');
+      // L'API range la photo et renvoie l'adresse définitive du profil
+      final me = await UsersApi.updateMe({'avatar_upload_id': uploadId});
+      final String downloadUrl = '${me['avatar_url'] ?? ''}';
+      if (downloadUrl.isEmpty) throw StateError('avatar_url manquant');
 
-      // Upload pour web et mobile
-      UploadTask uploadTask;
-
-      if (kIsWeb) {
-        // Pour le web, utiliser les bytes
-        uploadTask = storageReference.putData(await MediaShrink.bytes(_imageBytes!),
-          SettableMetadata(
-            contentType: 'image/jpeg',
-          ),
-        );
-      } else {
-        // Pour mobile, utiliser le fichier
-        uploadTask = storageReference.putFile(await MediaShrink.file(_imageFile!));
-      }
-
-      TaskSnapshot snapshot = await uploadTask;
-      String downloadUrl = await snapshot.ref.getDownloadURL();
-
-      // ✅ CRÉER LE POST AVANT DE METTRE À JOUR LE PROFIL
-       _createProfileUpdatePost(downloadUrl);
-
-      // Mettre à jour seulement l'URL de l'image
-      await UsersApi.updateMe({'avatar_url': downloadUrl});
+      // Publication d'annonce du changement de photo
+      _createProfileUpdatePost(downloadUrl);
 
       // Mettre à jour le provider
       authProvider.loginUserData.imageUrl = downloadUrl;
@@ -293,12 +275,15 @@ class _ProfilePageState extends State<ProfilePage> {
 
     } catch (error) {
       printVm("Erreur upload: $error");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Erreur lors du téléchargement de l'image"),
-          backgroundColor: primaryRed,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(UsersApi.message(error, fallback: "Impossible d'envoyer la photo pour le moment.")),
+            backgroundColor: primaryRed,
+            action: SnackBarAction(label: 'Réessayer', textColor: Colors.white, onPressed: _uploadProfileImage),
+          ),
+        );
+      }
     } finally {
       setState(() {
         change_profil_loading = false;

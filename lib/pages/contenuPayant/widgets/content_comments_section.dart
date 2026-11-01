@@ -1,4 +1,7 @@
+import 'package:afrolook_api_client/afrolook_api_client.dart' show ApiException;
+import 'package:afrotok/l10n/tr.dart';
 import 'package:afrotok/providers/authProvider.dart';
+import 'package:afrotok/services/api/paid_content_b2_api.dart';
 import 'package:afrotok/theme/app_colors.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:afrotok/services/api/contenu_payant_api.dart';
@@ -75,10 +78,42 @@ class _ContentCommentsSectionState extends State<ContentCommentsSection> {
     }
   }
 
-  /// La modification d'un commentaire n'existe pas dans l'API (voir lacunes_api_canaux.md) : supprimer puis réécrire.
+  /// Modifie MON commentaire (`PATCH /paid-content-comments/{id}`, 1 à 1000 caractères) ; la liste indique ensuite « modifié ».
   Future<void> _editComment(String docId, String current) async {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pour modifier ce commentaire, supprime-le puis réécris-le.')));
+    final colors = AppColors.of(context);
+    final ctrl = TextEditingController(text: current);
+    final text = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: colors.surface,
+        title: Text(tr('Modifier le commentaire'), style: TextStyle(color: colors.textPrimary, fontSize: 16)),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          minLines: 1,
+          maxLines: 5,
+          maxLength: 1000,
+          style: TextStyle(color: colors.textPrimary),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Annuler'))),
+          TextButton(onPressed: () => Navigator.pop(ctx, ctrl.text.trim()), child: Text(tr('Enregistrer'))),
+        ],
+      ),
+    );
+    ctrl.dispose();
+    if (text == null || text.isEmpty || text == current.trim()) return;
+    try {
+      await PaidExtrasApi.editComment(docId, text);
+      _reload();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(e is ApiException && e.status == 403 ? tr('Tu ne peux modifier que tes propres commentaires.') : PaidContentMessages.of(e)),
+        action: SnackBarAction(label: tr('Réessayer'), onPressed: () => _editComment(docId, text)),
+      ));
+    }
   }
 
   @override
@@ -318,7 +353,7 @@ class _CommentItem extends StatelessWidget {
                               color: colors.textPrimary)),
                       const Spacer(),
                       Text(
-                        edited ? '$date · modifié' : date,
+                        edited ? '$date · ${tr('modifié')}' : date,
                         style: TextStyle(
                             fontSize: 9,
                             color: colors.textSecondary),
@@ -340,7 +375,7 @@ class _CommentItem extends StatelessWidget {
                                 child: Row(children: [
                                   Icon(Icons.edit, size: 16, color: colors.textPrimary),
                                   const SizedBox(width: 8),
-                                  Text('Modifier', style: TextStyle(color: colors.textPrimary, fontSize: 13)),
+                                  Text(tr('Modifier'), style: TextStyle(color: colors.textPrimary, fontSize: 13)),
                                 ]),
                               ),
                             if (canDelete)
@@ -349,7 +384,7 @@ class _CommentItem extends StatelessWidget {
                                 child: Row(children: [
                                   const Icon(Icons.delete, size: 16, color: Colors.red),
                                   const SizedBox(width: 8),
-                                  const Text('Supprimer', style: TextStyle(color: Colors.red, fontSize: 13)),
+                                  Text(tr('Supprimer'), style: const TextStyle(color: Colors.red, fontSize: 13)),
                                 ]),
                               ),
                           ],

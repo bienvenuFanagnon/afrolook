@@ -39,7 +39,8 @@ import 'package:afrotok/pages/pub/banner_ad_widget.dart';
 import 'package:afrotok/pages/pub/afrolook_inline_ad.dart';
 import 'package:afrotok/pages/pub/conditional_ad_banner.dart';
 import 'package:afrotok/pages/user/userAbonnementPage.dart';
-import 'package:afrotok/pages/pub/rewarded_ad_widget.dart';
+import 'package:afrotok/l10n/tr.dart';
+import 'package:afrotok/widgets/post_social_actions.dart';
 
 import 'package:afrotok/pages/userPosts/postWidgets/postMenu.dart';
 import 'package:afrotok/pages/postComments.dart';
@@ -208,8 +209,6 @@ class _DetailsPostState extends State<DetailsPost>
   bool _isSharing = false;
 
   // Support par publicité
-  final GlobalKey<RewardedAdWidgetState> _rewardedAdKey = GlobalKey();
-  bool _showRewardedAd = false;
   bool _isSupporting = false;
   bool? _hasSeenSupportModal;
 
@@ -551,7 +550,7 @@ class _DetailsPostState extends State<DetailsPost>
     final currentUserId = authProvider.loginUserData.id;
     if (currentUserId == widget.post.user_id) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Vous ne pouvez pas soutenir votre propre post'), backgroundColor: _colors.warning),
+        SnackBar(content: Text(tr('Tu ne peux pas soutenir ta propre publication.')), backgroundColor: _colors.warning),
       );
       return;
     }
@@ -566,35 +565,14 @@ class _DetailsPostState extends State<DetailsPost>
     _startSupportAd();
   }
 
-  void _startSupportAd() {
-    setState(() {
-      _isSupporting = true;
-      _showRewardedAd = true;
+  /// Pub récompensée regardée en entier, déclarée au serveur puis consommée par `POST /posts/{id}/support-ad` (messages et « Réessayer » inclus).
+  Future<void> _startSupportAd() async {
+    if (_isSupporting) return;
+    setState(() => _isSupporting = true);
+    await PostSocialActions.supportWithAd(context, widget.post, myId: authProvider.loginUserData.id, onSupported: (_) {
+      if (mounted) setState(() {});
     });
-    // Attendre que le widget soit monté
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (_rewardedAdKey.currentState != null) {
-        _rewardedAdKey.currentState!.showAd();
-
-        // bool ready = await _rewardedAdKey.currentState!.waitForAdReady();
-        // if (ready) {
-        //   _rewardedAdKey.currentState!.showAd();
-        // } else {
-        //   setState(() {
-        //     _isSupporting = false;
-        //     _showRewardedAd = false;
-        //   });
-        //   ScaffoldMessenger.of(context).showSnackBar(
-        //     const SnackBar(content: Text('Publicité non disponible'), backgroundColor: Colors.red),
-        //   );
-        // }
-      } else {
-        setState(() {
-          _isSupporting = false;
-          _showRewardedAd = false;
-        });
-      }
-    });
+    if (mounted) setState(() => _isSupporting = false);
   }
 
   void _showSupportModal() {
@@ -664,40 +642,6 @@ class _DetailsPostState extends State<DetailsPost>
     );
   }
 
-  Future<void> _onSupportAdRewarded() async {
-    final postId = widget.post.id!;
-    try {
-      // Le serveur crédite le créateur, compte le soutien, applique la limite quotidienne et notifie.
-      await PubApi.supportAd(postId);
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isSupporting = false;
-        _showRewardedAd = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e is ApiException && (e.status == 429 || e.status == 409) ? 'Vous avez déjà soutenu ce post aujourd’hui. Revenez demain !' : PubApi.message(e)),
-          backgroundColor: _colors.warning,
-          action: SnackBarAction(label: 'Réessayer', onPressed: _onSupportAdRewarded),
-        ),
-      );
-      return;
-    }
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('🎉 Merci ! Le créateur a reçu des pièces.'),
-        backgroundColor: _colors.success,
-        duration: Duration(seconds: 2),
-      ),
-    );
-    setState(() {
-      widget.post.adSupportCount = (widget.post.adSupportCount ?? 0) + 1;
-      _isSupporting = false;
-      _showRewardedAd = false;
-    });
-  }
   Future<void> _initSharedPreferences() async {
     _prefs = await SharedPreferences.getInstance();
   }
@@ -1965,7 +1909,7 @@ class _DetailsPostState extends State<DetailsPost>
             Icon(Icons.repeat, size: 14, color: _colors.textSecondary),
           const SizedBox(width: 5),
           Text(
-            '@$reposterPseudo a republié',
+            tr('@{p} a republié', {'p': reposterPseudo}),
             style: TextStyle(fontSize: 12, color: _colors.textSecondary, fontWeight: FontWeight.w500),
           ),
         ],
@@ -3686,33 +3630,10 @@ class _DetailsPostState extends State<DetailsPost>
   }
 
   Future<void> _handleRepost() async {
-    final me = authProvider.loginUserData;
-    if (me.id == null) return;
-    if (me.id == widget.post.user_id) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tu ne peux pas republier ton propre post'), duration: Duration(seconds: 2)),
-      );
-      return;
-    }
-    widget.post.users_republier_id ??= [];
-    if (widget.post.users_republier_id!.contains(me.id)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tu as déjà republié ce post'), duration: Duration(seconds: 2)),
-      );
-      return;
-    }
-    final originalId = widget.post.isRepost == true
-        ? (widget.post.originalPostId ?? widget.post.id!)
-        : widget.post.id!;
-    setState(() => widget.post.users_republier_id!.add(me.id!));
-    try {
-      // Le serveur enregistre la republication, compte le partage et la diffuse aux abonnés
-      await PubApi.repost(originalId);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Post republié ✓'), duration: Duration(seconds: 2)));
-    } catch (e) {
-      setState(() => widget.post.users_republier_id!.remove(me.id));
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(PubApi.message(e, fallback: 'Erreur : impossible de republier')), duration: const Duration(seconds: 3), action: SnackBarAction(label: 'Réessayer', onPressed: _handleRepost)));
-    }
+    // Le serveur enregistre la republication (une par personne), la compte comme un partage et la diffuse aux abonnés.
+    await PostSocialActions.repost(context, widget.post, myId: authProvider.loginUserData.id, onDone: () {
+      if (mounted) setState(() {});
+    });
   }
 
   void _showShareOptions() {
@@ -3745,7 +3666,7 @@ class _DetailsPostState extends State<DetailsPost>
             if (widget.post.user_id != authProvider.loginUserData.id)
               ListTile(
                 leading: Icon(Icons.repeat, color: _colors.success),
-                title: Text('Republier', style: TextStyle(color: _colors.textPrimary)),
+                title: Text(tr('Republier'), style: TextStyle(color: _colors.textPrimary)),
                 onTap: () { Navigator.pop(ctx); _handleRepost(); },
               ),
             ListTile(
@@ -4371,21 +4292,6 @@ class _DetailsPostState extends State<DetailsPost>
                         )
                       else
                         _buildSuggestedPosts(),
-
-                      if (_showRewardedAd)
-                        RewardedAdWidget(
-                          key: _rewardedAdKey,
-                          onUserEarnedReward: (amount, name) async {
-                            await _onSupportAdRewarded();
-                          },
-                          onAdDismissed: () {
-                            setState(() {
-                              _showRewardedAd = false;
-                              _isSupporting = false;
-                            });
-                          },
-                          child: const SizedBox.shrink(),
-                        ),
                     ],
                   ),
                 );

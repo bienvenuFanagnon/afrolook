@@ -1,5 +1,6 @@
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/services/api/api_identity.dart';
+import 'package:afrotok/services/api/post_social_models.dart';
 
 /// Convertit une publication de la nouvelle API en modèle `Post` de l'application (les écrans existants ne changent pas).
 Post postFromApi(Map<String, dynamic> j) {
@@ -35,6 +36,10 @@ Post postFromApi(Map<String, dynamic> j) {
     ..likes = 0
     ..comments = (counts['comments'] as num?)?.toInt() ?? 0
     ..partage = (counts['shares'] as num?)?.toInt() ?? 0
+    ..adSupportCount = (counts['ad_support'] as num?)?.toInt() ?? 0
+    // L'API ne donne que le NOMBRE de republications (`counts.reposts`) : le modèle n'a qu'une liste d'identifiants (`users_republier_id`), dont les
+    // écrans affichent la longueur. On la remplit d'autant d'entrées vides ; l'appartenance de la personne connectée y est ajoutée après sa republication.
+    ..users_republier_id = List<String>.filled((counts['reposts'] as num?)?.toInt() ?? 0, '', growable: true)
     ..vues = (counts['views'] as num?)?.toInt() ?? 0
     ..uniqueViewsCount = (counts['views'] as num?)?.toInt() ?? 0
     ..monetized = j['is_monetized'] == true
@@ -48,6 +53,15 @@ Post postFromApi(Map<String, dynamic> j) {
     post.users_favorite_id = j['favorited_by_me'] == true ? [me] : [];
   }
   _applyDefi(post, j, me);
+  // Fil des abonnements : publication republiée par un compte suivi (bloc `reposted_by`, absent ailleurs). Le bandeau « a republié » des écrans lit ces champs.
+  final by = RepostedBy.fromJson(j['reposted_by']);
+  if (by != null) {
+    post
+      ..isRepost = true
+      ..reposterUserId = by.id
+      ..reposterPseudo = by.username
+      ..reposterImageUrl = by.avatarUrl.isEmpty ? null : by.avatarUrl;
+  }
   final sound = j['sound'];
   if (sound is Map) {
     post.artistSoundId = sound['id'] as String?;
