@@ -30,6 +30,9 @@ class FeedQuery {
   final Set<String> excludeIds;
   final int targetCount;
 
+  /// Fil « pour vous » : repartir d'une nouvelle lecture (bouton « voir les posts à découvrir », rafraîchir).
+  final bool reset;
+
   const FeedQuery({
     required this.type,
     required this.userId,
@@ -37,6 +40,7 @@ class FeedQuery {
     this.subscriptionPostIds = const [],
     this.excludeIds = const {},
     this.targetCount = 40,
+    this.reset = false,
   });
 }
 
@@ -116,7 +120,7 @@ class FeedRepository {
 
     switch (query.type) {
       case FeedType.home:
-        return _apiForYou(excluded, target, reset: false);   // pages suivantes
+        return _apiForYou(excluded, target, reset: query.reset);   // pages suivantes (reset = nouvelle lecture)
 
       case FeedType.video:
         results.addAll(await fetchByMediaType('VIDEO', query.countryCode, excluded, limit: target));

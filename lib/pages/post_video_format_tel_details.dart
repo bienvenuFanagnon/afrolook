@@ -45,6 +45,8 @@ import 'package:afrotok/l10n/tr.dart';
 import 'package:afrotok/services/api/post_social_api.dart';
 import 'package:afrotok/widgets/post_social_actions.dart';
 import 'package:afrotok/pages/pub/midroll_ad_card.dart';
+import 'package:afrotok/services/api/api_gateway.dart';
+import 'package:afrotok/services/api/post_mapper.dart';
 
 import 'package:afrotok/pages/widgetGlobal.dart';
 
@@ -198,9 +200,12 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   final int _maxVideosLimit = 50; // seuil de 50 vidéos
 
   // Nouveaux membres pour le préchargement
-  final Map<int, VideoPlayerController> _preloadedControllers = {};
-  final int _preloadRadius = 2;
-  final Set<int> _preloadingIndices = {};
+  // Clé = identifiant du POST (pas la position) : l'insertion d'une pub ou d'une page entre deux vidéos ne décale plus jamais un lecteur préchargé
+  final Map<String, VideoPlayerController> _preloadedControllers = {};
+  // Préchargement « façon TikTok » : 3 vidéos d'avance et 1 en arrière, prêtes à lire (lecteur initialisé, premières images en mémoire)
+  final int _preloadAhead = 3;
+  final int _preloadBehind = 1;
+  final Set<String> _preloadingIndices = {};
 
   // Cache des données pub pour les posts qui sont des publicités
   final Map<String, Advertisement?> _adCache = {};
@@ -436,8 +441,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
   @override
   void dispose() {
-    // Pub plein écran à la fermeture de la vidéo (toutes les N vidéos ; plafonds dans AdmobService)
-    unawaited(AdmobService.onVideoClosed(authProvider.loginUserData));
+    // Plus de pub plein écran déclenchée par la fermeture de la page (décision du 01/11/2026) : elle pouvait s'afficher par-dessus la
+    // page suivante, avant même que la vidéo soit regardée.
     WidgetsBinding.instance.removeObserver(this);
     _likeAnimationTimer?.cancel();
     _liveCommentTimer?.cancel();
@@ -630,10 +635,12 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     if (item is! Post) return;
     final post = item;
 
-    if (_preloadedControllers.containsKey(index)) return;
-    if (_preloadingIndices.contains(index)) return;
+    final key = post.id;
+    if (key == null || post.url_media == null) return;
+    if (_preloadedControllers.containsKey(key)) return;
+    if (_preloadingIndices.contains(key)) return;
 
-    _preloadingIndices.add(index);
+    _preloadingIndices.add(key);
 
     try {
       final optimizedUrl = authProvider.convertToCdnUrl(post.url_media!, authProvider.appDefaultData);
@@ -641,20 +648,26 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       await controller.initialize();
       // NE PAS jouer, NE PAS mettre en pause, NE PAS seek
       // L'initialisation seule suffit à remplir le buffer
-      _preloadedControllers[index] = controller;
+      _preloadedControllers[key] = controller;
       printVm("✅ Vidéo préchargée à l'index $index");
     } catch (e) {
       printVm("❌ Erreur préchargement index $index : $e");
     } finally {
-      _preloadingIndices.remove(index);
+      _preloadingIndices.remove(key);
     }
   }
 
   void _preloadNeighborhood(int currentIndex) {
-    final start = max(0, currentIndex - _preloadRadius);
-    final end = min(_feedItems.length - 1, currentIndex + _preloadRadius);
+    final start = max(0, currentIndex - _preloadBehind);
+    final end = min(_feedItems.length - 1, currentIndex + _preloadAhead);
 
-    for (int i = start; i <= end; i++) {
+    // Les plus proches d'abord : la suivante est prête avant celle d'après
+    for (int i = max(currentIndex, start); i <= end; i++) {
+      if (_feedItems[i] is Post) {
+        _preloadVideoAtIndex(i);
+      }
+    }
+    for (int i = currentIndex - 1; i >= start; i--) {
       if (_feedItems[i] is Post) {
         _preloadVideoAtIndex(i);
       }
@@ -662,19 +675,23 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   }
 
   void _cleanupOutOfRangeControllers(int currentIndex) {
-    final minKeep = currentIndex - _preloadRadius;
-    final maxKeep = currentIndex + _preloadRadius;
-    final toRemove = <int>[];
+    final keep = <String>{};
+    for (int i = max(0, currentIndex - _preloadBehind); i <= min(_feedItems.length - 1, currentIndex + _preloadAhead); i++) {
+      final item = _feedItems[i];
+      if (item is Post && item.id != null) keep.add(item.id!);
+    }
+    final toRemove = <String>[];
 
-    _preloadedControllers.forEach((index, controller) {
-      if (index < minKeep || index > maxKeep) {
+    _preloadedControllers.forEach((key, controller) {
+      // Le lecteur en cours de lecture n'est jamais libéré ici
+      if (!keep.contains(key) && controller != _currentVideoController) {
         controller.dispose();
-        toRemove.add(index);
+        toRemove.add(key);
       }
     });
 
-    for (var idx in toRemove) {
-      _preloadedControllers.remove(idx);
+    for (var key in toRemove) {
+      _preloadedControllers.remove(key);
     }
   }
 
@@ -684,8 +701,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     // Sur web, SmartVideoPlayer gère l'affichage nativement via <video> HTML
     if (kIsWeb) return;
     // Si un index est fourni et qu'un contrôleur préchargé existe, on l'utilise
-    if (index != null && _preloadedControllers.containsKey(index)) {
-      final preloadedController = _preloadedControllers[index]!;
+    if (post.id != null && _preloadedControllers.containsKey(post.id)) {
+      final preloadedController = _preloadedControllers[post.id]!;
 
       // Nettoyer l'ancien ChewieController sans disposer le contrôleur vidéo
       if (_chewieController != null) {
@@ -997,6 +1014,11 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       if (postCount % 7 == 0 && _promoArticles.isNotEmpty && !kIsAppleStore) {
         _feedItems.add(const _ShopPromoSentinel());
       }
+
+      // Créateurs et canaux à suivre : une page entière toutes les 10 vidéos (défilement infini : plus de section réservée à la fin)
+      if (postCount % 10 == 0 && i != mixedPosts.length - 1) {
+        _feedItems.add(const _CreatorsChannelsSentinel());
+      }
     }
 
     // Fin de feed T1 : widget de découverte (uniquement si T3 pas encore chargé)
@@ -1101,22 +1123,13 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
   // ── T1 : vidéos non vues des abonnements ──────────────────────────────────
   Future<void> _loadTier1Videos() async {
-    // Vidéos non vues des abonnements : fil « abonnements » de l'API (niveau 1), plusieurs pages si besoin.
+    // Flux infini de vidéos, même algorithme que l'accueil : les vidéos non vues des ABONNEMENTS d'abord, puis celles qui correspondent aux goûts,
+    // les nouveaux créateurs et canaux ; toujours des vidéos non vues. Les premières sont déjà prêtes (stock du téléphone).
     final List<Post> t1Posts = [];
-    String? cursor;
     try {
-      for (var page = 0; page < 3 && t1Posts.length < _batchSize; page++) {
-        final r = await PubApi.following(cursor: cursor, limit: 30);
-        cursor = r.next;
-        for (final p in r.posts) {
-          if (p.dataType != PostDataType.VIDEO.name || p.id == null) continue;
-          if (_loadedPostIds.contains(p.id) || t1Posts.any((e) => e.id == p.id)) continue;
-          t1Posts.add(p);
-        }
-        if (cursor == null) break;
-      }
+      t1Posts.addAll(await _fetchVideoStream(_batchSize, reset: true));
     } catch (e) {
-      printVm('Erreur chargement vidéos des abonnements: ${PubApi.message(e)}');
+      printVm('Erreur chargement des vidéos: ${PubApi.message(e)}');
     }
 
     for (final p in t1Posts) {
@@ -1128,7 +1141,17 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       }
     }
 
-    if (mounted) setState(() => _t1Exhausted = true);
+    // Flux infini : la suite se charge au défilement (plus de page « tu as tout vu » au milieu)
+    if (mounted) setState(() => _hasLoadedDiscovery = true);
+  }
+
+  /// Vidéos du flux infini (API, `media=video`) : jamais déjà chargées dans cette page.
+  Future<List<Post>> _fetchVideoStream(int limit, {bool reset = false}) async {
+    final rows = await ApiGateway.instance.forYouVideos(limit: limit, reset: reset);
+    return rows
+        .map(postFromApi)
+        .where((p) => p.id != null && p.dataType == PostDataType.VIDEO.name && p.url_media != null && !_loadedPostIds.contains(p.id))
+        .toList();
   }
 
   // ── T3 : découverte et tendances (sur demande explicite) ──────────────────
@@ -1152,6 +1175,42 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         );
       }
     }
+  }
+
+  // ── Page « créateurs et canaux à suivre » intercalée dans le fil vidéo ─────
+  Widget _buildCreatorsChannelsPage() {
+    return Container(
+      color: Colors.black,
+      child: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              const SizedBox(height: 24),
+              const Text(
+                'Créateurs et canaux à suivre',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Abonne-toi pour voir plus de leurs vidéos. Glisse vers le haut pour continuer.',
+                style: TextStyle(color: Colors.grey[400], fontSize: 13),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              FeedEndDiscoverySection(
+                pageType: 'VIDEO',
+                onSubscribed: () {
+                  if (!mounted) return;
+                  setState(() => _hasSubscribedFromEndFeed = true);
+                },
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   // ── Page de fin de feed T1 ─────────────────────────────────────────────────
@@ -1281,23 +1340,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         excludeIds: _loadedPostIds,
       );
 
-      if (newPosts.isEmpty && !isInitial) {
-        // Pool épuisé — recycler en ne gardant que les 5 derniers vus
-        // pour éviter les répétitions immédiates
-        final recent = _videoPosts.length > 5
-            ? _videoPosts.sublist(_videoPosts.length - 5).map((p) => p.id!).toSet()
-            : <String>{};
-        _loadedPostIds
-          ..clear()
-          ..addAll(recent);
-        _videosCursor = null;
-        _videosExhausted = false;
-        newPosts = await _fetchSuggestedVideosBatch(
-          limit: limit ?? _batchSize,
-          excludeIds: _loadedPostIds,
-        );
-      }
-
       if (newPosts.isNotEmpty) {
         // ── Posts non vus en priorité au premier chargement ─────────────────
         if (isInitial) {
@@ -1334,30 +1376,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     }
   }
   Future<List<Post>> _fetchSuggestedVideosBatch({required int limit, required Set<String> excludeIds}) async {
-    if (_videosExhausted) return [];
-    final r = await PubVideosApi.videos(cursor: _videosCursor, limit: limit * 2, exclude: excludeIds);
-    _videosCursor = r.next;
-    if (r.next == null) _videosExhausted = true;
-
-    // Éviter 3 mêmes créateurs / canaux à la suite
-    final results = <Post>[];
-    final ids = Set<String>.from(excludeIds);
-    for (final p in r.posts) {
-      if (p.id == null || ids.contains(p.id)) continue;
-      int creatorCount = 0;
-      int canalCount = 0;
-      for (int i = _videoPosts.length - 1; i >= max(0, _videoPosts.length - 2); i--) {
-        if (_videoPosts[i].user_id == p.user_id) creatorCount++;
-        if (_videoPosts[i].canal_id != null && _videoPosts[i].canal_id == p.canal_id) canalCount++;
-      }
-      if (creatorCount < 2 && canalCount < 2) {
-        ids.add(p.id!);
-        results.add(p);
-        if (results.length >= limit) break;
-      }
-    }
-    results.shuffle();
-    return results;
+    // Suite du flux infini (le serveur applique déjà « jamais plus de 2 de suite du même créateur ou canal » ; le stock du téléphone aussi)
+    final more = await _fetchVideoStream(limit * 2);
+    return more.where((p) => !excludeIds.contains(p.id)).take(limit).toList();
   }
 
   void _initPostLikeState(Post post) {
@@ -1411,6 +1432,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       await _markPostAsSeen(post);
       if (post.users_vue_id != null && post.users_vue_id!.contains(currentUserId)) return;
       await PubApi.view(post.id!);
+      ApiGateway.instance.noteSeen(post.id!);   // quitte le stock des vidéos du téléphone
       setState(() {
         post.vues = (post.vues ?? 0) + 1;
         post.users_vue_id = [...?post.users_vue_id, currentUserId];
@@ -3490,6 +3512,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
                 return _buildVideoPage(item, index);
               } else if (item is _EndOfFeedSentinel) {
                 return _buildEndOfFeedPage();
+              } else if (item is _CreatorsChannelsSentinel) {
+                return _buildCreatorsChannelsPage();
               } else if (item is _ShopPromoSentinel) {
                 return ShopPromoVideoItem(articles: _promoArticles);
               } else if (item is _TutoReminderSentinel) {
@@ -3545,6 +3569,11 @@ class _TutoReminderSentinel {
 /// Sentinel inséré dans _feedItems pour déclencher l'affichage de la promo AfroShop.
 class _ShopPromoSentinel {
   const _ShopPromoSentinel();
+}
+
+/// Sentinel inséré toutes les 10 vidéos : page « créateurs et canaux à suivre ».
+class _CreatorsChannelsSentinel {
+  const _CreatorsChannelsSentinel();
 }
 
 /// Sentinel inséré en fin de T1 pour afficher la page de découverte.

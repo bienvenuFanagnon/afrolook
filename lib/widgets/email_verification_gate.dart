@@ -48,7 +48,7 @@ class EmailVerificationGate {
   /// Pour les tests : remplace l'accès à Firebase Auth.
   static EmailVerifier verifier = const FirebaseEmailVerifier();
 
-  static bool isUnverified(Object e) => AuditErrors.isEmailUnverified(e);
+  static bool isUnverified(Object e) => AuditErrors.isEmailUnverified(e) && !AuditErrors.emailPromptDeclined(e);
 
   /// Exécute [action]. Si l'API répond `email_unverified`, ouvre la fenêtre « Confirme ton e-mail » ; une fois l'e-mail confirmé,
   /// [action] est rejouée UNE fois. Si la personne renonce, l'erreur d'origine est relancée (l'écran affiche son message habituel).

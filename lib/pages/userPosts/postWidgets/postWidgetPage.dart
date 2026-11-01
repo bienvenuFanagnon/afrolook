@@ -305,7 +305,7 @@ Future<void> recordUniquePostView() async {
     _initFromSnapshot();
     final snapMs = swInit.elapsedMilliseconds;
     final hadSnapshot = isCanalPost ? widget.post.canalSnapshot != null : widget.post.creatorSnapshot != null;
-    printVm('⏱️ [POST-WIDGET] id=$postId — snapshot=${hadSnapshot ? "✅ ${snapMs}ms (affichage immédiat)" : "❌ pas de snapshot → fetch Firestore"}');
+    printVm('⏱️ [POST-WIDGET] id=$postId — snapshot=${hadSnapshot ? "✅ ${snapMs}ms (affichage immédiat)" : "❌ pas de snapshot → chargement du profil par l'API"}');
 
     _loadUserData();
     _loadCanalData();

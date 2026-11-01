@@ -22,6 +22,7 @@ class ApiClient {
     required String baseUrl,
     required this.token,
     this.appCheck,
+    this.onEmailUnverified,
     this.maxRetries = 3,
     this.retryBase = const Duration(milliseconds: 400),
     Dio? dio,
@@ -35,6 +36,11 @@ class ApiClient {
 
   final TokenProvider token;
   final AppCheckProvider? appCheck;
+
+  /// Appelé UNE fois par requête quand l'API répond 403 `email_unverified` : l'application ouvre sa fenêtre « Confirme ton e-mail » et
+  /// renvoie true si l'e-mail est confirmé (la requête est alors rejouée, avec la même clé d'idempotence). Si la personne renonce (false),
+  /// l'erreur est relancée avec `details.declined = true` pour que l'écran n'ouvre pas une seconde fenêtre.
+  final Future<bool> Function()? onEmailUnverified;
   final int maxRetries;
   final Duration retryBase;
   final Dio _dio;
@@ -62,6 +68,7 @@ class ApiClient {
   Future<dynamic> _send(String method, String path, {Object? body, Map<String, dynamic>? query, String? idempotencyKey}) async {
     final safeToRetry = method == 'GET' || idempotencyKey != null;
     var refreshed = false;
+    var emailAsked = false;
     var attempt = 0;
     while (true) {
       Response<dynamic> res;
@@ -84,6 +91,12 @@ class ApiClient {
       if (status == 401 && !refreshed) {
         refreshed = true; // jeton expiré : un seul nouvel essai avec un jeton rafraîchi
         continue;
+      }
+      if (status == 403 && !emailAsked && onEmailUnverified != null && res.data is Map && (res.data as Map)['code'] == 'email_unverified') {
+        emailAsked = true;
+        if (await onEmailUnverified!()) continue; // e-mail confirmé, jeton renouvelé : on rejoue (aucun paiement n'a eu lieu, la route refuse avant)
+        final e = _error(status, res.data);
+        throw ApiException(status: e.status, code: e.code, message: e.message, details: {...e.details, 'declined': true});
       }
       if (safeToRetry && attempt < maxRetries && (status == 429 || status == 502 || status == 503 || status == 504)) {
         await _wait(attempt++, int.tryParse(res.headers.value('retry-after') ?? ''));

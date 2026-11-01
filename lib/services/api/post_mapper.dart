@@ -13,6 +13,17 @@ Post postFromApi(Map<String, dynamic> j) {
     'audio' => 'AUDIO',
     _ => 'TEXT',
   };
+  // Fichier principal : pour un son ou une vidéo, le premier média DE CE TYPE (une jaquette ou une image d'illustration ne doit jamais être lue comme un son)
+  final wanted = dataType == 'AUDIO' ? 'audio' : (dataType == 'VIDEO' ? 'video' : null);
+  Map<String, dynamic>? main = first;
+  if (wanted != null) {
+    for (final m in media) {
+      if (m['kind'] == wanted) {
+        main = m;
+        break;
+      }
+    }
+  }
   final counts = Map<String, dynamic>.from(j['counts'] as Map? ?? const {});
   final created = DateTime.tryParse('${j['created_at']}')?.millisecondsSinceEpoch ?? 0;
   final author = Map<String, dynamic>.from(j['author'] as Map? ?? const {});
@@ -30,8 +41,8 @@ Post postFromApi(Map<String, dynamic> j) {
   post
     ..canal_id = j['channel_id'] as String?
     ..images = imageUrls
-    ..url_media = dataType == 'IMAGE' ? (imageUrls.isEmpty ? null : imageUrls.first) : first?['url'] as String?
-    ..thumbnail = first?['thumbnail_url'] as String?
+    ..url_media = dataType == 'IMAGE' ? (imageUrls.isEmpty ? null : imageUrls.first) : main?['url'] as String?
+    ..thumbnail = (main?['thumbnail_url'] ?? first?['thumbnail_url']) as String?
     ..loves = (counts['likes'] as num?)?.toInt() ?? 0
     ..likes = 0
     ..comments = (counts['comments'] as num?)?.toInt() ?? 0

@@ -221,7 +221,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   final int _backgroundLoadLimit = 8;
   final int _manualLoadLimit = 8;
   final int _maxBackgroundPosts = 20;
-  final int _maxTotalPosts = 25;
+  final int _maxTotalPosts = 5000;   // file infinie : plus de plafond de 25 posts
   Timer? _backgroundLoadTimer;
   bool _useBackgroundLoading = true;
 
@@ -1106,7 +1106,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         final spread = _spreadCreatorsWithContext(newPosts, _posts);
         setState(() {
           _posts.addAll(spread);
-          if (_posts.length > 25) _posts = _posts.take(25).toList();
           _loadedPostIds.addAll(newPosts.map((p) => p.id!));
           _totalPostsLoaded = _posts.length;
           _backgroundPostsLoaded += spread.length;
@@ -1116,8 +1115,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       }
 
       // Vérifier s'il reste des posts à charger
-      _hasMorePosts = newPosts.length >= (_backgroundLoadLimit ~/ 2);
-      if (_posts.length >= 25) _hasMorePosts = false;
+      _hasMorePosts = _infiniteFeed ? newPosts.isNotEmpty : newPosts.length >= (_backgroundLoadLimit ~/ 2);
 
       // Si on atteint la limite de background, désactiver
       if (_backgroundPostsLoaded >= _maxBackgroundPosts) {
@@ -1875,12 +1873,12 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         _loadedPostIds.addAll(loadedIds);
         _totalPostsLoaded = _posts.length;
         _isFirstLoad = false;
-        // T1 épuisé → fin de feed, T2+T3 se chargent automatiquement
-        _hasMorePosts = false;
+        // File infinie : le fil continue tant que le serveur a des posts non vus ; sinon (anciens écrans) T2+T3 sur demande
+        _hasMorePosts = _infiniteFeed;
       });
       _logBadgeSummary();
       // Auto-déclencher T2+T3 une seule fois quand T1 est épuisé
-      if (!_t2AutoTriggered) {
+      if (!_t2AutoTriggered && !_infiniteFeed) {
         _t2AutoTriggered = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) _loadDiscoveryAndTrends();
@@ -2561,7 +2559,6 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         final spread = _spreadCreatorsWithContext(newPosts, _posts);
         setState(() {
           _posts.addAll(spread);
-          if (_posts.length > 25) _posts = _posts.take(25).toList();
           _loadedPostIds.addAll(newPosts.map((p) => p.id!));
           _totalPostsLoaded = _posts.length;
         });
@@ -2569,8 +2566,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         printVm('📱 ${spread.length} posts chargés manuellement (total: $_totalPostsLoaded)');
       }
 
-      _hasMorePosts = newPosts.length >= (_manualLoadLimit ~/ 2);
-      if (_posts.length >= 25) _hasMorePosts = false;
+      _hasMorePosts = _infiniteFeed ? newPosts.isNotEmpty : newPosts.length >= (_manualLoadLimit ~/ 2);
 
     } catch (e) {
       printVm('❌ Erreur chargement manuel: $e');
@@ -2619,7 +2615,25 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     }
   }
 
-  Future<void> _loadMorePostsByFilter(Set<String> loadedIds, List<Post> newPosts, int limit) async {
+  /// Accueil général branché sur l'API : UN SEUL fil infini (le serveur mélange abonnements, goûts, découverte, nouveaux créateurs ; toujours des posts non vus).
+  bool get _infiniteFeed => ApiGateway.instance.useApi('feed') && widget.type.isEmpty && widget.sortType != 'recent';
+
+  Future<void> _loadMorePostsByFilter(Set<String> loadedIds, List<Post> newPosts, int limit, {bool reset = false}) async {
+    if (_infiniteFeed) {
+      final countryCode = authProvider.loginUserData.countryData?['countryCode'] as String? ?? '';
+      final more = await FeedRepository().fetchFeed(FeedQuery(
+        type: FeedType.home,
+        userId: authProvider.loginUserData.id ?? '',
+        countryCode: countryCode,
+        excludeIds: loadedIds,
+        targetCount: limit < 12 ? 12 : limit,
+        reset: reset,
+      ));
+      for (final p in more) {
+        if (p.id != null && loadedIds.add(p.id!)) newPosts.add(p);
+      }
+      return;
+    }
     // Mode récent : pagination curseur strictement chronologique
     if (widget.sortType == 'recent') {
       await _loadMoreRecentCursor(newPosts, limit);
@@ -3744,6 +3758,20 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         _lastInsertedAt = i;
       }
 
+      // Créateurs et canaux à suivre : en défilement infini la section ne peut plus rester en fin de fil, elle REVIENT dans le fil
+      // (après le 12e post, puis tous les 24 posts), jamais collée à un autre élément inséré.
+      if ((postNumber == 12 || (postNumber > 12 && (postNumber - 12) % 24 == 0)) && (i - _lastInsertedAt) >= 3) {
+        contentWidgets.add(FeedEndDiscoverySection(
+          key: ValueKey('creators_channels_$postNumber'),
+          pageType: widget.type.isNotEmpty ? widget.type : null,
+          onSubscribed: () {
+            if (!mounted) return;
+            setState(() => _hasSubscribedFromEndFeed = true);
+          },
+        ));
+        _lastInsertedAt = i;
+      }
+
       // ── 2 sections catégorie inline toutes les 8 posts ──
       // Cat1 = SPORT (toujours), Cat2 = rotation dans les intérêts de l'utilisateur.
       // Ne pas injecter une catégorie si la page affiche déjà ce type de contenu.
@@ -3898,14 +3926,17 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       SizedBox(
         width: double.infinity,
         child: OutlinedButton.icon(
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => DiscoveryFeedPage(
-                pageType: widget.type.isNotEmpty ? widget.type : null,
-              ),
-            ),
-          ),
+          // Accueil infini : les posts à découvrir (toujours non vus) sont rechargés ICI, dans la même page, sans en ouvrir une autre
+          onPressed: _infiniteFeed
+              ? _reloadDiscoveryInPlace
+              : () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => DiscoveryFeedPage(
+                        pageType: widget.type.isNotEmpty ? widget.type : null,
+                      ),
+                    ),
+                  ),
           icon: Icon(Icons.explore_rounded, size: 18, color: colors.primary),
           label: Text(
             'Voir les posts Découvrir',
@@ -3919,6 +3950,39 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         ),
       ),
     ];
+  }
+
+  /// Bouton « Voir les posts Découvrir » de l'accueil infini : nouvelle lecture du fil du serveur (posts non vus, y compris la découverte),
+  /// ajoutée à la suite de la liste. La personne reste sur la même page et peut continuer à défiler.
+  Future<void> _reloadDiscoveryInPlace() async {
+    if (_isLoadingMorePosts) return;
+    setState(() {
+      _hasMorePosts = true;
+      _isLoadingMorePosts = true;
+    });
+    var added = 0;
+    try {
+      final ids = Set<String>.from(_loadedPostIds);
+      final fresh = <Post>[];
+      await _loadMorePostsByFilter(ids, fresh, 20, reset: true);
+      if (fresh.isNotEmpty && mounted) {
+        final spread = _spreadCreatorsWithContext(fresh, _posts);
+        added = spread.length;
+        setState(() {
+          _posts.addAll(spread);
+          _loadedPostIds.addAll(fresh.map((p) => p.id!));
+          _totalPostsLoaded = _posts.length;
+        });
+      }
+    } catch (e) {
+      printVm('❌ Erreur rechargement de la découverte: $e');
+    }
+    if (mounted) {
+      setState(() {
+        _isLoadingMorePosts = false;
+        _hasMorePosts = added > 0;   // rien de nouveau : on garde la fin de fil et le bouton
+      });
+    }
   }
 
   Future<void> _loadDiscoveryAndTrends() async {

@@ -90,4 +90,48 @@ void main() {
     expect(m.useApi('lives'), isTrue);
     expect(m.useApi('music'), isFalse);
   });
+
+  group('e-mail non confirmé (403 email_unverified)', () {
+    const unverified = {'code': 'email_unverified', 'message': 'Confirme ton e-mail.', 'details': {}};
+
+    ApiClient withHook(FakeAdapter a, Future<bool> Function() hook) => ApiClient(
+          baseUrl: 'https://api.test/v1',
+          token: ({bool forceRefresh = false}) async => 't',
+          retryBase: Duration.zero,
+          onEmailUnverified: hook,
+          dio: Dio()..httpClientAdapter = a,
+        );
+
+    test("e-mail confirmé : la requête est rejouée avec la même clé d'idempotence", () async {
+      final a = FakeAdapter([(403, unverified), (200, {'data': {'ok': 1}})]);
+      var asked = 0;
+      final r = await withHook(a, () async { asked++; return true; }).pay('/posts/1/gifts', body: {'coins': 5}, idempotencyKey: 'k1');
+      expect(ApiClient.data(r), {'ok': 1});
+      expect(asked, 1);
+      expect(a.seen.length, 2);
+      expect(a.seen[1].headers['Idempotency-Key'], 'k1');
+    });
+
+    test('la personne renonce : erreur relancée avec details.declined, une seule requête', () async {
+      final a = FakeAdapter([(403, unverified)]);
+      await expectLater(
+        withHook(a, () async => false).pay('/purchases', body: {}),
+        throwsA(isA<ApiException>().having((e) => e.code, 'code', 'email_unverified').having((e) => e.details['declined'], 'declined', true)),
+      );
+      expect(a.seen.length, 1);
+    });
+
+    test('toujours refusé après confirmation : une seule fenêtre par requête', () async {
+      final a = FakeAdapter([(403, unverified)]);
+      var asked = 0;
+      await expectLater(withHook(a, () async { asked++; return true; }).post('/x'), throwsA(isA<ApiException>()));
+      expect(asked, 1);
+      expect(a.seen.length, 2);
+    });
+
+    test('sans crochet : comportement inchangé', () async {
+      final a = FakeAdapter([(403, unverified)]);
+      await expectLater(make(a).post('/x'), throwsA(isA<ApiException>().having((e) => e.details.containsKey('declined'), 'declined', false)));
+    });
+  });
 }

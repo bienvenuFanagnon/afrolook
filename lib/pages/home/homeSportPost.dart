@@ -421,19 +421,9 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     printVm('⏱️ [Timer] Conditions OK : non premium et cooldown passé');
     return true;
   }
-  void _startStayTimer() async {
-    printVm('⏱️ [Timer] Démarrage demandé...');
+  // La fenêtre « Soutenez Afrolook ! » est supprimée (demande du propriétaire, 01/11/2026) : plus de minuteur d'affichage.
+  void _startStayTimer() async {}
 
-    bool shouldStart = await _shouldStartTimer();
-    if (!shouldStart) return;
-
-    _stopStayTimer();
-    _stayTimer = Timer(const Duration(seconds: 5), () {
-      printVm('⏱️ [Timer] Timer déclenché après 5 secondes');
-      _checkAndShowSupportPopup();
-    });
-    printVm('⏱️ [Timer] Timer démarré (10s)');
-  }
   void _stopStayTimer() {
     if (_stayTimer != null && _stayTimer!.isActive) {
       _stayTimer!.cancel();
@@ -452,149 +442,6 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     return isPremium;
   }
 
-  Future<void> _checkAndShowSupportPopup() async {
-    printVm('🔔 [Popup] Vérification des conditions...');
-    if (!_isPageVisible) {
-      printVm('🔔 [Popup] Page non visible → annulé');
-      return;
-    }
-    if (_isSupportDialogShowing) {
-      printVm('🔔 [Popup] Popup déjà en cours d\'affichage → annulé');
-      return;
-    }
-    if (_isUserPremium()) {
-      printVm('🔔 [Popup] Utilisateur premium → pas de popup');
-      return;
-    }
-
-    final prefs = await SharedPreferences.getInstance();
-    final lastPopupDateStr = prefs.getString(_lastPopupDateKey!);
-    printVm('🔔 [Popup] Dernière date enregistrée: $lastPopupDateStr');
-
-    if (lastPopupDateStr != null) {
-      final lastDate = DateTime.parse(lastPopupDateStr);
-      final diffDays = DateTime.now().difference(lastDate).inDays;
-      printVm('🔔 [Popup] Différence en jours: $diffDays');
-      if (diffDays < 2) {
-        printVm('🔔 [Popup] Cooldown actif (moins de 2 jours) → popup ignoré');
-        return;
-      }
-    }
-
-    // Enregistrer la date actuelle
-    final nowStr = DateTime.now().toIso8601String();
-    await prefs.setString(_lastPopupDateKey!, nowStr);
-    printVm('🔔 [Popup] Date enregistrée: $nowStr');
-
-    printVm('🔔 [Popup] Affichage du popup...');
-    _showSupportDialog();
-  }
-  void _showSupportDialog() {
-    _isSupportDialogShowing = true;
-    final colors = AppColors.of(context);
-    final l10n = AppLocalizations.of(context);
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: colors.surface,
-        titlePadding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-        title: Row(
-          children: [
-            Icon(Icons.volunteer_activism, color: primaryGreen, size: 24),
-            const SizedBox(width: 8),
-            Text(l10n.supportTitle, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 18)),
-          ],
-        ),
-        contentPadding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              l10n.supportMessage,
-              style: TextStyle(color: colors.textPrimary, fontSize: 13),
-            ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-              decoration: BoxDecoration(
-                color: colors.surfaceVariant,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: accentYellow),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.workspace_premium, color: accentYellow, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          l10n.supportBecomePremium,
-                          style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
-                        ),
-                        Text(
-                          l10n.supportPremiumPrice,
-                          style: TextStyle(color: accentYellow, fontSize: 12, fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          l10n.supportPremiumDesc,
-                          style: TextStyle(color: colors.textSecondary, fontSize: 11),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actionsPadding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _isSupportDialogShowing = false;
-            },
-            child: Text(l10n.commonClose, style: TextStyle(color: colors.textSecondary)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _isSupportDialogShowing = false;
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) =>  AbonnementScreen()),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: accentYellow,
-              foregroundColor: colors.onAccent,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            ),
-            child: Text(l10n.profileSubscribe, style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _isSupportDialogShowing = false;
-              _showInterstitialAd();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: primaryGreen,
-              foregroundColor: colors.onPrimary,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            ),
-            child: Text(l10n.supportWatchAd, style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-        ],
-      ),
-    );
-  }
   void _showInterstitialAd() {
     // interstitiel supprimé du feed
   }
@@ -3023,6 +2870,20 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         final poolCount = postNumber ~/ 16 - 1;
         final poolIdx = poolCount % _kPoolOrder.length;
         contentWidgets.add(_buildPoolContent(_kPoolOrder[poolIdx], 'pool_slot_$poolCount'));
+        _lastInsertedAt = i;
+      }
+
+      // Créateurs et canaux à suivre : en défilement infini la section ne peut plus rester en fin de fil, elle REVIENT dans le fil
+      // (après le 12e post, puis tous les 24 posts), jamais collée à un autre élément inséré.
+      if ((postNumber == 12 || (postNumber > 12 && (postNumber - 12) % 24 == 0)) && (i - _lastInsertedAt) >= 3) {
+        contentWidgets.add(FeedEndDiscoverySection(
+          key: ValueKey('creators_channels_$postNumber'),
+          pageType: widget.type.isNotEmpty ? widget.type : null,
+          onSubscribed: () {
+            if (!mounted) return;
+            setState(() => _hasSubscribedFromEndFeed = true);
+          },
+        ));
         _lastInsertedAt = i;
       }
     }

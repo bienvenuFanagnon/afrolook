@@ -696,8 +696,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
 
   @override
   void dispose() {
-    // Pub plein écran à la fermeture de la vidéo (toutes les N vidéos ; plafonds dans AdmobService)
-    unawaited(AdmobService.onVideoClosed(authProvider.loginUserData));
+    // Plus de pub plein écran déclenchée par la fermeture de la page (décision du 01/11/2026) : elle pouvait s'afficher avant la vidéo suivante.
     _midrollTimer?.cancel();
     _midrollVideoController?.dispose();
     _midrollVideoController = null;

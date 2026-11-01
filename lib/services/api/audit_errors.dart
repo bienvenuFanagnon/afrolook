@@ -23,6 +23,9 @@ class AuditErrors {
   /// 403 `email_unverified` : la route exige un e-mail confirmé (voir [EmailVerificationGate]).
   static bool isEmailUnverified(Object e) => e is ApiException && e.code == 'email_unverified';
 
+  /// La personne a déjà vu la fenêtre « Confirme ton e-mail » (ouverte par le client d'API) et a renoncé : pas de seconde fenêtre.
+  static bool emailPromptDeclined(Object e) => isEmailUnverified(e) && (e as ApiException).details['declined'] == true;
+
   /// Message traduit pour un code connu de l'API, ou null si le code n'est pas l'un de ceux de l'audit.
   /// Les messages de l'API sont en français : ici ils sont remplacés par des textes traduits dans la langue de la personne.
   static String? known(Object e, {ErrorScope scope = ErrorScope.generic}) {

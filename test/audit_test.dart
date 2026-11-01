@@ -176,6 +176,15 @@ void main() {
   });
 
   group('Confirme ton e-mail (composant unique)', () {
+    test('la personne a déjà renoncé dans la fenêtre du client d\'API : pas de seconde fenêtre, le message habituel reste', () {
+      final declined = err('email_unverified', details: const {'declined': true});
+      expect(AuditErrors.isEmailUnverified(declined), isTrue);
+      expect(AuditErrors.emailPromptDeclined(declined), isTrue);
+      expect(EmailVerificationGate.isUnverified(declined), isFalse);
+      expect(EmailVerificationGate.isUnverified(err('email_unverified')), isTrue);
+      expect(AuditErrors.known(declined), 'Confirme ton e-mail pour utiliser cette fonction.');
+    });
+
     testWidgets('e-mail confirmé : le jeton est rechargé puis l\'action est rejouée', (tester) async {
       final v = FakeVerifier(confirmed: true);
       EmailVerificationGate.verifier = v;
