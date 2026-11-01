@@ -15,6 +15,7 @@ import '../../layout/centered_content.dart';
 import '../../l10n/tr.dart';
 import '../../providers/authProvider.dart';
 import '../../services/share/share_service.dart';
+import '../../widgets/email_verification_gate.dart';
 import '../../theme/app_colors.dart';
 import '../user/inviteAmis.dart';
 
@@ -520,7 +521,8 @@ class _ShareEarnPageState extends State<ShareEarnPage> {
     setState(() => _busyMission = m.id);
     try {
       final lang = Localizations.localeOf(context).languageCode == 'fr' ? 'fr' : 'en';
-      final link = await ShareService.createLink(m.id, channel, lang);
+      // E-mail non confirmé (403 `email_unverified`) : fenêtre « Confirme ton e-mail », puis le lien est demandé de nouveau.
+      final link = await EmailVerificationGate.run(context, () => ShareService.createLink(m.id, channel, lang));
       if (!mounted) return;
       // iPad : la feuille de partage exige une zone d'ancrage, sinon elle plante (au centre de l'écran, comme une fenêtre flottante)
       final size = MediaQuery.of(context).size;
@@ -616,12 +618,14 @@ class _ProfileFormState extends State<_ProfileForm> {
     }
     setState(() { _busy = true; _err = null; });
     try {
-      final status = await ShareService.saveProfile({
+      final profile = {
         'whatsapp': _wa.text.trim(), 'country': _country.text.trim(), 'city': _city.text.trim(),
         'statusAudience': int.tryParse(_status.text.trim()) ?? 0, 'telegramAudience': int.tryParse(_tg.text.trim()) ?? 0, 'otherAudience': int.tryParse(_other.text.trim()) ?? 0,
         'groups': [for (final g in _groups) if (g.$1.text.trim().isNotEmpty) {'name': g.$1.text.trim(), 'members': int.tryParse(g.$2.text.trim()) ?? 0}],
         'about': _about.text.trim(), 'acceptTerms': _accept, 'rulesVersion': widget.home.rulesVersion,
-      });
+      };
+      // E-mail non confirmé (403 `email_unverified`) : fenêtre « Confirme ton e-mail », puis le profil est renvoyé.
+      final status = await EmailVerificationGate.run(context, () => ShareService.saveProfile(profile));
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(status == 'active' ? context.tr('Profil mis à jour.') : context.tr('Profil envoyé : notre équipe le valide, tu seras prévenu.'))));
       Navigator.pop(context, true);

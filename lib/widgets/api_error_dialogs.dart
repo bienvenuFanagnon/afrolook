@@ -1,12 +1,15 @@
 import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:afrotok/pages/coins/coin_recharge_screen.dart';
+import 'package:afrotok/services/api/audit_errors.dart';
+import 'package:afrotok/widgets/email_verification_gate.dart';
 import 'package:flutter/material.dart';
 
 /// Messages d'erreur de l'API pour les écrans de publications.
 
 /// Texte lisible pour une erreur (message de l'API en français, sinon texte générique).
 String apiErrorText(Object e, {String fallback = 'Une erreur est survenue. Réessayez.'}) {
-  if (e is ApiException) return e.message;
+  // Codes de l'audit (e-mail non confirmé, plafonds, compte trop récent…) : texte traduit dans la langue de la personne.
+  if (e is ApiException) return AuditErrors.known(e) ?? e.message;
   return fallback;
 }
 
@@ -47,6 +50,11 @@ Future<void> showRechargeDialog(BuildContext context, {required String message})
 void handleApiError(BuildContext context, Object e, {VoidCallback? onRetry, String? fallback}) {
   if (e is ApiException && e.isInsufficientCoins) {
     showRechargeDialog(context, message: e.message);
+  } else if (EmailVerificationGate.isUnverified(e)) {
+    // E-mail non confirmé : fenêtre « Confirme ton e-mail » ; une fois confirmé, l'action est rejouée si l'écran sait la rejouer.
+    EmailVerificationGate.confirm(context).then((ok) {
+      if (ok && onRetry != null) onRetry();
+    });
   } else {
     showApiError(context, e, onRetry: onRetry, fallback: fallback);
   }

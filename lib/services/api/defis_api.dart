@@ -1,6 +1,7 @@
 import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/services/api/api_gateway.dart';
+import 'package:afrotok/services/api/audit_errors.dart';
 import 'package:afrotok/services/api/post_mapper.dart';
 
 /// Ce que le défi a rapporté (visible par le créateur et l'équipe) : sommes payées par les participants et les votants.
@@ -33,7 +34,8 @@ class DefisApi {
   }
 
   /// Message en français prêt à afficher.
-  static String message(Object e, {String fallback = 'Une erreur est survenue. Réessaie.'}) => e is ApiException ? e.message : fallback;
+  static String message(Object e, {String fallback = 'Une erreur est survenue. Réessaie.'}) =>
+      e is ApiException ? (AuditErrors.known(e, scope: ErrorScope.defi) ?? e.message) : fallback;
 
   // ── Clés d'idempotence ──
   static final Map<String, String> _keys = {};
@@ -125,7 +127,8 @@ class DefisApi {
   }
 
   /// Participe (frais éventuels) et publie la réponse. [id] : identifiant réservé par [reserve] (la publication le porte exactement).
-  /// Erreurs : 402, 409 `already_participating` / `defi_ended` / `id_taken`, 422 `reservation_invalid` (réservation échue ou d'une autre personne).
+  /// Erreurs : 402, 403 `creator_cannot_participate` (le créateur ne participe pas à son DÉFI), 409 `already_participating` / `defi_ended` / `id_taken`,
+  /// 422 `reservation_invalid` (réservation échue ou d'une autre personne).
   static Future<Post> participate(String defiId, Map<String, dynamic> content, {String? id}) =>
       _once('participate:$defiId', (k) async => postFromApi(_map(await _c.pay('/defis/$defiId/participations', body: {...content, if (id != null && id.isNotEmpty) 'id': id}, idempotencyKey: k))));
 

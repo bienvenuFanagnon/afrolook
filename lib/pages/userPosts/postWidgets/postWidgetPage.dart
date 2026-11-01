@@ -2285,6 +2285,7 @@ Future<void> _handleRepost() async {
     // Post DÉFI original → bouton "Participer" (ou badge "Terminé")
     if (isDefi) {
       if (isDefiOver(post)) return const DefiEndedChip();
+      if (isDefiCreator(post, authProvider.loginUserData.id)) return const SizedBox.shrink(); // le créateur ne peut pas participer (403 `creator_cannot_participate`)
       return Material(
         color: Colors.transparent,
         child: InkWell(

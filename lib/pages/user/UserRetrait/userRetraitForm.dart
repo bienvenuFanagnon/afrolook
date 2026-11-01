@@ -10,6 +10,7 @@ import '../../../providers/authProvider.dart';
 import '../../../services/payment_methods_config_service.dart';
 import '../../../services/api/wallet_api.dart';
 import '../../../services/retraitService.dart';
+import '../../../widgets/email_verification_gate.dart';
 import '../../../theme/app_colors.dart';
 import '../../../l10n/tr.dart';
 import '../../../services/currency_service.dart';
@@ -902,8 +903,19 @@ class _UserDemandeRetraitPageState extends State<UserDemandeRetraitPage> {
             content: Text(context.tr('Demande de retrait envoyée')), duration: Duration(seconds: 4)));
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => UserRetraitListPage()));
       } else if (!success && mounted) {
+        // E-mail non confirmé (403 `email_unverified`) : fenêtre « Confirme ton e-mail », puis la demande est renvoyée.
+        if (RetraitService.lastErrorCode == 'email_unverified' && await EmailVerificationGate.confirm(context)) {
+          if (mounted) await _submitRetrait(authProvider);
+          return;
+        }
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text(RetraitService.lastError ?? context.tr('Demande de retrait impossible')), duration: const Duration(seconds: 5)));
+            content: Text(RetraitService.lastError ?? context.tr('Demande de retrait impossible')),
+            duration: const Duration(seconds: 5),
+            // Échec réseau ou serveur : « Réessayer » (jamais de repli sur un autre système)
+            action: RetraitService.lastErrorCode == 'network' || (RetraitService.lastErrorCode ?? '').startsWith('http_5')
+                ? SnackBarAction(label: context.tr('Réessayer'), onPressed: () => _submitRetrait(authProvider))
+                : null));
       }
     } catch (e) {
       if (mounted) {

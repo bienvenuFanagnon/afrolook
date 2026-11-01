@@ -1,6 +1,8 @@
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:afrolook_api_client/afrolook_api_client.dart';
+import 'package:afrotok/l10n/tr.dart';
+import 'package:afrotok/services/api/audit_errors.dart';
 
 /// Soldes de la personne, tels que l'API les renvoie (jamais calculés dans l'application).
 class WalletSnapshot {
@@ -66,6 +68,22 @@ class WithdrawalRow {
   String get status => '${json['status'] ?? 'pending'}';
   String? get note => json['note'] as String?;
   Map<String, dynamic> get meta => json['meta'] is Map ? Map<String, dynamic>.from(json['meta'] as Map) : const {};
+
+  /// Gros montant : deux personnes de l'équipe doivent approuver (`needs_second_validation`, seuil fixé par l'API).
+  bool get needsSecondValidation => json['needs_second_validation'] == true;
+
+  /// Identifiant de la personne de l'équipe qui a validé en premier (null tant que personne n'a validé).
+  String? get validatedBy {
+    final v = json['validated_by'];
+    return v is String && v.isNotEmpty ? v : null;
+  }
+
+  /// Signaux de risque joints à la demande par l'API (`meta.risk` ou `risk`) : new_account, recent_gains, second_validation_required.
+  List<String> get risk {
+    final r = json['risk'] ?? meta['risk'];
+    return r is List ? r.map((e) => '$e').toList() : const [];
+  }
+
   DateTime? get createdAt => DateTime.tryParse('${json['created_at']}')?.toLocal();
 }
 
@@ -86,9 +104,12 @@ class WalletApi {
       ((r is Map ? r['data'] : r) as List? ?? const []).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
 
   /// Message en français prêt à afficher.
-  static String message(Object e, {String fallback = 'Une erreur est survenue. Réessaie.'}) {
+  /// Les codes de l'audit (e-mail non vérifié, plafonds, lots de 25 pièces…) sont traduits (voir [AuditErrors]).
+  static String message(Object e, {String fallback = 'Une erreur est survenue. Réessaie.', ErrorScope scope = ErrorScope.generic}) {
     if (e is ApiException) {
-      if (e.isNetwork) return 'Connexion impossible. Vérifie ta connexion puis réessaie.';
+      if (e.isNetwork) return tr('Connexion impossible. Vérifie ta connexion puis réessaie.');
+      final known = AuditErrors.known(e, scope: scope);
+      if (known != null) return known;
       return e.message.isNotEmpty ? e.message : fallback;
     }
     return fallback;
@@ -133,10 +154,21 @@ class WalletApi {
     return (items: list(r), next: r is Map ? r['next_cursor'] as String? : null);
   }
 
-  /// Conversion de pièces gagnées en FCFA à retirer.
-  Future<Map<String, dynamic>> convert(int coins) => pay('convert:$coins', '/wallet/convert', body: {'coins': coins});
+  /// Conversion de pièces gagnées en FCFA à retirer, par lots de 25 pièces (l'API refuse le reste : 422 `coins_not_multiple`).
+  /// Un nombre qui n'est pas un multiple de 25 n'est jamais envoyé : l'erreur est levée tout de suite, comme le ferait l'API.
+  Future<Map<String, dynamic>> convert(int coins) {
+    if (!AuditErrors.isMultipleOfStep(coins)) {
+      return Future.error(ApiException(
+        status: 422,
+        code: 'coins_not_multiple',
+        message: 'La conversion se fait par lots de ${AuditErrors.conversionStep} pièces.',
+        details: {'step': AuditErrors.conversionStep},
+      ));
+    }
+    return pay('convert:$coins', '/wallet/convert', body: {'coins': coins});
+  }
 
-  /// Gains des vues : {pending_views, rate_xof_per_view, tier, available_xof, min_cash_xof}.
+  /// Gains des vues : {pending_views, rate_xof_per_view, tier, available_xof, min_cash_xof, daily_cap_xof, cashed_today_xof}.
   Future<Map<String, dynamic>> viewEarnings() async => map(await _c.get('/wallet/earnings/views'));
 
   Future<Map<String, dynamic>> cashViews(int amountXof) => pay('cashviews:$amountXof', '/wallet/earnings/views/cash', body: {'amount_xof': amountXof});
@@ -212,6 +244,9 @@ class WalletApi {
   /// Équipe : [status] = pending | paid | rejected.
   Future<List<WithdrawalRow>> adminWithdrawals({String status = 'pending'}) async =>
       list(await _c.get('/admin/withdrawals', query: {'status': status})).map(WithdrawalRow.new).toList();
+
+  /// Première approbation d'un gros retrait (`POST /admin/withdrawals/{id}/validate`) : une AUTRE personne de l'équipe paie ensuite.
+  Future<void> validateWithdrawal(String id) => _c.post('/admin/withdrawals/$id/validate');
 
   Future<void> payWithdrawal(String id, {String? note}) => _c.post('/admin/withdrawals/$id/pay', body: {if (note != null) 'note': note});
 

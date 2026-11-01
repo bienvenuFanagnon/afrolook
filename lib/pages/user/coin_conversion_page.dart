@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:afrolook_api_client/afrolook_api_client.dart';
 import '../../services/api/wallet_api.dart';
+import '../../services/api/audit_errors.dart';
+import '../../widgets/email_verification_gate.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/coin_gift_provider.dart';
 import '../../theme/app_colors.dart';
@@ -27,13 +29,16 @@ class _CoinConversionPageState extends State<CoinConversionPage>
   int _coinsBalance = 0;
   int _totalCoins = 0;
   int _coinsToConvert = 0;
+  // Nombre saisi quand il n'est pas un multiple de 25 : la conversion est arrondie vers le bas (affiché à la personne).
+  int _typedCoins = 0;
   double _fcfaToGet = 0;
   String _errorMessage = '';
 
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
-  static const int _minCoins = 100;
+  static const int _step = AuditErrors.conversionStep; // l'API n'accepte que des multiples de 25 pièces (`coins_not_multiple`)
+  static const int _minCoins = 100; // multiple de 25
   static const double _rate = 0.4; // 25 pièces = 10 FCFA
 
   @override
@@ -67,7 +72,7 @@ class _CoinConversionPageState extends State<CoinConversionPage>
       if (!mounted) return;
       setState(() {
         _totalCoins = w.totalCoins;
-        _coinsBalance = w.convertibleCoins;
+        _coinsBalance = AuditErrors.roundDownToStep(w.convertibleCoins); // multiple de 25 (l'API le renvoie déjà ainsi)
       });
     } catch (e) {
       if (!mounted) return;
@@ -78,6 +83,7 @@ class _CoinConversionPageState extends State<CoinConversionPage>
   void _updateConversion(String value) {
     setState(() {
       _errorMessage = '';
+      _typedCoins = 0;
       if (value.isEmpty) {
         _coinsToConvert = 0;
         _fcfaToGet = 0;
@@ -94,13 +100,18 @@ class _CoinConversionPageState extends State<CoinConversionPage>
         _errorMessage = context.tr('Maximum convertible : {a} pièces gagnées', {'a': _fmt(_coinsBalance)});
         _coinsToConvert = 0;
         _fcfaToGet = 0;
-      } else if (parsed < _minCoins) {
+        return;
+      }
+      // Arrondi vers le bas au lot de 25 pièces : c'est ce montant (affiché) qui est envoyé à l'API.
+      final rounded = AuditErrors.roundDownToStep(parsed);
+      if (rounded < _minCoins) {
         _errorMessage = context.tr('Minimum {a} pièces par conversion', {'a': _minCoins});
         _coinsToConvert = 0;
         _fcfaToGet = 0;
       } else {
-        _coinsToConvert = parsed;
-        _fcfaToGet = parsed * _rate;
+        _coinsToConvert = rounded;
+        _typedCoins = rounded == parsed ? 0 : parsed;
+        _fcfaToGet = rounded * _rate;
         _pulseController.forward().then((_) => _pulseController.reverse());
       }
     });
@@ -112,12 +123,23 @@ class _CoinConversionPageState extends State<CoinConversionPage>
     _focusNode.unfocus();
   }
 
+  /// Boutons − / + : un lot de 25 pièces à la fois (en partant du nombre arrondi).
+  void _stepBy(int delta) {
+    final current = _coinsToConvert > 0 ? _coinsToConvert : AuditErrors.roundDownToStep(int.tryParse(_coinsController.text) ?? 0);
+    final next = (current == 0 && delta > 0 ? _minCoins : current + delta * _step).clamp(0, _coinsBalance);
+    final value = AuditErrors.roundDownToStep(next);
+    _coinsController.text = value == 0 ? '' : '$value';
+    _coinsController.selection = TextSelection.collapsed(offset: _coinsController.text.length);
+    _updateConversion(_coinsController.text);
+  }
+
   Future<void> _convertCoins() async {
     if (_coinsToConvert < _minCoins) return;
     setState(() => _isLoading = true);
     try {
       // Côté serveur : vérifie que seules des pièces gagnées sont converties.
-      await WalletApi.instance.convert(_coinsToConvert);
+      // E-mail non confirmé (403 `email_unverified`) : fenêtre « Confirme ton e-mail », puis l'action est rejouée.
+      await EmailVerificationGate.run(context, () => WalletApi.instance.convert(_coinsToConvert));
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -136,16 +158,20 @@ class _CoinConversionPageState extends State<CoinConversionPage>
     } catch (e) {
       if (!mounted) return;
       final notConvertible = e is ApiException && (e.code == 'insufficient_funds' || e.code == 'debt_outstanding');
-      if (notConvertible) await _loadBalance();
+      final wrongStep = e is ApiException && e.code == 'coins_not_multiple';
+      if (notConvertible || wrongStep) await _loadBalance();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(notConvertible
+          content: Text(e is ApiException && e.code == 'insufficient_funds'
               ? context.tr('Seules tes pièces gagnées sont convertibles : {a} pièces maximum.', {'a': _fmt(_coinsBalance)})
-              : (e is ApiException && !e.isNetwork && e.message.isNotEmpty
-                  ? e.message
+              : (e is ApiException && !e.isNetwork
+                  ? AuditErrors.message(e, scope: ErrorScope.conversion, fallback: 'La conversion n\'a pas pu être effectuée. Vérifie ta connexion et réessaie.')
                   : context.tr('La conversion n\'a pas pu être effectuée. Vérifie ta connexion et réessaie.'))),
           backgroundColor: Colors.red,
+          action: e is ApiException && (e.isNetwork || e.status >= 500)
+              ? SnackBarAction(label: context.tr('Réessayer'), textColor: Colors.white, onPressed: _convertCoins)
+              : null,
         ),
       );
     } finally {
@@ -427,6 +453,42 @@ class _CoinConversionPageState extends State<CoinConversionPage>
                 )
               : const SizedBox.shrink(),
         ),
+        if (_typedCoins > 0 && !hasError)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(
+              key: const Key('conversion_rounding_note'),
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.info_outline_rounded, color: colors.primary, size: 14),
+                const SizedBox(width: 5),
+                Expanded(
+                  child: Text(
+                    context.tr('Arrondi vers le bas : {a} pièces seront converties (conversion par lots de {b} pièces).', {'a': _fmt(_coinsToConvert), 'b': _step}),
+                    style: TextStyle(color: colors.primary, fontSize: 12, height: 1.35),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            OutlinedButton.icon(
+              key: const Key('conversion_step_minus'),
+              onPressed: _isLoading ? null : () => _stepBy(-1),
+              icon: const Icon(Icons.remove_rounded, size: 18),
+              label: Text('$_step'),
+            ),
+            const SizedBox(width: 8),
+            OutlinedButton.icon(
+              key: const Key('conversion_step_plus'),
+              onPressed: _isLoading ? null : () => _stepBy(1),
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: Text('$_step'),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -634,7 +696,7 @@ class _CoinConversionPageState extends State<CoinConversionPage>
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              context.tr('Minimum {a} pièces par conversion. Le montant est ajouté à votre Solde Gains.', {'a': _minCoins}),
+              context.tr('Minimum {a} pièces par conversion, par lots de {b} pièces (le surplus est arrondi vers le bas). Le montant est ajouté à votre Solde Gains.', {'a': _minCoins, 'b': _step}),
               style: TextStyle(color: colors.textSecondary, fontSize: 12, height: 1.5),
             ),
           ),

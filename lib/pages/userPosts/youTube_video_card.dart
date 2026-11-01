@@ -2130,6 +2130,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     // Post DÉFI original → bouton "Participer" (ou badge "Terminé")
     if (isDefi) {
       if (isDefiOver(post)) return const DefiEndedChip();
+      if (isDefiCreator(post, _authProvider.loginUserData.id)) return const SizedBox.shrink(); // le créateur ne peut pas participer (403 `creator_cannot_participate`)
       return Material(
         color: Colors.transparent,
         child: InkWell(

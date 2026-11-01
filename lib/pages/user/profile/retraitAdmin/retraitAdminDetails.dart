@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import '../../../admin/admin_palette.dart';
 import 'package:provider/provider.dart';
 
+import '../../../../l10n/tr.dart';
 import '../../../../models/model_data.dart';
 import '../../../../providers/authProvider.dart';
+import '../../../../services/api/audit_errors.dart';
 import '../../../../services/retraitService.dart';
 
 class AdminRetraitDetailPage extends StatefulWidget {
@@ -116,6 +118,44 @@ class _AdminRetraitDetailPageState extends State<AdminRetraitDetailPage> {
           _buildInfoRow('Date', _formatDate(widget.retrait.createdAt!)),
           if (widget.retrait.numeroTransaction != null)
             _buildInfoRow('Transaction', widget.retrait.numeroTransaction!),
+          if (widget.retrait.needsSecondValidation) ...[
+            SizedBox(height: 8),
+            _buildInfoRow(tr('Validé en premier par'), (widget.retrait.validatedBy ?? '').isEmpty ? tr('personne pour le moment') : widget.retrait.validatedBy!),
+          ],
+          if (widget.retrait.risk.isNotEmpty) ...[
+            SizedBox(height: 12),
+            _buildRiskSignals(),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Signaux de risque joints à la demande par l'API (compte récent, gains récents, gros montant).
+  Widget _buildRiskSignals() {
+    return Container(
+      key: const Key('retrait_risk_signals'),
+      width: double.infinity,
+      padding: EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.orange.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.orange.withOpacity(0.6)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 18),
+            SizedBox(width: 6),
+            Text(tr('Signaux de risque'), style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold)),
+          ]),
+          SizedBox(height: 6),
+          for (final r in widget.retrait.risk)
+            Padding(
+              padding: EdgeInsets.only(top: 3),
+              child: Text('• ${AuditErrors.riskLabel(r)}', style: TextStyle(color: AdminPalette.textP, fontSize: 13)),
+            ),
         ],
       ),
     );
@@ -176,6 +216,11 @@ class _AdminRetraitDetailPageState extends State<AdminRetraitDetailPage> {
   }
 
   Widget _buildAdminActions(String adminId) {
+    final step = withdrawalStep(
+      needsSecondValidation: widget.retrait.needsSecondValidation,
+      validatedBy: widget.retrait.validatedBy,
+      me: adminId,
+    );
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(16),
@@ -195,23 +240,69 @@ class _AdminRetraitDetailPageState extends State<AdminRetraitDetailPage> {
           ),
           SizedBox(height: 16),
 
-          // Bouton Valider
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _isLoading ? null : () => _validerRetrait(adminId),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              icon: Icon(Icons.check_circle),
-              label: Text('VALIDER LE RETRAIT'),
+          // Validation à deux dès le seuil fixé par l'API : « Valider » (1re approbation), puis une AUTRE personne paie
+          if (step == WithdrawalStep.needsFirstValidation) ...[
+            Text(
+              tr('Gros montant : une première personne valide, une autre personne de l’équipe paie.'),
+              style: TextStyle(color: AdminPalette.textS, fontSize: 13),
             ),
-          ),
+            SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                key: const Key('retrait_btn_valider'),
+                onPressed: _isLoading ? null : _premiereValidation,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                icon: Icon(Icons.how_to_reg),
+                label: Text(tr('VALIDER (1re approbation)')),
+              ),
+            ),
+          ] else if (step == WithdrawalStep.waitingSecondApprover) ...[
+            Container(
+              key: const Key('retrait_attente_second'),
+              width: double.infinity,
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.withOpacity(0.6)),
+              ),
+              child: Row(children: [
+                Icon(Icons.hourglass_top, color: Colors.blue, size: 20),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    tr('En attente d’un second approbateur : tu as validé ce retrait, une autre personne de l’équipe doit le payer.'),
+                    style: TextStyle(color: AdminPalette.textP, fontSize: 13),
+                  ),
+                ),
+              ]),
+            ),
+          ] else ...[
+            // Paiement (fait à la main) : sous le seuil, ou déjà validé par une autre personne
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                key: const Key('retrait_btn_payer'),
+                onPressed: _isLoading ? null : () => _validerRetrait(adminId),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                icon: Icon(Icons.check_circle),
+                label: Text(tr('CONFIRMER LE PAIEMENT')),
+              ),
+            ),
+          ],
           SizedBox(height: 12),
 
           // Bouton Annuler
@@ -323,6 +414,28 @@ class _AdminRetraitDetailPageState extends State<AdminRetraitDetailPage> {
         ],
       ),
     );
+  }
+
+  /// Première approbation d'un gros retrait : rien n'est payé, une autre personne de l'équipe devra payer.
+  Future<void> _premiereValidation() async {
+    final adminId = context.read<UserAuthProvider>().userId;
+    setState(() => _isLoading = true);
+    try {
+      final ok = await RetraitService.premiereValidation(retraitId: widget.retrait.id!);
+      if (!mounted) return;
+      if (ok) {
+        setState(() => widget.retrait.validatedBy = adminId);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(tr('Retrait validé. Une autre personne de l’équipe doit maintenant le payer.')), backgroundColor: Colors.blue),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(RetraitService.lastError ?? tr('Opération impossible')), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _validerRetrait(String adminId) async {

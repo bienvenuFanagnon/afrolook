@@ -9,6 +9,8 @@ import '../providers/authProvider.dart';
 import '../providers/coin_gift_provider.dart';
 import '../theme/app_colors.dart';
 import '../widgets/coin_balances_row.dart';
+import '../widgets/email_verification_gate.dart';
+import 'api/audit_errors.dart';
 import '../models/model_data.dart';
 import '../l10n/tr.dart';
 import 'currency_service.dart';
@@ -91,7 +93,8 @@ class CoinCheckout {
     if (confirmed != true || !context.mounted) return false;
 
     try {
-      await WalletApi.instance.buy(kind, refId: refId, months: dureeMois, weeks: weeks, combined: combined, days: days);
+      // E-mail non confirmé (403 `email_unverified`) : fenêtre « Confirme ton e-mail », puis l'achat est rejoué.
+      await EmailVerificationGate.run(context, () => WalletApi.instance.buy(kind, refId: refId, months: dureeMois, weeks: weeks, combined: combined, days: days));
       if (context.mounted) await refreshBalance(context);
       return true;
     } on ApiException catch (e) {
@@ -110,7 +113,7 @@ class CoinCheckout {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.message.isNotEmpty ? e.message : context.tr('Le paiement n\'a pas pu être effectué. Tu n\'as pas été débité.'))),
+          SnackBar(content: Text(AuditErrors.known(e) ?? (e.message.isNotEmpty ? e.message : context.tr('Le paiement n\'a pas pu être effectué. Tu n\'as pas été débité.')))),
         );
       }
       return false;

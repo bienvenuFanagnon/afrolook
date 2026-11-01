@@ -1,5 +1,6 @@
 import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:afrotok/services/api/api_gateway.dart';
+import 'package:afrotok/services/api/audit_errors.dart';
 
 /// Accès à la nouvelle API pour le module « régie et administration ».
 /// Aucune requête ne revient vers Firebase : une erreur est remontée telle quelle (ApiException, message déjà en français).
@@ -17,7 +18,7 @@ class RegieApi {
       (v is List ? v : const []).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
 
   /// Message lisible pour une erreur d'API (ou autre).
-  static String err(Object e) => e is ApiException ? e.message : 'Une erreur est survenue. Réessaie.';
+  static String err(Object e) => e is ApiException ? (AuditErrors.known(e, scope: ErrorScope.share) ?? e.message) : 'Une erreur est survenue. Réessaie.';
 
   // ── Lectures / écritures génériques ──
   static Future<dynamic> get(String path, {Map<String, dynamic>? query}) => _c.get(path, query: query);

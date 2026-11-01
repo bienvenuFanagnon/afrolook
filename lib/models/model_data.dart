@@ -5294,6 +5294,10 @@ class TransactionRetrait {
   String? methodPaiement; // Orange Money, Wave, etc.
   String? numeroCompte; // Numéro de téléphone ou compte
   String? countryCode; // Nouveau champ pour le pays
+  // Validation à deux (gros montants) et signaux de risque, tels que l'API les renvoie à l'équipe
+  bool needsSecondValidation = false;
+  String? validatedBy; // identifiant de la personne de l'équipe qui a validé en premier
+  List<String> risk = const []; // new_account, recent_gains, second_validation_required
 
   TransactionRetrait({
     this.id,
@@ -5363,9 +5367,14 @@ class TransactionRetrait {
   bool get isValide => statut == 'VALIDER';
   bool get isAnnule => statut == 'ANNULE';
 
+  /// Gros montant déjà validé par une personne : un second approbateur doit payer.
+  bool get isWaitingSecondApprover => isEnAttente && needsSecondValidation && (validatedBy ?? '').isNotEmpty;
+
   String get statutText {
     switch (statut) {
-      case 'EN_ATTENTE': return 'En attente';
+      case 'EN_ATTENTE':
+        if (isWaitingSecondApprover) return 'En attente d\'un second approbateur';
+        return needsSecondValidation ? 'À valider (deux approbateurs)' : 'En attente';
       case 'VALIDER': return 'Validé';
       case 'ANNULE': return 'Annulé';
       default: return 'Inconnu';

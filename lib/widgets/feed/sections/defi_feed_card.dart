@@ -108,6 +108,7 @@ class _DefiFeedCardState extends State<DefiFeedCard> {
     final c = AppColors.of(context);
     final me = context.read<UserAuthProvider>().loginUserData;
     final joined = (p.defiParticipantIds ?? const []).contains(me.id);
+    final isCreator = isDefiCreator(p, me.id); // le créateur ne peut pas participer (403 `creator_cannot_participate`)
     final thumb = _thumb(p);
     final title = (p.description ?? '').trim().isEmpty ? context.tr('Un défi t’attend') : p.description!.trim();
     final people = p.defiParticipantCount;
@@ -155,15 +156,17 @@ class _DefiFeedCardState extends State<DefiFeedCard> {
           ]),
           const SizedBox(height: 12),
           Row(children: [
-            Expanded(
-              child: FilledButton.icon(
-                style: FilledButton.styleFrom(backgroundColor: _orange, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24))),
-                onPressed: () => joined ? _open(p) : openDefiParticipation(context, p),
-                icon: Icon(joined ? Icons.how_to_vote_rounded : Icons.flag_rounded, size: 18),
-                label: Text(joined ? context.tr('Voir et voter') : context.tr('Participer'), style: const TextStyle(fontWeight: FontWeight.w800)),
+            if (!isCreator) ...[
+              Expanded(
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(backgroundColor: _orange, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24))),
+                  onPressed: () => joined ? _open(p) : openDefiParticipation(context, p),
+                  icon: Icon(joined ? Icons.how_to_vote_rounded : Icons.flag_rounded, size: 18),
+                  label: Text(joined ? context.tr('Voir et voter') : context.tr('Participer'), style: const TextStyle(fontWeight: FontWeight.w800)),
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
+              const SizedBox(width: 8),
+            ],
             OutlinedButton(
               style: OutlinedButton.styleFrom(foregroundColor: c.textPrimary, side: BorderSide(color: c.border), padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24))),
               onPressed: () => _open(p),

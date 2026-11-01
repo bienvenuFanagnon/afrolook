@@ -119,6 +119,9 @@ class RegieAdminApi {
             'countries': _arr(c['countries']),
             'actionUrl': c['url'] ?? '',
             'allocatedReach': _i(c['allocated_reach']),
+            // Audit H2 : référence du paiement de l'annonceur (exigée à l'approbation) et créateur de la campagne (un autre approbateur dès 200 000 F)
+            'paymentReference': c['payment_reference'] ?? '',
+            'createdBy': c['created_by'] ?? '',
           },
       ],
       'alerts': const [],
@@ -126,7 +129,9 @@ class RegieAdminApi {
   }
 
   /// Décision de l'équipe. [target] : advertiser, profile, property, sharer, campaign.
-  static Future<void> decide(String target, String id, String decision, {String? reason, int? retained}) async {
+  /// [paymentReference] : référence du paiement de l'annonceur, EXIGÉE par l'API pour activer une campagne (422 `payment_reference_required`).
+  /// Au-delà du seuil fixé par l'API (200 000 F), le créateur de la campagne ne peut pas l'approuver lui-même (403 `second_approver_required`).
+  static Future<void> decide(String target, String id, String decision, {String? reason, int? retained, String? paymentReference}) async {
     final action = switch (decision) {
       'approve' || 'reactivate' || 'resume' => 'approve',
       'refuse' || 'reject' => 'reject',
@@ -142,6 +147,7 @@ class RegieAdminApi {
         'action': action,
         if (reason != null) 'reason': reason,
         if (retained != null && target == 'sharer') 'retained_audience': retained,
+        if (paymentReference != null && paymentReference.trim().isNotEmpty && target == 'campaign') 'payment_reference': paymentReference.trim(),
       });
       return;
     }

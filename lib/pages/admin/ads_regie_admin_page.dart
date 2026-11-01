@@ -1,3 +1,4 @@
+import 'package:afrotok/l10n/tr.dart';
 import 'package:afrotok/services/api/regie_admin_api.dart';
 import 'package:afrotok/services/api/regie_api.dart';
 import 'package:flutter/material.dart';
@@ -179,11 +180,42 @@ class _AdsRegieAdminPageState extends State<AdsRegieAdminPage> {
           label: decision == 'refuse' ? 'Motif (envoyé par e-mail)' : 'Motif (gardé dans le journal)');
       if (reason == null) return;
     }
+    // Audit H2 : l'API n'active une campagne que si la référence du paiement de l'annonceur est indiquée (valider ou reprendre).
+    String? paymentReference;
+    if (decision == 'approve' || decision == 'resume') {
+      final known = '${p['paymentReference'] ?? ''}'.trim();
+      paymentReference = (decision == 'resume' && known.isNotEmpty) ? known : await _askPaymentReference(known);
+      if (paymentReference == null) return;
+    }
     try {
-      await RegieAdminApi.decide('campaign', '${p['id']}', decision, reason: reason);
+      await RegieAdminApi.decide('campaign', '${p['id']}', decision, reason: reason, paymentReference: paymentReference);
       _toast('Décision enregistrée');
       _load();
     } catch (e) { _toast(_err(e)); }
+  }
+
+  /// Référence du paiement de l'annonceur (virement, Mobile Money…) : obligatoire pour activer une campagne. Null si la personne annule.
+  Future<String?> _askPaymentReference(String initial) async {
+    final ctl = TextEditingController(text: initial);
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(tr('Valider la campagne')),
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(tr('Indique la référence du paiement de l’annonceur : sans elle, la campagne ne peut pas être activée. Au-delà d’un certain montant, une autre personne que le créateur doit l’approuver.')),
+          const SizedBox(height: 10),
+          TextField(key: const Key('campagne_reference_paiement'), controller: ctl, maxLength: 120, decoration: InputDecoration(labelText: tr('Référence du paiement'))),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Annuler'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Valider'))),
+        ],
+      ),
+    );
+    final t = ctl.text.trim();
+    if (ok != true) return null;
+    if (t.length < 3) { _toast(tr('La référence du paiement est obligatoire (3 caractères au moins).')); return null; }
+    return t;
   }
 
   Widget _card(AppColors c, {required List<Widget> children}) => Card(
@@ -392,13 +424,14 @@ class _AdsRegieAdminPageState extends State<AdsRegieAdminPage> {
           _kv(c, 'Texte', '${p['text'] ?? ''}'),
           _kv(c, 'Audience à atteindre', '${p['targetAudience'] ?? 0} personnes'),
           _kv(c, 'Prix', p['free'] == true ? 'Offerte par l\'équipe' : '${p['listPriceFcfa'] ?? 0} F (à encaisser avant de valider)'),
+          if ('${p['paymentReference'] ?? ''}'.isNotEmpty) _kv(c, 'Référence de paiement', '${p['paymentReference']}'),
           _kv(c, 'Pays', (p['countries'] as List? ?? const []).join(', ')),
           _kv(c, 'Résultats', '${p['valid'] ?? 0} clics valides · ${p['sharers'] ?? 0} partageurs · audience engagée ${p['allocatedReach'] ?? 0}'),
           _kv(c, 'Audience touchée', '${p['provenReach'] ?? 0} personnes (publications confirmées) · ${p['uniqueOpens'] ?? 0} ouvertures · ${p['previews'] ?? 0} aperçus · ${p['declaredViews'] ?? 0} vues déclarées'),
           _link(c, 'Voir le lien de l\'annonceur', '${p['actionUrl'] ?? ''}'),
           if ('${p['reason'] ?? ''}'.isNotEmpty) _kv(c, 'Motif', '${p['reason']}'),
           _buttons(c, items: [
-            if (p['status'] == 'pending') ('Valider (paiement reçu)', () => _campDecision(p, 'approve'), c.primary),
+            if (p['status'] == 'pending') ('Valider (référence du paiement exigée)', () => _campDecision(p, 'approve'), c.primary),
             if (p['status'] == 'pending') ('Refuser', () => _campDecision(p, 'refuse'), null),
             if (p['status'] == 'active') ('Mettre en pause', () => _campDecision(p, 'pause'), null),
             if (p['status'] == 'active') ('Terminer', () => _campDecision(p, 'end'), null),

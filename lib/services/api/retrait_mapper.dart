@@ -9,7 +9,7 @@ TransactionRetrait retraitFromApi(WithdrawalRow w) {
   final created = w.createdAt?.millisecondsSinceEpoch ?? 0;
   final statut = switch (w.status) { 'paid' => 'VALIDER', 'rejected' => 'ANNULE', _ => 'EN_ATTENTE' };
   final meta = w.meta;
-  return TransactionRetrait(
+  final retrait = TransactionRetrait(
     id: w.id,
     userId: w.userId,
     userPseudo: (j['user_pseudo'] ?? j['username'] ?? meta['user_pseudo']) as String?,
@@ -26,4 +26,9 @@ TransactionRetrait retraitFromApi(WithdrawalRow w) {
     methodPaiement: w.method,
     numeroCompte: w.account,
   );
+  // Validation à deux et signaux de risque : tels que l'API les renvoie (aucun calcul ici)
+  retrait.needsSecondValidation = w.needsSecondValidation;
+  retrait.validatedBy = w.validatedBy;
+  retrait.risk = w.risk;
+  return retrait;
 }

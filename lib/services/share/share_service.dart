@@ -127,6 +127,7 @@ class ShareService {
   static String profileError(Object e, String Function(String) tr) {
     final code = e is ApiException ? e.code : '';
     final m = (e is ApiException ? e.message : '').toLowerCase();
+    if (code == 'email_unverified') return tr('Confirme ton e-mail pour utiliser cette fonction.');
     if (code == 'rules_outdated') return tr('Les règles ont changé : relis-les et accepte la version actuelle.');
     if (code == 'audience_too_small' || m.contains('audience trop faible')) return tr('Ton audience doit compter au moins 20 personnes (statut, canal, groupes).');
     if (m.contains('whatsapp')) return tr('Ton numéro WhatsApp n\'est pas valide. Écris-le avec l\'indicatif du pays, par exemple +22890123456.');
@@ -141,6 +142,8 @@ class ShareService {
     final code = e is ApiException ? e.code : '';
     final m = e is ApiException ? e.message : '$e';
     switch (code) {
+      case 'email_unverified':
+        return tr('Confirme ton e-mail pour utiliser cette fonction.');
       case 'profile_not_approved':
         return tr('Ton profil n\'est pas encore validé.');
       case 'campaign_closed':

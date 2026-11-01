@@ -3,8 +3,10 @@ import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/cards/card_entry.dart';
 import 'package:afrotok/pages/coins/coin_recharge_screen.dart';
 import 'package:afrotok/pages/userPosts/userPostForm.dart';
+import 'package:afrotok/l10n/tr.dart';
 import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/services/coin_checkout.dart';
+import 'package:afrotok/widgets/email_verification_gate.dart';
 import 'package:afrotok/theme/app_colors.dart';
 import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -81,6 +83,14 @@ class DefiDialogs {
         message: 'Tu es le créateur de ce DÉFI : tu ne peux pas voter pour les participants.',
       );
 
+  /// Le créateur d'un DÉFI ne peut pas y participer (403 `creator_cannot_participate`).
+  static Future<void> creatorCannotParticipate(BuildContext context) => _show(
+        context,
+        icon: Icons.block,
+        title: tr('Participation impossible'),
+        message: tr('Tu es le créateur de ce DÉFI : tu ne peux pas y participer.'),
+      );
+
   static Future<void> alreadyParticipated(BuildContext context) => _show(
         context,
         icon: Icons.emoji_events,
@@ -134,6 +144,13 @@ class DefiDialogs {
         return alreadyParticipated(context);
       case 'creator_cannot_vote':
         return creatorCannotVote(context);
+      case 'creator_cannot_participate':
+        return creatorCannotParticipate(context);
+      case 'email_unverified':
+        // E-mail non confirmé : fenêtre « Confirme ton e-mail », puis l'action est rejouée si l'écran sait la rejouer.
+        return EmailVerificationGate.confirm(context).then((ok) {
+          if (ok && onRetry != null) onRetry();
+        });
       case 'defi_ended':
         return defiEnded(context);
       case 'id_taken':
@@ -159,6 +176,10 @@ class DefiDialogs {
     }
   }
 }
+
+/// La personne connectée est-elle la créatrice / le créateur de ce DÉFI ? Elle ne peut ni y participer ni voter (l'API refuse : 403).
+bool isDefiCreator(Post defiPost, String? currentUserId) =>
+    currentUserId != null && currentUserId.isNotEmpty && currentUserId == defiPost.user_id;
 
 bool isDefiOver(Post defiPost) {
   final cfg = defiPost.defiConfig;
@@ -196,6 +217,10 @@ class DefiEndedChip extends StatelessWidget {
 void openDefiParticipation(BuildContext context, Post defiPost) {
   final auth = Provider.of<UserAuthProvider>(context, listen: false);
   final cfg = defiPost.defiConfig;
+  if (isDefiCreator(defiPost, auth.loginUserData.id)) {
+    DefiDialogs.creatorCannotParticipate(context);
+    return;
+  }
   if (defiPost.defiParticipantIds?.contains(auth.loginUserData.id) ?? false) {
     DefiDialogs.alreadyParticipated(context);
     return;

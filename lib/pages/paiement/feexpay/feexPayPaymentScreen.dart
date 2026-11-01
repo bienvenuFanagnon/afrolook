@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 
 import 'package:afrolook_api_client/afrolook_api_client.dart';
 import '../../../services/api/wallet_api.dart';
+import '../../../widgets/email_verification_gate.dart';
 
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -267,16 +268,20 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
     try {
       final api = WalletApi.instance;
       // 1) dépôt créé par l'API (montant payé, frais et montant crédité calculés par le serveur) ; 2) paiement lancé chez l'opérateur
-      final created = await api.createDeposit(widget.amount, operatorCode!);
-      final depositId = '${created['id']}';
-      final result = await api.executeDeposit(
-        depositId,
-        phone: phone,
-        operatorCode: operatorCode,
-        operatorName: _selectedOperator,
-        country: _selectedCountry,
-        otp: needsOtp ? _otpController.text.trim() : null,
-      );
+      // E-mail non confirmé (403 `email_unverified`) : fenêtre « Confirme ton e-mail », puis le dépôt est relancé.
+      final (depositId, result) = await EmailVerificationGate.run(context, () async {
+        final created = await api.createDeposit(widget.amount, operatorCode!);
+        final id = '${created['id']}';
+        final res = await api.executeDeposit(
+          id,
+          phone: phone,
+          operatorCode: operatorCode,
+          operatorName: _selectedOperator,
+          country: _selectedCountry,
+          otp: needsOtp ? _otpController.text.trim() : null,
+        );
+        return (id, res);
+      });
       if (!mounted) return;
       _showSuccessDialog('${result['message'] ?? context.tr('Paiement initié avec succès !')}', () {
         Navigator.pop(context);

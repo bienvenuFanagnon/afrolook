@@ -4,6 +4,8 @@ import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:flutter/material.dart';
 import '../../services/api/api_gateway.dart';
 import '../../services/api/wallet_api.dart';
+import '../../services/api/audit_errors.dart';
+import '../../widgets/email_verification_gate.dart';
 import '../../services/monetization_config.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -17,7 +19,12 @@ import '../postDetailsVideo.dart';
 import '../../l10n/tr.dart';
 import '../../services/currency_service.dart';
 
-const double _minEncaissement = 1000.0;
+/// Minimum d'encaissement : celui que l'API renvoie (`min_cash_xof`), 1 000 FCFA tant que les gains ne sont pas chargés.
+double get _minEncaissement => (_apiEarn?['min_cash_xof'] is num) ? (_apiEarn!['min_cash_xof'] as num).toDouble() : 1000.0;
+
+/// Plafond d'encaissement du jour et total déjà encaissé aujourd'hui, tels que l'API les renvoie (null si l'API ne les a pas donnés).
+int? get _dailyCapXof => (_apiEarn?['daily_cap_xof'] is num) ? (_apiEarn!['daily_cap_xof'] as num).toInt() : null;
+int? get _cashedTodayXof => (_apiEarn?['cashed_today_xof'] is num) ? (_apiEarn!['cashed_today_xof'] as num).toInt() : null;
 double get _baseViewRate => MonetizationConfig.baseViewRate;
 
 // Barème : config/monetization (MonetizationConfig), partagé avec les Cloud Functions.
@@ -58,12 +65,12 @@ double _fcfaPerView(double creatorScore) {
 /// Vues des posts non monétisés, exclues du calcul (chargées par la page, comme le fait le serveur).
 int _excludedViews = 0;
 
-int _pendingViews(UserData user) =>
-    (_apiEarn?['pending_views'] is num) ? (_apiEarn!['pending_views'] as num).toInt() : ((user.totalPostUniqueViews ?? 0) - _excludedViews - (user.totalViewsEarningsCredited ?? 0)).clamp(0, 1 << 40);
+/// Vues payables (décidées par le serveur : seules ces vues rapportent). Aucun calcul local : 0 tant que l'API n'a pas répondu.
+int _pendingViews(UserData user) => (_apiEarn?['pending_views'] is num) ? (_apiEarn!['pending_views'] as num).toInt() : 0;
 
-/// Gains encaissables (FCFA) — même calcul que la Cloud Function cashViewEarnings.
-double _availableEarnings(UserData user) =>
-    (_apiEarn?['available_xof'] is num) ? (_apiEarn!['available_xof'] as num).toDouble() : (_pendingViews(user) * _fcfaPerView(user.creatorScore ?? 0) * 100).floorToDouble() / 100;
+/// Gains encaissables (FCFA), tels que l'API les renvoie. Aucun calcul local ni repli : 0 tant que l'API n'a pas répondu
+/// (l'écran affiche alors l'erreur et « Réessayer »).
+double _availableEarnings(UserData user) => (_apiEarn?['available_xof'] is num) ? (_apiEarn!['available_xof'] as num).toDouble() : 0;
 
 class MesGainsPage extends StatefulWidget {
   final String userId;
@@ -165,19 +172,24 @@ class _MesGainsPageState extends State<MesGainsPage> {
     setState(() => _isEncashing = true);
     try {
       // Calcul et crédit côté serveur (clé conservée tant que la demande n'est pas confirmée)
-      await WalletApi.instance.cashViews(input.round());
+      // E-mail non confirmé (403 `email_unverified`) : fenêtre « Confirme ton e-mail », puis l'encaissement est rejoué.
+      await EmailVerificationGate.run(context, () => WalletApi.instance.cashViews(input.round()));
       _amountController.clear();
       await _reloadEarnings();
       await Provider.of<UserAuthProvider>(context, listen: false).refreshUserData();
       await _loadHistory();
       _snack(t.gainsSuccess(input.toInt()), colors.primary);
     } on ApiException catch (e) {
+      // Messages de l'API (plafond du jour, compte trop récent, e-mail non confirmé…) traduits ; aucun calcul local.
       final msg = switch (e.code) {
         'exceeds_available' => t.gainsErrInsuff,
         'too_soon' => t.gainsErrCooldown,
         'below_minimum' => t.gainsErrMin,
-        _ => t.gainsErrGeneral,
+        'account_too_young' || 'daily_cap_reached' || 'email_unverified' => AuditErrors.message(e, scope: ErrorScope.views),
+        _ => e.isNetwork ? AuditErrors.message(e) : t.gainsErrGeneral,
       };
+      // Les montants ont pu changer côté serveur : on relit ce que l'API renvoie.
+      if (e.code == 'exceeds_available' || e.code == 'daily_cap_reached') await _reloadEarnings();
       _snack(msg, colors.danger);
     } catch (_) {
       _snack(t.gainsErrGeneral, colors.danger);
@@ -516,7 +528,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
           const SizedBox(height: 12),
           Row(children: [
             Expanded(child: _statChip(t.gainsAvailable, Money.fmt(available), Icons.account_balance_wallet_outlined, tierColor, colors,
-                subtitle: context.tr('{a} vues dispo', {'a': _pendingViews(user)}))),
+                subtitle: context.tr('{a} vues payables', {'a': _pendingViews(user)}))),
             const SizedBox(width: 12),
             Expanded(child: _statChip(t.gainsTotalCashed, Money.fmt(cashed), Icons.check_circle_outline, colors.primary, colors)),
           ]),
@@ -584,6 +596,15 @@ class _MesGainsPageState extends State<MesGainsPage> {
           const SizedBox(height: 4),
           Text(t.gainsEncaissAvail(available.toInt()),
               style: TextStyle(color: colors.accent, fontWeight: FontWeight.bold, fontSize: 13)),
+          // Plafond du jour : valeurs données par l'API (`daily_cap_xof`, `cashed_today_xof`), affichées telles quelles
+          if (_dailyCapXof != null && _cashedTodayXof != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              context.tr("Plafond d'encaissement du jour : {a}. Déjà encaissé aujourd'hui : {b}.", {'a': Money.fmt(_dailyCapXof!), 'b': Money.fmt(_cashedTodayXof!)}),
+              key: const Key('views_daily_cap'),
+              style: TextStyle(color: colors.textSecondary, fontSize: 12, height: 1.4),
+            ),
+          ],
           const SizedBox(height: 16),
 
           if (!canEncash)

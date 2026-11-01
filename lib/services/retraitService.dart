@@ -2,8 +2,10 @@
 
 import 'dart:async';
 
+import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import '../models/model_data.dart';
+import 'api/audit_errors.dart';
 import 'api/retrait_mapper.dart';
 import 'api/wallet_api.dart';
 
@@ -11,6 +13,14 @@ import 'api/wallet_api.dart';
 class RetraitService {
   /// Dernière explication d'échec (message en français), lisible par l'écran après un `false`.
   static String? lastError;
+
+  /// Code de l'API de la dernière erreur (ex. `email_unverified`, `daily_cap_reached`) ; null si l'erreur ne vient pas de l'API.
+  static String? lastErrorCode;
+
+  static void _fail(Object e, {String? fallback, ErrorScope scope = ErrorScope.withdrawal}) {
+    lastErrorCode = e is ApiException ? e.code : null;
+    lastError = WalletApi.message(e, fallback: fallback ?? 'Une erreur est survenue. Réessaie.', scope: scope);
+  }
 
   /// Faire une demande de retrait (heures d'ouverture, solde et dette sont vérifiés par l'API).
   static Future<bool> demanderRetrait({
@@ -23,6 +33,7 @@ class RetraitService {
     Map<String, dynamic>? extra, // devise, montant local, taux, type de retrait…
   }) async {
     lastError = null;
+    lastErrorCode = null;
     try {
       if (montant <= 0) throw Exception('Montant invalide');
       await WalletApi.instance.requestWithdrawal(
@@ -35,21 +46,37 @@ class RetraitService {
       printVm('✅ Demande de retrait créée: $montant FCFA pour $countryCode');
       return true;
     } catch (e) {
-      lastError = WalletApi.message(e, fallback: 'Demande de retrait impossible');
+      _fail(e, fallback: 'Demande de retrait impossible');
       printVm('❌ Erreur demande retrait: $e');
       return false;
     }
   }
 
-  /// 🔄 Valider un retrait (équipe) : le paiement a été fait à la main.
+  /// 🔄 Marquer un retrait comme payé (équipe) : le paiement a été fait à la main. Pour un gros montant, une AUTRE personne
+  /// que celle qui a validé en premier doit payer (l'API refuse sinon : `second_validation_required`).
   static Future<bool> validerRetrait({required String retraitId, required String adminId}) async {
     lastError = null;
+    lastErrorCode = null;
     try {
       await WalletApi.instance.payWithdrawal(retraitId);
       return true;
     } catch (e) {
-      lastError = WalletApi.message(e);
+      _fail(e, scope: ErrorScope.admin);
       printVm('❌ Erreur validation retrait: $e');
+      return false;
+    }
+  }
+
+  /// ✅ Première approbation d'un gros retrait (équipe) : ne paie rien, autorise un second approbateur à payer.
+  static Future<bool> premiereValidation({required String retraitId}) async {
+    lastError = null;
+    lastErrorCode = null;
+    try {
+      await WalletApi.instance.validateWithdrawal(retraitId);
+      return true;
+    } catch (e) {
+      _fail(e, scope: ErrorScope.admin);
+      printVm('❌ Erreur première validation retrait: $e');
       return false;
     }
   }
@@ -57,11 +84,12 @@ class RetraitService {
   /// 🚫 Annuler un retrait (équipe) : le solde est remboursé par l'API.
   static Future<bool> annulerRetrait({required String retraitId, required String adminId, required String motif}) async {
     lastError = null;
+    lastErrorCode = null;
     try {
       await WalletApi.instance.rejectWithdrawal(retraitId, motif);
       return true;
     } catch (e) {
-      lastError = WalletApi.message(e);
+      _fail(e, scope: ErrorScope.admin);
       printVm('❌ Erreur annulation retrait: $e');
       return false;
     }

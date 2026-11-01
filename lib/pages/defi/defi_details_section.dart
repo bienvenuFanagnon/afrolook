@@ -80,7 +80,8 @@ class DefiDetailsSection extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (!isOver) ...[
+                // Le créateur du DÉFI ne peut pas y participer (403 `creator_cannot_participate`) : pas de bouton « Participer »
+                if (!isOver && !isCreator) ...[
                   const SizedBox(width: 8),
                   GestureDetector(
                     onTap: () => openDefiParticipation(context, defiPost),
