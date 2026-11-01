@@ -1,3 +1,4 @@
+import 'package:afrotok/services/api/api_identity.dart';
 import 'package:afrotok/services/api/jeux_api.dart';
 import 'package:afrotok/services/api/learning_admin_api.dart';
 import 'package:afrolook_api_client/afrolook_api_client.dart';
@@ -305,7 +306,7 @@ class QuizService {
   DateTime? _configAt;
   QuizConfig get config => _config;
 
-  String? get uid => FirebaseAuth.instance.currentUser?.uid;
+  String? get uid => ApiIdentity.myId;
 
   /// Codes de l'API -> mots-clés historiques attendus par les écrans (recherche par `contains`).
   static const _alias = {'report_limit': 'TOO_MANY', 'etude_off': 'QUIZ_OFF', 'quiz_off': 'QUIZ_OFF', 'no_ad': 'NO_ADS'};

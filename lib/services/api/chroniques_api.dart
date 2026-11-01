@@ -1,3 +1,4 @@
+import 'package:afrotok/services/api/api_identity.dart';
 import 'dart:io';
 
 import 'package:afrolook_api_client/afrolook_api_client.dart';
@@ -15,7 +16,7 @@ class ChroniquesApi {
   static ApiClient get _c => ApiGateway.instance.client;
 
   /// Identifiant de la personne connectée.
-  static String? get myId => FirebaseAuth.instance.currentUser?.uid;
+  static String? get myId => ApiIdentity.myId;
 
   static Map<String, dynamic> _map(dynamic r) {
     final d = ApiClient.data(r);

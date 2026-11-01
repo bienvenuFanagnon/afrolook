@@ -1,3 +1,4 @@
+import 'package:afrotok/services/api/api_identity.dart';
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/admin/new_category.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -107,7 +108,7 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
   Future<bool> _loadEntrepriseByUserId(String userId) async {
     try {
       // L'entreprise de la personne (API : /shop/businesses, entreprises à moi ou d'un autre selon l'identifiant du propriétaire)
-      final all = await ShopApi.businesses(mine: userId == FirebaseAuth.instance.currentUser?.uid);
+      final all = await ShopApi.businesses(mine: userId == ApiIdentity.myId);
       final mine = all.where((e) => e.userId == userId).toList();
       if (mine.isNotEmpty) {
         entrepriseData = mine.first;

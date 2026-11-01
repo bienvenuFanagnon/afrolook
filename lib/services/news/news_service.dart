@@ -1,3 +1,4 @@
+import 'package:afrotok/services/api/api_identity.dart';
 import 'package:afrotok/services/api/jeux_api.dart';
 import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -256,7 +257,7 @@ class NewsService {
   /// Compte une vue par personne et par article (le serveur dédoublonne) : la première fois que la carte est visible dans le fil, qu'on aime
   /// l'article depuis le fil ou qu'on ouvre sa page de détail. Retourne true si une vue vient d'être comptée.
   Future<bool> recordView(NewsArticle a) async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = ApiIdentity.myId;
     if (uid == null || a.viewedBy.contains(uid) || !_viewed.add(a.id)) return false; // _viewed : déjà compté pendant cette session
     try {
       await JeuxApi.client.post('/posts/${a.id}/view');

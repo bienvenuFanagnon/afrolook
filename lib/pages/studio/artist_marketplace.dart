@@ -1,3 +1,4 @@
+import 'package:afrotok/services/api/api_identity.dart';
 // lib/pages/studio/artist_marketplace.dart
 //
 // Sons d'artistes : un artiste dépose un son (gratuit ou payant), l'administrateur l'écoute et le valide,
@@ -795,7 +796,7 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
   bool _loadingAd = false;
   bool _adGranted = false; // écoute complète ouverte une fois par une pub récompensée
 
-  bool get _own => !widget.preview && widget.sound.userId == FirebaseAuth.instance.currentUser?.uid;
+  bool get _own => !widget.preview && widget.sound.userId == ApiIdentity.myId;
 
   /// Écoute en entier : titre gratuit, acheté, ou à soi. Sinon, extrait de 30 s.
   bool get _full => widget.sound.isFree || _own || _owned || _adGranted;
@@ -835,7 +836,7 @@ class _ArtistSoundDetailPageState extends State<ArtistSoundDetailPage> {
 
   Future<void> _listenWithAd() async {
     setState(() => _loadingAd = true);
-    final r = await MusicAds.listenWithAd(widget.sound.id, userId: FirebaseAuth.instance.currentUser?.uid ?? '');
+    final r = await MusicAds.listenWithAd(widget.sound.id, userId: ApiIdentity.myId ?? '');
     if (!mounted) return;
     setState(() => _loadingAd = false);
     if (r.outcome != MusicAdOutcome.ok || r.url == null) {

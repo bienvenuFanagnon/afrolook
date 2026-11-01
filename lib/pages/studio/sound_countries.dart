@@ -1,3 +1,4 @@
+import 'package:afrotok/services/api/api_identity.dart';
 // Pays où un titre est proposé : même grille que les posts (Gratuit 1 pays, Premium 20, Gold tous), sans pièces en plus.
 
 import 'package:afrolook_api_client/afrolook_api_client.dart';
@@ -95,7 +96,7 @@ class SoundCountries {
     return out;
   }
 
-  static String? get viewerUid => FirebaseAuth.instance.currentUser?.uid;
+  static String? get viewerUid => ApiIdentity.myId;
 }
 
 class _Picker extends StatefulWidget {

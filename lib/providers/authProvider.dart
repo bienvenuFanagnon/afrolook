@@ -1,4 +1,5 @@
 import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/api/api_identity.dart';
 import '../services/follow_service.dart';
 import 'dart:async';
 import 'dart:developer';
@@ -167,6 +168,7 @@ Future<bool> changeStateUser({required UserData user, required String state, req
       }
 
       await FirebaseAuth.instance.signOut();
+      ApiIdentity.clear();
       return null; // succès
     } on FirebaseAuthException catch (e) {
       if (e.code == 'wrong-password' || e.code == 'invalid-credential') {
@@ -207,6 +209,7 @@ Future<bool> changeStateUser({required UserData user, required String state, req
       await storeToken('');
       // 4️⃣ FORCER la déconnexion Firebase (la plus importante)
       await FirebaseAuth.instance.signOut();
+      ApiIdentity.clear();
 
       // 5️⃣ Attendre que Firebase termine la déconnexion
       await Future.delayed(const Duration(milliseconds: 500));
@@ -281,7 +284,9 @@ Future<void> incrementPostTotalInteractions({
 
   UserData? get userData => _userData;
   List<UserData> get availableUsers => _availableUsers;
-  String? get userId => _auth.currentUser?.uid;
+  /// Identifiant de la personne dans l'API (ULID pour les comptes créés par l'API), PAS l'uid Firebase.
+  /// L'uid Firebase s'obtient par `FirebaseAuth.instance.currentUser?.uid`, seulement pour Firebase Auth / FCM.
+  String? get userId => ApiIdentity.myId;
 
   Future<void> checkAndCleanViewedPosts(String userId) async {
     // Les publications vues sont tenues par le serveur (post_views) : rien à nettoyer côté application.

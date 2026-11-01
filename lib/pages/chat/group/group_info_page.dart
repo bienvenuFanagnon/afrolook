@@ -882,9 +882,13 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
 
                 const SizedBox(height: 16),
 
-                // Ce que le groupe a rapporté (propriétaire, affiché au-delà de 1 pièce)
+                // Ce que le groupe a rapporté (propriétaire ; toujours visible pour un groupe payant, sinon au-delà de 1 pièce)
                 if (_myRole == 'owner')
-                  GroupRevenueCard(groupId: widget.groupId, ownerId: _auth.loginUserData.id ?? ''),
+                  GroupRevenueCard(
+                    groupId: widget.groupId,
+                    ownerId: _auth.loginUserData.id ?? '',
+                    isPaid: JeuxApi.asInt(_groupData['subscription_price_coins']) > 0,
+                  ),
 
                 // Paramètres admin (Premium)
                 if (isOwnerOrAdmin) ...[

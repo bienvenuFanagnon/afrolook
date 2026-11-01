@@ -1,3 +1,4 @@
+import 'package:afrotok/services/api/api_identity.dart';
 import 'dart:async';
 import 'dart:io';
 
@@ -182,7 +183,7 @@ class _MusicSheetState extends State<_MusicSheet> {
   _Pick _fromSound(ArtistSound s) {
     final m = MontageMusic.artist(s);
     // Mêmes règles que partout : son gratuit = rien à payer ; son payant = prix d'utilisation (60 % pour l'artiste) ; ses propres sons sont gratuits
-    final mine = s.userId == FirebaseAuth.instance.currentUser?.uid;
+    final mine = s.userId == ApiIdentity.myId;
     return _Pick(key: 'artist:${s.id}', title: s.title, subtitle: '@${s.userPseudo}${(s.genre ?? '').isNotEmpty ? ' · ${s.genre}' : ''}${mine ? ' · mon son' : ''} · ${s.previewSec} s', durationMs: m.durationMs, coins: m.paid && !mine ? m.useCoins : 0, source: m, url: s.previewUrl);
   }
 

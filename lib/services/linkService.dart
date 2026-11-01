@@ -1,5 +1,6 @@
 ﻿// app_link_service.dart
 import 'package:afrolook_api_client/afrolook_api_client.dart';
+import 'package:afrotok/services/api/api_identity.dart';
 import 'package:afrotok/services/api/chat_api.dart';
 import 'package:afrotok/services/api/contenu_payant_api.dart';
 import 'package:afrotok/services/api/lives_mapper.dart';
@@ -387,7 +388,7 @@ class AppLinkService {
   // Navigation vers un groupe via son code d'invitation
   Future<void> _navigateToGroup(BuildContext context, String joinCode) async {
     final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    final myId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final myId = ApiIdentity.myId ?? '';
     final now = DateTime.now().millisecondsSinceEpoch;
 
     // Afficher le modal de chargement immédiatement
@@ -685,7 +686,7 @@ class AppLinkService {
         return;
       }
 
-      final isHost = liveData.hostId == user?.uid;
+      final isHost = liveData.hostId == ApiIdentity.myId;
 
       // Naviguer vers la page Live
       Navigator.push(

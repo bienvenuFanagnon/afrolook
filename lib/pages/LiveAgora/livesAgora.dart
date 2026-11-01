@@ -740,46 +740,8 @@ class LiveProvider extends ChangeNotifier {
 
   // ==================== NOUVELLES MÉTHODES ====================
 
-  Future<void> updateUserWatchTime(String liveId, String userId, int minutes) async {
-    try {
-      await _firestore.collection('lives').doc(liveId).update({
-        'userWatchTime.$userId': minutes,
-      });
-      printVm("⏰ Temps visionnage mis à jour: $userId -> $minutes min");
-    } catch (e) {
-      printVm("❌ Erreur mise à jour temps visionnage: $e");
-    }
-  }
-
-  Future<bool> checkUserPaymentStatus(String liveId, String userId) async {
-    try {
-      final doc = await _firestore.collection('lives').doc(liveId).get();
-      if (doc.exists) {
-        final data = doc.data()!;
-        final userWatchTime = Map<String, dynamic>.from(data['userWatchTime'] ?? {});
-        final userTime = userWatchTime[userId] ?? 0;
-        return userTime > 60;
-      }
-      return false;
-    } catch (e) {
-      printVm("❌ Erreur vérification statut paiement: $e");
-      return false;
-    }
-  }
-
-  Future<void> processParticipationPayment(String liveId, String userId, double amount) async {
-    try {
-      await _firestore.collection('lives').doc(liveId).update({
-        'paidParticipationTotal': FieldValue.increment(amount),
-        'giftTotal': FieldValue.increment(amount),
-        'userWatchTime.$userId': 999,
-      });
-      printVm("💰 Paiement participation traité: $amount FCFA pour $userId");
-    } catch (e) {
-      printVm("❌ Erreur traitement paiement participation: $e");
-      rethrow;
-    }
-  }
+  // L'essai gratuit et l'entrée payante d'un live sont tenus par le serveur (POST /lives/{id}/token, paiement en pièces) :
+  // les anciennes écritures `userWatchTime` / `paidParticipationTotal` dans le document `lives/{id}` n'existent plus.
 
   Future<void> updatePinnedText(String liveId, String text) async {
     try {

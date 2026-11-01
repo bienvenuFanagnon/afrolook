@@ -1,3 +1,4 @@
+import 'package:afrotok/services/api/api_identity.dart';
 import 'package:afrotok/services/api/jeux_api.dart';
 import 'package:afrotok/services/api/learning_admin_api.dart';
 import 'package:afrolook_api_client/afrolook_api_client.dart';
@@ -269,7 +270,7 @@ class ContesService {
   Future<ContesCatalog>? _catalogFuture;
   final Map<String, ConteOpen> _fullCache = {};
 
-  String? get uid => FirebaseAuth.instance.currentUser?.uid;
+  String? get uid => ApiIdentity.myId;
   ContesCatalog get cachedCatalog => _catalog;
 
   static const _alias = {'contes_off': 'CONTES_OFF', 'free_used': 'FREE_USED', 'no_ads': 'NO_ADS'};

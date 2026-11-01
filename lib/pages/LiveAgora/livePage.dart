@@ -341,24 +341,16 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         _participants.contains(currentUserId);
   }
 
+  /// Accès libre (hôte, participant, administrateur, entrée payée) : rien à écrire, le serveur (API) tient les droits d'accès.
   Future<void> _grantFreeAccess() async {
-    final currentUserId = ApiIdentity.myId;
-    if (currentUserId == null) return;
+    if (ApiIdentity.myId == null || !mounted) return;
 
-    try {
-      await _firestore.collection('lives').doc(widget.liveId).update({
-        'userWatchTime.$currentUserId': 999,
-      });
+    setState(() {
+      _remainingTrialMinutes = 999;
+      _remainingTrialSeconds = 0;
+    });
 
-      setState(() {
-        _remainingTrialMinutes = 999;
-        _remainingTrialSeconds = 0;
-      });
-
-      _removeRestrictions();
-    } catch (e) {
-      printVm("❌ Erreur accord accès libre: $e");
-    }
+    _removeRestrictions();
   }
 
   void _setupFreeAccess() {
@@ -374,26 +366,33 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   void _initializeTrialSystem() async {
     if (!widget.postLive.isPaidLive || _shouldSkipTrial()) return;
 
-    final currentUserId = ApiIdentity.myId;
-    if (currentUserId == null) return;
+    if (ApiIdentity.myId == null) return;
 
+    // L'essai est chronométré par le serveur (le jeton Agora est refusé en 402 quand il est fini) :
+    // on lit seulement l'état (entrée déjà payée, temps restant si l'API le donne) et on affiche le compte à rebours.
+    int minutes = widget.postLive.freeTrialMinutes;
+    int seconds = 0;
     try {
-      final liveDoc = await _firestore.collection('lives').doc(widget.liveId).get();
-      if (liveDoc.exists) {
-        final data = liveDoc.data()!;
-        final userWatchTime = Map<String, dynamic>.from(data['userWatchTime'] ?? {});
-        int userRemainingTime = userWatchTime[currentUserId] ?? widget.postLive.freeTrialMinutes;
-
-        setState(() {
-          _remainingTrialMinutes = userRemainingTime;
-          _remainingTrialSeconds = 0;
-        });
-
-        _startTrialTimer();
+      final live = await LivesApi.get(widget.liveId);
+      final me = live['me'];
+      if (me is Map && me['has_entry'] == true) {
+        await _grantFreeAccess(); // entrée déjà payée
+        return;
+      }
+      final left = me is Map ? me['trial_remaining_seconds'] : null;
+      if (left is num) {
+        minutes = left.toInt() ~/ 60;
+        seconds = left.toInt() % 60;
       }
     } catch (e) {
-      printVm("❌ Erreur initialisation système essai: $e");
+      printVm("❌ Erreur lecture de l'essai gratuit: $e");
     }
+    if (!mounted) return;
+    setState(() {
+      _remainingTrialMinutes = minutes;
+      _remainingTrialSeconds = seconds;
+    });
+    _startTrialTimer();
   }
 
   void _startTrialTimer() {
@@ -416,10 +415,6 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           }
         }
       });
-
-      if (timer.tick % 30 == 0) {
-        _updateUserWatchTime();
-      }
     });
   }
 
@@ -469,21 +464,6 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     });
   }
 
-  Future<void> _updateUserWatchTime() async {
-    if (!widget.postLive.isPaidLive) return;
-    final currentUserId = ApiIdentity.myId;
-    if (currentUserId == null) return;
-
-    try {
-      final totalSeconds = (_remainingTrialMinutes * 60) + _remainingTrialSeconds;
-      await _firestore.collection('lives').doc(widget.liveId).update({
-        'userWatchTime.$currentUserId': totalSeconds ~/ 60,
-      });
-    } catch (e) {
-      printVm("❌ Erreur mise à jour temps visionnage: $e");
-    }
-  }
-
   // ==================== SYSTÈME DE PAIEMENT CORRIGÉ ====================
 
   void _showPaymentModal() {
@@ -513,13 +493,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
       if (paymentSuccess) {
 
-        final currentUserId = ApiIdentity.myId;
-        if (currentUserId != null) {
-          await _firestore.collection('lives').doc(widget.liveId).update({
-            'userWatchTime.$currentUserId': 999,
-          });
-        }
-
+        // L'entrée payée est enregistrée par le serveur (paiement en pièces) : rien à écrire ici.
         _removeRestrictions();
         setState(() {
           _remainingTrialMinutes = 999;
@@ -780,6 +754,14 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       return result['token'] as String;
     } catch (e) {
       printVm("❌ Erreur récupération token Agora: $e");
+      if (e is ApiException && e.status == 402 && mounted) {
+        // Essai gratuit terminé côté serveur : entrée à payer
+        setState(() {
+          _remainingTrialMinutes = 0;
+          _remainingTrialSeconds = 0;
+        });
+        _onTrialTimeExpired();
+      }
       return null;
     }
   }
@@ -1213,7 +1195,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       final liveProvider = context.read<LiveProvider>();
 
       if (authProvider.loginUserData.role == UserRole.ADM.name) {
-        await liveProvider.joinAsParticipant(widget.liveId, authProvider.userId!);
+        await liveProvider.joinAsParticipant(widget.liveId, ApiIdentity.myId!);
         setState(() => _isParticipant = true);
         await _reinitializeAgora();
         await _grantFreeAccess();
@@ -1225,7 +1207,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           kind: 'live_participant', refId: widget.liveId, priceFcfa: 100, label: 'Participer au live');
 
       if (paymentSuccess) {
-        await liveProvider.joinAsParticipant(widget.liveId, authProvider.userId!);
+        await liveProvider.joinAsParticipant(widget.liveId, ApiIdentity.myId!);
         setState(() => _isParticipant = true);
         await _reinitializeAgora();
         await _grantFreeAccess();

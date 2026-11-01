@@ -1,3 +1,4 @@
+import 'package:afrotok/services/api/api_identity.dart';
 import 'dart:async';
 
 import 'package:afrotok/services/api/post_mapper.dart';
@@ -81,7 +82,7 @@ class NewContentBus {
   Future<void> _showLatestOwnPost() async {
     try {
       await Future.delayed(const Duration(milliseconds: 1200));
-      final uid = FirebaseAuth.instance.currentUser?.uid;
+      final uid = ApiIdentity.myId;
       if (uid == null) return;
       final r = await RegieApi.get('/feed', query: {'limit': 5});
       final rows = ((r is Map ? r['data'] : null) as List? ?? const []).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();

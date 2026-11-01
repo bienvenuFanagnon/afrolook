@@ -1,3 +1,4 @@
+import 'package:afrotok/services/api/api_identity.dart';
 import 'ad_config.dart';
 import 'admob_service.dart';
 import 'appodeal_service.dart';
@@ -15,7 +16,7 @@ class RewardedAds {
 
   /// Retourne `true` si une pub a été regardée en entier (et peut être comptée).
   static Future<bool> watch({String? userId}) async {
-    final admob = await AdmobService.watchRewardedOutcome(userId: userId);
+    final admob = await AdmobService.watchRewardedOutcome(userId: ApiIdentity.myId ?? userId);
     if (admob == RewardedOutcome.earned) return true;
     if (admob == RewardedOutcome.dismissed) return false;
     if (AdConfig.current.ssvEnabled) return false;

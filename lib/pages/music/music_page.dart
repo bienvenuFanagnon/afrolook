@@ -1,3 +1,4 @@
+import 'package:afrotok/services/api/api_identity.dart';
 // Page Musique d'Afrolook : écouter, aimer et utiliser les musiques gratuites d'Afrolook et les sons des artistes.
 // Onglets : Pour toi · Gratuites · Artistes · Playlists · Ma bibliothèque · Favoris. Thèmes clair et sombre (AppColors).
 // Dans « Pour toi », la carte « en lecture » (disque vinyle) fait office de lecteur ; dans les autres onglets, le lecteur flottant reste visible.
@@ -180,7 +181,7 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
       ),
     );
     if (ok != true || !mounted) return;
-    final r = await MusicAds.listenWithAd(it.id, userId: FirebaseAuth.instance.currentUser?.uid ?? '');
+    final r = await MusicAds.listenWithAd(it.id, userId: ApiIdentity.myId ?? '');
     if (!mounted) return;
     if (r.outcome != MusicAdOutcome.ok || r.url == null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(MusicAds.message(r.outcome))));

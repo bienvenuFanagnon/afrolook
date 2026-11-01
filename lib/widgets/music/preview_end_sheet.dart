@@ -1,3 +1,4 @@
+import 'package:afrotok/services/api/api_identity.dart';
 // Feuille du bas affichée à la fin de l'extrait gratuit d'un titre payant :
 // remercie, parle de l'artiste, propose d'acheter (pièces), d'écouter en entier avec une pub, ou de créer un post avec ce son.
 
@@ -37,7 +38,7 @@ Future<void> showPreviewEndSheet(BuildContext ctx, MusicTrack t, {VoidCallback? 
     case PreviewEnd.topup:
       await Navigator.push(ctx, MaterialPageRoute(builder: (_) => const CoinRechargeScreen()));
     case PreviewEnd.ad:
-      final res = await MusicAds.listenWithAd(t.id, userId: FirebaseAuth.instance.currentUser?.uid ?? '');
+      final res = await MusicAds.listenWithAd(t.id, userId: ApiIdentity.myId ?? '');
       if (!ctx.mounted) return;
       if (res.outcome != MusicAdOutcome.ok || res.url == null) {
         ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text(MusicAds.message(res.outcome))));

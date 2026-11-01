@@ -1,3 +1,4 @@
+import 'package:afrotok/services/api/api_identity.dart';
 import 'package:afrotok/services/api/chat_api.dart';
 import 'package:afrotok/services/api/chat_mapper.dart';
 import 'package:afrotok/services/api/posts_api.dart';
@@ -311,7 +312,7 @@ class NavigationService {
     try {
       // La conversation vient de l'API ; les messages eux-mêmes restent lus par l'écran de discussion (Firebase).
       final conv = await ChatApi.openConversation(sendUserId);
-      final myId = FirebaseAuth.instance.currentUser?.uid ?? '';
+      final myId = ApiIdentity.myId ?? '';
       final chat = chatFromConversation(conv, myId);
 
       Navigator.pop(context);

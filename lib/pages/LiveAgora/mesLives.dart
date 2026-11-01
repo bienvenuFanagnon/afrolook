@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:afrotok/services/api/api_identity.dart';
 import 'package:afrotok/services/api/chat_api.dart';
 import 'package:afrotok/services/api/lives_mapper.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -32,12 +33,12 @@ class _UserLivesPageState extends State<UserLivesPage> {
 
   Future<void> _loadUserLives() async {
     try {
-      final user = _auth.currentUser;
-      if (user == null) return;
+      final myId = ApiIdentity.myId;
+      if (myId == null) return;
       final me = context.read<UserAuthProvider>().loginUserData;
       final results = await Future.wait([
-        LivesApi.list(status: 'live', hostId: user.uid, limit: 50),
-        LivesApi.list(status: 'ended', hostId: user.uid, limit: 50),
+        LivesApi.list(status: 'live', hostId: myId, limit: 50),
+        LivesApi.list(status: 'ended', hostId: myId, limit: 50),
       ]);
       final lives = [...results[0].items, ...results[1].items]
           .map((j) => postLiveFromApi(j, hostName: me.pseudo ?? '', hostImage: me.imageUrl ?? ''))

@@ -1,3 +1,4 @@
+import 'package:afrotok/services/api/api_identity.dart';
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/services/ads_engine_service.dart';
 import '../../pub/ad_actions.dart';
@@ -89,7 +90,7 @@ class _AdPostWidgetState extends State<AdPostWidget> {
         (post.url_media?.contains('.mp4') ?? false) ||
         (post.url_media?.contains('.mov') ?? false);
     _likesCount = post.loves ?? 0;
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = ApiIdentity.myId;
     if (uid != null) {
       _isLiked = (post.users_love_id ?? []).contains(uid);
     }
@@ -367,7 +368,7 @@ class _AdPostWidgetState extends State<AdPostWidget> {
   Widget _buildActionsOverlay() {
     final commentCount = post.comments ?? 0;
     final authProv = Provider.of<UserAuthProvider>(context, listen: false);
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = ApiIdentity.myId;
     final showClicks = uid != null &&
         (uid == ad.ownerId || AbonnementUtils.isAdmin(authProv.loginUserData?.role));
     return Positioned(

@@ -1,3 +1,4 @@
+import 'package:afrotok/services/api/api_identity.dart';
 import 'package:afrotok/services/api/jeux_api.dart';
 import 'package:afrotok/services/api/learning_admin_api.dart';
 import 'package:afrolook_api_client/afrolook_api_client.dart';
@@ -230,7 +231,7 @@ class EtudeService {
   List<EtudeTrack> _catalog = const [];
   DateTime? _catalogAt;
 
-  String? get uid => FirebaseAuth.instance.currentUser?.uid;
+  String? get uid => ApiIdentity.myId;
 
   static const _alias = {'etude_off': 'QUIZ_OFF', 'need_previous': 'NEED_PREVIOUS', 'chapters_todo': 'CHAPTERS_TODO', 'no_ads': 'NO_ADS'};
 

@@ -5,7 +5,7 @@ import 'package:afrotok/services/api/post_mapper.dart';
 import 'package:afrotok/services/api/posts_api.dart';
 import 'package:afrotok/services/api/publications_api.dart';
 import 'package:afrotok/services/api/users_api.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:afrotok/services/api/api_identity.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -395,7 +395,7 @@ Future<List<Post>> getPostsImagesById(String post_id) async {
 
   Future<List<Canal>> getCanauxHome() async {
     try {
-      return await PubApi.topCanaux(myId: FirebaseAuth.instance.currentUser?.uid);
+      return await PubApi.topCanaux(myId: ApiIdentity.myId);
     } catch (e) {
       printVm('❌ API canaux (accueil) en échec : $e');
       return [];

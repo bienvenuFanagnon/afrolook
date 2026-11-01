@@ -1,3 +1,4 @@
+import 'package:afrotok/services/api/api_identity.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -14,7 +15,7 @@ class CreationFee {
   static Future<bool> ensurePaid(BuildContext context, String type) async {
     int cost;
     try {
-      final uid = FirebaseAuth.instance.currentUser?.uid;
+      final uid = ApiIdentity.myId;
       // Le premier canal / groupe est gratuit : on compte ceux que la personne a déjà créés.
       final path = type == 'canal' ? '/channels' : '/groups';
       final r = await ApiGateway.instance.client.get(path, query: type == 'canal' ? {'mine': true, 'limit': 50} : null);

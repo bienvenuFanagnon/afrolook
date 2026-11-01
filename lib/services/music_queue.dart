@@ -1,3 +1,4 @@
+import 'package:afrotok/services/api/api_identity.dart';
 // File d'attente de la musique d'Afrolook : suivant, précédent, aléatoire, préchargement, fin d'extrait gratuit.
 // Un seul lecteur dans toute l'application (SoundPreview) ; ce fichier décide QUOI jouer ensuite et prévient l'interface.
 
@@ -97,7 +98,7 @@ class MusicTrack {
 
   bool get isMine {
     try {
-      return sound != null && sound!.userId == FirebaseAuth.instance.currentUser?.uid;
+      return sound != null && sound!.userId == ApiIdentity.myId;
     } catch (_) {
       return false;
     }

@@ -1,3 +1,4 @@
+import 'package:afrotok/services/api/api_identity.dart';
 import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:afrotok/services/api/post_mapper.dart';
 import 'dart:math';
@@ -202,7 +203,7 @@ class FeedRepository {
 
   Future<List<Chronique>> fetchChroniques({int limit = 8}) async {
     try {
-      final page = await ChroniquesApi.list(limit: limit, myId: FirebaseAuth.instance.currentUser?.uid);
+      final page = await ChroniquesApi.list(limit: limit, myId: ApiIdentity.myId);
       final valid = page.items.where((c) => !c.isExpired).toList();
       ChroniqueFirstPage.save(valid, page.next, hasMore: page.next != null);
       lastError = null;
@@ -215,7 +216,7 @@ class FeedRepository {
 
   Future<List<Canal>> fetchCanaux({int limit = 6}) async {
     try {
-      final r = await CanauxApi.list(limit: limit, myId: FirebaseAuth.instance.currentUser?.uid);
+      final r = await CanauxApi.list(limit: limit, myId: ApiIdentity.myId);
       lastError = null;
       return r.items;
     } catch (e) {

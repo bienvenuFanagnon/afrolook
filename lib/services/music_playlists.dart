@@ -1,3 +1,4 @@
+import 'package:afrotok/services/api/api_identity.dart';
 // Playlists : modèle, lecture des titres, et appels aux fonctions (créer, acheter, retirer).
 // Tout le monde voit une playlist et son contenu ; l'accès (ajout à la bibliothèque) est gratuit ou payant selon le créateur.
 // Les titres payants d'artistes y sont permis mais signalés : acheter la playlist ne donne pas le titre complet des titres payants.
@@ -70,7 +71,7 @@ class MusicPlaylist {
   bool get isPaid => access == 'paid';
   int get trackCount => trackIds.length;
   bool get hasPaidTracks => paidCount > 0;
-  bool get isMine => ownerId == (FirebaseAuth.instance.currentUser?.uid ?? '?');
+  bool get isMine => ownerId == (ApiIdentity.myId ?? '?');
 
   /// Part du créateur sur un achat (60 %).
   int get ownerShare => (priceCoins * 60) ~/ 100;

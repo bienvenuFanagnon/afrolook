@@ -1,3 +1,4 @@
+import 'package:afrotok/services/api/api_identity.dart';
 // Musique des templates : pistes gratuites d'Afrolook (Storage studio_music/{id}.m4a, créées par
 // functions/scripts/gen_studio_music.cjs, sans droits d'auteur) et sons des artistes validés (payants, l'artiste est payé).
 
@@ -323,7 +324,7 @@ class _MusicSheetState extends State<_MusicSheet> {
             Builder(builder: (_) {
               return _row(
                 MontageMusic.artist(s),
-                onReport: s.userId == FirebaseAuth.instance.currentUser?.uid ? null : () => reportArtistSound(context, s.id, s.title),
+                onReport: s.userId == ApiIdentity.myId ? null : () => reportArtistSound(context, s.id, s.title),
                 leading: ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: s.coverImageUrl != null

@@ -2,7 +2,7 @@ import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:afrotok/services/api/canaux_api.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:afrotok/services/api/api_identity.dart';
 
 /// Faux « document » au format des anciens documents Firestore : les écrans qui lisaient `snapshot.docs` / `doc.data()` / `doc.id` gardent leur code.
 class LegacyDoc {
@@ -97,7 +97,7 @@ class ContenuPayantApi {
   ContenuPayantApi._();
 
   static ApiClient get _c => ApiGateway.instance.client;
-  static String? get myId => FirebaseAuth.instance.currentUser?.uid;
+  static String? get myId => ApiIdentity.myId;
 
   static Map<String, dynamic> _map(dynamic r) {
     final d = ApiClient.data(r);

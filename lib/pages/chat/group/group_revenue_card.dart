@@ -7,11 +7,14 @@ import 'package:intl/intl.dart';
 import '../../../theme/app_colors.dart';
 
 /// Ce qu'un groupe privé payant a rapporté à son propriétaire (`GET /groups/{id}/earnings` : sa part, en pièces gagnées).
-/// Affichée seulement au-delà de 1 pièce ; un appui ouvre l'écran des gains avec le détail des entrées.
+/// Affichée pour un groupe payant (même sans gain encore), ou au-delà de 1 pièce ; un appui ouvre l'écran des gains avec le détail des entrées.
 class GroupRevenueCard extends StatefulWidget {
   final String groupId;
   final String ownerId;
-  const GroupRevenueCard({super.key, required this.groupId, required this.ownerId});
+
+  /// Vrai si le groupe est payant : la carte reste visible pour que le propriétaire atteigne l'écran des gains dès le premier jour.
+  final bool isPaid;
+  const GroupRevenueCard({super.key, required this.groupId, required this.ownerId, this.isPaid = false});
 
   @override
   State<GroupRevenueCard> createState() => _GroupRevenueCardState();
@@ -40,7 +43,7 @@ class _GroupRevenueCardState extends State<GroupRevenueCard> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_loaded || _coins <= 1) return const SizedBox.shrink();
+    if (!_loaded || (_coins <= 1 && !widget.isPaid)) return const SizedBox.shrink();
     final c = AppColors.of(context);
     final n = NumberFormat.decimalPattern(Localizations.localeOf(context).languageCode);
     return InkWell(
