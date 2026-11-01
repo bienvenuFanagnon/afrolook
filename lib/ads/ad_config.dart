@@ -91,6 +91,8 @@ class AdConfig {
   // Page « Travaille et gagne de l'argent » : pub plein écran avant d'ouvrir le mur de tâches (par jour et par appareil au plus)
   bool get tasksInterstitial => _b('tasksInterstitial', true);
   int get tasksInterstitialMaxPerDay => kDebugMode ? 99 : _i('tasksInterstitialMaxPerDay', 5).clamp(0, 20);
+  // Galerie de tâches (notre écran d'offres) : une pub plein écran AVANT CHAQUE offre ouverte, Appodeal d'abord ; plafond par jour et par appareil
+  int get tasksOfferInterstitialMaxPerDay => kDebugMode ? 99 : _i('tasksOfferInterstitialMaxPerDay', 25).clamp(0, 100);
   /// Écouter un titre payant en entier contre une pub récompensée.
   bool get musicRewarded => _b('musicRewarded', true);
 

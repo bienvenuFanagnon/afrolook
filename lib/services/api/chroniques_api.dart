@@ -1,4 +1,5 @@
 import 'package:afrotok/services/api/api_identity.dart';
+import 'dart:async';
 import 'dart:io';
 
 import 'package:afrolook_api_client/afrolook_api_client.dart';
@@ -7,6 +8,7 @@ import 'package:afrotok/pages/chronique/chroniqueform.dart';
 import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:afrotok/services/api/canaux_api.dart';
 import 'package:afrotok/services/api/chroniques_mapper.dart';
+import 'package:afrotok/services/chronique_first_page.dart';
 
 /// Accès à l'API pour le module « chroniques » (contenus de 24 h : liste, création, vue, j'aime / j'adore, suppression, réponse privée).
 /// Les COMMENTAIRES (`chronique_messages`) restent sur Firebase. Aucun retour à Firebase en cas d'erreur de l'API.
@@ -34,7 +36,11 @@ class ChroniquesApi {
   /// Chroniques actives (plus récentes d'abord), par curseur. [userId] : celles d'une seule personne.
   static Future<({List<Chronique> items, String? next})> list({String? userId, String? cursor, int limit = 20, String? myId}) async {
     final r = await _c.get('/chronicles', query: {'limit': limit, if (userId != null) 'user_id': userId, if (cursor != null) 'cursor': cursor});
-    return (items: _list(r).map((j) => chroniqueFromApi(j, myId: myId)).toList(), next: r is Map ? r['next_cursor'] as String? : null);
+    final raw = _list(r);
+    final next = r is Map ? r['next_cursor'] as String? : null;
+    // La première page générale est gardée sur le téléphone : à la prochaine ouverture, les chroniques s'affichent tout de suite
+    if (userId == null && cursor == null) unawaited(ChroniqueFirstPage.persistRaw(myId ?? ApiIdentity.myId, raw, next));
+    return (items: raw.map((j) => chroniqueFromApi(j, myId: myId)).toList(), next: next);
   }
 
   /// Une chronique (null si elle a expiré ou a été supprimée).

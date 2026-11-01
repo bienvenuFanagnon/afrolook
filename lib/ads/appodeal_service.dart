@@ -109,6 +109,13 @@ class AppodealService {
     }
   }
 
+  /// Prépare une pub plein écran à l'avance (ouverture de la galerie de tâches) : elle est prête au toucher d'une offre.
+  static void warmUpInterstitial() {
+    try {
+      if (supported && ready.value) Appodeal.cache(AppodealAdType.Interstitial);
+    } catch (_) {}
+  }
+
   static final Map<AppodealAdType, String> _outcome = {};
   static Completer<bool>? _rewardWaiter;
   static Completer<bool>? _interWaiter;

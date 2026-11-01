@@ -17,6 +17,7 @@ import '../../theme/app_colors.dart';
 import '../../widgets/offerwall_dialogs.dart';
 import '../../widgets/offerwall_earnings_card.dart';
 import '../../widgets/offerwall_promo_banner.dart';
+import '../../widgets/partner_tasks_section.dart';
 import '../user/inviteAmis.dart';
 import 'offerwall_tutorial_page.dart';
 
@@ -174,6 +175,9 @@ class _OfferwallTasksPageState extends State<OfferwallTasksPage> {
             OfferwallEarningsCard(userId: _uid),
             const SizedBox(height: 12),
             _shareCard(c),
+            // Tâches de nos partenaires : gains séparés des autres, payés après 30 jours (« Partage et gagne » reste tel quel au-dessus)
+            const SizedBox(height: 12),
+            const PartnerTasksSection(),
             if (partners) ...[
             const SizedBox(height: 12),
             _card(c, [

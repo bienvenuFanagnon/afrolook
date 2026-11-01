@@ -6,6 +6,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tapjoy_offerwall/tapjoy_offerwall.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart';
+
+import '../api/api_gateway.dart';
 import '../share/share_service.dart';
 
 /// Mur de tâches (Tapjoy, puis ayeT-Studios en relais) — voir docs/OFFERWALL_TACHES.md.
@@ -114,8 +117,27 @@ class OfferwallService {
   static Future<bool> isAvailable() async {
     await _loadKeys();
     if (await _tasksAvailable()) return true;
+    // Tâches de nos partenaires (mur ou galerie d'offres), activées par le serveur
+    if (await _partnerTasksEnabled()) return true;
     // « Partage et gagne » : le travail principal d'Afrolook, ouvert même quand aucune plateforme de tâches n'est active
     return ShareService.isEnabled();
+  }
+
+  static bool? _partnerEnabled;
+  static int _partnerAt = 0;
+
+  /// Les tâches des partenaires sont-elles ouvertes ? (réponse du serveur, gardée 5 minutes ; ne lève jamais d'erreur)
+  static Future<bool> _partnerTasksEnabled() async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (_partnerEnabled != null && now - _partnerAt < 300000) return _partnerEnabled!;
+    try {
+      final r = ApiClient.data(await ApiGateway.instance.client.get('/offerwall/torox/summary'));
+      _partnerEnabled = r is Map && r['enabled'] == true;
+      _partnerAt = now;
+    } catch (_) {
+      return false;
+    }
+    return _partnerEnabled!;
   }
 
   static Future<bool> _tasksAvailable() async {

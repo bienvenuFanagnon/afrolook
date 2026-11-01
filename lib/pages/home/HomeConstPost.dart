@@ -2355,7 +2355,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
     _t2FillPostIds.clear();
 
-    const kMaxT1 = 25;
+    const kMaxT1 = 5000;   // file infinie : plus de plafond de 25 posts
     // Posts du pays de l'utilisateur en premier (tri local, sans index Firestore)
     final s1 = _spreadCreators(prioritizeUserCountry(
         t1.take(kMaxT1).toList(), authProvider.loginUserData.countryData?['countryCode']));
@@ -2527,7 +2527,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       setState(() => _showScrollToTop = shouldShow);
     }
 
-    if (pixels >= _scrollController.position.maxScrollExtent - 1500 &&
+    if (pixels >= _scrollController.position.maxScrollExtent - 3500 &&
         !_isLoadingMorePosts &&
         !_isLoadingBackground &&
         _hasMorePosts &&
@@ -2570,7 +2570,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
     } catch (e) {
       printVm('❌ Erreur chargement manuel: $e');
-      _hasMorePosts = false;
+      if (!_infiniteFeed) _hasMorePosts = false;   // file infinie : une erreur réseau ne met jamais fin au fil, le prochain défilement réessaie
     } finally {
       setState(() {
         _isLoadingMorePosts = false;
@@ -2616,7 +2616,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   }
 
   /// Accueil général branché sur l'API : UN SEUL fil infini (le serveur mélange abonnements, goûts, découverte, nouveaux créateurs ; toujours des posts non vus).
-  bool get _infiniteFeed => ApiGateway.instance.useApi('feed') && widget.type.isEmpty && widget.sortType != 'recent';
+  // L'accueil principal est construit avec type « LOOKS » (main.dart) : il reste le fil général ; seules les pages « récent » gardent l'ancien chargement.
+  bool get _infiniteFeed => ApiGateway.instance.useApi('feed') && widget.sortType != 'recent' && !widget.isVideoPage;
 
   Future<void> _loadMorePostsByFilter(Set<String> loadedIds, List<Post> newPosts, int limit, {bool reset = false}) async {
     if (_infiniteFeed) {
@@ -3612,30 +3613,23 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         contentWidgets.add(FeedMonetizationReminder(key: ValueKey('tuto_reminder_home_$i'), feed: 'home'));
       }
 
-      // Offre « Une journée sans pub » : après le 5e post (jamais collée à une pub), 1 fois par jour
-      if (i == 4) {
+      // ── Widgets PRIORITAIRES du fil (décision du propriétaire, 01/11/2026) : récompenses, « Travaille et gagne » et quiz. Ils arrivent tôt, puis REVIENNENT
+      // régulièrement (le fil est infini : plus de fin de fil où les placer). Chaque carte se masque d'elle-même quand elle n'a rien à proposer.
+      // Quiz : après le 3e post, puis tous les 30 posts.
+      if (i == 2 || (i > 2 && (i - 2) % 30 == 0)) {
+        contentWidgets.add(QuizFeedCard(key: ValueKey('quiz_card_home_$i'), slot: i == 2 ? 1 : 2 + (i - 2) ~/ 30));
+      }
+      // Tâches rémunérées (« Travaille et gagne de l'argent ») : après le 6e post, puis tous les 20 posts.
+      if (i == 5 || (i > 5 && (i - 5) % 20 == 0)) {
+        contentWidgets.add(OfferwallFeedCard(key: ValueKey('offerwall_card_home_$i'), slot: i == 5 ? 1 : 2 + (i - 5) ~/ 20));
+      }
+      // Offre « Une journée sans pub » : après le 9e post (jamais collée à une pub), 1 fois par jour.
+      if (i == 8) {
         contentWidgets.add(const AdFreeDayCard(key: ValueKey('ad_free_day_home')));
       }
-
-      // Cadeau à récupérer après une courte vidéo (pub récompensée) : au milieu du fil
-      if (i == 11) {
-        contentWidgets.add(const GiftRewardCard(key: ValueKey('gift_card_home_1'), slot: 1));
-      }
-
-      // Tâches rémunérées (« travaille dans Afrolook et gagne de l'argent ») : après le 9e post, puis un rappel plus loin
-      if (i == 8) {
-        contentWidgets.add(const OfferwallFeedCard(key: ValueKey('offerwall_card_home_1'), slot: 1));
-      }
-      if (i == 23) {
-        contentWidgets.add(const OfferwallFeedCard(key: ValueKey('offerwall_card_home_2'), slot: 2));
-      }
-
-      // Quiz : les 3 questions du jour après le 3e post, puis un rappel plus loin si la personne n'a pas joué
-      if (i == 2) {
-        contentWidgets.add(const QuizFeedCard(key: ValueKey('quiz_card_home_1'), slot: 1));
-      }
-      if (i == 16) {
-        contentWidgets.add(const QuizFeedCard(key: ValueKey('quiz_card_home_2'), slot: 2));
+      // Cadeau à récupérer après une courte vidéo (pub récompensée) : après le 12e post, puis tous les 25 posts.
+      if (i == 11 || (i > 11 && (i - 11) % 25 == 0)) {
+        contentWidgets.add(GiftRewardCard(key: ValueKey('gift_card_home_$i'), slot: i == 11 ? 1 : 2 + (i - 11) ~/ 25));
       }
 
       // Conte du jour (La Case aux Contes) : après le 7e post, un second après le 22e seulement si le premier a été ouvert
@@ -3656,7 +3650,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       // Quand les posts non vus sont épuisés et que le fil passe aux posts à découvrir (déjà vus ou tendances), les actualités deviennent plus
       // fréquentes : une carte tous les 4 posts, pour que la personne ait toujours du nouveau à lire.
       final bool _discoveryPost = pid.isNotEmpty && _tier2PostIds.contains(pid) && !_seenTier1PostIds.contains(pid);
-      if (i == 7 || (i > 7 && (i - 7) % 15 == 0) || (_discoveryPost && i > 7 && i - _lastNewsAt >= 4)) {
+      // Journal : TRÈS rare (décision du propriétaire, 01/11/2026) : une carte après le 15e post, puis une seule tous les 60 posts.
+      if (i == 14 || (i > 14 && (i - 14) % 60 == 0)) {
         _lastNewsAt = i;
         contentWidgets.add(NewsFeedCard(key: ValueKey('news_card_home_$i'), slotKey: 'home_$i'));
       }

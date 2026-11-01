@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:afrotok/services/api/api_identity.dart';
 import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:afrotok/services/api/post_mapper.dart';
@@ -205,12 +206,26 @@ class FeedRepository {
 
   // ── CONTENU GLOBAL (partagé par tous les feeds) ──────────────────────────────
 
+  /// Chroniques du fil : affichage immédiat avec la dernière page gardée (mémoire, puis téléphone), rafraîchie en arrière-plan.
   Future<List<Chronique>> fetchChroniques({int limit = 8}) async {
+    await ChroniqueFirstPage.ensureLoaded(ApiIdentity.myId);
+    final fresh = ChroniqueFirstPage.fresh();
+    if (fresh != null) return fresh.items;
+    final stale = ChroniqueFirstPage.stale();
+    if (stale != null) {
+      unawaited(_refreshChroniques(limit));   // les écrans qui écoutent se mettent à jour quand la page fraîche arrive
+      return stale.items;
+    }
+    return _refreshChroniques(limit, notify: false);
+  }
+
+  Future<List<Chronique>> _refreshChroniques(int limit, {bool notify = true}) async {
     try {
       final page = await ChroniquesApi.list(limit: limit, myId: ApiIdentity.myId);
       final valid = page.items.where((c) => !c.isExpired).toList();
       ChroniqueFirstPage.save(valid, page.next, hasMore: page.next != null);
       lastError = null;
+      if (notify) ChroniqueFirstPage.refreshed();
       return valid;
     } catch (e) {
       _fail('chroniques', e);

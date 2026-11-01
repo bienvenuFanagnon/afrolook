@@ -50,7 +50,8 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> with SingleTicker
     _scroll.addListener(() {
       if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 300) _loadMore();
     });
-    final warm = ChroniqueFirstPage.fresh();
+    final freshPage = ChroniqueFirstPage.fresh();
+    final warm = freshPage ?? ChroniqueFirstPage.stale();   // même ancienne (enregistrée sur le téléphone) : affichée tout de suite, rafraîchie derrière
     if (warm != null) {
       // Première page déjà lue par le fil : affichée tout de suite, sans lecture ; on ne va chercher que la suite
       for (final c in warm.items) {
@@ -61,6 +62,7 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> with SingleTicker
       _firstLoad = false;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) precacheChroniqueImages(context, warm.items);
+        if (freshPage == null && mounted) _silentRefresh();
       });
       if (_hasMore) WidgetsBinding.instance.addPostFrameCallback((_) => _loadMore());
       final id = widget.initialChroniqueId;
@@ -81,7 +83,30 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> with SingleTicker
 
   /// Une chronique vient d'être publiée ou supprimée : la liste est relue depuis le début.
   void _onChroniquesChanged() {
-    if (mounted) _loadMore(reset: true);
+    if (mounted) _silentRefresh();
+  }
+
+  /// Relit la première page SANS vider l'écran : les chroniques déjà affichées restent visibles, la liste est remplacée d'un coup à l'arrivée du serveur.
+  Future<void> _silentRefresh() async {
+    if (_loading && !_firstLoad) return;
+    try {
+      final page = await context.read<ChroniqueProvider>().getChroniquesPage(limit: _batch, after: null);
+      if (!mounted) return;
+      final groups = <String, List<Chronique>>{};
+      for (final c in page.items) {
+        groups.putIfAbsent(c.userId, () => []).add(c);
+      }
+      setState(() {
+        _groups
+          ..clear()
+          ..addAll(groups);
+        _last = page.last;
+        _hasMore = page.hasMore;
+        _firstLoad = false;
+        _error = false;
+      });
+      precacheChroniqueImages(context, page.items);
+    } catch (_) {/* on garde ce qui est affiché */}
   }
 
   Future<void> _loadMore({bool reset = false}) async {

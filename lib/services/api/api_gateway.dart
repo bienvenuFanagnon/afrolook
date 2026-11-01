@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:afrotok/services/api/startup_trace.dart';
 
@@ -8,7 +9,9 @@ import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../chronique_first_page.dart';
 import '../feed/feed_stock.dart';
+import 'api_identity.dart';
 
 import '../../widgets/email_verification_gate.dart';
 import '../nav_cache_service.dart';
@@ -119,6 +122,7 @@ class ApiGateway {
     if (!useApi('feed')) return;
     StartupTrace.mark('préchargement du feed lancé');
     _feedStock.prefetch();
+    unawaited(ChroniqueFirstPage.ensureLoaded(ApiIdentity.myId));   // les chroniques gardées sur le téléphone sont prêtes avant l'ouverture de l'accueil
     Future<void>.delayed(const Duration(seconds: 3), prefetchVideos);   // les vidéos de la page verticale se préparent juste après, sans gêner l'accueil
   }
 
