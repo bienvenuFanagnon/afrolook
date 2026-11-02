@@ -27,7 +27,7 @@ class TutoPick {
 /// Rotation des scènes. Dans les feeds : jusqu'à [dailyQuota] tutoriels DIFFÉRENTS par jour
 /// (tous feeds confondus), toujours le suivant du cycle ; le créneau 0 est l'animation d'origine.
 class TutoRotation {
-  static const dailyQuota = 5;
+  static const dailyQuota = 1;   // un seul tutoriel par jour dans le fil (décision du propriétaire, 02/11/2026)
 
   static String _today() {
     final n = DateTime.now();

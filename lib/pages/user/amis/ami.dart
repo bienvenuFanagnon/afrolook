@@ -58,7 +58,7 @@ class _ListUserChatsState extends State<Amis> {
           l10n.profileFriends,
           style: TextStyle(
             fontSize: SizeText.homeProfileTextSize,
-            color: _colors.accent,
+            color: _colors.accentText,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -253,7 +253,7 @@ class _ConversationListState extends State<ConversationList> {
                       Icon(
                         Icons.people,
                         size: 14,
-                        color: _colors.accent,
+                        color: _colors.accentText,
                       ),
                       SizedBox(width: 4),
                       Text(
@@ -361,7 +361,7 @@ class _InvitationsState extends State<Invitations> {
                       Icon(
                         Icons.people,
                         size: 14,
-                        color: _colors.accent,
+                        color: _colors.accentText,
                       ),
                       SizedBox(width: 4),
                       Text(

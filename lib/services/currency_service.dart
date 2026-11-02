@@ -240,4 +240,10 @@ class CurrencyService extends ChangeNotifier {
 class Money {
   static String fmt(num fcfa) => CurrencyService.instance.fmt(fcfa);
   static String approx(num fcfa) => CurrencyService.instance.approx(fcfa);
+
+  /// Équivalent en dollars américains, quel que soit le pays : « $0.07 » (3 décimales sous 1 $, pour les petits gains).
+  static String usd(num fcfa) {
+    final v = CurrencyService.instance.fromFcfa(fcfa, 'USD');
+    return '\$${v < 1 ? v.toStringAsFixed(3) : v.toStringAsFixed(2)}';
+  }
 }

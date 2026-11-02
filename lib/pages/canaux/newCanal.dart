@@ -106,7 +106,7 @@ class _NewCanalState extends State<NewCanal> {
           Text(
             _l10n.canalFieldProfile + ' & ' + _l10n.canalFieldCover,
             style: TextStyle(
-              color: _colors.accent,
+              color: _colors.accentText,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -167,7 +167,7 @@ class _NewCanalState extends State<NewCanal> {
                         borderRadius: BorderRadius.circular(15),
                         child: Image.file(File(imageCouverture!.path), fit: BoxFit.cover),
                       )
-                          : Icon(Icons.photo_library, color: _colors.accent, size: 40),
+                          : Icon(Icons.photo_library, color: _colors.accentText, size: 40),
                     ),
                     SizedBox(height: 10),
                     ElevatedButton(
@@ -255,8 +255,8 @@ class _NewCanalState extends State<NewCanal> {
                 labelText: context.tr('Prix de l\'abonnement (pièces)'),
                 suffixText: context.tr('pièces'),
                 helperText: kIsAppleStore ? null : context.tr('1 FCFA = 2,5 pièces'),
-                labelStyle: TextStyle(color: _colors.accent),
-                prefixIcon: Icon(Icons.toll_rounded, color: _colors.accent),
+                labelStyle: TextStyle(color: _colors.accentText),
+                prefixIcon: Icon(Icons.toll_rounded, color: _colors.accentText),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(color: _colors.accent),
@@ -433,7 +433,7 @@ class _NewCanalState extends State<NewCanal> {
             style: TextStyle(color: _colors.textPrimary),
             decoration: InputDecoration(
               labelText: _l10n.canalFieldDescription,
-              labelStyle: TextStyle(color: _colors.accent),
+              labelStyle: TextStyle(color: _colors.accentText),
               alignLabelWithHint: true,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -710,7 +710,7 @@ class _NewCanalState extends State<NewCanal> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
-            child: Icon(Icons.group_work, color: _colors.accent),
+            child: Icon(Icons.group_work, color: _colors.accentText),
           ),
         ],
       ),
@@ -746,7 +746,7 @@ class _NewCanalState extends State<NewCanal> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.info, color: _colors.accent, size: 20),
+                    Icon(Icons.info, color: _colors.accentText, size: 20),
                     SizedBox(width: 10),
                     Expanded(
                       child: Text(

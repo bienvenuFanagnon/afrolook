@@ -1,5 +1,7 @@
+import 'package:afrotok/services/post_orientation.dart';
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/services/ads_engine_service.dart';
+import '../services/suggestions_modal_once.dart';
 import '../services/comments_prefetch.dart';
 import '../services/media_shrink.dart';
 import 'package:afrotok/widgets/studio/post_template_try.dart';
@@ -252,7 +254,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
 
       // Attendre que le premier frame soit terminé pour éviter l'erreur de contexte
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (widget.initialPost.isPortrait == true) {
+        if (PostOrientation.of(widget.initialPost)) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -281,7 +283,10 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
   void _startSuggestionModalTimer() {
     _suggestionModalTimer?.cancel();
     if (_hasSeenSuggestionsModal) return;
-    _suggestionModalTimer = Timer(Duration(seconds: 5), () {
+    _suggestionModalTimer = Timer(Duration(seconds: 5), () async {
+      // une seule fois par compte : la mémoire est relue juste avant l'ouverture
+      if (!mounted || _hasSeenSuggestionsModal) return;
+      if (!await SuggestionsModalOnce.shouldShow(authProvider.loginUserData?.id)) return;
       if (mounted && !_hasSeenSuggestionsModal) {
         _showSuggestionsModal();
       }
@@ -306,6 +311,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     final suggestions = getFilteredSuggestions().take(10).toList();
 
     if (suggestions.isEmpty) return;
+    _hasSeenSuggestionsModal = true;
+    SuggestionsModalOnce.markShown(authProvider.loginUserData?.id);   // noté dès l'ouverture, quelle que soit la façon de fermer
 
     final colors = AppColors.of(context);
     showDialog(
@@ -321,7 +328,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            Icon(Icons.lightbulb, color: colors.accent),
+            Icon(Icons.lightbulb, color: colors.accentText),
             SizedBox(width: 8),
             Text(
               'Découvrez d’autres posts',
@@ -342,7 +349,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
               SizedBox(height: 16),
               Text(
                 'Suggestions pour vous :',
-                style: TextStyle(color: colors.accent, fontWeight: FontWeight.bold),
+                style: TextStyle(color: colors.accentText, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 12),
               Flexible(
@@ -638,7 +645,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
   void _onSuggestedPostSelected(Post newPost) {
     if(newPost.dataType==PostDataType.VIDEO.name){
       // Vidéo format téléphone → page portrait ; sinon page paysage
-      final isPortrait = newPost.isPortrait ?? true;
+      final isPortrait = PostOrientation.of(newPost);
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -2167,9 +2174,9 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
                 const SizedBox(width: 3),
                 Text('${ad.clicks} clics', style: TextStyle(color: colors.textSecondary, fontSize: 11)),
                 const SizedBox(width: 12),
-                Icon(Icons.percent, size: 13, color: colors.accent),
+                Icon(Icons.percent, size: 13, color: colors.accentText),
                 const SizedBox(width: 3),
-                Text('CTR ${ad.ctr.toStringAsFixed(1)}%', style: TextStyle(color: colors.accent, fontSize: 11)),
+                Text('CTR ${ad.ctr.toStringAsFixed(1)}%', style: TextStyle(color: colors.accentText, fontSize: 11)),
               ],
             ]);
           }),
@@ -2275,9 +2282,9 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
                   const SizedBox(width: 3),
                   Text('${ad.clicks}', style: TextStyle(color: colors.textSecondary, fontSize: 11)),
                   const SizedBox(width: 10),
-                  Icon(Icons.percent, size: 13, color: colors.accent),
+                  Icon(Icons.percent, size: 13, color: colors.accentText),
                   const SizedBox(width: 3),
-                  Text('CTR ${ad.ctr.toStringAsFixed(1)}%', style: TextStyle(color: colors.accent, fontSize: 11)),
+                  Text('CTR ${ad.ctr.toStringAsFixed(1)}%', style: TextStyle(color: colors.accentText, fontSize: 11)),
                 ],
               ]);
             }),

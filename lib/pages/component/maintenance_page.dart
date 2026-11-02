@@ -65,7 +65,7 @@ class MaintenancePage extends StatelessWidget {
               if (showBack)
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: colors.accent,
+                    foregroundColor: colors.accentText,
                     side: BorderSide(color: colors.accent),
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

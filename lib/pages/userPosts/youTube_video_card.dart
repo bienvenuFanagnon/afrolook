@@ -1,3 +1,4 @@
+import 'package:afrotok/services/post_orientation.dart';
 import 'package:afrotok/services/read_meter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../utils/media_cdn.dart';
@@ -1629,9 +1630,9 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
               style: TextStyle(fontSize: 15, color: colors.textSecondary, height: 1.4), maxLines: 2),
           const SizedBox(height: 8),
           Row(children: [
-            Icon(Icons.lock, color: colors.accent, size: 16),
+            Icon(Icons.lock, color: colors.accentText, size: 16),
             const SizedBox(width: 4),
-            Text('Contenu réservé aux abonnés', style: TextStyle(color: colors.accent, fontSize: 12, fontWeight: FontWeight.w500)),
+            Text('Contenu réservé aux abonnés', style: TextStyle(color: colors.accentText, fontSize: 12, fontWeight: FontWeight.w500)),
           ]),
         ],
       );
@@ -1691,7 +1692,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                     shape: BoxShape.circle,
                     border: Border.all(color: colors.accent, width: 2),
                   ),
-                  child: Icon(Icons.lock_outline, color: colors.accent, size: 32),
+                  child: Icon(Icons.lock_outline, color: colors.accentText, size: 32),
                 ),
                 const SizedBox(height: 12),
                 const Text(
@@ -1788,7 +1789,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     final isLocked = _isLockedContent;
     final screenWidth = AppLayout.effectiveContentWidth(context);
     final isAd = widget.post.isAdvertisement == true;
-    final bool isVideoPortrait = widget.post.isPortrait ?? true;
+    final bool isVideoPortrait = PostOrientation.of(widget.post);
 
     // ── Posts portrait (non-pub) : rendu identique à AdvertisementVideoWidget ──
     if (isVideoPortrait && !isAd) {
@@ -2601,7 +2602,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
     // Posts normaux : layout Threads
     final bool isPortraitVideoPost = widget.post.dataType == PostDataType.VIDEO.name &&
-        (widget.post.isPortrait ?? true);
+        (PostOrientation.of(widget.post));
 
     return Container(
       color: colors.background,

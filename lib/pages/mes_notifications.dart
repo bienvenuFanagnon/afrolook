@@ -1,4 +1,5 @@
 import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/pages/liveshop/live_shop_orders_page.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/models/model_data.dart';
@@ -32,6 +33,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:afrotok/pages/studio/artist_marketplace.dart';
 import 'package:afrotok/pages/user/userPubs/user_my_advertisements_page.dart';
 import 'package:afrotok/pages/admin/AfrolookPub/afrolookAdminPubPage.dart';
+import 'package:afrotok/pages/admin/ads_regie_admin_page.dart';
+import 'package:afrotok/pages/admin/seller_verifications_admin_page.dart';
+import 'package:afrotok/pages/liveshop/live_shop_admin_page.dart';
 import 'package:afrotok/providers/afroshop/categorie_produits_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -567,6 +571,19 @@ class _MesNotificationState extends State<MesNotification> {
         case 'WEEKLY_REWARD':
           await _openPage(MonetisationPage());
           break;
+        case 'ORDER_NEW':
+        case 'ORDER_VALIDATED':
+        case 'ORDER_FEE':
+        case 'ORDER_SHIPPED':
+        case 'ORDER_RECEIVED':
+        case 'ORDER_CANCELLED':
+        case 'ORDER_DISPUTE':
+        case 'ORDER_RESOLVED':
+        case 'OFFER_NEW':
+        case 'OFFER_REPLY':
+          // vente en direct : commandes, ventes et offres
+          await _openPage(const LiveShopOrdersPage());
+          break;
         case 'PROFILE_LIKE':
         case 'USER':
           final profileId = notification.user_id;
@@ -680,6 +697,24 @@ class _MesNotificationState extends State<MesNotification> {
             }
             setState(() => _isHandlingNotification = false);
           }
+          break;
+        case 'STAFF_VERIF':
+          // Identité de vendeur à vérifier (équipe)
+          _hideLoadingOverlay();
+          await Navigator.push(context, MaterialPageRoute(builder: (_) => const SellerVerificationsAdminPage()));
+          if (mounted) setState(() => _isHandlingNotification = false);
+          break;
+        case 'STAFF_FRAUD':
+          // Gains de partage bloqués (équipe) : régie, liste des partageurs
+          _hideLoadingOverlay();
+          await Navigator.push(context, MaterialPageRoute(builder: (_) => const AdsRegieAdminPage()));
+          if (mounted) setState(() => _isHandlingNotification = false);
+          break;
+        case 'STAFF_DISPUTE':
+          // Litige de commande (équipe)
+          _hideLoadingOverlay();
+          await Navigator.push(context, MaterialPageRoute(builder: (_) => const LiveShopAdminPage()));
+          if (mounted) setState(() => _isHandlingNotification = false);
           break;
         case 'BOOST_SOUMIS':
           // Boost à valider (équipe seulement) : file de validation des annonces

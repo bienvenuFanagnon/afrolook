@@ -508,7 +508,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 child: Icon(
                   Icons.camera_alt,
-                  color: _colors.accent,
+                  color: _colors.accentText,
                   size: 20,
                 ),
               ),
@@ -611,7 +611,7 @@ class _ProfilePageState extends State<ProfilePage> {
               shape: BoxShape.circle,
               border: Border.all(color: _colors.accent.withOpacity(0.3)),
             ),
-            child: Icon(Icons.alternate_email, color: _colors.accent, size: 20),
+            child: Icon(Icons.alternate_email, color: _colors.accentText, size: 20),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -706,7 +706,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             child: Icon(
               icon,
-              color: _colors.accent,
+              color: _colors.accentText,
               size: 20,
             ),
           ),
@@ -784,7 +784,7 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               Icon(
                 Icons.share,
-                color: _colors.accent,
+                color: _colors.accentText,
                 size: 20,
               ),
               SizedBox(width: 10),
@@ -823,7 +823,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     Text(
                       "${authProvider.loginUserData.codeParrainage}",
                       style: TextStyle(
-                        color: _colors.accent,
+                        color: _colors.accentText,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.5,
@@ -999,7 +999,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       SizedBox(height: 5),
                       PseudoTag(label: "@${authProvider.loginUserData.pseudo ?? ''}",
                         style: TextStyle(
-                          color: _colors.accent,
+                          color: _colors.accentText,
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.0,
@@ -1419,7 +1419,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   shape: BoxShape.circle,
                   border: Border.all(color: _colors.accent.withOpacity(0.3)),
                 ),
-                child: Icon(Icons.favorite_outline, color: _colors.accent, size: 20),
+                child: Icon(Icons.favorite_outline, color: _colors.accentText, size: 20),
               ),
               const SizedBox(width: 16),
               Text(

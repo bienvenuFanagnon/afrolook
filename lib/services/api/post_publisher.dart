@@ -29,6 +29,8 @@ class PostPublisher {
     File? thumbnail,
     Uint8List? thumbnailBytes,
     String? studioTemplate,
+    int? videoWidth,
+    int? videoHeight,
     void Function(double)? onProgress,
   }) async {
     final ids = await _upload(files, bytes, bytesContentType, onProgress);
@@ -46,6 +48,8 @@ class PostPublisher {
       eventDate: eventDate,
       thumbnailUploadId: thumbId,
       studioTemplate: studioTemplate ?? _currentTemplate(),
+      videoWidth: videoWidth,
+      videoHeight: videoHeight,
     );
   }
 

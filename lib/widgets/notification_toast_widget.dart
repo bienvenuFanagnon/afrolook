@@ -220,7 +220,7 @@ class _ToastWidgetState extends State<_ToastWidget>
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Icon(Icons.notifications_rounded,
-                                color: colors.accent, size: 16),
+                                color: colors.accentText, size: 16),
                           ),
                           const SizedBox(width: 8),
                           Text(

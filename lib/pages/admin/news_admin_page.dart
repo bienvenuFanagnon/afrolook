@@ -1,3 +1,4 @@
+import 'package:afrotok/services/admin_reauth.dart';
 import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:afrotok/services/api/regie_api.dart';
 import 'package:flutter/material.dart';
@@ -72,6 +73,8 @@ class _NewsAdminPageState extends State<NewsAdminPage> {
         return {'sources': await RegieApi.getList('/admin/news/sources')};
       case 'newsLogs':
         return {'logs': await RegieApi.getList('/admin/news/log', query: {'limit': data?['limit'] ?? 50}), 'health': <String, dynamic>{}};
+      case 'newsAgentStats':
+        return Map<String, dynamic>.from(await RegieApi.getMap('/admin/news/stats'));
       case 'newsSetConfig':
         final on = data?['sourcesOn'];
         if (on is Map && on.isNotEmpty) {
@@ -79,7 +82,9 @@ class _NewsAdminPageState extends State<NewsAdminPage> {
           await RegieApi.patch('/admin/news/sources/${e.key}', body: {'active': e.value == true});
           return {};
         }
-        break;
+        // interrupteurs et pays : enregistrés par le serveur (journal, cartes dans le fil, génération, notifications, flash)
+        await AdminReauth.run(context, () => RegieApi.put('/admin/news/config', body: data));
+        return {};
       case 'newsDeleteArticle':
         await RegieApi.delete('/admin/news/articles/${data?['id']}');
         return {};

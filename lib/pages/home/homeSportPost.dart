@@ -2754,7 +2754,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         ),
       );
 
-      if (i % 5 == 1 && _showTutoReminder) {
+      if (i == 1 && _showTutoReminder) {   // un seul tutoriel dans le fil
         contentWidgets.add(FeedMonetizationReminder(key: ValueKey('tuto_reminder_sport_$i'), feed: 'sport'));
       }
 

@@ -275,7 +275,7 @@ class _CoinConversionPageState extends State<CoinConversionPage>
           Text(
             _fmt(_coinsBalance),
             style: TextStyle(
-              color: colors.accent,
+              color: colors.accentText,
               fontSize: 46,
               fontWeight: FontWeight.bold,
               letterSpacing: -2,
@@ -291,7 +291,7 @@ class _CoinConversionPageState extends State<CoinConversionPage>
             ),
             child: Text(
               context.tr('pièces gagnées convertibles'),
-              style: TextStyle(color: colors.accent, fontSize: 11, fontWeight: FontWeight.w600),
+              style: TextStyle(color: colors.accentText, fontSize: 11, fontWeight: FontWeight.w600),
             ),
           ),
           if (_totalCoins > _coinsBalance) ...[

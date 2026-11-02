@@ -302,15 +302,15 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.menu_book, color: _colors.accent, size: 60),
+              Icon(Icons.menu_book, color: _colors.accentText, size: 60),
               SizedBox(height: 16),
-              Text('✨ Extrait visionné ! ✨', style: TextStyle(color: _colors.accent, fontSize: 20, fontWeight: FontWeight.bold)),
+              Text('✨ Extrait visionné ! ✨', style: TextStyle(color: _colors.accentText, fontSize: 20, fontWeight: FontWeight.bold)),
               SizedBox(height: 12),
               Text('Vous avez vu la page "${selectedCapsule.label}" pendant $_capsuleDurationSeconds secondes.', style: TextStyle(color: _colors.textSecondary, fontSize: 14), textAlign: TextAlign.center),
               SizedBox(height: 20),
               Text('Convaincu ? Débloquez l\'intégralité de cet ebook !', style: TextStyle(color: _colors.textPrimary, fontSize: 14, fontWeight: FontWeight.w500), textAlign: TextAlign.center),
               SizedBox(height: 8),
-              Text('💰 ${kIsAppleStore ? '${CoinCheckout.coinsFor(widget.content.price)} pièces' : '${widget.content.price.toInt()} Afrcoins'} seulement', style: TextStyle(color: _colors.accent, fontSize: 20, fontWeight: FontWeight.bold)),
+              Text('💰 ${kIsAppleStore ? '${CoinCheckout.coinsFor(widget.content.price)} pièces' : '${widget.content.price.toInt()} Afrcoins'} seulement', style: TextStyle(color: _colors.accentText, fontSize: 20, fontWeight: FontWeight.bold)),
               SizedBox(height: 8),
               Text('Votre soutien permet aux auteurs de créer plus de contenu', style: TextStyle(color: _colors.textSecondary, fontSize: 11, fontStyle: FontStyle.italic), textAlign: TextAlign.center),
               SizedBox(height: 24),
@@ -541,7 +541,7 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.info_outline, color: _colors.accent, size: 60),
+              Icon(Icons.info_outline, color: _colors.accentText, size: 60),
               SizedBox(height: 20),
               Text('Déjà Acheté', style: TextStyle(color: _colors.textPrimary, fontSize: 24, fontWeight: FontWeight.bold)),
               SizedBox(height: 12),
@@ -585,7 +585,7 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
               },
             ),
             ListTile(
-              leading: Icon(Icons.download, color: _colors.accent),
+              leading: Icon(Icons.download, color: _colors.accentText),
               title: Text('Télécharger', style: TextStyle(color: _colors.textPrimary)),
               subtitle: Text('Télécharger l\'ebook sur votre appareil', style: TextStyle(color: _colors.textSecondary)),
               onTap: () {
@@ -819,9 +819,9 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            Icon(Icons.visibility, color: _colors.accent, size: 18),
+            Icon(Icons.visibility, color: _colors.accentText, size: 18),
             SizedBox(width: 8),
-            Text('🔍 Aperçu gratuit (5 secondes par extrait)', style: TextStyle(color: _colors.accent, fontSize: 14, fontWeight: FontWeight.bold)),
+            Text('🔍 Aperçu gratuit (5 secondes par extrait)', style: TextStyle(color: _colors.accentText, fontSize: 14, fontWeight: FontWeight.bold)),
           ]),
           SizedBox(height: 12),
           Text('Cliquez sur un extrait pour voir une page de l\'ebook', style: TextStyle(color: _colors.textSecondary, fontSize: 12)),
@@ -858,10 +858,10 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
                         border: Border.all(color: isLoading ? _colors.primary : (isReady ? _colors.accent.withOpacity(0.5) : _colors.border), width: 1),
                       ),
                       child: !isReady
-                          ? Column(children: [SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: _colors.accent, strokeWidth: 2)), SizedBox(height: 8), Text('Chargement...', style: TextStyle(color: _colors.accent, fontSize: 11))])
+                          ? Column(children: [SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: _colors.accent, strokeWidth: 2)), SizedBox(height: 8), Text('Chargement...', style: TextStyle(color: _colors.accentText, fontSize: 11))])
                           : isLoading
-                          ? Column(children: [SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: _colors.accent, strokeWidth: 2)), SizedBox(height: 8), Text('Lecture...', style: TextStyle(color: _colors.accent, fontSize: 11))])
-                          : Column(children: [Icon(capsule.icon, color: _colors.accent, size: 28), SizedBox(height: 8), Text(capsule.label, style: TextStyle(color: _colors.textPrimary, fontSize: 13, fontWeight: FontWeight.w500)), SizedBox(height: 4), Text('5 sec', style: TextStyle(color: _colors.textSecondary, fontSize: 10))]),
+                          ? Column(children: [SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: _colors.accent, strokeWidth: 2)), SizedBox(height: 8), Text('Lecture...', style: TextStyle(color: _colors.accentText, fontSize: 11))])
+                          : Column(children: [Icon(capsule.icon, color: _colors.accentText, size: 28), SizedBox(height: 8), Text(capsule.label, style: TextStyle(color: _colors.textPrimary, fontSize: 13, fontWeight: FontWeight.w500)), SizedBox(height: 4), Text('5 sec', style: TextStyle(color: _colors.textSecondary, fontSize: 10))]),
                     ),
                   ),
                 );
@@ -886,7 +886,7 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
       children: [
         Text(widget.content.title!, style: TextStyle(color: _colors.textPrimary, fontSize: 28, fontWeight: FontWeight.bold)),
         SizedBox(height: 8),
-        Text('Série Ebook', style: TextStyle(color: _colors.accent, fontSize: 16, fontWeight: FontWeight.w500)),
+        Text('Série Ebook', style: TextStyle(color: _colors.accentText, fontSize: 16, fontWeight: FontWeight.w500)),
         SizedBox(height: 16),
         if (_currentEpisode != null) ...[
           Text('Épisode: ${_currentEpisode!.title}', style: TextStyle(color: _colors.textPrimary, fontSize: 20, fontWeight: FontWeight.bold)),
@@ -1105,7 +1105,7 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
                           _buildStatButton(Icons.visibility, null, widget.content.views, false),
                           Spacer(),
                           if (!widget.content.isFree && (!widget.content.isSeries || (widget.content.isSeries && _currentEpisode != null && !_currentEpisode!.isFree)))
-                            Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: _colors.accent.withOpacity(0.2), borderRadius: BorderRadius.circular(4), border: Border.all(color: _colors.accent)), child: Text('PREMIUM', style: TextStyle(color: _colors.accent, fontSize: 12, fontWeight: FontWeight.bold))),
+                            Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: _colors.accent.withOpacity(0.2), borderRadius: BorderRadius.circular(4), border: Border.all(color: _colors.accent)), child: Text('PREMIUM', style: TextStyle(color: _colors.accentText, fontSize: 12, fontWeight: FontWeight.bold))),
                         ],
                       ),
                       SizedBox(height: 20),
@@ -1151,7 +1151,7 @@ class _EbookDetailScreenState extends State<EbookDetailScreen> with SingleTicker
                             SizedBox(height: 12),
                             if (canRead)
                               OutlinedButton(
-                                style: OutlinedButton.styleFrom(foregroundColor: _colors.accent, side: BorderSide(color: _colors.accent), padding: EdgeInsets.symmetric(vertical: 16)),
+                                style: OutlinedButton.styleFrom(foregroundColor: _colors.accentText, side: BorderSide(color: _colors.accent), padding: EdgeInsets.symmetric(vertical: 16)),
                                 onPressed: _downloadEbook,
                                 child: Text('TÉLÉCHARGER L\'EBOOK', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                               ),
@@ -2138,7 +2138,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //               },
 //             ),
 //             ListTile(
-//               leading: Icon(Icons.download, color: _colors.accent),
+//               leading: Icon(Icons.download, color: _colors.accentText),
 //               title: Text('Télécharger', style: TextStyle(color: _colors.textPrimary)),
 //               subtitle: Text('Télécharger l\'ebook sur votre appareil', style: TextStyle(color: _colors.textSecondary)),
 //               onTap: () {
@@ -2290,7 +2290,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //               children: [
 //                 Icon(
 //                   Icons.info_outline,
-//                   color: _colors.accent,
+//                   color: _colors.accentText,
 //                   size: 60,
 //                 ),
 //                 SizedBox(height: 20),
@@ -2363,7 +2363,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //         Text(
 //           'Série Ebook',
 //           style: TextStyle(
-//             color: _colors.accent,
+//             color: _colors.accentText,
 //             fontSize: 16,
 //             fontWeight: FontWeight.w500,
 //           ),
@@ -2885,7 +2885,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                               child: Text(
 //                                 'PREMIUM',
 //                                 style: TextStyle(
-//                                   color: _colors.accent,
+//                                   color: _colors.accentText,
 //                                   fontSize: 12,
 //                                   fontWeight: FontWeight.bold,
 //                                 ),
@@ -3009,7 +3009,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                             if (canRead && (widget.content.isFree || hasPurchased || isAdminOrOwner))
 //                               OutlinedButton(
 //                                 style: OutlinedButton.styleFrom(
-//                                   foregroundColor: _colors.accent,
+//                                   foregroundColor: _colors.accentText,
 //                                   side: BorderSide(color: _colors.accent),
 //                                   padding: EdgeInsets.symmetric(vertical: 16),
 //                                   shape: RoundedRectangleBorder(

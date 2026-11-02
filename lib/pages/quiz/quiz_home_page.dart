@@ -414,7 +414,7 @@ class _QuizHomePageState extends State<QuizHomePage> {
                 ),
               ]),
             ),
-            Icon(Icons.chevron_right_rounded, color: c.accent, size: 30),
+            Icon(Icons.chevron_right_rounded, color: c.accentText, size: 30),
           ]),
         ),
       ),

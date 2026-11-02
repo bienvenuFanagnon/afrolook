@@ -1,3 +1,4 @@
+import 'package:afrotok/services/admin_reauth.dart';
 // pages/admin/user_management_page.dart
 
 import 'package:afrotok/pages/component/consoleWidget.dart';
@@ -298,7 +299,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
     try {
       // L'API suspend jusqu'à rétablissement (la durée n'existe pas encore : elle est écrite dans le motif)
       final motif = isPermanent ? reason : '$reason (durée prévue : $durationDays jours)';
-      await AdminMoneyApi.setStatus(widget.userId, 'suspend', motif.length < 5 ? '$motif.....' : motif);
+      await AdminReauth.run(context, () => AdminMoneyApi.setStatus(widget.userId, 'suspend', motif.length < 5 ? '$motif.....' : motif));
       _showSnack('Compte suspendu', _red);
       await _loadUserData();
     } catch (e) {
@@ -326,7 +327,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
             onPressed: () async {
               Navigator.pop(ctx);
               try {
-                await AdminMoneyApi.setStatus(widget.userId, 'restore', 'Suspension levée par l\'équipe');
+                await AdminReauth.run(context, () => AdminMoneyApi.setStatus(widget.userId, 'restore', 'Suspension levée par l\'équipe'));
                 _showSnack('Suspension levée', _green);
                 await _loadUserData();
               } catch (e) {
@@ -605,7 +606,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
     );
     if (ok != true || !mounted) return;
     try {
-      await AdminMoneyApi.restoreDeleted(_userData!.id!, waiveFee: true);
+      await AdminReauth.run(context, () => AdminMoneyApi.restoreDeleted(_userData!.id!, waiveFee: true));
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Compte débloqué sans frais')));
       await _loadUserData();
@@ -652,7 +653,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
     );
     if (ok != true || !mounted) return;
     try {
-      final res = await AdminMoneyApi.restoreDeleted(_userData!.id!, waiveFee: waiveFee);
+      final res = await AdminReauth.run(context, () => AdminMoneyApi.restoreDeleted(_userData!.id!, waiveFee: waiveFee));
       if (!mounted) return;
       final fee = ((res['fee_coins'] ?? res['feeCoins']) as num?)?.toInt() ?? 0;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -709,7 +710,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
 
     try {
       // Certification enregistrée par l'API (la notification au compte est envoyée par le serveur)
-      await AdminMoneyApi.setVerified(widget.userId, newValue);
+      await AdminReauth.run(context, () => AdminMoneyApi.setVerified(widget.userId, newValue, reason: newValue ? null : 'Retrait par l\'équipe'));
 
       setState(() {
         _userData!.isVerify = newValue;
@@ -737,8 +738,8 @@ class _UserManagementPageState extends State<UserManagementPage> {
     setState(() => _isUpdating = true);
     try {
       // Ajustement fait par l'API (écriture comptable, solde relu ensuite)
-      await AdminMoneyApi.adjustWallet(widget.userId,
-          kind: balanceField == 'votre_solde_depot' ? 'deposit_xof' : 'payout_xof', amount: amount, reason: raison.isEmpty ? description : raison);
+      await AdminReauth.run(context, () => AdminMoneyApi.adjustWallet(widget.userId,
+          kind: balanceField == 'votre_solde_depot' ? 'deposit_xof' : 'payout_xof', amount: amount, reason: raison.isEmpty ? description : raison));
       await _loadUserData();
       _showSnack('Opération effectuée !', _green);
     } catch (e) {
@@ -759,7 +760,7 @@ class _UserManagementPageState extends State<UserManagementPage> {
     setState(() => _isUpdating = true);
     try {
       // Ajustement fait par l'API (refuse si le solde ne suffit pas) ; soldes relus ensuite
-      await AdminMoneyApi.adjustWallet(widget.userId, kind: depot ? 'deposit_coins' : 'earned_coins', amount: amount, reason: raison);
+      await AdminReauth.run(context, () => AdminMoneyApi.adjustWallet(widget.userId, kind: depot ? 'deposit_coins' : 'earned_coins', amount: amount, reason: raison));
       await _loadUserData();
       _showSnack('${amount > 0 ? '+' : ''}$amount pièce(s) appliquée(s)', _gold);
     } catch (e) {

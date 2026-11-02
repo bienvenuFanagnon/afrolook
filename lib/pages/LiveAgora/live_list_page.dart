@@ -1,3 +1,5 @@
+import 'package:afrotok/l10n/tr.dart';
+import 'package:afrotok/pages/liveshop/live_shop_orders_page.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -138,7 +140,7 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
         itemId: live.liveId ?? '',
         itemType: 'live',
         title: live.title,
-        subtitle: live.isLive ? '🔴 Live en cours' : 'Live terminé',
+        subtitle: live.isLive ? '🔴 Live en cours' : tr('Live terminé'),
         thumbnail: live.hostImage ?? '',
         icon: Icons.live_tv_rounded,
       ),
@@ -183,7 +185,7 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
                       onLoading: _loadMore,
                       header: WaterDropHeader(
                         waterDropColor: colors.accent,
-                        complete: Icon(Icons.check, color: colors.accent),
+                        complete: Icon(Icons.check, color: colors.accentText),
                       ),
                       // Tab 0 = En cours (liste simple) | Tab 1 = Tous (carousel + liste)
                       child: _selectedTab == 1
@@ -241,6 +243,20 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
                 border: Border.all(color: colors.border),
               ),
               child: Icon(Icons.refresh_rounded, color: colors.textSecondary, size: 18),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Live Shopping : achats, ventes et négociations
+          InkWell(
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LiveShopOrdersPage())),
+            child: Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(
+                color: colors.surface,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: colors.border),
+              ),
+              child: Icon(Icons.shopping_bag_outlined, color: colors.textSecondary, size: 18),
             ),
           ),
         ],
@@ -308,7 +324,7 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('Récents', style: TextStyle(color: colors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600)),
+                Text(tr('Récents'), style: TextStyle(color: colors.textSecondary, fontSize: 13, fontWeight: FontWeight.w600)),
                 Text('${termines.length} lives', style: TextStyle(color: colors.textSecondary.withOpacity(0.6), fontSize: 12)),
               ],
             ),
@@ -423,12 +439,12 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                     decoration: BoxDecoration(color: Colors.purple.withOpacity(0.85), borderRadius: BorderRadius.circular(20)),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.lock_rounded, color: Colors.white, size: 9),
                         SizedBox(width: 3),
-                        Text('PRIVÉ', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700)),
+                        Text(tr('PRIVÉ'), style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700)),
                       ],
                     ),
                   ),
@@ -475,7 +491,7 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
                         const SizedBox(width: 3),
                         Text(_formatCount(live.likeCount ?? 0), style: const TextStyle(color: Colors.white60, fontSize: 10)),
                         const SizedBox(width: 8),
-                        Icon(Icons.card_giftcard_rounded, color: colors.accent, size: 11),
+                        Icon(Icons.card_giftcard_rounded, color: colors.accentText, size: 11),
                         const SizedBox(width: 3),
                         Text('${_formatCount(live.giftCoinsTotal)} pcs', style: const TextStyle(color: Colors.white60, fontSize: 10)),
                       ],
@@ -698,8 +714,8 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
               const SizedBox(height: 16),
               TextButton.icon(
                 onPressed: () => _loadLives(reset: true),
-                icon: Icon(Icons.refresh_rounded, color: colors.accent),
-                label: Text('Réessayer', style: TextStyle(color: colors.accent, fontWeight: FontWeight.w600)),
+                icon: Icon(Icons.refresh_rounded, color: colors.accentText),
+                label: Text(tr('Réessayer'), style: TextStyle(color: colors.accentText, fontWeight: FontWeight.w600)),
               ),
             ],
           ),
@@ -714,12 +730,12 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
           const SizedBox(height: 16),
           Text('Aucun live', style: TextStyle(color: colors.textPrimary, fontSize: 17, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
-          Text('Soyez le premier à lancer un live !', style: TextStyle(color: colors.textSecondary, fontSize: 13)),
+          Text(tr('Soyez le premier à lancer un live !'), style: TextStyle(color: colors.textSecondary, fontSize: 13)),
           const SizedBox(height: 24),
           TextButton.icon(
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CreateLivePage())),
-            icon: Icon(Icons.add_rounded, color: colors.accent),
-            label: Text('Créer un live', style: TextStyle(color: colors.accent, fontWeight: FontWeight.w600)),
+            icon: Icon(Icons.add_rounded, color: colors.accentText),
+            label: Text(tr('Créer un live'), style: TextStyle(color: colors.accentText, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -747,6 +763,6 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
     if (diff.inDays >= 1) return 'il y a ${diff.inDays}j';
     if (diff.inHours >= 1) return 'il y a ${diff.inHours}h';
     if (diff.inMinutes >= 1) return 'il y a ${diff.inMinutes}m';
-    return "à l'instant";
+    return tr("à l'instant");
   }
 }

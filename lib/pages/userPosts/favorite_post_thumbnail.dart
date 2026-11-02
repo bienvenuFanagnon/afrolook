@@ -333,28 +333,28 @@ class _FavoritePostThumbnailWidgetState extends State<FavoritePostThumbnailWidge
             _buildStatItem(
               icon: Icons.favorite,
               count: widget.post.loves ?? 0,
-              color: _afroRed,
+              color: Colors.white,
             ),
 
             // Comments
             _buildStatItem(
               icon: Icons.comment,
               count: widget.post.comments ?? 0,
-              color: _afroBlue,
+              color: Colors.white,
             ),
 
             // Shares
             _buildStatItem(
               icon: Icons.share,
               count: widget.post.partage ?? 0,
-              color: _afroGreen,
+              color: Colors.white,
             ),
 
             // Views
             _buildStatItem(
               icon: Icons.remove_red_eye,
               count: widget.post.vues ?? 0,
-              color: _afroYellow,
+              color: Colors.white,
             ),
           ],
         ),

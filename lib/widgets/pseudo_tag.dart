@@ -19,7 +19,8 @@ class PseudoTag extends StatelessWidget {
   /// Le texte est-il un pseudo à mettre en capsule (« @xxx » sans espace) ?
   static bool isPseudoLabel(String s) => RegExp(r'^@[A-Za-z0-9._\-]+$').hasMatch(s);
 
-  static Color _gold(AppColors c) => c.isDark ? const Color(0xFFF5C542) : const Color(0xFFD99A00);
+  /// Médaillon : jaune de marque en FOND avec le @ noir dessus (13,1). Points du pseudo : ambre foncé sur fond clair (5,1), jaune sur fond sombre.
+  static Color _gold(AppColors c) => c.isDark ? const Color(0xFFF5C542) : const Color(0xFFFFD400);
 
   @override
   Widget build(BuildContext context) {
@@ -33,12 +34,13 @@ class PseudoTag extends StatelessWidget {
     // Texte clair (fond vidéo, bandeaux sombres) : capsule translucide sombre
     final onDark = txtColor.computeLuminance() > 0.8;
     final gold = _gold(c);
+    final dot = onDark || c.isDark ? const Color(0xFFF5C542) : c.accentText;
     final name = label.substring(1);
     final parts = name.split('.');
 
     final spans = <InlineSpan>[];
     for (var i = 0; i < parts.length; i++) {
-      if (i > 0) spans.add(TextSpan(text: '.', style: TextStyle(color: gold, fontWeight: FontWeight.w900)));
+      if (i > 0) spans.add(TextSpan(text: '.', style: TextStyle(color: dot, fontWeight: FontWeight.w900)));
       spans.add(TextSpan(text: parts[i]));
     }
 
@@ -56,7 +58,7 @@ class PseudoTag extends StatelessWidget {
           height: medal,
           alignment: Alignment.center,
           decoration: BoxDecoration(color: gold, shape: BoxShape.circle),
-          child: Text('@', style: TextStyle(color: const Color(0xFF2B1A00), fontSize: fs * .82, fontWeight: FontWeight.w900, height: 1)),
+          child: Text('@', style: TextStyle(color: const Color(0xFF121212), fontSize: fs * .82, fontWeight: FontWeight.w900, height: 1)),
         ),
         SizedBox(width: fs * .4),
         Flexible(

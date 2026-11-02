@@ -137,7 +137,7 @@ class _QuizShopPageState extends State<QuizShopPage> {
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Row(children: [
-                        Icon(Icons.star_rounded, color: c.accent, size: 26),
+                        Icon(Icons.star_rounded, color: c.accentText, size: 26),
                         const SizedBox(width: 4),
                         Text('${s.points}', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: c.textPrimary)),
                       ]),

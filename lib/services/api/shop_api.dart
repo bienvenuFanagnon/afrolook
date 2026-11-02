@@ -87,6 +87,19 @@ class ShopApi {
     e.suivi = (m['followers_count'] as num?)?.toInt() ?? 0;
     e.publication = (m['articles_count'] as num?)?.toInt() ?? 0;
     e.haveSubscription = m['is_premium'] == true;
+    // Limites calculées par le serveur (seulement pour le propriétaire) : articles restants et images par article.
+    // L'écran de publication lit `abonnement` ; le serveur applique déjà l'expiration, donc aucune date de fin côté application.
+    final lim = m['limits'];
+    if (lim is Map) {
+      final total = (lim['articles'] as num?)?.toInt();   // null = illimité (équipe)
+      final used = (m['articles_count'] as num?)?.toInt() ?? 0;
+      e.abonnement = EntrepriseAbonnement()
+        ..type = e.haveSubscription == true ? TypeAbonement.PREMIUM.name : TypeAbonement.GRATUIT.name
+        ..nombre_pub = total == null ? 999 : (total - used).clamp(0, 1 << 30)
+        ..nombre_image_pub = (lim['images'] as num?)?.toInt() ?? 1
+        ..end = DateTime.now().add(const Duration(days: 3650)).millisecondsSinceEpoch
+        ..isFinished = false;
+    }
     return e;
   }
 
@@ -102,7 +115,7 @@ class ShopApi {
   static Future<List<Categorie>> categories() async => _list(await _c.get('/shop/categories')).map(category).toList();
 
   static Future<List<EntrepriseData>> businesses({bool mine = false, String? search, int page = 1}) async =>
-      _list(await _c.get('/shop/businesses', query: {if (mine) 'mine': true, if (search != null && search.isNotEmpty) 'search': search, 'page': page})).map(business).toList();
+      _list(await _c.get('/shop/businesses', query: {if (mine) 'mine': 1, if (search != null && search.isNotEmpty) 'search': search, 'page': page})).map(business).toList();
 
   static Future<EntrepriseData?> businessById(String id) async {
     try {
@@ -136,7 +149,7 @@ class ShopApi {
       if (businessId != null) 'business_id': businessId,
       if (ownerId != null) 'owner_id': ownerId,
       if (search != null && search.isNotEmpty) 'search': search,
-      if (mine) 'mine': true,
+      if (mine) 'mine': 1,
       'page': page,
       'limit': limit,
     });

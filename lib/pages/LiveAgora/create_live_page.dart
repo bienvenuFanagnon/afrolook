@@ -1,3 +1,5 @@
+import 'package:afrotok/l10n/tr.dart';
+import 'package:afrolook_api_client/afrolook_api_client.dart' show ApiException;
 import 'package:afrotok/services/api/api_identity.dart';
 import '../../services/media_shrink.dart';
 import 'package:afrotok/services/account_gate.dart';
@@ -9,7 +11,9 @@ import 'package:cloud_firestore/cloud_firestore.dart'; // uniquement l'état en 
 import 'package:afrotok/services/api/chat_api.dart';
 import 'package:afrotok/services/api/lives_mapper.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:afrotok/services/api/live_shop_api.dart';
 import 'package:flutter/material.dart';
+import '../../theme/app_colors.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../models/model_data.dart';
@@ -20,11 +24,20 @@ import 'livePage.dart';
 import 'livesAgora.dart';
 
 class CreateLivePage extends StatefulWidget {
+  /// [initialShopping] : démarre sur « Vente en direct » ; [articleIds] : articles de la boutique à épingler dès le début du live (depuis la page de la boutique).
+  const CreateLivePage({super.key, this.initialShopping = false, this.articleIds = const []});
+
+  final bool initialShopping;
+  final List<String> articleIds;
+
   @override
   _CreateLivePageState createState() => _CreateLivePageState();
 }
 
 class _CreateLivePageState extends State<CreateLivePage> {
+  // Thème clair ou sombre de l'application (comme les autres pages)
+  AppColors get _c => AppColors.of(context);
+
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   String? _coverUploadId;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -37,6 +50,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
 
   // Variables pour les paramètres
   bool _isPaidLive = false;
+  late bool _isShoppingLive = widget.initialShopping;   // vente en direct (Live Shopping)
   String _audioBehavior = 'reduce';
   int _audioReductionPercent = 50;
   bool _blurVideoAfterTrial = true;
@@ -92,14 +106,14 @@ class _CreateLivePageState extends State<CreateLivePage> {
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          title: const Text('Tu as déjà un live en cours'),
+          title: Text(tr('Tu as déjà un live en cours')),
           content: Text(
-            (title != null && title.isNotEmpty ? '« $title » est toujours en direct. ' : 'Un de tes lives est toujours en direct. ') +
-                'Un seul live à la fois est possible : reprends-le, ou termine-le pour en créer un nouveau.',
+            (title != null && title.isNotEmpty ? '« $title » est toujours en direct. ' : tr('Un de tes lives est toujours en direct. ')) +
+                tr('Un seul live à la fois est possible : reprends-le, ou termine-le pour en créer un nouveau.'),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, 'fermer'), child: const Text('Annuler')),
-            TextButton(onPressed: () => Navigator.pop(ctx, 'terminer'), child: const Text('Terminer ce live')),
+            TextButton(onPressed: () => Navigator.pop(ctx, 'terminer'), child: Text(tr('Terminer ce live'))),
             FilledButton(onPressed: () => Navigator.pop(ctx, 'reprendre'), child: const Text('Reprendre')),
           ],
         ),
@@ -113,7 +127,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
             builder: (context) => LivePage(
               liveId: liveId,
               isHost: true,
-              hostName: me.pseudo ?? 'Hôte',
+              hostName: me.pseudo ?? tr('Hôte'),
               hostImage: me.imageUrl ?? '',
               isInvited: false,
               postLive: postLiveFromApi(apiLive, hostName: me.pseudo ?? '', hostImage: me.imageUrl ?? ''),
@@ -127,7 +141,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
         } catch (_) {}
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Live terminé : tu peux en créer un nouveau.')),
+            SnackBar(content: Text(tr('Live terminé : tu peux en créer un nouveau.'))),
           );
         }
       } else {
@@ -154,9 +168,9 @@ class _CreateLivePageState extends State<CreateLivePage> {
 
         // Message d'information
         if (restrictions['isAdmin'] == true) {
-          _restrictionMessage = 'Mode Admin : Pas de restrictions';
+          _restrictionMessage = tr('Mode Admin : Pas de restrictions');
         } else if (restrictions['isPremium'] == true) {
-          _restrictionMessage = 'Mode Premium : Toutes fonctionnalités débloquées';
+          _restrictionMessage = tr('Mode Premium : Toutes fonctionnalités débloquées');
         } else {
           _restrictionMessage = 'Mode Gratuit : ${_remainingLives} lives restants ce mois';
         }
@@ -186,7 +200,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
       headerIcon = Icons.workspace_premium;
       headerText = 'Mode Premium';
     } else {
-      headerColor = Colors.grey;
+      headerColor = _c.textSecondary;
       headerIcon = Icons.lock;
       headerText = 'Mode Gratuit';
     }
@@ -229,7 +243,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                     ),
                   ),
                   child: Text(
-                    'PASSER À PREMIUM',
+                    tr('PASSER À PREMIUM'),
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -241,16 +255,16 @@ class _CreateLivePageState extends State<CreateLivePage> {
           SizedBox(height: 8),
           Row(
             children: [
-              Icon(Icons.live_tv, size: 16, color: Colors.grey),
+              Icon(Icons.live_tv, size: 16, color: _c.textSecondary),
               SizedBox(width: 8),
               Text(
                 isAdmin
-                    ? 'Lives illimités • Qualité HD • 500ms'
+                    ? tr('Lives illimités • Qualité HD • 500ms')
                     : isPremium
-                    ? 'Lives illimités • Qualité HD • 500ms'
+                    ? tr('Lives illimités • Qualité HD • 500ms')
                     : 'Lives restants: $remainingLives/$maxLives • SD • 2s',
                 style: TextStyle(
-                  color: Colors.grey[400],
+                  color: _c.textSecondary,
                   fontSize: 12,
                 ),
               ),
@@ -272,7 +286,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                   Expanded(
                     child: Text(
                       remainingLives == 0
-                          ? 'Vous avez atteint votre limite de lives ce mois.'
+                          ? tr('Vous avez atteint votre limite de lives ce mois.')
                           : 'Il vous reste seulement $remainingLives live(s) ce mois.',
                       style: TextStyle(
                         color: Colors.orange,
@@ -293,7 +307,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
     final isAdmin = _liveRestrictions['isAdmin'] == true;
 
     return Card(
-      color: Colors.grey[900],
+      color: _c.surface,
       child: Padding(
         padding: EdgeInsets.all(16),
         child: Column(
@@ -304,9 +318,9 @@ class _CreateLivePageState extends State<CreateLivePage> {
                 Icon(Icons.compare_arrows, color: Color(0xFFF9A825), size: 20),
                 SizedBox(width: 8),
                 Text(
-                  'Choisissez votre expérience de live',
+                  tr('Choisissez votre expérience de live'),
                   style: TextStyle(
-                    color: Colors.white,
+                    color: _c.textPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -318,9 +332,9 @@ class _CreateLivePageState extends State<CreateLivePage> {
             // Option Gratuit
             _buildExperienceOption(
               title: 'Gratuit',
-              subtitle: 'Expérience de base',
+              subtitle: tr('Expérience de base'),
               icon: Icons.lock,
-              color: Colors.grey,
+              color: _c.textSecondary,
               isSelected: !_useHDQuality && !_useLowLatency,
               onTap: () {
                 if (isAdmin || isPremium) {
@@ -337,10 +351,10 @@ class _CreateLivePageState extends State<CreateLivePage> {
               },
               features: [
                 '✅ 5 lives par mois',
-                '✅ Qualité SD (480p)',
+                tr('✅ Qualité SD (480p)'),
                 '✅ Latence 2 secondes',
-                '❌ Pas de HD',
-                '❌ Pas de faible latence',
+                tr('❌ Pas de HD'),
+                tr('❌ Pas de faible latence'),
               ],
             ),
 
@@ -349,7 +363,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
             // Option Premium
             _buildExperienceOption(
               title: 'Premium',
-              subtitle: 'Expérience optimale',
+              subtitle: tr('Expérience optimale'),
               icon: Icons.workspace_premium,
               color: Color(0xFFFDB813),
               isSelected: _useHDQuality || _useLowLatency,
@@ -361,17 +375,17 @@ class _CreateLivePageState extends State<CreateLivePage> {
                   });
                 } else {
                   _showPremiumModal(
-                    title: 'Expérience Premium',
-                    message: 'L\'expérience Premium est réservée aux abonnés.\nProfitez d\'une qualité HD et d\'une latence réduite pour des lives parfaits.',
+                    title: tr('Expérience Premium'),
+                    message: tr('L\'expérience Premium est réservée aux abonnés.\nProfitez d\'une qualité HD et d\'une latence réduite pour des lives parfaits.'),
                   );
                 }
               },
               features: [
-                '✅ Lives illimités',
-                '✅ Qualité HD (720p)',
+                tr('✅ Lives illimités'),
+                tr('✅ Qualité HD (720p)'),
                 '✅ Latence 500ms',
-                '✅ Réactions en temps réel',
-                '✅ Expérience fluide',
+                tr('✅ Réactions en temps réel'),
+                tr('✅ Expérience fluide'),
               ],
               premiumOnly: true,
             ),
@@ -388,7 +402,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
               child: Container(
                 padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
+                  color: _c.surfaceVariant,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: Color(0xFFF9A825)),
                 ),
@@ -401,7 +415,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                     ),
                     SizedBox(width: 8),
                     Text(
-                      _showComparison ? 'MASQUER LES DÉTAILS' : 'VOIR LA COMPARAISON DÉTAILLÉE',
+                      _showComparison ? tr('MASQUER LES DÉTAILS') : tr('VOIR LA COMPARAISON DÉTAILLÉE'),
                       style: TextStyle(
                         color: Color(0xFFF9A825),
                         fontWeight: FontWeight.bold,
@@ -419,19 +433,19 @@ class _CreateLivePageState extends State<CreateLivePage> {
                 child: Container(
                   padding: EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.3),
+                    color: _c.surfaceVariant,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(
                     children: [
                       _buildComparisonRow(
-                        feature: 'Nombre de lives',
+                        feature: tr('Nombre de lives'),
                         freeValue: '5/mois',
-                        premiumValue: 'Illimités',
+                        premiumValue: tr('Illimités'),
                         premiumBetter: true,
                       ),
                       _buildComparisonRow(
-                        feature: 'Qualité vidéo',
+                        feature: tr('Qualité vidéo'),
                         freeValue: 'SD (480p)',
                         premiumValue: 'HD (720p)',
                         premiumBetter: true,
@@ -443,15 +457,15 @@ class _CreateLivePageState extends State<CreateLivePage> {
                         premiumBetter: true,
                       ),
                       _buildComparisonRow(
-                        feature: 'Fluidité',
+                        feature: tr('Fluidité'),
                         freeValue: 'Standard',
                         premiumValue: 'Optimale',
                         premiumBetter: true,
                       ),
                       _buildComparisonRow(
                         feature: 'Interactions',
-                        freeValue: 'Délai visible',
-                        premiumValue: 'Temps réel',
+                        freeValue: tr('Délai visible'),
+                        premiumValue: tr('Temps réel'),
                         premiumBetter: true,
                       ),
                       SizedBox(height: 12),
@@ -459,8 +473,8 @@ class _CreateLivePageState extends State<CreateLivePage> {
                         ElevatedButton(
                           onPressed: () {
                             _showPremiumModal(
-                              title: 'Améliorez votre expérience',
-                              message: 'Passez à Premium pour profiter de tous les avantages et offrez la meilleure expérience à votre audience.',
+                              title: tr('Améliorez votre expérience'),
+                              message: tr('Passez à Premium pour profiter de tous les avantages et offrez la meilleure expérience à votre audience.'),
                             );
                           },
                           style: ElevatedButton.styleFrom(
@@ -469,7 +483,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                             minimumSize: Size(double.infinity, 40),
                           ),
                           child: Text(
-                            'DÉBLOQUER L\'EXPÉRIENCE PREMIUM',
+                            tr('DÉBLOQUER L\'EXPÉRIENCE PREMIUM'),
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
@@ -498,7 +512,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
       child: Container(
         padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.2) : Colors.grey[800],
+          color: isSelected ? color.withOpacity(0.2) : _c.surfaceVariant,
           border: Border.all(
             color: isSelected ? color : Colors.transparent,
             width: 2,
@@ -528,7 +542,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                           Text(
                             title,
                             style: TextStyle(
-                              color: Colors.white,
+                              color: _c.textPrimary,
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
                             ),
@@ -557,7 +571,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                       Text(
                         subtitle,
                         style: TextStyle(
-                          color: Colors.white70,
+                          color: _c.textSecondary,
                           fontSize: 14,
                         ),
                       ),
@@ -586,7 +600,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                         child: Text(
                           feature.substring(2),
                           style: TextStyle(
-                            color: Colors.white70,
+                            color: _c.textSecondary,
                             fontSize: 12,
                           ),
                         ),
@@ -611,7 +625,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
     return Container(
       padding: EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: Colors.grey[800]!)),
+        border: Border(bottom: BorderSide(color: _c.surfaceVariant!)),
       ),
       child: Row(
         children: [
@@ -620,7 +634,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
             child: Text(
               feature,
               style: TextStyle(
-                color: Colors.white70,
+                color: _c.textSecondary,
                 fontSize: 12,
               ),
             ),
@@ -629,14 +643,14 @@ class _CreateLivePageState extends State<CreateLivePage> {
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.grey[900],
+                color: _c.surface,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
                 freeValue,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white,
+                  color: _c.textPrimary,
                   fontSize: 12,
                 ),
               ),
@@ -657,7 +671,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                 premiumValue,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.white,
+                  color: _c.textPrimary,
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
@@ -673,7 +687,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
+        backgroundColor: _c.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
@@ -684,7 +698,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
             Text(
               'Gratuit vs Premium',
               style: TextStyle(
-                color: Colors.white,
+                color: _c.textPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -697,13 +711,13 @@ class _CreateLivePageState extends State<CreateLivePage> {
               // Gratuit
               _buildPlanCard(
                 title: 'Gratuit',
-                color: Colors.grey,
+                color: _c.textSecondary,
                 features: [
                   '5 lives par mois',
-                  'Qualité SD (480p)',
+                  tr('Qualité SD (480p)'),
                   'Latence 2 secondes',
-                  'Interactions limitées',
-                  'Expérience standard',
+                  tr('Interactions limitées'),
+                  tr('Expérience standard'),
                 ],
                 price: '0 FCFA',
                 isPremium: false,
@@ -716,13 +730,13 @@ class _CreateLivePageState extends State<CreateLivePage> {
                 title: 'Premium',
                 color: Color(0xFFFDB813),
                 features: [
-                  'Lives illimités',
-                  'Qualité HD (720p)',
+                  tr('Lives illimités'),
+                  tr('Qualité HD (720p)'),
                   'Latence 500ms',
-                  'Interactions en temps réel',
-                  'Expérience optimale',
+                  tr('Interactions en temps réel'),
+                  tr('Expérience optimale'),
                 ],
-                price: '500 pièces/mois',
+                price: tr('500 pièces/mois'),
                 isPremium: true,
               ),
 
@@ -731,7 +745,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
               Container(
                 padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.3),
+                  color: _c.surfaceVariant,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Color(0xFFFDB813)),
                 ),
@@ -744,16 +758,16 @@ class _CreateLivePageState extends State<CreateLivePage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Économisez jusqu\'à 1 250 pièces',
+                            tr('Économisez jusqu\'à 1 250 pièces'),
                             style: TextStyle(
-                              color: Colors.white,
+                              color: _c.textPrimary,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           Text(
-                            'Réduction sur les abonnements longs (3, 6, 12 mois)',
+                            tr('Réduction sur les abonnements longs (3, 6, 12 mois)'),
                             style: TextStyle(
-                              color: Colors.grey[400],
+                              color: _c.textSecondary,
                               fontSize: 12,
                             ),
                           ),
@@ -770,8 +784,8 @@ class _CreateLivePageState extends State<CreateLivePage> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'PAS MAINTENANT',
-              style: TextStyle(color: Colors.grey),
+              tr('PAS MAINTENANT'),
+              style: TextStyle(color: _c.textSecondary),
             ),
           ),
           ElevatedButton(
@@ -786,7 +800,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
               backgroundColor: Color(0xFFFDB813),
               foregroundColor: Colors.black,
             ),
-            child: Text('VOIR LES OFFRES'),
+            child: Text(tr('VOIR LES OFFRES')),
           ),
         ],
       ),
@@ -829,7 +843,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                 Text(
                   title,
                   style: TextStyle(
-                    color: Colors.white,
+                    color: _c.textPrimary,
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
                   ),
@@ -847,7 +861,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                     Text(
                       feature,
                       style: TextStyle(
-                        color: Colors.white70,
+                        color: _c.textSecondary,
                         fontSize: 12,
                       ),
                     ),
@@ -859,7 +873,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
             Container(
               padding: EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.3),
+                color: _c.surfaceVariant,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -868,7 +882,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                   Text(
                     price,
                     style: TextStyle(
-                      color: Colors.white,
+                      color: _c.textPrimary,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
@@ -889,7 +903,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
+        backgroundColor: _c.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
@@ -900,7 +914,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
             Text(
               title,
               style: TextStyle(
-                color: Colors.white,
+                color: _c.textPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -912,13 +926,13 @@ class _CreateLivePageState extends State<CreateLivePage> {
           children: [
             Text(
               message,
-              style: TextStyle(color: Colors.grey[400]),
+              style: TextStyle(color: _c.textSecondary),
             ),
             SizedBox(height: 20),
             Container(
               padding: EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.3),
+                color: _c.surfaceVariant,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Color(0xFFFDB813)),
               ),
@@ -933,14 +947,14 @@ class _CreateLivePageState extends State<CreateLivePage> {
                         Text(
                           'Afrolook Premium',
                           style: TextStyle(
-                            color: Colors.white,
+                            color: _c.textPrimary,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         Text(
-                          'Lives illimités • HD • 500ms • Pas de restriction',
+                          tr('Lives illimités • HD • 500ms • Pas de restriction'),
                           style: TextStyle(
-                            color: Colors.grey[400],
+                            color: _c.textSecondary,
                             fontSize: 12,
                           ),
                         ),
@@ -956,8 +970,8 @@ class _CreateLivePageState extends State<CreateLivePage> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'PAS MAINTENANT',
-              style: TextStyle(color: Colors.grey),
+              tr('PAS MAINTENANT'),
+              style: TextStyle(color: _c.textSecondary),
             ),
           ),
           ElevatedButton(
@@ -983,11 +997,11 @@ class _CreateLivePageState extends State<CreateLivePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Créer un live', style: TextStyle(color: Color(0xFFF9A825))),
-        backgroundColor: Colors.black,
+        title: Text(tr('Créer un live'), style: TextStyle(color: Color(0xFFF9A825))),
+        backgroundColor: _c.background,
         elevation: 0,
       ),
-      backgroundColor: Colors.black,
+      backgroundColor: _c.background,
       body: SingleChildScrollView(
         child: Padding(
           padding: EdgeInsets.all(16),
@@ -1018,6 +1032,10 @@ class _CreateLivePageState extends State<CreateLivePage> {
 
                 SizedBox(height: 20),
 
+                // Format du live : discussion ou vente en direct
+                _buildFormatSection(),
+                SizedBox(height: 16),
+
                 // Type de live
                 _buildLiveTypeSection(),
 
@@ -1040,12 +1058,12 @@ class _CreateLivePageState extends State<CreateLivePage> {
   Widget _buildTitleField() {
     return TextFormField(
       controller: _titleController,
-      style: TextStyle(color: Colors.white),
+      style: TextStyle(color: _c.textPrimary),
       decoration: InputDecoration(
-        labelText: 'Titre du live',
+        labelText: tr('Titre du live'),
         labelStyle: TextStyle(color: Color(0xFF2E7D32)),
-        hintText: 'Donnez un titre à votre live...',
-        hintStyle: TextStyle(color: Colors.grey[600]),
+        hintText: tr('Donnez un titre à votre live...'),
+        hintStyle: TextStyle(color: _c.textSecondary),
         enabledBorder: OutlineInputBorder(
           borderSide: BorderSide(color: Color(0xFF2E7D32)),
           borderRadius: BorderRadius.circular(12),
@@ -1056,23 +1074,73 @@ class _CreateLivePageState extends State<CreateLivePage> {
         ),
         prefixIcon: Icon(Icons.title, color: Color(0xFFF9A825)),
         filled: true,
-        fillColor: Colors.grey[900],
+        fillColor: _c.surface,
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return 'Veuillez entrer un titre';
+          return tr('Veuillez entrer un titre');
         }
         if (value.length > 100) {
-          return 'Titre trop long (max 100 caractères)';
+          return tr('Titre trop long (max 100 caractères)');
         }
         return null;
       },
     );
   }
 
+  /// Format du live : discussion (comme avant) ou vente en direct (produits de la boutique épinglés, achat en 1 clic avec séquestre).
+  Widget _buildFormatSection() {
+    return Card(
+      color: _c.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              const Icon(Icons.live_tv_rounded, color: Color(0xFFF9A825), size: 20),
+              const SizedBox(width: 8),
+              Text(tr('Format du live'), style: TextStyle(color: _c.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
+            ]),
+            const SizedBox(height: 12),
+            Row(children: [
+              Expanded(
+                child: _buildLiveTypeOption(
+                  title: 'Discussion',
+                  subtitle: tr('Parle, échange, reçois des cadeaux'),
+                  icon: Icons.forum_rounded,
+                  isSelected: !_isShoppingLive,
+                  onTap: () => setState(() => _isShoppingLive = false),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildLiveTypeOption(
+                  title: 'Vente en direct',
+                  subtitle: tr('Vends les articles de ta boutique'),
+                  icon: Icons.shopping_bag_rounded,
+                  isSelected: _isShoppingLive,
+                  onTap: () => setState(() => _isShoppingLive = true),
+                ),
+              ),
+            ]),
+            if (_isShoppingLive) ...[
+              const SizedBox(height: 10),
+              Text(
+                tr("Pendant le live, tu épingles un article de ta boutique : les spectateurs l'achètent en un clic ou négocient le prix. Leur argent est protégé jusqu'à la réception, puis il t'est versé (10 % de commission) : ça rassure les acheteurs. Il faut avoir une boutique avec au moins un article."),
+                style: TextStyle(color: _c.textSecondary, fontSize: 12.5, height: 1.4),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildLiveTypeSection() {
     return Card(
-      color: Colors.grey[900],
+      color: _c.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -1086,9 +1154,9 @@ class _CreateLivePageState extends State<CreateLivePage> {
                 Icon(Icons.monetization_on, color: Color(0xFFF9A825), size: 20),
                 SizedBox(width: 8),
                 Text(
-                  'Type de live',
+                  tr('Type de live'),
                   style: TextStyle(
-                    color: Colors.white,
+                    color: _c.textPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1101,7 +1169,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                 Expanded(
                   child: _buildLiveTypeOption(
                     title: 'Gratuit',
-                    subtitle: 'Tout le monde peut regarder',
+                    subtitle: tr('Tout le monde peut regarder'),
                     icon: Icons.people,
                     isSelected: !_isPaidLive,
                     onTap: () => setState(() => _isPaidLive = false),
@@ -1111,7 +1179,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                 Expanded(
                   child: _buildLiveTypeOption(
                     title: 'Payant',
-                    subtitle: 'Spectateurs payent pour regarder',
+                    subtitle: tr('Spectateurs payent pour regarder'),
                     icon: Icons.attach_money,
                     isSelected: _isPaidLive,
                     onTap: () => setState(() => _isPaidLive = true),
@@ -1137,7 +1205,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
       child: Container(
         padding: EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSelected ? Color(0xFFF9A825).withOpacity(0.2) : Colors.grey[800],
+          color: isSelected ? Color(0xFFF9A825).withOpacity(0.2) : _c.surfaceVariant,
           border: Border.all(
             color: isSelected ? Color(0xFFF9A825) : Colors.transparent,
             width: 2,
@@ -1149,12 +1217,12 @@ class _CreateLivePageState extends State<CreateLivePage> {
           children: [
             Row(
               children: [
-                Icon(icon, color: isSelected ? Color(0xFFF9A825) : Colors.grey),
+                Icon(icon, color: isSelected ? Color(0xFFF9A825) : _c.textSecondary),
                 SizedBox(width: 8),
                 Text(
                   title,
                   style: TextStyle(
-                    color: Colors.white,
+                    color: _c.textPrimary,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -1164,7 +1232,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
             Text(
               subtitle,
               style: TextStyle(
-                color: Colors.white70,
+                color: _c.textSecondary,
                 fontSize: 12,
               ),
             ),
@@ -1190,15 +1258,15 @@ class _CreateLivePageState extends State<CreateLivePage> {
   Widget _buildParticipationFeeField() {
     return TextFormField(
       controller: _participationFeeController,
-      style: TextStyle(color: Colors.white),
+      style: TextStyle(color: _c.textPrimary),
       keyboardType: TextInputType.number,
       decoration: InputDecoration(
-        labelText: "Prix d'entrée du live privé (pièces)",
+        labelText: tr("Prix d'entrée du live privé (pièces)"),
         labelStyle: TextStyle(color: Color(0xFF2E7D32)),
         hintText: '250',
-        suffixText: 'pièces',
-        helperText: kIsAppleStore ? null : '1 FCFA = 2,5 pièces',
-        hintStyle: TextStyle(color: Colors.grey[600]),
+        suffixText: tr('pièces'),
+        helperText: kIsAppleStore ? null : tr('1 FCFA = 2,5 pièces'),
+        hintStyle: TextStyle(color: _c.textSecondary),
         enabledBorder: OutlineInputBorder(
           borderSide: BorderSide(color: Color(0xFF2E7D32)),
           borderRadius: BorderRadius.circular(12),
@@ -1209,11 +1277,11 @@ class _CreateLivePageState extends State<CreateLivePage> {
         ),
         prefixIcon: Icon(Icons.money, color: Color(0xFFF9A825)),
         filled: true,
-        fillColor: Colors.grey[900],
+        fillColor: _c.surface,
       ),
       validator: (value) {
         if (_isPaidLive && (value == null || value.isEmpty)) {
-          return 'Veuillez entrer un prix';
+          return tr('Veuillez entrer un prix');
         }
         if (_isPaidLive) {
           final price = double.tryParse(value!);
@@ -1221,10 +1289,10 @@ class _CreateLivePageState extends State<CreateLivePage> {
             return 'Prix invalide';
           }
           if (price < 25) {
-            return 'Minimum 25 pièces';
+            return tr('Minimum 25 pièces');
           }
           if (price > 250000) {
-            return 'Maximum 250 000 pièces';
+            return tr('Maximum 250 000 pièces');
           }
         }
         return null;
@@ -1235,13 +1303,13 @@ class _CreateLivePageState extends State<CreateLivePage> {
   Widget _buildFreeTrialField() {
     return TextFormField(
       controller: _freeTrialController,
-      style: TextStyle(color: Colors.white),
+      style: TextStyle(color: _c.textPrimary),
       keyboardType: TextInputType.number,
       decoration: InputDecoration(
         labelText: 'Temps d\'essai gratuit (minutes)',
         labelStyle: TextStyle(color: Color(0xFF2E7D32)),
         hintText: '1',
-        hintStyle: TextStyle(color: Colors.grey[600]),
+        hintStyle: TextStyle(color: _c.textSecondary),
         enabledBorder: OutlineInputBorder(
           borderSide: BorderSide(color: Color(0xFF2E7D32)),
           borderRadius: BorderRadius.circular(12),
@@ -1252,16 +1320,16 @@ class _CreateLivePageState extends State<CreateLivePage> {
         ),
         prefixIcon: Icon(Icons.timer, color: Color(0xFFF9A825)),
         filled: true,
-        fillColor: Colors.grey[900],
+        fillColor: _c.surface,
       ),
       validator: (value) {
         if (_isPaidLive && (value == null || value.isEmpty)) {
-          return 'Veuillez entrer une durée';
+          return tr('Veuillez entrer une durée');
         }
         if (_isPaidLive) {
           final minutes = int.tryParse(value!);
           if (minutes == null) {
-            return 'Durée invalide';
+            return tr('Durée invalide');
           }
           if (minutes < 1) {
             return 'Minimum 1 minute';
@@ -1277,7 +1345,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
 
   Widget _buildAudioBehaviorSection() {
     return Card(
-      color: Colors.grey[900],
+      color: _c.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -1291,9 +1359,9 @@ class _CreateLivePageState extends State<CreateLivePage> {
                 Icon(Icons.volume_up, color: Color(0xFFF9A825), size: 20),
                 SizedBox(width: 8),
                 Text(
-                  'Comportement du son après l\'essai',
+                  tr('Comportement du son après l\'essai'),
                   style: TextStyle(
-                    color: Colors.white,
+                    color: _c.textPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1303,27 +1371,27 @@ class _CreateLivePageState extends State<CreateLivePage> {
             SizedBox(height: 12),
             _buildAudioOption(
               value: 'mute',
-              title: '🔇 Son coupé',
-              subtitle: 'Le spectateur ne peut plus entendre',
+              title: tr('🔇 Son coupé'),
+              subtitle: tr('Le spectateur ne peut plus entendre'),
               icon: Icons.volume_off,
             ),
             _buildAudioOption(
               value: 'reduce',
-              title: '🎵 Son réduit',
-              subtitle: 'Le son est baissé mais audible',
+              title: tr('🎵 Son réduit'),
+              subtitle: tr('Le son est baissé mais audible'),
               icon: Icons.volume_down,
             ),
             _buildAudioOption(
               value: 'keep',
               title: '🔊 Son normal',
-              subtitle: 'Le son reste inchangé',
+              subtitle: tr('Le son reste inchangé'),
               icon: Icons.volume_up,
             ),
             if (_audioBehavior == 'reduce') ...[
               SizedBox(height: 16),
               Text(
                 'Réduction du son: $_audioReductionPercent%',
-                style: TextStyle(color: Colors.white70),
+                style: TextStyle(color: _c.textSecondary),
               ),
               Slider(
                 value: _audioReductionPercent.toDouble(),
@@ -1337,7 +1405,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                   });
                 },
                 activeColor: Color(0xFFF9A825),
-                inactiveColor: Colors.grey,
+                inactiveColor: _c.textSecondary,
               ),
             ],
           ],
@@ -1361,11 +1429,11 @@ class _CreateLivePageState extends State<CreateLivePage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: TextStyle(color: Colors.white)),
+                Text(title, style: TextStyle(color: _c.textPrimary)),
                 SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                  style: TextStyle(color: _c.textSecondary, fontSize: 12),
                 ),
               ],
             ),
@@ -1385,7 +1453,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
 
   Widget _buildVisualRestrictionsSection() {
     return Card(
-      color: Colors.grey[900],
+      color: _c.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
@@ -1399,9 +1467,9 @@ class _CreateLivePageState extends State<CreateLivePage> {
                 Icon(Icons.remove_red_eye, color: Color(0xFFF9A825), size: 20),
                 SizedBox(width: 8),
                 Text(
-                  'Restrictions visuelles après l\'essai',
+                  tr('Restrictions visuelles après l\'essai'),
                   style: TextStyle(
-                    color: Colors.white,
+                    color: _c.textPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1411,12 +1479,12 @@ class _CreateLivePageState extends State<CreateLivePage> {
             SizedBox(height: 12),
             SwitchListTile(
               title: Text(
-                'Flouter la vidéo',
-                style: TextStyle(color: Colors.white),
+                tr('Flouter la vidéo'),
+                style: TextStyle(color: _c.textPrimary),
               ),
               subtitle: Text(
-                'Rendre le flux vidéo flou',
-                style: TextStyle(color: Colors.white70),
+                tr('Rendre le flux vidéo flou'),
+                style: TextStyle(color: _c.textSecondary),
               ),
               value: _blurVideoAfterTrial,
               onChanged: (value) {
@@ -1428,12 +1496,12 @@ class _CreateLivePageState extends State<CreateLivePage> {
             ),
             SwitchListTile(
               title: Text(
-                'Afficher le modal de paiement',
-                style: TextStyle(color: Colors.white),
+                tr('Afficher le modal de paiement'),
+                style: TextStyle(color: _c.textPrimary),
               ),
               subtitle: Text(
-                'Montrer automatiquement la demande de paiement',
-                style: TextStyle(color: Colors.white70),
+                tr('Montrer automatiquement la demande de paiement'),
+                style: TextStyle(color: _c.textSecondary),
               ),
               value: _showPaymentModalAfterTrial,
               onChanged: (value) {
@@ -1464,7 +1532,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
           padding: EdgeInsets.all(16),
           margin: EdgeInsets.only(bottom: 20),
           decoration: BoxDecoration(
-            color: Colors.grey[900],
+            color: _c.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Color(0xFFF9A825)),
           ),
@@ -1472,9 +1540,9 @@ class _CreateLivePageState extends State<CreateLivePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Résumé de votre live',
+                tr('Résumé de votre live'),
                 style: TextStyle(
-                  color: Colors.white,
+                  color: _c.textPrimary,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
@@ -1488,7 +1556,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                     child: Text(
                       _titleController.text.isNotEmpty ? _titleController.text : 'Aucun titre',
                       style: TextStyle(
-                        color: Colors.white70,
+                        color: _c.textSecondary,
                         fontSize: 14,
                       ),
                     ),
@@ -1503,7 +1571,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                   Text(
                     'Qualité: $actualQuality',
                     style: TextStyle(
-                      color: Colors.white70,
+                      color: _c.textSecondary,
                       fontSize: 14,
                     ),
                   ),
@@ -1513,7 +1581,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                   Text(
                     'Latence: ${actualLatency}ms',
                     style: TextStyle(
-                      color: Colors.white70,
+                      color: _c.textSecondary,
                       fontSize: 14,
                     ),
                   ),
@@ -1527,7 +1595,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                   Text(
                     _isPaidLive ? 'Live privé • ${_participationFeeController.text} pièces' : 'Live gratuit',
                     style: TextStyle(
-                      color: Colors.white70,
+                      color: _c.textSecondary,
                       fontSize: 14,
                     ),
                   ),
@@ -1542,7 +1610,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Passez à Premium pour améliorer la qualité',
+                          tr('Passez à Premium pour améliorer la qualité'),
                           style: TextStyle(
                             color: Color(0xFFFDB813),
                             fontSize: 12,
@@ -1573,7 +1641,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                     Icon(Icons.error, color: Colors.red),
                     SizedBox(width: 10),
                     Text(
-                      'Limite de lives atteinte',
+                      tr('Limite de lives atteinte'),
                       style: TextStyle(
                         color: Colors.red,
                         fontWeight: FontWeight.bold,
@@ -1583,8 +1651,8 @@ class _CreateLivePageState extends State<CreateLivePage> {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  'Vous avez utilisé vos 5 lives gratuits ce mois.\nPassez à Premium pour des lives illimités.',
-                  style: TextStyle(color: Colors.white70),
+                  tr('Vous avez utilisé vos 5 lives gratuits ce mois.\nPassez à Premium pour des lives illimités.'),
+                  style: TextStyle(color: _c.textSecondary),
                 ),
                 SizedBox(height: 12),
                 ElevatedButton(
@@ -1599,7 +1667,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                     minimumSize: Size(double.infinity, 40),
                   ),
                   child: Text(
-                    'PASSER À PREMIUM',
+                    tr('PASSER À PREMIUM'),
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -1625,7 +1693,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                 ),
                 SizedBox(width: 12),
                 Text(
-                  'Création en cours...',
+                  tr('Création en cours...'),
                   style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
                 ),
               ],
@@ -1636,7 +1704,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                 Icon(Icons.live_tv, color: Colors.black, size: 20),
                 SizedBox(width: 8),
                 Text(
-                  'DÉMARRER LE LIVE',
+                  tr('DÉMARRER LE LIVE'),
                   style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ],
@@ -1644,7 +1712,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
           ),
           style: ElevatedButton.styleFrom(
             backgroundColor: _isCreating || !canCreate
-                ? Colors.grey[700]
+                ? _c.border
                 : Color(0xFFF9A825),
             padding: EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
@@ -1681,7 +1749,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
         decoration: BoxDecoration(
           color: const Color(0xFF1E1E2E),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white12),
+          border: Border.all(color: _c.border),
           image: _coverImageFile != null
               ? DecorationImage(image: FileImage(_coverImageFile!), fit: BoxFit.cover)
               : null,
@@ -1690,19 +1758,19 @@ class _CreateLivePageState extends State<CreateLivePage> {
             ? Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.add_photo_alternate_rounded, color: Colors.white38, size: 36),
+                  Icon(Icons.add_photo_alternate_rounded, color: _c.textSecondary, size: 36),
                   const SizedBox(height: 8),
-                  const Text('Ajouter une image de couverture',
-                      style: TextStyle(color: Colors.white38, fontSize: 13)),
+                  Text(tr('Ajouter une image de couverture'),
+                      style: TextStyle(color: _c.textSecondary, fontSize: 13)),
                   const SizedBox(height: 4),
-                  const Text('Optionnel — visible dans la liste des lives',
-                      style: TextStyle(color: Colors.white24, fontSize: 11)),
+                  Text(tr('Optionnel — visible dans la liste des lives'),
+                      style: TextStyle(color: _c.border, fontSize: 11)),
                 ],
               )
             : Stack(
                 children: [
                   if (_isUploadingCover)
-                    const Center(child: CircularProgressIndicator(color: Colors.white54)),
+                    Center(child: CircularProgressIndicator(color: _c.textSecondary)),
                   Positioned(
                     top: 8, right: 8,
                     child: GestureDetector(
@@ -1720,10 +1788,10 @@ class _CreateLivePageState extends State<CreateLivePage> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(color: Colors.green.withOpacity(0.85), borderRadius: BorderRadius.circular(8)),
-                        child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
                           Icon(Icons.check, color: Colors.white, size: 12),
                           SizedBox(width: 4),
-                          Text('Uploadée', style: TextStyle(color: Colors.white, fontSize: 11)),
+                          Text(tr('Uploadée'), style: TextStyle(color: Colors.white, fontSize: 11)),
                         ]),
                       ),
                     ),
@@ -1753,7 +1821,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
       printVm('❌ Utilisateur non authentifié');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Vous devez être connecté pour créer un live'),
+          content: Text(tr('Vous devez être connecté pour créer un live')),
           backgroundColor: Colors.red,
         ),
       );
@@ -1778,7 +1846,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
       final already = await LivesApi.list(status: 'live', hostId: (ApiIdentity.myId ?? user.uid), limit: 1);
       if (already.items.isNotEmpty && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Votre live précédent a été terminé pour démarrer celui-ci'), backgroundColor: Colors.orange, duration: Duration(seconds: 3)),
+          SnackBar(content: Text(tr('Votre live précédent a été terminé pour démarrer celui-ci')), backgroundColor: Colors.orange, duration: Duration(seconds: 3)),
         );
       }
 
@@ -1793,6 +1861,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
         isPaid: _isPaidLive && fee > 0,
         feeCoins: fee,
         freeTrialMinutes: _isPaidLive ? (int.tryParse(_freeTrialController.text) ?? 0) : 0,
+        typeSession: _isShoppingLive ? 'shopping' : 'talk',
         options: {
           'audioBehaviorAfterTrial': _audioBehavior,
           'audioReductionPercent': _audioReductionPercent,
@@ -1800,6 +1869,17 @@ class _CreateLivePageState extends State<CreateLivePage> {
           'showPaymentModalAfterTrial': _showPaymentModalAfterTrial,
         },
       );
+      // Vente en direct lancée depuis la boutique : les articles choisis sont épinglés tout de suite (le premier choisi s'affiche en premier)
+      if (_isShoppingLive && widget.articleIds.isNotEmpty) {
+        try {
+          for (final id in widget.articleIds.reversed) {
+            await LiveShopApi.enableSelling(id);
+            await LiveShopApi.pin('${apiLive['id']}', id);
+          }
+        } catch (e) {
+          printVm('⚠️ Épinglage des articles impossible, à refaire depuis le live : $e');
+        }
+      }
       final String liveId = '${apiLive['id']}';
       final PostLive newLive = postLiveFromApi(
         apiLive,
@@ -1841,6 +1921,13 @@ class _CreateLivePageState extends State<CreateLivePage> {
 
     } catch (e) {
       printVm("❌ Erreur création live: $e");
+      // Quota mensuel gratuit atteint (appliqué par le serveur) : message clair, pas d'erreur technique
+      if (e is ApiException && e.code == 'monthly_limit') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.tr('Tu as utilisé tes lives gratuits de ce mois. Passe à Premium pour des lives illimités.')), backgroundColor: Colors.orange, duration: const Duration(seconds: 5)),
+        );
+        return;
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Erreur lors de la création du live: ${e.toString()}'),

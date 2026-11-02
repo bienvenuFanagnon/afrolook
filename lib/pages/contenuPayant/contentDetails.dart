@@ -313,15 +313,15 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.play_circle_filled, color: _colors.accent, size: 60),
+              Icon(Icons.play_circle_filled, color: _colors.accentText, size: 60),
               SizedBox(height: 16),
-              Text('✨ Extrait visionné ! ✨', style: TextStyle(color: _colors.accent, fontSize: 20, fontWeight: FontWeight.bold)),
+              Text('✨ Extrait visionné ! ✨', style: TextStyle(color: _colors.accentText, fontSize: 20, fontWeight: FontWeight.bold)),
               SizedBox(height: 12),
               Text('Vous avez vu ${_capsuleDuration.toInt()} secondes de l\'extrait "${selectedCapsule.label}".', style: TextStyle(color: Colors.white70, fontSize: 14), textAlign: TextAlign.center),
               SizedBox(height: 20),
               Text('Convaincu ? Débloquez l\'intégralité de ce contenu !', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500), textAlign: TextAlign.center),
               SizedBox(height: 8),
-              Text('💰 ${kIsAppleStore ? '${CoinCheckout.coinsFor(widget.content.price)} pièces' : '${widget.content.price.toInt()} Afrcoins'} seulement', style: TextStyle(color: _colors.accent, fontSize: 20, fontWeight: FontWeight.bold)),
+              Text('💰 ${kIsAppleStore ? '${CoinCheckout.coinsFor(widget.content.price)} pièces' : '${widget.content.price.toInt()} Afrcoins'} seulement', style: TextStyle(color: _colors.accentText, fontSize: 20, fontWeight: FontWeight.bold)),
               SizedBox(height: 8),
               Text('Votre soutien permet aux artistes de créer plus de contenu', style: TextStyle(color: Colors.white54, fontSize: 11, fontStyle: FontStyle.italic), textAlign: TextAlign.center),
               SizedBox(height: 24),
@@ -544,7 +544,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.info_outline, color: _colors.accent, size: 60),
+                Icon(Icons.info_outline, color: _colors.accentText, size: 60),
                 SizedBox(height: 20),
                 Text('Déjà Acheté', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
                 SizedBox(height: 12),
@@ -638,7 +638,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
       children: [
         Text(widget.content.title!, style: TextStyle(color: _colors.textPrimary, fontSize: 28, fontWeight: FontWeight.bold)),
         SizedBox(height: 8),
-        Text('Série', style: TextStyle(color: _colors.accent, fontSize: 16, fontWeight: FontWeight.w500)),
+        Text('Série', style: TextStyle(color: _colors.accentText, fontSize: 16, fontWeight: FontWeight.w500)),
         SizedBox(height: 16),
         if (_currentEpisode != null) ...[
           Text('Épisode: ${_currentEpisode!.title}', style: TextStyle(color: _colors.textPrimary, fontSize: 20, fontWeight: FontWeight.bold)),
@@ -777,7 +777,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [Icon(Icons.visibility, color: _colors.accent, size: 18), SizedBox(width: 8), Text('🔍 Aperçu gratuit (5 secondes par extrait)', style: TextStyle(color: _colors.accent, fontSize: 14, fontWeight: FontWeight.bold))]),
+          Row(children: [Icon(Icons.visibility, color: _colors.accentText, size: 18), SizedBox(width: 8), Text('🔍 Aperçu gratuit (5 secondes par extrait)', style: TextStyle(color: _colors.accentText, fontSize: 14, fontWeight: FontWeight.bold))]),
           SizedBox(height: 12),
           Text('Cliquez sur un extrait pour voir un aperçu - Lecture instantanée', style: TextStyle(color: Colors.white70, fontSize: 12)),
           SizedBox(height: 12),
@@ -799,10 +799,10 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
                       border: Border.all(color: isLoading ? _colors.primary : (isReady ? _colors.accent.withOpacity(0.5) : Colors.grey[700]!), width: 1),
                     ),
                     child: !isReady
-                        ? Column(children: [SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: _colors.accent, strokeWidth: 2)), SizedBox(height: 8), Text('Chargement...', style: TextStyle(color: _colors.accent, fontSize: 11))])
+                        ? Column(children: [SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: _colors.accent, strokeWidth: 2)), SizedBox(height: 8), Text('Chargement...', style: TextStyle(color: _colors.accentText, fontSize: 11))])
                         : isLoading
-                        ? Column(children: [SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: _colors.accent, strokeWidth: 2)), SizedBox(height: 8), Text('Lecture...', style: TextStyle(color: _colors.accent, fontSize: 11))])
-                        : Column(children: [Icon(capsule.icon, color: _colors.accent, size: 28), SizedBox(height: 8), Text(capsule.label, style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)), SizedBox(height: 4), Text('${_capsuleDuration.toInt()} sec', style: TextStyle(color: Colors.white54, fontSize: 10))]),
+                        ? Column(children: [SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: _colors.accent, strokeWidth: 2)), SizedBox(height: 8), Text('Lecture...', style: TextStyle(color: _colors.accentText, fontSize: 11))])
+                        : Column(children: [Icon(capsule.icon, color: _colors.accentText, size: 28), SizedBox(height: 8), Text(capsule.label, style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w500)), SizedBox(height: 4), Text('${_capsuleDuration.toInt()} sec', style: TextStyle(color: Colors.white54, fontSize: 10))]),
                   ),
                 ),
               );
@@ -920,7 +920,7 @@ class _ContentDetailScreenState extends State<ContentDetailScreen> with SingleTi
                           _buildStatButton(Icons.visibility, null, widget.content.views, false),
                           Spacer(),
                           if (!widget.content.isFree && (!widget.content.isSeries || (widget.content.isSeries && _currentEpisode != null && !_currentEpisode!.isFree)))
-                            Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: _colors.accent.withOpacity(0.2), borderRadius: BorderRadius.circular(4), border: Border.all(color: _colors.accent)), child: Text('PREMIUM', style: TextStyle(color: _colors.accent, fontSize: 12, fontWeight: FontWeight.bold))),
+                            Container(padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: _colors.accent.withOpacity(0.2), borderRadius: BorderRadius.circular(4), border: Border.all(color: _colors.accent)), child: Text('PREMIUM', style: TextStyle(color: _colors.accentText, fontSize: 12, fontWeight: FontWeight.bold))),
                         ],
                       ),
                       SizedBox(height: 20),
@@ -1585,7 +1585,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //               children: [
 //                 Icon(
 //                   Icons.info_outline,
-//                   color: _colors.accent,
+//                   color: _colors.accentText,
 //                   size: 60,
 //                 ),
 //                 SizedBox(height: 20),
@@ -1657,7 +1657,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //         Text(
 //           'Série',
 //           style: TextStyle(
-//             color: _colors.accent,
+//             color: _colors.accentText,
 //             fontSize: 16,
 //             fontWeight: FontWeight.w500,
 //           ),
@@ -2121,7 +2121,7 @@ enum PurchaseResult { success, insufficientBalance, alreadyPurchased, error }
 //                               child: Text(
 //                                 'PREMIUM',
 //                                 style: TextStyle(
-//                                   color: _colors.accent,
+//                                   color: _colors.accentText,
 //                                   fontSize: 12,
 //                                   fontWeight: FontWeight.bold,
 //                                 ),

@@ -468,7 +468,13 @@ class _MyAppState extends State<MyApp> {
           GlobalCupertinoLocalizations.delegate,
         ],
         // Lecteur flottant de la musique : au-dessus de toutes les pages (voir widgets/music/music_overlay.dart)
-        builder: (context, child) => MusicOverlayHost(child: child ?? const SizedBox.shrink()),
+        builder: (context, child) {
+          final app = MusicOverlayHost(child: child ?? const SizedBox.shrink());
+          // APK de TEST (serveur de test, données de test) : ruban visible sur tous les écrans pour que personne ne le confonde avec la vraie application
+          return const bool.fromEnvironment('TEST_BUILD')
+              ? Banner(message: 'TEST', location: BannerLocation.topEnd, color: const Color(0xFFE65100), textStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1), child: app)
+              : app;
+        },
         home: RemoteConfigService.instance.isPageActive('app_active')
             ? const SplashChargement()
             : const MaintenancePage(

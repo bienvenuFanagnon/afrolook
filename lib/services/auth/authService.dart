@@ -23,6 +23,8 @@ class AuthService {
       appData.app_logo = (app['logo'] as String?) ?? appData.app_logo;
       appData.app_version_code = (app['version_code'] as num?)?.toInt() ?? appData.app_version_code;
       appData.app_version_code_officiel = (app['version_code_official'] as num?)?.toInt() ?? appData.app_version_code_officiel;
+      appData.app_version_code_android = (app['version_code_android'] as num?)?.toInt();
+      appData.app_version_code_ios = (app['version_code_ios'] as num?)?.toInt();
       if (app['use_cdn'] is bool) appData.useCDN = app['use_cdn'] as bool;
       final challenge = (cfg['challenge'] as Map?) ?? const {};
       final start = challenge['start_date'];

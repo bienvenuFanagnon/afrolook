@@ -1,3 +1,5 @@
+import 'package:afrotok/l10n/tr.dart';
+import '../liveshop/live_sales_card.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/services/api/api_identity.dart';
 import 'package:afrotok/services/api/chat_api.dart';
@@ -66,13 +68,13 @@ class _UserLivesPageState extends State<UserLivesPage> {
     try {
       if (live.isLive) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Impossible de supprimer un live en cours'), backgroundColor: Colors.red),
+          SnackBar(content: Text(tr('Impossible de supprimer un live en cours')), backgroundColor: Colors.red),
         );
         return;
       }
       // La suppression d'un live terminé n'existe pas encore dans l'API (voir lacunes_api_jeux_medias.md)
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('La suppression des lives terminés sera disponible prochainement.'), backgroundColor: Colors.orange),
+        SnackBar(content: Text(tr('La suppression des lives terminés sera disponible prochainement.')), backgroundColor: Colors.orange),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -90,9 +92,9 @@ class _UserLivesPageState extends State<UserLivesPage> {
       builder: (context) => AlertDialog(
         backgroundColor: colors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: colors.border)),
-        title: Text('Supprimer le live', style: TextStyle(color: colors.textPrimary)),
+        title: Text(tr('Supprimer le live'), style: TextStyle(color: colors.textPrimary)),
         content: Text(
-          'Êtes-vous sûr de vouloir supprimer ce live ?\nCette action est irréversible.',
+          tr('Êtes-vous sûr de vouloir supprimer ce live ?\nCette action est irréversible.'),
           style: TextStyle(color: colors.textSecondary),
         ),
         actions: [
@@ -116,13 +118,13 @@ class _UserLivesPageState extends State<UserLivesPage> {
     return Scaffold(
       backgroundColor: colors.background,
       appBar: AppBar(
-        title: Text('Mes Lives', style: TextStyle(color: colors.accent, fontWeight: FontWeight.w700)),
+        title: Text('Mes Lives', style: TextStyle(color: colors.accentText, fontWeight: FontWeight.w700)),
         backgroundColor: colors.surface,
         elevation: 0,
         iconTheme: IconThemeData(color: colors.textPrimary),
         actions: [
           IconButton(
-            icon: Icon(Icons.refresh_rounded, color: colors.accent),
+            icon: Icon(Icons.refresh_rounded, color: colors.accentText),
             onPressed: _loadUserLives,
           ),
         ],
@@ -133,7 +135,7 @@ class _UserLivesPageState extends State<UserLivesPage> {
         enablePullDown: true,
         header: WaterDropHeader(
           waterDropColor: colors.accent,
-          complete: Icon(Icons.check, color: colors.accent),
+          complete: Icon(Icons.check, color: colors.accentText),
         ),
         child: _isLoading
             ? _buildLoadingState(colors)
@@ -151,7 +153,7 @@ class _UserLivesPageState extends State<UserLivesPage> {
         children: [
           CircularProgressIndicator(color: colors.accent),
           const SizedBox(height: 16),
-          Text('Chargement de vos lives...', style: TextStyle(color: colors.textSecondary)),
+          Text(tr('Chargement de vos lives...'), style: TextStyle(color: colors.textSecondary)),
         ],
       ),
     );
@@ -164,9 +166,9 @@ class _UserLivesPageState extends State<UserLivesPage> {
         children: [
           Icon(Icons.videocam_off_rounded, size: 64, color: colors.textSecondary.withOpacity(0.5)),
           const SizedBox(height: 16),
-          Text('Aucun live créé', style: TextStyle(color: colors.textPrimary, fontSize: 18, fontWeight: FontWeight.w600)),
+          Text(tr('Aucun live créé'), style: TextStyle(color: colors.textPrimary, fontSize: 18, fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
-          Text('Commencez par créer votre premier live !', style: TextStyle(color: colors.textSecondary, fontSize: 14)),
+          Text(tr('Commencez par créer votre premier live !'), style: TextStyle(color: colors.textSecondary, fontSize: 14)),
         ],
       ),
     );
@@ -239,7 +241,7 @@ class _UserLivesPageState extends State<UserLivesPage> {
                         Icon(isLive ? Icons.circle : Icons.check_circle, color: Colors.white, size: 8),
                         const SizedBox(width: 4),
                         Text(
-                          isLive ? 'LIVE' : 'TERMINÉ',
+                          isLive ? 'LIVE' : tr('TERMINÉ'),
                           style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                         ),
                       ],
@@ -253,12 +255,12 @@ class _UserLivesPageState extends State<UserLivesPage> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                       decoration: BoxDecoration(color: Colors.purple, borderRadius: BorderRadius.circular(12)),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.lock_rounded, color: Colors.white, size: 10),
                           SizedBox(width: 2),
-                          Text('PRIVÉ', style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+                          Text(tr('PRIVÉ'), style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
@@ -275,7 +277,7 @@ class _UserLivesPageState extends State<UserLivesPage> {
               children: [
                 Row(
                   children: [
-                    if (hasPinnedText) Icon(Icons.push_pin, color: colors.accent, size: 12),
+                    if (hasPinnedText) Icon(Icons.push_pin, color: colors.accentText, size: 12),
                     if (hasPinnedText) const SizedBox(width: 4),
                     Expanded(
                       child: Text(
@@ -324,7 +326,7 @@ class _UserLivesPageState extends State<UserLivesPage> {
                           }
                         },
                         icon: Icon(isLive ? Icons.play_arrow_rounded : Icons.bar_chart_rounded, size: 16),
-                        label: Text(isLive ? 'Rejoindre' : 'Voir détails'),
+                        label: Text(isLive ? 'Rejoindre' : tr('Voir détails')),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: isLive ? colors.danger : colors.primary,
                           foregroundColor: isLive ? Colors.white : colors.onPrimary,
@@ -346,7 +348,7 @@ class _UserLivesPageState extends State<UserLivesPage> {
                           : IconButton(
                               onPressed: () => _showDeleteConfirmation(live),
                               icon: Icon(Icons.delete_outline_rounded, color: colors.danger),
-                              tooltip: 'Supprimer le live',
+                              tooltip: tr('Supprimer le live'),
                             ),
                     ],
                   ],
@@ -364,15 +366,15 @@ class _UserLivesPageState extends State<UserLivesPage> {
             ),
             child: Row(
               children: [
-                Icon(Icons.stars_rounded, color: colors.accent, size: 18),
+                Icon(Icons.stars_rounded, color: colors.accentText, size: 18),
                 const SizedBox(width: 8),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Pièces reçues', style: TextStyle(color: colors.textSecondary, fontSize: 11)),
+                    Text(tr('Pièces reçues'), style: TextStyle(color: colors.textSecondary, fontSize: 11)),
                     Text(
                       '${live.giftCoinsTotal > 0 ? live.giftCoinsTotal : live.giftTotal.toInt()} pcs',
-                      style: TextStyle(color: colors.accent, fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: colors.accentText, fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -428,7 +430,7 @@ class _UserLivesPageState extends State<UserLivesPage> {
             children: [
               Center(
                 child: Text(
-                  'Détails du Live',
+                  tr('Détails du Live'),
                   style: TextStyle(color: colors.textPrimary, fontSize: 20, fontWeight: FontWeight.bold),
                 ),
               ),
@@ -441,9 +443,9 @@ class _UserLivesPageState extends State<UserLivesPage> {
                 ),
               ),
               const SizedBox(height: 15),
-              _buildDetailRow('Hôte :', live.hostName!, colors),
-              _buildDetailRow('Début :', dateFormat.format(live.startTime), colors),
-              if (live.endTime != null) _buildDetailRow('Durée :', duration, colors),
+              _buildDetailRow(tr('Hôte :'), live.hostName!, colors),
+              _buildDetailRow(tr('Début :'), dateFormat.format(live.startTime), colors),
+              if (live.endTime != null) _buildDetailRow(tr('Durée :'), duration, colors),
               const SizedBox(height: 15),
               Text('Audience', style: TextStyle(color: colors.info, fontSize: 16, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
@@ -479,9 +481,9 @@ class _UserLivesPageState extends State<UserLivesPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.stars_rounded, color: colors.accent, size: 18),
+                        Icon(Icons.stars_rounded, color: colors.accentText, size: 18),
                         const SizedBox(width: 6),
-                        Text('Pièces reçues (cadeaux)', style: TextStyle(color: colors.accent, fontSize: 14, fontWeight: FontWeight.bold)),
+                        Text(tr('Pièces reçues (cadeaux)'), style: TextStyle(color: colors.accentText, fontSize: 14, fontWeight: FontWeight.bold)),
                       ],
                     ),
                     const SizedBox(height: 6),
@@ -510,16 +512,17 @@ class _UserLivesPageState extends State<UserLivesPage> {
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: Colors.purple.withOpacity(0.3)),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.lock_rounded, color: Colors.purpleAccent, size: 16),
                       SizedBox(width: 8),
-                      Text('Live Privé — Accès payant', style: TextStyle(color: Colors.purpleAccent, fontSize: 12, fontWeight: FontWeight.bold)),
+                      Text(tr('Live Privé — Accès payant'), style: TextStyle(color: Colors.purpleAccent, fontSize: 12, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
               ],
+              if (live.liveId != null) LiveSalesCard(liveId: live.liveId!),
               const SizedBox(height: 20),
               Center(
                 child: ElevatedButton(

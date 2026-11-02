@@ -30,7 +30,8 @@ class ApiGateway {
   /// À appeler après `RemoteConfigService.initialize()` (et à chaque rafraîchissement de Remote Config).
   void refresh() {
     // Essais en debug : `flutter run --dart-define=API_MODULES={"feed":true} --dart-define=API_BASE_URL=http://192.168.1.20:8000/v1`
-    if (!kReleaseMode && const String.fromEnvironment('API_MODULES').isNotEmpty) {   // essais (test et profile) ; jamais en version publiée
+    // essais (debug, profile) et APK de TEST distribué aux testeurs (`--dart-define=TEST_BUILD=true`) ; jamais dans une version publiée sur les boutiques
+    if ((!kReleaseMode || const bool.fromEnvironment('TEST_BUILD')) && const String.fromEnvironment('API_MODULES').isNotEmpty) {
       modules.update(Map<String, dynamic>.from(jsonDecode(const String.fromEnvironment('API_MODULES')) as Map));
       const u = String.fromEnvironment('API_BASE_URL');
       _client = null;

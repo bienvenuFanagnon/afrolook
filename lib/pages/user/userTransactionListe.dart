@@ -82,6 +82,9 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
     'CADEAU_PIECES':      _TxMeta(tr('Cadeau envoyé'),          _pink,   Iconsax.send_square,       _TabFilter.pieces, false),
     'ACHAT_PIECES':       _TxMeta(tr('Achat pièces'),           _purple, Iconsax.buy_crypto,        _TabFilter.pieces, false),
     'CONVERSION_PIECES':  _TxMeta(tr('Conversion pièces'),     _teal,   Iconsax.convert_3d_cube,   _TabFilter.pieces, false),
+    'DEPENSE_PIECES':     _TxMeta(tr('Dépense pièces'),        _red,    Iconsax.wallet_minus,      _TabFilter.pieces, false),
+    'GAIN_ANNULE':        _TxMeta(tr('Gain annulé'),           _red,    Iconsax.close_circle,      _TabFilter.pieces, false),
+    'REMBOURSEMENT':      _TxMeta(tr('Remboursement'),         _green,  Iconsax.arrow_down,        _TabFilter.argent, true),
   };
 
   static _TxMeta _metaFor(String? type) =>

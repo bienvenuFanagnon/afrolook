@@ -1,3 +1,4 @@
+import 'package:afrotok/services/admin_reauth.dart';
 import 'package:afrotok/l10n/tr.dart';
 import 'package:afrotok/services/api/regie_admin_api.dart';
 import 'package:afrotok/services/api/regie_api.dart';
@@ -40,16 +41,14 @@ class _AdsRegieAdminPageState extends State<AdsRegieAdminPage> {
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final q = await RegieAdminApi.queue(pendingOnly: _filter == 'pending');
-      // L'API ne liste que les éléments en attente : les autres filtres affichent donc une liste vide.
-      final only = _filter == 'pending' || _filter == 'all';
-      List<Map<String, dynamic>> pick(String k) => only ? (q[k] ?? const []) : <Map<String, dynamic>>[];
+      final q = await AdminReauth.run(context, () => RegieAdminApi.queue(filter: _filter));   // mêmes listes et mêmes filtres que le site
+      List<Map<String, dynamic>> pick(String k) => q[k] ?? const [];
       if (!mounted) return;
       setState(() {
         _logos = pick('advertisers');
         _profiles = pick('profiles');
         _props = pick('properties');
-        _alerts = const [];
+        _alerts = pick('alerts');
         _sharers = pick('sharers');
         _camps = pick('campaigns');
         _loading = false;
@@ -82,23 +81,27 @@ class _AdsRegieAdminPageState extends State<AdsRegieAdminPage> {
     String? reason;
     if (!approve) { reason = await _askReason('Refuser le profil'); if (reason == null) return; }
     try {
-      await RegieAdminApi.decide('advertiser', '${p['uid']}', approve ? 'approve' : 'reject', reason: reason);
+      await AdminReauth.run(context, () => RegieAdminApi.decide('advertiser', '${p['uid']}', approve ? 'approve' : 'reject', reason: reason));
       _toast(approve ? 'Profil validé' : 'Profil refusé');
       _load();
     } catch (e) { _toast(_err(e)); }
   }
 
   /// Alerte de la surveillance : vérifiée (rien d'anormal), bloquer les paiements de la plateforme, ou lever le blocage.
-  /// Alertes de surveillance : pas encore proposées par l'API (voir lacunes_api_regie_admin.md).
+  /// Alertes de surveillance : vérifiée, bloquer les paiements du diffuseur, lever le blocage.
   Future<void> _alertDecision(Map<String, dynamic> a, String decision) async {
-    _toast('Les alertes de surveillance ne sont pas encore disponibles dans cette version.');
+    try {
+      await AdminReauth.run(context, () => RegieAdminApi.decide('alert', '${a['id']}', decision));
+      _toast('Décision enregistrée');
+      _load();
+    } catch (e) { _toast(_err(e)); }
   }
 
   Future<void> _profileDecision(Map<String, dynamic> p, String decision) async {
     String? reason;
     if (decision == 'refuse' || decision == 'suspend') { reason = await _askReason(decision == 'refuse' ? 'Refuser le profil' : 'Suspendre le profil'); if (reason == null) return; }
     try {
-      await RegieAdminApi.decide('profile', '${p['uid']}', decision, reason: reason);
+      await AdminReauth.run(context, () => RegieAdminApi.decide('profile', '${p['uid']}', decision, reason: reason));
       _toast('Décision enregistrée');
       _load();
     } catch (e) { _toast(_err(e)); }
@@ -106,6 +109,7 @@ class _AdsRegieAdminPageState extends State<AdsRegieAdminPage> {
 
   Future<void> _propDecision(Map<String, dynamic> p, String decision) async {
     String? reason;
+    int? retained;
     if (decision == 'refuse' || decision == 'suspend') {
       reason = await _askReason(decision == 'refuse' ? 'Refuser ce site ou cette application' : 'Suspendre la diffusion');
       if (reason == null) return;
@@ -128,9 +132,10 @@ class _AdsRegieAdminPageState extends State<AdsRegieAdminPage> {
         ),
       );
       if (ok != true) return;
+      retained = int.tryParse(ctl.text.trim());
     }
     try {
-      await RegieAdminApi.decide('property', '${p['id']}', decision, reason: reason);
+      await AdminReauth.run(context, () => RegieAdminApi.decide('property', '${p['id']}', decision, reason: reason, retained: retained));
       _toast('Décision enregistrée');
       _load();
     } catch (e) {
@@ -166,7 +171,7 @@ class _AdsRegieAdminPageState extends State<AdsRegieAdminPage> {
       retained = int.tryParse(ctl.text.trim());
     }
     try {
-      await RegieAdminApi.decide('sharer', '${p['uid']}', decision, reason: reason, retained: retained);
+      await AdminReauth.run(context, () => RegieAdminApi.decide('sharer', '${p['uid']}', decision, reason: reason, retained: retained));
       _toast('Décision enregistrée');
       _load();
     } catch (e) { _toast(_err(e)); }
@@ -188,7 +193,7 @@ class _AdsRegieAdminPageState extends State<AdsRegieAdminPage> {
       if (paymentReference == null) return;
     }
     try {
-      await RegieAdminApi.decide('campaign', '${p['id']}', decision, reason: reason, paymentReference: paymentReference);
+      await AdminReauth.run(context, () => RegieAdminApi.decide('campaign', '${p['id']}', decision, reason: reason, paymentReference: paymentReference));
       _toast('Décision enregistrée');
       _load();
     } catch (e) { _toast(_err(e)); }
@@ -218,22 +223,44 @@ class _AdsRegieAdminPageState extends State<AdsRegieAdminPage> {
     return t;
   }
 
-  Widget _card(AppColors c, {required List<Widget> children}) => Card(
-        color: c.surface,
-        margin: const EdgeInsets.only(bottom: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: c.border)),
-        child: Padding(padding: const EdgeInsets.all(14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children)),
+  Widget _card(AppColors c, {required List<Widget> children}) => Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: c.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: c.border.withOpacity(0.8)),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(c.isDark ? 0.25 : 0.05), blurRadius: 14, offset: const Offset(0, 4))],
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
       );
+
+  /// Statut sous forme de pastille colorée (en validation, validé, refusé, suspendu…).
+  Widget _pill(AppColors c, String label) {
+    final l = label.toLowerCase();
+    final color = l.contains('attente') || l.contains('en validation') || l.contains('à valider') ? c.warning
+        : l.contains('refus') || l.contains('fraude') ? c.danger
+        : l.contains('valid') || l.contains('cours') ? c.primary
+        : c.textSecondary;
+    return Container(
+      margin: const EdgeInsets.only(top: 2, bottom: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(color: color.withOpacity(0.14), borderRadius: BorderRadius.circular(99)),
+      child: Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w800, fontSize: 12)),
+    );
+  }
 
   Widget _empty(AppColors c, String text) => Padding(padding: const EdgeInsets.all(32), child: Center(child: Text(text, style: TextStyle(color: c.textSecondary), textAlign: TextAlign.center)));
 
-  Widget _kv(AppColors c, String k, String v) => Padding(
-        padding: const EdgeInsets.only(top: 3),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          SizedBox(width: 118, child: Text(k, style: TextStyle(color: c.textSecondary, fontSize: 12.5))),
-          Expanded(child: Text(v, style: TextStyle(color: c.textPrimary, fontSize: 13.5))),
-        ]),
-      );
+  Widget _kv(AppColors c, String k, String v) => k == 'Statut'
+      ? Align(alignment: Alignment.centerLeft, child: _pill(c, v))
+      : Padding(
+          padding: const EdgeInsets.only(top: 5),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            SizedBox(width: 118, child: Text(k, style: TextStyle(color: c.textSecondary, fontSize: 12.5, height: 1.35))),
+            Expanded(child: Text(v, style: TextStyle(color: c.textPrimary, fontSize: 13.5, height: 1.35, fontWeight: FontWeight.w500))),
+          ]),
+        );
 
   Widget _link(AppColors c, String label, String url) => url.isEmpty
       ? const SizedBox.shrink()
@@ -243,10 +270,18 @@ class _AdsRegieAdminPageState extends State<AdsRegieAdminPage> {
         );
 
   Widget _buttons(AppColors c, {required List<(String, VoidCallback, Color?)> items}) => Padding(
-        padding: const EdgeInsets.only(top: 10),
-        child: Wrap(spacing: 8, runSpacing: 6, children: [
+        padding: const EdgeInsets.only(top: 14),
+        child: Wrap(spacing: 8, runSpacing: 8, children: [
           for (final (label, fn, color) in items)
-            color == null ? OutlinedButton(onPressed: fn, child: Text(label)) : FilledButton(style: FilledButton.styleFrom(backgroundColor: color), onPressed: fn, child: Text(label)),
+            color == null
+                ? FilledButton.tonal(
+                    style: FilledButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10), textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                    onPressed: fn,
+                    child: Text(label))
+                : FilledButton(
+                    style: FilledButton.styleFrom(backgroundColor: color, foregroundColor: c.onPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10), textStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                    onPressed: fn,
+                    child: Text(label)),
         ]),
       );
 
@@ -452,8 +487,10 @@ class _AdsRegieAdminPageState extends State<AdsRegieAdminPage> {
         appBar: AppBar(
           backgroundColor: c.surface,
           foregroundColor: c.textPrimary,
-          title: const Text('Régie : annonceurs, diffuseurs, partageurs'),
-          bottom: TabBar(isScrollable: true, tabAlignment: TabAlignment.start, tabs: [
+          title: const Text('Régie Afrolook Ads', style: TextStyle(fontWeight: FontWeight.w800)),
+          elevation: 0,
+          scrolledUnderElevation: 0.5,
+          bottom: TabBar(isScrollable: true, tabAlignment: TabAlignment.start, labelColor: c.primary, unselectedLabelColor: c.textSecondary, indicatorColor: c.primary, indicatorSize: TabBarIndicatorSize.label, dividerColor: c.border, labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5), tabs: [
             Tab(text: 'Annonceurs (${_logos.length})'),
             Tab(text: 'Diffuseurs (${_profiles.length})'),
             Tab(text: 'Sites et applis (${_props.length})'),

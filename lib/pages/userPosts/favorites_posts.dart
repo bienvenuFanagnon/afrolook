@@ -15,6 +15,7 @@ import '../../providers/postProvider.dart';
 import '../home/homeWidget.dart';
 
 import '../../models/model_data.dart';
+import '../../theme/app_colors.dart';
 
 import 'favorite_post_thumbnail.dart';
 
@@ -40,12 +41,13 @@ class _FavoritePostsPageState extends State<FavoritePostsPage> {
   static const int _pageSize = 10;
   int _loadedCount = 0; // combien d'IDs ont déjà été chargés
 
-  // Couleurs du thème
-  final Color _backgroundColor = Color(0xFF000000);
-  final Color _textColor = Colors.white;
-  final Color _subtextColor = Colors.grey[400]!;
-  final Color _primaryColor = Color(0xFF2E7D32);
-  final Color _accentColor = Color(0xFFFFD600);
+  // Couleurs du thème (clair ET sombre)
+  AppColors get _c => AppColors.of(context);
+  Color get _backgroundColor => _c.background;
+  Color get _textColor => _c.textPrimary;
+  Color get _subtextColor => _c.textSecondary;
+  Color get _primaryColor => _c.primary;
+  Color get _accentColor => _c.accentText;
 
   @override
   void initState() {
@@ -145,7 +147,7 @@ class _FavoritePostsPageState extends State<FavoritePostsPage> {
               label: Text('Charger plus'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _primaryColor,
-                foregroundColor: Colors.white,
+                foregroundColor: _c.onPrimary,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                 padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
@@ -160,7 +162,7 @@ class _FavoritePostsPageState extends State<FavoritePostsPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.bookmark_border, size: 100, color: Colors.grey[600]),
+            Icon(Icons.bookmark_border, size: 80, color: _subtextColor),
             SizedBox(height: 24),
             Text('Aucun post en favoris',
                 style: TextStyle(fontSize: 22, color: _textColor, fontWeight: FontWeight.bold),
@@ -191,7 +193,7 @@ class _FavoritePostsPageState extends State<FavoritePostsPage> {
             ElevatedButton(
               onPressed: () => Navigator.pop(context),
               style: ElevatedButton.styleFrom(
-                backgroundColor: _primaryColor, foregroundColor: Colors.white,
+                backgroundColor: _primaryColor, foregroundColor: _c.onPrimary,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
                 padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
               ),
@@ -215,8 +217,8 @@ class _FavoritePostsPageState extends State<FavoritePostsPage> {
           children: [
             Container(
               padding: EdgeInsets.all(20),
-              decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.red)),
-              child: Icon(Icons.error_outline, size: 60, color: Colors.red),
+              decoration: BoxDecoration(color: _c.danger.withOpacity(0.1), borderRadius: BorderRadius.circular(20), border: Border.all(color: _c.danger)),
+              child: Icon(Icons.error_outline, size: 60, color: _c.danger),
             ),
             SizedBox(height: 24),
             Text('Erreur de chargement', style: TextStyle(color: _textColor, fontSize: 20, fontWeight: FontWeight.bold)),
@@ -227,13 +229,13 @@ class _FavoritePostsPageState extends State<FavoritePostsPage> {
             Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               ElevatedButton(
                 onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.grey[800], foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)), padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
+                style: ElevatedButton.styleFrom(backgroundColor: _c.surfaceVariant, foregroundColor: _c.textPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)), padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
                 child: Text('Retour'),
               ),
               SizedBox(width: 16),
               ElevatedButton(
                 onPressed: _loadInitial,
-                style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)), padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
+                style: ElevatedButton.styleFrom(backgroundColor: _primaryColor, foregroundColor: _c.onPrimary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)), padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12)),
                 child: Text('Réessayer'),
               ),
             ]),
@@ -290,8 +292,11 @@ class _FavoritePostsPageState extends State<FavoritePostsPage> {
       backgroundColor: _backgroundColor,
       appBar: AppBar(
         title: Text('Mes Favoris',
-            style: TextStyle(color: _textColor, fontSize: 20, fontWeight: FontWeight.bold)),
+            style: TextStyle(color: _textColor, fontSize: 20, fontWeight: FontWeight.w800)),
         backgroundColor: _backgroundColor,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
         iconTheme: IconThemeData(color: _textColor),
         actions: [
           IconButton(

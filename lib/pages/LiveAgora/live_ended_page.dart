@@ -1,3 +1,5 @@
+import 'package:afrotok/l10n/tr.dart';
+import '../liveshop/live_sales_card.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -83,10 +85,10 @@ class LiveEndedPage extends StatelessWidget {
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: const [
+                            children: [
                               Icon(Icons.stop_circle_outlined, color: Colors.redAccent, size: 18),
                               SizedBox(width: 8),
-                              Text('Ce live est terminé', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w700, fontSize: 14)),
+                              Text(tr('Ce live est terminé'), style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w700, fontSize: 14)),
                             ],
                           ),
                         ),
@@ -124,9 +126,9 @@ class LiveEndedPage extends StatelessWidget {
                         _StatGrid(children: [
                           _StatTile(icon: Icons.people_rounded, label: 'Spectateurs', value: '$totalViewers', color: Colors.blueAccent),
                           _StatTile(icon: Icons.favorite_rounded, label: 'Likes', value: '${live.likeCount ?? 0}', color: Colors.pinkAccent),
-                          _StatTile(icon: Icons.stars_rounded, label: 'Pièces', value: '$coins pcs', color: const Color(0xFFF9A825)),
+                          _StatTile(icon: Icons.stars_rounded, label: tr('Pièces'), value: '$coins pcs', color: const Color(0xFFF9A825)),
                           _StatTile(icon: Icons.share_rounded, label: 'Partages', value: '${live.shareCount}', color: Colors.greenAccent),
-                          _StatTile(icon: Icons.timer_rounded, label: 'Durée', value: _formatDuration(), color: Colors.purpleAccent),
+                          _StatTile(icon: Icons.timer_rounded, label: tr('Durée'), value: _formatDuration(), color: Colors.purpleAccent),
                           _StatTile(icon: Icons.mic_rounded, label: 'Participants', value: '${live.participants.length}', color: Colors.tealAccent),
                         ]),
 
@@ -143,7 +145,7 @@ class LiveEndedPage extends StatelessWidget {
                               children: [
                                 const Icon(Icons.payment, color: Colors.greenAccent, size: 18),
                                 const SizedBox(width: 10),
-                                const Text('Entrées payantes', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                                Text(tr('Entrées payantes'), style: TextStyle(color: Colors.white70, fontSize: 13)),
                                 const Spacer(),
                                 Text(
                                   '${live.paidParticipationTotal.toStringAsFixed(0)} pièces',
@@ -153,6 +155,8 @@ class LiveEndedPage extends StatelessWidget {
                             ),
                           ),
                         ],
+
+                        if (live.liveId != null) LiveSalesCard(liveId: live.liveId!, onDark: true),
 
                         const SizedBox(height: 40),
                       ],

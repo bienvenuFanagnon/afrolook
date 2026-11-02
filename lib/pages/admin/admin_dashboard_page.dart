@@ -1,3 +1,7 @@
+import 'certifications_admin_page.dart';
+import '../liveshop/live_shop_admin_page.dart';
+import 'seller_verifications_admin_page.dart';
+import 'app_version_admin_page.dart';
 import 'package:afrotok/services/api/regie_api.dart';
 import 'contes_admin_page.dart';
 import 'etude_admin_page.dart';
@@ -282,6 +286,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           () => _push(AdminRetraitListPage())),
       _QuickTile(Icons.gavel_rounded, 'Modération', 'Signalements, blocages', c.danger, _moderationPending,
           () => _push(const ModerationReportsPage())),
+      _QuickTile(Icons.verified_rounded, 'Certifications', 'Ajouter ou retirer un badge', c.info, 0,
+          () => _push(const CertificationsAdminPage())),
+      _QuickTile(Icons.live_tv_rounded, 'Vente en direct', 'Commandes, litiges, stocks', c.warning, 0,
+          () => _push(const LiveShopAdminPage())),
+      _QuickTile(Icons.badge_rounded, 'Identités vendeurs', 'Vérifier les pièces', c.info, 0,
+          () => _push(const SellerVerificationsAdminPage())),
+      _QuickTile(Icons.system_update_rounded, "Version de l'application", 'Mise à jour obligatoire ou non', c.warning, 0,
+          () => _push(const AppVersionAdminPage())),
     ];
     return GridView.count(
       crossAxisCount: 2,
@@ -371,8 +383,11 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         ]),
         const SizedBox(height: 8),
         Row(children: [
-          Expanded(child: _counter(c, '7 jours', _activeWeek, c.info)),
+          for (final e in const [('today', "Aujourd'hui"), ('yesterday', 'Hier'), ('d7', '7 jours'), ('d30', '30 jours'), ('d90', '90 jours')])
+            Expanded(child: _connCounter(c, e.$2, e.$1)),
         ]),
+        const SizedBox(height: 6),
+        Text('Personnes différentes actives (A = Android, i = iPhone). Historique tenu depuis le 02/11/2026.', style: TextStyle(color: c.textSecondary, fontSize: 10)),
       ]),
     );
   }
@@ -447,6 +462,17 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 11)),
         ]),
       ),
+    ]);
+  }
+
+  /// Connexions d'une période : total, puis Android (A) et iPhone (i).
+  Widget _connCounter(AppColors c, String label, String key) {
+    final conn = _stats?['connections'] is Map ? Map<String, dynamic>.from(_stats!['connections'] as Map) : const <String, dynamic>{};
+    final v = conn[key] is Map ? Map<String, dynamic>.from(conn[key] as Map) : const <String, dynamic>{};
+    int n(Object? x) => x is num ? x.toInt() : 0;
+    return Column(children: [
+      _counter(c, label, n(v['all']), c.info),
+      Text('A ${n(v['android'])} · i ${n(v['ios'])}', style: TextStyle(color: c.textSecondary, fontSize: 9.5)),
     ]);
   }
 

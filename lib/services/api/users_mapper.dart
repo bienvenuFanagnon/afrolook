@@ -1,3 +1,4 @@
+import 'package:afrotok/l10n/tr.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/services/api/api_identity.dart';
 
@@ -8,6 +9,11 @@ int _i(dynamic v) => (v as num?)?.toInt() ?? 0;
 /// Les soldes viennent TOUJOURS de l'API : pièces de dépôt (non convertibles) + pièces gagnées (convertibles).
 UserData userFromBootstrap(Map<String, dynamic> b) {
   final u = userFromApi(Map<String, dynamic>.from(b['user'] as Map));
+  // Parrainage : code personnel et nombre de filleuls (l'écran « Inviter des amis » ne lit que ces deux informations)
+  final bu = Map<String, dynamic>.from(b['user'] as Map);
+  if ('${bu['referral_code'] ?? ''}'.isNotEmpty) u.codeParrainage = '${bu['referral_code']}';
+  final referrals = _i(bu['referrals_count']);
+  if (referrals > 0) u.usersParrainer = List<String>.filled(referrals, '');
   ApiIdentity.set(u.id); // les convertisseurs de publications comparent « j'aime / favori » à cet identifiant
   final w = (b['wallet'] as Map?) ?? const {};
   final deposit = _i(w['deposit_coins']);
@@ -47,7 +53,11 @@ UserData userFromBootstrap(Map<String, dynamic> b) {
   final freeUntil = ads['free_until'];
   u.adFreeUntil = freeUntil == null ? null : _ms(freeUntil);
   final staff = b['staff'];
-  if (staff is Map && staff['type'] != null) u.role = '${staff['type']}';
+  // super-administrateur et administrateur = rôle « ADM » de l'application (tableau de bord admin, gestion d'équipe…) ; collaborateur et stagiaire gardent leur type (Hub Équipe)
+  if (staff is Map && staff['type'] != null) {
+    final t = '${staff['type']}';
+    u.role = (t == 'super_admin' || t == 'admin') ? UserRole.ADM.name : t;
+  }
 
   // Série de commentaires
   final st = (b['comment_streak'] as Map?) ?? const {};
@@ -148,22 +158,180 @@ Map<String, dynamic> userUpdateBody(UserData u) {
   };
 }
 
+/// Nature de la transaction de l'API → type connu de l'écran « Transactions » (libellé, couleur, onglet). Inconnu : gardé tel quel.
+String _legacyTransactionType(String kind, String descriptionKey) {
+  switch (kind) {
+    case 'deposit':
+      return 'DEPOT';
+    case 'withdrawal':
+      return 'RETRAIT';
+    case 'view_cashout':
+    case 'shop_sale':
+      return 'GAIN';
+    case 'shop_payment':
+      return 'DEPENSE';
+    case 'conversion':
+      return 'CONVERSION_PIECES';
+    case 'coin_purchase':
+      return 'ACHAT_PIECES';
+    case 'like':
+      return 'LIKE_PIECES';
+    case 'reward':
+      return 'GAIN_PIECES';
+    case 'coin_spend':
+      return 'DEPENSE_PIECES';
+    case 'gift':
+      return descriptionKey == 'wallet.coin_gift_received' ? 'CADEAU_PIECES_RECU' : 'CADEAU_PIECES';
+    // natures reprises de l'ancien système (import) : sans cette table, tout apparaissait comme une dépense
+    case 'opening':
+    case 'earning':
+      return 'GAIN';
+    case 'coin_earned':
+      return 'GAIN_PIECES';
+    case 'gift_sent':
+      return 'CADEAU_PIECES';
+    case 'gift_received':
+      return 'CADEAU_PIECES_RECU';
+    case 'spend':
+      return 'DEPENSE';
+    case 'refund':
+      return const {'wallet.offerwall_reversal', 'wallet.share_clawback'}.contains(descriptionKey) ? 'GAIN_ANNULE' : 'REMBOURSEMENT';
+  }
+  return kind.toUpperCase();
+}
+
+/// Libellé d'une transaction reprise de l'ancien système quand son texte d'origine est vide.
+String _legacyKindLabel(String kind) {
+  switch (kind) {
+    case 'coin_earned':
+      return tr('Gain en pièces');
+    case 'gift_sent':
+      return tr('Cadeau envoyé');
+    case 'gift_received':
+      return tr('Cadeau reçu');
+    case 'like':
+      return tr("J'aime envoyé");
+    case 'spend':
+      return tr('Dépense');
+    case 'coin_spend':
+      return tr('Paiement en pièces');
+    case 'conversion':
+      return tr('Conversion de pièces gagnées en argent');
+    case 'earning':
+      return tr('Gain');
+    case 'deposit':
+      return tr('Dépôt');
+    case 'coin_purchase':
+      return tr('Achat de pièces');
+    case 'view_cashout':
+      return tr('Gains des vues encaissés');
+    case 'opening':
+      return tr("Solde d'ouverture (repris de l'ancien système)");
+  }
+  return tr('Transaction');
+}
+
+/// Phrase claire pour la clé de description envoyée par l'API (clé inconnue : affichée telle quelle).
+String _transactionDescription(String key, Map<String, dynamic> params) {
+  final offer = '${params['offer'] ?? ''}'.trim();
+  switch (key) {
+    case 'wallet.offerwall_reward':
+      return offer.isEmpty ? tr("Tâche d'un partenaire terminée") : tr('Tâche terminée : {o}', {'o': offer});
+    case 'wallet.offerwall_sponsor':
+      return tr("Gain de parrainage : tâche d'un filleul");
+    case 'wallet.offerwall_reversal':
+      return tr('Tâche annulée par le partenaire');
+    case 'wallet.share_reward':
+      return tr('Partage et gagne : gains versés');
+    case 'wallet.share_clawback':
+      return tr('Partage et gagne : gains retirés');
+    case 'wallet.weekly_reward':
+      return tr('Récompense de la semaine');
+    case 'wallet.ad_reward':
+      return tr('Pièces gagnées avec une publicité');
+    case 'wallet.coin_gift_received':
+      return tr('Pièces reçues en cadeau');
+    case 'wallet.deposit':
+      return tr('Dépôt');
+    case 'wallet.conversion':
+      return tr('Conversion de pièces gagnées en argent');
+    case 'wallet.coin_purchase':
+      return tr('Achat de pièces');
+    case 'wallet.shop_payment':
+      final t = '${params['title'] ?? ''}'.trim();
+      return t.isEmpty ? tr("Achat en direct (argent protégé jusqu'à la réception)") : tr("Achat en direct : {t} (argent protégé jusqu'à la réception)", {'t': t});
+    case 'wallet.shop_sale':
+      return tr('Vente en direct : fonds reçus après confirmation de réception');
+    case 'wallet.shop_refund':
+      return tr('Commande annulée : remboursement');
+    case 'wallet.shop_refund_penalty':
+      return tr("Commande annulée : remboursement moins la pénalité d'annulation");
+    case 'wallet.gift_sent':
+      return tr('Cadeau envoyé');
+    case 'wallet.credit_manual':
+      return tr("Crédit par l'équipe");
+    case 'wallet.admin_adjustment':
+      final why = '${params['reason'] ?? ''}'.trim();
+      return why.isEmpty ? tr("Ajustement par l'équipe") : tr("Ajustement par l'équipe : {r}", {'r': why});
+    case 'wallet.withdrawal':
+      return tr('Retrait');
+    case 'wallet.withdrawal_refund':
+      return tr('Retrait annulé : remboursement');
+    case 'wallet.view_cashout':
+      return tr('Gains des vues encaissés');
+    case 'wallet.quiz_hearts':
+      return tr('Cœurs du quiz');
+    case 'wallet.opening':
+      return tr("Solde d'ouverture (repris de l'ancien système)");
+    case 'wallet.like':
+      return tr("J'aime envoyé");
+    case 'wallet.comment_like':
+      return tr("J'aime sur un commentaire");
+    case 'wallet.comment':
+      return tr('Commentaire en pièces');
+    case 'wallet.etude':
+      return tr('Étude : accès débloqué');
+    case 'wallet.contes':
+      return tr('Contes : accès débloqué');
+    case 'wallet.debt_repayment':
+      return tr('Remboursement de dette (tâche annulée)');
+    case 'wallet.coin_purchase_refunded':
+      return tr('Achat de pièces remboursé');
+    case 'wallet.coin_purchase_gift':
+      return tr("Pièces offertes à l'achat");
+    case 'wallet.card':
+      return tr('Cartes : achat');
+    case 'wallet.ad_support':
+      return tr("Soutien d'une publicité regardée");
+  }
+  // clé inconnue : jamais le code brut à l'écran, une phrase lisible tirée du code (« wallet.some_thing » → « Some thing »)
+  final plain = key.replaceFirst(RegExp(r'^wallet\.'), '').replaceAll('_', ' ').trim();
+  return plain.isEmpty ? '' : plain[0].toUpperCase() + plain.substring(1);
+}
+
 /// Transaction du portefeuille de l'API → `TransactionSolde` (type = nature, pièces et montants lus tels quels).
 TransactionSolde transactionFromApi(Map<String, dynamic> j, String userId) {
   final t = TransactionSolde();
   t.id = j['id'] as String?;
   t.user_id = userId;
-  t.type = '${j['kind'] ?? ''}'.toUpperCase();
+  t.type = _legacyTransactionType('${j['kind'] ?? ''}', '${j['description_key'] ?? ''}');
   t.statut = switch ('${j['status']}') { 'completed' || 'done' || 'success' => 'VALIDER', 'pending' => 'ENCOURS', 'failed' || 'cancelled' => 'ANNULER', final o => o.toUpperCase() };
-  t.description = '${j['description_key'] ?? ''}';
-  t.montant = _i(j['amount_xof']).toDouble();
+  final descParams = j['description_params'] is Map ? Map<String, dynamic>.from(j['description_params'] as Map) : const <String, dynamic>{};
+  t.description = '${j['description_key']}' == 'legacy.description'
+      ? (('${descParams['text'] ?? ''}'.trim().isNotEmpty) ? '${descParams['text']}'.trim() : _legacyKindLabel('${j['kind'] ?? ''}'))
+      : _transactionDescription('${j['description_key'] ?? ''}', descParams);
+  // Les écrans lisent `montant` : en FCFA pour l'argent, en PIÈCES pour les opérations en pièces (cadeaux, achats, gains…). Sinon « 0 pièces » partout.
+  final xof = _i(j['amount_xof']);
+  final coinsN = _i(j['coins']);
+  final inCoins = coinsN > 0 && (xof == 0 || '${j['kind']}' == 'coin_purchase');
+  t.montant = (inCoins ? coinsN : xof).toDouble();
   t.montant_total = t.montant;
   t.frais = 0.0;
   t.numero_depot = '';
   t.methode_paiement = '${j['payment_method'] ?? ''}';
   t.createdAt = _ms(j['created_at']);
   t.updatedAt = t.createdAt;
-  t.coins = (j['coins'] as num?)?.toInt();
+  t.coins = inCoins ? coinsN : null;   // null = montant en FCFA (une valeur 0 ferait lire un montant en FCFA comme des pièces)
   t.paymentMethod = j['payment_method'] as String?;
   return t;
 }

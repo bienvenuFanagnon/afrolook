@@ -380,7 +380,7 @@ class _ProfileScreenContenuState extends State<ProfileScreenContenu>
                         const Spacer(),
                         Text(
                           '${user.votre_solde_principal?.toStringAsFixed(0) ?? '0'} FCFA',
-                          style: TextStyle(color: colors.accent, fontSize: 17, fontWeight: FontWeight.bold),
+                          style: TextStyle(color: colors.accentText, fontSize: 17, fontWeight: FontWeight.bold),
                         ),
                       ],
                     ),
@@ -953,7 +953,7 @@ class _ProfileScreenContenuState extends State<ProfileScreenContenu>
                         ),
                         child: Text(
                           serie.isFree ? 'GRATUIT' : '${serie.price.toInt()} FCFA',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: serie.isFree ? Colors.green : colors.accent),
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: serie.isFree ? Colors.green : colors.accentText),
                         ),
                       ),
                       const Spacer(),

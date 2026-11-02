@@ -59,6 +59,8 @@ class PostsApi {
     DateTime? eventDate,
     String? thumbnailUploadId,
     String? studioTemplate,
+    int? videoWidth,
+    int? videoHeight,
   }) async {
     final body = <String, dynamic>{
       if (description != null && description.trim().isNotEmpty) 'description': description.trim(),
@@ -73,6 +75,7 @@ class PostsApi {
       if (eventDate != null) 'event_date': eventDate.toUtc().toIso8601String(),
       if (thumbnailUploadId != null && thumbnailUploadId.isNotEmpty) 'thumbnail_upload_id': thumbnailUploadId,
       if (studioTemplate != null && studioTemplate.isNotEmpty) 'studio_template': studioTemplate.length > 120 ? studioTemplate.substring(0, 120) : studioTemplate,
+      if (videoWidth != null && videoHeight != null && videoWidth > 0 && videoHeight > 0) ...{'video_width': videoWidth, 'video_height': videoHeight},
     };
     // Clé d'idempotence : un nouvel essai réseau ne crée pas deux publications.
     final r = await _c.post('/posts', body: body, idempotencyKey: ApiClient.newIdempotencyKey());

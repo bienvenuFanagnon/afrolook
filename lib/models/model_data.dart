@@ -418,6 +418,9 @@ class AppDefaultData {
   int? nbr_abonnes = 0;
   int? app_version_code = 0;
   int? app_version_code_officiel = 0;
+  /// Numéros PAR système (null = on utilise le numéro commun `app_version_code`)
+  int? app_version_code_android;
+  int? app_version_code_ios;
   int? nbr_likes = 0;
   bool? googleVerification = false;
   int? nbr_comments = 0;

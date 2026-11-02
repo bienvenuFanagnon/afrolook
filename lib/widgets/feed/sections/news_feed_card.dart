@@ -211,8 +211,8 @@ class _NewsFeedCardState extends State<NewsFeedCard> {
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
             color: c.surface,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: c.border),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: c.border.withOpacity(0.6)),
           ),
           child: body,
         ),
@@ -250,7 +250,7 @@ class _NewsFeedCardState extends State<NewsFeedCard> {
   }
 
   Widget _title(AppColors c, String text, double size, {Color? color}) =>
-      Text(text, style: TextStyle(color: color ?? c.textPrimary, fontFamily: 'serif', fontWeight: FontWeight.w800, fontSize: size, height: 1.25));
+      Text(text, style: TextStyle(color: color ?? c.textPrimary, fontWeight: FontWeight.w800, fontSize: size, height: 1.28));
 
   Widget _byline(AppColors c, NewsFeedItem item, {bool sources = true}) {
     final agent = newsAgentOf(item.agentKey);
@@ -299,221 +299,171 @@ class _NewsFeedCardState extends State<NewsFeedCard> {
     ]);
   }
 
-  // ── A : La une (sobre, style presse) ─────────────────────────────────────
-
-  Widget _lead(AppColors c, NewsFeedItem item) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Text(context.tr('ACTUALITÉ'), style: TextStyle(color: c.primary, fontWeight: FontWeight.w900, fontSize: 11.5, letterSpacing: 1.4)),
-          const SizedBox(width: 6),
-          Expanded(child: Text('· ${_place(item).toUpperCase()}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 11, fontWeight: FontWeight.w600))),
-          _closeButton(c),
+  /// En-tête comme celui d'une publication : avatar du rédacteur, pseudo, il y a combien de temps et lieu ; la croix à droite.
+  Widget _header(AppColors c, NewsFeedItem item, {Color? textColor, Color? subColor, Color? closeColor}) {
+    final agent = newsAgentOf(item.agentKey);
+    return Row(children: [
+      AgentAvatar(agent: agent, size: 36),
+      const SizedBox(width: 10),
+      Expanded(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(agent.pseudo, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: textColor ?? c.textPrimary, fontWeight: FontWeight.w800, fontSize: 14)),
+          Text('${newsAgo(item.at)}${newsLeftTag(item.exp)}  ·  ${_place(item)}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: subColor ?? c.textSecondary, fontSize: 11.5)),
         ]),
-        const SizedBox(height: 6),
-        _photo(c, item, 160, radius: 8),
-        if (item.image.isNotEmpty) const SizedBox(height: 10),
-        _title(c, item.title, 17.5),
-        const SizedBox(height: 6),
-        Text(item.chapo, maxLines: 3, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 13, height: 1.4)),
-        const SizedBox(height: 10),
-        _byline(c, item),
-        const SizedBox(height: 8),
-        Divider(color: c.border, height: 1),
-        const SizedBox(height: 4),
-        _stats(c),
-        const SizedBox(height: 8),
-        _more(),
-      ]),
-    );
+      ),
+      _closeButton(c, color: closeColor),
+    ]);
   }
 
-  // ── B : Photo plein cadre (le titre sur la photo) ────────────────────────
+  Widget _sourcesLine(AppColors c, NewsFeedItem item) => Row(children: [
+        Icon(Icons.link_rounded, size: 14, color: c.info),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            item.sourceNames.isEmpty ? context.tr('Résumé de {n} sources', {'n': item.sourceCount}) : '${context.tr('Résumé de {n} sources', {'n': item.sourceCount})} : ${item.sourceNames.join(', ')}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: c.info, fontSize: 11.5, fontWeight: FontWeight.w600),
+          ),
+        ),
+      ]);
+
+  Widget _footer(AppColors c) => Padding(
+        padding: const EdgeInsets.fromLTRB(8, 4, 8, 6),
+        child: Column(children: [_stats(c), _more()]),
+      );
+
+  // ── A : image large, titre et résumé (le rendu courant) ──────────────────
+
+  Widget _lead(AppColors c, NewsFeedItem item) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Padding(padding: const EdgeInsets.fromLTRB(12, 10, 6, 8), child: _header(c, item)),
+      if (item.image.isNotEmpty) _photo(c, item, 210),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          _title(c, item.title, 17),
+          const SizedBox(height: 6),
+          Text(item.chapo, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 13.5, height: 1.4)),
+          const SizedBox(height: 8),
+          _sourcesLine(c, item),
+        ]),
+      ),
+      Divider(color: c.border.withOpacity(0.6), height: 1),
+      _footer(c),
+    ]);
+  }
+
+  // ── B : photo plein cadre, le titre sur l'image ──────────────────────────
 
   Widget _photoFull(AppColors c, NewsFeedItem item) {
     final agent = newsAgentOf(item.agentKey);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Padding(padding: const EdgeInsets.fromLTRB(12, 10, 6, 8), child: _header(c, item)),
       SizedBox(
-        height: 220,
+        height: 300,
         child: Stack(fit: StackFit.expand, children: [
           if (item.image.isNotEmpty)
             CachedNetworkImage(
               imageUrl: item.image,
               fit: BoxFit.cover,
               placeholder: (_, __) => Container(color: c.shimmerBase),
-              errorWidget: (_, __, ___) => Container(color: const Color(0xFF2C2C2A), child: Icon(agent.icon, size: 56, color: Colors.white24)),
+              errorWidget: (_, __, ___) => Container(color: c.surfaceVariant, child: Icon(agent.icon, size: 56, color: c.textSecondary)),
             )
           else
-            Container(color: const Color(0xFF2C2C2A), child: Icon(agent.icon, size: 56, color: Colors.white24)),
+            Container(color: c.surfaceVariant, child: Icon(agent.icon, size: 56, color: c.textSecondary)),
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
-                gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.transparent, Colors.black.withOpacity(0.85)], stops: const [0.35, 1]),
+                gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.transparent, Colors.black.withOpacity(0.82)], stops: const [0.4, 1]),
               ),
             ),
           ),
           Positioned(
-            top: 10,
-            left: 10,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(color: Colors.black.withOpacity(0.6), borderRadius: BorderRadius.circular(6)),
-              child: Text('${context.tr('ACTUALITÉ')} · ${_place(item).toUpperCase()}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 10.5, letterSpacing: 0.8)),
-            ),
-          ),
-          if (widget.showClose)
-            Positioned(
-              top: 6,
-              right: 6,
-              child: Container(decoration: BoxDecoration(color: Colors.black.withOpacity(0.6), shape: BoxShape.circle), child: _closeButton(c, color: Colors.white)),
-            ),
-          Positioned(
-            left: 12,
-            right: 12,
-            bottom: 10,
+            left: 14,
+            right: 14,
+            bottom: 12,
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-              _title(c, item.title, 18, color: Colors.white),
+              _title(c, item.title, 18.5, color: Colors.white),
               const SizedBox(height: 4),
-              Text('${agent.pseudo}  ·  ${newsAgo(item.at)}${newsLeftTag(item.exp)}  ·  ${context.tr('Résumé de {n} sources', {'n': item.sourceCount})}',
-                  maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 11.5)),
+              Text(context.tr('Résumé de {n} sources', {'n': item.sourceCount}), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 11.5)),
             ]),
           ),
         ]),
       ),
-      Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-        child: Column(children: [
-          _stats(c),
-          const SizedBox(height: 8),
-          _more(),
-        ]),
-      ),
+      _footer(c),
     ]);
   }
 
-  // ── C : Brève compacte (barre colorée, miniature) ────────────────────────
+  // ── C : brève compacte, texte et miniature ───────────────────────────────
 
   Widget _compact(AppColors c, NewsFeedItem item) {
     final agent = newsAgentOf(item.agentKey);
-    return IntrinsicHeight(
-      child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Container(width: 4, color: agent.color(c)),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 10, 10),
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Padding(padding: const EdgeInsets.fromLTRB(12, 10, 6, 6), child: _header(c, item)),
+      Padding(
+        padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Text(context.tr('ACTUALITÉ'), style: TextStyle(color: agent.color(c), fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1.3)),
-                const SizedBox(width: 6),
-                Expanded(child: Text('· ${_place(item).toUpperCase()}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 10.5, fontWeight: FontWeight.w600))),
-                _closeButton(c),
-              ]),
+              _title(c, item.title, 15.5),
               const SizedBox(height: 4),
-              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(item.title, maxLines: 4, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textPrimary, fontFamily: 'serif', fontWeight: FontWeight.w800, fontSize: 15, height: 1.25)),
-                    const SizedBox(height: 6),
-                    Text('${agent.pseudo}  ·  ${newsAgo(item.at)}${newsLeftTag(item.exp)}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 11.5)),
-                  ]),
-                ),
-                if (item.image.isNotEmpty) ...[
-                  const SizedBox(width: 10),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: CachedNetworkImage(
-                      imageUrl: item.image,
-                      width: 88,
-                      height: 88,
-                      fit: BoxFit.cover,
-                      placeholder: (_, __) => Container(width: 88, height: 88, color: c.shimmerBase),
-                      errorWidget: (_, __, ___) => Container(width: 88, height: 88, color: c.surfaceVariant, child: Icon(agent.icon, color: c.textSecondary)),
-                    ),
-                  ),
-                ],
-              ]),
-              const SizedBox(height: 8),
-              Row(children: [
-                Expanded(
-                  child: Row(children: [
-                    Icon(Icons.visibility_outlined, size: 15, color: c.textSecondary),
-                    const SizedBox(width: 3),
-                    Text(newsCount(_views), style: TextStyle(color: c.textSecondary, fontSize: 11.5, fontWeight: FontWeight.w600)),
-                    const SizedBox(width: 12),
-                    InkWell(
-                      onTap: _like,
-                      child: Row(children: [
-                        Icon(_liked ? Icons.favorite_rounded : Icons.favorite_border_rounded, size: 15, color: _liked ? c.danger : c.textSecondary),
-                        const SizedBox(width: 3),
-                        Text(newsCount(_loves), style: TextStyle(color: _liked ? c.danger : c.textSecondary, fontSize: 11.5, fontWeight: FontWeight.w600)),
-                      ]),
-                    ),
-                    const SizedBox(width: 12),
-                    Icon(Icons.chat_bubble_outline_rounded, size: 15, color: c.textSecondary),
-                    const SizedBox(width: 3),
-                    Text(newsCount(_article?.comments ?? 0), style: TextStyle(color: c.textSecondary, fontSize: 11.5, fontWeight: FontWeight.w600)),
-                  ]),
-                ),
-                if (widget.showMore)
-                  InkWell(
-                  onTap: () => NewsMoreButton.openJournal(context),
-                  borderRadius: BorderRadius.circular(6),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Text(context.tr('Voir plus d\'actualités'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 12)),
-                      const SizedBox(width: 2),
-                      Icon(Icons.arrow_forward_rounded, size: 15, color: c.textPrimary),
-                    ]),
-                  ),
-                ),
-              ]),
+              Text(item.chapo, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 12.5, height: 1.35)),
             ]),
           ),
-        ),
-      ]),
-    );
+          if (item.image.isNotEmpty) ...[
+            const SizedBox(width: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: CachedNetworkImage(
+                imageUrl: item.image,
+                width: 96,
+                height: 96,
+                fit: BoxFit.cover,
+                placeholder: (_, __) => Container(width: 96, height: 96, color: c.shimmerBase),
+                errorWidget: (_, __, ___) => Container(width: 96, height: 96, color: c.surfaceVariant, child: Icon(agent.icon, color: c.textSecondary)),
+              ),
+            ),
+          ],
+        ]),
+      ),
+      Divider(color: c.border.withOpacity(0.6), height: 1),
+      _footer(c),
+    ]);
   }
 
-  // ── D : Flash info (bandeau sombre) ──────────────────────────────────────
+  // ── D : grosse actualité, comme A avec une pastille discrète « À la une » ─
 
   Widget _flash(AppColors c, NewsFeedItem item) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Container(
-        color: const Color(0xFF2C2C2A),
-        padding: const EdgeInsets.fromLTRB(12, 4, 6, 4),
-        child: Row(children: [
-          Container(width: 8, height: 8, decoration: const BoxDecoration(color: Color(0xFFE24B4A), shape: BoxShape.circle)),
-          const SizedBox(width: 7),
-          Text(context.tr('FLASH ACTUALITÉ'), style: const TextStyle(color: Color(0xFFF1EFE8), fontWeight: FontWeight.w900, fontSize: 11, letterSpacing: 1.3)),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text('${_place(item).toUpperCase()} · ${newsAgo(item.at)}${newsLeftTag(item.exp)}', maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.right, style: const TextStyle(color: Color(0xFFB4B2A9), fontSize: 10.5, fontWeight: FontWeight.w600)),
+      Padding(padding: const EdgeInsets.fromLTRB(12, 10, 6, 8), child: _header(c, item)),
+      if (item.image.isNotEmpty)
+        Stack(children: [
+          _photo(c, item, 210),
+          Positioned(
+            top: 10,
+            left: 10,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+              decoration: BoxDecoration(color: Colors.black.withOpacity(0.55), borderRadius: BorderRadius.circular(99)),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Container(width: 7, height: 7, decoration: const BoxDecoration(color: Color(0xFFE24B4A), shape: BoxShape.circle)),
+                const SizedBox(width: 6),
+                Text(context.tr('À la une'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 11)),
+              ]),
+            ),
           ),
-          _closeButton(c, color: const Color(0xFFB4B2A9)),
         ]),
-      ),
       Padding(
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _title(c, item.title, 18.5),
+          _title(c, item.title, 17.5),
           const SizedBox(height: 6),
-          Text(item.chapo, maxLines: 3, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 13, height: 1.4)),
-          if (item.image.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            _photo(c, item, 110, radius: 8),
-          ],
-          const SizedBox(height: 10),
-          _byline(c, item, sources: false),
-          const SizedBox(height: 8),
-          Divider(color: c.border, height: 1),
-          const SizedBox(height: 4),
-          _stats(c),
-          const SizedBox(height: 8),
-          _more(),
+          Text(item.chapo, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 13.5, height: 1.4)),
         ]),
       ),
+      Divider(color: c.border.withOpacity(0.6), height: 1),
+      _footer(c),
     ]);
   }
 

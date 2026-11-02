@@ -3608,8 +3608,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         ),
       );
 
-      // Un tutoriel tous les 5 posts (dès le 2e) : jusqu'à 5 tutoriels différents par jour
-      if (i % 5 == 1 && _showTutoReminder) {
+      // Un seul tutoriel dans le fil (après le 2e post), un par jour au plus
+      if (i == 1 && _showTutoReminder) {
         contentWidgets.add(FeedMonetizationReminder(key: ValueKey('tuto_reminder_home_$i'), feed: 'home'));
       }
 

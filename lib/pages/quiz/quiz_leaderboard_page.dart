@@ -190,7 +190,7 @@ class _QuizLeaderboardPageState extends State<QuizLeaderboardPage> {
         ),
         Text('${e.points}', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: c.supportAccent)),
         const SizedBox(width: 2),
-        Icon(Icons.star_rounded, size: 16, color: c.accent),
+        Icon(Icons.star_rounded, size: 16, color: c.accentText),
       ]),
     );
   }
@@ -248,7 +248,7 @@ class _QuizLeaderboardPageState extends State<QuizLeaderboardPage> {
                       Expanded(child: Text(list[i].name, style: TextStyle(fontWeight: FontWeight.w800, color: c.textPrimary))),
                       Text('${list[i].points}', style: TextStyle(fontWeight: FontWeight.w900, color: c.supportAccent)),
                       const SizedBox(width: 2),
-                      Icon(Icons.star_rounded, size: 16, color: c.accent),
+                      Icon(Icons.star_rounded, size: 16, color: c.accentText),
                     ]),
                     const SizedBox(height: 8),
                     ClipRRect(

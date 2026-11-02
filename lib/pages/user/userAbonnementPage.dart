@@ -27,6 +27,8 @@ class _AbonnementScreenState extends State<AbonnementScreen>
     with SingleTickerProviderStateMixin {
   final AbonnementService _abonnementService = AbonnementService();
 
+  AppColors get _c => AppColors.of(context);
+
   late TabController _tabController;
   bool _isLoading = false;
   bool _showPlanDetails = false;
@@ -103,90 +105,58 @@ class _AbonnementScreenState extends State<AbonnementScreen>
     final isPremium = AbonnementUtils.isPremiumActive(abonnement);
     final isGold = AbonnementUtils.isGold(abonnement);
 
+    final title = isGold ? context.tr('Afrolook Gold 👑') : (isPremium ? context.tr('Afrolook Premium ⭐') : context.tr('Abonnement'));
     return Scaffold(
       backgroundColor: colors.background,
-      body: NestedScrollView(
-        headerSliverBuilder: (_, __) => [_buildSliverAppBar(colors, isGold, isPremium)],
-        body: Column(
-          children: [
-            _buildTabBar(colors),
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildFreeTab(colors, abonnement),
-                  _buildPremiumTab(colors, user, abonnement, isPremium, isGold),
-                  _buildGoldTab(colors, user, abonnement, isGold),
-                ],
-              ),
+      appBar: AppBar(
+        backgroundColor: colors.background,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        iconTheme: IconThemeData(color: colors.textPrimary),
+        title: Text(title, style: TextStyle(color: colors.textPrimary, fontSize: 20, fontWeight: FontWeight.w800)),
+      ),
+      body: Column(
+        children: [
+          _buildTabBar(colors),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildFreeTab(colors, abonnement),
+                _buildPremiumTab(colors, user, abonnement, isPremium, isGold),
+                _buildGoldTab(colors, user, abonnement, isGold),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── AppBar ──────────────────────────────────────────────────────────────
-
-  Widget _buildSliverAppBar(AppColors colors, bool isGold, bool isPremium) {
-    List<Color> gradientColors;
-    String title;
-    if (isGold) {
-      gradientColors = [const Color(0xFFFFD700), const Color(0xFFFF8C00)];
-      title = context.tr('Afrolook Gold 👑');
-    } else if (isPremium) {
-      gradientColors = [const Color(0xFFFF416C), const Color(0xFFFDB813)];
-      title = context.tr('Afrolook Premium ⭐');
-    } else {
-      gradientColors = [const Color(0xFF1FAA59), const Color(0xFF0E7C3A)];
-      title = context.tr('Abonnement');
-    }
-
-    return SliverAppBar(
-      expandedHeight: 110,
-      floating: false,
-      pinned: true,
-      backgroundColor: colors.background,
-      leading: IconButton(
-        icon: Icon(Icons.arrow_back, color: Colors.white),
-        onPressed: () => Navigator.pop(context),
-      ),
-      flexibleSpace: FlexibleSpaceBar(
-        centerTitle: true,
-        title: Text(title,
-            style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
-        background: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-                colors: gradientColors,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  // ── TabBar ──────────────────────────────────────────────────────────────
+  // ── Onglets : trois pilules, la sélectionnée en vert (même style que le reste de l'application) ──
 
   Widget _buildTabBar(AppColors colors) {
-    return Container(
-      color: colors.surface,
-      child: TabBar(
-        controller: _tabController,
-        labelColor: Colors.white,
-        unselectedLabelColor: colors.textSecondary,
-        indicatorSize: TabBarIndicatorSize.tab,
-        tabs: [
-          Tab(text: context.tr('🆓 Gratuit')),
-          Tab(text: context.tr('⭐ Premium')),
-          Tab(text: context.tr('👑 Gold')),
-        ],
-        indicator: BoxDecoration(
-          gradient: const LinearGradient(colors: [Color(0xFFFF416C), Color(0xFFFDB813)]),
-          borderRadius: BorderRadius.circular(4),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(color: colors.surfaceVariant, borderRadius: BorderRadius.circular(14), border: Border.all(color: colors.border)),
+        child: TabBar(
+          controller: _tabController,
+          dividerColor: Colors.transparent,
+          labelColor: colors.onPrimary,
+          unselectedLabelColor: colors.textSecondary,
+          indicatorSize: TabBarIndicatorSize.tab,
+          indicator: BoxDecoration(color: colors.primary, borderRadius: BorderRadius.circular(10)),
+          labelStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+          tabs: [
+            Tab(height: 38, text: context.tr('🆓 Gratuit')),
+            Tab(height: 38, text: context.tr('⭐ Premium')),
+            Tab(height: 38, text: context.tr('👑 Gold')),
+          ],
         ),
-        labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
       ),
     );
   }
@@ -248,8 +218,8 @@ class _AbonnementScreenState extends State<AbonnementScreen>
           _buildStatusCard(
             colors: colors,
             icon: Icons.workspace_premium,
-            iconColor: const Color(0xFFFFD700),
-            borderColor: const Color(0xFFFFD700),
+            iconColor: _c.primary,
+            borderColor: _c.primary,
             title: context.tr('VOUS ÊTES GOLD 👑'),
             subtitle: context.tr('Le plan Gold inclut tout Premium et plus encore'),
           ),
@@ -257,9 +227,9 @@ class _AbonnementScreenState extends State<AbonnementScreen>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFD700).withOpacity(0.08),
+              color: _c.primary.withOpacity(0.08),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3)),
+              border: Border.all(color: _c.primary.withOpacity(0.3)),
             ),
             child: Text(
               context.tr('Gold ⊃ Premium : tous les avantages Premium sont inclus dans votre plan Gold.'),
@@ -281,18 +251,18 @@ class _AbonnementScreenState extends State<AbonnementScreen>
           _buildStatusCard(
             colors: colors,
             icon: Icons.workspace_premium,
-            iconColor: const Color(0xFFFDB813),
-            borderColor: const Color(0xFFFDB813),
+            iconColor: _c.primary,
+            borderColor: _c.primary,
             title: context.tr('ABONNÉ PREMIUM ⭐'),
             subtitle: context.tr('Valable encore {a} jours', {'a': AbonnementUtils.getDaysRemaining(abonnement)}),
             badge: 'ACTIF',
-            badgeColor: const Color(0xFFFF416C),
+            badgeColor: _c.primary,
             dateDebut: abonnement?.dateDebut,
             dateFin: abonnement?.dateFin,
             montantPaye: abonnement?.montantPaye,
           ),
         if (!isPremium) ...[
-          _buildPlanHeader(colors, context.tr('Premium ⭐'), context.tr('À partir de'), 200, const Color(0xFFFDB813)),
+          _buildPlanHeader(colors, context.tr('Premium ⭐'), context.tr('À partir de'), 200, _c.primary),
           const SizedBox(height: 16),
           _buildFeatureList(colors, _premiumFeatures()),
           const SizedBox(height: 20),
@@ -300,11 +270,11 @@ class _AbonnementScreenState extends State<AbonnementScreen>
             colors: colors,
             offres: _offresPremium,
             selected: _dureePremium,
-            accentColor: const Color(0xFFFDB813),
+            accentColor: _c.primary,
             onSelect: (m) => setState(() => _dureePremium = m),
           ),
           const SizedBox(height: 16),
-          _buildPriceSummary(colors, _offresPremium, _dureePremium, const Color(0xFFFDB813)),
+          _buildPriceSummary(colors, _offresPremium, _dureePremium, _c.primary),
           const SizedBox(height: 16),
           if (!kPayInCoins) _buildAbonnementBalanceSelector(
             colors: colors,
@@ -319,7 +289,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
             prixFinal: prixFinal,
             soldeInsuffisant: soldeInsuffisant,
             soldeLabel: kPayInCoins ? context.tr('Solde de pièces') : (_selectedBalancePremium == 'votre_solde_depot' ? context.tr('Solde Dépôt') : context.tr('Solde Gains')),
-            accentColor: const Color(0xFFFF416C),
+            accentColor: _c.primary,
             btnLabel: context.tr('⭐ DEVENIR PREMIUM — {a}', {'a': _px(prixFinal)}),
             onPay: () => _souscrire(user, 'premium', _dureePremium, balanceKey: _selectedBalancePremium),
           ),
@@ -331,7 +301,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
             user: user,
             abonnement: abonnement!,
             offres: _offresPremium,
-            accentColor: const Color(0xFFFDB813),
+            accentColor: _c.primary,
             planType: 'premium',
           ),
           const SizedBox(height: 16),
@@ -369,12 +339,12 @@ class _AbonnementScreenState extends State<AbonnementScreen>
           _buildStatusCard(
             colors: colors,
             icon: Icons.workspace_premium,
-            iconColor: const Color(0xFFFFD700),
-            borderColor: const Color(0xFFFFD700),
+            iconColor: _c.primary,
+            borderColor: _c.primary,
             title: context.tr('ABONNÉ GOLD 👑'),
             subtitle: context.tr('Valable encore {a} jours', {'a': AbonnementUtils.getDaysRemaining(abonnement)}),
             badge: 'ACTIF',
-            badgeColor: const Color(0xFFFFD700),
+            badgeColor: _c.primary,
             dateDebut: abonnement?.dateDebut,
             dateFin: abonnement?.dateFin,
             montantPaye: abonnement?.montantPaye,
@@ -383,7 +353,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
         if (!isGold) ...[
           _buildNewBadge(),
           const SizedBox(height: 12),
-          _buildPlanHeader(colors, context.tr('Gold 👑'), context.tr('À partir de'), 500, const Color(0xFFFFD700)),
+          _buildPlanHeader(colors, context.tr('Gold 👑'), context.tr('À partir de'), 500, _c.primary),
         ],
 
         const SizedBox(height: 16),
@@ -394,9 +364,9 @@ class _AbonnementScreenState extends State<AbonnementScreen>
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFD700).withOpacity(0.08),
+            color: _c.primary.withOpacity(0.08),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.3)),
+            border: Border.all(color: _c.primary.withOpacity(0.3)),
           ),
           child: Text(
             context.tr('👑 Si votre abonnement Gold expire : vos groupes passent en lecture seule. Les membres ne sont pas expulsés — le renouvellement est demandé à leur prochaine entrée.'),
@@ -411,11 +381,11 @@ class _AbonnementScreenState extends State<AbonnementScreen>
             colors: colors,
             offres: _offresGold,
             selected: _dureeGold,
-            accentColor: const Color(0xFFFFD700),
+            accentColor: _c.primary,
             onSelect: (m) => setState(() => _dureeGold = m),
           ),
           const SizedBox(height: 16),
-          _buildPriceSummary(colors, _offresGold, _dureeGold, const Color(0xFFFFD700)),
+          _buildPriceSummary(colors, _offresGold, _dureeGold, _c.primary),
           const SizedBox(height: 16),
           if (!kPayInCoins) _buildAbonnementBalanceSelector(
             colors: colors,
@@ -430,7 +400,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
             prixFinal: prixFinal,
             soldeInsuffisant: soldeInsuffisant,
             soldeLabel: kPayInCoins ? context.tr('Solde de pièces') : (_selectedBalanceGold == 'votre_solde_depot' ? context.tr('Solde Dépôt') : context.tr('Solde Gains')),
-            accentColor: const Color(0xFFFFD700),
+            accentColor: _c.primary,
             btnLabel: context.tr('👑 DEVENIR GOLD — {a}', {'a': _px(prixFinal)}),
             onPay: () => _souscrire(user, 'gold', _dureeGold, balanceKey: _selectedBalanceGold),
             btnTextColor: Colors.black,
@@ -444,7 +414,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
             user: user,
             abonnement: abonnement!,
             offres: _offresGold,
-            accentColor: const Color(0xFFFFD700),
+            accentColor: _c.primary,
             planType: 'gold',
           ),
         ],
@@ -527,12 +497,12 @@ class _AbonnementScreenState extends State<AbonnementScreen>
             _infoRow(colors, context.tr('Fin'),
                 '${dateFin.day}/${dateFin.month}/${dateFin.year}',
                 valueColor: dateFin.difference(DateTime.now()).inDays <= 7
-                    ? Colors.orange
+                    ? _c.warning
                     : null),
             if (montantPaye != null) ...[
               const SizedBox(height: 6),
               _infoRow(colors, context.tr('Montant payé'), _px(montantPaye),
-                  valueColor: const Color(0xFFFDB813)),
+                  valueColor: _c.primary),
             ],
           ],
         ],
@@ -588,7 +558,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
         decoration: BoxDecoration(
-          color: const Color(0xFFFFD700),
+          color: _c.primary,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(context.tr('NOUVEAU 🆕'),
@@ -624,12 +594,12 @@ class _AbonnementScreenState extends State<AbonnementScreen>
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFD700).withOpacity(0.2),
+                      color: _c.primary.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: const Text('GOLD',
+                    child: Text('GOLD',
                         style: TextStyle(
-                            color: Color(0xFFFFD700),
+                            color: _c.primary,
                             fontSize: 9,
                             fontWeight: FontWeight.bold)),
                   ),
@@ -725,13 +695,13 @@ class _AbonnementScreenState extends State<AbonnementScreen>
                           padding:
                               const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.2),
+                            color: _c.primary.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: Colors.green),
+                            border: Border.all(color: _c.primary),
                           ),
                           child: Text('-${_px(reduction)}',
-                              style: const TextStyle(
-                                  color: Colors.green,
+                              style: TextStyle(
+                                  color: _c.primary,
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold)),
                         ),
@@ -770,7 +740,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
                 valueColor: colors.textSecondary),
             const SizedBox(height: 8),
             _infoRow(colors, context.tr('Réduction'), '-${_px(reduction)}',
-                valueColor: Colors.green),
+                valueColor: _c.primary),
           ],
           Divider(color: colors.border, height: 20),
           Row(
@@ -828,7 +798,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
           child: Row(
             children: [
               Icon(Icons.account_balance_wallet,
-                  color: soldeInsuffisant ? Colors.orange : accentColor),
+                  color: soldeInsuffisant ? _c.warning : accentColor),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -934,7 +904,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
     required String selectedBalance,
     required void Function(String) onSelect,
   }) {
-    const green = Color(0xFF34C759);
+    final green = _c.primary;
     final depot = user.votre_solde_depot ?? 0.0;
     final principal = user.votre_solde_principal ?? 0.0;
 
@@ -1053,7 +1023,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
         color: colors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: expireBientot ? Colors.orange : accentColor.withOpacity(0.4),
+          color: expireBientot ? _c.warning : accentColor.withOpacity(0.4),
           width: expireBientot ? 2 : 1,
         ),
       ),
@@ -1065,19 +1035,19 @@ class _AbonnementScreenState extends State<AbonnementScreen>
               padding: const EdgeInsets.all(10),
               margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.15),
+                color: _c.warning.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.orange),
+                border: Border.all(color: _c.warning),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.warning, color: Colors.orange, size: 18),
+                  Icon(Icons.warning, color: _c.warning, size: 18),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       context.tr('Expire dans {a} jours', {'a': AbonnementUtils.getDaysRemaining(abonnement)}),
-                      style: const TextStyle(
-                          color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 13),
+                      style: TextStyle(
+                          color: _c.warning, fontWeight: FontWeight.bold, fontSize: 13),
                     ),
                   ),
                 ],
@@ -1193,7 +1163,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
     _Feature(context.tr('Tout le plan Premium inclus'), true),
     // ── Posts & médias
     _Feature(context.tr('5 photos par look (Premium : 3)'), true, isGoldOnly: true),
-    _Feature(context.tr('Vidéos jusqu\'à 50 Mo (Premium : 40 Mo)'), true, isGoldOnly: true),
+    _Feature(context.tr('Vidéos jusqu\'à 100 Mo (Premium : 40 Mo)'), true, isGoldOnly: true),
     // ── Groupes : limites levées
     _Feature(context.tr('Groupes illimités (Premium : 2 max)'), true, isGoldOnly: true),
     _Feature(context.tr('Membres illimités par groupe (Premium : 100 max)'), true, isGoldOnly: true),
@@ -1334,7 +1304,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
           side: BorderSide(
-              color: isGold ? const Color(0xFFFFD700) : const Color(0xFFFDB813),
+              color: isGold ? _c.primary : _c.primary,
               width: 2),
         ),
         content: Column(
@@ -1346,8 +1316,8 @@ class _AbonnementScreenState extends State<AbonnementScreen>
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
                   colors: isGold
-                      ? [const Color(0xFFFFD700), const Color(0xFFFF8C00)]
-                      : [const Color(0xFFFDB813), const Color(0xFFFF416C)],
+                      ? [_c.primary, _c.primary]
+                      : [_c.primary, _c.primary],
                 ),
               ),
               child: Icon(Icons.workspace_premium, color: Colors.white, size: 48),
@@ -1377,7 +1347,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor:
-                    isGold ? const Color(0xFFFFD700) : const Color(0xFFFF416C),
+                    isGold ? _c.primary : _c.primary,
                 foregroundColor: isGold ? Colors.black : Colors.white,
                 minimumSize: const Size(150, 48),
                 shape: RoundedRectangleBorder(
@@ -1404,7 +1374,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text('OK',
-                style: TextStyle(color: const Color(0xFFFDB813))),
+                style: TextStyle(color: _c.primary)),
           ),
         ],
       ),

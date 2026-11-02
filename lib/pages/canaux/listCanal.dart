@@ -231,7 +231,7 @@ class _CanalListPageState extends State<CanalListPage> {
                               if (isPrivate)
                                 Padding(
                                   padding: const EdgeInsets.only(left: 6),
-                                  child: Icon(Icons.attach_money, color: _colors.accent, size: 14),
+                                  child: Icon(Icons.attach_money, color: _colors.accentText, size: 14),
                                 ),
                             ],
                           ),
@@ -270,11 +270,11 @@ class _CanalListPageState extends State<CanalListPage> {
                               ),
                               if (isPrivate) ...[
                                 SizedBox(width: 16),
-                                Icon(Icons.attach_money, color: _colors.accent, size: 14),
+                                Icon(Icons.attach_money, color: _colors.accentText, size: 14),
                                 SizedBox(width: 4),
                                 Text(
                                   context.tr('{a} pièces', {'a': CoinCheckout.fmt(canal.subscriptionPriceCoins)}),
-                                  style: TextStyle(color: _colors.accent, fontSize: 12),
+                                  style: TextStyle(color: _colors.accentText, fontSize: 12),
                                 ),
                               ],
                             ],

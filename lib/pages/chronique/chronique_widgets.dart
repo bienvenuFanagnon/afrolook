@@ -136,7 +136,7 @@ class ChroniquePreviewFill extends StatelessWidget {
           cacheKey: 'chronique_${c.id}',
           posterUrl: c.posterUrl,
           videoUrl: c.mediaUrl,
-          placeholder: ColoredBox(color: colors.shimmerBase, child: Icon(Icons.play_circle_fill_rounded, color: colors.accent.withValues(alpha: .8), size: 30)),
+          placeholder: ColoredBox(color: colors.shimmerBase, child: Icon(Icons.play_circle_fill_rounded, color: colors.accentText.withValues(alpha: .8), size: 30)),
         );
       case ChroniqueType.AUDIO:
         if ((c.coverImageUrl ?? '').isNotEmpty) {
@@ -443,7 +443,7 @@ class ChroniqueCard extends StatelessWidget {
                     margin: const EdgeInsets.only(right: 4),
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(color: Colors.black.withValues(alpha: .55), borderRadius: BorderRadius.circular(9)),
-                    child: Text('+${group.length - 1}', style: TextStyle(color: colors.accent, fontSize: 10, fontWeight: FontWeight.w800)),
+                    child: Text('+${group.length - 1}', style: TextStyle(color: colors.accentText, fontSize: 10, fontWeight: FontWeight.w800)),
                   ),
                 Container(
                   width: 22,

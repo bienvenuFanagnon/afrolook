@@ -1,3 +1,4 @@
+import 'package:afrotok/services/post_orientation.dart';
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/services/ads_engine_service.dart';
 import '../services/comments_prefetch.dart';
@@ -750,6 +751,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       );
 
       setState(() => _isVideoInitialized = true);
+      if (_learnOrientation(post)) return;
       _videoPlayCount++;
       if ((_videoPlayCount - 1) % 3 == 0 && !_isUserPremium() && post.isAdvertisement != true) _attachMidrollListener();
       await _recordPostView(post);
@@ -791,6 +793,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       );
 
       setState(() => _isVideoInitialized = true);
+      if (_learnOrientation(post)) return;
       _videoPlayCount++;
       if ((_videoPlayCount - 1) % 3 == 0 && !_isUserPremium() && post.isAdvertisement != true) _attachMidrollListener();
       await _recordPostView(post);
@@ -1424,6 +1427,19 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
   // ==================== VIDEO INIT & PLAYBACK ====================
 
+  /// Orientation réelle de la vidéo : retenue pour la suite ; si la vidéo ouverte est en PAYSAGE alors que l'API ne le savait pas, on passe à la page paysage.
+  bool _learnOrientation(Post post) {
+    final c = _currentVideoController;
+    if (c == null || !c.value.isInitialized) return false;
+    final unknown = PostOrientation.isUnknown(post);
+    PostOrientation.learn(post, c.value.size.width, c.value.size.height);
+    if (unknown && post.isPortrait == false && mounted && widget.initialPost?.id == post.id) {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => VideoYoutubePageDetails(initialPost: post, isIn: true, feedTier: widget.feedTier)));
+      return true;
+    }
+    return false;
+  }
+
   Future<void> _recordPostView(Post post) async {
     if (post.id == null) return;
     final currentUserId = authProvider.loginUserData.id;
@@ -1480,18 +1496,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     final lastShowKey = 'suggestions_modal_last_show_$userId';
     final lastShowTimestamp = _prefs.getInt(lastShowKey);
 
-    // Si jamais affiché avant, on affiche
-    if (lastShowTimestamp == null) return true;
-
-    // Récupérer la date du dernier affichage
-    final lastShowDate = DateTime.fromMillisecondsSinceEpoch(lastShowTimestamp);
-    final now = DateTime.now();
-
-    // Calculer la différence en jours
-    final difference = now.difference(lastShowDate).inDays;
-
-    // Afficher seulement si 3 jours ou plus sont passés
-    return difference >= 3;
+    // Une seule fois par compte : affiché seulement s'il ne l'a jamais été
+    return lastShowTimestamp == null;
   }
 
   Future<void> _markSuggestionsModalSeen() async {
@@ -1513,6 +1519,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   }
 
   void _showFirstScrollModal() {
+    _markSuggestionsModalSeen();   // noté dès l'ouverture : il ne revient plus
     final colors = AppColors.of(context);
     showDialog(
       context: context,
@@ -1521,7 +1528,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         backgroundColor: colors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
-          children: [Icon(Icons.swipe_vertical, color: colors.accent), const SizedBox(width: 8), Text('Astuces Vidéo', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold))],
+          children: [Icon(Icons.swipe_vertical, color: colors.accentText), const SizedBox(width: 8), Text('Astuces Vidéo', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold))],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1541,7 +1548,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
                       color: colors.accent.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(Icons.swipe_vertical, color: colors.accent, size: 28),
+                    child: Icon(Icons.swipe_vertical, color: colors.accentText, size: 28),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -1888,7 +1895,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: colors.surface,
-        title: Text('Solde insuffisant', style: TextStyle(color: colors.accent)),
+        title: Text('Solde insuffisant', style: TextStyle(color: colors.accentText)),
         content: Text('Rechargez votre compte pour envoyer un cadeau.', style: TextStyle(color: colors.textPrimary)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler', style: TextStyle(color: colors.textPrimary))),
@@ -2041,7 +2048,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
             if (post.user_id == authProvider.loginUserData.id ||
                 authProvider.loginUserData.role == UserRole.ADM.name)
               ListTile(
-                leading: Icon(Icons.rocket_launch, color: colors.accent),
+                leading: Icon(Icons.rocket_launch, color: colors.accentText),
                 title: Text('Booster ce post', style: TextStyle(color: colors.textPrimary)),
                 subtitle: Text('Transformer en publicité', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
                 onTap: () {
@@ -2203,11 +2210,11 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         backgroundColor: colors.surface,
-        title: Row(children: [Icon(Icons.volunteer_activism, color: colors.accent), const SizedBox(width: 8), Text('Soutenir le créateur', style: TextStyle(color: colors.textPrimary))]),
+        title: Row(children: [Icon(Icons.volunteer_activism, color: colors.accentText), const SizedBox(width: 8), Text('Soutenir le créateur', style: TextStyle(color: colors.textPrimary))]),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           Text(tr('Regarde cette publicité jusqu\'au bout pour offrir 1 pièce au créateur.'), style: TextStyle(color: colors.textSecondary)),
           const SizedBox(height: 12),
-          Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: colors.primary.withOpacity(0.2), borderRadius: BorderRadius.circular(12)), child: Row(children: [Icon(Icons.monetization_on, color: colors.accent), const SizedBox(width: 8), Expanded(child: Text('Les pièces peuvent être converties en argent réel.', style: TextStyle(color: colors.textPrimary)))])),
+          Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: colors.primary.withOpacity(0.2), borderRadius: BorderRadius.circular(12)), child: Row(children: [Icon(Icons.monetization_on, color: colors.accentText), const SizedBox(width: 8), Expanded(child: Text('Les pièces peuvent être converties en argent réel.', style: TextStyle(color: colors.textPrimary)))])),
         ]),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: Text('Plus tard', style: TextStyle(color: colors.textSecondary))),

@@ -1,3 +1,4 @@
+import 'package:afrotok/pages/liveshop/shopping_live_launcher.dart';
 import 'package:afrotok/services/api/api_identity.dart';
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/admin/new_category.dart';
@@ -28,6 +29,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../providers/afroshop/categorie_produits_provider.dart';
 
 import '../../../providers/postProvider.dart';
+import '../../../theme/app_colors.dart';
 
 class EntrepriseProfil extends StatefulWidget {
   final String? userId;
@@ -205,40 +207,37 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
     _loadInitialProducts();
   }
 
+  // ── Design : couleurs du thème (clair ET sombre), une seule couleur d'accent, mêmes cartes et mêmes puces partout ──
+
+  AppColors get _c => AppColors.of(context);
+
+  BoxDecoration _card({double radius = 16}) => BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(radius), border: Border.all(color: _c.border));
+
   Widget _buildHeader() {
+    final c = _c;
     if (_isLoading) {
       return _buildHeaderSkeleton();
     }
 
     if (entrepriseData == null) {
       return Container(
-        padding: EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.black,
-          borderRadius: BorderRadius.circular(15),
-        ),
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: _card(),
         child: Column(
           children: [
-            Icon(Icons.business, size: 50, color: Colors.grey),
-            SizedBox(height: 10),
+            Icon(Icons.business, size: 46, color: c.textSecondary),
+            const SizedBox(height: 10),
             Text(
               _isOwner ? "Créez votre entreprise" : "Aucune entreprise trouvée",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(color: c.textPrimary, fontSize: 16, fontWeight: FontWeight.w800),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 12),
             if (_isOwner)
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/new_entreprise');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: CustomConstants.kPrimaryColor,
-                ),
-                child: Text("Créer mon entreprise"),
+              FilledButton(
+                onPressed: () => Navigator.pushNamed(context, '/new_entreprise'),
+                style: FilledButton.styleFrom(backgroundColor: c.primary, minimumSize: const Size(200, 46), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                child: Text("Créer mon entreprise", style: TextStyle(color: c.onPrimary, fontWeight: FontWeight.w700)),
               ),
           ],
         ),
@@ -246,118 +245,69 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
     }
 
     return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
+      padding: const EdgeInsets.all(16),
+      decoration: _card(radius: 18),
       child: Column(
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: CustomConstants.kPrimaryColor, width: 2),
-                ),
+                width: 72,
+                height: 72,
+                padding: const EdgeInsets.all(2.5),
+                decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: c.primary, width: 2)),
                 child: ClipOval(
                   child: CachedNetworkImage(
                     imageUrl: entrepriseData!.urlImage ?? '',
                     fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                      color: Colors.grey[800],
-                      child: Icon(Icons.business, color: Colors.grey),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      color: Colors.grey[800],
-                      child: Icon(Icons.business, color: Colors.grey),
-                    ),
+                    placeholder: (context, url) => Container(color: c.surfaceVariant, child: Icon(Icons.business, color: c.textSecondary)),
+                    errorWidget: (context, url, error) => Container(color: c.surfaceVariant, child: Icon(Icons.business, color: c.textSecondary)),
                   ),
                 ),
               ),
-              SizedBox(width: 16),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       entrepriseData!.titre ?? 'Entreprise',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: TextStyle(color: c.textPrimary, fontSize: 19, fontWeight: FontWeight.w800),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(Icons.people, size: 16, color: Colors.grey),
-                        SizedBox(width: 4),
-                        Text(
-                          "${entrepriseData!.suivi ?? 0} abonnés",
-                          style: TextStyle(color: Colors.grey, fontSize: 14),
-                        ),
-                        SizedBox(width: 16),
-                        Icon(Icons.shopping_bag, size: 16, color: Colors.grey),
-                        SizedBox(width: 4),
-                        Text(
-                          "${produits.length}+ produits",
-                          style: TextStyle(color: Colors.grey, fontSize: 14),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 8),
-                    if (entrepriseData!.description != null && entrepriseData!.description!.isNotEmpty)
-                      Text(
-                        entrepriseData!.description!,
-                        style: TextStyle(color: Colors.grey[400], fontSize: 14),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                    const SizedBox(height: 4),
+                    Wrap(spacing: 14, runSpacing: 2, children: [
+                      Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(Icons.people, size: 15, color: c.textSecondary),
+                        const SizedBox(width: 4),
+                        Text("${entrepriseData!.suivi ?? 0} abonnés", style: TextStyle(color: c.textSecondary, fontSize: 13)),
+                      ]),
+                      Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(Icons.shopping_bag, size: 15, color: c.textSecondary),
+                        const SizedBox(width: 4),
+                        Text("${produits.length}+ produits", style: TextStyle(color: c.textSecondary, fontSize: 13)),
+                      ]),
+                    ]),
+                    if (entrepriseData!.description != null && entrepriseData!.description!.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(entrepriseData!.description!, style: TextStyle(color: c.textSecondary, fontSize: 13, height: 1.35), maxLines: 3, overflow: TextOverflow.ellipsis),
+                    ],
                   ],
                 ),
               ),
             ],
           ),
-          SizedBox(height: 16),
-
+          const SizedBox(height: 14),
+          Divider(height: 1, color: c.divider),
+          const SizedBox(height: 12),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              if (_isOwner || _isAdmin) ...[
-                _buildStatItem(
-                  icon: Icons.monetization_on,
-                  value: "${entrepriseData!.publicash?.toStringAsFixed(0) ?? '0'}",
-                  label: "Publicash",
-                  color: Colors.yellow,
-                ),
-              ],
-
-              _buildStatItem(
-                icon: Icons.star,
-                value: "${_getAbonnementLabel()}",
-                label: "Abonnement",
-                color: CustomConstants.kPrimaryColor,
-              ),
-
-              _buildStatItem(
-                icon: Icons.shopping_bag,
-                value: "${produits.length}",
-                label: "Produits",
-                color: Colors.green,
-              ),
+              if (_isOwner || _isAdmin)
+                Expanded(child: _buildStatItem(icon: Icons.monetization_on, value: "${entrepriseData!.publicash?.toStringAsFixed(0) ?? '0'}", label: "Publicash")),
+              Expanded(child: _buildStatItem(icon: Icons.star, value: _getAbonnementLabel(), label: "Abonnement")),
+              Expanded(child: _buildStatItem(icon: Icons.shopping_bag, value: "${produits.length}", label: "Produits")),
             ],
           ),
         ],
@@ -374,106 +324,54 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
     return 'Gratuit';
   }
 
-  Widget _buildStatItem({required IconData icon, required String value, required String label, required Color color}) {
+  Widget _buildStatItem({required IconData icon, required String value, required String label}) {
+    final c = _c;
     return Column(
       children: [
         Container(
-          padding: EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, size: 20, color: color),
+          width: 34,
+          height: 34,
+          decoration: BoxDecoration(color: c.primary.withOpacity(0.12), shape: BoxShape.circle),
+          child: Icon(icon, size: 18, color: c.primary),
         ),
-        SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 12,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.grey,
-            fontSize: 10,
-          ),
-        ),
+        const SizedBox(height: 5),
+        Text(value, style: TextStyle(color: c.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w800)),
+        Text(label, style: TextStyle(color: c.textSecondary, fontSize: 11)),
       ],
     );
   }
 
+  Widget _skel({double? w, double h = 14, double r = 6}) => Container(width: w, height: h, decoration: BoxDecoration(color: _c.shimmerBase, borderRadius: BorderRadius.circular(r)));
+
   Widget _buildHeaderSkeleton() {
     return Container(
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.black,
-        borderRadius: BorderRadius.circular(15),
-      ),
+      padding: const EdgeInsets.all(16),
+      decoration: _card(radius: 18),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.grey[800],
-            ),
-          ),
-          SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 150,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[800],
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-                SizedBox(height: 8),
-                Container(
-                  width: 200,
-                  height: 14,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[800],
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          Container(width: 72, height: 72, decoration: BoxDecoration(shape: BoxShape.circle, color: _c.shimmerBase)),
+          const SizedBox(width: 14),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_skel(w: 150, h: 20), const SizedBox(height: 8), _skel(w: 200)])),
         ],
       ),
     );
   }
 
+  Future<void> _startShoppingLive() => startShoppingLive(context, produits);
+
   Widget _buildActionButtons() {
-    if (!_isOwner && !_isAdmin) return SizedBox();
+    if (!_isOwner && !_isAdmin) return const SizedBox();
+    final c = _c;
 
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.grey[900],
-        borderRadius: BorderRadius.circular(12),
-      ),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+      decoration: _card(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Actions rapides",
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          SizedBox(height: 12),
+          Text("Actions rapides", style: TextStyle(color: c.textPrimary, fontSize: 15, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 10),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -481,52 +379,36 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
               _buildActionButton(
                 icon: Icons.star,
                 label: "Abonnement",
-                color: CustomConstants.kPrimaryColor,
                 onTap: () {
                   if (entrepriseData?.abonnement != null) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CurrentSubscriptionPage(
-                          abonnement: entrepriseData!.abonnement!, entreprise: entrepriseData!,
-                        ),
-                      ),
-                    );
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => CurrentSubscriptionPage(abonnement: entrepriseData!.abonnement!, entreprise: entrepriseData!)));
                   }
                 },
               ),
-
               if (_isAdmin)
                 _buildActionButton(
                   icon: Icons.add,
                   label: "Annonce",
-                  color: Colors.green,
                   onTap: () async {
                     await userProvider.getGratuitInfos().then((value) {
                       Navigator.pushNamed(context, '/new_annonce');
                     });
                   },
                 ),
-
               if (_isAdmin)
                 _buildActionButton(
                   icon: Icons.category,
                   label: "Catégories",
-                  color: Colors.yellow,
                   onTap: () async {
                     await userProvider.getGratuitInfos().then((value) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => AddCategorie()),
-                      );
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => AddCategorie()));
                     });
                   },
                 ),
-
+              if (_isOwner) _buildActionButton(icon: Icons.live_tv_rounded, label: "Vente en direct", onTap: _startShoppingLive),
               _buildActionButton(
                 icon: Icons.chat,
                 label: "Clients",
-                color: Colors.purple,
                 onTap: () {
                   userProvider.getUserEntreprise(authProvider.loginUserData.id!).then((value) {
                     if (value) {
@@ -544,67 +426,52 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
     );
   }
 
-  Widget _buildActionButton({required IconData icon, required String label, required Color color, required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withOpacity(0.3)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 16, color: color),
-            SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
+  /// Bouton d'action : même taille, même style, même couleur d'icône pour tous.
+  Widget _buildActionButton({required IconData icon, required String label, required VoidCallback onTap}) {
+    final c = _c;
+    return Material(
+      color: c.surfaceVariant,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: c.border)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 17, color: c.primary),
+              const SizedBox(width: 7),
+              Text(label, style: TextStyle(color: c.textPrimary, fontSize: 12.5, fontWeight: FontWeight.w700)),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildFilterChips() {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: SingleChildScrollView(
+    final c = _c;
+    return SizedBox(
+      height: 40,
+      child: ListView(
         scrollDirection: Axis.horizontal,
-        child: Row(
-          children: _filters.map((filter) {
-            final isSelected = _selectedFilter == filter;
-            return Padding(
-              padding: const EdgeInsets.only(right: 8.0),
-              child: FilterChip(
-                label: Text(
-                  _getFilterLabel(filter),
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.grey,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                selected: isSelected,
-                onSelected: (selected) => _onFilterChanged(filter),
-                backgroundColor: Colors.grey[900],
-                selectedColor: CustomConstants.kPrimaryColor,
-                checkmarkColor: Colors.white,
-                shape: StadiumBorder(
-                  side: BorderSide(
-                    color: isSelected ? CustomConstants.kPrimaryColor : Colors.grey[700]!,
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: _filters.map((filter) {
+          final isSelected = _selectedFilter == filter;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: ChoiceChip(
+              label: Text(_getFilterLabel(filter), style: TextStyle(color: isSelected ? c.onPrimary : c.textPrimary, fontSize: 12.5, fontWeight: FontWeight.w700)),
+              selected: isSelected,
+              showCheckmark: false,
+              onSelected: (selected) => _onFilterChanged(filter),
+              backgroundColor: c.surface,
+              selectedColor: c.primary,
+              shape: StadiumBorder(side: BorderSide(color: isSelected ? c.primary : c.border)),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
@@ -620,6 +487,7 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
   }
 
   Widget _buildProductsGrid() {
+    final c = _c;
     if (_isLoading) {
       return _buildProductsSkeleton();
     }
@@ -631,95 +499,41 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
     return Column(
       children: [
         GridView.builder(
-          physics: NeverScrollableScrollPhysics(),
+          physics: const NeverScrollableScrollPhysics(),
           shrinkWrap: true,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.75,
-          ),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.74),
           itemCount: produits.length,
-          itemBuilder: (context, index) {
-            return _buildProductCard(produits[index]);
-          },
+          itemBuilder: (context, index) => _buildProductCard(produits[index]),
         ),
-
         if (_isLoadingMore)
-          Container(
-            padding: EdgeInsets.all(20),
-            child: Center(
-              child: CircularProgressIndicator(
-                color: CustomConstants.kPrimaryColor,
-              ),
-            ),
-          ),
-
+          Padding(padding: const EdgeInsets.all(20), child: Center(child: CircularProgressIndicator(color: c.primary))),
         if (!_hasMoreData && produits.isNotEmpty)
-          Container(
-            padding: EdgeInsets.all(20),
-            child: Center(
-              child: Text(
-                'Tous les produits sont affichés',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ),
+          Padding(padding: const EdgeInsets.all(20), child: Center(child: Text('Tous les produits sont affichés', style: TextStyle(color: c.textSecondary, fontSize: 13)))),
       ],
     );
   }
 
   Widget _buildProductCard(ArticleData article) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ProduitDetail(productId: article.id!),
-          ),
-        );
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.grey[900],
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 8,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
+    final c = _c;
+    return Material(
+      color: c.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: c.border)),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => ProduitDetail(productId: article.id!))),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Stack(
               children: [
-                Container(
-                  height: 120,
+                SizedBox(
+                  height: 128,
                   width: double.infinity,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(12),
-                      topRight: Radius.circular(12),
-                    ),
-                    child: CachedNetworkImage(
-                      imageUrl: article.images?.isNotEmpty == true
-                          ? article.images!.first
-                          : '',
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        color: Colors.grey[800],
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        color: Colors.grey[800],
-                        child: Icon(Icons.shopping_bag, color: Colors.grey),
-                      ),
-                    ),
+                  child: CachedNetworkImage(
+                    imageUrl: article.images?.isNotEmpty == true ? article.images!.first : '',
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(color: c.shimmerBase),
+                    errorWidget: (context, url, error) => Container(color: c.surfaceVariant, child: Icon(Icons.shopping_bag, color: c.textSecondary)),
                   ),
                 ),
                 if (article.estBoosted)
@@ -727,80 +541,38 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
                     top: 8,
                     left: 8,
                     child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.rocket_launch, size: 10, color: Colors.white),
-                          SizedBox(width: 2),
-                          Text(
-                            'BOOST',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 8,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(color: c.badgeFill, borderRadius: BorderRadius.circular(8)),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Icon(Icons.rocket_launch, size: 10, color: c.onBadge),
+                        const SizedBox(width: 3),
+                        Text('BOOST', style: TextStyle(color: c.onBadge, fontSize: 9, fontWeight: FontWeight.w800)),
+                      ]),
                     ),
                   ),
               ],
             ),
-
-            Padding(
-              padding: EdgeInsets.all(8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    article.titre ?? 'Produit',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    '${article.prix ?? 0} FCFA',
-                    style: TextStyle(
-                      color: CustomConstants.kPrimaryColor,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(Icons.remove_red_eye, size: 12, color: Colors.grey),
-                      SizedBox(width: 4),
-                      Text(
-                        '${article.vues ?? 0}',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 10,
-                        ),
-                      ),
-                      Spacer(),
-                      Icon(Icons.favorite, size: 12, color: Colors.grey),
-                      SizedBox(width: 4),
-                      Text(
-                        '${article.jaime ?? 0}',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 10,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(article.titre ?? 'Produit', style: TextStyle(color: c.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w600, height: 1.2), maxLines: 2, overflow: TextOverflow.ellipsis),
+                    const SizedBox(height: 4),
+                    Text('${article.prix ?? 0} FCFA', style: TextStyle(color: c.primary, fontSize: 15, fontWeight: FontWeight.w800)),
+                    const Spacer(),
+                    Row(children: [
+                      Icon(Icons.remove_red_eye, size: 13, color: c.textSecondary),
+                      const SizedBox(width: 4),
+                      Text('${article.vues ?? 0}', style: TextStyle(color: c.textSecondary, fontSize: 11)),
+                      const Spacer(),
+                      Icon(Icons.favorite, size: 13, color: c.textSecondary),
+                      const SizedBox(width: 4),
+                      Text('${article.jaime ?? 0}', style: TextStyle(color: c.textSecondary, fontSize: 11)),
+                    ]),
+                  ],
+                ),
               ),
             ),
           ],
@@ -811,91 +583,38 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
 
   Widget _buildProductsSkeleton() {
     return GridView.builder(
-      physics: NeverScrollableScrollPhysics(),
+      physics: const NeverScrollableScrollPhysics(),
       shrinkWrap: true,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.75,
-      ),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.74),
       itemCount: 6,
-      itemBuilder: (context, index) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.grey[900],
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                height: 120,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.grey[800],
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    topRight: Radius.circular(12),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: EdgeInsets.all(8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      height: 12,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[800],
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Container(
-                      height: 14,
-                      width: 80,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[800],
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+      itemBuilder: (context, index) => Container(
+        decoration: _card(radius: 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(height: 128, width: double.infinity, decoration: BoxDecoration(color: _c.shimmerBase, borderRadius: const BorderRadius.vertical(top: Radius.circular(14)))),
+            Padding(padding: const EdgeInsets.all(10), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_skel(h: 12), const SizedBox(height: 8), _skel(w: 80)])),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildEmptyState() {
-    return Container(
+    final c = _c;
+    return SizedBox(
       height: 200,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.shopping_bag_outlined, size: 60, color: Colors.grey[600]),
-            SizedBox(height: 16),
-            Text(
-              "Aucun produit trouvé",
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 8),
+            Icon(Icons.shopping_bag_outlined, size: 56, color: c.textSecondary),
+            const SizedBox(height: 14),
+            Text("Aucun produit trouvé", style: TextStyle(color: c.textPrimary, fontSize: 16, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 6),
             Text(
               _isOwner ? "Commencez par ajouter vos premiers produits" : "Cette entreprise n'a pas encore de produits",
-              style: TextStyle(
-                color: Colors.grey[500],
-                fontSize: 14,
-              ),
+              style: TextStyle(color: c.textSecondary, fontSize: 13.5),
               textAlign: TextAlign.center,
             ),
           ],
@@ -905,16 +624,14 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
   }
 
   Widget _buildLoadingState() {
+    final c = _c;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(color: CustomConstants.kPrimaryColor),
-          SizedBox(height: 16),
-          Text(
-            "Chargement...",
-            style: TextStyle(color: Colors.white),
-          ),
+          CircularProgressIndicator(color: c.primary),
+          const SizedBox(height: 16),
+          Text("Chargement...", style: TextStyle(color: c.textPrimary)),
         ],
       ),
     );
@@ -922,90 +639,63 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
 
   @override
   Widget build(BuildContext context) {
+    final c = AppColors.of(context);
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: c.background,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: c.background,
         elevation: 0,
-        title: Text(
-          widget.userId == null ? "Mon Entreprise" : "Boutique",
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        title: Text(widget.userId == null ? "Mon Entreprise" : "Boutique", style: TextStyle(color: c.textPrimary, fontSize: 20, fontWeight: FontWeight.w800)),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: Logo(),
+            padding: const EdgeInsets.only(right: 14.0),
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(10), border: Border.all(color: c.border)),
+              child: Logo(),
+            ),
           ),
         ],
-        iconTheme: IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: c.textPrimary),
       ),
       body: _isLoading
           ? _buildLoadingState()
           : RefreshIndicator(
-        onRefresh: _loadInitialProducts,
-        color: CustomConstants.kPrimaryColor,
-        child: SingleChildScrollView(
-          controller: _scrollController,
-          physics: AlwaysScrollableScrollPhysics(),
-          child: Column(
-            children: [
-              _buildHeader(),
-
-              SizedBox(height: 20),
-
-              if ((_isOwner || _isAdmin) && entrepriseData != null)
-                _buildActionButtons(),
-
-              SizedBox(height: 20),
-
-              if (entrepriseData != null) ...[
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: [
-                      Icon(Icons.shopping_bag, color: CustomConstants.kPrimaryColor),
-                      SizedBox(width: 8),
-                      Text(
-                        "Produits",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Spacer(),
-                      Text(
-                        '${produits.length} produit(s)',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
-                        ),
-                      ),
+              onRefresh: _loadInitialProducts,
+              color: c.primary,
+              child: SingleChildScrollView(
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                child: Column(
+                  children: [
+                    _buildHeader(),
+                    if ((_isOwner || _isAdmin) && entrepriseData != null) ...[
+                      const SizedBox(height: 12),
+                      _buildActionButtons(),
                     ],
-                  ),
+                    if (entrepriseData != null) ...[
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Icon(Icons.shopping_bag, color: c.primary, size: 20),
+                          const SizedBox(width: 8),
+                          Text("Produits", style: TextStyle(color: c.textPrimary, fontSize: 17, fontWeight: FontWeight.w800)),
+                          const Spacer(),
+                          Text('${produits.length} produit(s)', style: TextStyle(color: c.textSecondary, fontSize: 12)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Transform.translate(offset: const Offset(-16, 0), child: SizedBox(width: MediaQuery.of(context).size.width, child: _buildFilterChips())),
+                      const SizedBox(height: 14),
+                      _buildProductsGrid(),
+                    ],
+                  ],
                 ),
-
-                SizedBox(height: 12),
-
-                _buildFilterChips(),
-
-                SizedBox(height: 16),
-
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: _buildProductsGrid(),
-                ),
-              ],
-
-              SizedBox(height: 20),
-            ],
-          ),
-        ),
-      ),
+              ),
+            ),
     );
   }
 }

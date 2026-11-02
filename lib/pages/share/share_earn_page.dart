@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -8,9 +9,9 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../ads/ad_slot.dart';
+import '../../ads/task_ads.dart';
 import '../../layout/centered_content.dart';
 import '../../l10n/tr.dart';
 import '../../providers/authProvider.dart';
@@ -34,26 +35,12 @@ class _ShareEarnPageState extends State<ShareEarnPage> {
   bool _loading = true;
   String? _busyMission;
 
-  /// Gains, parrainage et consigne : ouverts la toute première fois, fermés ensuite pour laisser voir les missions (le résumé reste visible).
-  static const _kInfoSeen = 'share_info_seen';
-  bool _infoOpen = false;
-
   UserAuthProvider get _auth => Provider.of<UserAuthProvider>(context, listen: false);
 
   @override
   void initState() {
     super.initState();
-    _loadInfoPref();
     _load();
-  }
-
-  Future<void> _loadInfoPref() async {
-    try {
-      final sp = await SharedPreferences.getInstance();
-      final seen = sp.getBool(_kInfoSeen) ?? false;
-      if (!seen) await sp.setBool(_kInfoSeen, true);
-      if (mounted && !seen) setState(() => _infoOpen = true);
-    } catch (_) {}
   }
 
   Future<void> _load() async {
@@ -64,8 +51,7 @@ class _ShareEarnPageState extends State<ShareEarnPage> {
       setState(() { _home = h; _loading = false; });
     } catch (_) {
       if (!mounted) return;
-      // Service injoignable : on montre quand même les informations du travail (gains, parrainage, consigne).
-      setState(() { _home = ShareHome.preview(); _loading = false; });
+      setState(() { _error = context.tr('Impossible de charger les missions pour le moment. Réessaie plus tard.'); _loading = false; });
     }
   }
 
@@ -81,7 +67,7 @@ class _ShareEarnPageState extends State<ShareEarnPage> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(_error!, style: TextStyle(color: c.textSecondary), textAlign: TextAlign.center)))
+              ? Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [Text(_error!, style: TextStyle(color: c.textSecondary), textAlign: TextAlign.center), const SizedBox(height: 8), TextButton(onPressed: _load, child: Text(context.tr('Réessayer')))])))
               : RefreshIndicator(onRefresh: _load, child: _content(c, _home!)),
     );
   }
@@ -90,21 +76,20 @@ class _ShareEarnPageState extends State<ShareEarnPage> {
     if (!h.enabled) {
       return ListView(padding: const EdgeInsets.fromLTRB(16, 12, 16, 32), children: [
         CenteredContent(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            _hero(c),
-            _ad(AdSlotKind.detail),
-            _card(c, [
-              _title(c, Icons.schedule_rounded, context.tr('Bientôt disponible')),
-              const SizedBox(height: 6),
-              Text(context.tr('Partage des annonces et gagne des pièces pour chaque clic. Reviens très vite !'), style: TextStyle(color: c.textSecondary, fontSize: 13.5, height: 1.4)),
-            ]),
-            const SizedBox(height: 12),
-            _earnCard(c, h),
-            const SizedBox(height: 12),
-            _sponsorCard(c, h),
-            const SizedBox(height: 12),
-            _rulesCard(c, h),
-            _ad(AdSlotKind.list),
+          child: Column(children: [
+            const SizedBox(height: 40),
+            Container(
+              width: 76,
+              height: 76,
+              decoration: BoxDecoration(color: c.primary.withOpacity(0.12), shape: BoxShape.circle),
+              child: Icon(Icons.campaign_rounded, color: c.primary, size: 36),
+            ),
+            const SizedBox(height: 18),
+            Text(context.tr('Les missions arrivent'), style: TextStyle(color: c.textPrimary, fontSize: 20, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 6),
+            Text(context.tr('Tu pourras bientôt partager des annonces et gagner des pièces.'), textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary, fontSize: 14, height: 1.4)),
+            const SizedBox(height: 22),
+            _infoTile(c, h),
           ]),
         ),
       ]);
@@ -113,62 +98,66 @@ class _ShareEarnPageState extends State<ShareEarnPage> {
       CenteredContent(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           _profileCard(c, h),
-          const SizedBox(height: 12),
-          // les missions d'abord : le reste de l'information se replie
+          const SizedBox(height: 8),
+          _infoTile(c, h),
           if (h.status == 'active') ...[
-            _missions(c, h),
-            const SizedBox(height: 12),
-          ],
-          _infoGroup(c, h),
-          _ad(AdSlotKind.detail),
-          if (h.status == 'active') ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             _myEarnings(c, h),
-            _ad(AdSlotKind.list),
+            const SizedBox(height: 14),
+            _missions(c, h),
           ],
+          _ad(AdSlotKind.detail),
         ]),
       ),
     ]);
   }
 
-  /// Gains, parrainage et consigne regroupés : un résumé toujours visible, le détail s'ouvre au toucher (ouvert seulement la première fois).
-  Widget _infoGroup(AppColors c, ShareHome h) {
-    final summary = context.tr('environ {f} F par clic valide, jusqu\'à {m} F par jour · parrainage +{p} % · seuls les clics valides sont payés', {'f': _n(h.perClickFcfa), 'm': _n(h.dailyCapFcfa), 'p': h.sponsorPct});
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Material(
+  /// Une seule ligne : tout le détail (gains, parrainage, consigne) s'ouvre au toucher dans une fenêtre.
+  Widget _infoTile(AppColors c, ShareHome h) => Material(
         color: c.surface,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () => setState(() => _infoOpen = !_infoOpen),
+          onTap: () => _showInfo(h),
           child: Container(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border)),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            child: Row(children: [
               Icon(Icons.info_outline_rounded, color: c.primary),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(context.tr('Gains, parrainage et consigne'), style: TextStyle(color: c.textPrimary, fontSize: 15.5, fontWeight: FontWeight.w800)),
-                  if (!_infoOpen) Padding(padding: const EdgeInsets.only(top: 3), child: Text(summary, style: TextStyle(color: c.textSecondary, fontSize: 12.5, height: 1.35))),
+                  Text(context.tr('Comment ça marche ?'), style: TextStyle(color: c.textPrimary, fontSize: 14.5, fontWeight: FontWeight.w800)),
+                  Text(h.sponsorPct > 0 ? context.tr('{f} F par clic valide · parrainage +{p} %', {'f': _n(h.perClickFcfa), 'p': h.sponsorPct}) : context.tr('{f} F par clic valide', {'f': _n(h.perClickFcfa)}), style: TextStyle(color: c.textSecondary, fontSize: 12)),
                 ]),
               ),
-              Icon(_infoOpen ? Icons.expand_less_rounded : Icons.expand_more_rounded, color: c.textSecondary),
+              Icon(Icons.chevron_right_rounded, color: c.textSecondary),
             ]),
           ),
         ),
+      );
+
+  /// Gains, parrainage et consigne, à la demande.
+  Future<void> _showInfo(ShareHome h) async {
+    final c = AppColors.of(context);
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: c.background,
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.92),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            _earnCard(c, h),
+            const SizedBox(height: 12),
+            if (h.sponsorPct > 0) ...[_sponsorCard(c, h), const SizedBox(height: 12)],
+            _rulesCard(c, h),
+          ]),
+        ),
       ),
-      if (_infoOpen) ...[
-        const SizedBox(height: 12),
-        _hero(c),
-        const SizedBox(height: 12),
-        _earnCard(c, h),
-        const SizedBox(height: 12),
-        _sponsorCard(c, h),
-        const SizedBox(height: 12),
-        _rulesCard(c, h),
-      ],
-    ]);
+    );
   }
 
   /// La consigne d'un partage, à la demande (bouton « Consigne » de chaque mission).
@@ -205,18 +194,27 @@ class _ShareEarnPageState extends State<ShareEarnPage> {
         Expanded(child: Text(text, style: TextStyle(color: c.textPrimary, fontSize: 16.5, fontWeight: FontWeight.w800))),
       ]);
 
-  Widget _hero(AppColors c) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(gradient: LinearGradient(colors: [c.primary, c.primary.withOpacity(0.75)], begin: Alignment.topLeft, end: Alignment.bottomRight), borderRadius: BorderRadius.circular(18)),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(context.tr('Partage des annonces, gagne des pièces'), style: TextStyle(color: c.onPrimary, fontSize: 21, fontWeight: FontWeight.w900, height: 1.2)),
-          const SizedBox(height: 8),
-          Text(context.tr('Publie une annonce sur ton statut WhatsApp, tes groupes, Telegram, Facebook ou TikTok. Chaque personne qui clique sur ton lien te rapporte de l\'argent : tes gains arrivent en pièces, que tu convertis en FCFA.'), style: TextStyle(color: c.onPrimary, fontSize: 13.5, height: 1.4)),
-        ]),
-      );
-
   /// Gains : valeur d'un clic, exemples, plafond du jour et estimation selon l'audience (estimation, jamais une promesse).
+  /// Délai avant que les pièces « en attente » deviennent des « pièces gagnées » : « 3 jours », « 1 jour » ou « 12 h ». Vide si le serveur ne le dit pas.
+  /// Raison du blocage anti-fraude, dite simplement (le serveur envoie un code et les chiffres).
+  String _fraudReason(BuildContext context, Map<String, dynamic> r) {
+    final n = _n((r['n'] as num?) ?? 0);
+    return switch ('${r['code']}') {
+      'self' => context.tr('{n} clics faits sur tes propres liens (depuis ta connexion).', {'n': n}),
+      'dup' => context.tr('{n} clics en doublon : la même personne a cliqué plusieurs fois.', {'n': n}),
+      'invalid_ratio' => context.tr('{p} % de tes clics ont été refusés ({n} sur {t}).', {'p': '${r['pct'] ?? 0}', 'n': n, 't': '${r['total'] ?? 0}'}),
+      'too_fast' => context.tr('{n} clics venant de navigateurs automatiques, sans vraie visite.', {'n': n}),
+      _ => context.tr('Comportement inhabituel sur tes liens.'),
+    };
+  }
+
+  String _holdText(ShareHome h) {
+    final hrs = h.holdHours;
+    if (hrs <= 0) return '';
+    if (hrs % 24 == 0) return hrs == 24 ? context.tr('1 jour') : context.tr('{n} jours', {'n': hrs ~/ 24});
+    return context.tr('{n} h', {'n': hrs});
+  }
+
   Widget _earnCard(AppColors c, ShareHome h) {
     final per = h.coinsPerClick, cap = h.maxClicksPerDay;
     final estClicks = h.retained > 0 ? (h.retained * h.expectedCtr).round() : (500 * h.expectedCtr).round();
@@ -245,7 +243,12 @@ class _ShareEarnPageState extends State<ShareEarnPage> {
         ),
       ),
       const SizedBox(height: 8),
-      Text(context.tr('Plus ton audience est grande et active, plus tu gagnes. Tes gains sont d\'abord « en attente » pendant {h} h, puis ajoutés à ton solde de pièces, que tu convertis en argent réel (FCFA).', {'h': h.holdHours}), style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.35)),
+      Text(
+        _holdText(h).isEmpty
+            ? context.tr("Plus ton audience est grande et active, plus tu gagnes. Tes pièces passent d'abord « en attente » (contrôle anti-fraude), puis en « pièces gagnées » : tu peux alors les convertir en argent réel. 25 pièces = 10 F.")
+            : context.tr("Plus ton audience est grande et active, plus tu gagnes. Chaque clic valide rapporte des pièces « en attente » pendant {d} (contrôle anti-fraude), puis elles passent en « pièces gagnées » : tu peux alors les convertir en argent réel. 25 pièces = 10 F.", {'d': _holdText(h)}),
+        style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.4),
+      ),
     ]);
   }
 
@@ -307,6 +310,18 @@ class _ShareEarnPageState extends State<ShareEarnPage> {
       'suspended' => (Icons.block_rounded, c.danger, context.tr('Profil suspendu'), h.profile?.reason.isNotEmpty == true ? h.profile!.reason : context.tr('Ton profil est suspendu. Contacte-nous pour en savoir plus.')),
       _ => (Icons.edit_note_rounded, c.info, context.tr('Crée ton profil pour commencer'), context.tr('Dis-nous combien de personnes voient tes statuts et tes groupes. Notre équipe valide ton profil avant ta première mission.')),
     };
+    if (s == 'active') {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border)),
+        child: Row(children: [
+          Icon(icon, color: color, size: 22),
+          const SizedBox(width: 10),
+          Expanded(child: Text(context.tr('Profil validé · {a} personnes', {'a': _n(h.retained)}), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13.5))),
+          TextButton(onPressed: () => _editProfile(h), style: TextButton.styleFrom(visualDensity: VisualDensity.compact), child: Text(context.tr('Modifier'))),
+        ]),
+      );
+    }
     return _card(c, [
       Row(children: [Icon(icon, color: color), const SizedBox(width: 10), Expanded(child: Text(title, style: TextStyle(color: c.textPrimary, fontSize: 16.5, fontWeight: FontWeight.w800)))]),
       const SizedBox(height: 6),
@@ -355,45 +370,18 @@ class _ShareEarnPageState extends State<ShareEarnPage> {
           Expanded(child: Text(published ? context.tr('Publication confirmée : une personne a ouvert ton lien.') : context.tr('En attente : ta publication sera confirmée dès qu\'une personne ouvrira ton lien.'), style: TextStyle(color: c.textPrimary, fontSize: 12.5, fontWeight: FontWeight.w700))),
         ]),
         const SizedBox(height: 8),
-        Row(children: [stat(_n(n('opens')), context.tr('personnes ont ouvert')), stat(_n(n('valid')), context.tr('clics valides')), stat(_n(n('views')), context.tr('vues déclarées'))]),
+        Row(children: [
+          stat(_n(n('opens')), context.tr('personnes ont ouvert')),
+          stat(_n(n('valid')), context.tr('clics valides')),
+          // portée ESTIMÉE par le serveur (ouvertures ÷ taux de clic), en fourchette : rien à déclarer
+          n('views') > 0
+              ? stat('≈ ${_n(n('views_low'))}–${_n(n('views_high'))}', context.tr('personnes touchées (estimation)'))
+              : stat(n('min_people') > 0 ? '≥ ${_n(n('min_people'))}' : '0', n('min_people') > 0 ? context.tr('personnes touchées (au moins)') : context.tr('personnes touchées (estimation)')),
+        ]),
         const SizedBox(height: 6),
-        Align(alignment: Alignment.centerRight, child: TextButton.icon(onPressed: () => _askViews(m), icon: const Icon(Icons.visibility_rounded, size: 16), label: Text(context.tr('Déclarer mes vues')))),
+        Text(context.tr("La portée est estimée à partir des personnes qui ouvrent ton lien. Rien à déclarer : tes gains dépendent seulement des clics valides."), style: TextStyle(color: c.textSecondary, fontSize: 11, height: 1.35)),
       ]),
     );
-  }
-
-  /// Le partageur indique le nombre de vues de sa publication (ex. « Vu par … » du statut WhatsApp). Chiffre déclaré : contrôlé, jamais présenté comme mesuré.
-  Future<void> _askViews(ShareMission m) async {
-    final ctl = TextEditingController();
-    final views = await showDialog<int>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(context.tr('Combien de personnes ont vu ta publication ?')),
-        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(context.tr('Par exemple le nombre de « vues » de ton statut WhatsApp. Sois honnête : ce chiffre est contrôlé avec les ouvertures de ton lien.'), style: const TextStyle(fontSize: 13)),
-          const SizedBox(height: 10),
-          TextField(controller: ctl, keyboardType: TextInputType.number, autofocus: true, decoration: InputDecoration(border: const OutlineInputBorder(), hintText: context.tr('Nombre de vues'))),
-        ]),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(context.tr('Annuler'))),
-          FilledButton(onPressed: () => Navigator.pop(ctx, int.tryParse(ctl.text.trim())), child: Text(context.tr('Envoyer'))),
-        ],
-      ),
-    );
-    if (views == null || !mounted) return;
-    try {
-      final r = await ShareService.reportViews(m.id, views);
-      if (!mounted) return;
-      final msg = r['counted'] == true
-          ? context.tr('Merci, tes vues sont enregistrées.')
-          : r['plausible'] != true
-              ? context.tr('Ce chiffre paraît trop élevé par rapport à ton audience validée : notre équipe va le vérifier.')
-              : context.tr('Enregistré. Il sera compté dès qu\'une personne aura ouvert ton lien.');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
-      await _load();
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(ShareService.explain(e, (s) => context.tr(s)))));
-    }
   }
 
   /// Détail d'une mission : annonce en entier, gain par clic en FCFA, bannière, puis le bouton de partage.
@@ -417,6 +405,7 @@ class _ShareEarnPageState extends State<ShareEarnPage> {
             if (m.text.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: Text(m.text, style: TextStyle(color: c.textPrimary, fontSize: 14, height: 1.4))),
             const SizedBox(height: 12),
             Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), decoration: BoxDecoration(color: c.primary.withOpacity(0.12), borderRadius: BorderRadius.circular(99)), child: Text(context.tr('+{f} F par clic', {'f': _n(m.fcfaPerClick)}), style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 13))),
+            if (m.results != null) _results(c, m),
             _ad(AdSlotKind.detail),
             SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: () => Navigator.pop(ctx, true), icon: const Icon(Icons.ios_share_rounded, size: 18), label: Text(context.tr('Partager')))),
             const SizedBox(height: 6),
@@ -428,58 +417,164 @@ class _ShareEarnPageState extends State<ShareEarnPage> {
     if (go == true && mounted) await _chooseChannel(m);
   }
 
-  Widget _missionCard(AppColors c, ShareMission m) => Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border)),
+  /// Mission en ligne compacte (vignette, marque, titre, gain) : toucher ouvre les détails, où se trouve le bouton Partager.
+  Widget _missionCard(AppColors c, ShareMission m) {
+    final r = m.results;
+    final published = r != null && ((r['published'] as num?) ?? 0) > 0;
+    final valid = r == null ? 0 : ((r['valid'] as num?) ?? 0).toInt();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: c.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: c.border)),
         clipBehavior: Clip.antiAlias,
-        child: InkWell(onTap: () => _showDetail(m), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          if (m.image.isNotEmpty)
-            SizedBox(
-              height: 170, width: double.infinity,
-              child: Stack(fit: StackFit.expand, children: [
-                CachedNetworkImage(imageUrl: m.image, fit: BoxFit.contain, errorWidget: (_, __, ___) => Container(color: c.surfaceVariant)),
-                if (m.video) const Center(child: Icon(Icons.play_circle_fill_rounded, color: Colors.white70, size: 46)),
-              ]),
-            ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              if (m.brand.isNotEmpty) Text(m.brand, style: TextStyle(color: c.textSecondary, fontSize: 12, fontWeight: FontWeight.w700)),
-              Text(m.title, style: TextStyle(color: c.textPrimary, fontSize: 15.5, fontWeight: FontWeight.w800)),
-              if (m.text.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4), child: Text(m.text, maxLines: 3, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 13, height: 1.35))),
-              if (m.results != null) _results(c, m),
-              const SizedBox(height: 10),
-              Row(children: [
-                Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5), decoration: BoxDecoration(color: c.primary.withOpacity(0.12), borderRadius: BorderRadius.circular(99)), child: Text(context.tr('+{f} F par clic', {'f': _n(m.fcfaPerClick)}), style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 12.5))),
-                const Spacer(),
-                TextButton(onPressed: _showConsigne, style: TextButton.styleFrom(visualDensity: VisualDensity.compact, padding: const EdgeInsets.symmetric(horizontal: 10)), child: Text(context.tr('Consigne'))),
-                const SizedBox(width: 4),
-                FilledButton.icon(
-                  onPressed: _busyMission == null ? () => _chooseChannel(m) : null,
-                  icon: _busyMission == m.id ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.ios_share_rounded, size: 18),
-                  label: Text(context.tr('Partager')),
+        child: InkWell(
+          onTap: () => _openDetail(m),
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Row(children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: SizedBox(
+                  width: 64, height: 64,
+                  child: m.image.isEmpty
+                      ? Container(color: c.surfaceVariant, child: Icon(Icons.campaign_rounded, color: c.textSecondary))
+                      : Stack(fit: StackFit.expand, children: [
+                          CachedNetworkImage(imageUrl: m.image, fit: BoxFit.cover, errorWidget: (_, __, ___) => Container(color: c.surfaceVariant)),
+                          if (m.video) const Center(child: Icon(Icons.play_circle_fill_rounded, color: Colors.white70, size: 26)),
+                        ]),
                 ),
-              ]),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  if (m.brand.isNotEmpty) Text(m.brand, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 11.5, fontWeight: FontWeight.w700)),
+                  Text(m.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.w800, height: 1.2)),
+                  const SizedBox(height: 5),
+                  Row(children: [
+                    Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: c.primary.withOpacity(0.12), borderRadius: BorderRadius.circular(99)), child: Text(context.tr('+{f} F par clic', {'f': _n(m.fcfaPerClick)}), style: TextStyle(color: c.primary, fontWeight: FontWeight.w800, fontSize: 11.5))),
+                    if (r != null) ...[
+                      const SizedBox(width: 8),
+                      Icon(published ? Icons.verified_rounded : Icons.hourglass_top_rounded, size: 14, color: published ? c.primary : c.textSecondary),
+                      const SizedBox(width: 3),
+                      Flexible(child: Text(context.tr('{n} clics valides', {'n': _n(valid)}), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 11.5))),
+                    ],
+                  ]),
+                ]),
+              ),
+              Icon(Icons.chevron_right_rounded, color: c.textSecondary),
             ]),
           ),
-        ])),
-      );
+        ),
+      ),
+    );
+  }
 
+  /// Ouvre les détails d'une mission : une pub plein écran passe d'abord (plafonnée par jour, sans jamais bloquer l'accès), puis la fiche avec le bouton Partager.
+  Future<void> _openDetail(ShareMission m) async {
+    final user = _auth.loginUserData;
+    // Pub seulement si le temps d'attente entre deux pubs est passé : sinon les détails s'ouvrent tout de suite. La personne est PRÉVENUE avant, pour ne pas confondre la pub avec la mission.
+    if (await TaskAds.canShowMissionAd(user)) {
+      if (!mounted) return;
+      final go = await showDialog<bool>(
+        context: context,
+        builder: (ctx) {
+          final c = AppColors.of(ctx);
+          return AlertDialog(
+            backgroundColor: c.surface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+            title: Row(children: [
+              Icon(Icons.lock_open_rounded, color: c.primary),
+              const SizedBox(width: 10),
+              Expanded(child: Text(ctx.tr('Débloquer la mission'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 17))),
+            ]),
+            content: Text(ctx.tr("Une courte publicité va s'afficher pour débloquer la mission. Ce n'est pas la mission : ferme la publicité, puis tu verras les détails et le bouton Partager."), style: TextStyle(color: c.textSecondary, height: 1.4)),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(ctx.tr('Annuler'))),
+              FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(ctx.tr('Continuer'))),
+            ],
+          );
+        },
+      );
+      if (go != true || !mounted) return;
+      try {
+        await TaskAds.beforeMission(user);
+      } catch (_) {}
+    }
+    if (!mounted) return;
+    await _showDetail(m);
+  }
+
+  bool? _earningsOpen;   // null = décidé à l'affichage (ouvert seulement si des gains sont bloqués)
+
+  /// Mes gains : une ligne résumée, pliable ; ouvert d'office seulement quand des gains sont bloqués par la détection de fraude.
   Widget _myEarnings(AppColors c, ShareHome h) {
-    Widget cell(String value, String label) => Expanded(child: Column(children: [Text(value, style: TextStyle(color: c.textPrimary, fontSize: 18, fontWeight: FontWeight.w900)), const SizedBox(height: 2), Text(label, textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary, fontSize: 11.5))]));
-    return _card(c, [
-      _title(c, Icons.insights_rounded, context.tr('Mes gains de partage')),
-      const SizedBox(height: 12),
-      Row(children: [
-        cell(_n(h.validClicks), context.tr('clics valides')),
-        cell(_n(h.pendingFcfa * 2.5), context.tr('pièces en attente')),
-        cell(_n(h.paidCoins), context.tr('pièces gagnées')),
+    final open = _earningsOpen ?? (h.blockedCoins > 0);
+    final pendingCoins = (h.pendingFcfa * 2.5).round();
+    Widget cell(String value, String label) => Expanded(
+          child: Column(children: [
+            Text(value, style: TextStyle(color: c.textPrimary, fontSize: 17, fontWeight: FontWeight.w900)),
+            Text(label, textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary, fontSize: 11)),
+          ]),
+        );
+    return Container(
+      decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: h.blockedCoins > 0 ? c.danger.withOpacity(0.5) : c.border)),
+      clipBehavior: Clip.antiAlias,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        InkWell(
+          onTap: () => setState(() => _earningsOpen = !open),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(children: [
+              Icon(Icons.insights_rounded, color: c.primary, size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(context.tr('Mes gains de partage'), style: TextStyle(color: c.textPrimary, fontSize: 14.5, fontWeight: FontWeight.w800)),
+                  Text(
+                    context.tr('{a} clics valides · {b} pièces gagnées · {p} en attente', {'a': _n(h.validClicks), 'b': _n(h.paidCoins), 'p': _n(pendingCoins)}),
+                    maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: c.textSecondary, fontSize: 12),
+                  ),
+                ]),
+              ),
+              if (h.blockedCoins > 0) Padding(padding: const EdgeInsets.only(right: 6), child: Icon(Icons.shield_outlined, color: c.danger, size: 18)),
+              Icon(open ? Icons.expand_less_rounded : Icons.expand_more_rounded, color: c.textSecondary),
+            ]),
+          ),
+        ),
+        if (open) Padding(
+          padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Divider(height: 1, color: c.divider),
+            const SizedBox(height: 10),
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              cell(_n(h.validClicks), context.tr('clics valides')),
+              cell('${_n(pendingCoins)} · ≈ ${_n(h.pendingFcfa)} F', context.tr('en attente')),
+              cell('${_n(h.paidCoins)} · ≈ ${_n(h.paidCoins / 2.5)} F', context.tr('pièces gagnées')),
+            ]),
+            const SizedBox(height: 8),
+            Text(context.tr("Aujourd'hui : {f} F sur {m} F maximum par jour.", {'f': _n(h.todayFcfa), 'm': _n(h.dailyCapFcfa)}), style: TextStyle(color: c.textPrimary, fontSize: 12.5, fontWeight: FontWeight.w700)),
+            if (h.blockedCoins > 0) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: c.danger.withOpacity(0.08), borderRadius: BorderRadius.circular(12), border: Border.all(color: c.danger.withOpacity(0.4))),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(context.tr('{n} pièces bloquées : détection de fraude', {'n': _n(h.blockedCoins)}), style: TextStyle(color: c.danger, fontSize: 13.5, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 4),
+                  Text(context.tr('Notre contrôle anti-fraude a repéré un comportement anormal sur tes liens de ces 3 derniers jours :'), style: TextStyle(color: c.textPrimary, fontSize: 12.5, height: 1.4)),
+                  for (final r in h.blockedReasons)
+                    Padding(padding: const EdgeInsets.only(top: 3), child: Text('• ${_fraudReason(context, r)}', style: TextStyle(color: c.textPrimary, fontSize: 12.5, height: 1.4, fontWeight: FontWeight.w700))),
+                  const SizedBox(height: 6),
+                  Text(context.tr('Tes gains sont mis de côté, pas perdus : notre équipe vérifie ton compte et les libère si tout est en ordre. Pour éviter ça : ne clique pas sur tes propres liens et ne fais pas cliquer plusieurs fois la même personne.'), style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.4)),
+                ]),
+              ),
+            ],
+          ]),
+        ),
       ]),
-      const SizedBox(height: 10),
-      Text(context.tr('Soit environ {f} F déjà gagnés, convertibles en argent réel.', {'f': _n(h.paidCoins / 2.5)}), style: TextStyle(color: c.primary, fontSize: 13, fontWeight: FontWeight.w700)),
-      const SizedBox(height: 4),
-      Text(context.tr('Aujourd\'hui : {f} F sur un maximum de {m} F par jour.', {'f': _n(h.todayFcfa), 'm': _n(h.dailyCapFcfa)}), style: TextStyle(color: c.textSecondary, fontSize: 12.5)),
-    ]);
+    );
   }
 
   // ─── Partager ─────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -585,6 +680,33 @@ class _ProfileFormState extends State<_ProfileForm> {
   bool _accept = false;
   bool _busy = false;
   String? _err;
+
+  @override
+  void initState() {
+    super.initState();
+    // Modification d'un profil existant : le formulaire est REMPLI avec ce que la personne a déjà donné (rien à ressaisir)
+    final j = widget.home.profile?.json;
+    if (j == null) return;
+    String s(String k) => '${j[k] ?? ''}';
+    String n(String k) => '${(j[k] as num?)?.toInt() ?? 0}';
+    _wa.text = s('whatsapp');
+    if (s('country').isNotEmpty) _country.text = s('country').toUpperCase();
+    _city.text = s('city');
+    _status.text = n('status_audience');
+    _tg.text = n('telegram_audience');
+    _other.text = n('other_audience');
+    _about.text = s('about');
+    _accept = s('rules_version') == widget.home.rulesVersion;   // règles déjà acceptées dans cette version : rien à recocher ; si elles ont changé, il faut les accepter à nouveau
+    dynamic g = j['groups'];
+    if (g is String && g.isNotEmpty) {
+      try { g = jsonDecode(g); } catch (_) { g = null; }
+    }
+    if (g is List) {
+      for (final e in g) {
+        if (e is Map) _groups.add((TextEditingController(text: '${e['name'] ?? ''}'), TextEditingController(text: '${(e['members'] as num?)?.toInt() ?? ''}')));
+      }
+    }
+  }
 
   @override
   void dispose() {

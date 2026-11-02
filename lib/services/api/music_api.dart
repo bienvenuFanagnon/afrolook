@@ -90,9 +90,9 @@ class MusicApi {
       if (search != null && search.isNotEmpty) 'search': search,
       if (pricing != null) 'pricing': pricing,
       'sort': sort,
-      if (mine) 'mine': true,
+      if (mine) 'mine': 1,
       'page': page,
-      'limit': limit,
+      'limit': limit.clamp(1, 50), // le serveur refuse (422) plus de 50 par page
     });
     return (items: _list(r).map(soundFromApi).toList(), more: r is Map && r['has_more'] == true);
   }
@@ -216,7 +216,7 @@ class MusicApi {
 
   // ── Playlists ──
   static Future<List<Map<String, dynamic>>> playlists({bool mine = false, bool added = false}) async =>
-      _list(await _c.get('/music/playlists', query: {if (mine) 'mine': true, if (added) 'added': true}));
+      _list(await _c.get('/music/playlists', query: {if (mine) 'mine': 1, if (added) 'added': 1}));
 
   static Future<Map<String, dynamic>?> playlist(String id) async {
     try {

@@ -82,11 +82,12 @@ class _MonetisationPageState extends State<MonetisationPage> {
       appBar: AppBar(
         title: Text(
           t.profileMenuMonetization,
-          style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold),
+          style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 20),
         ),
-        centerTitle: true,
-        backgroundColor: colors.surface,
+        centerTitle: false,
+        backgroundColor: colors.background,
         elevation: 0,
+        scrolledUnderElevation: 0,
         iconTheme: IconThemeData(color: colors.textPrimary),
         actions: [
           IconButton(
@@ -161,7 +162,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
     final tier = _getTier(creatorScore);
     final double multiplier = tier['multiplier'] as double;
     final String tierLabel = tier['label'] as String;
-    final Color tierColor = Color(tier['color'] as int);
+    final Color tierColor = colors.primary;   // un seul accent : le palier se lit au libellé et à la pastille, pas à une autre couleur
     final double myRate = baseRate * multiplier;
     final int pendingViews = (totalViews - creditedViews).clamp(0, totalViews);
     final double pendingEarnings = pendingViews * myRate;
@@ -297,7 +298,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
                         ),
                         const SizedBox(height: 6),
                         ..._scoreTiers.map((t) {
-                          final tColor = Color(t['color'] as int);
+                          final tColor = colors.primary;
                           final tMulti = t['multiplier'] as double;
                           final tLabel = t['label'] as String;
                           final tMin = t['minScore'] as double;
@@ -429,7 +430,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
                 child: _coinTile(
                   c,
                   icon: Icons.toll_rounded,
-                  color: c.supportAccent,
+                  color: c.primary,
                   title: context.tr('Pièces de dépôt'),
                   coins: depotCoins,
                   caption: context.tr('Pour acheter, offrir et voter'),
@@ -490,7 +491,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
                 _moneyRow(
                   c,
                   icon: Icons.savings_rounded,
-                  color: c.info,
+                  color: c.primary,
                   title: context.tr('Dépôt FCFA'),
                   value: _money(user.votre_solde_depot ?? 0),
                   action: context.tr('Convertir en pièces'),
@@ -525,10 +526,10 @@ class _MonetisationPageState extends State<MonetisationPage> {
               _linkRow(c, Icons.article_rounded, c.primary, context.tr('Rémunération des posts'),
                   () => Navigator.push(context, MaterialPageRoute(builder: (_) => MesGainsPage(userId: user.id!)))),
               Divider(height: 1, thickness: 0.5, indent: 52, color: c.border),
-              _linkRow(c, Icons.campaign_rounded, c.info, context.tr('Gains publicitaires'),
+              _linkRow(c, Icons.campaign_rounded, c.primary, context.tr('Gains publicitaires'),
                   () => Navigator.push(context, MaterialPageRoute(builder: (_) => MesGainsPublicitePage(userId: user.id!)))),
               Divider(height: 1, thickness: 0.5, indent: 52, color: c.border),
-              _linkRow(c, Icons.receipt_long_rounded, c.warning, context.tr('Historique des retraits'),
+              _linkRow(c, Icons.receipt_long_rounded, c.primary, context.tr('Historique des retraits'),
                   () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserRetraitListPage()))),
             ],
           ),
@@ -579,7 +580,7 @@ class _MonetisationPageState extends State<MonetisationPage> {
       decoration: BoxDecoration(
         color: c.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.35)),
+        border: Border.all(color: c.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -819,12 +820,7 @@ class _TxGroupedListState extends State<_TxGroupedList> {
   }
 
   Color _groupColor(String group, AppColors c) {
-    switch (group) {
-      case 'Entrées':  return c.success;
-      case 'Dépenses': return c.danger;
-      case 'Retraits': return c.warning;
-      default:         return c.info;
-    }
+    return group == 'Entrées' ? c.primary : c.textSecondary;   // entrées en vert, le reste en neutre
   }
 
   @override
@@ -990,8 +986,7 @@ class TransactionWidget extends StatelessWidget {
     final c = AppColors.of(context);
     final type = transaction.type?.toUpperCase() ?? '';
     final credit = _isCredit(type, transaction);
-    final isWithdrawal = type == 'RETRAIT' || type == 'RETRAITADMIN';
-    final tint = credit ? c.success : (isWithdrawal ? c.warning : c.danger);
+    final tint = credit ? c.primary : c.textSecondary;
     // Achat de pièces : montant réellement payé (sinon équivalent FCFA sur iPhone)
     final equivalent = TxAmount.paidLabel(transaction) ?? TxAmount.equivalent(transaction);
     final desc = transaction.description?.trim() ?? '';

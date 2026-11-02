@@ -819,7 +819,7 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
             ),
             child: Icon(
               Icons.arrow_back,
-              color: _colors.accent,
+              color: _colors.accentText,
               size: 20,
             ),
           ),
@@ -828,7 +828,7 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
         title: Text(
           'Invitations',
           style: TextStyle(
-            color: _colors.accent,
+            color: _colors.accentText,
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
@@ -847,7 +847,7 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
               children: [
                 Icon(
                   Icons.notifications_none,
-                  color: _colors.accent,
+                  color: _colors.accentText,
                   size: 20,
                 ),
                 if (_invitations.isNotEmpty)
@@ -959,7 +959,7 @@ class _MesInvitationsState extends State<MesInvitationsPage> with SingleTickerPr
                       ),
                       child: Icon(
                         Icons.mail_outline,
-                        color: _colors.accent,
+                        color: _colors.accentText,
                         size: 60,
                       ),
                     ),

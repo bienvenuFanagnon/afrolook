@@ -115,7 +115,7 @@ class JoinLiveDialog extends StatelessWidget {
             Icon(Icons.video_camera_front, size: 48, color: Color(0xFFF9A825)),
             SizedBox(height: 16),
             Text(
-              'Rejoindre le live',
+              tr('Rejoindre le live'),
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 18,
@@ -124,7 +124,7 @@ class JoinLiveDialog extends StatelessWidget {
             ),
             SizedBox(height: 12),
             Text(
-              'Comment souhaitez-vous rejoindre ce live?',
+              tr('Comment souhaitez-vous rejoindre ce live?'),
               style: TextStyle(color: Colors.white70),
               textAlign: TextAlign.center,
             ),
@@ -155,7 +155,7 @@ class JoinLiveDialog extends StatelessWidget {
                       padding: EdgeInsets.symmetric(vertical: 12),
                     ),
                     child: Text(
-                      '🎤 Participant (250 pièces)',
+                      tr('🎤 Participant (250 pièces)'),
                       style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -214,7 +214,7 @@ class GiftPanelWidget extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Envoyer un cadeau',
+                        tr('Envoyer un cadeau'),
                         style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -357,7 +357,7 @@ class UsersPanelWidget extends StatelessWidget {
                                   fontWeight: FontWeight.bold,
                                 )),
                               Text(
-                                isHost ? 'Hôte' : (isParticipant ? 'Participant' : 'Spectateur'),
+                                isHost ? tr('Hôte') : (isParticipant ? 'Participant' : 'Spectateur'),
                                 style: TextStyle(
                                   color: isHost ? Color(0xFFF9A825) : Colors.white70,
                                   fontSize: 10,
@@ -409,7 +409,7 @@ class PinnedTextEditorWidget extends StatelessWidget {
         child: Column(
           children: [
             Text(
-              'Texte épinglé',
+              tr('Texte épinglé'),
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -422,7 +422,7 @@ class PinnedTextEditorWidget extends StatelessWidget {
               style: TextStyle(color: Colors.white),
               maxLines: 2,
               decoration: InputDecoration(
-                hintText: 'Entrez votre message...',
+                hintText: tr('Entrez votre message...'),
                 hintStyle: TextStyle(color: Colors.white54),
                 border: OutlineInputBorder(
                   borderSide: BorderSide(color: Color(0xFFF9A825)),
@@ -448,7 +448,7 @@ class PinnedTextEditorWidget extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Color(0xFFF9A825),
                     ),
-                    child: Text('Épingler', style: TextStyle(color: Colors.black)),
+                    child: Text(tr('Épingler'), style: TextStyle(color: Colors.black)),
                   ),
                 ),
               ],

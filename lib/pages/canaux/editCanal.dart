@@ -124,7 +124,7 @@ class _EditCanalState extends State<EditCanal> {
           Text(
             _l10n.canalFieldEditProfile + ' & ' + _l10n.canalFieldEditCover,
             style: TextStyle(
-              color: _colors.accent,
+              color: _colors.accentText,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -213,7 +213,7 @@ class _EditCanalState extends State<EditCanal> {
                             borderRadius: BorderRadius.circular(15),
                             child: Image.network(widget.canal.urlCouverture!, fit: BoxFit.cover),
                           )
-                              : Icon(Icons.photo_library, color: _colors.accent, size: 40),
+                              : Icon(Icons.photo_library, color: _colors.accentText, size: 40),
                         ),
                         Positioned(
                           bottom: 5,
@@ -324,8 +324,8 @@ class _EditCanalState extends State<EditCanal> {
                 labelText: context.tr('Prix de l\'abonnement (pièces)'),
                 suffixText: context.tr('pièces'),
                 helperText: context.tr('1 FCFA = 2,5 pièces'),
-                labelStyle: TextStyle(color: _colors.accent),
-                prefixIcon: Icon(Icons.toll_rounded, color: _colors.accent),
+                labelStyle: TextStyle(color: _colors.accentText),
+                prefixIcon: Icon(Icons.toll_rounded, color: _colors.accentText),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(color: _colors.accent),
@@ -465,13 +465,13 @@ class _EditCanalState extends State<EditCanal> {
         ),
         child: Row(
           children: [
-            Icon(Icons.people, color: _colors.accent, size: 16),
+            Icon(Icons.people, color: _colors.accentText, size: 16),
             SizedBox(width: 8),
             Expanded(
               child: Text(
                 context.tr('{a} abonné(s) actuel(s) seront affectés par ce changement', {'a': subscribersCount}),
                 style: TextStyle(
-                  color: _colors.accent,
+                  color: _colors.accentText,
                   fontSize: 12,
                 ),
               ),
@@ -536,7 +536,7 @@ class _EditCanalState extends State<EditCanal> {
             style: TextStyle(color: _colors.textPrimary),
             decoration: InputDecoration(
               labelText: _l10n.canalFieldDescription,
-              labelStyle: TextStyle(color: _colors.accent),
+              labelStyle: TextStyle(color: _colors.accentText),
               alignLabelWithHint: true,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -647,7 +647,7 @@ class _EditCanalState extends State<EditCanal> {
           Text(
             context.tr('Statistiques du Canal'),
             style: TextStyle(
-              color: _colors.accent,
+              color: _colors.accentText,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -869,7 +869,7 @@ class _EditCanalState extends State<EditCanal> {
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
-            child: Icon(Icons.edit, color: _colors.accent),
+            child: Icon(Icons.edit, color: _colors.accentText),
           ),
         ],
       ),
@@ -912,12 +912,12 @@ class _EditCanalState extends State<EditCanal> {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.info, color: _colors.accent, size: 20),
+                        Icon(Icons.info, color: _colors.accentText, size: 20),
                         SizedBox(width: 10),
                         Text(
                           context.tr('Information importante'),
                           style: TextStyle(
-                            color: _colors.accent,
+                            color: _colors.accentText,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

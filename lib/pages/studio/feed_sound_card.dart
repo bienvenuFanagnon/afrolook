@@ -245,7 +245,7 @@ class _FeedSoundCardState extends State<FeedSoundCard> {
                 right: 14,
                 bottom: 14,
                 child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(('NOUVEAU${s.genre != null && s.genre!.isNotEmpty ? ' · ${s.genre}' : ''}').toUpperCase(), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.accent, fontWeight: FontWeight.w800, fontSize: 10, letterSpacing: 1.4)),
+                  Text(('NOUVEAU${s.genre != null && s.genre!.isNotEmpty ? ' · ${s.genre}' : ''}').toUpperCase(), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.accentText, fontWeight: FontWeight.w800, fontSize: 10, letterSpacing: 1.4)),
                   const SizedBox(height: 3),
                   SizedBox(
                     width: 175,

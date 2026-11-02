@@ -1,5 +1,6 @@
 ﻿// pages/chronique/add_chronique_page.dart
 
+import 'package:afrotok/services/account_gate.dart';
 import 'dart:async';
 import 'package:afrotok/ads/ad_config.dart';
 import 'package:afrotok/ads/admob_service.dart';
@@ -372,6 +373,10 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
       _textController.text = t.length > 100 ? t.substring(0, 100) : t;
     }
     _textController.addListener(() => setState(() {}));
+    // Compte bloqué pour inactivité (20 jours sans publication) : déblocage en pièces avant de créer une chronique (le serveur refuse aussi)
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!await AccountGate.ensureCanPublish(context) && mounted) Navigator.of(context).maybePop();
+    });
   }
 
   @override
@@ -450,7 +455,7 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: colors.surface,
-        title: Text('Erreur', style: TextStyle(color: colors.accent, fontWeight: FontWeight.bold)),
+        title: Text('Erreur', style: TextStyle(color: colors.accentText, fontWeight: FontWeight.bold)),
         content: Text(message, style: TextStyle(color: colors.textPrimary)),
         actions: [
           TextButton(

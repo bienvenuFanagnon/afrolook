@@ -177,8 +177,10 @@ class LivesApi {
     int feeCoins = 0,
     int freeTrialMinutes = 0,
     Map<String, dynamic>? options,
+    String typeSession = 'talk',   // talk (discussion) ou shopping (vente en direct)
   }) async =>
       JeuxApi.map(await _c.post('/lives', body: {
+        'type_session': typeSession,
         'title': title,
         if (coverUploadId != null) 'cover_upload_id': coverUploadId,
         if (durationMinutes != null) 'duration_minutes': durationMinutes,
@@ -197,6 +199,20 @@ class LivesApi {
   static Future<Map<String, dynamic>> update(String id, Map<String, dynamic> fields) async => JeuxApi.map(await _c.patch('/lives/$id', body: fields));
 
   static Future<void> end(String id) => _c.post('/lives/$id/end');
+
+  /// Droits de lancement : lives gratuits restants ce mois, durée maximale, prix/durée/nombre des prolongations payantes.
+  static Future<Map<String, dynamic>> limits() async => JeuxApi.map(await _c.get('/lives/limits'));
+
+  // Vocaux des spectateurs à l'hôte (30 s au plus, fichier privé, écouté par l'hôte seul)
+  static Future<Map<String, dynamic>> voiceStatus(String id) async => JeuxApi.map(await _c.get('/lives/$id/voice-notes/status'));
+  static Future<Map<String, dynamic>> sendVoice(String id, String uploadId, int seconds) async =>
+      JeuxApi.map(await _c.post('/lives/$id/voice-notes', body: {'upload_id': uploadId, 'duration_seconds': seconds}));
+  static Future<Map<String, dynamic>> voiceNotes(String id) async => JeuxApi.map(await _c.get('/lives/$id/voice-notes'));
+  static Future<String> voiceListen(String noteId) async => '${JeuxApi.map(await _c.get('/lives/voice-notes/$noteId/listen'))['url']}';
+  static Future<void> voiceIgnore(String noteId) => _c.post('/lives/voice-notes/$noteId/ignore');
+  static Future<void> voiceReport(String noteId) => _c.post('/lives/voice-notes/$noteId/report');
+  static Future<Map<String, dynamic>> voiceSettings(String id, {bool? enabled, String? blockUserId}) async =>
+      JeuxApi.map(await _c.put('/lives/$id/voice-notes/settings', body: {if (enabled != null) 'enabled': enabled, if (blockUserId != null) 'block_user_id': blockUserId}));
 
   /// Jeton Agora : [uid] est l'identifiant numérique Agora du participant ; [role] « host » ou « audience ».
   static Future<Map<String, dynamic>> token(String id, {required int uid, String role = 'audience'}) async =>

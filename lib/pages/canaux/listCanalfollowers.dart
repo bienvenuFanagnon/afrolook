@@ -251,7 +251,7 @@ class _ChannelFollowersPageState extends State<ChannelFollowersPage> {
                               BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 2),
                             ],
                           ),
-                          child: Icon(Icons.verified, color: _colors.accent, size: 16),
+                          child: Icon(Icons.verified, color: _colors.accentText, size: 16),
                         ),
                       ),
                   ],

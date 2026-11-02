@@ -43,7 +43,7 @@ class _StickerStudioPageState extends State<StickerStudioPage> {
     try {
       final res = await Future.wait([
         WalletApi.instance.transactions(scope: 'coins', limit: 100),
-        ApiGateway.instance.client.get('/stickers/packs', query: {'mine': true}),
+        ApiGateway.instance.client.get('/stickers/packs', query: {'mine': 1}),
       ]);
       final now = DateTime.now();
       final start = DateTime(now.year, now.month, 1);

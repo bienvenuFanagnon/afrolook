@@ -417,7 +417,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
           title: Text(
             context.tr('Services & Jobs 🛠️'),
             style: TextStyle(
-              color: colors.accent,
+              color: colors.accentText,
               fontWeight: FontWeight.bold,
               fontSize: 18,
             ),
@@ -434,7 +434,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
               SizedBox(height: 16),
               Text(
                 context.tr('Chargement des services...'),
-                style: TextStyle(color: colors.accent),
+                style: TextStyle(color: colors.accentText),
               ),
               SizedBox(height: 8),
               Text(
@@ -454,14 +454,14 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
         title: Text(
           context.tr('Services & Jobs 🛠️'),
           style: TextStyle(
-            color: colors.accent,
+            color: colors.accentText,
             fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.filter_list, color: colors.accent),
+            icon: Icon(Icons.filter_list, color: colors.accentText),
             onPressed: () {
               setState(() {
                 _showFilters = !_showFilters;
@@ -469,7 +469,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
             },
           ),
           IconButton(
-            icon: Icon(Icons.add, color: colors.accent),
+            icon: Icon(Icons.add, color: colors.accentText),
             onPressed: () {
               Navigator.push(
                 context,
@@ -775,7 +775,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
           SizedBox(height: 16),
           Text(
             context.tr('Chargement des services...'),
-            style: TextStyle(color: colors.accent),
+            style: TextStyle(color: colors.accentText),
           ),
         ],
       ),
@@ -1083,7 +1083,7 @@ class ServiceGridCard extends StatelessWidget {
                       child: Text(
                         service.titre ?? context.tr('Service'),
                         style: TextStyle(
-                          color: colors.accent,
+                          color: colors.accentText,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                           height: 1.1,

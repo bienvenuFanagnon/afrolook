@@ -595,7 +595,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
           ]),
           const SizedBox(height: 4),
           Text(t.gainsEncaissAvail(available.toInt()),
-              style: TextStyle(color: colors.accent, fontWeight: FontWeight.bold, fontSize: 13)),
+              style: TextStyle(color: colors.accentText, fontWeight: FontWeight.bold, fontSize: 13)),
           // Plafond du jour : valeurs données par l'API (`daily_cap_xof`, `cashed_today_xof`), affichées telles quelles
           if (_dailyCapXof != null && _cashedTodayXof != null) ...[
             const SizedBox(height: 6),
@@ -745,7 +745,7 @@ class _MesGainsPageState extends State<MesGainsPage> {
                       style: TextStyle(color: colors.textSecondary, fontSize: 12)),
                   const SizedBox(width: 12),
                   Text(Money.fmt(fcfa),
-                      style: TextStyle(color: colors.accent, fontWeight: FontWeight.bold, fontSize: 13)),
+                      style: TextStyle(color: colors.accentText, fontWeight: FontWeight.bold, fontSize: 13)),
                   const SizedBox(width: 8),
                   Icon(Icons.chevron_right, color: colors.textSecondary, size: 16),
                 ]),
@@ -1098,7 +1098,7 @@ class _MonthPostsSheetState extends State<_MonthPostsSheet> {
             const SizedBox(height: 4),
             Text(Money.fmt(views * widget.fcfaPerView),
                 style: TextStyle(
-                    color: colors.accent, fontWeight: FontWeight.bold, fontSize: 12)),
+                    color: colors.accentText, fontWeight: FontWeight.bold, fontSize: 12)),
           ]),
         ]),
       ),

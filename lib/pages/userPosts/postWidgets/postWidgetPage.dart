@@ -1,3 +1,4 @@
+import 'package:afrotok/services/post_orientation.dart';
 import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:afrotok/services/read_meter.dart';
 import '../../../services/comments_prefetch.dart';
@@ -1490,12 +1491,12 @@ Future<void> _handleRepost() async {
           SizedBox(height: 8),
           Row(
             children: [
-              Icon(Icons.lock, color: colors.accent, size: 16),
+              Icon(Icons.lock, color: colors.accentText, size: 16),
               SizedBox(width: 4),
               Text(
                 AppLocalizations.of(context).postLockedSubscribers,
                 style: TextStyle(
-                  color: colors.accent,
+                  color: colors.accentText,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -1604,10 +1605,10 @@ Future<void> _handleRepost() async {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.lock, color: colors.accent, size: 50),
+                          Icon(Icons.lock, color: colors.accentText, size: 50),
                           const SizedBox(height: 8),
                           Text('Contenu verrouillé', style: TextStyle(
-                            color: colors.accent, fontSize: 16, fontWeight: FontWeight.bold,
+                            color: colors.accentText, fontSize: 16, fontWeight: FontWeight.bold,
                           )),
                           const SizedBox(height: 4),
                           const Text('Abonnez-vous pour voir ce contenu',
@@ -1649,10 +1650,10 @@ Future<void> _handleRepost() async {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.lock, color: colors.accent, size: 50),
+                        Icon(Icons.lock, color: colors.accentText, size: 50),
                         const SizedBox(height: 8),
                         Text('Contenu verrouillé', style: TextStyle(
-                          color: colors.accent, fontSize: 16, fontWeight: FontWeight.bold,
+                          color: colors.accentText, fontSize: 16, fontWeight: FontWeight.bold,
                         )),
                         const SizedBox(height: 4),
                         const Text('Abonnez-vous pour voir ce contenu',
@@ -1950,7 +1951,7 @@ Future<void> _handleRepost() async {
 
     // Portrait : 72% de la largeur écran (même traitement que pub video) pour éviter trop de hauteur
     // Paysage : largeur colonne contenu standard
-    final bool isVideoPortrait = widget.post.isPortrait ?? true;
+    final bool isVideoPortrait = PostOrientation.of(widget.post);
     final double screenW = MediaQuery.of(context).size.width;
     final double videoW = isVideoPortrait
         ? screenW * 0.72
@@ -2042,7 +2043,7 @@ Future<void> _handleRepost() async {
                           shape: BoxShape.circle,
                           border: Border.all(color: colors.accent, width: 2),
                         ),
-                        child: Icon(Icons.lock_outline, color: colors.accent, size: 28),
+                        child: Icon(Icons.lock_outline, color: colors.accentText, size: 28),
                       ),
                       const SizedBox(height: 10),
                       const Text('Contenu réservé aux abonnés',
@@ -3146,7 +3147,7 @@ Future<void> _refreshPostStats() async {
       return;
     }
     final isVideoPost = widget.post.dataType == PostDataType.VIDEO.name;
-    final isPortrait = widget.post.isPortrait ?? true;
+    final isPortrait = PostOrientation.of(widget.post);
     if (isVideoPost && isPortrait) {
       Navigator.push(
         context,

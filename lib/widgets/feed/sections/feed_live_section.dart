@@ -200,7 +200,7 @@ class _LiveCard extends StatelessWidget {
             fit: StackFit.expand,
             children: [
               // Image de couverture plein widget
-              _Avatar(url: live.hostImage),
+              _Avatar(url: live.displayImage),
               // Dégradé bas pour lisibilité du texte
               Positioned.fill(
                 child: DecoratedBox(

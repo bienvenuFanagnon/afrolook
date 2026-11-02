@@ -495,7 +495,7 @@ const Map<String, Map<String, String>> kTrMoney = {
   'Veuillez sélectionner une méthode': {'en': 'Please select a method', 'es': 'Selecciona un método', 'de': 'Bitte wähle eine Methode', 'ar': 'يرجى اختيار طريقة', 'pt': 'Selecione um método'},
   'Veuillez vous connecter': {'en': 'Please log in', 'es': 'Inicia sesión', 'de': 'Bitte melde dich an', 'ar': 'يرجى تسجيل الدخول', 'pt': 'Faça login'},
   'Vibe': {'en': 'Vibe', 'es': 'Vibe', 'de': 'Vibe', 'ar': 'Vibe', 'pt': 'Vibe'},
-  'Vidéos jusqu\'à 50 Mo (Premium : 40 Mo)': {'en': 'Videos up to 50 MB (Premium: 40 MB)', 'es': 'Vídeos de hasta 50 MB (Premium: 40 MB)', 'de': 'Videos bis 50 MB (Premium: 40 MB)', 'ar': 'فيديوهات حتى 50 ميغابايت (بريميوم: 40)', 'pt': 'Vídeos de até 50 MB (Premium: 40 MB)'},
+  'Vidéos jusqu\'à 100 Mo (Premium : 40 Mo)': {'en': 'Videos up to 100 MB (Premium: 40 MB)', 'es': 'Vídeos de hasta 100 MB (Premium: 40 MB)', 'de': 'Videos bis 100 MB (Premium: 40 MB)', 'ar': 'فيديوهات حتى 100 ميغابايت (بريميوم: 40)', 'pt': 'Vídeos de até 100 MB (Premium: 40 MB)'},
   'Ville': {'en': 'City', 'es': 'Ciudad', 'de': 'Stadt', 'ar': 'المدينة', 'pt': 'Cidade'},
   'Virement bancaire': {'en': 'Bank transfer', 'es': 'Transferencia bancaria', 'de': 'Banküberweisung', 'ar': 'تحويل بنكي', 'pt': 'Transferência bancária'},
   'Virement, carte, PayPal': {'en': 'Transfer, card, PayPal', 'es': 'Transferencia, tarjeta, PayPal', 'de': 'Überweisung, Karte, PayPal', 'ar': 'تحويل، بطاقة، PayPal', 'pt': 'Transferência, cartão, PayPal'},

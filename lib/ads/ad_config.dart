@@ -93,6 +93,10 @@ class AdConfig {
   int get tasksInterstitialMaxPerDay => kDebugMode ? 99 : _i('tasksInterstitialMaxPerDay', 5).clamp(0, 20);
   // Galerie de tâches (notre écran d'offres) : une pub plein écran AVANT CHAQUE offre ouverte, Appodeal d'abord ; plafond par jour et par appareil
   int get tasksOfferInterstitialMaxPerDay => kDebugMode ? 99 : _i('tasksOfferInterstitialMaxPerDay', 25).clamp(0, 100);
+  // Missions de « Partage et gagne » : pub plein écran avant d'ouvrir les détails d'une mission, avec un TEMPS D'ATTENTE entre deux pubs (les bannières ne sont pas concernées)
+  bool get missionInterstitial => _b('missionInterstitial', true);
+  int get missionInterstitialMinGapMinutes => kDebugMode ? 0 : _i('missionInterstitialMinGapMinutes', 10).clamp(1, 120);
+  int get missionInterstitialMaxPerDay => kDebugMode ? 99 : _i('missionInterstitialMaxPerDay', 6).clamp(0, 50);
   /// Écouter un titre payant en entier contre une pub récompensée.
   bool get musicRewarded => _b('musicRewarded', true);
 

@@ -1,5 +1,6 @@
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
+import 'package:afrotok/widgets/user_badge_widget.dart';
 import 'package:afrotok/services/followers_count_service.dart';
 import 'package:afrotok/utils/count_format.dart';
 import 'package:afrotok/layout/centered_content.dart';
@@ -97,40 +98,165 @@ class _UserProfilState extends State<UserProfil> {
     }
   }
 
+  // ── Design : un seul style de tuile (grille 3 colonnes) et un seul style de ligne ; une seule couleur d'accent (le vert de l'application), pas de dégradés ──
+
+  /// Tuile de la grille : même taille partout, icône dans une pastille de la couleur d'accent, libellé sur 2 lignes au plus.
+  Widget _tile({required double width, required IconData icon, required String label, required VoidCallback onTap}) {
+    final c = _colors;
+    return SizedBox(
+      width: width,
+      height: 88,
+      child: Material(
+        color: c.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: c.border)),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(color: c.primary.withOpacity(0.12), shape: BoxShape.circle),
+                  child: Icon(icon, color: c.primary, size: 19),
+                ),
+                const SizedBox(height: 6),
+                Text(label, textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textPrimary, fontSize: 11.5, fontWeight: FontWeight.w600, height: 1.2)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Ligne pleine largeur : même hauteur et même style pour tout (compte officiel, outils, administration).
+  Widget _row({required IconData icon, required String label, String? subtitle, VoidCallback? onTap, Color? tone, String? chip, bool chevron = true}) {
+    final c = _colors;
+    final color = tone ?? c.primary;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: c.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: c.border)),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
+                child: Icon(icon, color: color, size: 19),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(label, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
+                  if (subtitle != null) Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.3)),
+                ]),
+              ),
+              if (chip != null)
+                Container(
+                  margin: const EdgeInsets.only(left: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(color: c.surfaceVariant, borderRadius: BorderRadius.circular(8)),
+                  child: Text(chip, style: TextStyle(color: c.textSecondary, fontSize: 10.5, fontWeight: FontWeight.w700)),
+                ),
+              if (chevron && onTap != null) Icon(Icons.chevron_right_rounded, color: c.textSecondary, size: 22),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionTitle(String t) => Padding(
+        padding: const EdgeInsets.only(top: 14, bottom: 8, left: 2),
+        child: Text(t, style: TextStyle(color: _colors.textSecondary, fontSize: 12.5, fontWeight: FontWeight.w800, letterSpacing: 0.4)),
+      );
+
+  Widget _stat(String value, String label) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(value, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: _colors.textPrimary)),
+          Text(label, style: TextStyle(fontSize: 11.5, color: _colors.textSecondary)),
+        ],
+      );
+
+  /// Entreprise : ouvre la page de l'entreprise, ou propose d'en créer une.
+  Future<void> _openEnterprise(AppLocalizations l10n) async {
+    final c = _colors;
+    Navigator.push(context, MaterialPageRoute(builder: (_) => Scaffold(backgroundColor: c.background, body: Center(child: CircularProgressIndicator(color: c.primary)))));
+    try {
+      final value = await userProvider.getUserEntreprise(authProvider.loginUserData.id!);
+      if (!mounted) return;
+      Navigator.pop(context);
+      if (value) {
+        Navigator.pushNamed(context, '/profile_entreprise');
+      } else {
+        showDialog(
+          context: context,
+          builder: (_) => Dialog(
+            backgroundColor: c.surface,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                CircleAvatar(radius: 30, backgroundColor: c.primary.withOpacity(0.12), child: Icon(Icons.store, color: c.primary, size: 30)),
+                const SizedBox(height: 12),
+                Text(l10n.profileEnterpriseCreateTitle, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: c.textPrimary)),
+                const SizedBox(height: 8),
+                Text(l10n.profileEnterpriseCreateDesc, textAlign: TextAlign.center, style: TextStyle(fontSize: 14, color: c.textSecondary)),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    style: FilledButton.styleFrom(backgroundColor: c.primary, minimumSize: const Size.fromHeight(46), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, '/new_entreprise');
+                    },
+                    child: Text(l10n.profileEnterpriseCreateBtn, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                  ),
+                ),
+              ]),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.profileEnterpriseLoadError), backgroundColor: c.danger));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     _colors = AppColors.of(context);
+    final c = _colors;
     final l10n = AppLocalizations.of(context);
-
-    double height = MediaQuery.of(context).size.height;
-    double width = MediaQuery.of(context).size.width;
-
-    // Définition des couleurs du thème
-    final Color primaryBlack = _colors.background;
-    final Color primaryRed = _colors.danger;
-    final Color primaryYellow = _colors.accent;
-    final Color secondaryBlack = _colors.surface;
-    final Color textWhite = _colors.textPrimary;
-    final Color textGrey = _colors.textSecondary;
+    final me = authProvider.loginUserData;
+    final isAdmin = me.role == UserRole.ADM.name;
 
     return Scaffold(
-      backgroundColor: primaryBlack,
+      backgroundColor: c.background,
       appBar: AppBar(
-        backgroundColor: primaryBlack,
+        backgroundColor: c.background,
         elevation: 0,
-        title: Text(
-          l10n.profileTitle,
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: textWhite,
-            letterSpacing: 1.0,
-          ),
-        ),
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        title: Text(l10n.profileTitle, style: TextStyle(fontSize: 21, fontWeight: FontWeight.w800, color: c.textPrimary)),
         actions: [
           // Réglages du compte : suppression accessible depuis le profil (exigence App Store 5.1.1(v))
           PopupMenuButton<String>(
-            icon: Icon(Icons.settings_rounded, color: textWhite),
+            icon: Icon(Icons.settings_rounded, color: c.textPrimary),
             tooltip: context.tr('Paramètres'),
             onSelected: (v) {
               if (v == 'delete') {
@@ -141,21 +267,18 @@ class _UserProfilState extends State<UserProfil> {
               PopupMenuItem(
                 value: 'delete',
                 child: Row(children: [
-                  const Icon(Icons.delete_forever_rounded, color: Colors.redAccent),
+                  Icon(Icons.delete_forever_rounded, color: c.danger),
                   const SizedBox(width: 10),
-                  Text(context.tr('Supprimer mon compte'), style: const TextStyle(color: Colors.redAccent)),
+                  Text(context.tr('Supprimer mon compte'), style: TextStyle(color: c.danger)),
                 ]),
               ),
             ],
           ),
           Padding(
-            padding: const EdgeInsets.only(right: 16.0),
+            padding: const EdgeInsets.only(right: 14.0, left: 2),
             child: Container(
-              padding: EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: secondaryBlack,
-                borderRadius: BorderRadius.circular(12),
-              ),
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(10), border: Border.all(color: c.border)),
               child: Logo(),
             ),
           ),
@@ -164,958 +287,215 @@ class _UserProfilState extends State<UserProfil> {
       body: CenteredContent(
         maxWidth: AppLayout.isDesktop(context) ? 800 : AppLayout.maxFeedWidth,
         child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Section Header avec informations utilisateur
-              GestureDetector(
-                onTap: () {
-                  Navigator.pushNamed(context, '/profil_detail_user');
-
-                },
-                child: Container(
-                  padding: EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: secondaryBlack,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
-                        blurRadius: 10,
-                        offset: Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      // Avatar avec bordure décorative
-                      Stack(
-                        children: [
-                          Container(
-                            padding: EdgeInsets.all(3),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [primaryRed, primaryYellow],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              shape: BoxShape.circle,
-                            ),
-                            child: CircleAvatar(onBackgroundImageError: (_, __) {}, 
-                              radius: 40,
-                              backgroundImage: NetworkImage(
-                                  '${authProvider.loginUserData!.imageUrl!}'),
-                              backgroundColor: secondaryBlack,
-                            ),
+              // ── En-tête : photo, pseudo, chiffres ; toucher = mes informations ──
+              Material(
+                color: c.surface,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18), side: BorderSide(color: c.border)),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(18),
+                  onTap: () => Navigator.pushNamed(context, '/profil_detail_user'),
+                  child: Padding(
+                    padding: const EdgeInsets.all(14),
+                    child: Row(children: [
+                      Stack(children: [
+                        Container(
+                          padding: const EdgeInsets.all(2.5),
+                          decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: c.primary, width: 2)),
+                          child: CircleAvatar(onBackgroundImageError: (_, __) {}, radius: 32, backgroundImage: NetworkImage('${me.imageUrl!}'), backgroundColor: c.surfaceVariant),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(5),
+                            decoration: BoxDecoration(color: c.primary, shape: BoxShape.circle, border: Border.all(color: c.surface, width: 2)),
+                            child: const Icon(Icons.edit, size: 11, color: Colors.white),
                           ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: Container(
-                              padding: EdgeInsets.all(6),
-                              decoration: BoxDecoration(
-                                color: primaryBlack,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: primaryYellow, width: 2),
-                              ),
-                              child: Icon(
-                                Icons.edit,
-                                size: 16,
-                                color: primaryYellow,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(width: 20),
-
-                      // Informations utilisateur
+                        ),
+                      ]),
+                      const SizedBox(width: 14),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            PseudoTag(label: "@${authProvider.loginUserData!.pseudo}",
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: textWhite,
-                              ),
-                              overflow: TextOverflow.ellipsis),
-                            SizedBox(height: 8),
-
-                            // Statistiques
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Column(
-                                  children: [
-                                    FollowersCountBuilder(
-                                      userId: authProvider.loginUserData.id,
-                                      fallback: authProvider.loginUserData!.followersCount,
-                                      builder: (_, c) => Text(
-                                        formatCompactCount(c),
-                                        style: TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.bold,
-                                          color: primaryYellow,
-                                        ),
-                                      ),
-                                    ),
-                                    Text(
-                                      l10n.profileFollowers,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: textGrey,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                Container(
-                                  height: 30,
-                                  width: 1,
-                                  color: _colors.divider,
-                                ),
-                                Column(
-                                  children: [
-                                    Text(
-                                      "${formatNumber(authProvider.loginUserData!.userlikes!)}",
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                        color: primaryRed,
-                                      ),
-                                    ),
-                                    Text(
-                                      l10n.profileLikesShort,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: textGrey,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Row(children: [
+                            Flexible(child: PseudoTag(label: '@${me.pseudo}', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: c.textPrimary), overflow: TextOverflow.ellipsis)),
+                            const SizedBox(width: 5),
+                            UserBadgeWidget(user: me, size: 17),   // badge de l'abonnement / certification
+                          ]),
+                          const SizedBox(height: 8),
+                          Row(children: [
+                            FollowersCountBuilder(
+                              userId: me.id,
+                              fallback: me.followersCount,
+                              builder: (_, n) => _stat(formatCompactCount(n), l10n.profileFollowers),
                             ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              SizedBox(height: 20),
-
-              // Section "Mes Looks"
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => OtherUserPage(otherUser:authProvider.loginUserData!),
-                    ),
-                  );
-                },
-                child: Container(
-                  padding: EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: secondaryBlack,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
-                        blurRadius: 10,
-                        offset: Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.style,
-                            color: primaryYellow,
-                            size: 24,
-                          ),
-                          SizedBox(width: 10),
-                          Text(
-                            l10n.profileMyLooks,
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: textWhite,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              SizedBox(height: 10),
-
-              // Menu d'options
-              Container(
-                padding: EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: secondaryBlack,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 10,
-                      offset: Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    // Ligne 1
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildMenuButton(
-                          icon: Icons.person,
-                          label: l10n.profileMenuMyInfos,
-                          color: Colors.blue,
-                          onTap: () {
-                            Navigator.pushNamed(context, '/profil_detail_user');
-                          },
-                        ),
-                        _buildMenuButton(
-                          icon: Icons.store,
-                          label: l10n.profileMenuEnterprise,
-                          color: Color(0xFF2ECC71),
-                          onTap: () async {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => Scaffold(
-                                  backgroundColor: _colors.background,
-                                  body: Center(
-                                    child: CircularProgressIndicator(color: Color(0xFF2ECC71)),
-                                  ),
-                                ),
-                              ),
-                            );
-
-                            try {
-                              final value = await userProvider.getUserEntreprise(authProvider.loginUserData.id!);
-                              Navigator.pop(context);
-
-                              if (value) {
-                                Navigator.pushNamed(context, '/profile_entreprise');
-                              } else {
-                                showDialog(
-                                  context: context,
-                                  builder: (_) => Dialog(
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    child: Container(
-                                      padding: EdgeInsets.all(20),
-                                      decoration: BoxDecoration(
-                                        color: secondaryBlack,
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          CircleAvatar(
-                                            radius: 30,
-                                            backgroundColor: Color(0xFF2ECC71).withOpacity(0.1),
-                                            child: Icon(Icons.store, color: Color(0xFF2ECC71), size: 32),
-                                          ),
-                                          SizedBox(height: 12),
-                                          Text(
-                                            l10n.profileEnterpriseCreateTitle,
-                                            style: TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold,
-                                              color: textWhite,
-                                            ),
-                                          ),
-                                          SizedBox(height: 8),
-                                          Text(
-                                            l10n.profileEnterpriseCreateDesc,
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(fontSize: 14, color: textGrey),
-                                          ),
-                                          SizedBox(height: 20),
-                                          ElevatedButton(
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: Color(0xFF2ECC71),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(10),
-                                              ),
-                                              padding: EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-                                            ),
-                                            onPressed: () {
-                                              Navigator.pop(context);
-                                              Navigator.pushNamed(context, '/new_entreprise');
-                                            },
-                                            child: Text(l10n.profileEnterpriseCreateBtn, style: TextStyle(color: Colors.white)),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }
-                            } catch (e) {
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(l10n.profileEnterpriseLoadError),
-                                  backgroundColor: primaryRed,
-                                ),
-                              );
-                            }
-                          },
-                        ),
-                        _buildMenuButton(
-                          icon: Icons.account_balance_wallet_rounded,
-                          label: 'Mon portefeuille',
-                          color: Colors.green,
-                          onTap: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (context) => MonetisationPage()));
-                          },
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: 15),
-
-                    // Ligne 2
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildMenuButton(
-                          icon: Icons.card_membership,
-                          label: l10n.profileMenuSubscription,
-                          color: Colors.blue,
-                          onTap: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (context) => AbonnementScreen()));
-                          },
-                        ),
-                        _buildMenuButton(
-                          icon: Icons.bookmark_border,
-                          label: l10n.profileMenuFavorites,
-                          color: primaryYellow,
-                          onTap: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (context) => FavoritePostsPage()));
-                          },
-                        ),
-                        _buildMenuButton(
-                          icon: FontAwesome.forumbee,
-                          label: l10n.profileMenuChannels,
-                          color: Colors.green,
-                          onTap: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (context) => CanalListPageByUser()));
-                          },
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: 15),
-                    // Ligne 3
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildMenuButton(
-                          icon: Icons.public,
-                          label: l10n.profileMenuAds,
-                          color: Colors.blue,
-                          onTap: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (context) => UserMyAdvertisementsPage()));
-                          },
-                        ),
-                        _buildMenuButton(
-                          icon: Icons.rocket_launch_outlined,
-                          label: 'Booster mon profil',
-                          color: const Color(0xFFFFD700),
-                          onTap: () {
-                            Navigator.push(context, MaterialPageRoute(
-                              builder: (_) => const UserProfileBoostPage(),
-                            ));
-                          },
-                        ),
-                        if (authProvider.loginUserData.isCreatorProfileEnabled == true && !kIsAppleStore)
-                          _buildMenuButton(
-                            icon: Icons.storefront_rounded,
-                            label: 'Mon Business',
-                            color: const Color(0xFFFFD400),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => ProfileScreenContenu(
-                                    userId: authProvider.loginUserData.id,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                      ],
-                    ),
-
-                    SizedBox(height: 15),
-                    // Ligne 4 : studio de stickers (création et envoi de packs)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        _buildMenuButton(
-                          icon: Icons.emoji_emotions_outlined,
-                          label: context.tr('Studio stickers'),
-                          color: const Color(0xFFE91E63),
-                          onTap: () {
-                            Navigator.push(context, MaterialPageRoute(builder: (_) => const StickerStudioPage()));
-                          },
-                        ),
-                      ],
-                    ),
-
-                    // Bouton Compte officiel
-                    if (_officialRequestLoaded) Builder(builder: (_) {
-                      final me = authProvider.loginUserData;
-                      if (me.isOfficialAccount) {
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 15),
-                          child: _buildOfficialBadge(me),
-                        );
-                      }
-                      return Padding(
-                        padding: const EdgeInsets.only(top: 15),
-                        child: _buildOfficialAccountButton(_officialRequest),
-                      );
-                    }),
-
-                    SizedBox(height: 15),
-
-                    // Tableau de bord admin
-                    if (authProvider.loginUserData.role == UserRole.ADM.name) ...[
-                      GestureDetector(
-                        onTap: () => Navigator.push(context,
-                            MaterialPageRoute(builder: (_) => const AdminDashboardPage())),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF534AB7), Color(0xFF185FA5)],
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                            ),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.admin_panel_settings_rounded,
-                                  color: Colors.white, size: 20),
-                              SizedBox(width: 10),
-                              Text('Tableau de bord admin',
-                                  style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 14)),
-                              Spacer(),
-                              Icon(Icons.arrow_forward_ios_rounded,
-                                  color: Colors.white54, size: 14),
-                            ],
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      // Gestion équipe (admin seulement)
-                      GestureDetector(
-                        onTap: () => Navigator.push(context,
-                            MaterialPageRoute(builder: (_) => const TeamAdminPage())),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 18),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: const Color(0xFF534AB7).withOpacity(0.5)),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.group_outlined, color: Color(0xFF534AB7), size: 20),
-                              SizedBox(width: 10),
-                              Text('Gestion d\'équipe',
-                                  style: TextStyle(
-                                      color: Color(0xFF534AB7),
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 14)),
-                              Spacer(),
-                              Icon(Icons.arrow_forward_ios_rounded,
-                                  color: Color(0xFF534AB7), size: 14),
-                            ],
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 15),
-                    ],
-
-                    // Hub Équipe (membres non-admin)
-                    if (authProvider.loginUserData.role != UserRole.ADM.name)
-                      FutureBuilder<bool>(
-                        future: _checkTeamMember(authProvider.loginUserData.id ?? ''),
-                        builder: (ctx, snap) {
-                          if (snap.data != true) return const SizedBox.shrink();
-                          return Column(children: [
-                            GestureDetector(
-                              onTap: () => Navigator.push(context,
-                                  MaterialPageRoute(builder: (_) => const TeamHubPage())),
-                              child: Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [Color(0xFF1FAA59), Color(0xFF0D7A3E)],
-                                    begin: Alignment.centerLeft,
-                                    end: Alignment.centerRight,
-                                  ),
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: const Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.dashboard_rounded, color: Colors.white, size: 20),
-                                    SizedBox(width: 10),
-                                    Text('Hub Équipe',
-                                        style: TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 14)),
-                                    Spacer(),
-                                    Icon(Icons.arrow_forward_ios_rounded,
-                                        color: Colors.white54, size: 14),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 15),
-                          ]);
-                        },
-                      ),
-
-                    // Espace artiste : déposer ses sons pour le Studio et suivre ses gains
-                    GestureDetector(
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyArtistSoundsPage())),
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [Color(0xFF6A1B9A), Color(0xFFE91E63)]),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Row(children: [
-                          const Icon(Icons.mic_rounded, color: Colors.white, size: 20),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(context.tr('Espace artiste : mes sons et mes gains'),
-                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14)),
-                          ),
-                          const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white54, size: 14),
+                            Container(height: 28, width: 1, margin: const EdgeInsets.symmetric(horizontal: 18), color: c.divider),
+                            _stat(formatNumber(me.userlikes ?? 0), l10n.profileLikesShort),
+                          ]),
                         ]),
                       ),
-                    ),
-                    const SizedBox(height: 15),
+                      Icon(Icons.chevron_right_rounded, color: c.textSecondary),
+                    ]),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              _row(icon: Icons.style, label: l10n.profileMyLooks, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => OtherUserPage(otherUser: me)))),
 
-                    // Devise d'affichage des montants (les gains restent en FCFA)
-                    Consumer<CurrencyService>(
-                      builder: (context, cur, _) => GestureDetector(
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CurrencyPickerPage())),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(colors: [Color(0xFF0F6B38), Color(0xFF1FAA59)]),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Row(children: [
-                            const Icon(Icons.currency_exchange_rounded, color: Colors.white, size: 20),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                  '${context.tr('Devise d\'affichage')} : ${cur.currency}${cur.override == null ? ' (${context.tr('auto')})' : ''}',
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14)),
-                            ),
-                            const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white54, size: 14),
-                          ]),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 15),
+              // ── Mon espace : grille de 3 colonnes, toutes les tuiles identiques ──
+              _sectionTitle(context.tr('Mon espace')),
+              LayoutBuilder(builder: (context, box) {
+                final w = (box.maxWidth - 20) / 3;
+                return Wrap(spacing: 10, runSpacing: 10, children: [
+                  _tile(width: w, icon: Icons.person, label: l10n.profileMenuMyInfos, onTap: () => Navigator.pushNamed(context, '/profil_detail_user')),
+                  _tile(width: w, icon: Icons.account_balance_wallet_rounded, label: context.tr('Mon portefeuille'), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MonetisationPage()))),
+                  _tile(width: w, icon: Icons.card_membership, label: l10n.profileMenuSubscription, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AbonnementScreen()))),
+                  _tile(width: w, icon: Icons.bookmark_border, label: l10n.profileMenuFavorites, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => FavoritePostsPage()))),
+                  _tile(width: w, icon: FontAwesome.forumbee, label: l10n.profileMenuChannels, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CanalListPageByUser()))),
+                  _tile(width: w, icon: Icons.store, label: l10n.profileMenuEnterprise, onTap: () => _openEnterprise(l10n)),
+                  _tile(width: w, icon: Icons.public, label: l10n.profileMenuAds, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => UserMyAdvertisementsPage()))),
+                  _tile(width: w, icon: Icons.rocket_launch_outlined, label: context.tr('Booster mon profil'), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UserProfileBoostPage()))),
+                  if (me.isCreatorProfileEnabled == true && !kIsAppleStore)
+                    _tile(width: w, icon: Icons.storefront_rounded, label: context.tr('Mon Business'), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreenContenu(userId: me.id)))),
+                  _tile(width: w, icon: Icons.emoji_emotions_outlined, label: context.tr('Studio stickers'), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StickerStudioPage()))),
+                ]);
+              }),
 
-                  ],
+              // ── Compte et outils ──
+              _sectionTitle(context.tr('Compte et outils')),
+              if (_officialRequestLoaded) (me.isOfficialAccount ? _buildOfficialBadge(me) : _buildOfficialAccountButton(_officialRequest)),
+              _row(icon: Icons.mic_rounded, label: context.tr('Espace artiste : mes sons et mes gains'), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyArtistSoundsPage()))),
+              Consumer<CurrencyService>(
+                builder: (context, cur, _) => _row(
+                  icon: Icons.currency_exchange_rounded,
+                  label: context.tr('Devise d\'affichage'),
+                  subtitle: '${cur.currency}${cur.override == null ? ' (${context.tr('auto')})' : ''}',
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CurrencyPickerPage())),
                 ),
               ),
 
-              SizedBox(height: 20),
+              // ── Équipe ──
+              if (isAdmin) ...[
+                _sectionTitle(context.tr('Équipe')),
+                _row(icon: Icons.admin_panel_settings_rounded, label: context.tr('Tableau de bord admin'), chip: 'ADMIN', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminDashboardPage()))),
+                _row(icon: Icons.group_outlined, label: context.tr('Gestion d\'équipe'), chip: 'ADMIN', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TeamAdminPage()))),
+              ] else
+                FutureBuilder<bool>(
+                  future: _checkTeamMember(me.id ?? ''),
+                  builder: (ctx, snap) {
+                    if (snap.data != true) return const SizedBox.shrink();
+                    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      _sectionTitle(context.tr('Équipe')),
+                      _row(icon: Icons.dashboard_rounded, label: context.tr('Hub Équipe'), chip: context.tr('ÉQUIPE'), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TeamHubPage()))),
+                    ]);
+                  },
+                ),
             ],
           ),
         ),
-      ),
       ),
     );
   }
 
+  /// Compte officiel : une ligne selon l'état de la demande (demander, en cours, à compléter, refusée, suspendue).
   Widget _buildOfficialAccountButton(OfficialAccountRequest? req) {
-    if (req == null) {
-      return GestureDetector(
-        onTap: () => Navigator.push(
+    final c = _colors;
+    void openRequest([OfficialAccountRequest? existing]) => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const RequestOfficialAccountPage()),
-        ).then((_) => _loadOfficialRequest()),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF7B2FBE), Color(0xFF4A90D9)],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            ),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.verified_rounded, color: Colors.white, size: 20),
-              SizedBox(width: 8),
-              Text(
-                'Demander un compte officiel',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14),
-              ),
-            ],
-          ),
-        ),
-      );
+          MaterialPageRoute(builder: (_) => existing == null ? const RequestOfficialAccountPage() : RequestOfficialAccountPage(existingRequest: existing)),
+        ).then((_) => _loadOfficialRequest());
+
+    if (req == null) {
+      return _row(icon: Icons.verified_rounded, label: context.tr('Demander un compte officiel'), onTap: () => openRequest());
     }
-
-    final status = req.status;
-
-    // Cas spécial : informations complémentaires — affiche le message admin complet
-    if (status == OfficialAccountStatus.moreInfoNeeded) {
-      const fg = Color(0xFFE65100);
-      const bg = Color(0xFFFFF3E0);
+    // Informations complémentaires demandées : message de l'équipe + bouton pour mettre à jour la demande
+    if (req.status == OfficialAccountStatus.moreInfoNeeded) {
       return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: fg.withOpacity(0.3)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.info_outline_rounded, color: fg, size: 18),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Text(
-                    'Informations complémentaires requises',
-                    style: TextStyle(color: fg, fontWeight: FontWeight.w700, fontSize: 13),
-                  ),
-                ),
-              ],
-            ),
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: c.warning.withOpacity(0.10), borderRadius: BorderRadius.circular(14), border: Border.all(color: c.warning.withOpacity(0.4))),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Icon(Icons.info_outline_rounded, color: c.warning, size: 19),
+            const SizedBox(width: 8),
+            Expanded(child: Text(context.tr('Informations complémentaires requises'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13.5))),
+          ]),
+          const SizedBox(height: 10),
+          Row(children: [
             if (req.adminNote?.isNotEmpty == true) ...[
-              const SizedBox(height: 10),
-              GestureDetector(
-                onTap: () => _showAdminNoteDialog(context, req.adminNote!),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: fg.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: fg.withOpacity(0.25)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.message_outlined, color: fg, size: 15),
-                      const SizedBox(width: 8),
-                      const Expanded(
-                        child: Text(
-                          'Voir le message de l\'administrateur',
-                          style: TextStyle(
-                              color: fg, fontWeight: FontWeight.w600, fontSize: 13),
-                        ),
-                      ),
-                      const Icon(Icons.arrow_forward_ios_rounded, color: fg, size: 13),
-                    ],
-                  ),
-                ),
-              ),
+              Expanded(child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(40), side: BorderSide(color: c.border), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                onPressed: () => _showAdminNoteDialog(context, req.adminNote!),
+                icon: Icon(Icons.message_outlined, size: 16, color: c.textPrimary),
+                label: Text(context.tr('Message'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w600, fontSize: 13)),
+              )),
+              const SizedBox(width: 8),
             ],
-            const SizedBox(height: 10),
-            GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => RequestOfficialAccountPage(existingRequest: req)),
-              ).then((_) => _loadOfficialRequest()),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                decoration: BoxDecoration(
-                  color: _colors.primary,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.edit_rounded, color: Colors.white, size: 15),
-                    SizedBox(width: 8),
-                    Text('Mettre à jour ma demande',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13)),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+            Expanded(child: FilledButton.icon(
+              style: FilledButton.styleFrom(backgroundColor: c.primary, minimumSize: const Size.fromHeight(40), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+              onPressed: () => openRequest(req),
+              icon: const Icon(Icons.edit_rounded, size: 16, color: Colors.white),
+              label: Text(context.tr('Mettre à jour'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
+            )),
+          ]),
+        ]),
       );
     }
-
-    final (IconData icon, String label, Color bg, Color fg, bool tappable) = switch (status) {
-      OfficialAccountStatus.pending => (
-          Icons.hourglass_top_rounded,
-          'Demande en cours d\'examen...',
-          _colors.surfaceVariant,
-          _colors.textSecondary,
-          false,
-        ),
-      OfficialAccountStatus.underReview => (
-          Icons.manage_search_rounded,
-          'En cours d\'analyse par l\'équipe',
-          _colors.surfaceVariant,
-          Colors.blue,
-          false,
-        ),
-      OfficialAccountStatus.rejected => (
-          Icons.refresh_rounded,
-          'Renouveler ma demande',
-          _colors.surfaceVariant,
-          _colors.textSecondary,
-          true,
-        ),
-      OfficialAccountStatus.suspended => (
-          Icons.block_rounded,
-          'Compte officiel suspendu',
-          _colors.surfaceVariant,
-          Colors.red,
-          false,
-        ),
-      _ => (Icons.verified_rounded, '', Colors.transparent, Colors.transparent, false),
+    return switch (req.status) {
+      OfficialAccountStatus.pending => _row(icon: Icons.hourglass_top_rounded, label: context.tr('Compte officiel'), subtitle: context.tr('Demande en cours d\'examen...'), tone: c.textSecondary, chevron: false),
+      OfficialAccountStatus.underReview => _row(icon: Icons.manage_search_rounded, label: context.tr('Compte officiel'), subtitle: context.tr('En cours d\'analyse par l\'équipe'), tone: c.info, chevron: false),
+      OfficialAccountStatus.rejected => _row(icon: Icons.refresh_rounded, label: context.tr('Renouveler ma demande'), subtitle: context.tr('Compte officiel'), onTap: () => openRequest()),
+      OfficialAccountStatus.suspended => _row(icon: Icons.block_rounded, label: context.tr('Compte officiel'), subtitle: context.tr('Compte officiel suspendu'), tone: c.danger, chevron: false),
+      _ => const SizedBox.shrink(),
     };
-
-    if (label.isEmpty) return const SizedBox.shrink();
-
-    return GestureDetector(
-      onTap: tappable
-          ? () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const RequestOfficialAccountPage()),
-              ).then((_) => _loadOfficialRequest())
-          : null,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: _colors.border),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: fg, size: 20),
-            const SizedBox(width: 8),
-            Text(label, style: TextStyle(color: fg, fontWeight: FontWeight.w600, fontSize: 14)),
-          ],
-        ),
-      ),
-    );
   }
 
   void _showAdminNoteDialog(BuildContext context, String note) {
+    final c = _colors;
     showDialog(
       context: context,
       builder: (ctx) => Dialog(
-        backgroundColor: _colors.surface,
+        backgroundColor: c.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE65100).withOpacity(0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.info_rounded,
-                        color: Color(0xFFE65100), size: 18),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Message de l\'administrateur',
-                      style: TextStyle(
-                          color: _colors.textPrimary,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15),
-                    ),
-                  ),
-                ],
+          padding: const EdgeInsets.fromLTRB(22, 24, 22, 18),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Container(width: 34, height: 34, decoration: BoxDecoration(color: c.warning.withOpacity(0.14), shape: BoxShape.circle), child: Icon(Icons.info_rounded, color: c.warning, size: 18)),
+              const SizedBox(width: 12),
+              Expanded(child: Text(context.tr('Message de l\'administrateur'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 15))),
+            ]),
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(color: c.surfaceVariant, borderRadius: BorderRadius.circular(12), border: Border.all(color: c.border)),
+              child: Text(note, style: TextStyle(color: c.textPrimary, fontSize: 14, height: 1.55)),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: FilledButton.styleFrom(backgroundColor: c.primary, minimumSize: const Size.fromHeight(44), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                child: Text(context.tr('Fermer'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
               ),
-              const SizedBox(height: 16),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF3E0),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE65100).withOpacity(0.2)),
-                ),
-                child: Text(
-                  note,
-                  style: const TextStyle(
-                      color: Color(0xFFBF360C), fontSize: 14, height: 1.6),
-                ),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE65100),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  child: const Text('Fermer',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14)),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ]),
         ),
       ),
     );
   }
 
   Widget _buildOfficialBadge(UserData me) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1A237E), Color(0xFF7B2FBE)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.verified_rounded, color: Colors.white, size: 20),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              me.officialName?.isNotEmpty == true ? me.officialName! : 'Compte officiel vérifié',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMenuButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 100,
-        height: 100,
-        decoration: BoxDecoration(
-          color: _colors.surfaceVariant,
-          borderRadius: BorderRadius.circular(15),
-          border: Border.all(
-            color: _colors.border,
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 5,
-              offset: Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: color.withOpacity(0.3),
-                  width: 1.5,
-                ),
-              ),
-              child: Icon(
-                icon,
-                color: color,
-                size: 24,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: _colors.textPrimary,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
+    return _row(
+      icon: Icons.verified_rounded,
+      label: me.officialName?.isNotEmpty == true ? me.officialName! : context.tr('Compte officiel vérifié'),
+      subtitle: context.tr('Compte officiel'),
+      chevron: false,
     );
   }
 }

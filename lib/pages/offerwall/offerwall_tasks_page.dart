@@ -1,7 +1,7 @@
+import 'package:afrotok/services/currency_service.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../ads/ad_config.dart';
 import '../../ads/ad_gate.dart';
@@ -18,7 +18,6 @@ import '../../widgets/offerwall_dialogs.dart';
 import '../../widgets/offerwall_earnings_card.dart';
 import '../../widgets/offerwall_promo_banner.dart';
 import '../../widgets/partner_tasks_section.dart';
-import '../user/inviteAmis.dart';
 import 'offerwall_tutorial_page.dart';
 
 /// Page « Gagne des pièces » : introduction dans la langue de la personne, accès au mur de tâches (Tapjoy), total gagné,
@@ -37,10 +36,12 @@ class _OfferwallTasksPageState extends State<OfferwallTasksPage> {
   bool _loading = true;
   ShareHome _shareHome = ShareHome.preview(); // gains affichés sur la carte « Partage et gagne » (aperçu tant que le serveur n'a pas répondu)
   bool _opening = false;
+  bool _openingTasks = false;
   bool _ageOk = false;
   bool _ageChecked = false;
-  // « Comment ça marche ? » : ouvert seulement à la toute première visite, puis replié avec un court résumé (la personne peut l'ouvrir et le fermer)
+  // « Comment ça marche ? » : toujours replié au départ (la personne l'ouvre au toucher)
   bool _howOpen = false;
+  final GlobalKey<PartnerTasksSectionState> _partnerKey = GlobalKey<PartnerTasksSectionState>();
   OfferwallInfo? _info;
   String? _error;
 
@@ -51,7 +52,6 @@ class _OfferwallTasksPageState extends State<OfferwallTasksPage> {
   void initState() {
     super.initState();
     _load();
-    _initHow();
     // la pub plein écran se prépare tout de suite : elle sera prête quand la personne touchera « Voir les tâches »
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && OfferwallService.isConfigured) TaskAds.warmUp(_auth.loginUserData); // pub plein écran : seulement pour les plateformes de tâches
@@ -76,15 +76,6 @@ class _OfferwallTasksPageState extends State<OfferwallTasksPage> {
       if (!mounted) return;
       setState(() { _error = context.tr('Impossible de charger les tâches pour le moment. Réessaie plus tard.'); _loading = false; });
     }
-  }
-
-  Future<void> _initHow() async {
-    try {
-      final sp = await SharedPreferences.getInstance();
-      if (sp.getBool('offerwall_how_seen_v1') ?? false) return;
-      await sp.setBool('offerwall_how_seen_v1', true);
-      if (mounted) setState(() => _howOpen = true);
-    } catch (_) {}
   }
 
   Future<void> _open({bool ayet = false}) async {
@@ -165,112 +156,220 @@ class _OfferwallTasksPageState extends State<OfferwallTasksPage> {
     final info = _info!;
     final partners = OfferwallService.isConfigured; // plateformes de tâches actives (en pause : seule la tâche « Regarder une pub » est proposée)
     final usable = partners && info.availableHere && !info.blocked;
-    final user = _auth.loginUserData;
-    final sponsorPct = (info.sponsorPct / 2).round(); // 20 % des pièces de l'utilisateur = 10 % de la valeur de la tâche
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
       children: [
         CenteredContent(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            // Les deux entrées en haut, simples : missions de partage ET tâches des partenaires
+            _topActions(c),
+            const SizedBox(height: 12),
+            _howCard(c),
+            const SizedBox(height: 12),
             OfferwallEarningsCard(userId: _uid),
             const SizedBox(height: 12),
-            _shareCard(c),
-            // Tâches de nos partenaires : gains séparés des autres, payés après 30 jours (« Partage et gagne » reste tel quel au-dessus)
-            const SizedBox(height: 12),
-            const PartnerTasksSection(),
+            // Gains des tâches de nos partenaires (séparés des autres, payés après 30 jours) : carte compacte, explications au toucher du « i »
+            PartnerTasksSection(key: _partnerKey),
             if (partners) ...[
-            const SizedBox(height: 12),
-            _card(c, [
-              Text(context.tr('Travaille dans Afrolook, sois payé'), style: TextStyle(color: c.textPrimary, fontSize: 17, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 6),
-              Text(context.tr('Chaque tâche terminée est un travail payé : jeux, sondages, applications de nos partenaires. Tu gagnes des pièces que tu convertis en argent réel.'), style: TextStyle(color: c.textSecondary, fontSize: 13, height: 1.4)),
               const SizedBox(height: 12),
-              const OfferwallPromoBanner(),
-              const SizedBox(height: 14),
-              if (!usable)
-                Text(
-                  info.blocked ? context.tr('Les tâches sont suspendues pour ton compte.') : context.tr('Les tâches ne sont pas disponibles pour le moment.'),
-                  style: TextStyle(color: c.warning, fontWeight: FontWeight.w700),
-                )
-              else ...[
-                if (!_ageOk)
-                  CheckboxListTile(
-                    contentPadding: EdgeInsets.zero,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    value: _ageChecked,
-                    onChanged: (v) => setState(() => _ageChecked = v ?? false),
-                    title: Text(context.tr('J\'ai 18 ans ou plus'), style: TextStyle(color: c.textPrimary, fontSize: 13.5)),
-                  ),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: (_opening || (!_ageOk && !_ageChecked)) ? null : _open,
-                    icon: _opening ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.task_alt_rounded),
-                    label: Text(context.tr('Voir les tâches')),
-                  ),
-                ),
-                // seconde source de tâches (ayeT) : quand Tapjoy est vide, l'ouverture normale bascule déjà ; ce bouton permet d'en voir plus
-                if (OfferwallService.tapjoyConfigured && OfferwallService.ayetConfigured)
-                  Align(
-                    alignment: Alignment.center,
-                    child: TextButton(
-                      onPressed: (_opening || (!_ageOk && !_ageChecked)) ? null : () => _open(ayet: true),
-                      child: Text(context.tr('Voir plus de tâches')),
-                    ),
-                  ),
-              ],
-            ]),
-            const SizedBox(height: 12),
-            _card(c, [
-              InkWell(
-                onTap: () => setState(() => _howOpen = !_howOpen),
-                child: Row(children: [
-                  Expanded(child: Text(context.tr('Comment ça marche ?'), style: TextStyle(color: c.textPrimary, fontSize: 15, fontWeight: FontWeight.w800))),
-                  Icon(_howOpen ? Icons.expand_less_rounded : Icons.expand_more_rounded, color: c.textSecondary),
-                ]),
-              ),
-              const SizedBox(height: 8),
-              if (_howOpen) ...[
-              _step(c, '1', context.tr('Choisis une tâche dans la liste de nos partenaires.')),
-              _step(c, '2', context.tr('Fais-la en suivant ses consignes : c\'est ton travail du jour.')),
-              _step(c, '3', context.tr('Ta paie apparaît tout de suite en pièces « en attente ».')),
-              _step(c, '4', context.tr('Après {h} h, elles deviennent des Pièces gagnées que tu convertis en argent réel.', {'h': info.holdHours})),
-              const SizedBox(height: 8),
-              Text(context.tr('Les offres viennent de nos partenaires : certaines sont en anglais.'), style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.35)),
-              const SizedBox(height: 4),
-              Text(context.tr('Une tâche peut être refusée si ses consignes ne sont pas respectées. Au-delà de {n} pièces par jour, les tâches sont examinées par notre équipe.', {'n': _n.format(info.dailyCapCoins)}), style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.35)),
-              ] else
-                Text(context.tr('Choisis une tâche, fais-la, puis reçois ta paie en pièces : convertie en argent réel après {h} h.', {'h': info.holdHours}), style: TextStyle(color: c.textSecondary, fontSize: 12.5, height: 1.4)),
-            ]),
+              _legacyTasks(c, info, usable),
             ],
             _ad(AdSlotKind.detail),
-            if (partners && sponsorPct > 0) ...[
-              const SizedBox(height: 12),
-              _card(c, [
-                Row(children: [
-                  Icon(Icons.group_add_rounded, color: c.primary),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(context.tr('Invite tes amis : tu gagnes {p} % de la valeur de leurs tâches.', {'p': sponsorPct}), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13.5))),
-                ]),
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: OutlinedButton(onPressed: () => showInviteFriendsModal(context, user), child: Text(context.tr('Inviter mes amis'))),
-                ),
-              ]),
-            ],
             _ad(AdSlotKind.list),
-            const SizedBox(height: 10),
-            Text(context.tr('Mon historique'), style: TextStyle(color: c.textPrimary, fontSize: 15, fontWeight: FontWeight.w800)),
             const SizedBox(height: 6),
-            if (info.events.isEmpty)
-              Padding(padding: const EdgeInsets.symmetric(vertical: 14), child: Text(context.tr('Aucune tâche pour le moment.'), style: TextStyle(color: c.textSecondary)))
-            else
-              for (final e in info.events) _historyRow(c, e),
+            Theme(
+              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                tilePadding: const EdgeInsets.symmetric(horizontal: 4),
+                childrenPadding: EdgeInsets.zero,
+                title: Text(context.tr('Mon historique'), style: TextStyle(color: c.textPrimary, fontSize: 15, fontWeight: FontWeight.w800)),
+                children: [
+                  if (info.events.isEmpty)
+                    Padding(padding: const EdgeInsets.symmetric(vertical: 10), child: Text(context.tr('Aucune tâche pour le moment.'), style: TextStyle(color: c.textSecondary)))
+                  else
+                    for (final e in info.events) _historyRow(c, e),
+                ],
+              ),
+            ),
           ]),
         ),
       ],
     );
+  }
+
+
+  /// « Comment ça marche ? » : trois lignes toujours visibles, tout le détail au toucher de « Lire plus ».
+  Widget _howCard(AppColors c) {
+    Widget step(String n, String text) => Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            CircleAvatar(radius: 9, backgroundColor: c.primary.withOpacity(0.15), child: Text(n, style: TextStyle(color: c.primary, fontSize: 10.5, fontWeight: FontWeight.w800))),
+            const SizedBox(width: 8),
+            Expanded(child: Text(text, style: TextStyle(color: c.textPrimary, fontSize: 12.5, height: 1.3))),
+          ]),
+        );
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+      decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(context.tr('Comment ça marche ?'), style: TextStyle(color: c.textPrimary, fontSize: 15, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 8),
+        step('1', context.tr('Choisis une mission ou une tâche.')),
+        step('2', context.tr('Fais-la en suivant les consignes.')),
+        step('3', context.tr('Tes pièces arrivent « en attente », puis sont versées : tu les convertis en argent.')),
+        Align(alignment: Alignment.centerRight, child: TextButton(onPressed: () => _showHow(c), child: Text(context.tr('Lire plus')))),
+      ]),
+    );
+  }
+
+  Future<void> _showHow(AppColors c) async {
+    final holdDays = _partnerKey.currentState?.holdDays ?? 30;
+    Widget block(IconData icon, String title, String text) => Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Icon(icon, color: c.primary, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(title, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 14)),
+                const SizedBox(height: 2),
+                Text(text, style: TextStyle(color: c.textSecondary, fontSize: 13, height: 1.4)),
+              ]),
+            ),
+          ]),
+        );
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: c.background,
+      constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.9),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(context.tr('Comment ça marche ?'), style: TextStyle(color: c.textPrimary, fontSize: 18, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 14),
+            block(Icons.campaign_rounded, context.tr('Les missions (Partage et gagne)'),
+                context.tr("Tu partages des annonces sur WhatsApp, Telegram, Facebook ou TikTok avec ton lien personnel. Chaque clic valide te rapporte des pièces. Elles restent « en attente » {h} h, puis elles sont ajoutées à ton solde.", {'h': _shareHome.holdHours})),
+            block(Icons.task_alt_rounded, context.tr('Les tâches de nos partenaires'),
+                context.tr("Jeux, sondages et applications : tu choisis une tâche, tu la fais en suivant ses consignes (traduites dans ta langue quand c'est possible). Tes pièces sont « en attente » {n} jours : nos partenaires vérifient ton travail et peuvent annuler une tâche en cas de fraude.", {'n': holdDays})),
+            block(Icons.savings_rounded, context.tr('Convertir en argent'),
+                context.tr("Quand tes pièces sont versées, elles rejoignent tes pièces gagnées. Tu peux les convertir en argent réel : 25 pièces valent 10 F.")),
+            block(Icons.group_add_rounded, context.tr('Invite tes amis'),
+                context.tr("Tu gagnes en plus un pourcentage de ce que gagnent tes amis, sans rien leur retirer.")),
+            block(Icons.rule_rounded, context.tr('À respecter'),
+                context.tr("Fais chaque tâche toi-même et une seule fois. Une tâche non conforme peut être refusée, et un gain peut être retiré en cas de fraude.")),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  /// Les deux entrées, côte à côte et en haut de la page : « Voir les missions » (Partage et gagne) et « Voir les tâches » (partenaires).
+  Widget _topActions(AppColors c) {
+    Widget tile(IconData icon, String title, String subtitle, VoidCallback? onTap, {bool busy = false}) => Expanded(
+          child: Material(
+            color: c.surface,
+            borderRadius: BorderRadius.circular(18),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: onTap,
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(borderRadius: BorderRadius.circular(18), border: Border.all(color: c.primary.withOpacity(0.45))),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(color: c.primary.withOpacity(0.14), borderRadius: BorderRadius.circular(12)),
+                    child: busy ? Padding(padding: const EdgeInsets.all(11), child: CircularProgressIndicator(strokeWidth: 2, color: c.primary)) : Icon(icon, color: c.primary),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(title, style: TextStyle(color: c.textPrimary, fontSize: 15, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 2),
+                  Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.3)),
+                ]),
+              ),
+            ),
+          ),
+        );
+    return IntrinsicHeight(
+      child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        tile(Icons.campaign_rounded, context.tr('Voir les missions'), '${context.tr('Partage et gagne : {f} F par clic valide', {'f': _n.format(_shareHome.perClickFcfa)})} (≈ ${Money.usd(_shareHome.perClickFcfa)})', _opening ? null : _openShare, busy: _opening),
+        const SizedBox(width: 12),
+        tile(Icons.task_alt_rounded, context.tr('Voir les tâches'), context.tr('Jeux, sondages et applications'), _openingTasks ? null : () async {
+          setState(() => _openingTasks = true);   // retour visuel immédiat : la liste peut mettre un instant à s'ouvrir
+          try {
+            await PartnerTasksSection.open(context);
+          } finally {
+            if (mounted) setState(() => _openingTasks = false);
+          }
+          _partnerKey.currentState?.reload();
+        }, busy: _openingTasks),
+      ]),
+    );
+  }
+
+  /// Anciennes plateformes de tâches (seulement quand elles sont actives) : un bouton et une explication repliée.
+  Widget _legacyTasks(AppColors c, OfferwallInfo info, bool usable) {
+    return _card(c, [
+      Text(context.tr('Autres tâches'), style: TextStyle(color: c.textPrimary, fontSize: 15, fontWeight: FontWeight.w800)),
+      const SizedBox(height: 10),
+      const OfferwallPromoBanner(),
+      const SizedBox(height: 10),
+      if (!usable)
+        Text(
+          info.blocked ? context.tr('Les tâches sont suspendues pour ton compte.') : context.tr('Les tâches ne sont pas disponibles pour le moment.'),
+          style: TextStyle(color: c.warning, fontWeight: FontWeight.w700),
+        )
+      else ...[
+        if (!_ageOk)
+          CheckboxListTile(
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            value: _ageChecked,
+            onChanged: (v) => setState(() => _ageChecked = v ?? false),
+            title: Text(context.tr('J\'ai 18 ans ou plus'), style: TextStyle(color: c.textPrimary, fontSize: 13.5)),
+          ),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: (_opening || (!_ageOk && !_ageChecked)) ? null : _open,
+            icon: _opening ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.task_alt_rounded),
+            label: Text(context.tr('Ouvrir la liste')),
+          ),
+        ),
+        // seconde source de tâches (ayeT) : quand Tapjoy est vide, l'ouverture normale bascule déjà ; ce bouton permet d'en voir plus
+        if (OfferwallService.tapjoyConfigured && OfferwallService.ayetConfigured)
+          Align(
+            alignment: Alignment.center,
+            child: TextButton(
+              onPressed: (_opening || (!_ageOk && !_ageChecked)) ? null : () => _open(ayet: true),
+              child: Text(context.tr('Voir plus de tâches')),
+            ),
+          ),
+      ],
+      const SizedBox(height: 4),
+      InkWell(
+        onTap: () => setState(() => _howOpen = !_howOpen),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Row(children: [
+            Expanded(child: Text(context.tr('Comment ça marche ?'), style: TextStyle(color: c.textSecondary, fontSize: 13, fontWeight: FontWeight.w700))),
+            Icon(_howOpen ? Icons.expand_less_rounded : Icons.expand_more_rounded, color: c.textSecondary),
+          ]),
+        ),
+      ),
+      if (_howOpen) ...[
+        _step(c, '1', context.tr('Choisis une tâche dans la liste de nos partenaires.')),
+        _step(c, '2', context.tr('Fais-la en suivant ses consignes : c\'est ton travail du jour.')),
+        _step(c, '3', context.tr('Ta paie apparaît tout de suite en pièces « en attente ».')),
+        _step(c, '4', context.tr('Après {h} h, elles deviennent des Pièces gagnées que tu convertis en argent réel.', {'h': info.holdHours})),
+        const SizedBox(height: 6),
+        Text(context.tr('Une tâche peut être refusée si ses consignes ne sont pas respectées. Au-delà de {n} pièces par jour, les tâches sont examinées par notre équipe.', {'n': _n.format(info.dailyCapCoins)}), style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.35)),
+      ],
+    ]);
   }
 
   /// Emplacement publicitaire (bannière ou native) : vide pour les comptes sans pub ; jamais collé au bouton des tâches.
@@ -304,19 +403,6 @@ class _OfferwallTasksPageState extends State<OfferwallTasksPage> {
     setState(() => _opening = false);
     await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ShareEarnPage()));
   }
-
-  /// Entrée vers « Partage et gagne » : partager des annonces (WhatsApp, Telegram, Facebook…) et être payé au clic valide.
-  Widget _shareCard(AppColors c) => _card(c, [
-        Row(children: [
-          Icon(Icons.campaign_rounded, color: c.primary),
-          const SizedBox(width: 10),
-          Expanded(child: Text(context.tr('Partage et gagne'), style: TextStyle(color: c.textPrimary, fontSize: 17, fontWeight: FontWeight.w800))),
-        ]),
-        const SizedBox(height: 6),
-        Text(context.tr('Partage des annonces sur WhatsApp, Telegram, Facebook… et gagne de l\'argent : environ {f} F par clic valide, jusqu\'à {m} F par jour.', {'f': _n.format(_shareHome.perClickFcfa), 'm': _n.format(_shareHome.dailyCapFcfa)}), style: TextStyle(color: c.textSecondary, fontSize: 13.5, height: 1.35)),
-        const SizedBox(height: 12),
-        SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: _opening ? null : _openShare, icon: const Icon(Icons.arrow_forward_rounded), label: Text(context.tr('Voir les missions')))),
-      ]);
 
   /// D'où vient le gain : partage (avec la plateforme) ou tâche d'un partenaire.
   String _sourceLabel(OfferwallEntry e) {

@@ -1,5 +1,7 @@
+import 'package:afrotok/services/post_orientation.dart';
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/services/ads_engine_service.dart';
+import '../services/suggestions_modal_once.dart';
 import '../services/comments_prefetch.dart';
 import 'package:afrotok/widgets/studio/post_template_try.dart';
 import 'defi/defi_boost.dart';
@@ -525,7 +527,7 @@ class _DetailsPostState extends State<DetailsPost>
   void _onSuggestedPostSelected(Post newPost) {
     if(newPost.dataType==PostDataType.VIDEO.name){
       // Vidéo format téléphone → page portrait ; sinon page paysage
-      final isPortrait = newPost.isPortrait ?? true;
+      final isPortrait = PostOrientation.of(newPost);
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -583,7 +585,7 @@ class _DetailsPostState extends State<DetailsPost>
         backgroundColor: _colors.surfaceVariant,
         title: Row(
           children: [
-            Icon(Icons.volunteer_activism, color: _colors.accent),
+            Icon(Icons.volunteer_activism, color: _colors.accentText),
             SizedBox(width: 8),
             Text('Soutenir le créateur', style: TextStyle(color: _colors.textPrimary)),
           ],
@@ -610,7 +612,7 @@ class _DetailsPostState extends State<DetailsPost>
               ),
               child: Row(
                 children: [
-                  Icon(Icons.monetization_on, color: _colors.accent),
+                  Icon(Icons.monetization_on, color: _colors.accentText),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -681,7 +683,10 @@ class _DetailsPostState extends State<DetailsPost>
   void _startSuggestionModalTimer() {
     _suggestionModalTimer?.cancel();
     if (_hasSeenSuggestionsModal) return;
-    _suggestionModalTimer = Timer(Duration(seconds: 5), () {
+    _suggestionModalTimer = Timer(Duration(seconds: 5), () async {
+      // une seule fois par compte : la mémoire est relue juste avant l'ouverture
+      if (!mounted || _hasSeenSuggestionsModal) return;
+      if (!await SuggestionsModalOnce.shouldShow(authProvider.loginUserData?.id)) return;
       if (mounted && !_hasSeenSuggestionsModal) {
         _showSuggestionsModal();
       }
@@ -695,6 +700,8 @@ class _DetailsPostState extends State<DetailsPost>
         .toList();
 
     if (suggestions.isEmpty) return;
+    _hasSeenSuggestionsModal = true;
+    SuggestionsModalOnce.markShown(authProvider.loginUserData?.id);   // noté dès l'ouverture, quelle que soit la façon de fermer
 
     showDialog(
       context: context,
@@ -709,7 +716,7 @@ class _DetailsPostState extends State<DetailsPost>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            Icon(Icons.lightbulb, color: _colors.accent),
+            Icon(Icons.lightbulb, color: _colors.accentText),
             SizedBox(width: 8),
             Text(
               'Découvrez d’autres posts',
@@ -730,7 +737,7 @@ class _DetailsPostState extends State<DetailsPost>
               SizedBox(height: 16),
               Text(
                 'Suggestions pour vous :',
-                style: TextStyle(color: _colors.accent, fontWeight: FontWeight.bold),
+                style: TextStyle(color: _colors.accentText, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 12),
               Flexible(
@@ -989,7 +996,7 @@ class _DetailsPostState extends State<DetailsPost>
     // Aucune pub : bouton booster
     return _buildBoostCard(
       icon: Icons.rocket_launch,
-      iconColor: _colors.accent,
+      iconColor: _colors.accentText,
       title: 'Booster ce post',
       subtitle: 'Transformez ce post en publicité et touchez plus d\'utilisateurs en Afrique.',
       child: SizedBox(
@@ -1495,12 +1502,12 @@ class _DetailsPostState extends State<DetailsPost>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.lock, color: _colors.accent, size: 60),
+                        Icon(Icons.lock, color: _colors.accentText, size: 60),
                         SizedBox(height: 20),
                         Text(
                           AppLocalizations.of(context).postDetailAudioLocked,
                           style: TextStyle(
-                            color: _colors.accent,
+                            color: _colors.accentText,
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
@@ -1804,7 +1811,7 @@ class _DetailsPostState extends State<DetailsPost>
     _startSuggestionModalTimer();
     if(widget.post!=null&&widget.post.type == PostDataType.VIDEO .name){
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (widget.post.isPortrait == true) {
+        if (PostOrientation.of(widget.post)) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -2291,7 +2298,7 @@ class _DetailsPostState extends State<DetailsPost>
           title: Text(
             'Solde Insuffisant',
             style: TextStyle(
-              color: _colors.accent,
+              color: _colors.accentText,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -2416,7 +2423,7 @@ class _DetailsPostState extends State<DetailsPost>
                       if (canal.isVerify ?? false)
                         Icon(Icons.verified, color: _colors.info, size: 16),
                       if (isLocked)
-                        Icon(Icons.lock, color: _colors.accent, size: 16),
+                        Icon(Icons.lock, color: _colors.accentText, size: 16),
                     ],
                   ),
                   Text(
@@ -2848,13 +2855,13 @@ class _DetailsPostState extends State<DetailsPost>
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.lock, color: _colors.accent, size: 16),
+                        Icon(Icons.lock, color: _colors.accentText, size: 16),
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'Contenu réservé aux abonnés du canal',
                             style: TextStyle(
-                              color: _colors.accent,
+                              color: _colors.accentText,
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
                             ),
@@ -3003,12 +3010,12 @@ class _DetailsPostState extends State<DetailsPost>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.lock, color: _colors.accent, size: 50),
+                  Icon(Icons.lock, color: _colors.accentText, size: 50),
                   SizedBox(height: 16),
                   Text(
                     'Contenu verrouillé',
                     style: TextStyle(
-                      color: _colors.accent,
+                      color: _colors.accentText,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -3248,7 +3255,7 @@ class _DetailsPostState extends State<DetailsPost>
                     children: [
                       Icon(
                         Icons.play_circle_filled,
-                        color: _colors.accent,
+                        color: _colors.accentText,
                         size: 14,
                       ),
                       SizedBox(width: 4),
@@ -4097,7 +4104,7 @@ class _DetailsPostState extends State<DetailsPost>
         backgroundColor: _colors.background,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: _colors.accent),
+          icon: Icon(Icons.arrow_back, color: _colors.accentText),
           onPressed: () => Navigator.pop(context),
         ),
         title: widget.post.type == PostType.DEFI.name
@@ -4121,12 +4128,12 @@ class _DetailsPostState extends State<DetailsPost>
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text('Post', style: TextStyle(color: _colors.accent, fontWeight: FontWeight.bold, fontSize: 18)),
+                  Text('Post', style: TextStyle(color: _colors.accentText, fontWeight: FontWeight.bold, fontSize: 18)),
                 ],
               )
             : Text(
                 'Post',
-                style: TextStyle(color: _colors.accent, fontWeight: FontWeight.bold, fontSize: 18),
+                style: TextStyle(color: _colors.accentText, fontWeight: FontWeight.bold, fontSize: 18),
               ),
         actions: [
           Text(

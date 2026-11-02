@@ -1,3 +1,9 @@
+import '../share/share_earn_page.dart';
+import '../offerwall/offerwall_tasks_page.dart';
+import '../liveshop/live_shop_orders_page.dart';
+import '../liveshop/live_shop_admin_page.dart';
+import '../liveshop/shopping_live_launcher.dart';
+import '../../services/api/live_shop_api.dart';
 import 'package:afrotok/services/read_meter.dart';
 import '../news/news_detail_page.dart';
 import '../coins/card_coin_page.dart';
@@ -596,17 +602,24 @@ class _MyHomePageState extends State<MyHomePage>
                       iconColor: const Color(0xFF2ECC71),
                       label: context.tr('Quiz & Étude'),
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const QuizEtudeHubPage()))),
-                  // Mon journal : actualités du pays, du continent et du monde (résumés de sources)
+                  // Boutique (AfroShop) et commandes (achats, ventes, négociations de la vente en direct)
+                  if (!kIsAppleStore)
+                    _dItem(context, colors,
+                        icon: Icons.store_mall_directory,
+                        iconColor: const Color(0xFFF9A825),
+                        label: l10n.menuAfroshopMarket,
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HomeAfroshopPage(title: '')))),
                   _dItem(context, colors,
-                      icon: Icons.newspaper_rounded,
-                      iconColor: const Color(0xFF2ECC71),
-                      label: context.tr('Mon journal'),
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NewsJournalPage()))),
-                  // Fil Découverte : ancien onglet du haut de l'accueil, remplacé par Actualités
+                      icon: Icons.shopping_bag_outlined,
+                      iconColor: const Color(0xFFF9A825),
+                      label: context.tr('Mes commandes'),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LiveShopOrdersPage()))),
+                  // Vente en direct : choisir ses articles puis passer en live (l'administration de la vente en direct est dans le hub d'administration)
                   _dItem(context, colors,
-                      icon: Icons.explore_rounded,
-                      label: context.tr('Découverte'),
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => HomeSportPostPage(type: TabBarType.DECOUVERTE.name)))),
+                      icon: Icons.live_tv_rounded,
+                      iconColor: const Color(0xFFE53935),
+                      label: context.tr('Vente en direct'),
+                      onTap: () => startMyShoppingLive(context)),
                   // Musique : titres gratuits et d'artistes, bibliothèque, favoris, titres téléchargés
                   _dItem(context, colors,
                       icon: Icons.library_music_rounded,
@@ -642,7 +655,7 @@ class _MyHomePageState extends State<MyHomePage>
                     _dSection(colors, 'Business'),
                     _dItem(context, colors,
                         icon: Icons.play_lesson_outlined,
-                        iconColor: const Color(0xFFFFD400),
+                        iconColor: colors.navInactive,
                         label: context.tr('Contenu Business'),
                         onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DashboardContentScreen()))),
                   ],
@@ -1229,6 +1242,12 @@ class _MyHomePageState extends State<MyHomePage>
       case 'monetisation':
         page = MonetisationPage();
         break;
+      case 'share_earn':
+        page = const ShareEarnPage();
+        break;
+      case 'offerwall_tasks':
+        page = const OfferwallTasksPage();
+        break;
       case 'live_create':
         page = CreateLivePage();
         break;
@@ -1677,7 +1696,6 @@ class _MyHomePageState extends State<MyHomePage>
                                 badge: n,
                                 colors: colors,
                                 size: navIconSize,
-                                activeColor: colors.info,
                               );
                             },
                           ),
@@ -1687,7 +1705,7 @@ class _MyHomePageState extends State<MyHomePage>
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.business_center_outlined, color: const Color(0xFFFFD400), size: navIconSize),
+                              Icon(Icons.business_center_outlined, color: colors.navInactive, size: navIconSize),
                               const SizedBox(height: 2),
                               Text('Business', style: TextStyle(fontSize: 9, color: colors.textSecondary, fontWeight: FontWeight.w500)),
                             ],
@@ -1704,14 +1722,10 @@ class _MyHomePageState extends State<MyHomePage>
                                 width: 30,
                                 height: 30,
                                 decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [colors.primary, colors.accent],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
+                                  color: colors.primary,
                                   shape: BoxShape.circle,
                                   boxShadow: [
-                                    BoxShadow(color: colors.primary.withOpacity(0.35), blurRadius: 8, spreadRadius: 1),
+                                    BoxShadow(color: colors.primary.withOpacity(0.30), blurRadius: 8, spreadRadius: 0.5),
                                   ],
                                 ),
                                 child: Icon(Icons.add, color: colors.onPrimary, size: navIconSize - 6),
@@ -1738,7 +1752,7 @@ class _MyHomePageState extends State<MyHomePage>
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.school_rounded, color: colors.primary, size: navIconSize),
+                              Icon(Icons.school_rounded, color: colors.navInactive, size: navIconSize),
                               const SizedBox(height: 2),
                               Text(context.tr('Quiz & Étude'), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 9, color: colors.textSecondary, fontWeight: FontWeight.w500)),
                             ],
@@ -1775,9 +1789,9 @@ class _MyHomePageState extends State<MyHomePage>
                       isScrollable: true,
                       indicatorColor: colors.primary,
                       indicatorWeight: 2.5,
-                      labelColor: colors.accent,
+                      labelColor: colors.primary,
                       unselectedLabelColor: colors.textSecondary,
-                      labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                      labelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
                       unselectedLabelStyle: const TextStyle(fontSize: 11),
                       tabAlignment: TabAlignment.start,
                       tabs: [
@@ -2121,14 +2135,14 @@ class _MyHomePageState extends State<MyHomePage>
     required double size,
     Color? activeColor,
   }) {
-    final color = activeColor ?? colors.textSecondary;
+    final color = activeColor ?? colors.navInactive;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         badges.Badge(
           showBadge: badge > 0,
-          badgeStyle: badges.BadgeStyle(badgeColor: colors.accent, padding: const EdgeInsets.all(3)),
-          badgeContent: Text(badge > 9 ? '9+' : '$badge', style: TextStyle(fontSize: 8, color: colors.onAccent)),
+          badgeStyle: badges.BadgeStyle(badgeColor: colors.badgeFill, padding: const EdgeInsets.all(3)),
+          badgeContent: Text(badge > 9 ? '9+' : '$badge', style: TextStyle(fontSize: 8, color: colors.onBadge, fontWeight: FontWeight.w700)),
           child: Icon(badge > 0 ? activeIcon : icon, color: color, size: size),
         ),
         const SizedBox(height: 2),
@@ -2392,22 +2406,22 @@ class _MyHomePageState extends State<MyHomePage>
                     colors: colors,
                     iconColor: colors.primary,
                   ),
-                  // Mon journal
+                  // Boutique et commandes
+                  if (!kIsAppleStore)
+                    _sidebarItem(
+                      context: context,
+                      icon: Icons.store_mall_directory,
+                      label: context.tr('Boutique'),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HomeAfroshopPage(title: ''))),
+                      wide: wide,
+                      colors: colors,
+                      iconColor: colors.primary,
+                    ),
                   _sidebarItem(
                     context: context,
-                    icon: Icons.newspaper_rounded,
-                    label: context.tr('Mon journal'),
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NewsJournalPage())),
-                    wide: wide,
-                    colors: colors,
-                    iconColor: colors.primary,
-                  ),
-                  // Fil Découverte (ancien onglet du haut de l'accueil)
-                  _sidebarItem(
-                    context: context,
-                    icon: Icons.explore_rounded,
-                    label: context.tr('Découverte'),
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => HomeSportPostPage(type: TabBarType.DECOUVERTE.name))),
+                    icon: Icons.shopping_bag_outlined,
+                    label: context.tr('Mes commandes'),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LiveShopOrdersPage())),
                     wide: wide,
                     colors: colors,
                     iconColor: colors.primary,
@@ -2630,7 +2644,7 @@ class _MyHomePageState extends State<MyHomePage>
         isScrollable: true,
         indicatorColor: colors.primary,
         indicatorWeight: 2.5,
-        labelColor: colors.accent,
+        labelColor: colors.primary,
         unselectedLabelColor: colors.textSecondary,
         labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
         unselectedLabelStyle: const TextStyle(fontSize: 12),

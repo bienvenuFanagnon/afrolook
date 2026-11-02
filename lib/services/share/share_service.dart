@@ -49,6 +49,8 @@ class ShareService {
     final missions = r[0] is Map ? Map<String, dynamic>.from(r[0] as Map) : <String, dynamic>{};
     final prof = WalletApi.map(r[1]);
     final earn = WalletApi.map(r[2]);
+    final cfg = prof['config'] is Map ? Map<String, dynamic>.from(prof['config'] as Map) : const <String, dynamic>{};
+    if (cfg['daily_cap_fcfa'] is num) lastDailyCapFcfa = (cfg['daily_cap_fcfa'] as num).toDouble();
     // Missions : noms de champs de l'ancien écran
     final items = [
       for (final m in WalletApi.list(missions))
@@ -73,11 +75,17 @@ class ShareService {
       'perClickFcfa': lastPerClickFcfa,
       'coinsPerClick': coins,
       'dailyCapFcfa': lastDailyCapFcfa,
+      'holdHours': cfg['hold_hours'] ?? 72,
+      'expectedCtr': cfg['expected_ctr'] ?? 0.02,
+      'retainedAudience': p is Map ? (p['retained_audience'] ?? 0) : 0,
       'items': items,
       'me': {
         'pendingFcfa': ((earn['held_coins'] as num?) ?? 0) / 2.5,
+        'blockedCoins': earn['blocked_coins'] ?? 0,
+        'blockedReasons': earn['blocked_reasons'] ?? const [],
         'paidCoins': earn['released_coins'] ?? 0,
         'validClicks': earn['valid_clicks'] ?? 0,
+        'todayFcfa': earn['today_fcfa'] ?? 0,
       },
     }, {
       'profile': p is Map ? {...Map<String, dynamic>.from(p), 'status': status, 'reason': p['reject_reason'] ?? p['reason'], 'retained': p['retained_audience'], 'declared': p['declared_audience']} : null,
@@ -108,11 +116,6 @@ class ShareService {
     final media = '${r['media_url'] ?? ''}';
     return ShareLink(url: '${r['url']}', caption: '${r['caption']}', video: media.toLowerCase().endsWith('.mp4'), mediaUrl: media, image: media);
   }
-
-  /// Le partageur déclare combien de personnes ont vu sa publication. Point d'accès prévu : POST /share/report (absent pour l'instant,
-  /// voir lacunes_api_argent_creations.md). Retourne `{counted, proven, plausible}`.
-  static Future<Map<String, dynamic>> reportViews(String campaignId, int views) async =>
-      WalletApi.map(await _c.post('/share/report', body: {'campaign_id': campaignId, 'views': views}));
 
   /// Message clair quand le compte lui-même est refusé.
   static String? accountReason(String m, String Function(String) tr) {
@@ -198,7 +201,7 @@ class ShareHome {
   ShareHome({
     required this.enabled, required this.status, required this.perClickFcfa, required this.coinsPerClick, required this.dailyCapFcfa, required this.holdHours,
     required this.sponsorPct, required this.expectedCtr, required this.retained, required this.todayFcfa, required this.pendingFcfa, required this.paidCoins,
-    required this.validClicks, required this.missions, required this.profile, required this.rulesVersion, required this.rules,
+    required this.validClicks, required this.missions, required this.profile, required this.rulesVersion, required this.rules, this.blockedCoins = 0, this.blockedReasons = const [],
   });
 
   factory ShareHome.fromJson(Map<String, dynamic> list, Map<String, dynamic> prof) {
@@ -218,6 +221,8 @@ class ShareHome {
       retained: n(list['retainedAudience']).toInt(),
       todayFcfa: n(me['todayFcfa']).toDouble(),
       pendingFcfa: n(me['pendingFcfa']).toDouble(),
+      blockedCoins: n(me['blockedCoins']).toInt(),
+      blockedReasons: ((me['blockedReasons'] ?? const []) as List).map((e) => Map<String, dynamic>.from(e as Map)).toList(),
       paidCoins: n(me['paidCoins']).toInt(),
       validClicks: n(me['validClicks']).toInt(),
       missions: ((list['items'] ?? const []) as List).map((e) => ShareMission(Map<String, dynamic>.from(e as Map))).toList(),
@@ -229,7 +234,7 @@ class ShareHome {
 
   /// Aperçu des informations quand le service n'est pas (encore) joignable : valeurs de départ du pilote, à titre d'estimation.
   factory ShareHome.preview() => ShareHome(
-        enabled: false, status: 'none', perClickFcfa: 5, coinsPerClick: 12.5, dailyCapFcfa: 500, holdHours: 72, sponsorPct: 10, expectedCtr: 0.02, retained: 0,
+        enabled: false, status: 'none', perClickFcfa: 5, coinsPerClick: 12.5, dailyCapFcfa: 3000, holdHours: 72, sponsorPct: 10, expectedCtr: 0.02, retained: 0,
         todayFcfa: 0, pendingFcfa: 0, paidCoins: 0, validClicks: 0, missions: const [], profile: null, rulesVersion: '', rules: const [],
       );
 
@@ -244,6 +249,8 @@ class ShareHome {
   final int retained;
   final double todayFcfa;
   final double pendingFcfa;
+  final List<Map<String, dynamic>> blockedReasons;   // pourquoi : self, dup, invalid_ratio, too_fast
+  final int blockedCoins;   // gains retenus par le contrôle anti-fraude (en vérification par l'équipe)
   final int paidCoins;
   final int validClicks;
   final List<ShareMission> missions;

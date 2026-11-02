@@ -589,11 +589,11 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
               ),
               child: Row(children: [
                 SizedBox(width: 28, child: Text('${k + 1}', style: TextStyle(fontWeight: FontWeight.w900, color: c.textSecondary))),
-                if (_safe.contains(k)) Icon(Icons.shield_rounded, size: 16, color: c.accent) else const SizedBox(width: 16),
+                if (_safe.contains(k)) Icon(Icons.shield_rounded, size: 16, color: c.accentText) else const SizedBox(width: 16),
                 const Spacer(),
                 Text('${prizes[k]}', style: TextStyle(fontWeight: FontWeight.w900, color: c.supportAccent, fontSize: 15)),
                 const SizedBox(width: 3),
-                Icon(Icons.star_rounded, size: 16, color: c.accent),
+                Icon(Icons.star_rounded, size: 16, color: c.accentText),
               ]),
             ),
         ]),
@@ -775,7 +775,7 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
             border: Border.all(color: c.accent, width: 1.5),
           ),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Icon(icon, size: 18, color: c.accent),
+            Icon(icon, size: 18, color: c.accentText),
             const SizedBox(width: 4),
             Text(label, style: TextStyle(fontWeight: FontWeight.w900, color: c.textPrimary, fontSize: 13)),
           ]),
@@ -811,7 +811,7 @@ class _QuizChallengePageState extends State<QuizChallengePage> {
         ),
         child: Column(children: [
           Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Icon(Icons.star_rounded, color: c.accent, size: 34),
+            Icon(Icons.star_rounded, color: c.accentText, size: 34),
             const SizedBox(width: 6),
             Text('+${r.gain}', style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900, color: c.textPrimary)),
           ]),

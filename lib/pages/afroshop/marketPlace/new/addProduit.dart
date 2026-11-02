@@ -1,3 +1,4 @@
+import 'package:afrotok/l10n/tr.dart';
 import '../../../../services/media_shrink.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:io';
@@ -52,6 +53,14 @@ class AddNewProduit extends StatefulWidget {
 
 class _AddAnnonceState extends State<AddNewProduit> {
   final _formKey = GlobalKey<FormState>();
+  // Vente en direct (achat en 1 clic avec séquestre) : options du vendeur
+  bool _liveSellable = false;
+  bool _negotiable = false;
+  bool _flashSale = false;
+  final _floorPrice = TextEditingController();
+  final _stock = TextEditingController();
+  final _oldPrice = TextEditingController();
+  final _flashHours = TextEditingController(text: '24');
   String _titre2 = '';
   final _titre = TextEditingController();
   final _description = TextEditingController();
@@ -97,6 +106,22 @@ class _AddAnnonceState extends State<AddNewProduit> {
   void initState() {
     super.initState();
     // categorieSelected = null;
+  }
+
+  /// Champs de la vente en direct envoyés avec l'article (rien si l'achat en un clic est désactivé).
+  Map<String, dynamic> _liveExtra(int price) {
+    if (!_liveSellable) return const {};
+    final floor = int.tryParse(_floorPrice.text.trim());
+    final stock = int.tryParse(_stock.text.trim());
+    final old = int.tryParse(_oldPrice.text.trim());
+    final hours = int.tryParse(_flashHours.text.trim()) ?? 24;
+    return {
+      'live_sellable': true,
+      'negotiable': _negotiable,
+      if (_negotiable && floor != null && floor > 0 && floor <= price) 'floor_price_xof': floor,
+      if (stock != null) 'stock': stock,
+      if (_flashSale && old != null && old > price) ...{'original_price': old, 'promo_until': DateTime.now().toUtc().add(Duration(hours: hours.clamp(1, 720))).toIso8601String()},
+    };
   }
 
   // Vérifier si l'utilisateur peut publier
@@ -188,9 +213,9 @@ class _AddAnnonceState extends State<AddNewProduit> {
     final sizeBytes = await video.length();
     if (sizeBytes > 50 * 1024 * 1024) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           backgroundColor: Colors.red,
-          content: Text('Vidéo trop lourde — max 50 Mo'),
+          content: Text(tr('Vidéo trop lourde — max 50 Mo')),
         ));
       }
       return;
@@ -311,7 +336,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                 ),
                 SizedBox(height: 15),
                 Text(
-                  "Abonnement expiré",
+                  tr("Abonnement expiré"),
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -322,8 +347,8 @@ class _AddAnnonceState extends State<AddNewProduit> {
                 SizedBox(height: 15),
                 Text(
                   isPremium
-                      ? "Votre abonnement premium est expiré. Renouvelez-le pour continuer à publier des produits."
-                      : "Votre abonnement gratuit est expiré. Passez à l'abonnement premium pour continuer à publier.",
+                      ? tr("Votre abonnement premium est expiré. Renouvelez-le pour continuer à publier des produits.")
+                      : tr("Votre abonnement gratuit est expiré. Passez à l'abonnement premium pour continuer à publier."),
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.grey[700], fontSize: 14),
                 ),
@@ -334,7 +359,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                     _navigateToPremiumSubscription();
                   },
                   icon: Icon(Icons.star, color: Colors.white),
-                  label: Text("Voir les abonnements", style: TextStyle(color: Colors.white)),
+                  label: Text(tr("Voir les abonnements"), style: TextStyle(color: Colors.white)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: CustomConstants.kPrimaryColor,
                     padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -382,7 +407,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                 ),
                 SizedBox(height: 15),
                 Text(
-                  "Limite de produits atteinte",
+                  tr("Limite de produits atteinte"),
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -393,8 +418,8 @@ class _AddAnnonceState extends State<AddNewProduit> {
                 SizedBox(height: 15),
                 Text(
                   isPremium
-                      ? "Vous avez atteint la limite de produits de votre abonnement premium. Renouvelez ou améliorez votre abonnement pour publier plus de produits."
-                      : "Vous avez atteint la limite de produits gratuits. Passez à l'abonnement premium pour publier plus de produits.",
+                      ? tr("Vous avez atteint la limite de produits de votre abonnement premium. Renouvelez ou améliorez votre abonnement pour publier plus de produits.")
+                      : tr("Vous avez atteint la limite de produits gratuits. Passez à l'abonnement premium pour publier plus de produits."),
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.grey[700], fontSize: 14),
                 ),
@@ -405,7 +430,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                     _navigateToPremiumSubscription();
                   },
                   icon: Icon(Icons.star, color: Colors.white),
-                  label: Text("Améliorer l'abonnement", style: TextStyle(color: Colors.white)),
+                  label: Text(tr("Améliorer l'abonnement"), style: TextStyle(color: Colors.white)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: CustomConstants.kPrimaryColor,
                     padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -447,7 +472,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
     final isAdmin = authProvider.loginUserData.role == UserRole.ADM.name;
 
     String produitRestant = isAdmin
-        ? "Illimité (Admin)"
+        ? tr("Illimité (Admin)")
         : remainingProducts > 0
         ? "$remainingProducts restants"
         : "0 restant";
@@ -459,7 +484,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Publier un article',
+          tr('Publier un article'),
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -500,8 +525,8 @@ class _AddAnnonceState extends State<AddNewProduit> {
                           Expanded(
                             child: Text(
                               _getRemainingProducts() == 0
-                                  ? "Vous avez atteint votre limite de produits."
-                                  : "Votre abonnement est expiré.",
+                                  ? tr("Vous avez atteint votre limite de produits.")
+                                  : tr("Votre abonnement est expiré."),
                               style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500),
                             ),
                           ),
@@ -555,7 +580,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                                   ),
                                   SizedBox(height: 12),
                                   Text(
-                                    "Créez votre entreprise",
+                                    tr("Créez votre entreprise"),
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold,
@@ -564,7 +589,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                                   ),
                                   SizedBox(height: 8),
                                   Text(
-                                    "Pour vendre vos produits et services, créez gratuitement une entreprise avec un nom unique.",
+                                    tr("Pour vendre vos produits et services, créez gratuitement une entreprise avec un nom unique."),
                                     textAlign: TextAlign.center,
                                     style: TextStyle(fontSize: 13, color: Colors.black54),
                                   ),
@@ -581,7 +606,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                                       Navigator.pop(context);
                                       Navigator.pushNamed(context, '/new_entreprise');
                                     },
-                                    child: Text("Créer maintenant", style: TextStyle(color: Colors.white)),
+                                    child: Text(tr("Créer maintenant"), style: TextStyle(color: Colors.white)),
                                   ),
                                 ],
                               ),
@@ -592,7 +617,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                     } catch (e) {
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text("Erreur lors du chargement")),
+                        SnackBar(content: Text(tr("Erreur lors du chargement"))),
                       );
                     }
                   },
@@ -668,14 +693,14 @@ class _AddAnnonceState extends State<AddNewProduit> {
                       child: Icon(Icons.star, color: Colors.amber),
                     ),
                     title: Text(
-                      "Améliorer l'abonnement",
+                      tr("Améliorer l'abonnement"),
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         color: Colors.black87,
                       ),
                     ),
                     subtitle: Text(
-                      "Débloquer plus de fonctionnalités",
+                      tr("Débloquer plus de fonctionnalités"),
                       style: TextStyle(color: Colors.grey[600]),
                     ),
                     trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
@@ -712,7 +737,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                             Icon(Icons.videocam_rounded, color: CustomConstants.kPrimaryColor),
                             SizedBox(width: 8),
                             Text(
-                              'Vidéo du produit',
+                              tr('Vidéo du produit'),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -735,7 +760,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                         ),
                         SizedBox(height: 4),
                         Text(
-                          'Ajoutez une vidéo pour présenter votre produit (max 50 Mo)',
+                          tr('Ajoutez une vidéo pour présenter votre produit (max 50 Mo)'),
                           style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                         ),
                         SizedBox(height: 12),
@@ -785,7 +810,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                           icon: Icon(Icons.add_circle_outline,
                               color: CustomConstants.kPrimaryColor),
                           label: Text(
-                            _videoFile == null ? 'Ajouter une vidéo' : 'Changer la vidéo',
+                            _videoFile == null ? tr('Ajouter une vidéo') : tr('Changer la vidéo'),
                             style: TextStyle(color: CustomConstants.kPrimaryColor),
                           ),
                           style: OutlinedButton.styleFrom(
@@ -816,7 +841,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                             Icon(Icons.photo_library, color: CustomConstants.kPrimaryColor),
                             SizedBox(width: 8),
                             Text(
-                              'Images du produit',
+                              tr('Images du produit'),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -903,7 +928,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                           icon: Icon(Icons.add_photo_alternate,
                               color: _mediaFileList!.length >= maxImages ? Colors.grey : CustomConstants.kPrimaryColor),
                           label: Text(
-                            'Ajouter des photos',
+                            tr('Ajouter des photos'),
                             style: TextStyle(color: _mediaFileList!.length >= maxImages ? Colors.grey : CustomConstants.kPrimaryColor),
                           ),
                           style: OutlinedButton.styleFrom(
@@ -953,7 +978,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                             ),
                             validator: (value) {
                               if (value!.isEmpty) {
-                                return 'Veuillez entrer un prix';
+                                return tr('Veuillez entrer un prix');
                               }
                               return null;
                             },
@@ -967,7 +992,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                             Icon(Icons.category, color: CustomConstants.kPrimaryColor),
                             SizedBox(width: 8),
                             Text(
-                              'Catégorie',
+                              tr('Catégorie'),
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -985,7 +1010,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                           },
                           validator: (value) {
                             if (value == null) {
-                              return "Veuillez choisir une catégorie";
+                              return tr("Veuillez choisir une catégorie");
                             }
                             return null;
                           },
@@ -999,7 +1024,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                             return Padding(
                               padding: const EdgeInsets.only(left: 8.0),
                               child: Text(
-                                selectedItem?.nom ?? "Choisissez une catégorie",
+                                selectedItem?.nom ?? tr("Choisissez une catégorie"),
                                 style: TextStyle(
                                   color: selectedItem == null
                                       ? Colors.grey
@@ -1013,7 +1038,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                           popupProps: PopupProps.menu(
                             searchFieldProps: TextFieldProps(
                               decoration: InputDecoration(
-                                hintText: "Rechercher une catégorie...",
+                                hintText: tr("Rechercher une catégorie..."),
                                 prefixIcon: Icon(Icons.search),
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(10),
@@ -1035,7 +1060,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                           ),
                           dropdownDecoratorProps: DropDownDecoratorProps(
                             dropdownSearchDecoration: InputDecoration(
-                              labelText: "Catégorie *",
+                              labelText: tr("Catégorie *"),
                               labelStyle: TextStyle(
                                 color: Colors.black87,
                                 fontWeight: FontWeight.w500,
@@ -1052,7 +1077,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                                 borderRadius: BorderRadius.circular(10),
                                 borderSide: BorderSide(color: CustomConstants.kPrimaryColor),
                               ),
-                              hintText: "Sélectionnez une catégorie",
+                              hintText: tr("Sélectionnez une catégorie"),
                               hintStyle: TextStyle(color: Colors.grey),
                             ),
                           ),
@@ -1066,16 +1091,16 @@ class _AddAnnonceState extends State<AddNewProduit> {
 
                 // Champs de formulaire
                 _buildFormField(
-                  label: 'Titre du produit *',
+                  label: tr('Titre du produit *'),
                   icon: Icons.title,
                   child: TextFormField(
                     controller: _titre,
                     decoration: InputDecoration(
-                      hintText: 'Ex: Téléphone Samsung Galaxy S21',
+                      hintText: tr('Ex: Téléphone Samsung Galaxy S21'),
                     ),
                     validator: (value) {
                       if (value!.isEmpty) {
-                        return 'Veuillez entrer un titre';
+                        return tr('Veuillez entrer un titre');
                       }
                       return null;
                     },
@@ -1085,11 +1110,11 @@ class _AddAnnonceState extends State<AddNewProduit> {
                 SizedBox(height: 16),
 
                 _buildFormField(
-                  label: 'Numéro WhatsApp *',
+                  label: tr('Numéro WhatsApp *'),
                   icon: FontAwesome.whatsapp,
                   child: PhoneFormField(
                     decoration: InputDecoration(
-                      hintText: 'Votre numéro WhatsApp',
+                      hintText: tr('Votre numéro WhatsApp'),
                     ),
                     initialValue: PhoneNumber.parse('+228'),
                     validator: PhoneValidator.compose([
@@ -1123,15 +1148,83 @@ class _AddAnnonceState extends State<AddNewProduit> {
                     controller: _description,
                     maxLines: 3,
                     decoration: InputDecoration(
-                      hintText: 'Décrivez votre produit en détail...',
+                      hintText: tr('Décrivez votre produit en détail...'),
                     ),
                     validator: (value) {
                       if (value!.isEmpty) {
-                        return 'Veuillez entrer une description';
+                        return tr('Veuillez entrer une description');
                       }
                       return null;
                     },
 
+                  ),
+                ),
+
+                SizedBox(height: 16),
+
+                // Vente en direct : achat en 1 clic, négociation, stock, vente flash
+                Card(
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(children: [
+                          Icon(Icons.live_tv_rounded, color: CustomConstants.kPrimaryColor),
+                          const SizedBox(width: 8),
+                          const Text('Vente en direct', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                        ]),
+                        SwitchListTile(
+                          contentPadding: EdgeInsets.zero,
+                          value: _liveSellable,
+                          onChanged: (v) => setState(() => _liveSellable = v),
+                          title: Text(tr('Achat en un clic')),
+                          subtitle: Text(tr("Les clients paient dans l'application ; leur argent est protégé jusqu'à la réception, puis il t'est versé (10 % de commission).")),
+                        ),
+                        if (_liveSellable) ...[
+                          SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            value: _negotiable,
+                            onChanged: (v) => setState(() => _negotiable = v),
+                            title: Text(tr('Prix négociable')),
+                          ),
+                          if (_negotiable)
+                            TextFormField(
+                              controller: _floorPrice,
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(labelText: 'Prix plancher (F)', helperText: tr("Tu refuses toute offre en dessous. Les clients ne le voient jamais."), border: OutlineInputBorder()),
+                            ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _stock,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(labelText: 'Stock (facultatif)', helperText: tr('Laisse vide pour un stock illimité.'), border: OutlineInputBorder()),
+                          ),
+                          SwitchListTile(
+                            contentPadding: EdgeInsets.zero,
+                            value: _flashSale,
+                            onChanged: (v) => setState(() => _flashSale = v),
+                            title: const Text('Vente flash'),
+                            subtitle: Text(tr("Le prix saisi plus haut est le prix de la vente flash ; l'ancien prix revient à la fin.")),
+                          ),
+                          if (_flashSale) ...[
+                            TextFormField(
+                              controller: _oldPrice,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(labelText: 'Ancien prix (F)', border: OutlineInputBorder()),
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _flashHours,
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(labelText: tr('Durée de la vente flash (heures)'), border: OutlineInputBorder()),
+                            ),
+                          ],
+                        ],
+                      ],
+                    ),
                   ),
                 ),
 
@@ -1228,7 +1321,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     backgroundColor: Colors.red,
-                    content: Text("Veuillez sélectionner un pays"),
+                    content: Text(tr("Veuillez sélectionner un pays")),
                   ),
                 );
                 return;
@@ -1238,7 +1331,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     backgroundColor: Colors.red,
-                    content: Text("Veuillez ajouter au moins une image"),
+                    content: Text(tr("Veuillez ajouter au moins une image")),
                   ),
                 );
                 return;
@@ -1292,7 +1385,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
               Icon(Icons.check_circle_outline, size: 20),
               SizedBox(width: 8),
               Text(
-                canPublish ? 'Publier l\'article' : 'Publication bloquée',
+                canPublish ? 'Publier l\'article' : tr('Publication bloquée'),
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
             ],
@@ -1338,9 +1431,9 @@ class _AddAnnonceState extends State<AddNewProduit> {
         final sizeBytes = await _videoFile!.length();
         if (sizeBytes > 50 * 1024 * 1024) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
               backgroundColor: Colors.red,
-              content: Text('Vidéo trop lourde — max 50 Mo'),
+              content: Text(tr('Vidéo trop lourde — max 50 Mo')),
             ));
           }
           setState(() { onSaveTap = false; });
@@ -1364,12 +1457,13 @@ class _AddAnnonceState extends State<AddNewProduit> {
           images: imageFiles,
           video: videoFile,
           videoDurationSec: _videoDurationSec,
+          extra: _liveExtra(annonceRegisterData.prix ?? 0),
         );
         postId = created.id ?? '';
         success = true;
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text(ShopApi.message(e, fallback: "Erreur lors de l'ajout du produit"))));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text(ShopApi.message(e, fallback: tr("Erreur lors de l'ajout du produit")))));
         }
       }
 
@@ -1384,7 +1478,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: Colors.green,
-            content: Text("Article ajouté avec succès"),
+            content: Text(tr("Article ajouté avec succès")),
           ),
         );
 

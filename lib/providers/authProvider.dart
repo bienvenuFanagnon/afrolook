@@ -1180,6 +1180,12 @@ Future<void> sendChatPush({
         onSuccess();
         return;
       }
+      // L'équipe d'administration n'est JAMAIS bloquée par une mise à jour obligatoire (elle doit pouvoir se connecter pour corriger la version en ligne)
+      final teamRole = loginUserData.role;
+      if (teamRole != null && teamRole.isNotEmpty && teamRole != UserRole.USER.name) {
+        onSuccess();
+        return;
+      }
       // Bypass pendant la review Google Play ou Apple App Store
       final isInStoreReview = (!kIsWeb && Platform.isIOS)
           ? (appDefaultData.appleVerification ?? false)
@@ -1187,7 +1193,9 @@ Future<void> sendChatPush({
 
       if (!isInStoreReview) {
         // Mise à jour requise uniquement si la version en ligne est SUPÉRIEURE à celle de l'utilisateur
-        final onlineVersion = appDefaultData.app_version_code ?? app_version_code;
+        // numéro du système de la personne (Android ou iPhone) s'il est réglé, sinon le numéro commun
+        final platformVersion = (!kIsWeb && Platform.isIOS) ? appDefaultData.app_version_code_ios : appDefaultData.app_version_code_android;
+        final onlineVersion = platformVersion ?? appDefaultData.app_version_code ?? app_version_code;
         if (app_version_code >= onlineVersion) {
           onSuccess();
         } else {

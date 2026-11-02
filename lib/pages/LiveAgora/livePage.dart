@@ -1,4 +1,7 @@
+import 'package:afrotok/pages/liveshop/live_pinned_product.dart';
 import 'package:afrotok/l10n/tr.dart';
+import 'live_voice.dart';
+import 'package:afrotok/services/api/wallet_api.dart';
 import 'package:afrotok/services/api/api_identity.dart';
 import 'package:afrotok/services/api/live_trial.dart';
 import 'package:afrotok/services/api/users_api.dart';
@@ -143,6 +146,13 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   // Durée maximale du live (30 min, 60 min admin) et fin détectée à distance
   Timer? _durationTimer;
   bool _durationWarned = false;
+  int? _durationOverride;          // durée mise à jour après une prolongation payante
+  bool _tokenAsHost = false;       // rôle du jeton Agora en cours (pour le renouveler)
+  bool _extensionOffered = false;
+  Timer? _voiceTimer;             // hôte : surveille l'arrivée de vocaux de spectateurs
+  int _voiceNew = 0;
+
+  int get _liveMinutes => _durationOverride ?? widget.postLive.safeLiveDurationMinutes;
   bool _endHandled = false;
 
   // ANIMATIONS
@@ -204,6 +214,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     if (widget.isHost) {
       _startHeartbeat();
       _startDurationLimit();
+      _startVoiceWatch();
     }
 
     // Vérification de la session Firebase avant toute connexion Agora/Firestore
@@ -514,7 +525,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           kind: 'live_entry',
           refId: widget.liveId,
           coins: widget.postLive.participationFeeCoins,
-          label: 'Accès au live privé');
+          label: tr('Accès au live privé'));
 
       if (paymentSuccess) {
 
@@ -597,6 +608,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       // Configuration des handlers
       _engine.registerEventHandler(
         RtcEngineEventHandler(
+          onTokenPrivilegeWillExpire: (connection, token) => _renewAgoraToken(connection.localUid),
+          onRequestToken: (connection) => _renewAgoraToken(connection.localUid),
           onJoinChannelSuccess: (connection, elapsed) {
             printVm("✅ Rejoint le canal avec succès - UID: ${connection.localUid}");
             setState(() => _localUserJoined = true);
@@ -714,6 +727,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       // Configuration des handlers
       _engine.registerEventHandler(
         RtcEngineEventHandler(
+          onTokenPrivilegeWillExpire: (connection, token) => _renewAgoraToken(connection.localUid),
+          onRequestToken: (connection) => _renewAgoraToken(connection.localUid),
           onJoinChannelSuccess: (connection, elapsed) {
             printVm("✅ Rejoint le canal avec succès - UID: ${connection.localUid}");
             setState(() => _localUserJoined = true);
@@ -804,6 +819,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }) async {
     try {
       // Jeton généré par l'API : refusé sur un live payant sans entrée payée (402 entry_required)
+      _tokenAsHost = isHost;
       final result = await LivesApi.token(widget.liveId, uid: uid, role: isHost ? 'host' : 'audience');
       // Pendant l'essai, la réponse porte `trial` : on recale le compte à rebours sur le serveur (le chrono démarre ici).
       final trial = LiveTrial.fromJson(result['trial']);
@@ -824,7 +840,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
   Future<void> _toggleScreenSharing() async {
     await _confirmAction(
-      _isScreenSharing ? "arrêter le partage d'écran" : "partager l'écran",
+      _isScreenSharing ? tr("arrêter le partage d'écran") : tr("partager l'écran"),
           () async {
         if (!(widget.isHost || _isParticipant)) return;
 
@@ -919,7 +935,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
   Future<void> _toggleMicrophone() async {
     await _confirmAction(
-      _isMicrophoneMuted ? "activer le micro" : "désactiver le micro",
+      _isMicrophoneMuted ? tr("activer le micro") : tr("désactiver le micro"),
           () async {
         if (!(widget.isHost || _isParticipant)) return;
 
@@ -935,12 +951,12 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
   Future<void> _switchCamera() async {
     await _confirmAction(
-      "changer de caméra",
+      tr("changer de caméra"),
           () async {
         try {
           if (_numberOfCameras < 2) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Une seule caméra disponible')),
+              SnackBar(content: Text(tr('Une seule caméra disponible'))),
             );
             return;
           }
@@ -993,7 +1009,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
 
 
-  void _sendComment(String message, {String type = 'text', String? giftId}) {
+  void _sendComment(String message, {String type = 'text', String? giftId, String? voiceNoteId, int? voiceSeconds}) {
     _stopTyping();
 
     try {
@@ -1013,6 +1029,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           'timestamp': DateTime.now(),
           'type': type,
           'giftId': giftId,
+          if (voiceNoteId != null) 'voiceNoteId': voiceNoteId,
+          if (voiceSeconds != null) 'voiceSeconds': voiceSeconds,
         });
       }
     } catch (e) {
@@ -1020,10 +1038,13 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     }
   }
 
+  Gift? _lastGift;   // dernier cadeau envoyé : seul raccourci affiché sous le chat (garde la vue des messages dégagée)
+
   void _sendGift(Gift gift) async {
     try {
       final currentUser = _auth.currentUser;
       if (currentUser == null) return;
+      if (mounted) setState(() => _lastGift = gift);
 
       final coinsAmount = gift.price.toInt();
 
@@ -1304,8 +1325,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       builder: (BuildContext context) {
         return AlertDialog(
           backgroundColor: Colors.grey[900],
-          title: Text('Terminer le live?', style: TextStyle(color: Colors.white)),
-          content: Text('Voulez-vous vraiment terminer votre live?', style: TextStyle(color: Colors.white70)),
+          title: Text(tr('Terminer le live?'), style: TextStyle(color: Colors.white)),
+          content: Text(tr('Voulez-vous vraiment terminer votre live ? Les spectateurs seront déconnectés et les commandes en cours resteront à traiter.'), style: TextStyle(color: Colors.white70)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -1329,29 +1350,106 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     _heartbeatTimer = Timer.periodic(const Duration(minutes: 2), (_) => _sendHeartbeat());
   }
 
-  /// Termine le live à la fin de sa durée maximale, avec un avertissement 2 minutes avant.
+  /// Termine le live à la fin de sa durée (la vidéo est facturée à la minute), avec un avertissement 2 minutes avant et la possibilité de PAYER pour continuer.
   void _startDurationLimit() {
-    final endAt = widget.postLive.startTime.add(Duration(minutes: widget.postLive.safeLiveDurationMinutes));
     _durationTimer = Timer.periodic(const Duration(seconds: 15), (t) {
       if (!mounted || _endHandled) { t.cancel(); return; }
+      final endAt = widget.postLive.startTime.add(Duration(minutes: _liveMinutes));
       final remaining = endAt.difference(DateTime.now());
       if (remaining <= Duration.zero) {
         t.cancel();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Durée maximale atteinte (${widget.postLive.safeLiveDurationMinutes} min) : fin du live.')),
+          SnackBar(content: Text(context.tr('Durée maximale atteinte ({m} min) : fin du live.', {'m': '$_liveMinutes'}))),
         );
         _endLive();
       } else if (remaining <= const Duration(minutes: 2) && !_durationWarned) {
         _durationWarned = true;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            duration: const Duration(seconds: 6),
-            backgroundColor: Colors.orange,
-            content: Text('Ton live se termine dans 2 minutes (durée maximale : ${widget.postLive.safeLiveDurationMinutes} min).'),
-          ),
-        );
+        _offerExtension();
       }
     });
+  }
+
+  /// Hôte : toutes les 20 secondes, regarde s'il y a de nouveaux vocaux de spectateurs ; alerte discrète + pastille sur le menu.
+  void _startVoiceWatch() {
+    _voiceTimer = Timer.periodic(const Duration(seconds: 20), (t) async {
+      if (!mounted || _endHandled) { t.cancel(); return; }
+      try {
+        final s = await LivesApi.voiceStatus(widget.liveId);
+        final n = (s['new_count'] as num?)?.toInt() ?? 0;
+        if (!mounted) return;
+        if (n > _voiceNew) {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            duration: const Duration(seconds: 4),
+            content: Text(context.tr("Nouveau vocal d'un spectateur : ouvre le menu du live.")),
+          ));
+        }
+        if (n != _voiceNew) setState(() => _voiceNew = n);
+      } catch (_) {}
+    });
+  }
+
+  /// À 2 minutes de la fin : proposer de continuer en payant (prix, durée et nombre de prolongations fixés par le serveur).
+  Future<void> _offerExtension() async {
+    if (_extensionOffered || !mounted) return;
+    _extensionOffered = true;
+    try {
+      final lim = await LivesApi.limits();
+      final ext = Map<String, dynamic>.from(lim['extension'] as Map? ?? {});
+      final live = await LivesApi.get(widget.liveId);
+      final used = (live['extensions_count'] as num?)?.toInt() ?? 0;
+      final max = (ext['max'] as num?)?.toInt() ?? 0;
+      int coins = (ext['coins'] as num?)?.toInt() ?? 0;
+      try {
+        coins = await WalletApi.instance.quote('live_extension', refId: widget.liveId);   // prix du moment : il suit le nombre de spectateurs
+      } catch (_) {}
+      final minutes = (ext['minutes'] as num?)?.toInt() ?? 60;
+      if (!mounted) return;
+      if (ext['free'] == true || used >= max || coins <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          duration: const Duration(seconds: 6),
+          backgroundColor: Colors.orange,
+          content: Text(context.tr('Ton live se termine dans 2 minutes (durée maximale : {m} min).', {'m': '$_liveMinutes'})),
+        ));
+        return;
+      }
+      final go = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(ctx.tr('Ton live arrive à sa fin')),
+          content: Text(ctx.tr('Il se termine dans 2 minutes. Continue encore {m} min pour {p}.', {'m': '$minutes', 'p': CoinCheckout.coinsLabel(coins)})),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(ctx.tr('Terminer à l\'heure'))),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(ctx.tr('Prolonger'))),
+          ],
+        ),
+      );
+      if (go != true || !mounted) return;
+      final ok = await CoinCheckout.pay(context, kind: 'live_extension', refId: widget.liveId, coins: coins, label: context.tr('Prolonger le live'));
+      if (!ok || !mounted) return;
+      final fresh = await LivesApi.get(widget.liveId);
+      setState(() {
+        _durationOverride = (fresh['duration_minutes'] as num?)?.toInt() ?? (_liveMinutes + minutes);
+        _durationWarned = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Live prolongé de {m} min.', {'m': '$minutes'}))));
+    } catch (e) {
+      printVm('⚠️ Prolongation impossible : $e');
+    } finally {
+      _extensionOffered = false;
+    }
+  }
+
+  /// Le jeton Agora s'arrête à la fin prévue du live : on en redemande un avant l'échéance (accordé tant que le live n'est pas fini, prolongations comprises).
+  Future<void> _renewAgoraToken(int? uid) async {
+    if (_endHandled) return;
+    try {
+      final r = await LivesApi.token(widget.liveId, uid: uid ?? 0, role: _tokenAsHost ? 'host' : 'audience');
+      await _engine.renewToken(r['token'] as String);
+    } on ApiException catch (e) {
+      if (e.status == 410 && mounted && !widget.isHost) await _onLiveEndedRemotely();
+    } catch (e) {
+      printVm('⚠️ Renouvellement du jeton impossible : $e');
+    }
   }
 
   /// Le live a été terminé ailleurs (durée maximale, inactivité, nouveau live de l'hôte).
@@ -1371,8 +1469,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Live terminé'),
-        content: const Text('Ce live est terminé. Merci d\'avoir regardé !'),
+        title: Text(tr('Live terminé')),
+        content: Text(tr('Ce live est terminé. Merci d\'avoir regardé !')),
         actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
       ),
     );
@@ -1444,13 +1542,13 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                 child: Icon(Icons.live_tv, color: Color(0xFFF9A825), size: 30),
               ),
               const SizedBox(height: 16),
-              const Text('Live terminé 🎉',
+              Text(tr('Live terminé 🎉'),
                   style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 20)),
               const SizedBox(height: 4),
-              Text('Merci à tous vos spectateurs !',
+              Text(tr('Merci à tous vos spectateurs !'),
                   style: TextStyle(color: Colors.white54, fontSize: 13)),
               const SizedBox(height: 24),
-              _buildStatRow(Icons.stars_rounded, 'Pièces reçues', '$_giftCoinsTotal pcs', const Color(0xFFF9A825)),
+              _buildStatRow(Icons.stars_rounded, tr('Pièces reçues'), '$_giftCoinsTotal pcs', const Color(0xFFF9A825)),
               const SizedBox(height: 12),
               _buildStatRow(Icons.favorite_rounded, 'Likes', '$_likeCount', Colors.pinkAccent),
               const SizedBox(height: 12),
@@ -1555,7 +1653,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           children: [
             Container(width: 36, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 20),
-            Text('Partager ce live', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)),
+            Text(tr('Partager ce live'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)),
             const SizedBox(height: 8),
             Text(widget.postLive.title, style: const TextStyle(color: Colors.white54, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
             const SizedBox(height: 20),
@@ -1570,8 +1668,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                 decoration: BoxDecoration(color: Color(0xFFF9A825).withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
                 child: Icon(Icons.chat_bubble_outline_rounded, color: Color(0xFFF9A825), size: 22),
               ),
-              title: const Text('Envoyer dans un chat', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-              subtitle: const Text('Conversations ou groupes', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              title: Text(tr('Envoyer dans un chat'), style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+              subtitle: Text(tr('Conversations ou groupes'), style: TextStyle(color: Colors.white54, fontSize: 12)),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               tileColor: Colors.white.withOpacity(0.05),
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -1588,8 +1686,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                 decoration: BoxDecoration(color: Colors.blueAccent.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
                 child: const Icon(Icons.ios_share_rounded, color: Colors.blueAccent, size: 22),
               ),
-              title: const Text('Partager le lien', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-              subtitle: const Text('WhatsApp, réseaux sociaux...', style: TextStyle(color: Colors.white54, fontSize: 12)),
+              title: Text(tr('Partager le lien'), style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+              subtitle: Text(tr('WhatsApp, réseaux sociaux...'), style: TextStyle(color: Colors.white54, fontSize: 12)),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               tileColor: Colors.white.withOpacity(0.05),
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -1825,6 +1923,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       _buildHostOverlay(),
       _buildViewerInfo(),
       _buildPinnedTextSection(),
+      LivePinnedProduct(liveId: widget.liveId, isHost: widget.isHost),   // Live Shopping : produit épinglé
       _buildLeaderboard(),
       _buildCommentsSection(),
       _buildFooter(),
@@ -1925,7 +2024,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
             ),
             const SizedBox(height: 8),
             Text(
-              _pauseMessage ?? "L'hôte a mis le live en pause",
+              _pauseMessage ?? tr("L'hôte a mis le live en pause"),
               style: const TextStyle(color: Colors.white54, fontSize: 14),
               textAlign: TextAlign.center,
             ),
@@ -1938,7 +2037,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
               ),
             ),
             const SizedBox(height: 10),
-            const Text('Réactivation automatique…', style: TextStyle(color: Colors.white38, fontSize: 12)),
+            Text(tr('Réactivation automatique…'), style: TextStyle(color: Colors.white38, fontSize: 12)),
           ],
         ),
       ),
@@ -2160,9 +2259,9 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(UsersApi.message(e, fallback: 'Impossible de charger ce profil pour le moment.')),
+          content: Text(UsersApi.message(e, fallback: tr('Impossible de charger ce profil pour le moment.'))),
           backgroundColor: Colors.red,
-          action: SnackBarAction(label: 'Réessayer', textColor: Colors.white, onPressed: () => _showUserDetailsById(userId)),
+          action: SnackBarAction(label: tr('Réessayer'), textColor: Colors.white, onPressed: () => _showUserDetailsById(userId)),
         ),
       );
     }
@@ -2225,30 +2324,61 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
-                widget.isHost ? 'HÔTE' : authProvider.loginUserData.role == UserRole.ADM.name ? 'ADMIN' : 'PARTICIPANT',
+                widget.isHost ? tr('HÔTE') : authProvider.loginUserData.role == UserRole.ADM.name ? 'ADMIN' : 'PARTICIPANT',
                 style: TextStyle(color: Colors.greenAccent, fontWeight: FontWeight.w800, fontSize: 9, letterSpacing: .8),
               ),
             ),
-          // Bouton arrêter
+          // Menu de l'hôte : « Terminer le live » est rangé ici (jamais un bouton rouge isolé) pour ne pas arrêter le live par erreur
           if (widget.isHost || authProvider.loginUserData.role == UserRole.ADM.name) ...[
-            SizedBox(height: 12),
-            GestureDetector(
-              onTap: _confirmEndLive,
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.85),
-                  borderRadius: BorderRadius.circular(12),
+            SizedBox(height: 10),
+            PopupMenuButton<String>(
+              tooltip: tr('Menu du live'),
+              color: Colors.grey[900],
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              onSelected: (v) {
+                if (v == 'end') _confirmEndLive();
+                if (v == 'voice' && widget.isHost) showLiveVoiceInbox(context, widget.liveId);
+              },
+              itemBuilder: (ctx) => [
+                if (widget.isHost)
+                  PopupMenuItem<String>(
+                    value: 'voice',
+                    child: Row(children: [
+                      const Icon(Icons.mic_rounded, color: Colors.white, size: 20),
+                      const SizedBox(width: 10),
+                      Text(_voiceNew > 0 ? '${context.tr('Vocaux des spectateurs')} ($_voiceNew)' : context.tr('Vocaux des spectateurs'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                    ]),
+                  ),
+                PopupMenuItem<String>(
+                  value: 'end',
+                  child: Row(children: [
+                    Icon(Icons.stop_circle_rounded, color: Colors.redAccent, size: 20),
+                    SizedBox(width: 10),
+                    Text(tr('Terminer le live'), style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w700)),
+                  ]),
                 ),
+              ],
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(color: Colors.black.withOpacity(0.55), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white24)),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.stop_rounded, color: Colors.white, size: 13),
+                    Icon(Icons.more_horiz_rounded, color: Colors.white, size: 16),
                     SizedBox(width: 4),
-                    Text('Arrêter', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 11)),
+                    Text('Menu', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 11)),
+                    if (_voiceNew > 0) const Padding(padding: EdgeInsets.only(left: 4), child: Icon(Icons.circle, color: Colors.redAccent, size: 9)),
                   ],
                 ),
               ),
+            ),
+          ],
+          // Spectateur (y compris un administrateur qui regarde le live d'un autre) : bouton « message vocal à l'hôte » (30 s au plus, écouté par l'hôte seul)
+          if (!widget.isHost && !_isParticipant) ...[
+            const SizedBox(height: 10),
+            LiveVoiceButton(
+              liveId: widget.liveId,
+              onSent: (id, seconds) => _sendComment(tr("a envoyé un message vocal à l'hôte"), type: 'voice', voiceNoteId: id, voiceSeconds: seconds),
             ),
           ],
         ],
@@ -2317,8 +2447,9 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
   Widget _buildCommentsSection() {
     final listHeight = MediaQuery.of(context).size.height * 0.30;
+    final footerH = MediaQuery.of(context).padding.bottom + 62 + (widget.isHost || _isParticipant ? 92 : 0) + (!widget.isHost && _gifts.isNotEmpty ? 30 : 0);
     return Positioned(
-      bottom: 82,
+      bottom: footerH,
       left: 10,
       width: MediaQuery.of(context).size.width * 0.68,
       child: Column(
@@ -2336,7 +2467,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                 border: Border.all(color: Colors.white.withOpacity(0.08)),
               ),
               child: Text(
-                _showComments ? 'Fermer les messages' : 'Afficher les messages',
+                _showComments ? tr('Fermer les messages') : tr('Afficher les messages'),
                 style: const TextStyle(color: Colors.white70, fontSize: 10.5, fontWeight: FontWeight.w600),
               ),
             ),
@@ -2388,12 +2519,14 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                                   fontSize: 11,
                                 ),
                               ),
-                              Text(
-                                comment.message,
-                                style: const TextStyle(color: Colors.white, fontSize: 11),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                              comment.type == 'voice' && comment.voiceNoteId != null
+                                  ? VoiceChatBadge(noteId: comment.voiceNoteId!, seconds: comment.voiceSeconds ?? 0, isHost: widget.isHost)
+                                  : Text(
+                                      comment.message,
+                                      style: const TextStyle(color: Colors.white, fontSize: 11),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                             ],
                           ),
                         ),
@@ -2411,13 +2544,13 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
   Widget _buildFooter() {
     final myCoins = CoinSplit.of(authProvider.loginUserData);
-    final quickGifts = _gifts.take(3).toList();
+    final quickGifts = _gifts.isEmpty ? <Gift>[] : [_lastGift ?? _gifts.first];
     return Positioned(
       bottom: 0,
       left: 0,
       right: 0,
       child: Container(
-        padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).padding.bottom + 12),
+        padding: EdgeInsets.fromLTRB(16, 6, 16, MediaQuery.of(context).padding.bottom + 8),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.bottomCenter,
@@ -2430,54 +2563,46 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           mainAxisSize: MainAxisSize.min,
           children: [
             if (widget.isHost || _isParticipant) _buildParticipantControls(),
-            // Solde pièces + raccourcis cadeaux
+            // Solde pièces + dernier cadeau envoyé : une seule petite rangée, poussée à droite, pour ne pas cacher les messages
             if (!widget.isHost && quickGifts.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.only(bottom: 6),
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     Container(
-                      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: Color(0xFFF9A825).withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Color(0xFFF9A825).withOpacity(0.4)),
+                        color: Colors.black.withOpacity(0.45),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white.withOpacity(0.12)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.stars_rounded, color: Color(0xFFF9A825), size: 14),
-                          SizedBox(width: 4),
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Dépôt ${TxAmount.fmt(myCoins.depot)}',
-                                  style: TextStyle(color: Color(0xFFF9A825), fontSize: 10.5, fontWeight: FontWeight.w700)),
-                              Text('Gagnées ${TxAmount.fmt(myCoins.gagnees)}',
-                                  style: TextStyle(color: Colors.white70, fontSize: 10.5, fontWeight: FontWeight.w600)),
-                            ],
-                          ),
+                          const Icon(Icons.stars_rounded, color: Color(0xFFF9A825), size: 12),
+                          const SizedBox(width: 4),
+                          Text('${TxAmount.fmt(myCoins.depot)} · ${TxAmount.fmt(myCoins.gagnees)}',
+                              style: const TextStyle(color: Colors.white70, fontSize: 10.5, fontWeight: FontWeight.w600)),
                         ],
                       ),
                     ),
-                    SizedBox(width: 10),
+                    const SizedBox(width: 6),
                     ...quickGifts.map((gift) => GestureDetector(
                       onTap: () => _sendGift(gift),
                       child: Container(
-                        margin: EdgeInsets.only(right: 6),
-                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: Colors.white.withOpacity(0.15)),
+                          color: Colors.black.withOpacity(0.45),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white.withOpacity(0.12)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(gift.icon, style: TextStyle(fontSize: 14)),
-                            SizedBox(width: 3),
-                            Text('${gift.price.toInt()}', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600)),
+                            Text(gift.icon, style: const TextStyle(fontSize: 12)),
+                            const SizedBox(width: 3),
+                            Text('${gift.price.toInt()}', style: const TextStyle(color: Colors.white70, fontSize: 10.5, fontWeight: FontWeight.w600)),
                           ],
                         ),
                       ),
@@ -2504,7 +2629,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                             controller: _commentController,
                             style: TextStyle(color: Colors.white, fontSize: 14),
                             decoration: InputDecoration(
-                              hintText: 'Envoyer un message...',
+                              hintText: tr('Envoyer un message...'),
                               hintStyle: TextStyle(color: Colors.white38),
                               border: InputBorder.none,
                               contentPadding: EdgeInsets.symmetric(horizontal: 16),
@@ -2601,7 +2726,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         children: [
           _buildCtrlBtn(
             icon: _isScreenSharing ? Icons.stop_screen_share : Icons.screen_share_rounded,
-            label: _isScreenSharing ? 'Arrêter' : 'Écran',
+            label: _isScreenSharing ? tr('Arrêter') : tr('Écran'),
             onTap: _toggleScreenSharing,
             active: !_isScreenSharing,
           ),
@@ -2616,7 +2741,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
             const SizedBox(width: 20),
             _buildCtrlBtn(
               icon: Icons.cameraswitch_rounded,
-              label: 'Caméra',
+              label: tr('Caméra'),
               onTap: _switchCamera,
             ),
           ],
@@ -2777,9 +2902,16 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }
   @override
   void dispose() {
+    // L'hôte quitte la page sans avoir terminé (retour, fermeture) : sa diffusion s'arrête, le live doit donc se terminer tout de suite côté serveur
+    // (sinon il reste affiché dans le fil jusqu'à 6 minutes, 20 pour une vente en direct)
+    if (widget.isHost && !_endHandled) {
+      _endHandled = true;
+      LivesApi.end(widget.liveId).then((_) {}, onError: (_) {});
+    }
     _removeUserFromSpectators();
     _heartbeatTimer?.cancel();
     _durationTimer?.cancel();
+    _voiceTimer?.cancel();
     _trialTimer?.cancel();
     _typingTimer?.cancel();
     _liveSubscription?.cancel();
@@ -2856,6 +2988,8 @@ class LiveComment {
   final DateTime timestamp;
   final String type;
   final String? giftId;
+  final String? voiceNoteId;   // type « voice » : identifiant du vocal (écoutable par l'hôte seul)
+  final int? voiceSeconds;
 
   LiveComment({
     required this.liveId,
@@ -2866,6 +3000,8 @@ class LiveComment {
     required this.timestamp,
     required this.type,
     this.giftId,
+    this.voiceNoteId,
+    this.voiceSeconds,
   });
 
   factory LiveComment.fromMap(Map<String, dynamic> map) {
@@ -2878,6 +3014,8 @@ class LiveComment {
       timestamp: (map['timestamp'] as Timestamp).toDate(),
       type: map['type'] ?? 'text',
       giftId: map['giftId'],
+      voiceNoteId: map['voiceNoteId'] as String?,
+      voiceSeconds: (map['voiceSeconds'] as num?)?.toInt(),
     );
   }
 }

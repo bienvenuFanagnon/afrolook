@@ -8,7 +8,7 @@ class NotificationText {
 
   /// Nouveaux types : mention, j'aime d'un commentaire, republication, soutien par pub, abonné à un canal,
   /// puis (lot « restes ») boost à valider (équipe), nomination comme administrateur d'un canal, intérêt pour un service.
-  static const newTypes = {'MENTION', 'COMMENT_LIKE', 'REPOST', 'SUPPORT', 'FOLLOW_CANAL', 'BOOST_SOUMIS', 'CANAL_ADMIN', 'SERVICE'};
+  static const newTypes = {'MENTION', 'COMMENT_LIKE', 'REPOST', 'SUPPORT', 'FOLLOW_CANAL', 'BOOST_SOUMIS', 'CANAL_ADMIN', 'SERVICE', 'STAFF_VERIF', 'STAFF_FRAUD', 'STAFF_DISPUTE'};
 
   /// Groupes de la page (clé = libellé français, traduit à l'affichage), types rangés dans chacun et filtre « par type » correspondant.
   static const Map<String, List<String>> groupTypes = {
@@ -19,8 +19,10 @@ class NotificationText {
     'Publications & Lives': ['NEWPOST', 'POST', 'REPOST', 'LIVE', 'CHALLENGE'],
     'Articles & Contenus': ['ARTICLE', 'CHRONIQUE', 'SERVICE'],
     'Récompenses': ['WEEKLY_REWARD'],
+    'Commandes': ['ORDER_NEW', 'ORDER_VALIDATED', 'ORDER_FEE', 'ORDER_SHIPPED', 'ORDER_RECEIVED', 'ORDER_CANCELLED', 'ORDER_DISPUTE', 'ORDER_RESOLVED', 'OFFER_NEW', 'OFFER_REPLY'],
     'Gains & Parrainages': ['GAIN', 'PARRAINAGE', 'SUPPORT'],
     'Afrolook': ['MARKETING', 'COMPTE_OFFICIEL', 'USER', 'BOOST_SOUMIS'],
+    'À traiter (équipe)': ['STAFF_VERIF', 'STAFF_FRAUD', 'STAFF_DISPUTE'],
   };
 
   /// Phrase affichée après le pseudo de l'auteur, ou null pour garder le texte envoyé par le serveur.
@@ -30,6 +32,26 @@ class NotificationText {
     switch ((type ?? '').toUpperCase()) {
       case 'MENTION':
         return b.isEmpty ? tr('vous a mentionné') : '${tr('vous a mentionné')} : « $b »';
+      case 'ORDER_NEW':
+        return b.isEmpty ? tr('vous a passé une commande') : '${tr('vous a passé une commande')} : $b';
+      case 'ORDER_VALIDATED':
+        return tr('a validé la commande');
+      case 'ORDER_FEE':
+        return tr('a modifié les frais de livraison : acceptez-les ou refusez');
+      case 'ORDER_SHIPPED':
+        return tr('a expédié votre commande');
+      case 'ORDER_RECEIVED':
+        return tr("a confirmé la réception : l'argent est versé");
+      case 'ORDER_CANCELLED':
+        return tr('a annulé la commande');
+      case 'ORDER_DISPUTE':
+        return tr('a signalé un problème sur la commande');
+      case 'ORDER_RESOLVED':
+        return tr("L'équipe a tranché le litige de la commande");
+      case 'OFFER_NEW':
+        return b.isEmpty ? tr('propose un prix sur votre article') : '${tr('propose un prix sur votre article')} : $b';
+      case 'OFFER_REPLY':
+        return tr('a répondu à votre offre');
       case 'COMMENT_LIKE':
         return tr('a aimé votre commentaire');
       case 'REPOST':
@@ -41,6 +63,12 @@ class NotificationText {
       case 'BOOST_SOUMIS':
         // body : « Publication : titre — 2 semaines »
         return b.isEmpty ? tr('a soumis un boost à valider') : '${tr('a soumis un boost à valider')} : $b';
+      case 'STAFF_VERIF':
+        return tr('demande la vérification de son identité de vendeur');
+      case 'STAFF_FRAUD':
+        return b.isEmpty ? tr('a des gains de partage bloqués : détection de fraude à vérifier') : '${tr('a des gains de partage bloqués : détection de fraude à vérifier')} : $b';
+      case 'STAFF_DISPUTE':
+        return b.isEmpty ? tr('a ouvert un litige sur une commande') : '${tr('a ouvert un litige sur une commande')} « $b »';
       case 'CANAL_ADMIN':
         return b.isEmpty ? tr('vous a nommé administrateur de son canal') : '${tr('vous a nommé administrateur de son canal')} « $b »';
       case 'SERVICE':
@@ -63,6 +91,9 @@ class NotificationText {
         'SUPPORT' => tr('Soutiens par pub'),
         'FOLLOW_CANAL' => tr('Abonnés de canal'),
         'BOOST_SOUMIS' => tr('Boosts à valider'),
+        'STAFF_VERIF' => tr('Identités de vendeurs à vérifier'),
+        'STAFF_FRAUD' => tr('Gains bloqués (fraude)'),
+        'STAFF_DISPUTE' => tr('Litiges de commande'),
         'CANAL_ADMIN' => tr('Nominations de canal'),
         'SERVICE' => tr('Intérêt pour un service'),
         _ => type,
@@ -76,6 +107,9 @@ class NotificationText {
         'SUPPORT' => (icon: Icons.volunteer_activism, tone: 3),
         'FOLLOW_CANAL' => (icon: Icons.campaign_outlined, tone: 1),
         'BOOST_SOUMIS' => (icon: Icons.rocket_launch_outlined, tone: 3),
+        'STAFF_VERIF' => (icon: Icons.badge_outlined, tone: 3),
+        'STAFF_FRAUD' => (icon: Icons.shield_outlined, tone: 0),
+        'STAFF_DISPUTE' => (icon: Icons.gavel_rounded, tone: 0),
         'CANAL_ADMIN' => (icon: Icons.admin_panel_settings_outlined, tone: 1),
         'SERVICE' => (icon: Icons.handyman, tone: 2),
         'LIKE' => (icon: Icons.favorite, tone: 0),

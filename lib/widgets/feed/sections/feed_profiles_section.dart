@@ -734,13 +734,13 @@ class _RectCard extends StatelessWidget {
                           Row(
                             children: [
                               Icon(Icons.group,
-                                  size: 9, color: colors.accent),
+                                  size: 9, color: colors.accentText),
                               const SizedBox(width: 2),
                               Text(
                                 _formatNumber(
                                     user.followersCount),
                                 style: TextStyle(
-                                    color: colors.accent, fontSize: 9),
+                                    color: colors.accentText, fontSize: 9),
                               ),
                               if (countryFlag != null) ...[
                                 const SizedBox(width: 4),

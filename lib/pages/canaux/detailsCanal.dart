@@ -281,7 +281,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                 Text(
                   context.tr('⚠️ Attention: Si vous vous désabonnez, vous devrez repayer l\'abonnement de {a} pièces pour y accéder à nouveau.', {'a': CoinCheckout.fmt(widget.canal.subscriptionPriceCoins)}),
                   style: TextStyle(
-                    color: colors.accent,
+                    color: colors.accentText,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -1262,7 +1262,7 @@ class _CanalDetailsState extends State<CanalDetails> {
             // Section Posts
             Row(
               children: [
-                Icon(Icons.dynamic_feed, color: _colors.accent, size: 24),
+                Icon(Icons.dynamic_feed, color: _colors.accentText, size: 24),
                 SizedBox(width: 8),
                 Text(
                   AppLocalizations.of(context).canalPublications,

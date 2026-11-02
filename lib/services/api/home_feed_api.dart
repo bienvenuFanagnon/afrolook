@@ -16,9 +16,12 @@ class HomeFeedApi {
   /// invalide veut dire « pas de filtre de pays » (le serveur refuse tout autre format).
   static Future<({List<Post> posts, String? next})> discover({String? category, String? country, String? cursor, int limit = 20, int tier = 3}) async {
     final cc = country?.trim().toUpperCase();
-    final r = await _c.get('/feed', query: {
-      'tier': tier,
-      'limit': limit,
+    // Page thématique (Sport, Événements, Looks…) : le même fil « pour toi » que l'accueil (non vu, abonnements d'abord, goûts), filtré par thème,
+    // et sans fin (quand le récent est épuisé, le serveur élargit à 90 jours, un an, tout l'historique). Le curseur est celui de /feed/for-you.
+    final themed = tier == 3 && category != null && category.isNotEmpty;
+    final r = await _c.get(themed ? '/feed/for-you' : '/feed', query: {
+      if (!themed) 'tier': tier,
+      'limit': themed ? limit.clamp(1, 30) : limit,
       if (cursor != null) 'cursor': cursor,
       if (category != null && category.isNotEmpty) 'category': category,
       if (cc != null && RegExp(r'^[A-Z]{2}$').hasMatch(cc)) 'country': cc,

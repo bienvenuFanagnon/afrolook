@@ -190,6 +190,8 @@ Future<void> storeNavigationFromPush(Map<String, dynamic> data) async {
     'RAPPEL_ETUDE': 'etude',
     'RAPPEL_CONTE': 'contes',
     'RAPPEL_MONETISATION': 'monetisation',
+    'RAPPEL_PARTAGE': 'share_earn',   // campagne « deux façons de gagner de l'argent » : Partage et gagne
+    'RAPPEL_TACHES': 'offerwall_tasks',   // ... et le Travail (tâches)
     'RAPPEL_LIVE': 'live_create',
     'RAPPEL_CANAL': 'canal_create',
     'RAPPEL_GROUPE': 'group_create',

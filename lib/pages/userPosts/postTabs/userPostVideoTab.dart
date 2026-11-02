@@ -406,7 +406,7 @@ Future<String?> _uploadCustomThumbnail() async {
 
     if (isGold) {
       _maxCharacters = 5000;
-      _maxVideoSizeMB = 50;
+      _maxVideoSizeMB = 100;   // Gold : vidéos jusqu'à 100 Mo
       _cooldownMinutes = 0;
     } else if (isPremium) {
       _maxCharacters = 3000;
@@ -1062,7 +1062,7 @@ Future<String?> _uploadCustomThumbnail() async {
           const SizedBox(height: 6),
           _planRow('⭐ Premium', '40 Mo max • Pas d\'attente', const Color(0xFFFDB813)),
           const SizedBox(height: 6),
-          _planRow('👑 Gold', '50 Mo max • Pas d\'attente', const Color(0xFFFFD700)),
+          _planRow('👑 Gold', '100 Mo max • Pas d\'attente', const Color(0xFFFFD700)),
         ],
       ),
     );
@@ -1089,7 +1089,7 @@ Future<String?> _uploadCustomThumbnail() async {
       label = 'Admin • 200 Mo max';
       color = _c.primary;
     } else if (isGold) {
-      label = 'Gold 👑 • 50 Mo max';
+      label = 'Gold 👑 • 100 Mo max';
       color = const Color(0xFFFFD700);
     } else if (isPremium) {
       label = 'Premium • 40 Mo max';
@@ -1113,7 +1113,7 @@ Future<String?> _uploadCustomThumbnail() async {
       infoText = 'Admin : Tous pays • 200 Mo';
       infoColor = _c.primary;
     } else if (isGold) {
-      infoText = 'Gold 👑 : Tous pays • 50 Mo • Pas d\'attente';
+      infoText = 'Gold 👑 : Tous pays • 100 Mo • Pas d\'attente';
       infoColor = const Color(0xFFFFD700);
     } else if (isPremium) {
       infoText = 'Premium : Tous pays • 40 Mo • Pas d\'attente';
@@ -1201,13 +1201,13 @@ Future<String?> _uploadCustomThumbnail() async {
         title = 'Vidéo trop grande';
         if (isPremium) {
           message = 'Votre vidéo dépasse la limite de 40 Mo (plan Premium).\n\n'
-              '👑 Avec Gold, vous pouvez publier des vidéos jusqu\'à 50 Mo !\n\n'
+              '👑 Avec Gold, vous pouvez publier des vidéos jusqu\'à 100 Mo !\n\n'
               '📹 Compressez votre vidéo ou passez à Gold.';
           actionText = 'PASSER À GOLD';
         } else {
           message = 'Votre vidéo dépasse votre limite actuelle.\n\n'
               '⭐ Premium : 40 Mo max\n'
-              '👑 Gold : 50 Mo max\n\n'
+              '👑 Gold : 100 Mo max\n\n'
               '📹 Compressez votre vidéo ou changez de plan.';
           actionText = 'VOIR LES ABONNEMENTS';
         }
@@ -1623,6 +1623,8 @@ Future<void> _generateAndUploadThumbnail(String postId, String videoUrl) async {
             eventDate: _selectedPostType == 'EVENEMENT' ? _selectedEventDate : null,
             thumbnail: thumbFile,
             thumbnailBytes: thumbBytes,
+            videoWidth: _controller?.value.size.width.round(),
+            videoHeight: _controller?.value.size.height.round(),
             onProgress: onProgress,
           );
         }

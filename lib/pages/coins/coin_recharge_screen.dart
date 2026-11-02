@@ -115,23 +115,13 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
       appBar: AppBar(
         title: Text(
           context.tr('Acheter des pièces'),
-          style: TextStyle(
-            color: colors.textPrimary,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
+          style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 20),
         ),
-        backgroundColor: colors.surface,
+        backgroundColor: colors.background,
         elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: colors.textPrimary, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Divider(height: 1, color: colors.divider),
-        ),
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        iconTheme: IconThemeData(color: colors.textPrimary),
       ),
       body: PopScope(
         canPop: !_isLoading,
@@ -275,14 +265,12 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
       backgroundColor: colors.background,
       appBar: AppBar(
         title: Text(context.tr('Acheter des pièces'),
-            style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 18)),
-        backgroundColor: colors.surface,
+            style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 20)),
+        backgroundColor: colors.background,
         elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: colors.textPrimary, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
+        scrolledUnderElevation: 0,
+        centerTitle: false,
+        iconTheme: IconThemeData(color: colors.textPrimary),
       ),
       body: Column(children: [
         Padding(padding: const EdgeInsets.fromLTRB(16, 16, 16, 0), child: _buildMethodToggle(colors)),
@@ -303,7 +291,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
   // ── Sélecteur de solde ────────────────────────────────────────────────────
 
   Widget _buildBalanceSelector(AppColors colors, double depot, double principal) {
-    const green = Color(0xFF34C759);
+    final green = colors.primary;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -335,7 +323,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
                 colors: colors,
                 label: context.tr('Gains à retirer'),
                 amount: principal,
-                color: colors.warning,
+                color: colors.primary,
                 icon: Icons.account_balance_wallet_rounded,
                 isSelected: _selectedBalance == 'votre_solde_principal',
                 onTap: () => setState(() => _selectedBalance = 'votre_solde_principal'),
@@ -474,17 +462,14 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: isActive ? colors.accent : Colors.transparent,
+          color: isActive ? colors.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(24),
-          boxShadow: isActive
-              ? [BoxShadow(color: colors.accent.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 2))]
-              : null,
         ),
         child: Text(
           label,
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: isActive ? colors.onAccent : colors.textSecondary,
+            color: isActive ? colors.onPrimary : colors.textSecondary,
             fontWeight: FontWeight.bold,
             fontSize: 13,
           ),
@@ -521,7 +506,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
                   decoration: InputDecoration(
                     hintText: 'exemple@email.com',
                     hintStyle: TextStyle(color: colors.textSecondary),
-                    prefixIcon: Icon(Icons.alternate_email_rounded, color: colors.accent, size: 18),
+                    prefixIcon: Icon(Icons.alternate_email_rounded, color: colors.primary, size: 18),
                     filled: true,
                     fillColor: colors.surfaceVariant,
                     border: OutlineInputBorder(
@@ -530,7 +515,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: colors.accent, width: 1.5),
+                      borderSide: BorderSide(color: colors.primary, width: 1.5),
                     ),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                   ),
@@ -542,8 +527,8 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
                 child: ElevatedButton(
                   onPressed: _isSearching ? null : _searchUser,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: colors.accent,
-                    foregroundColor: colors.onAccent,
+                    backgroundColor: colors.primary,
+                    foregroundColor: colors.onPrimary,
                     elevation: 0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -553,7 +538,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
                           height: 18,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation(colors.onAccent),
+                            valueColor: AlwaysStoppedAnimation(colors.onPrimary),
                           ),
                         )
                       : Text(context.tr('Vérifier'), style: TextStyle(fontWeight: FontWeight.bold)),
@@ -636,7 +621,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: colors.accent.withOpacity(0.12),
+            color: colors.primary.withOpacity(0.12),
             borderRadius: BorderRadius.circular(10),
           ),
           child: const Text('🪙', style: TextStyle(fontSize: 16)),
@@ -691,14 +676,14 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
     AppColors colors,
   ) {
     final isDisabled = !isAffordable || !canPurchase || _isLoading;
-    final accent = pack.isPopular ? colors.accent : colors.primary;
+    final accent = colors.primary;   // même couleur pour tous les packs ; « populaire » se voit à la pastille jaune et au contour plus épais
 
     return Material(
-      color: pack.isPopular ? colors.accent.withOpacity(colors.isDark ? 0.10 : 0.06) : colors.surface,
+      color: pack.isPopular ? colors.primary.withOpacity(colors.isDark ? 0.10 : 0.06) : colors.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
         side: BorderSide(
-          color: pack.isPopular ? colors.accent : colors.border.withOpacity(isAffordable ? 1 : 0.5),
+          color: pack.isPopular ? colors.primary : colors.border.withOpacity(isAffordable ? 1 : 0.5),
           width: pack.isPopular ? 1.5 : 1,
         ),
       ),
@@ -723,7 +708,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
                           child: Text(
                             _formatNumber(pack.coins),
                             style: TextStyle(
-                              color: pack.isPopular ? colors.accent : colors.textPrimary,
+                              color: colors.textPrimary,
                               fontSize: 17,
                               fontWeight: FontWeight.w800,
                               letterSpacing: -0.3,
@@ -889,7 +874,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            Icon(Icons.account_balance_wallet_rounded, color: colors.accent, size: 22),
+            Icon(Icons.account_balance_wallet_rounded, color: colors.primary, size: 22),
             const SizedBox(width: 8),
             Text(context.tr('Solde insuffisant'), style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
           ],
@@ -909,8 +894,8 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
               Navigator.push(context, MaterialPageRoute(builder: (_) => const DepositScreen()));
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: colors.accent,
-              foregroundColor: colors.onAccent,
+              backgroundColor: colors.primary,
+              foregroundColor: colors.onPrimary,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               elevation: 0,
             ),
@@ -931,7 +916,7 @@ class _CoinRechargeScreenState extends State<CoinRechargeScreen> {
           padding: const EdgeInsets.all(28),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [Color(0xFF2ECC71), Color(0xFF1FAA59)],
+              colors: [Color(0xFF2ECC71), Color(0xFF2ECC71)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),

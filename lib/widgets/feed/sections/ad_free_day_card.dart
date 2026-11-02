@@ -85,7 +85,7 @@ class _AdFreeDayCardState extends State<AdFreeDayCard> {
           width: 42,
           height: 42,
           decoration: BoxDecoration(color: colors.accent.withOpacity(0.18), shape: BoxShape.circle),
-          child: Icon(Icons.volunteer_activism_rounded, color: colors.accent, size: 22),
+          child: Icon(Icons.volunteer_activism_rounded, color: colors.accentText, size: 22),
         ),
         const SizedBox(width: 12),
         Expanded(

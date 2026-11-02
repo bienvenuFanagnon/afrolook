@@ -102,7 +102,7 @@ class TopFiveModal {
                                   style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
-                                    color: colors.accent,
+                                    color: colors.accentText,
                                   ),
                                 ),
                                 SizedBox(height: 8),
@@ -123,7 +123,7 @@ class TopFiveModal {
                               onTap: () => Navigator.of(context).pop(),
                               child: Icon(
                                 Icons.close,
-                                color: colors.accent,
+                                color: colors.accentText,
                                 size: 28,
                               ),
                             ),
@@ -325,7 +325,7 @@ class TopFiveUserItem extends StatelessWidget {
                 // ⭐ POPULARITÉ
                 Row(
                   children: [
-                    Icon(Icons.star, size: 12, color: colors.accent),
+                    Icon(Icons.star, size: 12, color: colors.accentText),
                     SizedBox(width: 4),
                     Text(
                       "${(user.popularite ?? 0).toStringAsFixed(2)}%",
@@ -484,7 +484,7 @@ class TopLiveGridModal {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: colors.accent,
+                          color: colors.accentText,
                         ),
                       ),
                       SizedBox(height: 8),
@@ -680,9 +680,9 @@ class _LiveGridItem extends StatelessWidget {
                   Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
-                      image: (live.hostImage?.isNotEmpty == true)
+                      image: (live.displayImage?.isNotEmpty == true)
                           ? DecorationImage(
-                              image: NetworkImage(live.hostImage!),
+                              image: NetworkImage(live.displayImage!),
                               fit: BoxFit.cover,
                             )
                           : null,
@@ -791,7 +791,7 @@ class _LiveGridItem extends StatelessWidget {
                   PseudoTag(label: "@${live.hostName}",
                     style: TextStyle(
                       fontSize: 10,
-                      color: colors.accent,
+                      color: colors.accentText,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis),

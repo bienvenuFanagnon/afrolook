@@ -73,7 +73,10 @@ class PostLive {
   final bool isPaused;              // ← NOUVEAU
   final String? pauseMessage;       // ← NOUVEAU
   final int giftCoinsTotal;         // Pièces reçues en cadeaux
-  final String? coverImage;         // Image de couverture du live
+  final String? coverImage;         // Image de couverture du live (facultative)
+
+  /// Image à montrer pour ce live : sa couverture si l'hôte en a choisi une, sinon la photo de profil de l'hôte.
+  String? get displayImage => (coverImage?.isNotEmpty == true) ? coverImage : hostImage;
 
   PostLive({
     // Champs existants
@@ -644,6 +647,14 @@ class LiveProvider extends ChangeNotifier {
     }
   }
 
+  /// Ajoute sans doublon : deux chargements lancés en même temps (ouverture de la page + rafraîchissement) renvoient la même page ; un live ne s'affiche qu'une fois.
+  void _addUnique(List<PostLive> into, List<PostLive> items) {
+    final seen = into.map((l) => l.liveId).toSet();
+    for (final l in items) {
+      if (l.liveId == null || seen.add(l.liveId)) into.add(l);
+    }
+  }
+
   Future<List<PostLive>> _convert(List<Map<String, dynamic>> rows) async {
     final out = <PostLive>[];
     for (final j in rows) {
@@ -667,9 +678,9 @@ class LiveProvider extends ChangeNotifier {
     try {
       // en cours d'abord, puis terminés : deux listes de l'API
       final live = reset || _allLives.isEmpty ? await LivesApi.list(status: 'live', limit: batchSize) : null;
-      if (live != null) _allLives.addAll(await _convert(live.items));
+      if (live != null) _addUnique(_allLives, await _convert(live.items));
       final ended = await LivesApi.list(status: 'ended', cursor: _lastAllLiveDoc, limit: batchSize);
-      _allLives.addAll(await _convert(ended.items));
+      _addUnique(_allLives, await _convert(ended.items));
       _lastAllLiveDoc = ended.next;
       if (ended.next == null || _allLives.length >= maxLives) _allLivesFinished = true;
       loadError = null;
@@ -690,7 +701,7 @@ class LiveProvider extends ChangeNotifier {
     if (_endedLivesFinished) return;
     try {
       final page = await LivesApi.list(status: 'ended', cursor: _lastEndedLiveDoc, limit: batchSize);
-      _endedLives.addAll(await _convert(page.items));
+      _addUnique(_endedLives, await _convert(page.items));
       _lastEndedLiveDoc = page.next;
       if (page.next == null || _endedLives.length >= maxLives) _endedLivesFinished = true;
       loadError = null;
@@ -711,7 +722,7 @@ class LiveProvider extends ChangeNotifier {
     if (_activeLivesFinished) return;
     try {
       final page = await LivesApi.list(status: 'live', cursor: _lastActiveLiveDoc, limit: batchSize);
-      _activeLives.addAll(await _convert(page.items));
+      _addUnique(_activeLives, await _convert(page.items));
       _lastActiveLiveDoc = page.next;
       if (page.next == null || _activeLives.length >= maxLives) _activeLivesFinished = true;
       loadError = null;

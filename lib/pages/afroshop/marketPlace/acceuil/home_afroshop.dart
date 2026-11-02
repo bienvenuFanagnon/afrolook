@@ -41,6 +41,7 @@ import '../../../user/conponent.dart';
 import '../component.dart';
 
 import '../new/addProduit.dart';
+import '../../../liveshop/shopping_live_launcher.dart';
 import 'shop_video_feed.dart';
 import '../../../../theme/app_colors.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -759,6 +760,53 @@ class _HomePageState extends State<HomeAfroshopPage>
                             SizedBox(width: 4),
                             Text('Publier', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
                           ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Vente en direct : passer en live avec ses articles
+                    GestureDetector(
+                      onTap: () => postProvider.getEntreprise(authProvider.loginUserData.id!).then((v) async {
+                        if (v.isEmpty) {
+                          _showBottomSheetCompterNonValide();
+                          return;
+                        }
+                        try {
+                          final mine = await ShopApi.articles(ownerId: authProvider.loginUserData.id!, limit: 50);
+                          if (mounted) startShoppingLive(context, mine.items);
+                        } catch (_) {
+                          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible de charger tes produits pour le moment.')));
+                        }
+                      }),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(20)),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.live_tv_rounded, color: Colors.white, size: 15),
+                            SizedBox(width: 4),
+                            Text('Live', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Ma boutique : gérer ses produits, ses stocks, ses commandes et ses ventes
+                    Tooltip(
+                      message: 'Ma boutique',
+                      child: GestureDetector(
+                        onTap: () => postProvider.getEntreprise(authProvider.loginUserData.id!).then((v) {
+                          if (v.isNotEmpty) {
+                            Navigator.pushNamed(context, '/profile_entreprise');
+                          } else {
+                            _showBottomSheetCompterNonValide();
+                          }
+                        }),
+                        child: Container(
+                          width: 34, height: 34,
+                          decoration: BoxDecoration(color: colors.surfaceVariant, shape: BoxShape.circle, border: Border.all(color: colors.border)),
+                          child: Icon(Icons.storefront_rounded, color: CustomConstants.kPrimaryColor, size: 18),
                         ),
                       ),
                     ),

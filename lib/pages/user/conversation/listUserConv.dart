@@ -1177,7 +1177,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           : Text(
         _l10n.convTitle,
         style: TextStyle(
-          color: _colors.accent,
+          color: _colors.accentText,
           fontWeight: FontWeight.bold,
           fontSize: 20,
         ),
@@ -1185,7 +1185,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       actions: [
         _isSearching
             ? IconButton(
-          icon: Icon(Icons.close, color: _colors.accent),
+          icon: Icon(Icons.close, color: _colors.accentText),
           onPressed: () {
             setState(() {
               _isSearching = false;
@@ -1197,7 +1197,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
             : Row(
           children: [
             IconButton(
-              icon: Icon(Icons.search, color: _colors.accent),
+              icon: Icon(Icons.search, color: _colors.accentText),
               onPressed: () {
                 setState(() {
                   _isSearching = true;
@@ -1205,7 +1205,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
               },
             ),
             IconButton(
-              icon: Icon(Icons.people, color: _colors.accent),
+              icon: Icon(Icons.people, color: _colors.accentText),
               onPressed: () {
                 Navigator.pushNamed(context, '/amis');
               },
@@ -1214,7 +1214,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
               tooltip: _isSoundMuted ? 'Activer les sons' : 'Couper les sons',
               icon: Icon(
                 _isSoundMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded,
-                color: _isSoundMuted ? _colors.textSecondary : _colors.accent,
+                color: _isSoundMuted ? _colors.textSecondary : _colors.accentText,
               ),
               onPressed: () async {
                 final newVal = !_isSoundMuted;
@@ -1223,7 +1223,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
               },
             ),
             PopupMenuButton<String>(
-              icon: Icon(Icons.more_vert, color: _colors.accent),
+              icon: Icon(Icons.more_vert, color: _colors.accentText),
               color: _colors.surface,
               onSelected: (value) {
                 if (value == 'archives') _showArchivedChats();
@@ -2578,7 +2578,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.chat_bubble_outline, color: _colors.accent, size: 48),
+              Icon(Icons.chat_bubble_outline, color: _colors.accentText, size: 48),
               SizedBox(height: 16),
               Text(
                 _l10n.convEmptyTitle,
@@ -2612,7 +2612,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.search_off, color: _colors.accent, size: 48),
+          Icon(Icons.search_off, color: _colors.accentText, size: 48),
           SizedBox(height: 16),
           Text(
             _l10n.convNoResults,

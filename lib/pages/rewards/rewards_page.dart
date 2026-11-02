@@ -188,7 +188,7 @@ class _RewardsPageState extends State<RewardsPage> {
         border: Border.all(color: colors.accent.withOpacity(0.5)),
       ),
       child: Row(children: [
-        Icon(Icons.workspace_premium_rounded, color: colors.accent, size: 28),
+        Icon(Icons.workspace_premium_rounded, color: colors.accentText, size: 28),
         const SizedBox(width: 12),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -202,7 +202,7 @@ class _RewardsPageState extends State<RewardsPage> {
         OutlinedButton(
           onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AbonnementScreen())),
           style: OutlinedButton.styleFrom(
-            foregroundColor: colors.accent,
+            foregroundColor: colors.accentText,
             side: BorderSide(color: colors.accent),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
           ),
@@ -234,7 +234,7 @@ class _RewardsPageState extends State<RewardsPage> {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(color: colors.accent.withOpacity(0.18), borderRadius: BorderRadius.circular(10)),
               child: Text(context.tr('Pubs en réserve : {n}', {'n': _status.pending}),
-                  style: TextStyle(color: colors.accent, fontWeight: FontWeight.w800, fontSize: 11)),
+                  style: TextStyle(color: colors.accentText, fontWeight: FontWeight.w800, fontSize: 11)),
             ),
         ]),
         const SizedBox(height: 8),
@@ -272,7 +272,7 @@ class _RewardsPageState extends State<RewardsPage> {
           width: 42,
           height: 42,
           decoration: BoxDecoration(color: colors.surfaceVariant, borderRadius: BorderRadius.circular(11)),
-          child: Icon(o.icon, color: o.premium ? colors.accent : colors.primary, size: 22),
+          child: Icon(o.icon, color: o.premium ? colors.accentText : colors.primary, size: 22),
         ),
         const SizedBox(width: 12),
         Expanded(

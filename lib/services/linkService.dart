@@ -162,7 +162,8 @@ class AppLinkService {
     }
   }
   // final domaineName = 'https://afrolooki.web.app';
-  final domaineName = 'https://afrolookmedia.com';
+  // APK de TEST : les liens de partage pointent vers le serveur de test (aperçus, comptage) ; versions des boutiques : le vrai site
+  final domaineName = const bool.fromEnvironment('TEST_BUILD') ? 'https://api-staging.afrolookmedia.com' : 'https://afrolookmedia.com';
   // Génération des liens de partage
   String generateLink(AppLinkType type, String id, {Map<String, String>? params}) {
     // final baseUrl = 'https://afrolookmedia.com/share';

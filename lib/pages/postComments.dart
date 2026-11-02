@@ -1,3 +1,4 @@
+import 'package:afrotok/services/post_orientation.dart';
 import '../ads/ad_slot.dart';
 import 'package:afrotok/pages/canaux/detailsCanal.dart';
 import '../l10n/tr.dart';
@@ -917,7 +918,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                         onPressed: () {
                           final post = widget.post;
                           final isVideo = post.dataType == 'VIDEO';
-                          final isPortrait = post.isPortrait ?? true;
+                          final isPortrait = PostOrientation.of(post);
                           Navigator.push(context, MaterialPageRoute(
                             builder: (_) => isVideo
                                 ? (isPortrait
@@ -1107,7 +1108,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.4)),
                       ),
-                      child: const Text('🎁 cadeau', style: TextStyle(fontSize: 10, color: Color(0xFFFFD700), fontWeight: FontWeight.w700)),
+                      child: Text('🎁 cadeau', style: TextStyle(fontSize: 10, color: AppColors.of(context).accentText, fontWeight: FontWeight.w700)),
                     ),
                   ],
                   const Spacer(),
@@ -1198,7 +1199,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                     const SizedBox(width: 16),
                     _buildActionButton(
                       icon: Icons.card_giftcard_rounded,
-                      color: const Color(0xFFD99A00),
+                      color: AppColors.of(context).accentText,
                       label: 'Cadeau',
                       onTap: () => showCommentGiftSheet(context,
                           commentId: pcm.id!, authorPseudo: pcm.user?.pseudo ?? ''),
@@ -1206,7 +1207,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                     const SizedBox(width: 16),
                     _buildActionButton(
                       icon: Icons.sticky_note_2_outlined,
-                      color: const Color(0xFFD99A00),
+                      color: AppColors.of(context).accentText,
                       label: context.tr('Offrir un sticker'),
                       onTap: () => _offerSticker(pcm.id!),
                     ),
@@ -1413,7 +1414,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                       const SizedBox(width: 14),
                       _buildActionButton(
                         icon: Icons.card_giftcard_rounded,
-                        color: const Color(0xFFD99A00),
+                        color: AppColors.of(context).accentText,
                         label: 'Cadeau',
                         small: true,
                         onTap: () => showCommentGiftSheet(context,
@@ -1422,7 +1423,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                       const SizedBox(width: 14),
                       _buildActionButton(
                         icon: Icons.sticky_note_2_outlined,
-                        color: const Color(0xFFD99A00),
+                        color: AppColors.of(context).accentText,
                         label: context.tr('Offrir un sticker'),
                         small: true,
                         onTap: () => _offerSticker(pcm.id!, replyId: rpc.id),
@@ -1699,6 +1700,21 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
+                // Profil avec lequel on commente (pour savoir sous quel compte on est connecté)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4, right: 8),
+                  child: Builder(builder: (_) {
+                    final me = authProvider.loginUserData;
+                    final img = me.imageUrl ?? '';
+                    return CircleAvatar(
+                      radius: 17,
+                      backgroundColor: _colors.surfaceVariant,
+                      backgroundImage: img.isNotEmpty ? NetworkImage(img) : null,
+                      onBackgroundImageError: img.isNotEmpty ? (_, __) {} : null,
+                      child: img.isEmpty ? Icon(Icons.person_rounded, size: 18, color: _colors.textSecondary) : null,
+                    );
+                  }),
+                ),
                 // Bouton emoji/sticker
                 GestureDetector(
                   onTap: () {
@@ -1755,7 +1771,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                       maxLines: null,
                       style: TextStyle(color: _colors.textPrimary, fontSize: 13.5),
                       decoration: InputDecoration(
-                        hintText: replying ? 'Ecrire une reponse...' : 'Ajouter un commentaire...',
+                        hintText: replying ? 'Ecrire une reponse...' : context.tr('Commenter en tant que {a}...', {'a': '@${authProvider.loginUserData.pseudo ?? ''}'}),
                         hintStyle: TextStyle(fontSize: 13.5, color: _colors.textSecondary),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
