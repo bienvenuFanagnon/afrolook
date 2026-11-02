@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const dist = path.join(path.dirname(new URL(import.meta.url).pathname), 'dist');
+const dist = path.join(process.cwd(), 'dist'); // ESSAI : le chemin issu de import.meta.url plantait sous Windows (double lettre de lecteur) ; on part du dossier courant
 const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
 const files = walk(dist).filter((f) => !f.startsWith(path.join(dist, 'app') + path.sep)); // /app/ = application Flutter, hors du site
 const htmls = files.filter((f) => f.endsWith('.html'));

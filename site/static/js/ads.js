@@ -88,7 +88,7 @@ function openDetail(a, opt = {}) {
 const gallery = $('#adgallery');
 if (gallery) {
   // Vues et clics : le navigateur garde un identifiant anonyme ; le serveur compte au plus UNE vue et UN clic par visiteur, annonce et jour.
-  const trackUrl = gallery.dataset.api.replace('adsWebPublic', 'adsWebTrack');
+  const trackUrl = gallery.dataset.api.replace('/web/public', '/web/track');
   const vid = (() => {
     try {
       let v = localStorage.getItem('adsvid');
@@ -196,12 +196,32 @@ async function boot(onUser) {
   });
 
   let mods;
-  try { mods = await Promise.all([import(`${G}/firebase-app.js`), import(`${G}/firebase-auth.js`), import(`${G}/firebase-storage.js`), import(`${G}/firebase-functions.js`)]); }
+  try { mods = await Promise.all([import(`${G}/firebase-app.js`), import(`${G}/firebase-auth.js`)]); }
   catch { status('Impossible de charger la connexion Google (réseau). Recharge la page et réessaie.', true); return null; }
-  const [{ initializeApp }, A, S, F] = mods;
+  const [{ initializeApp }, A] = mods;
   const app = initializeApp(JSON.parse($('#fbcfg').textContent));
-  const auth = A.getAuth(app), storage = S.getStorage(app), fns = F.getFunctions(app, 'us-central1');
-  const call = (name, data) => F.httpsCallable(fns, name)(data || {}).then((r) => r.data);
+  const auth = A.getAuth(app);
+  // Appels des espaces connectés : l'API Afrolook (même nom, mêmes données, mêmes réponses que les anciennes fonctions). Jeton Google dans l'en-tête.
+  const SPACE = $('#fbcfg').dataset.space, API_V1 = SPACE.replace(/\/ads\/api\/space$/, '/v1');
+  const authHeader = async () => ({ Authorization: 'Bearer ' + (await auth.currentUser.getIdToken()) });
+  const call = async (name, data) => {
+    let r;
+    try { r = await fetch(`${SPACE}/${name}`, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...(await authHeader()) }, body: JSON.stringify(data || {}) }); }
+    catch { throw Object.assign(new Error('réseau'), { code: 'functions/unavailable' }); }
+    const j = await r.json().catch(() => ({}));
+    if (r.ok) return j;
+    if (j.code === 'profile_missing') { status(j.message, true); throw Object.assign(new Error(j.message), { code: 'functions/failed-precondition' }); }   // pas encore de profil Afrolook : ouvrir l'application une première fois
+    throw Object.assign(new Error((j.error && j.error.message) || j.message || 'erreur'), { code: 'functions/' + String((j.error && j.error.status) || 'unknown').toLowerCase().replace(/_/g, '-') });
+  };
+  // Dépôt d'un fichier (logo, image, vidéo, bannière) : l'API donne une adresse d'envoi directe, puis confirme ; on récupère l'adresse publique du fichier.
+  const upload = async (blob, contentType) => {
+    const a = await fetch(`${API_V1}/uploads`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(await authHeader()) }, body: JSON.stringify({ content_type: contentType, size: blob.size }) });
+    const j = await a.json(); if (!a.ok) throw new Error((j && j.message) || 'envoi refusé');
+    const put = await fetch(j.data.url, { method: 'PUT', headers: j.data.headers, body: blob }); if (!put.ok) throw new Error('envoi échoué');
+    const c = await fetch(`${API_V1}/uploads/${j.data.upload_id}/complete`, { method: 'POST', headers: await authHeader() });
+    const k = await c.json(); if (!c.ok) throw new Error((k && k.message) || 'envoi non confirmé');
+    return k.data.url;
+  };
   ready({ A, auth });
   $('#signout').addEventListener('click', () => A.signOut(auth));
   A.onAuthStateChanged(auth, (u) => {
@@ -213,7 +233,7 @@ async function boot(onUser) {
     // Aucun bouton « Administration » sur le site : on détecte le compte à la connexion et on n'affiche l'espace admin qu'aux administrateurs.
     call('adsWho').then((r) => { if (r && r.admin) { IS_ADMIN = true; showAdminAccess(); window.dispatchEvent(new Event('afl-admin')); } }).catch(() => {});
   });
-  return { A, auth, S, storage, call };
+  return { A, auth, call, upload };
 }
 
 /** Ajoute l'accès à l'espace administration (menu du haut + carte du compte) ; appelé seulement pour un administrateur connecté. */
@@ -254,7 +274,7 @@ async function initSpace() {
   const err = (msg) => { const e = $('#aderr'); e.hidden = !msg; e.textContent = msg || ''; };
   const fb = await boot(() => { loadProfile(); loadMine(); });
   if (!fb) return;
-  const { auth, S, storage, call } = fb;
+  const { auth, call, upload } = fb;
 
   // onglets
   const tab = (t) => { $$('.adtabs a').forEach((a) => a.classList.toggle('on', a.dataset.tab === t)); for (const k of ['creer', 'mes', 'profil']) $('#tab-' + k).hidden = k !== t; if (t === 'mes') { loadMine(); loadShareMine(); } };
@@ -396,7 +416,7 @@ async function initSpace() {
     v.onseeked = () => { const c = h('canvas'); c.width = v.videoWidth || 640; c.height = v.videoHeight || 360; c.getContext('2d').drawImage(v, 0, 0, c.width, c.height); c.toBlob(res, 'image/jpeg', 0.8); };
     v.onerror = () => rej(new Error('Vidéo illisible.'));
   });
-  const put = async (folder, blob, ext, type) => { const r = S.ref(storage, `${folder}/${crypto.randomUUID()}.${ext}`); await S.uploadBytes(r, blob, { contentType: type }); return S.getDownloadURL(r); };
+  const put = async (folder, blob, ext, type) => upload(blob, type);   // le dossier et l'extension n'existent plus : l'API range les fichiers
 
   const explain = (e) => {
     const m = String(e?.message || '');
@@ -442,7 +462,7 @@ async function initSpace() {
       if (share) { payload.targetAudience = Number($('#f-aud').value); if (!(payload.targetAudience >= 1000)) throw Object.assign(new Error('Choisis au moins 1 000 personnes à atteindre.'), { code: 'functions/invalid-argument' }); if (IS_ADMIN) payload.brand = $('#f-sbrand').value.trim(); }
       const done = share ? await call('adsShareCampaignCreate', payload) : await call('adsWebCreate', payload);
       $('#adform').reset(); st.banners = {}; $$('.bnrow .bt').forEach((t) => { t.textContent = ''; t.className = 'bt'; }); st.langs.clear(); st.devs.clear(); st.types.clear(); $$('#f-langs span, #f-devs span, #f-types span').forEach((x) => x.classList.remove('on')); st.countries = new Set(['ALL']); $$('#f-countries span').forEach((x) => x.classList.toggle('on', x.dataset.v === 'ALL')); $('#f-cat-note').hidden = true; st.files = []; $('#f-file-name').textContent = 'Choisis une image ou une vidéo'; refresh();
-      status(share ? (done.free ? 'Campagne lancée : elle est proposée tout de suite aux partageurs.' : 'Campagne envoyée ! Notre équipe te contacte pour le paiement de ' + Number(done.priceFcfa).toLocaleString('fr-FR') + ' F : elle démarre dès que le paiement est confirmé.') : 'Annonce envoyée ! Notre équipe la valide, tu recevras un e-mail dès qu\'elle est en ligne.');
+      status(share ? (done.free ? 'Campagne créée : elle sera proposée aux partageurs dès sa validation par la deuxième personne de l’équipe.' : 'Campagne envoyée ! Notre équipe te contacte pour le paiement de ' + Number(done.priceFcfa).toLocaleString('fr-FR') + ' F : elle démarre dès que le paiement est confirmé.') : 'Annonce envoyée ! Notre équipe la valide, tu recevras un e-mail dès qu\'elle est en ligne.');
       tab('mes');
     } catch (e) { err(explain(e)); } finally { btn.disabled = false; btn.textContent = label; }
   });
@@ -497,7 +517,7 @@ async function initSpace() {
     const btn = $('#p-send'); btn.disabled = true; const label = btn.textContent;
     try {
       v.logoUrl = pst.profile && pst.profile.logoUrl;
-      if (pst.blob) { btn.textContent = 'Envoi du logo…'; const r = S.ref(storage, `ad_logos/${auth.currentUser.uid}/${crypto.randomUUID()}.${pst.ext}`); await S.uploadBytes(r, pst.blob, { contentType: pst.type }); v.logoUrl = await S.getDownloadURL(r); }
+      if (pst.blob) { btn.textContent = 'Envoi du logo…'; v.logoUrl = await upload(pst.blob, pst.type); }
       btn.textContent = 'Enregistrement…';
       const r = await call('adsAdvSaveProfile', v);
       pst.blob = null;
@@ -545,7 +565,7 @@ const wallDyn = $('#adpartners-dyn');
 if (wallDyn) {
   fetch(wallDyn.dataset.api).then((r) => r.json()).then(({ items = [] }) => {
     for (const p of items) {
-      if (!String(p.logo).startsWith('https://firebasestorage.googleapis.com/')) continue;
+      if (!String(p.logo).startsWith('https://')) continue;
       const href = p.url ? safeUrl(p.url) : '';
       wallDyn.append(h(href ? 'a' : 'div', { class: 'adpart', title: p.name, href: href || false, target: href ? '_blank' : false, rel: href ? 'nofollow sponsored noopener' : false }, h('img', { src: p.logo, alt: p.name, width: 56, height: 56, loading: 'lazy' }), h('span', { text: p.name })));
     }
@@ -776,7 +796,7 @@ async function initRegieAdmin() {
 
   function advCard(p) {
     const c = h('article', { class: 'rg-card' },
-      h('div', { class: 'rg-h' }, h('div', { class: 'rg-logo' }, p.logoUrl && String(p.logoUrl).startsWith('https://firebasestorage.googleapis.com/') ? h('img', { src: p.logoUrl, alt: '' }) : h('span', { text: '?' })),
+      h('div', { class: 'rg-h' }, h('div', { class: 'rg-logo' }, p.logoUrl && String(p.logoUrl).startsWith('https://') ? h('img', { src: p.logoUrl, alt: '' }) : h('span', { text: '?' })),
         h('div', {}, h('b', { text: p.brandName }), h('small', { text: [p.sector, p.city, p.country].filter(Boolean).join(' · ') })),
         tag(({ pending: 'wait', approved: 'ok', rejected: 'rej' })[p.logoStatus] || 'end', ({ pending: 'Profil en validation', approved: 'Profil validé', rejected: 'Profil refusé' })[p.logoStatus] || '')),
       row('Ce qu\'ils font', p.about), row('Contact', [p.whatsapp, p.email].filter(Boolean).join(' · ')), row('Inscrit le', date(p.createdAt)),
@@ -850,7 +870,7 @@ async function initRegieAdmin() {
       p.reason ? row('Motif', p.reason) : null);
     const l = lnk('Voir le lien de l’annonceur', p.actionUrl); if (l) c.append(l);
     const d = (decision) => ({ target: 'campaign', id: p.id, decision }), specs = [];
-    if (p.status === 'pending') specs.push({ label: 'Valider (paiement reçu)', primary: true, fn: 'adsPubAdminReview', data: d('approve') }, { label: 'Refuser', ask: 'Motif du refus (envoyé par e-mail)', fn: 'adsPubAdminReview', data: d('refuse') });
+    if (p.status === 'pending') specs.push({ label: 'Valider (paiement reçu)', primary: true, ask: 'Référence du paiement reçu (virement, Mobile Money…)', fn: 'adsPubAdminReview', data: d('approve') }, { label: 'Refuser', ask: 'Motif du refus (envoyé par e-mail)', fn: 'adsPubAdminReview', data: d('refuse') });
     if (p.status === 'active') specs.push({ label: 'Mettre en pause', ask: 'Motif (gardé dans le journal)', fn: 'adsPubAdminReview', data: d('pause') }, { label: 'Terminer', ask: 'Motif (gardé dans le journal)', fn: 'adsPubAdminReview', data: d('end') });
     if (p.status === 'paused') specs.push({ label: 'Reprendre', primary: true, fn: 'adsPubAdminReview', data: d('resume') });
     decide(c, specs); return c;

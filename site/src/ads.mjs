@@ -109,7 +109,7 @@ export const adsFaqLd = { '@context': 'https://schema.org', '@type': 'FAQPage', 
 // ───────── page /en/ads/ (English) ─────────
 export const ADS_META_EN = {
   title: 'Afrolook Ads: advertise your business for free',
-  desc: 'Post a free ad with your Google account and reach over 50,000 people on Afrolook, SlashAtlas, Pronoflash and Épargne+. Or have people share your ad on WhatsApp, Telegram and Facebook with a Share campaign.',
+  desc: 'Post a free ad with your Google account and reach over 50,000 people on Afrolook, SlashAtlas, Pronoflash and Épargne+. Or get your ad shared on WhatsApp, Telegram and Facebook.',
 };
 export const adsSubnavEn = (active) => {
   const L = [['ads', '/en/ads/', 'Advertise'], ['espace', '/ads/espace/', 'Advertiser space'], ['diffuseur', '/ads/diffuseur/', 'Publisher space'], ['docs', '/ads/diffuseur/documentation/', 'Integration guide'], ['regles', '/ads/diffuseur/regles/', 'Publisher rules']];
@@ -187,7 +187,7 @@ export function adsLandingEn(api) {
 
 <section class="adsec" id="annonces"><div class="wrap"><span class="kicker">Live ads</span><h2 class="h2">What advertisers are already posting.</h2>
 <p class="sub">Every ad was approved by our team before appearing here.</p>
-<div class="adg" id="adgallery" data-api="${api}/adsWebPublic"></div>
+<div class="adg" id="adgallery" data-api="${api}/ads/api/web/public"></div>
 <p class="adempty" id="adempty" hidden>The first ads are coming. <a href="/ads/espace/">Be the first to advertise.</a></p>
 <noscript><p class="adempty">Enable JavaScript to see the live ads.</p></noscript></div></section>
 
@@ -265,7 +265,7 @@ export function adsLanding(api) {
 
 <section class="adsec adwallsec"><div class="wrap"><span class="kicker">Nos partenaires</span><h2 class="h2">Ils font confiance à Afrolook Ads.</h2>
 <p class="sub">Nos plateformes, et les marques qui annoncent chez nous.</p>
-<div class="adwall" id="adpartners">${PARTNERS.map((p) => `<div class="adpart" title="${p.n}">${p.img ? `<img src="${p.img}" alt="${p.n}" width="56" height="56" loading="lazy">` : `<i class="adp-logo plus">${p.mark}</i>`}<span>${p.n}</span></div>`).join('')}<span id="adpartners-dyn" data-api="${api}/adsPartners" data-audience="${api}/adsAudience" style="display:contents"></span></div></div></section>
+<div class="adwall" id="adpartners">${PARTNERS.map((p) => `<div class="adpart" title="${p.n}">${p.img ? `<img src="${p.img}" alt="${p.n}" width="56" height="56" loading="lazy">` : `<i class="adp-logo plus">${p.mark}</i>`}<span>${p.n}</span></div>`).join('')}<span id="adpartners-dyn" data-api="${api}/ads/api/partners" data-audience="${api}/ads/api/audience" style="display:contents"></span></div></div></section>
 
 <section class="adsec"><div class="wrap"><span class="kicker">Où ton annonce est vue</span><h2 class="h2">Une annonce. Plusieurs plateformes.</h2>
 <p class="sub">Dès que ton annonce est validée, elle est diffusée automatiquement, sans que tu aies rien à faire de plus.</p>
@@ -299,7 +299,7 @@ ${formatsSection()}
 
 <section class="adsec" id="annonces"><div class="wrap"><span class="kicker">Annonces en ligne</span><h2 class="h2">Ce que les annonceurs publient déjà.</h2>
 <p class="sub">Chaque annonce a été validée par notre équipe avant d'apparaître ici.</p>
-<div class="adg" id="adgallery" data-api="${api}/adsWebPublic"></div>
+<div class="adg" id="adgallery" data-api="${api}/ads/api/web/public"></div>
 <p class="adempty" id="adempty" hidden>Les premières annonces arrivent. <a href="/ads/espace/">Sois le premier à annoncer.</a></p>
 <noscript><p class="adempty">Active JavaScript pour voir les annonces en ligne.</p></noscript></div></section>
 
@@ -335,8 +335,8 @@ export function adsSpace(fbConfig, api) {
   const actions = [['visit', 'Visiter le site'], ['download', 'Télécharger'], ['learn_more', 'En savoir plus'], ['whatsapp', 'WhatsApp'], ['call', 'Appeler']];
   const countries = [['ALL', 'Tous les pays'], ['AFRICA', 'Toute l\'Afrique'], ['TG', 'Togo'], ['CI', 'Côte d\'Ivoire'], ['BJ', 'Bénin'], ['SN', 'Sénégal'], ['CM', 'Cameroun'], ['BF', 'Burkina Faso'], ['ML', 'Mali'], ['GN', 'Guinée'], ['GA', 'Gabon'], ['CD', 'RD Congo'], ['FR', 'France']];
   const COUNTRIES = countries.filter(([c]) => c !== 'ALL' && c !== 'AFRICA');
-  return `<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js"><link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js"><link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage.js"><link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.14.1/firebase-functions.js">${adsSubnav('espace')}<section class="adsp"><div class="wrap" id="adspace" data-api="${api}">
- <script type="application/json" id="fbcfg">${JSON.stringify(fbConfig)}</script>
+  return `<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js"><link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js">${adsSubnav('espace')}<section class="adsp"><div class="wrap" id="adspace" data-api="${api}">
+ <script type="application/json" id="fbcfg" data-space="${api}/ads/api/space">${JSON.stringify(fbConfig)}</script>
  <div class="adsp-top"><div><span class="kicker">Afrolook Ads</span><h1 class="h2" style="margin-top:6px">Mon espace annonceur</h1></div>
   <div class="adsp-user" id="adsp-user" hidden><i class="admk-av" id="u-av">K</i><span><b id="u-name"></b><small id="u-mail"></small></span><button class="adlinkbtn" id="signout" type="button">Déconnexion</button></div></div>
  <p class="adstatus" id="adstatus" role="status" aria-live="polite" hidden></p>
@@ -432,7 +432,7 @@ export function adsSpace(fbConfig, api) {
 export function adsPublisherSpace(fbConfig, api) {
   const countries = [['TG', 'Togo'], ['CI', 'Côte d\'Ivoire'], ['BJ', 'Bénin'], ['SN', 'Sénégal'], ['CM', 'Cameroun'], ['BF', 'Burkina Faso'], ['ML', 'Mali'], ['GN', 'Guinée'], ['GA', 'Gabon'], ['CD', 'RD Congo'], ['NE', 'Niger'], ['FR', 'France']];
   return `${adsSubnav('diffuseur')}<section class="adsp"><div class="wrap" id="pubspace" data-api="${api}" data-rules="${RULES.version}">
- <script type="application/json" id="fbcfg">${JSON.stringify(fbConfig)}</script>
+ <script type="application/json" id="fbcfg" data-space="${api}/ads/api/space">${JSON.stringify(fbConfig)}</script>
  <div class="adsp-top"><div><span class="kicker">Afrolook Ads</span><h1 class="h2" style="margin-top:6px">Mon espace diffuseur</h1></div>
   <div class="adsp-user" id="adsp-user" hidden><i class="admk-av" id="u-av">K</i><span><b id="u-name"></b><small id="u-mail"></small></span><button class="adlinkbtn" id="signout" type="button">Déconnexion</button></div></div>
  <p class="adstatus" id="adstatus" role="status" aria-live="polite" hidden></p>
@@ -496,7 +496,7 @@ export function adsPublisherSpace(fbConfig, api) {
 // ───────── administration de la régie (page réservée aux administrateurs, non indexée) ─────────
 export function adsAdminSpace(fbConfig, api) {
   return `${adsSubnav('admin')}<section class="adsp"><div class="wrap" id="regieadmin" data-api="${api}">
- <script type="application/json" id="fbcfg">${JSON.stringify(fbConfig)}</script>
+ <script type="application/json" id="fbcfg" data-space="${api}/ads/api/space">${JSON.stringify(fbConfig)}</script>
  <div class="adsp-top"><div><span class="kicker">Afrolook Ads</span><h1 class="h2" style="margin-top:6px">Administration de la régie</h1></div>
   <div class="adsp-user" id="adsp-user" hidden><i class="admk-av" id="u-av">A</i><span><b id="u-name"></b><small id="u-mail"></small></span><button class="adlinkbtn" id="signout" type="button">Déconnexion</button></div></div>
  <p class="adstatus" id="adstatus" role="status" aria-live="polite" hidden></p>

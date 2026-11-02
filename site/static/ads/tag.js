@@ -7,7 +7,7 @@
 (function () {
   'use strict';
   if (window.__aflAds) return; window.__aflAds = true;
-  var API = window.AFL_ADS_API || 'https://us-central1-afrolooki.cloudfunctions.net';
+  var API = window.AFL_ADS_API || '__API_BASE__/ads/api'; // remplacé à la construction du site (build.mjs, variable API_BASE)
   var MAX_SLOTS = 3;
   var FORMATS = { banner: 1, native: 1, poster: 1, sticky: 1 };
   var DNT = navigator.doNotTrack === '1' || navigator.globalPrivacyControl === true;
@@ -88,7 +88,7 @@
     if (!FORMATS[fmt]) { host.hidden = true; return; }
     if (fmt === 'sticky') { try { if (sessionStorage.getItem('afl_sticky_closed')) { host.hidden = true; return; } } catch (e) { /* tant pis */ } }
     var q = 'pub=' + encodeURIComponent(pub) + '&fmt=' + encodeURIComponent(fmt) + '&slot=' + encodeURIComponent(slot) + '&vid=' + encodeURIComponent(VID) + '&lang=' + encodeURIComponent((navigator.language || '').slice(0, 2));
-    fetch(API + '/adsServe?' + q, { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
+    fetch(API + '/serve?' + q, { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
       if (!j || !j.ok || !j.ad) { host.hidden = true; return; } // aucune annonce pour ce visiteur : l'emplacement reste vide
       css(); render(host, j.ad, fmt);
     }).catch(function () { host.hidden = true; });
