@@ -32,7 +32,8 @@ const share = (p) => {
 };
 
 export function adsDocsPage(api) {
-  const A = api || 'https://us-central1-afrolooki.cloudfunctions.net';
+  const A = (api || 'https://afrolookmedia.com') + '/ads/api'; // adresse publique stable de la régie (réécrite vers l'API)
+  const HOST = new URL(A).host;
   return `${adsSubnav('docs')}<section class="adsp"><div class="wrap doc">
  <span class="kicker">Afrolook Ads · Diffuseurs</span><h1 class="h2" style="margin-top:6px">Documentation d'intégration</h1>
  <p class="sub">Afficher les annonces Afrolook Ads sur ton site ou dans ton application. Les annonces sont choisies, signées et comptées par les serveurs d'Afrolook Ads : ton code se contente de les afficher.</p>
@@ -57,7 +58,7 @@ export function adsDocsPage(api) {
    <li><code>data-pub</code> : ton identifiant publicitaire. <code>data-slot</code> : le nom de l'emplacement (lettres, chiffres, - et _), pour tes statistiques. <code>data-format</code> : <code>banner</code>, <code>native</code>, <code>poster</code> ou <code>sticky</code> (bandeau collant en bas de l'écran, fermable).</li>
    <li>Une seule annonce par emplacement et par chargement de page, <b>3 emplacements au plus par page</b>. Pas de rafraîchissement automatique.</li>
    <li>Si aucune annonce ne convient au visiteur (pays, langue, catégories que tu acceptes…), l'emplacement reste vide : rien n'est compté, rien n'est payé.</li>
-   <li>Si ton site a une politique de sécurité de contenu (CSP) : autorise <code>script-src https://afrolookmedia.com</code>, <code>connect-src ${esc(A)}</code> et <code>img-src https://firebasestorage.googleapis.com</code>.</li>
+   <li>Si ton site a une politique de sécurité de contenu (CSP) : autorise <code>script-src https://afrolookmedia.com</code>, <code>connect-src ${esc(new URL(A).origin)}</code> et <code>img-src ${esc(process.env.MEDIA_BASE || "https://cdn.afrolookmedia.com")}</code>.</li>
    <li>Visiteurs avec « Ne pas suivre » : l'annonce s'affiche, mais ni la vue ni le clic ne sont enregistrés.</li>
   </ul>
   <p>Pour afficher plusieurs emplacements, ajoute plusieurs balises <code>&lt;ins class="afl-ad"&gt;</code> (un seul <code>&lt;script&gt;</code> suffit). Les formats vidéo, carrousel, interstitiel et récompensée passent aujourd'hui par l'API (section 4).</p>
@@ -90,7 +91,7 @@ class AfrolookAd extends StatefulWidget {
 }
 
 class _AfrolookAdState extends State<AfrolookAd> {
-  static const _host = 'us-central1-afrolooki.cloudfunctions.net';
+  static const _host = '${HOST}';
   Map<String, dynamic>? _ad;
   String _vid = '';
   Timer? _timer;
@@ -112,7 +113,7 @@ class _AfrolookAdState extends State<AfrolookAd> {
     final prefs = await SharedPreferences.getInstance();
     _vid = prefs.getString('aflv') ?? List.generate(24, (_) => Random.secure().nextInt(16).toRadixString(16)).join();
     await prefs.setString('aflv', _vid);
-    final r = await http.get(Uri.https(_host, '/adsServe', {'pub': widget.pub, 'fmt': widget.format, 'slot': widget.slot, 'vid': _vid}));
+    final r = await http.get(Uri.https(_host, '/ads/api/serve', {'pub': widget.pub, 'fmt': widget.format, 'slot': widget.slot, 'vid': _vid}));
     final ad = (jsonDecode(r.body) as Map<String, dynamic>)['ad'];
     if (mounted && ad != null) setState(() => _ad = ad as Map<String, dynamic>);
   }
@@ -125,8 +126,8 @@ class _AfrolookAdState extends State<AfrolookAd> {
     if (info.visibleFraction >= 0.5) {
       _timer = Timer(Duration(milliseconds: (ad['viewMs'] as int) + 50), () {
         _sent = true;
-        http.post(Uri.parse(ad['event'] as String), headers: {'Content-Type': 'text/plain'},
-            body: jsonEncode({'t': ad['token'], 'e': 'view', 'ms': (ad['viewMs'] as int) + 50, 'vid': _vid}));
+        http.post(Uri.parse(ad['event'] as String),
+            body: {'t': ad['token'], 'e': 'view', 'ms': ((ad['viewMs'] as int) + 50).toString(), 'vid': _vid});
       });
     }
   }
@@ -163,7 +164,7 @@ class _AfrolookAdState extends State<AfrolookAd> {
  <section class="doc-s" id="api"><h2>4. API</h2>
   <h3>Obtenir une annonce</h3>
   ${code('http', `
-GET ${A}/adsServe?pub=ap_xxxxxxxxxx&fmt=native&slot=fil-principal&vid=<identifiant-visiteur>&lang=fr`)}
+GET ${A}/serve?pub=ap_xxxxxxxxxx&fmt=native&slot=fil-principal&vid=<identifiant-visiteur>&lang=fr`)}
   <ul class="list">
    <li><code>pub</code> (obligatoire) : ton identifiant publicitaire. <code>fmt</code> (obligatoire) : <code>banner</code>, <code>sticky</code>, <code>native</code>, <code>carousel</code>, <code>poster</code>, <code>video</code>, <code>interstitial</code> ou <code>rewarded</code>. <code>size</code> (facultatif) : taille de l'emplacement, <code>728x90</code>, <code>320x50</code>, <code>320x100</code> ou <code>300x250</code> ; si l'annonce a une bannière prête à cette taille, elle est renvoyée dans <code>banner</code>. <code>slot</code> : nom de l'emplacement (1 à 32 caractères : lettres minuscules, chiffres, - et _). <code>vid</code> (obligatoire) : un identifiant anonyme du visiteur, 12 à 64 caractères (lettres, chiffres, -), généré une fois et gardé sur l'appareil. <code>lang</code> : langue du visiteur (2 lettres), facultatif.</li>
    <li>Le <b>pays du visiteur</b> est déterminé par nos serveurs d'après son adresse IP : n'envoie pas de pays.</li>
@@ -177,9 +178,9 @@ GET ${A}/adsServe?pub=ap_xxxxxxxxxx&fmt=native&slot=fil-principal&vid=<identifia
     "title": "Boutique Kofi : mode africaine", "text": "Vêtements modernes, livraison à Lomé.", "cta": "Visiter",
     "media": { "type": "image", "url": "https://…", "thumb": "https://…", "images": ["https://…"] },
     "banner": { "url": "https://…", "w": 728, "h": 90 },
-    "click": "${A}/adsGo?t=<jeton>&v=<vid>",
+    "click": "${A}/go?t=<jeton>&v=<vid>",
     "token": "<jeton signé à usage unique>",
-    "event": "${A}/adsEvent",
+    "event": "${A}/event",
     "viewMs": 1000, "ttlMs": 1800000
   }
 }`)}
@@ -187,7 +188,7 @@ GET ${A}/adsServe?pub=ap_xxxxxxxxxx&fmt=native&slot=fil-principal&vid=<identifia
 
   <h3>Signaler une vue</h3>
   ${code('http', `
-POST ${A}/adsEvent        (Content-Type: text/plain)
+POST ${A}/event        (Content-Type: text/plain)
 {"t":"<jeton>", "e":"view", "ms":1050, "vid":"<identifiant-visiteur>"}`)}
   <ul class="list">
    <li><code>e</code> : <code>view</code> (vue) ou <code>complete</code> (lecture complète d'une vidéo, pour les formats vidéo et récompensée, après une vue valide). <code>ms</code> : durée pendant laquelle l'annonce est restée visible (à moitié au moins) ; elle ne peut pas dépasser le temps écoulé depuis la demande.</li>
@@ -195,7 +196,7 @@ POST ${A}/adsEvent        (Content-Type: text/plain)
   </ul>
 
   <h3>Le clic</h3>
-  <p>Le bouton de l'annonce pointe <b>toujours</b> vers le lien <code>click</code> reçu (<code>adsGo</code>) : Afrolook Ads y compte le clic puis redirige vers l'annonceur. N'appelle jamais ce lien toi-même et ne le remplace pas par l'adresse de l'annonceur : un clic qui ne passe pas par Afrolook Ads n'existe pas.</p>
+  <p>Le bouton de l'annonce pointe <b>toujours</b> vers le lien <code>click</code> reçu (<code>/go</code>) : Afrolook Ads y compte le clic puis redirige vers l'annonceur. N'appelle jamais ce lien toi-même et ne le remplace pas par l'adresse de l'annonceur : un clic qui ne passe pas par Afrolook Ads n'existe pas.</p>
 
   <h3>Limites et durées</h3>
   <ul class="list"><li>Le jeton ne vaut que pour <b>une seule vue</b> et expire au bout de 30 minutes (2 heures pour le clic).</li><li>Au plus <b>3 vues de la même annonce par visiteur et par jour</b>, 300 affichages par visiteur et par jour, un intervalle minimum entre deux annonces d'un même emplacement (tableau ci-dessous).</li><li>Les demandes en rafale sont limitées (par adresse et par visiteur).</li></ul>

@@ -90,3 +90,14 @@ Mise à jour : 02/11/2026. Légende : ✅ fait et testé côté API / analysé c
 6. 🔑 Refaire l'export des utilisateurs (certifications), puis import final avec `--share=`.
 7. 🔑 Création de l'équipe d'administration sur la production, bascule Torox, envoi aux stores (version 2.0.17+268).
 8. ⏳ Visualiser la base PostgreSQL (DBeaver) : étape 1 donnée, la suite à faire ensemble.
+
+## 8. Ajouts du 02/11/2026 (nuit)
+
+| Demande | État |
+|---|---|
+| Premium limité (20 lives par mois), seul Gold est illimité | ✅ API testée (réglable) |
+| Prix de la prolongation selon le coût réel Agora (300 F minimum + 160 F par spectateur et par heure, 3 fois au plus) | ✅ API testée |
+| Écran « Réglages lives et ventes » (commission, quotas, prix de la prolongation) | ✅ 📱 (Administration → Vente en direct → icône réglages) |
+| Codes promo : écran vendeur, champ « Code promo » à l'achat, étoiles et « Vendeur fiable » | ✅ 📱 |
+| Dollar dans la fenêtre d'une tâche partenaire | ✅ 📱 |
+| Textes des lives, de la commande et des instructions non traduits | ✅ 459 + 50 textes traduits en 7 langues (`lib/l10n/tr_live.dart`) · traduction automatique à relire · les anciens écrans de `addProduit` hors vente en direct restent à faire |

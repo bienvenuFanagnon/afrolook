@@ -4,7 +4,6 @@
   "playUrl": "https://play.google.com/store/apps/details?id=com.afrotok.afrotok",
   "appStoreUrl": "https://apps.apple.com/app/id6811423047",
   "contactEmail": "contact@afrolookmedia.com",
-  "contactEndpoint": "https://us-central1-afrolooki.cloudfunctions.net/contactMessage",
   "social": {
     "whatsapp": "https://whatsapp.com/channel/0029VaxfuwYISTkF3o42e60V",
     "facebook": "https://www.facebook.com/profile.php?id=61554481360821",
@@ -18,7 +17,7 @@
     "fcfaEn": "249,900",
     "eur": "381"
   },
-  "functionsBase": "https://us-central1-afrolooki.cloudfunctions.net",
+  "functionsBase": "https://afrolookmedia.com",
   "firebase": {
     "apiKey": "AIzaSyBES1Ej6uR4FouRRkh-1PF1B89wRpW7bQo",
     "authDomain": "afrolooki.firebaseapp.com",

@@ -17,7 +17,7 @@
    Couleurs : vert Afrolook, jaune et rouge du drapeau de marque en filet, encre verdâtre. Polices : Bricolage Grotesque (titres), Figtree (texte). */
 :root{
   --bg:#F7F9F6; --surface:#FFFFFF; --soft:#EDF2EC; --ink:#0D1511; --muted:#566159; --line:#DDE5DC;
-  --green:#14A04E; --green-bright:#2ECC71; --on-green:#06210F; --yellow:#FFD21F; --red:#E5484D;
+  --green:#158246; --green-bright:#2ECC71; --on-green:#06210F; --yellow:#FFD21F; --red:#E5484D;
   --night:#0A100C; --night2:#111A14; --night-ink:#F1F6F0; --night-muted:#9DAAA0; --night-line:#233028;
   --shadow:0 18px 40px -18px rgba(8,30,15,.35);
   --display:'Bricolage Grotesque',system-ui,sans-serif; --body:'Figtree',system-ui,sans-serif;

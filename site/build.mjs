@@ -11,6 +11,11 @@ import { adsKitPage, KIT_META, adsLandingEn, ADS_META_EN, adsFaqLdEn, adsHomeBlo
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 const cfg = JSON.parse(fs.readFileSync(path.join(root, 'src/config.json'), 'utf8'));
+// ESSAI API : l'adresse du serveur tient en UNE variable. API_BASE (variable d'environnement) l'emporte sur functionsBase (config.json).
+// Les appels publics de la régie passent par ${API_BASE}/ads/api/..., les autres par ${API_BASE}/v1/... (voir LISEZMOI.md).
+const API_BASE = String(process.env.API_BASE || cfg.functionsBase).replace(/\/+$/, '');
+cfg.functionsBase = API_BASE;
+cfg.contactEndpoint = `${API_BASE}/v1/site/contact`;
 const MONEY = /commission|\d+(,\d+)? ?%|RPM|FCFA|minimum|\$|part du créateur|palier|taux de change|encaiss|parrain/i;
 // Page publique : les règles de fonctionnement, sans les montants ni les parts (ils restent dans l'application).
 const rules = JSON.parse(fs.readFileSync(path.join(root, 'src/rules.json'), 'utf8'))
@@ -395,7 +400,9 @@ fs.mkdirSync(dist, { recursive: true });
 fs.cpSync(path.join(root, 'static'), dist, { recursive: true });
 // composant Flutter de bannières (même fichier que dans l'application, publié pour les diffuseurs)
 fs.mkdirSync(path.join(dist, 'ads'), { recursive: true });
-fs.copyFileSync(path.join(root, '../lib/ads/afrolook_ads_banner.dart'), path.join(dist, 'ads/afrolook_ads_banner.dart'));
+fs.copyFileSync(path.join(root, 'vendor/afrolook_ads_banner.dart'), path.join(dist, 'ads/afrolook_ads_banner.dart'));
+// la balise est copiée telle quelle : on y inscrit l'adresse du serveur
+fs.writeFileSync(path.join(dist, 'ads/tag.js'), fs.readFileSync(path.join(dist, 'ads/tag.js'), 'utf8').replaceAll('__API_BASE__', API_BASE));
 
 for (const lang of ['fr', 'en']) {
   homePage(lang); earnPage(lang); cardsPage(lang); musicPage(lang); holidaysIndex(lang); contactPage(lang); downloadPage(lang); deletePage(lang);
