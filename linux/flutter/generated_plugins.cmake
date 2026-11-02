@@ -5,14 +5,12 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   audioplayers_linux
   emoji_picker_flutter
-  encrypt_decrypt_plus
   file_selector_linux
   flutter_secure_storage_linux
   gtk
   record_linux
   rive_common
   smart_auth
-  stories_for_flutter
   url_launcher_linux
 )
 

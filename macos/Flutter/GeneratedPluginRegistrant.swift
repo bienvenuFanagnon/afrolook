@@ -14,7 +14,6 @@ import cloud_firestore
 import cloud_functions
 import device_info_plus
 import emoji_picker_flutter
-import encrypt_decrypt_plus
 import file_picker
 import file_selector_macos
 import firebase_app_check
@@ -44,7 +43,6 @@ import share_plus
 import shared_preferences_foundation
 import smart_auth
 import sqflite_darwin
-import stories_for_flutter
 import url_launcher_macos
 import video_compress
 import video_player_avfoundation
@@ -61,7 +59,6 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   FirebaseFunctionsPlugin.register(with: registry.registrar(forPlugin: "FirebaseFunctionsPlugin"))
   DeviceInfoPlusMacosPlugin.register(with: registry.registrar(forPlugin: "DeviceInfoPlusMacosPlugin"))
   EmojiPickerFlutterPlugin.register(with: registry.registrar(forPlugin: "EmojiPickerFlutterPlugin"))
-  EncryptDecryptPlusPlugin.register(with: registry.registrar(forPlugin: "EncryptDecryptPlusPlugin"))
   FilePickerPlugin.register(with: registry.registrar(forPlugin: "FilePickerPlugin"))
   FileSelectorPlugin.register(with: registry.registrar(forPlugin: "FileSelectorPlugin"))
   FLTFirebaseAppCheckPlugin.register(with: registry.registrar(forPlugin: "FLTFirebaseAppCheckPlugin"))
@@ -91,7 +88,6 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   SharedPreferencesPlugin.register(with: registry.registrar(forPlugin: "SharedPreferencesPlugin"))
   SmartAuthPlugin.register(with: registry.registrar(forPlugin: "SmartAuthPlugin"))
   SqflitePlugin.register(with: registry.registrar(forPlugin: "SqflitePlugin"))
-  StoriesForFlutterPlugin.register(with: registry.registrar(forPlugin: "StoriesForFlutterPlugin"))
   UrlLauncherPlugin.register(with: registry.registrar(forPlugin: "UrlLauncherPlugin"))
   VideoCompressPlugin.register(with: registry.registrar(forPlugin: "VideoCompressPlugin"))
   FVPVideoPlayerPlugin.register(with: registry.registrar(forPlugin: "FVPVideoPlayerPlugin"))
