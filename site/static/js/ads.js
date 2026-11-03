@@ -444,8 +444,7 @@ async function initSpace() {
           c.reason ? h('div', { class: 'rg-row' }, h('span', { text: 'Motif' }), h('b', { text: c.reason })) : null,
           h('details', { class: 'rg-more' }, h('summary', { text: 'Plus de détails' }),
             h('div', { class: 'rg-row' }, h('span', { text: 'Partageurs qui ont publié' }), h('b', { text: nf(c.sharersPublished) + ' / ' + nf(c.sharers) })),
-            h('div', { class: 'rg-row' }, h('span', { text: 'Personnes ayant ouvert le lien' }), h('b', { text: nf(c.uniqueOpens) })),
-            h('div', { class: 'rg-row' }, h('span', { text: 'Vues déclarées (indicatif)' }), h('b', { text: nf(c.declaredViews) }))),
+            h('div', { class: 'rg-row' }, h('span', { text: 'Personnes ayant ouvert le lien' }), h('b', { text: nf(c.uniqueOpens) }))),
           zone);
       }));
     } catch { /* pas de campagne ou service indisponible */ }
