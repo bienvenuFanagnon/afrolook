@@ -8,7 +8,7 @@ class NotificationText {
 
   /// Nouveaux types : mention, j'aime d'un commentaire, republication, soutien par pub, abonné à un canal,
   /// puis (lot « restes ») boost à valider (équipe), nomination comme administrateur d'un canal, intérêt pour un service.
-  static const newTypes = {'MENTION', 'COMMENT_LIKE', 'REPOST', 'SUPPORT', 'FOLLOW_CANAL', 'BOOST_SOUMIS', 'CANAL_ADMIN', 'SERVICE', 'STAFF_VERIF', 'STAFF_FRAUD', 'STAFF_DISPUTE'};
+  static const newTypes = {'MENTION', 'COMMENT_LIKE', 'REPOST', 'SUPPORT', 'FOLLOW_CANAL', 'BOOST_SOUMIS', 'CANAL_ADMIN', 'SERVICE', 'STAFF_VERIF', 'STAFF_FRAUD', 'STAFF_DISPUTE', 'STAFF_ADS'};
 
   /// Groupes de la page (clé = libellé français, traduit à l'affichage), types rangés dans chacun et filtre « par type » correspondant.
   static const Map<String, List<String>> groupTypes = {
@@ -22,7 +22,7 @@ class NotificationText {
     'Commandes': ['ORDER_NEW', 'ORDER_VALIDATED', 'ORDER_FEE', 'ORDER_SHIPPED', 'ORDER_RECEIVED', 'ORDER_CANCELLED', 'ORDER_DISPUTE', 'ORDER_RESOLVED', 'OFFER_NEW', 'OFFER_REPLY'],
     'Gains & Parrainages': ['GAIN', 'PARRAINAGE', 'SUPPORT'],
     'Afrolook': ['MARKETING', 'COMPTE_OFFICIEL', 'USER', 'BOOST_SOUMIS'],
-    'À traiter (équipe)': ['STAFF_VERIF', 'STAFF_FRAUD', 'STAFF_DISPUTE'],
+    'À traiter (équipe)': ['STAFF_VERIF', 'STAFF_FRAUD', 'STAFF_DISPUTE', 'STAFF_ADS'],
   };
 
   /// Phrase affichée après le pseudo de l'auteur, ou null pour garder le texte envoyé par le serveur.
@@ -67,6 +67,9 @@ class NotificationText {
         return tr('demande la vérification de son identité de vendeur');
       case 'STAFF_FRAUD':
         return b.isEmpty ? tr('a des gains de partage bloqués : détection de fraude à vérifier') : '${tr('a des gains de partage bloqués : détection de fraude à vérifier')} : $b';
+      case 'STAFF_ADS':
+        // body : « Annonceur · secteur · pays » ou « Diffuseur · type · pays »
+        return b.isEmpty ? tr('a envoyé son profil Afrolook Ads à valider') : '${tr('a envoyé son profil Afrolook Ads à valider')} : $b';
       case 'STAFF_DISPUTE':
         return b.isEmpty ? tr('a ouvert un litige sur une commande') : '${tr('a ouvert un litige sur une commande')} « $b »';
       case 'CANAL_ADMIN':
@@ -94,6 +97,7 @@ class NotificationText {
         'STAFF_VERIF' => tr('Identités de vendeurs à vérifier'),
         'STAFF_FRAUD' => tr('Gains bloqués (fraude)'),
         'STAFF_DISPUTE' => tr('Litiges de commande'),
+        'STAFF_ADS' => tr('Profils Afrolook Ads à valider'),
         'CANAL_ADMIN' => tr('Nominations de canal'),
         'SERVICE' => tr('Intérêt pour un service'),
         _ => type,
@@ -110,6 +114,7 @@ class NotificationText {
         'STAFF_VERIF' => (icon: Icons.badge_outlined, tone: 3),
         'STAFF_FRAUD' => (icon: Icons.shield_outlined, tone: 0),
         'STAFF_DISPUTE' => (icon: Icons.gavel_rounded, tone: 0),
+        'STAFF_ADS' => (icon: Icons.storefront_outlined, tone: 3),
         'CANAL_ADMIN' => (icon: Icons.admin_panel_settings_outlined, tone: 1),
         'SERVICE' => (icon: Icons.handyman, tone: 2),
         'LIKE' => (icon: Icons.favorite, tone: 0),

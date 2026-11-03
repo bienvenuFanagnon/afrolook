@@ -433,8 +433,8 @@ export function adsSpace(fbConfig, api) {
 
   <div id="tab-mes" hidden><div class="admine"><h2 class="h2" style="font-size:clamp(24px,3vw,34px)">Mes annonces <small class="adcount" id="myquota"></small></h2>
    <div class="addash" id="mylist" style="margin-top:18px"><p class="adempty">Chargement…</p></div></div>
-   <div class="admine" id="sharemine" hidden><h2 class="h2" style="font-size:clamp(22px,2.6vw,30px);margin-top:28px">Mes campagnes Partage</h2>
-    <div class="adstack" id="sharelist" style="margin-top:14px"></div></div></div>
+   <div class="admine" id="sharemine" hidden><h2 class="h2" style="font-size:clamp(24px,3vw,34px)">Mes campagnes Partage</h2>
+    <div class="adstack" id="sharelist" style="margin-top:18px"></div></div></div>
  </div>
 </div></section>
 <dialog class="addlg" id="adtopup" aria-label="Recharger mon solde"><div class="addlg-in"><button class="addlg-x" type="button" id="adtopup-x" aria-label="Fermer">×</button>
@@ -488,6 +488,10 @@ export function adsPublisherSpace(fbConfig, api) {
   <div id="tab-profil"><div class="adform-g">
    <form class="adform" id="pform" novalidate>
     <div class="adfs"><h3><i>1</i> Toi ou ton entreprise</h3>
+     <div class="logo-up"><label class="logo-box" for="p-logo" id="pl-pv"><span>Logo</span></label>
+      <div class="logo-t"><b>Ton logo</b><small>Obligatoire. PNG, JPG ou WebP, fond transparent conseillé. Il est affiché parmi nos partenaires diffuseurs une fois ton profil validé par notre équipe.</small>
+       <div class="logo-r"><label class="btn btn-line adsm" for="p-logo">Choisir un logo</label></div><p class="aderr" id="pl-need" hidden>Ton profil n'a pas encore de logo : ajoute-le pour pouvoir ajouter des sites et des applications.</p></div>
+      <input id="p-logo" type="file" accept="image/png,image/jpeg,image/webp" hidden></div>
      <div class="adbtn" id="p-type"><label class="on" data-v="individual">Particulier</label><label data-v="company">Entreprise</label></div>
      <label class="fl" for="p-name">Nom ou nom de l'entreprise<input id="p-name" maxlength="80" autocomplete="organization"></label>
      <label class="fl" for="p-country">Pays<select id="p-country">${countries.map(([c, l]) => `<option value="${c}">${l}</option>`).join('')}</select></label>
@@ -498,6 +502,7 @@ export function adsPublisherSpace(fbConfig, api) {
      <label class="fl" for="p-about">Que fais-tu ? <small>(300 caractères)</small><textarea id="p-about" rows="3" maxlength="300" placeholder="Présente ton activité, tes sites ou tes applications."></textarea></label></div>
     <div class="warn" id="p-rules-new" hidden><b>Les règles ont changé.</b> Lis-les puis accepte-les pour pouvoir ajouter un site ou une application. <button class="btn btn-primary adsm" id="p-rules-accept" type="button">J'accepte la nouvelle version</button></div>
     <details class="adrules" id="p-rules"><summary>Lire les règles des diffuseurs <small>version ${RULES.version}</small></summary><div class="rules">${rulesHtml()}</div></details>
+    <label class="adcheck"><input type="checkbox" id="p-consent"><span>J'accepte que mon nom et mon logo soient affichés comme partenaire diffuseur sur Afrolook Ads, après validation de mon profil par l'équipe.</span></label>
     <label class="adcheck"><input type="checkbox" id="p-terms"><span>J'ai lu et j'accepte les <a href="/ads/diffuseur/regles/" target="_blank" rel="noopener">règles des diffuseurs</a> (version ${RULES.version}) : audience mesurée par Afrolook Ads et comparée à ma déclaration, annonces validées, catégories que j'accepte, aucun clic sur mes propres annonces, aucun trafic acheté ou automatique, rémunération selon l'offre Réseau.</span></label>
     <p class="aderr" id="perr" role="alert" hidden></p>
     <div class="adsub"><div><b id="p-state">Profil à valider</b><small>Notre équipe valide chaque profil avant de traiter tes sites et applications.</small></div><button class="btn btn-primary adbig" id="p-send" type="submit">Envoyer mon profil</button></div>
@@ -505,22 +510,27 @@ export function adsPublisherSpace(fbConfig, api) {
    <aside class="adprev"><span class="kicker">Comment ça marche</span><ol class="adsteps"><li><b>Ton profil</b> est validé par notre équipe.</li><li>Tu <b>ajoutes tes sites et applications</b> (en ligne obligatoirement).</li><li>Chacun est <b>accepté ou refusé</b> séparément.</li><li>Il reçoit son <b>identifiant publicitaire</b> (ap_…).</li><li>Tu intègres la balise ou le composant fourni, et tu suis tes statistiques ici.</li></ol><p class="adnote"><a href="/ads/diffuseur/documentation/">Documentation d'intégration</a> · <a href="/ads/diffuseur/regles/">Règles des diffuseurs</a></p></aside>
   </div></div>
 
-  <div id="tab-sites" hidden><div class="adform-g">
-   <div><h2 class="h2" style="font-size:clamp(22px,3vw,30px)">Mes sites et applications</h2><div class="pubprops" id="plist" style="margin-top:16px"><p class="adempty">Chargement…</p></div></div>
-   <form class="adform" id="propform" novalidate>
-    <div class="adfs"><h3>Ajouter un site ou une application</h3>
-     <div class="adbtn" id="q-kind"><label class="on" data-v="site">Site web</label><label data-v="app">Application</label></div>
-     <label class="fl" for="q-name">Nom<input id="q-name" maxlength="80" placeholder="Ex. Kofi Sport"></label>
+  <div id="tab-sites" hidden><div class="adform-g adsites">
+   <div class="adsites-l"><div class="adsites-h"><h2 class="h2" style="font-size:clamp(24px,3vw,34px)">Mes sites et applications</h2><a class="btn btn-primary adsm adsites-add" href="#propform">+ Ajouter</a></div>
+    <p class="adsites-sub">Chaque site ou application doit être <b>en ligne</b>. Notre équipe le vérifie, puis l'accepte ou le refuse séparément ; il reçoit alors son identifiant publicitaire.</p>
+    <div class="pubprops" id="plist" style="margin-top:18px"><p class="adempty">Chargement…</p></div></div>
+   <form class="adform adform-sites" id="propform" novalidate>
+    <div class="adfs"><h3><i>1</i> Que veux-tu ajouter ?</h3>
+     <div class="adbtn adseg" id="q-kind"><label class="on" data-v="site">Site web</label><label data-v="app">Application</label></div>
+     <div class="adrow2"><label class="fl" for="q-name">Nom<input id="q-name" maxlength="80" placeholder="Ex. Kofi Sport"></label>
+      <label class="fl" for="q-cat">Type<select id="q-cat">${PUB_CATS.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></label></div>
      <label class="fl" for="q-url" id="q-site">Adresse du site <small>(https, en ligne)</small><input id="q-url" inputmode="url" placeholder="https://tonsite.com"></label>
-     <div id="q-app" hidden><label class="fl" for="q-and">Lien Google Play <small>(si Android)</small><input id="q-and" inputmode="url" placeholder="https://play.google.com/store/apps/details?id=…"></label>
-      <label class="fl" for="q-ios">Lien App Store <small>(si iPhone)</small><input id="q-ios" inputmode="url" placeholder="https://apps.apple.com/…/id123456789"></label></div>
-     <label class="fl" for="q-cat">Type de ton site ou de ton application<select id="q-cat">${PUB_CATS.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></label>
-     <div class="fl"><span>Catégories d'annonces que tu acceptes d'afficher</span><div class="cats" id="q-cats">${catChecks('qcat')}</div><small>Seules ces catégories s'afficheront chez toi. Les catégories sensibles (finance, paris, alcool, médicaments, rencontres, contenu sensuel, politique, religion…) ne s'affichent jamais sans ton accord : coche-les seulement si tu les acceptes. Tu peux changer ce choix à tout moment.</small></div>
+     <div id="q-app" hidden><div class="adrow2"><label class="fl" for="q-and">Lien Google Play <small>(si Android)</small><input id="q-and" inputmode="url" placeholder="https://play.google.com/store/apps/details?id=…"></label>
+      <label class="fl" for="q-ios">Lien App Store <small>(si iPhone)</small><input id="q-ios" inputmode="url" placeholder="https://apps.apple.com/…/id123456789"></label></div></div></div>
+    <div class="adfs"><h3><i>2</i> Ton audience</h3>
      <div class="fl"><span>Pays de ton audience</span><div class="adchips" id="q-countries">${countries.map(([c, l], n) => `<span class="${n === 0 ? 'on' : ''}" data-v="${c}">${l}</span>`).join('')}</div></div>
-     <label class="fl" for="q-aud">Audience : personnes différentes par mois<input id="q-aud" type="number" min="100" step="100" inputmode="numeric" placeholder="Ex. 25000"></label>
-     <label class="fl" for="q-ses">Pages vues ou sessions par mois <small>(facultatif)</small><input id="q-ses" type="number" min="0" step="100" inputmode="numeric"></label>
-     <label class="fl" for="q-desc">Décris ton site ou ton application <small>(400 caractères)</small><textarea id="q-desc" rows="3" maxlength="400"></textarea></label></div>
-    <p class="adnote">Ton site ou ton application doit être <b>en ligne</b> : nous vérifions l'adresse. L'audience que tu déclares est contrôlée ; notre équipe retient le chiffre validé.</p>
+     <div class="adrow2"><label class="fl" for="q-aud">Personnes différentes par mois<input id="q-aud" type="number" min="100" step="100" inputmode="numeric" placeholder="Ex. 25000"></label>
+      <label class="fl" for="q-ses">Pages vues ou sessions par mois <small>(facultatif)</small><input id="q-ses" type="number" min="0" step="100" inputmode="numeric"></label></div>
+     <label class="fl" for="q-desc">Décris ton site ou ton application <small>(20 à 400 caractères)</small><textarea id="q-desc" rows="3" maxlength="400"></textarea></label></div>
+    <div class="adfs"><h3><i>3</i> Ce que tu acceptes d'afficher</h3>
+     <div class="fl"><span>Catégories d'annonces</span><div class="cats" id="q-cats">${catChecks('qcat')}</div></div>
+     <p class="adcallout">Seules ces catégories s'affichent chez toi. Les catégories sensibles (finance, paris, alcool, médicaments, rencontres, contenu sensuel, politique, religion…) ne s'affichent <b>jamais</b> sans ton accord : coche-les seulement si tu les acceptes. Tu peux changer ce choix à tout moment.</p></div>
+    <p class="adnote">L'audience que tu déclares est contrôlée par Afrolook Ads ; notre équipe retient le chiffre validé.</p>
     <p class="aderr" id="qerr" role="alert" hidden></p>
     <button class="btn btn-primary adbig" id="q-send" type="submit">Envoyer la demande</button>
    </form>

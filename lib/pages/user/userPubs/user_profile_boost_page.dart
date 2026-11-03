@@ -88,7 +88,7 @@ class _UserProfileBoostPageState extends State<UserProfileBoostPage> {
         target: _target,
         targetId: id,
         weeks: _weeks!,
-        countries: _allCountries ? const [] : _countries.toList(),
+        countries: _allCountries ? const ['ALL'] : _countries.toList(),
         actionText: _actionText,
         description: _desc.text,
         title: _entityName(me),

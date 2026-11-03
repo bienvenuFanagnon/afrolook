@@ -33,6 +33,7 @@ class _UserSearchPageState extends State<UserSearchPage> {
   bool _isSearching = false;
   bool _hasSearched = false;
   String _searchType = 'email'; // 'email' ou 'pseudo'
+  bool _verifiedOnly = false; // puce « Certifiés » : seulement les comptes certifiés (les plus suivis d'abord)
 
   // Pagination et filtre
   int _selectedLimit = 10; // Valeurs: 10, 50, 200
@@ -77,6 +78,8 @@ class _UserSearchPageState extends State<UserSearchPage> {
       'pseudo': r['username'] ?? r['display_name'] ?? '',
       'email': r['email'] ?? '',
       'imageUrl': r['avatar_url'] ?? '',
+      'isVerify': r['is_verified'] == true,
+      'abonnes': (r['followers_count'] as num?)?.toInt() ?? 0,
       if (created != null) 'createdAt': created,
     });
     u.id = '${r['id']}';
@@ -84,7 +87,7 @@ class _UserSearchPageState extends State<UserSearchPage> {
   }
 
   Future<({List<UserData> users, bool more})> _fetch({String search = '', int page = 1}) async {
-    final r = await ApiGateway.instance.client.get('/admin/users', query: {if (search.isNotEmpty) 'search': search, 'page': page});
+    final r = await ApiGateway.instance.client.get('/admin/users', query: {if (search.isNotEmpty) 'search': search, if (_verifiedOnly) 'verified': 1, 'page': page});
     final rows = WalletApi.list(r);
     return (users: rows.map(_userFromAdmin).toList(), more: r is Map && r['has_more'] == true);
   }
@@ -264,6 +267,8 @@ class _UserSearchPageState extends State<UserSearchPage> {
               _buildSearchTypeChip('pseudo', 'Pseudo'),
               const SizedBox(width: 6),
               _buildSearchTypeChip('email', 'E-mail'),
+              const SizedBox(width: 6),
+              _buildVerifiedChip(),
               const Spacer(),
               DropdownButtonHideUnderline(
                 child: DropdownButton<int>(
@@ -286,6 +291,35 @@ class _UserSearchPageState extends State<UserSearchPage> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  /// Puce « Certifiés » : liste (avec la même recherche) des comptes certifiés, les plus suivis d'abord.
+  Widget _buildVerifiedChip() {
+    return GestureDetector(
+      onTap: () {
+        setState(() => _verifiedOnly = !_verifiedOnly);
+        final q = _searchController.text.trim();
+        q.isEmpty ? _loadRecentUsers() : _searchUsers(q);
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: _verifiedOnly ? AdminPalette.blue : AdminPalette.field,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(Icons.verified_rounded, size: 14, color: _verifiedOnly ? Colors.white : AdminPalette.blue),
+          const SizedBox(width: 4),
+          Text('Certifiés',
+              style: TextStyle(
+                color: _verifiedOnly ? Colors.white : AdminPalette.textS,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              )),
+        ]),
       ),
     );
   }
@@ -316,7 +350,7 @@ class _UserSearchPageState extends State<UserSearchPage> {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 2),
       child: Row(
         children: [
-          Text('DERNIERS INSCRITS',
+          Text(_verifiedOnly ? 'COMPTES CERTIFIÉS' : 'DERNIERS INSCRITS',
               style: TextStyle(
                   color: AdminPalette.textS, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.1)),
           const Spacer(),
@@ -354,8 +388,8 @@ class _UserSearchPageState extends State<UserSearchPage> {
     if (_displayedUsers.isEmpty) {
       return _centerMessage(
         _hasSearched ? Iconsax.search_status : Iconsax.people,
-        _hasSearched ? 'Aucun utilisateur trouvé' : 'Aucun utilisateur',
-        _hasSearched ? "Essaie avec d'autres critères" : 'Les utilisateurs apparaîtront ici',
+        _hasSearched ? 'Aucun utilisateur trouvé' : (_verifiedOnly ? 'Aucun compte certifié' : 'Aucun utilisateur'),
+        _hasSearched ? "Essaie avec d'autres critères" : (_verifiedOnly ? 'Les comptes certifiés apparaîtront ici' : 'Les utilisateurs apparaîtront ici'),
         action: _hasSearched
             ? OutlinedButton.icon(
                 onPressed: _clearSearch,

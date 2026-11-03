@@ -524,6 +524,32 @@ class _UserTransactionsPageState extends State<UserTransactionsPage>
 
 // ── Métadonnées type transaction ──────────────────────────────────────────────
 
+/// Ouvre la fiche détaillée d'une transaction (même fenêtre que la liste « Transactions »), depuis n'importe quel écran
+/// (page de monétisation, etc.). Le montant est affiché dans la bonne unité (pièces ou FCFA).
+void showTransactionDetails(BuildContext context, TransactionSolde t, {UserData? userData}) {
+  final m = _UserTransactionsPageState._metaFor(t.type);
+  final inCoins = _UserTransactionsPageState._isCoins(t.type) || TxAmount.storedInCoins(t);
+  final amount = inCoins ? '${t.montant?.toInt() ?? 0}' : (t.montant ?? 0.0).toStringAsFixed(2);
+  showResponsiveBottomSheet(
+    context: context,
+    backgroundColor: _card,
+    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+    isScrollControlled: true,
+    builder: (_) => DraggableScrollableSheet(
+      initialChildSize: 0.6,
+      minChildSize: 0.4,
+      maxChildSize: 0.85,
+      expand: false,
+      builder: (_, ctrl) => _TxDetailSheet(
+        tx: t, meta: m,
+        amount: amount, unit: inCoins ? context.tr('pièces') : 'FCFA',
+        userData: userData,
+        scrollController: ctrl,
+      ),
+    ),
+  );
+}
+
 class _TxMeta {
   final String    label;
   final Color     color;

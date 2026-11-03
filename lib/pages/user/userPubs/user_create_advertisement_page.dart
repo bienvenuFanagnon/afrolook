@@ -185,7 +185,7 @@ class _UserCreateAdvertisementPageState extends State<UserCreateAdvertisementPag
         targetId: _isBoost ? widget.existingPost!.id! : null,
         weeks: _weeks!,
         combined: _isBoost && _combined,
-        countries: _allCountries ? const [] : _countries.toList(),
+        countries: _allCountries ? const ['ALL'] : _countries.toList(),
         actionText: _actionLabel(),
         actionUrl: _actionUrl(),
         description: _desc.text,

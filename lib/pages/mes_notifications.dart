@@ -704,6 +704,12 @@ class _MesNotificationState extends State<MesNotification> {
           await Navigator.push(context, MaterialPageRoute(builder: (_) => const SellerVerificationsAdminPage()));
           if (mounted) setState(() => _isHandlingNotification = false);
           break;
+        case 'STAFF_ADS':
+          // Profil annonceur ou diffuseur à valider (équipe) : administration de la régie
+          _hideLoadingOverlay();
+          await Navigator.push(context, MaterialPageRoute(builder: (_) => const AdsRegieAdminPage()));
+          if (mounted) setState(() => _isHandlingNotification = false);
+          break;
         case 'STAFF_FRAUD':
           // Gains de partage bloqués (équipe) : régie, liste des partageurs
           _hideLoadingOverlay();

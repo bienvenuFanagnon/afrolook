@@ -202,6 +202,17 @@ if (space) initSpace();
 
 // ───────── connexion Google et Firebase (commune à l'espace annonceur et à l'espace diffuseur) ─────────
 function setStatus(msg, bad = false) { const e = $('#adstatus'); e.hidden = !msg; e.textContent = msg || ''; e.className = 'adstatus' + (bad ? ' bad' : ''); }
+// le logo est réduit (512 px au plus) et gardé en PNG pour conserver la transparence ; WebP s'il reste lourd
+async function logoBlob(file) {
+  const bmp = await createImageBitmap(file);
+  if (Math.min(bmp.width, bmp.height) < 64) throw new Error('petit');
+  const r = Math.min(1, 512 / Math.max(bmp.width, bmp.height)); const c = h('canvas'); c.width = Math.round(bmp.width * r); c.height = Math.round(bmp.height * r);
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  let blob = await new Promise((res) => c.toBlob(res, 'image/png'));
+  if (blob.size > 900 * 1024) { blob = await new Promise((res) => c.toBlob(res, 'image/webp', 0.85)); return { blob, ext: 'webp', type: 'image/webp' }; }
+  return { blob, ext: 'png', type: 'image/png' };
+}
+
 async function boot(onUser) {
   const V = '10.14.1', G = `https://www.gstatic.com/firebasejs/${V}`;
   const status = setStatus;
@@ -549,16 +560,6 @@ async function initSpace() {
       if (!d.profile) { tab('profil'); status('Bienvenue ! Avant ta première annonce, complète ton profil de marque : nom et logo.'); }
     } catch { status('Impossible de charger ton profil pour le moment. Recharge la page.', true); }
   }
-  // le logo est réduit (512 px au plus) et gardé en PNG pour conserver la transparence ; WebP s'il reste lourd
-  const logoBlob = async (file) => {
-    const bmp = await createImageBitmap(file);
-    if (Math.min(bmp.width, bmp.height) < 64) throw new Error('petit');
-    const r = Math.min(1, 512 / Math.max(bmp.width, bmp.height)); const c = h('canvas'); c.width = Math.round(bmp.width * r); c.height = Math.round(bmp.height * r);
-    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
-    let blob = await new Promise((res) => c.toBlob(res, 'image/png'));
-    if (blob.size > 900 * 1024) { blob = await new Promise((res) => c.toBlob(res, 'image/webp', 0.85)); return { blob, ext: 'webp', type: 'image/webp' }; }
-    return { blob, ext: 'png', type: 'image/png' };
-  };
   $('#f-logo').addEventListener('change', async (e) => {
     perr('');
     const f = e.target.files[0]; if (!f) return;
@@ -748,7 +749,7 @@ if (wallDyn) {
     for (const p of items) {
       if (!String(p.logo).startsWith('https://')) continue;
       const href = p.url ? safeUrl(p.url) : '';
-      wallDyn.append(h(href ? 'a' : 'div', { class: 'adpart', title: p.name, href: href || false, target: href ? '_blank' : false, rel: href ? 'nofollow sponsored noopener' : false }, h('img', { src: p.logo, alt: p.name, width: 56, height: 56, loading: 'lazy' }), h('span', { text: p.name })));
+      wallDyn.append(h(href ? 'a' : 'div', { class: 'adpart', title: p.name + (p.kind === 'publisher' ? ' · diffuseur' : p.kind === 'advertiser' ? ' · annonceur' : ''), href: href || false, target: href ? '_blank' : false, rel: href ? 'nofollow sponsored noopener' : false }, h('img', { src: p.logo, alt: p.name, width: 56, height: 56, loading: 'lazy' }), h('span', { text: p.name })));
     }
   }).catch(() => {});
   // « plus de X » : 50 000 sur nos plateformes + l'audience retenue des diffuseurs validés, arrondie au millier inférieur
@@ -765,7 +766,7 @@ async function initPub() {
   const status = setStatus;
   const fb = await boot(() => load());
   if (!fb) return;
-  const { call } = fb;
+  const { call, upload } = fb;
   const st = { profile: null, props: [], kind: 'site', type: 'individual', countries: new Set(['TG']) };
   const perr = (m) => { const e = $('#perr'); e.hidden = !m; e.textContent = m || ''; };
   const qerr = (m) => { const e = $('#qerr'); e.hidden = !m; e.textContent = m || ''; };
@@ -773,6 +774,16 @@ async function initPub() {
   $$('.adtabs a').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); tab(a.dataset.tab); }));
   const toggle = (box, cb) => $$('label', $(box)).forEach((l) => l.addEventListener('click', () => { $$('label', $(box)).forEach((x) => x.classList.toggle('on', x === l)); cb(l.dataset.v); }));
   toggle('#p-type', (v) => { st.type = v; });
+  // logo du diffuseur : obligatoire, affiché sur les pages de partenaires une fois le profil validé
+  const plogo = { blob: null, type: '', preview: null };
+  const plogoShow = (src) => $('#pl-pv').replaceChildren(src ? h('img', { src, alt: 'Ton logo' }) : h('span', { text: 'Logo' }));
+  $('#p-logo').addEventListener('change', async (e) => {
+    perr('');
+    const f = e.target.files[0]; if (!f) return;
+    if (!/^image\/(png|jpeg|webp)$/.test(f.type)) return perr('Choisis une image PNG, JPG ou WebP.');
+    try { const o = await logoBlob(f); plogo.blob = o.blob; plogo.type = o.type; if (plogo.preview) URL.revokeObjectURL(plogo.preview); plogo.preview = URL.createObjectURL(o.blob); plogoShow(plogo.preview); }
+    catch { plogo.blob = null; perr('Image illisible ou trop petite (64 px au moins). Essaie un autre fichier.'); }
+  });
   $('#p-rules-accept').addEventListener('click', async () => { try { await call('adsPubAcceptRules', { version: $('#pubspace').dataset.rules }); status('Règles acceptées. Merci !'); load(); } catch { status('Impossible d\'enregistrer ton acceptation pour le moment.', true); } });
   toggle('#q-kind', (v) => { st.kind = v; $('#q-site').hidden = v !== 'site'; $('#q-app').hidden = v !== 'app'; });
   $$('#q-countries span').forEach((c) => c.addEventListener('click', () => { const v = c.dataset.v; st.countries.has(v) ? st.countries.delete(v) : st.countries.add(v); if (!st.countries.size) st.countries.add(v); $$('#q-countries span').forEach((x) => x.classList.toggle('on', st.countries.has(x.dataset.v))); }));
@@ -784,7 +795,8 @@ async function initPub() {
     $('#pbadge').textContent = p ? (p.status === 'active' ? '✓' : '…') : '!';
     profBanner('pub', p ? ({ pending: 'pending', active: 'ok', refused: 'rej', suspended: 'suspended' })[p.status] || 'pending' : 'none', p && p.reason);
     if (!p) return;
-    $('#p-name').value = p.name || ''; $('#p-country').value = p.country || 'TG'; $('#p-city').value = p.city || ''; $('#p-phone').value = p.phone || ''; $('#p-web').value = p.website || ''; $('#p-about').value = p.about || ''; $('#p-terms').checked = true;
+    $('#p-name').value = p.name || ''; $('#p-country').value = p.country || 'TG'; $('#p-city').value = p.city || ''; $('#p-phone').value = p.phone || ''; $('#p-web').value = p.website || ''; $('#p-about').value = p.about || ''; $('#p-terms').checked = true; plogoShow(p.logoUrl); $('#p-consent').checked = !!p.logoUrl;
+    $('#pl-need').hidden = !!p.logoUrl;
     st.type = p.type === 'company' ? 'company' : 'individual'; $$('#p-type label').forEach((l) => l.classList.toggle('on', l.dataset.v === st.type));
     $('#p-state').textContent = profState[p.status] || 'Profil'; $('#p-send').textContent = p.status === 'refused' ? 'Renvoyer mon profil' : 'Mettre à jour';
     if (p.status === 'refused' && p.reason) perr('Motif du refus : ' + p.reason);
@@ -905,16 +917,19 @@ async function initPub() {
 
   $('#pform').addEventListener('submit', async (ev) => {
     ev.preventDefault(); perr('');
-    const v = { type: st.type, name: $('#p-name').value.trim(), country: $('#p-country').value, city: $('#p-city').value.trim(), phone: $('#p-phone').value.trim(), website: $('#p-web').value.trim(), about: $('#p-about').value.trim(), acceptTerms: $('#p-terms').checked, rulesVersion: $('#pubspace').dataset.rules };
+    const v = { type: st.type, name: $('#p-name').value.trim(), country: $('#p-country').value, city: $('#p-city').value.trim(), phone: $('#p-phone').value.trim(), website: $('#p-web').value.trim(), about: $('#p-about').value.trim(), acceptTerms: $('#p-terms').checked, partnerConsent: $('#p-consent').checked, rulesVersion: $('#pubspace').dataset.rules };
     if (v.name.length < 2) return perr('Ajoute ton nom ou celui de ton entreprise.');
     if (v.city.length < 2) return perr('Ajoute ta ville.');
     if (v.phone.replace(/[^\d]/g, '').length < 8) return perr('Ajoute ton numéro WhatsApp avec l\'indicatif.');
     if (v.about.length < 20) return perr('Présente ton activité en 20 caractères au moins.');
+    if (!plogo.blob && !(st.profile && st.profile.logoUrl)) return perr('Ajoute ton logo : il est obligatoire, car il est affiché sur les pages de partenaires.');
+    if (!v.partnerConsent) return perr('Coche l\'accord d\'affichage de ton logo comme partenaire.');
     if (!v.acceptTerms) return perr('Coche l\'acceptation des règles des diffuseurs.');
-    const btn = $('#p-send'); btn.disabled = true;
-    try { const r = await call('adsPubSaveProfile', v); status(r.status === 'active' ? 'Profil mis à jour.' : 'Profil envoyé ! Notre équipe le valide et tu recevras un e-mail. Tu peux déjà préparer tes sites et applications.'); await load(); tab('sites'); }
+    const btn = $('#p-send'); btn.disabled = true; const plabel = btn.textContent;
+    try { v.logoUrl = st.profile && st.profile.logoUrl; if (plogo.blob) { btn.textContent = 'Envoi du logo…'; v.logoUrl = await upload(plogo.blob, plogo.type); plogo.blob = null; }
+      const r = await call('adsPubSaveProfile', v); status(r.status === 'active' ? 'Profil mis à jour.' : 'Profil envoyé ! Notre équipe le valide et tu recevras un e-mail. Tu peux déjà préparer tes sites et applications.'); await load(); tab('sites'); }
     catch (e) { perr(/profil_suspendu/.test(String(e && e.message)) ? 'Ton profil est suspendu. Contacte-nous.' : (e && e.code === 'functions/invalid-argument' ? String(e.message).replace(/^.*?:\s*/, '') : 'Impossible d\'envoyer le profil pour le moment. Réessaie.')); }
-    finally { btn.disabled = false; }
+    finally { btn.disabled = false; btn.textContent = plabel; }
   });
 
   const explain = (e) => {
@@ -925,12 +940,14 @@ async function initPub() {
     if (/profil_manquant/.test(m)) return 'Crée d\'abord ton profil de diffuseur.';
     if (/profil_non_valide/.test(m)) return 'Ton profil n\'est pas valide pour ajouter un site : contacte-nous.';
     if (/regles_a_accepter/.test(m)) return 'Accepte d\'abord la version courante des règles des diffuseurs.';
+    if (/logo_manquant/.test(m)) return 'Ajoute d\'abord le logo de ton profil (onglet Mon profil) : il est obligatoire.';
     if (e && e.code === 'functions/invalid-argument') return String(e.message).replace(/^.*?:\s*/, '') || 'Vérifie les champs.';
     return 'Impossible d\'envoyer la demande pour le moment. Réessaie.';
   };
   $('#propform').addEventListener('submit', async (ev) => {
     ev.preventDefault(); qerr('');
     if (!st.profile) { tab('profil'); return qerr('Crée d\'abord ton profil de diffuseur.'); }
+    if (!st.profile.logoUrl) { tab('profil'); perr('Ajoute le logo de ton profil avant d\'ajouter un site ou une application : il est obligatoire.'); return qerr('Ajoute d\'abord le logo de ton profil (onglet Mon profil).'); }
     const v = { kind: st.kind, name: $('#q-name').value.trim(), url: $('#q-url').value.trim(), androidUrl: $('#q-and').value.trim(), iosUrl: $('#q-ios').value.trim(), category: $('#q-cat').value, countries: [...st.countries], languages: ['fr'], audienceMonthly: Number($('#q-aud').value), sessionsMonthly: Number($('#q-ses').value) || 0, description: $('#q-desc').value.trim(), acceptedCategories: $$('#q-cats input:checked').map((i) => i.value) };
     if (v.name.length < 2) return qerr('Ajoute le nom.');
     if (st.kind === 'site' && !v.url) return qerr('Ajoute l\'adresse du site (https://…).');
@@ -1036,7 +1053,7 @@ async function initRegieAdmin() {
   }
   function pubCard(p) {
     const c = h('article', { class: 'rg-card' },
-      h('div', { class: 'rg-h' }, h('div', {}, h('b', { text: p.name }), h('small', { text: (p.type === 'company' ? 'Entreprise' : 'Particulier') + ' · ' + [p.city, p.country].filter(Boolean).join(', ') })), tag(({ pending: 'wait', active: 'ok', refused: 'rej', suspended: 'rej' })[p.status] || 'end', ({ pending: 'En validation', active: 'Validé', refused: 'Refusé', suspended: 'Suspendu' })[p.status] || p.status)),
+      h('div', { class: 'rg-h' }, h('div', { class: 'rg-logo' }, p.logoUrl && String(p.logoUrl).startsWith('https://') ? h('img', { src: p.logoUrl, alt: '' }) : h('span', { text: '?' })), h('div', {}, h('b', { text: p.name }), h('small', { text: (p.type === 'company' ? 'Entreprise' : 'Particulier') + ' · ' + [p.city, p.country].filter(Boolean).join(', ') })), tag(({ pending: 'wait', active: 'ok', refused: 'rej', suspended: 'rej' })[p.status] || 'end', ({ pending: 'En validation', active: 'Validé', refused: 'Refusé', suspended: 'Suspendu' })[p.status] || p.status)),
       row('Présentation', p.about), row('Contact', [p.phone, p.email].filter(Boolean).join(' · ')), row('Inscrit le', date(p.createdAt)));
     if (p.reason) c.append(row('Motif', p.reason));
     const l = lnk('Voir le site', p.website); if (l) c.append(l);

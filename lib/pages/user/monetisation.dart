@@ -15,6 +15,7 @@ import '../paiement/newDepot.dart';
 import '../paiement/feexpay/pendingTransactionsScreen.dart';
 import 'UserRetrait/userRetraitListe.dart';
 import 'coin_conversion_page.dart';
+import 'userTransactionListe.dart' show showTransactionDetails;
 import '../../../providers/authProvider.dart';
 import '../../../providers/postProvider.dart';
 import '../../../theme/app_colors.dart';
@@ -898,7 +899,7 @@ class _TxGroupedListState extends State<_TxGroupedList> {
         if (isOpen) ...[
           for (final tx in items.take(visible)) ...[
             Divider(height: 1, thickness: 0.5, indent: 60, color: c.border),
-            TransactionWidget(transaction: tx),
+            InkWell(onTap: () => showTransactionDetails(context, tx, userData: Provider.of<UserAuthProvider>(context, listen: false).loginUserData), child: TransactionWidget(transaction: tx)),
           ],
           if (visible < items.length)
             InkWell(

@@ -1192,30 +1192,126 @@ Future<String?> _uploadCustomThumbnail() async {
   }
 
   // 🔥 MODIFIÉ : Message explicatif pour la limite temporaire
+  /// Encadré de l'aperçu quand la vidéo dépasse la limite du plan : invitation à passer Premium ou Gold (bouton), sans conseil de compression.
+  Widget _sizeUpsellBox() {
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: _c.accent.withOpacity(0.10), borderRadius: BorderRadius.circular(10), border: Border.all(color: _c.accent.withOpacity(0.6))),
+      child: Row(
+        children: [
+          Icon(Icons.workspace_premium, color: _c.accent, size: 22),
+          const SizedBox(width: 10),
+          Expanded(child: Text('Cette vidéo dépasse la limite de ton plan ($_maxVideoSizeMB Mo). Passe à Premium ou Gold pour la publier.', style: TextStyle(color: _c.textPrimary, fontSize: 12.5, height: 1.3))),
+          const SizedBox(width: 8),
+          ElevatedButton(
+            onPressed: _showSizeUpgrade,
+            style: ElevatedButton.styleFrom(backgroundColor: _c.accent, foregroundColor: _c.onAccent, padding: const EdgeInsets.symmetric(horizontal: 12), minimumSize: const Size(0, 36)),
+            child: const Text('Voir', style: TextStyle(fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Vidéo bloquée par la taille (enregistrée ou choisie) : on propose directement l'abonnement Premium ou Gold et leurs avantages.
+  void _showSizeUpgrade() {
+    final abonnement = authProvider.loginUserData.abonnement;
+    final isGold = AbonnementUtils.isGold(abonnement);
+    final isPremium = !isGold && AbonnementUtils.isPremiumActive(abonnement);
+    Widget plan(String titre, Color couleur, List<String> avantages) => Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(top: 12),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: couleur.withOpacity(0.10),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: couleur.withOpacity(0.6)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(titre, style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w800, fontSize: 15)),
+              const SizedBox(height: 8),
+              for (final a in avantages)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 5),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.check_circle, size: 16, color: couleur),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(a, style: TextStyle(color: _c.textSecondary, fontSize: 13, height: 1.3))),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        );
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _c.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.workspace_premium, color: Color(0xFFFDB813)),
+            const SizedBox(width: 10),
+            Expanded(child: Text(isPremium ? 'Passe à Gold 👑' : 'Passe à Premium ou Gold', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.bold))),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                isPremium ? 'Cette vidéo dépasse la limite de $_maxVideoSizeMB Mo de ton plan Premium. Avec Gold, publie des vidéos plus longues et plus lourdes.' : 'Cette vidéo dépasse la limite de $_maxVideoSizeMB Mo du plan gratuit. Avec un abonnement, publie des vidéos plus longues, sans attendre.',
+                style: TextStyle(color: _c.textSecondary, height: 1.35),
+              ),
+              if (!isPremium)
+                plan('⭐ Premium', const Color(0xFFFDB813), const [
+                  'Vidéos jusqu\'à 40 Mo',
+                  'Publie sans attendre entre deux posts',
+                  '3 photos par look',
+                  'Live HD, posts visibles partout en Afrique',
+                  'Badge Premium et support prioritaire',
+                ]),
+              plan('👑 Gold', const Color(0xFFFFD700), [
+                'Vidéos jusqu\'à 100 Mo',
+                if (!isPremium) 'Tout le plan Premium inclus',
+                '5 photos par look',
+                'Groupes et membres illimités',
+                'Groupes privés payants (70 % des revenus pour toi)',
+              ]),
+            ],
+          ),
+        ),
+        actionsAlignment: MainAxisAlignment.spaceBetween,
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Plus tard', style: TextStyle(color: _c.textSecondary))),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.push(context, MaterialPageRoute(builder: (context) => AbonnementScreen()));
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: _c.accent, foregroundColor: _c.onAccent),
+            child: const Text('Voir les abonnements'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showPremiumModal({String? reason, String? title, String? message, String? actionText}) {
+    if (reason == 'size') {
+      _showSizeUpgrade();
+      return;
+    }
     if (title == null) {
-      if (reason == 'size') {
-        final abonnement = authProvider.loginUserData.abonnement;
-        final isGold = AbonnementUtils.isGold(abonnement);
-        final isPremium = !isGold && AbonnementUtils.isPremiumActive(abonnement);
-        title = 'Vidéo trop grande';
-        if (isPremium) {
-          message = 'Votre vidéo dépasse la limite de 40 Mo (plan Premium).\n\n'
-              '👑 Avec Gold, vous pouvez publier des vidéos jusqu\'à 100 Mo !\n\n'
-              '📹 Compressez votre vidéo ou passez à Gold.';
-          actionText = 'PASSER À GOLD';
-        } else {
-          message = 'Votre vidéo dépasse votre limite actuelle.\n\n'
-              '⭐ Premium : 40 Mo max\n'
-              '👑 Gold : 100 Mo max\n\n'
-              '📹 Compressez votre vidéo ou changez de plan.';
-          actionText = 'VOIR LES ABONNEMENTS';
-        }
-      } else {
-        title = 'Limite de caractères atteinte';
+      title = 'Limite de caractères atteinte';
         message = 'L\'abonnement gratuit est limité à 300 caractères.\nPassez à Afrolook Premium pour écrire jusqu\'à 3000 caractères.';
-        actionText = 'VOIR L\'ABONNEMENT';
-      }
+      actionText = 'VOIR L\'ABONNEMENT';
     }
     showDialog(
       context: context,
@@ -1234,29 +1330,6 @@ Future<String?> _uploadCustomThumbnail() async {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(message!, style: TextStyle(color: _c.textSecondary)),
-            if (reason == 'size') ...[
-              SizedBox(height: 16),
-              Container(
-                padding: EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: _c.warning.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: _c.warning),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.compress, color: _c.warning, size: 20),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        '💡 Conseil : Utilisez un outil de compression vidéo en ligne ou une application comme "Video Compressor" pour réduire la taille de votre vidéo.',
-                        style: TextStyle(color: Color.lerp(_c.warning, Colors.white, 0.4)!, fontSize: 12),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
             if (reason != 'size') ...[
               SizedBox(height: 20),
               Container(
@@ -1838,7 +1911,7 @@ Future<void> _generateAndUploadThumbnail(String postId, String videoUrl) async {
                 )),
                 SizedBox(height: 12),
                 Container(padding: EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.blue.withOpacity(0.3))), child: Row(children: [Icon(Icons.info_outline, color: Colors.blue, size: 18), SizedBox(width: 8), Expanded(child: Text('✅ Vidéo prête à être publiée\n(L\'aperçu vidéo n\'est pas disponible sur le web)', style: TextStyle(color: Colors.blue, fontSize: 12, height: 1.4)))])),
-                if (sizeInMB > _maxVideoSizeMB && !isAdmin) Container(margin: EdgeInsets.only(top: 12), padding: EdgeInsets.all(12), decoration: BoxDecoration(color: _c.danger.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: _c.danger)), child: Row(children: [Icon(Icons.warning, color: _c.danger, size: 18), SizedBox(width: 8), Expanded(child: Text('Cette vidéo dépasse la limite temporaire de 30 Mo. Veuillez la compresser.', style: TextStyle(color: _c.danger, fontSize: 12, fontWeight: FontWeight.w500)))])),
+                if (sizeInMB > _maxVideoSizeMB && !isAdmin) _sizeUpsellBox(),
               ],
             ),
           );
@@ -1881,19 +1954,7 @@ Future<void> _generateAndUploadThumbnail(String postId, String videoUrl) async {
                   ],
                 ),
                 if (_controller!.value.isInitialized) Padding(padding: EdgeInsets.only(top: 4), child: Text('Durée: ${_formatDuration(_controller!.value.duration)}', style: TextStyle(color: _c.textSecondary, fontSize: 11))),
-                if (!isAdmin && sizeInMB > _maxVideoSizeMB)
-                  Container(
-                    margin: EdgeInsets.only(top: 12),
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: _c.danger.withOpacity(0.1), borderRadius: BorderRadius.circular(8), border: Border.all(color: _c.danger)),
-                    child: Row(
-                      children: [
-                        Icon(Icons.warning, color: _c.danger, size: 18),
-                        SizedBox(width: 8),
-                        Expanded(child: Text('⚠️ Cette vidéo dépasse votre limite ($_maxVideoSizeMB Mo). Compressez-la avant publication.', style: TextStyle(color: _c.danger, fontSize: 12, fontWeight: FontWeight.w500))),
-                      ],
-                    ),
-                  ),
+                if (!isAdmin && sizeInMB > _maxVideoSizeMB) _sizeUpsellBox(),
               ],
             ),
           );
