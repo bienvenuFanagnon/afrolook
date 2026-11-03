@@ -1,6 +1,11 @@
 # Uncomment this line to define a global platform for your project
 platform :ios, '17.0'
 
+# Appodeal (stack_appodeal_flutter 4.3.1) : sources des adaptateurs de réseaux (README du plugin, section iOS)
+source 'https://github.com/appodeal/CocoaPods.git'
+source 'https://github.com/bidon-io/CocoaPods-Specs.git'
+source 'https://cdn.cocoapods.org'
+
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
@@ -30,6 +35,23 @@ flutter_ios_podfile_setup
 target 'Runner' do
   use_frameworks!
   use_modular_headers!
+
+  # Appodeal : adaptateurs des réseaux de médiation (depuis la 4.1.0 le plugin n'embarque que « Appodeal » et « IAB » : sans adaptateurs,
+  # Appodeal ne sert aucune pub sur iPhone). Mêmes réseaux que sur Android (android/app/build.gradle), aux versions EXACTES du README du plugin.
+  # Meta Audience Network passe par la médiation Appodeal (enchères) ; BidMachine est requis pour ses enchères.
+  # VOLONTAIREMENT ABSENTS : AdMob (AppodealGoogleAdMobAdapter 13.5 exige le SDK Google 13.5, alors que google_mobile_ads 6.0.0 impose
+  # « Google-Mobile-Ads-SDK ~> 12.2.0 » : conflit « pod install » ; AdMob reste servi en direct par l'application), Mintegral, VK/MyTarget, Amazon.
+  # Si « pod install » échoue (conflit de versions) : mettre ce bloc en commentaire, les bannières retombent sur AdMob direct comme avant.
+  pod 'AppodealAppLovinAdapter', '13.6.4.0'
+  pod 'AppodealBidMachineAdapter', '3.7.1.0'
+  pod 'AppodealBigoAdsAdapter', '5.2.1.0'
+  pod 'AppodealDTExchangeAdapter', '8.4.7.0'
+  pod 'AppodealInMobiAdapter', '11.3.0.0'
+  pod 'AppodealIronSourceAdapter', '9.4.0.0.0'
+  pod 'AppodealMetaAudienceNetworkAdapter', '6.21.1.0'
+  pod 'AppodealUnityAdapter', '4.17.0.0'
+  pod 'AppodealVungleAdapter', '7.7.3.0'
+  pod 'AppodealYandexAdapter', '7.18.4.1'
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 

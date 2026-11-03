@@ -11,7 +11,10 @@ import 'package:afrotok/services/api/users_api.dart';
 import 'package:flutter/material.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
+import 'package:provider/provider.dart';
 import '../../models/model_data.dart';
+import '../../providers/authProvider.dart';
+import '../../services/follow_service.dart';
 import '../../services/active_creators_service.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/user_badge_widget.dart';
@@ -72,8 +75,7 @@ class _CreatorUnseenPostsPageState extends State<CreatorUnseenPostsPage> {
   Color _getRandomColor() =>
       _postColors[_random.nextInt(_postColors.length)];
 
-  bool get _isSubscribed =>
-      widget.creator.userAbonnesIds?.contains(widget.currentUserId) ?? false;
+  bool get _isSubscribed => FollowService.isFollowing(Provider.of<UserAuthProvider>(context, listen: false).loginUserData, widget.creator);
 
   @override
   void initState() {

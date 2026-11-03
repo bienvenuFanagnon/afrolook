@@ -91,8 +91,10 @@ class PostsApi {
     return postFromApi(_asMap(r));
   }
 
-  static Future<void> delete(String id) async {
-    await _c.delete('/posts/$id');
+  /// L'auteur supprime sa publication ; un membre de l'équipe avec le droit de modération peut supprimer celle d'un autre (motif facultatif, gardé au journal de modération).
+  static Future<void> delete(String id, {String? reason}) async {
+    final r = reason?.trim() ?? '';
+    await _c.delete('/posts/$id', body: r.isEmpty ? null : {'reason': r});
   }
 
   // ── Réactions ──

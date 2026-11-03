@@ -240,8 +240,7 @@ class _OtherUserPageState extends State<OtherUserPage> {
   }
 
   bool get _isAbonne {
-    final currentUserId = authProvider.loginUserData.id;
-    return widget.otherUser.userAbonnesIds?.contains(currentUserId) ?? false;
+    return FollowService.isFollowing(authProvider.loginUserData, widget.otherUser);
   }
 
   // ── Menu ⋮ ────────────────────────────────────────────────────────────────

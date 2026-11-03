@@ -75,6 +75,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 
 import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/services/follow_service.dart';
 
 import 'package:afrotok/providers/authProvider.dart';
 
@@ -2959,7 +2960,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     }
     else if (post.user_id != null) {
       // C'est un post d'utilisateur - vérifier si l'utilisateur courant suit ce créateur
-      final isFollowing = post.user?.userAbonnesIds?.contains(currentUserId) ?? false;
+      final isFollowing = FollowService.isFollowing(authProvider.loginUserData, post.user);
 
       // Si l'utilisateur ne suit PAS le créateur, afficher l'icône
       if (!isFollowing) {

@@ -1,9 +1,12 @@
 import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../layout/responsive_layout.dart';
 import '../../../models/model_data.dart';
+import '../../../providers/authProvider.dart';
+import '../../../services/follow_service.dart';
 import '../../../pages/canaux/detailsCanal.dart';
 import '../../../pages/listeUserLikepage.dart';
 import '../../../services/active_creators_service.dart';
@@ -596,8 +599,7 @@ class _RectList extends StatelessWidget {
         itemCount: users.length,
         itemBuilder: (_, i) {
           final user = users[i];
-          final isSubscribed =
-              user.userAbonnesIds?.contains(currentUserId) ?? false;
+          final isSubscribed = FollowService.isFollowing(Provider.of<UserAuthProvider>(context, listen: false).loginUserData, user);
           final hasPending = pendingInvitationUserIds.contains(user.id);
           final unseen = unseenCounts[user.id] ?? 0;
           return Container(

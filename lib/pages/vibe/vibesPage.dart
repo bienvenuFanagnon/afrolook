@@ -42,6 +42,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 
 import 'package:afrotok/models/model_data.dart';
+import 'package:afrotok/services/follow_service.dart';
 
 import 'package:afrotok/providers/authProvider.dart';
 
@@ -1095,7 +1096,7 @@ class _VibesVideoPageState extends State<VibesVideoPage> with AutomaticKeepAlive
         );
       }
     } else if (post.user_id != null) {
-      final isFollowing = post.user?.userAbonnesIds?.contains(currentUserId) ?? false;
+      final isFollowing = FollowService.isFollowing(authProvider.loginUserData, post.user);
       if (!isFollowing) {
         return Positioned(
           bottom: -2, right: -2,

@@ -44,6 +44,7 @@ import 'package:visibility_detector/visibility_detector.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../../models/model_data.dart';
+import '../../../services/follow_service.dart';
 import '../../../theme/app_colors.dart';
 import '../../cards/card_entry.dart';
 import '../../defi/defi_convert.dart';
@@ -166,6 +167,7 @@ class _HomePostUsersWidgetState extends State<HomePostUsersWidget>
   Random random = Random();
   bool _isLoading = false;
   bool _isProcessingFollow = false;
+  bool _removedByDelete = false; // la publication vient d'être supprimée : la carte disparaît tout de suite, sans attendre l'actualisation du fil
   bool _isSupporting = false;
   bool? _hasSeenSupportModal; // null = pas encore chargé
   // Variables pour stocker les données récupérées individuellement
@@ -774,6 +776,7 @@ Future<void> _loadCanalData() async {
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    if (_removedByDelete) return const SizedBox.shrink();
     // Article d'actualité : jamais le rendu d'un post ordinaire (qui n'en montrerait que le chapô, sans ses sources)
     if (widget.post.type == 'NEWS' && (widget.post.id ?? '').isNotEmpty) {
       return NewsFeedCard(key: ValueKey('news_post_${widget.post.id}'), slotKey: 'post_${widget.post.id}', postId: widget.post.id);
@@ -1006,10 +1009,10 @@ Future<void> _handleRepost() async {
     final isCurrentUser = currentUserId == currentUser?.id;
     final subscriptionLoaded = isCanalPost
         ? currentCanal?.usersSuiviId != null
-        : currentUser?.userAbonnesIds != null;
+        : FollowService.isKnown(authProvider.loginUserData, currentUser);
     final isAbonne = isCanalPost
         ? currentCanal?.usersSuiviId?.contains(currentUserId) ?? false
-        : currentUser?.userAbonnesIds?.contains(currentUserId) ?? false;
+        : FollowService.isFollowing(authProvider.loginUserData, currentUser);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1066,10 +1069,10 @@ Future<void> _handleRepost() async {
     // d'afficher "Suivre/S'abonner" à tort à quelqu'un qui suit déjà.
     final subscriptionLoaded = isCanalPost
         ? currentCanal?.usersSuiviId != null
-        : currentUser?.userAbonnesIds != null;
+        : FollowService.isKnown(authProvider.loginUserData, currentUser);
     final isAbonne = isCanalPost
         ? currentCanal?.usersSuiviId?.contains(currentUserId) ?? false
-        : currentUser?.userAbonnesIds?.contains(currentUserId) ?? false;
+        : FollowService.isFollowing(authProvider.loginUserData, currentUser);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1165,10 +1168,10 @@ Future<void> _handleRepost() async {
     // Vérifier si déjà abonné — uniquement si la liste est chargée (non null)
     final subscriptionLoaded2 = isCanalPost
         ? currentCanal?.usersSuiviId != null
-        : currentUser?.userAbonnesIds != null;
+        : FollowService.isKnown(authProvider.loginUserData, currentUser);
     final isAbonne = isCanalPost
         ? currentCanal?.usersSuiviId?.contains(currentUserId) ?? false
-        : currentUser?.userAbonnesIds?.contains(currentUserId) ?? false;
+        : FollowService.isFollowing(authProvider.loginUserData, currentUser);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -3246,6 +3249,8 @@ Future<void> _refreshPostStats() async {
   Future<void> _confirmAndDeletePost(Post post) async {
     if (!mounted) return;
     final colors = AppColors.of(context);
+    final bool othersPost = post.user_id != null && post.user_id != authProvider.loginUserData.id;
+    final reasonCtrl = TextEditingController();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -3256,9 +3261,24 @@ Future<void> _refreshPostStats() async {
           const SizedBox(width: 10),
           Text('Supprimer ce post', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.bold, fontSize: 16)),
         ]),
-        content: Text(
-          'Ce post sera supprimé définitivement. Cette action est irréversible.',
-          style: TextStyle(color: colors.textSecondary, fontSize: 14),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              othersPost ? 'Ce post sera retiré pour tout le monde. Ta décision est enregistrée au journal de modération.' : 'Ce post sera supprimé définitivement. Cette action est irréversible.',
+              style: TextStyle(color: colors.textSecondary, fontSize: 14),
+            ),
+            if (othersPost) ...[
+              const SizedBox(height: 12),
+              TextField(
+                controller: reasonCtrl,
+                maxLength: 200,
+                style: TextStyle(color: colors.textPrimary, fontSize: 14),
+                decoration: InputDecoration(hintText: 'Motif (facultatif)', hintStyle: TextStyle(color: colors.textSecondary)),
+              ),
+            ],
+          ],
         ),
         actions: [
           TextButton(
@@ -3289,9 +3309,10 @@ Future<void> _refreshPostStats() async {
       if (authProvider.loginUserData.role != UserRole.ADM.name) {
         post.status = PostStatus.SUPPRIMER.name;
       }
-      await _deletePost(post);
+      await _deletePost(post, reason: othersPost ? reasonCtrl.text : null);
       if (!mounted) return;
       Navigator.pop(context); // loader
+      setState(() => _removedByDelete = true);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: const Row(children: [
           Icon(Icons.check_circle, color: Colors.white),
@@ -3305,10 +3326,10 @@ Future<void> _refreshPostStats() async {
       if (!mounted) return;
       Navigator.pop(context); // loader
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: const Row(children: [
-          Icon(Icons.error_outline, color: Colors.white),
-          SizedBox(width: 10),
-          Text('Échec de la suppression. Réessaie.'),
+        content: Row(children: [
+          const Icon(Icons.error_outline, color: Colors.white),
+          const SizedBox(width: 10),
+          Flexible(child: Text(_deleteErrorMessage(e))),
         ]),
         backgroundColor: colors.danger,
         duration: const Duration(seconds: 4),
@@ -3316,9 +3337,20 @@ Future<void> _refreshPostStats() async {
     }
   }
 
-Future<void> _deletePost(Post post) async {
+/// Message précis selon la réponse de l'API : droit manquant (403), publication déjà supprimée (404), pas de réseau.
+  String _deleteErrorMessage(Object e) {
+    if (e is ApiException) {
+      if (e.isNetwork) return 'Connexion impossible. Vérifie ta connexion puis réessaie.';
+      if (e.status == 403) return "Suppression refusée : ton compte n'a pas le droit de modération sur ce post.";
+      if (e.isNotFound) return 'Ce post a déjà été supprimé.';
+      if (e.message.isNotEmpty) return e.message;
+    }
+    return 'Échec de la suppression. Réessaie.';
+  }
+
+Future<void> _deletePost(Post post, {String? reason}) async {
     try {
-      await PostsApi.delete(post.id!);
+      await PostsApi.delete(post.id!, reason: reason);
       printVm('✅ Post ${post.id} supprimé');
     } catch (e) {
       printVm('❌ Erreur lors de la suppression du post ${post.id}: $e');
