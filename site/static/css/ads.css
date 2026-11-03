@@ -504,3 +504,10 @@ pre.doc-code code{background:none;padding:0;color:inherit;font:inherit;overflow-
 #adtopup .sharebox{margin-top:14px}
 #adtopup .adnote{margin:6px 0 0}
 @media (max-width:620px){#adtopup .addlg-in{padding:22px 16px 20px}#adtopup .adchips span{padding:8px 13px}#adtopup .adtype label{padding:14px 8px}}
+
+/* bouton « Payer » : roue qui tourne pendant le traitement */
+#top-go.busy{display:inline-flex;align-items:center;justify-content:center;gap:10px;cursor:progress}
+#top-go:disabled{opacity:.9}
+#top-go.busy::before{content:'';flex:none;width:18px;height:18px;border-radius:50%;border:3px solid currentColor;border-right-color:transparent;animation:topspin .7s linear infinite}
+@keyframes topspin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){#top-go.busy::before{animation-duration:2s}}

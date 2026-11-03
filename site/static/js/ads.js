@@ -616,7 +616,11 @@ async function initSpace() {
         h('div', { class: 'waltx-a ' + (t.amountXof > 0 ? 'pos' : 'neg') }, h('b', { text: (t.amountXof > 0 ? '+' : '−') + nf(Math.abs(t.amountXof)) + ' F' }), h('small', { text: 'Solde : ' + nf(t.balanceAfter) + ' F' }))))
         : [h('p', { class: 'adempty', text: 'Aucun mouvement pour l’instant. Recharge ton solde pour lancer ta première campagne.' })]));
   }
-  const topDlg = $('#adtopup'), tp = { method: 'momo', key: '', timer: 0, quoteT: 0 };
+  const topDlg = $('#adtopup'), tp = { method: 'momo', key: '', timer: 0, quoteT: 0, busy: false };
+  // traitement en cours : bouton « Payer » grisé avec une roue qui tourne, pour qu'on ne le touche pas deux fois
+  const setTopBusy = (on, label) => { tp.busy = on; const go = $('#top-go'); go.disabled = on; go.classList.toggle('busy', on); go.setAttribute('aria-busy', on ? 'true' : 'false'); go.textContent = on ? (label || 'Traitement en cours…') : 'Payer'; };
+  // raisons d'échec renvoyées par l'opérateur : message clair (les autres s'affichent telles quelles)
+  const payFail = (code) => ({ PAYER_NOT_FOUND: 'Ce numéro est introuvable chez l’opérateur choisi. Vérifie que le numéro correspond bien à cet opérateur et à son pays (ex. un numéro togolais avec Togocom ou Moov Togo, pas MTN Bénin).' }[String(code || '').toUpperCase()] || null);
   const topErr = (m) => { const e = $('#top-err'); e.hidden = !m; e.textContent = m || ''; };
   const topExplain = (e) => {
     const m = String((e && e.message) || '');
@@ -648,7 +652,7 @@ async function initSpace() {
     const o = wal.data.options, op = $('#top-op');
     if (!op.options.length) { op.replaceChildren(...o.operators.map((x) => h('option', { value: x.code, text: x.label }))); }
     $('#top-method label[data-v="card"]').hidden = !o.card.enabled;
-    tp.key = ''; topErr(''); $('#top-wait').hidden = true; $('#top-go').disabled = false;
+    tp.key = ''; topErr(''); $('#top-wait').hidden = true; setTopBusy(false);
     const nb = $('#top-need');
     nb.hidden = !(need > 0); nb.textContent = need > 0 ? 'Il te manque ' + nf(need) + ' F pour cette campagne. Montant proposé : de quoi la payer.' : '';
     if (need > 0) $('#top-amt').value = String(Math.min(o.maxXof, Math.max(o.minXof, Math.ceil(need / 500) * 500)));
@@ -661,10 +665,10 @@ async function initSpace() {
     try {
       const r = await call('adsWalletTopupStatus', { id });
       if (r.status === 'paid') { try { sessionStorage.removeItem('adtopup'); } catch { /* sans stockage */ } if (topDlg.open) topDlg.close(); status('Recharge confirmée : ' + nf(r.creditedXof) + ' F ajoutés à ton solde.'); loadWallet(); return; }
-      if (r.status === 'failed' || r.status === 'expired') { try { sessionStorage.removeItem('adtopup'); } catch { /* sans stockage */ } tp.key = ''; $('#top-go').disabled = false; $('#top-wait').hidden = true; topErr('Le paiement n’a pas abouti' + (r.failure ? ' (' + r.failure + ')' : '') + '. Tu peux réessayer.'); return; }
+      if (r.status === 'failed' || r.status === 'expired') { try { sessionStorage.removeItem('adtopup'); } catch { /* sans stockage */ } tp.key = ''; setTopBusy(false); $('#top-wait').hidden = true; topErr(payFail(r.failure) || ('Le paiement n’a pas abouti' + (r.failure ? ' (' + r.failure + ')' : '') + '. Tu peux réessayer.')); return; }
     } catch { /* on réessaie */ }
     if (tries < 75) tp.timer = setTimeout(() => pollTopup(id, tries + 1), 4000);
-    else { $('#top-go').disabled = false; $('#top-wait').textContent = 'Toujours en attente. Si tu as validé le paiement, ton solde sera crédité dès confirmation : reviens dans quelques minutes.'; }
+    else { setTopBusy(false); $('#top-wait').textContent = 'Toujours en attente. Si tu as validé le paiement, ton solde sera crédité dès confirmation : reviens dans quelques minutes.'; }
   }
   if (topDlg) {
     $('#adtopup-x').addEventListener('click', () => { clearTimeout(tp.timer); topDlg.close(); });
@@ -676,20 +680,22 @@ async function initSpace() {
     $('#wal-topup').addEventListener('click', () => openTopup(0));
     $('#topform').addEventListener('submit', async (ev) => {
       ev.preventDefault(); topErr('');
+      if (tp.busy) return;   // déjà en cours : un second toucher ne fait rien
       const amount = Number($('#top-amt').value) || 0;
       if (amount < 1000) return topErr('Entre un montant de 1 000 F au moins.');
       tp.key = tp.key || (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36)).replace(/[^A-Za-z0-9-]/g, '');
       const body = { amountXof: amount, method: tp.method, key: tp.key };
       if (tp.method === 'momo') Object.assign(body, { operator: $('#top-op').value, phone: $('#top-phone').value.trim(), otp: $('#top-otp').value.trim() });
       else Object.assign(body, { terms: $('#top-terms').checked, firstName: $('#top-fn').value.trim(), lastName: $('#top-ln').value.trim(), city: $('#top-city').value.trim(), zip: $('#top-zip').value.trim(), country: $('#top-cc').value.trim(), phone: $('#top-cphone').value.trim() });
-      const go = $('#top-go'); go.disabled = true;
+      setTopBusy(true, 'Envoi du paiement…');
       try {
         const r = await call('adsWalletTopup', body);
         try { sessionStorage.setItem('adtopup', r.id); } catch { /* sans stockage */ }
-        if (tp.method === 'card' && r.paymentUrl) { $('#top-wait').hidden = false; $('#top-wait').textContent = 'Ouverture de la page de paiement sécurisée…'; location.href = r.paymentUrl; return; }
+        if (tp.method === 'card' && r.paymentUrl) { $('#top-wait').hidden = false; $('#top-wait').textContent = 'Ouverture de la page de paiement sécurisée…'; setTopBusy(true, 'Ouverture du paiement…'); location.href = r.paymentUrl; return; }
         $('#top-wait').hidden = false; $('#top-wait').textContent = (r.message || 'Valide le paiement sur ton téléphone') + '. Cette fenêtre se met à jour toute seule.';
+        setTopBusy(true, 'En attente de ta validation…');
         pollTopup(r.id);
-      } catch (e) { go.disabled = false; tp.key = /provider|otp|terms|identity|phone/.test(String((e && e.message) || '')) ? '' : tp.key; topErr(topExplain(e)); }
+      } catch (e) { setTopBusy(false); tp.key = /provider|otp|terms|identity|phone/.test(String((e && e.message) || '')) ? '' : tp.key; topErr(topExplain(e)); }
     });
     // retour de la page de paiement par carte : on vérifie la recharge en cours
     try { const pend = sessionStorage.getItem('adtopup'); if (pend) { status('Vérification de ta recharge…'); pollTopup(pend, 60); } } catch { /* sans stockage */ }
