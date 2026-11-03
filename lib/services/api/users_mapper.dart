@@ -1,6 +1,7 @@
 import 'package:afrotok/l10n/tr.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/services/api/api_identity.dart';
+import 'package:afrotok/services/app_messaging.dart';
 
 int _ms(dynamic iso) => DateTime.tryParse('$iso')?.millisecondsSinceEpoch ?? 0;
 int _i(dynamic v) => (v as num?)?.toInt() ?? 0;
@@ -69,6 +70,9 @@ UserData userFromBootstrap(Map<String, dynamic> b) {
   u.todayCommentDate = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
   u.interests = ((b['interests'] as List?) ?? const []).map((e) => '$e').toList();
+  // ciblage des messages dans l'application (console Firebase) : pays, langue, abonnement, équipe ; aucune donnée personnelle
+  final plan = u.abonnement?.estActif == true ? '${u.abonnement!.type}' : 'free';
+  AppMessaging.syncUser(country: bu['country_code'] as String?, language: bu['language'] as String?, plan: plan == 'gold' || plan == 'premium' ? plan : 'free', team: staff is Map && staff['type'] != null);
   return u;
 }
 

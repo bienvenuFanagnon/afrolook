@@ -1,6 +1,7 @@
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:afrotok/services/api/startup_trace.dart';
+import 'package:afrotok/services/app_messaging.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
@@ -167,6 +168,7 @@ Future<void> main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     StartupTrace.mark('  Firebase initialisé');
+    unawaited(AppMessaging.init());   // messages dans l'application (campagnes de la console Firebase)
 
     // App Check — active l'attestation pour protéger Firestore/Functions
     // Android : Play Integrity (prod) / Debug (dev)

@@ -202,6 +202,8 @@ dependencies:
     path: third_party/ayet_sdk_v2  # copie Android seulement (iPhone : Swift Package Manager désactivé sur Codemagic) : voir third_party/ayet_sdk_v2/PATCH_AFROLOOK.md
   tapjoy_offerwall:
     path: third_party/tapjoy_offerwall  # copie corrigée (activité de type FlutterFragmentActivity) : voir third_party/tapjoy_offerwall/PATCH_AFROLOOK.md
+  firebase_analytics: ^11.6.0
+  firebase_in_app_messaging: ^0.8.1+10
 #  ffmpeg_kit_flutter_new: ^4.2.1
 
 
