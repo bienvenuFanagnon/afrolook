@@ -325,29 +325,6 @@ ${formatsSection()}
 
 <section class="adfinal"><div class="wrap"><h2>Prêt à être vu par <span data-aud>${AUDIENCE}</span> personnes ?</h2><p>Gratuit et rapide : ta marque et ton logo, puis ton annonce.</p>
  <div class="cta" style="justify-content:center"><a class="btn adbig adwhite" href="/ads/espace/">${G} Publier mon annonce gratuite</a></div></div></section>
-<dialog class="addlg" id="adtopup" aria-label="Recharger mon solde"><div class="addlg-in"><button class="addlg-x" type="button" id="adtopup-x" aria-label="Fermer">×</button>
- <form class="topform" id="topform" novalidate>
-  <h2>Recharger mon solde</h2>
-  <p class="adnote" id="top-need" hidden></p>
-  <label class="fl" for="top-amt">Montant à ajouter à ton solde (FCFA)<input id="top-amt" type="number" min="1000" max="2000000" step="500" value="10000" inputmode="numeric"></label>
-  <div class="adchips" id="top-quick"><span data-v="5000">5 000</span><span data-v="10000">10 000</span><span data-v="25000">25 000</span><span data-v="50000">50 000</span></div>
-  <div class="adtype" id="top-method"><label class="on" data-v="momo"><b>Mobile Money</b><small>MTN, Moov, Orange, Wave…</small></label><label data-v="card"><b>Carte bancaire</b><small>Visa, Mastercard</small></label></div>
-  <div id="top-momo">
-   <label class="fl" for="top-op">Opérateur<select id="top-op"></select></label>
-   <label class="fl" for="top-phone">Numéro Mobile Money<input id="top-phone" type="tel" autocomplete="tel" placeholder="+228 90 12 34 56"></label>
-   <label class="fl" id="top-otp-l" for="top-otp" hidden>Code OTP <small>(à générer sur ton téléphone avec le code USSD de l’opérateur)</small><input id="top-otp" autocomplete="one-time-code"></label>
-  </div>
-  <div id="top-card" hidden>
-   <div class="topgrid"><label class="fl" for="top-fn">Prénom<input id="top-fn" autocomplete="given-name"></label><label class="fl" for="top-ln">Nom<input id="top-ln" autocomplete="family-name"></label></div>
-   <div class="topgrid"><label class="fl" for="top-city">Ville<input id="top-city" autocomplete="address-level2"></label><label class="fl" for="top-zip">Code postal<input id="top-zip" autocomplete="postal-code"></label></div>
-   <div class="topgrid"><label class="fl" for="top-cc">Pays <small>(2 lettres : TG, BJ, CI…)</small><input id="top-cc" maxlength="2" autocomplete="country" placeholder="TG"></label><label class="fl" for="top-cphone">Téléphone<input id="top-cphone" type="tel" autocomplete="tel"></label></div>
-   <label class="topterms"><input type="checkbox" id="top-terms"> <span>J’accepte que ce paiement par carte soit débité en dollars et qu’il serve à recharger mon solde annonceur, utilisable uniquement pour payer mes campagnes sur Afrolook Ads.</span></label>
-  </div>
-  <div class="sharebox" id="top-quote"><b>—</b><small></small></div>
-  <p class="aderr" id="top-err" role="alert" hidden></p>
-  <p class="adstatus" id="top-wait" role="status" hidden></p>
-  <button class="btn btn-primary adbig" id="top-go" type="submit">Payer</button>
- </form></div></dialog>
 <dialog class="addlg" id="addetail" aria-label="Détail de l'annonce"><div class="addlg-in"><button class="addlg-x" type="button" id="addetail-x" aria-label="Fermer">×</button><div id="addetail-body"></div></div></dialog>
 <script src="/js/ads.js?v=__ASSET_V__" type="module"></script>`;
 }
@@ -455,6 +432,29 @@ export function adsSpace(fbConfig, api) {
     <div class="adstack" id="sharelist" style="margin-top:14px"></div></div></div>
  </div>
 </div></section>
+<dialog class="addlg" id="adtopup" aria-label="Recharger mon solde"><div class="addlg-in"><button class="addlg-x" type="button" id="adtopup-x" aria-label="Fermer">×</button>
+ <form class="topform" id="topform" novalidate>
+  <h2>Recharger mon solde</h2>
+  <p class="adnote" id="top-need" hidden></p>
+  <label class="fl" for="top-amt">Montant à ajouter à ton solde (FCFA)<input id="top-amt" type="number" min="1000" max="2000000" step="500" value="10000" inputmode="numeric"></label>
+  <div class="adchips" id="top-quick"><span data-v="5000">5 000</span><span data-v="10000">10 000</span><span data-v="25000">25 000</span><span data-v="50000">50 000</span></div>
+  <div class="adtype" id="top-method"><label class="on" data-v="momo"><b>Mobile Money</b><small>MTN, Moov, Orange, Wave…</small></label><label data-v="card"><b>Carte bancaire</b><small>Visa, Mastercard</small></label></div>
+  <div id="top-momo">
+   <label class="fl" for="top-op">Opérateur<select id="top-op"></select></label>
+   <label class="fl" for="top-phone">Numéro Mobile Money<input id="top-phone" type="tel" autocomplete="tel" placeholder="+228 90 12 34 56"></label>
+   <label class="fl" id="top-otp-l" for="top-otp" hidden>Code OTP <small>(à générer sur ton téléphone avec le code USSD de l’opérateur)</small><input id="top-otp" autocomplete="one-time-code"></label>
+  </div>
+  <div id="top-card" hidden>
+   <div class="topgrid"><label class="fl" for="top-fn">Prénom<input id="top-fn" autocomplete="given-name"></label><label class="fl" for="top-ln">Nom<input id="top-ln" autocomplete="family-name"></label></div>
+   <div class="topgrid"><label class="fl" for="top-city">Ville<input id="top-city" autocomplete="address-level2"></label><label class="fl" for="top-zip">Code postal<input id="top-zip" autocomplete="postal-code"></label></div>
+   <div class="topgrid"><label class="fl" for="top-cc">Pays <small>(2 lettres : TG, BJ, CI…)</small><input id="top-cc" maxlength="2" autocomplete="country" placeholder="TG"></label><label class="fl" for="top-cphone">Téléphone<input id="top-cphone" type="tel" autocomplete="tel"></label></div>
+   <label class="topterms"><input type="checkbox" id="top-terms"> <span>J’accepte que ce paiement par carte soit débité en dollars et qu’il serve à recharger mon solde annonceur, utilisable uniquement pour payer mes campagnes sur Afrolook Ads.</span></label>
+  </div>
+  <div class="sharebox" id="top-quote"><b>—</b><small></small></div>
+  <p class="aderr" id="top-err" role="alert" hidden></p>
+  <p class="adstatus" id="top-wait" role="status" hidden></p>
+  <button class="btn btn-primary adbig" id="top-go" type="submit">Payer</button>
+ </form></div></dialog>
 <dialog class="addlg" id="addetail" aria-label="Détail de l'annonce"><div class="addlg-in"><button class="addlg-x" type="button" id="addetail-x" aria-label="Fermer">×</button><div id="addetail-body"></div></div></dialog>
 <script src="/js/ads.js?v=__ASSET_V__" type="module"></script>`;
 }
