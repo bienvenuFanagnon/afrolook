@@ -8,6 +8,8 @@ Dernière mise à jour : **30 octobre 2026** · Branche : `refonte_claude` · Ve
 
 ## 0. Comment utiliser et tenir ce fichier
 
+> **Reprendre le travail : lire d'abord la section 7.0** (ce qui est fait, ce qui reste, pièges).
+
 1. **Début de session** : lire ce fichier en entier, puis seulement les documents de la section 3 utiles à la tâche.
 2. **Pendant le travail** : cocher les cases (`[x]`) des tableaux de la section 6 dès qu'une étape est faite et vérifiée.
 3. **Fin de session** : ajouter **une ligne** au journal (section 9) : date, ce qui a été fait, ce qui reste, où reprendre. Mettre à jour « Dernière mise à jour » en haut.
@@ -220,6 +222,42 @@ Nouvelle plateforme : [ ] comptes administrateurs séparés (RBAC, 2FA, Cloudfla
 
 ## 7. Chantiers hors migration (à reprendre, dans cet ordre de priorité à confirmer)
 
+### 7.0 REPRISE : état au 03/11/2026 (soir) — ce qui est FAIT, ce qui RESTE (à lire en premier)
+
+> Les lignes de journal récentes (02/11 et 03/11) sont tout **en bas du fichier** (après la section 11), pas dans la section 9. Détail technique de chaque point : ces lignes + les commits de `main` (API : dépôt `afrolook-api`, branches `develop` = `main` ; application et site : dépôt `afrolookofficiel_v2`, branches `main` = `branche_api`).
+> Repères : **déploiement refusé automatiquement aux agents** → toujours donner les commandes au propriétaire (API : `sudo -u deploy -H env APP_DIR=/var/www/afrolook-api APP_HOST=api.afrolookmedia.com bash /var/www/afrolook-api/deploy/deploy.sh main` sur le serveur ; site : `firebase deploy --only hosting` (et `functions:apiProxy` si `functions/` a changé), depuis le dossier du dépôt sur son PC ; l'application se compile par lui (Shorebird / stores), sans la bannière TEST).
+
+**FAIT et poussé sur `main` (03/11/2026)** — sauf mention, l'API a été déployée par le propriétaire jusqu'à la compression des vidéos incluse ; les commits suivants sont poussés, déploiement à confirmer :
+- **Lien suivi `/p/<code>/`** : `firebase.json` + `functions/src/edge/apiProxy.ts` l'envoient à l'API (il tombait sur `/ads/` via l'ancienne fonction Firebase). Déployé et vérifié (200 avec aperçu).
+- **Hub « Publicité » de l'application** (admin) refait comme avant la migration : onglets En attente / Actives / Expirées / Rejetées / Annulées / Stats / Régie, accepter, rejeter AVEC remboursement des pièces, annuler, réactiver, prolonger, supprimer, bouton d'action, tarifs. API `App\Ads\BoostAdmin` + `AdminBoostController` (`/v1/admin/ads/boosts…`, `/boost-pricing`), tests `BoostAdminTest`. Une annonce « annulée » est enregistrée `paused` (contrainte de table). Les boosts ne sont plus dans la file `/admin/ads/queue`.
+- **Annonceur (site)** : tableau de bord simplifié ; arrêt et suppression d'une campagne Partage avec confirmation, jamais remboursés (`adsShareCampaignStop/Delete`, statut `deleted`) ; ligne « Vues déclarées » retirée (reste de l'ancien système, toujours 0).
+- **Solde annonceur en FCFA** (séparé du portefeuille de l'application) : tables `advertiser_wallets/transactions/topups` (migration `000360`), `App\Ads\AdvertiserWallet` et `AdvertiserTopups` (Mobile Money + carte via FeexPay, état relu chez FeexPay, crédit une seule fois), appels du site `adsWalletMe/Quote/Topup/TopupStatus`, campagne payée par le solde à la création, **refus d'une campagne en attente = remboursement sur le solde** (une fois, audité). Site : carte « Solde annonceur », onglet « Mon solde », fenêtre de recharge (mobile corrigé, frais NON affichés avant le paiement, numéro envoyé avec l'indicatif du pays de l'opérateur, roue sur le bouton Payer, message clair pour `PAYER_NOT_FOUND`).
+- **Compression des vidéos d'annonces** : `App\Ads\AdVideos` (planifiée toutes les 5 min dans `routes/console.php`), original gardé, migration `000370` appliquée, ffmpeg présent sur le serveur.
+- **Page Annoncer (FR et EN) et accueil** : la campagne WhatsApp / Telegram / Facebook en avant, **simulateur d'audience** (tarif et taux de visite lus sur `/ads/api/audience`), maquettes fabriquées (CSS), confiance et anti-fraude, réseau de partageurs, FAQ. Sources : `site/src/ads_campaign.mjs`, `ads.mjs`, `static/js/ads.js`, `ads.css`. Badge du menu : « WhatsApp ».
+- **Suivi de la page Travail (admin)** : `POST /v1/work/track`, `GET /v1/admin/work/stats`, `PUT /v1/admin/work/ecpm`, table `work_sessions` (migration `000380`), `App\Work\WorkStats` ; application : `lib/services/work_tracking.dart`, page `work_stats_page.dart`, module « Suivi de la page Travail ».
+- **Groupes officiels** : la migration avait supprimé l'écran admin « Groupe Afrolook » et l'inscription automatique sans les remplacer. Rétabli : `App\Groups\OfficialGroups` ; entrée automatique de toute personne active dans les groupes officiels à `GET /v1/bootstrap` ; `GET/POST /v1/admin/groups/official`, `POST …/{id}/migrate` ; page `afrolook_group_migration_page.dart` + module « Groupes officiels ».
+- Tests API : 1 144 passaient avant les derniers ajouts (groupes officiels, numéro de téléphone) ; ne JAMAIS lancer deux séries de tests en même temps (même base de test : échecs fantômes `UniqueConstraintViolation`).
+
+**RESTE À FAIRE (par ordre de priorité)**
+1. **Déployer** (propriétaire) : API (`deploy.sh main`, migrations `000380` suivi Travail + tout ce qui suit `000370`), site (`firebase deploy --only hosting`, version des fichiers `ASSET_V = 32` : bouton Payer avec roue, message d'échec) ; vérifier dans l'espace annonceur qu'une recharge Mobile Money aboutit.
+2. **Nouvelle version de l'application** (propriétaire compile ; actuelle 2.0.18+269) : nécessaire pour voir le hub Publicité reconstruit, le suivi de la page Travail (envoi des signaux ET page admin) et la page Groupes officiels. Le suivi ne compte les visites qu'à partir de cette version. Le libellé du remboursement de boost (`wallet.boost_refund`) est dans `users_mapper.dart`.
+3. **Groupes officiels** : après le déploiement de l'API, lancer « Faire entrer tous les utilisateurs » (page admin, ou demander à un agent de le lancer côté serveur) ; vérifier que le groupe principal `afrolook_official_main_group` existe bien en base (importé) ; vérifier `FIRESTORE_MIRROR=true` côté serveur (sinon l'accès aux messages des nouveaux membres ne suit pas). Les messages des groupes restent dans Firebase.
+4. **Recharge du solde annonceur** : confirmer avec le propriétaire un vrai paiement réussi (le dernier essai montrait `PAYER_NOT_FOUND` : numéro togolais avec l'opérateur MTN Bénin, donc à refaire avec Togocom ou Moov Togo) ; **Wave** (Sénégal, Côte d'Ivoire, Burkina) : l'application mobile prévoit une adresse de retour dans le navigateur (`payment_url`), non reprise sur le site ; **carte bancaire** non testée en réel.
+5. **Décisions à demander au propriétaire** (rien d'inventé côté site) : taux de visite du simulateur (2 % par défaut, réglage `share` → `ctr`) ; chiffres publics sur le réseau de partageurs (nombre, pays) ; garantie éventuelle si l'audience n'est pas atteinte (remboursement ? aujourd'hui NON promis) ; sort du solde annonceur non utilisé (remboursable ou non) ; annonces web payantes avec le solde (aujourd'hui gratuites : 3 par annonceur) ; écran d'ajustement manuel du solde par l'équipe (méthode `AdvertiserWallet::adjust` existe, aucun écran).
+6. **Suivi de la page Travail** : seules les pubs plein écran sont comptées (pas les bannières) ; saisir l'eCPM (bouton « Prix » de la page) pour estimer le revenu ; le revenu réel reste chez le fournisseur de pubs.
+7. **Hub des boosts** : pas de notification envoyée à la personne quand l'équipe accepte ou refuse son boost (seule la file de l'équipe est notifiée) ; à décider.
+8. **Page Annoncer** : vérifier l'affichage connecté avec le propriétaire (captures), surtout sur mobile ; les maquettes de statuts WhatsApp/Telegram/Facebook sont fictives et sans logo.
+9. **Restes plus anciens (à confirmer, état non revérifié)** : Remote Config `api_modules` (remettre `{"all": false}` jusqu'à la bascule, puis `true` + relever la version en ligne 269 Android/iOS/Firestore ; contrôle du delta de soldes avant) ; `EDGE_SECRET` à poser dans le `.env` du serveur (relais Firebase) ; second super-administrateur ; fournisseur SMTP (`deploy/poser-mail.sh`) ; campagne de notifications « gagne par le Partage / les tâches » (`earn_promo`, éteinte par défaut) ; **révoquer la clé App Store `T42B8B48XF`** après usage ; `/share/**` encore envoyé à la fonction `sharePostLink` (à passer à l'API à la bascule) ; « corriger les noms en doublon » et « admins en Gold à vie » de l'ancien écran des groupes : NON repris (ponctuels).
+10. **Nettoyage** : `docs/cloudflare/afrolook-api-router.js` (Worker devenu inutile, non suivi par Git) ; `pubspec.lock` modifié sans commit dans le dossier principal (généré par `flutter pub get`, ne pas committer sans raison).
+
+**Pièges rencontrés (utile aux agents)**
+- Dans l'outil Bash, un document ici (`<<'EOF'`) contenant des apostrophes et des chevrons a plusieurs fois échoué (« unexpected EOF ») : écrire les scripts avec l'outil d'écriture de fichier, puis les lancer.
+- Les statuts de la table `ads` sont limités par une contrainte (`pending, active, rejected, paused, ended`) ; les statuts de `share_campaigns` tiennent sur 10 caractères.
+- Le simulateur et la page d'audience publique partagent `/ads/api/audience` : des tests comparent sa réponse EXACTE (`SiteGalleryTest`, `SiteSpaceTest`) : les mettre à jour si on ajoute un champ.
+- Règles de vocabulaire du propriétaire : « Afrolook Ads » (pas « Afrolook ») dans les pages de la régie ; ne jamais afficher la part gardée par l'application ni les frais avant le moment du paiement ; le solde annonceur ne se mélange jamais avec les pièces et les gains.
+
+#### Chantiers plus anciens
+
 État **connu au 27/10/2026** ; vérifier avant de reprendre.
 
 - [x] ~~**Mur de tâches (Tapjoy + ayeT-Studios)**~~ **ABANDONNÉ le 30/10/2026 (partenaires non obtenus)** ; retrait du code à décider. Ancien texte : — **à mettre en production AVANT la migration** : valider `docs/OFFERWALL_TACHES.md` (questions du §7 du document), puis étapes 1 à 7 du plan (configuration des tableaux de bord, serveur, application Android, tests, conformité Google Play, déploiement progressif, mesure). Suivi des étapes : à cocher ici au fil de l'avancement ; **configuration pas à pas des tableaux de bord Tapjoy et ayeT : `docs/OFFERWALL_TACHES.md` §10** (état du 27/10 : compte Tapjoy **en cours de revue**, **les deux applications Android et iOS sont ajoutées** (confirmé par le propriétaire), ayeT à vérifier/créer).
@@ -263,6 +301,8 @@ Nouvelle plateforme : [ ] comptes administrateurs séparés (RBAC, 2FA, Cloudfla
 ---
 
 ## 9. Journal de bord (une ligne par session, du plus récent au plus ancien)
+
+> **Attention** : les entrées des 02/11 et 03/11/2026 ont été ajoutées tout **en bas du fichier** (après la section 11). Le point d'entrée pour reprendre le travail est la section **7.0**.
 
 - **2026-11-02 (nuit : fin de l'étape 1 du Live Shopping, clés du serveur de test)** — Clés posées et vérifiées sur le serveur de TEST par le propriétaire (R2, FeexPay live, Agora, FCM, signature des pubs ; `NEWS_AI_ACCOUNTS` encore vide) et FeexPay live sur la production. API : fuseau PostgreSQL en UTC (décalage d'une heure corrigé), jeton de live avec uid 0, traduction des instructions des tâches, fil des pages thématiques, import de Partage et gagne, notifications de commande, administration de la vente en direct, version et liens des magasins. Application : menus (Boutique, Mes commandes), bouton Live sur la boutique, formulaire d'article (vente en direct), écran d'administration, correctifs (Publier, doublons, couvertures, heure). Rien commité côté application ; API poussée jusqu'à `ae590ee`, le reste à pousser. Détail : `docs/TACHES_RESTANTES.md`.
 
