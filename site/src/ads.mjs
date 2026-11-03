@@ -396,6 +396,7 @@ export function adsSpace(fbConfig, api) {
      <label class="fl" id="f-sbrand-l" for="f-sbrand" hidden>Marque affichée <small>(équipe : ex. SlashAtlas)</small><input id="f-sbrand" maxlength="60" autocomplete="off" placeholder="SlashAtlas"></label>
      <label class="fl" for="f-aud">Nombre de personnes à atteindre<input id="f-aud" type="number" min="1000" max="5000000" step="1000" value="10000"></label>
      <div class="sharebox"><b id="f-aud-price">—</b><small id="f-aud-note"></small></div></div>
+    <div class="adneed" id="f-need" role="alert" hidden><p id="f-need-t"></p><button class="btn btn-primary adbig" type="button" id="f-need-go">Recharger maintenant</button></div>
     <p class="aderr" id="aderr" role="alert" hidden></p>
     <div class="adsub"><div><b id="f-sub-t">Gratuit</b><small id="f-quota">Validation par notre équipe avant diffusion</small></div><button class="btn btn-primary adbig" id="f-send" type="submit">Envoyer pour validation</button></div>
    </form>

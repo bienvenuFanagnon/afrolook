@@ -405,11 +405,19 @@ async function initSpace() {
     $('#f-sbrand-l').hidden = !(share && IS_ADMIN);
     $('#f-aud-note').textContent = IS_ADMIN ? '' : 'Débité de ton solde annonceur' + (wal.data ? ' (solde actuel : ' + nf(wal.data.balanceXof) + ' F)' : '') + '. Si notre équipe refuse ta campagne, tu es remboursé sur ton solde.';
     $$('#adform .adfs').filter((e) => !e.hidden).forEach((e, n) => { const i = e.querySelector('h3 > i'); if (i) i.textContent = String(n); });
+    // solde insuffisant : on le dit tout de suite, avec le bouton pour recharger (la campagne se paie avec le solde, jamais par un paiement direct)
+    const price = Math.round((a / 1000) * wal.per1000), bal = wal.data ? wal.data.balanceXof : 0, lack = price - bal, need = $('#f-need');
+    if (need) {
+      need.hidden = !(share && !IS_ADMIN && wal.data && a >= 1000 && lack > 0);
+      need.dataset.lack = String(Math.max(0, lack));
+      $('#f-need-t').textContent = 'Cette campagne coûte ' + nf(price) + ' F et ton solde est de ' + nf(bal) + ' F : il te manque ' + nf(Math.max(0, lack)) + ' F. Recharge ton solde, puis envoie ta campagne.';
+    }
   };
   $$('#f-mode label').forEach((l) => l.addEventListener('click', () => { st.mode = l.dataset.v; $$('#f-mode label').forEach((x) => x.classList.toggle('on', x === l)); refreshMode(); }));
   $('#f-aud').addEventListener('input', refreshMode);
   window.addEventListener('afl-admin', refreshMode);
   window.addEventListener('afl-wallet', refreshMode);
+  $('#f-need-go').addEventListener('click', () => openTopup(Number($('#f-need').dataset.lack) || 0));
   try {   // venant du simulateur : ?aud=25000 ouvre « Campagne Partage » avec cette audience
     const q = Number(new URLSearchParams(location.search).get('aud')), v = Math.round(q / 1000) * 1000;
     if (v >= 1000 && v <= 5000000) { $('#f-aud').value = String(v); $('#f-mode label[data-v="share"]').click(); tab('creer'); }
@@ -471,7 +479,7 @@ async function initSpace() {
     if (/profil_en_validation/.test(m)) return 'Ton profil est en cours de validation : tu pourras publier ta première annonce dès qu’il est validé (tu recevras un e-mail).';
     if (/logo_refuse/.test(m)) return "Ton profil annonceur a été refusé : corrige-le dans l'onglet Profil puis renvoie-le.";
     if (/15 secondes/.test(m)) return 'La vidéo doit durer 15 secondes maximum.';
-    if (/solde_insuffisant/.test(m)) return 'Ton solde est insuffisant : recharge-le puis renvoie ta campagne.';
+    if (/solde_insuffisant/.test(m)) { loadWallet(); return 'Ton solde est insuffisant : recharge-le avec le bouton « Recharger maintenant », puis renvoie ta campagne.'; }
     if (/limite_atteinte/.test(m)) return 'Tu as utilisé tes 3 annonces gratuites.';
     if (/limite_du_jour/.test(m)) return 'Trop d\'annonces envoyées aujourd\'hui. Réessaie demain.';
     if (/gratuite_terminee/.test(m)) return 'L\'offre gratuite est terminée. Contacte-nous pour annoncer.';
@@ -491,7 +499,7 @@ async function initSpace() {
     if (!$('#f-cat').value) return err('Choisis la catégorie de ton annonce.');
     if (st.mode === 'share' && !IS_ADMIN) {   // solde annonceur : si le prix dépasse le solde, on propose la recharge du montant manquant
       const need = Math.round(((Number($('#f-aud').value) || 0) / 1000) * wal.per1000) - (wal.data ? wal.data.balanceXof : 0);
-      if (need > 0) { err('Ton solde est insuffisant pour cette campagne : recharge-le, puis envoie-la.'); openTopup(need); return; }
+      if (need > 0) { err(''); refreshMode(); $('#f-need').scrollIntoView({ block: 'center', behavior: 'smooth' }); openTopup(need); return; }
     }
     const btn = $('#f-send'); btn.disabled = true; const label = btn.textContent;
     try {

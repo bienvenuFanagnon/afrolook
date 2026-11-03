@@ -524,3 +524,8 @@ pre.doc-code code{background:none;padding:0;color:inherit;font:inherit;overflow-
 
 /* carte de connexion et boutons longs : jamais plus larges que l'écran */
 @media (max-width:420px){.adgate-c{padding:26px 16px}.adgate-c .btn,.adbig{white-space:normal;text-align:center}}
+
+/* campagne : solde insuffisant, avec le bouton « Recharger maintenant » */
+.adneed{display:grid;gap:12px;justify-items:start;padding:16px 18px;border-radius:18px;border:2px solid #e8a317;background:color-mix(in srgb,#ffd400 14%,var(--surface))}
+.adneed p{margin:0;font-weight:600;line-height:1.5}
+@media (max-width:620px){.adneed .btn{width:100%}}
