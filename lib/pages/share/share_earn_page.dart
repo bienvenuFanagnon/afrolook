@@ -18,6 +18,7 @@ import '../../providers/authProvider.dart';
 import '../../services/share/share_service.dart';
 import '../../widgets/email_verification_gate.dart';
 import '../../theme/app_colors.dart';
+import '../../services/work_tracking.dart';
 import '../user/inviteAmis.dart';
 
 /// Page « Partage et gagne » : on partage des annonces (statut WhatsApp, groupes, Telegram, Facebook, TikTok…) avec son lien personnel et on est payé en pièces
@@ -34,13 +35,21 @@ class _ShareEarnPageState extends State<ShareEarnPage> {
   String? _error;
   bool _loading = true;
   String? _busyMission;
+  late final WorkTrack _track;   // suivi de fréquentation pour l'administration
 
   UserAuthProvider get _auth => Provider.of<UserAuthProvider>(context, listen: false);
 
   @override
   void initState() {
     super.initState();
+    _track = WorkTrack.start('missions');
     _load();
+  }
+
+  @override
+  void dispose() {
+    _track.stop();
+    super.dispose();
   }
 
   Future<void> _load() async {
