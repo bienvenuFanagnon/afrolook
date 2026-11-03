@@ -275,6 +275,8 @@ String _transactionDescription(String key, Map<String, dynamic> params) {
       return why.isEmpty ? tr("Ajustement par l'équipe") : tr("Ajustement par l'équipe : {r}", {'r': why});
     case 'wallet.withdrawal':
       return tr('Retrait');
+    case 'wallet.boost_refund':
+      return tr('Publicité refusée : pièces remboursées');
     case 'wallet.withdrawal_refund':
       return tr('Retrait annulé : remboursement');
     case 'wallet.view_cashout':
