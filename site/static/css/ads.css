@@ -511,3 +511,16 @@ pre.doc-code code{background:none;padding:0;color:inherit;font:inherit;overflow-
 #top-go.busy::before{content:'';flex:none;width:18px;height:18px;border-radius:50%;border:3px solid currentColor;border-right-color:transparent;animation:topspin .7s linear infinite}
 @keyframes topspin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){#top-go.busy::before{animation-duration:2s}}
+
+/* téléphone : formulaires sans zoom automatique, liens de texte faciles à toucher, fenêtres adaptées à la barre du navigateur, bandeau collant au-dessus de l'encoche */
+@media (max-width:760px){
+  .fl input,.fl select,.fl textarea,.adsim-n input,#adtopup input,#adtopup select{font-size:16px}
+  .adlinkbtn{display:inline-flex;align-items:center;min-height:44px}
+  .adbar{padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+  .adtabs a{padding-block:14px}
+  .chm-b.in,.chm-card span,.chm-st p,.chm-cap{font-size:11.5px}
+}
+.addlg-in{max-height:calc(100vh - 40px);max-height:calc(100dvh - 40px)}
+
+/* carte de connexion et boutons longs : jamais plus larges que l'écran */
+@media (max-width:420px){.adgate-c{padding:26px 16px}.adgate-c .btn,.adbig{white-space:normal;text-align:center}}

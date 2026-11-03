@@ -638,3 +638,17 @@ img{height:auto}
 /* Lien « Annoncer » (Afrolook Ads) dans l'en-tête */
 .top .main a.adlink{color:var(--green);font-weight:800;position:relative}
 .top .main a.adlink::after{content:attr(data-badge);position:absolute;top:-9px;right:-30px;font-size:9px;font-weight:800;background:var(--yellow);color:#2B1A00;padding:1px 6px;border-radius:99px}
+
+/* téléphone : cibles tactiles confortables, pas de zoom automatique d'iOS dans les champs, encoches respectées */
+@media (max-width:760px){
+  form.card input,form.card select,form.card textarea{font-size:16px}
+  .lang-sw a,.lang-sw span{padding:9px 14px}
+  footer ul{gap:2px}
+  footer li a{display:inline-block;padding:9px 0}
+  .crumbs a{display:inline-block;padding:8px 2px}
+  .store small{font-size:11.5px}
+}
+@media (hover:none){a,button,summary,label{-webkit-tap-highlight-color:transparent}}
+
+/* très petits téléphones (320 px) : l'en-tête tient sur une ligne */
+@media (max-width:360px){.lang-sw a,.lang-sw span{padding:8px 10px}.brand{font-size:21px}.top .wrap{gap:8px}}
