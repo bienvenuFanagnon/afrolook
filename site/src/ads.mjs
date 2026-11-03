@@ -325,6 +325,29 @@ ${formatsSection()}
 
 <section class="adfinal"><div class="wrap"><h2>Prêt à être vu par <span data-aud>${AUDIENCE}</span> personnes ?</h2><p>Gratuit et rapide : ta marque et ton logo, puis ton annonce.</p>
  <div class="cta" style="justify-content:center"><a class="btn adbig adwhite" href="/ads/espace/">${G} Publier mon annonce gratuite</a></div></div></section>
+<dialog class="addlg" id="adtopup" aria-label="Recharger mon solde"><div class="addlg-in"><button class="addlg-x" type="button" id="adtopup-x" aria-label="Fermer">×</button>
+ <form class="topform" id="topform" novalidate>
+  <h2>Recharger mon solde</h2>
+  <p class="adnote" id="top-need" hidden></p>
+  <label class="fl" for="top-amt">Montant à ajouter à ton solde (FCFA)<input id="top-amt" type="number" min="1000" max="2000000" step="500" value="10000" inputmode="numeric"></label>
+  <div class="adchips" id="top-quick"><span data-v="5000">5 000</span><span data-v="10000">10 000</span><span data-v="25000">25 000</span><span data-v="50000">50 000</span></div>
+  <div class="adtype" id="top-method"><label class="on" data-v="momo"><b>Mobile Money</b><small>MTN, Moov, Orange, Wave…</small></label><label data-v="card"><b>Carte bancaire</b><small>Visa, Mastercard</small></label></div>
+  <div id="top-momo">
+   <label class="fl" for="top-op">Opérateur<select id="top-op"></select></label>
+   <label class="fl" for="top-phone">Numéro Mobile Money<input id="top-phone" type="tel" autocomplete="tel" placeholder="+228 90 12 34 56"></label>
+   <label class="fl" id="top-otp-l" for="top-otp" hidden>Code OTP <small>(à générer sur ton téléphone avec le code USSD de l’opérateur)</small><input id="top-otp" autocomplete="one-time-code"></label>
+  </div>
+  <div id="top-card" hidden>
+   <div class="topgrid"><label class="fl" for="top-fn">Prénom<input id="top-fn" autocomplete="given-name"></label><label class="fl" for="top-ln">Nom<input id="top-ln" autocomplete="family-name"></label></div>
+   <div class="topgrid"><label class="fl" for="top-city">Ville<input id="top-city" autocomplete="address-level2"></label><label class="fl" for="top-zip">Code postal<input id="top-zip" autocomplete="postal-code"></label></div>
+   <div class="topgrid"><label class="fl" for="top-cc">Pays <small>(2 lettres : TG, BJ, CI…)</small><input id="top-cc" maxlength="2" autocomplete="country" placeholder="TG"></label><label class="fl" for="top-cphone">Téléphone<input id="top-cphone" type="tel" autocomplete="tel"></label></div>
+   <label class="topterms"><input type="checkbox" id="top-terms"> <span>J’accepte que ce paiement par carte soit débité en dollars et qu’il serve à recharger mon solde annonceur, utilisable uniquement pour payer mes campagnes sur Afrolook Ads.</span></label>
+  </div>
+  <div class="sharebox" id="top-quote"><b>—</b><small></small></div>
+  <p class="aderr" id="top-err" role="alert" hidden></p>
+  <p class="adstatus" id="top-wait" role="status" hidden></p>
+  <button class="btn btn-primary adbig" id="top-go" type="submit">Payer</button>
+ </form></div></dialog>
 <dialog class="addlg" id="addetail" aria-label="Détail de l'annonce"><div class="addlg-in"><button class="addlg-x" type="button" id="addetail-x" aria-label="Fermer">×</button><div id="addetail-body"></div></div></dialog>
 <script src="/js/ads.js?v=__ASSET_V__" type="module"></script>`;
 }
@@ -347,7 +370,8 @@ export function adsSpace(fbConfig, api) {
 
  <div id="adapp" hidden>
   <div class="profban" id="profban" role="status" hidden></div>
-  <div class="adtabs"><a class="on" href="#tab-creer" data-tab="creer">Créer une annonce</a><a href="#tab-mes" data-tab="mes">Mes annonces <i id="mycount">0</i></a><a href="#tab-profil" data-tab="profil">Mon profil de marque <i id="profbadge">!</i></a></div>
+  <div class="adkpis" id="advkpis" aria-live="polite"><div class="adk adk-load"><small>&nbsp;</small><b>&nbsp;</b><span>&nbsp;</span></div><div class="adk adk-load"><small>&nbsp;</small><b>&nbsp;</b><span>&nbsp;</span></div><div class="adk adk-load"><small>&nbsp;</small><b>&nbsp;</b><span>&nbsp;</span></div><div class="adk adk-load"><small>&nbsp;</small><b>&nbsp;</b><span>&nbsp;</span></div></div>
+  <div class="adtabs"><a class="on" href="#tab-creer" data-tab="creer">Créer une annonce</a><a href="#tab-mes" data-tab="mes">Mes annonces <i id="mycount">0</i></a><a href="#tab-solde" data-tab="solde">Mon solde</a><a href="#tab-profil" data-tab="profil">Mon profil de marque <i id="profbadge">!</i></a></div>
 
   <div id="tab-creer"><div class="adform-g">
    <form class="adform" id="adform" novalidate>
@@ -387,7 +411,7 @@ export function adsSpace(fbConfig, api) {
      <details class="adfold" data-adsonly><summary>Types de sites et d'applications <small>(facultatif)</small></summary><div class="adchips" id="f-types">${PUB_CATS.map(([k, l]) => `<span data-v="${k}">${l}</span>`).join('')}</div></details>
      <p class="adnote" data-adsonly>C'est toi qui définis à qui s'adresse ton annonce, et nous le respectons : au plus <b>40 %</b> des vues peuvent venir d'autres pays que ceux choisis. Le pays du visiteur est déterminé par nos serveurs, jamais par le site qui affiche l'annonce.</p></div>
     <div class="adfs" id="f-share" hidden><h3><i>5</i> Audience à atteindre <small>(service payant)</small></h3>
-     <p class="adnote">Il n'y a <b>pas d'offre gratuite</b> pour ce service : des personnes sont payées pour partager ton annonce. <b>Tu paies l'audience</b>, c'est-à-dire le nombre de personnes à atteindre. Les partageurs sont validés par notre équipe et leur audience est vérifiée ; ta campagne s'arrête quand l'audience choisie est atteinte : <b>tu ne dépasses jamais ton budget</b>. Seuls les clics valides sont comptés, sans doublon, et tu les vois uniquement dans ton espace.</p>
+     <p class="adnote">Il n'y a <b>pas d'offre gratuite</b> pour ce service : des personnes sont payées pour partager ton annonce. <b>Tu paies l'audience</b>, c'est-à-dire le nombre de personnes à atteindre, avec ton <b>solde annonceur</b> (recharge libre en FCFA). Les partageurs sont validés par notre équipe et leur audience est vérifiée ; ta campagne s'arrête quand l'audience choisie est atteinte : <b>tu ne dépasses jamais ton budget</b>. Seuls les clics valides sont comptés, sans doublon, et tu les vois uniquement dans ton espace.</p>
      <label class="fl" id="f-sbrand-l" for="f-sbrand" hidden>Marque affichée <small>(équipe : ex. SlashAtlas)</small><input id="f-sbrand" maxlength="60" autocomplete="off" placeholder="SlashAtlas"></label>
      <label class="fl" for="f-aud">Nombre de personnes à atteindre<input id="f-aud" type="number" min="1000" max="5000000" step="1000" value="10000"></label>
      <div class="sharebox"><b id="f-aud-price">—</b><small id="f-aud-note"></small></div></div>
@@ -397,6 +421,13 @@ export function adsSpace(fbConfig, api) {
    <aside class="adprev"><span class="kicker">Aperçu en direct</span>${phone('Tel que ton annonce apparaîtra')}
     <div class="adprev-n" data-adsonly>${ico('shield', 18)}<span>Ton annonce sera diffusée sur <b>Afrolook</b>, <b>SlashAtlas</b>, <b>Pronoflash</b> et <b>Épargne+</b> après validation.</span></div>
     <div class="adprev-n" data-shareonly hidden>${ico('shield', 18)}<span>Ton annonce sera partagée par des personnes <b>validées par notre équipe</b> sur WhatsApp, Telegram, Facebook… Seuls les clics valides sont comptés.</span></div></aside>
+  </div></div>
+
+  <div id="tab-solde" hidden><div class="admine">
+   <div class="walbox"><div><small>Solde annonceur</small><b id="wal-bal">—</b><span>Ce solde sert <b>uniquement</b> à payer tes campagnes sur Afrolook Ads. Il est séparé de ton compte dans l’application (pièces, gains) : aucun lien entre les deux.</span></div><button class="btn btn-primary adbig" id="wal-topup" type="button">Recharger</button></div>
+   <h3 class="walh">Mes mouvements</h3>
+   <div class="waltx" id="wal-tx"><p class="adempty">Chargement…</p></div>
+   <p class="adnote">Si notre équipe refuse une campagne, elle est <b>remboursée sur ce solde</b> et tu peux l’utiliser pour une autre annonce. Une campagne que tu arrêtes ou supprimes toi-même n’est pas remboursable.</p>
   </div></div>
 
   <div id="tab-profil" hidden><form class="adform adprof" id="adprof" novalidate>
@@ -421,7 +452,7 @@ export function adsSpace(fbConfig, api) {
   <div id="tab-mes" hidden><div class="admine"><h2 class="h2" style="font-size:clamp(24px,3vw,34px)">Mes annonces <small class="adcount" id="myquota"></small></h2>
    <div class="addash" id="mylist" style="margin-top:18px"><p class="adempty">Chargement…</p></div></div>
    <div class="admine" id="sharemine" hidden><h2 class="h2" style="font-size:clamp(22px,2.6vw,30px);margin-top:28px">Mes campagnes Partage</h2>
-    <div class="addash" id="sharelist" style="margin-top:14px"></div></div></div>
+    <div class="adstack" id="sharelist" style="margin-top:14px"></div></div></div>
  </div>
 </div></section>
 <dialog class="addlg" id="addetail" aria-label="Détail de l'annonce"><div class="addlg-in"><button class="addlg-x" type="button" id="addetail-x" aria-label="Fermer">×</button><div id="addetail-body"></div></div></dialog>
@@ -446,6 +477,7 @@ export function adsPublisherSpace(fbConfig, api) {
  <div id="adapp" hidden>
   <div class="pubaud"><div><small>Audience du réseau Afrolook Ads</small><b id="aud-total">plus de 50 000</b></div><p>Elle augmente à chaque site ou application validé : <b>50 000</b> sur nos plateformes <b>+ l'audience retenue de chaque diffuseur</b>.</p></div>
   <div class="profban" id="profban" role="status" hidden></div>
+  <div class="adkpis" id="pubkpis" aria-live="polite"><div class="adk adk-load"><small>&nbsp;</small><b>&nbsp;</b><span>&nbsp;</span></div><div class="adk adk-load"><small>&nbsp;</small><b>&nbsp;</b><span>&nbsp;</span></div><div class="adk adk-load"><small>&nbsp;</small><b>&nbsp;</b><span>&nbsp;</span></div><div class="adk adk-load"><small>&nbsp;</small><b>&nbsp;</b><span>&nbsp;</span></div></div>
   <div class="adtabs"><a class="on" href="#tab-profil" data-tab="profil">Mon profil <i id="pbadge">!</i></a><a href="#tab-sites" data-tab="sites">Mes sites et applications <i id="pcount">0</i></a></div>
 
   <div id="tab-profil"><div class="adform-g">
@@ -504,6 +536,7 @@ export function adsAdminSpace(fbConfig, api) {
   <p>Connecte-toi avec ton compte Google administrateur. Tu pourras voir tous les annonceurs, tous les diffuseurs et leurs sites ou applications, et les valider ou les refuser.</p>
   <button class="btn btn-primary adbig" id="signin" type="button">${G} Continuer avec Google</button></div></div>
  <div id="adapp" hidden>
+  <div class="adkpis adkpis-adm" id="rg-kpis" aria-live="polite"><div class="adk adk-load"><small>&nbsp;</small><b>&nbsp;</b><span>&nbsp;</span></div><div class="adk adk-load"><small>&nbsp;</small><b>&nbsp;</b><span>&nbsp;</span></div><div class="adk adk-load"><small>&nbsp;</small><b>&nbsp;</b><span>&nbsp;</span></div><div class="adk adk-load"><small>&nbsp;</small><b>&nbsp;</b><span>&nbsp;</span></div><div class="adk adk-load"><small>&nbsp;</small><b>&nbsp;</b><span>&nbsp;</span></div><div class="adk adk-load"><small>&nbsp;</small><b>&nbsp;</b><span>&nbsp;</span></div></div>
   <div class="adtabs" id="rg-tabs"></div>
   <div class="rg-filters" id="rg-filters"></div>
   <div class="rg-list" id="rg-list"></div>

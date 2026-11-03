@@ -10,6 +10,10 @@ function h(tag, attrs = {}, ...kids) {
 }
 const EN = document.documentElement.lang === 'en'; // page anglaise : vues et boutons traduits
 const n = (v) => Number(v || 0).toLocaleString(EN ? 'en-US' : 'fr-FR');
+/** Carte de chiffre clé : libellé, valeur, précision, ton (ok, wait, alert), clic facultatif. */
+const kpiCard = (label, value, sub, tone, onclick) => h(onclick ? 'button' : 'div', { class: 'adk' + (tone ? ' ' + tone : '') + (onclick ? ' clk' : ''), type: onclick ? 'button' : false, onclick: onclick || false },
+  h('small', { text: label }), h('b', { text: value }), h('span', { text: sub || '\u00a0' }));
+const pct = (a, b) => (b > 0 ? (a / b * 100).toFixed(1).replace('.', ',') + ' %' : '—');
 const VUES = EN ? 'views' : 'vues';
 const ACT = (s) => (EN ? ({ Visiter: 'Visit', 'Télécharger': 'Download', 'En savoir plus': 'Learn more', Appeler: 'Call' }[s] || s) : s);
 let IS_ADMIN = false; // compte administrateur de la régie : ses campagnes sont offertes (aucun paiement)
@@ -272,15 +276,16 @@ function profBanner(kind, state, reason) {
 async function initSpace() {
   const status = setStatus;
   const err = (msg) => { const e = $('#aderr'); e.hidden = !msg; e.textContent = msg || ''; };
-  const fb = await boot(() => { loadProfile(); loadMine(); });
+  const fb = await boot(() => { loadProfile(); loadMine(); loadShareMine(); loadWallet(); });   // les campagnes Partage comptent aussi dans le bandeau de chiffres, dès l'ouverture
   if (!fb) return;
   const { auth, call, upload } = fb;
 
   // onglets
-  const tab = (t) => { $$('.adtabs a').forEach((a) => a.classList.toggle('on', a.dataset.tab === t)); for (const k of ['creer', 'mes', 'profil']) $('#tab-' + k).hidden = k !== t; if (t === 'mes') { loadMine(); loadShareMine(); } };
+  const tab = (t) => { $$('.adtabs a').forEach((a) => a.classList.toggle('on', a.dataset.tab === t)); for (const k of ['creer', 'mes', 'solde', 'profil']) $('#tab-' + k).hidden = k !== t; if (t === 'mes') { loadMine(); loadShareMine(); } if (t === 'solde') loadWallet(); };
   $$('.adtabs a').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); tab(a.dataset.tab); }));
 
   // formulaire : choix, aperçu en direct
+  const wal = { data: null, per1000: 500 }; // prix de 1 000 personnes : valeur du serveur (adsWalletMe), 500 F tant qu'elle n'est pas chargée
   const st = { kind: 'entreprise', action: 'visit', countries: new Set(['ALL']), langs: new Set(), devs: new Set(), types: new Set(), files: [], isVideo: false, open: true, left: 3 };
   const pick = (box, cb) => $$('label,span', $(box)).forEach((el) => el.addEventListener('click', () => { cb(el.dataset.v, el); }));
   const single = (box, key, after) => pick(box, (v, el) => { st[key] = v; $$('label', $(box)).forEach((l) => l.classList.toggle('on', l === el)); after && after(); });
@@ -360,7 +365,6 @@ async function initSpace() {
   }));
 
   // mode : annonce affichée (gratuite) ou campagne Partage (payante, à l'audience)
-  const SHARE_PER_1000 = 500; // prix indicatif pour 1 000 personnes ; le montant exact est confirmé par le serveur
   st.mode = 'ads';
   const nf = (v) => Number(v).toLocaleString('fr-FR');
   const refreshMode = () => {
@@ -370,36 +374,51 @@ async function initSpace() {
     // étapes numérotées dans l'ordre des étapes visibles ; l'étape « durée » devient « pays visés » en mode partage
     const h4 = $('#f-countries').closest('.adfs').querySelector('h3'); if (h4 && h4.lastChild) h4.lastChild.textContent = share ? ' Pays visés' : ' Durée et audience';
     $('#f-share').hidden = !share;
-    $('#f-sub-t').textContent = share ? (IS_ADMIN ? 'Offert par l’équipe' : nf(Math.round((a / 1000) * SHARE_PER_1000)) + ' F') : 'Gratuit';
+    $('#f-sub-t').textContent = share ? (IS_ADMIN ? 'Offert par l’équipe' : nf(Math.round((a / 1000) * wal.per1000)) + ' F') : 'Gratuit';
     $('#f-send').textContent = share ? (IS_ADMIN ? 'Lancer la campagne' : 'Envoyer la campagne') : 'Envoyer pour validation';
-    $('#f-quota').textContent = share ? (IS_ADMIN ? 'Campagne de l’équipe : aucun paiement' : 'Elle démarre dès que le paiement est confirmé') : 'Validation par notre équipe avant diffusion';
-    $('#f-aud-price').textContent = IS_ADMIN ? 'Offert par l’équipe : aucun paiement' : nf(Math.round((a / 1000) * SHARE_PER_1000)) + ' F pour ' + nf(a) + ' personnes';
+    $('#f-quota').textContent = share ? (IS_ADMIN ? 'Campagne de l’équipe : aucun paiement' : 'Payée avec ton solde annonceur · démarre après validation par notre équipe') : 'Validation par notre équipe avant diffusion';
+    $('#f-aud-price').textContent = IS_ADMIN ? 'Offert par l’équipe : aucun paiement' : nf(Math.round((a / 1000) * wal.per1000)) + ' F pour ' + nf(a) + ' personnes';
     $('#f-sbrand-l').hidden = !(share && IS_ADMIN);
-    $('#f-aud-note').textContent = IS_ADMIN ? '' : 'Prix indicatif : le montant exact est confirmé à la réception de ta demande.';
+    $('#f-aud-note').textContent = IS_ADMIN ? '' : 'Débité de ton solde annonceur' + (wal.data ? ' (solde actuel : ' + nf(wal.data.balanceXof) + ' F)' : '') + '. Si notre équipe refuse ta campagne, tu es remboursé sur ton solde.';
     $$('#adform .adfs').filter((e) => !e.hidden).forEach((e, n) => { const i = e.querySelector('h3 > i'); if (i) i.textContent = String(n); });
   };
   $$('#f-mode label').forEach((l) => l.addEventListener('click', () => { st.mode = l.dataset.v; $$('#f-mode label').forEach((x) => x.classList.toggle('on', x === l)); refreshMode(); }));
   $('#f-aud').addEventListener('input', refreshMode);
   window.addEventListener('afl-admin', refreshMode);
+  window.addEventListener('afl-wallet', refreshMode);
 
   // mes campagnes Partage : statut, audience engagée, clics valides (visibles seulement ici)
-  const shareStat = { pending: ['wait', 'En attente de paiement'], active: ['ok', 'En cours'], paused: ['end', 'En pause'], refused: ['rej', 'Refusée'], ended: ['end', 'Terminée'] };
+  const shareStat = { pending: ['wait', 'En attente de validation'], active: ['ok', 'En cours'], paused: ['end', 'En pause'], refused: ['rej', 'Refusée'], ended: ['end', 'Terminée'] };
   async function loadShareMine() {
     try {
       const r = await call('adsShareCampaignMine'), box = $('#sharemine');
+      st.shares = r.items; drawAdvKpis();
       box.hidden = !r.items.length;
       $('#sharelist').replaceChildren(...r.items.map((c) => {
         const [cls, lab] = shareStat[c.status] || ['end', c.status];
+        const pctDone = Math.min(100, c.targetAudience ? Math.round((c.provenReach / c.targetAudience) * 100) : 0);
+        const zone = h('div', { class: 'rg-act' });
+        const act = (name, okMsg) => async () => { zone.querySelectorAll('button').forEach((x) => { x.disabled = true; }); try { await call(name, { id: c.id }); status(okMsg); await loadShareMine(); } catch { zone.append(h('p', { class: 'aderr', text: 'Action impossible pour le moment. Réessaie.' })); zone.querySelectorAll('button').forEach((x) => { x.disabled = false; }); } };
+        const ask = (msg, label, fn) => zone.replaceChildren(h('p', { class: 'addlg-conf', text: msg }), h('div', { class: 'addlg-row' }, h('button', { class: 'btn adsm adred', type: 'button', text: label, onclick: fn }), h('button', { class: 'btn btn-line adsm', type: 'button', text: 'Annuler', onclick: () => draw() })));
+        const draw = () => {
+          const b = [];
+          if (['pending', 'active', 'paused'].includes(c.status)) b.push(h('button', { class: 'btn btn-line adsm', type: 'button', text: 'Arrêter la diffusion', onclick: () => ask('Arrêter la diffusion ? La campagne ne sera plus proposée aux partageurs. Ce qui a déjà été diffusé n’est pas remboursé.', 'Oui, arrêter', act('adsShareCampaignStop', 'Campagne arrêtée.')) }));
+          b.push(h('button', { class: 'btn adsm adred-o', type: 'button', text: 'Supprimer', onclick: () => ask('Supprimer cette campagne ? Elle sera retirée de ta liste et de la diffusion. Aucun remboursement n’est possible.', 'Oui, supprimer', act('adsShareCampaignDelete', 'Campagne supprimée.')) }));
+          zone.replaceChildren(...b);
+        };
+        draw();
         return h('article', { class: 'rg-card' },
           h('div', { class: 'rg-h' }, h('div', {}, h('b', { text: c.title }), h('small', { text: c.free ? 'Campagne offerte par l’équipe' : nf(c.priceFcfa || c.listPriceFcfa) + ' F pour ' + nf(c.targetAudience) + ' personnes' })), h('span', { class: 'st ' + cls, text: lab })),
-          h('div', { class: 'rg-reach' }, h('small', { text: 'Audience touchée' }), h('b', { text: nf(c.provenReach) + ' personnes' }), h('small', { text: 'sur ' + nf(c.targetAudience) + ' achetées · publications confirmées par une vraie ouverture du lien' }),
-            h('div', { class: 'rg-bar' }, h('i', { style: 'width:' + Math.min(100, c.targetAudience ? Math.round((c.provenReach / c.targetAudience) * 100) : 0) + '%' }))),
-          h('div', { class: 'rg-row' }, h('span', { text: 'Partageurs qui ont publié' }), h('b', { text: nf(c.sharersPublished) + ' / ' + nf(c.sharers) })),
-          h('div', { class: 'rg-row' }, h('span', { text: 'Personnes ayant ouvert le lien (mesuré)' }), h('b', { text: nf(c.uniqueOpens) })),
-          h('div', { class: 'rg-row' }, h('span', { text: 'Clics valides (mesuré)' }), h('b', { text: nf(c.valid) })),
-          h('div', { class: 'rg-row' }, h('span', { text: 'Vues déclarées par les partageurs (indicatif)' }), h('b', { text: nf(c.declaredViews) })),
+          h('div', { class: 'rg-reach' }, h('small', { text: 'Personnes touchées' }), h('b', { text: nf(c.provenReach) + ' sur ' + nf(c.targetAudience) }),
+            h('div', { class: 'rg-bar' }, h('i', { style: 'width:' + pctDone + '%' }))),
+          h('div', { class: 'rg-row' }, h('span', { text: 'Clics' }), h('b', { text: nf(c.valid) })),
           h('div', { class: 'rg-row' }, h('span', { text: 'Budget utilisé' }), h('b', { text: c.usedPct + ' %' })),
-          c.reason ? h('div', { class: 'rg-row' }, h('span', { text: 'Motif' }), h('b', { text: c.reason })) : null);
+          c.reason ? h('div', { class: 'rg-row' }, h('span', { text: 'Motif' }), h('b', { text: c.reason })) : null,
+          h('details', { class: 'rg-more' }, h('summary', { text: 'Plus de détails' }),
+            h('div', { class: 'rg-row' }, h('span', { text: 'Partageurs qui ont publié' }), h('b', { text: nf(c.sharersPublished) + ' / ' + nf(c.sharers) })),
+            h('div', { class: 'rg-row' }, h('span', { text: 'Personnes ayant ouvert le lien' }), h('b', { text: nf(c.uniqueOpens) })),
+            h('div', { class: 'rg-row' }, h('span', { text: 'Vues déclarées (indicatif)' }), h('b', { text: nf(c.declaredViews) }))),
+          zone);
       }));
     } catch { /* pas de campagne ou service indisponible */ }
   }
@@ -425,6 +444,7 @@ async function initSpace() {
     if (/profil_en_validation/.test(m)) return 'Ton profil est en cours de validation : tu pourras publier ta première annonce dès qu’il est validé (tu recevras un e-mail).';
     if (/logo_refuse/.test(m)) return "Ton profil annonceur a été refusé : corrige-le dans l'onglet Profil puis renvoie-le.";
     if (/15 secondes/.test(m)) return 'La vidéo doit durer 15 secondes maximum.';
+    if (/solde_insuffisant/.test(m)) return 'Ton solde est insuffisant : recharge-le puis renvoie ta campagne.';
     if (/limite_atteinte/.test(m)) return 'Tu as utilisé tes 3 annonces gratuites.';
     if (/limite_du_jour/.test(m)) return 'Trop d\'annonces envoyées aujourd\'hui. Réessaie demain.';
     if (/gratuite_terminee/.test(m)) return 'L\'offre gratuite est terminée. Contacte-nous pour annoncer.';
@@ -442,6 +462,10 @@ async function initSpace() {
     if (st.isVideo && !(st.duration > 0)) return err('Patiente un instant : la durée de la vidéo est en cours de lecture.');
     if (!link) return err(tel() ? 'Ajoute ton numéro de téléphone.' : 'Ajoute le lien du bouton (https://…).');
     if (!$('#f-cat').value) return err('Choisis la catégorie de ton annonce.');
+    if (st.mode === 'share' && !IS_ADMIN) {   // solde annonceur : si le prix dépasse le solde, on propose la recharge du montant manquant
+      const need = Math.round(((Number($('#f-aud').value) || 0) / 1000) * wal.per1000) - (wal.data ? wal.data.balanceXof : 0);
+      if (need > 0) { err('Ton solde est insuffisant pour cette campagne : recharge-le, puis envoie-la.'); openTopup(need); return; }
+    }
     const btn = $('#f-send'); btn.disabled = true; const label = btn.textContent;
     try {
       btn.textContent = 'Envoi des fichiers…';
@@ -461,8 +485,9 @@ async function initSpace() {
       const share = st.mode === 'share';
       if (share) { payload.targetAudience = Number($('#f-aud').value); if (!(payload.targetAudience >= 1000)) throw Object.assign(new Error('Choisis au moins 1 000 personnes à atteindre.'), { code: 'functions/invalid-argument' }); if (IS_ADMIN) payload.brand = $('#f-sbrand').value.trim(); }
       const done = share ? await call('adsShareCampaignCreate', payload) : await call('adsWebCreate', payload);
+      if (share) loadWallet();
       $('#adform').reset(); st.banners = {}; $$('.bnrow .bt').forEach((t) => { t.textContent = ''; t.className = 'bt'; }); st.langs.clear(); st.devs.clear(); st.types.clear(); $$('#f-langs span, #f-devs span, #f-types span').forEach((x) => x.classList.remove('on')); st.countries = new Set(['ALL']); $$('#f-countries span').forEach((x) => x.classList.toggle('on', x.dataset.v === 'ALL')); $('#f-cat-note').hidden = true; st.files = []; $('#f-file-name').textContent = 'Choisis une image ou une vidéo'; refresh();
-      status(share ? (done.free ? 'Campagne créée : elle sera proposée aux partageurs dès sa validation par la deuxième personne de l’équipe.' : 'Campagne envoyée ! Notre équipe te contacte pour le paiement de ' + Number(done.priceFcfa).toLocaleString('fr-FR') + ' F : elle démarre dès que le paiement est confirmé.') : 'Annonce envoyée ! Notre équipe la valide, tu recevras un e-mail dès qu\'elle est en ligne.');
+      status(share ? (done.free ? 'Campagne créée : elle sera proposée aux partageurs dès sa validation par la deuxième personne de l’équipe.' : 'Campagne envoyée et payée avec ton solde (' + Number(done.priceFcfa).toLocaleString('fr-FR') + ' F). Elle démarre dès sa validation par notre équipe ; si elle est refusée, tu es remboursé sur ton solde.') : 'Annonce envoyée ! Notre équipe la valide, tu recevras un e-mail dès qu\'elle est en ligne.');
       tab('mes');
     } catch (e) { err(explain(e)); } finally { btn.disabled = false; btn.textContent = label; }
   });
@@ -532,6 +557,116 @@ async function initSpace() {
 
   // mes annonces
   const badge = { validation: ['wait', 'En validation'], ligne: ['ok', 'En ligne'], refusee: ['rej', 'Refusée'], arretee: ['end', 'Arrêtée'], terminee: ['end', 'Terminée'] };
+  /** Chiffres clés de l'annonceur : annonces affichées ET campagnes Partage (les deux alimentent le même bandeau). */
+  function drawAdvKpis() {
+    const d = st.mine, sh = st.shares || [];
+    if (!d) return;
+    const live = d.items.filter((a) => a.status === 'ligne'), wait = d.items.filter((a) => a.status === 'validation'), stats = d.items.filter((a) => a.status !== 'validation');
+    const views = stats.reduce((x, a) => x + (a.views || 0), 0), clicks = stats.reduce((x, a) => x + (a.clicks || 0), 0);
+    const shLive = sh.filter((c) => c.status === 'active'), shWait = sh.filter((c) => c.status === 'pending');
+    const online = live.length + shLive.length, waiting = wait.length + shWait.length;
+    const goMine = () => $('.adtabs a[data-tab="mes"]').click();
+    const bal = wal.data ? wal.data.balanceXof : null;
+    $('#advkpis').replaceChildren(
+      kpiCard('Solde annonceur', bal === null ? '—' : nf(bal) + ' F', bal === null ? 'Complète d’abord ton profil' : (bal > 0 ? 'Recharger' : 'Recharge-le pour lancer une campagne'), bal ? 'ok' : '', () => (bal === null ? tab('profil') : openTopup(0))),
+      kpiCard('En ligne', n(online), online ? 'annonces et campagnes diffusées' : 'aucune pour l’instant', online ? 'ok' : '', goMine),
+      kpiCard('En attente', n(waiting), waiting ? 'validation par l’équipe sous 48 h' : 'rien en attente', waiting ? 'wait' : '', goMine),
+      kpiCard('Vues', n(views), `${n(clicks)} clic${clicks > 1 ? 's' : ''}`));
+  }
+  // ───────── solde annonceur (FCFA) : séparé des pièces et des gains de l'application ─────────
+  const kindLab = { topup: 'Recharge', spend: 'Campagne payée', refund: 'Remboursement', adjustment: 'Ajustement' };
+  async function loadWallet() {
+    try { wal.data = await call('adsWalletMe'); wal.per1000 = wal.data.sharePricePer1000 || wal.per1000; }
+    catch { wal.data = null; }
+    drawAdvKpis(); drawWallet(); window.dispatchEvent(new Event('afl-wallet'));
+  }
+  function drawWallet() {
+    const d = wal.data;
+    $('#wal-bal').textContent = d ? nf(d.balanceXof) + ' F' : '—';
+    $('#wal-tx').replaceChildren(...(!d ? [h('p', { class: 'adempty', text: 'Complète d’abord ton profil de marque : ton solde est créé ensuite.' })]
+      : d.transactions.length ? d.transactions.map((t) => h('div', { class: 'waltx-r' },
+        h('div', {}, h('b', { text: t.description }), h('small', { text: kindLab[t.kind] + ' · ' + new Date(t.createdAt).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' }) })),
+        h('div', { class: 'waltx-a ' + (t.amountXof > 0 ? 'pos' : 'neg') }, h('b', { text: (t.amountXof > 0 ? '+' : '−') + nf(Math.abs(t.amountXof)) + ' F' }), h('small', { text: 'Solde : ' + nf(t.balanceAfter) + ' F' }))))
+        : [h('p', { class: 'adempty', text: 'Aucun mouvement pour l’instant. Recharge ton solde pour lancer ta première campagne.' })]));
+  }
+  const topDlg = $('#adtopup'), tp = { method: 'momo', key: '', timer: 0, quoteT: 0 };
+  const topErr = (m) => { const e = $('#top-err'); e.hidden = !m; e.textContent = m || ''; };
+  const topExplain = (e) => {
+    const m = String((e && e.message) || '');
+    const map = { otp_required: 'Ajoute le code OTP généré sur ton téléphone (Orange Burkina Faso).', terms_required: 'Accepte les conditions pour payer par carte.', card_identity_required: 'Complète ton identité et ton adresse.', phone_required: 'Ajoute ton numéro de téléphone.',
+      provider_refused: 'L’opérateur a refusé la demande. Vérifie le numéro et l’opérateur, puis réessaie.', provider_unavailable: 'Le paiement par carte est indisponible pour le moment. Réessaie plus tard.', card_blocked: 'La carte est désactivée sur ce compte : utilise le Mobile Money.',
+      card_disabled: 'Le paiement par carte est désactivé pour le moment.', limite_du_jour: 'Trop de recharges aujourd’hui. Réessaie demain.', montant_invalide: 'Entre un montant de 1 000 à 2 000 000 F.', email_required: 'Ton compte doit avoir une adresse e-mail.', profil_manquant: 'Complète d’abord ton profil de marque.' };
+    const k = Object.keys(map).find((x) => m.includes(x));
+    return k ? map[k] : 'Impossible de lancer la recharge pour le moment. Réessaie.';
+  };
+  const topQuote = () => {
+    clearTimeout(tp.quoteT);
+    tp.quoteT = setTimeout(async () => {
+      const amount = Number($('#top-amt').value) || 0, box = $('#top-quote');
+      box.querySelector('b').textContent = '…'; box.querySelector('small').textContent = '';
+      try {
+        const q = await call('adsWalletQuote', { amountXof: amount, method: tp.method, operator: $('#top-op').value });
+        box.querySelector('b').textContent = 'Tu paies ' + nf(q.payXof) + ' F';
+        box.querySelector('small').textContent = nf(q.creditedXof) + ' F arrivent sur ton solde · ' + nf(q.feeXof) + ' F de frais de paiement' + (q.payCents ? ' · débité en dollars (' + (q.payCents / 100).toFixed(2).replace('.', ',') + ' $)' : '');
+      } catch (e) { box.querySelector('b').textContent = '—'; box.querySelector('small').textContent = topExplain(e); }
+    }, 250);
+  };
+  const setMethod = (m) => {
+    tp.method = m; $$('#top-method label').forEach((l) => l.classList.toggle('on', l.dataset.v === m));
+    $('#top-momo').hidden = m !== 'momo'; $('#top-card').hidden = m !== 'card'; topErr(''); topQuote();
+  };
+  function openTopup(need) {
+    if (!wal.data) { tab('profil'); status('Complète d’abord ton profil de marque : ton solde est créé ensuite.', true); return; }
+    const o = wal.data.options, op = $('#top-op');
+    if (!op.options.length) { op.replaceChildren(...o.operators.map((x) => h('option', { value: x.code, text: x.label }))); }
+    $('#top-method label[data-v="card"]').hidden = !o.card.enabled;
+    tp.key = ''; topErr(''); $('#top-wait').hidden = true; $('#top-go').disabled = false;
+    const nb = $('#top-need');
+    nb.hidden = !(need > 0); nb.textContent = need > 0 ? 'Il te manque ' + nf(need) + ' F pour cette campagne. Montant proposé : de quoi la payer.' : '';
+    if (need > 0) $('#top-amt').value = String(Math.min(o.maxXof, Math.max(o.minXof, Math.ceil(need / 500) * 500)));
+    $('#top-otp-l').hidden = !(o.operators.find((x) => x.code === op.value) || {}).otp;
+    setMethod('momo');
+    if (!topDlg.open) topDlg.showModal();
+  }
+  async function pollTopup(id, tries = 0) {
+    clearTimeout(tp.timer);
+    try {
+      const r = await call('adsWalletTopupStatus', { id });
+      if (r.status === 'paid') { try { sessionStorage.removeItem('adtopup'); } catch { /* sans stockage */ } if (topDlg.open) topDlg.close(); status('Recharge confirmée : ' + nf(r.creditedXof) + ' F ajoutés à ton solde.'); loadWallet(); return; }
+      if (r.status === 'failed' || r.status === 'expired') { try { sessionStorage.removeItem('adtopup'); } catch { /* sans stockage */ } tp.key = ''; $('#top-go').disabled = false; $('#top-wait').hidden = true; topErr('Le paiement n’a pas abouti' + (r.failure ? ' (' + r.failure + ')' : '') + '. Tu peux réessayer.'); return; }
+    } catch { /* on réessaie */ }
+    if (tries < 75) tp.timer = setTimeout(() => pollTopup(id, tries + 1), 4000);
+    else { $('#top-go').disabled = false; $('#top-wait').textContent = 'Toujours en attente. Si tu as validé le paiement, ton solde sera crédité dès confirmation : reviens dans quelques minutes.'; }
+  }
+  if (topDlg) {
+    $('#adtopup-x').addEventListener('click', () => { clearTimeout(tp.timer); topDlg.close(); });
+    topDlg.addEventListener('click', (e) => { if (e.target === topDlg) { clearTimeout(tp.timer); topDlg.close(); } });
+    $$('#top-quick span').forEach((x) => x.addEventListener('click', () => { $('#top-amt').value = x.dataset.v; topQuote(); }));
+    $$('#top-method label').forEach((l) => l.addEventListener('click', () => setMethod(l.dataset.v)));
+    $('#top-amt').addEventListener('input', topQuote);
+    $('#top-op').addEventListener('change', () => { const o = wal.data && wal.data.options.operators.find((x) => x.code === $('#top-op').value); $('#top-otp-l').hidden = !(o && o.otp); topQuote(); });
+    $('#wal-topup').addEventListener('click', () => openTopup(0));
+    $('#topform').addEventListener('submit', async (ev) => {
+      ev.preventDefault(); topErr('');
+      const amount = Number($('#top-amt').value) || 0;
+      if (amount < 1000) return topErr('Entre un montant de 1 000 F au moins.');
+      tp.key = tp.key || (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36)).replace(/[^A-Za-z0-9-]/g, '');
+      const body = { amountXof: amount, method: tp.method, key: tp.key };
+      if (tp.method === 'momo') Object.assign(body, { operator: $('#top-op').value, phone: $('#top-phone').value.trim(), otp: $('#top-otp').value.trim() });
+      else Object.assign(body, { terms: $('#top-terms').checked, firstName: $('#top-fn').value.trim(), lastName: $('#top-ln').value.trim(), city: $('#top-city').value.trim(), zip: $('#top-zip').value.trim(), country: $('#top-cc').value.trim(), phone: $('#top-cphone').value.trim() });
+      const go = $('#top-go'); go.disabled = true;
+      try {
+        const r = await call('adsWalletTopup', body);
+        try { sessionStorage.setItem('adtopup', r.id); } catch { /* sans stockage */ }
+        if (tp.method === 'card' && r.paymentUrl) { $('#top-wait').hidden = false; $('#top-wait').textContent = 'Ouverture de la page de paiement sécurisée…'; location.href = r.paymentUrl; return; }
+        $('#top-wait').hidden = false; $('#top-wait').textContent = (r.message || 'Valide le paiement sur ton téléphone') + '. Cette fenêtre se met à jour toute seule.';
+        pollTopup(r.id);
+      } catch (e) { go.disabled = false; tp.key = /provider|otp|terms|identity|phone/.test(String((e && e.message) || '')) ? '' : tp.key; topErr(topExplain(e)); }
+    });
+    // retour de la page de paiement par carte : on vérifie la recharge en cours
+    try { const pend = sessionStorage.getItem('adtopup'); if (pend) { status('Vérification de ta recharge…'); pollTopup(pend, 60); } } catch { /* sans stockage */ }
+  }
+
   async function loadMine() {
     try {
       const d = await call('adsWebMine');
@@ -539,6 +674,7 @@ async function initSpace() {
       $('#mycount').textContent = d.items.length; $('#myquota').textContent = `${d.used} gratuite${d.used > 1 ? 's' : ''} utilisée${d.used > 1 ? 's' : ''} sur ${d.max}`;
       $('#f-quota').textContent = !d.open ? 'L\'offre gratuite est terminée.' : st.left ? `${st.left} annonce${st.left > 1 ? 's' : ''} gratuite${st.left > 1 ? 's' : ''} restante${st.left > 1 ? 's' : ''} · validation par notre équipe avant diffusion` : 'Tu as utilisé tes annonces gratuites.';
       $('#f-send').disabled = !d.open || !st.left;
+      st.mine = d; drawAdvKpis();   // chiffres clés, visibles sans ouvrir d'onglet
       const box = $('#mylist'); box.replaceChildren();
       if (!d.items.length) { box.append(h('p', { class: 'adempty', text: 'Tu n\'as pas encore d\'annonce. Crée la première, c\'est gratuit.' })); return; }
       const doAct = (name, id, okMsg) => async () => { try { await call(name, { id }); status(okMsg); } catch (er) { status(/paiement_requis/.test(String(er?.message)) ? 'Limite de prolongations gratuites atteinte : l’offre payante Afrolook Ads arrive bientôt.' : 'Action impossible pour le moment.', true); throw er; } finally { loadMine(); } };
@@ -555,7 +691,10 @@ async function initSpace() {
         row.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target === row) { e.preventDefault(); openDetail(a, opt); } });
         box.append(row);
       }
-    } catch { $('#mylist').replaceChildren(h('p', { class: 'adempty', text: 'Impossible de charger tes annonces pour le moment.' })); }
+    } catch {
+      $('#advkpis').replaceChildren(kpiCard('Tes chiffres', '—', 'indisponibles pour le moment', 'alert', () => loadMine()));
+      $('#mylist').replaceChildren(h('p', { class: 'adempty', text: 'Impossible de charger tes annonces pour le moment.' }));
+    }
   }
   refresh();
 }
@@ -659,6 +798,22 @@ async function initPub() {
     return wrap;
   }
 
+  /** Chiffres clés du diffuseur : profil, sites validés, puis audience et trafic mesurés (60 jours) des sites validés. */
+  async function pubKpis(d) {
+    const box = $('#pubkpis'); if (!box) return;
+    const props = d.properties || [], ok = props.filter((p) => p.status === 'active'), wait = props.filter((p) => p.status === 'pending');
+    const prof = d.profile ? ({ active: ['Validé', 'ok'], pending: ['En validation', 'wait'], refused: ['Refusé', 'alert'], suspended: ['Suspendu', 'alert'] })[d.profile.status] || [d.profile.status, ''] : ['À créer', 'wait'];
+    const base = [kpiCard('Mon profil', prof[0], d.profile ? '' : 'commence par ton profil', prof[1], () => $('.adtabs a[data-tab="profil"]').click()),
+      kpiCard('Sites et applications', `${ok.length} / ${props.length}`, props.length ? `${ok.length} validé${ok.length > 1 ? 's' : ''}${wait.length ? ` · ${wait.length} en validation` : ''}` : 'aucun pour l\u2019instant', ok.length ? 'ok' : (wait.length ? 'wait' : ''), () => $('.adtabs a[data-tab="sites"]').click())];
+    box.replaceChildren(...base, kpiCard('Affichages (60 j)', '…', 'calcul en cours'), kpiCard('Trafic invalide', '…', 'calcul en cours'));
+    if (!ok.length) { box.replaceChildren(...base, kpiCard('Affichages (60 j)', '0', 'aucun site validé'), kpiCard('Trafic invalide', '—', 'aucun site validé')); return; }
+    const res = await Promise.allSettled(ok.map((p) => call('adsPubStats', { id: p.id })));
+    const good = res.filter((r) => r.status === 'fulfilled').map((r) => r.value);
+    const imp = good.reduce((s, x) => s + ((x.totals && x.totals.impressions60) || 0), 0), bad = good.reduce((s, x) => s + ((x.totals && x.totals.invalid60) || 0), 0);
+    box.replaceChildren(...base, kpiCard('Affichages (60 j)', good.length ? n(imp) : '—', good.length ? `sur ${good.length} site${good.length > 1 ? 's' : ''}` : 'mesures indisponibles', imp ? 'ok' : ''),
+      kpiCard('Trafic invalide', good.length ? pct(bad, imp + bad) : '—', good.length ? `${n(bad)} affichage${bad > 1 ? 's' : ''} écarté${bad > 1 ? 's' : ''}` : '', good.length && imp + bad > 0 && bad / (imp + bad) > 0.1 ? 'alert' : ''));
+  }
+
   function renderProps() {
     $('#pcount').textContent = st.props.length;
     const box = $('#plist'); box.replaceChildren();
@@ -701,7 +856,7 @@ async function initPub() {
       const d = await call('adsPubMe'); st.profile = d.profile; st.props = d.properties;
       const t = Math.floor(Number(d.audience.total) / 1000) * 1000; $('#aud-total').textContent = 'plus de ' + n(Math.max(50000, t));
       st.cats = d.adCategories || {}; $('#p-rules-new').hidden = !(d.profile && d.rules && !d.rules.accepted);
-      fillProfile(); renderProps();
+      fillProfile(); renderProps(); pubKpis(d);
       if (!d.profile) { tab('profil'); status('Bienvenue ! Commence par ton profil de diffuseur.'); } else if (!$('#tab-profil').hidden && d.properties.length) tab('sites');
     } catch { status('Impossible de charger ton espace pour le moment. Recharge la page.', true); }
   }
@@ -768,9 +923,38 @@ async function initRegieAdmin() {
   const tabs = { adv: 'Annonceurs', pub: 'Diffuseurs', prop: 'Sites et applications', share: 'Partageurs', camp: 'Campagnes Partage', alert: 'Alertes' };
   const alertFilters = [['open', 'À vérifier'], ['held', 'Paiements bloqués'], ['reviewed', 'Vérifiées'], ['all', 'Toutes']];
   const filters = [['all', 'Tous'], ['pending', 'En attente'], ['active', 'Validés'], ['refused', 'Refusés'], ['suspended', 'Suspendus']];
+  /** Total de chaque rubrique ET ce qui attend une décision, chargés d'un coup (pas besoin d'ouvrir chaque onglet pour savoir ce qu'il y a). */
+  async function loadKpis() {
+    const one = (name, args, pick, wait) => call(name, args).then((r) => { const l = pick(r); return { total: l.length, wait: l.filter(wait).length }; }).catch(() => null);
+    const pend = (x) => String(x.status || x.logoStatus) === 'pending', open = (x) => String(x.status) === 'open';
+    const [adv, pub, prop, share, camp, alert] = await Promise.all([
+      one('adsAdvAdminList', { status: 'all' }, (r) => r.items || [], pend),
+      one('adsPubAdminList', { status: 'all' }, (r) => r.profiles || [], pend),
+      one('adsPubAdminList', { status: 'all' }, (r) => r.properties || [], pend),
+      one('adsPubAdminList', { sharers: true, status: 'all' }, (r) => r.sharers || [], pend),
+      one('adsPubAdminList', { campaigns: true, status: 'all' }, (r) => r.campaigns || [], pend),
+      one('adsPubAdminList', { alerts: true, status: 'all' }, (r) => r.alerts || [], open)]);
+    st.k = { adv, pub, prop, share, camp, alert };
+    drawKpis(); drawBar();
+  }
+  function drawKpis() {
+    const k = st.k;
+    const go = (tab, filter) => () => { st.tab = tab; if (tab === 'alert') st.afilter = 'open'; else st.filter = filter; load(); };
+    // grand chiffre = total ; dessous = ce qui attend une décision (jaune) ou « tout est traité » (vert)
+    const card = (label, key, tab, what) => {
+      const x = k[key];
+      if (!x) return kpiCard(label, '—', 'indisponible', 'alert', () => loadKpis());
+      return kpiCard(label, n(x.total), x.wait ? `${n(x.wait)} ${what}` : (x.total ? 'tout est traité' : 'aucun pour l\u2019instant'), x.wait ? (tab === 'alert' ? 'alert' : 'wait') : 'ok', go(tab, x.wait ? 'pending' : 'all'));
+    };
+    $('#rg-kpis').replaceChildren(card('Annonceurs', 'adv', 'adv', 'à valider'), card('Diffuseurs', 'pub', 'pub', 'à valider'), card('Sites et applications', 'prop', 'prop', 'à valider'),
+      card('Partageurs', 'share', 'share', 'à valider'), card('Campagnes Partage', 'camp', 'camp', 'à valider'), card('Alertes', 'alert', 'alert', 'à vérifier'));
+  }
   const drawBar = () => {
-    const count = { adv: st.adv.length, pub: st.profiles.length, prop: st.props.length, share: st.sharers.length, camp: st.camps.length, alert: st.tab === 'alert' && st.afilter === 'open' ? st.alerts.length : st.alertsOpen };
-    $('#rg-tabs').replaceChildren(...Object.entries(tabs).map(([k, l]) => h('a', { href: '#', class: (st.tab === k ? 'on ' : '') + (k === 'alert' && count.alert ? 'rg-alert' : ''), onclick: (e) => { e.preventDefault(); st.tab = k; load(); } }, l, h('i', { text: String(count[k]) }))));
+    // pastille de chaque rubrique = TOTAL (chargé d'un coup, voir loadKpis) ; sinon, longueur de la liste affichée
+    const k = st.k || {}, pick = (x, fallback) => (x ? x.total : fallback);
+    const waiting = (key) => !!(k[key] && k[key].wait);
+    const count = { adv: pick(k.adv, st.adv.length), pub: pick(k.pub, st.profiles.length), prop: pick(k.prop, st.props.length), share: pick(k.share, st.sharers.length), camp: pick(k.camp, st.camps.length), alert: k.alert ? k.alert.wait : (st.tab === 'alert' && st.afilter === 'open' ? st.alerts.length : st.alertsOpen) };
+    $('#rg-tabs').replaceChildren(...Object.entries(tabs).map(([tk, l]) => h('a', { href: '#', class: (st.tab === tk ? 'on ' : '') + (tk === 'alert' && count.alert ? 'rg-alert' : (waiting(tk) ? 'rg-wait' : '')), onclick: (e) => { e.preventDefault(); st.tab = tk; load(); } }, l, h('i', { text: String(count[tk]) }))));
     const fl = st.tab === 'alert' ? alertFilters : filters, cur = st.tab === 'alert' ? st.afilter : st.filter;
     $('#rg-filters').replaceChildren(...fl.map(([k, l]) => h('span', { class: cur === k ? 'on' : false, onclick: () => { if (st.tab === 'alert') st.afilter = k; else st.filter = k; load(); } }, l)));
   };
@@ -865,12 +1049,12 @@ async function initRegieAdmin() {
     const stl = { pending: ['wait', 'À valider'], active: ['ok', 'En cours'], paused: ['end', 'En pause'], refused: ['rej', 'Refusée'], ended: ['end', 'Terminée'] }[p.status] || ['end', p.status];
     const c = h('article', { class: 'rg-card' },
       h('div', { class: 'rg-h' }, h('div', {}, h('b', { text: p.brand + ' · ' + p.title }), h('small', { text: p.ownerEmail || '' })), tag(stl[0], stl[1])),
-      row('Texte', p.text), row('Audience à atteindre', n(p.targetAudience) + ' personnes'), row('Prix', p.free ? 'Offerte par l’équipe' : n(p.listPriceFcfa) + ' F (à encaisser avant de valider)'),
-      row('Pays', (p.countries || []).join(', ')), row('Résultats', n(p.valid) + ' clics valides · ' + n(p.sharers) + ' partageurs · audience engagée ' + n(p.allocatedReach)), row('Audience touchée', n(p.provenReach) + ' personnes (publications confirmées) · ' + n(p.uniqueOpens) + ' ouvertures · ' + n(p.previews) + ' aperçus · ' + n(p.declaredViews) + ' vues déclarées'), row('Gains versés (plafond)', n(p.spentFcfa) + ' F'),
+      row('Texte', p.text), row('Audience à atteindre', n(p.targetAudience) + ' personnes'), row('Prix', p.free ? 'Offerte par l’équipe' : p.fromBalance ? n(p.listPriceFcfa) + ' F (payée avec le solde annonceur)' : n(p.listPriceFcfa) + ' F (à encaisser avant de valider)'),
+      row('Pays', (p.countries || []).filter((c) => c !== 'ALL').join(', ') || 'Tous les pays'), row('Résultats', n(p.valid) + ' clics valides · ' + n(p.sharers) + ' partageurs · audience engagée ' + n(p.allocatedReach)), row('Audience touchée', n(p.provenReach) + ' personnes (publications confirmées) · ' + n(p.uniqueOpens) + ' ouvertures · ' + n(p.previews) + ' aperçus · ' + n(p.declaredViews) + ' vues déclarées'), row('Gains versés (plafond)', n(p.spentFcfa) + ' F'),
       p.reason ? row('Motif', p.reason) : null);
     const l = lnk('Voir le lien de l’annonceur', p.actionUrl); if (l) c.append(l);
     const d = (decision) => ({ target: 'campaign', id: p.id, decision }), specs = [];
-    if (p.status === 'pending') specs.push({ label: 'Valider (paiement reçu)', primary: true, ask: 'Référence du paiement reçu (virement, Mobile Money…)', fn: 'adsPubAdminReview', data: d('approve') }, { label: 'Refuser', ask: 'Motif du refus (envoyé par e-mail)', fn: 'adsPubAdminReview', data: d('refuse') });
+    if (p.status === 'pending') specs.push({ label: (p.free || p.fromBalance) ? 'Valider' : 'Valider (paiement reçu)', primary: true, ...((p.free || p.fromBalance) ? {} : { ask: 'Référence du paiement reçu (virement, Mobile Money…)' }), fn: 'adsPubAdminReview', data: d('approve') }, { label: 'Refuser', ask: 'Motif du refus (envoyé par e-mail)', fn: 'adsPubAdminReview', data: d('refuse') });
     if (p.status === 'active') specs.push({ label: 'Mettre en pause', ask: 'Motif (gardé dans le journal)', fn: 'adsPubAdminReview', data: d('pause') }, { label: 'Terminer', ask: 'Motif (gardé dans le journal)', fn: 'adsPubAdminReview', data: d('end') });
     if (p.status === 'paused') specs.push({ label: 'Reprendre', primary: true, fn: 'adsPubAdminReview', data: d('resume') });
     decide(c, specs); return c;
@@ -898,6 +1082,7 @@ async function initRegieAdmin() {
     $('#rg-list').replaceChildren(...(list.length ? list : [h('p', { class: 'adempty', text: 'Rien à afficher pour ce filtre.' })]));
   }
   async function load() {
+    loadKpis();
     $('#rg-list').replaceChildren(h('p', { class: 'adempty', text: 'Chargement…' }));
     try {
       if (st.tab === 'share') { st.sharers = (await call('adsPubAdminList', { sharers: true, status: st.filter })).sharers; draw(); return; }

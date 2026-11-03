@@ -109,8 +109,25 @@
       ],
       "rewrites": [
         {
+          "source": "/v1/**",
+          "function": {
+            "functionId": "apiProxy",
+            "region": "us-central1"
+          }
+        },
+        {
+          "source": "/ads/api/**",
+          "function": {
+            "functionId": "apiProxy",
+            "region": "us-central1"
+          }
+        },
+        {
           "source": "/p/**",
-          "function": "adsShareGo"
+          "function": {
+            "functionId": "apiProxy",
+            "region": "us-central1"
+          }
         },
         {
           "source": "/app/**",

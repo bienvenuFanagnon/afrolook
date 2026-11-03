@@ -415,3 +415,44 @@ pre.doc-code code{background:none;padding:0;color:inherit;font:inherit;overflow-
 @media (prefers-reduced-motion:reduce){.rg-card,.rg-filters span,.adtabs a{transition:none}.rg-card:hover{transform:none}}
 @media (max-width:620px){.rg-card{padding:18px 16px;border-radius:18px}.rg-row{grid-template-columns:minmax(0,1fr)}.rg-row span{text-transform:none}}
 @media (prefers-color-scheme:dark){.rg-card{box-shadow:0 1px 2px rgba(0,0,0,.3),0 12px 30px -14px rgba(0,0,0,.6)}}
+
+/* Chiffres clés des espaces annonceur, diffuseur et administration : on voit tout de suite l'essentiel, sans ouvrir d'onglet */
+.adkpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:22px 0 4px}
+.adkpis-adm{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.adk{display:flex;flex-direction:column;gap:3px;text-align:left;font:inherit;color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;position:relative;overflow:hidden}
+.adk::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--line)}
+.adk small{color:var(--muted);font-size:12.5px;font-weight:700;text-transform:none;letter-spacing:.2px}
+.adk b{font-family:var(--display);font-size:clamp(26px,3vw,34px);line-height:1.1;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
+.adk span{color:var(--muted);font-size:12.5px;min-height:1.2em}
+.adk.ok::before{background:var(--green-bright)}.adk.wait::before{background:var(--yellow)}.adk.alert::before{background:#e5484d}
+.adk.alert b{color:#e5484d}.adk.ok b{color:var(--green)}
+.adk.clk{cursor:pointer;transition:transform .12s,box-shadow .12s,border-color .12s}.adk.clk:hover{transform:translateY(-1px);border-color:var(--green);box-shadow:0 6px 18px rgba(0,0,0,.08)}
+.adk.clk:focus-visible{outline:3px solid color-mix(in srgb,var(--green-bright) 55%,transparent);outline-offset:2px}
+.adk.adk-load{pointer-events:none}.adk.adk-load small,.adk.adk-load b,.adk.adk-load span{background:linear-gradient(90deg,var(--line),color-mix(in srgb,var(--line) 40%,transparent),var(--line));background-size:200% 100%;border-radius:6px;color:transparent;animation:adksk 1.2s linear infinite}
+.adk.adk-load small{width:60%}.adk.adk-load b{width:40%}.adk.adk-load span{width:75%}
+@keyframes adksk{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.adk.adk-load small,.adk.adk-load b,.adk.adk-load span{animation:none}.adk.clk{transition:none}}
+@media (max-width:620px){.adkpis{grid-template-columns:1fr 1fr;gap:10px}.adk{padding:12px 13px}}
+
+.adtabs a.rg-wait i{background:var(--yellow);color:#1a1a1a}
+/* correctifs d'affichage : cartes alignées en haut (bouton ou non), onglets sur une seule ligne défilante sur téléphone */
+.adk{justify-content:flex-start;align-content:flex-start}
+.adk.adk-load{min-height:92px}
+.adtabs a{white-space:nowrap;flex:0 0 auto}
+.adtabs a i{margin-left:6px}
+
+.adstack{display:grid;gap:14px}
+.rg-more{margin-top:2px}.rg-more summary{cursor:pointer;font-size:13.5px;font-weight:600;color:var(--green);padding:6px 0;list-style:none}.rg-more summary::-webkit-details-marker{display:none}.rg-more summary::after{content:' ▾'}.rg-more[open] summary::after{content:' ▴'}
+.rg-act{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}.rg-act .addlg-conf{flex-basis:100%;margin:0}
+
+/* solde annonceur */
+.walbox{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:22px 24px;border-radius:22px;background:var(--surface);border:1px solid var(--line);box-shadow:0 1px 2px rgba(13,21,17,.04),0 10px 28px -14px rgba(13,21,17,.18)}
+.walbox>div{display:grid;gap:6px;min-width:0;flex:1 1 280px}.walbox small{color:var(--muted);font-weight:700;font-size:13px}.walbox b{font:800 clamp(30px,5vw,42px) var(--display);color:var(--green)}.walbox span{color:var(--muted);font-size:14px;line-height:1.5}
+.walh{margin:28px 0 10px;font:800 20px var(--display)}
+.waltx{display:grid;gap:8px}.waltx-r{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:13px 16px;border-radius:16px;background:var(--surface);border:1px solid var(--line)}
+.waltx-r>div{display:grid;gap:3px;min-width:0}.waltx-r small{color:var(--muted);font-size:12.5px}.waltx-r b{font-size:14.5px;overflow-wrap:anywhere}
+.waltx-a{text-align:right}.waltx-a b{font-size:16px}.waltx-a.pos b{color:var(--green)}.waltx-a.neg b{color:#e5484d}
+.topform{display:grid;gap:4px}.topform h2{margin:0 0 4px;font:800 24px var(--display)}.topform select,.topform input[type=number],.topform input[type=tel],.topform input:not([type]){width:100%}
+.topgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.topterms{display:flex;gap:10px;align-items:flex-start;margin-top:12px;font-size:13px;color:var(--muted);line-height:1.5}.topterms input{margin-top:3px;flex:none}
+#top-go{margin-top:14px}
+@media (max-width:620px){.topgrid{grid-template-columns:1fr}.waltx-r{padding:12px 13px}}

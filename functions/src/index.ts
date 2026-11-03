@@ -97,3 +97,6 @@ export { onNewsCommentCreated } from "./news/engagement";
 export { newsPipelineTick, newsRunPipeline, newsSourcesTest } from "./news/schedule";
 export { newsCleanup } from "./news/cleanup";
 export { newsDigestTick, newsBuildDigests } from "./news/digest";
+
+// Relais du site afrolookmedia.com vers la nouvelle API (chemins /v1/** et /ads/api/**, voir firebase.json)
+export { apiProxy } from "./edge/apiProxy";
