@@ -31,6 +31,24 @@ class _PartnerOffersPageState extends State<PartnerOffersPage> {
 
   String get _platform => (!kIsWeb && Platform.isIOS) ? 'ios' : 'android';
 
+  /// Étapes d'une offre (nom d'origine `name`, nom traduit `label`, pièces `coins`, `done`) : une offre peut payer par étapes (ouvrir le jeu, atteindre un niveau…).
+  List<Map<String, dynamic>> _steps(Map<String, dynamic> o) => (o['steps'] as List? ?? const []).whereType<Map>().map((m) => Map<String, dynamic>.from(m)).toList();
+
+  Map<String, dynamic> _progress(Map<String, dynamic> o) => o['progress'] is Map ? Map<String, dynamic>.from(o['progress'] as Map) : const {};
+
+  /// Même clé de comparaison que le serveur (le nom de l'étape reçu dans l'appel de retour du partenaire correspond à celui du flux).
+  String _key(String s) => s.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+
+  /// État d'une étape déjà faite d'après l'appel de retour reçu : `held` (en attente), `released` (versée), `reversed` (annulée) ; null = pas encore faite.
+  String? _stepState(Map<String, dynamic> o, Map<String, dynamic> step) {
+    for (final d in (_progress(o)['done'] as List? ?? const []).whereType<Map>()) {
+      if (_key('${d['event'] ?? ''}') == _key('${step['name']}')) return '${d['status']}';
+    }
+    return step['done'] == true ? 'held' : null;
+  }
+
+  String _fcfa(int coins) => tr('≈ {f} F', {'f': _n.format((coins * 0.4).floor())});
+
   @override
   void initState() {
     super.initState();
@@ -123,12 +141,96 @@ class _PartnerOffersPageState extends State<PartnerOffersPage> {
     );
   }
 
+  /// Les étapes d'une offre : ce qui est déjà fait (avec son état), ce qui reste, et la part de chaque étape dans le gain total. Ne montre aucune étape qui demande de dépenser de l'argent.
+  List<Widget> _stepsBlock(AppColors c, Map<String, dynamic> o, List<Map<String, dynamic>> steps, int total) {
+    final prog = _progress(o);
+    final earned = (prog['earned'] as num?)?.toInt() ?? 0;
+    final remaining = (prog['remaining'] as num?)?.toInt() ?? steps.fold<int>(0, (a, s) => a + ((s['coins'] as num?)?.toInt() ?? 0));
+    final doneCount = steps.where((s) => _stepState(o, s) != null && _stepState(o, s) != 'reversed').length;
+    final biggest = steps.fold<int>(0, (a, s) => ((s['coins'] as num?)?.toInt() ?? 0) > a ? ((s['coins'] as num?)?.toInt() ?? 0) : a);
+    final biggestShare = total > 0 ? (biggest * 100 / total).round() : 0;
+    // même style que les autres cartes de l'application : fond « surface », bordure fine, coins arrondis à 16, vert de marque pour ce qui est fait
+    return [
+      const SizedBox(height: 16),
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            Icon(Icons.checklist_rounded, color: c.primary, size: 22),
+            const SizedBox(width: 10),
+            Expanded(child: Text(tr('Les étapes'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 16.5))),
+            Text('$doneCount/${steps.length}', style: TextStyle(color: c.textSecondary, fontWeight: FontWeight.w700, fontSize: 13)),
+          ]),
+          if (doneCount > 0 || earned > 0) ...[
+            const SizedBox(height: 10),
+            ClipRRect(borderRadius: BorderRadius.circular(6), child: LinearProgressIndicator(value: total > 0 ? (earned / total).clamp(0.0, 1.0) : 0, minHeight: 8, backgroundColor: c.surfaceVariant, color: c.primary)),
+            const SizedBox(height: 6),
+            Text(
+              '${tr('Gagné : {c} pièces', {'c': _n.format(earned)})} · ${tr('Il te reste {c} pièces à gagner', {'c': _n.format(remaining)})}',
+              style: TextStyle(color: c.textSecondary, fontSize: 12.5, height: 1.35),
+            ),
+          ],
+          const SizedBox(height: 6),
+          for (var i = 0; i < steps.length; i++) ...[
+            if (i > 0) Divider(height: 1, color: c.divider),
+            _stepRow(c, o, steps[i], total),
+          ],
+          if (biggestShare >= 50) ...[
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: c.surfaceVariant, borderRadius: BorderRadius.circular(12)),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Icon(Icons.info_outline_rounded, color: c.accentText, size: 18),
+                const SizedBox(width: 8),
+                Expanded(child: Text(tr('Les dernières étapes rapportent le plus : la plus grosse représente {p} % du gain total. Les premières sont faciles et rapides.', {'p': biggestShare}), style: TextStyle(color: c.textPrimary, fontSize: 12.5, height: 1.4))),
+              ]),
+            ),
+          ],
+        ]),
+      ),
+    ];
+  }
+
+  Widget _stepRow(AppColors c, Map<String, dynamic> o, Map<String, dynamic> s, int total) {
+    final state = _stepState(o, s);
+    final done = state != null && state != 'reversed';
+    final coins = (s['coins'] as num?)?.toInt() ?? 0;
+    final share = total > 0 ? (coins * 100 / total).round() : 0;
+    final label = '${s['label'] ?? s['name']}';
+    final stateText = switch (state) { 'released' => tr('Versée'), 'reversed' => tr('Annulée'), 'held' => tr('En attente'), _ => null };
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 9),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Icon(done ? Icons.check_circle_rounded : (state == 'reversed' ? Icons.cancel_rounded : Icons.radio_button_unchecked_rounded), size: 20, color: done ? c.primary : (state == 'reversed' ? c.danger : c.textSecondary)),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(label, style: TextStyle(color: c.textPrimary, fontSize: 13.5, height: 1.3, fontWeight: done ? FontWeight.w700 : FontWeight.w500)),
+            Text(
+              stateText != null ? '$stateText' : (share >= 5 ? tr('{p} % du gain total', {'p': share}) : tr('À faire')),
+              style: TextStyle(color: done ? c.primary : (state == 'reversed' ? c.danger : c.textSecondary), fontSize: 11.5),
+            ),
+          ]),
+        ),
+        const SizedBox(width: 8),
+        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Text('+${_n.format(coins)}', style: TextStyle(color: done ? c.primary : c.textPrimary, fontWeight: FontWeight.w800, fontSize: 13.5)),
+          Text(_fcfa(coins), style: TextStyle(color: c.textSecondary, fontSize: 11)),
+        ]),
+      ]),
+    );
+  }
+
   /// Consignes COMPLÈTES de la tâche, avant de la commencer : ce qu'il faut faire, les détails, le gain et le délai de paiement.
   Future<void> _showInstructions(AppColors c, Map<String, dynamic> o) async {
     final action = '${o['action'] ?? ''}'.trim();
     final desc = '${o['description'] ?? ''}'.trim();
     final coins = (o['coins'] as num?)?.toInt() ?? 0;
     final icon = o['icon'] as String?;
+    final steps = _steps(o);
     final go = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -156,9 +258,15 @@ class _PartnerOffersPageState extends State<PartnerOffersPage> {
                   child: Row(children: [
                     Icon(Icons.savings_rounded, color: c.primary),
                     const SizedBox(width: 10),
-                    Expanded(child: Text('${tr('Tu gagnes {c} pièces (≈ {f} F)', {'c': _n.format(coins), 'f': _n.format((coins * 0.4).floor())})} · ≈ ${Money.usd(coins * 0.4)}', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800))),
+                    Expanded(
+                      child: Text(
+                        '${steps.isEmpty ? tr('Tu gagnes {c} pièces (≈ {f} F)', {'c': _n.format(coins), 'f': _n.format((coins * 0.4).floor())}) : tr('Tu peux gagner jusqu\'à {c} pièces (≈ {f} F) en faisant toutes les étapes', {'c': _n.format(coins), 'f': _n.format((coins * 0.4).floor())})} · ≈ ${Money.usd(coins * 0.4)}',
+                        style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800),
+                      ),
+                    ),
                   ]),
                 ),
+                if (steps.isNotEmpty) ..._stepsBlock(c, o, steps, coins),
                 if (action.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   Text(tr('Ce que tu dois faire'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 15)),
@@ -174,6 +282,10 @@ class _PartnerOffersPageState extends State<PartnerOffersPage> {
                 if (action.isEmpty && desc.isEmpty) Padding(padding: const EdgeInsets.only(top: 12), child: Text(tr("Le partenaire n'a pas donné de consignes : elles s'affichent sur la page de la tâche."), style: TextStyle(color: c.textSecondary))),
                 const SizedBox(height: 16),
                 Text(tr("Fais la tâche toi-même, en suivant les consignes jusqu'au bout. Tes pièces sont « en attente » 30 jours, puis versées si la tâche est validée."), style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.4)),
+                if (steps.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(tr("Chaque étape est payée quand tu l'atteins. Respecte le délai donné dans les consignes. Aucun achat n'est nécessaire."), style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.4)),
+                ],
               ]),
             ),
           ),
@@ -214,6 +326,15 @@ class _PartnerOffersPageState extends State<PartnerOffersPage> {
                   if (desc.isNotEmpty) ...[
                     const SizedBox(height: 2),
                     Text(desc, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 12, height: 1.3)),
+                  ],
+                  if (_steps(o).isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      _progress(o)['steps_done'] is num && (_progress(o)['steps_done'] as num) > 0
+                          ? tr('{k} sur {n} étapes faites', {'k': (_progress(o)['steps_done'] as num).toInt(), 'n': _steps(o).length})
+                          : tr('{n} étapes', {'n': _steps(o).length}),
+                      style: TextStyle(color: c.textSecondary, fontSize: 11.5, fontWeight: FontWeight.w600),
+                    ),
                   ],
                   Padding(
                     padding: const EdgeInsets.only(top: 3),

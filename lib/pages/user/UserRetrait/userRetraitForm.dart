@@ -24,7 +24,7 @@ class UserDemandeRetraitPage extends StatefulWidget {
 }
 
 class _UserDemandeRetraitPageState extends State<UserDemandeRetraitPage> {
-  static const double _minRetrait = 2500;
+  static const double _minRetrait = 5000; // décision du propriétaire (04/11/2026) : même minimum que l'API (withdrawals.min_xof)
 
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _montantController = TextEditingController();
@@ -46,7 +46,7 @@ class _UserDemandeRetraitPageState extends State<UserDemandeRetraitPage> {
 
   CurrencyService get _cur => CurrencyService.instance;
 
-  /// Minimum en FCFA : 2 500 FCFA en Mobile Money, l'équivalent de 100 $ sinon.
+  /// Minimum en FCFA : 5 000 FCFA en Mobile Money, l'équivalent de 100 $ sinon.
   double get _minFcfa => _manual ? _cur.toFcfa(100, 'USD') : _minRetrait;
 
   /// Montant saisi (dans la devise de l'utilisateur) converti en FCFA.
