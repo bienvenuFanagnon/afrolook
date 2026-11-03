@@ -18,6 +18,7 @@ import '../../widgets/offerwall_dialogs.dart';
 import '../../widgets/offerwall_earnings_card.dart';
 import '../../widgets/offerwall_promo_banner.dart';
 import '../../widgets/partner_tasks_section.dart';
+import '../../services/work_tracking.dart';
 import 'offerwall_tutorial_page.dart';
 
 /// Page « Gagne des pièces » : introduction dans la langue de la personne, accès au mur de tâches (Tapjoy), total gagné,
@@ -42,6 +43,7 @@ class _OfferwallTasksPageState extends State<OfferwallTasksPage> {
   // « Comment ça marche ? » : toujours replié au départ (la personne l'ouvre au toucher)
   bool _howOpen = false;
   final GlobalKey<PartnerTasksSectionState> _partnerKey = GlobalKey<PartnerTasksSectionState>();
+  late final WorkTrack _track;   // suivi de fréquentation pour l'administration (visite, temps, boutons touchés, pubs)
   OfferwallInfo? _info;
   String? _error;
 
@@ -51,6 +53,7 @@ class _OfferwallTasksPageState extends State<OfferwallTasksPage> {
   @override
   void initState() {
     super.initState();
+    _track = WorkTrack.start('work');
     _load();
     // la pub plein écran se prépare tout de suite : elle sera prête quand la personne touchera « Voir les tâches »
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -62,6 +65,12 @@ class _OfferwallTasksPageState extends State<OfferwallTasksPage> {
       if (!OfferwallService.isConfigured || await OfferwallTutorialPage.alreadySeen() || !mounted) return;
       await OfferwallTutorialPage.open(context);
     });
+  }
+
+  @override
+  void dispose() {
+    _track.stop();
+    super.dispose();
   }
 
   Future<void> _load({bool force = false}) async {
@@ -84,6 +93,7 @@ class _OfferwallTasksPageState extends State<OfferwallTasksPage> {
       await OfferwallService.confirmAge();
       _ageOk = true;
     }
+    _track.tap('partner');
     setState(() => _opening = true);
     // la vérification des tâches (Tapjoy) démarre tout de suite, EN MÊME TEMPS que la pub plein écran (si elle passe) : à sa fermeture, la bonne page s'ouvre
     final prefetch = ayet ? null : OfferwallService.prefetchTapjoy(_uid);
@@ -300,9 +310,12 @@ class _OfferwallTasksPageState extends State<OfferwallTasksPage> {
         const SizedBox(width: 12),
         tile(Icons.task_alt_rounded, context.tr('Voir les tâches'), context.tr('Jeux, sondages et applications'), _openingTasks ? null : () async {
           setState(() => _openingTasks = true);   // retour visuel immédiat : la liste peut mettre un instant à s'ouvrir
+          _track.tap('tasks');
+          _track.pause();
           try {
             await PartnerTasksSection.open(context);
           } finally {
+            _track.resume();
             if (mounted) setState(() => _openingTasks = false);
           }
           _partnerKey.currentState?.reload();
@@ -397,11 +410,14 @@ class _OfferwallTasksPageState extends State<OfferwallTasksPage> {
   /// Portail : une pub plein écran passe d'abord (comptes qui voient des pubs), puis la page des missions s'ouvre. Ne bloque jamais l'accès.
   Future<void> _openShare() async {
     if (_opening) return;
+    _track.tap('missions');
     setState(() => _opening = true);
     await TaskAds.beforeTasks(_auth.loginUserData);
     if (!mounted) return;
     setState(() => _opening = false);
+    _track.pause();
     await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ShareEarnPage()));
+    _track.resume();
   }
 
   /// D'où vient le gain : partage (avec la plateforme) ou tâche d'un partenaire.

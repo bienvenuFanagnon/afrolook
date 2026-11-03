@@ -1,6 +1,7 @@
 // Pubs de la page « Travaille et gagne de l'argent » : pub plein écran avant l'ouverture du mur de tâches.
 // Voir docs/OFFERWALL_TACHES.md §19.
 
+import '../services/work_tracking.dart';
 import 'dart:async';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -46,7 +47,10 @@ class TaskAds {
         shown = await AdmobService.showInterstitialAndWait(user, maxPerDay: c.tasksOfferInterstitialMaxPerDay, capKey: 'ad_inter_offer', warmup: false)
             .timeout(const Duration(seconds: 60), onTimeout: () => false);
       }
-      if (shown) await sp.setInt(key, (sp.getInt(key) ?? 0) + 1);
+      if (shown) {
+        await sp.setInt(key, (sp.getInt(key) ?? 0) + 1);
+        WorkTrack.ad('other');
+      }
       return shown;
     } catch (_) {
       return false;
@@ -96,6 +100,7 @@ class TaskAds {
         final key = 'ad_mission_${n.year}${n.month}${n.day}';
         await sp.setInt(_kMissionLast, n.millisecondsSinceEpoch);
         await sp.setInt(key, (sp.getInt(key) ?? 0) + 1);
+        WorkTrack.ad('mission');
       }
       return shown;
     } catch (_) {
@@ -110,9 +115,11 @@ class TaskAds {
     try {
       final c = AdConfig.current;
       if (!c.tasksInterstitial || !AdGate.canShowType(user, 'interstitial')) return false;
-      return await AdmobService
+      final shown = await AdmobService
           .showInterstitialAndWait(user, maxPerDay: c.tasksInterstitialMaxPerDay, capKey: 'ad_inter_tasks', warmup: false)
           .timeout(const Duration(seconds: 45), onTimeout: () => false);
+      if (shown) WorkTrack.ad('tasks');
+      return shown;
     } catch (_) {
       return false;
     }
