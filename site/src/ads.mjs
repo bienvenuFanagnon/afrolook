@@ -3,6 +3,7 @@
 // L'audience affichée est un seul chiffre, ici : AUDIENCE (cumulée sur toutes nos plateformes, confirmée par le propriétaire le 29/10/2026).
 
 import { catOptions, catChecks, rulesHtml, RULES } from './ads_data.mjs';
+import { simulatorSection, channelMocks, trustSection, networkSection, stepsSection, waPhone } from './ads_campaign.mjs';
 import { formatsSection } from './ads_formats.mjs';
 
 export const AUDIENCE = 'plus de 50 000';
@@ -47,18 +48,18 @@ export const phone = (cap = '') => `<figure class="mkw"><div class="mkp"><div cl
 // ───────── bloc de l'accueil ─────────
 const HOME = {
   fr: {
-    kick: 'Nouveau · Afrolook Ads', h: 'Annonce <em>gratuitement</em> ton entreprise, ta startup, ton site, ton app, ton projet.',
-    p: `Notre régie publicitaire diffuse ton annonce sur <b>Afrolook</b>, <b>SlashAtlas</b>, <b>Pronoflash</b> et <b>Épargne+</b>, auprès de <b>${AUDIENCE} personnes</b>. Un compte Google suffit.`,
+    kick: 'Afrolook Ads · Campagne WhatsApp', h: 'Fais partager ton annonce sur <em>WhatsApp, Telegram, Facebook…</em> partout en Afrique.',
+    p: `Des partageurs validés publient ton annonce sur leurs statuts, groupes et canaux. Tu choisis l'audience, tu simules ton budget, et seules les visites valides sont comptées, avec un système anti-fraude. Pas de budget ? Une annonce gratuite est aussi diffusée sur <b>Afrolook</b>, <b>SlashAtlas</b>, <b>Pronoflash</b> et <b>Épargne+</b> (<b>${AUDIENCE} personnes</b>).`,
     pub: ['Tu as un site ou une application ?', 'Affiche les annonces Afrolook Ads chez toi : audience mesurée et comparée à ta déclaration, catégories d\'annonces choisies par toi, et 65 % du budget des annonces de l\'offre Réseau pour toi.', 'Devenir diffuseur', 'Documentation d\'intégration'],
-    sh: ['Nouveau : la Campagne Partage', 'Des personnes inscrites sur Afrolook partagent ton annonce sur WhatsApp, Telegram, Facebook… Tu paies l\'audience, seuls les clics valides sont comptés.', 'Lancer une campagne Partage'],
-    cta: 'Publier une annonce gratuite', ghost: 'Voir les annonces en ligne', s1: ['d\'audience', 'sur 4 plateformes'], s2: ['pour annoncer', '3 annonces gratuites de 14 jours chacune'], bar: 'Annonce gratuitement sur Afrolook Ads', barBtn: 'Annoncer',
+    sh: ['Simule ton audience en 10 secondes', 'Entre ton budget : tu vois combien de personnes tu touches et combien de visites attendre sur ton lien.', 'Ouvrir le simulateur'],
+    cta: 'Lancer une campagne', ghost: 'Annonce gratuite', s1: ['d\'audience', 'sur nos 4 plateformes'], s2: ['anti-fraude', 'seules les visites valides sont comptées'], bar: 'Fais partager ton annonce sur WhatsApp, Telegram, Facebook', barBtn: 'Annoncer',
   },
   en: {
-    kick: 'New · Afrolook Ads', h: 'Advertise your business, startup, website, app or project <em>for free</em>.',
-    p: `Our ad network shows your ad on <b>Afrolook</b>, <b>SlashAtlas</b>, <b>Pronoflash</b> and <b>Épargne+</b>, to an audience of <b>${AUDIENCE_EN} people</b>. A Google account is all you need.`,
+    kick: 'Afrolook Ads · WhatsApp campaign', h: 'Get your ad shared on <em>WhatsApp, Telegram, Facebook…</em> across Africa.',
+    p: `Approved sharers post your ad on their statuses, groups and channels. You choose the audience, simulate your budget, and only valid visits are counted, with an anti-fraud system. No budget? A free ad is also shown on <b>Afrolook</b>, <b>SlashAtlas</b>, <b>Pronoflash</b> and <b>Épargne+</b> (<b>${AUDIENCE_EN} people</b>).`,
     pub: ['Own a website or an app?', 'Show Afrolook Ads on it: measured audience compared with what you declared, ad categories chosen by you, and 65% of the Network offer budget for you.', 'Become a publisher', 'Integration guide'],
-    sh: ['New: Share campaigns', 'People registered on Afrolook share your ad on WhatsApp, Telegram, Facebook… You pay for the audience, only valid clicks are counted.', 'Launch a Share campaign'],
-    cta: 'Post a free ad', ghost: 'See live ads', s1: ['audience', 'across 4 platforms'], s2: ['to advertise', '3 free ads of 14 days each'], bar: 'Advertise for free on Afrolook Ads', barBtn: 'Advertise',
+    sh: ['Simulate your audience in 10 seconds', 'Enter your budget: see how many people you reach and how many visits to expect on your link.', 'Open the simulator'],
+    cta: 'Launch a campaign', ghost: 'Free ad', s1: ['audience', 'across our 4 platforms'], s2: ['anti-fraud', 'only valid visits are counted'], bar: 'Get your ad shared on WhatsApp, Telegram, Facebook', barBtn: 'Advertise',
   },
 };
 /** Menu commun aux pages Afrolook Ads : annonceur, diffuseur, documentation, règles, administration (aucun bouton : le lien « Administration » est ajouté par ads.js seulement quand le compte connecté est administrateur). */
@@ -67,15 +68,15 @@ export const adsSubnav = (active) => {
   return `<nav class="adsnav" aria-label="Afrolook Ads"><div class="wrap">${L.map(([k, h, l]) => `<a href="${h}"${k === active ? ' aria-current="page"' : ''}>${l}</a>`).join('')}<span class="sp"></span></div></nav>`;
 };
 export const adsNav = (lang) => (lang === 'fr' ? 'Annoncer' : 'Advertise');
-export const adsBadge = (lang) => (lang === 'fr' ? 'Gratuit' : 'Free');
+export const adsBadge = () => 'WhatsApp';
 
 export function adsHomeBlock(lang) {
   const t = HOME[lang], aud = lang === 'fr' ? AUDIENCE : AUDIENCE_EN;
   return `<section class="adhome"><div class="wrap adhome-g">
  <div class="adhome-l"><span class="adh-kick">${ico('gift', 16)} ${t.kick}</span>
   <h2>${t.h}</h2><p>${t.p}</p>
-  <div class="cta"><a class="btn btn-primary adbig" href="/ads/espace/">${G} ${t.cta}</a><a class="btn adghost adbig" href="${lang === 'fr' ? '/ads/' : '/en/ads/'}#annonces">${t.ghost} ${ico('arrow', 18)}</a></div>
-  <a class="adshare" href="${lang === 'fr' ? '/ads/' : '/en/ads/'}#partage"><b>${t.sh[0]}</b><span>${t.sh[1]}</span><i>${t.sh[2]} →</i></a></div>
+  <div class="cta"><a class="btn btn-primary adbig" href="/ads/espace/">${G} ${t.cta}</a><a class="btn adghost adbig" href="${lang === 'fr' ? '/ads/' : '/en/ads/'}#annonces-gratuites">${t.ghost} ${ico('arrow', 18)}</a></div>
+  <a class="adshare" href="${lang === 'fr' ? '/ads/' : '/en/ads/'}#simulateur"><b>${t.sh[0]}</b><span>${t.sh[1]}</span><i>${t.sh[2]} →</i></a></div>
  <div class="adhome-r"><div class="adhome-st">${stat(aud, t.s1[0], t.s1[1])}${stat('0 FCFA', t.s2[0], t.s2[1])}</div>
   <div class="adhome-pl"><span><img src="/img/logo.webp" width="22" height="22" alt=""> Afrolook</span><span><img src="/img/partners/slashatlas.webp" width="22" height="22" alt=""> SlashAtlas</span><span><img src="/img/partners/pronoflash.webp" width="22" height="22" alt=""> Pronoflash</span><span><img src="/img/partners/epargneplus.webp" width="22" height="22" alt=""> Épargne+</span></div></div>
 <div class="wrap adhome-pub"><div><b>${t.pub[0]}</b><span>${t.pub[1]}</span></div><a class="btn btn-primary adbig" href="/ads/diffuseur/">${t.pub[2]}</a><a class="adlinkbtn" href="/ads/diffuseur/documentation/">${t.pub[3]} ${ico('arrow', 16)}</a></div>
@@ -85,17 +86,21 @@ export const adsBar = (lang) => `<div class="adbar"><div class="wrap">${ico('gif
 
 // ───────── page /ads/ ─────────
 export const ADS_META = {
-  title: 'Afrolook Ads : annonce gratuitement ton entreprise',
-  desc: `Publie ton annonce gratuite avec ton compte Google : elle est diffusée sur Afrolook, SlashAtlas, Pronoflash et Épargne+, auprès de ${AUDIENCE} personnes. 3 annonces gratuites, 14 jours chacune.`,
+  title: 'Afrolook Ads : campagnes WhatsApp, Telegram, Facebook et annonces gratuites',
+  desc: 'Fais partager ton annonce sur WhatsApp, Telegram et Facebook par des partageurs validés en Afrique. Simule ton audience, suis tes visites. Annonces gratuites aussi.',
 };
 export const PUB_META = { title: 'Espace diffuseur | Afrolook Ads', desc: 'Crée ton profil de diffuseur et ajoute tes sites et applications pour afficher les annonces Afrolook Ads.' };
 const PARTNERS = [{ n: 'Afrolook', img: '/img/logo.webp' }, { n: 'SlashAtlas', img: '/img/partners/slashatlas.webp' }, { n: 'PronoFlash', img: '/img/partners/pronoflash.webp' }, { n: 'Épargne+', img: '/img/partners/epargneplus.webp' }];
 const SECTORS = [['boutique', 'Boutique et commerce'], ['restauration', 'Restauration et alimentation'], ['mode', 'Mode et beauté'], ['services', 'Services aux particuliers et aux entreprises'], ['technologie', 'Technologie, applications, sites web'], ['immobilier', 'Immobilier et construction'], ['education', 'Éducation et formation'], ['sante', 'Santé et bien-être'], ['finance', 'Finance et assurance'], ['evenement', 'Événements, musique, spectacles'], ['medias', 'Médias et créateurs de contenu'], ['association', 'Association, ONG, institution'], ['autre', 'Autre']];
 const PUB_CATS = [['actualites', 'Actualités et médias'], ['sport', 'Sport'], ['paris_sportifs', 'Pronostics et paris sportifs'], ['divertissement', 'Divertissement, musique, vidéo'], ['education', 'Éducation et formation'], ['finance', 'Finance, épargne, mobile money'], ['sante', 'Santé et bien-être'], ['boutique', 'Boutique et commerce en ligne'], ['technologie', 'Technologie et outils'], ['jeux', 'Jeux'], ['reseau_social', 'Réseau social et communauté'], ['emploi', 'Emploi et annonces'], ['religion', 'Religion et spiritualité'], ['jeunesse', 'Jeunesse et famille'], ['autre', 'Autre']];
 export const ADMIN_META = { title: 'Administration de la régie | Afrolook Ads', desc: 'Annonceurs, diffuseurs, sites et applications : validation par l\'équipe Afrolook Ads.' };
-export const SPACE_META = { title: 'Mon espace annonceur | Afrolook Ads', desc: 'Crée et suis tes annonces gratuites sur Afrolook, SlashAtlas, Pronoflash et Épargne+ avec ton compte Google.' };
+export const SPACE_META = { title: 'Mon espace annonceur | Afrolook Ads', desc: 'Lance et suis tes campagnes de partage (WhatsApp, Telegram, Facebook) et tes annonces gratuites avec ton compte Google ; recharge ton solde annonceur.' };
 
 const FAQ = [
+  ['Comment est calculée l\'audience de ma campagne ?', 'Tu choisis le nombre de personnes à atteindre et tu paies cette audience (tarif affiché dans le simulateur). Elle est mesurée par de vraies ouvertures de ton lien suivi, partageur par partageur. La campagne se ferme dès que l\'audience choisie est atteinte, sans jamais dépasser ton budget.'],
+  ['Combien de visites vais-je recevoir sur mon site ou mon application ?', 'Le simulateur donne une estimation à partir du taux de visite moyen constaté (environ 2 % de l\'audience, variable selon ton annonce). Nous ne promettons pas un nombre exact de visites : nous comptons et te montrons, en direct, les visites valides réellement reçues.'],
+  ['Comment es-tu protégé contre la fraude ?', 'Chaque partageur a un lien personnel suivi. Doublons, auto-clics et robots sont écartés, les comportements suspects sont détectés et bloqués, les gains frauduleux sont retenus puis repris, et les fraudes ne sont jamais comptées pour toi. Les partageurs et les annonces sont validés par notre équipe.'],
+  ['Comment je paie ma campagne ?', 'Avec ton solde annonceur, que tu recharges librement en FCFA par Mobile Money ou carte bancaire. Si notre équipe refuse ton annonce, le montant retourne sur ton solde. Une campagne que tu arrêtes ou supprimes toi-même n\'est pas remboursable.'],
   ['C\'est vraiment gratuit ?', 'Oui, pour les annonces affichées sur nos plateformes : pour le lancement, publier une annonce ne coûte rien, sans carte bancaire ni abonnement. La Campagne Partage (ton annonce partagée sur WhatsApp, Telegram, Facebook…) est un service payant, sans offre gratuite.'],
   ['Qu\'est-ce que la Campagne Partage ?', 'Des personnes validées par notre équipe publient ton annonce sur leur statut WhatsApp, leurs groupes, Telegram, Facebook ou TikTok. Tu choisis le nombre de personnes à atteindre et tu paies cette audience. Seuls les clics valides sont comptés : un clic par personne, sans doublon ni robot, et les fraudes sont écartées. Tu suis tes résultats dans ton espace annonceur.'],
   ['Faut-il créer un compte Afrolook Ads ?', 'Non. Ton compte Google suffit : pas de mot de passe de plus.'],
@@ -108,14 +113,18 @@ export const adsFaqLd = { '@context': 'https://schema.org', '@type': 'FAQPage', 
 
 // ───────── page /en/ads/ (English) ─────────
 export const ADS_META_EN = {
-  title: 'Afrolook Ads: advertise your business for free',
-  desc: 'Post a free ad with your Google account and reach over 50,000 people on Afrolook, SlashAtlas, Pronoflash and Épargne+. Or get your ad shared on WhatsApp, Telegram and Facebook.',
+  title: 'Afrolook Ads: WhatsApp, Telegram and Facebook campaigns, plus free ads',
+  desc: 'Get your ad shared on WhatsApp, Telegram and Facebook by approved sharers across Africa. Simulate your audience, track your visits. Free ads too.',
 };
 export const adsSubnavEn = (active) => {
   const L = [['ads', '/en/ads/', 'Advertise'], ['espace', '/ads/espace/', 'Advertiser space'], ['diffuseur', '/ads/diffuseur/', 'Publisher space'], ['docs', '/ads/diffuseur/documentation/', 'Integration guide'], ['regles', '/ads/diffuseur/regles/', 'Publisher rules']];
   return `<nav class="adsnav" aria-label="Afrolook Ads"><div class="wrap">${L.map(([k, h, l]) => `<a href="${h}"${k === active ? ' aria-current="page"' : ''}>${l}</a>`).join('')}<span class="sp"></span></div></nav>`;
 };
 const FAQ_EN = [
+  ['How is my campaign audience calculated?', 'You choose the number of people to reach and you pay for that audience (rate shown in the simulator). It is measured by real openings of your tracked link, sharer by sharer. The campaign closes as soon as the audience you chose is reached, never exceeding your budget.'],
+  ['How many visits will I get on my website or app?', 'The simulator gives an estimate based on the observed average visit rate (about 2% of the audience, varying with your ad). We do not promise an exact number of visits: we count and show you, live, the valid visits actually received.'],
+  ['How are you protected against fraud?', 'Each sharer has a personal tracked link. Duplicates, self-clicks and bots are discarded, suspicious behavior is detected and blocked, fraudulent earnings are held then taken back, and frauds are never counted for you. Sharers and ads are approved by our team.'],
+  ['How do I pay for my campaign?', 'With your advertiser balance, which you top up freely in FCFA by Mobile Money or bank card. If our team refuses your ad, the amount goes back to your balance. A campaign you stop or delete yourself is not refundable.'],
   ['Is it really free?', 'Yes, for ads displayed on our platforms: during the launch, posting an ad costs nothing, with no card and no subscription. The Share campaign (your ad shared on WhatsApp, Telegram, Facebook…) is a paid service with no free offer.'],
   ['What is a Share campaign?', 'People approved by our team post your ad on their WhatsApp status, groups, Telegram, Facebook or TikTok. You choose how many people to reach and you pay for that audience. Only valid clicks are counted: one click per person, no duplicates or bots, and frauds are discarded. You follow the results in your advertiser space.'],
   ['What are Afrolook jobs and tasks?', 'On Afrolook, registered people do simple paid tasks. One of them is sharing ads: each valid click on their personal link earns them money. Their profile and audience are approved by our team before their first mission.'],
@@ -130,26 +139,22 @@ export function adsLandingEn(api) {
   return `${adsSubnavEn('ads')}<section class="adfeat" id="adfeat" hidden aria-label="Ads of the moment"><div class="wrap"><b class="adfeat-t">Featured</b><div class="adfeat-row" id="adfeat-row"></div><a class="adfeat-all" href="#annonces">All ads →</a></div></section>
 <section class="adh"><div class="wrap adh-grid">
  <div class="adh-l">
-  <span class="adh-kick">${ico('gift', 16)} Launch offer · 100% free ads</span>
-  <h1>Make <em>your business, startup, website, app or project</em> known. For free.</h1>
-  <p class="lead">Post your ad in a few minutes with your Google account. It is shown automatically on <b>Afrolook</b>, <b>SlashAtlas</b>, <b>Pronoflash</b> and <b>Épargne+</b>, to an audience of <span data-aud>${AUDIENCE_EN}</span> people that grows every day.</p>
-  <div class="cta"><a class="btn btn-primary adbig" href="/ads/espace/">${G} Post my free ad</a><a class="btn btn-line adbig" href="#partage">Share campaign: get your ad shared</a></div>
-  <ul class="adh-pts"><li>${ico('check', 18)} 3 free ads</li><li>${ico('check', 18)} 14 days each</li><li>${ico('check', 18)} Brand profile in 2 minutes</li><li>${ico('check', 18)} Approved by our team</li></ul>
-  <a class="adshare" href="#partage"><b>New: the Share campaign</b><span>People registered on Afrolook are paid to share your ad on WhatsApp, Telegram, Facebook… You pay for the audience, only valid clicks are counted.</span><i>Discover the Share campaign →</i></a>
+  <span class="adh-kick">${ico('rocket', 16)} WhatsApp · Telegram · Facebook campaign</span>
+  <h1>Get your ad shared on <em>WhatsApp, Telegram, Facebook…</em> by sharers all across Africa.</h1>
+  <p class="lead">You choose the audience to reach. It is <b>measured by real openings of your link</b>, protected by an anti-fraud system, and the campaign never exceeds your budget. Business, website, app, event: bring in real visits.</p>
+  <div class="cta"><a class="btn btn-primary adbig" href="/ads/espace/">${G} Launch a campaign</a><a class="btn btn-line adbig" href="#simulateur">Simulate my audience</a></div>
+  <ul class="adh-pts"><li>${ico('check', 18)} Measured audience</li><li>${ico('check', 18)} Valid visits only</li><li>${ico('check', 18)} Anti-fraud</li><li>${ico('check', 18)} Live tracking</li></ul>
+  <a class="adshare" href="#annonces-gratuites"><b>No budget?</b><span>Post a free ad, shown on Afrolook, SlashAtlas, Pronoflash and Épargne+ (3 ads, 14 days each).</span><i>See the free offer →</i></a>
  </div>
- <div class="adh-r"><div class="adh-glow"></div>${phone('Your ad in the Afrolook feed')}
-  <div class="adh-chip c1">${ico('check', 16)} Ad approved</div><div class="adh-chip c2">${ico('eye', 16)} 2,480 views</div><div class="adh-chip c3">Free</div></div>
+ <div class="adh-r"><div class="adh-glow"></div><div class="chm-hero">${waPhone('en')}</div>
+  <div class="adh-chip c1">${ico('check', 16)} Valid visit</div><div class="adh-chip c2">${ico('shield', 16)} Anti-fraud</div><div class="adh-chip c3">Shared on WhatsApp</div></div>
 </div></section>
 
-<section class="adsec soft" id="partage"><div class="wrap"><span class="kicker">Share campaign · Afrolook jobs and tasks</span><h2 class="h2">Your ad becomes a job: people are paid to share it.</h2>
-<p class="sub">On Afrolook, registered people do paid tasks: sharing ads on their WhatsApp status, groups, Telegram, Facebook or TikTok. You choose the audience to reach; they are paid per valid click. It is a paid service with no free offer, because these people are paid.</p>
-<div class="adp3">
- <article class="adp"><div class="adp-top"><i class="adp-logo plus">1</i><div><h3>You pay for the audience</h3><small>The number of people to reach</small></div></div><p>You choose how many people you want to reach. The price is calculated on that audience and shown before you confirm. Payment fees are added when you pay.</p></article>
- <article class="adp"><div class="adp-top"><i class="adp-logo plus">2</i><div><h3>Approved sharers</h3><small>Profile and audience checked</small></div></div><p>Each sharer describes their audience and our team approves it before their first mission. Your campaign closes as soon as the audience you chose is reached.</p></article>
- <article class="adp"><div class="adp-top"><i class="adp-logo plus">3</i><div><h3>Only valid clicks</h3><small>No duplicates, no fraud</small></div></div><p>One person = one counted click. Duplicates, self-clicks and bots are discarded; frauds are detected and never counted. You see the audience reached and your results in your space.</p></article>
-</div>
-<div class="cta" style="margin-top:22px"><a class="btn btn-primary adbig" href="/ads/espace/">Launch a Share campaign</a><a class="btn btn-line adbig" href="/en/earn/#jobs">See how sharers earn</a></div></div></section>
-
+${simulatorSection('en', api, ico, G)}
+${channelMocks('en', ico, phone('Your ad in the Afrolook feed'))}
+${stepsSection('en')}
+${trustSection('en', ico)}
+${networkSection('en', ico)}
 <section class="adpubbar"><div class="wrap"><div><b>Do you own a website or an app?</b><span>Become a publisher: show ads on it, see your real audience over 60 days and choose the ad categories you accept. No site? Share ads through Afrolook jobs and get paid per valid click.</span></div><a class="btn btn-primary adsm" href="/ads/diffuseur/">Become a publisher</a><a class="adlinkbtn" href="/ads/diffuseur/documentation/">Integration guide</a></div></section>
 
 <section class="adstats"><div class="wrap"><div class="adst-row">
@@ -158,8 +163,9 @@ export function adsLandingEn(api) {
  ${stat('4', 'platforms', 'one ad, shown everywhere')}
 </div></div></section>
 
-<section class="adsec"><div class="wrap"><span class="kicker">Where your ad is seen</span><h2 class="h2">One ad. Several platforms.</h2>
-<p class="sub">As soon as your ad is approved, it is shown automatically, with nothing more to do on your side.</p>
+<section class="adsec" id="annonces-gratuites"><div class="wrap"><span class="kicker">Launch offer · 100% free ads</span><h2 class="h2">No budget? Post a free ad on our platforms.</h2>
+<p class="sub">With your Google account: 3 free ads of 14 days, approved by our team, shown automatically on Afrolook, SlashAtlas, Pronoflash and Épargne+, to ${AUDIENCE_EN} people.</p>
+<div class="cta" style="margin:0 0 22px"><a class="btn btn-primary adbig" href="/ads/espace/">${G} Post my free ad</a></div>
 <div class="adp3">
  <article class="adp"><div class="adp-top"><img src="/img/logo.webp" width="46" height="46" alt=""><div><h3>Afrolook</h3><small>The social network of African creators</small></div></div><p>Your ad appears in the feed, between creators' posts. An action button leads to your site, app or WhatsApp.</p></article>
  <article class="adp"><div class="adp-top"><img src="/img/partners/slashatlas.webp" width="46" height="46" alt=""><div><h3>SlashAtlas.com</h3><small>Posters and creations on order</small></div></div><p>An audience of creators and customers who order posters, visuals and video edits.</p></article>
@@ -176,7 +182,7 @@ export function adsLandingEn(api) {
  <article class="adt">${ico('poster', 30)}<h3>A poster</h3><p>Concert, training, promotion: your visual, big.</p></article>
 </div></div></section>
 
-<section class="adsec"><div class="wrap"><span class="kicker">How it works</span><h2 class="h2">Four steps, a few minutes.</h2>
+<section class="adsec"><div class="wrap"><span class="kicker">Free ad · how it works</span><h2 class="h2">Four steps, a few minutes.</h2>
 <div class="ads4">
  <article class="ads"><i>1</i><h3>Sign in with Google</h3><p>One click, no extra password. You enter your brand name and logo once.</p></article>
  <article class="ads"><i>2</i><h3>Create your ad</h3><p>Choose what you promote, add your image or video, your title and your button. Or pick a Share campaign.</p></article>
@@ -194,8 +200,8 @@ export function adsLandingEn(api) {
 <section class="adsec soft"><div class="wrap"><span class="kicker">Frequently asked questions</span><h2 class="h2">You are wondering…</h2>
 <div class="faq">${FAQ_EN.map(([q, a], i) => `<details${i === 0 ? ' open' : ''}><summary>${q}</summary><p>${a}</p></details>`).join('')}</div></div></section>
 
-<section class="adfinal"><div class="wrap"><h2>Ready to be seen by <span data-aud>${AUDIENCE_EN}</span> people?</h2><p>Free and fast: your brand and logo, then your ad. The advertiser space is currently in French.</p>
- <div class="cta"><a class="btn btn-primary adbig" href="/ads/espace/">${G} Open the advertiser space</a></div></div></section>
+<section class="adfinal"><div class="wrap"><h2>Ready to launch your WhatsApp, Telegram and Facebook campaign?</h2><p>Simulate your audience, top up your balance, follow your visits live. Or start with a free ad. The advertiser space is currently in French.</p>
+ <div class="cta" style="justify-content:center"><a class="btn adbig adwhite" href="/ads/espace/">${G} Launch a campaign</a><a class="btn adbig adghost" href="#simulateur">Simulate my audience</a></div></div></section>
 <script src="/js/ads.js?v=__ASSET_V__" type="module"></script>`;
 }
 
@@ -236,25 +242,22 @@ export function adsLanding(api) {
   return `${adsSubnav('ads')}<section class="adfeat" id="adfeat" hidden aria-label="Annonces à la une"><div class="wrap"><b class="adfeat-t">À la une</b><div class="adfeat-row" id="adfeat-row"></div><a class="adfeat-all" href="#annonces">Toutes les annonces →</a></div></section>
 <section class="adh"><div class="wrap adh-grid">
  <div class="adh-l">
-  <span class="adh-kick">${ico('gift', 16)} Offre de lancement · annonces 100 % gratuites</span>
-  <h1>Fais connaître <em>ton entreprise, ta startup, ton site, ton app, ton projet</em>. Gratuitement.</h1>
-  <p class="lead">Publie ton annonce en quelques minutes avec ton compte Google. Elle est diffusée automatiquement sur <b>Afrolook</b>, <b>SlashAtlas</b>, <b>Pronoflash</b> et <b>Épargne+</b>, devant une audience de <span data-aud>${AUDIENCE}</span> personnes qui s'agrandit chaque jour.</p>
-  <div class="cta"><a class="btn btn-primary adbig" href="/ads/espace/">${G} Publier mon annonce gratuite</a><a class="btn btn-line adbig" href="#partage">Campagne Partage : fais partager ton annonce</a></div>
-  <ul class="adh-pts"><li>${ico('check', 18)} 3 annonces gratuites</li><li>${ico('check', 18)} 14 jours chacune</li><li>${ico('check', 18)} Profil de marque en 2 minutes</li><li>${ico('check', 18)} Validée par notre équipe</li></ul>
-  <a class="adshare" href="#partage"><b>Nouveau : la Campagne Partage</b><span>Des personnes inscrites sur Afrolook sont payées pour partager ton annonce sur WhatsApp, Telegram, Facebook… Tu paies l’audience, seuls les clics valides sont comptés.</span><i>Découvrir la Campagne Partage →</i></a>
+  <span class="adh-kick">${ico('rocket', 16)} Campagne WhatsApp · Telegram · Facebook</span>
+  <h1>Fais partager ton annonce sur <em>WhatsApp, Telegram, Facebook…</em> par des partageurs partout en Afrique.</h1>
+  <p class="lead">Tu choisis l'audience à atteindre. Elle est <b>mesurée par de vraies ouvertures de ton lien</b>, protégée par un système anti-fraude, et la campagne ne dépasse jamais ton budget. Entreprise, site, application, événement : amène de vraies visites.</p>
+  <div class="cta"><a class="btn btn-primary adbig" href="/ads/espace/">${G} Lancer une campagne</a><a class="btn btn-line adbig" href="#simulateur">Simuler mon audience</a></div>
+  <ul class="adh-pts"><li>${ico('check', 18)} Audience mesurée</li><li>${ico('check', 18)} Visites valides seulement</li><li>${ico('check', 18)} Anti-fraude</li><li>${ico('check', 18)} Suivi en direct</li></ul>
+  <a class="adshare" href="#annonces-gratuites"><b>Pas de budget ?</b><span>Publie une annonce gratuite, diffusée sur Afrolook, SlashAtlas, Pronoflash et Épargne+ (3 annonces, 14 jours chacune).</span><i>Voir l'offre gratuite →</i></a>
  </div>
- <div class="adh-r"><div class="adh-glow"></div>${phone('Ton annonce dans le fil Afrolook')}
-  <div class="adh-chip c1">${ico('check', 16)} Annonce validée</div><div class="adh-chip c2">${ico('eye', 16)} 2 480 vues</div><div class="adh-chip c3">Gratuit</div></div>
+ <div class="adh-r"><div class="adh-glow"></div><div class="chm-hero">${waPhone('fr')}</div>
+  <div class="adh-chip c1">${ico('check', 16)} Visite valide</div><div class="adh-chip c2">${ico('shield', 16)} Anti-fraude</div><div class="adh-chip c3">Partagé sur WhatsApp</div></div>
 </div></section>
 
-<section class="adsec soft" id="partage"><div class="wrap"><span class="kicker">Campagne Partage · jobs et tâches Afrolook</span><h2 class="h2">Ton annonce devient un job : des personnes sont payées pour la partager.</h2>
-<p class="sub">Sur Afrolook, des personnes inscrites font des tâches rémunérées : partager des annonces sur leur statut WhatsApp, leurs groupes, Telegram, Facebook ou TikTok. Tu choisis l'audience à atteindre ; elles sont payées au clic valide. C'est un service payant, sans offre gratuite, car ces personnes sont rémunérées.</p>
-<div class="adp3">
- <article class="adp"><div class="adp-top"><i class="adp-logo plus">1</i><div><h3>Tu paies l'audience</h3><small>Le nombre de personnes à atteindre</small></div></div><p>Tu choisis combien de personnes tu veux atteindre. Le prix est calculé sur cette audience et affiché avant que tu valides. Les frais de paiement s'ajoutent au moment de payer.</p></article>
- <article class="adp"><div class="adp-top"><i class="adp-logo plus">2</i><div><h3>Des partageurs validés</h3><small>Profil et audience vérifiés</small></div></div><p>Chaque partageur présente son audience et notre équipe la valide avant sa première mission. Ta campagne se ferme dès que l'audience choisie est atteinte.</p></article>
- <article class="adp"><div class="adp-top"><i class="adp-logo plus">3</i><div><h3>Seuls les clics valides</h3><small>Sans doublon, sans fraude</small></div></div><p>Une personne = un clic compté. Les doublons, les auto-clics et les robots sont écartés, les fraudes sont détectées et jamais comptées. Tu vois l'audience touchée et tes résultats dans ton espace.</p></article>
-</div>
-<div class="cta" style="margin-top:22px"><a class="btn btn-primary adbig" href="/ads/espace/">Lancer une campagne Partage</a><a class="btn btn-line adbig" href="/gagner/#jobs">Voir comment les partageurs gagnent</a></div></div></section>
+${simulatorSection('fr', api, ico, G)}
+${channelMocks('fr', ico, phone('Ton annonce dans le fil Afrolook'))}
+${stepsSection('fr')}
+${trustSection('fr', ico)}
+${networkSection('fr', ico)}
 <section class="adpubbar"><div class="wrap"><div><b>Tu as un site ou une application ?</b><span>Deviens diffuseur : affiche les annonces chez toi, vois ton audience réelle sur 60 jours, choisis les catégories d'annonces que tu acceptes.</span></div><a class="btn btn-primary adsm" href="/ads/diffuseur/">Devenir diffuseur</a><a class="adlinkbtn" href="/ads/diffuseur/documentation/">Documentation d'intégration</a></div></section>
 
 <section class="adstats"><div class="wrap"><div class="adst-row">
@@ -267,8 +270,9 @@ export function adsLanding(api) {
 <p class="sub">Nos plateformes, et les marques qui annoncent chez nous.</p>
 <div class="adwall" id="adpartners">${PARTNERS.map((p) => `<div class="adpart" title="${p.n}">${p.img ? `<img src="${p.img}" alt="${p.n}" width="56" height="56" loading="lazy">` : `<i class="adp-logo plus">${p.mark}</i>`}<span>${p.n}</span></div>`).join('')}<span id="adpartners-dyn" data-api="${api}/ads/api/partners" data-audience="${api}/ads/api/audience" style="display:contents"></span></div></div></section>
 
-<section class="adsec"><div class="wrap"><span class="kicker">Où ton annonce est vue</span><h2 class="h2">Une annonce. Plusieurs plateformes.</h2>
-<p class="sub">Dès que ton annonce est validée, elle est diffusée automatiquement, sans que tu aies rien à faire de plus.</p>
+<section class="adsec" id="annonces-gratuites"><div class="wrap"><span class="kicker">Offre de lancement · annonces 100 % gratuites</span><h2 class="h2">Pas de budget ? Publie une annonce gratuite sur nos plateformes.</h2>
+<p class="sub">Avec ton compte Google : 3 annonces gratuites de 14 jours, validées par notre équipe, diffusées automatiquement sur Afrolook, SlashAtlas, Pronoflash et Épargne+, auprès de ${AUDIENCE} personnes.</p>
+<div class="cta" style="margin:0 0 22px"><a class="btn btn-primary adbig" href="/ads/espace/">${G} Publier mon annonce gratuite</a></div>
 <div class="adp3">
  <article class="adp"><div class="adp-top"><img src="/img/logo.webp" width="46" height="46" alt=""><div><h3>Afrolook</h3><small>Réseau social des créateurs africains</small></div></div><p>Ton annonce apparaît dans le fil, entre les publications des créateurs. Un bouton d'action mène vers ton site ou ton application.</p><span class="adp-tag">Dans l'application et sur le web</span></article>
  <article class="adp"><div class="adp-top"><img src="/img/partners/slashatlas.webp" width="46" height="46" alt=""><div><h3>SlashAtlas.com</h3><small>Affiches et créations par commande</small></div></div><p>Une audience de créateurs et de clients qui commandent des affiches, des visuels et des montages.</p><span class="adp-tag">Sur le site et l'application mobile</span></article>
@@ -286,7 +290,7 @@ export function adsLanding(api) {
  <article class="adt">${ico('poster', 30)}<h3>Une affiche</h3><p>Concert, formation, promotion : ton visuel en grand.</p></article>
 </div></div></section>
 
-<section class="adsec"><div class="wrap"><span class="kicker">Comment ça marche</span><h2 class="h2">Quatre étapes, quelques minutes.</h2>
+<section class="adsec"><div class="wrap"><span class="kicker">Annonce gratuite · comment ça marche</span><h2 class="h2">Quatre étapes, quelques minutes.</h2>
 <div class="ads4">
  <article class="ads"><i>1</i><h3>Connecte-toi avec Google</h3><p>Un seul clic, pas de mot de passe de plus. Tu renseignes ensuite ta marque et ton logo, une seule fois.</p></article>
  <article class="ads"><i>2</i><h3>Crée ton annonce</h3><p>Choisis ce que tu promeus, ajoute ton image ou ta vidéo, ton texte et ton bouton d'action.</p></article>
@@ -323,8 +327,8 @@ ${formatsSection()}
 <section class="adsec soft"><div class="wrap"><span class="kicker">Questions fréquentes</span><h2 class="h2">Tu te demandes…</h2>
 <div class="faq">${FAQ.map(([q, a], i) => `<details${i === 0 ? ' open' : ''}><summary>${q}</summary><p>${a}</p></details>`).join('')}</div></div></section>
 
-<section class="adfinal"><div class="wrap"><h2>Prêt à être vu par <span data-aud>${AUDIENCE}</span> personnes ?</h2><p>Gratuit et rapide : ta marque et ton logo, puis ton annonce.</p>
- <div class="cta" style="justify-content:center"><a class="btn adbig adwhite" href="/ads/espace/">${G} Publier mon annonce gratuite</a></div></div></section>
+<section class="adfinal"><div class="wrap"><h2>Prêt à lancer ta campagne WhatsApp, Telegram et Facebook ?</h2><p>Simule ton audience, recharge ton solde, suis tes visites en direct. Ou commence par une annonce gratuite.</p>
+ <div class="cta" style="justify-content:center"><a class="btn adbig adwhite" href="/ads/espace/">${G} Lancer une campagne</a><a class="btn adbig adghost" href="#simulateur">Simuler mon audience</a></div></div></section>
 <dialog class="addlg" id="addetail" aria-label="Détail de l'annonce"><div class="addlg-in"><button class="addlg-x" type="button" id="addetail-x" aria-label="Fermer">×</button><div id="addetail-body"></div></div></dialog>
 <script src="/js/ads.js?v=__ASSET_V__" type="module"></script>`;
 }

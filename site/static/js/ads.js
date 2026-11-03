@@ -88,6 +88,30 @@ function openDetail(a, opt = {}) {
   if (!dlg.open) dlg.showModal();
 }
 
+// ───────── simulateur d'audience (page Annoncer) : budget → audience payée, visites estimées, coût par visite ─────────
+const simBox = $('#adsim');
+if (simBox) {
+  const cfg = { per: Number(simBox.dataset.per) || 500, ctr: Number(simBox.dataset.ctr) || 2 };
+  const num = $('#sim-n'), rng = $('#sim-b'), nfmt = (v) => Number(v).toLocaleString(EN ? 'en-US' : 'fr-FR');
+  const drawSim = () => {
+    const b = Math.max(0, Math.min(2500000, Math.round(Number(num.value) || 0)));
+    const aud = Math.round((b / cfg.per) * 1000), vis = Math.round((aud * cfg.ctr) / 100), cpv = vis > 0 ? Math.round(b / vis) : 0;
+    $('#sim-aud').textContent = b >= 1000 ? nfmt(aud) : '—'; $('#sim-vis').textContent = vis > 0 && b >= 1000 ? '≈ ' + nfmt(vis) : '—'; $('#sim-cpv').textContent = cpv > 0 && b >= 1000 ? '≈ ' + nfmt(cpv) + ' F' : '—';
+    $('#sim-go').href = '/ads/espace/' + (aud >= 1000 ? '?aud=' + Math.min(5000000, Math.round(aud / 1000) * 1000) : '');
+    if (b >= Number(rng.min) && b <= Number(rng.max)) rng.value = String(b);
+    const ctrTxt = String(cfg.ctr).replace('.', EN ? '.' : ','), perTxt = nfmt(cfg.per), note = $('#sim-note');
+    note.textContent = EN
+      ? `Indicative estimate: ${ctrTxt}% of the audience visits your link (observed average rate, it varies with your ad). Current rate: ${perTxt} F per 1,000 people. You pay for the audience; only valid visits are counted and you follow everything live in your space.`
+      : `Estimation indicative : ${ctrTxt} % de l'audience visite ton lien (taux moyen constaté, il varie selon ton annonce). Tarif actuel : ${perTxt} F pour 1 000 personnes. Tu paies l'audience ; seules les visites valides sont comptées et tu suis tout en direct dans ton espace.`;
+  };
+  num.addEventListener('input', drawSim);
+  rng.addEventListener('input', () => { num.value = rng.value; drawSim(); });
+  $$('#sim-quick span').forEach((x) => x.addEventListener('click', () => { num.value = x.dataset.v; drawSim(); }));
+  drawSim();
+  // valeurs réelles du moment (prix de 1 000 personnes, taux de visite) ; les valeurs de départ restent affichées si l'API ne répond pas
+  fetch(simBox.dataset.api).then((r) => (r.ok ? r.json() : null)).then((j) => { if (!j) return; if (j.sharePer1000 > 0) cfg.per = j.sharePer1000; if (j.ctr > 0) cfg.ctr = j.ctr; drawSim(); }).catch(() => {});
+}
+
 // ───────── galerie publique + bandeau « À la une » ─────────
 const gallery = $('#adgallery');
 if (gallery) {
@@ -386,6 +410,10 @@ async function initSpace() {
   $('#f-aud').addEventListener('input', refreshMode);
   window.addEventListener('afl-admin', refreshMode);
   window.addEventListener('afl-wallet', refreshMode);
+  try {   // venant du simulateur : ?aud=25000 ouvre « Campagne Partage » avec cette audience
+    const q = Number(new URLSearchParams(location.search).get('aud')), v = Math.round(q / 1000) * 1000;
+    if (v >= 1000 && v <= 5000000) { $('#f-aud').value = String(v); $('#f-mode label[data-v="share"]').click(); tab('creer'); }
+  } catch { /* sans paramètre */ }
 
   // mes campagnes Partage : statut, audience engagée, clics valides (visibles seulement ici)
   const shareStat = { pending: ['wait', 'En attente de validation'], active: ['ok', 'En cours'], paused: ['end', 'En pause'], refused: ['rej', 'Refusée'], ended: ['end', 'Terminée'] };

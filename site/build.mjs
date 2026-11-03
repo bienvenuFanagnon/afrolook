@@ -24,7 +24,7 @@ const rules = JSON.parse(fs.readFileSync(path.join(root, 'src/rules.json'), 'utf
 const dist = path.join(root, 'dist');
 const flagsDir = process.env.FLAGS_DIR || path.join(root, 'static/img/flags');
 
-const ASSET_V = '28';
+const ASSET_V = '29';
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const slug = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const write = (p, c) => { const f = path.join(dist, p); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, c); };
