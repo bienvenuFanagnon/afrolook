@@ -492,3 +492,15 @@ pre.doc-code code{background:none;padding:0;color:inherit;font:inherit;overflow-
 .adnet{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:22px}.adnet-i{display:grid;gap:4px;padding:16px 18px;border-radius:18px;background:var(--surface);border:1px solid var(--line)}.adnet-i b{font:800 18px var(--display)}.adnet-i span{color:var(--muted);font-size:13.5px}
 @media (prefers-color-scheme:dark){.chm-ph{border-color:#2b3133}}
 .chm-af{max-width:none;width:auto}
+
+/* fenêtre de recharge du solde : une seule colonne, marges propres, champs alignés (mobile compris) */
+#adtopup{max-width:min(520px,calc(100% - 20px))}
+#adtopup .addlg-in{display:block;padding:26px 22px 24px;max-height:calc(100vh - 24px);max-height:calc(100dvh - 24px)}
+#adtopup .topform h2{padding-right:48px;margin:0 0 6px}
+#adtopup .fl select{width:100%;font:inherit;font-weight:500;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+#adtopup .fl input{width:100%;min-width:0}
+#adtopup .adchips{margin-top:12px}
+#adtopup .adtype{margin-top:14px}
+#adtopup .sharebox{margin-top:14px}
+#adtopup .adnote{margin:6px 0 0}
+@media (max-width:620px){#adtopup .addlg-in{padding:22px 16px 20px}#adtopup .adchips span{padding:8px 13px}#adtopup .adtype label{padding:14px 8px}}

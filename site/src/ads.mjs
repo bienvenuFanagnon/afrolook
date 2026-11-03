@@ -445,7 +445,7 @@ export function adsSpace(fbConfig, api) {
   <div class="adtype" id="top-method"><label class="on" data-v="momo"><b>Mobile Money</b><small>MTN, Moov, Orange, Wave…</small></label><label data-v="card"><b>Carte bancaire</b><small>Visa, Mastercard</small></label></div>
   <div id="top-momo">
    <label class="fl" for="top-op">Opérateur<select id="top-op"></select></label>
-   <label class="fl" for="top-phone">Numéro Mobile Money<input id="top-phone" type="tel" autocomplete="tel" placeholder="+228 90 12 34 56"></label>
+   <label class="fl" for="top-phone">Numéro Mobile Money <small>(l'indicatif du pays est ajouté tout seul)</small><input id="top-phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="70 87 02 40"></label>
    <label class="fl" id="top-otp-l" for="top-otp" hidden>Code OTP <small>(à générer sur ton téléphone avec le code USSD de l’opérateur)</small><input id="top-otp" autocomplete="one-time-code"></label>
   </div>
   <div id="top-card" hidden>

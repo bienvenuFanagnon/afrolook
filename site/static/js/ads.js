@@ -634,8 +634,9 @@ async function initSpace() {
       box.querySelector('b').textContent = '…'; box.querySelector('small').textContent = '';
       try {
         const q = await call('adsWalletQuote', { amountXof: amount, method: tp.method, operator: $('#top-op').value });
-        box.querySelector('b').textContent = 'Tu paies ' + nf(q.payXof) + ' F';
-        box.querySelector('small').textContent = nf(q.creditedXof) + ' F arrivent sur ton solde · ' + nf(q.feeXof) + ' F de frais de paiement' + (q.payCents ? ' · débité en dollars (' + (q.payCents / 100).toFixed(2).replace('.', ',') + ' $)' : '');
+        // le montant payé (frais compris) n'est affiché qu'au moment de payer, sur le téléphone ou la page de paiement : ici, seulement ce qui arrive sur le solde
+        box.querySelector('b').textContent = nf(q.creditedXof) + ' F seront ajoutés à ton solde';
+        box.querySelector('small').textContent = tp.method === 'card' ? 'Le montant à payer s’affiche sur la page de paiement sécurisée.' : 'Tu valides le paiement sur ton téléphone : le montant demandé par ton opérateur inclut les frais de paiement.';
       } catch (e) { box.querySelector('b').textContent = '—'; box.querySelector('small').textContent = topExplain(e); }
     }, 250);
   };
