@@ -45,6 +45,35 @@
   <script src="flutter_bootstrap.js" async></script>
 </head>
 <body>
+  <!-- Écran d'attente : la première ouverture télécharge l'application (plusieurs Mo) ; sans lui la page reste blanche. Retiré dès que Flutter a dessiné sa première image. -->
+  <style>
+    #afl-splash { position: fixed; inset: 0; z-index: 2147483647; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 24px; text-align: center;
+      background: radial-gradient(120% 80% at 50% 0%, #17A05A 0%, #0F7B43 45%, #0B5A33 100%); color: #fff; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; transition: opacity .35s ease; }
+    #afl-splash.afl-out { opacity: 0; pointer-events: none; }
+    #afl-splash img { width: 96px; height: 96px; border-radius: 24px; box-shadow: 0 14px 34px rgba(0, 0, 0, .35); }
+    #afl-splash .afl-nom { font-size: 30px; font-weight: 800; letter-spacing: .3px; }
+    #afl-splash .afl-barre { width: min(280px, 70vw); height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .25); overflow: hidden; }
+    #afl-splash .afl-barre i { display: block; width: 40%; height: 100%; border-radius: 3px; background: #fff; animation: afl-glisse 1.3s ease-in-out infinite; }
+    #afl-splash .afl-msg { font-size: 16px; line-height: 1.4; opacity: .92; max-width: 320px; min-height: 2.8em; }
+    @keyframes afl-glisse { 0% { transform: translateX(-110%); } 100% { transform: translateX(260%); } }
+    @media (prefers-reduced-motion: reduce) { #afl-splash .afl-barre i { animation: none; width: 100%; opacity: .7; } }
+  </style>
+  <div id="afl-splash" role="status" aria-live="polite">
+    <img src="icons/Icon-192.png" alt="">
+    <div class="afl-nom">Afrolook</div>
+    <div class="afl-barre"><i></i></div>
+    <div class="afl-msg" id="afl-msg">Chargement…<br>La première ouverture prend quelques secondes de plus, les suivantes sont plus rapides.</div>
+  </div>
+  <script>
+    (function () {
+      var splash = document.getElementById('afl-splash'), msg = document.getElementById('afl-msg'), done = false;
+      function fin() { if (done) return; done = true; splash.classList.add('afl-out'); setTimeout(function () { splash.remove(); }, 450); }
+      window.addEventListener('flutter-first-frame', fin);
+      setTimeout(function () { if (!done) msg.innerHTML = 'Encore quelques secondes…<br>Ta connexion est un peu lente, ça arrive.'; }, 12000);
+      setTimeout(function () { if (!done) msg.innerHTML = 'Toujours en chargement.<br>Si rien ne s\'affiche, recharge la page.'; }, 45000);
+      setTimeout(fin, 240000);   // filet de sécurité : l'écran d'attente ne reste jamais indéfiniment
+    })();
+  </script>
   <script src='https://cdn.jsdelivr.net/npm/pdfjs-dist@4.6.82/build/pdf.min.mjs' type='module'></script>
   <script type='module'>
   var { pdfjsLib } = globalThis;

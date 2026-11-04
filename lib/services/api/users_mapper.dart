@@ -247,6 +247,8 @@ String _transactionDescription(String key, Map<String, dynamic> params) {
       return tr('Tâche annulée par le partenaire');
     case 'wallet.share_reward':
       return tr('Partage et gagne : gains versés');
+    case 'wallet.share_sponsor':
+      return tr("Gain de parrainage : partage d'un filleul");
     case 'wallet.share_clawback':
       return tr('Partage et gagne : gains retirés');
     case 'wallet.weekly_reward':
