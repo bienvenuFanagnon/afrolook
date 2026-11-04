@@ -70,7 +70,7 @@ const posterJobs = html(1080, 1350, `
  </div>
  <div style="position:absolute;left:70px;top:610px;width:940px">
   <div class="big">5 F</div>
-  <p style="font:700 38px/1.25 'Figtree';margin-top:10px">par clic valide, jusqu'à 500 F par jour</p>
+  <p style="font:700 38px/1.25 'Figtree';margin-top:10px">par clic valide, jusqu'à 10 000 F par jour</p>
  </div>
  <div class="steps" style="position:absolute;left:70px;top:860px;width:940px">
   <div><b>1</b>Crée ton profil, notre équipe le valide</div>
@@ -100,7 +100,7 @@ const ogJobs = html(1200, 630, `
   <h1 style="font-size:70px;line-height:1.03;margin-top:18px">Gagne de l'argent en <em>partageant</em> des annonces.</h1>
   <p style="font:600 26px/1.3 'Figtree';color:var(--muted);margin-top:16px">Profil validé · clic valide payé · retrait en argent réel</p>
  </div>
- <div style="position:absolute;right:70px;top:150px;text-align:center;width:300px"><div class="big" style="font-size:150px">5 F</div><p style="font:700 28px/1.2 'Figtree'">par clic valide</p><p class="fine" style="margin-top:8px">jusqu'à 500 F par jour</p></div>
+ <div style="position:absolute;right:70px;top:150px;text-align:center;width:300px"><div class="big" style="font-size:150px">5 F</div><p style="font:700 28px/1.2 'Figtree'">par clic valide</p><p class="fine" style="margin-top:8px">jusqu'à 10 000 F par jour</p></div>
  <span class="pill" style="position:absolute;left:60px;bottom:48px;font-size:28px;padding:14px 30px">afrolookmedia.com/gagner/</span>`);
 
 const JOBS = [
@@ -111,14 +111,18 @@ const JOBS = [
 ];
 fs.mkdirSync(OUT, { recursive: true });
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'afl-affiches-'));
+const only = process.argv.slice(2);   // ex. : node affiches/make.mjs affiche-jobs og-jobs (sans argument : toutes les images)
 for (const [name, doc, w, h] of JOBS) {
+  if (only.length && !only.includes(name)) continue;
   const src = path.join(tmp, name + '.html'), out = path.join(OUT, name + '.png');
   fs.writeFileSync(src, doc);
   fs.rmSync(out, { force: true }); // l'ancienne image ne doit pas faire croire que le rendu est terminé
-  execFileSync(browser, ['--headless=new', '--disable-gpu', `--user-data-dir=${path.join(tmp, 'profil')}`, '--no-first-run', '--hide-scrollbars', '--force-device-scale-factor=1', `--window-size=${w},${h}`, '--virtual-time-budget=4000', `--screenshot=${out}`, pathToFileURL(src).href], { stdio: 'ignore' });
+  execFileSync(browser, ['--headless=new', '--disable-gpu', `--user-data-dir=${path.join(tmp, 'profil')}`, '--no-first-run', '--hide-scrollbars', '--force-device-scale-factor=1', `--window-size=${w},${h + 140}`, '--virtual-time-budget=4000', `--screenshot=${out}`, pathToFileURL(src).href], { stdio: 'ignore' });
   // Edge rend la main avant d'avoir écrit l'image : on attend qu'elle apparaisse et se stabilise
   for (let i = 0; i < 80 && !fs.existsSync(out); i++) await new Promise((r) => setTimeout(r, 250));
   await new Promise((r) => setTimeout(r, 600));
+  // la fenêtre sans bordure d'Edge garde environ 80 px de moins que demandé : on rend plus haut, puis on recadre à la taille voulue (sinon le bas de l'affiche est rogné)
+  execFileSync('python', ['-I', '-c', 'import sys;from PIL import Image;p=sys.argv[1];im=Image.open(p).convert("RGB");im.crop((0,0,int(sys.argv[2]),int(sys.argv[3]))).save(p,optimize=True)', out, String(w), String(h)]);
   console.log(name, fs.existsSync(out) ? fs.statSync(out).size + ' o' : 'ÉCHEC');
 }
 try { fs.rmSync(tmp, { recursive: true, force: true }); } catch { /* profil encore verrouillé : sans importance */ }

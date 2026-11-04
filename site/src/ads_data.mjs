@@ -13,9 +13,11 @@ const entries = (level) => Object.entries(CATS.categories).filter(([, c]) => c.l
 export const catOptions = () => `<optgroup label="Catégories courantes">${entries('standard').map(([k, c]) => `<option value="${k}">${esc(c.label)}</option>`).join('')}</optgroup>` +
   `<optgroup label="Catégories sensibles : diffusées seulement chez les diffuseurs qui les acceptent">${entries('sensitive').map(([k, c]) => `<option value="${k}" data-s="1">${esc(c.label)}</option>`).join('')}</optgroup>`;
 
-/** Cases à cocher des catégories qu'un diffuseur accepte d'afficher : les courantes cochées par défaut, les sensibles jamais. */
-export const catChecks = (name) => `<div class="catgrp"><b>Catégories courantes</b>${entries('standard').map(([k, c]) => `<label class="catck"><input type="checkbox" name="${name}" value="${k}" checked><span>${esc(c.label)}</span></label>`).join('')}</div>` +
-  `<div class="catgrp sens"><b>Catégories sensibles <small>(décochées : tu dois les accepter toi-même)</small></b>${entries('sensitive').map(([k, c]) => `<label class="catck"><input type="checkbox" name="${name}" value="${k}"><span>${esc(c.label)}${c.hint ? `<small>${esc(c.hint)}</small>` : ''}</span></label>`).join('')}</div>`;
+/** Sélection multiple des catégories qu'un diffuseur accepte d'afficher : les courantes retenues par défaut, les sensibles jamais.
+ *  Les vraies cases sont cachées (`.catpick-store`) : le script (catPick dans ads.js) en fait des pastilles et une liste déroulante pour ajouter. */
+export const catChecks = (name, id) => `<div class="catpick"${id ? ` id="${id}"` : ''}><div class="catpick-store" hidden>` +
+  [['standard', true], ['sensitive', false]].map(([lvl, on]) => entries(lvl).map(([k, c]) => `<input type="checkbox" name="${name}" value="${k}"${on ? ' checked' : ''} data-lvl="${lvl}" data-label="${esc(c.label)}"${c.hint ? ` data-hint="${esc(c.hint)}"` : ''}>`).join('')).join('') +
+  `</div></div>`;
 
 /** Texte officiel des règles, en HTML (même contenu que celui affiché et accepté dans l'espace diffuseur). */
 export const rulesHtml = () => RULES.blocks.map((b) => `<section class="rule"><h3>${esc(b.title)}</h3><ul>${b.items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul></section>`).join('');

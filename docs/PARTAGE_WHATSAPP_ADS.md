@@ -1,6 +1,6 @@
 # « Partage et gagne » : marketing WhatsApp d'Afrolook Ads (conception, 30/10/2026)
 
-> **Modèle final (29/10/2026)** : voir docs/PROJET_MEMOIRE.md (journal du 29/10 soir). Résumé : les annonceurs paient l'AUDIENCE à atteindre (pas de prix au clic, pas d'offre gratuite), l'administrateur lance des campagnes offertes, 5 F par clic valide au partageur (plafond 100 clics = 500 F par jour), parrain +10 %, partageurs validés avant toute mission. Le reste de ce document décrit le principe ; en cas de différence, la mémoire du projet fait foi.
+> **Modèle final (29/10/2026)** : voir docs/PROJET_MEMOIRE.md (journal du 29/10 soir). Résumé : les annonceurs paient l'AUDIENCE à atteindre (pas de prix au clic, pas d'offre gratuite), l'administrateur lance des campagnes offertes, 5 F par clic valide au partageur (plafond de 10 000 F par jour et 200 clics valides par lien et par jour depuis le 04/11/2026 ; avant : 3 000 F et 100 clics), parrain +10 %, partageurs validés avant toute mission. Le reste de ce document décrit le principe ; en cas de différence, la mémoire du projet fait foi.
 
 **État : conception à valider par le propriétaire, rien n'est codé.** Voir les décisions ouvertes en fin de document.
 

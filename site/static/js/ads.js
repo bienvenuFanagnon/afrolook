@@ -19,6 +19,47 @@ const ACT = (s) => (EN ? ({ Visiter: 'Visit', 'Télécharger': 'Download', 'En s
 let IS_ADMIN = false; // compte administrateur de la régie : ses campagnes sont offertes (aucun paiement)
 const safeUrl = (u) => { try { const x = new URL(u); return x.protocol === 'https:' || x.protocol === 'tel:' ? x.href : ''; } catch { return ''; } };
 
+// ───────── messages : fenêtre modale claire, fermée par la personne elle-même (un message en haut de page se perdait dès qu'on avait défilé) ─────────
+//  - erreur : le problème expliqué en français ; on la ferme avec le bouton (ou Échap), jamais toute seule
+//  - succès : même fenêtre, en vert ; elle se ferme aussi d'un clic à côté et ne bloque rien (la page continue de se mettre à jour derrière)
+let msgDlg = null;
+const MISSING = /^(Ajoute|Choisis|Écris|Indique|Décris|Explique|Présente|Coche|Patiente|Crée d|Avant ta|Complète)/;
+function showMessage(kind, message, title) {
+  const msg = String(message || '').trim(); if (!msg) return;
+  if (!msgDlg) {
+    const ic = h('i', { class: 'amdlg-ic', 'aria-hidden': 'true' }), t = h('h2', { id: 'amdlg-t' }), m = h('p', { class: 'amdlg-msg', id: 'amdlg-m' });
+    const b = h('button', { class: 'btn btn-primary adbig', type: 'button', onclick: () => msgDlg.close() });
+    msgDlg = h('dialog', { class: 'amdlg', 'aria-labelledby': 'amdlg-t', 'aria-describedby': 'amdlg-m' }, h('div', { class: 'amdlg-in' }, ic, t, m, b));
+    Object.assign(msgDlg, { _ic: ic, _t: t, _m: m, _b: b });
+    msgDlg.addEventListener('click', (e) => { if (e.target === msgDlg && msgDlg.dataset.kind === 'success') msgDlg.close(); });   // un clic à côté ferme un succès, jamais une erreur
+    msgDlg.addEventListener('close', () => { if (!msgDlg.open) delete msgDlg.dataset.kind; });   // l'événement arrive après la fermeture : ne pas effacer le type d'un message déjà rouvert
+    document.body.append(msgDlg);
+  }
+  const d = msgDlg, bad = kind === 'error';
+  if (d.open && d.dataset.kind === 'error' && !bad) return;   // un succès ne recouvre pas une erreur encore à lire
+  if (d.open && d.dataset.kind === kind) { if (!d._m.textContent.includes(msg) && d._m.textContent.length < 700) d._m.textContent += '\n\n' + msg; }   // plusieurs messages d'affilée : ils s'ajoutent
+  else {
+    d._m.textContent = msg; d.dataset.kind = kind; d.setAttribute('role', bad ? 'alertdialog' : 'dialog');
+    d._ic.textContent = bad ? '!' : '✓';
+    d._t.textContent = title || (bad ? (MISSING.test(msg) ? (EN ? 'Something is missing' : 'Il manque une information') : (EN ? 'Something went wrong' : 'Un problème est survenu')) : (EN ? 'Done' : 'C’est fait'));
+    d._b.textContent = bad ? (EN ? 'Got it' : 'J’ai compris') : (EN ? 'Close' : 'Fermer');
+  }
+  if (!d.open) d.showModal();
+  d._b.focus();
+}
+const showError = (message, title) => showMessage('error', message, title);
+const showSuccess = (message, title) => showMessage('success', message, title);
+/** Explication simple d'une erreur technique (réseau, session, droits, envoi de fichier) ; sinon le texte de repli donné par l'appelant. */
+function friendly(e, fallback) {
+  const m = String((e && e.message) || ''), c = String((e && e.code) || '');
+  if (c === 'functions/unavailable' || /^réseau$|failed to fetch|networkerror|load failed/i.test(m)) return 'Impossible de joindre le serveur. Vérifie ta connexion internet, puis réessaie.';
+  if (c === 'functions/unauthenticated' || /unauthenticated/i.test(m)) return 'Ta connexion a expiré. Recharge la page et reconnecte-toi avec Google.';
+  if (c === 'functions/permission-denied') return 'Ce compte n’a pas le droit de faire cette action.';
+  if (/trop_vite/.test(m)) return 'Tu vas trop vite : attends quelques secondes, puis réessaie.';
+  if (/^envoi (refusé|échoué|non confirmé)/.test(m)) return 'L’envoi du fichier a échoué. Vérifie ta connexion et que le fichier est bien une image (PNG, JPG ou WebP), puis réessaie.';
+  return fallback;
+}
+
 // ───────── fenêtre de détail d'une annonce (galerie publique et « Mes annonces ») ─────────
 const dlg = $('#addetail');
 const closeDetail = () => { if (dlg && dlg.open) dlg.close(); };
@@ -28,6 +69,67 @@ if (dlg) {
   dlg.addEventListener('close', () => { if (location.hash.startsWith('#annonce-')) history.replaceState(null, '', location.pathname + location.search); });
 }
 const initial = (a) => (a.title || 'A').trim().charAt(0).toUpperCase();
+
+// ───────── pays : tous les pays du monde (codes ISO 3166-1), noms dans la langue de la page ─────────
+const ISO_COUNTRIES = 'AD AE AF AG AI AL AM AO AQ AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BV BW BY BZ CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GS GT GU GW GY HK HM HN HR HT HU ID IE IL IM IN IO IQ IR IS IT JE JM JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SJ SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TF TG TH TJ TK TL TM TN TO TR TT TV TW TZ UA UG UM US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW'.split(' ');
+const AFRICA_CODES = 'DZ AO BJ BW BF BI CM CV CF TD KM CG CD CI DJ EG GQ ER SZ ET GA GM GH GN GW KE LS LR LY MG MW ML MR MU MA MZ NA NE NG RW ST SN SC SL SO ZA SS SD TZ TG TN UG ZM ZW EH'.split(' ');
+const countryName = (() => { let dn = null; try { dn = new Intl.DisplayNames([EN ? 'en' : 'fr'], { type: 'region' }); } catch { /* ancien navigateur : le code est affiché */ } return (c) => { try { return (dn && dn.of(c)) || c; } catch { return c; } }; })();
+const sortedCountries = () => ISO_COUNTRIES.map((c) => [c, countryName(c)]).sort((a, b) => a[1].localeCompare(b[1], EN ? 'en' : 'fr'));
+/** Sélection multiple de pays : pastilles retirables, liste (Afrique puis autres pays) pour en ajouter, « Toute l'Afrique » et « Tous les pays ». Lit et modifie l'ensemble rendu par get(). */
+function countryPick(root, get) {
+  const AFR = new Set(AFRICA_CODES);
+  const render = () => {
+    const set = get(), names = sortedCountries(), picked = names.filter(([c]) => set.has(c)), free = names.filter(([c]) => !set.has(c));
+    const chips = h('div', { class: 'catpick-chips' });
+    if (!picked.length) chips.append(h('span', { class: 'catpick-none', text: 'Aucun pays choisi : ajoute au moins un pays.' }));
+    for (const [c, nm] of picked.slice(0, 24)) chips.append(h('span', { class: 'catpick-chip' }, nm, h('button', { type: 'button', 'aria-label': 'Retirer ' + nm, text: '×', onclick: () => { set.delete(c); render(); } })));
+    if (picked.length > 24) chips.append(h('span', { class: 'catpick-none', text: `+ ${picked.length - 24} autres pays` }));
+    const sel = h('select', { class: 'catpick-add', 'aria-label': 'Ajouter un pays' }, h('option', { value: '', text: '+ Ajouter un pays…' }),
+      h('optgroup', { label: 'Afrique' }, ...free.filter(([c]) => AFR.has(c)).map(([c, nm]) => h('option', { value: c, text: nm }))),
+      h('optgroup', { label: 'Autres pays' }, ...free.filter(([c]) => !AFR.has(c)).map(([c, nm]) => h('option', { value: c, text: nm }))));
+    sel.addEventListener('change', () => { if (sel.value) { set.add(sel.value); render(); } });
+    const act = h('div', { class: 'catpick-act' },
+      h('button', { type: 'button', class: 'catpick-link', text: 'Toute l\u2019Afrique', onclick: () => { AFRICA_CODES.forEach((c) => set.add(c)); render(); } }),
+      h('button', { type: 'button', class: 'catpick-link', text: 'Tous les pays', onclick: () => { ISO_COUNTRIES.forEach((c) => set.add(c)); render(); } }),
+      picked.length ? h('button', { type: 'button', class: 'catpick-link', text: 'Tout retirer', onclick: () => { set.clear(); render(); } }) : null);
+    root.replaceChildren(h('div', { class: 'catpick-grp' }, chips, sel, act));
+  };
+  render();
+  return render;
+}
+
+/** Sélection multiple des catégories d'annonces : les catégories retenues sont des pastilles (× pour retirer), une liste déroulante sert à en ajouter.
+ *  Les vraies cases (cachées, dans `.catpick-store`) gardent la valeur : le formulaire les lit avec `input:checked`, comme avant. */
+const CAT_GROUPS = {
+  standard: { title: 'Catégories courantes', note: 'toutes acceptées au départ : retire celles que tu ne veux pas', none: 'Aucune catégorie retenue.', add: '+ Ajouter une catégorie…' },
+  sensitive: { title: 'Catégories sensibles', note: 'aucune au départ : ajoute seulement celles que tu acceptes toi-même', none: 'Aucune : rien de sensible ne s\'affiche chez toi.', add: '+ Accepter une catégorie…', sens: true },
+};
+function catPick(root) {
+  const store = $('.catpick-store', root); if (!store) return;
+  const inputs = $$('input', store);
+  const render = () => {
+    const old = $('.catpick-ui', root); if (old) old.remove();
+    const ui = h('div', { class: 'catpick-ui' });
+    for (const [lvl, g] of Object.entries(CAT_GROUPS)) {
+      const list = inputs.filter((i) => i.dataset.lvl === lvl); if (!list.length) continue;
+      const on = list.filter((i) => i.checked), off = list.filter((i) => !i.checked);
+      const chips = h('div', { class: 'catpick-chips' });
+      if (!on.length) chips.append(h('span', { class: 'catpick-none', text: g.none }));
+      for (const i of on) chips.append(h('span', { class: 'catpick-chip', title: i.dataset.hint || false }, i.dataset.label,
+        h('button', { type: 'button', 'aria-label': 'Retirer ' + i.dataset.label, text: '×', onclick: () => { i.checked = false; render(); } })));
+      const sel = h('select', { class: 'catpick-add', 'aria-label': g.title }, h('option', { value: '', text: g.add }), ...off.map((i) => h('option', { value: i.value, text: i.dataset.label })));
+      sel.addEventListener('change', () => { const i = list.find((x) => x.value === sel.value); if (i) { i.checked = true; render(); } });
+      const act = h('div', { class: 'catpick-act' });
+      if (off.length > 1) act.append(h('button', { type: 'button', class: 'catpick-link', text: 'Tout ajouter', onclick: () => { off.forEach((i) => { i.checked = true; }); render(); } }));
+      if (on.length > 1) act.append(h('button', { type: 'button', class: 'catpick-link', text: 'Tout retirer', onclick: () => { on.forEach((i) => { i.checked = false; }); render(); } }));
+      ui.append(h('div', { class: 'catpick-grp' + (g.sens ? ' sens' : '') }, h('b', {}, g.title, h('small', { text: g.note })), chips, off.length ? sel : null, act.children.length ? act : null));
+    }
+    root.append(ui);
+  };
+  render();
+  const form = root.closest('form');
+  if (form) form.addEventListener('reset', () => setTimeout(render)); // après l'envoi, le formulaire revient à son état de départ
+}
 const stCls = { validation: 'wait', ligne: 'ok', refusee: 'rej', arretee: 'end', terminee: 'end' };
 const stLab = { validation: 'En validation', ligne: 'En ligne', refusee: 'Refusée', arretee: 'Arrêtée', terminee: 'Terminée' };
 
@@ -76,7 +178,7 @@ function openDetail(a, opt = {}) {
   body.append(info);
   if (opt.mine) {
     const zone = h('div', { class: 'addlg-act' }); info.append(zone);
-    const run = async (fn) => { zone.querySelectorAll('button').forEach((b) => { b.disabled = true; }); try { await fn(); closeDetail(); } catch { zone.append(h('p', { class: 'aderr', text: 'Action impossible pour le moment. Réessaie.' })); zone.querySelectorAll('button').forEach((b) => { b.disabled = false; }); } };
+    const run = async (fn) => { zone.querySelectorAll('button').forEach((b) => { b.disabled = true; }); try { await fn(); closeDetail(); } catch (e) { showError(friendly(e, 'Action impossible pour le moment. Réessaie.')); zone.querySelectorAll('button').forEach((b) => { b.disabled = false; }); } };
     const confirmBox = (msg, label, fn) => { zone.replaceChildren(h('p', { class: 'addlg-conf', text: msg }), h('div', { class: 'addlg-row' }, h('button', { class: 'btn adsm adred', type: 'button', text: label, onclick: () => run(fn) }), h('button', { class: 'btn btn-line adsm', type: 'button', text: 'Annuler', onclick: () => openDetail(a, opt) }))); };
     const buttons = [];
     if (a.renew === 'free') buttons.push(h('button', { class: 'btn btn-primary adsm', type: 'button', text: 'Renouveler gratuitement', onclick: () => run(opt.onRenew) }));
@@ -201,7 +303,7 @@ const space = $('#adspace');
 if (space) initSpace();
 
 // ───────── connexion Google et Firebase (commune à l'espace annonceur et à l'espace diffuseur) ─────────
-function setStatus(msg, bad = false) { const e = $('#adstatus'); e.hidden = !msg; e.textContent = msg || ''; e.className = 'adstatus' + (bad ? ' bad' : ''); }
+function setStatus(msg, bad = false, info = false) { const e = $('#adstatus'); if (msg && !info) { e.hidden = true; e.textContent = ''; (bad ? showError : showSuccess)(msg); return; } e.hidden = !msg; e.textContent = msg || ''; e.className = 'adstatus'; }   // info = message d'attente (bandeau) ; sinon erreur ou succès en fenêtre
 // le logo est réduit (512 px au plus) et gardé en PNG pour conserver la transparence ; WebP s'il reste lourd
 async function logoBlob(file) {
   const bmp = await createImageBitmap(file);
@@ -220,7 +322,7 @@ async function boot(onUser) {
   let ready; const sdk = new Promise((r) => { ready = r; });
   const signin = $('#signin');
   signin.addEventListener('click', async () => {
-    status('Connexion en cours…'); signin.disabled = true;
+    status('Connexion en cours…', false, true); signin.disabled = true;
     try {
       const { A, auth } = await Promise.race([sdk, new Promise((_, rej) => setTimeout(() => rej(new Error('lent')), 30000))]);
       const p = new A.GoogleAuthProvider();
@@ -230,7 +332,7 @@ async function boot(onUser) {
         else if (e.code === 'auth/popup-closed-by-user' || e.code === 'auth/cancelled-popup-request') status('');
         else status(`Connexion impossible pour le moment (${e.code || 'erreur'}). Réessaie.`, true);
       }
-    } catch { status('La connexion met du temps à charger. Vérifie ta connexion internet puis réessaie.', true); }
+    } catch (e) { status(friendly(e, 'La connexion met du temps à charger. Vérifie ta connexion internet puis réessaie.'), true); }
     finally { signin.disabled = false; }
   });
 
@@ -310,7 +412,7 @@ function profBanner(kind, state, reason) {
 
 async function initSpace() {
   const status = setStatus;
-  const err = (msg) => { const e = $('#aderr'); e.hidden = !msg; e.textContent = msg || ''; };
+  const err = (msg) => { const e = $('#aderr'); if (e) { e.hidden = true; e.textContent = ''; } if (msg) showError(msg); };
   const fb = await boot(() => { loadProfile(); loadMine(); loadShareMine(); loadWallet(); });   // les campagnes Partage comptent aussi dans le bandeau de chiffres, dès l'ouverture
   if (!fb) return;
   const { auth, call, upload } = fb;
@@ -337,11 +439,19 @@ async function initSpace() {
     $('#pv-link').textContent = ($('#f-link').value.trim() || '').replace(/^https?:\/\//, '').slice(0, 28);
   };
   single('#f-action', 'action', refresh);
-  $$('#f-countries span').forEach((c) => c.addEventListener('click', () => {
-    const v = c.dataset.v;
+  const pickCountry = (v) => {
     if (v === 'ALL') st.countries = new Set(['ALL']); else { st.countries.delete('ALL'); st.countries.has(v) ? st.countries.delete(v) : st.countries.add(v); if (!st.countries.size) st.countries.add('ALL'); }
     $$('#f-countries span').forEach((x) => x.classList.toggle('on', st.countries.has(x.dataset.v)));
-  }));
+  };
+  $$('#f-countries span').forEach((c) => c.addEventListener('click', () => pickCountry(c.dataset.v)));
+  // tous les autres pays du monde : la liste ajoute une pastille de plus
+  const moreC = $('#f-more-countries'), knownC = new Set($$('#f-countries span').map((x) => x.dataset.v));
+  sortedCountries().filter(([c]) => !knownC.has(c)).forEach(([c, nm]) => moreC.append(h('option', { value: c, text: nm })));
+  moreC.addEventListener('change', () => {
+    const c = moreC.value; if (!c) return;
+    $('#f-countries').append(h('span', { 'data-v': c, text: countryName(c), onclick: () => pickCountry(c) }));
+    const o = moreC.querySelector(`option[value="${c}"]`); if (o) o.remove(); moreC.value = ''; pickCountry(c);
+  });
   ['#f-title', '#f-text', '#f-link'].forEach((s) => $(s).addEventListener('input', refresh));
   // ciblage facultatif (langues, appareils, types de sites) et note sur les catégories sensibles
   const chips = (box, set) => $$(box + ' span').forEach((c) => c.addEventListener('click', () => { const v = c.dataset.v; set.has(v) ? set.delete(v) : set.add(v); c.classList.toggle('on', set.has(v)); }));
@@ -409,9 +519,12 @@ async function initSpace() {
     // étapes numérotées dans l'ordre des étapes visibles ; l'étape « durée » devient « pays visés » en mode partage
     const h4 = $('#f-countries').closest('.adfs').querySelector('h3'); if (h4 && h4.lastChild) h4.lastChild.textContent = share ? ' Pays visés' : ' Durée et audience';
     $('#f-share').hidden = !share;
-    $('#f-sub-t').textContent = share ? (IS_ADMIN ? 'Offert par l’équipe' : nf(Math.round((a / 1000) * wal.per1000)) + ' F') : 'Gratuit';
-    $('#f-send').textContent = share ? (IS_ADMIN ? 'Lancer la campagne' : 'Envoyer la campagne') : 'Envoyer pour validation';
-    $('#f-quota').textContent = share ? (IS_ADMIN ? 'Campagne de l’équipe : aucun paiement' : 'Payée avec ton solde annonceur · démarre après validation par notre équipe') : 'Validation par notre équipe avant diffusion';
+    const net = $('#f-net').checked;   // Offre Réseau (payante) cochée par défaut : on la décoche pour utiliser l'offre gratuite
+    $('#f-net-note').innerHTML = net ? 'Cette case est cochée : ton annonce sera une <b>demande d\u2019offre Réseau payante</b>. Notre équipe te communique le tarif avant la mise en ligne. <b>Décoche la case pour publier gratuitement</b> sur Afrolook, SlashAtlas, Pronoflash et Épargne+ (3 annonces gratuites).' : '<b>Offre gratuite</b> : ton annonce sera affichée sur Afrolook, SlashAtlas, Pronoflash et Épargne+ seulement (3 annonces gratuites de 14 jours).';
+    $('#f-sub-t').textContent = share ? (IS_ADMIN ? 'Offert par l’équipe' : nf(Math.round((a / 1000) * wal.per1000)) + ' F') : (net ? 'Offre Réseau (payante)' : 'Gratuit');
+    $('#f-send').textContent = share ? (IS_ADMIN ? 'Lancer la campagne' : 'Envoyer la campagne') : (net ? 'Envoyer ma demande' : 'Envoyer pour validation');
+    $('#f-quota').textContent = share ? (IS_ADMIN ? 'Campagne de l’équipe : aucun paiement' : 'Payée avec ton solde annonceur · démarre après validation par notre équipe') : (net ? 'Notre équipe te communique le tarif avant la mise en ligne' : 'Validation par notre équipe avant diffusion');
+    if (!share && st.mine) $('#f-send').disabled = !net && !(st.open && st.left);   // plus de place gratuite : seule la demande d'offre Réseau reste possible
     $('#f-aud-price').textContent = IS_ADMIN ? 'Offert par l’équipe : aucun paiement' : nf(Math.round((a / 1000) * wal.per1000)) + ' F pour ' + nf(a) + ' personnes';
     $('#f-sbrand-l').hidden = !(share && IS_ADMIN);
     $('#f-aud-note').textContent = IS_ADMIN ? '' : 'Débité de ton solde annonceur' + (wal.data ? ' (solde actuel : ' + nf(wal.data.balanceXof) + ' F)' : '') + '. Si notre équipe refuse ta campagne, tu es remboursé sur ton solde.';
@@ -424,6 +537,7 @@ async function initSpace() {
       $('#f-need-t').textContent = 'Cette campagne coûte ' + nf(price) + ' F et ton solde est de ' + nf(bal) + ' F : il te manque ' + nf(Math.max(0, lack)) + ' F. Recharge ton solde, puis envoie ta campagne.';
     }
   };
+  $('#f-net').addEventListener('change', () => refreshMode());
   $$('#f-mode label').forEach((l) => l.addEventListener('click', () => { st.mode = l.dataset.v; $$('#f-mode label').forEach((x) => x.classList.toggle('on', x === l)); refreshMode(); }));
   $('#f-aud').addEventListener('input', refreshMode);
   window.addEventListener('afl-admin', refreshMode);
@@ -445,7 +559,7 @@ async function initSpace() {
         const [cls, lab] = shareStat[c.status] || ['end', c.status];
         const pctDone = Math.min(100, c.targetAudience ? Math.round((c.provenReach / c.targetAudience) * 100) : 0);
         const zone = h('div', { class: 'rg-act' });
-        const act = (name, okMsg) => async () => { zone.querySelectorAll('button').forEach((x) => { x.disabled = true; }); try { await call(name, { id: c.id }); status(okMsg); await loadShareMine(); } catch { zone.append(h('p', { class: 'aderr', text: 'Action impossible pour le moment. Réessaie.' })); zone.querySelectorAll('button').forEach((x) => { x.disabled = false; }); } };
+        const act = (name, okMsg) => async () => { zone.querySelectorAll('button').forEach((x) => { x.disabled = true; }); try { await call(name, { id: c.id }); status(okMsg); await loadShareMine(); } catch (e) { showError(friendly(e, 'Action impossible pour le moment. Réessaie.')); zone.querySelectorAll('button').forEach((x) => { x.disabled = false; }); } };
         const ask = (msg, label, fn) => zone.replaceChildren(h('p', { class: 'addlg-conf', text: msg }), h('div', { class: 'addlg-row' }, h('button', { class: 'btn adsm adred', type: 'button', text: label, onclick: fn }), h('button', { class: 'btn btn-line adsm', type: 'button', text: 'Annuler', onclick: () => draw() })));
         const draw = () => {
           const b = [];
@@ -495,7 +609,7 @@ async function initSpace() {
     if (/limite_du_jour/.test(m)) return 'Trop d\'annonces envoyées aujourd\'hui. Réessaie demain.';
     if (/gratuite_terminee/.test(m)) return 'L\'offre gratuite est terminée. Contacte-nous pour annoncer.';
     if (e?.code === 'functions/invalid-argument') return m.replace(/^.*?:\s*/, '') || 'Vérifie les champs de ton annonce.';
-    return 'Impossible d\'envoyer l\'annonce pour le moment. Réessaie.';
+    return friendly(e, 'Impossible d\'envoyer l\'annonce pour le moment. Réessaie.');
   };
   $('#adform').addEventListener('submit', async (ev) => {
     ev.preventDefault(); err(''); status('');
@@ -530,17 +644,18 @@ async function initSpace() {
       btn.textContent = 'Envoi de l\'annonce…';
       const share = st.mode === 'share';
       if (share) { payload.targetAudience = Number($('#f-aud').value); if (!(payload.targetAudience >= 1000)) throw Object.assign(new Error('Choisis au moins 1 000 personnes à atteindre.'), { code: 'functions/invalid-argument' }); if (IS_ADMIN) payload.brand = $('#f-sbrand').value.trim(); }
+      if (!share) payload.networkRequested = $('#f-net').checked;   // offre Réseau payante demandée (cochée par défaut)
       const done = share ? await call('adsShareCampaignCreate', payload) : await call('adsWebCreate', payload);
       if (share) loadWallet();
       $('#adform').reset(); st.banners = {}; $$('.bnrow .bt').forEach((t) => { t.textContent = ''; t.className = 'bt'; }); st.langs.clear(); st.devs.clear(); st.types.clear(); $$('#f-langs span, #f-devs span, #f-types span').forEach((x) => x.classList.remove('on')); st.countries = new Set(['ALL']); $$('#f-countries span').forEach((x) => x.classList.toggle('on', x.dataset.v === 'ALL')); $('#f-cat-note').hidden = true; st.files = []; $('#f-file-name').textContent = 'Choisis une image ou une vidéo'; refresh();
-      status(share ? (done.free ? 'Campagne créée : elle sera proposée aux partageurs dès sa validation par la deuxième personne de l’équipe.' : 'Campagne envoyée et payée avec ton solde (' + Number(done.priceFcfa).toLocaleString('fr-FR') + ' F). Elle démarre dès sa validation par notre équipe ; si elle est refusée, tu es remboursé sur ton solde.') : 'Annonce envoyée ! Notre équipe la valide, tu recevras un e-mail dès qu\'elle est en ligne.');
+      status(share ? (done.free ? 'Campagne créée : elle sera proposée aux partageurs dès sa validation par la deuxième personne de l’équipe.' : 'Campagne envoyée et payée avec ton solde (' + Number(done.priceFcfa).toLocaleString('fr-FR') + ' F). Elle démarre dès sa validation par notre équipe ; si elle est refusée, tu es remboursé sur ton solde.') : (done.networkRequested ? 'Demande envoyée ! Ton annonce est une demande d\u2019offre Réseau payante : notre équipe te communique le tarif avant la mise en ligne. Tu recevras un e-mail dès qu\'elle est en ligne.' : 'Annonce envoyée ! Notre équipe la valide, tu recevras un e-mail dès qu\'elle est en ligne.'));
       tab('mes');
     } catch (e) { err(explain(e)); } finally { btn.disabled = false; btn.textContent = label; }
   });
 
   // ─── profil de marque : nom, secteur, pays, contact et LOGO (obligatoire pour publier ; le logo validé est affiché comme partenaire) ───
   const pst = { profile: null, blob: null, ext: 'png', type: 'image/png', preview: '' };
-  const perr = (m) => { const e = $('#perr'); e.hidden = !m; e.textContent = m || ''; };
+  const perr = (m) => { const e = $('#perr'); if (e) { e.hidden = true; e.textContent = ''; } if (m) showError(m); };
   const logoShow = (src) => $('#logo-pv').replaceChildren(src ? h('img', { src, alt: 'Logo de ta marque' }) : h('span', { text: 'Logo' }));
   const logoBadge = { pending: ['wait', 'Profil en validation'], approved: ['ok', 'Profil validé'], rejected: ['rej', 'Profil refusé'] };
   function showProfile(p) {
@@ -557,8 +672,8 @@ async function initSpace() {
   async function loadProfile() {
     try {
       const d = await call('adsAdvMe'); showProfile(d.profile);
-      if (!d.profile) { tab('profil'); status('Bienvenue ! Avant ta première annonce, complète ton profil de marque : nom et logo.'); }
-    } catch { status('Impossible de charger ton profil pour le moment. Recharge la page.', true); }
+      if (!d.profile) { tab('profil'); status('Bienvenue ! Avant ta première annonce, complète ton profil de marque : nom et logo.', false, true); }
+    } catch (e) { status(friendly(e, 'Impossible de charger ton profil pour le moment. Recharge la page.'), true); }
   }
   $('#f-logo').addEventListener('change', async (e) => {
     perr('');
@@ -587,7 +702,7 @@ async function initSpace() {
       tab('creer');
     } catch (e) {
       const m = String(e && e.message || '');
-      perr(e && e.code === 'functions/invalid-argument' ? (m.replace(/^.*?:\s*/, '') || 'Vérifie les champs.') : 'Impossible d\'enregistrer le profil pour le moment. Réessaie.');
+      perr(e && e.code === 'functions/invalid-argument' ? (m.replace(/^.*?:\s*/, '') || 'Vérifie les champs.') : friendly(e, 'Impossible d\'enregistrer le profil pour le moment. Réessaie.'));
     } finally { btn.disabled = false; btn.textContent = label; }
   });
 
@@ -630,7 +745,7 @@ async function initSpace() {
   const setTopBusy = (on, label) => { tp.busy = on; const go = $('#top-go'); go.disabled = on; go.classList.toggle('busy', on); go.setAttribute('aria-busy', on ? 'true' : 'false'); go.textContent = on ? (label || 'Traitement en cours…') : 'Payer'; };
   // raisons d'échec renvoyées par l'opérateur : message clair (les autres s'affichent telles quelles)
   const payFail = (code) => ({ PAYER_NOT_FOUND: 'Ce numéro est introuvable chez l’opérateur choisi. Vérifie que le numéro correspond bien à cet opérateur et à son pays (ex. un numéro togolais avec Togocom ou Moov Togo, pas MTN Bénin).' }[String(code || '').toUpperCase()] || null);
-  const topErr = (m) => { const e = $('#top-err'); e.hidden = !m; e.textContent = m || ''; };
+  const topErr = (m) => { const e = $('#top-err'); if (e) { e.hidden = true; e.textContent = ''; } if (m) showError(m); };
   const topExplain = (e) => {
     const m = String((e && e.message) || '');
     const map = { otp_required: 'Ajoute le code OTP généré sur ton téléphone (Orange Burkina Faso).', terms_required: 'Accepte les conditions pour payer par carte.', card_identity_required: 'Complète ton identité et ton adresse.', phone_required: 'Ajoute ton numéro de téléphone.',
@@ -707,7 +822,7 @@ async function initSpace() {
       } catch (e) { setTopBusy(false); tp.key = /provider|otp|terms|identity|phone/.test(String((e && e.message) || '')) ? '' : tp.key; topErr(topExplain(e)); }
     });
     // retour de la page de paiement par carte : on vérifie la recharge en cours
-    try { const pend = sessionStorage.getItem('adtopup'); if (pend) { status('Vérification de ta recharge…'); pollTopup(pend, 60); } } catch { /* sans stockage */ }
+    try { const pend = sessionStorage.getItem('adtopup'); if (pend) { status('Vérification de ta recharge…', false, true); pollTopup(pend, 60); } } catch { /* sans stockage */ }
   }
 
   async function loadMine() {
@@ -715,16 +830,16 @@ async function initSpace() {
       const d = await call('adsWebMine');
       st.open = d.open; st.left = Math.max(0, d.max - d.used);
       $('#mycount').textContent = d.items.length; $('#myquota').textContent = `${d.used} gratuite${d.used > 1 ? 's' : ''} utilisée${d.used > 1 ? 's' : ''} sur ${d.max}`;
-      $('#f-quota').textContent = !d.open ? 'L\'offre gratuite est terminée.' : st.left ? `${st.left} annonce${st.left > 1 ? 's' : ''} gratuite${st.left > 1 ? 's' : ''} restante${st.left > 1 ? 's' : ''} · validation par notre équipe avant diffusion` : 'Tu as utilisé tes annonces gratuites.';
-      $('#f-send').disabled = !d.open || !st.left;
+      $('#f-quota').textContent = $('#f-net').checked ? 'Notre équipe te communique le tarif avant la mise en ligne' : !d.open ? 'L\'offre gratuite est terminée.' : st.left ? `${st.left} annonce${st.left > 1 ? 's' : ''} gratuite${st.left > 1 ? 's' : ''} restante${st.left > 1 ? 's' : ''} · validation par notre équipe avant diffusion` : 'Tu as utilisé tes annonces gratuites. Décoche l\u2019offre Réseau seulement si une place gratuite est libre.';
+      $('#f-send').disabled = !$('#f-net').checked && (!d.open || !st.left);
       st.mine = d; drawAdvKpis();   // chiffres clés, visibles sans ouvrir d'onglet
       const box = $('#mylist'); box.replaceChildren();
       if (!d.items.length) { box.append(h('p', { class: 'adempty', text: 'Tu n\'as pas encore d\'annonce. Crée la première, c\'est gratuit.' })); return; }
-      const doAct = (name, id, okMsg) => async () => { try { await call(name, { id }); status(okMsg); } catch (er) { status(/paiement_requis/.test(String(er?.message)) ? 'Limite de prolongations gratuites atteinte : l’offre payante Afrolook Ads arrive bientôt.' : 'Action impossible pour le moment.', true); throw er; } finally { loadMine(); } };
+      const doAct = (name, id, okMsg) => async () => { try { await call(name, { id }); status(okMsg); } catch (er) { status(/paiement_requis/.test(String(er?.message)) ? 'Limite de prolongations gratuites atteinte : l’offre payante Afrolook Ads arrive bientôt.' : friendly(er, 'Action impossible pour le moment.'), true); throw er; } finally { loadMine(); } };
       for (const a of d.items) {
         const [cls, lab] = badge[a.status] || ['end', a.status];
         const thumb = a.thumb || a.media ? h('img', { class: 'addash-th', src: a.thumb || a.media, alt: '', loading: 'lazy' }) : h('i', { class: 'addash-th ph', text: initial(a) });
-        const meta = `${a.action} · ${a.days} jours${a.status === 'ligne' ? ` · ${a.daysLeft} jour${a.daysLeft > 1 ? 's' : ''} restant${a.daysLeft > 1 ? 's' : ''}` : ''}${a.renewals ? ` · renouvelée ${a.renewals} fois` : ''}`;
+        const meta = `${a.action} · ${a.days} jours${a.networkRequested ? (a.network ? ' · Offre Réseau' : ' · Offre Réseau demandée (payante)') : ''}${a.status === 'ligne' ? ` · ${a.daysLeft} jour${a.daysLeft > 1 ? 's' : ''} restant${a.daysLeft > 1 ? 's' : ''}` : ''}${a.renewals ? ` · renouvelée ${a.renewals} fois` : ''}`;
         const row = h('div', { class: 'addash-r', 'data-id': a.id, tabindex: '0', role: 'button', 'aria-label': `Voir le détail : ${a.title}` },
           h('div', { class: 'addash-main' }, thumb, h('div', {}, h('b', { text: a.title }), imgCount(a) > 1 ? h('span', { class: 'adc-tag-s adsl-mine', text: `${imgCount(a)} photos` }) : null, h('small', { text: meta }), h('small', { class: 'st-m', text: a.status === 'validation' ? 'Pas encore de statistiques' : `${n(a.views)} vues · ${n(a.clicks)} clics` }))),
           h('span', { class: `st ${cls}`, text: lab }),
@@ -752,11 +867,7 @@ if (wallDyn) {
       wallDyn.append(h(href ? 'a' : 'div', { class: 'adpart', title: p.name + (p.kind === 'publisher' ? ' · diffuseur' : p.kind === 'advertiser' ? ' · annonceur' : ''), href: href || false, target: href ? '_blank' : false, rel: href ? 'nofollow sponsored noopener' : false }, h('img', { src: p.logo, alt: p.name, width: 56, height: 56, loading: 'lazy' }), h('span', { text: p.name })));
     }
   }).catch(() => {});
-  // « plus de X » : 50 000 sur nos plateformes + l'audience retenue des diffuseurs validés, arrondie au millier inférieur
-  fetch(wallDyn.dataset.audience).then((r) => r.json()).then((a) => {
-    const t = Math.floor(Number(a.total) / 1000) * 1000;
-    if (t >= 50000) for (const el of $$('[data-aud]')) el.textContent = 'plus de ' + n(t);
-  }).catch(() => {});
+  // l'audience « plus de X » est mise à jour par site.js (data-aud), la même sur tout le site
 }
 
 // ───────── espace diffuseur ─────────
@@ -768,8 +879,10 @@ async function initPub() {
   if (!fb) return;
   const { call, upload } = fb;
   const st = { profile: null, props: [], kind: 'site', type: 'individual', countries: new Set(['TG']) };
-  const perr = (m) => { const e = $('#perr'); e.hidden = !m; e.textContent = m || ''; };
-  const qerr = (m) => { const e = $('#qerr'); e.hidden = !m; e.textContent = m || ''; };
+  const perr = (m) => { const e = $('#perr'); if (e) { e.hidden = true; e.textContent = ''; } if (m) showError(m); };
+  const qerr = (m) => { const e = $('#qerr'); if (e) { e.hidden = true; e.textContent = ''; } if (m) showError(m); };
+  $('#p-country').replaceChildren(...sortedCountries().map(([c, nm]) => h('option', { value: c, text: nm }))); $('#p-country').value = 'TG';   // pays du profil : tous les pays du monde
+  const renderQCountries = countryPick($('#q-countries'), () => st.countries);
   const tab = (t) => { $$('.adtabs a').forEach((a) => a.classList.toggle('on', a.dataset.tab === t)); $('#tab-profil').hidden = t !== 'profil'; $('#tab-sites').hidden = t !== 'sites'; };
   $$('.adtabs a').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); tab(a.dataset.tab); }));
   const toggle = (box, cb) => $$('label', $(box)).forEach((l) => l.addEventListener('click', () => { $$('label', $(box)).forEach((x) => x.classList.toggle('on', x === l)); cb(l.dataset.v); }));
@@ -784,9 +897,17 @@ async function initPub() {
     try { const o = await logoBlob(f); plogo.blob = o.blob; plogo.type = o.type; if (plogo.preview) URL.revokeObjectURL(plogo.preview); plogo.preview = URL.createObjectURL(o.blob); plogoShow(plogo.preview); }
     catch { plogo.blob = null; perr('Image illisible ou trop petite (64 px au moins). Essaie un autre fichier.'); }
   });
-  $('#p-rules-accept').addEventListener('click', async () => { try { await call('adsPubAcceptRules', { version: $('#pubspace').dataset.rules }); status('Règles acceptées. Merci !'); load(); } catch { status('Impossible d\'enregistrer ton acceptation pour le moment.', true); } });
+  $('#p-rules-accept').addEventListener('click', async () => { try { await call('adsPubAcceptRules', { version: $('#pubspace').dataset.rules }); status('Règles acceptées. Merci !'); load(); } catch (e) { status(friendly(e, 'Impossible d\'enregistrer ton acceptation pour le moment.'), true); } });
   toggle('#q-kind', (v) => { st.kind = v; $('#q-site').hidden = v !== 'site'; $('#q-app').hidden = v !== 'app'; });
-  $$('#q-countries span').forEach((c) => c.addEventListener('click', () => { const v = c.dataset.v; st.countries.has(v) ? st.countries.delete(v) : st.countries.add(v); if (!st.countries.size) st.countries.add(v); $$('#q-countries span').forEach((x) => x.classList.toggle('on', st.countries.has(x.dataset.v))); }));
+  // image du site ou de l'application : obligatoire (logo, capture d'écran ou autre) ; réduite comme le logo
+  const qimg = { blob: null, type: '', preview: null, url: '' };
+  const qimgShow = (src) => $('#qi-pv').replaceChildren(src ? h('img', { src, alt: 'Image du site ou de l\u2019application' }) : h('span', { text: 'Image' }));
+  $('#q-img').addEventListener('change', async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    if (!/^image\/(png|jpeg|webp)$/.test(f.type)) return qerr('Choisis une image PNG, JPG ou WebP.');
+    try { const o = await logoBlob(f); qimg.blob = o.blob; qimg.type = o.type; qimg.url = ''; if (qimg.preview) URL.revokeObjectURL(qimg.preview); qimg.preview = URL.createObjectURL(o.blob); qimgShow(qimg.preview); }
+    catch { qimg.blob = null; qerr('Image illisible ou trop petite (64 px au moins). Essaie un autre fichier.'); }
+  });
 
   const stLab = { pending: ['wait', 'En validation'], active: ['ok', 'Validé'], refused: ['rej', 'Refusé'], suspended: ['rej', 'Suspendu'] };
   const profState = { pending: 'Profil en validation par notre équipe', active: 'Profil validé', refused: 'Profil refusé', suspended: 'Profil suspendu' };
@@ -806,16 +927,14 @@ async function initPub() {
   function catsBlock(p) {
     const box = h('details', { class: 'adfold pubcats' }, h('summary', { text: `Catégories d'annonces acceptées (${(p.acceptedCategories || []).length})` }));
     const acc = new Set(p.acceptedCategories || []);
-    const grp = (lvl, title) => {
-      const g = h('div', { class: 'catgrp' + (lvl === 'sensitive' ? ' sens' : '') }, h('b', { text: title }));
-      for (const [k, c] of Object.entries(st.cats)) if (c.level === lvl) g.append(h('label', { class: 'catck' }, h('input', { type: 'checkbox', value: k, checked: acc.has(k) ? true : false }), h('span', { text: c.label })));
-      return g;
-    };
-    box.append(grp('standard', 'Catégories courantes'), grp('sensitive', 'Catégories sensibles (jamais diffusées sans ton accord)'),
+    const pick = h('div', { class: 'catpick' }, h('div', { class: 'catpick-store', hidden: true },
+      ...Object.entries(st.cats).map(([k, c]) => h('input', { type: 'checkbox', value: k, checked: acc.has(k), 'data-lvl': c.level, 'data-label': c.label, 'data-hint': c.hint || false }))));
+    catPick(pick);
+    box.append(pick,
       h('div', { class: 'logo-r' }, h('button', { class: 'btn btn-primary adsm', type: 'button', text: 'Enregistrer mes catégories', onclick: async (e) => {
         const list = $$('input:checked', box).map((i) => i.value); if (!list.length) return status('Choisis au moins une catégorie.', true);
         const b = e.currentTarget; b.disabled = true;
-        try { await call('adsPubUpdateProperty', { id: p.id, acceptedCategories: list }); status('Catégories enregistrées.'); load(); } catch { status('Enregistrement impossible pour le moment.', true); } finally { b.disabled = false; }
+        try { await call('adsPubUpdateProperty', { id: p.id, acceptedCategories: list }); status('Catégories enregistrées.'); load(); } catch (e) { status(friendly(e, 'Enregistrement impossible pour le moment.'), true); } finally { b.disabled = false; }
       } })));
     return box;
   }
@@ -847,7 +966,7 @@ async function initPub() {
     const body = h('div', { class: 'statpanel' }, h('p', { class: 'adnote', text: 'Chargement…' })); wrap.append(body);
     wrap.addEventListener('toggle', async () => {
       if (!wrap.open || wrap.dataset.done) return; wrap.dataset.done = '1';
-      try { renderStats(body, await call('adsPubStats', { id: p.id })); } catch { wrap.dataset.done = ''; body.replaceChildren(h('p', { class: 'aderr', text: 'Impossible de charger les mesures pour le moment.' })); }
+      try { renderStats(body, await call('adsPubStats', { id: p.id })); } catch (e) { wrap.dataset.done = ''; const why = friendly(e, 'Impossible de charger les mesures pour le moment.'); body.replaceChildren(h('p', { class: 'aderr', text: why })); showError(why); }
     });
     return wrap;
   }
@@ -875,8 +994,17 @@ async function initPub() {
     for (const p of st.props) {
       const [cls, lab] = stLab[p.status] || ['end', p.status];
       const where = p.kind === 'site' ? p.url : [p.androidUrl, p.iosUrl].filter(Boolean).join('  ');
+      const imgFile = h('input', { type: 'file', accept: 'image/png,image/jpeg,image/webp', hidden: true });
+      imgFile.addEventListener('change', async () => {
+        const f = imgFile.files[0]; if (!f) return;
+        if (!/^image\/(png|jpeg|webp)$/.test(f.type)) return showError('Choisis une image PNG, JPG ou WebP.');
+        try { const o = await logoBlob(f); const url = await upload(o.blob, o.type); await call('adsPubUpdateProperty', { id: p.id, imageUrl: url }); status('Image enregistrée.'); load(); }
+        catch (e) { showError(friendly(e, 'Image illisible, trop petite (64 px au moins) ou envoi impossible. Essaie un autre fichier.')); }
+      });
       const card = h('article', { class: 'pubprop' },
         h('div', { class: 'pubprop-h' }, h('b', { text: p.name }), h('span', { class: 'st ' + cls, text: lab })),
+        h('div', { class: 'pubprop-im' }, p.imageUrl ? h('img', { class: 'pubprop-img', src: p.imageUrl, alt: '', loading: 'lazy' }) : h('span', { class: 'pubprop-img ph', text: '?' }),
+          h('div', {}, p.imageUrl ? null : h('small', { class: 'aderr', text: 'Ajoute une image de ce site ou de cette application.' }), h('button', { class: 'adlinkbtn', type: 'button', text: p.imageUrl ? 'Changer l\u2019image' : 'Ajouter une image', onclick: () => imgFile.click() }), imgFile)),
         h('small', { class: 'pubprop-w', text: (p.kind === 'site' ? 'Site web · ' : 'Application · ') + where }),
         h('div', { class: 'pubid' }, h('span', {}, h('small', { text: 'Identifiant publicitaire' }), h('code', { text: p.id })), h('button', { class: 'btn btn-line adsm', type: 'button', text: 'Copier', onclick: (e) => copy(p.id, e.currentTarget) })),
         h('p', { class: 'pubprop-a', text: `Audience déclarée : ${n(p.audienceMonthly)} par mois` + (p.status === 'active' ? ` · retenue : ${n(p.audienceCounted)}` : '') }));
@@ -893,13 +1021,13 @@ async function initPub() {
             h('div', { class: 'logo-r' }, h('button', { class: 'btn btn-line adsm', type: 'button', text: 'Vérifier', onclick: async (e) => {
               const b = e.currentTarget; b.disabled = true;
               try { const r = await call('adsPubVerifyProperty', { id: p.id }); status(r.verified ? 'Propriété vérifiée.' : 'Code introuvable sur ton site pour l\'instant. Vérifie la balise puis réessaie.', !r.verified); if (r.verified) load(); }
-              catch { status('Vérification impossible pour le moment.', true); } finally { b.disabled = false; }
+              catch (e) { status(friendly(e, 'Vérification impossible pour le moment.'), true); } finally { b.disabled = false; }
             } })));
         }
         card.append(vbox);
       }
       const del = h('button', { class: 'adlinkbtn', type: 'button', text: 'Retirer', onclick: () => {
-        del.replaceWith(h('span', { class: 'confirm' }, 'Retirer ? ', h('button', { class: 'adlinkbtn danger', type: 'button', text: 'Oui', onclick: async () => { try { await call('adsPubDeleteProperty', { id: p.id }); load(); } catch { status('Action impossible pour le moment.', true); } } }), ' ', h('button', { class: 'adlinkbtn', type: 'button', text: 'Non', onclick: () => renderProps() })));
+        del.replaceWith(h('span', { class: 'confirm' }, 'Retirer ? ', h('button', { class: 'adlinkbtn danger', type: 'button', text: 'Oui', onclick: async () => { try { await call('adsPubDeleteProperty', { id: p.id }); load(); } catch (e) { status(friendly(e, 'Action impossible pour le moment.'), true); } } }), ' ', h('button', { class: 'adlinkbtn', type: 'button', text: 'Non', onclick: () => renderProps() })));
       } });
       card.append(h('div', { class: 'pubprop-f' }, del));
       box.append(card);
@@ -911,8 +1039,8 @@ async function initPub() {
       const t = Math.floor(Number(d.audience.total) / 1000) * 1000; $('#aud-total').textContent = 'plus de ' + n(Math.max(50000, t));
       st.cats = d.adCategories || {}; $('#p-rules-new').hidden = !(d.profile && d.rules && !d.rules.accepted);
       fillProfile(); renderProps(); pubKpis(d);
-      if (!d.profile) { tab('profil'); status('Bienvenue ! Commence par ton profil de diffuseur.'); } else if (!$('#tab-profil').hidden && d.properties.length) tab('sites');
-    } catch { status('Impossible de charger ton espace pour le moment. Recharge la page.', true); }
+      if (!d.profile) { tab('profil'); status('Bienvenue ! Commence par ton profil de diffuseur.', false, true); } else if (!$('#tab-profil').hidden && d.properties.length) tab('sites');
+    } catch (e) { status(friendly(e, 'Impossible de charger ton espace pour le moment. Recharge la page.'), true); }
   }
 
   $('#pform').addEventListener('submit', async (ev) => {
@@ -928,7 +1056,7 @@ async function initPub() {
     const btn = $('#p-send'); btn.disabled = true; const plabel = btn.textContent;
     try { v.logoUrl = st.profile && st.profile.logoUrl; if (plogo.blob) { btn.textContent = 'Envoi du logo…'; v.logoUrl = await upload(plogo.blob, plogo.type); plogo.blob = null; }
       const r = await call('adsPubSaveProfile', v); status(r.status === 'active' ? 'Profil mis à jour.' : 'Profil envoyé ! Notre équipe le valide et tu recevras un e-mail. Tu peux déjà préparer tes sites et applications.'); await load(); tab('sites'); }
-    catch (e) { perr(/profil_suspendu/.test(String(e && e.message)) ? 'Ton profil est suspendu. Contacte-nous.' : (e && e.code === 'functions/invalid-argument' ? String(e.message).replace(/^.*?:\s*/, '') : 'Impossible d\'envoyer le profil pour le moment. Réessaie.')); }
+    catch (e) { perr(/profil_suspendu/.test(String(e && e.message)) ? 'Ton profil est suspendu. Contacte-nous.' : (e && e.code === 'functions/invalid-argument' ? String(e.message).replace(/^.*?:\s*/, '') : friendly(e, 'Impossible d\'envoyer le profil pour le moment. Réessaie.'))); }
     finally { btn.disabled = false; btn.textContent = plabel; }
   });
 
@@ -942,22 +1070,28 @@ async function initPub() {
     if (/regles_a_accepter/.test(m)) return 'Accepte d\'abord la version courante des règles des diffuseurs.';
     if (/logo_manquant/.test(m)) return 'Ajoute d\'abord le logo de ton profil (onglet Mon profil) : il est obligatoire.';
     if (e && e.code === 'functions/invalid-argument') return String(e.message).replace(/^.*?:\s*/, '') || 'Vérifie les champs.';
-    return 'Impossible d\'envoyer la demande pour le moment. Réessaie.';
+    return friendly(e, 'Impossible d\'envoyer la demande pour le moment. Réessaie.');
   };
+  $$('#propform .catpick').forEach(catPick);
   $('#propform').addEventListener('submit', async (ev) => {
     ev.preventDefault(); qerr('');
     if (!st.profile) { tab('profil'); return qerr('Crée d\'abord ton profil de diffuseur.'); }
     if (!st.profile.logoUrl) { tab('profil'); perr('Ajoute le logo de ton profil avant d\'ajouter un site ou une application : il est obligatoire.'); return qerr('Ajoute d\'abord le logo de ton profil (onglet Mon profil).'); }
     const v = { kind: st.kind, name: $('#q-name').value.trim(), url: $('#q-url').value.trim(), androidUrl: $('#q-and').value.trim(), iosUrl: $('#q-ios').value.trim(), category: $('#q-cat').value, countries: [...st.countries], languages: ['fr'], audienceMonthly: Number($('#q-aud').value), sessionsMonthly: Number($('#q-ses').value) || 0, description: $('#q-desc').value.trim(), acceptedCategories: $$('#q-cats input:checked').map((i) => i.value) };
     if (v.name.length < 2) return qerr('Ajoute le nom.');
+    if (!qimg.blob && !qimg.url) return qerr('Ajoute une image de ton site ou de ton application (logo, capture d\u2019écran ou autre) : elle est obligatoire.');
+    if (!v.countries.length) return qerr('Choisis au moins un pays pour ton audience.');
     if (st.kind === 'site' && !v.url) return qerr('Ajoute l\'adresse du site (https://…).');
     if (st.kind === 'app' && !v.androidUrl && !v.iosUrl) return qerr('Ajoute le lien Google Play ou App Store : l\'application doit être en ligne.');
     if (!(v.audienceMonthly >= 100)) return qerr('Indique ton audience mensuelle (100 personnes au moins).');
     if (v.description.length < 20) return qerr('Décris ton site ou ton application en 20 caractères au moins.');
     const btn = $('#q-send'); btn.disabled = true; const label = btn.textContent; btn.textContent = 'Vérification en cours…';
     try {
+      if (!qimg.url) { btn.textContent = 'Envoi de l\u2019image…'; qimg.url = await upload(qimg.blob, qimg.type); }
+      v.imageUrl = qimg.url;
       const r = await call('adsPubAddProperty', v);
-      $('#propform').reset(); st.countries = new Set(['TG']); $$('#q-countries span').forEach((x) => x.classList.toggle('on', x.dataset.v === 'TG'));
+      $('#propform').reset(); st.countries = new Set(['TG']); renderQCountries();
+      qimg.blob = null; qimg.url = ''; if (qimg.preview) { URL.revokeObjectURL(qimg.preview); qimg.preview = null; } qimgShow(null);
       status(`Demande envoyée ! Ton identifiant publicitaire : ${r.id}. Notre équipe te répond par e-mail.`);
       await load();
     } catch (e) { qerr(explain(e)); } finally { btn.disabled = false; btn.textContent = label; }
@@ -972,28 +1106,29 @@ async function initRegieAdmin() {
   const fb = await boot(() => load());
   if (!fb) return;
   const { call } = fb;
-  const st = { tab: 'adv', filter: 'pending', afilter: 'open', adv: [], profiles: [], props: [], alerts: [], alertsOpen: 0, sharers: [], camps: [] };
+  const st = { tab: 'adv', filter: 'pending', afilter: 'open', adv: [], ads: [], profiles: [], props: [], alerts: [], alertsOpen: 0, sharers: [], camps: [] };
   const date = (ms) => (ms ? new Date(Number(ms)).toLocaleDateString('fr-FR') : '—');
   const row = (k, v) => h('div', { class: 'rg-row' }, h('span', { text: k }), h('b', { text: v == null || v === '' ? '—' : String(v) }));
   const lnk = (label, url) => { const u = url ? safeUrl(url) : ''; return u ? h('a', { class: 'rg-link', href: u, target: '_blank', rel: 'nofollow noopener', text: label }) : null; };
   const tag = (cls, text) => h('span', { class: 'st ' + cls, text });
-  const nice = (e) => { const m = String(e && e.message || ''); if (/administrateurs|permission/.test(m) || (e && e.code === 'functions/permission-denied')) return 'Cette page est réservée aux administrateurs : connecte-toi avec le compte Google utilisé dans l\'application.'; if (/profil_non_valide/.test(m)) return 'Valide d\'abord le profil du diffuseur.'; return m.replace(/^.*?:\s*/, '') || 'Action impossible pour le moment.'; };
+  const nice = (e) => { const m = String(e && e.message || ''); if (/administrateurs|permission/.test(m) || (e && e.code === 'functions/permission-denied')) return 'Cette page est réservée aux administrateurs : connecte-toi avec le compte Google utilisé dans l\'application.'; if (/profil_non_valide/.test(m)) return 'Valide d\'abord le profil du diffuseur (onglet Diffuseurs).'; if (/verification_requise/.test(m)) return 'Ce site n\'a pas encore prouvé qu\'il appartient au diffuseur : le diffuseur doit ajouter la balise de vérification sur son site, puis cliquer sur « Vérifier » dans son espace.'; if (/hors_ligne/.test(m)) return 'Ce site ou cette application ne répond pas : il doit être en ligne.'; if (/regles_a_accepter/.test(m)) return 'Le diffuseur doit d\'abord accepter la dernière version des règles (dans son espace).'; if (/motif_obligatoire/.test(m)) return 'Le motif doit faire 5 caractères au moins.'; return friendly(e, m.replace(/^.*?:\s*/, '') || 'Action impossible pour le moment.'); };
 
-  const tabs = { adv: 'Annonceurs', pub: 'Diffuseurs', prop: 'Sites et applications', share: 'Partageurs', camp: 'Campagnes Partage', alert: 'Alertes' };
+  const tabs = { adv: 'Annonceurs', ads: 'Annonces', pub: 'Diffuseurs', prop: 'Sites et applications', share: 'Partageurs', camp: 'Campagnes Partage', alert: 'Alertes' };
   const alertFilters = [['open', 'À vérifier'], ['held', 'Paiements bloqués'], ['reviewed', 'Vérifiées'], ['all', 'Toutes']];
   const filters = [['all', 'Tous'], ['pending', 'En attente'], ['active', 'Validés'], ['refused', 'Refusés'], ['suspended', 'Suspendus']];
   /** Total de chaque rubrique ET ce qui attend une décision, chargés d'un coup (pas besoin d'ouvrir chaque onglet pour savoir ce qu'il y a). */
   async function loadKpis() {
     const one = (name, args, pick, wait) => call(name, args).then((r) => { const l = pick(r); return { total: l.length, wait: l.filter(wait).length }; }).catch(() => null);
     const pend = (x) => String(x.status || x.logoStatus) === 'pending', open = (x) => String(x.status) === 'open';
-    const [adv, pub, prop, share, camp, alert] = await Promise.all([
+    const [adv, ads, pub, prop, share, camp, alert] = await Promise.all([
       one('adsAdvAdminList', { status: 'all' }, (r) => r.items || [], pend),
+      one('adsPubAdminList', { ads: true, status: 'all' }, (r) => r.ads || [], pend),
       one('adsPubAdminList', { status: 'all' }, (r) => r.profiles || [], pend),
       one('adsPubAdminList', { status: 'all' }, (r) => r.properties || [], pend),
       one('adsPubAdminList', { sharers: true, status: 'all' }, (r) => r.sharers || [], pend),
       one('adsPubAdminList', { campaigns: true, status: 'all' }, (r) => r.campaigns || [], pend),
       one('adsPubAdminList', { alerts: true, status: 'all' }, (r) => r.alerts || [], open)]);
-    st.k = { adv, pub, prop, share, camp, alert };
+    st.k = { adv, ads, pub, prop, share, camp, alert };
     drawKpis(); drawBar();
   }
   function drawKpis() {
@@ -1005,14 +1140,14 @@ async function initRegieAdmin() {
       if (!x) return kpiCard(label, '—', 'indisponible', 'alert', () => loadKpis());
       return kpiCard(label, n(x.total), x.wait ? `${n(x.wait)} ${what}` : (x.total ? 'tout est traité' : 'aucun pour l\u2019instant'), x.wait ? (tab === 'alert' ? 'alert' : 'wait') : 'ok', go(tab, x.wait ? 'pending' : 'all'));
     };
-    $('#rg-kpis').replaceChildren(card('Annonceurs', 'adv', 'adv', 'à valider'), card('Diffuseurs', 'pub', 'pub', 'à valider'), card('Sites et applications', 'prop', 'prop', 'à valider'),
+    $('#rg-kpis').replaceChildren(card('Annonceurs', 'adv', 'adv', 'à valider'), card('Annonces', 'ads', 'ads', 'à valider'), card('Diffuseurs', 'pub', 'pub', 'à valider'), card('Sites et applications', 'prop', 'prop', 'à valider'),
       card('Partageurs', 'share', 'share', 'à valider'), card('Campagnes Partage', 'camp', 'camp', 'à valider'), card('Alertes', 'alert', 'alert', 'à vérifier'));
   }
   const drawBar = () => {
     // pastille de chaque rubrique = TOTAL (chargé d'un coup, voir loadKpis) ; sinon, longueur de la liste affichée
     const k = st.k || {}, pick = (x, fallback) => (x ? x.total : fallback);
     const waiting = (key) => !!(k[key] && k[key].wait);
-    const count = { adv: pick(k.adv, st.adv.length), pub: pick(k.pub, st.profiles.length), prop: pick(k.prop, st.props.length), share: pick(k.share, st.sharers.length), camp: pick(k.camp, st.camps.length), alert: k.alert ? k.alert.wait : (st.tab === 'alert' && st.afilter === 'open' ? st.alerts.length : st.alertsOpen) };
+    const count = { adv: pick(k.adv, st.adv.length), ads: pick(k.ads, st.ads.length), pub: pick(k.pub, st.profiles.length), prop: pick(k.prop, st.props.length), share: pick(k.share, st.sharers.length), camp: pick(k.camp, st.camps.length), alert: k.alert ? k.alert.wait : (st.tab === 'alert' && st.afilter === 'open' ? st.alerts.length : st.alertsOpen) };
     $('#rg-tabs').replaceChildren(...Object.entries(tabs).map(([tk, l]) => h('a', { href: '#', class: (st.tab === tk ? 'on ' : '') + (tk === 'alert' && count.alert ? 'rg-alert' : (waiting(tk) ? 'rg-wait' : '')), onclick: (e) => { e.preventDefault(); st.tab = tk; load(); } }, l, h('i', { text: String(count[tk]) }))));
     const fl = st.tab === 'alert' ? alertFilters : filters, cur = st.tab === 'alert' ? st.afilter : st.filter;
     $('#rg-filters').replaceChildren(...fl.map(([k, l]) => h('span', { class: cur === k ? 'on' : false, onclick: () => { if (st.tab === 'alert') st.afilter = k; else st.filter = k; load(); } }, l)));
@@ -1021,16 +1156,19 @@ async function initRegieAdmin() {
   /** Zone de décision avec motif : jamais de fenêtre du navigateur, tout est dans la carte. */
   function decide(card, specs) {
     const zone = h('div', { class: 'rg-act' });
-    const show = () => zone.replaceChildren(...specs.map((s) => h('button', { class: 'btn ' + (s.primary ? 'btn-primary' : 'btn-line') + ' adsm', type: 'button', text: s.label, onclick: () => (s.ask || s.audience != null ? ask(s) : send(s)) })));
-    const send = async (s, extra = {}) => { try { await call(s.fn, { ...s.data, ...extra }); status('Décision enregistrée.'); load(); } catch (e) { status(nice(e), true); show(); } };
+    // en cas de refus du serveur, la raison s'affiche dans la carte (le message du haut de la page est hors de l'écran quand on a défilé)
+    const show = (err) => zone.replaceChildren(...(err ? [h('p', { class: 'aderr rg-err', role: 'alert', text: err })] : []), ...specs.map((s) => h('button', { class: 'btn ' + (s.primary ? 'btn-primary' : 'btn-line') + ' adsm', type: 'button', text: s.label, onclick: () => (s.ask || s.audience != null || s.networkChoice ? ask(s) : send(s)) })));
+    const send = async (s, extra = {}) => { try { await call(s.fn, { ...s.data, ...extra }); status('Décision enregistrée.'); load(); } catch (e) { const m = nice(e); status(m, true); show(m); } };
     const ask = (s) => {
       const ta = h('textarea', { rows: 2, maxlength: 300, placeholder: s.ask });
       const num = s.audience != null ? h('input', { type: 'number', min: 0, value: s.audience, 'aria-label': 'Audience retenue' }) : null;
-      zone.replaceChildren(h('div', { class: 'rg-ask' }, num ? h('label', { class: 'fl' }, 'Audience retenue (ajoutée aux 50 000) ', num) : null, s.ask ? ta : null,
+      const net = s.networkChoice ? h('label', { class: 'adcheck rg-net' }, h('input', { type: 'checkbox', checked: s.networkDefault ? true : false }), h('span', {}, h('b', { text: 'Offre Réseau' }), ' : diffuser aussi cette annonce chez les diffuseurs externes (leurs sites et applications). Sans cette case, elle reste sur les plateformes Afrolook.')) : null;
+      zone.replaceChildren(h('div', { class: 'rg-ask' }, num ? h('label', { class: 'fl' }, 'Audience retenue (ajoutée aux 50 000) ', num) : null, net, s.ask ? ta : null,
         h('div', { class: 'logo-r' }, h('button', { class: 'btn btn-primary adsm', type: 'button', text: 'Confirmer', onclick: () => {
           const extra = {};
           if (s.ask) { if (ta.value.trim().length < 5) return status('Le motif doit faire 5 caractères au moins.', true); extra.reason = ta.value.trim(); }
           if (num) extra[s.audienceKey || 'audienceCounted'] = Number(num.value);
+          if (net) extra.network = net.querySelector('input').checked;
           send(s, extra);
         } }), h('button', { class: 'adlinkbtn', type: 'button', text: 'Annuler', onclick: show }))));
     };
@@ -1051,6 +1189,29 @@ async function initRegieAdmin() {
     if (p.logoStatus !== 'rejected') specs.push({ label: 'Refuser le profil', ask: 'Motif du refus (envoyé par e-mail)', fn: 'adsAdvAdminReview', data: { uid: p.uid, decision: 'reject' } });
     decide(c, specs); return c;
   }
+  /** Annonce déposée depuis le site : ce que l'équipe regarde pour la valider (visuel, texte, lien, pays), et l'offre Réseau. */
+  function adCard(a) {
+    const stl = { pending: ['wait', 'En validation'], active: ['ok', 'En ligne'], refused: ['rej', 'Refusée'], suspended: ['rej', 'Suspendue'], stopped: ['end', 'Arrêtée par l\u2019annonceur'] }[a.status] || ['end', a.status];
+    const img = a.imageUrl && String(a.imageUrl).startsWith('https://') ? h('img', { src: a.imageUrl, alt: '', loading: 'lazy' }) : h('span', { text: a.video ? '▶' : '?' });
+    const c = h('article', { class: 'rg-card' },
+      h('div', { class: 'rg-h' }, h('div', { class: 'rg-logo' }, img), h('div', {}, h('b', { text: a.title }), h('small', { text: (a.brand || 'Annonceur') + ' · ' + (a.networkRequested ? 'Offre Réseau demandée (payante)' : (a.free ? 'Annonce gratuite' : 'Annonce')) + ' · ' + a.id.slice(0, 8) })), tag(stl[0], stl[1])),
+      row('Texte', a.text), row('Bouton', a.action), row('Annonceur', [a.brand, a.ownerEmail].filter(Boolean).join(' · ')), row('Catégorie', a.categoryLabel || a.category),
+      row('Pays', (a.countries || []).join(', ') || 'Tous'), row('Langues, appareils', [(a.languages || []).join(', '), (a.devices || []).join(', ')].filter(Boolean).join(' · ') || 'Toutes'),
+      row('Offre Réseau', a.network ? 'Oui : aussi servie chez les diffuseurs externes' : (a.networkRequested ? 'Demandée par l\u2019annonceur (offre payante) : convenir du tarif avec lui avant de valider' : 'Non : plateformes Afrolook seulement')),
+      row('Résultats', `${n(a.views)} vues · ${n(a.clicks)} clics`), row('Déposée le', date(a.createdAt)), row('Fin prévue', a.endsAt ? date(a.endsAt) : '—'));
+    if (a.reason) c.append(row('Motif', a.reason));
+    const l = lnk('Ouvrir le lien de l\u2019annonce', a.actionUrl); if (l) c.append(l);
+    const d = (decision, more = {}) => ({ target: 'ad', id: a.id, decision, ...more }), specs = [];
+    if (a.status === 'pending' || a.status === 'refused') specs.push({ label: 'Valider', primary: true, networkChoice: true, networkDefault: !!a.networkRequested, fn: 'adsPubAdminReview', data: d('approve') });
+    if (a.status === 'pending') specs.push({ label: 'Refuser', ask: 'Motif du refus (envoyé par e-mail)', fn: 'adsPubAdminReview', data: d('refuse') });
+    if (a.status === 'active') {
+      specs.push({ label: a.network ? 'Retirer l\u2019offre Réseau' : 'Activer l\u2019offre Réseau', primary: !a.network, fn: 'adsPubAdminReview', data: d('approve', { network: !a.network }) });
+      specs.push({ label: 'Suspendre', ask: 'Motif de la suspension', fn: 'adsPubAdminReview', data: d('suspend') });
+    }
+    if (a.status === 'suspended') specs.push({ label: 'Réactiver', primary: true, fn: 'adsPubAdminReview', data: d('reactivate') });
+    if (specs.length) decide(c, specs);
+    return c;
+  }
   function pubCard(p) {
     const c = h('article', { class: 'rg-card' },
       h('div', { class: 'rg-h' }, h('div', { class: 'rg-logo' }, p.logoUrl && String(p.logoUrl).startsWith('https://') ? h('img', { src: p.logoUrl, alt: '' }) : h('span', { text: '?' })), h('div', {}, h('b', { text: p.name }), h('small', { text: (p.type === 'company' ? 'Entreprise' : 'Particulier') + ' · ' + [p.city, p.country].filter(Boolean).join(', ') })), tag(({ pending: 'wait', active: 'ok', refused: 'rej', suspended: 'rej' })[p.status] || 'end', ({ pending: 'En validation', active: 'Validé', refused: 'Refusé', suspended: 'Suspendu' })[p.status] || p.status)),
@@ -1066,7 +1227,7 @@ async function initRegieAdmin() {
   }
   function propCard(p) {
     const c = h('article', { class: 'rg-card' },
-      h('div', { class: 'rg-h' }, h('div', {}, h('b', { text: p.name }), h('small', { text: (p.kind === 'site' ? 'Site web' : 'Application') + ' · ' + p.id })), tag(({ pending: 'wait', active: 'ok', refused: 'rej', suspended: 'rej' })[p.status] || 'end', ({ pending: 'En validation', active: 'Validé', refused: 'Refusé', suspended: 'Suspendu' })[p.status] || p.status)),
+      h('div', { class: 'rg-h' }, p.imageUrl && String(p.imageUrl).startsWith('https://') ? h('div', { class: 'rg-logo' }, h('img', { src: p.imageUrl, alt: '' })) : null, h('div', {}, h('b', { text: p.name }), h('small', { text: (p.kind === 'site' ? 'Site web' : 'Application') + ' · ' + p.id })), tag(({ pending: 'wait', active: 'ok', refused: 'rej', suspended: 'rej' })[p.status] || 'end', ({ pending: 'En validation', active: 'Validé', refused: 'Refusé', suspended: 'Suspendu' })[p.status] || p.status)),
       row('Diffuseur', `${p.ownerName} · ${p.ownerEmail} (profil : ${({ active: 'validé', pending: 'en attente', refused: 'refusé', suspended: 'suspendu' })[p.ownerStatus] || 'aucun'})`),
       row('Catégorie, pays', `${p.category} · ${(p.countries || []).join(', ')}`), row('Audience déclarée', `${n(p.audienceMonthly)} par mois`), p.status === 'active' ? row('Audience retenue', n(p.audienceCounted)) : null,
       row('En ligne', p.online ? 'Oui' + (p.protectedSite ? ' (site protégé contre les robots)' : '') : 'Non'), row('Propriété du site', p.verified ? 'Vérifiée ✓' : 'Non vérifiée'), row('Rémunérable', p.payable ? 'Oui' : 'Non (site non vérifié ou application non attestée)'),
@@ -1137,20 +1298,21 @@ async function initRegieAdmin() {
   }
   function draw() {
     drawBar();
-    const list = st.tab === 'share' ? st.sharers.map(sharerCard) : st.tab === 'camp' ? st.camps.map(campCard) : st.tab === 'alert' ? st.alerts.map(alertCard) : st.tab === 'adv' ? st.adv.map(advCard) : st.tab === 'pub' ? st.profiles.map(pubCard) : st.props.map(propCard);
+    const list = st.tab === 'share' ? st.sharers.map(sharerCard) : st.tab === 'camp' ? st.camps.map(campCard) : st.tab === 'alert' ? st.alerts.map(alertCard) : st.tab === 'adv' ? st.adv.map(advCard) : st.tab === 'ads' ? st.ads.map(adCard) : st.tab === 'pub' ? st.profiles.map(pubCard) : st.props.map(propCard);
     $('#rg-list').replaceChildren(...(list.length ? list : [h('p', { class: 'adempty', text: 'Rien à afficher pour ce filtre.' })]));
   }
   async function load() {
     loadKpis();
     $('#rg-list').replaceChildren(h('p', { class: 'adempty', text: 'Chargement…' }));
     try {
+      if (st.tab === 'ads') { st.ads = (await call('adsPubAdminList', { ads: true, status: st.filter })).ads; draw(); return; }
       if (st.tab === 'share') { st.sharers = (await call('adsPubAdminList', { sharers: true, status: st.filter })).sharers; draw(); return; }
       if (st.tab === 'camp') { st.camps = (await call('adsPubAdminList', { campaigns: true, status: st.filter })).campaigns; draw(); return; }
       if (st.tab === 'alert') { const r = await call('adsPubAdminList', { alerts: true, status: st.afilter }); st.alerts = r.alerts; if (st.afilter === 'open') st.alertsOpen = r.alerts.length; draw(); return; }
       const advStatus = ({ all: 'all', pending: 'pending', active: 'approved', refused: 'rejected' })[st.filter];
       const [a, p, al] = await Promise.all([advStatus ? call('adsAdvAdminList', { status: advStatus }) : Promise.resolve({ items: [] }), call('adsPubAdminList', { status: st.filter }), call('adsPubAdminList', { alerts: true, status: 'open' }).catch(() => ({ alerts: [] }))]);
       st.adv = a.items; st.profiles = p.profiles; st.props = p.properties; st.alertsOpen = al.alerts.length; draw();
-    } catch (e) { st.adv = st.profiles = st.props = []; drawBar(); $('#rg-list').replaceChildren(h('p', { class: 'aderr', text: nice(e) })); }
+    } catch (e) { st.adv = st.profiles = st.props = []; drawBar(); $('#rg-list').replaceChildren(h('p', { class: 'aderr', text: nice(e) })); showError(nice(e)); }
   }
 }
 

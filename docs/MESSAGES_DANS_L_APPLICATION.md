@@ -34,7 +34,7 @@ Console Firebase, projet **afrolooki**, menu **Engagement** puis **In-App Messag
 - Type de message : **Card** (deux images, deux boutons) ou **Modal** (une image).
 - Nom de la campagne : `Jobs et tâches - FR - 2026-11`
 - Titre : `Gagne de l'argent avec Afrolook`
-- Texte : `Partage des annonces sur WhatsApp, Telegram ou Facebook et gagne environ 5 F par clic valide, jusqu'à 500 F par jour. Ouvre la page Travail pour voir les missions.`
+- Texte : `Partage des annonces sur WhatsApp, Telegram ou Facebook et gagne environ 5 F par clic valide, jusqu'à 10 000 F par jour. Ouvre la page Travail pour voir les missions.`
 - Image portrait : `affiche-jobs.png` ; image paysage : `og-jobs.png`.
 - Bouton principal : texte `Voir comment ça marche` ; action **Open URL** : `https://afrolookmedia.com/gagner/#jobs`
 - Bouton secondaire (type Card) : texte `Plus tard` ; action **Dismiss** (fermer).
@@ -57,7 +57,7 @@ Console Firebase, projet **afrolooki**, menu **Engagement** puis **In-App Messag
 ### Version anglaise (deuxième campagne, mêmes réglages)
 - Nom : `Jobs and tasks - EN - 2026-11` ; ciblage `app_lang` = `en`.
 - Titre : `Earn money with Afrolook`
-- Texte : `Share ads on WhatsApp, Telegram or Facebook and earn about 5 F per valid click, up to 500 F a day. Open the Work page to see the missions.`
+- Texte : `Share ads on WhatsApp, Telegram or Facebook and earn about 5 F per valid click, up to 10,000 F a day. Open the Work page to see the missions.`
 - Bouton principal : `See how it works` → `https://afrolookmedia.com/en/earn/#jobs`
 - Bouton secondaire : `Later` (Dismiss).
 

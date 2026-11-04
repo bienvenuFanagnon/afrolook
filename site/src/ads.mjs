@@ -49,14 +49,14 @@ export const phone = (cap = '') => `<figure class="mkw"><div class="mkp"><div cl
 const HOME = {
   fr: {
     kick: 'Afrolook Ads · Campagne WhatsApp', h: 'Fais partager ton annonce sur <em>WhatsApp, Telegram, Facebook…</em> partout en Afrique.',
-    p: `Des partageurs validés publient ton annonce sur leurs statuts, groupes et canaux. Tu choisis l'audience, tu simules ton budget, et seules les visites valides sont comptées, avec un système anti-fraude. Pas de budget ? Une annonce gratuite est aussi diffusée sur <b>Afrolook</b>, <b>SlashAtlas</b>, <b>Pronoflash</b> et <b>Épargne+</b> (<b>${AUDIENCE} personnes</b>).`,
+    p: `Des partageurs validés publient ton annonce sur leurs statuts, groupes et canaux. Tu choisis l'audience, tu simules ton budget, et seules les visites valides sont comptées, avec un système anti-fraude. Pas de budget ? Une annonce gratuite est aussi diffusée sur <b>Afrolook</b>, <b>SlashAtlas</b>, <b>Pronoflash</b> et <b>Épargne+</b> (<b><span data-aud>${AUDIENCE}</span> personnes</b>).`,
     pub: ['Tu as un site ou une application ?', 'Affiche les annonces Afrolook Ads chez toi : audience mesurée et comparée à ta déclaration, catégories d\'annonces choisies par toi, et 65 % du budget des annonces de l\'offre Réseau pour toi.', 'Devenir diffuseur', 'Documentation d\'intégration'],
     sh: ['Simule ton audience en 10 secondes', 'Entre ton budget : tu vois combien de personnes tu touches et combien de visites attendre sur ton lien.', 'Ouvrir le simulateur'],
     cta: 'Lancer une campagne', ghost: 'Annonce gratuite', s1: ['d\'audience', 'sur nos 4 plateformes'], s2: ['anti-fraude', 'seules les visites valides sont comptées'], bar: 'Fais partager ton annonce sur WhatsApp, Telegram, Facebook', barBtn: 'Annoncer',
   },
   en: {
     kick: 'Afrolook Ads · WhatsApp campaign', h: 'Get your ad shared on <em>WhatsApp, Telegram, Facebook…</em> across Africa.',
-    p: `Approved sharers post your ad on their statuses, groups and channels. You choose the audience, simulate your budget, and only valid visits are counted, with an anti-fraud system. No budget? A free ad is also shown on <b>Afrolook</b>, <b>SlashAtlas</b>, <b>Pronoflash</b> and <b>Épargne+</b> (<b>${AUDIENCE_EN} people</b>).`,
+    p: `Approved sharers post your ad on their statuses, groups and channels. You choose the audience, simulate your budget, and only valid visits are counted, with an anti-fraud system. No budget? A free ad is also shown on <b>Afrolook</b>, <b>SlashAtlas</b>, <b>Pronoflash</b> and <b>Épargne+</b> (<b><span data-aud>${AUDIENCE_EN}</span> people</b>).`,
     pub: ['Own a website or an app?', 'Show Afrolook Ads on it: measured audience compared with what you declared, ad categories chosen by you, and 65% of the Network offer budget for you.', 'Become a publisher', 'Integration guide'],
     sh: ['Simulate your audience in 10 seconds', 'Enter your budget: see how many people you reach and how many visits to expect on your link.', 'Open the simulator'],
     cta: 'Launch a campaign', ghost: 'Free ad', s1: ['audience', 'across our 4 platforms'], s2: ['anti-fraud', 'only valid visits are counted'], bar: 'Get your ad shared on WhatsApp, Telegram, Facebook', barBtn: 'Advertise',
@@ -77,7 +77,7 @@ export function adsHomeBlock(lang) {
   <h2>${t.h}</h2><p>${t.p}</p>
   <div class="cta"><a class="btn btn-primary adbig" href="/ads/espace/">${G} ${t.cta}</a><a class="btn adghost adbig" href="${lang === 'fr' ? '/ads/' : '/en/ads/'}#annonces-gratuites">${t.ghost} ${ico('arrow', 18)}</a></div>
   <a class="adshare" href="${lang === 'fr' ? '/ads/' : '/en/ads/'}#simulateur"><b>${t.sh[0]}</b><span>${t.sh[1]}</span><i>${t.sh[2]} →</i></a></div>
- <div class="adhome-r"><div class="adhome-st">${stat(aud, t.s1[0], t.s1[1])}${stat('0 FCFA', t.s2[0], t.s2[1])}</div>
+ <div class="adhome-r"><div class="adhome-st">${stat(`<span data-aud>${aud}</span>`, t.s1[0], t.s1[1])}${stat('0 FCFA', t.s2[0], t.s2[1])}</div>
   <div class="adhome-pl"><span><img src="/img/logo.webp" width="22" height="22" alt=""> Afrolook</span><span><img src="/img/partners/slashatlas.webp" width="22" height="22" alt=""> SlashAtlas</span><span><img src="/img/partners/pronoflash.webp" width="22" height="22" alt=""> Pronoflash</span><span><img src="/img/partners/epargneplus.webp" width="22" height="22" alt=""> Épargne+</span></div></div>
 <div class="wrap adhome-pub"><div><b>${t.pub[0]}</b><span>${t.pub[1]}</span></div><a class="btn btn-primary adbig" href="/ads/diffuseur/">${t.pub[2]}</a><a class="adlinkbtn" href="/ads/diffuseur/documentation/">${t.pub[3]} ${ico('arrow', 16)}</a></div>
 </section>`;
@@ -164,7 +164,7 @@ ${networkSection('en', ico)}
 </div></div></section>
 
 <section class="adsec" id="annonces-gratuites"><div class="wrap"><span class="kicker">Launch offer · 100% free ads</span><h2 class="h2">No budget? Post a free ad on our platforms.</h2>
-<p class="sub">With your Google account: 3 free ads of 14 days, approved by our team, shown automatically on Afrolook, SlashAtlas, Pronoflash and Épargne+, to ${AUDIENCE_EN} people.</p>
+<p class="sub">With your Google account: 3 free ads of 14 days, approved by our team, shown automatically on Afrolook, SlashAtlas, Pronoflash and Épargne+, to <span data-aud>${AUDIENCE_EN}</span> people.</p>
 <div class="cta" style="margin:0 0 22px"><a class="btn btn-primary adbig" href="/ads/espace/">${G} Post my free ad</a></div>
 <div class="adp3">
  <article class="adp"><div class="adp-top"><img src="/img/logo.webp" width="46" height="46" alt=""><div><h3>Afrolook</h3><small>The social network of African creators</small></div></div><p>Your ad appears in the feed, between creators' posts. An action button leads to your site, app or WhatsApp.</p></article>
@@ -216,7 +216,7 @@ const KIT_LINKS = [
 ];
 const KIT_POSTERS = [
   ['Affiche : Campagne Partage (annonceurs)', '/img/ads/affiche-annonceurs.png', 'affiche-afrolook-ads-campagne-partage.png', 'https://afrolookmedia.com/ads/#partage', '💼 Fais partager ton annonce par de vraies personnes sur WhatsApp, Telegram, Facebook et TikTok. Tu paies l\'audience, seuls les clics valides sont comptés.'],
-  ['Affiche : Jobs et tâches Afrolook (partageurs)', '/img/ads/affiche-jobs.png', 'affiche-afrolook-jobs.png', 'https://afrolookmedia.com/gagner/#jobs', '💰 Gagne de l\'argent en partageant des annonces : environ 5 F par clic valide, jusqu\'à 500 F par jour (montants indicatifs). Crée ton profil et commence.'],
+  ['Affiche : Jobs et tâches Afrolook (partageurs)', '/img/ads/affiche-jobs.png', 'affiche-afrolook-jobs.png', 'https://afrolookmedia.com/gagner/#jobs', '💰 Gagne de l\'argent en partageant des annonces : environ 5 F par clic valide, jusqu\'à 10 000 F par jour (montants indicatifs). Crée ton profil et commence.'],
 ];
 const attr = (s) => String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 const shareRow = (url, msg) => `<div class="kit-act"><button class="btn btn-primary adsm" type="button" data-copy="${attr(url)}">Copier le lien</button><button class="btn btn-line adsm" type="button" data-copy="${attr(msg + '\n' + url)}">Copier le message</button><a class="btn btn-line adsm" target="_blank" rel="noopener" data-wa="${attr(msg + '\n' + url)}" href="#">WhatsApp</a><a class="btn btn-line adsm" target="_blank" rel="noopener" data-tg-url="${attr(url)}" data-tg-text="${attr(msg)}" href="#">Telegram</a><a class="btn btn-line adsm" target="_blank" rel="noopener" data-fb="${attr(url)}" href="#">Facebook</a></div>`;
@@ -271,7 +271,7 @@ ${networkSection('fr', ico)}
 <div class="adwall" id="adpartners">${PARTNERS.map((p) => `<div class="adpart" title="${p.n}">${p.img ? `<img src="${p.img}" alt="${p.n}" width="56" height="56" loading="lazy">` : `<i class="adp-logo plus">${p.mark}</i>`}<span>${p.n}</span></div>`).join('')}<span id="adpartners-dyn" data-api="${api}/ads/api/partners" data-audience="${api}/ads/api/audience" style="display:contents"></span></div></div></section>
 
 <section class="adsec" id="annonces-gratuites"><div class="wrap"><span class="kicker">Offre de lancement · annonces 100 % gratuites</span><h2 class="h2">Pas de budget ? Publie une annonce gratuite sur nos plateformes.</h2>
-<p class="sub">Avec ton compte Google : 3 annonces gratuites de 14 jours, validées par notre équipe, diffusées automatiquement sur Afrolook, SlashAtlas, Pronoflash et Épargne+, auprès de ${AUDIENCE} personnes.</p>
+<p class="sub">Avec ton compte Google : 3 annonces gratuites de 14 jours, validées par notre équipe, diffusées automatiquement sur Afrolook, SlashAtlas, Pronoflash et Épargne+, auprès de <span data-aud>${AUDIENCE}</span> personnes.</p>
 <div class="cta" style="margin:0 0 22px"><a class="btn btn-primary adbig" href="/ads/espace/">${G} Publier mon annonce gratuite</a></div>
 <div class="adp3">
  <article class="adp"><div class="adp-top"><img src="/img/logo.webp" width="46" height="46" alt=""><div><h3>Afrolook</h3><small>Réseau social des créateurs africains</small></div></div><p>Ton annonce apparaît dans le fil, entre les publications des créateurs. Un bouton d'action mène vers ton site ou ton application.</p><span class="adp-tag">Dans l'application et sur le web</span></article>
@@ -387,10 +387,14 @@ export function adsSpace(fbConfig, api) {
     <div class="adfs"><h3><i>4</i> Durée et audience</h3>
      <div data-adsonly><div class="adbtn"><label class="on">14 jours · offre gratuite</label></div><p class="adnote">Ton annonce reste en ligne 2 semaines. Tu peux la renouveler gratuitement une fois.</p></div>
      <div class="adchips" id="f-countries">${countries.map(([c, l], n) => `<span class="${n === 0 ? 'on' : ''}" data-v="${c}">${l}</span>`).join('')}</div>
+     <select class="catpick-add" id="f-more-countries" aria-label="Ajouter un autre pays" style="margin-top:10px"><option value="">+ Autre pays…</option></select>
      <div class="fl" data-adsonly><span>Langues <small>(facultatif : toutes si rien n'est choisi)</small></span><div class="adchips" id="f-langs"><span data-v="fr">Français</span><span data-v="en">Anglais</span><span data-v="pt">Portugais</span></div></div>
      <div class="fl" data-adsonly><span>Appareils <small>(facultatif)</small></span><div class="adchips" id="f-devs"><span data-v="mobile">Téléphone</span><span data-v="desktop">Ordinateur</span></div></div>
      <details class="adfold" data-adsonly><summary>Types de sites et d'applications <small>(facultatif)</small></summary><div class="adchips" id="f-types">${PUB_CATS.map(([k, l]) => `<span data-v="${k}">${l}</span>`).join('')}</div></details>
      <p class="adnote" data-adsonly>C'est toi qui définis à qui s'adresse ton annonce, et nous le respectons : au plus <b>40 %</b> des vues peuvent venir d'autres pays que ceux choisis. Le pays du visiteur est déterminé par nos serveurs, jamais par le site qui affiche l'annonce.</p></div>
+    <div class="adfs" data-adsonly id="f-netbox"><h3><i>5</i> Où diffuser ton annonce ?</h3>
+     <label class="adcheck" for="f-net"><input type="checkbox" id="f-net" checked><span><b>Offre Réseau (payante)</b> : en plus de nos plateformes, ton annonce est diffusée chez les sites et applications de nos diffuseurs partenaires, pour toucher une audience bien plus large.</span></label>
+     <p class="adcallout" id="f-net-note"></p></div>
     <div class="adfs" id="f-share" hidden><h3><i>5</i> Audience à atteindre <small>(service payant)</small></h3>
      <p class="adnote">Il n'y a <b>pas d'offre gratuite</b> pour ce service : des personnes sont payées pour partager ton annonce. <b>Tu paies l'audience</b>, c'est-à-dire le nombre de personnes à atteindre, avec ton <b>solde annonceur</b> (recharge libre en FCFA). Les partageurs sont validés par notre équipe et leur audience est vérifiée ; ta campagne s'arrête quand l'audience choisie est atteinte : <b>tu ne dépasses jamais ton budget</b>. Seuls les clics valides sont comptés, sans doublon, et tu les vois uniquement dans ton espace.</p>
      <label class="fl" id="f-sbrand-l" for="f-sbrand" hidden>Marque affichée <small>(équipe : ex. SlashAtlas)</small><input id="f-sbrand" maxlength="60" autocomplete="off" placeholder="SlashAtlas"></label>
@@ -519,17 +523,21 @@ export function adsPublisherSpace(fbConfig, api) {
      <div class="adbtn adseg" id="q-kind"><label class="on" data-v="site">Site web</label><label data-v="app">Application</label></div>
      <div class="adrow2"><label class="fl" for="q-name">Nom<input id="q-name" maxlength="80" placeholder="Ex. Kofi Sport"></label>
       <label class="fl" for="q-cat">Type<select id="q-cat">${PUB_CATS.map(([k, l]) => `<option value="${k}">${l}</option>`).join('')}</select></label></div>
+     <div class="logo-up"><label class="logo-box" for="q-img" id="qi-pv"><span>Image</span></label>
+      <div class="logo-t"><b>Image du site ou de l'application</b><small>Obligatoire : ton logo, une capture d'écran ou toute image qui le représente (PNG, JPG ou WebP). Notre équipe la regarde pour valider ta demande.</small>
+       <div class="logo-r"><label class="btn btn-line adsm" for="q-img">Choisir une image</label></div></div>
+      <input id="q-img" type="file" accept="image/png,image/jpeg,image/webp" hidden></div>
      <label class="fl" for="q-url" id="q-site">Adresse du site <small>(https, en ligne)</small><input id="q-url" inputmode="url" placeholder="https://tonsite.com"></label>
      <div id="q-app" hidden><div class="adrow2"><label class="fl" for="q-and">Lien Google Play <small>(si Android)</small><input id="q-and" inputmode="url" placeholder="https://play.google.com/store/apps/details?id=…"></label>
       <label class="fl" for="q-ios">Lien App Store <small>(si iPhone)</small><input id="q-ios" inputmode="url" placeholder="https://apps.apple.com/…/id123456789"></label></div></div></div>
     <div class="adfs"><h3><i>2</i> Ton audience</h3>
-     <div class="fl"><span>Pays de ton audience</span><div class="adchips" id="q-countries">${countries.map(([c, l], n) => `<span class="${n === 0 ? 'on' : ''}" data-v="${c}">${l}</span>`).join('')}</div></div>
+     <div class="fl"><span>Pays de ton audience <small>(tous les pays du monde sont possibles)</small></span><div class="cpick" id="q-countries"></div></div>
      <div class="adrow2"><label class="fl" for="q-aud">Personnes différentes par mois<input id="q-aud" type="number" min="100" step="100" inputmode="numeric" placeholder="Ex. 25000"></label>
       <label class="fl" for="q-ses">Pages vues ou sessions par mois <small>(facultatif)</small><input id="q-ses" type="number" min="0" step="100" inputmode="numeric"></label></div>
      <label class="fl" for="q-desc">Décris ton site ou ton application <small>(20 à 400 caractères)</small><textarea id="q-desc" rows="3" maxlength="400"></textarea></label></div>
     <div class="adfs"><h3><i>3</i> Ce que tu acceptes d'afficher</h3>
-     <div class="fl"><span>Catégories d'annonces</span><div class="cats" id="q-cats">${catChecks('qcat')}</div></div>
-     <p class="adcallout">Seules ces catégories s'affichent chez toi. Les catégories sensibles (finance, paris, alcool, médicaments, rencontres, contenu sensuel, politique, religion…) ne s'affichent <b>jamais</b> sans ton accord : coche-les seulement si tu les acceptes. Tu peux changer ce choix à tout moment.</p></div>
+     <div class="fl"><span>Catégories d'annonces <small>(sélection multiple)</small></span>${catChecks('qcat', 'q-cats')}</div>
+     <p class="adcallout">Seules ces catégories s'affichent chez toi. Les catégories sensibles (finance, paris, alcool, médicaments, rencontres, contenu sensuel, politique, religion…) ne s'affichent <b>jamais</b> sans ton accord : ajoute-les seulement si tu les acceptes. Tu peux changer ce choix à tout moment.</p></div>
     <p class="adnote">L'audience que tu déclares est contrôlée par Afrolook Ads ; notre équipe retient le chiffre validé.</p>
     <p class="aderr" id="qerr" role="alert" hidden></p>
     <button class="btn btn-primary adbig" id="q-send" type="submit">Envoyer la demande</button>

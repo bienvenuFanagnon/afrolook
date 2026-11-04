@@ -24,7 +24,7 @@ const rules = JSON.parse(fs.readFileSync(path.join(root, 'src/rules.json'), 'utf
 const dist = path.join(root, 'dist');
 const flagsDir = process.env.FLAGS_DIR || path.join(root, 'static/img/flags');
 
-const ASSET_V = '37';
+const ASSET_V = '44';
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const slug = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const write = (p, c) => { const f = path.join(dist, p); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, c); };
@@ -96,7 +96,7 @@ function layout({ lang, key, path: pth, alt, title, desc, body, ogImage = '/img/
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>${esc(title)}</title><meta name="description" content="${esc(desc)}">
 <link rel="canonical" href="${canon}">${hl}${noindex ? '<meta name="robots" content="noindex">' : ''}
-<meta name="theme-color" content="#0A100C"><meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#0A100C"><meta name="color-scheme" content="light dark"><meta name="afl-audience-api" content="${cfg.functionsBase}/ads/api/audience">
 <link rel="icon" href="/img/favicon-32.png" sizes="32x32"><link rel="apple-touch-icon" href="/img/apple-touch-icon.png"><link rel="manifest" href="/manifest.webmanifest">
 <meta property="og:type" content="website"><meta property="og:site_name" content="Afrolook"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:url" content="${canon}"><meta property="og:image" content="${abs(ogImage)}"><meta property="og:locale" content="${lang === 'fr' ? 'fr_FR' : 'en_US'}">
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(desc)}"><meta name="twitter:image" content="${abs(ogImage)}">
@@ -126,14 +126,14 @@ const JOBS = {
   fr: {
     k: 'Jobs et tâches Afrolook', h: 'Gagne de l\'argent en partageant des annonces.',
     sub: 'Afrolook propose des jobs : des tâches simples et payées. Tu partages une annonce sur ton statut WhatsApp, tes groupes, Telegram, Facebook ou TikTok, et chaque personne qui clique sur ton lien te rapporte de l\'argent. Pas besoin d\'être créateur.',
-    steps: [['Crée ton profil', 'Dis-nous combien de personnes voient tes statuts et tes groupes. Notre équipe le valide avant ta première mission.'], ['Partage une annonce', 'Choisis une mission, publie-la où tu veux avec ton lien personnel : WhatsApp, Telegram, Facebook, TikTok…'], ['Gagne au clic valide', 'Environ 5 F par clic valide, jusqu\'à 500 F par jour. Tes gains deviennent des pièces, que tu retires en argent réel.']],
+    steps: [['Crée ton profil', 'Dis-nous combien de personnes voient tes statuts et tes groupes. Notre équipe le valide avant ta première mission.'], ['Partage une annonce', 'Choisis une mission, publie-la où tu veux avec ton lien personnel : WhatsApp, Telegram, Facebook, TikTok…'], ['Gagne au clic valide', 'Environ 5 F par clic valide, jusqu\'à 10 000 F par jour. Tes gains deviennent des pièces, que tu retires en argent réel.']],
     ex: [['Le parrainage rapporte aussi', 'Quand un ami que tu as parrainé gagne, tu reçois 10 % en plus. Cela ne diminue jamais ses gains.'], ['Seuls les clics valides sont payés', 'Une vraie personne, un seul clic, sans doublon. Les fraudes sont détectées et non comptées ; un gain peut être retiré en cas de fraude.']],
     cta: 'Télécharger Afrolook', more: 'Tu es annonceur ? Fais partager ton annonce', fine: 'Les montants sont indicatifs et peuvent évoluer. Les gains dépendent de ton audience et des missions disponibles.',
   },
   en: {
     k: 'Afrolook jobs and tasks', h: 'Earn money by sharing ads.',
     sub: 'Afrolook offers jobs: simple, paid tasks. You share an ad on your WhatsApp status, your groups, Telegram, Facebook or TikTok, and every person who clicks your link earns you money. You do not need to be a creator.',
-    steps: [['Create your profile', 'Tell us how many people see your statuses and groups. Our team approves it before your first mission.'], ['Share an ad', 'Pick a mission and post it wherever you like with your personal link: WhatsApp, Telegram, Facebook, TikTok…'], ['Earn per valid click', 'About 5 F per valid click, up to 500 F a day. Your earnings become coins that you withdraw as real money.']],
+    steps: [['Create your profile', 'Tell us how many people see your statuses and groups. Our team approves it before your first mission.'], ['Share an ad', 'Pick a mission and post it wherever you like with your personal link: WhatsApp, Telegram, Facebook, TikTok…'], ['Earn per valid click', 'About 5 F per valid click, up to 10,000 F a day. Your earnings become coins that you withdraw as real money.']],
     ex: [['Referrals pay too', 'When a friend you referred earns, you get 10% extra. It never reduces their earnings.'], ['Only valid clicks are paid', 'A real person, one click, no duplicates. Frauds are detected and not counted; earnings can be withdrawn in case of fraud.']],
     cta: 'Download Afrolook', more: 'Advertiser? Get your ad shared', fine: 'Amounts are indicative and may change. Earnings depend on your audience and on the missions available.',
   },

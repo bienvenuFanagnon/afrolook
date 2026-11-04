@@ -66,6 +66,18 @@
     });
   }
 
+  // audience du réseau Afrolook Ads : UN seul chiffre pour tout le site, lu sur l'API (50 000 sur nos plateformes + l'audience retenue des diffuseurs validés, arrondie au millier inférieur)
+  var auds = $$('[data-aud]'), audApi = $('meta[name="afl-audience-api"]');
+  if (auds.length && audApi) {
+    var en = document.documentElement.lang === 'en';
+    fetch(audApi.content).then(function (r) { return r.json(); }).then(function (a) {
+      var t = Math.floor(Number(a.total) / 1000) * 1000;
+      if (!(t >= 50000)) return;
+      var txt = (en ? 'over ' : 'plus de ') + t.toLocaleString(en ? 'en-US' : 'fr-FR');
+      auds.forEach(function (el) { el.textContent = txt; });
+    }).catch(function () { /* le chiffre écrit dans la page reste affiché */ });
+  }
+
   // page de téléchargement : envoie vers la bonne boutique
   var play = $('meta[name="afrolook-play"]'), ios = $('meta[name="afrolook-ios"]');
   if (play && ios) {

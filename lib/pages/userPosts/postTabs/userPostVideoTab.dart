@@ -1378,7 +1378,46 @@ Future<String?> _uploadCustomThumbnail() async {
     }
   }
 
-  Future<void> _getVideo({XFile? preset}) async {
+  /// Bouton « Enregistrer » / « Choisir » de la page : même aspect pour les deux.
+  Widget _videoSourceButton({required IconData icon, required String label, required String hint, required VoidCallback onTap}) {
+    return Container(
+      height: 62,
+      decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.accent, width: 2)),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: _c.accentText, size: 24),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: _c.accentText, fontWeight: FontWeight.bold, fontSize: 14)),
+                      const SizedBox(height: 2),
+                      Text(hint, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: _c.textSecondary, fontSize: 10.5, height: 1.2)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Enregistrer avec la caméra (60 s au plus) : la vidéo passe ensuite par le même contrôle de taille que celle choisie dans la galerie.
+  Future<void> _recordVideo() => _getVideo(source: ImageSource.camera);
+
+  Future<void> _getVideo({XFile? preset, ImageSource source = ImageSource.gallery}) async {
     if (_isPickingVideo) {
       printVm("⏳ Sélection déjà en cours, ignorée");
       return;
@@ -1414,7 +1453,7 @@ Future<String?> _uploadCustomThumbnail() async {
         },
       );
 
-      final video = preset ?? await picker.pickVideo(source: ImageSource.gallery);
+      final video = preset ?? await picker.pickVideo(source: source, maxDuration: source == ImageSource.camera ? const Duration(seconds: 60) : null);
 
       if (video == null) {
         if (Navigator.canPop(context)) Navigator.pop(context);
@@ -2215,33 +2254,14 @@ Future<void> _generateAndUploadThumbnail(String postId, String videoUrl) async {
                           ),
                         ),
                         SizedBox(height: 12),
-                        Container(
-                          width: double.infinity,
-                          height: 55,
-                          decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: _c.accent, width: 2),),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(12),
-                              onTap: _getVideo,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.video_library, color: _c.accent, size: 24),
-                                  SizedBox(width: 12),
-                                  Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text('SÉLECTIONNER UNE VIDÉO', style: TextStyle(color: _c.accent, fontWeight: FontWeight.bold, fontSize: 16)),
-                                      SizedBox(height: 2),
-                                      Text('Max $_maxVideoSizeMB Mo selon votre plan', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                        Row(
+                          children: [
+                            if (!kIsWeb) ...[
+                              Expanded(child: _videoSourceButton(icon: Icons.videocam_rounded, label: 'ENREGISTRER', hint: '60 s au plus', onTap: _recordVideo)),
+                              const SizedBox(width: 10),
+                            ],
+                            Expanded(child: _videoSourceButton(icon: Icons.video_library, label: 'CHOISIR', hint: 'Max $_maxVideoSizeMB Mo selon ton plan', onTap: _getVideo)),
+                          ],
                         ),
                         SizedBox(height: 20),
                         _buildVideoPreview(),

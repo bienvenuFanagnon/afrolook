@@ -234,7 +234,7 @@ class ShareHome {
 
   /// Aperçu des informations quand le service n'est pas (encore) joignable : valeurs de départ du pilote, à titre d'estimation.
   factory ShareHome.preview() => ShareHome(
-        enabled: false, status: 'none', perClickFcfa: 5, coinsPerClick: 12.5, dailyCapFcfa: 3000, holdHours: 72, sponsorPct: 10, expectedCtr: 0.02, retained: 0,
+        enabled: false, status: 'none', perClickFcfa: 5, coinsPerClick: 12.5, dailyCapFcfa: 10000, holdHours: 72, sponsorPct: 10, expectedCtr: 0.02, retained: 0,
         todayFcfa: 0, pendingFcfa: 0, paidCoins: 0, validClicks: 0, missions: const [], profile: null, rulesVersion: '', rules: const [],
       );
 

@@ -345,7 +345,7 @@ body{overflow-x:clip}
 .toast.c{left:auto;right:0;bottom:36px;transform:rotate(-2deg);z-index:7}
 .hero .stage .fine{bottom:-24px}
 /* deux piliers */
-.duo2{padding-block:0 8px}
+.duo2{padding-block:40px 8px}
 .duo2 .two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
 .duo2 a{border-radius:28px;padding:30px;text-decoration:none;position:relative;overflow:hidden;display:flex;flex-direction:column;gap:12px;min-width:0;transition:transform .2s}
 .duo2 a:hover{transform:translateY(-3px)}
