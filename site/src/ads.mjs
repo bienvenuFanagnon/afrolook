@@ -106,7 +106,7 @@ const FAQ = [
   ['Faut-il créer un compte Afrolook Ads ?', 'Non. Ton compte Google suffit : pas de mot de passe de plus.'],
   ['Quelles annonces sont acceptées ?', 'Les entreprises, startups, sites web, applications, projets, événements et affiches. Chaque annonce est relue par notre équipe : les contenus trompeurs, illégaux ou choquants sont refusés.'],
   ['Où mon annonce est-elle diffusée ?', 'Automatiquement sur Afrolook, SlashAtlas, Pronoflash et Épargne+, dès qu\'elle est validée.'],
-  ['Combien d\'annonces, et pendant combien de temps ?', 'Tu peux publier 3 annonces gratuites. Chacune reste en ligne 2 semaines (14 jours) et peut être renouvelée gratuitement une fois.'],
+  ['Combien d\'annonces, et pendant combien de temps ?', 'Tu peux publier 1 annonce gratuite. Elle reste en ligne 2 semaines (14 jours) et n\'est pas renouvelable : pour diffuser davantage, choisis l\'offre Réseau (payante) ou une campagne Partage.'],
   ['Comment suivre mes résultats ?', 'Ton espace annonceur affiche les vues et les clics de chaque annonce, et tu reçois un e-mail à chaque palier de 100 vues.'],
 ];
 export const adsFaqLd = { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: FAQ.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) };
@@ -131,7 +131,7 @@ const FAQ_EN = [
   ['Do I need an Afrolook Ads account?', 'No. Your Google account is enough: no extra password.'],
   ['Which ads are accepted?', 'Businesses, startups, websites, apps, projects, events and posters. Every ad is reviewed by our team: misleading, illegal or shocking content is refused.'],
   ['Where is my ad displayed?', 'Automatically on Afrolook, SlashAtlas, Pronoflash and Épargne+, as soon as it is approved.'],
-  ['How many ads, and for how long?', 'You can post 3 free ads. Each one stays online for 2 weeks (14 days) and can be renewed once for free.'],
+  ['How many ads, and for how long?', 'You can post 1 free ad. It stays online for 2 weeks (14 days) and cannot be renewed: to keep advertising, choose the Network offer (paid) or a Share campaign.'],
 ];
 export const adsFaqLdEn = { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: FAQ_EN.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) };
 
@@ -159,12 +159,12 @@ ${networkSection('en', ico)}
 
 <section class="adstats"><div class="wrap"><div class="adst-row">
  ${stat(`<span data-aud>${AUDIENCE_EN}</span>`, 'people in the audience', 'across our platforms and our partners\' platforms')}
- ${stat('0 FCFA', 'to advertise', '3 free ads of 14 days each')}
+ ${stat('0 FCFA', 'to advertise', '1 free ad of 14 days, not renewable')}
  ${stat('4', 'platforms', 'one ad, shown everywhere')}
 </div></div></section>
 
 <section class="adsec" id="annonces-gratuites"><div class="wrap"><span class="kicker">Launch offer · 100% free ads</span><h2 class="h2">No budget? Post a free ad on our platforms.</h2>
-<p class="sub">With your Google account: 3 free ads of 14 days, approved by our team, shown automatically on Afrolook, SlashAtlas, Pronoflash and Épargne+, to <span data-aud>${AUDIENCE_EN}</span> people.</p>
+<p class="sub">With your Google account: 1 free ad of 14 days (not renewable), approved by our team, shown automatically on Afrolook, SlashAtlas, Pronoflash and Épargne+, to <span data-aud>${AUDIENCE_EN}</span> people.</p>
 <div class="cta" style="margin:0 0 22px"><a class="btn btn-primary adbig" href="/ads/espace/">${G} Post my free ad</a></div>
 <div class="adp3">
  <article class="adp"><div class="adp-top"><img src="/img/logo.webp" width="46" height="46" alt=""><div><h3>Afrolook</h3><small>The social network of African creators</small></div></div><p>Your ad appears in the feed, between creators' posts. An action button leads to your site, app or WhatsApp.</p></article>
@@ -247,7 +247,7 @@ export function adsLanding(api) {
   <p class="lead">Tu choisis l'audience à atteindre. Elle est <b>mesurée par de vraies ouvertures de ton lien</b>, protégée par un système anti-fraude, et la campagne ne dépasse jamais ton budget. Entreprise, site, application, événement : amène de vraies visites.</p>
   <div class="cta"><a class="btn btn-primary adbig" href="/ads/espace/">${G} Lancer une campagne</a><a class="btn btn-line adbig" href="#simulateur">Simuler mon audience</a></div>
   <ul class="adh-pts"><li>${ico('check', 18)} Audience mesurée</li><li>${ico('check', 18)} Visites valides seulement</li><li>${ico('check', 18)} Anti-fraude</li><li>${ico('check', 18)} Suivi en direct</li></ul>
-  <a class="adshare" href="#annonces-gratuites"><b>Pas de budget ?</b><span>Publie une annonce gratuite, diffusée sur Afrolook, SlashAtlas, Pronoflash et Épargne+ (3 annonces, 14 jours chacune).</span><i>Voir l'offre gratuite →</i></a>
+  <a class="adshare" href="#annonces-gratuites"><b>Pas de budget ?</b><span>Publie une annonce gratuite, diffusée sur Afrolook, SlashAtlas, Pronoflash et Épargne+ (1 annonce, 14 jours, non renouvelable).</span><i>Voir l'offre gratuite →</i></a>
  </div>
  <div class="adh-r"><div class="adh-glow"></div><div class="chm-hero">${waPhone('fr')}</div>
   <div class="adh-chip c1">${ico('check', 16)} Visite valide</div><div class="adh-chip c2">${ico('shield', 16)} Anti-fraude</div><div class="adh-chip c3">Partagé sur WhatsApp</div></div>
@@ -262,7 +262,7 @@ ${networkSection('fr', ico)}
 
 <section class="adstats"><div class="wrap"><div class="adst-row">
  ${stat(`<span data-aud>${AUDIENCE}</span>`, 'personnes d\'audience', 'sur nos plateformes et celles de nos partenaires')}
- ${stat('0 FCFA', 'pour annoncer', '3 annonces gratuites de 14 jours chacune')}
+ ${stat('0 FCFA', 'pour annoncer', '1 annonce gratuite de 14 jours, non renouvelable')}
  ${stat('4', 'plateformes', 'une seule annonce, diffusée partout')}
 </div></div></section>
 
@@ -271,7 +271,7 @@ ${networkSection('fr', ico)}
 <div class="adwall" id="adpartners">${PARTNERS.map((p) => `<div class="adpart" title="${p.n}">${p.img ? `<img src="${p.img}" alt="${p.n}" width="56" height="56" loading="lazy">` : `<i class="adp-logo plus">${p.mark}</i>`}<span>${p.n}</span></div>`).join('')}<span id="adpartners-dyn" data-api="${api}/ads/api/partners" data-audience="${api}/ads/api/audience" style="display:contents"></span></div></div></section>
 
 <section class="adsec" id="annonces-gratuites"><div class="wrap"><span class="kicker">Offre de lancement · annonces 100 % gratuites</span><h2 class="h2">Pas de budget ? Publie une annonce gratuite sur nos plateformes.</h2>
-<p class="sub">Avec ton compte Google : 3 annonces gratuites de 14 jours, validées par notre équipe, diffusées automatiquement sur Afrolook, SlashAtlas, Pronoflash et Épargne+, auprès de <span data-aud>${AUDIENCE}</span> personnes.</p>
+<p class="sub">Avec ton compte Google : 1 annonce gratuite de 14 jours (non renouvelable), validée par notre équipe, diffusée automatiquement sur Afrolook, SlashAtlas, Pronoflash et Épargne+, auprès de <span data-aud>${AUDIENCE}</span> personnes.</p>
 <div class="cta" style="margin:0 0 22px"><a class="btn btn-primary adbig" href="/ads/espace/">${G} Publier mon annonce gratuite</a></div>
 <div class="adp3">
  <article class="adp"><div class="adp-top"><img src="/img/logo.webp" width="46" height="46" alt=""><div><h3>Afrolook</h3><small>Réseau social des créateurs africains</small></div></div><p>Ton annonce apparaît dans le fil, entre les publications des créateurs. Un bouton d'action mène vers ton site ou ton application.</p><span class="adp-tag">Dans l'application et sur le web</span></article>
@@ -310,7 +310,7 @@ ${formatsSection()}
 <section class="adsec soft"><div class="wrap adtwo">
  <div><span class="kicker">Ton espace annonceur</span><h2 class="h2">Suis tes annonces en direct.</h2>
  <p class="sub">Vues, clics, statut de validation, jours restants : tout se gère dans ton espace, avec ton compte Google.</p>
- <ul class="adlist"><li>${ico('check', 18)} Crée, renouvelle ou arrête une annonce quand tu veux</li><li>${ico('check', 18)} Vois le nombre de vues et de clics, jour après jour</li><li>${ico('check', 18)} Reçois un e-mail à la validation, puis à chaque palier de 100 vues</li><li>${ico('check', 18)} Renouvelle gratuitement une annonce terminée</li></ul>
+ <ul class="adlist"><li>${ico('check', 18)} Crée ou arrête une annonce quand tu veux</li><li>${ico('check', 18)} Vois le nombre de vues et de clics, jour après jour</li><li>${ico('check', 18)} Reçois un e-mail à la validation, puis à chaque palier de 100 vues</li><li>${ico('check', 18)} Annonce gratuite : une seule, 14 jours, non renouvelable</li></ul>
  <div class="cta"><a class="btn btn-primary adbig" href="/ads/espace/">${G} Ouvrir mon espace</a></div></div>
  <div class="addash"><div class="addash-h"><b>Mes annonces <small class="adcount">Aperçu</small></b><span class="btn btn-primary adsm">+ Nouvelle annonce</span></div>
   <div class="addash-r"><div><b>Kofi Studio</b><small>Visiter le site · 14 jours</small></div><span class="st ok">En ligne</span><span class="n">${ico('eye', 14)} 2 480</span><span class="n">${ico('click', 14)} 186</span></div>
@@ -347,7 +347,7 @@ export function adsSpace(fbConfig, api) {
 
  <div class="adgate" id="adgate"><div class="adgate-c">${ico('shield', 34)}<h2>Connecte-toi pour annoncer gratuitement</h2>
   <p>Ton compte Google suffit : pas de mot de passe de plus. Tu renseignes ensuite ta marque et ton logo, une seule fois. Nous n'utilisons que ton nom et ton adresse e-mail pour te prévenir quand ton annonce est validée.</p>
-  <button class="btn btn-primary adbig" id="signin" type="button">${G} Continuer avec Google</button><small>Offre de lancement : 3 annonces gratuites, 14 jours chacune.</small></div></div>
+  <button class="btn btn-primary adbig" id="signin" type="button">${G} Continuer avec Google</button><small>Offre de lancement : 1 annonce gratuite de 14 jours, non renouvelable.</small></div></div>
 
  <div id="adapp" hidden>
   <div class="profban" id="profban" role="status" hidden></div>
@@ -385,7 +385,7 @@ export function adsSpace(fbConfig, api) {
      <div class="adbtn" id="f-action">${actions.map(([k, l], n) => `<label class="${n === 0 ? 'on' : ''}" data-v="${k}">${l}</label>`).join('')}</div>
      <label class="fl" for="f-link" id="f-link-l">Lien du bouton<input id="f-link" inputmode="url" autocomplete="off" placeholder="https://tonsite.com"></label></div>
     <div class="adfs"><h3><i>4</i> Durée et audience</h3>
-     <div data-adsonly><div class="adbtn"><label class="on">14 jours · offre gratuite</label></div><p class="adnote">Ton annonce reste en ligne 2 semaines. Tu peux la renouveler gratuitement une fois.</p></div>
+     <div data-adsonly><div class="adbtn"><label class="on">14 jours · offre gratuite</label></div><p class="adnote">Ton annonce reste en ligne 2 semaines. L\'annonce gratuite est unique et n\'est pas renouvelable.</p></div>
      <div class="adchips" id="f-countries">${countries.map(([c, l], n) => `<span class="${n === 0 ? 'on' : ''}" data-v="${c}">${l}</span>`).join('')}</div>
      <select class="catpick-add" id="f-more-countries" aria-label="Ajouter un autre pays" style="margin-top:10px"><option value="">+ Autre pays…</option></select>
      <div class="fl" data-adsonly><span>Langues <small>(facultatif : toutes si rien n'est choisi)</small></span><div class="adchips" id="f-langs"><span data-v="fr">Français</span><span data-v="en">Anglais</span><span data-v="pt">Portugais</span></div></div>

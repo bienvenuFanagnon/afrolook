@@ -1,4 +1,5 @@
 import 'package:afrotok/services/read_meter.dart';
+import 'package:afrotok/services/afrolook_ads_pool.dart';
 import 'package:afrotok/services/api/api_identity.dart';
 import '../services/follow_service.dart';
 import 'dart:async';
@@ -83,11 +84,21 @@ class UserAuthProvider extends ChangeNotifier {
   List<Map<String, dynamic>> get advertisements => _advertisements;
 
 
-Future<void> loadAdvertisements() async {
-    // Les annonces de la régie Afrolook Ads sont choisies par le serveur (GET /ads/app/serve) au moment de l'affichage :
-    // plus de liste à charger ni de cache d'annonces côté application (voir lacunes_api_compte_boosts.md).
-    _advertisements = [];
-    notifyListeners();
+Future<void> loadAdvertisements({bool force = false}) async {
+    // Stock d'annonces d'Afrolook préparé À L'AVANCE (GET /ads/app/pool) : boosts payés et annonces d'Afrolook Ads choisis par le serveur pour cette personne.
+    // Chargé au lancement puis au plus toutes les 30 minutes ; gardé sur le téléphone. Les emplacements piochent dedans, seulement en repli quand Appodeal / AdMob
+    // n'ont rien à montrer (voir AdSlot). La vue et le clic sont comptés par le moteur d'Afrolook Ads (AdsEngineService).
+    final pool = AfrolookAdsPool.instance;
+    final cached = await pool.fromCache();   // tout de suite : le stock du dernier lancement
+    if (cached.isNotEmpty && _advertisements.isEmpty) {
+      _advertisements = cached;
+      notifyListeners();
+    }
+    final fresh = await pool.refresh(force: force);
+    if (!identical(fresh, _advertisements)) {
+      _advertisements = fresh;
+      notifyListeners();
+    }
   }
 
   /// Rafraîchit les données de l'utilisateur connecté depuis Firestore

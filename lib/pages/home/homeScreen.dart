@@ -1499,6 +1499,8 @@ class _MyHomePageState extends State<MyHomePage>
         NotificationToast.dismiss();
         _lastToastTime = null;
         if (mounted) _showNotificationToastIfNeeded();
+        // stock d'annonces d'Afrolook : redemandé seulement s'il a plus de 30 minutes (sinon sans effet)
+        authProvider.loadAdvertisements();
         break;
 
       case AppLifecycleState.paused:

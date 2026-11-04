@@ -1276,6 +1276,11 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
 
   void _openPostPage(BuildContext context, Post post, Advertisement ad) {
     _recordClick(ad);
+    // annonce d'Afrolook Ads : la « publication » est faite avec son visuel (identifiant ad_…), il n'y a rien à ouvrir à part le lien de l'annonceur
+    if ((post.id ?? '').startsWith('ad_')) {
+      if ((ad.actionUrl ?? '').isNotEmpty) AdActions.open(ad);
+      return;
+    }
     if (post.dataType == PostDataType.VIDEO.name ||
         (post.url_media?.contains('.mp4') ?? false) ||
         (post.url_media?.contains('.mov') ?? false)) {

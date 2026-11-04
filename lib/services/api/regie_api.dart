@@ -61,6 +61,9 @@ class RegieApi {
 
   // ── Pubs de la régie dans l'application (choix de l'annonce par le serveur) ──
   static Future<Map<String, dynamic>> adsServe(Map<String, dynamic> query) async => _map(await _c.get('/ads/app/serve', query: query));
+
+  /// Stock d'annonces d'Afrolook préparé à l'avance pour la personne connectée (voir AfrolookAdsPool) : `{ads: [...], ttl_sec}`.
+  static Future<Map<String, dynamic>> adsPool({int limit = 10}) async => _map(await _c.get('/ads/app/pool', query: {'limit': limit}));
   static Future<void> adsEvent(Map<String, dynamic> body) async {
     await _c.post('/ads/app/event', body: body);
   }

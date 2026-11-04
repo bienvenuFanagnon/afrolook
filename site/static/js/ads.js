@@ -520,7 +520,7 @@ async function initSpace() {
     const h4 = $('#f-countries').closest('.adfs').querySelector('h3'); if (h4 && h4.lastChild) h4.lastChild.textContent = share ? ' Pays visés' : ' Durée et audience';
     $('#f-share').hidden = !share;
     const net = $('#f-net').checked;   // Offre Réseau (payante) cochée par défaut : on la décoche pour utiliser l'offre gratuite
-    $('#f-net-note').innerHTML = net ? 'Cette case est cochée : ton annonce sera une <b>demande d\u2019offre Réseau payante</b>. Notre équipe te communique le tarif avant la mise en ligne. <b>Décoche la case pour publier gratuitement</b> sur Afrolook, SlashAtlas, Pronoflash et Épargne+ (3 annonces gratuites).' : '<b>Offre gratuite</b> : ton annonce sera affichée sur Afrolook, SlashAtlas, Pronoflash et Épargne+ seulement (3 annonces gratuites de 14 jours).';
+    $('#f-net-note').innerHTML = net ? 'Cette case est cochée : ton annonce sera une <b>demande d\u2019offre Réseau payante</b>. Notre équipe te communique le tarif avant la mise en ligne. <b>Décoche la case pour publier gratuitement</b> sur Afrolook, SlashAtlas, Pronoflash et Épargne+ (une seule annonce gratuite de 14 jours, non renouvelable).' : '<b>Offre gratuite</b> : ton annonce sera affichée sur Afrolook, SlashAtlas, Pronoflash et Épargne+ seulement (une seule annonce gratuite de 14 jours, non renouvelable).';
     $('#f-sub-t').textContent = share ? (IS_ADMIN ? 'Offert par l’équipe' : nf(Math.round((a / 1000) * wal.per1000)) + ' F') : (net ? 'Offre Réseau (payante)' : 'Gratuit');
     $('#f-send').textContent = share ? (IS_ADMIN ? 'Lancer la campagne' : 'Envoyer la campagne') : (net ? 'Envoyer ma demande' : 'Envoyer pour validation');
     $('#f-quota').textContent = share ? (IS_ADMIN ? 'Campagne de l’équipe : aucun paiement' : 'Payée avec ton solde annonceur · démarre après validation par notre équipe') : (net ? 'Notre équipe te communique le tarif avant la mise en ligne' : 'Validation par notre équipe avant diffusion');
@@ -605,7 +605,7 @@ async function initSpace() {
     if (/logo_refuse/.test(m)) return "Ton profil annonceur a été refusé : corrige-le dans l'onglet Profil puis renvoie-le.";
     if (/15 secondes/.test(m)) return 'La vidéo doit durer 15 secondes maximum.';
     if (/solde_insuffisant/.test(m)) { loadWallet(); return 'Ton solde est insuffisant : recharge-le avec le bouton « Recharger maintenant », puis renvoie ta campagne.'; }
-    if (/limite_atteinte/.test(m)) return 'Tu as utilisé tes 3 annonces gratuites.';
+    if (/limite_atteinte/.test(m)) return 'Tu as déjà utilisé ton annonce gratuite : elle est unique et non renouvelable. Pour diffuser davantage, garde la case « Offre Réseau » cochée (offre payante).';
     if (/limite_du_jour/.test(m)) return 'Trop d\'annonces envoyées aujourd\'hui. Réessaie demain.';
     if (/gratuite_terminee/.test(m)) return 'L\'offre gratuite est terminée. Contacte-nous pour annoncer.';
     if (e?.code === 'functions/invalid-argument') return m.replace(/^.*?:\s*/, '') || 'Vérifie les champs de ton annonce.';
@@ -712,6 +712,7 @@ async function initSpace() {
   function drawAdvKpis() {
     const d = st.mine, sh = st.shares || [];
     if (!d) return;
+    $('#mycount').textContent = d.items.length + sh.length;   // l'onglet « Mes annonces » montre les annonces ET les campagnes Partage : le badge les compte toutes
     const live = d.items.filter((a) => a.status === 'ligne'), wait = d.items.filter((a) => a.status === 'validation'), stats = d.items.filter((a) => a.status !== 'validation');
     const views = stats.reduce((x, a) => x + (a.views || 0), 0), clicks = stats.reduce((x, a) => x + (a.clicks || 0), 0);
     const shLive = sh.filter((c) => c.status === 'active'), shWait = sh.filter((c) => c.status === 'pending');
@@ -829,7 +830,7 @@ async function initSpace() {
     try {
       const d = await call('adsWebMine');
       st.open = d.open; st.left = Math.max(0, d.max - d.used);
-      $('#mycount').textContent = d.items.length; $('#myquota').textContent = `${d.used} gratuite${d.used > 1 ? 's' : ''} utilisée${d.used > 1 ? 's' : ''} sur ${d.max}`;
+      $('#mycount').textContent = d.items.length + (st.shares || []).length; $('#myquota').textContent = `${d.used} gratuite${d.used > 1 ? 's' : ''} utilisée${d.used > 1 ? 's' : ''} sur ${d.max}`;
       $('#f-quota').textContent = $('#f-net').checked ? 'Notre équipe te communique le tarif avant la mise en ligne' : !d.open ? 'L\'offre gratuite est terminée.' : st.left ? `${st.left} annonce${st.left > 1 ? 's' : ''} gratuite${st.left > 1 ? 's' : ''} restante${st.left > 1 ? 's' : ''} · validation par notre équipe avant diffusion` : 'Tu as utilisé tes annonces gratuites. Décoche l\u2019offre Réseau seulement si une place gratuite est libre.';
       $('#f-send').disabled = !$('#f-net').checked && (!d.open || !st.left);
       st.mine = d; drawAdvKpis();   // chiffres clés, visibles sans ouvrir d'onglet
