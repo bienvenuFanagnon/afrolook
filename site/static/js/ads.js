@@ -883,7 +883,7 @@ async function initPub() {
   const qerr = (m) => { const e = $('#qerr'); if (e) { e.hidden = true; e.textContent = ''; } if (m) showError(m); };
   $('#p-country').replaceChildren(...sortedCountries().map(([c, nm]) => h('option', { value: c, text: nm }))); $('#p-country').value = 'TG';   // pays du profil : tous les pays du monde
   const renderQCountries = countryPick($('#q-countries'), () => st.countries);
-  const tab = (t) => { $$('.adtabs a').forEach((a) => a.classList.toggle('on', a.dataset.tab === t)); $('#tab-profil').hidden = t !== 'profil'; $('#tab-sites').hidden = t !== 'sites'; };
+  const tab = (t) => { $$('.adtabs a').forEach((a) => a.classList.toggle('on', a.dataset.tab === t)); $('#tab-profil').hidden = t !== 'profil'; $('#tab-sites').hidden = t !== 'sites'; $('#tab-gains').hidden = t !== 'gains'; if (t === 'gains') loadGains(); };
   $$('.adtabs a').forEach((a) => a.addEventListener('click', (e) => { e.preventDefault(); tab(a.dataset.tab); }));
   const toggle = (box, cb) => $$('label', $(box)).forEach((l) => l.addEventListener('click', () => { $$('label', $(box)).forEach((x) => x.classList.toggle('on', x === l)); cb(l.dataset.v); }));
   toggle('#p-type', (v) => { st.type = v; });
@@ -1033,12 +1033,71 @@ async function initPub() {
       box.append(card);
     }
   }
+
+  // ───────── gains et retraits du diffuseur ─────────
+  const FC = (v) => n(v) + ' F';
+  const OPERATORS = ['T-Money (Togocel)', 'Flooz (Moov)', 'MTN MoMo', 'Orange Money', 'Wave', 'Autre'];
+  const FMT_LAB = { banner: 'Bannière', sticky: 'Bandeau collant', native: 'Carte native', carousel: 'Carrousel', poster: 'Affiche', video: 'Vidéo dans le fil', interstitial: 'Interstitiel', rewarded: 'Récompensée' };
+  const EARN_LAB = { held: 'En attente', available: 'Disponible', requested: 'Retrait demandé', paid: 'Payé' };
+  const PAY_LAB = { requested: ['wait', 'Demandé'], paid: ['ok', 'Payé'], refused: ['rej', 'Refusé'] };
+  $('#g-op').replaceChildren(...OPERATORS.map((o) => h('option', { value: o, text: o })));
+  const gainErr = (e) => {
+    const m = String((e && e.message) || '');
+    if (/sous_le_minimum/.test(m)) return 'Il faut au moins 10 000 F disponibles pour demander un retrait.';
+    if (/profil_non_valide/.test(m)) return 'Ton profil doit être validé par notre équipe avant un retrait.';
+    if (e && e.code === 'functions/invalid-argument') return m.replace(/^.*?:\s*/, '') || 'Vérifie le numéro et l\u2019opérateur.';
+    return friendly(e, 'Impossible d\u2019envoyer la demande de retrait pour le moment. Réessaie.');
+  };
+  let gst = null;
+  function drawGains(g) {
+    gst = g; $('#gcount').textContent = FC(g.availableFcfa);
+    $('#g-kpis').replaceChildren(
+      kpiCard('En attente', FC(g.pendingFcfa), `bloqués ${g.holdDays} jours`, g.pendingFcfa ? 'wait' : ''),
+      kpiCard('Disponible', FC(g.availableFcfa), g.canRequest ? 'prêt à retirer' : `minimum ${FC(g.minPayoutFcfa)}`, g.canRequest ? 'ok' : ''),
+      kpiCard('Retrait demandé', FC(g.requestedFcfa), 'en cours de paiement', g.requestedFcfa ? 'wait' : ''),
+      kpiCard('Payé', FC(g.paidFcfa), 'déjà versé', g.paidFcfa ? 'ok' : ''),
+      kpiCard('Réserve', FC(g.reserveFcfa), `${g.reservePct} % gardés ${g.reserveDays} jours`));
+    $('#g-amount').textContent = FC(g.availableFcfa);
+    const ok = st.profile && (st.profile.status === 'active');
+    $('#g-sub').textContent = !ok ? 'Ton profil doit être validé pour retirer tes gains.' : g.canRequest ? 'Montant retiré : tous tes gains disponibles (net de la réserve).' : `Il faut au moins ${FC(g.minPayoutFcfa)} : il te manque ${FC(Math.max(0, g.minPayoutFcfa - g.availableFcfa))}.`;
+    $('#g-send').disabled = !(ok && g.canRequest);
+    const pb = $('#g-payouts'); pb.replaceChildren();
+    if (!g.payouts.length) pb.append(h('p', { class: 'adempty', text: 'Aucune demande de retrait pour l\u2019instant.' }));
+    for (const p of g.payouts) {
+      const [cls, lab] = PAY_LAB[p.status] || ['end', p.status];
+      pb.append(h('div', { class: 'gpay' }, h('div', {}, h('b', { text: FC(p.amountFcfa) }), h('small', { text: `${date2(p.createdAt)} · ${p.operator} · ${p.phone}` }),
+        p.status === 'paid' ? h('small', { text: 'Référence : ' + p.reference }) : null, p.status === 'refused' ? h('small', { class: 'aderr', text: 'Motif : ' + (p.reason || 'non précisé') }) : null), h('span', { class: 'st ' + cls, text: lab })));
+    }
+    const db = $('#g-detail'); db.replaceChildren();
+    if (!g.properties.length) { db.append(h('p', { class: 'adempty', text: 'Aucun site ni application pour l\u2019instant.' })); return; }
+    const table = (head, rows) => h('div', { class: 'gscroll' }, h('table', { class: 'gtab' }, h('thead', {}, h('tr', {}, ...head.map((x) => h('th', { class: x[1] || false, text: x[0] })))), h('tbody', {}, ...rows)));
+    db.append(table([['Site ou application'], ['Vues valides', 'r'], ['Gains nets', 'r']], g.properties.map((p) => h('tr', {}, h('td', { text: p.name }), h('td', { class: 'r', text: n(p.views) }), h('td', { class: 'r', text: FC(p.netFcfa) })))));
+    if (g.daily.length) {
+      const det = h('details', { class: 'adfold' }, h('summary', { text: 'Jour par jour (90 derniers jours)' }));
+      det.append(table([['Jour'], ['Site ou application'], ['Format'], ['Vues', 'r'], ['Net', 'r'], ['État']], g.daily.map((e) => h('tr', {}, h('td', { text: e.day }), h('td', { text: e.property }), h('td', { text: FMT_LAB[e.format] || e.format }), h('td', { class: 'r', text: n(e.views) }), h('td', { class: 'r', text: FC(e.netFcfa) }),
+        h('td', { text: (EARN_LAB[e.status] || e.status) + (e.status === 'held' ? ' · dispo le ' + e.releaseOn : '') })))));
+      db.append(det);
+    }
+  }
+  const date2 = (ms) => (ms ? new Date(Number(ms)).toLocaleDateString('fr-FR') : '—');
+  async function loadGains(quiet) {
+    try { drawGains(await call('adsPubEarnings')); }
+    catch (e) { if (!quiet) status(friendly(e, 'Impossible de charger tes gains pour le moment.'), true); }
+  }
+  $('#g-send').addEventListener('click', async () => {
+    const phone = $('#g-phone').value.trim(), operator = $('#g-op').value;
+    if (phone.replace(/[^\d]/g, '').length < 8) return showError('Écris ton numéro Mobile Money avec l\u2019indicatif du pays, par exemple +228 90 00 00 00.');
+    const b = $('#g-send'); b.disabled = true;
+    try { const r = await call('adsPubRequestPayout', { phone, operator }); status(`Demande envoyée : ${FC(r.amountFcfa)} sur ton Mobile Money (${operator}). Notre équipe te paie puis tu reçois un e-mail avec la référence.`); await loadGains(true); }
+    catch (e) { showError(gainErr(e)); }
+    finally { b.disabled = false; }
+  });
   async function load() {
     try {
       const d = await call('adsPubMe'); st.profile = d.profile; st.props = d.properties;
       const t = Math.floor(Number(d.audience.total) / 1000) * 1000; $('#aud-total').textContent = 'plus de ' + n(Math.max(50000, t));
       st.cats = d.adCategories || {}; $('#p-rules-new').hidden = !(d.profile && d.rules && !d.rules.accepted);
-      fillProfile(); renderProps(); pubKpis(d);
+      fillProfile(); renderProps(); pubKpis(d); loadGains(true);
       if (!d.profile) { tab('profil'); status('Bienvenue ! Commence par ton profil de diffuseur.', false, true); } else if (!$('#tab-profil').hidden && d.properties.length) tab('sites');
     } catch (e) { status(friendly(e, 'Impossible de charger ton espace pour le moment. Recharge la page.'), true); }
   }
@@ -1106,34 +1165,36 @@ async function initRegieAdmin() {
   const fb = await boot(() => load());
   if (!fb) return;
   const { call } = fb;
-  const st = { tab: 'adv', filter: 'pending', afilter: 'open', adv: [], ads: [], profiles: [], props: [], alerts: [], alertsOpen: 0, sharers: [], camps: [] };
+  const st = { tab: 'adv', filter: 'pending', afilter: 'open', adv: [], ads: [], pays: [], payMeta: null, page: 1, profiles: [], props: [], alerts: [], alertsOpen: 0, sharers: [], camps: [] };
   const date = (ms) => (ms ? new Date(Number(ms)).toLocaleDateString('fr-FR') : '—');
   const row = (k, v) => h('div', { class: 'rg-row' }, h('span', { text: k }), h('b', { text: v == null || v === '' ? '—' : String(v) }));
   const lnk = (label, url) => { const u = url ? safeUrl(url) : ''; return u ? h('a', { class: 'rg-link', href: u, target: '_blank', rel: 'nofollow noopener', text: label }) : null; };
   const tag = (cls, text) => h('span', { class: 'st ' + cls, text });
-  const nice = (e) => { const m = String(e && e.message || ''); if (/administrateurs|permission/.test(m) || (e && e.code === 'functions/permission-denied')) return 'Cette page est réservée aux administrateurs : connecte-toi avec le compte Google utilisé dans l\'application.'; if (/profil_non_valide/.test(m)) return 'Valide d\'abord le profil du diffuseur (onglet Diffuseurs).'; if (/verification_requise/.test(m)) return 'Ce site n\'a pas encore prouvé qu\'il appartient au diffuseur : le diffuseur doit ajouter la balise de vérification sur son site, puis cliquer sur « Vérifier » dans son espace.'; if (/hors_ligne/.test(m)) return 'Ce site ou cette application ne répond pas : il doit être en ligne.'; if (/regles_a_accepter/.test(m)) return 'Le diffuseur doit d\'abord accepter la dernière version des règles (dans son espace).'; if (/motif_obligatoire/.test(m)) return 'Le motif doit faire 5 caractères au moins.'; return friendly(e, m.replace(/^.*?:\s*/, '') || 'Action impossible pour le moment.'); };
+  const nice = (e) => { const m = String(e && e.message || ''); if (/administrateurs|permission/.test(m) || (e && e.code === 'functions/permission-denied')) return 'Cette page est réservée aux administrateurs : connecte-toi avec le compte Google utilisé dans l\'application.'; if (/profil_non_valide/.test(m)) return 'Valide d\'abord le profil du diffuseur (onglet Diffuseurs).'; if (/verification_requise/.test(m)) return 'Ce site n\'a pas encore prouvé qu\'il appartient au diffuseur : le diffuseur doit ajouter la balise de vérification sur son site, puis cliquer sur « Vérifier » dans son espace.'; if (/hors_ligne/.test(m)) return 'Ce site ou cette application ne répond pas : il doit être en ligne.'; if (/regles_a_accepter/.test(m)) return 'Le diffuseur doit d\'abord accepter la dernière version des règles (dans son espace).'; if (/motif_obligatoire/.test(m)) return 'Le motif doit faire 5 caractères au moins.'; if (/r.f.rence_obligatoire/.test(m)) return 'La référence du paiement est obligatoire (3 caractères au moins).'; if (/deja_traite/.test(m)) return 'Cette demande a déjà été traitée.'; return friendly(e, m.replace(/^.*?:\s*/, '') || 'Action impossible pour le moment.'); };
 
-  const tabs = { adv: 'Annonceurs', ads: 'Annonces', pub: 'Diffuseurs', prop: 'Sites et applications', share: 'Partageurs', camp: 'Campagnes Partage', alert: 'Alertes' };
+  const tabs = { adv: 'Annonceurs', ads: 'Annonces', pub: 'Diffuseurs', prop: 'Sites et applications', share: 'Partageurs', camp: 'Campagnes Partage', pay: 'Retraits', alert: 'Alertes' };
+  const payFilters = [['requested', 'À payer'], ['paid', 'Payés'], ['refused', 'Refusés'], ['all', 'Tous']];
   const alertFilters = [['open', 'À vérifier'], ['held', 'Paiements bloqués'], ['reviewed', 'Vérifiées'], ['all', 'Toutes']];
   const filters = [['all', 'Tous'], ['pending', 'En attente'], ['active', 'Validés'], ['refused', 'Refusés'], ['suspended', 'Suspendus']];
   /** Total de chaque rubrique ET ce qui attend une décision, chargés d'un coup (pas besoin d'ouvrir chaque onglet pour savoir ce qu'il y a). */
   async function loadKpis() {
     const one = (name, args, pick, wait) => call(name, args).then((r) => { const l = pick(r); return { total: l.length, wait: l.filter(wait).length }; }).catch(() => null);
     const pend = (x) => String(x.status || x.logoStatus) === 'pending', open = (x) => String(x.status) === 'open';
-    const [adv, ads, pub, prop, share, camp, alert] = await Promise.all([
+    const [adv, ads, pub, prop, share, camp, alert, pay] = await Promise.all([
       one('adsAdvAdminList', { status: 'all' }, (r) => r.items || [], pend),
       one('adsPubAdminList', { ads: true, status: 'all' }, (r) => r.ads || [], pend),
       one('adsPubAdminList', { status: 'all' }, (r) => r.profiles || [], pend),
       one('adsPubAdminList', { status: 'all' }, (r) => r.properties || [], pend),
       one('adsPubAdminList', { sharers: true, status: 'all' }, (r) => r.sharers || [], pend),
       one('adsPubAdminList', { campaigns: true, status: 'all' }, (r) => r.campaigns || [], pend),
-      one('adsPubAdminList', { alerts: true, status: 'all' }, (r) => r.alerts || [], open)]);
-    st.k = { adv, ads, pub, prop, share, camp, alert };
+      one('adsPubAdminList', { alerts: true, status: 'all' }, (r) => r.alerts || [], open),
+      call('adsPubAdminList', { payouts: true, status: 'all' }).then((r) => ({ total: Number(r.total) || 0, wait: Number(r.toPay) || 0 })).catch(() => null)]);
+    st.k = { adv, ads, pub, prop, share, camp, alert, pay };
     drawKpis(); drawBar();
   }
   function drawKpis() {
     const k = st.k;
-    const go = (tab, filter) => () => { st.tab = tab; if (tab === 'alert') st.afilter = 'open'; else st.filter = filter; load(); };
+    const go = (tab, filter) => () => { st.tab = tab; st.page = 1; if (tab === 'alert') st.afilter = 'open'; else st.filter = tab === 'pay' ? (filter === 'pending' ? 'requested' : 'all') : filter; load(); };
     // grand chiffre = total ; dessous = ce qui attend une décision (jaune) ou « tout est traité » (vert)
     const card = (label, key, tab, what) => {
       const x = k[key];
@@ -1141,16 +1202,16 @@ async function initRegieAdmin() {
       return kpiCard(label, n(x.total), x.wait ? `${n(x.wait)} ${what}` : (x.total ? 'tout est traité' : 'aucun pour l\u2019instant'), x.wait ? (tab === 'alert' ? 'alert' : 'wait') : 'ok', go(tab, x.wait ? 'pending' : 'all'));
     };
     $('#rg-kpis').replaceChildren(card('Annonceurs', 'adv', 'adv', 'à valider'), card('Annonces', 'ads', 'ads', 'à valider'), card('Diffuseurs', 'pub', 'pub', 'à valider'), card('Sites et applications', 'prop', 'prop', 'à valider'),
-      card('Partageurs', 'share', 'share', 'à valider'), card('Campagnes Partage', 'camp', 'camp', 'à valider'), card('Alertes', 'alert', 'alert', 'à vérifier'));
+      card('Partageurs', 'share', 'share', 'à valider'), card('Campagnes Partage', 'camp', 'camp', 'à valider'), ...(k.pay ? [card('Retraits', 'pay', 'pay', 'à payer')] : []), card('Alertes', 'alert', 'alert', 'à vérifier'));
   }
   const drawBar = () => {
     // pastille de chaque rubrique = TOTAL (chargé d'un coup, voir loadKpis) ; sinon, longueur de la liste affichée
     const k = st.k || {}, pick = (x, fallback) => (x ? x.total : fallback);
     const waiting = (key) => !!(k[key] && k[key].wait);
-    const count = { adv: pick(k.adv, st.adv.length), ads: pick(k.ads, st.ads.length), pub: pick(k.pub, st.profiles.length), prop: pick(k.prop, st.props.length), share: pick(k.share, st.sharers.length), camp: pick(k.camp, st.camps.length), alert: k.alert ? k.alert.wait : (st.tab === 'alert' && st.afilter === 'open' ? st.alerts.length : st.alertsOpen) };
-    $('#rg-tabs').replaceChildren(...Object.entries(tabs).map(([tk, l]) => h('a', { href: '#', class: (st.tab === tk ? 'on ' : '') + (tk === 'alert' && count.alert ? 'rg-alert' : (waiting(tk) ? 'rg-wait' : '')), onclick: (e) => { e.preventDefault(); st.tab = tk; load(); } }, l, h('i', { text: String(count[tk]) }))));
-    const fl = st.tab === 'alert' ? alertFilters : filters, cur = st.tab === 'alert' ? st.afilter : st.filter;
-    $('#rg-filters').replaceChildren(...fl.map(([k, l]) => h('span', { class: cur === k ? 'on' : false, onclick: () => { if (st.tab === 'alert') st.afilter = k; else st.filter = k; load(); } }, l)));
+    const count = { adv: pick(k.adv, st.adv.length), ads: pick(k.ads, st.ads.length), pub: pick(k.pub, st.profiles.length), prop: pick(k.prop, st.props.length), share: pick(k.share, st.sharers.length), camp: pick(k.camp, st.camps.length), pay: pick(k.pay, st.pays.length), alert: k.alert ? k.alert.wait : (st.tab === 'alert' && st.afilter === 'open' ? st.alerts.length : st.alertsOpen) };
+    $('#rg-tabs').replaceChildren(...Object.entries(tabs).filter(([tk]) => tk !== 'pay' || !st.k || st.k.pay).map(([tk, l]) => h('a', { href: '#', class: (st.tab === tk ? 'on ' : '') + (tk === 'alert' && count.alert ? 'rg-alert' : (waiting(tk) ? 'rg-wait' : '')), onclick: (e) => { e.preventDefault(); st.tab = tk; st.page = 1; if (tk === 'pay' && !payFilters.some(([f]) => f === st.filter)) st.filter = 'requested'; if (tk !== 'pay' && tk !== 'alert' && !filters.some(([f]) => f === st.filter)) st.filter = 'pending'; load(); } }, l, h('i', { text: String(count[tk]) }))));
+    const fl = st.tab === 'alert' ? alertFilters : st.tab === 'pay' ? payFilters : filters, cur = st.tab === 'alert' ? st.afilter : st.filter;
+    $('#rg-filters').replaceChildren(...fl.map(([k, l]) => h('span', { class: cur === k ? 'on' : false, onclick: () => { if (st.tab === 'alert') st.afilter = k; else st.filter = k; st.page = 1; load(); } }, l)));
   };
 
   /** Zone de décision avec motif : jamais de fenêtre du navigateur, tout est dans la carte. */
@@ -1166,7 +1227,7 @@ async function initRegieAdmin() {
       zone.replaceChildren(h('div', { class: 'rg-ask' }, num ? h('label', { class: 'fl' }, 'Audience retenue (ajoutée aux 50 000) ', num) : null, net, s.ask ? ta : null,
         h('div', { class: 'logo-r' }, h('button', { class: 'btn btn-primary adsm', type: 'button', text: 'Confirmer', onclick: () => {
           const extra = {};
-          if (s.ask) { if (ta.value.trim().length < 5) return status('Le motif doit faire 5 caractères au moins.', true); extra.reason = ta.value.trim(); }
+          if (s.ask) { const min = s.askKey ? 3 : 5; if (ta.value.trim().length < min) return status(s.askKey ? 'La référence du paiement doit faire 3 caractères au moins.' : 'Le motif doit faire 5 caractères au moins.', true); extra[s.askKey || 'reason'] = ta.value.trim(); }
           if (num) extra[s.audienceKey || 'audienceCounted'] = Number(num.value);
           if (net) extra.network = net.querySelector('input').checked;
           send(s, extra);
@@ -1188,6 +1249,22 @@ async function initRegieAdmin() {
     if (p.logoStatus !== 'approved') specs.push({ label: 'Valider le profil', primary: true, fn: 'adsAdvAdminReview', data: { uid: p.uid, decision: 'approve' } });
     if (p.logoStatus !== 'rejected') specs.push({ label: 'Refuser le profil', ask: 'Motif du refus (envoyé par e-mail)', fn: 'adsAdvAdminReview', data: { uid: p.uid, decision: 'reject' } });
     decide(c, specs); return c;
+  }
+  /** Demande de retrait d'un diffuseur : montant, Mobile Money, ses gains ; Payer (avec la référence du paiement) ou Refuser (avec le motif). */
+  function payCard(p) {
+    const stl = { requested: ['wait', 'À payer'], paid: ['ok', 'Payé'], refused: ['rej', 'Refusé'] }[p.status] || ['end', p.status], e = p.earnings || {};
+    const c = h('article', { class: 'rg-card' },
+      h('div', { class: 'rg-h' }, h('div', {}, h('b', { text: `${n(p.amountFcfa)} F · ${p.name || p.email || 'Diffuseur'}` }), h('small', { text: `${p.operator} · ${p.phone}` })), tag(stl[0], stl[1])),
+      row('Diffuseur', [p.name, p.email].filter(Boolean).join(' · ')), row('Mobile Money', `${p.operator} · ${p.phone}`), row('Demandé le', date(p.createdAt)),
+      row('Ses gains', `${n(e.availableFcfa || 0)} F disponibles · ${n(e.pendingFcfa || 0)} F en attente · ${n(e.requestedFcfa || 0)} F en retrait · ${n(e.paidFcfa || 0)} F payés · réserve ${n(e.reserveFcfa || 0)} F`));
+    if (p.status === 'paid') c.append(row('Référence du paiement', p.reference), row('Payé le', date(p.decidedAt)));
+    if (p.status === 'refused') c.append(row('Motif du refus', p.reason), row('Décidé le', date(p.decidedAt)));
+    if (p.status === 'requested') {
+      const d = (decision) => ({ target: 'payout', id: String(p.id), decision });
+      decide(c, [{ label: 'Payer', primary: true, ask: `Référence du paiement de ${n(p.amountFcfa)} F envoyé à ${p.phone} (${p.operator})`, askKey: 'reference', fn: 'adsPubAdminReview', data: d('pay') },
+        { label: 'Refuser', ask: 'Motif du refus (envoyé par e-mail ; les gains redeviennent disponibles)', fn: 'adsPubAdminReview', data: d('refuse') }]);
+    }
+    return c;
   }
   /** Annonce déposée depuis le site : ce que l'équipe regarde pour la valider (visuel, texte, lien, pays), et l'offre Réseau. */
   function adCard(a) {
@@ -1215,7 +1292,8 @@ async function initRegieAdmin() {
   function pubCard(p) {
     const c = h('article', { class: 'rg-card' },
       h('div', { class: 'rg-h' }, h('div', { class: 'rg-logo' }, p.logoUrl && String(p.logoUrl).startsWith('https://') ? h('img', { src: p.logoUrl, alt: '' }) : h('span', { text: '?' })), h('div', {}, h('b', { text: p.name }), h('small', { text: (p.type === 'company' ? 'Entreprise' : 'Particulier') + ' · ' + [p.city, p.country].filter(Boolean).join(', ') })), tag(({ pending: 'wait', active: 'ok', refused: 'rej', suspended: 'rej' })[p.status] || 'end', ({ pending: 'En validation', active: 'Validé', refused: 'Refusé', suspended: 'Suspendu' })[p.status] || p.status)),
-      row('Présentation', p.about), row('Contact', [p.phone, p.email].filter(Boolean).join(' · ')), row('Inscrit le', date(p.createdAt)));
+      row('Présentation', p.about), row('Contact', [p.phone, p.email].filter(Boolean).join(' · ')), row('Inscrit le', date(p.createdAt)),
+      p.earnings ? row('Gains', `${n(p.earnings.availableFcfa)} F disponibles · ${n(p.earnings.pendingFcfa)} F en attente · ${n(p.earnings.requestedFcfa)} F en retrait · ${n(p.earnings.paidFcfa)} F payés · réserve ${n(p.earnings.reserveFcfa)} F · ${n(p.earnings.views)} vues valides`) : null);
     if (p.reason) c.append(row('Motif', p.reason));
     const l = lnk('Voir le site', p.website); if (l) c.append(l);
     const specs = [];
@@ -1298,21 +1376,24 @@ async function initRegieAdmin() {
   }
   function draw() {
     drawBar();
-    const list = st.tab === 'share' ? st.sharers.map(sharerCard) : st.tab === 'camp' ? st.camps.map(campCard) : st.tab === 'alert' ? st.alerts.map(alertCard) : st.tab === 'adv' ? st.adv.map(advCard) : st.tab === 'ads' ? st.ads.map(adCard) : st.tab === 'pub' ? st.profiles.map(pubCard) : st.props.map(propCard);
+    const list = st.tab === 'share' ? st.sharers.map(sharerCard) : st.tab === 'camp' ? st.camps.map(campCard) : st.tab === 'alert' ? st.alerts.map(alertCard) : st.tab === 'adv' ? st.adv.map(advCard) : st.tab === 'ads' ? st.ads.map(adCard) : st.tab === 'pay' ? st.pays.map(payCard) : st.tab === 'pub' ? st.profiles.map(pubCard) : st.props.map(propCard);
     $('#rg-list').replaceChildren(...(list.length ? list : [h('p', { class: 'adempty', text: 'Rien à afficher pour ce filtre.' })]));
+    const pm = st.payMeta;   // retraits : pages de 50
+    if (st.tab === 'pay' && pm && pm.total > pm.pageSize) { const pages = Math.ceil(pm.total / pm.pageSize); $('#rg-list').append(h('div', { class: 'rg-act' }, h('button', { class: 'btn btn-line adsm', type: 'button', text: 'Précédent', disabled: st.page <= 1, onclick: () => { st.page -= 1; load(); } }), h('small', { text: `Page ${st.page} sur ${pages} · ${n(pm.total)} demandes` }), h('button', { class: 'btn btn-line adsm', type: 'button', text: 'Suivant', disabled: st.page >= pages, onclick: () => { st.page += 1; load(); } }))); }
   }
   async function load() {
     loadKpis();
     $('#rg-list').replaceChildren(h('p', { class: 'adempty', text: 'Chargement…' }));
     try {
-      if (st.tab === 'ads') { st.ads = (await call('adsPubAdminList', { ads: true, status: st.filter })).ads; draw(); return; }
+      if (st.tab === 'pay') { const r = await call('adsPubAdminList', { payouts: true, status: st.filter, page: st.page }); st.pays = r.payouts || []; st.payMeta = r; draw(); return; }
+      if (st.tab === 'ads') { const r = await call('adsPubAdminList', { ads: true, status: st.filter }); if (!Array.isArray(r.ads)) throw new Error('API pas à jour : la liste des annonces n’existe pas encore sur le serveur. Redéploie l’API.'); st.ads = r.ads; draw(); return; }
       if (st.tab === 'share') { st.sharers = (await call('adsPubAdminList', { sharers: true, status: st.filter })).sharers; draw(); return; }
       if (st.tab === 'camp') { st.camps = (await call('adsPubAdminList', { campaigns: true, status: st.filter })).campaigns; draw(); return; }
       if (st.tab === 'alert') { const r = await call('adsPubAdminList', { alerts: true, status: st.afilter }); st.alerts = r.alerts; if (st.afilter === 'open') st.alertsOpen = r.alerts.length; draw(); return; }
       const advStatus = ({ all: 'all', pending: 'pending', active: 'approved', refused: 'rejected' })[st.filter];
       const [a, p, al] = await Promise.all([advStatus ? call('adsAdvAdminList', { status: advStatus }) : Promise.resolve({ items: [] }), call('adsPubAdminList', { status: st.filter }), call('adsPubAdminList', { alerts: true, status: 'open' }).catch(() => ({ alerts: [] }))]);
       st.adv = a.items; st.profiles = p.profiles; st.props = p.properties; st.alertsOpen = al.alerts.length; draw();
-    } catch (e) { st.adv = st.profiles = st.props = []; drawBar(); $('#rg-list').replaceChildren(h('p', { class: 'aderr', text: nice(e) })); showError(nice(e)); }
+    } catch (e) { st.adv = st.profiles = st.props = st.ads = st.pays = []; drawBar(); $('#rg-list').replaceChildren(h('p', { class: 'aderr', text: nice(e) })); showError(nice(e)); }
   }
 }
 

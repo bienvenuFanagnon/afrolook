@@ -487,7 +487,7 @@ export function adsPublisherSpace(fbConfig, api) {
   <div class="pubaud"><div><small>Audience du réseau Afrolook Ads</small><b id="aud-total">plus de 50 000</b></div><p>Elle augmente à chaque site ou application validé : <b>50 000</b> sur nos plateformes <b>+ l'audience retenue de chaque diffuseur</b>.</p></div>
   <div class="profban" id="profban" role="status" hidden></div>
   <div class="adkpis" id="pubkpis" aria-live="polite"><div class="adk adk-load"><small>&nbsp;</small><b>&nbsp;</b><span>&nbsp;</span></div><div class="adk adk-load"><small>&nbsp;</small><b>&nbsp;</b><span>&nbsp;</span></div><div class="adk adk-load"><small>&nbsp;</small><b>&nbsp;</b><span>&nbsp;</span></div><div class="adk adk-load"><small>&nbsp;</small><b>&nbsp;</b><span>&nbsp;</span></div></div>
-  <div class="adtabs"><a class="on" href="#tab-profil" data-tab="profil">Mon profil <i id="pbadge">!</i></a><a href="#tab-sites" data-tab="sites">Mes sites et applications <i id="pcount">0</i></a></div>
+  <div class="adtabs"><a class="on" href="#tab-profil" data-tab="profil">Mon profil <i id="pbadge">!</i></a><a href="#tab-sites" data-tab="sites">Mes sites et applications <i id="pcount">0</i></a><a href="#tab-gains" data-tab="gains">Mes gains <i id="gcount">0 F</i></a></div>
 
   <div id="tab-profil"><div class="adform-g">
    <form class="adform" id="pform" novalidate>
@@ -543,6 +543,17 @@ export function adsPublisherSpace(fbConfig, api) {
     <button class="btn btn-primary adbig" id="q-send" type="submit">Envoyer la demande</button>
    </form>
   </div></div>
+
+  <div id="tab-gains" hidden style="display:grid;gap:16px">
+   <div class="adkpis" id="g-kpis" aria-live="polite"></div>
+   <p class="adnote" id="g-intro">Tes gains viennent des <b>vues valides des annonces payantes de l'offre Réseau</b> affichées sur tes sites et applications : 65 % du prix du format. Ils sont <b>bloqués 30 jours</b>, puis disponibles. Une <b>réserve de 10 %</b> est gardée 90 jours. Retrait minimum : 10 000 F, sur Mobile Money. Les annonces gratuites s'affichent et se comptent, mais ne rapportent rien.</p>
+   <div class="adfs" id="g-withdraw"><h3>Retirer mes gains</h3>
+    <div class="adrow2"><label class="fl" for="g-phone">Numéro Mobile Money, avec l'indicatif<input id="g-phone" inputmode="tel" autocomplete="tel" placeholder="+228 90 00 00 00"></label>
+     <label class="fl" for="g-op">Opérateur<select id="g-op"></select></label></div>
+    <div class="adsub"><div><b id="g-amount">0 F</b><small id="g-sub">Chargement…</small></div><button class="btn btn-primary adbig" id="g-send" type="button" disabled>Demander le retrait</button></div></div>
+   <div class="adfs"><h3>Mes demandes de retrait</h3><div id="g-payouts"><p class="adempty">Chargement…</p></div></div>
+   <div class="adfs"><h3>Détail par site ou application</h3><div id="g-detail"><p class="adempty">Chargement…</p></div></div>
+  </div>
  </div>
 </div></section>
 <script src="/js/ads.js?v=__ASSET_V__" type="module"></script>`;

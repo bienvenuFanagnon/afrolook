@@ -68,8 +68,8 @@ class NotificationText {
       case 'STAFF_FRAUD':
         return b.isEmpty ? tr('a des gains de partage bloqués : détection de fraude à vérifier') : '${tr('a des gains de partage bloqués : détection de fraude à vérifier')} : $b';
       case 'STAFF_ADS':
-        // body : « Annonceur · secteur · pays » ou « Diffuseur · type · pays »
-        return b.isEmpty ? tr('a envoyé son profil Afrolook Ads à valider') : '${tr('a envoyé son profil Afrolook Ads à valider')} : $b';
+        // body : « Annonceur · secteur · pays », « Diffuseur · type · pays », « Site web · catégorie · pays », « Annonce gratuite · titre · pays », « Campagne Partage · titre · audience »
+        return b.isEmpty ? tr('a envoyé un élément Afrolook Ads à valider') : '${tr('a envoyé un élément Afrolook Ads à valider')} : $b';
       case 'STAFF_DISPUTE':
         return b.isEmpty ? tr('a ouvert un litige sur une commande') : '${tr('a ouvert un litige sur une commande')} « $b »';
       case 'CANAL_ADMIN':
@@ -97,7 +97,7 @@ class NotificationText {
         'STAFF_VERIF' => tr('Identités de vendeurs à vérifier'),
         'STAFF_FRAUD' => tr('Gains bloqués (fraude)'),
         'STAFF_DISPUTE' => tr('Litiges de commande'),
-        'STAFF_ADS' => tr('Profils Afrolook Ads à valider'),
+        'STAFF_ADS' => tr('Éléments Afrolook Ads à valider'),
         'CANAL_ADMIN' => tr('Nominations de canal'),
         'SERVICE' => tr('Intérêt pour un service'),
         _ => type,
