@@ -32,7 +32,7 @@ class AdConfig {
   };
 
   /// Emplacements de production Android déjà créés dans AdMob (identifiants vérifiés dans la console AdMob).
-  /// iPhone : à renseigner dans Firestore (`units.ios`) ; sans eux, ce sont les pubs de test de Google qui s'affichent.
+  /// iPhone : à renseigner dans le réglage `ads_client` de l'API (`units.ios`) ; sans eux, ce sont les pubs de test de Google qui s'affichent.
   static const _defaultAndroidUnits = {
     'banner': 'ca-app-pub-4937249920200692/2196510427',
     'native': 'ca-app-pub-4937249920200692/5006506592',
@@ -134,17 +134,17 @@ class AdConfig {
   String get bannerProvider => _d['bannerProvider'] == 'admob' ? 'admob' : 'appodeal';
 
   /// Appodeal sur iPhone : désactivé tant que le Podfile iOS n'a pas été validé sur Mac (voir ios/APPODEAL_IOS.md) ; sur Android, toujours actif.
-  /// Passe à `true` dans Firestore (`appodealIos`) pour l'activer sans publier de mise à jour, une fois la version iOS publiée avec ses pods.
+  /// Passe à `true` dans le réglage `ads_client` de l'API (`appodealIos`) pour l'activer sans publier de mise à jour, une fois la version iOS publiée avec ses pods.
   bool get appodealIos => _b('appodealIos', false);
 
-  /// Clés d'application Appodeal imposées par Firestore (`appodealKeys.android`, `appodealKeys.ios`) ; vide = clés intégrées à l'application.
+  /// Clés d'application Appodeal imposées par l'API (`appodealKeys.android`, `appodealKeys.ios`) ; vide = clés intégrées à l'application.
   Map<String, String> get appodealKeys {
     final k = _d['appodealKeys'];
     if (k is! Map) return const {};
     return {for (final e in k.entries) if (e.value is String) '${e.key}': (e.value as String).trim()};
   }
 
-  /// Identifiant d'emplacement : test en développement, sinon Firestore (`units.<plateforme>.<type>`),
+  /// Identifiant d'emplacement : test en développement, sinon l'API (`units.<plateforme>.<type>`),
   /// sinon (Android) ceux déjà créés. Vide = type indisponible.
   String unit(String type) {
     // Emplacements dédiés à la page Musique (`musicBanner`, `musicNative`) : à défaut, ceux de la bannière / du natif habituels
@@ -165,7 +165,7 @@ class AdConfig {
     }
     if (platform == 'android') return _defaultAndroidUnits[type] ?? '';
     // iPhone : tant que l'application iOS n'est pas vérifiée dans AdMob (et que ses emplacements ne sont pas saisis
-    // dans Firestore), on diffuse les pubs de TEST de Google : aucune vraie pub, aucun revenu, mais tout est testable.
+    // dans l'API), on diffuse les pubs de TEST de Google : aucune vraie pub, aucun revenu, mais tout est testable.
     return _testIds['ios']![type] ?? '';
   }
 }

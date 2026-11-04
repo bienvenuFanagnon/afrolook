@@ -1,7 +1,7 @@
 # Appodeal sur iPhone : étapes à faire sur un Mac (non testées depuis Windows)
 
 L'application utilise Appodeal pour les bannières sur **Android**. Sur iPhone, les bannières restent sur AdMob en direct tant que ces étapes ne sont pas faites
-et validées, puis activées par Firestore (`AppConfig/ads` → `appodealIos: true`, voir `tools/ads/set_config.js`).
+et validées, puis activées dans l'API (réglage `ads_client` → `appodealIos: true`, voir plus bas).
 
 Clé d'application Appodeal iOS : `47013088991ce1f20343b13078a4c981027aff2aa7ca05c6` (app « Afrolook », bundle `com.afrotok.afrotok`) ; elle est déjà
 dans `lib/ads/appodeal_service.dart`.
@@ -35,4 +35,4 @@ dans `lib/ads/appodeal_service.dart`.
 4. `Info.plist` : `GADApplicationIdentifier` est déjà présent ; `SKAdNetworkItems` contient déjà 65 identifiants (Appodeal en recommande davantage :
    liste à jour dans sa documentation) ; Appodeal demande aussi `NSAppTransportSecurity › NSAllowsArbitraryLoads = true` (à valider avec les règles de
    l'App Store avant de l'ajouter).
-5. Tester en Debug (pubs de test), puis publier la version iOS, puis activer `appodealIos` dans Firestore.
+5. Tester en Debug (pubs de test), puis publier la version iOS, puis activer `appodealIos` dans le réglage `ads_client` de l'API.
