@@ -593,3 +593,4 @@ pre.doc-code code{background:none;padding:0;color:inherit;font:inherit;overflow-
 .adwa{color:var(--green);font-weight:800;text-decoration:underline;text-underline-offset:3px}
 .adwa-nav{margin-left:auto;background:color-mix(in srgb,var(--green-bright) 12%,transparent);color:var(--green);text-decoration:none}
 .adneed .adsupport{margin:0}
+.rg-note{display:block;margin-top:6px;color:var(--muted);font-size:12.5px}

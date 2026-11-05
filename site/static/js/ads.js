@@ -535,7 +535,9 @@ async function initSpace() {
     $('#f-bal').textContent = wal.data ? ' (solde actuel : ' + nf(bal) + ' F)' : '';
     $('#o-app-e').textContent = d.app.on ? '≈ ' + nf(Math.round((d.app.v / NATIVE_CPM) * 1000)) + ' affichages mesurés avec une carte native (davantage avec une bannière, moins avec une vidéo)' : '';
     $('#o-net-e').textContent = d.net.on ? '≈ ' + nf(Math.round((d.net.v / NATIVE_CPM) * 1000)) + ' affichages mesurés avec une carte native (davantage avec une bannière, moins avec une vidéo)' : '';
-    $('#o-share-e').textContent = d.sh.on ? (IS_OFFERED ? 'Offert par l’équipe : aucun paiement' : nf(d.sharePrice) + ' F pour ' + nf(d.sh.v) + ' personnes à atteindre') : '';
+    const est = wal.data && wal.data.shareEstimate, clicks = est ? Math.floor(d.sharePrice * est.clicksPerFcfa) : 0;
+    $('#o-share-e').textContent = d.sh.on ? (IS_OFFERED ? 'Offert par l’équipe : aucun paiement' : nf(d.sharePrice) + ' F pour ' + nf(d.sh.v) + ' personnes à atteindre')
+      + (est && clicks > 0 ? ' · jusqu’à ≈ ' + nf(clicks) + ' clics valides, soit entre ' + nf(Math.round(clicks / est.ctrMax)) + ' et ' + nf(Math.round(clicks / est.ctrMin)) + ' personnes touchées (estimation)' : '') : '';
     $$('[data-shareonly]').forEach((e) => { e.hidden = !d.sh.on; });
     $('#f-sbrand-l').hidden = !(IS_OFFERED && d.sh.on);
     $('#f-days-l').hidden = !(d.app.on || d.net.on);
@@ -608,7 +610,8 @@ async function initSpace() {
       box.hidden = !r.items.length;
       $('#sharelist').replaceChildren(...r.items.map((c) => {
         const [cls, lab] = shareStat[c.status] || ['end', c.status];
-        const pctDone = Math.min(100, c.targetAudience ? Math.round((c.provenReach / c.targetAudience) * 100) : 0);
+        const reached = Number(c.deliveredAudience != null ? c.deliveredAudience : 0), reach = c.estimatedReach || { low: 0, high: 0 }, ctr = c.ctrRange || [0.022, 0.038], pc = (x) => (x * 100).toFixed(1).replace('.', ',') + ' %';   // estimation à partir des clics valides, jamais l'audience déclarée par les partageurs
+        const pctDone = Math.min(100, c.targetAudience ? Math.round((reached / c.targetAudience) * 100) : 0);
         const zone = h('div', { class: 'rg-act' });
         const act = (name, okMsg) => async () => { zone.querySelectorAll('button').forEach((x) => { x.disabled = true; }); try { await call(name, { id: c.id }); status(okMsg); await loadShareMine(); } catch (e) { showError(friendly(e, 'Action impossible pour le moment. Réessaie.')); zone.querySelectorAll('button').forEach((x) => { x.disabled = false; }); } };
         const ask = (msg, label, fn) => zone.replaceChildren(h('p', { class: 'addlg-conf', text: msg }), h('div', { class: 'addlg-row' }, h('button', { class: 'btn adsm adred', type: 'button', text: label, onclick: fn }), h('button', { class: 'btn btn-line adsm', type: 'button', text: 'Annuler', onclick: () => draw() })));
@@ -621,8 +624,9 @@ async function initSpace() {
         draw();
         return h('article', { class: 'rg-card' },
           h('div', { class: 'rg-h' }, h('div', {}, h('b', { text: c.title }), h('small', { text: c.free ? 'Campagne offerte par l’équipe' : nf(c.priceFcfa || c.listPriceFcfa) + ' F pour ' + nf(c.targetAudience) + ' personnes' })), h('span', { class: 'st ' + cls, text: lab })),
-          h('div', { class: 'rg-reach' }, h('small', { text: 'Personnes touchées' }), h('b', { text: nf(c.provenReach) + ' sur ' + nf(c.targetAudience) }),
-            h('div', { class: 'rg-bar' }, h('i', { style: 'width:' + pctDone + '%' }))),
+          h('div', { class: 'rg-reach' }, h('small', { text: 'Personnes touchées (estimation)' }), h('b', { text: nf(reached) + ' sur ' + nf(c.targetAudience) }),
+            h('div', { class: 'rg-bar' }, h('i', { style: 'width:' + pctDone + '%' })),
+            h('small', { class: 'rg-note', text: reach.high > 0 ? 'Estimation : entre ' + nf(reach.low) + ' et ' + nf(reach.high) + ' personnes (de ' + pc(ctr[0]) + ' à ' + pc(ctr[1]) + ' des personnes qui voient le partage cliquent). ' : 'Estimé à partir des clics valides : pas encore de clic valide. ' }, c.status === 'ended' ? 'Campagne terminée : le budget est entièrement utilisé.' : 'La campagne se termine quand son budget est utilisé.')),
           h('div', { class: 'rg-row' }, h('span', { text: 'Clics' }), h('b', { text: nf(c.valid) })),
           h('div', { class: 'rg-row' }, h('span', { text: 'Budget utilisé' }), h('b', { text: c.usedPct + ' %' })),
           c.reason ? h('div', { class: 'rg-row' }, h('span', { text: 'Motif' }), h('b', { text: c.reason })) : null,

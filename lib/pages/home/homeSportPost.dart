@@ -148,6 +148,12 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   bool _hasErrorPosts = false;
   bool _isLoadingMorePosts = false;
   bool _hasMorePosts = true;
+
+  /// File infinie (même règle que l'accueil) : le fil Sport continue tant que le serveur a des posts NON VUS du thème, sans fin de liste.
+  bool get _infiniteFeed => ApiGateway.instance.useApi('feed');
+
+  /// Curseur du fil « pour toi » du serveur, filtré par le thème de la page.
+  String? _themeCursor;
   bool _isLoadingBackground = false;
   bool _hasSubscribedFromEndFeed = false;
   bool _isReloadingAfterSubscribe = false;
@@ -167,7 +173,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     'BoostedContent', 'WeeklyTopCreators', 'Canaux', 'VIPContent', 'Articles',
   ];
   final int _maxBackgroundPosts = 20;
-  final int _maxTotalPosts = 25;
+  final int _maxTotalPosts = 5000;   // file infinie : plus de plafond de 25 posts (même règle que l'accueil)
   Timer? _backgroundLoadTimer;
   bool _useBackgroundLoading = true;
 
@@ -537,6 +543,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     _isLoadingMorePosts = false;
     _isLoadingBackground = false;
     _t2AutoTriggered = false;
+    _themeCursor = null;
   }
 
   // ===========================================================================
@@ -637,7 +644,9 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         }
       }
 
-      if (!mounted) return cachedPosts.isNotEmpty;
+      // Les publications ne sont plus lues depuis le cache (comme l'accueil) : elles étaient la source de posts déjà vus ou supprimés ; seul le reste (chroniques, canaux…) s'affiche tout de suite.
+      cachedPosts = [];
+      if (!mounted) return false;
 
       setState(() {
         if (cachedPosts.isNotEmpty) {
@@ -670,13 +679,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     try {
       final data = <String, dynamic>{};
 
-      if (_posts.isNotEmpty) {
-        data['posts'] = _posts.map((p) {
-          final json = p.toJson();
-          json['id'] = p.id;
-          return json;
-        }).toList();
-      }
+      // Publications exclues du cache : toujours rechargées depuis le réseau (le serveur ne renvoie que des posts non vus).
 
       if (_chroniques.isNotEmpty) {
         data['chroniques'] = _chroniques.map((c) {
@@ -795,7 +798,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         final spread = _spreadCreatorsWithContext(newPosts, _posts);
         setState(() {
           _posts.addAll(spread);
-          if (_posts.length > 25) _posts = _posts.take(25).toList();
+          if (!_infiniteFeed && _posts.length > 25) _posts = _posts.take(25).toList();
           _loadedPostIds.addAll(newPosts.map((p) => p.id!));
           _totalPostsLoaded = _posts.length;
           _backgroundPostsLoaded += spread.length;
@@ -804,8 +807,8 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         printVm('✅ ${spread.length} posts chargés en background (spread)');
       }
 
-      _hasMorePosts = newPosts.length >= (_backgroundLoadLimit ~/ 2);
-      if (_posts.length >= 25) _hasMorePosts = false;
+      _hasMorePosts = _infiniteFeed ? newPosts.isNotEmpty : newPosts.length >= (_backgroundLoadLimit ~/ 2);
+      if (!_infiniteFeed && _posts.length >= 25) _hasMorePosts = false;
 
       if (_backgroundPostsLoaded >= _maxBackgroundPosts) {
         _useBackgroundLoading = false;
@@ -1644,13 +1647,23 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       // T1 uniquement — T2 (Découverte/Tendance) jamais chargé automatiquement, uniquement sur demande utilisateur.
       await _loadTier1Posts(loadedIds, newPosts, limit);
 
+      // File infinie : si les posts des abonnements sont peu nombreux, on complète tout de suite avec le fil « pour toi » du thème (posts non vus),
+      // pour que la page ne soit jamais vide ni courte
+      if (_infiniteFeed && newPosts.length < 8) {
+        try {
+          await _loadInfiniteThemed(loadedIds, newPosts, 12 - newPosts.length);
+        } catch (e) {
+          printVm('⚠️ [SPORT] complément du fil : $e');
+        }
+      }
+
       setState(() {
         _posts = _buildTieredFeed(newPosts);
         _loadedPostIds.addAll(loadedIds);
         _totalPostsLoaded = _posts.length;
         _isFirstLoad = false;
-        // T1 épuisé → fin de feed, T2 se charge automatiquement
-        _hasMorePosts = false;
+        // File infinie : le fil continue tant que le serveur a des posts non vus ; sinon (anciens écrans) T2+T3 sur demande
+        _hasMorePosts = _infiniteFeed;
       });
 
       if (newPosts.isNotEmpty) {
@@ -1658,7 +1671,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       }
 
       // Auto-déclencher T2+T3 une seule fois quand T1 est épuisé
-      if (!_t2AutoTriggered) {
+      if (!_t2AutoTriggered && !_infiniteFeed) {
         _t2AutoTriggered = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) _loadDiscoveryAndTrends();
@@ -2012,6 +2025,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   // ===========================================================================
 
   void _scrollListener() {
+    if (!_scrollController.hasClients) return;
     final pixels = _scrollController.position.pixels;
 
     final shouldShow = pixels > 300;
@@ -2019,7 +2033,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       setState(() => _showScrollToTop = shouldShow);
     }
 
-    if (pixels >= _scrollController.position.maxScrollExtent - 1500 &&
+    if (pixels >= _scrollController.position.maxScrollExtent - 3500 &&
         !_isLoadingMorePosts &&
         !_isLoadingBackground &&
         _hasMorePosts &&
@@ -2037,6 +2051,9 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       _isLoadingMorePosts = true;
     });
 
+    // Les posts déjà vus sont envoyés au serveur avant de demander la suite (comme l'accueil)
+    await _flushAndRefreshUnread();
+
     try {
       Set<String> loadedIds = Set.from(_loadedPostIds);
       List<Post> newPosts = [];
@@ -2047,7 +2064,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         final spread = _spreadCreatorsWithContext(newPosts, _posts);
         setState(() {
           _posts.addAll(spread);
-          if (_posts.length > 25) _posts = _posts.take(25).toList();
+          if (!_infiniteFeed && _posts.length > 25) _posts = _posts.take(25).toList();
           _loadedPostIds.addAll(newPosts.map((p) => p.id!));
           _totalPostsLoaded = _posts.length;
         });
@@ -2055,12 +2072,12 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         printVm('📱 ${spread.length} posts chargés manuellement (spread)');
       }
 
-      _hasMorePosts = newPosts.length >= (_manualLoadLimit ~/ 2);
-      if (_posts.length >= 25) _hasMorePosts = false;
+      _hasMorePosts = _infiniteFeed ? newPosts.isNotEmpty : newPosts.length >= (_manualLoadLimit ~/ 2);
+      if (!_infiniteFeed && _posts.length >= 25) _hasMorePosts = false;
 
     } catch (e) {
       printVm('❌ Erreur chargement manuel: $e');
-      _hasMorePosts = false;
+      if (!_infiniteFeed) _hasMorePosts = false;   // file infinie : une erreur réseau ne met jamais fin au fil, le prochain défilement réessaie
     } finally {
       setState(() {
         _isLoadingMorePosts = false;
@@ -2068,7 +2085,11 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     }
   }
 
-  Future<void> _loadMorePostsByFilter(Set<String> loadedIds, List<Post> newPosts, int limit) async {
+  Future<void> _loadMorePostsByFilter(Set<String> loadedIds, List<Post> newPosts, int limit, {bool reset = false}) async {
+    if (_infiniteFeed) {
+      await _loadInfiniteThemed(loadedIds, newPosts, limit < 12 ? 12 : limit, reset: reset);
+      return;
+    }
     switch (_currentFilter) {
       case 'ALL':
         await _loadPostsWithTypeAndCountry(
@@ -2946,6 +2967,22 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
 
   List<Widget> _buildEndFeedButtons(AppColors colors) {
     return [
+      if (_infiniteFeed) ...[
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _reloadDiscoveryInPlace,
+            icon: Icon(Icons.explore_rounded, size: 18, color: colors.primary),
+            label: Text('Voir plus de posts', style: TextStyle(color: colors.primary, fontWeight: FontWeight.w600)),
+            style: OutlinedButton.styleFrom(
+              side: BorderSide(color: colors.primary.withOpacity(0.6)),
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+      ],
       SizedBox(
         width: double.infinity,
         child: _isReloadingAfterSubscribe
@@ -2993,6 +3030,67 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
           ),
         ),
     ];
+  }
+
+  /// Suite infinie du fil Sport : le MÊME fil « pour toi » que l'accueil (abonnements d'abord, goûts, découverte, nouveaux créateurs), filtré par le thème de la page.
+  /// Le serveur ne renvoie que des posts NON VUS et, quand le récent est épuisé, élargit la période. Côté application on écarte en plus tout post déjà chargé,
+  /// supprimé, publicitaire, indisponible dans le pays de la personne ou déjà vu : jamais de carte vide ni de repetition.
+  Future<void> _loadInfiniteThemed(Set<String> loadedIds, List<Post> newPosts, int limit, {bool reset = false}) async {
+    final theme = (widget.type.isEmpty || widget.type == 'DECOUVERTE') ? null : widget.type;
+    final cc = (authProvider.loginUserData.countryData?['countryCode'] as String? ?? '').toUpperCase();
+    if (reset) _themeCursor = null;
+    var added = 0;
+    var restarts = 0;
+    for (var i = 0; i < 6 && added < limit; i++) {
+      final page = await HomeFeedApi.discover(category: theme, cursor: _themeCursor, limit: 30);
+      _themeCursor = page.next;
+      for (final p in page.posts) {
+        if (added >= limit) break;
+        final id = p.id;
+        if (id == null || loadedIds.contains(id) || _loadedPostIds.contains(id)) continue;
+        if (p.isAdvertisement == true || p.status == 'SUPPRIMER') continue;
+        if (cc.isNotEmpty && !p.isAvailableForCountry(cc)) continue;
+        if (_checkIfPostSeen(p)) continue;
+        p.hasBeenSeenByCurrentUser = false;
+        loadedIds.add(id);
+        newPosts.add(p);
+        added++;
+      }
+      if (_themeCursor == null && ++restarts > 1) break;   // fin du parcours : on repart du début une seule fois par chargement
+    }
+  }
+
+  /// Bouton « Voir plus de posts » : nouvelle lecture du fil du serveur (posts non vus), ajoutée à la suite de la liste, sans quitter la page.
+  Future<void> _reloadDiscoveryInPlace() async {
+    if (_isLoadingMorePosts) return;
+    setState(() {
+      _hasMorePosts = true;
+      _isLoadingMorePosts = true;
+    });
+    var added = 0;
+    try {
+      await _flushAndRefreshUnread();
+      final ids = Set<String>.from(_loadedPostIds);
+      final fresh = <Post>[];
+      await _loadMorePostsByFilter(ids, fresh, 20, reset: true);
+      if (fresh.isNotEmpty && mounted) {
+        final spread = _spreadCreatorsWithContext(fresh, _posts);
+        added = spread.length;
+        setState(() {
+          _posts.addAll(spread);
+          _loadedPostIds.addAll(fresh.map((p) => p.id!));
+          _totalPostsLoaded = _posts.length;
+        });
+      }
+    } catch (e) {
+      printVm('❌ [SPORT] rechargement : $e');
+    }
+    if (mounted) {
+      setState(() {
+        _isLoadingMorePosts = false;
+        _hasMorePosts = added > 0;   // rien de nouveau : on garde la fin de fil et le bouton
+      });
+    }
   }
 
   Future<void> _loadDiscoveryAndTrends() async {
