@@ -652,3 +652,5 @@ img{height:auto}
 
 /* très petits téléphones (320 px) : l'en-tête tient sur une ligne */
 @media (max-width:360px){.lang-sw a,.lang-sw span{padding:8px 10px}.brand{font-size:21px}.top .wrap{gap:8px}}
+
+.wasup{margin:0 0 14px}.wasup .btn{display:inline-flex}

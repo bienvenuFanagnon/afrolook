@@ -67,9 +67,13 @@ const HOME = {
   },
 };
 /** Menu commun aux pages Afrolook Ads : annonceur, diffuseur, documentation, règles, administration (aucun bouton : le lien « Administration » est ajouté par ads.js seulement quand le compte connecté est administrateur). */
+// Support : contact WhatsApp de l'équipe (même numéro partout sur le site)
+const SUPPORT_WA = '22871645403', SUPPORT_LABEL = '+228 71 64 54 03';
+const waLink = (label, text, cls = 'adwa') => `<a class="${cls}" href="https://wa.me/${SUPPORT_WA}?text=${encodeURIComponent(text)}" target="_blank" rel="noopener">${label}</a>`;
+const supportLine = (text, lead = 'Besoin d\'aide ?') => `<p class="adsupport">${lead} ${waLink('Écris-nous sur WhatsApp : ' + SUPPORT_LABEL, text)}</p>`;
 export const adsSubnav = (active) => {
   const L = [['ads', '/ads/', 'Annoncer'], ['espace', '/ads/espace/', 'Espace annonceur'], ['diffuseur', '/ads/diffuseur/', 'Espace diffuseur'], ['docs', '/ads/diffuseur/documentation/', 'Documentation d\'intégration'], ['regles', '/ads/diffuseur/regles/', 'Règles des diffuseurs']];
-  return `<nav class="adsnav" aria-label="Afrolook Ads"><div class="wrap">${L.map(([k, h, l]) => `<a href="${h}"${k === active ? ' aria-current="page"' : ''}>${l}</a>`).join('')}<span class="sp"></span></div></nav>`;
+  return `<nav class="adsnav" aria-label="Afrolook Ads"><div class="wrap">${L.map(([k, h, l]) => `<a href="${h}"${k === active ? ' aria-current="page"' : ''}>${l}</a>`).join('')}<span class="sp"></span>${waLink('Support WhatsApp', 'Bonjour, j\'ai besoin d\'aide sur Afrolook Ads.', 'adwa adwa-nav')}</div></nav>`;
 };
 export const adsNav = (lang) => (lang === 'fr' ? 'Annoncer' : 'Advertise');
 export const adsBadge = () => 'WhatsApp';
@@ -122,7 +126,7 @@ export const ADS_META_EN = {
 };
 export const adsSubnavEn = (active) => {
   const L = [['ads', '/en/ads/', 'Advertise'], ['espace', '/ads/espace/', 'Advertiser space'], ['diffuseur', '/ads/diffuseur/', 'Publisher space'], ['docs', '/ads/diffuseur/documentation/', 'Integration guide'], ['regles', '/ads/diffuseur/regles/', 'Publisher rules']];
-  return `<nav class="adsnav" aria-label="Afrolook Ads"><div class="wrap">${L.map(([k, h, l]) => `<a href="${h}"${k === active ? ' aria-current="page"' : ''}>${l}</a>`).join('')}<span class="sp"></span></div></nav>`;
+  return `<nav class="adsnav" aria-label="Afrolook Ads"><div class="wrap">${L.map(([k, h, l]) => `<a href="${h}"${k === active ? ' aria-current="page"' : ''}>${l}</a>`).join('')}<span class="sp"></span>${waLink('WhatsApp support', 'Hello, I need help with Afrolook Ads.', 'adwa adwa-nav')}</div></nav>`;
 };
 const FAQ_EN = [
   ['How is my campaign audience calculated?', 'You choose the number of people to reach and you pay for that audience (rate shown in the simulator). It is measured by real openings of your tracked link, sharer by sharer. The campaign closes as soon as the audience you chose is reached, never exceeding your budget.'],
@@ -371,6 +375,7 @@ export function adsSpace(fbConfig, api) {
  <div class="adsp-top"><div><span class="kicker">Afrolook Ads</span><h1 class="h2" style="margin-top:6px">Mon espace annonceur</h1></div>
   <div class="adsp-user" id="adsp-user" hidden><i class="admk-av" id="u-av">K</i><span><b id="u-name"></b><small id="u-mail"></small></span><button class="adlinkbtn" id="signout" type="button">Déconnexion</button></div></div>
  <p class="adstatus" id="adstatus" role="status" aria-live="polite" hidden></p>
+ ${supportLine("Bonjour, j'ai besoin d'aide dans mon espace annonceur Afrolook Ads.")}
 
  <div class="adgate" id="adgate"><div class="adgate-c">${ico('shield', 34)}<h2>Connecte-toi pour annoncer gratuitement</h2>
   <p>Ton compte Google suffit : pas de mot de passe de plus. Tu renseignes ensuite ta marque et ton logo, une seule fois. Nous n'utilisons que ton nom et ton adresse e-mail pour te prévenir quand ton annonce est validée.</p>
@@ -432,7 +437,7 @@ export function adsSpace(fbConfig, api) {
       <label class="fl" id="f-sbrand-l" for="f-sbrand" hidden>Marque affichée <small>(équipe : ex. SlashAtlas)</small><input id="f-sbrand" maxlength="60" autocomplete="off" placeholder="SlashAtlas"></label>
       <label class="fl" id="f-days-l" for="f-days">Durée des options payantes<select id="f-days"><option value="7">7 jours</option><option value="14">14 jours</option><option value="30" selected>30 jours</option><option value="60">60 jours</option><option value="90">90 jours</option></select></label>
       <div class="sharebox"><b id="f-sum-t">Gratuit</b><small id="f-sum-n"></small></div></div>
-     <div class="adneed" id="f-need" role="alert" hidden><p id="f-need-t"></p><button class="btn btn-primary adbig" type="button" id="f-need-go">Recharger maintenant</button></div>
+     <div class="adneed" id="f-need" role="alert" hidden><p id="f-need-t"></p><button class="btn btn-primary adbig" type="button" id="f-need-go">Recharger maintenant</button>${supportLine("Bonjour, j'ai un problème pour recharger mon solde annonceur sur Afrolook Ads.", "Un souci de paiement ?")}</div>
      <p class="aderr" id="aderr" role="alert" hidden></p>
      <div class="adnav"><button class="btn btn-line adbig" type="button" id="f-prev" hidden>← Retour</button><button class="btn btn-primary adbig" type="button" id="f-next">Continuer</button></div>
     <div class="adsub" id="f-subrow" hidden><div><b id="f-sub-t">Gratuit</b><small id="f-quota">Validation par notre équipe avant diffusion</small></div><button class="btn btn-primary adbig" id="f-send" type="submit">Envoyer pour validation</button></div>
@@ -444,6 +449,7 @@ export function adsSpace(fbConfig, api) {
 
   <div id="tab-solde" hidden><div class="admine">
    <div class="walbox"><div><small>Solde annonceur</small><b id="wal-bal">—</b><span>Ce solde sert <b>uniquement</b> à payer tes campagnes sur Afrolook Ads. Il est séparé de ton compte dans l’application (pièces, gains) : aucun lien entre les deux.</span></div><button class="btn btn-primary adbig" id="wal-topup" type="button">Recharger</button></div>
+   ${supportLine("Bonjour, j'ai une question sur mon solde annonceur Afrolook Ads.", "Une question sur ton solde ou un paiement ?")}
    <h3 class="walh">Mes mouvements</h3>
    <div class="waltx" id="wal-tx"><p class="adempty">Chargement…</p></div>
    <p class="adnote">Si notre équipe refuse une campagne, elle est <b>remboursée sur ce solde</b> et tu peux l’utiliser pour une autre annonce. Une campagne que tu arrêtes ou supprimes toi-même n’est pas remboursable.</p>
@@ -496,6 +502,7 @@ export function adsSpace(fbConfig, api) {
   <p class="aderr" id="top-err" role="alert" hidden></p>
   <p class="adstatus" id="top-wait" role="status" hidden></p>
   <button class="btn btn-primary adbig" id="top-go" type="submit">Payer</button>
+  ${supportLine("Bonjour, j'ai un souci avec la recharge de mon solde annonceur sur Afrolook Ads.", "Un souci avec ta recharge ?")}
  </form></div></dialog>
 <dialog class="addlg" id="addetail" aria-label="Détail de l'annonce"><div class="addlg-in"><button class="addlg-x" type="button" id="addetail-x" aria-label="Fermer">×</button><div id="addetail-body"></div></div></dialog>
 <script src="/js/ads.js?v=__ASSET_V__" type="module"></script>`;
@@ -509,6 +516,7 @@ export function adsPublisherSpace(fbConfig, api) {
  <div class="adsp-top"><div><span class="kicker">Afrolook Ads</span><h1 class="h2" style="margin-top:6px">Mon espace diffuseur</h1></div>
   <div class="adsp-user" id="adsp-user" hidden><i class="admk-av" id="u-av">K</i><span><b id="u-name"></b><small id="u-mail"></small></span><button class="adlinkbtn" id="signout" type="button">Déconnexion</button></div></div>
  <p class="adstatus" id="adstatus" role="status" aria-live="polite" hidden></p>
+ ${supportLine("Bonjour, j'ai besoin d'aide dans mon espace diffuseur Afrolook Ads.")}
 
  <div class="adways" id="adways"><article class="adway on"><span class="adway-t">Nouveau · sans site ni application</span><h2>Partage des annonces avec les jobs Afrolook</h2><p>Tu as une audience sur WhatsApp, Telegram, Facebook ou TikTok ? Fais les tâches de partage : tu publies une annonce avec ton lien personnel et tu es payé pour chaque clic valide. Ton profil de partageur est validé par notre équipe avant ta première mission.</p><a class="btn btn-primary" href="/gagner/#jobs">Voir comment ça marche</a></article>
   <article class="adway"><span class="adway-t">Tu as un site ou une application</span><h2>Affiche les annonces chez toi</h2><p>Ajoute ton site ou ton application : après validation, tu reçois ton identifiant publicitaire et les annonces s'affichent chez toi.</p><a class="adlinkbtn" href="#adgate">Créer mon profil de diffuseur</a></article></div>

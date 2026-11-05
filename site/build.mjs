@@ -24,7 +24,7 @@ const rules = JSON.parse(fs.readFileSync(path.join(root, 'src/rules.json'), 'utf
 const dist = path.join(root, 'dist');
 const flagsDir = process.env.FLAGS_DIR || path.join(root, 'static/img/flags');
 
-const ASSET_V = '47';
+const ASSET_V = '48';
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const slug = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const write = (p, c) => { const f = path.join(dist, p); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, c); };
@@ -79,7 +79,7 @@ function footer(lang) {
  <div><a class="brand" href="${p.home}" style="color:#fff"><img src="/img/logo.webp" width="36" height="36" alt=""><span>afro<i>look</i></span></a><p class="about">${f.about}</p></div>
  <div><h4>${f.product}</h4><ul><li><a href="${p.earn}">${t.nav.earn}</a></li><li><a href="${p.cards}">${t.nav.cards}</a></li><li><a href="${p.music}">${t.nav.music}</a></li><li><a href="${p.holidays}">${t.nav.holidays}</a></li><li><a href="${p.download}">${t.nav.download}</a></li><li><a href="${cfg.appWebUrl}">${f.web}</a></li></ul></div>
  <div><h4>Afrolook Ads</h4><ul><li><a href="/ads/">${lang === 'fr' ? 'Annoncer' : 'Advertise'}</a></li><li><a href="/ads/diffuseur/">${lang === 'fr' ? 'Devenir diffuseur' : 'Become a publisher'}</a></li><li><a href="/ads/diffuseur/documentation/" hreflang="fr">${lang === 'fr' ? 'Documentation d\'intégration' : 'Integration guide'}</a></li><li><a href="/ads/diffuseur/regles/" hreflang="fr">${lang === 'fr' ? 'Règles des diffuseurs' : 'Publisher rules'}</a></li></ul></div>
- <div><h4>${f.help}</h4><ul><li><a href="${p.home}#faq">${f.faq}</a></li><li><a href="${p.contact}">${t.nav.contact}</a></li><li><a href="${p.del}">${f.delete}</a></li></ul></div>
+ <div><h4>${f.help}</h4><ul><li><a href="${p.home}#faq">${f.faq}</a></li><li><a href="${p.contact}">${t.nav.contact}</a></li><li><a href="https://wa.me/${cfg.supportWhatsapp}?text=${encodeURIComponent(lang === 'fr' ? 'Bonjour, j\'ai besoin d\'aide sur Afrolook.' : 'Hello, I need help with Afrolook.')}" target="_blank" rel="noopener">${lang === 'fr' ? 'Support WhatsApp' : 'WhatsApp support'}</a></li><li><a href="${p.del}">${f.delete}</a></li></ul></div>
  <div><h4>${f.legal}</h4><ul><li><a href="${p.rules}" hreflang="fr">${f.rules}</a></li><li><a href="${p.privacy}" hreflang="fr">${f.privacy}</a></li></ul></div>
 </div>
 <div class="bottom"><span>© ${new Date().getFullYear()} Afrolook. ${f.rights}</span><span>afrolookmedia.com</span></div>
@@ -174,6 +174,7 @@ function contactForm(lang) {
 const contactBlock = (lang) => {
   const c = T[lang].contact;
   return `<div class="mail"><code id="mailtxt">${cfg.contactEmail}</code><button class="btn btn-line" id="copymail" type="button" data-done="${c.copied}" data-label="${c.mail}">${c.mail}</button></div>
+<p class="wasup"><a class="btn btn-primary" href="https://wa.me/${cfg.supportWhatsapp}?text=${encodeURIComponent(lang === 'fr' ? 'Bonjour, j\'ai besoin d\'aide sur Afrolook.' : 'Hello, I need help with Afrolook.')}" target="_blank" rel="noopener">${lang === 'fr' ? 'Support WhatsApp' : 'WhatsApp support'} · ${cfg.supportWhatsappLabel}</a></p>
 <div class="chan">${c.chans.map(([k, n, s]) => `<a href="${cfg.social[k]}" rel="noopener">${svgIcon(k)}<span>${n}<small>${s}</small></span></a>`).join('')}</div>`;
 };
 
