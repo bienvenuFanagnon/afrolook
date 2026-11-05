@@ -3650,8 +3650,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       // Quand les posts non vus sont épuisés et que le fil passe aux posts à découvrir (déjà vus ou tendances), les actualités deviennent plus
       // fréquentes : une carte tous les 4 posts, pour que la personne ait toujours du nouveau à lire.
       final bool _discoveryPost = pid.isNotEmpty && _tier2PostIds.contains(pid) && !_seenTier1PostIds.contains(pid);
-      // Journal : une carte après le 6e post (décision du propriétaire, 05/11/2026), puis une seule tous les 60 posts (66e, 126e…).
-      if (i == 5 || (i > 5 && (i - 5) % 60 == 0)) {
+      // Journal : une carte tous les 6 posts (décision du propriétaire, 05/11/2026) : après les posts 6, 12, 18, 24…
+      if ((i + 1) % 6 == 0) {
         _lastNewsAt = i;
         contentWidgets.add(NewsFeedCard(key: ValueKey('news_card_home_$i'), slotKey: 'home_$i'));
       }
