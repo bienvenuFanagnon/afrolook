@@ -14,6 +14,7 @@ import 'package:afrotok/services/api/regie_api.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/material.dart';
+import '../../pub/brand_ad_widgets.dart';
 
 import 'package:flutter_linkify/flutter_linkify.dart';
 
@@ -311,26 +312,20 @@ class _AdPostWidgetState extends State<AdPostWidget> {
   }
 
   Widget _buildActionButton() {
+    // bouton d'action jaune, texte sombre (maquette validée) ; libellé choisi par l'annonceur
     return InkWell(
       onTap: _handleActionClick,
+      borderRadius: BorderRadius.circular(14),
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: [Color(0xFFE21221), Color(0xFFFF5252)]),
-          borderRadius: BorderRadius.circular(10),
-        ),
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        decoration: BoxDecoration(color: const Color(0xFFFFC400), borderRadius: BorderRadius.circular(14)),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(ad.getActionIcon(), color: Colors.white, size: 18),
-            const SizedBox(width: 8),
-            Text(
-              ad.getActionButtonText().toUpperCase(),
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            const SizedBox(width: 4),
-            const Icon(Icons.arrow_forward, color: Colors.white, size: 16),
+            Flexible(child: Text(adButtonLabel(ad), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFF20260F), fontWeight: FontWeight.w800, fontSize: 16))),
+            const SizedBox(width: 6),
+            const Icon(Icons.arrow_forward, color: Color(0xFF20260F), size: 18),
           ],
         ),
       ),
@@ -366,6 +361,8 @@ class _AdPostWidgetState extends State<AdPostWidget> {
   }
 
   Widget _buildActionsOverlay() {
+    // annonce du site : pas une publication, donc ni likes, ni commentaires, ni vues à montrer
+    if (isBrandPost(post)) return const SizedBox.shrink();
     final commentCount = post.comments ?? 0;
     final authProv = Provider.of<UserAuthProvider>(context, listen: false);
     final uid = ApiIdentity.myId;
@@ -402,14 +399,16 @@ class _AdPostWidgetState extends State<AdPostWidget> {
                     style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600,
                         shadows: [Shadow(color: Colors.black54, blurRadius: 4)])),
               ]),
-              const SizedBox(width: 16),
-              Row(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(Icons.remove_red_eye, color: Colors.white70, size: 18),
-                const SizedBox(width: 4),
-                Text(_formatCount(ad.views ?? 0),
-                    style: const TextStyle(color: Colors.white70, fontSize: 12,
-                        shadows: [Shadow(color: Colors.black54, blurRadius: 4)])),
-              ]),
+              if ((ad.views ?? 0) > 0) ...[
+                const SizedBox(width: 16),
+                Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.remove_red_eye, color: Colors.white70, size: 18),
+                  const SizedBox(width: 4),
+                  Text(_formatCount(ad.views ?? 0),
+                      style: const TextStyle(color: Colors.white70, fontSize: 12,
+                          shadows: [Shadow(color: Colors.black54, blurRadius: 4)])),
+                ]),
+              ],
               if (showClicks) ...[
                 const SizedBox(width: 16),
                 Row(mainAxisSize: MainAxisSize.min, children: [
@@ -494,16 +493,20 @@ class _AdPostWidgetState extends State<AdPostWidget> {
                   _buildDescription(),
                   const SizedBox(height: 12),
                   _buildActionButton(),
-                  MrecAdWidget(
-                    onAdLoaded: () {
-
-                  },)
+                  // pas de pub dans une pub : le rectangle AdMob n'apparaît que sous une publication boostée, jamais sous une annonce du site
+                  if (!isBrandPost(post))
+                    MrecAdWidget(
+                      onAdLoaded: () {},
+                    )
                 ],
               ),
             ),
           ),
 
-          // Badge SPONSORISÉ (haut gauche, style chronique)
+          // Badge SPONSORISÉ (haut gauche) ; annonce du site : la marque et son logo
+          if (isBrandPost(post))
+            Positioned(top: 52, left: 16, right: 16, child: BrandOverlayHeader(ad: ad))
+          else
           Positioned(
             top: 56,
             left: 16,

@@ -21,7 +21,7 @@ class QuizAdBanner extends StatelessWidget {
     if (MediaQuery.of(context).size.height < minHeight) return const SizedBox.shrink();
     final user = context.read<UserAuthProvider>().loginUserData;
     if (!ModuleAds.shows(user)) return const SizedBox.shrink();
-    return Padding(padding: padding, child: AdSlot(kind: AdSlotKind.detail, own: () => const AfrolookInlineAd(compact: true), admobFirst: true));
+    return Padding(padding: padding, child: AdSlot(kind: AdSlotKind.detail, own: () => const AfrolookInlineAd(compact: true, banner: true), admobFirst: true));
   }
 }
 

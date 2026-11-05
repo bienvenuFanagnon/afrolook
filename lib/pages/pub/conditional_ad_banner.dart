@@ -10,6 +10,6 @@ class ConditionalAdBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AdSlot(kind: AdSlotKind.detail, own: () => const AfrolookInlineAd());
+    return AdSlot(kind: AdSlotKind.detail, own: () => const AfrolookInlineAd(banner: true));
   }
 }

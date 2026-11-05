@@ -1154,7 +1154,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
   }
 
   Widget _buildAdNative({required String key}) {
-    return AdSlot(key: ValueKey(key), kind: AdSlotKind.detail, own: () => const AfrolookInlineAd());
+    return AdSlot(key: ValueKey(key), kind: AdSlotKind.detail, own: () => const AfrolookInlineAd(banner: true));
   }
 
   void _sharePost(Post post) async {

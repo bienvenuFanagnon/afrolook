@@ -14,6 +14,9 @@ import 'package:afrotok/services/api/canaux_api.dart';
 import 'package:afrotok/services/api/users_api.dart';
 import 'package:afrotok/services/api/users_mapper.dart';
 import 'package:flutter/material.dart';
+import 'package:afrotok/services/ads_engine_service.dart';
+import 'ad_actions.dart';
+import 'brand_ad_widgets.dart';
 import 'package:video_player/video_player.dart';
 
 /// Pub affichée pendant une vidéo (pages vidéo portrait et paysage).
@@ -129,6 +132,9 @@ class _MidrollAdCardState extends State<MidrollAdCard> {
         } catch (_) {}
       }
     }
+
+    // annonce du site Afrolook Ads : la marque et son logo, jamais un profil ; le bouton ouvre le lien de l'annonceur
+    final isBrand = isBrandPost(post);
 
     return Positioned.fill(
       child: Material(
@@ -310,8 +316,13 @@ class _MidrollAdCardState extends State<MidrollAdCard> {
                                     ),
                                   if (caption.isNotEmpty) const SizedBox(height: 10),
 
+                                  if (isBrand && ad != null) ...[
+                                    BrandOverlayHeader(ad: ad!),
+                                    const SizedBox(height: 14),
+                                  ],
+
                                   // ── Profil / entité boostée ──
-                                  if (ad != null && ad!.ownerName?.isNotEmpty == true) ...[
+                                  if (!isBrand && ad != null && ad!.ownerName?.isNotEmpty == true) ...[
                                     Container(
                                       margin: const EdgeInsets.only(bottom: 14),
                                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -508,7 +519,7 @@ class _MidrollAdCardState extends State<MidrollAdCard> {
                                   ],
 
                                   // Stats pub (vues toujours, clics uniquement admin/propriétaire)
-                                  if (ad != null && (ad!.views ?? 0) > 0) ...[
+                                  if (!isBrand && ad != null && (ad!.views ?? 0) > 0) ...[
                                     Builder(builder: (ctx) {
                                       final authProvider = Provider.of<UserAuthProvider>(ctx, listen: false);
                                       final uid = authProvider.loginUserData.id;
@@ -543,7 +554,10 @@ class _MidrollAdCardState extends State<MidrollAdCard> {
                                         if (ad == null) return;
                                         final nav = Navigator.of(context);
                                         widget.onClose();
-                                        if (post != null) {
+                                        if (ad!.id != null) AdsEngineService.instance.click(ad!.id!, format: 'native', slot: 'midroll');
+                                        if (isBrand) {
+                                          await AdActions.open(ad!);
+                                        } else if (post != null) {
                                           if (post!.dataType == PostDataType.VIDEO.name ||
                                               (post!.url_media?.contains('.mp4') ?? false)) {
                                             nav.push(MaterialPageRoute(
@@ -563,9 +577,7 @@ class _MidrollAdCardState extends State<MidrollAdCard> {
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(vertical: 13),
                                         decoration: BoxDecoration(
-                                          gradient: const LinearGradient(
-                                            colors: [Color(0xFFFFD700), Color(0xFFFF8C00)],
-                                          ),
+                                          color: const Color(0xFFFFC400),   // bouton d'action jaune partout (maquette validée)
                                           borderRadius: BorderRadius.circular(30),
                                         ),
                                         child: _ctaLoading
@@ -579,15 +591,17 @@ class _MidrollAdCardState extends State<MidrollAdCard> {
                                             : Row(
                                                 mainAxisAlignment: MainAxisAlignment.center,
                                                 children: [
-                                                  const Icon(Icons.open_in_new, color: Colors.white, size: 16),
-                                                  const SizedBox(width: 8),
-                                                  Text(
-                                                    btnText,
-                                                    style: const TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 14,
-                                                      fontWeight: FontWeight.bold,
-                                                      decoration: TextDecoration.none,
+                                                  Flexible(
+                                                    child: Text(
+                                                      isBrand && ad != null ? adButtonLabel(ad!) : btnText,
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                      style: const TextStyle(
+                                                        color: Color(0xFF20260F),
+                                                        fontSize: 15,
+                                                        fontWeight: FontWeight.w800,
+                                                        decoration: TextDecoration.none,
+                                                      ),
                                                     ),
                                                   ),
                                                 ],

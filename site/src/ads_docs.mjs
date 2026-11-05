@@ -20,8 +20,8 @@ export function adsRulesPage() {
 
 const FMT = [
   ['Bannière', 'banner', '1 s', '30 s', '1 000 F', 'oui'], ['Bandeau collant', 'sticky', '1 s', '30 s', '1 250 F', 'oui'], ['Carte native', 'native', '1 s', '20 s', '1 500 F', 'oui'],
-  ['Carrousel', 'carousel', '1 s', '20 s', '1 800 F', 'API'], ['Affiche', 'poster', '1 s', '20 s', '2 000 F', 'oui'], ['Vidéo dans le fil', 'video', '2 s', '20 s', '2 500 F', 'API'],
-  ['Interstitiel', 'interstitial', '1 s', '10 min', '3 000 F', 'API'], ['Récompensée', 'rewarded', '1 s, puis lecture complète', '5 min', '3 500 F (vue complète)', 'API'],
+  ['Carrousel', 'carousel', '1 s', '20 s', '1 800 F', 'oui'], ['Affiche', 'poster', '1 s', '20 s', '2 000 F', 'oui'], ['Vidéo dans le fil', 'video', '2 s', '20 s', '2 500 F', 'oui'],
+  ['Interstitiel', 'interstitial', '1 s', '10 min', '3 000 F', 'oui'], ['Récompensée', 'rewarded', '1 s, puis lecture complète', '5 min', '3 500 F (vue complète)', 'oui'],
 ];
 
 /** Part du diffuseur (65 %) d'un prix annonceur écrit « 1 250 F » ou « 3 500 F (vue complète) » : arrondie vers le bas au demi-franc, jamais au-dessus. */
@@ -55,13 +55,13 @@ export function adsDocsPage(api) {
 <ins class="afl-ad" data-pub="ap_xxxxxxxxxx" data-slot="fil-principal" data-format="native"></ins>
 <script async src="https://afrolookmedia.com/ads/tag.js"></script>`)}
   <ul class="list">
-   <li><code>data-pub</code> : ton identifiant publicitaire. <code>data-slot</code> : le nom de l'emplacement (lettres, chiffres, - et _), pour tes statistiques. <code>data-format</code> : <code>banner</code>, <code>native</code>, <code>poster</code> ou <code>sticky</code> (bandeau collant en bas de l'écran, fermable).</li>
+   <li><code>data-pub</code> : ton identifiant publicitaire. <code>data-slot</code> : le nom de l'emplacement (lettres, chiffres, - et _), pour tes statistiques. <code>data-format</code> : <code>banner</code>, <code>native</code>, <code>poster</code>, <code>carousel</code>, <code>video</code>, <code>sticky</code> (bandeau collant en bas de l'écran, fermable), <code>interstitial</code> (plein écran, fermable après 3 secondes ; <code>data-delay</code> = délai en millisecondes, 2 500 par défaut) ou <code>rewarded</code> (un bouton ; quand la vidéo est regardée en entier, l'événement <code>afl:reward</code> part de l'emplacement et c'est à toi de donner la récompense à ton visiteur ; <code>data-label</code> = texte du bouton). Chaque format a son prix, donc ta rémunération diffère d'un format à l'autre (section 5). Tu choisis les formats que tu acceptes dans ton espace diffuseur.</li>
    <li>Une seule annonce par emplacement et par chargement de page, <b>3 emplacements au plus par page</b>. Pas de rafraîchissement automatique.</li>
    <li>Si aucune annonce ne convient au visiteur (pays, langue, catégories que tu acceptes…), l'emplacement reste vide : rien n'est compté, rien n'est payé.</li>
    <li>Si ton site a une politique de sécurité de contenu (CSP) : autorise <code>script-src https://afrolookmedia.com</code>, <code>connect-src ${esc(new URL(A).origin)}</code> et <code>img-src ${esc(process.env.MEDIA_BASE || "https://cdn.afrolookmedia.com")}</code>.</li>
    <li>Visiteurs avec « Ne pas suivre » : l'annonce s'affiche, mais ni la vue ni le clic ne sont enregistrés.</li>
   </ul>
-  <p>Pour afficher plusieurs emplacements, ajoute plusieurs balises <code>&lt;ins class="afl-ad"&gt;</code> (un seul <code>&lt;script&gt;</code> suffit). Les formats vidéo, carrousel, interstitiel et récompensée passent aujourd'hui par l'API (section 4).</p>
+  <p>Pour afficher plusieurs emplacements, ajoute plusieurs balises <code>&lt;ins class="afl-ad"&gt;</code> (un seul <code>&lt;script&gt;</code> suffit). Tous les formats passent par la balise ; l'API (section 4) sert aux applications.</p>
  </section>
 
  <section class="doc-s" id="flutter"><h2>3. Application (composant Flutter prêt à l'emploi)</h2>

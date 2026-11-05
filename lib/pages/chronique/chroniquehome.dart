@@ -384,7 +384,7 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> with SingleTicker
           const SizedBox(width: 8),
           Expanded(child: Column(children: right)),
         ]),
-        if (showAd) AdSlot(key: ValueKey('chroniques_ad_$index'), kind: AdSlotKind.list, own: () => const AfrolookInlineAd()),
+        if (showAd) AdSlot(key: ValueKey('chroniques_ad_$index'), kind: AdSlotKind.list, own: () => const AfrolookInlineAd(compact: true)),
       ]),
     );
   }

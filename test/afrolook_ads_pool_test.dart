@@ -29,6 +29,19 @@ void main() {
     expect(post.images, ['https://cdn.test/a.jpg']);
   });
 
+  test('annonce typée du site : le type, le prix du produit et le bouton du type passent jusqu’à la carte', () {
+    final it = _web()..['ad_type'] = 'product'..['price'] = 12500..['cta'] = 'Acheter';
+    final ad = Advertisement.fromJson(Map<String, dynamic>.from(AfrolookAdsPool.toLegacy(it)!['ad'] as Map));
+    expect(ad.adType, 'product');
+    expect(ad.productPrice, 12500);
+    expect(ad.actionType, 'buy');
+    expect(ad.actionButtonText, 'Acheter');
+    final old = Advertisement.fromJson(Map<String, dynamic>.from(AfrolookAdsPool.toLegacy(_web())!['ad'] as Map));   // ancienne annonce : sans type ni prix
+    expect(old.adType, isNull);
+    expect(old.productPrice, isNull);
+    expect(old.actionType, 'visit');
+  });
+
   test('annonce vidéo : la publication est de type vidéo', () {
     final it = _web()..['media'] = {'type': 'video', 'url': 'https://cdn.test/v.mp4', 'thumb': 'https://cdn.test/t.jpg', 'duration': 12, 'images': <String>[]};
     final post = Post.fromJson(Map<String, dynamic>.from(AfrolookAdsPool.toLegacy(it)!['post'] as Map));

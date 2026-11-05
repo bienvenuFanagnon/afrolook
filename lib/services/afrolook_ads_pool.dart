@@ -40,6 +40,11 @@ class AfrolookAdsPool {
   /// Stock récent (moins de 30 minutes) : pas besoin de le redemander.
   bool get isFresh => _fetchedAt != null && DateTime.now().difference(_fetchedAt!) < refreshAfter;
 
+  /// Retire une annonce du stock (le serveur ne peut plus la compter pour cette personne) ; elle reviendra au prochain chargement si elle redevient éligible.
+  void drop(String adId) {
+    _ads = _ads.where((e) => '${(e['ad'] as Map?)?['id']}' != adId).toList();
+  }
+
   /// Oublie le stock (changement de compte, déconnexion).
   Future<void> clear() async {
     _ads = const [];
@@ -142,6 +147,8 @@ class AfrolookAdsPool {
     final thumb = '${media['thumb'] ?? ''}';
     final isVideo = media['type'] == 'video';
     final owner = it['owner'] is Map ? Map<String, dynamic>.from(it['owner'] as Map) : <String, dynamic>{};
+    // annonce du site Afrolook Ads : la MARQUE de l'annonceur (nom, logo, secteur, ville), jamais un profil
+    final brand = it['brand'] is Map ? Map<String, dynamic>.from(it['brand'] as Map) : <String, dynamic>{};
     final cta = '${it['cta'] ?? ''}'.trim();
     final url = '${it['action_url'] ?? ''}'.trim();
     final text = '${it['text'] ?? ''}'.trim();
@@ -162,7 +169,7 @@ class AfrolookAdsPool {
       id: id,
       postId: isPostBoost ? '${it['post_id'] ?? ''}' : null,
       description: text.isNotEmpty ? text : title,
-      actionType: url.isEmpty ? null : 'visit',
+      actionType: url.isEmpty ? null : (const {'product': 'buy', 'app': 'download', 'whatsapp': 'whatsapp', 'call': 'call', 'social': 'follow', 'event': 'book'}['${it['ad_type'] ?? ''}'] ?? 'visit'),
       actionUrl: url.isEmpty ? null : url,
       actionButtonText: cta.isNotEmpty ? cta : (url.isEmpty ? null : 'En savoir plus'),
       status: 'active',
@@ -172,9 +179,16 @@ class AfrolookAdsPool {
       updatedAt: now,
       ownerType: isEntity ? entityType : (isPostBoost && owner.isNotEmpty ? 'user' : null),
       ownerId: isEntity ? '${it['target_id'] ?? ''}' : (isPostBoost && owner.isNotEmpty ? '${owner['id'] ?? ''}' : null),
-      ownerName: isEntity ? title : (isPostBoost && owner.isNotEmpty ? '${owner['name'] ?? ''}' : null),
-      ownerAvatar: isEntity ? firstImage : (isPostBoost && owner.isNotEmpty ? '${owner['avatar'] ?? ''}' : null),
+      ownerName: isEntity ? title : (isPostBoost && owner.isNotEmpty ? '${owner['name'] ?? ''}' : (brand['name'] != null ? '${brand['name']}' : null)),
+      ownerAvatar: isEntity ? firstImage : (isPostBoost && owner.isNotEmpty ? '${owner['avatar'] ?? ''}' : (brand['logo'] != null ? '${brand['logo']}' : null)),
       ownerDescription: isEntity && text.isNotEmpty ? text : null,
+      ownerFollowers: (owner['followers'] as num?)?.toInt(),
+      adTitle: title.isNotEmpty ? title : null,
+      brandSector: brand['sector'] != null ? '${brand['sector']}' : null,
+      brandCity: brand['city'] != null ? '${brand['city']}' : null,
+      adType: it['ad_type'] != null && '${it['ad_type']}'.isNotEmpty ? '${it['ad_type']}' : null,
+      productPrice: (it['price'] as num?)?.toInt(),
+      videoSeconds: (media['duration'] as num?)?.toInt(),
     );
 
     Map<String, dynamic>? post;

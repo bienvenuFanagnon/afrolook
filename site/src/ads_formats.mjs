@@ -45,7 +45,7 @@ const FORMATS = [
 
 export function formatsSection() {
   return `<section class="adsec soft fmts" id="formats" data-dev="phone"><div class="wrap"><span class="kicker">Les formats</span><h2 class="h2">Le format qui te ressemble, sur téléphone et sur ordinateur.</h2>
-<p class="sub">Neuf formats, tous reproduits ici tels que le visiteur les voit. Chaque annonce a un bouton d'action : <b>Visiter le site</b>, <b>Télécharger</b>, <b>En savoir plus</b>, <b>WhatsApp</b> ou <b>Appeler</b>. Un seul visuel suffit : il s'adapte à chaque format.</p>
+<p class="sub">Neuf formats, tous reproduits ici tels que le visiteur les voit. Chaque annonce a le bouton de son type : <b>Acheter</b>, <b>Visiter le site</b>, <b>Installer</b>, <b>Écrire sur WhatsApp</b>, <b>Appeler</b>, <b>Suivre la page</b> ou <b>Réserver</b>. Un seul visuel suffit : il s'adapte à chaque format.</p>
 <div class="fmt-tabs" role="tablist" aria-label="Appareil"><button type="button" class="on" data-dev="phone" role="tab">📱 Sur téléphone et application</button><button type="button" data-dev="desk" role="tab">💻 Sur ordinateur et sites</button></div>
 <div class="fmgrid">${FORMATS.map((f) => `<article class="fmc"><div class="mk2"><div class="dvmock p">${f.ph}</div><div class="dvmock d">${f.dk}</div></div>
  <h3>${f.n}</h3><div class="fmchips"><span class="${f.free ? 'g' : 'r'}">${f.free ? 'Offre gratuite et Réseau' : 'Offre Réseau'}</span><span>${f.where}</span></div><p>${f.p}</p></article>`).join('')}</div>

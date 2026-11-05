@@ -1,0 +1,151 @@
+<title>Pubs dans l'application</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=Source+Sans+3:wght@400;600;700;800&display=swap">
+<style>
+  /* Mise en page : une grille de huit téléphones (les cartes A à H), chacun avec sa légende ; les écrans de téléphone gardent leur propre palette claire */
+  :root {
+    --bg: #E4EAE5; --surface: #FFFFFF; --fg: #14201A; --muted: #55625A; --line: #D3DCD5; --vert-deep: #0B5A33;
+    --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif; --font-body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+    /* intérieur des téléphones : représente l'application, identique dans les deux thèmes */
+    --ph-fond: #EEF1EE; --ph-carte: #FFFFFF; --ph-ligne: #E3E8E4; --ph-barre: #F6F8F6; --ph-texte: #14201A; --ph-gris: #6B766F; --ph-jaune: #FFC400; --ph-sur-jaune: #20260F; --ph-vert: #0F7B43; --ph-cadre: #101513;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg: #0E1612; --surface: #16211B; --fg: #E8F0EA; --muted: #9DAEA3; --line: #2A3A31; --vert-deep: #7FE0AB; color-scheme: dark; } }
+  :root[data-theme="dark"] { --bg: #0E1612; --surface: #16211B; --fg: #E8F0EA; --muted: #9DAEA3; --line: #2A3A31; --vert-deep: #7FE0AB; color-scheme: dark; }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 16px; line-height: 1.45;
+    padding-block: 28px 60px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .page { max-width: 1480px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px; }
+  h1 { font-family: var(--font-display); font-size: clamp(28px, 5vw, 40px); margin: 0; font-weight: 800; line-height: 1.1; text-wrap: balance; }
+  .lead { color: var(--muted); font-size: 18px; max-width: 75ch; margin: 8px 0 0; }
+  .grille { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 32px 28px; }
+  .bloc { min-width: 0; display: flex; flex-direction: column; align-items: center; }
+  .bloc h2 { font-family: var(--font-display); font-size: 19px; margin: 0 0 4px; align-self: flex-start; text-wrap: balance; }
+  .bloc p.n { font-size: 14px; color: var(--muted); margin: 0 0 12px; align-self: flex-start; max-width: 340px; min-height: 60px; }
+  .tel { width: 100%; max-width: 340px; background: var(--ph-fond); color: var(--ph-texte); border-radius: 30px; border: 8px solid var(--ph-cadre); overflow: hidden; height: 640px; position: relative; font-size: 14px; }
+  .barre { height: 46px; background: var(--ph-carte); display: flex; align-items: center; gap: 10px; padding: 0 14px; font-weight: 800; font-size: 17px; border-bottom: 1px solid var(--ph-ligne); }
+  .zone { padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+  .post { background: var(--ph-carte); border-radius: 14px; border: 1px solid var(--ph-ligne); overflow: hidden; }
+  .post.vide { height: 70px; opacity: .55; display: flex; align-items: center; padding: 10px; gap: 10px; }
+  .tete { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+  .logo { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 800; flex: none; }
+  .nom { font-weight: 800; font-size: 15px; line-height: 1.1; } .spons { font-size: 12px; color: var(--ph-gris); display: flex; gap: 6px; align-items: center; margin-top: 2px; }
+  .tag { background: #F1F3F1; border: 1px solid var(--ph-ligne); border-radius: 6px; padding: 0 6px; font-size: 11px; font-weight: 800; color: #445; }
+  .plus { margin-left: auto; font-size: 20px; color: var(--ph-gris); letter-spacing: 2px; }
+  .media { position: relative; background: linear-gradient(135deg, #f6b26b, #c2410c); display: grid; place-items: center; color: #fff; font-weight: 800; text-align: center; }
+  .m11 { aspect-ratio: 1 / 1; } .m45 { aspect-ratio: 4 / 5; } .m169 { aspect-ratio: 16 / 9; }
+  .cta { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--ph-barre); border-top: 1px solid var(--ph-ligne); }
+  .cta .dom { font-size: 12px; color: var(--ph-gris); line-height: 1.2; } .cta .tit { font-size: 14px; font-weight: 800; line-height: 1.15; }
+  .btn { margin-left: auto; background: var(--ph-jaune); color: var(--ph-sur-jaune); font-weight: 800; font-size: 14px; border-radius: 10px; padding: 9px 14px; white-space: nowrap; }
+  .btn.grand { display: block; text-align: center; font-size: 17px; padding: 14px; border-radius: 14px; }
+  .btn.vert { background: var(--ph-vert); color: #fff; }
+  .legende { padding: 8px 12px 12px; font-size: 14px; line-height: 1.35; }
+  .lecture { position: absolute; bottom: 10px; left: 10px; background: rgba(0,0,0,.55); color: #fff; border-radius: 12px; padding: 3px 9px; font-size: 12px; }
+  .son { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,.55); color: #fff; border-radius: 50%; width: 30px; height: 30px; display: grid; place-items: center; font-size: 14px; }
+  .play { width: 58px; height: 58px; border-radius: 50%; background: rgba(0,0,0,.5); display: grid; place-items: center; font-size: 26px; }
+  .prog { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(255,255,255,.35); } .prog i { display: block; height: 100%; width: 38%; background: var(--ph-jaune); }
+  .compact { display: flex; gap: 10px; padding: 10px; align-items: center; }
+  .compact .vig { width: 64px; height: 64px; border-radius: 10px; flex: none; background: linear-gradient(135deg, #8fb8f0, #1d4ed8); }
+  .compact .t { font-size: 14px; font-weight: 800; line-height: 1.2; }
+  .mini { display: inline-block; margin-top: 6px; background: var(--ph-jaune); color: var(--ph-sur-jaune); font-weight: 800; font-size: 12px; border-radius: 8px; padding: 5px 10px; }
+  .fixe { position: absolute; left: 0; right: 0; bottom: 0; background: var(--ph-carte); border-top: 1px solid var(--ph-ligne); padding: 10px 12px 14px; }
+  .ligne2 { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--ph-gris); }
+  .regles { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px 22px; }
+  .regles h2 { font-family: var(--font-display); font-size: 20px; margin: 0 0 6px; color: var(--vert-deep); }
+  .regles ul { margin: 6px 0 0 20px; padding: 0; } .regles li { margin: 5px 0; }
+</style>
+
+<main class="page">
+  <header>
+    <h1>Les pubs dans l'application : proposition à valider</h1>
+    <p class="lead">Même logique partout : le visuel d'abord (image ou vidéo comme sur Instagram), le nom de l'annonceur au lieu d'un faux profil, « Sponsorisé » bien visible et un bouton d'action clair sur chaque annonce. Un toucher sur le visuel ouvre la page de détails, un toucher sur le bouton ouvre directement le site ou la boutique d'applications.</p>
+  </header>
+
+  <div class="grille">
+    <div class="bloc"><h2>A · Fil, annonce image</h2><p class="n">Annonce venue du site Afrolook Ads, sans compte Afrolook : pas de profil, pas de « Suivre », la marque et son logo.</p>
+      <div class="tel"><div class="barre">Pour toi</div><div class="zone">
+        <div class="post vide"><div class="logo" style="background:#bbb;width:28px;height:28px"></div><div>Publication d'un membre…</div></div>
+        <div class="post">
+          <div class="tete"><div class="logo" style="background:#C2410C">A</div><div><div class="nom">Boutique Awa</div><div class="spons"><span class="tag">Sponsorisé</span> · Lomé</div></div><div class="plus">⋯</div></div>
+          <div class="media m11" style="font-size:28px">Pagnes wax<br>nouvelle collection</div>
+          <div class="cta"><div><div class="dom">boutique-awa.com</div><div class="tit">Livraison en Afrique de l'Ouest</div></div><div class="btn">Visiter le site</div></div>
+          <div class="legende"><b>Boutique Awa</b> Paiement Mobile Money accepté. Commandez en 2 minutes.</div>
+        </div>
+      </div></div></div>
+
+    <div class="bloc"><h2>B · Fil, annonce vidéo</h2><p class="n">Lecture automatique et muette quand elle est visible, haut-parleur pour le son, barre de progression. Le bouton suit l'objectif : Installer, Visiter, Écrire.</p>
+      <div class="tel"><div class="barre">Pour toi</div><div class="zone">
+        <div class="post">
+          <div class="tete"><div class="logo" style="background:#1D4ED8">K</div><div><div class="nom">Kéké Pay</div><div class="spons"><span class="tag">Sponsorisé</span> · Application</div></div><div class="plus">⋯</div></div>
+          <div class="media m45" style="background:linear-gradient(160deg,#1d4ed8,#0b1b4d)"><div class="play">▶</div><div class="lecture">0:12</div><div class="son">🔇</div><div class="prog"><i></i></div></div>
+          <div class="cta"><div><div class="dom">Google Play · App Store</div><div class="tit">Envoie de l'argent sans frais</div></div><div class="btn">Installer</div></div>
+        </div>
+      </div></div></div>
+
+    <div class="bloc"><h2>C · Page de détails</h2><p class="n">Ouverte au toucher sur le visuel. Un bouton d'action toujours visible en bas pour aller sur le site ou l'application. Aucun profil à ouvrir.</p>
+      <div class="tel"><div class="barre">← Annonce <span style="margin-left:auto" class="plus">⋯</span></div>
+        <div class="media m11" style="font-size:28px">Pagnes wax<br>nouvelle collection</div>
+        <div style="padding:12px 14px; background:var(--ph-carte); height:300px">
+          <div style="display:flex; gap:10px; align-items:center"><div class="logo" style="background:#C2410C">A</div><div><div class="nom" style="font-size:17px">Boutique Awa</div><div class="spons"><span class="tag">Sponsorisé</span> · boutique-awa.com</div></div></div>
+          <div style="font-size:19px; font-weight:800; margin-top:12px">Pagnes wax : nouvelle collection</div>
+          <div style="font-size:15px; color:#33403a; margin-top:6px; line-height:1.4">Livraison dans toute l'Afrique de l'Ouest. Paiement Mobile Money accepté.</div>
+          <div class="ligne2" style="margin-top:14px">ⓘ Pourquoi cette annonce ? · ⚑ Signaler</div>
+        </div>
+        <div class="fixe"><div class="btn grand">Visiter le site</div></div>
+      </div></div>
+
+    <div class="bloc"><h2>D · Boost d'une publication d'un membre</h2><p class="n">Ici le profil existe : on garde l'avatar, le pseudo et « Suivre ». Bouton « Voir la publication ».</p>
+      <div class="tel"><div class="barre">Pour toi</div><div class="zone">
+        <div class="post">
+          <div class="tete"><div class="logo" style="background:#0F7B43">B</div><div><div class="nom">@bienvenu</div><div class="spons"><span class="tag">Sponsorisé</span> · 2 345 abonnés</div></div><div class="btn" style="font-size:13px">Suivre</div></div>
+          <div class="media m11" style="background:linear-gradient(135deg,#17A05A,#0B5A33); font-size:26px">Ma nouvelle vidéo</div>
+          <div class="cta"><div class="tit">Voir la publication</div><div class="btn">Ouvrir</div></div>
+        </div>
+      </div></div></div>
+
+    <div class="bloc"><h2>E · Petites annonces</h2><p class="n">Commentaires, listes, conversations, groupes : vignette, marque, une ligne « Sponsorisé · secteur » et un petit bouton. Le toucher ouvre la page de détails.</p>
+      <div class="tel"><div class="barre">Commentaires</div><div class="zone">
+        <div class="post compact"><div class="logo" style="background:#bbb;width:30px;height:30px"></div><div>Super vidéo !</div></div>
+        <div class="post compact"><div class="vig"></div><div><div class="t">Lomé Digital</div><div class="spons"><span class="tag">Sponsorisé</span> Téléphones · Accessoires</div><span class="mini">Visiter</span></div></div>
+        <div class="post compact"><div class="logo" style="background:#bbb;width:30px;height:30px"></div><div>Merci pour le partage</div></div>
+        <div class="post compact"><div class="vig" style="background:linear-gradient(135deg,#c9a0ea,#7e22ce)"></div><div><div class="t">Chez Kéké</div><div class="spons"><span class="tag">Sponsorisé</span> Restaurant · Lomé</div><span class="mini">Appeler</span></div></div>
+      </div></div></div>
+
+    <div class="bloc"><h2>F · Bannières</h2><p class="n">Détail d'une publication, musique, groupes. Étiquette « Annonce » sur le visuel, titre et bouton dessous.</p>
+      <div class="tel"><div class="barre">Publication</div>
+        <div class="media m169" style="background:linear-gradient(135deg,#bbb,#888)">Publication</div>
+        <div style="padding:10px"><div class="post"><div style="position:relative"><div class="media" style="height:120px;background:linear-gradient(120deg,#0F7B43,#17A05A); font-size:22px; justify-content:flex-start; padding-left:16px">Lomé Digital</div><span class="tag" style="position:absolute;top:8px;right:8px">Annonce</span></div><div class="cta"><div class="tit">Nouveaux téléphones</div><div class="btn">Visiter</div></div></div></div>
+      </div></div>
+
+    <div class="bloc"><h2>G · Annonce à plusieurs images</h2><p class="n">Comme un carrousel Instagram : on glisse, des points en bas, le même bouton sur toutes les images.</p>
+      <div class="tel"><div class="barre">Pour toi</div><div class="zone">
+        <div class="post">
+          <div class="tete"><div class="logo" style="background:#7E22CE">D</div><div><div class="nom">Lomé Digital</div><div class="spons"><span class="tag">Sponsorisé</span></div></div><div class="plus">⋯</div></div>
+          <div class="media m11" style="background:linear-gradient(135deg,#7e22ce,#3b0f66); font-size:26px">Téléphone<div class="lecture" style="left:auto;right:10px;top:10px;bottom:auto">1/3</div></div>
+          <div style="text-align:center; padding:8px; font-size:18px; letter-spacing:4px; color:var(--ph-vert)">● ○ ○</div>
+          <div class="cta"><div><div class="dom">lome-digital.com</div><div class="tit">Voir tous les modèles</div></div><div class="btn">Découvrir</div></div>
+        </div>
+      </div></div></div>
+
+    <div class="bloc"><h2>H · Boost d'un profil, d'un canal ou d'un groupe</h2><p class="n">Carte avec grand avatar, nombre d'abonnés ou de membres et bouton vert. Réservé aux comptes qui existent dans Afrolook.</p>
+      <div class="tel"><div class="barre">Pour toi</div><div class="zone">
+        <div class="post" style="padding:16px; text-align:center">
+          <div class="spons" style="justify-content:center"><span class="tag">Sponsorisé</span></div>
+          <div class="logo" style="background:#0F7B43; width:84px; height:84px; margin:14px auto 8px; font-size:30px">AF</div>
+          <div class="nom" style="font-size:19px">Afro Mode</div><div style="font-size:14px; color:var(--ph-gris); margin-top:4px">Canal · 12 480 abonnés</div>
+          <div class="btn grand vert" style="margin-top:16px">Rejoindre le canal</div>
+        </div>
+      </div></div></div>
+  </div>
+
+  <section class="regles">
+    <h2>Règles communes</h2>
+    <ul>
+      <li><b>Nom d'annonceur :</b> la marque et le logo saisis sur le site Afrolook Ads. Jamais de profil, de pseudo ni de bouton « Suivre » pour une annonce venue du site, parce que l'annonceur n'a pas de compte Afrolook.</li>
+      <li><b>Un bouton d'action sur chaque annonce :</b> Visiter le site, Installer, Appeler, Écrire sur WhatsApp, En savoir plus, selon ce que l'annonceur a choisi. Sans lien, pas de bouton vide.</li>
+      <li><b>Image ou vidéo :</b> image 1:1 ou 4:5, vidéo lue en muet quand elle est visible, son au toucher, une seule vidéo à la fois.</li>
+      <li><b>Comptage :</b> une vue est une pub visible à moitié pendant 1 seconde. Un clic est un toucher sur le bouton ou sur le visuel, compté une fois par personne, annonce et jour.</li>
+      <li><b>Sous chaque pub :</b> menu « ⋯ » avec « Pourquoi cette annonce ? » et « Signaler ».</li>
+    </ul>
+  </section>
+</main>

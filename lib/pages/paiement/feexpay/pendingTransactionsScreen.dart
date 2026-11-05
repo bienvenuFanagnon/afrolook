@@ -93,8 +93,7 @@ class _PendingTransactionsScreenState extends State<PendingTransactionsScreen>
   }
 
   Widget _buildPendingDepositsList() {
-    // Liste des dépôts en cours de la personne. Point d'accès prévu : GET /payments/deposits?status= (absent pour l'instant,
-    // voir lacunes_api_argent_creations.md) : en cas d'erreur, « Réessayer ».
+    // Liste des dépôts en cours de la personne : GET /payments/deposits?status=open (ajouté à l'API le 05/11) ; en cas d'erreur, « Réessayer ».
     return FutureBuilder<List<Map<String, dynamic>>>(
       key: ValueKey(_reload),
       future: ApiGateway.instance.client.get('/payments/deposits', query: {'status': 'open'}).then(WalletApi.list),

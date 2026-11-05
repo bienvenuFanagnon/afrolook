@@ -423,22 +423,35 @@ async function initSpace() {
 
   // formulaire : choix, aperçu en direct
   const wal = { data: null, per1000: 500 }; // prix de 1 000 personnes : valeur du serveur (adsWalletMe), 500 F tant qu'elle n'est pas chargée
-  const st = { kind: 'entreprise', action: 'visit', countries: new Set(['ALL']), langs: new Set(), devs: new Set(), types: new Set(), files: [], isVideo: false, open: true, left: 3 };
-  const pick = (box, cb) => $$('label,span', $(box)).forEach((el) => el.addEventListener('click', () => { cb(el.dataset.v, el); }));
-  const single = (box, key, after) => pick(box, (v, el) => { st[key] = v; $$('label', $(box)).forEach((l) => l.classList.toggle('on', l === el)); after && after(); });
-  single('#f-kind', 'kind');
-  const labels = { visit: 'Visiter', download: 'Télécharger', learn_more: 'En savoir plus', whatsapp: 'WhatsApp', call: 'Appeler' };
-  const tel = () => st.action === 'whatsapp' || st.action === 'call';
+  const nf = (v) => Number(v).toLocaleString('fr-FR');
+  // les 7 types d'annonce : le type fixe le bouton (jamais de texte libre qui trompe), la destination attendue et, pour un produit, le prix
+  const TYPES = {
+    product: { action: 'buy', label: 'Acheter', dest: 'link', kind: 'projet', price: true, ph: 'https://tonsite.com/produit', hint: 'Colle le lien de la page du produit (pas la page d\u2019accueil). Le prix indiqué doit être celui de cette page.' },
+    site: { action: 'visit', label: 'Visiter le site', dest: 'link', kind: 'site', ph: 'https://tonsite.com', hint: 'Lien complet de ta boutique ou de ton site, en https://. Les liens raccourcis (bit.ly…) et les téléchargements directs ne sont pas acceptés.' },
+    app: { action: 'download', label: 'Installer', dest: 'link', kind: 'app', ph: 'https://play.google.com/store/apps/details?id=…', hint: 'Lien de ton application sur Google Play ou l\u2019App Store.' },
+    whatsapp: { action: 'whatsapp', label: 'Écrire sur WhatsApp', dest: 'phone', kind: 'entreprise', ph: '+228 90 00 00 00', hint: 'Le numéro WhatsApp avec l\u2019indicatif du pays : la discussion s\u2019ouvre en un geste.' },
+    call: { action: 'call', label: 'Appeler', dest: 'phone', kind: 'entreprise', ph: '+228 90 00 00 00', hint: 'Le numéro à appeler, avec l\u2019indicatif du pays.' },
+    social: { action: 'follow', label: 'Suivre la page', dest: 'link', kind: 'projet', ph: 'https://www.facebook.com/tapage', hint: 'Le lien de ta page Facebook, Instagram, TikTok, YouTube ou Telegram.' },
+    event: { action: 'book', label: 'Réserver', dest: 'link', kind: 'projet', ph: 'https://tonsite.com/evenement', hint: 'Le lien de la page où l\u2019on réserve ou s\u2019inscrit à ton événement.' },
+  };
+  const st = { type: 'site', kind: 'site', action: 'visit', countries: new Set(['ALL']), langs: new Set(), devs: new Set(), types: new Set(), files: [], isVideo: false, open: true, left: 3 };
+  const tel = () => TYPES[st.type].dest === 'phone';
   const refresh = () => {
-    const l = $('#f-link'); l.placeholder = tel() ? '+228 90 00 00 00' : 'https://tonsite.com'; l.inputMode = tel() ? 'tel' : 'url';
-    $('#f-link-l').firstChild.textContent = tel() ? 'Numéro de téléphone, avec l\'indicatif ' : 'Lien du bouton';
-    $('#pv-btn').textContent = labels[st.action];
+    const T = TYPES[st.type], l = $('#f-link'); l.placeholder = T.ph; l.inputMode = tel() ? 'tel' : 'url';
+    $('#f-link-l').firstChild.textContent = tel() ? 'Numéro de téléphone, avec l\'indicatif ' : (st.type === 'social' ? 'Lien de ta page ' : st.type === 'app' ? 'Lien de l\u2019application ' : 'Lien du bouton');
+    $('#f-price-l').hidden = !T.price; $('#f-link-hint').textContent = T.hint;
+    $('#f-btn-note').innerHTML = 'Le bouton de ton annonce sera <b>' + T.label + '</b>.';
+    $('#pv-btn').textContent = T.label;
     $('#pv-name').textContent = $('#f-title').value.trim() || 'Ton entreprise';
     $('#pv-av').textContent = ($('#f-title').value.trim() || 'A').charAt(0).toUpperCase();
     $('#pv-text').textContent = $('#f-text').value.trim() || 'Ton texte apparaîtra ici.';
-    $('#pv-link').textContent = ($('#f-link').value.trim() || '').replace(/^https?:\/\//, '').slice(0, 28);
+    const pr = TYPES[st.type].price && Number($('#f-price').value) >= 1 ? nf(Number($('#f-price').value)) + ' F · ' : '';
+    $('#pv-link').textContent = pr + ($('#f-link').value.trim() || '').replace(/^https?:\/\//, '').slice(0, 28);
   };
-  single('#f-action', 'action', refresh);
+  $$('#f-type label').forEach((el) => el.addEventListener('click', () => {
+    st.type = el.dataset.v; st.action = TYPES[st.type].action; st.kind = TYPES[st.type].kind;
+    $$('#f-type label').forEach((x) => x.classList.toggle('on', x === el)); $('#f-link').value = ''; refresh();
+  }));
   const pickCountry = (v) => {
     if (v === 'ALL') st.countries = new Set(['ALL']); else { st.countries.delete('ALL'); st.countries.has(v) ? st.countries.delete(v) : st.countries.add(v); if (!st.countries.size) st.countries.add('ALL'); }
     $$('#f-countries span').forEach((x) => x.classList.toggle('on', st.countries.has(x.dataset.v)));
@@ -452,7 +465,7 @@ async function initSpace() {
     $('#f-countries').append(h('span', { 'data-v': c, text: countryName(c), onclick: () => pickCountry(c) }));
     const o = moreC.querySelector(`option[value="${c}"]`); if (o) o.remove(); moreC.value = ''; pickCountry(c);
   });
-  ['#f-title', '#f-text', '#f-link'].forEach((s) => $(s).addEventListener('input', refresh));
+  ['#f-title', '#f-text', '#f-link', '#f-price'].forEach((s) => $(s).addEventListener('input', refresh));
   // ciblage facultatif (langues, appareils, types de sites) et note sur les catégories sensibles
   const chips = (box, set) => $$(box + ' span').forEach((c) => c.addEventListener('click', () => { const v = c.dataset.v; set.has(v) ? set.delete(v) : set.add(v); c.classList.toggle('on', set.has(v)); }));
   chips('#f-langs', st.langs); chips('#f-devs', st.devs); chips('#f-types', st.types);
@@ -509,43 +522,81 @@ async function initSpace() {
     } catch { bad('Image illisible.'); }
   }));
 
-  // mode : annonce affichée (gratuite) ou campagne Partage (payante, à l'audience)
-  st.mode = 'ads';
-  const nf = (v) => Number(v).toLocaleString('fr-FR');
-  const refreshMode = () => {
-    const share = st.mode === 'share', a = Number($('#f-aud').value) || 0;
-    $$('[data-adsonly]').forEach((e) => { e.hidden = share; });
-    $$('[data-shareonly]').forEach((e) => { e.hidden = !share; });
-    // étapes numérotées dans l'ordre des étapes visibles ; l'étape « durée » devient « pays visés » en mode partage
-    const h4 = $('#f-countries').closest('.adfs').querySelector('h3'); if (h4 && h4.lastChild) h4.lastChild.textContent = share ? ' Pays visés' : ' Durée et audience';
-    $('#f-share').hidden = !share;
-    const net = $('#f-net').checked;   // Offre Réseau (payante) cochée par défaut : on la décoche pour utiliser l'offre gratuite
-    $('#f-net-note').innerHTML = net ? 'Cette case est cochée : ton annonce sera une <b>demande d\u2019offre Réseau payante</b>. Notre équipe te communique le tarif avant la mise en ligne. <b>Décoche la case pour publier gratuitement</b> sur Afrolook, SlashAtlas, Pronoflash et Épargne+ (une seule annonce gratuite de 14 jours, non renouvelable).' : '<b>Offre gratuite</b> : ton annonce sera affichée sur Afrolook, SlashAtlas, Pronoflash et Épargne+ seulement (une seule annonce gratuite de 14 jours, non renouvelable).';
-    $('#f-sub-t').textContent = share ? (IS_ADMIN ? 'Offert par l’équipe' : nf(Math.round((a / 1000) * wal.per1000)) + ' F') : (net ? 'Offre Réseau (payante)' : 'Gratuit');
-    $('#f-send').textContent = share ? (IS_ADMIN ? 'Lancer la campagne' : 'Envoyer la campagne') : (net ? 'Envoyer ma demande' : 'Envoyer pour validation');
-    $('#f-quota').textContent = share ? (IS_ADMIN ? 'Campagne de l’équipe : aucun paiement' : 'Payée avec ton solde annonceur · démarre après validation par notre équipe') : (net ? 'Notre équipe te communique le tarif avant la mise en ligne' : 'Validation par notre équipe avant diffusion');
-    if (!share && st.mine) $('#f-send').disabled = !net && !(st.open && st.left);   // plus de place gratuite : seule la demande d'offre Réseau reste possible
-    $('#f-aud-price').textContent = IS_ADMIN ? 'Offert par l’équipe : aucun paiement' : nf(Math.round((a / 1000) * wal.per1000)) + ' F pour ' + nf(a) + ' personnes';
-    $('#f-sbrand-l').hidden = !(share && IS_ADMIN);
-    $('#f-aud-note').textContent = IS_ADMIN ? '' : 'Débité de ton solde annonceur' + (wal.data ? ' (solde actuel : ' + nf(wal.data.balanceXof) + ' F)' : '') + '. Si notre équipe refuse ta campagne, tu es remboursé sur ton solde.';
-    $$('#adform .adfs').filter((e) => !e.hidden).forEach((e, n) => { const i = e.querySelector('h3 > i'); if (i) i.textContent = String(n); });
-    // solde insuffisant : on le dit tout de suite, avec le bouton pour recharger (la campagne se paie avec le solde, jamais par un paiement direct)
-    const price = Math.round((a / 1000) * wal.per1000), bal = wal.data ? wal.data.balanceXof : 0, lack = price - bal, need = $('#f-need');
-    if (need) {
-      need.hidden = !(share && !IS_ADMIN && wal.data && a >= 1000 && lack > 0);
-      need.dataset.lack = String(Math.max(0, lack));
-      $('#f-need-t').textContent = 'Cette campagne coûte ' + nf(price) + ' F et ton solde est de ' + nf(bal) + ' F : il te manque ' + nf(Math.max(0, lack)) + ' F. Recharge ton solde, puis envoie ta campagne.';
-    }
+  // diffusion : trois options cumulables (dans Afrolook, chez les partenaires, partage au clic), chacune avec son budget payé depuis le solde annonceur ; sans option, l'annonce est gratuite
+  const NATIVE_CPM = 1500;   // prix pour 1 000 vues d'une carte native : sert seulement à l'estimation affichée
+  const opt = (k) => ({ on: $('#o-' + k + '-on').checked, v: Math.round(Number($('#o-' + k + '-v').value) || 0) });
+  const diffusion = () => {
+    const app = opt('app'), net = opt('net'), sh = opt('share'), sharePrice = sh.on ? Math.round((sh.v / 1000) * wal.per1000) : 0;
+    const teamShare = IS_ADMIN && sh.on && !app.on && !net.on;   // l'équipe lance une campagne offerte, sans solde
+    return { app, net, sh, sharePrice, teamShare, total: (app.on ? app.v : 0) + (net.on ? net.v : 0) + sharePrice, paid: app.on || net.on || sh.on };
   };
-  $('#f-net').addEventListener('change', () => refreshMode());
-  $$('#f-mode label').forEach((l) => l.addEventListener('click', () => { st.mode = l.dataset.v; $$('#f-mode label').forEach((x) => x.classList.toggle('on', x === l)); refreshMode(); }));
-  $('#f-aud').addEventListener('input', refreshMode);
+  const refreshMode = () => {
+    const d = diffusion(), bal = wal.data ? wal.data.balanceXof : 0;
+    $('#f-bal').textContent = wal.data ? ' (solde actuel : ' + nf(bal) + ' F)' : '';
+    $('#o-app-e').textContent = d.app.on ? '≈ ' + nf(Math.round((d.app.v / NATIVE_CPM) * 1000)) + ' affichages mesurés avec une carte native (davantage avec une bannière, moins avec une vidéo)' : '';
+    $('#o-net-e').textContent = d.net.on ? '≈ ' + nf(Math.round((d.net.v / NATIVE_CPM) * 1000)) + ' affichages mesurés avec une carte native (davantage avec une bannière, moins avec une vidéo)' : '';
+    $('#o-share-e').textContent = d.sh.on ? (d.teamShare ? 'Offert par l’équipe : aucun paiement' : nf(d.sharePrice) + ' F pour ' + nf(d.sh.v) + ' personnes à atteindre') : '';
+    $$('[data-shareonly]').forEach((e) => { e.hidden = !d.sh.on; });
+    $('#f-sbrand-l').hidden = !d.teamShare;
+    $('#f-days-l').hidden = !(d.app.on || d.net.on);
+    $('#pv-note').innerHTML = !d.paid ? 'Ton annonce sera diffusée sur <b>Afrolook</b>, <b>SlashAtlas</b>, <b>Pronoflash</b> et <b>Épargne+</b> après validation.'
+      : 'Ton annonce sera diffusée ' + [d.app.on ? 'dans <b>Afrolook</b>' : '', d.net.on ? 'chez nos <b>sites et applications partenaires</b>' : '', d.sh.on ? 'par le <b>partage au clic</b>' : ''].filter(Boolean).join(', ').replace(/, ([^,]*)$/, ' et $1') + ' après validation.';
+    $('#f-sum-t').textContent = !d.paid ? 'Gratuit' : d.teamShare ? 'Offert par l’équipe' : nf(d.total) + ' F';
+    $('#f-sum-n').textContent = !d.paid ? 'Une seule annonce gratuite, 14 jours, sur Afrolook, SlashAtlas, Pronoflash et Épargne+. Elle devient payante dès qu\u2019une option est cochée.'
+      : d.teamShare ? '' : 'Débité de ton solde annonceur' + (wal.data ? ' (solde actuel : ' + nf(bal) + ' F)' : '') + '. Le budget non dépensé te revient à la fin de l\u2019annonce ; si notre équipe la refuse, tu es remboursé en entier.';
+    $('#f-send').textContent = !d.paid ? 'Envoyer pour validation' : d.teamShare ? 'Lancer la campagne' : 'Payer et envoyer';
+    $('#f-quota').textContent = !d.paid ? (!st.mine ? 'Validation par notre équipe avant diffusion' : !st.open ? 'L\u2019offre gratuite est terminée.' : st.left ? `${st.left} annonce${st.left > 1 ? 's' : ''} gratuite${st.left > 1 ? 's' : ''} restante${st.left > 1 ? 's' : ''} · validation par notre équipe avant diffusion` : 'Tu as utilisé ton annonce gratuite : coche au moins une option de diffusion.')
+      : 'Démarre après validation par notre équipe';
+    if (st.mine) $('#f-send').disabled = !d.paid && !(st.open && st.left);
+    $$('#adform .adfs').filter((e) => !e.hidden).forEach((e) => { const i = e.querySelector('h3 > i'); if (i) i.textContent = e.dataset.step || i.textContent; });
+    // solde insuffisant : on le dit tout de suite, avec le bouton pour recharger (jamais de paiement direct)
+    const lack = d.total - bal, need = $('#f-need');
+    need.hidden = !(d.paid && !d.teamShare && wal.data && lack > 0);
+    need.dataset.lack = String(Math.max(0, lack));
+    $('#f-need-t').textContent = 'Ces options coûtent ' + nf(d.total) + ' F et ton solde est de ' + nf(bal) + ' F : il te manque ' + nf(Math.max(0, lack)) + ' F. Recharge ton solde, puis envoie ton annonce.';
+  };
+  ['app', 'net', 'share'].forEach((k) => { $('#o-' + k + '-on').addEventListener('change', refreshMode); $('#o-' + k + '-v').addEventListener('input', () => { if (Number($('#o-' + k + '-v').value) > 0) $('#o-' + k + '-on').checked = true; refreshMode(); }); });
   window.addEventListener('afl-admin', refreshMode);
   window.addEventListener('afl-wallet', refreshMode);
   $('#f-need-go').addEventListener('click', () => openTopup(Number($('#f-need').dataset.lack) || 0));
-  try {   // venant du simulateur : ?aud=25000 ouvre « Campagne Partage » avec cette audience
+
+  // quatre étapes : quoi, ton annonce, destination, diffusion
+  let step = 1;
+  const showStep = (n) => {
+    step = n;
+    $$('.adstep').forEach((e) => { e.hidden = Number(e.dataset.step) !== n; });
+    $$('#f-steps span').forEach((x, i) => { x.classList.toggle('on', i + 1 === n); x.classList.toggle('done', i + 1 < n); });
+    $('#f-prev').hidden = n === 1; $('#f-next').hidden = n === 4; $('#f-subrow').hidden = n !== 4;
+    if (n === 4) refreshMode(); else $('#f-need').hidden = true;
+    $('#f-steps').scrollIntoView({ block: 'start', behavior: 'smooth' });
+  };
+  const validate = (n) => {
+    if (n === 2) {
+      if ($('#f-title').value.trim().length < 2) return 'Ajoute un titre.';
+      if ($('#f-text').value.trim().length < 10) return 'Écris un texte d\'au moins 10 caractères.';
+      if (!$('#f-cat').value) return 'Choisis la catégorie de ton annonce.';
+      if (!st.files.length) return 'Ajoute une image ou une vidéo.';
+      if (st.isVideo && !(st.duration > 0)) return 'Patiente un instant : la durée de la vidéo est en cours de lecture.';
+    }
+    if (n === 3) {
+      const link = $('#f-link').value.trim();
+      if (TYPES[st.type].price && !(Number($('#f-price').value) >= 1)) return 'Indique le prix du produit, en francs CFA.';
+      if (!link) return tel() ? 'Ajoute ton numéro de téléphone.' : 'Ajoute le lien du bouton (https://…).';
+      if (!tel() && !/^https:\/\//i.test(link)) return 'Le lien doit commencer par https://';
+    }
+    if (n === 4) {
+      const d = diffusion();
+      for (const [o, nom] of [[d.app, 'dans Afrolook'], [d.net, 'chez les partenaires']]) if (o.on && (o.v < 1000 || o.v > 5000000)) return 'Budget ' + nom + ' : entre 1 000 et 5 000 000 F.';
+      if (d.sh.on && (d.sh.v < 1000 || d.sh.v > 5000000)) return 'Partage au clic : entre 1 000 et 5 000 000 personnes à atteindre.';
+      if (!d.paid && st.mine && !(st.open && st.left)) return 'Tu as déjà utilisé ton annonce gratuite : coche au moins une option de diffusion.';
+    }
+    return '';
+  };
+  $('#f-next').addEventListener('click', () => { err(''); const m = validate(step); if (m) return err(m); showStep(step + 1); });
+  $('#f-prev').addEventListener('click', () => { err(''); showStep(step - 1); });
+  try {   // venant du simulateur : ?aud=25000 ouvre l'option « Partage au clic » avec cette audience
     const q = Number(new URLSearchParams(location.search).get('aud')), v = Math.round(q / 1000) * 1000;
-    if (v >= 1000 && v <= 5000000) { $('#f-aud').value = String(v); $('#f-mode label[data-v="share"]').click(); tab('creer'); }
+    if (v >= 1000 && v <= 5000000) { $('#o-share-v').value = String(v); $('#o-share-on').checked = true; tab('creer'); }
   } catch { /* sans paramètre */ }
 
   // mes campagnes Partage : statut, audience engagée, clics valides (visibles seulement ici)
@@ -604,8 +655,8 @@ async function initSpace() {
     if (/profil_en_validation/.test(m)) return 'Ton profil est en cours de validation : tu pourras publier ta première annonce dès qu’il est validé (tu recevras un e-mail).';
     if (/logo_refuse/.test(m)) return "Ton profil annonceur a été refusé : corrige-le dans l'onglet Profil puis renvoie-le.";
     if (/15 secondes/.test(m)) return 'La vidéo doit durer 15 secondes maximum.';
-    if (/solde_insuffisant/.test(m)) { loadWallet(); return 'Ton solde est insuffisant : recharge-le avec le bouton « Recharger maintenant », puis renvoie ta campagne.'; }
-    if (/limite_atteinte/.test(m)) return 'Tu as déjà utilisé ton annonce gratuite : elle est unique et non renouvelable. Pour diffuser davantage, garde la case « Offre Réseau » cochée (offre payante).';
+    if (/solde_insuffisant/.test(m)) { loadWallet(); return 'Ton solde est insuffisant : recharge-le avec le bouton « Recharger maintenant », puis renvoie ton annonce.'; }
+    if (/limite_atteinte/.test(m)) return 'Tu as déjà utilisé ton annonce gratuite : elle est unique et non renouvelable. Pour en publier une autre, coche au moins une option de diffusion (payante).';
     if (/limite_du_jour/.test(m)) return 'Trop d\'annonces envoyées aujourd\'hui. Réessaie demain.';
     if (/gratuite_terminee/.test(m)) return 'L\'offre gratuite est terminée. Contacte-nous pour annoncer.';
     if (e?.code === 'functions/invalid-argument') return m.replace(/^.*?:\s*/, '') || 'Vérifie les champs de ton annonce.';
@@ -613,24 +664,20 @@ async function initSpace() {
   };
   $('#adform').addEventListener('submit', async (ev) => {
     ev.preventDefault(); err(''); status('');
+    if (step < 4) { $('#f-next').click(); return; }   // « Entrée » dans un champ : on passe à l'étape suivante
     if (!IS_ADMIN && !pst.profile) { tab('profil'); return err('Avant ta première annonce, complète ton profil de marque : nom et logo.'); }
     if (!IS_ADMIN && pst.profile.logoStatus !== 'approved') { tab('profil'); return err(pst.profile.logoStatus === 'rejected' ? 'Ton profil a été refusé : corrige-le puis renvoie-le.' : 'Ton profil est en cours de validation : tu pourras publier ta première annonce dès qu’il est validé (tu recevras un e-mail).'); }
-    const title = $('#f-title').value.trim(), text = $('#f-text').value.trim(), link = $('#f-link').value.trim();
-    if (title.length < 2) return err('Ajoute un titre.');
-    if (text.length < 10) return err('Écris un texte d\'au moins 10 caractères.');
-    if (!st.files.length) return err('Ajoute une image ou une vidéo.');
-    if (st.isVideo && !(st.duration > 0)) return err('Patiente un instant : la durée de la vidéo est en cours de lecture.');
-    if (!link) return err(tel() ? 'Ajoute ton numéro de téléphone.' : 'Ajoute le lien du bouton (https://…).');
-    if (!$('#f-cat').value) return err('Choisis la catégorie de ton annonce.');
-    if (st.mode === 'share' && !IS_ADMIN) {   // solde annonceur : si le prix dépasse le solde, on propose la recharge du montant manquant
-      const need = Math.round(((Number($('#f-aud').value) || 0) / 1000) * wal.per1000) - (wal.data ? wal.data.balanceXof : 0);
+    for (const n of [2, 3, 4]) { const m = validate(n); if (m) { showStep(n); return err(m); } }
+    const title = $('#f-title').value.trim(), text = $('#f-text').value.trim(), link = $('#f-link').value.trim(), dif = diffusion();
+    if (dif.paid && !dif.teamShare) {   // solde annonceur : si le total dépasse le solde, on propose la recharge du montant manquant
+      const need = dif.total - (wal.data ? wal.data.balanceXof : 0);
       if (need > 0) { err(''); refreshMode(); $('#f-need').scrollIntoView({ block: 'center', behavior: 'smooth' }); openTopup(need); return; }
     }
     const btn = $('#f-send'); btn.disabled = true; const label = btn.textContent;
     try {
       btn.textContent = 'Envoi des fichiers…';
       const regions = st.countries.has('AFRICA') ? ['AFRICA'] : [];
-      const payload = { kind: st.kind, title, text, category: $('#f-cat').value, action: st.action, countries: [...st.countries].filter((c) => c !== 'AFRICA'), regions, languages: [...st.langs], devices: [...st.devs], categories: [...st.types], [tel() ? 'phone' : 'link']: link };
+      const payload = { type: st.type, title, text, category: $('#f-cat').value, countries: [...st.countries].filter((c) => c !== 'AFRICA'), regions, languages: [...st.langs], devices: [...st.devs], categories: [...st.types], [tel() ? 'phone' : 'link']: link };
       if (st.isVideo) {
         const f = st.files[0]; payload.mediaType = 'video'; payload.videoDuration = st.duration;
         payload.videoUrl = await put('ad_videos', f, f.type === 'video/quicktime' ? 'mov' : 'mp4', f.type);
@@ -642,13 +689,20 @@ async function initSpace() {
       const bk = Object.keys(st.banners);
       if (bk.length) { payload.banners = {}; for (const k of bk) { const f = st.banners[k]; payload.banners[k] = await put('ad_images', f, f.type === 'image/png' ? 'png' : f.type === 'image/webp' ? 'webp' : 'jpg', f.type); } }
       btn.textContent = 'Envoi de l\'annonce…';
-      const share = st.mode === 'share';
-      if (share) { payload.targetAudience = Number($('#f-aud').value); if (!(payload.targetAudience >= 1000)) throw Object.assign(new Error('Choisis au moins 1 000 personnes à atteindre.'), { code: 'functions/invalid-argument' }); if (IS_ADMIN) payload.brand = $('#f-sbrand').value.trim(); }
-      if (!share) payload.networkRequested = $('#f-net').checked;   // offre Réseau payante demandée (cochée par défaut)
+      if (TYPES[st.type].price) payload.price = Number($('#f-price').value);
+      const share = dif.teamShare;   // campagne offerte par l'équipe : ancien appel, avec la marque affichée
+      if (share) { payload.targetAudience = dif.sh.v; payload.brand = $('#f-sbrand').value.trim(); }
+      else {
+        if (dif.app.on) payload.budgetApp = dif.app.v;
+        if (dif.net.on) payload.budgetNetwork = dif.net.v;
+        if (dif.sh.on) payload.shareAudience = dif.sh.v;
+        if (dif.app.on || dif.net.on) payload.days = Number($('#f-days').value);
+      }
       const done = share ? await call('adsShareCampaignCreate', payload) : await call('adsWebCreate', payload);
-      if (share) loadWallet();
+      loadWallet();
       $('#adform').reset(); st.banners = {}; $$('.bnrow .bt').forEach((t) => { t.textContent = ''; t.className = 'bt'; }); st.langs.clear(); st.devs.clear(); st.types.clear(); $$('#f-langs span, #f-devs span, #f-types span').forEach((x) => x.classList.remove('on')); st.countries = new Set(['ALL']); $$('#f-countries span').forEach((x) => x.classList.toggle('on', x.dataset.v === 'ALL')); $('#f-cat-note').hidden = true; st.files = []; $('#f-file-name').textContent = 'Choisis une image ou une vidéo'; refresh();
-      status(share ? (done.free ? 'Campagne créée : elle sera proposée aux partageurs dès sa validation par la deuxième personne de l’équipe.' : 'Campagne envoyée et payée avec ton solde (' + Number(done.priceFcfa).toLocaleString('fr-FR') + ' F). Elle démarre dès sa validation par notre équipe ; si elle est refusée, tu es remboursé sur ton solde.') : (done.networkRequested ? 'Demande envoyée ! Ton annonce est une demande d\u2019offre Réseau payante : notre équipe te communique le tarif avant la mise en ligne. Tu recevras un e-mail dès qu\'elle est en ligne.' : 'Annonce envoyée ! Notre équipe la valide, tu recevras un e-mail dès qu\'elle est en ligne.'));
+      status(share ? 'Campagne créée : elle sera proposée aux partageurs dès sa validation par la deuxième personne de l’équipe.' : (dif.paid ? 'Annonce envoyée et payée avec ton solde (' + nf(dif.total) + ' F). Elle démarre dès sa validation par notre équipe ; si elle est refusée, tu es remboursé en entier, et le budget non dépensé te revient à la fin.' : 'Annonce envoyée ! Notre équipe la valide, tu recevras un e-mail dès qu\'elle est en ligne.'));
+      showStep(1); refreshMode();
       tab('mes');
     } catch (e) { err(explain(e)); } finally { btn.disabled = false; btn.textContent = label; }
   });
@@ -831,8 +885,7 @@ async function initSpace() {
       const d = await call('adsWebMine');
       st.open = d.open; st.left = Math.max(0, d.max - d.used);
       $('#mycount').textContent = d.items.length + (st.shares || []).length; $('#myquota').textContent = `${d.used} gratuite${d.used > 1 ? 's' : ''} utilisée${d.used > 1 ? 's' : ''} sur ${d.max}`;
-      $('#f-quota').textContent = $('#f-net').checked ? 'Notre équipe te communique le tarif avant la mise en ligne' : !d.open ? 'L\'offre gratuite est terminée.' : st.left ? `${st.left} annonce${st.left > 1 ? 's' : ''} gratuite${st.left > 1 ? 's' : ''} restante${st.left > 1 ? 's' : ''} · validation par notre équipe avant diffusion` : 'Tu as utilisé tes annonces gratuites. Décoche l\u2019offre Réseau seulement si une place gratuite est libre.';
-      $('#f-send').disabled = !$('#f-net').checked && (!d.open || !st.left);
+      st.mine = d; refreshMode();
       st.mine = d; drawAdvKpis();   // chiffres clés, visibles sans ouvrir d'onglet
       const box = $('#mylist'); box.replaceChildren();
       if (!d.items.length) { box.append(h('p', { class: 'adempty', text: 'Tu n\'as pas encore d\'annonce. Crée la première, c\'est gratuit.' })); return; }
@@ -840,7 +893,7 @@ async function initSpace() {
       for (const a of d.items) {
         const [cls, lab] = badge[a.status] || ['end', a.status];
         const thumb = a.thumb || a.media ? h('img', { class: 'addash-th', src: a.thumb || a.media, alt: '', loading: 'lazy' }) : h('i', { class: 'addash-th ph', text: initial(a) });
-        const meta = `${a.action} · ${a.days} jours${a.networkRequested ? (a.network ? ' · Offre Réseau' : ' · Offre Réseau demandée (payante)') : ''}${a.status === 'ligne' ? ` · ${a.daysLeft} jour${a.daysLeft > 1 ? 's' : ''} restant${a.daysLeft > 1 ? 's' : ''}` : ''}${a.renewals ? ` · renouvelée ${a.renewals} fois` : ''}`;
+        const meta = `${a.action} · ${a.days} jours${a.budgetApp ? ` · Afrolook ${n(a.spentApp)} / ${n(a.budgetApp)} F` : ''}${a.budgetNet ? ` · Partenaires ${n(a.spentNet)} / ${n(a.budgetNet)} F` : ''}${a.shareId ? ' · Partage au clic' : ''}${a.refunded ? ` · ${n(a.refunded)} F remboursés` : ''}${a.networkRequested && !a.budgetNet ? (a.network ? ' · Offre Réseau' : ' · Offre Réseau demandée (payante)') : ''}${a.status === 'ligne' ? ` · ${a.daysLeft} jour${a.daysLeft > 1 ? 's' : ''} restant${a.daysLeft > 1 ? 's' : ''}` : ''}${a.renewals ? ` · renouvelée ${a.renewals} fois` : ''}`;
         const row = h('div', { class: 'addash-r', 'data-id': a.id, tabindex: '0', role: 'button', 'aria-label': `Voir le détail : ${a.title}` },
           h('div', { class: 'addash-main' }, thumb, h('div', {}, h('b', { text: a.title }), imgCount(a) > 1 ? h('span', { class: 'adc-tag-s adsl-mine', text: `${imgCount(a)} photos` }) : null, h('small', { text: meta }), h('small', { class: 'st-m', text: a.status === 'validation' ? 'Pas encore de statistiques' : `${n(a.views)} vues · ${n(a.clicks)} clics` }))),
           h('span', { class: `st ${cls}`, text: lab }),

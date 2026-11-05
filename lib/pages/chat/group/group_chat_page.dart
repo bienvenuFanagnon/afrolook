@@ -2674,7 +2674,7 @@ class _GroupChatPageState extends State<GroupChatPage> {
     return AdSlot(
       key: const ValueKey('group_banner'),
       kind: AdSlotKind.groupBanner,
-      own: () => const AfrolookInlineAd(compact: true),
+      own: () => const AfrolookInlineAd(compact: true, banner: true),
     );
   }
 

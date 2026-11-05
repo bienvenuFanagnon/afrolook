@@ -20,6 +20,7 @@ import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/services/media_cache_service.dart';
 import 'package:afrotok/services/ad_preload_service.dart';
 import 'package:flutter/material.dart';
+import '../pub/brand_ad_widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:video_player/video_player.dart';
@@ -1255,7 +1256,10 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
           ),
         ),
 
-        // ── Badge SPONSORISÉ ──
+        // ── Badge SPONSORISÉ (annonce du site : la marque et son logo, jamais un profil) ──
+        if (isBrandPost(post))
+          Positioned(top: MediaQuery.of(context).padding.top + 52, left: 16, right: 76, child: BrandOverlayHeader(ad: ad))
+        else
         Positioned(
           top: MediaQuery.of(context).padding.top + 56,
           left: 16,
@@ -1316,31 +1320,23 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFE21221), Color(0xFFFF5252)],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ),
+                  color: const Color(0xFFFFC400),   // bouton d'action jaune partout (maquette validée)
                   borderRadius: BorderRadius.circular(30),
                   boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 8, offset: const Offset(0, 4))],
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      ad.actionType == 'download' ? Icons.download
-                          : ad.actionType == 'visit' ? Icons.language
-                          : Icons.info_outline,
-                      color: Colors.white,
-                      size: 17,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      ad.getActionButtonText(),
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                    Flexible(
+                      child: Text(
+                        adButtonLabel(ad),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Color(0xFF20260F), fontWeight: FontWeight.w800, fontSize: 15),
+                      ),
                     ),
                     const SizedBox(width: 6),
-                    const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 12),
+                    const Icon(Icons.arrow_forward_ios, color: Color(0xFF20260F), size: 12),
                   ],
                 ),
               ),
@@ -1388,6 +1384,8 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
   }
 
   Widget _buildAdActionsOverlay(Advertisement ad) {
+    // une annonce du site n'est pas une publication : ni likes, ni commentaires, ni vues à montrer
+    if (isBrandPost(_adPosts[ad.id ?? ''])) return const SizedBox.shrink();
     final isEntityBoost = ad.ownerType != null && ad.ownerType!.isNotEmpty && ad.postId == null;
     final adPost = isEntityBoost ? null : _adPosts[ad.id ?? ''];
     final commentCount = adPost?.comments ?? 0;
@@ -1439,7 +1437,8 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
             ),
             const SizedBox(height: 20),
           ],
-          // Vues pub (toujours visible)
+          // Vues : seulement si elles existent vraiment (jamais « 0 » pour une annonce dont on ne connaît pas les vues)
+          if ((ad.views ?? 0) > 0)
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [

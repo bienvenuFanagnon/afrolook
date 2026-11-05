@@ -2151,6 +2151,14 @@ class Advertisement {
   String? ownerCoverImage; // Image de couverture (canaux uniquement)
   int? ownerFollowers;
   String? ownerDescription; // Bio, description courte (≤ 120 chars)
+  // Annonce d'Afrolook Ads venue du site (annonceur sans compte Afrolook) : titre, secteur et ville de la marque, durée de la vidéo en secondes
+  String? adTitle;
+  String? brandSector;
+  String? brandCity;
+  // Type de l'annonce du site (product, site, app, whatsapp, call, social, event) et prix d'un produit en FCFA
+  String? adType;
+  int? productPrice;
+  int? videoSeconds;
   String? ownerCategory; // Catégorie principale (ex: 'SPORT', 'ACTUALITES')
   // Snapshot des 3 derniers posts du créateur au moment de la soumission
   // Chaque map contient : { 'thumb': String, 'isVideo': bool, 'postId': String }
@@ -2188,6 +2196,12 @@ class Advertisement {
     this.ownerCoverImage,
     this.ownerFollowers,
     this.ownerDescription,
+    this.adTitle,
+    this.brandSector,
+    this.brandCity,
+    this.adType,
+    this.productPrice,
+    this.videoSeconds,
     this.ownerCategory,
     this.ownerRecentPosts,
   });
@@ -2225,6 +2239,12 @@ class Advertisement {
       'ownerCoverImage': ownerCoverImage,
       'ownerFollowers': ownerFollowers,
       'ownerDescription': ownerDescription,
+      'adTitle': adTitle,
+      'brandSector': brandSector,
+      'brandCity': brandCity,
+      'adType': adType,
+      'productPrice': productPrice,
+      'videoSeconds': videoSeconds,
       'ownerCategory': ownerCategory,
       'ownerRecentPosts': ownerRecentPosts,
     };
@@ -2278,6 +2298,12 @@ class Advertisement {
       ownerCoverImage: json['ownerCoverImage'],
       ownerFollowers: (json['ownerFollowers'] as num?)?.toInt(),
       ownerDescription: json['ownerDescription'],
+      adTitle: json['adTitle'],
+      brandSector: json['brandSector'],
+      brandCity: json['brandCity'],
+      adType: json['adType'] as String?,
+      productPrice: (json['productPrice'] as num?)?.toInt(),
+      videoSeconds: (json['videoSeconds'] as num?)?.toInt(),
       ownerCategory: json['ownerCategory'] as String?,
       ownerRecentPosts: (json['ownerRecentPosts'] as List<dynamic>?)
           ?.map((e) => Map<String, dynamic>.from(e as Map))
@@ -2311,11 +2337,21 @@ class Advertisement {
   String getActionButtonText() {
     switch(actionType) {
       case 'download':
-        return 'Télécharger';
+        return adType == 'app' ? 'Installer' : 'Télécharger';
       case 'visit':
-        return 'Visiter';
+        return adType == 'site' ? 'Visiter le site' : 'Visiter';
       case 'learn_more':
         return 'En savoir plus';
+      case 'buy':
+        return 'Acheter';
+      case 'follow':
+        return 'Suivre la page';
+      case 'book':
+        return 'Réserver';
+      case 'whatsapp':
+        return 'Écrire sur WhatsApp';
+      case 'call':
+        return 'Appeler';
       default:
         return actionButtonText ?? 'En savoir plus';
     }

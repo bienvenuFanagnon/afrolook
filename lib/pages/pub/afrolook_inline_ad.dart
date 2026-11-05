@@ -1,5 +1,7 @@
 import 'package:afrotok/services/ads_engine_service.dart';
 import 'ad_actions.dart';
+import 'brand_ad_widgets.dart';
+import '../../services/afrolook_ads_pool.dart';
 import '../../ads/ad_gate.dart';
 import 'dart:async';
 import 'dart:math';
@@ -36,8 +38,10 @@ import 'package:afrotok/utils/responsive_sheet.dart';
 class AfrolookInlineAd extends StatefulWidget {
   /// [compact] : format bannière horizontal (pour pages détails).
   /// [compact] = false (défaut) : format carte verticale (feed).
-  const AfrolookInlineAd({Key? key, this.compact = false}) : super(key: key);
+  /// [banner] : format bannière de la maquette (F) : détail d'une publication, musique, groupes.
+  const AfrolookInlineAd({Key? key, this.compact = false, this.banner = false}) : super(key: key);
   final bool compact;
+  final bool banner;
 
   @override
   State<AfrolookInlineAd> createState() => _AfrolookInlineAdState();
@@ -52,6 +56,7 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
   bool _adVideoInitialized = false;
   bool _isCtaLoading = false;
   int? _liveFollowers;
+  late final String _slot;   // un emplacement par position : voir AdsEngineService.nextSlot
 
   late AnimationController _bounceCtrl;
   late Animation<double> _bounceOffset;
@@ -60,6 +65,7 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
   @override
   void initState() {
     super.initState();
+    _slot = AdsEngineService.nextSlot(widget.banner ? 'banner' : (widget.compact ? 'compact' : 'feed'));
     _bounceCtrl = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 4),
@@ -188,7 +194,7 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
       final ad = Advertisement.fromJson(adData['ad'] as Map<String, dynamic>);
       if (ad.id == null) return;
       // vue comptée par le moteur d'Afrolook Ads (plus d'écriture directe dans Advertisements)
-      AdsEngineService.instance.view(ad.id!, format: 'native', slot: 'feed');
+      AdsEngineService.instance.view(ad.id!, format: 'native', slot: _slot, onRefused: () => _onRefused(ad.id!));
     } catch (e) {
       printVm('AfrolookInlineAd._recordView error: $e');
     }
@@ -196,7 +202,21 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
 
   Future<void> _recordClick(Advertisement ad) async {
     if (ad.id == null) return;
-    AdsEngineService.instance.click(ad.id!, format: 'native', slot: 'feed');
+    AdsEngineService.instance.click(ad.id!, format: 'native', slot: _slot);
+  }
+
+  /// Le serveur ne peut pas compter cette annonce pour cette personne (plafond du jour, annonce terminée, hors cible) : on la retire au lieu de la montrer sans la compter.
+  void _onRefused(String adId) {
+    if (!mounted) return;
+    final auth = Provider.of<UserAuthProvider>(context, listen: false);
+    auth.dropAdvertisement(adId);
+    AfrolookAdsPool.instance.drop(adId);
+    if (auth.advertisements.isEmpty) {
+      setState(() => _adData = null);
+      return;
+    }
+    _lastAdId = null;
+    _pickAd(rotate: true);
   }
 
   void _showPremiumModal(BuildContext context) {
@@ -406,11 +426,11 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
   Widget _buildEntityBoostBanner(BuildContext context, Advertisement ad, String adDescription) {
     if (ad.ownerName?.isEmpty != false) return const SizedBox.shrink();
     if (widget.compact) return _buildEntityBoostBannerHorizontal(context, ad, adDescription);
-    switch (ad.ownerType) {
-      case 'canal': return _buildCanalCard(context, ad, adDescription);
-      case 'group': return _buildGroupCard(context, ad, adDescription);
-      default:      return _buildProfileCard(context, ad, adDescription);
-    }
+    // maquette H : carte centrée, grand avatar, bouton vert
+    return EntityBoostCard(ad: ad, followers: _liveFollowers, onOpen: () {
+      _navigateToAdOwner(context, ad);
+      _recordClick(ad);
+    });
   }
 
   // ── Bannière horizontale compacte (pages détails image + vidéo) ─────
@@ -1339,6 +1359,36 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
 
     // ── Pub post standard ──
     final post = Post.fromJson(_adData!['post'] as Map<String, dynamic>);
+
+    // ── Annonce d'un annonceur du site : la MARQUE, jamais un profil (maquette A, B, G, E, F) ──
+    if (isBrandPost(post)) {
+      final ctrl = _adVideoInitialized ? _adVideoController : null;
+      Future<void> act() async {
+        await _recordClick(ad);
+        await AdActions.open(ad);
+      }
+      void details() {
+        _recordClick(ad);
+        Navigator.push(context, MaterialPageRoute(builder: (_) => AdDetailPage(ad: ad, post: post)));
+      }
+      if (widget.banner) return BrandBanner(ad: ad, post: post, onOpenDetails: details, onAction: act);
+      if (widget.compact) return BrandAdCompact(ad: ad, post: post, onOpenDetails: details, onAction: act);
+      return BrandAdCard(ad: ad, post: post, onOpenDetails: details, onAction: act, videoController: ctrl);
+    }
+
+    // ── Boost d'une publication d'un membre (le profil existe) : maquette D ──
+    if (!widget.compact && !widget.banner && ad.ownerType == 'user' && (ad.ownerName ?? '').isNotEmpty) {
+      return MemberBoostCard(
+        ad: ad,
+        post: post,
+        videoController: _adVideoInitialized ? _adVideoController : null,
+        onOpenPost: () => _openPostPage(context, post, ad),
+        onFollow: () {
+          _navigateToAdOwner(context, ad);
+          _recordClick(ad);
+        },
+      );
+    }
     final thumb = _thumbUrl(post);
     final caption = post.description ?? '';
     final btnText = ad.actionButtonText ?? 'En savoir plus';

@@ -526,7 +526,7 @@ class _UserServiceListPageState extends State<UserServiceListPage> {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: AdSlot(key: const ValueKey('services_list_ad'), kind: AdSlotKind.list, own: () => const AfrolookInlineAd()),
+                child: AdSlot(key: const ValueKey('services_list_ad'), kind: AdSlotKind.list, own: () => const AfrolookInlineAd(compact: true)),
               ),
             ),
 

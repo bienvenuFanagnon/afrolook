@@ -327,7 +327,7 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
               },
             ),
       bottomNavigationBar: widget.preview == null && MediaQuery.of(context).size.height >= 700
-          ? AdSlot(key: const ValueKey('music_banner'), kind: AdSlotKind.musicBanner, own: () => const AfrolookInlineAd(compact: true), admobFirst: true)
+          ? AdSlot(key: const ValueKey('music_banner'), kind: AdSlotKind.musicBanner, own: () => const AfrolookInlineAd(compact: true, banner: true), admobFirst: true)
           : null,
     );
   }

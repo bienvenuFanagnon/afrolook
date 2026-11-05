@@ -786,7 +786,7 @@ class _DetailsPostState extends State<DetailsPost>
     return count.toString();
   }
   Widget _buildAdMrec({required String key}) {
-    return AdSlot(key: ValueKey(key), kind: AdSlotKind.detailMrec, own: () => const AfrolookInlineAd());
+    return AdSlot(key: ValueKey(key), kind: AdSlotKind.detailMrec, own: () => const AfrolookInlineAd(banner: true));
   }
 
 // 3. Ajouter la méthode de chargement :
@@ -2910,7 +2910,7 @@ class _DetailsPostState extends State<DetailsPost>
           _buildMediaContent(post),
 
         // Pub compacte juste sous le média (remplace la 1ère suggestion)
-        AdSlot(key: const ValueKey('post_details_compact_ad'), kind: AdSlotKind.detail, own: () => const AfrolookInlineAd(compact: true)),
+        AdSlot(key: const ValueKey('post_details_compact_ad'), kind: AdSlotKind.detail, own: () => const AfrolookInlineAd(compact: true, banner: true)),
       ],
     );
   }

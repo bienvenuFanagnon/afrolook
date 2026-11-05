@@ -10,6 +10,10 @@ export const AUDIENCE = 'plus de 50 000';
 export const AUDIENCE_EN = 'over 50,000';
 
 const IC = {
+  chat: 'M20 2H4a2 2 0 00-2 2v18l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2z',
+  call: 'M6.6 10.8a15.1 15.1 0 006.6 6.6l2.2-2.2a1 1 0 011-.25 11.4 11.4 0 003.6.6 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.6 3.6a1 1 0 01-.25 1z',
+  share: 'M18 16.1a3 3 0 00-2 .8l-7.1-4.2a3.2 3.2 0 000-1.4L16 7.2A3 3 0 1015 5a3 3 0 00.1.7L8 9.9a3 3 0 100 4.2l7.2 4.2a2.8 2.8 0 00-.1.7 2.9 2.9 0 102.9-2.9z',
+  calendar: 'M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm0 16H5V9h14v11z',
   globe: 'M12 2a10 10 0 100 20 10 10 0 000-20zm6.9 9h-3.2a15.7 15.7 0 00-1.4-5.2A8 8 0 0118.9 11zM12 4c.9 1.2 1.6 3.2 1.9 7h-3.8c.3-3.8 1-5.8 1.9-7zM4.1 13h3.2c.2 1.9.7 3.7 1.4 5.2A8 8 0 014.1 13zm3.2-2H4.1a8 8 0 014.6-5.2A15.7 15.7 0 007.3 11zM12 20c-.9-1.2-1.6-3.2-1.9-7h3.8c-.3 3.8-1 5.8-1.9 7zm3.3-1.8c.7-1.5 1.2-3.3 1.4-5.2h3.2a8 8 0 01-4.6 5.2z',
   phone: 'M17 1H7a2 2 0 00-2 2v18a2 2 0 002 2h10a2 2 0 002-2V3a2 2 0 00-2-2zm0 18H7V5h10v14z',
   rocket: 'M12 2c3.3 2 5 5.3 5 9 0 1.6-.4 3.1-1 4.4L18 18l-3 1-1.2-1.8H10.2L9 19l-3-1 2-2.6A9.8 9.8 0 017 11c0-3.7 1.7-7 5-9zm0 6a2 2 0 100 4 2 2 0 000-4z',
@@ -37,7 +41,7 @@ const stat = (big, label, note) => `<div class="adst"><b>${big}</b><span>${label
 export const phone = (cap = '') => `<figure class="mkw"><div class="mkp"><div class="mk"><div class="mkb"><span>9:41</span><span class="mkn"></span><span>5G ▮</span></div>
 <div class="mkab"><span>${ico('globe', 22)}</span><b class="logo">Afrolook</b><i></i><span>${ico('bell', 22)}</span></div>
 <div class="mktabs2"><span class="on">✨ Pour toi</span><span>⚽ Sport</span><span>📅 Sorties</span></div>
-<div class="admk"><div class="admk-top"><i class="admk-av" id="pv-av">K</i><span><b id="pv-name">Kofi Studio</b><small>Sponsorisé · Annonce gratuite</small></span></div>
+<div class="admk"><div class="admk-top"><i class="admk-av" id="pv-av">K</i><span><b id="pv-name">Kofi Studio</b><small>Sponsorisé</small></span></div>
  <p class="admk-txt" id="pv-text">Ton site web professionnel en 7 jours, paiement Mobile Money accepté. 🚀</p>
  <div class="admk-img" id="pv-img"><img src="/img/card-collector.webp" alt=""></div>
  <div class="admk-cta"><span id="pv-link">kofistudio.com</span><b id="pv-btn">Visiter</b></div>
@@ -281,23 +285,46 @@ ${networkSection('fr', ico)}
  <article class="adp more"><div class="adp-top"><i class="adp-logo plus">+</i><div><h3>D'autres plateformes</h3><small>Le réseau s'agrandit</small></div></div><p>De nouveaux partenaires rejoignent la régie : ton annonce y sera diffusée aussi, sans rien changer de ton côté.</p><span class="adp-tag">Bientôt</span></article>
 </div></div></section>
 
-<section class="adsec soft"><div class="wrap"><span class="kicker">Que peux-tu promouvoir ?</span><h2 class="h2">Tout ce qui mérite d'être vu.</h2>
-<div class="adt4">
- <article class="adt">${ico('bag', 30)}<h3>Une entreprise ou une startup</h3><p>Ton activité, ton offre, ta marque : fais-toi connaître.</p></article>
- <article class="adt">${ico('globe', 30)}<h3>Un site web</h3><p>Boutique, blog, portfolio, service : amène des visiteurs.</p></article>
- <article class="adt">${ico('phone', 30)}<h3>Une application</h3><p>Android ou iPhone : un bouton « Télécharger » direct.</p></article>
- <article class="adt">${ico('rocket', 30)}<h3>Un projet</h3><p>Association, événement, financement : fais-le connaître.</p></article>
- <article class="adt">${ico('poster', 30)}<h3>Une affiche</h3><p>Concert, formation, promotion : ton visuel en grand.</p></article>
+<section class="adsec soft" id="types"><div class="wrap"><span class="kicker">Que peux-tu annoncer ?</span><h2 class="h2">Sept types d'annonce, un bouton clair pour chacun.</h2>
+<p class="sub">Le type choisit le bouton : il ne se change pas, pour que le visiteur sache toujours où il va. Tu fournis un lien ou un numéro, et nous vérifions la destination.</p>
+<div class="adt4 adt7">
+ <article class="adt">${ico('bag', 30)}<h3>Produit</h3><p>Un article précis, avec son prix affiché. Tu fournis le lien de la page du produit et son prix.</p><span class="adbtnchip">Acheter</span></article>
+ <article class="adt">${ico('globe', 30)}<h3>Boutique ou site</h3><p>Ta boutique, ton blog, ton portfolio, ton service : amène des visiteurs.</p><span class="adbtnchip">Visiter le site</span></article>
+ <article class="adt">${ico('phone', 30)}<h3>Application</h3><p>Android ou iPhone. Tu fournis le lien Google Play ou App Store.</p><span class="adbtnchip">Installer</span></article>
+ <article class="adt">${ico('chat', 30)}<h3>WhatsApp</h3><p>Une discussion qui s'ouvre en un geste avec ton numéro WhatsApp.</p><span class="adbtnchip">Écrire sur WhatsApp</span></article>
+ <article class="adt">${ico('call', 30)}<h3>Appel</h3><p>Le visiteur t'appelle directement, depuis son téléphone.</p><span class="adbtnchip">Appeler</span></article>
+ <article class="adt">${ico('share', 30)}<h3>Page de réseau social</h3><p>Ta page Facebook, Instagram, TikTok, YouTube ou Telegram.</p><span class="adbtnchip">Suivre la page</span></article>
+ <article class="adt">${ico('calendar', 30)}<h3>Événement</h3><p>Concert, formation, soirée, inscription : une page où l'on réserve.</p><span class="adbtnchip">Réserver</span></article>
 </div></div></section>
 
 <section class="adsec"><div class="wrap"><span class="kicker">Annonce gratuite · comment ça marche</span><h2 class="h2">Quatre étapes, quelques minutes.</h2>
 <div class="ads4">
  <article class="ads"><i>1</i><h3>Connecte-toi avec Google</h3><p>Un seul clic, pas de mot de passe de plus. Tu renseignes ensuite ta marque et ton logo, une seule fois.</p></article>
- <article class="ads"><i>2</i><h3>Crée ton annonce</h3><p>Choisis ce que tu promeus, ajoute ton image ou ta vidéo, ton texte et ton bouton d'action.</p></article>
+ <article class="ads"><i>2</i><h3>Crée ton annonce</h3><p>Choisis le type d'annonce, ajoute ton image ou ta vidéo et ton texte, puis ta destination (lien ou numéro). Le bouton est choisi par le type.</p></article>
  <article class="ads"><i>3</i><h3>Notre équipe la valide</h3><p>Chaque annonce est relue avant d'être publiée, pour garder une audience de confiance. Tu reçois un e-mail dès qu'elle est validée.</p></article>
- <article class="ads"><i>4</i><h3>Elle est diffusée partout</h3><p>Sur Afrolook, SlashAtlas, Pronoflash et Épargne+. Tu suis tes vues et tes clics, et tu reçois un e-mail à chaque palier de 100 vues.</p></article>
+ <article class="ads"><i>4</i><h3>Elle est diffusée</h3><p>Gratuitement sur Afrolook, SlashAtlas, Pronoflash et Épargne+, ou avec les options payantes de ton choix. Tu suis tes vues et tes clics, et tu reçois un e-mail à chaque palier de 100 vues.</p></article>
 </div>
 <div class="cta" style="margin-top:34px"><a class="btn btn-primary adbig" href="/ads/espace/">${G} Commencer maintenant, c'est gratuit</a></div></div></section>
+
+<section class="adsec" id="diffuser"><div class="wrap"><span class="kicker">Comment diffuser ?</span><h2 class="h2">Trois façons de diffuser, que tu peux cumuler.</h2>
+<p class="sub">Un seul solde annonceur, une enveloppe par option. Ce qui n'est pas dépensé te revient à la fin de l'annonce, et si notre équipe refuse ton annonce, tu es remboursé en entier.</p>
+<div class="adp3">
+ <article class="adp"><div class="adp-top"><i class="adp-logo plus">1</i><div><h3>Gratuit sur nos plateformes</h3><small>Une seule annonce, 14 jours</small></div></div><p>Ton annonce est diffusée sur Afrolook, SlashAtlas, Pronoflash et Épargne+. Elle n'est pas renouvelable et devient payante dès que tu actives une option.</p><span class="adp-tag">Sans budget</span></article>
+ <article class="adp"><div class="adp-top"><i class="adp-logo plus">2</i><div><h3>Dans Afrolook et chez les partenaires</h3><small>Au prix pour 1 000 vues</small></div></div><p>Tu fixes un budget par option : dans Afrolook, et chez les sites et applications partenaires (bannière, carte, vidéo, plein écran…). Chaque vue valide est comptée par nos serveurs, au prix de son format.</p><span class="adp-tag">Budget au choix</span></article>
+ <article class="adp"><div class="adp-top"><i class="adp-logo plus">3</i><div><h3>Partage au clic</h3><small>500 F pour 1 000 personnes</small></div></div><p>Des personnes partagent ton annonce sur WhatsApp, Telegram et Facebook et gagnent à chaque clic valide. Le lien ouvre une page avec le bouton de ton annonce. Tu paies l'audience à atteindre.</p><span class="adp-tag">Audience à atteindre</span></article>
+</div>
+<div class="tablewrap" style="margin-top:26px"><table class="doc-table"><thead><tr><th>Format</th><th>Prix pour 1 000 vues valides</th></tr></thead><tbody>
+ <tr><td>Bannière</td><td>1 000 F</td></tr><tr><td>Bandeau collant</td><td>1 250 F</td></tr><tr><td>Carte native</td><td>1 500 F</td></tr><tr><td>Carrousel</td><td>1 800 F</td></tr><tr><td>Affiche</td><td>2 000 F</td></tr><tr><td>Vidéo dans le fil</td><td>2 500 F</td></tr><tr><td>Plein écran (interstitiel)</td><td>3 000 F</td></tr><tr><td>Récompensée (vidéo regardée en entier)</td><td>3 500 F</td></tr>
+</tbody></table></div>
+<p class="adnote">Les vues sont toujours <b>mesurées</b> par nos serveurs : une vue compte quand l'annonce est restée visible assez longtemps, jamais sur la seule parole du site qui l'affiche. Pour le partage, l'audience annoncée est une <b>estimation</b> à partir des clics valides ; jamais une audience garantie.</p></div></section>
+
+<section class="adsec soft" id="securite"><div class="wrap"><span class="kicker">Sécurité et confiance</span><h2 class="h2">Pas de fraude, pas de piège pour le visiteur.</h2>
+<div class="adt4">
+ <article class="adt">${ico('shield', 30)}<h3>Destination vérifiée</h3><p>Lien en https obligatoire, pas de lien raccourci qui cache la vraie destination, pas de téléchargement direct. Une application mène à Google Play ou à l'App Store.</p></article>
+ <article class="adt">${ico('eye', 30)}<h3>Revérifiée chaque jour</h3><p>Si le lien d'une annonce en ligne change et devient interdit, l'annonce est mise en pause tout de suite et notre équipe est prévenue.</p></article>
+ <article class="adt">${ico('click', 30)}<h3>Vues et clics mesurés</h3><p>Jetons signés, plafonds par appareil, détection des robots : ce qui n'est pas valide n'est ni facturé, ni payé.</p></article>
+ <article class="adt">${ico('check', 30)}<h3>Aucun faux chiffre</h3><p>Une annonce n'affiche jamais de faux j'aime, commentaires ou vues. Chaque visiteur peut la signaler en un geste.</p></article>
+</div></div></section>
 
 ${formatsSection()}
 
@@ -335,8 +362,8 @@ ${formatsSection()}
 
 // ───────── espace annonceur (page dynamique : connexion Google, création, suivi) ─────────
 export function adsSpace(fbConfig, api) {
-  const types = [['entreprise', 'bag', 'Entreprise / startup'], ['site', 'globe', 'Site web'], ['app', 'phone', 'Application'], ['projet', 'rocket', 'Projet'], ['affiche', 'poster', 'Affiche']];
-  const actions = [['visit', 'Visiter le site'], ['download', 'Télécharger'], ['learn_more', 'En savoir plus'], ['whatsapp', 'WhatsApp'], ['call', 'Appeler']];
+  const adTypes = [['product', 'bag', 'Produit', 'Acheter'], ['site', 'globe', 'Boutique ou site', 'Visiter le site'], ['app', 'phone', 'Application', 'Installer'], ['whatsapp', 'chat', 'WhatsApp', 'Écrire sur WhatsApp'],
+    ['call', 'call', 'Appel', 'Appeler'], ['social', 'share', 'Page de réseau social', 'Suivre la page'], ['event', 'calendar', 'Événement', 'Réserver']];
   const countries = [['ALL', 'Tous les pays'], ['AFRICA', 'Toute l\'Afrique'], ['TG', 'Togo'], ['CI', 'Côte d\'Ivoire'], ['BJ', 'Bénin'], ['SN', 'Sénégal'], ['CM', 'Cameroun'], ['BF', 'Burkina Faso'], ['ML', 'Mali'], ['GN', 'Guinée'], ['GA', 'Gabon'], ['CD', 'RD Congo'], ['FR', 'France']];
   const COUNTRIES = countries.filter(([c]) => c !== 'ALL' && c !== 'AFRICA');
   return `<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js"><link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js">${adsSubnav('espace')}<section class="adsp"><div class="wrap" id="adspace" data-api="${api}">
@@ -356,11 +383,11 @@ export function adsSpace(fbConfig, api) {
 
   <div id="tab-creer"><div class="adform-g">
    <form class="adform" id="adform" novalidate>
-    <div class="adfs"><h3><i>0</i> Comment veux-tu diffuser ?</h3>
-     <div class="adtype" id="f-mode"><label class="on" data-v="ads"><b>Annonce affichée</b><small>Gratuite · affichée sur Afrolook, SlashAtlas, Pronoflash et Épargne+</small></label><label data-v="share"><b>Campagne Partage</b><small>Payante · des personnes partagent ton annonce sur WhatsApp, Telegram, Facebook…</small></label></div></div>
-    <div class="adfs" data-adsonly><h3><i>1</i> Que veux-tu promouvoir ?</h3>
-     <div class="adtype" id="f-kind">${types.map(([k, i, l], n) => `<label class="${n === 0 ? 'on' : ''}" data-v="${k}">${ico(i, 26)}<b>${l}</b></label>`).join('')}</div></div>
-    <div class="adfs"><h3><i>2</i> Ton annonce</h3>
+     <div class="adsteps" id="f-steps" aria-hidden="true"><span class="on"><i>1</i> Quoi</span><span><i>2</i> Ton annonce</span><span><i>3</i> Destination</span><span><i>4</i> Diffusion</span></div>
+     <div class="adfs adstep" data-step="1"><h3><i>1</i> Que veux-tu annoncer ?</h3>
+      <p class="adnote" style="margin-top:-6px">Le type choisit le bouton de ton annonce : il ne se change pas, pour que le visiteur sache toujours où il va.</p>
+      <div class="adtype adtype7" id="f-type">${adTypes.map(([k, i, l, b], n) => `<label class="${n === 1 ? 'on' : ''}" data-v="${k}">${ico(i, 26)}<b>${l}</b><small>Bouton « ${b} »</small></label>`).join('')}</div></div>
+    <div class="adfs adstep" data-step="2" hidden><h3><i>2</i> Ton annonce</h3>
      <label class="fl" for="f-title">Titre <small>(60 caractères)</small><input id="f-title" maxlength="60" autocomplete="off" placeholder="Nom de ton entreprise, de ton site, de ton projet…"></label>
      <label class="fl" for="f-text">Texte <small>(220 caractères)</small><textarea id="f-text" rows="3" maxlength="220" placeholder="Explique en une ou deux phrases ce que tu proposes."></textarea></label>
      <p class="adnote" style="margin-top:-4px">Où s’affichent ton titre et ton texte : dans les annonces de type carte ou native, sur nos plateformes, et — pour une <b>Campagne Partage</b> — dans le message que les partageurs publient avec ton lien (WhatsApp, Telegram, Facebook…) et dans l’aperçu du lien. Les <b>bannières prêtes</b> (320×50, 300×250…) n’affichent que ton image.</p>
@@ -381,31 +408,37 @@ export function adsSpace(fbConfig, api) {
        <div class="bnrow"><label for="bn-b728x90"><b>Leaderboard</b> <i>728 × 90</i><small>haut ou bas des pages sur ordinateur</small></label><input id="bn-b728x90" data-k="b728x90" type="file" accept="image/jpeg,image/png,image/webp"><span class="bt" id="bt-b728x90"></span></div><div class="bnrow"><label for="bn-b320x100"><b>Grande bannière</b> <i>320 × 100</i><small>téléphone, dans les pages</small></label><input id="bn-b320x100" data-k="b320x100" type="file" accept="image/jpeg,image/png,image/webp"><span class="bt" id="bt-b320x100"></span></div><div class="bnrow"><label for="bn-b320x50"><b>Mini bannière</b> <i>320 × 50</i><small>bas des applications</small></label><input id="bn-b320x50" data-k="b320x50" type="file" accept="image/jpeg,image/png,image/webp"><span class="bt" id="bt-b320x50"></span></div><div class="bnrow"><label for="bn-b300x250"><b>Rectangle moyen</b> <i>300 × 250</i><small>dans le contenu</small></label><input id="bn-b300x250" data-k="b300x250" type="file" accept="image/jpeg,image/png,image/webp"><span class="bt" id="bt-b300x250"></span></div>
       </details>
       <input id="f-file" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime" multiple hidden></div></div>
-    <div class="adfs"><h3><i>3</i> Bouton d'action</h3>
-     <div class="adbtn" id="f-action">${actions.map(([k, l], n) => `<label class="${n === 0 ? 'on' : ''}" data-v="${k}">${l}</label>`).join('')}</div>
-     <label class="fl" for="f-link" id="f-link-l">Lien du bouton<input id="f-link" inputmode="url" autocomplete="off" placeholder="https://tonsite.com"></label></div>
-    <div class="adfs"><h3><i>4</i> Durée et audience</h3>
-     <div data-adsonly><div class="adbtn"><label class="on">14 jours · offre gratuite</label></div><p class="adnote">Ton annonce reste en ligne 2 semaines. L\'annonce gratuite est unique et n\'est pas renouvelable.</p></div>
+     <div class="adfs adstep" data-step="3" hidden><h3><i>3</i> Destination</h3>
+      <p class="adcallout" id="f-btn-note"></p>
+      <label class="fl" for="f-price" id="f-price-l" hidden>Prix du produit, en francs CFA <small>(affiché dans l'annonce ; il doit être celui de la page)</small><input id="f-price" type="number" min="1" max="99999999" inputmode="numeric" placeholder="12500"></label>
+      <label class="fl" for="f-link" id="f-link-l">Lien du bouton<input id="f-link" inputmode="url" autocomplete="off" placeholder="https://tonsite.com"></label>
+      <p class="adnote" id="f-link-hint"></p></div>
+     <div class="adfs adstep" data-step="4" hidden><h3><i>4</i> Diffusion</h3>
+      <h4 class="adsub-h">À qui s'adresse ton annonce ?</h4>
      <div class="adchips" id="f-countries">${countries.map(([c, l], n) => `<span class="${n === 0 ? 'on' : ''}" data-v="${c}">${l}</span>`).join('')}</div>
      <select class="catpick-add" id="f-more-countries" aria-label="Ajouter un autre pays" style="margin-top:10px"><option value="">+ Autre pays…</option></select>
      <div class="fl" data-adsonly><span>Langues <small>(facultatif : toutes si rien n'est choisi)</small></span><div class="adchips" id="f-langs"><span data-v="fr">Français</span><span data-v="en">Anglais</span><span data-v="pt">Portugais</span></div></div>
      <div class="fl" data-adsonly><span>Appareils <small>(facultatif)</small></span><div class="adchips" id="f-devs"><span data-v="mobile">Téléphone</span><span data-v="desktop">Ordinateur</span></div></div>
      <details class="adfold" data-adsonly><summary>Types de sites et d'applications <small>(facultatif)</small></summary><div class="adchips" id="f-types">${PUB_CATS.map(([k, l]) => `<span data-v="${k}">${l}</span>`).join('')}</div></details>
-     <p class="adnote" data-adsonly>C'est toi qui définis à qui s'adresse ton annonce, et nous le respectons : au plus <b>40 %</b> des vues peuvent venir d'autres pays que ceux choisis. Le pays du visiteur est déterminé par nos serveurs, jamais par le site qui affiche l'annonce.</p></div>
-    <div class="adfs" data-adsonly id="f-netbox"><h3><i>5</i> Où diffuser ton annonce ?</h3>
-     <label class="adcheck" for="f-net"><input type="checkbox" id="f-net" checked><span><b>Offre Réseau (payante)</b> : en plus de nos plateformes, ton annonce est diffusée chez les sites et applications de nos diffuseurs partenaires, pour toucher une audience bien plus large.</span></label>
-     <p class="adcallout" id="f-net-note"></p></div>
-    <div class="adfs" id="f-share" hidden><h3><i>5</i> Audience à atteindre <small>(service payant)</small></h3>
-     <p class="adnote">Il n'y a <b>pas d'offre gratuite</b> pour ce service : des personnes sont payées pour partager ton annonce. <b>Tu paies l'audience</b>, c'est-à-dire le nombre de personnes à atteindre, avec ton <b>solde annonceur</b> (recharge libre en FCFA). Les partageurs sont validés par notre équipe et leur audience est vérifiée ; ta campagne s'arrête quand l'audience choisie est atteinte : <b>tu ne dépasses jamais ton budget</b>. Seuls les clics valides sont comptés, sans doublon, et tu les vois uniquement dans ton espace.</p>
-     <label class="fl" id="f-sbrand-l" for="f-sbrand" hidden>Marque affichée <small>(équipe : ex. SlashAtlas)</small><input id="f-sbrand" maxlength="60" autocomplete="off" placeholder="SlashAtlas"></label>
-     <label class="fl" for="f-aud">Nombre de personnes à atteindre<input id="f-aud" type="number" min="1000" max="5000000" step="1000" value="10000"></label>
-     <div class="sharebox"><b id="f-aud-price">—</b><small id="f-aud-note"></small></div></div>
-    <div class="adneed" id="f-need" role="alert" hidden><p id="f-need-t"></p><button class="btn btn-primary adbig" type="button" id="f-need-go">Recharger maintenant</button></div>
-    <p class="aderr" id="aderr" role="alert" hidden></p>
-    <div class="adsub"><div><b id="f-sub-t">Gratuit</b><small id="f-quota">Validation par notre équipe avant diffusion</small></div><button class="btn btn-primary adbig" id="f-send" type="submit">Envoyer pour validation</button></div>
+     <p class="adnote" data-adsonly>C'est toi qui définis à qui s'adresse ton annonce, et nous le respectons : au plus <b>40 %</b> des vues peuvent venir d'autres pays que ceux choisis. Le pays du visiteur est déterminé par nos serveurs, jamais par le site qui affiche l'annonce.</p>
+      <h4 class="adsub-h">Où la diffuser ?</h4>
+      <p class="adnote">Trois options, que tu peux <b>cumuler</b>. Chacune a son budget, payé avec ton solde annonceur<span id="f-bal"></span> ; ce qui n'est pas dépensé te revient à la fin de l'annonce. <b>Sans option, ton annonce reste gratuite</b> (une seule, sur Afrolook, SlashAtlas, Pronoflash et Épargne+).</p>
+      <label class="dfopt" for="o-app-on"><input type="checkbox" id="o-app-on"><span class="dfmain"><b>Dans Afrolook</b><small>Tu paies les affichages mesurés (prix pour 1 000 vues, selon le format). Chaque vue est comptée par nos serveurs.</small></span>
+       <span class="dfbud"><input id="o-app-v" type="number" min="1000" max="5000000" step="500" value="5000" aria-label="Budget dans Afrolook, en francs"> F</span><small class="dfest" id="o-app-e"></small></label>
+      <label class="dfopt" for="o-net-on"><input type="checkbox" id="o-net-on"><span class="dfmain"><b>Sites et applications partenaires</b><small>Ton annonce s'affiche aussi chez nos diffuseurs, dans leurs formats (bannière, carte, vidéo, plein écran…). Même mesure, même prix.</small></span>
+       <span class="dfbud"><input id="o-net-v" type="number" min="1000" max="5000000" step="500" value="5000" aria-label="Budget chez les partenaires, en francs"> F</span><small class="dfest" id="o-net-e"></small></label>
+      <label class="dfopt" for="o-share-on"><input type="checkbox" id="o-share-on"><span class="dfmain"><b>Partage au clic</b><small>Des personnes partagent ton annonce sur WhatsApp, Telegram et Facebook et gagnent à chaque clic valide. Tu paies l'audience à atteindre. Elle apparaît dans l'onglet Tâches de l'application.</small></span>
+       <span class="dfbud"><input id="o-share-v" type="number" min="1000" max="5000000" step="1000" value="10000" aria-label="Personnes à atteindre"> pers.</span><small class="dfest" id="o-share-e"></small></label>
+      <label class="fl" id="f-sbrand-l" for="f-sbrand" hidden>Marque affichée <small>(équipe : ex. SlashAtlas)</small><input id="f-sbrand" maxlength="60" autocomplete="off" placeholder="SlashAtlas"></label>
+      <label class="fl" id="f-days-l" for="f-days">Durée des options payantes<select id="f-days"><option value="7">7 jours</option><option value="14">14 jours</option><option value="30" selected>30 jours</option><option value="60">60 jours</option><option value="90">90 jours</option></select></label>
+      <div class="sharebox"><b id="f-sum-t">Gratuit</b><small id="f-sum-n"></small></div></div>
+     <div class="adneed" id="f-need" role="alert" hidden><p id="f-need-t"></p><button class="btn btn-primary adbig" type="button" id="f-need-go">Recharger maintenant</button></div>
+     <p class="aderr" id="aderr" role="alert" hidden></p>
+     <div class="adnav"><button class="btn btn-line adbig" type="button" id="f-prev" hidden>← Retour</button><button class="btn btn-primary adbig" type="button" id="f-next">Continuer</button></div>
+    <div class="adsub" id="f-subrow" hidden><div><b id="f-sub-t">Gratuit</b><small id="f-quota">Validation par notre équipe avant diffusion</small></div><button class="btn btn-primary adbig" id="f-send" type="submit">Envoyer pour validation</button></div>
    </form>
    <aside class="adprev"><span class="kicker">Aperçu en direct</span>${phone('Tel que ton annonce apparaîtra')}
-    <div class="adprev-n" data-adsonly>${ico('shield', 18)}<span>Ton annonce sera diffusée sur <b>Afrolook</b>, <b>SlashAtlas</b>, <b>Pronoflash</b> et <b>Épargne+</b> après validation.</span></div>
+    <div class="adprev-n">${ico('shield', 18)}<span id="pv-note">Ton annonce sera diffusée sur <b>Afrolook</b>, <b>SlashAtlas</b>, <b>Pronoflash</b> et <b>Épargne+</b> après validation.</span></div>
     <div class="adprev-n" data-shareonly hidden>${ico('shield', 18)}<span>Ton annonce sera partagée par des personnes <b>validées par notre équipe</b> sur WhatsApp, Telegram, Facebook… Seuls les clics valides sont comptés.</span></div></aside>
   </div></div>
 

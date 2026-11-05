@@ -1730,7 +1730,9 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         unread = authProvider.loginUserData.unreadPosts ?? {};
       } catch (_) {}
     }
-    if (unread.isEmpty) return;
+    // Avec l'API le serveur choisit les publications : la liste « posts non lus » de l'ancien système est vide et ne doit PAS bloquer le chargement
+    // (même règle que le fil principal) ; sinon la page Sport restait vide.
+    if (unread.isEmpty && !ApiGateway.instance.useApi('feed')) return;
 
     try {
       // DECOUVERTE = pas de filtre catégorie (tous les posts non vus),

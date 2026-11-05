@@ -513,7 +513,7 @@ class _DefiResponsesFeedState extends State<DefiResponsesFeed> {
               if (showAd)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: AdSlot(key: ValueKey('ad_defi_$i'), kind: AdSlotKind.list, own: () => const AfrolookInlineAd()),
+                  child: AdSlot(key: ValueKey('ad_defi_$i'), kind: AdSlotKind.list, own: () => const AfrolookInlineAd(compact: true)),
                 ),
             ],
           );

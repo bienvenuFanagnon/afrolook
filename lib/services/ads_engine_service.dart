@@ -21,20 +21,27 @@ class AdsEngineService {
   final Map<String, DateTime> _lastView = {};
 
   /// Une annonce vient d'être affichée à l'utilisateur. Sans effet bloquant, jamais d'exception.
-  void view(String adId, {String format = 'native', String slot = 'feed'}) {
+  /// [onRefused] : le serveur répond qu'il n'y a pas d'annonce à compter pour cette personne (plafond du jour atteint, annonce terminée, hors cible) :
+  /// l'écran doit alors retirer l'annonce au lieu de la montrer sans pouvoir la compter.
+  void view(String adId, {String format = 'native', String slot = 'feed', VoidCallback? onRefused}) {
     final last = _lastView[adId];
     if (last != null && DateTime.now().difference(last).inSeconds < 20) return; // même annonce re-déclenchée par un redessin
     _lastView[adId] = DateTime.now();
     if (_lastView.length > 300) _lastView.clear();
-    unawaited(_view(adId, format, slot));
+    unawaited(_view(adId, format, slot, onRefused));
   }
+
+  /// Un emplacement par POSITION dans l'écran (feed1, feed2…) : deux annonces visibles ensemble comptent toutes les deux (la règle d'intervalle du serveur
+  /// s'applique par emplacement). Les positions tournent sur 6 emplacements au plus.
+  static int _slotCounter = 0;
+  static String nextSlot(String base) => '$base${(_slotCounter++ % 6) + 1}';
 
   /// L'utilisateur vient d'appuyer sur l'annonce (bouton d'action).
   void click(String adId, {String format = 'native', String slot = 'feed'}) {
     unawaited(_click(adId, format, slot));
   }
 
-  Future<void> _view(String adId, String format, String slot) async {
+  Future<void> _view(String adId, String format, String slot, VoidCallback? onRefused) async {
     try {
       final t = await _serve(adId, format, slot);
       if (t == null) return;
@@ -42,6 +49,8 @@ class AdsEngineService {
       // le serveur compare ce délai à l'heure d'émission du jeton : une vue instantanée est refusée
       await Future.delayed(Duration(milliseconds: t.viewMs + 80));
       await _post(t, 'view', ms: t.viewMs + 80);
+    } on _Refused {
+      onRefused?.call();
     } catch (e) {
       if (kDebugMode) debugPrint('AdsEngineService.view: $e');
     }
@@ -73,6 +82,7 @@ class AdsEngineService {
       'pub': _pub, 'fmt': format, 'slot': slot.replaceAll(RegExp(r'[^a-z0-9_-]'), '').padRight(1, 'x'), 'ad': adId,
     });
     final ad = j['ad'];
+    if (j['ok'] == true && ad == null) throw _Refused();   // le serveur n'a aucune annonce à compter pour cette personne
     if (ad is! Map || ad['token'] is! String) return null;
     if ('${ad['id']}' != adId) return null;
     return _Ticket(token: ad['token'] as String, event: '', viewMs: (ad['viewMs'] as num?)?.toInt() ?? 1000);
@@ -82,6 +92,8 @@ class AdsEngineService {
     await RegieApi.adsEvent({'t': t.token, 'e': kind, if (ms != null) 'ms': ms});
   }
 }
+
+class _Refused implements Exception {}
 
 class _Ticket {
   _Ticket({required this.token, required this.event, required this.viewMs}) : at = DateTime.now();

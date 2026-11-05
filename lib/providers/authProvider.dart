@@ -83,6 +83,13 @@ class UserAuthProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _advertisements = [];
   List<Map<String, dynamic>> get advertisements => _advertisements;
 
+  /// Retire une annonce de la liste affichée (le serveur ne peut plus la compter) : on ne montre jamais une annonce qu'on ne peut pas compter.
+  void dropAdvertisement(String adId) {
+    final before = _advertisements.length;
+    _advertisements = _advertisements.where((e) => '${(e['ad'] as Map?)?['id']}' != adId).toList();
+    if (_advertisements.length != before) notifyListeners();
+  }
+
 
 Future<void> loadAdvertisements({bool force = false}) async {
     // Stock d'annonces d'Afrolook préparé À L'AVANCE (GET /ads/app/pool) : boosts payés et annonces d'Afrolook Ads choisis par le serveur pour cette personne.
