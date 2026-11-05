@@ -2765,8 +2765,8 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         contentWidgets.add(const AdFreeDayCard(key: ValueKey('ad_free_day_sport')));
       }
 
-      // Tâches rémunérées (« travaille dans Afrolook et gagne de l'argent ») : après le 9e post, puis un rappel plus loin (emplacements 4 à 6 : propres au fil Sport)
-      if (i == 8) {
+      // Tâches rémunérées (« travaille dans Afrolook et gagne de l'argent ») : dès le 1er post (décision du propriétaire, 05/11/2026), puis un rappel plus loin (emplacements 4 à 6 : propres au fil Sport)
+      if (i == 0) {
         contentWidgets.add(const OfferwallFeedCard(key: ValueKey('offerwall_card_sport_1'), slot: 4));
       }
       if (i == 23) {

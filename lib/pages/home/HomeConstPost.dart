@@ -3619,9 +3619,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       if (i == 2 || (i > 2 && (i - 2) % 30 == 0)) {
         contentWidgets.add(QuizFeedCard(key: ValueKey('quiz_card_home_$i'), slot: i == 2 ? 1 : 2 + (i - 2) ~/ 30));
       }
-      // Tâches rémunérées (« Travaille et gagne de l'argent ») : après le 6e post, puis tous les 20 posts.
-      if (i == 5 || (i > 5 && (i - 5) % 20 == 0)) {
-        contentWidgets.add(OfferwallFeedCard(key: ValueKey('offerwall_card_home_$i'), slot: i == 5 ? 1 : 2 + (i - 5) ~/ 20));
+      // Tâches rémunérées (« Travaille et gagne de l'argent ») : DÈS LE 1er post (décision du propriétaire, 05/11/2026), puis tous les 20 posts à partir du 6e (26e, 46e…).
+      if (i == 0 || (i > 5 && (i - 5) % 20 == 0)) {
+        contentWidgets.add(OfferwallFeedCard(key: ValueKey('offerwall_card_home_$i'), slot: i == 0 ? 1 : 2 + (i - 5) ~/ 20));
       }
       // Offre « Une journée sans pub » : après le 9e post (jamais collée à une pub), 1 fois par jour.
       if (i == 8) {

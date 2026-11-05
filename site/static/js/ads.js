@@ -16,7 +16,8 @@ const kpiCard = (label, value, sub, tone, onclick) => h(onclick ? 'button' : 'di
 const pct = (a, b) => (b > 0 ? (a / b * 100).toFixed(1).replace('.', ',') + ' %' : '—');
 const VUES = EN ? 'views' : 'vues';
 const ACT = (s) => (EN ? ({ Visiter: 'Visit', 'Télécharger': 'Download', 'En savoir plus': 'Learn more', Appeler: 'Call' }[s] || s) : s);
-let IS_ADMIN = false; // compte administrateur de la régie : ses campagnes sont offertes (aucun paiement)
+let IS_ADMIN = false; // compte de l'équipe de la régie
+let IS_OFFERED = false; // équipe d'argent : ses annonces et campagnes sont offertes (aucun débit du solde)
 const safeUrl = (u) => { try { const x = new URL(u); return x.protocol === 'https:' || x.protocol === 'tel:' ? x.href : ''; } catch { return ''; } };
 
 // ───────── messages : fenêtre modale claire, fermée par la personne elle-même (un message en haut de page se perdait dès qu'on avait défilé) ─────────
@@ -372,7 +373,7 @@ async function boot(onUser) {
     $('#u-av').textContent = (u.displayName || u.email || 'A').trim().charAt(0).toUpperCase();
     setTimeout(() => onUser(u), 0); // laisse la page finir son initialisation avant de charger les données
     // Aucun bouton « Administration » sur le site : on détecte le compte à la connexion et on n'affiche l'espace admin qu'aux administrateurs.
-    call('adsWho').then((r) => { if (r && r.admin) { IS_ADMIN = true; showAdminAccess(); window.dispatchEvent(new Event('afl-admin')); } }).catch(() => {});
+    call('adsWho').then((r) => { if (r && r.admin) { IS_ADMIN = true; IS_OFFERED = !!r.offered; showAdminAccess(); window.dispatchEvent(new Event('afl-admin')); } }).catch(() => {});
   });
   return { A, auth, call, upload };
 }
@@ -527,31 +528,30 @@ async function initSpace() {
   const opt = (k) => ({ on: $('#o-' + k + '-on').checked, v: Math.round(Number($('#o-' + k + '-v').value) || 0) });
   const diffusion = () => {
     const app = opt('app'), net = opt('net'), sh = opt('share'), sharePrice = sh.on ? Math.round((sh.v / 1000) * wal.per1000) : 0;
-    const teamShare = IS_ADMIN && sh.on && !app.on && !net.on;   // l'équipe lance une campagne offerte, sans solde
-    return { app, net, sh, sharePrice, teamShare, total: (app.on ? app.v : 0) + (net.on ? net.v : 0) + sharePrice, paid: app.on || net.on || sh.on };
+    return { app, net, sh, sharePrice, total: (app.on ? app.v : 0) + (net.on ? net.v : 0) + sharePrice, paid: app.on || net.on || sh.on };
   };
   const refreshMode = () => {
     const d = diffusion(), bal = wal.data ? wal.data.balanceXof : 0;
     $('#f-bal').textContent = wal.data ? ' (solde actuel : ' + nf(bal) + ' F)' : '';
     $('#o-app-e').textContent = d.app.on ? '≈ ' + nf(Math.round((d.app.v / NATIVE_CPM) * 1000)) + ' affichages mesurés avec une carte native (davantage avec une bannière, moins avec une vidéo)' : '';
     $('#o-net-e').textContent = d.net.on ? '≈ ' + nf(Math.round((d.net.v / NATIVE_CPM) * 1000)) + ' affichages mesurés avec une carte native (davantage avec une bannière, moins avec une vidéo)' : '';
-    $('#o-share-e').textContent = d.sh.on ? (d.teamShare ? 'Offert par l’équipe : aucun paiement' : nf(d.sharePrice) + ' F pour ' + nf(d.sh.v) + ' personnes à atteindre') : '';
+    $('#o-share-e').textContent = d.sh.on ? (IS_OFFERED ? 'Offert par l’équipe : aucun paiement' : nf(d.sharePrice) + ' F pour ' + nf(d.sh.v) + ' personnes à atteindre') : '';
     $$('[data-shareonly]').forEach((e) => { e.hidden = !d.sh.on; });
-    $('#f-sbrand-l').hidden = !d.teamShare;
+    $('#f-sbrand-l').hidden = !(IS_OFFERED && d.sh.on);
     $('#f-days-l').hidden = !(d.app.on || d.net.on);
     $('#pv-note').innerHTML = !d.paid ? 'Ton annonce sera diffusée sur <b>Afrolook</b>, <b>SlashAtlas</b>, <b>Pronoflash</b> et <b>Épargne+</b> après validation.'
       : 'Ton annonce sera diffusée ' + [d.app.on ? 'dans <b>Afrolook</b>' : '', d.net.on ? 'chez nos <b>sites et applications partenaires</b>' : '', d.sh.on ? 'par le <b>partage au clic</b>' : ''].filter(Boolean).join(', ').replace(/, ([^,]*)$/, ' et $1') + ' après validation.';
-    $('#f-sum-t').textContent = !d.paid ? 'Gratuit' : d.teamShare ? 'Offert par l’équipe' : nf(d.total) + ' F';
+    $('#f-sum-t').textContent = !d.paid ? 'Gratuit' : IS_OFFERED ? 'Offert par l’équipe' : nf(d.total) + ' F';
     $('#f-sum-n').textContent = !d.paid ? 'Une seule annonce gratuite, 14 jours, sur Afrolook, SlashAtlas, Pronoflash et Épargne+. Elle devient payante dès qu\u2019une option est cochée.'
-      : d.teamShare ? '' : 'Débité de ton solde annonceur' + (wal.data ? ' (solde actuel : ' + nf(bal) + ' F)' : '') + '. Le budget non dépensé te revient à la fin de l\u2019annonce ; si notre équipe la refuse, tu es remboursé en entier.';
-    $('#f-send').textContent = !d.paid ? 'Envoyer pour validation' : d.teamShare ? 'Lancer la campagne' : 'Payer et envoyer';
+      : IS_OFFERED ? 'Offert par l’équipe : rien n’est débité de ton solde.' : 'Débité de ton solde annonceur' + (wal.data ? ' (solde actuel : ' + nf(bal) + ' F)' : '') + '. Le budget non dépensé te revient à la fin de l\u2019annonce ; si notre équipe la refuse, tu es remboursé en entier.';
+    $('#f-send').textContent = !d.paid ? 'Envoyer pour validation' : IS_OFFERED ? 'Lancer l’annonce' : 'Payer et envoyer';
     $('#f-quota').textContent = !d.paid ? (!st.mine ? 'Validation par notre équipe avant diffusion' : !st.open ? 'L\u2019offre gratuite est terminée.' : st.left ? `${st.left} annonce${st.left > 1 ? 's' : ''} gratuite${st.left > 1 ? 's' : ''} restante${st.left > 1 ? 's' : ''} · validation par notre équipe avant diffusion` : 'Tu as utilisé ton annonce gratuite : coche au moins une option de diffusion.')
       : 'Démarre après validation par notre équipe';
     if (st.mine) $('#f-send').disabled = !d.paid && !(st.open && st.left);
     $$('#adform .adfs').filter((e) => !e.hidden).forEach((e) => { const i = e.querySelector('h3 > i'); if (i) i.textContent = e.dataset.step || i.textContent; });
     // solde insuffisant : on le dit tout de suite, avec le bouton pour recharger (jamais de paiement direct)
     const lack = d.total - bal, need = $('#f-need');
-    need.hidden = !(d.paid && !d.teamShare && wal.data && lack > 0);
+    need.hidden = !(d.paid && !IS_OFFERED && wal.data && lack > 0);
     need.dataset.lack = String(Math.max(0, lack));
     $('#f-need-t').textContent = 'Ces options coûtent ' + nf(d.total) + ' F et ton solde est de ' + nf(bal) + ' F : il te manque ' + nf(Math.max(0, lack)) + ' F. Recharge ton solde, puis envoie ton annonce.';
   };
@@ -669,7 +669,7 @@ async function initSpace() {
     if (!IS_ADMIN && pst.profile.logoStatus !== 'approved') { tab('profil'); return err(pst.profile.logoStatus === 'rejected' ? 'Ton profil a été refusé : corrige-le puis renvoie-le.' : 'Ton profil est en cours de validation : tu pourras publier ta première annonce dès qu’il est validé (tu recevras un e-mail).'); }
     for (const n of [2, 3, 4]) { const m = validate(n); if (m) { showStep(n); return err(m); } }
     const title = $('#f-title').value.trim(), text = $('#f-text').value.trim(), link = $('#f-link').value.trim(), dif = diffusion();
-    if (dif.paid && !dif.teamShare) {   // solde annonceur : si le total dépasse le solde, on propose la recharge du montant manquant
+    if (dif.paid && !IS_OFFERED) {   // solde annonceur : si le total dépasse le solde, on propose la recharge du montant manquant
       const need = dif.total - (wal.data ? wal.data.balanceXof : 0);
       if (need > 0) { err(''); refreshMode(); $('#f-need').scrollIntoView({ block: 'center', behavior: 'smooth' }); openTopup(need); return; }
     }
@@ -690,18 +690,14 @@ async function initSpace() {
       if (bk.length) { payload.banners = {}; for (const k of bk) { const f = st.banners[k]; payload.banners[k] = await put('ad_images', f, f.type === 'image/png' ? 'png' : f.type === 'image/webp' ? 'webp' : 'jpg', f.type); } }
       btn.textContent = 'Envoi de l\'annonce…';
       if (TYPES[st.type].price) payload.price = Number($('#f-price').value);
-      const share = dif.teamShare;   // campagne offerte par l'équipe : ancien appel, avec la marque affichée
-      if (share) { payload.targetAudience = dif.sh.v; payload.brand = $('#f-sbrand').value.trim(); }
-      else {
-        if (dif.app.on) payload.budgetApp = dif.app.v;
-        if (dif.net.on) payload.budgetNetwork = dif.net.v;
-        if (dif.sh.on) payload.shareAudience = dif.sh.v;
-        if (dif.app.on || dif.net.on) payload.days = Number($('#f-days').value);
-      }
-      const done = share ? await call('adsShareCampaignCreate', payload) : await call('adsWebCreate', payload);
+      if (dif.app.on) payload.budgetApp = dif.app.v;
+      if (dif.net.on) payload.budgetNetwork = dif.net.v;
+      if (dif.sh.on) { payload.shareAudience = dif.sh.v; if (IS_OFFERED && $('#f-sbrand').value.trim()) payload.brand = $('#f-sbrand').value.trim(); }
+      if (dif.app.on || dif.net.on) payload.days = Number($('#f-days').value);
+      const done = await call('adsWebCreate', payload);
       loadWallet();
       $('#adform').reset(); st.banners = {}; $$('.bnrow .bt').forEach((t) => { t.textContent = ''; t.className = 'bt'; }); st.langs.clear(); st.devs.clear(); st.types.clear(); $$('#f-langs span, #f-devs span, #f-types span').forEach((x) => x.classList.remove('on')); st.countries = new Set(['ALL']); $$('#f-countries span').forEach((x) => x.classList.toggle('on', x.dataset.v === 'ALL')); $('#f-cat-note').hidden = true; st.files = []; $('#f-file-name').textContent = 'Choisis une image ou une vidéo'; refresh();
-      status(share ? 'Campagne créée : elle sera proposée aux partageurs dès sa validation par la deuxième personne de l’équipe.' : (dif.paid ? 'Annonce envoyée et payée avec ton solde (' + nf(dif.total) + ' F). Elle démarre dès sa validation par notre équipe ; si elle est refusée, tu es remboursé en entier, et le budget non dépensé te revient à la fin.' : 'Annonce envoyée ! Notre équipe la valide, tu recevras un e-mail dès qu\'elle est en ligne.'));
+      status(dif.paid && IS_OFFERED ? 'Annonce envoyée, offerte par l’équipe : aucun débit. Elle démarre dès sa validation.' : (dif.paid ? 'Annonce envoyée et payée avec ton solde (' + nf(dif.total) + ' F). Elle démarre dès sa validation par notre équipe ; si elle est refusée, tu es remboursé en entier, et le budget non dépensé te revient à la fin.' : 'Annonce envoyée ! Notre équipe la valide, tu recevras un e-mail dès qu\'elle est en ligne.'));
       showStep(1); refreshMode();
       tab('mes');
     } catch (e) { err(explain(e)); } finally { btn.disabled = false; btn.textContent = label; }
@@ -1220,13 +1216,14 @@ async function initRegieAdmin() {
   if (!fb) return;
   const { call } = fb;
   const st = { tab: 'adv', filter: 'pending', afilter: 'open', adv: [], ads: [], pays: [], payMeta: null, page: 1, profiles: [], props: [], alerts: [], alertsOpen: 0, sharers: [], camps: [] };
+  window.addEventListener('afl-admin', () => { if (typeof drawBar === 'function') drawBar(); });   // l'onglet « Soldes » n'apparaît qu'une fois le compte reconnu comme équipe d'argent
   const date = (ms) => (ms ? new Date(Number(ms)).toLocaleDateString('fr-FR') : '—');
   const row = (k, v) => h('div', { class: 'rg-row' }, h('span', { text: k }), h('b', { text: v == null || v === '' ? '—' : String(v) }));
   const lnk = (label, url) => { const u = url ? safeUrl(url) : ''; return u ? h('a', { class: 'rg-link', href: u, target: '_blank', rel: 'nofollow noopener', text: label }) : null; };
   const tag = (cls, text) => h('span', { class: 'st ' + cls, text });
   const nice = (e) => { const m = String(e && e.message || ''); if (/administrateurs|permission/.test(m) || (e && e.code === 'functions/permission-denied')) return 'Cette page est réservée aux administrateurs : connecte-toi avec le compte Google utilisé dans l\'application.'; if (/profil_non_valide/.test(m)) return 'Valide d\'abord le profil du diffuseur (onglet Diffuseurs).'; if (/verification_requise/.test(m)) return 'Ce site n\'a pas encore prouvé qu\'il appartient au diffuseur : le diffuseur doit ajouter la balise de vérification sur son site, puis cliquer sur « Vérifier » dans son espace.'; if (/hors_ligne/.test(m)) return 'Ce site ou cette application ne répond pas : il doit être en ligne.'; if (/regles_a_accepter/.test(m)) return 'Le diffuseur doit d\'abord accepter la dernière version des règles (dans son espace).'; if (/motif_obligatoire/.test(m)) return 'Le motif doit faire 5 caractères au moins.'; if (/r.f.rence_obligatoire/.test(m)) return 'La référence du paiement est obligatoire (3 caractères au moins).'; if (/deja_traite/.test(m)) return 'Cette demande a déjà été traitée.'; return friendly(e, m.replace(/^.*?:\s*/, '') || 'Action impossible pour le moment.'); };
 
-  const tabs = { adv: 'Annonceurs', ads: 'Annonces', pub: 'Diffuseurs', prop: 'Sites et applications', share: 'Partageurs', camp: 'Campagnes Partage', pay: 'Retraits', alert: 'Alertes' };
+  const tabs = { adv: 'Annonceurs', ads: 'Annonces', pub: 'Diffuseurs', prop: 'Sites et applications', share: 'Partageurs', camp: 'Campagnes Partage', pay: 'Retraits', alert: 'Alertes', wal: 'Soldes' };
   const payFilters = [['requested', 'À payer'], ['paid', 'Payés'], ['refused', 'Refusés'], ['all', 'Tous']];
   const alertFilters = [['open', 'À vérifier'], ['held', 'Paiements bloqués'], ['reviewed', 'Vérifiées'], ['all', 'Toutes']];
   const filters = [['all', 'Tous'], ['pending', 'En attente'], ['active', 'Validés'], ['refused', 'Refusés'], ['suspended', 'Suspendus']];
@@ -1263,8 +1260,8 @@ async function initRegieAdmin() {
     const k = st.k || {}, pick = (x, fallback) => (x ? x.total : fallback);
     const waiting = (key) => !!(k[key] && k[key].wait);
     const count = { adv: pick(k.adv, st.adv.length), ads: pick(k.ads, st.ads.length), pub: pick(k.pub, st.profiles.length), prop: pick(k.prop, st.props.length), share: pick(k.share, st.sharers.length), camp: pick(k.camp, st.camps.length), pay: pick(k.pay, st.pays.length), alert: k.alert ? k.alert.wait : (st.tab === 'alert' && st.afilter === 'open' ? st.alerts.length : st.alertsOpen) };
-    $('#rg-tabs').replaceChildren(...Object.entries(tabs).filter(([tk]) => tk !== 'pay' || !st.k || st.k.pay).map(([tk, l]) => h('a', { href: '#', class: (st.tab === tk ? 'on ' : '') + (tk === 'alert' && count.alert ? 'rg-alert' : (waiting(tk) ? 'rg-wait' : '')), onclick: (e) => { e.preventDefault(); st.tab = tk; st.page = 1; if (tk === 'pay' && !payFilters.some(([f]) => f === st.filter)) st.filter = 'requested'; if (tk !== 'pay' && tk !== 'alert' && !filters.some(([f]) => f === st.filter)) st.filter = 'pending'; load(); } }, l, h('i', { text: String(count[tk]) }))));
-    const fl = st.tab === 'alert' ? alertFilters : st.tab === 'pay' ? payFilters : filters, cur = st.tab === 'alert' ? st.afilter : st.filter;
+    $('#rg-tabs').replaceChildren(...Object.entries(tabs).filter(([tk]) => (tk !== 'pay' || !st.k || st.k.pay) && (tk !== 'wal' || IS_OFFERED)).map(([tk, l]) => h('a', { href: '#', class: (st.tab === tk ? 'on ' : '') + (tk === 'alert' && count.alert ? 'rg-alert' : (waiting(tk) ? 'rg-wait' : '')), onclick: (e) => { e.preventDefault(); st.tab = tk; st.page = 1; if (tk === 'pay' && !payFilters.some(([f]) => f === st.filter)) st.filter = 'requested'; if (tk !== 'pay' && tk !== 'alert' && !filters.some(([f]) => f === st.filter)) st.filter = 'pending'; load(); } }, l, tk === 'wal' ? null : h('i', { text: String(count[tk]) }))));
+    const fl = st.tab === 'wal' ? [] : st.tab === 'alert' ? alertFilters : st.tab === 'pay' ? payFilters : filters, cur = st.tab === 'alert' ? st.afilter : st.filter;
     $('#rg-filters').replaceChildren(...fl.map(([k, l]) => h('span', { class: cur === k ? 'on' : false, onclick: () => { if (st.tab === 'alert') st.afilter = k; else st.filter = k; st.page = 1; load(); } }, l)));
   };
 
@@ -1430,13 +1427,49 @@ async function initRegieAdmin() {
   }
   function draw() {
     drawBar();
-    const list = st.tab === 'share' ? st.sharers.map(sharerCard) : st.tab === 'camp' ? st.camps.map(campCard) : st.tab === 'alert' ? st.alerts.map(alertCard) : st.tab === 'adv' ? st.adv.map(advCard) : st.tab === 'ads' ? st.ads.map(adCard) : st.tab === 'pay' ? st.pays.map(payCard) : st.tab === 'pub' ? st.profiles.map(pubCard) : st.props.map(propCard);
+    const list = st.tab === 'wal' ? [walCard()] : st.tab === 'share' ? st.sharers.map(sharerCard) : st.tab === 'camp' ? st.camps.map(campCard) : st.tab === 'alert' ? st.alerts.map(alertCard) : st.tab === 'adv' ? st.adv.map(advCard) : st.tab === 'ads' ? st.ads.map(adCard) : st.tab === 'pay' ? st.pays.map(payCard) : st.tab === 'pub' ? st.profiles.map(pubCard) : st.props.map(propCard);
     $('#rg-list').replaceChildren(...(list.length ? list : [h('p', { class: 'adempty', text: 'Rien à afficher pour ce filtre.' })]));
     const pm = st.payMeta;   // retraits : pages de 50
     if (st.tab === 'pay' && pm && pm.total > pm.pageSize) { const pages = Math.ceil(pm.total / pm.pageSize); $('#rg-list').append(h('div', { class: 'rg-act' }, h('button', { class: 'btn btn-line adsm', type: 'button', text: 'Précédent', disabled: st.page <= 1, onclick: () => { st.page -= 1; load(); } }), h('small', { text: `Page ${st.page} sur ${pages} · ${n(pm.total)} demandes` }), h('button', { class: 'btn btn-line adsm', type: 'button', text: 'Suivant', disabled: st.page >= pages, onclick: () => { st.page += 1; load(); } }))); }
   }
+  // « Soldes » : l'équipe d'argent recharge GRATUITEMENT le solde d'un annonceur, retrouvé par son e-mail (aucun paiement, motif obligatoire, journal de l'équipe)
+  let walKey = '';
+  const newKey = () => { walKey = (window.crypto && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2)).replace(/[^A-Za-z0-9-]/g, ''); };
+  newKey();
+  function walCard() {
+    const email = h('input', { type: 'email', placeholder: 'adresse e-mail de l’annonceur', autocomplete: 'off', 'aria-label': 'Adresse e-mail de l’annonceur' });
+    const result = h('div', { class: 'rg-act' });
+    const find = async () => {
+      const v = email.value.trim(); if (!v) return showError('Écris l’adresse e-mail de l’annonceur.');
+      result.replaceChildren(h('small', { text: 'Recherche…' }));
+      try {
+        const w = await call('adsWalletAdminFind', { email: v });
+        const amt = h('input', { type: 'number', min: '100', max: '5000000', step: '500', value: '10000', 'aria-label': 'Montant offert en francs' });
+        const why = h('input', { maxlength: '200', placeholder: 'Motif (ex. : offre de lancement)', 'aria-label': 'Motif' });
+        const quick = h('div', { class: 'adchips' }, ...[5000, 10000, 25000, 50000].map((x) => h('span', { text: n(x), onclick: () => { amt.value = String(x); } })));
+        const go = h('button', { class: 'btn btn-primary adsm', type: 'button', text: 'Recharger gratuitement' });
+        go.addEventListener('click', async () => {
+          if (String(why.value).trim().length < 5) return showError('Écris le motif de cette recharge (5 caractères au moins).');
+          go.disabled = true;
+          try {
+            const r = await call('adsWalletAdminGift', { email: w.email, amount: Number(amt.value), reason: why.value.trim(), key: walKey });
+            newKey(); showSuccess('Solde rechargé : ' + n(r.creditedXof) + ' F offerts. Nouveau solde de ' + (w.brand || w.name || w.email) + ' : ' + n(r.balanceXof) + ' F.'); find();
+          } catch (e) { showError(nice(e)); } finally { go.disabled = false; }
+        });
+        result.replaceChildren(
+          h('div', { class: 'rg-row' }, h('span', { text: 'Compte' }), h('b', { text: (w.name ? w.name + ' · ' : '') + w.email })),
+          h('div', { class: 'rg-row' }, h('span', { text: 'Marque annonceur' }), h('b', { text: w.brand ? w.brand + (w.brandStatus === 'approved' ? '' : ' (profil non validé)') : 'aucun profil annonceur' })),
+          h('div', { class: 'rg-row' }, h('span', { text: 'Solde actuel' }), h('b', { text: n(w.balanceXof) + ' F' })),
+          h('label', { class: 'fl' }, h('span', { text: 'Montant à offrir (F)' }), amt), quick, h('label', { class: 'fl' }, h('span', { text: 'Motif' }), why), go);
+      } catch (e) { result.replaceChildren(h('small', { class: 'aderr', text: nice(e) })); }
+    };
+    email.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); find(); } });
+    return h('article', { class: 'rg-card' }, h('div', { class: 'rg-h' }, h('div', {}, h('b', { text: 'Recharger un compte annonceur (offert)' }), h('small', { text: 'Cherche l’annonceur par son adresse e-mail. Aucun paiement : le montant est offert par Afrolook Ads et noté dans le journal de l’équipe.' }))),
+      h('label', { class: 'fl' }, h('span', { text: 'Adresse e-mail' }), email), h('div', { class: 'rg-act' }, h('button', { class: 'btn btn-line adsm', type: 'button', text: 'Chercher', onclick: find })), result);
+  }
   async function load() {
     loadKpis();
+    if (st.tab === 'wal') { draw(); return; }
     $('#rg-list').replaceChildren(h('p', { class: 'adempty', text: 'Chargement…' }));
     try {
       if (st.tab === 'pay') { const r = await call('adsPubAdminList', { payouts: true, status: st.filter, page: st.page }); st.pays = r.payouts || []; st.payMeta = r; draw(); return; }
