@@ -105,6 +105,7 @@ import 'admin/AfrolookPub/ad_post_page_video_widget.dart';
 import 'canaux/detailsCanal.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:afrotok/services/authentic_video_check.dart';
 
 import 'coins/coin_gift_dialog.dart';
 
@@ -457,6 +458,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     _likeAnimationTimer?.cancel();
     _liveCommentTimer?.cancel();
     _giftNudgeTimer?.cancel();
+    _authTimer?.cancel();
     _quickCommentController.dispose();
 
     // Nettoyer tous les
@@ -3360,6 +3362,16 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         ] else ...[
           const Positioned.fill(child: IgnorePointer(child: VideoShade())),
           _buildCreatorInfo(post),
+          if (post.authenticity == 'flagged')
+            Positioned(
+              left: 12,
+              top: MediaQuery.of(context).padding.top + 58,
+              right: 80,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: NotMonetizedChip(onTap: () => showNotMonetizedSheet(context, mark: post.authenticityMark ?? 'other', isOwner: post.user_id == authProvider.loginUserData.id, onOwnClaim: () => _ownClaim(post))),
+              ),
+            ),
           _buildRail(post),
           Positioned(left: 12, right: 12, bottom: 12 + bottomInset, child: VideoCommentField(onTap: () => _showCommentsModal(post))),
         ],
@@ -3463,6 +3475,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
                 decoration: BoxDecoration(color: const Color(0xFFFFD21F), borderRadius: BorderRadius.circular(99)),
                 child: Text(tr('Fait sur Afrolook'), style: const TextStyle(color: Color(0xFF3A2C00), fontSize: 10, fontWeight: FontWeight.w800)),
               ),
+            if (post.authenticity == 'validated') ...[const SizedBox(width: 8), const AuthenticBadge()],
             if (post.type == PostType.DEFI.name)
               Container(
                 margin: const EdgeInsets.only(left: 8),
@@ -3530,6 +3543,72 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     );
   }
 
+  // ── Authenticité : contrôle de la vidéo regardée (gratuit, sur ce téléphone, seul le résultat est envoyé) ─────────
+  Timer? _authTimer;
+  bool _authBusy = false;
+  int _authScans = 0;
+  Set<String>? _authChecked;
+
+  Future<Set<String>> _loadAuthChecked() async {
+    if (_authChecked != null) return _authChecked!;
+    try {
+      final p = await SharedPreferences.getInstance();
+      _authChecked = (p.getStringList('auth_checked_ids') ?? const <String>[]).toSet();
+    } catch (_) {
+      _authChecked = <String>{};
+    }
+    return _authChecked!;
+  }
+
+  Future<void> _rememberChecked(String id) async {
+    final set = await _loadAuthChecked();
+    set.add(id);
+    try {
+      final list = set.toList();
+      final p = await SharedPreferences.getInstance();
+      await p.setStringList('auth_checked_ids', list.length > 300 ? list.sublist(list.length - 300) : list);
+    } catch (_) {}
+  }
+
+  /// 6 secondes après le début d'une vidéo non encore validée ni marquée : le téléphone lit quelques images avec la reconnaissance de texte gratuite de Google
+  /// et envoie « rien » ou « marque vue ». Une fois par vidéo et par personne, jamais pour sa propre vidéo, 6 vidéos par séance au plus, une analyse à la fois.
+  void _scheduleAuthenticityCheck(Post post) {
+    _authTimer?.cancel();
+    final me = authProvider.loginUserData.id;
+    if (kIsWeb || post.isAdvertisement == true || post.id == null || post.url_media == null || post.user_id == me || post.authenticity != null) return;
+    final id = post.id!;
+    _authTimer = Timer(const Duration(seconds: 6), () async {
+      if (!mounted || _authBusy || _authScans >= 6 || _currentPostId() != id) return;
+      if ((await _loadAuthChecked()).contains(id)) return;
+      final vc = _currentVideoController;
+      if (vc == null || !vc.value.isInitialized || !vc.value.isPlaying) return;
+      _authBusy = true;
+      _authScans++;
+      try {
+        final url = authProvider.convertToCdnUrl(post.url_media!, authProvider.appDefaultData);
+        final res = await AuthenticVideoCheck.scanUrl(url, vc.value.duration.inMilliseconds);
+        if (res == null) return;
+        await _rememberChecked(id);
+        final state = await PostsApi.reportAuthenticity(id, clean: res == 'clean', mark: res == 'clean' ? null : res);
+        if (mounted && state != null && post.authenticity != state) {
+          setState(() {
+            post.authenticity = state;
+            if (state == 'flagged') post.authenticityMark = res == 'clean' ? null : res;
+          });
+        }
+      } finally {
+        _authBusy = false;
+      }
+    });
+  }
+
+  Future<void> _ownClaim(Post post) async {
+    if (post.id == null) return;
+    final ok = await PostsApi.claimOwnership(post.id!);
+    if (!mounted) return;
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(ok ? tr('Merci : notre équipe va vérifier ta vidéo.') : tr('Impossible pour le moment. Réessaie plus tard.'))));
+  }
+
   // ── Invitation à offrir un cadeau (modale fluide) ─────────────────────────
   Timer? _giftNudgeTimer;
   int _nudgesShown = 0;
@@ -3542,6 +3621,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   /// jamais pour sa propre vidéo, une pub, ni si un cadeau a déjà été envoyé sur cette vidéo).
   void _scheduleGiftNudge(Post post) {
     _giftNudgeTimer?.cancel();
+    _scheduleAuthenticityCheck(post);
     final me = authProvider.loginUserData.id;
     if (post.isAdvertisement == true || post.id == null || post.user_id == null || post.user_id == me) return;
     if (_nudgesShown >= 3 || _nudgedPostIds.contains(post.id)) return;

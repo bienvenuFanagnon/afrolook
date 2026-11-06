@@ -61,6 +61,8 @@ Post postFromApi(Map<String, dynamic> j) {
     ..categorie = j['category'] as String?
     ..isPortrait = j['is_portrait'] as bool?
     ..captureSource = j['capture_source'] as String?
+    ..authenticity = j['authenticity'] as String?
+    ..authenticityMark = j['authenticity_mark'] as String?
     ..voiceEffect = j['voice_effect'] as String?
     ..replyToPostId = (j['reply_to'] is Map ? (j['reply_to'] as Map)['id'] : null) as String?
     ..replyToUsername = (j['reply_to'] is Map && (j['reply_to'] as Map)['author'] is Map ? ((j['reply_to'] as Map)['author'] as Map)['username'] : null) as String?

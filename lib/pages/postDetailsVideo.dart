@@ -108,6 +108,7 @@ import '../widgets/double_tap_like.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:afrotok/services/api/posts_api.dart';
 
 
 import 'package:path_provider/path_provider.dart';
@@ -2429,6 +2430,15 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
         Text(title, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: colors.textPrimary, fontSize: 18, fontWeight: FontWeight.w800, height: 1.25)),
       const SizedBox(height: 3),
       Text('${_formatCount(views)} ${tr('vues')}${ago.isNotEmpty ? ' · $ago' : ''}', style: TextStyle(color: colors.textSecondary, fontSize: 13)),
+      if (_currentPost.authenticity == 'validated') const Padding(padding: EdgeInsets.only(top: 6), child: Align(alignment: Alignment.centerLeft, child: AuthenticBadge())),
+      if (_currentPost.authenticity == 'flagged')
+        Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: NotMonetizedChip(onTap: () => showNotMonetizedSheet(context, mark: _currentPost.authenticityMark ?? 'other', isOwner: _currentPost.user_id == authProvider.loginUserData.id, onOwnClaim: () => PostsApi.claimOwnership(_currentPost.id ?? ''))),
+          ),
+        ),
       if (rest.isNotEmpty || title.length > 90) ...[
         const SizedBox(height: 6),
         _buildExpandableDescription(rest.isNotEmpty ? rest : title),

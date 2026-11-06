@@ -93,6 +93,39 @@ class AuthenticVideoCheck {
     }
   }
 
+  /// Même examen sur une vidéo qui se lit (adresse du film et durée déjà connues) : sert aux contrôles d'authenticité pendant les lectures.
+  /// Rend la marque vue (tiktok, instagram…), « clean » si rien, null si l'examen n'a pas pu se faire (rien n'est envoyé dans ce cas).
+  static Future<String?> scanUrl(String url, int durationMs) async {
+    if (kIsWeb || durationMs <= 0) return null;
+    final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
+    try {
+      final times = <int>{
+        300,
+        (durationMs * .25).round(),
+        (durationMs * .5).round(),
+        (durationMs * .75).round(),
+        if (durationMs > 2500) durationMs - 1200,
+      }.where((t) => t >= 0 && t < durationMs).toList()
+        ..sort();
+      final texts = <String>[];
+      for (final t in times) {
+        final f = await VideoThumbnail.thumbnailFile(video: url, imageFormat: ImageFormat.JPEG, timeMs: t, maxWidth: 720, quality: 70);
+        if (f == null) continue;
+        final r = await recognizer.processImage(InputImage.fromFilePath(f));
+        texts.add(r.text);
+        try {
+          await File(f).delete();
+        } catch (_) {}
+      }
+      if (texts.length < 2) return null;   // trop peu d'images lues : pas de verdict
+      return decide(texts) ?? 'clean';
+    } catch (_) {
+      return null;
+    } finally {
+      await recognizer.close();
+    }
+  }
+
   static String _name(String mark) => switch (mark) {
         'tiktok' => 'TikTok',
         'instagram' => 'Instagram',

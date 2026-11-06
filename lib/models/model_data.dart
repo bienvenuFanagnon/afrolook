@@ -1657,6 +1657,9 @@ class Post {
   bool? isPortrait;
   /// Origine du média : « captured » = filmé ou enregistré avec l'application (badge « Fait sur Afrolook »), « imported » = choisi dans la galerie, null = autre.
   String? captureSource;
+  /// Authenticité de la vidéo : « validated » (badge Validé), « flagged » (marque d'un autre réseau vue : plus monétisée), null = non vérifiée.
+  String? authenticity;
+  String? authenticityMark;
   /// Effet de voix choisi par l'auteur d'un audio (étiquette « Voix modifiée »), null = voix d'origine.
   String? voiceEffect;
   /// Réponse en vidéo : publication visée, pseudo de son auteur et extrait de sa description.
@@ -1941,6 +1944,8 @@ class Post {
     }
     isPortrait = json['isPortrait']??true;
     captureSource = json['captureSource'] as String?;
+    authenticity = json['authenticity'] as String?;
+    authenticityMark = json['authenticityMark'] as String?;
     voiceEffect = json['voiceEffect'] as String?;
     replyToPostId = json['replyToPostId'] as String?;
     replyToUsername = json['replyToUsername'] as String?;
@@ -2073,6 +2078,8 @@ class Post {
     data['adSupportCount'] = adSupportCount;
     data['isPortrait'] = isPortrait;
     data['captureSource'] = captureSource;
+    if (authenticity != null) data['authenticity'] = authenticity;
+    if (authenticityMark != null) data['authenticityMark'] = authenticityMark;
     if (voiceEffect != null) data['voiceEffect'] = voiceEffect;
     if (replyToPostId != null) {
       data['replyToPostId'] = replyToPostId;

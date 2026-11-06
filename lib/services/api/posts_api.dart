@@ -103,6 +103,27 @@ class PostsApi {
     return postFromApi(_asMap(r));
   }
 
+  /// Résultat d'un contrôle d'authenticité fait sur ce téléphone pendant une lecture : « clean » ou « mark » (+ marque). Rend l'état public de la vidéo (validated, flagged, null).
+  static Future<String?> reportAuthenticity(String postId, {required bool clean, String? mark}) async {
+    try {
+      final r = await _c.post('/posts/$postId/authenticity', body: {'result': clean ? 'clean' : 'mark', if (!clean && mark != null) 'mark': mark});
+      final d = ApiClient.data(r);
+      return d is Map ? d['authenticity'] as String? : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// « C'est ma vidéo » sur une vidéo marquée : l'équipe la vérifie. Vrai si la demande est partie.
+  static Future<bool> claimOwnership(String postId) async {
+    try {
+      await _c.post('/posts/$postId/ownership-claim');
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Onglet « Suivis » de la page des vidéos verticales : vidéos des comptes et canaux suivis, du plus récent au plus ancien.
   static Future<({List<Map<String, dynamic>> items, String? next})> followingVideos({String? cursor, int limit = 10}) async {
     final r = await _c.get('/feed/videos/following', query: {'limit': limit, if (cursor != null) 'cursor': cursor});

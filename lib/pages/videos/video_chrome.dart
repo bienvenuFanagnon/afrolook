@@ -482,3 +482,93 @@ class _VideoGestureLayerState extends State<VideoGestureLayer> {
     );
   }
 }
+
+/// Badge vert « Validé » : aucune marque d'un autre réseau n'a été détectée après plusieurs contrôles.
+class AuthenticBadge extends StatelessWidget {
+  const AuthenticBadge({super.key, this.compact = false});
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        key: const ValueKey('authentic_badge'),
+        padding: EdgeInsets.symmetric(horizontal: compact ? 6 : 8, vertical: 2),
+        decoration: BoxDecoration(color: const Color(0xF21B8A3C), borderRadius: BorderRadius.circular(99)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(Icons.verified_rounded, size: compact ? 11 : 12, color: Colors.white),
+          const SizedBox(width: 3),
+          Text(context.tr('Validé'), style: TextStyle(color: Colors.white, fontSize: compact ? 9 : 10, fontWeight: FontWeight.w800)),
+        ]),
+      );
+}
+
+/// Pastille jaune d'une vidéo marquée : « Ce post n'est plus monétisé · En savoir plus ».
+class NotMonetizedChip extends StatelessWidget {
+  const NotMonetizedChip({super.key, required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+        key: const ValueKey('not_monetized_chip'),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+          decoration: BoxDecoration(color: const Color(0xF5FFC400), borderRadius: BorderRadius.circular(99), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.35), blurRadius: 12, offset: const Offset(0, 3))]),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            const Icon(Icons.warning_amber_rounded, size: 15, color: Color(0xFF3A2C00)),
+            const SizedBox(width: 6),
+            Flexible(child: Text(context.tr('Ce post n\'est plus monétisé · En savoir plus'), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFF3A2C00), fontSize: 11, fontWeight: FontWeight.w800))),
+            const Icon(Icons.chevron_right_rounded, size: 16, color: Color(0xFF3A2C00)),
+          ]),
+        ),
+      );
+}
+
+/// Feuille d'explication d'une vidéo marquée : pourquoi elle n'est plus monétisée, ce qui change, et « C'est ma vidéo ».
+Future<void> showNotMonetizedSheet(BuildContext context, {required String mark, bool isOwner = false, VoidCallback? onOwnClaim}) {
+  final c = AppColors.of(context);
+  final name = switch (mark) {
+    'tiktok' => 'TikTok',
+    'instagram' => 'Instagram',
+    'facebook' => 'Facebook',
+    _ => context.tr('d\'autres réseaux'),
+  };
+  return showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: c.surface,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+    builder: (ctx) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 12, 18, 14),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Center(child: Container(width: 38, height: 4, decoration: BoxDecoration(color: c.border, borderRadius: BorderRadius.circular(3)))),
+          const SizedBox(height: 14),
+          Text(context.tr('Pourquoi ce post n\'est plus monétisé ?'), style: TextStyle(color: c.textPrimary, fontSize: 17, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 8),
+          Text(context.tr('Plusieurs lectures de cette vidéo ont montré la marque d\'un autre réseau ({a}). Afrolook met en avant les contenus authentiques, propres à la plateforme.', {'a': name}), style: TextStyle(color: c.textSecondary, fontSize: 14, height: 1.45)),
+          const SizedBox(height: 10),
+          for (final t in [context.tr('Les vues de ce post ne rapportent plus de pièces.'), context.tr('Il reste visible, mais n\'est plus mis en avant.'), context.tr('Les cadeaux restent possibles.')])
+            Padding(padding: const EdgeInsets.only(bottom: 4), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('•  ', style: TextStyle(color: c.textSecondary)), Expanded(child: Text(t, style: TextStyle(color: c.textSecondary, fontSize: 13.5, height: 1.4)))])),
+          if (isOwner) ...[
+            const SizedBox(height: 10),
+            Text(context.tr('C\'est ta vidéo ? Dis-le-nous : notre équipe la vérifie.'), style: TextStyle(color: c.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: FilledButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  onOwnClaim?.call();
+                },
+                style: FilledButton.styleFrom(backgroundColor: c.accent, foregroundColor: c.onAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(23))),
+                child: Text(context.tr('C\'est ma vidéo'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+              ),
+            ),
+          ],
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(context.tr('Fermer'), style: TextStyle(color: c.textSecondary))),
+        ]),
+      ),
+    ),
+  );
+}
