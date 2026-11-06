@@ -66,6 +66,8 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
   final List<FaceTrackPoint> _faceTrack = []; // trajectoire du centre du visage, pour adoucir la peau
   final Stopwatch _recWatch = Stopwatch();
   bool _moduleReady = false;
+  int _framesSeen = 0; // images reçues du flux (diagnostic des APK de test)
+  String? _streamErr;
   String? _filterNote; // message affiché sur l'aperçu (préparation, visage non trouvé, erreur)
   int _detectFails = 0;
   double _trackSize = 0.3; // taille du filtre en fraction de la largeur de l'image
@@ -227,12 +229,14 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
         _streaming = false;
         await c.stopImageStream();
       }
-    } catch (_) {
+    } catch (e) {
       _streaming = false;
+      _streamErr = '$e';
     }
   }
 
   Future<void> _onFrame(CameraImage img) async {
+    _framesSeen++;
     final now = DateTime.now().millisecondsSinceEpoch;
     if (_frameBusy || now - _lastFrameMs < 140 || !mounted) return;
     _frameBusy = true;
@@ -461,6 +465,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
       const Positioned(top: 0, left: 0, right: 0, height: 130, child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xAA000000), Color(0x00000000)])))),
       const Positioned(bottom: 0, left: 0, right: 0, height: 260, child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter, colors: [Color(0xCC000000), Color(0x00000000)])))),
       if (_filterNote != null) _filterBanner(),
+      if (const bool.fromEnvironment('TEST_BUILD') && FaceFilters.available) _diagnostic(),
       SafeArea(
         child: Column(children: [
           Padding(
@@ -569,6 +574,19 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
         ]),
       ),
     ]);
+  }
+
+  /// Diagnostic des filtres (APK de test seulement) : dit à quelle étape le suivi du visage s'arrête.
+  Widget _diagnostic() {
+    final txt = 'flux ${_streaming ? 'démarré' : 'arrêté'} · module ${_moduleReady ? 'prêt' : 'absent'} · images $_framesSeen · visages ${_liveFaces.length}'
+        '${_liveSize != null ? ' · taille ${_liveSize!.width.toInt()}×${_liveSize!.height.toInt()}' : ''}'
+        '${_streamErr != null ? '\nflux : $_streamErr' : ''}${FaceFilters.lastError != null ? '\ndétection : ${FaceFilters.lastError}' : ''}';
+    return Positioned(
+      left: 8,
+      right: 8,
+      bottom: 300,
+      child: IgnorePointer(child: Text(txt, textAlign: TextAlign.center, style: const TextStyle(color: Colors.yellowAccent, fontSize: 11, fontWeight: FontWeight.w700, shadows: [Shadow(color: Colors.black, blurRadius: 3)]))),
+    );
   }
 
   /// Petit message sur l'aperçu quand un filtre est choisi (préparation, visage non trouvé, erreur).
