@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Site : accueil réseau social · proposition v2</title>
+<style>
+:root{--bg:#f7f8f6;--card:#fff;--ink:#14201a;--muted:#5d6b63;--line:#e1e6df;--green:#1b8a3c;--gold:#ffc400;--goldink:#3a2c00;--shadow:0 14px 40px rgba(16,26,20,.16)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0e1411;--card:#17201a;--ink:#eef3ef;--muted:#9fb0a5;--line:#27332b;--shadow:0 14px 40px rgba(0,0,0,.55)}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1140px;margin:0 auto;padding:26px 16px 80px}
+h1{font-size:28px;margin:0 0 6px}h2{font-size:22px;margin:44px 0 8px}h3{font-size:16px;margin:0 0 6px}
+.lead{color:var(--muted);max-width:78ch;margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:16px}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.tbl{overflow-x:auto}
+.note{font-size:13px;color:var(--muted)}
+.warn{background:rgba(255,196,0,.18);border:1px solid rgba(255,196,0,.5);border-radius:12px;padding:10px 14px;font-size:14px}
+.hero{display:grid;gap:30px;grid-template-columns:1fr 1fr;align-items:center;background:linear-gradient(160deg,#f8faf7,#e8f5ea);border:1px solid var(--line);border-radius:24px;padding:34px;overflow:hidden}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]) .hero{background:linear-gradient(160deg,#121a15,#10241a)}}
+@media(max-width:860px){.hero{grid-template-columns:1fr;padding:20px}}
+.kick{display:inline-block;background:rgba(27,138,60,.14);color:var(--green);font-weight:800;font-size:12.5px;letter-spacing:.06em;text-transform:uppercase;padding:6px 14px;border-radius:99px}
+.h1{font-size:42px;line-height:1.05;font-weight:900;letter-spacing:-.025em;margin:14px 0;text-wrap:balance}
+.h1 em{font-style:normal;color:var(--green)}
+@media(max-width:560px){.h1{font-size:32px}}
+.pills{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}.pill{padding:7px 12px;border-radius:99px;background:var(--card);border:1px solid var(--line);font-size:13px;font-weight:700}
+.cta{display:inline-block;background:var(--green);color:#fff;font-weight:800;border-radius:12px;padding:12px 18px}
+.stage{position:relative;height:540px;max-width:430px;margin:0 auto;width:100%}
+.scene{position:absolute;inset:0;opacity:0;transition:opacity .6s;pointer-events:none}
+.scene.on{opacity:1;pointer-events:auto}
+.phone{position:absolute;left:50%;top:6px;transform:translateX(-50%) rotate(-2.5deg);width:250px;height:510px;border-radius:34px;background:#0b0f0d;border:7px solid #111;box-shadow:var(--shadow);overflow:hidden}
+.scr{position:absolute;inset:0;background:#fafaf8;color:#14201a;font-size:10px;overflow:hidden;font-family:Roboto,system-ui,sans-serif}
+.bar{display:flex;align-items:center;justify-content:space-between;padding:6px 9px 4px}
+.bar b{color:var(--green);font-size:13px;letter-spacing:.02em}
+.ico{display:flex;gap:9px;align-items:center}.ico svg{width:14px;height:14px;stroke:#333;fill:none;stroke-width:2}
+.bell{position:relative}.bell i{position:absolute;top:-6px;right:-8px;background:#ffd400;border-radius:8px;font-size:7px;font-weight:800;padding:0 3px;font-style:normal}
+.row7{display:flex;justify-content:space-between;padding:5px 6px;border-top:1px solid #e4e4e0;border-bottom:1px solid #e4e4e0;font-size:7.2px;color:#666}
+.row7 div{text-align:center;width:14.2%}.row7 svg{width:15px;height:15px;stroke:#666;fill:none;stroke-width:1.8;display:block;margin:0 auto 2px}
+.row7 .cr svg{background:var(--green);stroke:#fff;border-radius:50%;width:21px;height:21px;padding:4px;margin-top:-3px}
+.row7 .lv svg{stroke:#c62828}
+.tabs{display:flex;gap:9px;padding:7px 8px 0;font-size:8.6px;color:#555;border-bottom:1px solid #ddd}.tabs span{padding-bottom:5px}.tabs .on{color:var(--green);font-weight:800;border-bottom:2px solid var(--green)}
+.chips{display:flex;gap:5px;padding:6px 8px}.chips span{background:#333;color:#fff;border-radius:99px;padding:3px 8px;font-size:8.5px}.chips .b{background:#2a7be4}
+.chro{padding:2px 9px}.chro b{font-size:11.5px}.chro small{color:var(--green);font-weight:700;float:right;font-size:9px;margin-top:2px}
+.circ{display:flex;gap:10px;padding:5px 9px;font-size:8px;text-align:center}.circ div{width:40px}
+.circ i{width:38px;height:38px;border-radius:50%;border:2px dashed #aaa;margin-bottom:2px;display:grid;place-items:center;font-style:normal;font-size:16px;color:var(--green)}
+.circ img{width:38px;height:38px;border-radius:50%;border:2px solid #6cc04a;object-fit:cover;display:block;margin-bottom:2px}
+.pst{padding:4px 9px}.who{display:flex;gap:6px;align-items:center}.who img{width:24px;height:24px;border-radius:50%;object-fit:cover}
+.un{background:#efefea;border-radius:99px;padding:2px 8px 2px 3px;font-size:10px;font-weight:700;display:inline-flex;gap:4px;align-items:center}.un i{background:#ffd400;border-radius:50%;width:11px;height:11px;display:inline-block}
+.pst small{color:#777;display:block;font-size:8.5px}
+.pst .im{display:block;width:100%;height:200px;object-fit:cover;border-radius:10px;margin-top:5px}
+.live{position:absolute;inset:0;color:#fff}.live>img.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.live:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.45),transparent 30%,transparent 50%,rgba(0,0,0,.7))}
+.live .z{position:absolute;z-index:2;left:0;right:0;padding:8px 9px}.live .top{top:0;display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:9px}
+.live .rec{background:#e5383b;border-radius:5px;padding:1px 5px;font-size:8px}
+.hostr{display:flex;gap:5px;align-items:center}.hostr img{width:22px;height:22px;border-radius:50%;object-fit:cover;border:1.5px solid #fff}
+.pin{position:absolute;z-index:3;left:8px;right:8px;bottom:50px;background:rgba(255,255,255,.96);border-radius:14px;padding:6px;display:flex;gap:7px;color:#14201a;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.pin img{width:56px;height:68px;border-radius:9px;object-fit:cover}.pin b{font-size:10.5px;display:block}
+.pin .pr{font-weight:900;font-size:12px;color:var(--green)}.pin s{color:#888;font-size:8.5px;margin-left:4px}
+.pin .ch{display:flex;gap:4px;flex-wrap:wrap;margin:2px 0 4px}.pin .ch span{background:#f0f0ea;border-radius:99px;padding:1px 6px;font-size:7.5px;font-weight:700}.pin .ch .fl{background:#fff1c2}
+.pin .bt{display:flex;gap:4px}.pin .bt span{border-radius:8px;padding:3px 9px;font-size:9px;font-weight:800}.pin .bt .a{background:var(--green);color:#fff}.pin .bt .n{border:1px solid #bbb}
+.cm{position:absolute;z-index:2;left:9px;bottom:8px;display:flex;flex-direction:column;gap:3px;font-size:8.5px}.cm span{background:rgba(0,0,0,.42);border-radius:9px;padding:2px 7px;align-self:flex-start}
+.lab{position:absolute;background:var(--gold);color:var(--goldink);font-weight:900;border-radius:99px;padding:7px 13px;box-shadow:var(--shadow);font-size:12.5px}
+.float{position:absolute;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:7px 11px;font-size:11.5px;font-weight:800}
+.full{position:absolute;inset:6px 20px;border-radius:26px;overflow:hidden;box-shadow:var(--shadow)}.full img{width:100%;height:100%;object-fit:cover;display:block}
+.full:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 55%,rgba(0,0,0,.6))}
+.full .cap{position:absolute;z-index:2;left:14px;bottom:14px;right:14px;color:#fff;font-weight:800;font-size:13px}
+.cardimg{position:absolute;width:128px;border-radius:12px;box-shadow:var(--shadow)}
+.dots{display:flex;gap:7px;justify-content:center;margin-top:6px}.dots i{width:8px;height:8px;border-radius:50%;background:var(--line);display:block}.dots i.on{background:var(--green)}
+.mos{display:grid;gap:8px;grid-template-columns:repeat(6,1fr);grid-auto-rows:120px}
+@media(max-width:700px){.mos{grid-template-columns:repeat(3,1fr)}}
+.mos figure{margin:0;border-radius:14px;overflow:hidden;position:relative}.mos img{width:100%;height:100%;object-fit:cover;display:block}
+.mos figcaption{position:absolute;left:6px;bottom:6px;background:rgba(0,0,0,.55);color:#fff;border-radius:99px;padding:2px 8px;font-size:11px;font-weight:700}
+.mos .w2{grid-column:span 2}.mos .h2{grid-row:span 2}
+.blocks{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.blk{border-radius:18px;overflow:hidden;border:1px solid var(--line);background:var(--card)}.blk img{width:100%;height:150px;object-fit:cover;display:block}.blk div{padding:12px 14px}.blk p{margin:0;color:var(--muted);font-size:13.5px}
+ol.ord{padding-left:20px;margin:0}ol.ord li{padding:5px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Accueil du site : un réseau social qui rémunère ses créateurs (v2)</h1>
+<p class="lead"><b>Proposition à valider, rien n'est modifié sur le site.</b> Correction par rapport à la première version : <b>plus aucune silhouette ni dégradé</b>. Les téléphones reproduisent les vrais écrans de l'application, avec de <b>vraies photos</b>, et j'ai ajouté les <b>lives de vente de produits</b>. Je revois aussi les informations affichées et la disposition de toute la page.</p>
+
+<div class="warn"><b>Fidélité aux écrans.</b> Le <b>fil</b> est reproduit élément par élément d'après une vraie capture de l'application (barre du haut, rangée Invitations · Messages · Business · Créer · Vidéos · Quiz &amp; Étude · Lives, onglets, filtres Tous / Mon pays, Chroniques, publication avec pastille @ et nombre d'abonnés). L'écran du <b>live de vente</b> reprend les libellés et éléments du code de l'application (carte produit épinglée : prix, ancien prix, stock, vente flash, Acheter, Négocier, Vendeur fiable). Pour une fidélité parfaite, je propose de prendre les <b>captures réelles</b> du live de vente, de la vidéo verticale et du profil sur le serveur de test (comptes de démonstration, photos libres), puis de les mettre dans les téléphones à la place de ces reproductions.</div>
+
+<h2>1. L'en-tête proposé (4 scènes qui changent toutes les 5 secondes)</h2>
+<div class="hero">
+ <div>
+  <span class="kick">Réseau social · Lives · Vente en direct · Studio</span>
+  <div class="h1">Ton réseau social. <em>Qui paie ses créateurs, partout dans le monde.</em></div>
+  <p style="color:var(--muted);font-size:16px;margin:0 0 14px">Publie, passe en live, vends tes produits en direct, partage des cartes et mets ta musique. Plus ta communauté grandit, plus Afrolook te rémunère, dans ta monnaie.</p>
+  <div class="pills"><span class="pill">Fil et chroniques</span><span class="pill">Lives et cadeaux</span><span class="pill">Vente en direct</span><span class="pill">Studio Cartes</span><span class="pill">Musique</span></div>
+  <span class="cta">Télécharger l'application</span>
+  <p class="note" style="margin-top:10px">Inscription gratuite · Android, iPhone et web · Photos et profils d'illustration</p>
+ </div>
+ <div>
+  <div class="stage" id="stage">
+   <div class="scene on"><div class="phone"><div class="scr">
+     <div class="bar"><span style="display:flex;gap:7px;align-items:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2.4"><path d="M3 6h18M3 12h18M3 18h18"/></svg><b>Afrolook</b></span>
+       <span class="ico"><span class="bell"><svg viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0 1 12 0v6l2 2H4zM10 21h4"/></svg><i>9+</i></span><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-5-5"/></svg><svg viewBox="0 0 24 24" style="stroke:var(--green)"><path d="M4 9v6h4l5 4V5L8 9zM17 9l4 6M21 9l-4 6"/></svg><svg viewBox="0 0 24 24" style="stroke:var(--green)"><path d="M20 12a8 8 0 1 1-3-6.2M20 4v5h-5"/></svg></span></div>
+     <div class="row7">
+       <div><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.4"/><path d="M3 20c0-4 3-6 6-6s6 2 6 6M15 15c3 0 6 1 6 5"/></svg>Invitations</div>
+       <div><svg viewBox="0 0 24 24"><path d="M4 4h16v12H9l-5 4z"/></svg>Messages</div>
+       <div><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V4h6v3"/></svg>Business</div>
+       <div class="cr"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Créer</div>
+       <div><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9l5 3-5 3z"/></svg>Vidéos</div>
+       <div><svg viewBox="0 0 24 24"><path d="M2 9l10-5 10 5-10 5zM6 12v5c3 2 9 2 12 0v-5"/></svg>Quiz &amp; Étude</div>
+       <div class="lv"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M10 11l5 3-5 3zM8 3l4 4 4-4"/></svg>Lives</div></div>
+     <div class="tabs"><span class="on">✨ Pour toi</span><span>⚽ Sport</span><span>📅 Sorties</span><span>Actualités</span><span>🏆 Défis</span></div>
+     <div class="chips"><span>🌍 Tous</span><span class="b">📍 Mon pays</span></div>
+     <div class="chro"><b>Chroniques</b> <span style="color:var(--green);font-size:8px">● 3 actives</span><small>Tout voir →</small></div>
+     <div class="circ"><div><i>+</i>Ma chronique</div><div><img src="img/n_av_dj.jpg" alt="">aminata</div><div><img src="img/n_av_food.jpg" alt="">mariam</div><div><img src="img/intro1.jpg" alt="">zuri</div></div>
+     <div class="pst"><div class="who"><img src="img/n_av_mic.jpg" alt=""><div><span class="un"><i></i>aminata_k</span><small>1,2 M abonnés</small></div></div>
+       <div style="margin:4px 0 0;font-size:10px">Ma tenue du week-end, dites-moi ce que vous en pensez</div>
+       <img class="im" src="img/n_av_mic.jpg" alt="" style="object-position:top"></div>
+   </div></div>
+    <span class="lab" style="left:0;top:190px">Fil et chroniques</span>
+    <img class="cardimg" src="img/card-neon.webp" style="right:-4px;top:290px" alt="">
+   </div>
+   <div class="scene"><div class="phone"><div class="scr"><div class="live">
+     <img class="bg" src="img/n_av_food.jpg" alt="" style="object-position:center 25%">
+     <div class="z top"><span class="hostr"><img src="img/n_av_food.jpg" alt=""><span><b>boutique_mariam</b><br><span style="font-weight:400;font-size:8px">Vendeur fiable · 312 avis</span></span></span><span><span class="rec">● EN DIRECT</span> 12,4 k</span></div>
+     <div class="pin"><img src="img/n_av_mic.jpg" alt="" style="object-position:center 70%"><div><b>Jupe en wax, taille unique</b><span class="pr">12 500 F</span><s>15 000 F</s>
+       <div class="ch"><span class="fl">Vente flash 04:32</span><span>Plus que 5</span><span>28 vendus</span></div>
+       <div class="bt"><span class="a">Acheter</span><span class="n">Négocier</span></div></div></div>
+     <div class="cm"><span><b>Awa</b> je prends la rouge</span><span><b>Koffi</b> livraison à Lomé ?</span></div>
+   </div></div></div>
+    <span class="lab" style="left:0;top:120px">Vente en direct</span>
+    <div class="float" style="right:0;top:250px">Paiement à la livraison</div>
+   </div>
+   <div class="scene"><div class="full"><img src="img/intro1.jpg" alt=""><div class="cap">Chaque création compte.</div></div>
+    <span class="lab" style="left:0;top:80px">1,2 M abonnés</span>
+    <div class="float" style="right:0;top:200px">+12 cadeaux reçus</div>
+    <img class="cardimg" src="img/card-kente.webp" style="left:-2px;bottom:30px" alt="">
+   </div>
+   <div class="scene"><div class="full"><img src="img/n_ig_b.jpg" alt=""><div class="cap">Lives, musique et cadeaux</div></div>
+    <span class="lab" style="right:0;top:70px">Live · 12,4 k spectateurs</span>
+    <img class="cardimg" src="img/card-music.webp" style="right:6px;bottom:24px" alt="">
+    <div class="float" style="left:0;top:250px">Lion offert par Mariam</div>
+   </div>
+  </div>
+  <div class="dots" id="dots"><i class="on"></i><i></i><i></i><i></i></div>
+ </div>
+</div>
+<p class="note" style="margin-top:8px">Les photos sont de vraies photos libres de droits (celles déjà utilisées dans la vidéo de pub). Les noms, abonnés et prix sont des exemples ; la mention « Photos et profils d'illustration » reste sous l'en-tête.</p>
+
+<h2>2. Informations affichées : ce que je retire, change ou garde</h2>
+<div class="card tbl"><table>
+<tr><th>Élément de l'accueil</th><th>Aujourd'hui</th><th>Proposition</th></tr>
+<tr><td>Titre et étiquette</td><td>« Gagne de l'argent avec ce que tu publies » · Rémunération · Studio Cartes · Musique</td><td>« Ton réseau social. Qui paie ses créateurs, partout dans le monde. » · Réseau social · Lives · Vente en direct · Studio</td></tr>
+<tr><td>Téléphone de l'en-tête</td><td>Portefeuille : 624 750 pièces, lignes likes / cadeaux / canal / lives</td><td><b>Retiré.</b> Remplacé par les vrais écrans (fil, live de vente) avec photos</td></tr>
+<tr><td>Notification « Retrait envoyé · 249 900 FCFA »</td><td>Dans l'en-tête</td><td><b>Retirée</b> : un gros montant en tête ressemble à une promesse de revenu. Les montants restent plus bas, dans « Du gain au retrait », avec la mention « exemple »</td></tr>
+<tr><td>Trois piliers sous le titre</td><td>Rémunération · Studio Cartes · Musique</td><td>Fil et chroniques · Lives et cadeaux · Vente en direct · Studio Cartes · Musique</td></tr>
+<tr><td>Éventail de cartes (manga, collector, passeport, drapeaux)</td><td>À droite, avec « Partager »</td><td>Gardé plus bas (bloc Studio) ; 1 ou 2 cartes seulement dans l'en-tête, posées sur les photos</td></tr>
+<tr><td>Bandeau des moyens de paiement</td><td>Sous l'en-tête</td><td>Descend dans « Du gain au retrait »</td></tr>
+<tr><td>Section « Les écrans de l'application »</td><td>Maquettes à silhouettes (fil, lives)</td><td>Captures réelles : fil, vidéo verticale, live, live de vente, profil, Studio, musique</td></tr>
+<tr><td>Rémunération (2 gros blocs, « Gagner »)</td><td>Tout en haut</td><td>Passe après la découverte du réseau, avec le texte actuel</td></tr>
+<tr><td>Chiffres d'exemple</td><td>Pièces, FCFA, euros partout</td><td>Moins de chiffres en tête ; chaque chiffre porte « exemple », aucun revenu garanti</td></tr>
+</table></div>
+
+<h2>3. Nouvelle disposition de toute la page</h2>
+<div class="card"><ol class="ord">
+<li><b>En-tête</b> : titre, texte, boutons des boutiques, scènes qui défilent (fil, live de vente, photo plein cadre, live et musique).</li>
+<li><b>Mosaïque de créateurs</b> : grille de vraies photos avec légendes, pour montrer la variété de la communauté.</li>
+<li><b>Les cinq piliers</b> : Fil et chroniques · Lives et cadeaux · <b>Vente en direct</b> · Studio Cartes · Musique, chacun avec une vraie photo.</li>
+<li><b>Les vrais écrans</b> : défilement horizontal des captures réelles de l'application.</li>
+<li><b>Vendre en direct</b> (section nouvelle) : vitrine de produits épinglés, stock visible, vente flash, négociation, livraison, suivi des commandes, vendeur vérifié.</li>
+<li><b>Studio Cartes</b> et <b>Musique</b> (existants).</li>
+<li><b>Gagner</b> : « Et ta communauté te rémunère » : cadeaux, vues, lives, parrainage, avec la mention « exemples ».</li>
+<li><b>Du gain au retrait</b> : portefeuille, moyens de paiement, 3 étapes (existant, déplacé).</li>
+<li><b>Fêtes nationales</b>, <b>Télécharger</b>, <b>FAQ</b>, <b>Contact</b> (inchangés).</li>
+</ol></div>
+
+<h2>4. Mosaïque de vraies photos (aperçu)</h2>
+<div class="mos">
+ <figure class="w2 h2"><img src="img/intro1.jpg" alt="" style="object-position:top"><figcaption>Photo et mode</figcaption></figure>
+ <figure><img src="img/n_av_food.jpg" alt=""><figcaption>Boutique en live</figcaption></figure>
+ <figure><img src="img/n_dj.jpg" alt=""><figcaption>DJ</figcaption></figure>
+ <figure class="h2"><img src="img/n_av_mic.jpg" alt="" style="object-position:top"><figcaption>Mode wax</figcaption></figure>
+ <figure><img src="img/n_food.jpg" alt=""><figcaption>Cuisine</figcaption></figure>
+ <figure class="w2"><img src="img/n_ig_b.jpg" alt=""><figcaption>Concerts en direct</figcaption></figure>
+ <figure><img src="img/n_mic.jpg" alt=""><figcaption>Chant</figcaption></figure>
+ <figure><img src="img/n_av_dj.jpg" alt=""><figcaption>Portrait</figcaption></figure>
+</div>
+
+<h2>5. Les cinq piliers (aperçu)</h2>
+<div class="blocks">
+ <div class="blk"><img src="img/n_ig_a.jpg" alt="" style="object-position:center 20%"><div><h3>Fil et chroniques</h3><p>Publications, vidéos, chroniques de 24 h, abonnés.</p></div></div>
+ <div class="blk"><img src="img/n_ig_b.jpg" alt=""><div><h3>Lives et cadeaux</h3><p>Passe en direct, reçois des cadeaux de ta communauté.</p></div></div>
+ <div class="blk"><img src="img/n_av_food.jpg" alt="" style="object-position:center 25%"><div><h3>Vente en direct</h3><p>Épingle tes produits, montre-les, vends pendant le live.</p></div></div>
+ <div class="blk"><img src="img/card-neon.webp" alt="" style="object-fit:contain;background:#101"><div><h3>Studio Cartes</h3><p>Des cartes à partager sur tous tes réseaux.</p></div></div>
+ <div class="blk"><img src="img/n_mic.jpg" alt=""><div><h3>Musique</h3><p>Écoute, soutiens les artistes, mets ta musique.</p></div></div>
+</div>
+
+<h2>6. Section « Vendre en direct » (nouvelle)</h2>
+<div class="card"><div class="grid">
+ <div><h3>Ce qu'on y dit (tiré de l'application)</h3><ul style="margin:0;padding-left:18px">
+  <li>Épingle tes produits : ils défilent en cartes sur le live, avec prix et ancien prix.</li>
+  <li>Stock visible et mis à jour en direct (« Plus que 5 »).</li>
+  <li>Ventes flash avec minuteur.</li>
+  <li>Prix négociable : 3 propositions au plus, le vendeur répond.</li>
+  <li>Livraison estimée, payée à la livraison ; codes promo ; suivi dans « Mes commandes ».</li>
+  <li>Vendeur vérifié, notes et avis ; tes ventes dans « Mes ventes en ligne ».</li>
+ </ul></div>
+ <div><h3>Ce que je ne dis pas</h3><ul style="margin:0;padding-left:18px">
+  <li>Aucun revenu garanti, aucune promesse de ventes.</li>
+  <li>Pas de commission ni de part gardée affichée sur le site.</li>
+  <li>Rien qui n'existe pas encore : je relis le code avant chaque phrase et je vous liste les points à confirmer (par exemple l'argent gardé jusqu'à la réception du colis) avant de les publier.</li>
+ </ul></div></div></div>
+
+<h2>7. Photos et captures : ce que je prépare</h2>
+<div class="card"><ul style="margin:0;padding-left:18px">
+ <li><b>Déjà disponibles</b> : 15 vraies photos libres de droits utilisées dans la pub ; je garde leurs sources dans un fichier de licences.</li>
+ <li><b>À prendre</b> sur le serveur de test avec des comptes de démonstration : vidéo verticale, live, live de vente, profil, Studio. Aucune capture de votre compte ni de contenus d'autres personnes sur le site.</li>
+ <li><b>Plus de variété</b> : une dizaine de photos supplémentaires (jeunes créateurs, boutique, danse, studio) sur Pexels, Unsplash ou Pixabay. Pour les personnes reconnaissables, je recommande une séance avec autorisation écrite ou une banque payante.</li>
+ <li>Toutes les images en WebP, versions claire et sombre vérifiées, texte alternatif dans toutes les langues du site.</li>
+</ul></div>
+
+<h2>À valider</h2>
+<div class="card"><ol class="ord">
+<li>Le titre « Ton réseau social. Qui paie ses créateurs, partout dans le monde. »</li>
+<li>Les 4 scènes de l'en-tête (fil, live de vente, photo plein cadre, live et musique).</li>
+<li>Le retrait du téléphone portefeuille et de la notification de retrait de l'en-tête.</li>
+<li>La nouvelle disposition (section 3), dont la nouvelle section « Vendre en direct ».</li>
+<li>Les captures réelles sur le serveur de test avec comptes de démonstration (recommandé).</li>
+</ol><p class="note">Après votre accord : captures, photos, découpes, textes dans toutes les langues, puis publication.</p></div>
+</div>
+<script>
+(function(){var s=[].slice.call(document.querySelectorAll('#stage .scene')),d=[].slice.call(document.querySelectorAll('#dots i')),i=0;
+if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+setInterval(function(){s[i].classList.remove('on');d[i].classList.remove('on');i=(i+1)%s.length;s[i].classList.add('on');d[i].classList.add('on')},5000);})();
+</script>
+</body>
+</html>
