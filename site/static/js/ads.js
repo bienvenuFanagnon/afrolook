@@ -632,7 +632,7 @@ async function initSpace() {
           c.reason ? h('div', { class: 'rg-row' }, h('span', { text: 'Motif' }), h('b', { text: c.reason })) : null,
           h('details', { class: 'rg-more' }, h('summary', { text: 'Plus de détails' }),
             h('div', { class: 'rg-row' }, h('span', { text: 'Partageurs qui ont publié' }), h('b', { text: nf(c.sharersPublished) + ' / ' + nf(c.sharers) })),
-            h('div', { class: 'rg-row' }, h('span', { text: 'Personnes ayant ouvert le lien' }), h('b', { text: nf(c.uniqueOpens) }))),
+            h('div', { class: 'rg-row' }, h('span', { text: 'Visites du lien (avant v\u00e9rification des clics)' }), h('b', { text: nf(c.uniqueOpens) }))),
           zone);
       }));
     } catch { /* pas de campagne ou service indisponible */ }
@@ -1403,7 +1403,7 @@ async function initRegieAdmin() {
     const c = h('article', { class: 'rg-card' },
       h('div', { class: 'rg-h' }, h('div', {}, h('b', { text: p.brand + ' · ' + p.title }), h('small', { text: p.ownerEmail || '' })), tag(stl[0], stl[1])),
       row('Texte', p.text), row('Audience à atteindre', n(p.targetAudience) + ' personnes'), row('Prix', p.free ? 'Offerte par l’équipe' : p.fromBalance ? n(p.listPriceFcfa) + ' F (payée avec le solde annonceur)' : n(p.listPriceFcfa) + ' F (à encaisser avant de valider)'),
-      row('Pays', (p.countries || []).filter((c) => c !== 'ALL').join(', ') || 'Tous les pays'), row('Résultats', n(p.valid) + ' clics valides · ' + n(p.sharers) + ' partageurs · audience engagée ' + n(p.allocatedReach)), row('Audience touchée', n(p.provenReach) + ' personnes (publications confirmées) · ' + n(p.uniqueOpens) + ' ouvertures · ' + n(p.previews) + ' aperçus · ' + n(p.declaredViews) + ' vues déclarées'), row('Gains versés (plafond)', n(p.spentFcfa) + ' F'),
+      row('Pays', (p.countries || []).filter((c) => c !== 'ALL').join(', ') || 'Tous les pays'), row('Résultats', n(p.valid) + ' clics valides · ' + n(p.sharers) + ' partageurs · audience engagée ' + n(p.allocatedReach)), row('Audience touch\u00e9e (estimation)', (p.estimatedReach && p.estimatedReach.high > 0) ? n(p.estimatedReach.low) + ' \u00e0 ' + n(p.estimatedReach.high) + ' personnes \u00b7 d\u2019apr\u00e8s ' + n(p.valid) + ' clics valides et un taux de clic de ' + (((p.ctrRange || [0.022, 0.038])[0]) * 100).toFixed(1).replace('.', ',') + ' % \u00e0 ' + (((p.ctrRange || [0.022, 0.038])[1]) * 100).toFixed(1).replace('.', ',') + ' %' : 'Pas encore assez de clics valides pour estimer'), row('Gains versés (plafond)', n(p.spentFcfa) + ' F'),
       p.reason ? row('Motif', p.reason) : null);
     const l = lnk('Voir le lien de l’annonceur', p.actionUrl); if (l) c.append(l);
     const d = (decision) => ({ target: 'campaign', id: p.id, decision }), specs = [];
