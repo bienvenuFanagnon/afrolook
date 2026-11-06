@@ -8,6 +8,7 @@ import '../../l10n/tr.dart';
 import '../../models/model_data.dart';
 import '../../services/api/studio_subtitles_api.dart';
 import '../../services/api/studio_trim_api.dart';
+import '../../services/api/studio_time_api.dart';
 import '../../services/post_source_link.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/api_error_dialogs.dart';
@@ -239,6 +240,61 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
     }
   }
 
+  // ── Temps : accéléré, ralenti, rembobinage, boomerang, rampe de vitesse ───
+
+  Future<void> _time() async {
+    final v = _video;
+    if (!widget.isVideo || v == null || !v.value.isInitialized || _busy) return;
+    final seconds = v.value.duration.inMilliseconds / 1000;
+    v.pause();
+    final key = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: const Color(0xFF1B1B1B),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+      builder: (c) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(context.tr('Jouer avec le temps'), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 10),
+            for (final e in StudioTimeApi.effects)
+              ListTile(
+                key: ValueKey('time_${e.$1}'),
+                contentPadding: EdgeInsets.zero,
+                enabled: seconds <= StudioTimeApi.maxSeconds(e.$1),
+                leading: Text(e.$3, style: const TextStyle(fontSize: 26)),
+                title: Text(context.tr(e.$2), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                subtitle: Text(
+                  seconds <= StudioTimeApi.maxSeconds(e.$1) ? '${context.tr('Résultat')} : ${(seconds * e.$4).round()} s' : context.tr('Vidéo trop longue pour cet effet : coupe-la d\'abord.'),
+                  style: const TextStyle(color: Colors.white60, fontSize: 12.5),
+                ),
+                onTap: () => Navigator.pop(c, e.$1),
+              ),
+          ]),
+        ),
+      ),
+    );
+    if (!mounted) return;
+    if (key == null) {
+      v.play();
+      return;
+    }
+    setState(() => _busy = true);
+    try {
+      final out = await StudioTimeApi.apply(File(_path), key);
+      if (!mounted) return;
+      _path = out.path;
+      _touched = true;
+      _busy = false;
+      await _initVideo();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      v.play();
+      handleApiError(context, e, onRetry: _time, fallback: context.tr('L\'effet n\'a pas pu être appliqué. Réessaie.'));
+    }
+  }
+
   // ── Écran ────────────────────────────────────────────────────────────────
 
   @override
@@ -282,6 +338,10 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
                     _round(key: const ValueKey('tool_voice'), icon: Icons.record_voice_over_rounded, size: 40, onTap: _voice),
                     const SizedBox(height: 4),
                     Text(context.tr('Voix'), style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w700, shadows: shadow)),
+                    const SizedBox(height: 10),
+                    _round(key: const ValueKey('tool_time'), icon: Icons.speed_rounded, size: 40, onTap: _time),
+                    const SizedBox(height: 4),
+                    Text(context.tr('Temps'), style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w700, shadows: shadow)),
                     if (_subtitlesOk) ...[
                       const SizedBox(height: 10),
                       _round(key: const ValueKey('tool_subtitles'), icon: Icons.closed_caption_rounded, size: 40, onTap: _subtitles),
