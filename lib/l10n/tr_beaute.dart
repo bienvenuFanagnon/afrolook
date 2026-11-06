@@ -6,6 +6,7 @@ const Map<String, Map<String, String>> kTrBeaute = {
   'Teint éclatant': {'en': 'Glowing complexion', 'es': "Tez luminosa", 'pt': "Tez luminosa", 'de': "Strahlender Teint", 'ar': "بشرة مشرقة", 'zh': "肤色透亮", 'sw': "Uso unaong'aa"},
   'Chaleur': {'en': 'Warmth', 'es': "Calidez", 'pt': "Calor", 'de': "Wärme", 'ar': "دفء", 'zh': "暖色", 'sw': "Joto"},
   'Niveau naturel': {'en': 'Natural level', 'es': "Nivel natural", 'pt': "Nível natural", 'de': "Natürliches Niveau", 'ar': "المستوى الطبيعي", 'zh': "自然程度", 'sw': "Kiwango cha asili"},
+  "La beauté n'a pas pu être appliquée : vidéo gardée telle quelle.": {'en': 'Beauty could not be applied: video kept as it is.', 'es': "No se pudo aplicar la belleza: vídeo conservado tal cual.", 'pt': "Não foi possível aplicar a beleza: vídeo mantido como está.", 'de': "Beauty konnte nicht angewendet werden: Video bleibt unverändert.", 'ar': "تعذّر تطبيق الجمال: بقي الفيديو كما هو.", 'zh': "无法应用美颜：视频保持原样。", 'sw': "Urembo haukuweza kutumika: video imebaki kama ilivyo."},
   '✨ Beauté : désactivée': {'en': '✨ Beauty: off', 'es': "✨ Belleza: desactivada", 'pt': "✨ Beleza: desativada", 'de': "✨ Beauty: aus", 'ar': "✨ الجمال: معطّل", 'zh': "✨ 美颜：已关闭", 'sw': "✨ Urembo: umezimwa"},
   '✨ Beauté : réglable': {'en': '✨ Beauty: adjustable', 'es': "✨ Belleza: ajustable", 'pt': "✨ Beleza: ajustável", 'de': "✨ Beauty: einstellbar", 'ar': "✨ الجمال: قابل للضبط", 'zh': "✨ 美颜：可调", 'sw': "✨ Urembo: unaweza kurekebisha"},
 };

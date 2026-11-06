@@ -61,7 +61,8 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
   int _lastFrameMs = 0;
   Size? _liveSize;
   List<FaceBox> _liveFaces = const [];
-  final List<FaceTrackPoint> _track = []; // trajectoire du visage pendant le tournage
+  final List<FaceTrackPoint> _track = []; // trajectoire du filtre (ancre) pendant le tournage
+  final List<FaceTrackPoint> _faceTrack = []; // trajectoire du centre du visage, pour adoucir la peau
   final Stopwatch _recWatch = Stopwatch();
   bool _moduleReady = false;
   String? _filterNote; // message affiché sur l'aperçu (préparation, visage non trouvé, erreur)
@@ -165,6 +166,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
   void _toggleBeauty() {
     setState(() => _beautyOn = !_beautyOn);
     _savedBeautyOn = _beautyOn;
+    _syncStream();
   }
 
   Future<void> _openBeauty() async {
@@ -181,6 +183,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
     });
     _savedBeauty = _beauty;
     _savedBeautyOn = _beautyOn;
+    _syncStream();
   }
 
   Future<void> _pickFilter(FaceFilter f) async {
@@ -207,15 +210,19 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
     await _syncStream();
   }
 
-  /// Lit les images de la caméra seulement quand un filtre est choisi (sinon aucun coût).
+  /// Lit les images de la caméra seulement si un filtre est choisi ou si la peau doit être adoucie (sinon aucun coût).
+  bool get _needsStream => _filter != FaceFilter.none || (_beautyNow.smooth > 0 && FaceFilters.available);
+
   Future<void> _syncStream() async {
     final c = _ctrl;
     if (c == null || !c.value.isInitialized || !FaceFilters.available) return;
     try {
-      if (_filter != FaceFilter.none && !_streaming) {
+      if (_needsStream && !_moduleReady) _moduleReady = await FaceFilters.ensureReady();
+      if (!mounted) return;
+      if (_needsStream && _moduleReady && !_streaming) {
         _streaming = true;
         await c.startImageStream(_onFrame);
-      } else if (_filter == FaceFilter.none && _streaming && !_recording) {
+      } else if (!_needsStream && _streaming && !_recording) {
         _streaming = false;
         await c.stopImageStream();
       }
@@ -234,19 +241,20 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
       if (!mounted) return;
       if (r == null) {
         // la détection échoue : après quelques essais on le dit au lieu de rester muet
-        if (++_detectFails == 6) setState(() => _filterNote = context.tr('Le filtre ne peut pas suivre ton visage : {err}', {'err': FaceFilters.lastError ?? '?'}));
+        if (++_detectFails == 6 && _filter != FaceFilter.none) setState(() => _filterNote = context.tr('Le filtre ne peut pas suivre ton visage : {err}', {'err': FaceFilters.lastError ?? '?'}));
         return;
       }
       _detectFails = 0;
       setState(() {
         _liveSize = r.size;
         _liveFaces = r.faces;
-        _filterNote = r.faces.isEmpty ? context.tr('Place ton visage devant la caméra') : null;
+        _filterNote = _filter != FaceFilter.none && r.faces.isEmpty ? context.tr('Place ton visage devant la caméra') : null;
       });
       if (_recording) {
         // seul le plus grand visage est suivi dans la vidéo
         final main = r.faces.isEmpty ? null : (r.faces.toList()..sort((a, b) => (b.rect.width * b.rect.height).compareTo(a.rect.width * a.rect.height))).first;
         final a = main == null ? null : FaceFilters.anchor(main, _filter);
+        _faceTrack.add(FaceTrackPoint(_recWatch.elapsedMilliseconds, main == null ? null : (main.rect.center.dx / r.size.width).clamp(-0.4, 1.4), main == null ? null : (main.rect.center.dy / r.size.height).clamp(-0.4, 1.4)));
         _track.add(FaceTrackPoint(_recWatch.elapsedMilliseconds, a == null ? null : (a.center.dx / r.size.width).clamp(-0.4, 1.4), a == null ? null : (a.center.dy / r.size.height).clamp(-0.4, 1.4)));
         if (a != null) _trackSize = a.size / r.size.width;
       }
@@ -308,6 +316,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
     try {
       HapticFeedback.mediumImpact();
       _track.clear();
+      _faceTrack.clear();
       _recWatch
         ..reset()
         ..start();
@@ -346,6 +355,11 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
         return;
       }
       var path = f.path;
+      // beauté : couleurs et peau adoucie (le serveur suit le visage noté pendant le tournage) ; en cas d'échec la vidéo est gardée telle quelle
+      if (!_beautyNow.isOff) {
+        path = await _burnBeauty(path);
+        if (!mounted) return;
+      }
       // filtre de visage choisi : le serveur le pose sur la trajectoire du visage ; en cas d'échec la vidéo est gardée telle quelle
       if (_filter != FaceFilter.none && _track.any((p) => p.x != null)) {
         path = await _burnFilter(path);
@@ -354,6 +368,16 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
       Navigator.pop(context, CreateCaptureResult.file(path, isVideo: true));
     } catch (_) {
       if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<String> _burnBeauty(String path) async {
+    try {
+      final out = await StudioBeautyApi.apply(File(path), _beautyNow, List.of(_faceTrack));
+      return out.path;
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('La beauté n\'a pas pu être appliquée : vidéo gardée telle quelle.'))));
+      return path;
     }
   }
 
