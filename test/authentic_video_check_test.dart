@@ -11,11 +11,11 @@ void main() {
   test('autres réseaux : il faut la marque sur deux images au moins', () {
     expect(AuthenticVideoCheck.decide(['Instagram', '', 'rien']), isNull);
     expect(AuthenticVideoCheck.decide(['Instagram @zuri', '', 'instagram']), 'instagram');
-    expect(AuthenticVideoCheck.decide(['Snapchat', 'snapchat']), 'snapchat');
   });
 
   test('les éditeurs (CapCut, InShot…) et les vidéos propres passent', () {
     expect(AuthenticVideoCheck.decide(['CapCut', 'capcut', '']), isNull);
+    expect(AuthenticVideoCheck.decide(['Snapchat', 'snapchat', '@zuri']), isNull);   // Snapchat n'est pas bloqué
     expect(AuthenticVideoCheck.decide(['InShot', 'Made with VN']), isNull);
     expect(AuthenticVideoCheck.decide(['Bonjour tout le monde', '', '']), isNull);
     expect(AuthenticVideoCheck.decide([]), isNull);

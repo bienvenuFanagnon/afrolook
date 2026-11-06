@@ -30,12 +30,11 @@ class AuthenticResult {
 class AuthenticVideoCheck {
   AuthenticVideoCheck._();
 
-  /// Marques cherchées. `strong` : une seule image suffit (le filigrane de TikTok est très reconnaissable) ; sinon il en faut deux (jamais sur un mot isolé).
+  /// Marques cherchées (Snapchat n'est PAS bloqué : beaucoup de créateurs s'en servent pour créer leurs contenus). `strong` : une seule image suffit (le filigrane de TikTok est très reconnaissable) ; sinon il en faut deux (jamais sur un mot isolé).
   static const _marks = <(String, List<String>, bool)>[
     ('tiktok', ['tiktok', 'douyin'], true),
     ('instagram', ['instagram'], false),
     ('facebook', ['facebook'], false),
-    ('snapchat', ['snapchat'], false),
     ('other', ['likee', 'kwai', 'triller'], false),
   ];
 
@@ -98,7 +97,6 @@ class AuthenticVideoCheck {
         'tiktok' => 'TikTok',
         'instagram' => 'Instagram',
         'facebook' => 'Facebook',
-        'snapchat' => 'Snapchat',
         _ => tr('d\'autres réseaux'),
       };
 
