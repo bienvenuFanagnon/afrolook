@@ -104,6 +104,45 @@ th,td{padding:10px 12px;text-align:left;vertical-align:top;border-bottom:1px sol
   </figure>
 </div>
 
+<h2>1 bis. Beauté : peau lisse et belles couleurs, comme Snapchat et l’iPhone</h2>
+<p class="lead">Réglage « Beauté » <b>activé par défaut à un niveau naturel</b>, pour la photo comme pour la vidéo. Une pastille ✨ dans la barre du haut l’éteint ou l’allume, et un curseur règle la force. L’idée : peau plus douce, teint plus lumineux, couleurs chaudes et nettes, sans effet « plastique ».</p>
+<div class="phones">
+  <figure>
+    <div class="phone">
+      <div class="top"><span>✕</span><span style="background:var(--y);color:#17191C;border-radius:99px;font-size:12px;font-weight:800;padding:2px 10px">✨ Beauté</span><span>⚡ 🔄</span></div>
+      <svg class="face" viewBox="0 0 120 150"><use href="#smooth"/></svg>
+      <div style="position:absolute;left:14px;right:14px;bottom:100px;background:#000a;border-radius:14px;padding:9px 11px;color:#fff;font-size:10.5px;font-weight:700">
+        <div style="display:flex;justify-content:space-between"><span>Peau lisse</span><span>40 %</span></div><div style="height:5px;border-radius:9px;background:#fff4;margin:5px 0 8px"><div style="width:40%;height:100%;border-radius:9px;background:var(--y)"></div></div>
+        <div style="display:flex;justify-content:space-between"><span>Teint éclatant</span><span>30 %</span></div><div style="height:5px;border-radius:9px;background:#fff4;margin-top:5px"><div style="width:30%;height:100%;border-radius:9px;background:var(--y)"></div></div>
+      </div>
+      <div class="row"><i>🚫</i><i class="on">🙂</i><i>🐵</i><i>🤖</i><i>🕶️</i></div>
+      <div class="shutter"><b></b></div>
+    </div>
+    <figcaption><b>Réglages Beauté</b>Peau lisse, teint éclatant, chaleur des couleurs. Curseurs simples, valeur naturelle déjà choisie.</figcaption>
+  </figure>
+  <figure>
+    <div class="phone" style="background:linear-gradient(90deg,#3a3d42 50%,#4b4a47 50%)">
+      <div class="top"><span>✕</span><span style="color:#fff;font-size:12px;font-weight:800">Avant | Après</span><span></span></div>
+      <svg class="face" viewBox="0 0 120 150" style="clip-path:inset(0 50% 0 0)"><use href="#spots"/></svg>
+      <svg class="face" viewBox="0 0 120 150" style="clip-path:inset(0 0 0 50%)"><use href="#smooth"/></svg>
+      <div style="position:absolute;top:0;bottom:0;left:50%;width:2px;background:#fff"></div>
+      <div class="note" style="top:auto;bottom:70px">Tu vois la différence avant de filmer</div>
+    </div>
+    <figcaption><b>Avant / après</b>Un glissé sur l’aperçu compare. La personne garde la main : elle peut tout désactiver.</figcaption>
+  </figure>
+</div>
+
+<h2>Ce qu’il faut pour y arriver (comme Snapchat)</h2>
+<div class="scroll"><table>
+<tr><th>Effet de beauté</th><th>Photo</th><th>Vidéo</th><th>Direct dans la caméra</th></tr>
+<tr><td><b>Peau lisse</b> (adoucir sans effacer les yeux, la bouche, les cheveux)</td><td><span class="tag t1">Faisable</span><br>On lisse seulement la zone du visage détectée.</td><td><span class="tag t2">Faisable</span><br>Après l’enregistrement, par le serveur, en suivant le visage (comme le filtre vidéo). Un peu lent.</td><td><span class="tag t3">Gros chantier</span><br>Il faut un traitement graphique en temps réel (GPU).</td></tr>
+<tr><td><b>Teint éclatant</b> (lumière, chaleur de la peau)</td><td><span class="tag t1">Faisable</span></td><td><span class="tag t2">Faisable</span> (serveur)</td><td><span class="tag t1">Faisable</span> : un filtre de couleur sur l’aperçu suffit, sans suivre le visage.</td></tr>
+<tr><td><b>Couleurs « iPhone »</b> (contraste doux, couleurs vives mais naturelles, tons chauds)</td><td><span class="tag t1">Faisable</span></td><td><span class="tag t1">Faisable</span> : s’appuie sur les « Looks » déjà dans l’éditeur.</td><td><span class="tag t1">Faisable</span> sur l’aperçu</td></tr>
+<tr><td><b>Yeux lumineux / dents plus claires</b></td><td><span class="tag t2">Faisable</span><br>Zones des yeux et de la bouche détectées.</td><td><span class="tag t2">Faisable</span> (serveur)</td><td><span class="tag t3">Gros chantier</span></td></tr>
+<tr><td><b>Visage plus fin, nez plus petit, mâchoire</b></td><td><span class="tag t3">Gros chantier</span><br>Demande de déformer l’image (maillage du visage).</td><td><span class="tag t3">Gros chantier</span></td><td><span class="tag t3">Gros chantier</span></td></tr>
+</table></div>
+<p class="lead" style="margin-top:14px"><b>Ce que je propose :</b> tout ce qui est « Faisable » en un seul lot : lissage et teint sur les photos et les vidéos (la vidéo est traitée après l’enregistrement), couleurs « iPhone » en direct sur l’aperçu, avec ✨ Beauté activée à un niveau naturel par défaut et un curseur. Le direct complet (peau lisse pendant le film) et les déformations fines viennent avec le moteur du niveau 3.</p>
+
 <h2>2. Ce qu’on peut intégrer, et à quel prix</h2>
 <div class="scroll"><table>
 <tr><th>Niveau</th><th>Effets</th><th>Comment</th><th>Effort / risque</th></tr>
@@ -124,6 +163,8 @@ th,td{padding:10px 12px;text-align:left;vertical-align:top;border-bottom:1px sol
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
     <symbol id="real" viewBox="0 0 120 150"><ellipse cx="60" cy="76" rx="42" ry="56" fill="#E9B98F"/><ellipse cx="45" cy="66" rx="5" ry="3.5" fill="#222"/><ellipse cx="75" cy="66" rx="5" ry="3.5" fill="#222"/><path d="M44 98q16 12 32 0" stroke="#7a2e2e" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M60 72v14" stroke="#c48f68" stroke-width="3"/></symbol>
+    <symbol id="spots" viewBox="0 0 120 150"><ellipse cx="60" cy="76" rx="42" ry="56" fill="#DDA982"/><circle cx="38" cy="80" r="2.6" fill="#a8705a"/><circle cx="82" cy="84" r="2.2" fill="#a8705a"/><circle cx="52" cy="96" r="2" fill="#b87b63"/><circle cx="70" cy="50" r="2.4" fill="#a8705a"/><circle cx="44" cy="52" r="2" fill="#b87b63"/><ellipse cx="45" cy="66" rx="5" ry="3.5" fill="#222"/><ellipse cx="75" cy="66" rx="5" ry="3.5" fill="#222"/><path d="M44 98q16 12 32 0" stroke="#7a2e2e" stroke-width="4" fill="none" stroke-linecap="round"/></symbol>
+    <symbol id="smooth" viewBox="0 0 120 150"><ellipse cx="60" cy="76" rx="42" ry="56" fill="#F0C7A2"/><ellipse cx="45" cy="64" rx="14" ry="9" fill="#f7d6b8" opacity=".7"/><ellipse cx="75" cy="64" rx="14" ry="9" fill="#f7d6b8" opacity=".7"/><ellipse cx="45" cy="66" rx="5" ry="3.5" fill="#222"/><ellipse cx="75" cy="66" rx="5" ry="3.5" fill="#222"/><path d="M44 98q16 12 32 0" stroke="#a23b3b" stroke-width="4" fill="none" stroke-linecap="round"/></symbol>
     <symbol id="mask-monkey" viewBox="0 0 120 150"><circle cx="14" cy="64" r="16" fill="#8a5a33"/><circle cx="106" cy="64" r="16" fill="#8a5a33"/><ellipse cx="60" cy="76" rx="44" ry="56" fill="#8a5a33"/><ellipse cx="60" cy="92" rx="30" ry="26" fill="#e8c9a0"/><circle cx="45" cy="64" r="7" fill="#fff"/><circle cx="75" cy="64" r="7" fill="#fff"/><circle cx="46" cy="65" r="3.5" fill="#222"/><circle cx="76" cy="65" r="3.5" fill="#222"/><ellipse cx="60" cy="84" rx="5" ry="3.5" fill="#4a2a14"/><path d="M48 98q12 9 24 0" stroke="#4a2a14" stroke-width="3.5" fill="none" stroke-linecap="round"/></symbol>
     <symbol id="mask-robot" viewBox="0 0 120 150"><rect x="16" y="22" width="88" height="112" rx="16" fill="#9aa5b1"/><rect x="26" y="52" width="68" height="26" rx="8" fill="#17202a"/><circle cx="44" cy="65" r="7" fill="#37e0ff"/><circle cx="76" cy="65" r="7" fill="#37e0ff"/><rect x="34" y="98" width="52" height="14" rx="4" fill="#17202a"/><path d="M42 105h36" stroke="#9aa5b1" stroke-width="2" stroke-dasharray="4 4"/><rect x="57" y="8" width="6" height="16" fill="#6d7886"/><circle cx="60" cy="8" r="5" fill="#E5383B"/></symbol>
     <symbol id="pixel" viewBox="0 0 120 150"><g><rect x="22" y="30" width="22" height="22" fill="#d9a57c"/><rect x="44" y="30" width="22" height="22" fill="#c68f66"/><rect x="66" y="30" width="22" height="22" fill="#d9a57c"/><rect x="88" y="30" width="14" height="22" fill="#c68f66"/><rect x="22" y="52" width="22" height="22" fill="#c68f66"/><rect x="44" y="52" width="22" height="22" fill="#6e4a33"/><rect x="66" y="52" width="22" height="22" fill="#6e4a33"/><rect x="88" y="52" width="14" height="22" fill="#d9a57c"/><rect x="22" y="74" width="22" height="22" fill="#d9a57c"/><rect x="44" y="74" width="22" height="22" fill="#c68f66"/><rect x="66" y="74" width="22" height="22" fill="#d9a57c"/><rect x="88" y="74" width="14" height="22" fill="#c68f66"/><rect x="22" y="96" width="22" height="22" fill="#c68f66"/><rect x="44" y="96" width="22" height="22" fill="#a56a5a"/><rect x="66" y="96" width="22" height="22" fill="#a56a5a"/><rect x="88" y="96" width="14" height="22" fill="#d9a57c"/></g></symbol>
