@@ -1,0 +1,173 @@
+# -*- coding: utf-8 -*-
+# Génère docs/maquettes/videos_verticales_proposition.html (+ version autonome avec images intégrées)
+import os, re, base64
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+CSS = r'''
+:root{--bg:#f7f8f6;--card:#fff;--ink:#14201a;--muted:#5d6b63;--line:#e1e6df;--green:#1b8a3c;--gold:#ffc400;--red:#e5383b;--shadow:0 14px 40px rgba(16,26,20,.16)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0e1411;--card:#17201a;--ink:#eef3ef;--muted:#9fb0a5;--line:#27332b;--shadow:0 14px 40px rgba(0,0,0,.55)}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:26px 16px 80px}
+h1{font-size:28px;margin:0 0 6px}h2{font-size:22px;margin:42px 0 8px}h3{font-size:16px;margin:0 0 6px}
+.lead{color:var(--muted);max-width:80ch;margin:0 0 14px}.note{font-size:13px;color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:16px}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}.tbl{overflow-x:auto}
+.warn{background:rgba(255,196,0,.18);border:1px solid rgba(255,196,0,.5);border-radius:12px;padding:10px 14px;font-size:14px}
+.row{display:flex;gap:26px;flex-wrap:wrap;justify-content:center}.row figure{margin:0;text-align:center;width:262px}.row figcaption{margin-top:10px;font-weight:800}.row figcaption small{display:block;color:var(--muted);font-weight:400;font-size:12.5px}
+.phone{position:relative;width:262px;height:540px;border-radius:34px;background:#0b0f0d;border:7px solid #232f28;box-shadow:0 0 0 1px rgba(255,255,255,.18),var(--shadow);overflow:hidden;margin:0 auto}
+.v{position:absolute;inset:0;color:#fff;font-family:Roboto,system-ui,sans-serif;font-size:10px}
+.v>img.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.38),transparent 22%,transparent 55%,rgba(0,0,0,.62))}
+.tabs{position:absolute;z-index:3;top:12px;left:0;right:0;display:flex;justify-content:center;gap:18px;font-size:12px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.6)}
+.tabs span{opacity:.72;padding-bottom:3px}.tabs .on{opacity:1;border-bottom:2.5px solid #fff}
+.back{position:absolute;z-index:3;top:10px;left:10px;width:30px;height:30px}
+.mute{position:absolute;z-index:3;top:10px;right:10px;width:30px;height:30px}
+.btn{width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.42);border:1px solid rgba(255,255,255,.2);box-shadow:0 2px 8px rgba(0,0,0,.35);display:grid;place-items:center}
+.btn svg{width:21px;height:21px;fill:none;stroke:#fff;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.rail{position:absolute;z-index:3;right:9px;bottom:70px;display:flex;flex-direction:column;align-items:center;gap:9px}
+.rail .n{font-size:10px;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.8);margin-top:-5px}
+.av{position:relative;width:42px;height:42px}.av img{width:42px;height:42px;border-radius:50%;border:2px solid #fff;object-fit:cover;display:block}
+.av i{position:absolute;left:50%;bottom:-7px;margin-left:-8px;width:16px;height:16px;border-radius:50%;background:var(--gold);color:#3a2c00;font-style:normal;font-weight:900;font-size:12px;line-height:16px;text-align:center}
+.like svg{stroke:#fff}.like.on svg{fill:#ff4d57;stroke:#ff4d57}
+.info{position:absolute;z-index:3;left:11px;right:66px;bottom:48px;text-shadow:0 1px 4px rgba(0,0,0,.75)}
+.info b{font-size:12px;display:block}.info .f{display:inline-block;background:var(--gold);color:#3a2c00;border-radius:99px;padding:1px 8px;font-size:9px;font-weight:800;text-shadow:none;margin-left:6px}
+.info p{margin:3px 0;font-size:10.5px;line-height:1.3}.info .s{font-size:9.5px;opacity:.9}
+.field{position:absolute;z-index:3;left:11px;right:11px;bottom:10px;height:30px;border-radius:15px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;padding:0 12px;font-size:10px;color:rgba(255,255,255,.85)}
+.prog{position:absolute;z-index:4;left:0;right:0;bottom:0;height:2.5px;background:rgba(255,255,255,.28)}.prog i{display:block;height:100%;width:42%;background:#fff}
+/* ancien écran (approximation d'après le code) */
+.old .tabs{display:none}.old .shade{background:linear-gradient(180deg,rgba(0,0,0,.2),transparent 30%,rgba(0,0,0,.45))}
+.old .ri{position:absolute;z-index:3;right:7px;bottom:40px;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:9px}
+.old .ri svg{width:24px;height:24px;fill:none;stroke-width:1.8;stroke-linecap:round}
+.old .eye{position:absolute;z-index:3;top:10px;right:10px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.45);display:grid;place-items:center;font-size:12px}
+.old .tt{position:absolute;z-index:3;top:12px;left:10px;font-weight:800;color:#2ecc71;font-size:13px}
+.old .live{position:absolute;z-index:2;left:10px;right:62px;bottom:98px;display:flex;flex-direction:column;gap:3px;opacity:.9}.old .live span{background:rgba(0,0,0,.4);border-radius:9px;padding:2px 7px;align-self:flex-start;font-size:8.5px}
+.old .inf{position:absolute;z-index:3;left:10px;right:64px;bottom:46px;font-size:9px;line-height:1.35}
+.old .chipx{display:inline-block;background:rgba(255,255,255,.2);border-radius:99px;padding:1px 6px;margin:1px 2px 1px 0;font-size:8px}
+.old .qc{position:absolute;z-index:3;left:10px;right:62px;bottom:10px;height:26px;border-radius:13px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:space-between;padding:0 8px;font-size:9px;color:rgba(255,255,255,.6)}
+/* pub */
+.ad{position:absolute;inset:0;background:#0f1a14;color:#fff}.ad>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.adtag{position:absolute;z-index:3;top:46px;left:11px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.25);border-radius:99px;padding:2px 9px;font-size:9px;font-weight:800}
+.adcta{position:absolute;z-index:3;left:11px;right:11px;bottom:44px;background:#fff;color:#14201a;border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:9px}
+.adcta b{font-size:11.5px;display:block}.adcta small{color:#667;font-size:9px}.adcta span{margin-left:auto;background:var(--green);color:#fff;border-radius:99px;padding:5px 12px;font-weight:800;font-size:10px;white-space:nowrap}
+.hint{position:absolute;z-index:3;left:0;right:0;bottom:12px;text-align:center;font-size:9.5px;opacity:.85}
+/* page des commentaires */
+.cp{position:absolute;inset:0;background:#fafaf8;color:#14201a;font-family:Roboto,system-ui,sans-serif;font-size:10px}
+.cp .h{display:flex;align-items:center;gap:8px;padding:10px 12px;font-weight:800;font-size:13px;border-bottom:1px solid #e6e6e0}
+.cm{display:flex;gap:7px;padding:8px 12px}.cm img{width:26px;height:26px;border-radius:50%;object-fit:cover}.cm b{display:block;font-size:10px}.cm span{color:#444;font-size:10px}
+.cp .in{position:absolute;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #e6e6e0;padding:8px 10px;display:flex;gap:8px;align-items:center}.cp .in div{flex:1;background:#f1f1ec;border-radius:99px;padding:7px 12px;color:#777}
+.kb{position:absolute;left:0;right:0;bottom:0;height:150px;background:#d9dbe0;display:grid;place-items:center;color:#667;font-size:10px}
+ul.t{margin:0;padding-left:18px}ul.t li{padding:3px 0}
+.g2{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+'''
+
+def im(n):
+    return 'img/' + n
+
+SV = {
+ 'heart': '<svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z"/></svg>',
+ 'chat': '<svg viewBox="0 0 24 24"><path d="M4 5h16v11H9.5L5 20v-4H4z"/></svg>',
+ 'gift': '<svg viewBox="0 0 24 24"><rect x="3.5" y="9" width="17" height="11" rx="1.5"/><path d="M12 9v11M3.5 13h17M12 9C9.5 9 8 8 8 6.6 8 5.5 9 5 10 5c1.5 0 2 2 2 4zm0 0c2.5 0 4-1 4-2.4C16 5.5 15 5 14 5c-1.5 0-2 2-2 4z"/></svg>',
+ 'share': '<svg viewBox="0 0 24 24"><path d="M14 4l7 7-7 7v-4c-5 0-8 1.5-10 5 .5-6 3.5-10 10-10z"/></svg>',
+ 'more': '<svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/></svg>',
+ 'mute': '<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9zM17 9l4 6M21 9l-4 6"/></svg>',
+ 'back': '<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
+ 'bar': '<svg viewBox="0 0 24 24"><path d="M5 20V10M12 20V4M19 20v-7"/></svg>',
+ 'mark': '<svg viewBox="0 0 24 24"><path d="M6 4h12v17l-6-4-6 4z"/></svg>',
+}
+
+def b(icon, n=None, cls=''):
+    return '<div class="btn %s">%s</div>%s' % (cls, SV[icon], ('<span class="n">%s</span>' % n) if n else '')
+
+def new_screen(photo, user, subs, caption, pos='center 20%', back=False, sound='Son original · '):
+    return ('<div class="v"><img class="bg" src="%s" alt="" style="object-position:%s"><div class="shade"></div>'
+            '<div class="tabs"><span>Suivis</span><span class="on">Pour toi</span><span>Lives</span></div>%s'
+            '<div class="rail"><div class="av"><img src="%s" alt=""><i>+</i></div>%s%s%s%s%s</div>'
+            '<div class="info"><b>@%s<span class="f">Fait sur Afrolook</span></b><span class="s">%s abonnés</span><p>%s</p><span class="s">♪ %s%s</span></div>'
+            '<div class="field">Ajouter un commentaire…</div><div class="prog"><i></i></div></div>') % (
+        im(photo), pos, '<div class="btn back">%s</div>' % SV['back'] if back else '', im(photo),
+        b('heart', '12,4 k', 'like on'), b('chat', '320'), b('gift', '58'), b('share', 'Partager'), '<div class="btn">%s</div>' % SV['more'],
+        user, subs, caption, sound, user)
+
+def old_screen(photo, pos='center 20%'):
+    ic = lambda svg, col: svg.replace('<svg ', '<svg style="stroke:%s;width:24px;height:24px" ' % col)
+    return ('<div class="v old"><img class="bg" src="%s" alt="" style="object-position:%s"><div class="shade"></div>'
+            '<span class="tt">Vibe vidéos</span><span class="eye">👁</span>'
+            '<div class="ri"><div class="av" style="width:34px;height:34px"><img src="%s" alt="" style="width:34px;height:34px;border-color:#2ecc71"><i>+</i></div><span>@aminata</span><span>145 k</span>%s<span>12,4 k</span>%s<span>320</span>%s<span>9 k</span>%s<span>58</span>%s</div>'
+            '<div class="live"><span><b>Awa</b> trop forte !</span><span><b>Koffi</b> 🔥🔥🔥</span><span><b>Jay</b> bravo</span></div>'
+            '<div class="inf"><div style="opacity:.75">il y a 2 h</div><div>Ma tenue du week-end, dites-moi ce que vous en pensez</div>'
+            '<div><span class="chipx">🌹 12</span><span class="chipx">👑 5</span><span class="chipx">💎 3</span></div><div><span class="chipx">Utiliser · 🪙 5</span><span class="chipx">Score 78</span><span class="chipx">🪙 240 reçues</span></div></div>'
+            '<div class="qc"><span>Ajouter un commentaire…</span><span>😀 ➤</span></div></div>') % (
+        im(photo), pos, im(photo), ic(SV['heart'], '#e53935'), ic(SV['chat'], '#fff'), ic(SV['bar'], '#3b82f6'), ic(SV['mark'], '#fff'), ic(SV['more'], '#fff'))
+
+P_NEW_LIGHT = '<div class="phone">%s</div>' % new_screen('h_7562179.jpg', 'jay.beats', '50 k', 'Studio ce soir, nouveau son #afrobeats', 'center 10%')
+P_NEW_DARK = '<div class="phone">%s</div>' % new_screen('h_15929275.jpg', 'zuri.danse', '58 k', 'Chorégraphie du week-end', 'center 20%', back=True)
+P_OLD = '<div class="phone">%s</div>' % old_screen('h_7562179.jpg', 'center 10%')
+P_AD = ('<div class="phone"><div class="v"><div class="ad"><img src="%s" alt="" style="object-position:center 30%%"><div class="shade"></div>'
+        '<div class="tabs"><span>Suivis</span><span class="on">Pour toi</span><span>Lives</span></div><span class="adtag">Annonce</span>'
+        '<div class="adcta"><div><b>Jupe en wax, taille unique</b><small>boutique_mariam</small></div><span>Acheter</span></div>'
+        '<div class="hint">Glisse pour continuer</div></div></div></div>') % im('n_av_mic.jpg')
+P_COM = ('<div class="phone"><div class="cp"><div class="h">← Commentaires (320)</div>'
+         '<div class="cm"><img src="%s" alt=""><div><b>awa_k</b><span>Trop forte, bravo !</span></div></div>'
+         '<div class="cm"><img src="%s" alt=""><div><b>koffi</b><span>La chorégraphie est incroyable</span></div></div>'
+         '<div class="cm"><img src="%s" alt=""><div><b>mariam</b><span>On veut la suite</span></div></div>'
+         '<div class="in"><div>Ajouter un commentaire…</div><span>➤</span></div><div class="kb">clavier</div></div></div>') % (im('f_8727469.jpg'), im('h_2033447.jpg'), im('f_10158011.jpg'))
+
+HTML = '''<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Page des vidéos verticales · proposition</title><style>%(css)s</style></head><body><div class="wrap">
+<h1>Page des vidéos verticales : proposition à valider</h1>
+<p class="lead"><b>Rien n'est modifié dans l'application.</b> J'ai relu la page actuelle en entier (<code>post_video_format_tel_details.dart</code>, 3 777 lignes, et la page « Afrolook vidéos » ouverte par le bouton Vidéos). Voici ce que j'ai trouvé, puis la nouvelle page, puis les points à valider.</p>
+
+<h2>1. La page actuelle, telle que je l'ai relue</h2>
+<div class="row"><figure>%(old)s<figcaption>Aujourd'hui (d'après le code)<small>Sur un fond clair, les icônes blanches sans fond disparaissent</small></figcaption></figure>
+<div style="flex:1;min-width:300px;max-width:560px"><div class="card"><h3>Ce qui encombre</h3><ul class="t">
+<li><b>Commentaires qui défilent</b> au-dessus du bas (liste animée avec fondu), en plus du dernier commentaire.</li>
+<li><b>Colonne de droite à 9 éléments</b> : avatar + abonnement, nom, nombre d'abonnés, cœur, commentaires, barre de stats (inerte), favoris, menu. Icônes de 4 couleurs (rouge, blanc, bleu, jaune) et de 3 tailles (30, 33, 35), sans fond.</li>
+<li><b>Bas de l'écran</b> : heure, description, liste de cadeaux, bouton musique, score, pièces reçues, carte Défi, champ de commentaire avec stickers.</li>
+<li><b>Haut</b> : titre « Vibe vidéos », bouton œil (masquer l'interface), badges tier et pays, cadeau rapide, flèche retour.</li>
+<li><b>Pages intercalées</b> : pub plein écran toutes les 3 vidéos, pub « midroll » 5 secondes avant la fin (la vidéo se met en pause), « créateurs et canaux à suivre » toutes les 10, promo AfroShop, rappel de monétisation, fin de fil.</li>
+<li><b>Fluidité</b> : une animation d'apparition est rejouée à chaque reconstruction de la colonne, les commentaires se mettent à jour par minuteur, et tout l'écran se redessine à chaque changement de vidéo.</li></ul></div>
+<div class="card"><h3>Le bouton « Vidéos » du bas</h3><p style="margin:0">Il ouvre aujourd'hui <b>une autre page</b> : une liste de cartes « Afrolook vidéos » avec barre du haut. Toucher une vidéo ouvre ensuite la page plein écran ci-dessus. Il y a donc deux pages pour la même chose.</p></div></div></div>
+
+<h2>2. La nouvelle page</h2>
+<div class="row"><figure>%(new_light)s<figcaption>Vidéo à fond clair<small>Chaque bouton a sa pastille sombre : visible sur tous les fonds</small></figcaption></figure>
+<figure>%(new_dark)s<figcaption>Ouverte depuis une vidéo<small>Flèche retour, la vidéo touchée passe en premier</small></figcaption></figure>
+<figure>%(ad)s<figcaption>Pub entre deux vidéos<small>En plein écran, on la passe en glissant</small></figcaption></figure>
+<figure>%(com)s<figcaption>Toucher le champ<small>Ouvre la page des commentaires, clavier prêt</small></figcaption></figure></div>
+
+<h2>3. Ce qui change, point par point</h2>
+<div class="card tbl"><table><tr><th>Sujet</th><th>Décision proposée</th></tr>
+<tr><td>Haut de l'écran</td><td><b>Suivis · Pour toi · Lives</b>, centré, onglet actif souligné (comme sur le site). Rien d'autre, sauf la flèche retour quand on arrive d'une autre page et le son (muet / actif).</td></tr>
+<tr><td>Commentaires qui défilent</td><td><b>Supprimés</b> (liste animée, minuteur, dernier commentaire).</td></tr>
+<tr><td>Champ « Ajouter un commentaire… »</td><td>Reste en bas, mais ce n'est plus un vrai champ : <b>toucher ouvre la page des commentaires</b> (clavier ouvert). Plus de commentaire écrit sur la vidéo. Les stickers se choisissent sur la page des commentaires.</td></tr>
+<tr><td>Colonne de droite</td><td><b>5 boutons + menu</b> : créateur (+ abonner), j'aime, commentaires, cadeau, partager, puis « ⋯ ». Favoris, statistiques, signaler, supprimer, traduire passent dans le menu « ⋯ ».</td></tr>
+<tr><td>Lisibilité</td><td>Chaque bouton est dans une <b>pastille ronde sombre translucide</b> (bord clair fin, légère ombre), et chaque chiffre a une ombre portée : visibles sur un fond blanc comme sur un fond noir.</td></tr>
+<tr><td>Icônes et couleurs</td><td><b>Même famille d'icônes que la barre de navigation</b> (contour arrondi, même épaisseur, même taille 21 px dans une pastille de 40 px). Blanches au repos ; actives avec les couleurs du thème (cœur rouge de l'application, favori en ambre « texte »). Les chiffres suivent la même règle, en blanc avec ombre.</td></tr>
+<tr><td>Bas de l'écran</td><td><b>@pseudo</b> + « Fait sur Afrolook » si filmé dans l'application, abonnés, <b>2 lignes de description</b> (« plus »), son utilisé. Disparaissent de l'écran : liste de cadeaux (vue dans la feuille Cadeau), score, pièces reçues, heure, cartes Défi (restent dans le menu « ⋯ » et la page de détail).</td></tr>
+<tr><td>Œil (masquer l'interface)</td><td><b>Supprimé</b> : l'interface est assez légère pour ne plus en avoir besoin.</td></tr>
+<tr><td>Publicités</td><td>Une <b>pub plein écran entre deux vidéos</b> (toutes les 4 vidéos, valeur réglable depuis la configuration), avec la mention « Annonce », un bouton d'action, et on la passe en glissant comme une vidéo. <b>Plus de pub « midroll »</b> qui coupe la vidéo. Aucune pub pour les comptes Gold. Les pages « créateurs à suivre », promo AfroShop et rappel restent mais plus rarement, jamais l'une après l'autre.</td></tr>
+<tr><td>Fluidité du défilement</td><td>Défilement page par page avec accroche nette, <b>lecteur suivant déjà prêt</b> (3 vidéos d'avance, 1 en arrière, ce qui existe déjà), première image visible tout de suite (vignette) pendant que le lecteur démarre, <b>un seul morceau de l'écran se redessine</b> au changement de vidéo (compteurs et icônes isolés), plus d'animation rejouée, plus de minuteur de commentaires. Je mesure avant et après (images par seconde, délai de la première image) et je vous donne les chiffres.</td></tr>
+<tr><td>Bouton « Vidéos » du bas</td><td><b>Ouvre cette même page</b> sur « Pour toi », directement. L'ancienne liste « Afrolook vidéos » n'est plus atteinte depuis la navigation.</td></tr>
+<tr><td>Une vidéo touchée ailleurs</td><td>La page <b>reçoit la vidéo en paramètre et l'affiche en premier</b> (c'est déjà le cas aujourd'hui avec <code>initialPost</code>) ; le fil « Pour toi » continue derrière.</td></tr>
+<tr><td>Onglet Suivis</td><td>Les vidéos des comptes et canaux que la personne suit, du plus récent au plus ancien. <b>Demande un nouveau point d'accès dans l'API</b> (je le crée avec ses tests avant de toucher l'application).</td></tr>
+<tr><td>Onglet Lives</td><td>Montre les lives en cours, vignettes plein écran défilantes, un toucher rejoint le live. Au début, il ouvre la liste des lives existante pour ne pas dupliquer la salle de live.</td></tr></table></div>
+
+<h2>4. Ce que je ne change pas</h2>
+<div class="card"><ul class="t"><li>Double toucher pour aimer, avec les cœurs qui s'envolent.</li><li>Le cadeau (menu doré existant), le partage, l'abonnement, le menu « ⋯ » et ses actions de modération.</li><li>La monétisation : les likes, vues et cadeaux paient comme avant.</li><li>Le préchargement des vidéos et le suivi des vues.</li></ul></div>
+
+<h2>5. À valider avant que je code</h2>
+<div class="card"><ol style="margin:0;padding-left:20px">
+<li>La colonne de 5 boutons + « ⋯ » (et la suppression de la barre de stats, de l'œil et des commentaires qui défilent).</li>
+<li>Une pub toutes les 4 vidéos, sans pub midroll, sans pub pour Gold.</li>
+<li>L'onglet <b>Suivis</b> : OK pour créer le point d'accès dans l'API ?</li>
+<li>L'onglet <b>Lives</b> : au début il ouvre la liste des lives (recommandé), plus tard il pourra défiler en plein écran.</li>
+<li>Le bouton Vidéos du bas qui ouvre cette page, et la fin de la page liste « Afrolook vidéos ».</li></ol>
+<p class="note">Ordre de travail après votre accord : API (Suivis) avec tests, puis la nouvelle page, puis mesures avant/après sur un vrai téléphone. Les photos sont des exemples (Pexels).</p></div>
+</div></body></html>''' % {'css': CSS, 'old': P_OLD, 'new_light': P_NEW_LIGHT, 'new_dark': P_NEW_DARK, 'ad': P_AD, 'com': P_COM}
+
+open('videos_verticales_proposition.html', 'w', encoding='utf-8').write(HTML)
+
+def emb(m):
+    p = m.group(1)
+    return 'src="data:image/jpeg;base64,%s"' % base64.b64encode(open(p, 'rb').read()).decode()
+
+open('videos_verticales_proposition_autonome.html', 'w', encoding='utf-8').write(re.sub(r'src="(img/[^"]+)"', emb, HTML))
+print(len(HTML) // 1024, 'Ko')
