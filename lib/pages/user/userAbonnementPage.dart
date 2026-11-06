@@ -34,24 +34,10 @@ class _AbonnementScreenState extends State<AbonnementScreen>
   bool _showPlanDetails = false;
 
   // Durée sélectionnée par plan
-  int _dureePremium = 1;
   int _dureeGold = 1;
 
   // Solde sélectionné pour le paiement (dépôt par défaut)
-  String _selectedBalancePremium = 'votre_solde_depot';
   String _selectedBalanceGold = 'votre_solde_depot';
-
-  // Offres Premium — prix calculés depuis AfrolookAbonnement.prixPremiumBase
-  List<Map<String, dynamic>> get _offresPremium {
-    final p = AfrolookAbonnement.prixPremiumBase;
-    return [
-      {'mois': 1,  'prixBase': p * 1,  'reduction': AfrolookAbonnement.reductions[1]  ?? 0.0},
-      {'mois': 2,  'prixBase': p * 2,  'reduction': AfrolookAbonnement.reductions[2]  ?? 0.0},
-      {'mois': 3,  'prixBase': p * 3,  'reduction': AfrolookAbonnement.reductions[3]  ?? 0.0},
-      {'mois': 6,  'prixBase': p * 6,  'reduction': AfrolookAbonnement.reductions[6]  ?? 0.0},
-      {'mois': 12, 'prixBase': p * 12, 'reduction': AfrolookAbonnement.reductions[12] ?? 0.0},
-    ];
-  }
 
   // Offres Gold — prix calculés depuis AfrolookAbonnement.prixGoldBase
   List<Map<String, dynamic>> get _offresGold {
@@ -72,22 +58,15 @@ class _AbonnementScreenState extends State<AbonnementScreen>
     if (widget.initialTab == null) {
       final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
       final type = authProvider.loginUserData?.abonnement?.type ?? 'gratuit';
-      if (type == 'premium') initialTab = 1;
-      if (type == 'gold') initialTab = 2;
+      if (type == 'gold' || type == 'premium') initialTab = 1;   // un ancien Premium en cours est traité comme Gold
     }
-    _tabController = TabController(length: 3, vsync: this, initialIndex: initialTab);
+    _tabController = TabController(length: 2, vsync: this, initialIndex: initialTab.clamp(0, 1));
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
-  }
-
-  double _getPrixPremium(int mois) {
-    final offre = _offresPremium.firstWhere((o) => o['mois'] == mois,
-        orElse: () => _offresPremium.first);
-    return (offre['prixBase'] as double) - (offre['reduction'] as double);
   }
 
   double _getPrixGold(int mois) {
@@ -102,10 +81,9 @@ class _AbonnementScreenState extends State<AbonnementScreen>
     final authProvider = Provider.of<UserAuthProvider>(context);
     final user = authProvider.loginUserData!;
     final abonnement = user.abonnement;
-    final isPremium = AbonnementUtils.isPremiumActive(abonnement);
-    final isGold = AbonnementUtils.isGold(abonnement);
+    final isGold = AbonnementUtils.isGold(abonnement) || AbonnementUtils.isPremiumActive(abonnement);   // un ancien Premium en cours est traité comme Gold
 
-    final title = isGold ? context.tr('Afrolook Gold 👑') : (isPremium ? context.tr('Afrolook Premium ⭐') : context.tr('Abonnement'));
+    final title = isGold ? context.tr('Afrolook Gold 👑') : context.tr('Abonnement');
     return Scaffold(
       backgroundColor: colors.background,
       appBar: AppBar(
@@ -124,7 +102,6 @@ class _AbonnementScreenState extends State<AbonnementScreen>
               controller: _tabController,
               children: [
                 _buildFreeTab(colors, abonnement),
-                _buildPremiumTab(colors, user, abonnement, isPremium, isGold),
                 _buildGoldTab(colors, user, abonnement, isGold),
               ],
             ),
@@ -153,7 +130,6 @@ class _AbonnementScreenState extends State<AbonnementScreen>
           unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
           tabs: [
             Tab(height: 38, text: context.tr('🆓 Gratuit')),
-            Tab(height: 38, text: context.tr('⭐ Premium')),
             Tab(height: 38, text: context.tr('👑 Gold')),
           ],
         ),
@@ -193,127 +169,6 @@ class _AbonnementScreenState extends State<AbonnementScreen>
         _buildInfoCard(colors, [
           context.tr('⏰ À l\'expiration d\'un plan payant, retour automatique au plan Gratuit'),
           context.tr('💡 Votre abonnement soutient le développement d\'Afrolook'),
-        ]),
-      ],
-    );
-  }
-
-  // ── Onglet Premium ──────────────────────────────────────────────────────
-
-  Widget _buildPremiumTab(AppColors colors, UserData user,
-      AfrolookAbonnement? abonnement, bool isPremium, bool isGold) {
-    final depot = user.votre_solde_depot ?? 0.0;
-    final principal = user.votre_solde_principal ?? 0.0;
-    final solde = kPayInCoins
-        ? (user.giftCoinsBalance ?? 0).toDouble()
-        : (_selectedBalancePremium == 'votre_solde_depot' ? depot : principal);
-    final prixFinal = _getPrixPremium(_dureePremium);
-    final soldeInsuffisant = solde < (kPayInCoins ? CoinCheckout.coinsFor(prixFinal) : prixFinal);
-
-    // Si Gold actif : afficher info upgrade impossible (déjà au dessus)
-    if (isGold) {
-      return ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _buildStatusCard(
-            colors: colors,
-            icon: Icons.workspace_premium,
-            iconColor: _c.primary,
-            borderColor: _c.primary,
-            title: context.tr('VOUS ÊTES GOLD 👑'),
-            subtitle: context.tr('Le plan Gold inclut tout Premium et plus encore'),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: _c.primary.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _c.primary.withOpacity(0.3)),
-            ),
-            child: Text(
-              context.tr('Gold ⊃ Premium : tous les avantages Premium sont inclus dans votre plan Gold.'),
-              style: TextStyle(color: colors.textSecondary, fontSize: 13),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          const SizedBox(height: 20),
-          _buildFeatureList(colors, _premiumFeatures()),
-        ],
-      );
-    }
-
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        // Statut actuel
-        if (isPremium)
-          _buildStatusCard(
-            colors: colors,
-            icon: Icons.workspace_premium,
-            iconColor: _c.primary,
-            borderColor: _c.primary,
-            title: context.tr('ABONNÉ PREMIUM ⭐'),
-            subtitle: context.tr('Valable encore {a} jours', {'a': AbonnementUtils.getDaysRemaining(abonnement)}),
-            badge: 'ACTIF',
-            badgeColor: _c.primary,
-            dateDebut: abonnement?.dateDebut,
-            dateFin: abonnement?.dateFin,
-            montantPaye: abonnement?.montantPaye,
-          ),
-        if (!isPremium) ...[
-          _buildPlanHeader(colors, context.tr('Premium ⭐'), context.tr('À partir de'), 200, _c.primary),
-          const SizedBox(height: 16),
-          _buildFeatureList(colors, _premiumFeatures()),
-          const SizedBox(height: 20),
-          _buildDurationSelector(
-            colors: colors,
-            offres: _offresPremium,
-            selected: _dureePremium,
-            accentColor: _c.primary,
-            onSelect: (m) => setState(() => _dureePremium = m),
-          ),
-          const SizedBox(height: 16),
-          _buildPriceSummary(colors, _offresPremium, _dureePremium, _c.primary),
-          const SizedBox(height: 16),
-          if (!kPayInCoins) _buildAbonnementBalanceSelector(
-            colors: colors,
-            user: user,
-            selectedBalance: _selectedBalancePremium,
-            onSelect: (k) => setState(() => _selectedBalancePremium = k),
-          ),
-          const SizedBox(height: 16),
-          _buildPaymentSection(
-            colors: colors,
-            solde: solde,
-            prixFinal: prixFinal,
-            soldeInsuffisant: soldeInsuffisant,
-            soldeLabel: kPayInCoins ? context.tr('Solde de pièces') : (_selectedBalancePremium == 'votre_solde_depot' ? context.tr('Solde Dépôt') : context.tr('Solde Gains')),
-            accentColor: _c.primary,
-            btnLabel: context.tr('⭐ DEVENIR PREMIUM — {a}', {'a': _px(prixFinal)}),
-            onPay: () => _souscrire(user, 'premium', _dureePremium, balanceKey: _selectedBalancePremium),
-          ),
-        ],
-        if (isPremium) ...[
-          const SizedBox(height: 20),
-          _buildRenewalSection(
-            colors: colors,
-            user: user,
-            abonnement: abonnement!,
-            offres: _offresPremium,
-            accentColor: _c.primary,
-            planType: 'premium',
-          ),
-          const SizedBox(height: 16),
-          _buildFeatureList(colors, _premiumFeatures()),
-        ],
-        const SizedBox(height: 20),
-        _buildGroupRenewalNote(colors),
-        const SizedBox(height: 20),
-        _buildInfoCard(colors, [
-          context.tr('🔄 Pas de renouvellement automatique — vous contrôlez votre abonnement'),
-          context.tr('⏰ À l\'expiration, retour automatique au plan Gratuit'),
-          context.tr('👑 Pour les groupes privés payants, passez au plan Gold'),
         ]),
       ],
     );
@@ -1064,7 +919,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
           const SizedBox(height: 14),
           OutlinedButton(
             onPressed: () => _showRenewalSheet(user, offres, accentColor, planType,
-                balanceKey: planType == 'premium' ? _selectedBalancePremium : _selectedBalanceGold),
+                balanceKey: _selectedBalanceGold),
             style: OutlinedButton.styleFrom(
               side: BorderSide(color: accentColor, width: 2),
               foregroundColor: accentColor,
@@ -1136,27 +991,6 @@ class _AbonnementScreenState extends State<AbonnementScreen>
 
   // ── Listes de fonctionnalités ────────────────────────────────────────────
 
-  List<_Feature> _premiumFeatures() => [
-    _Feature(context.tr('Messagerie privée'), true),
-    _Feature(context.tr('Créer et gérer des groupes · 2 groupes max · 100 membres/groupe'), true),
-    _Feature(context.tr('Posts visibles partout en Afrique'), true),
-    _Feature(context.tr('3 photos par look · vidéos jusqu\'à 40 Mo'), true),
-    _Feature(context.tr('Live HD · latence 500ms'), true),
-    _Feature(context.tr('Mode fantôme · connexion cachée'), true),
-    _Feature(context.tr('Emojis 3D · Stickers exclusifs'), true),
-    _Feature(context.tr('Challenges illimités'), true),
-    _Feature(context.tr('Badge Premium ⭐'), true),
-    _Feature(context.tr('Mode lecture seule pour les membres'), true),
-    _Feature(context.tr('Support prioritaire'), true),
-    _Feature(context.tr('Groupes illimités · membres illimités (Gold)'), false, isGoldOnly: true),
-    _Feature(context.tr('Groupes privés payants (70% vous revient)'), false, isGoldOnly: true),
-    _Feature(context.tr('Code unique + lien d\'invitation partageable'), false, isGoldOnly: true),
-    _Feature(context.tr('Liens externes cliquables dans les messages'), false, isGoldOnly: true),
-    _Feature(context.tr('Carousel pub dans la page Groupes'), false, isGoldOnly: true),
-    _Feature(context.tr('Contrôle écriture / partage par membre'), false, isGoldOnly: true),
-    _Feature(context.tr('Masquer ou restreindre un message'), false, isGoldOnly: true),
-    _Feature(context.tr('Groupe gelé si plan expire (membres protégés)'), false, isGoldOnly: true),
-  ];
 
   List<_Feature> _goldFeatures() => [
     // ── Hérité du plan Premium
@@ -1257,11 +1091,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
                     return ListTile(
                       onTap: () {
                         Navigator.pop(context);
-                        if (planType == 'premium') {
-                          setState(() => _dureePremium = mois);
-                        } else {
-                          setState(() => _dureeGold = mois);
-                        }
+                        setState(() => _dureeGold = mois);
                         _souscrire(user, planType, mois, balanceKey: balanceKey);
                       },
                       leading: Container(

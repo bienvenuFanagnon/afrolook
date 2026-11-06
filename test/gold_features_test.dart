@@ -23,7 +23,7 @@ void main() {
     expect(RewardsService.dynamicOffer('feature:nimporte'), isNull);
     expect(RewardsService.dynamicOffer('gold_pass'), isNull); // sans état du serveur : pas de prochaine passe connue
     final ids = RewardsService.offers.map((o) => o.id).toSet();
-    expect(ids, {'flame_shield', 'card_capture'});
+    expect(ids, {'flame_shield', 'stickers_3', 'photos_3', 'card_capture'});
     expect(RewardsService.exportAds, 3); // valeur de départ tant que le serveur n'a pas répondu
     expect(RewardsService.goldPriceMonth, 500);
   });

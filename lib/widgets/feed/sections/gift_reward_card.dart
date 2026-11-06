@@ -75,7 +75,8 @@ class _GiftRewardCardState extends State<GiftRewardCard> {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<UserAuthProvider>().loginUserData;
-    if (!_visible || !RewardsService.available(user)) return const SizedBox.shrink();
+    // les pièces gagnées avec des pubs n'existent plus : la carte « cadeau » ne s'affiche que si le serveur propose encore cette offre
+    if (!_visible || !RewardsService.available(user) || RewardsService.offerById('coins_2') == null) return const SizedBox.shrink();
     final colors = AppColors.of(context);
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

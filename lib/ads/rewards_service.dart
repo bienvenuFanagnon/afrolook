@@ -77,7 +77,7 @@ class RewardsService {
     _cfgAt = DateTime.now();
   }
 
-  static const _knownIds = ['flame_shield', 'card_capture'];
+  static const _knownIds = ['flame_shield', 'stickers_3', 'photos_3', 'card_capture'];
 
   static bool get enabledByConfig => _cfg['enabled'] != false;
   static int get maxAdsPerDay => ((_cfg['maxAdsPerDay'] as num?)?.toInt() ?? 30).clamp(1, 60);
@@ -94,6 +94,8 @@ class RewardsService {
 
   static const offers = <RewardOffer>[
     RewardOffer('flame_shield', Icons.local_fire_department_rounded, 'Bouclier de flamme', 'Protège ta série de commentaires une fois', 1, 1),
+    RewardOffer('stickers_3', Icons.sticky_note_2_rounded, '3 stickers aujourd\'hui', 'Pour les comptes gratuits', 1, 2, freeOnly: true),
+    RewardOffer('photos_3', Icons.photo_library_rounded, 'Post avec 3 photos', 'Une publication avec plusieurs photos', 2, 3, freeOnly: true),
     // Studio Cartes : une pub = une capture de carte sans pièces (proposée depuis le studio)
     RewardOffer('card_capture', Icons.auto_awesome_rounded, 'Une carte Afrolook', 'Une capture de carte offerte', 1, 2, hidden: true),
   ];
