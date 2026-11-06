@@ -376,7 +376,16 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
     _textController.addListener(() => setState(() {}));
     // Compte bloqué pour inactivité (20 jours sans publication) : déblocage en pièces avant de créer une chronique (le serveur refuse aussi)
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!await AccountGate.ensureCanPublish(context) && mounted) Navigator.of(context).maybePop();
+      if (!await AccountGate.ensureCanPublish(context) && mounted) {
+        Navigator.of(context).maybePop();
+        return;
+      }
+      // Une seule porte d'entrée : créer une chronique ouvre le Studio de montage (même éditeur, même contrôle d'authenticité que les posts).
+      // Cette page sert ensuite d'aperçu avant publication ; « Studio » permet de modifier. Sans rien créé au retour du Studio, on revient en arrière.
+      if (mounted && widget.initialImage == null) {
+        await _openStudio();
+        if (mounted && _selectedMedia == null && _textController.text.trim().isEmpty) Navigator.of(context).maybePop();
+      }
     });
   }
 
