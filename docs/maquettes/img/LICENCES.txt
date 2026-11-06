@@ -1,0 +1,5 @@
+Photos de personnes : Pexels (https://www.pexels.com), licence Pexels (usage commercial permis, sans obligation de citer).
+Identifiants Pexels : h_<id>.jpg et f_<id>.jpg = https://www.pexels.com/photo/<id>/
+Vérifier la page de chaque photo avant publication (autorisation des personnes photographiées non garantie par Pexels pour tous les usages).
+Autres photos (intro*.jpg, n_*.jpg) : photos libres utilisées dans la pub (voir docs/pub_motion).
+Cartes card-*.webp : cartes du Studio Afrolook.
