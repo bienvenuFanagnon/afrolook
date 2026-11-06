@@ -47,6 +47,22 @@ class FaceFilters {
 
   static bool get available => !kIsWeb && Platform.isAndroid;
 
+  /// Dernière erreur de détection (texte du téléphone), pour dire à la personne pourquoi le filtre ne s'affiche pas.
+  static String? lastError;
+
+  /// Fait télécharger le module de visage de Google Play si besoin (première utilisation) ; rend faux si impossible (pas de connexion, Play indisponible).
+  static Future<bool> ensureReady() async {
+    if (!available) return false;
+    try {
+      await _channel.invokeMethod('ensureModule').timeout(const Duration(seconds: 60));
+      lastError = null;
+      return true;
+    } catch (e) {
+      lastError = e is PlatformException ? (e.message ?? e.code) : e.toString();
+      return false;
+    }
+  }
+
   static String emoji(FaceFilter f) => switch (f) {
         FaceFilter.none => '',
         FaceFilter.glasses => '😎',
@@ -145,7 +161,8 @@ class FaceFilters {
       final bytes = img.planes.length == 1 ? img.planes.first.bytes : _nv21(img);
       final r = Map<String, dynamic>.from(await _channel.invokeMethod('detectFrame', {'bytes': bytes, 'width': img.width, 'height': img.height, 'rotation': rotation}) as Map);
       return (size: Size((r['width'] as num).toDouble(), (r['height'] as num).toDouble()), faces: [for (final f in (r['faces'] as List)) FaceBox.fromMap(f as Map)]);
-    } catch (_) {
+    } catch (e) {
+      lastError = e is PlatformException ? (e.message ?? e.code) : e.toString();
       return null;
     }
   }

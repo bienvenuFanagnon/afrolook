@@ -2,7 +2,10 @@ package com.afrotok.afrotok
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.content.Context
 import android.graphics.Matrix
+import com.google.android.gms.common.moduleinstall.ModuleInstall
+import com.google.android.gms.common.moduleinstall.ModuleInstallRequest
 import androidx.exifinterface.media.ExifInterface
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.face.FaceDetection
@@ -43,8 +46,30 @@ object FaceChannel {
         return m
     }
 
-    fun register(engine: FlutterEngine, cacheDir: File) {
+    fun register(engine: FlutterEngine, context: Context) {
+        val cacheDir = context.cacheDir
         MethodChannel(engine.dartExecutor.binaryMessenger, NAME).setMethodCallHandler { call, result ->
+            if (call.method == "ensureModule") {
+                // Le modèle de visage (ML Kit non groupé) est fourni par les services Google Play : on le fait télécharger AVANT la première détection,
+                // sinon elle échoue silencieusement tant que le module n'est pas là (cas d'une application installée hors du Play Store).
+                try {
+                    val client = ModuleInstall.getClient(context)
+                    client.areModulesAvailable(live)
+                        .addOnSuccessListener { avail ->
+                            if (avail.areModulesAvailable()) {
+                                result.success(true)
+                            } else {
+                                client.installModules(ModuleInstallRequest.newBuilder().addApi(live).build())
+                                    .addOnSuccessListener { r -> result.success(r.areModulesAlreadyInstalled() || true) }
+                                    .addOnFailureListener { e -> result.error("module_failed", e.message, null) }
+                            }
+                        }
+                        .addOnFailureListener { e -> result.error("module_failed", e.message, null) }
+                } catch (e: Throwable) {
+                    result.error("module_failed", e.message, null)
+                }
+                return@setMethodCallHandler
+            }
             if (call.method == "detectFrame") {
                 // Image de la caméra (NV21) : rend les visages dans l'image REDRESSÉE (rotation appliquée), sans miroir
                 val bytes = call.argument<ByteArray>("bytes")

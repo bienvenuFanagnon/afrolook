@@ -54,6 +54,9 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
   List<FaceBox> _liveFaces = const [];
   final List<FaceTrackPoint> _track = []; // trajectoire du visage pendant le tournage
   final Stopwatch _recWatch = Stopwatch();
+  bool _moduleReady = false;
+  String? _filterNote; // message affiché sur l'aperçu (préparation, visage non trouvé, erreur)
+  int _detectFails = 0;
   double _trackSize = 0.3; // taille du filtre en fraction de la largeur de l'image
   bool _recording = false;
   bool _busy = false;
@@ -153,8 +156,24 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
   Future<void> _pickFilter(FaceFilter f) async {
     setState(() {
       _filter = f;
+      _filterNote = null;
+      _detectFails = 0;
       if (f == FaceFilter.none) _liveFaces = const [];
     });
+    if (f != FaceFilter.none && !_moduleReady) {
+      // première utilisation : le téléphone télécharge le module de visage (Google Play) ; on le dit à la personne
+      setState(() => _filterNote = context.tr('Préparation du filtre… (téléchargement du module de visage)'));
+      _moduleReady = await FaceFilters.ensureReady();
+      if (!mounted) return;
+      if (!_moduleReady) {
+        setState(() {
+          _filterNote = context.tr('Le filtre n\'est pas disponible sur ce téléphone pour le moment. Vérifie ta connexion puis réessaie.');
+          _filter = FaceFilter.none;
+        });
+        return;
+      }
+      setState(() => _filterNote = null);
+    }
     await _syncStream();
   }
 
@@ -182,10 +201,17 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
     _lastFrameMs = now;
     try {
       final r = await FaceFilters.detectFrame(img, _cameras[_camIndex].sensorOrientation);
-      if (!mounted || r == null) return;
+      if (!mounted) return;
+      if (r == null) {
+        // la détection échoue : après quelques essais on le dit au lieu de rester muet
+        if (++_detectFails == 6) setState(() => _filterNote = context.tr('Le filtre ne peut pas suivre ton visage : {err}', {'err': FaceFilters.lastError ?? '?'}));
+        return;
+      }
+      _detectFails = 0;
       setState(() {
         _liveSize = r.size;
         _liveFaces = r.faces;
+        _filterNote = r.faces.isEmpty ? context.tr('Place ton visage devant la caméra') : null;
       });
       if (_recording) {
         // seul le plus grand visage est suivi dans la vidéo
@@ -374,6 +400,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
       // dégradés haut et bas : les boutons restent lisibles sur n'importe quelle image
       const Positioned(top: 0, left: 0, right: 0, height: 130, child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xAA000000), Color(0x00000000)])))),
       const Positioned(bottom: 0, left: 0, right: 0, height: 260, child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter, colors: [Color(0xCC000000), Color(0x00000000)])))),
+      if (_filterNote != null) _filterBanner(),
       SafeArea(
         child: Column(children: [
           Padding(
@@ -457,6 +484,25 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
         ]),
       ),
     ]);
+  }
+
+  /// Petit message sur l'aperçu quand un filtre est choisi (préparation, visage non trouvé, erreur).
+  Widget _filterBanner() {
+    return Positioned(
+      top: 70,
+      left: 24,
+      right: 24,
+      child: IgnorePointer(
+        child: Center(
+          child: Container(
+            key: const ValueKey('filter_note'),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(color: const Color(0xAA000000), borderRadius: BorderRadius.circular(99)),
+            child: Text(_filterNote!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+          ),
+        ),
+      ),
+    );
   }
 
   /// Le filtre posé en direct sur l'aperçu (dans le même cadre que l'image, donc au bon endroit) ; la caméra avant est affichée en miroir.
