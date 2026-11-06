@@ -17,6 +17,7 @@ import '../cards/card_entry.dart';
 import '../cards/card_events.dart';
 import '../cards/card_models.dart' show CardStyleId;
 import '../studio/montage/montage_canvas.dart';
+import '../studio/montage/montage_music.dart' show MontageMusic;
 import '../studio/montage/montage_catalog.dart';
 import '../studio/montage/montage_state.dart';
 import '../studio/montage/montage_editor_page.dart';
@@ -36,7 +37,7 @@ enum CreateStart { none, video, audio }
 /// Écran « Que créer ? » : l'entrée unique de la création (publication, Studio et cartes réunis). On choisit le type, on prépare le média, on le retouche, puis
 /// un seul formulaire demande le reste. Ce qui est filmé ou enregistré dans l'application passe en premier ; la galerie est limitée à 2 médias par jour.
 class CreateHubPage extends StatefulWidget {
-  const CreateHubPage({super.key, this.canal, this.defiPostId, this.start = CreateStart.none, this.replyToPostId});
+  const CreateHubPage({super.key, this.canal, this.defiPostId, this.start = CreateStart.none, this.replyToPostId, this.presetSound});
 
   final Canal? canal;
   final String? defiPostId;
@@ -44,6 +45,9 @@ class CreateHubPage extends StatefulWidget {
 
   /// Réponse en vidéo à ce post : caméra limitée à 15 s ; le serveur n'accepte qu'une vidéo.
   final String? replyToPostId;
+
+  /// « Créer avec ce son » : ce son devient l'audio du post. La caméra le joue pendant qu'on filme, puis l'éditeur l'applique ; photo et galerie marchent aussi.
+  final MontageMusic? presetSound;
 
   @override
   State<CreateHubPage> createState() => _CreateHubPageState();
@@ -104,7 +108,7 @@ class _CreateHubPageState extends State<CreateHubPage> {
 
   Future<void> _openCamera({required bool photo}) async {
     if (kIsWeb) return _pickGallery(video: !photo);
-    final r = await Navigator.of(context).push<CreateCaptureResult>(MaterialPageRoute(builder: (_) => CreateCameraPage(startOnPhoto: photo && widget.replyToPostId == null, maxSeconds: widget.replyToPostId != null ? 15 : 60)));
+    final r = await Navigator.of(context).push<CreateCaptureResult>(MaterialPageRoute(builder: (_) => CreateCameraPage(startOnPhoto: photo && widget.replyToPostId == null, maxSeconds: widget.replyToPostId != null ? 15 : 60, sound: widget.presetSound)));
     if (r == null || !mounted) return;
     if (r.openGallery) return _pickGallery(video: r.isVideo);
     await _editor(r.path!, r.isVideo, PostSourceLink.captured);
@@ -139,7 +143,7 @@ class _CreateHubPageState extends State<CreateHubPage> {
 
   Future<void> _editor(String path, bool isVideo, String source) async {
     final r = await Navigator.of(context).push<String>(MaterialPageRoute(
-      builder: (_) => CreateEditorPage(path: path, isVideo: isVideo, source: source, canal: widget.canal, defiPostId: widget.defiPostId),
+      builder: (_) => CreateEditorPage(path: path, isVideo: isVideo, source: source, canal: widget.canal, defiPostId: widget.defiPostId, sound: widget.presetSound),
     ));
     if (r == kCreateRedo && mounted) {
       // « Refaire » : on rouvre la caméra (ou la galerie si le média venait de la galerie)
@@ -270,6 +274,10 @@ class _CreateHubPageState extends State<CreateHubPage> {
           if (soon != null) ...[
             _EventBanner(event: soon, onTap: () => _card(text: soon.event.text, hint: CardStyleHint(soon.event.style, soon.event.country))),
             const SizedBox(height: 12),
+          ],
+          if (widget.presetSound != null) ...[
+            _SoundBanner(sound: widget.presetSound!),
+            const SizedBox(height: 10),
           ],
           _VideoHero(
             onFilm: () => _guard(() => _openCamera(photo: false)),
@@ -503,6 +511,37 @@ class _Tile extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Bandeau « Créer avec ce son » : le son choisi sera l'audio du post.
+class _SoundBanner extends StatelessWidget {
+  const _SoundBanner({required this.sound});
+  final MontageMusic sound;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return Container(
+      key: const ValueKey('sound_banner'),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border)),
+      child: Row(children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(color: c.accent, borderRadius: BorderRadius.circular(12)),
+          child: Icon(Icons.music_note_rounded, color: c.onAccent),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(sound.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 14.5)),
+            Text(context.tr('Ce son sera l\'audio de ton post. Filme-toi, prends une photo ou choisis un média.'), maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 12)),
+          ]),
+        ),
+      ]),
     );
   }
 }

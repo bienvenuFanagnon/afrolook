@@ -35,6 +35,7 @@ import 'montage/montage_catalog.dart';
 import 'montage/montage_editor_page.dart';
 import 'montage/montage_gallery_page.dart';
 import 'montage/montage_music.dart';
+import '../create/create_hub_page.dart';
 import '../../ads/music_ads.dart';
 import '../../utils/media_cdn.dart';
 import 'sound_countries.dart';
@@ -657,6 +658,20 @@ Future<void> startPostWithSound(BuildContext context, ArtistSound s) => startPos
 /// [ownVideo] : « Ma vidéo avec ce son » — directement la vidéo de la personne et la musique, sans modèle ni habillage ;
 /// le son d'origine de la vidéo est coupé (seule la musique est jouée), la personne peut le garder dans l'éditeur.
 Future<void> startPostWithMusic(BuildContext context, MontageMusic music, {bool ownVideo = false}) async {
+  // « Créer avec ce son » : l'écran « Créer un post » s'ouvre avec ce son comme audio (caméra qui le joue, photo, galerie dans la limite du jour), puis le Studio
+  if (!ownVideo) {
+    final token = Object();
+    MusicQueue.suspend(token);
+    MusicOverlay.add(1);
+    try {
+      if (!context.mounted) return;
+      await Navigator.push(context, MaterialPageRoute(builder: (_) => CreateHubPage(presetSound: music)));
+    } finally {
+      MusicOverlay.add(-1);
+      MusicQueue.release(token);
+    }
+    return;
+  }
   // Le Studio joue sa propre musique : le lecteur flottant se met en pause et se masque, puis reprend au retour
   final token = Object();
   MusicQueue.suspend(token);

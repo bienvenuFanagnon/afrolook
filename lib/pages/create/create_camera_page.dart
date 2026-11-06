@@ -13,6 +13,7 @@ import '../../l10n/tr.dart';
 import '../../services/api/studio_face_overlay_api.dart';
 import '../../services/beauty.dart';
 import '../../services/face_avatars.dart';
+import '../studio/montage/montage_music.dart' show MontageMusic, MontageMusicPlayer;
 import '../../services/face_engine.dart';
 import '../../services/face_filters.dart';
 import 'package:path_provider/path_provider.dart';
@@ -36,10 +37,13 @@ class CreateCaptureResult {
 /// Caméra d'Afrolook : vidéo (15, 30 ou 60 s) et photo dans le même écran, avec le style de l'application. Un seul toucher pour filmer, un second pour arrêter ;
 /// la barre ronde montre le temps qui reste. Si la caméra n'est pas disponible (autorisation refusée, appareil sans caméra), on propose la caméra du téléphone.
 class CreateCameraPage extends StatefulWidget {
-  const CreateCameraPage({super.key, this.startOnPhoto = false, this.maxSeconds = 60});
+  const CreateCameraPage({super.key, this.startOnPhoto = false, this.maxSeconds = 60, this.sound});
 
   final bool startOnPhoto;
   final int maxSeconds;
+
+  /// Son à jouer pendant qu'on filme (« Créer avec ce son »).
+  final MontageMusic? sound;
 
   @override
   State<CreateCameraPage> createState() => _CreateCameraPageState();
@@ -111,6 +115,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    if (widget.sound != null) unawaited(MontageMusicPlayer.stop());
     _tick?.cancel();
     _ctrl?.dispose();
     super.dispose();
@@ -566,6 +571,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
       _recWatch
         ..reset()
         ..start();
+      if (widget.sound != null) await MontageMusicPlayer.play(widget.sound!);   // le son joue pendant le tournage (casque conseillé)
       if (_eng) {
         await FaceEngine.startRecording(await _engTmp('mp4'), audio: _micOk);
       } else {
@@ -590,6 +596,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
   Future<void> _stopRecording() async {
     final c = _ctrl;
     _tick?.cancel();
+    if (widget.sound != null) unawaited(MontageMusicPlayer.stop());
     if ((c == null && !_eng) || !_recording) return;
     setState(() {
       _recording = false;
