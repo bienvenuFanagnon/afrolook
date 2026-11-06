@@ -439,6 +439,8 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           maxSeconds: widget.forChronique ? 30 : 60,
           onJob: (id) => _lastJobId = id,
           onPaid: (coins) => _say('🎤 $coins pièces utilisées pour le son de l’artiste. Merci de soutenir les artistes !'),
+          outroPseudo: context.read<UserAuthProvider>().loginUserData.pseudo,
+          outroAvatarUrl: context.read<UserAuthProvider>().loginUserData.imageUrl,
         );
       } else {
         await _setT(.3);
@@ -874,6 +876,16 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           ),
         ],
       ],
+      if (s.useVideo)
+        SwitchListTile(
+          key: const ValueKey('outro_switch'),
+          contentPadding: EdgeInsets.zero,
+          value: s.outro,
+          onChanged: RewardsService.goldActive ? (v) => setState(() => s.outro = v) : null,
+          activeThumbColor: _c.primary,
+          title: Text(context.tr('Ajouter la fin Afrolook'), style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13.5)),
+          subtitle: Text(RewardsService.goldActive ? context.tr('2,8 secondes à la fin de ta vidéo : logo, ton @pseudo et une invitation.') : context.tr('Incluse dans les vidéos des comptes gratuits. Gold peut la retirer.'), style: TextStyle(color: _c.textSecondary, fontSize: 12)),
+        ),
       if (m != null)
         Padding(
           padding: const EdgeInsets.only(top: 4),

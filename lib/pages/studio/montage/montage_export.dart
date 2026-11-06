@@ -15,6 +15,7 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../l10n/tr.dart';
 import 'montage_canvas.dart';
 import 'montage_state.dart';
 import 'montage_stickers.dart';
@@ -47,6 +48,100 @@ class MontageExport {
     img.dispose();
     if (data == null) throw StateError('Capture impossible');
     return data.buffer.asUint8List();
+  }
+
+
+  /// Fin animée Afrolook : deux calques plein cadre, transparents, dessinés ici (texte traduit, police de l'application) ; le serveur fabrique le décor,
+  /// le logo et l'animation, et les fait apparaître au bon moment. [W] × [H] = taille du film. Rend (widget du @pseudo, phrase et pastilles).
+  static Future<(Uint8List, Uint8List)> outroLayers({required String pseudo, required String? avatarUrl, required int W, required int H}) async {
+    const gold = Color(0xFFFFD21F);
+    final k = W / 262.0;   // les mesures de la maquette validée sont données pour un écran de 262 px de large
+
+    Future<ui.Image?> avatar() async {
+      if (avatarUrl == null || avatarUrl.isEmpty) return null;
+      try {
+        final r = await http.get(Uri.parse(avatarUrl)).timeout(const Duration(seconds: 8));
+        if (r.statusCode != 200) return null;
+        final codec = await ui.instantiateImageCodec(r.bodyBytes, targetWidth: (34 * k).round());
+        return (await codec.getNextFrame()).image;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    TextPainter text(String t, double size, FontWeight w, Color c, {double maxWidth = double.infinity}) {
+      final tp = TextPainter(text: TextSpan(text: t, style: TextStyle(color: c, fontSize: size * k, fontWeight: w, height: 1.15)), textDirection: TextDirection.ltr, maxLines: 1, ellipsis: '…');
+      tp.layout(maxWidth: maxWidth);
+      return tp;
+    }
+
+    Future<Uint8List> finish(ui.PictureRecorder rec) async {
+      final img = await rec.endRecording().toImage(W, H);
+      final data = await img.toByteData(format: ui.ImageByteFormat.png);
+      img.dispose();
+      return data!.buffer.asUint8List();
+    }
+
+    // 1) widget du @pseudo : pastille blanche, photo cerclée de jaune, pastille « @ », @pseudo
+    final pillRec = ui.PictureRecorder();
+    final pc = Canvas(pillRec);
+    final name = text(pseudo, 13, FontWeight.w800, const Color(0xFF14201A), maxWidth: W * .52);
+    final av = await avatar();
+    final h = 40 * k;
+    final w = (5 + 30 + 8 + 18 + 6) * k + name.width + 14 * k;
+    final left = (W - w) / 2;
+    final top = H * .72;
+    pc.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(left, top, w, h), Radius.circular(h / 2)), Paint()..color = const Color(0xF5FFFFFF));
+    final ac = Offset(left + (5 + 17.5) * k, top + h / 2);
+    if (av != null) {
+      pc.save();
+      pc.clipPath(Path()..addOval(Rect.fromCircle(center: ac, radius: 15 * k)));
+      pc.drawImageRect(av, Rect.fromLTWH(0, 0, av.width.toDouble(), av.height.toDouble()), Rect.fromCircle(center: ac, radius: 15 * k), Paint());
+      pc.restore();
+    } else {
+      pc.drawCircle(ac, 15 * k, Paint()..color = gold);
+      final ini = text(pseudo.isEmpty ? 'A' : pseudo.characters.first.toUpperCase(), 14, FontWeight.w900, const Color(0xFF3A2C00));
+      ini.paint(pc, ac - Offset(ini.width / 2, ini.height / 2));
+    }
+    pc.drawCircle(ac, 16 * k, Paint()..color = gold..style = PaintingStyle.stroke..strokeWidth = 2 * k);
+    final badge = Offset(left + (5 + 30 + 8 + 9) * k, top + h / 2);
+    pc.drawCircle(badge, 9 * k, Paint()..color = gold);
+    final at = text('@', 11, FontWeight.w900, const Color(0xFF3A2C00));
+    at.paint(pc, badge - Offset(at.width / 2, at.height / 2));
+    name.paint(pc, Offset(left + (5 + 30 + 8 + 18 + 6) * k, top + (h - name.height) / 2));
+    final pill = await finish(pillRec);
+    av?.dispose();
+
+    // 2) invitation et trois pastilles (cadeaux, lives, musique)
+    final tagRec = ui.PictureRecorder();
+    final tc = Canvas(tagRec);
+    final a = text(tr('Rejoins-moi sur Afrolook'), 12, FontWeight.w700, const Color(0xFFFFFFFF), maxWidth: W * .9);
+    a.paint(tc, Offset((W - a.width) / 2, H * .80));
+    final b = text(tr('Fait sur Afrolook'), 10, FontWeight.w500, const Color(0xB3FFFFFF), maxWidth: W * .9);
+    b.paint(tc, Offset((W - b.width) / 2, H * .80 + a.height + 2 * k));
+    final cy = H * .89;
+    final stroke = Paint()..color = const Color(0xFFFFFFFF)..style = PaintingStyle.stroke..strokeWidth = 1.9 * k..strokeCap = StrokeCap.round..strokeJoin = StrokeJoin.round;
+    for (var i = 0; i < 3; i++) {
+      final c = Offset(W / 2 + (i - 1) * 36 * k, cy);
+      tc.drawCircle(c, 13 * k, Paint()..color = const Color(0x24FFFFFF));
+      tc.drawCircle(c, 13 * k, Paint()..color = const Color(0x40FFFFFF)..style = PaintingStyle.stroke..strokeWidth = 1 * k);
+      if (i == 0) {            // cadeau
+        tc.drawRRect(RRect.fromRectAndRadius(Rect.fromCenter(center: c + Offset(0, 1.5 * k), width: 12 * k, height: 8 * k), Radius.circular(1.2 * k)), stroke);
+        tc.drawLine(c + Offset(0, -2.5 * k), c + Offset(0, 5.5 * k), stroke);
+        tc.drawLine(c + Offset(-6 * k, 1.5 * k), c + Offset(6 * k, 1.5 * k), stroke);
+        tc.drawArc(Rect.fromCenter(center: c + Offset(-2 * k, -3.5 * k), width: 4 * k, height: 3 * k), 0, 6.28, false, stroke);
+        tc.drawArc(Rect.fromCenter(center: c + Offset(2 * k, -3.5 * k), width: 4 * k, height: 3 * k), 0, 6.28, false, stroke);
+      } else if (i == 1) {     // live
+        tc.drawRRect(RRect.fromRectAndRadius(Rect.fromCenter(center: c + Offset(-1.5 * k, 0), width: 11 * k, height: 8 * k), Radius.circular(1.5 * k)), stroke);
+        tc.drawPath(Path()..moveTo(c.dx + 4.5 * k, c.dy - 1.5 * k)..lineTo(c.dx + 8 * k, c.dy - 3.5 * k)..lineTo(c.dx + 8 * k, c.dy + 3.5 * k)..lineTo(c.dx + 4.5 * k, c.dy + 1.5 * k)..close(), stroke);
+      } else {                 // musique
+        tc.drawPath(Path()..moveTo(c.dx - 2 * k, c.dy + 4 * k)..lineTo(c.dx - 2 * k, c.dy - 5 * k)..lineTo(c.dx + 5 * k, c.dy - 6.5 * k)..lineTo(c.dx + 5 * k, c.dy + 2 * k), stroke);
+        tc.drawCircle(c + Offset(-4 * k, 4.5 * k), 2.2 * k, stroke);
+        tc.drawCircle(c + Offset(3 * k, 2.5 * k), 2.2 * k, stroke);
+      }
+    }
+    final tag = await finish(tagRec);
+    return (pill, tag);
   }
 
   static Future<Uint8List> jpeg(Uint8List png, int width, {int quality = 90}) async {
@@ -101,6 +196,8 @@ class MontageExport {
     required int maxSeconds,
     void Function(int coins)? onPaid,
     void Function(String jobId)? onJob,
+    String? outroPseudo,
+    String? outroAvatarUrl,
   }) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) throw StateError('Connecte-toi pour créer une vidéo.');
@@ -149,6 +246,16 @@ class MontageExport {
       if (timedStickers.isNotEmpty) await setT(.3);
     }
 
+    // fin animée Afrolook (vidéo seulement) : le @pseudo et l'invitation sont dessinés ici, le serveur fait le reste
+    final wantOutro = isVideo && s.outro;
+    if (wantOutro) {
+      try {
+        final l = await outroLayers(pseudo: outroPseudo ?? '', avatarUrl: outroAvatarUrl, W: 720, H: s.post ? 900 : 1280);
+        up('outro_pill.png', l.$1, 'image/png');
+        up('outro_tag.png', l.$2, 'image/png');
+      } catch (_) {}   // sans ces calques, le serveur n'ajoute pas la fin : la vidéo reste valable
+    }
+
     onStep('Envoi…');
     final ids = <String, String>{};
     for (final e in uploads.entries) {
@@ -181,6 +288,7 @@ class MontageExport {
       'saturation': s.saturation,
       'brightness': s.brightness,
       'has_under': isVideo,
+      if (isVideo) 'outro': s.outro,
       if (timedMeta.isNotEmpty) 'timed': timedMeta,
       if (isVideo && s.pins.isNotEmpty) 'pins': [for (final p in s.pins.take(2)) p.toApi()],
       if (m != null) 'music': {'type': m.type, 'id': m.id, 'start_ms': s.musicStartMs, 'volume': s.musicVolume},

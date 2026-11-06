@@ -91,6 +91,9 @@ class MontageState {
   double videoVolume = .9;
   bool duckMusic = false;
 
+  /// Fin animée Afrolook (2,8 s : logo, @pseudo, invitation) ajoutée à la fin d'une vidéo exportée. Par défaut oui ; seul un compte Gold peut la retirer.
+  bool outro = true;
+
   /// Chiffres affichés (null = exemple du template pour les j'aime/commentaires, vrai nombre d'abonnés).
   String? likesText;
   String? commentsText;

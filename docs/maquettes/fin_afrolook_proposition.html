@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fin animée Afrolook · proposition</title>
+<style>
+:root{--bg:#f7f8f6;--card:#fff;--ink:#14201a;--muted:#5d6b63;--line:#e1e6df;--green:#1b8a3c;--gold:#ffc400;--red:#e5383b;--shadow:0 14px 40px rgba(16,26,20,.16)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0e1411;--card:#17201a;--ink:#eef3ef;--muted:#9fb0a5;--line:#27332b;--shadow:0 14px 40px rgba(0,0,0,.55)}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:26px 16px 80px}
+h1{font-size:28px;margin:0 0 6px}h2{font-size:22px;margin:42px 0 8px}h3{font-size:16px;margin:0 0 6px}
+.lead{color:var(--muted);max-width:80ch;margin:0 0 14px}.note{font-size:13px;color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:16px}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}.tbl{overflow-x:auto}
+ul.t{margin:0;padding-left:18px}ul.t li{padding:3px 0}
+.row{display:flex;gap:22px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+.row figure{margin:0;text-align:center}.row figcaption{margin-top:10px;font-weight:800;font-size:13px}.row figcaption small{display:block;color:var(--muted);font-weight:400;font-size:12px}
+.phone{position:relative;width:262px;height:540px;border-radius:34px;background:#0b0f0d;border:7px solid #232f28;box-shadow:0 0 0 1px rgba(255,255,255,.18),var(--shadow);overflow:hidden;margin:0 auto}
+/* ───────── la fin animée (2,8 s) ───────── */
+.oc{--t:0s;position:absolute;inset:0;overflow:hidden;background:#07120b;color:#fff;font-family:Roboto,system-ui,sans-serif}
+.oc *{animation-duration:2.8s;animation-timing-function:cubic-bezier(.22,.9,.3,1);animation-fill-mode:both;animation-iteration-count:infinite}
+.oc.pause *{animation-play-state:paused;animation-iteration-count:1;animation-delay:var(--t)!important}
+.oc .bg{position:absolute;inset:0;background:
+  radial-gradient(circle at 50% 62%,rgba(255,196,0,.28),transparent 55%),
+  linear-gradient(170deg,#0d2a18 0%,#07120b 60%);animation-name:bgIn}
+.oc .bands{position:absolute;inset:-20% -20%;background:repeating-linear-gradient(115deg,transparent 0 26px,rgba(27,138,60,.35) 26px 34px,transparent 34px 60px,rgba(255,196,0,.28) 60px 64px,transparent 64px 96px,rgba(229,56,59,.3) 96px 99px);animation-name:bandsMove;opacity:.0}
+.oc .vid{position:absolute;inset:0;overflow:hidden;animation-name:vidShrink;transform-origin:50% 50%}
+.oc .vid img{width:100%;height:100%;object-fit:cover;display:block}
+.oc .ring{position:absolute;left:50%;top:57%;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;border:2px solid rgba(255,196,0,.8);animation-name:ringPulse;opacity:0}
+.oc .logo{position:absolute;left:50%;top:57%;width:84px;height:84px;margin:-42px 0 0 -42px;border-radius:22px;background:#fff;display:grid;place-items:center;animation-name:logoPop;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+.oc .logo img{width:62px;height:62px;display:block}
+.oc .pill{position:absolute;left:50%;top:72%;transform:translateX(-50%);display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.96);color:#14201a;border-radius:99px;padding:5px 14px 5px 5px;font-weight:800;font-size:13px;white-space:nowrap;animation-name:pillIn;box-shadow:0 8px 22px rgba(0,0,0,.4)}
+.oc .pill img{width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid var(--gold)}
+.oc .pill b{background:var(--gold);color:#3a2c00;border-radius:50%;width:18px;height:18px;display:grid;place-items:center;font-size:11px}
+.oc .tag{position:absolute;left:0;right:0;top:82%;text-align:center;font-size:12px;letter-spacing:.02em;animation-name:tagIn}
+.oc .tag small{display:block;opacity:.7;font-size:10px;margin-top:2px}
+.oc .feat{position:absolute;left:0;right:0;top:89%;display:flex;justify-content:center;gap:10px}
+.oc .feat i{width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);display:grid;place-items:center}
+.oc .feat i:nth-child(1){animation-name:f1}.oc .feat i:nth-child(2){animation-name:f2}.oc .feat i:nth-child(3){animation-name:f3}
+.oc .feat svg{width:14px;height:14px;fill:none;stroke:#fff;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+@keyframes bgIn{0%,14%{opacity:0}30%,92%{opacity:1}100%{opacity:1}}
+@keyframes bandsMove{0%,14%{opacity:0;transform:translate(0,40%)}30%{opacity:.5}92%{opacity:.4;transform:translate(0,-6%)}100%{opacity:.4;transform:translate(0,-6%)}}
+@keyframes vidShrink{0%,10%{transform:none;border-radius:0;top:0}26%,100%{transform:translateY(-27%) scale(.44) rotate(-3deg);border-radius:30px;box-shadow:0 12px 34px rgba(0,0,0,.5)}}
+@keyframes ringPulse{0%,16%{opacity:0;transform:scale(.5)}22%{opacity:.8}48%,100%{opacity:0;transform:scale(2.3)}}
+@keyframes logoPop{0%,14%{opacity:0;transform:scale(.4) rotate(-12deg)}24%{opacity:1;transform:scale(1.12) rotate(2deg)}30%,100%{opacity:1;transform:scale(1) rotate(0)}}
+@keyframes pillIn{0%,30%{opacity:0;transform:translate(-50%,26px)}42%,100%{opacity:1;transform:translate(-50%,0)}}
+@keyframes tagIn{0%,44%{opacity:0;transform:translateY(10px)}56%,100%{opacity:1;transform:none}}
+@keyframes f1{0%,54%{opacity:0;transform:scale(.3)}60%,100%{opacity:1;transform:scale(1)}}
+@keyframes f2{0%,60%{opacity:0;transform:scale(.3)}66%,100%{opacity:1;transform:scale(1)}}
+@keyframes f3{0%,66%{opacity:0;transform:scale(.3)}72%,100%{opacity:1;transform:scale(1)}}
+.mini{width:152px;height:314px;border-width:5px;border-radius:24px}
+.mini .oc{zoom:.58;width:172%;height:172%}
+.badge{display:inline-block;background:var(--gold);color:#3a2c00;border-radius:99px;padding:1px 9px;font-size:12px;font-weight:800}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Fin animée Afrolook sur les vidéos montées chez nous : proposition à valider</h1>
+<p class="lead"><b>Rien n'est modifié.</b> Quand une vidéo est montée dans le Studio Afrolook, une courte fin de 2,8 secondes est ajoutée : le logo, le pseudo de la personne dans un widget à lui, et une phrase d'invitation. Le dessin et l'animation sont à nous (bandes vert, jaune et rouge de la charte, carte de la vidéo qui se range, logo qui rebondit), <b>pas une copie de TikTok</b>.</p>
+
+<h2>1. L'animation (en boucle)</h2>
+<div class="row"><figure>
+<div class="phone"><div class="oc"><div class="bg"></div><div class="bands"></div>
+<div class="vid"><img src="img/h_6774139.jpg" alt=""></div>
+<div class="ring"></div><div class="logo"><img src="img/logo.webp" alt=""></div>
+<div class="pill"><img src="img/f_5688730.jpg" alt=""><b>@</b>zuri.danse</div>
+<div class="tag">Rejoins-moi sur Afrolook<small>Fait sur Afrolook</small></div>
+<div class="feat"><i><svg viewBox="0 0 24 24"><rect x="3.5" y="9" width="17" height="11" rx="1.5"/><path d="M12 9v11M3.5 13h17"/></svg></i><i><svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/></svg></i><i><svg viewBox="0 0 24 24"><path d="M9 18V6l10-2v12M9 18a3 3 0 1 1-3-3M19 16a3 3 0 1 1-3-3"/></svg></i></div>
+</div></div>
+<figcaption>La fin, en direct<small>2,8 s : la vidéo se range, le logo rebondit, le pseudo arrive, trois pastilles (cadeaux, lives, musique)</small></figcaption></figure>
+
+<div style="flex:1;min-width:300px;max-width:520px"><div class="card"><h3>Le déroulé, seconde par seconde</h3><ul class="t">
+<li><b>0,0 à 0,7 s</b> : la dernière image de la vidéo se range en carte légèrement penchée en haut, pendant que le fond vert arrive avec ses bandes (vert, jaune, rouge).</li>
+<li><b>0,4 à 0,9 s</b> : le logo rebondit au centre, un anneau jaune s'élargit derrière lui.</li>
+<li><b>0,8 à 1,2 s</b> : le widget du pseudo monte : photo de profil cerclée de jaune, pastille « @ », @pseudo.</li>
+<li><b>1,2 à 1,6 s</b> : « Rejoins-moi sur Afrolook » et « Fait sur Afrolook ».</li>
+<li><b>1,5 à 2,0 s</b> : trois pastilles apparaissent une à une (cadeaux, lives, musique).</li>
+<li><b>2,0 à 2,8 s</b> : tout reste en place, puis la vidéo reboucle.</li></ul></div>
+<div class="card"><h3>Le son</h3><p style="margin:0">Une petite signature sonore de moins d'une seconde (trois notes montantes) au moment où le logo rebondit, <b>par-dessus le son de la vidéo qui s'estompe</b>. Je la fabrique moi-même (aucun droit à payer). Vous avez écrit « le ton » : j'ai compris « le son » ; si vous pensiez aux couleurs, elles sont déjà dans le dessin.</p></div></div></div>
+
+<h2>2. Image par image</h2>
+<div class="row">
+<figure><div class="phone mini"><div class="oc pause" style="--t:-.2s"><div class="bg"></div><div class="bands"></div><div class="vid"><img src="img/h_6774139.jpg" alt=""></div><div class="ring"></div><div class="logo"><img src="img/logo.webp" alt=""></div><div class="pill"><img src="img/f_5688730.jpg" alt=""><b>@</b>zuri.danse</div><div class="tag">Rejoins-moi sur Afrolook<small>Fait sur Afrolook</small></div><div class="feat"><i></i><i></i><i></i></div></div></div><figcaption>0,2 s<small>la vidéo commence à se ranger</small></figcaption></figure>
+<figure><div class="phone mini"><div class="oc pause" style="--t:-.6s"><div class="bg"></div><div class="bands"></div><div class="vid"><img src="img/h_6774139.jpg" alt=""></div><div class="ring"></div><div class="logo"><img src="img/logo.webp" alt=""></div><div class="pill"><img src="img/f_5688730.jpg" alt=""><b>@</b>zuri.danse</div><div class="tag">Rejoins-moi sur Afrolook<small>Fait sur Afrolook</small></div><div class="feat"><i></i><i></i><i></i></div></div></div><figcaption>0,6 s<small>le logo rebondit</small></figcaption></figure>
+<figure><div class="phone mini"><div class="oc pause" style="--t:-1s"><div class="bg"></div><div class="bands"></div><div class="vid"><img src="img/h_6774139.jpg" alt=""></div><div class="ring"></div><div class="logo"><img src="img/logo.webp" alt=""></div><div class="pill"><img src="img/f_5688730.jpg" alt=""><b>@</b>zuri.danse</div><div class="tag">Rejoins-moi sur Afrolook<small>Fait sur Afrolook</small></div><div class="feat"><i></i><i></i><i></i></div></div></div><figcaption>1,0 s<small>le widget du pseudo arrive</small></figcaption></figure>
+<figure><div class="phone mini"><div class="oc pause" style="--t:-1.5s"><div class="bg"></div><div class="bands"></div><div class="vid"><img src="img/h_6774139.jpg" alt=""></div><div class="ring"></div><div class="logo"><img src="img/logo.webp" alt=""></div><div class="pill"><img src="img/f_5688730.jpg" alt=""><b>@</b>zuri.danse</div><div class="tag">Rejoins-moi sur Afrolook<small>Fait sur Afrolook</small></div><div class="feat"><i></i><i></i><i></i></div></div></div><figcaption>1,5 s<small>la phrase d'invitation</small></figcaption></figure>
+<figure><div class="phone mini"><div class="oc pause" style="--t:-2.4s"><div class="bg"></div><div class="bands"></div><div class="vid"><img src="img/h_6774139.jpg" alt=""></div><div class="ring"></div><div class="logo"><img src="img/logo.webp" alt=""></div><div class="pill"><img src="img/f_5688730.jpg" alt=""><b>@</b>zuri.danse</div><div class="tag">Rejoins-moi sur Afrolook<small>Fait sur Afrolook</small></div><div class="feat"><i><svg viewBox="0 0 24 24" style="width:12px;height:12px;fill:none;stroke:#fff;stroke-width:2"><rect x="3.5" y="9" width="17" height="11" rx="1.5"/></svg></i><i></i><i></i></div></div></div><figcaption>2,4 s<small>image finale</small></figcaption></figure>
+</div>
+
+<h2>3. Comment je le fabrique</h2>
+<div class="card tbl"><table><tr><th>Sujet</th><th>Proposition</th></tr>
+<tr><td>Où</td><td><b>Dans le serveur, à l'export du Studio</b> (<code>app/Studio/Montage.php</code>, la même chaîne ffmpeg que le texte, la musique et les épingles) : la fin est collée après la dernière image. Elle est donc <b>dans le fichier</b> : elle suit la vidéo partout (fil, partage WhatsApp, téléchargement).</td></tr>
+<tr><td>Le décor</td><td>Un petit film d'animation prêt à l'emploi par format (9:16, 1:1, 16:9), fabriqué une fois pour toutes avec la charte. Il ne dépend pas de la vidéo.</td></tr>
+<tr><td>Le widget du pseudo</td><td>Une image PNG fabriquée à chaque export avec la photo de profil et le @pseudo de la personne, posée par-dessus à la bonne seconde.</td></tr>
+<tr><td>La dernière image de la vidéo</td><td>Prise automatiquement et rangée en carte (même principe que les épingles du Studio).</td></tr>
+<tr><td>Le son</td><td>Signature de moins d'une seconde, mélangée à la fin du son de la vidéo (fondu), fabriquée par le serveur.</td></tr>
+<tr><td>Durée</td><td>2,8 s en plus de la vidéo (les vidéos de 60 s deviennent 62,8 s ; les limites d'enregistrement ne changent pas).</td></tr>
+<tr><td>Tests</td><td>Rendu réel dans les tests de l'API (comme les tests de montage existants) : durée totale, image finale, présence du son.</td></tr></table></div>
+
+<h2>4. Règles proposées</h2>
+<div class="card"><ul class="t">
+<li><b>Quand</b> : sur chaque vidéo <b>exportée depuis le Studio Afrolook</b>. Pas sur une vidéo publiée telle quelle depuis la galerie, ni sur les photos et les audios.</li>
+<li><b>Interrupteur</b> « Ajouter la fin Afrolook » dans l'écran d'export, <b>activé par défaut</b>. Les comptes <span class="badge">Gold</span> peuvent le désactiver, les comptes gratuits le gardent (c'est une des façons dont Afrolook se fait connaître).</li>
+<li><b>Jamais</b> pour les vidéos des canaux de l'équipe ni les publicités.</li>
+<li>Le pseudo vient du compte au moment de l'export ; photo de profil absente : l'initiale sur fond jaune.</li>
+<li>Aucune mention de commission, de gain ou de revenu dans cette fin.</li></ul></div>
+
+<h2>À valider</h2>
+<div class="card"><ol style="margin:0;padding-left:20px">
+<li>Le dessin et le déroulé (carte qui se range, logo qui rebondit, widget du pseudo, trois pastilles, 2,8 s).</li>
+<li>La phrase « Rejoins-moi sur Afrolook » et la mention « Fait sur Afrolook ».</li>
+<li>Le son : signature de moins d'une seconde, d'accord ? (ou silence)</li>
+<li>La règle : activée par défaut, désactivable seulement par Gold, uniquement pour les exports du Studio.</li>
+<li>Faut-il aussi un lien ou un QR dans la fin (par exemple afrolookmedia.com/telecharger) ? Je recommande <b>non</b> au début : plus léger, et le widget du pseudo suffit.</li></ol>
+<p class="note">Après votre accord : le décor animé (3 formats) et le son, le montage côté serveur avec ses tests, puis l'interrupteur dans l'export de l'application.</p></div>
+</div></body></html>
