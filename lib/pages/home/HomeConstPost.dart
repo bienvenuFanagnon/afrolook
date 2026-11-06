@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/feed/sections/post_call_card.dart';
 import 'package:afrotok/services/chronique_first_page.dart';
 import 'package:afrotok/services/api/startup_trace.dart';
 import 'package:afrotok/services/api/api_gateway.dart';
@@ -53,6 +54,7 @@ import 'feed_cache_service.dart';
 import '../../services/postService/post_view_service.dart';
 import '../../theme/app_colors.dart';
 import '../../l10n/app_localizations.dart';
+import '../../l10n/tr.dart';
 import '../../theme/theme_provider.dart';
 import '../../widgets/feed/sections/feed_articles_section.dart';
 import '../../widgets/feed/sections/feed_canaux_section.dart';
@@ -82,7 +84,6 @@ import '../../layout/centered_content.dart';
 import '../user/creator_unseen_posts_page.dart';
 import '../user/following_unseen_feed_page.dart';
 import 'home_boot_cache.dart';
-import 'discovery_feed_page.dart';
 import '../../widgets/feed/weekly_top_creators_widget.dart';
 import '../../widgets/feed/sections/weekly_top_posts_section_widget.dart';
 import '../../widgets/feed/sections/weekly_top_commentators_widget.dart';
@@ -3656,6 +3657,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         contentWidgets.add(NewsFeedCard(key: ValueKey('news_card_home_$i'), slotKey: 'home_$i'));
       }
 
+      // Appel à poster (phrases variées, au plus 3 par jour, masquable) : après le 16e post, puis tous les 30 posts. Il invite à se filmer ou à laisser un vocal.
+      if (i == 15 || (i > 15 && (i - 15) % 30 == 0)) {
+        contentWidgets.add(PostCallCard(key: ValueKey('post_call_home_$i'), slot: i == 15 ? 1 : 2 + (i - 15) ~/ 30));
+      }
+
       // Invitation « Crée ta carte Afrolook » : après le 13e post, puis plus loin (au plus une fois tous les 3 jours, jamais sur le web)
       if (i == 12) {
         contentWidgets.add(const CardFeedInvite(key: ValueKey('card_invite_home_1')));
@@ -3870,84 +3876,35 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     );
   }
 
-  /// Deux boutons de fin de feed :
-  /// 1. "Voir de nouveaux posts" — disabled jusqu'à un abonnement depuis FeedEndDiscoverySection
-  /// 2. "À découvrir & Tendances" — charge T2+T3 sur demande
+  /// Fin de feed : UN SEUL bouton « Voir plus de posts ». Il charge la suite ICI, dans la même page (le serveur cherche d'autres posts non vus, partout, puis
+  /// re-propose les moins récemment vus : jamais de fil vide). Plus de page « à découvrir », plus de bouton bloqué tant qu'on ne s'abonne pas.
   List<Widget> _buildEndFeedButtons(AppColors colors) {
     return [
-      // Bouton 1 : Voir les nouveaux posts (activé après abonnement)
       SizedBox(
         width: double.infinity,
-        child: _isReloadingAfterSubscribe
-            ? Center(child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                child: CircularProgressIndicator(color: colors.primary, strokeWidth: 2),
-              ))
-            : ElevatedButton.icon(
-                onPressed: _hasSubscribedFromEndFeed
-                    ? () async {
-                        setState(() => _isReloadingAfterSubscribe = true);
-                        _resetPagination();
-                        await _loadInitialPosts();
-                        if (mounted) setState(() {
-                          _hasSubscribedFromEndFeed = false;
-                          _isReloadingAfterSubscribe = false;
-                        });
-                      }
-                    : null,
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: const Text('Voir de nouveaux posts'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _hasSubscribedFromEndFeed ? colors.primary : colors.border,
-                  foregroundColor: _hasSubscribedFromEndFeed ? colors.onPrimary : colors.textSecondary,
-                  disabledBackgroundColor: colors.surface,
-                  disabledForegroundColor: colors.textSecondary,
+        child: _isLoadingMorePosts
+            ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: CircularProgressIndicator(color: colors.primary, strokeWidth: 2),
+                ),
+              )
+            : OutlinedButton.icon(
+                key: const ValueKey('see_more_posts'),
+                onPressed: _reloadDiscoveryInPlace,
+                icon: Icon(Icons.expand_more_rounded, size: 20, color: colors.primary),
+                label: Text(context.tr('Voir plus de posts'), style: TextStyle(color: colors.primary, fontWeight: FontWeight.w600)),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: colors.primary.withOpacity(0.6)),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
                 ),
               ),
-      ),
-      if (!_hasSubscribedFromEndFeed) ...[
-        const SizedBox(height: 6),
-        Text(
-          'Abonne-toi à un créateur ou canal ci-dessus pour activer ce bouton',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: colors.textSecondary, fontSize: 11),
-        ),
-      ],
-      const SizedBox(height: 10),
-      // Bouton 2 : Voir les posts Découvrir — toujours disponible
-      SizedBox(
-        width: double.infinity,
-        child: OutlinedButton.icon(
-          // Accueil infini : les posts à découvrir (toujours non vus) sont rechargés ICI, dans la même page, sans en ouvrir une autre
-          onPressed: _infiniteFeed
-              ? _reloadDiscoveryInPlace
-              : () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => DiscoveryFeedPage(
-                        pageType: widget.type.isNotEmpty ? widget.type : null,
-                      ),
-                    ),
-                  ),
-          icon: Icon(Icons.explore_rounded, size: 18, color: colors.primary),
-          label: Text(
-            'Voir les posts Découvrir',
-            style: TextStyle(color: colors.primary, fontWeight: FontWeight.w600),
-          ),
-          style: OutlinedButton.styleFrom(
-            side: BorderSide(color: colors.primary.withOpacity(0.6)),
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
       ),
     ];
   }
 
-  /// Bouton « Voir les posts Découvrir » de l'accueil infini : nouvelle lecture du fil du serveur (posts non vus, y compris la découverte),
+  /// Bouton « Voir plus de posts » : nouvelle lecture du fil du serveur (d'abord du non vu, partout ; puis les moins récemment vus),
   /// ajoutée à la suite de la liste. La personne reste sur la même page et peut continuer à défiler.
   Future<void> _reloadDiscoveryInPlace() async {
     if (_isLoadingMorePosts) return;

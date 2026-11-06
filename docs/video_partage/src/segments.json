@@ -1,0 +1,10 @@
+[
+  { "id": "s1", "scene": "accroche", "text": "Tu as des vues sur ton statut WhatsApp, sur tes groupes WhatsApp, sur Facebook, sur Telegram ? Transforme-les en revenus." },
+  { "id": "s2", "scene": "marques", "text": "Des marques partenaires publient leurs campagnes avec Afrolook Ads, et ce sont elles qui te paient." },
+  { "id": "s3", "scene": "parcours", "text": "Depuis le fil, ouvre le menu, va dans Récompenses, touche le widget : tu es sur la page de travail d'Afrolook." },
+  { "id": "s4", "scene": "partage", "text": "Choisis une campagne et partage ton lien." },
+  { "id": "s5", "scene": "gains", "text": "À chaque visite de tes amis, tu gagnes, jusqu'à dix mille francs par jour." },
+  { "id": "s6", "scene": "parrainage", "text": "Parraine tes amis : quand ils partagent, tu gagnes aussi un pourcentage de leurs gains.", "onlyWith": true },
+  { "id": "s7", "scene": "travail", "text": "C'est un vrai travail dans l'application." },
+  { "id": "s8", "scene": "final", "text": "Télécharge Afrolook, sur Google Play et l'App Store." }
+]

@@ -3,9 +3,10 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import 'studio_models.dart';
+import 'studio_theme.dart';
 
 // Raccourci palette sombre fixe pour le Studio (toujours dark)
-const _c = AppColors.dark;
+AppColors get _c => studioColors;
 
 class StudioTextEditor extends StatefulWidget {
   final bool forChronique;
@@ -52,6 +53,7 @@ class _StudioTextEditorState extends State<StudioTextEditor> {
 
   @override
   Widget build(BuildContext context) {
+    syncStudioColors(context);
     return Scaffold(
       backgroundColor: _c.background,
       appBar: AppBar(
@@ -213,7 +215,7 @@ class _StudioTextEditorState extends State<StudioTextEditor> {
               maxLines: 3,
               maxLength: widget.forChronique ? 200 : 500,
               onChanged: (_) => setState(() {}),
-              style: const TextStyle(fontSize: 14, color: Colors.white),
+              style: TextStyle(fontSize: 14, color: _c.textPrimary),
               decoration: InputDecoration(
                 hintText: 'Écrivez votre message…',
                 hintStyle: TextStyle(color: _c.textSecondary),

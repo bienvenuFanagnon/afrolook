@@ -18,6 +18,7 @@ class StudioResult {
   final int? audioEndMs;        // fin du clip (trim), en millisecondes
   final String? artistSoundId;  // son d'artiste utilisé dans le montage (lie le post au son)
   final String? soundJobId;     // identifiant du montage côté serveur (preuve de l'utilisation)
+  final bool usedOwnMedia;      // true = la personne a mis sa propre photo/vidéo (galerie ou caméra) dans le modèle ; false = photo de profil ou exemple
 
   const StudioResult({
     required this.type,
@@ -31,6 +32,7 @@ class StudioResult {
     this.audioEndMs,
     this.artistSoundId,
     this.soundJobId,
+    this.usedOwnMedia = false,
   });
 }
 

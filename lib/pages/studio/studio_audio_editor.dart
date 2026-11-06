@@ -12,8 +12,9 @@ import 'package:audio_waveforms/audio_waveforms.dart' hide PlayerState;
 import '../../theme/app_colors.dart';
 import 'studio_models.dart';
 import 'studio_audio_trimmer.dart';
+import 'studio_theme.dart';
 
-const _c = AppColors.dark;
+AppColors get _c => studioColors;
 
 class StudioAudioEditor extends StatefulWidget {
   final bool forChronique;
@@ -140,6 +141,7 @@ class _StudioAudioEditorState extends State<StudioAudioEditor> {
 
   @override
   Widget build(BuildContext context) {
+    syncStudioColors(context);
     return Scaffold(
       backgroundColor: _c.background,
       appBar: AppBar(
@@ -186,7 +188,7 @@ class _StudioAudioEditorState extends State<StudioAudioEditor> {
                           height: 72,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.white24),
+                            border: Border.all(color: _c.border),
                             color: Colors.white.withOpacity(0.08),
                           ),
                           clipBehavior: Clip.hardEdge,
@@ -194,10 +196,10 @@ class _StudioAudioEditorState extends State<StudioAudioEditor> {
                               ? Image.file(_coverImageFile!, fit: BoxFit.cover)
                               : Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
-                                  children: const [
-                                    Icon(Icons.add_photo_alternate, color: Colors.white38, size: 24),
+                                  children: [
+                                    Icon(Icons.add_photo_alternate, color: _c.textSecondary, size: 24),
                                     SizedBox(height: 4),
-                                    Text('Pochette', style: TextStyle(color: Colors.white38, fontSize: 9)),
+                                    Text('Pochette', style: TextStyle(color: _c.textSecondary, fontSize: 9)),
                                   ],
                                 ),
                         ),
@@ -229,7 +231,7 @@ class _StudioAudioEditorState extends State<StudioAudioEditor> {
                             if (_duration != Duration.zero)
                               Text(
                                 _formatDuration(_duration),
-                                style: TextStyle(fontSize: 11, color: Colors.white54),
+                                style: TextStyle(fontSize: 11, color: _c.textSecondary),
                               ),
                           ],
                         ),
@@ -246,7 +248,7 @@ class _StudioAudioEditorState extends State<StudioAudioEditor> {
                       playerController: _waveformController!,
                       waveformType: WaveformType.fitWidth,
                       playerWaveStyle: PlayerWaveStyle(
-                        fixedWaveColor: Colors.white24,
+                        fixedWaveColor: _c.border,
                         liveWaveColor: _c.primary,
                         spacing: 4,
                         waveThickness: 3,
@@ -264,7 +266,7 @@ class _StudioAudioEditorState extends State<StudioAudioEditor> {
                       if (_audioFile != null) ...[
                         Text(
                           _formatDuration(_position),
-                          style: TextStyle(fontSize: 11, color: Colors.white54),
+                          style: TextStyle(fontSize: 11, color: _c.textSecondary),
                         ),
                         const SizedBox(width: 12),
                         GestureDetector(
@@ -286,12 +288,12 @@ class _StudioAudioEditorState extends State<StudioAudioEditor> {
                         const SizedBox(width: 12),
                         Text(
                           _formatDuration(_duration),
-                          style: TextStyle(fontSize: 11, color: Colors.white54),
+                          style: TextStyle(fontSize: 11, color: _c.textSecondary),
                         ),
                       ] else
                         Text(
                           'Aucun audio sélectionné',
-                          style: TextStyle(color: Colors.white38, fontSize: 12),
+                          style: TextStyle(color: _c.textSecondary, fontSize: 12),
                         ),
                     ],
                   ),
@@ -319,7 +321,7 @@ class _StudioAudioEditorState extends State<StudioAudioEditor> {
                   children: [
                     Icon(
                       _audioFile != null ? Icons.check_circle : Icons.audio_file,
-                      color: _audioFile != null ? _c.primary : Colors.white54,
+                      color: _audioFile != null ? _c.primary : _c.textSecondary,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
@@ -328,7 +330,7 @@ class _StudioAudioEditorState extends State<StudioAudioEditor> {
                           ? _audioFile!.path.split('/').last
                           : 'Choisir un fichier audio (MP3 / WAV / AAC · max 50 Mo)',
                       style: TextStyle(
-                        color: _audioFile != null ? _c.primary : Colors.white54,
+                        color: _audioFile != null ? _c.primary : _c.textSecondary,
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                       ),
@@ -363,7 +365,7 @@ class _StudioAudioEditorState extends State<StudioAudioEditor> {
                     children: [
                       Icon(
                         Icons.content_cut_rounded,
-                        color: (_audioStartMs != null) ? const Color(0xFF9B59B6) : Colors.white54,
+                        color: (_audioStartMs != null) ? const Color(0xFF9B59B6) : _c.textSecondary,
                         size: 18,
                       ),
                       const SizedBox(width: 8),
@@ -372,7 +374,7 @@ class _StudioAudioEditorState extends State<StudioAudioEditor> {
                             ? '✂️ Clip : ${(_audioStartMs! / 1000).toStringAsFixed(1)}s → ${(_audioEndMs! / 1000).toStringAsFixed(1)}s'
                             : 'Découper le clip (style WhatsApp)',
                         style: TextStyle(
-                          color: (_audioStartMs != null) ? const Color(0xFF9B59B6) : Colors.white54,
+                          color: (_audioStartMs != null) ? const Color(0xFF9B59B6) : _c.textSecondary,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
@@ -398,7 +400,7 @@ class _StudioAudioEditorState extends State<StudioAudioEditor> {
                 maxLines: 1,
                 maxLength: 60,
                 onChanged: (_) => setState(() {}),
-                style: const TextStyle(fontSize: 13, color: Colors.white),
+                style: TextStyle(fontSize: 13, color: _c.textPrimary),
                 decoration: InputDecoration(
                   hintText: 'Titre du son / podcast…',
                   hintStyle: TextStyle(color: _c.textSecondary),
@@ -506,6 +508,7 @@ class _StudioAudioEditorState extends State<StudioAudioEditor> {
 class _WaveformPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    syncStudioColors(context);
     return SizedBox(
       height: 48,
       child: Row(
@@ -518,7 +521,7 @@ class _WaveformPlaceholder extends StatelessWidget {
             height: 8 + (i % 5) * 6.0,
             margin: const EdgeInsets.symmetric(horizontal: 2),
             decoration: BoxDecoration(
-              color: Colors.white12,
+              color: _c.border,
               borderRadius: BorderRadius.circular(99),
             ),
           ),

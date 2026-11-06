@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Partage et gagne</title>
+<style>
+  :root { --g1:#0B5A33; --g2:#0F7B43; --g3:#17A05A; --jaune:#FFC400; --creme:#F6F8F5; --texte:#12261B; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 720px; height: 1280px; overflow: hidden; background: #08422a; font-family: "Bahnschrift", "Segoe UI", Arial, sans-serif; color: #fff; }
+  #stage { position: relative; width: 720px; height: 1280px; overflow: hidden; background: linear-gradient(180deg, #0F7B43 0%, #0B5A33 100%); }
+  #fond { position: absolute; inset: -80px; }
+  .bulle { position: absolute; border-radius: 50%; background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.20), rgba(255,255,255,0) 70%); }
+  .scene { position: absolute; inset: 0; opacity: 0; will-change: transform, opacity; }
+  .brand { position: absolute; left: 40px; top: 36px; display: flex; align-items: center; gap: 14px; font-weight: 700; font-size: 30px; letter-spacing: .3px; opacity: .96; }
+  .brand img { width: 52px; height: 52px; border-radius: 14px; }
+  h1, h2 { font-weight: 800; line-height: 1.08; text-wrap: balance; }
+  .big { font-size: 68px; }
+  .mid { font-size: 52px; }
+  .chip { display: inline-block; background: var(--jaune); color: var(--texte); font-weight: 800; border-radius: 22px; padding: 10px 26px; }
+  .abs { position: absolute; }
+  .center { left: 0; right: 0; text-align: center; padding: 0 48px; }
+
+  .phone { position: absolute; left: 130px; top: 410px; width: 460px; height: 822px; border-radius: 56px; background: #0b0f0d; padding: 10px; box-shadow: 0 26px 60px rgba(0,0,0,.45), 0 0 0 2px #25322b inset; }
+  .screen { position: relative; width: 440px; height: 802px; border-radius: 46px; overflow: hidden; background: #fff; }
+  .shot { position: absolute; inset: 0; opacity: 0; }
+  .shot img.base { position: absolute; left: 0; width: 440px; top: calc(-120px * 0.4365); }
+  .blurbox { position: absolute; overflow: hidden; border-radius: 10px; }
+  .blurbox img { position: absolute; width: 440px; filter: blur(12px) saturate(.8); }
+  .ring { position: absolute; width: 74px; height: 74px; margin: -37px 0 0 -37px; border-radius: 50%; border: 6px solid var(--jaune); background: rgba(255,196,0,.22); }
+
+  .card { position: absolute; left: 60px; right: 60px; height: 132px; border-radius: 28px; background: var(--creme); color: var(--texte); display: flex; align-items: center; gap: 22px; padding: 0 28px; box-shadow: 0 14px 34px rgba(0,0,0,.28); }
+  .card .ic { width: 76px; height: 76px; border-radius: 22px; display: grid; place-items: center; font-size: 40px; font-weight: 800; color: #fff; flex: none; }
+  .card .nom { font-size: 34px; font-weight: 800; }
+  .card .sub { font-size: 24px; opacity: .68; margin-top: 2px; }
+  .card .gain { margin-left: auto; background: var(--jaune); color: var(--texte); font-weight: 800; font-size: 26px; border-radius: 16px; padding: 8px 14px; white-space: nowrap; }
+  .coin { position: absolute; width: 54px; height: 54px; border-radius: 50%; background: var(--jaune); color: var(--texte); display: grid; place-items: center; font-weight: 800; font-size: 26px; box-shadow: 0 6px 14px rgba(0,0,0,.3); }
+
+  .statut { position: absolute; left: 60px; right: 60px; top: 500px; height: 440px; border-radius: 36px; background: linear-gradient(160deg, #1d2a24, #0b1511); box-shadow: 0 22px 50px rgba(0,0,0,.4); overflow: hidden; }
+  .statut .bar { position: absolute; left: 24px; right: 24px; top: 18px; height: 6px; border-radius: 3px; background: rgba(255,255,255,.28); }
+  .statut .bar i { display: block; height: 100%; background: #fff; border-radius: 3px; }
+  .avatar { border-radius: 50%; background: linear-gradient(145deg, #cfd8d3, #8fa399); display: grid; place-items: center; color: #fff; font-weight: 800; }
+  .vu { position: absolute; left: 0; right: 0; bottom: 0; padding: 22px 30px; background: linear-gradient(0deg, rgba(0,0,0,.65), rgba(0,0,0,0)); display: flex; align-items: center; gap: 14px; font-size: 40px; font-weight: 800; }
+  .badge { position: absolute; }
+  .petit { font-size: 24px; opacity: .8; }
+  .node { position: absolute; width: 132px; text-align: center; font-size: 24px; font-weight: 700; }
+  .node .avatar { width: 112px; height: 112px; margin: 0 auto 8px; font-size: 44px; border: 5px solid rgba(255,255,255,.9); }
+  .ligne { position: absolute; width: 6px; border-radius: 3px; background: rgba(255,255,255,.55); transform-origin: top center; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="fond"></div>
+
+  <!-- 1. accroche -->
+  <div class="scene" id="sc_accroche">
+    <div class="brand"><img src="assets/logo_1024.png" alt=""><span>Afrolook</span></div>
+    <h1 class="abs center big" id="a_t1" style="top:130px">Tu as des vues ?</h1>
+    <div class="abs center" id="a_chips" style="top:270px; display:flex; flex-wrap:wrap; gap:14px; justify-content:center"></div>
+    <div class="statut" id="a_card">
+      <div class="bar"><i style="width:62%"></i></div>
+      <div class="abs" style="left:28px; top:44px; display:flex; align-items:center; gap:16px">
+        <div class="avatar" style="width:76px;height:76px;font-size:32px">Toi</div>
+        <div><div style="font-size:30px;font-weight:800">Mon statut</div><div class="petit">il y a 2 h</div></div>
+      </div>
+      <div class="abs" style="left:0; right:0; top:140px; text-align:center">
+        <div style="font-size:30px; opacity:.85">Une annonce partagée</div>
+        <div style="font-size:78px; font-weight:800; margin-top:10px">Boutique Awa</div>
+        <div style="font-size:30px; opacity:.85; margin-top:6px">Pagnes · Wax · Bogolan</div>
+      </div>
+      <div class="vu">
+        <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3.2"/></svg>
+        <span id="a_vues">0</span><span style="font-weight:600; opacity:.85; font-size:32px">vues</span>
+      </div>
+    </div>
+    <div class="abs center" id="a_t2" style="top:990px"><span class="chip" style="font-size:60px; line-height:1.15">Transforme-les<br>en revenus</span></div>
+  </div>
+
+  <!-- 2. marques -->
+  <div class="scene" id="sc_marques">
+    <div class="brand"><img src="assets/logo_1024.png" alt=""><span>Afrolook</span></div>
+    <h2 class="abs center mid" id="m_t1" style="top:140px">Des marques partenaires<br>publient leurs campagnes</h2>
+    <div class="card" id="m_c1" style="top:400px"><div class="ic" style="background:#C2410C">A</div><div><div class="nom">Boutique Awa</div><div class="sub">Pagnes · Wax</div></div><div class="gain">+5 F / visite</div></div>
+    <div class="card" id="m_c2" style="top:560px"><div class="ic" style="background:#1D4ED8">K</div><div><div class="nom">Chez Kéké</div><div class="sub">Restaurant · Lomé</div></div><div class="gain">+5 F / visite</div></div>
+    <div class="card" id="m_c3" style="top:720px"><div class="ic" style="background:#7E22CE">D</div><div><div class="nom">Lomé Digital</div><div class="sub">Téléphones · Accessoires</div></div><div class="gain">+5 F / visite</div></div>
+    <div id="m_coins"></div>
+    <div class="abs center" id="m_t2" style="top:990px"><span class="chip" style="font-size:56px">Ce sont elles<br>qui te paient</span></div>
+  </div>
+
+  <!-- 3. parcours -->
+  <div class="scene" id="sc_parcours">
+    <div class="brand"><img src="assets/logo_1024.png" alt=""><span>Afrolook</span></div>
+    <div class="abs center" style="top:130px"><span class="petit" style="font-size:30px; letter-spacing:2px; text-transform:uppercase">Comment commencer ?</span></div>
+    <div class="abs center" id="p_step" style="top:190px; height:170px"><span class="chip" id="p_chip" style="font-size:50px; line-height:1.2"></span></div>
+    <div class="phone" id="p_phone"><div class="screen" id="p_screen"></div></div>
+  </div>
+
+  <!-- 4. partage -->
+  <div class="scene" id="sc_partage">
+    <div class="brand"><img src="assets/logo_1024.png" alt=""><span>Afrolook</span></div>
+    <h2 class="abs center mid" id="s_t1" style="top:150px">Choisis une campagne<br>et partage ton lien</h2>
+    <div class="abs center" id="s_chips" style="top:330px; display:flex; gap:14px; justify-content:center; flex-wrap:wrap"></div>
+    <div class="phone" id="s_phone"><div class="screen" id="s_screen"></div></div>
+  </div>
+
+  <!-- 5. gains -->
+  <div class="scene" id="sc_gains">
+    <div class="brand"><img src="assets/logo_1024.png" alt=""><span>Afrolook</span></div>
+    <h2 class="abs center mid" id="g_t1" style="top:150px">À chaque visite<br>de tes amis, tu gagnes</h2>
+    <div class="abs" style="left:60px; right:60px; top:400px; display:flex; gap:24px">
+      <div style="flex:1; background:var(--creme); color:var(--texte); border-radius:32px; padding:30px 20px; text-align:center" id="g_k1"><div style="font-size:26px; font-weight:700; opacity:.7">Visites</div><div style="font-size:96px; font-weight:800; line-height:1.1" id="g_v">0</div></div>
+      <div style="flex:1; background:var(--creme); color:var(--texte); border-radius:32px; padding:30px 20px; text-align:center" id="g_k2"><div style="font-size:26px; font-weight:700; opacity:.7">Tes gains</div><div style="font-size:96px; font-weight:800; line-height:1.1"><span id="g_f">0</span><span style="font-size:48px"> F</span></div></div>
+    </div>
+    <div id="g_plus"></div>
+    <div class="abs center" id="g_t2" style="top:790px"><span class="chip" style="font-size:60px; line-height:1.15">Jusqu'à 10 000 F<br>par jour</span></div>
+    <div class="abs center petit" id="g_t3" style="top:1010px; font-size:28px">selon les visites valides</div>
+  </div>
+
+  <!-- 6. parrainage (version avec parrainage seulement) -->
+  <div class="scene" id="sc_parrainage">
+    <div class="brand"><img src="assets/logo_1024.png" alt=""><span>Afrolook</span></div>
+    <h2 class="abs center mid" id="r_t1" style="top:140px">Parraine tes amis</h2>
+    <div class="abs center" id="r_t2" style="top:236px; font-size:36px; opacity:.95">Quand ils partagent, tu gagnes aussi un pourcentage</div>
+    <div id="r_net"></div>
+    <div class="abs center petit" style="top:1190px; font-size:22px; opacity:.7">Illustration</div>
+  </div>
+
+  <!-- 7. travail -->
+  <div class="scene" id="sc_travail">
+    <div class="brand"><img src="assets/logo_1024.png" alt=""><span>Afrolook</span></div>
+    <div class="abs center" id="t_t2" style="top:470px"><span class="chip" style="font-size:62px; line-height:1.2">C'est un vrai travail<br>dans l'application</span></div>
+  </div>
+
+  <!-- 8. final -->
+  <div class="scene" id="sc_final">
+    <img id="f_logo" class="abs" src="assets/logo_1024.png" alt="" style="left:240px; top:170px; width:240px; height:240px; border-radius:60px; box-shadow:0 20px 50px rgba(0,0,0,.4)">
+    <h1 class="abs center big" id="f_t1" style="top:470px">Télécharge<br>Afrolook</h1>
+    <div class="abs center petit" id="f_t2" style="top:690px; font-size:32px; opacity:.95">Disponible sur Android et iPhone</div>
+    <img id="f_gp" class="badge" src="assets/badge_google_play.png" alt="Disponible sur Google Play" style="left:150px; top:780px; width:420px">
+    <img id="f_as" class="badge" src="assets/badge_app_store.svg" alt="Télécharger dans l'App Store" style="left:180px; top:980px; width:360px">
+  </div>
+</div>
+
+<script>
+const K = 440 / 1008, TOPCROP = 120;
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const eo = x => 1 - Math.pow(1 - clamp(x), 3);                                     // départ vif, arrivée douce
+const eio = x => { x = clamp(x); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };   // départ et arrivée doux
+const eb = x => { x = clamp(x); const c1 = 1.4, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };   // petit rebond
+const sg = (t, a, b) => clamp((t - a) / (b - a));
+const $ = id => document.getElementById(id);
+const fmt = n => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+const cue = (n, d) => (window.TL.cues[n] !== undefined ? window.TL.cues[n] : d);
+// apparition : fondu + montée douce + léger rebond
+const pop = (el, p, dy = 28) => { const e = eo(p); el.style.opacity = clamp(p * 1.6); el.style.transform = `translateY(${(1 - e) * dy}px) scale(${0.9 + 0.1 * eb(p)})`; };
+
+const SHOTS = {
+  fil:  { f: '../captures/01_fil.png',  blur: [[0, 440, 1008, 2244]], tap: [47, 162] },
+  menu: { f: '../captures/02_menu.png', blur: [[0, 250, 860, 385], [0, 600, 860, 805]], tap: [224, 1671] },
+  rec:  { f: '../captures/03_recompenses.png', blur: [], tap: [504, 379] },
+  trav: { f: '../captures/04_page_travail.png', blur: [[30, 1050, 980, 1362]], tap: [263, 420] },
+  miss: { f: '../captures/05_missions.png', blur: [], tap: [504, 916] },
+};
+
+function makeShot(container, key) {
+  const s = SHOTS[key];
+  const el = document.createElement('div'); el.className = 'shot';
+  const img = document.createElement('img'); img.className = 'base'; img.src = s.f; el.appendChild(img);
+  for (const [x0, y0, x1, y1] of s.blur) {
+    const b = document.createElement('div'); b.className = 'blurbox';
+    const top = Math.max(0, (y0 - TOPCROP) * K), bot = Math.min(802, (y1 - TOPCROP) * K);
+    b.style.left = x0 * K + 'px'; b.style.top = top + 'px'; b.style.width = (x1 - x0) * K + 'px'; b.style.height = (bot - top) + 'px';
+    const i2 = document.createElement('img'); i2.src = s.f;
+    i2.style.left = (-x0 * K) + 'px'; i2.style.top = (-TOPCROP * K - top) + 'px';
+    b.appendChild(i2); el.appendChild(b);
+  }
+  const ring = document.createElement('div'); ring.className = 'ring';
+  ring.style.left = s.tap[0] * K + 'px'; ring.style.top = (s.tap[1] - TOPCROP) * K + 'px'; el.appendChild(ring);
+  container.appendChild(el);
+  return { el, ring };
+}
+
+const P = {};
+function build() {
+  // fond animé : grosses bulles lumineuses qui dérivent lentement
+  const fond = $('fond');
+  P.bulles = [[120, 200, 520], [520, 700, 640], [260, 1000, 460], [600, 120, 380], [80, 760, 420]].map(([x, y, d], i) => {
+    const b = document.createElement('div'); b.className = 'bulle'; b.style.width = b.style.height = d + 'px'; b.style.left = x + 'px'; b.style.top = y + 'px'; fond.appendChild(b); return { b, x, y, i };
+  });
+  P.par = ['fil', 'menu', 'rec', 'trav'].map(k => makeShot($('p_screen'), k));
+  P.miss = makeShot($('s_screen'), 'miss');
+  const ach = $('a_chips');
+  for (const n of ['Statut WhatsApp', 'Groupes WhatsApp', 'Facebook', 'Telegram']) { const c = document.createElement('span'); c.className = 'chip'; c.style.fontSize = '34px'; c.textContent = n; ach.appendChild(c); }
+  const chips = $('s_chips');
+  for (const n of ['WhatsApp', 'Telegram', 'Groupes']) { const c = document.createElement('span'); c.className = 'chip'; c.style.fontSize = '30px'; c.textContent = n; chips.appendChild(c); }
+  const mc = $('m_coins');
+  for (let i = 0; i < 14; i++) { const c = document.createElement('div'); c.className = 'coin'; c.textContent = 'F'; mc.appendChild(c); }
+  const gp = $('g_plus');
+  for (let i = 0; i < 8; i++) { const d = document.createElement('div'); d.className = 'chip'; d.style.cssText = 'position:absolute; font-size:34px; padding:6px 18px'; d.textContent = '+5 F'; gp.appendChild(d); }
+  $('r_net').innerHTML = `
+    <div class="node" id="r_n0" style="left:294px; top:350px"><div class="avatar">Toi</div>Parrain</div>
+    <div class="ligne" id="r_l1"></div><div class="ligne" id="r_l2"></div><div class="ligne" id="r_l3"></div>
+    <div class="node" id="r_n1" style="left:70px; top:760px"><div class="avatar" style="background:linear-gradient(145deg,#f6b26b,#c27c2c)">A</div>Ami 1</div>
+    <div class="node" id="r_n2" style="left:294px; top:790px"><div class="avatar" style="background:linear-gradient(145deg,#8fb8f0,#3f73c4)">B</div>Ami 2</div>
+    <div class="node" id="r_n3" style="left:518px; top:760px"><div class="avatar" style="background:linear-gradient(145deg,#c9a0ea,#8a52c0)">C</div>Ami 3</div>
+    <div id="r_coins"></div>
+    <div class="abs center" id="r_pct" style="top:1040px"><span class="chip" style="font-size:44px">+ un pourcentage</span></div>`;
+  const rc = $('r_coins');
+  for (let i = 0; i < 9; i++) { const c = document.createElement('div'); c.className = 'coin'; c.style.width = c.style.height = '44px'; c.style.fontSize = '22px'; c.textContent = 'F'; rc.appendChild(c); }
+}
+
+function line(el, x0, y0, x1, y1, p) {
+  const dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy), ang = Math.atan2(dy, dx) - Math.PI / 2;
+  el.style.left = x0 + 'px'; el.style.top = y0 + 'px'; el.style.height = len * eio(p) + 'px'; el.style.transform = `rotate(${ang}rad)`; el.style.opacity = clamp(p * 3);
+}
+// petit mouvement continu : rien n'est jamais figé
+const float = (t, seed, amp = 5) => Math.sin(t * 1.6 + seed) * amp;
+
+function renderScene(id, t, s, e) {
+  const lt = t - s, d = e - s;
+  switch (id) {
+    case 'accroche': {
+      pop($('a_t1'), sg(t, 0.15, 0.85));
+      const ch = $('a_chips').children, names = ['statut', 'groupes', 'facebook', 'telegram'];
+      for (let i = 0; i < ch.length; i++) pop(ch[i], sg(t, cue(names[i], 2 + i) - 0.22, cue(names[i], 2 + i) + 0.3), 16);
+      pop($('a_card'), sg(t, 0.55, 1.35), 46); $('a_card').style.transform += ` translateY(${float(t, 0, 4)}px)`;
+      $('a_vues').textContent = Math.round(375 * eio(sg(t, cue('vues', 1) , cue('revenus', 7))));
+      pop($('a_t2'), sg(t, cue('revenus', 7) - 0.3, cue('revenus', 7) + 0.35));
+      break;
+    }
+    case 'marques': {
+      pop($('m_t1'), sg(lt, 0.05, 0.6));
+      pop($('m_c1'), sg(lt, 0.35, 0.95)); pop($('m_c2'), sg(lt, 0.7, 1.3)); pop($('m_c3'), sg(lt, 1.05, 1.65));
+      for (const [i, id2] of ['m_c1', 'm_c2', 'm_c3'].entries()) $(id2).style.transform += ` translateY(${float(t, i * 1.3, 3)}px)`;
+      const pay = cue('paient', s + 3), cs = $('m_coins').children;
+      for (let i = 0; i < cs.length; i++) {
+        const t0 = pay - 0.5 + i * 0.1, p = sg(t, t0, t0 + 1.0), x = 70 + ((i * 97) % 580), y = 860 + eo(p) * 110;
+        cs[i].style.left = x + 'px'; cs[i].style.top = y + 'px'; cs[i].style.opacity = p > 0 && p < 1 ? Math.min(1, Math.sin(p * Math.PI) * 2.2) : 0;
+      }
+      pop($('m_t2'), sg(t, pay - 0.75, pay - 0.15));
+      break;
+    }
+    case 'parcours': {
+      const cm = cue('menu', s + 2), cr = cue('recompenses', s + 4), cw = cue('widget', s + 6);
+      const bounds = [s, cm + 0.55, cr + 0.7, cw + 0.55, e + 1];
+      const k = t < bounds[1] ? 0 : t < bounds[2] ? 1 : t < bounds[3] ? 2 : 3;
+      for (let i = 0; i < 4; i++) {
+        const sh = P.par[i], t0 = bounds[i], t1 = bounds[i + 1];
+        const o = i === k ? eio(sg(t, t0, t0 + 0.4)) : (i === k - 1 ? 1 - eio(sg(t, t1 - 0.001, t1 + 0.4)) : 0);
+        sh.el.style.opacity = i === 0 ? (k === 0 ? 1 : o) : o; sh.el.style.zIndex = i === k ? 2 : 1;
+        const tap = [cm - 0.15, cr - 0.15, cw - 0.15, 1e9][i];
+        sh.ring.style.opacity = t >= tap && t < t1 ? clamp(sg(t, tap, tap + 0.2)) : 0;
+        sh.ring.style.transform = `scale(${1 + 0.3 * Math.sin((t - tap) * 8)})`;
+      }
+      const legende = ['1 · Ouvre le menu', '2 · Va dans Récompenses', '3 · Touche le widget', '4 · Page de travail'];
+      const chip = $('p_chip'); if (chip.textContent !== legende[k]) chip.textContent = legende[k];
+      pop(chip, sg(t, bounds[k], bounds[k] + 0.35), 18);
+      pop($('p_phone'), sg(lt, 0, 0.6), 70); $('p_phone').style.transform += ` translateY(${float(t, 1, 5)}px)`;
+      break;
+    }
+    case 'partage': {
+      pop($('s_t1'), sg(lt, 0, 0.5));
+      const ch = $('s_chips').children, lien = cue('lien', s + 2);
+      for (let i = 0; i < ch.length; i++) pop(ch[i], sg(t, lien - 0.4 + i * 0.14, lien + 0.1 + i * 0.14), 14);
+      const c = cue('campagne', s + 0.8);
+      P.miss.el.style.opacity = 1; P.miss.ring.style.opacity = sg(t, c - 0.1, c + 0.2); P.miss.ring.style.transform = `scale(${1 + 0.3 * Math.sin((t - c) * 8)})`;
+      pop($('s_phone'), sg(lt, 0, 0.6), 70); $('s_phone').style.transform += ` translateY(${float(t, 2, 5)}px)`;
+      break;
+    }
+    case 'gains': {
+      pop($('g_t1'), sg(lt, 0, 0.5));
+      pop($('g_k1'), sg(lt, 0.25, 0.8)); pop($('g_k2'), sg(lt, 0.4, 0.95));
+      const v0 = cue('visite', s + 0.7), g1 = cue('gagnes', s + 2.4) + 1.4, dix = cue('dix', s + 3.5);
+      const vis = Math.floor(40 * eio(sg(t, v0, g1))); $('g_v').textContent = vis; $('g_f').textContent = fmt(vis * 5);
+      const gp = $('g_plus').children;
+      for (let i = 0; i < gp.length; i++) { const t0 = v0 + i * 0.26, p = sg(t, t0, t0 + 0.9); gp[i].style.left = (110 + (i % 4) * 130 + (i * 37) % 30) + 'px'; gp[i].style.top = (372 - eo(p) * 52 + (i % 2) * 18) + 'px'; gp[i].style.opacity = p > 0 && p < 1 ? Math.sin(p * Math.PI) : 0; }
+      pop($('g_t2'), sg(t, dix - 0.3, dix + 0.35)); pop($('g_t3'), sg(t, dix + 0.8, dix + 1.3), 10);
+      break;
+    }
+    case 'parrainage': {
+      const pc = cue('pourcentage', s + 3.6);
+      pop($('r_t1'), sg(lt, 0, 0.5)); pop($('r_t2'), sg(lt, 0.25, 0.85), 14);
+      pop($('r_n0'), sg(lt, 0.45, 1.0));
+      const ax = [136, 360, 584], ay = [760, 790, 760];
+      for (let i = 1; i <= 3; i++) { pop($('r_n' + i), sg(lt, 0.7 + i * 0.15, 1.25 + i * 0.15)); line($('r_l' + i), 360, 530, ax[i - 1], ay[i - 1] - 6, sg(lt, 1.0 + i * 0.12, 1.6 + i * 0.12)); }
+      const cs = $('r_coins').children;
+      for (let i = 0; i < cs.length; i++) {
+        const f = i % 3, t0 = pc - 1.4 + Math.floor(i / 3) * 0.65 + f * 0.17, p = sg(t, t0, t0 + 0.9);
+        cs[i].style.left = (ax[f] + (360 - ax[f]) * eio(p) - 22) + 'px'; cs[i].style.top = (ay[f] + (470 - ay[f]) * eio(p) - 22) + 'px'; cs[i].style.opacity = p > 0 && p < 1 ? 1 : 0;
+      }
+      pop($('r_pct'), sg(t, pc - 0.35, pc + 0.25));
+      break;
+    }
+    case 'travail': {
+      pop($('t_t2'), sg(t, cue('vrai', s + 0.5) - 0.3, cue('vrai', s + 0.5) + 0.4)); $('t_t2').style.transform += ` translateY(${float(t, 3, 4)}px)`;
+      break;
+    }
+    case 'final': {
+      pop($('f_logo'), sg(lt, 0, 0.6), 40); $('f_logo').style.transform += ` translateY(${float(t, 4, 5)}px)`;
+      pop($('f_t1'), sg(t, cue('telecharge', s + 0.4) - 0.2, cue('telecharge', s + 0.4) + 0.4)); pop($('f_t2'), sg(lt, 0.7, 1.2), 10);
+      const g = cue('google', s + 1.6), st = cue('store', s + 2.6);
+      pop($('f_gp'), sg(t, g - 0.5, g + 0.15), 40); pop($('f_as'), sg(t, st - 0.7, st - 0.05), 40);
+      break;
+    }
+  }
+}
+
+window.render = function (t) {
+  if (!P.par) build();
+  const TL = window.TL;
+  // fond vivant : les bulles dérivent lentement
+  for (const o of P.bulles) o.b.style.transform = `translate(${Math.sin(t * 0.35 + o.i * 1.7) * 38}px, ${Math.cos(t * 0.28 + o.i * 2.3) * 52}px)`;
+  const FADE_IN = 0.4, FADE_OUT = 0.35;
+  TL.scenes.forEach((sc, i) => {
+    const el = $('sc_' + sc.id); if (!el) return;
+    const last = i === TL.scenes.length - 1;
+    if (t < sc.start || t >= sc.end + (last ? 0 : FADE_OUT)) { el.style.opacity = 0; el.style.visibility = 'hidden'; return; }
+    el.style.visibility = 'visible'; el.style.zIndex = i + 1;
+    renderScene(sc.id, t, sc.start, sc.end);
+    // fondu enchaîné : la scène qui part monte doucement en s'effaçant, la suivante arrive du bas
+    const a = eio(sg(t, sc.start, sc.start + FADE_IN)), b = last ? 1 : 1 - eio(sg(t, sc.end, sc.end + FADE_OUT));
+    el.style.opacity = i === 0 ? b : Math.min(a, b);
+    const slide = (1 - a) * 36 - (1 - b) * 36;
+    el.style.transform = `translateY(${slide}px)`;
+  });
+};
+</script>
+</body>
+</html>

@@ -5,6 +5,7 @@ import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:afrotok/services/api/post_mapper.dart';
 import 'package:afrotok/services/api/posts_mapper.dart';
+import 'package:afrotok/services/post_source_link.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
@@ -61,8 +62,17 @@ class PostsApi {
     String? studioTemplate,
     int? videoWidth,
     int? videoHeight,
+    String? captureSource,
   }) async {
+    // Origine du média (filmé ou enregistré dans l'application / choisi dans la galerie) : posée par le parcours « Créer un post », consommée ici une seule fois
+    final source = captureSource ?? PostSourceLink.take();
+    // Effet de voix (audio) et publication à laquelle on répond en vidéo : posés par le parcours, consommés ici une seule fois
+    final voiceEffect = PostVoiceLink.take();
+    final replyToId = PostReplyLink.take();
     final body = <String, dynamic>{
+      if (source != null && uploadIds.isNotEmpty) 'capture_source': source,
+      if (voiceEffect != null && uploadIds.isNotEmpty) 'voice_effect': voiceEffect,
+      if (replyToId != null) 'reply_to_id': replyToId,
       if (description != null && description.trim().isNotEmpty) 'description': description.trim(),
       if (linkUrl != null && linkUrl.trim().isNotEmpty) 'link_url': linkUrl.trim(),
       if (category != null && category.isNotEmpty) 'category': category,
@@ -80,6 +90,17 @@ class PostsApi {
     // Clé d'idempotence : un nouvel essai réseau ne crée pas deux publications.
     final r = await _c.post('/posts', body: body, idempotencyKey: ApiClient.newIdempotencyKey());
     return postFromApi(_asMap(r));
+  }
+
+  /// Imports restants aujourd'hui (médias choisis dans la galerie : 3 par jour). En cas d'erreur réseau, null : l'écran n'empêche rien, le serveur décide.
+  static Future<({int limit, int used, int remaining})?> importQuota() async {
+    try {
+      final d = ApiClient.data(await _c.get('/posts/quota'));
+      if (d is! Map) return null;
+      return (limit: (d['limit'] as num).toInt(), used: (d['used'] as num).toInt(), remaining: (d['remaining'] as num).toInt());
+    } catch (_) {
+      return null;
+    }
   }
 
   static Future<Post> update(String id, {String? description, String? linkUrl, String? category}) async {

@@ -1,3 +1,4 @@
+import 'package:afrotok/pages/create/create_hub_page.dart';
 import 'dart:math' as math;
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/cards/card_entry.dart';
@@ -242,7 +243,7 @@ void openDefiParticipation(BuildContext context, Post defiPost) {
 /// (frais de participation, une seule participation par DÉFI, vote…).
 Future<void> _chooseParticipation(BuildContext context, Post defiPost) async {
   if (kIsWeb) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => UserPostForm(defiPostId: defiPost.id!)));
+    Navigator.push(context, MaterialPageRoute(builder: (_) => CreateHubPage(defiPostId: defiPost.id!)));
     return;
   }
   final c = AppColors.of(context);
@@ -275,7 +276,7 @@ Future<void> _chooseParticipation(BuildContext context, Post defiPost) async {
   if (choice == 'card') {
     await CardEntry.openCompose(context, defiPostId: defiPost.id!);
   } else {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => UserPostForm(defiPostId: defiPost.id!)));
+    Navigator.push(context, MaterialPageRoute(builder: (_) => CreateHubPage(defiPostId: defiPost.id!)));
   }
 }
 

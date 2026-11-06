@@ -2,6 +2,8 @@ import 'package:afrotok/services/post_orientation.dart';
 import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:afrotok/services/read_meter.dart';
 import '../../../services/comments_prefetch.dart';
+import '../../../widgets/original_badge.dart';
+import '../../create/create_hub_page.dart';
 import '../../../widgets/studio/post_template_try.dart';
 import '../../defi/defi_boost.dart';
 import 'package:afrotok/widgets/link_preview_card.dart';
@@ -1259,6 +1261,15 @@ Future<void> _handleRepost() async {
                 ],
               ),
               _followersText(TextStyle(color: colors.textSecondary, fontSize: 12), topGap: 2),
+              if (OriginalBadge.isCaptured(widget.post.captureSource) || VoiceChangedBadge.has(widget.post.voiceEffect))
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Align(alignment: Alignment.centerLeft, child: Wrap(spacing: 6, runSpacing: 4, children: [
+                    if (OriginalBadge.isCaptured(widget.post.captureSource)) const OriginalBadge(),
+                    if (VoiceChangedBadge.has(widget.post.voiceEffect)) const VoiceChangedBadge(),
+                  ])),
+                ),
+              if (widget.post.replyToPostId != null) Align(alignment: Alignment.centerLeft, child: ReplyToLine(username: widget.post.replyToUsername, excerpt: widget.post.replyToExcerpt, onTap: _openReplyTarget)),
             ],
           ),
         ),
@@ -2441,6 +2452,14 @@ Future<void> _handleRepost() async {
                 widget.onViewed?.call();
               } : null,
             ),
+          if (hasAccess && widget.post.isAdvertisement != true && widget.post.type == PostType.POST.name)
+            IconButton(
+              key: const ValueKey('reply_video_button'),
+              tooltip: context.tr('Répondre en vidéo'),
+              visualDensity: VisualDensity.compact,
+              icon: Icon(Icons.videocam_outlined, size: 21, color: colors.textSecondary),
+              onPressed: _replyWithVideo,
+            ),
           if (widget.post.isAdvertisement != true) ...[
             const SizedBox(width: 4),
             if (hasAccess && authProvider.loginUserData.id != widget.post.user_id)
@@ -2479,6 +2498,22 @@ Future<void> _handleRepost() async {
       ],
     );
   }
+  /// « Répondre en vidéo » : la caméra s'ouvre tout de suite (15 s au plus) ; la publication part avec le lien vers ce post.
+  Future<void> _replyWithVideo() async {
+    final id = widget.post.id;
+    if (id == null) return;
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => CreateHubPage(start: CreateStart.video, replyToPostId: id)));
+  }
+
+  /// Ouvre le post auquel celui-ci répond.
+  void _openReplyTarget() {
+    final id = widget.post.replyToPostId;
+    if (id == null) return;
+    PostsApi.get(id).then((p) {
+      if (p != null && mounted) Navigator.push(context, MaterialPageRoute(builder: (_) => DetailsPost(post: p)));
+    }).catchError((_) {});
+  }
+
   Widget _buildInteractionsTotalBadge(int total, AppColors colors) {
     final isDark = colors.isDark;
     final bg = isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.04);

@@ -1,9 +1,10 @@
+import 'package:afrotok/widgets/feed/sections/post_call_card.dart';
+import 'package:afrotok/pages/create/create_menu_sheet.dart';
 import 'package:afrotok/services/chronique_first_page.dart';
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/widgets/feed/sections/card_feed_invite.dart';
 import 'package:afrotok/widgets/feed/sections/defi_feed_card.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
-import 'discovery_feed_page.dart';
 import '../../widgets/feed/sections/feed_sport_discovery_section.dart';
 import '../../widgets/feed/sections/feed_end_discovery_section.dart';
 import '../../widgets/feed/sections/feed_discovery_section.dart';
@@ -16,6 +17,7 @@ import 'package:afrotok/layout/responsive_layout.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/home/unitePostPage/chronique_section.dart';
 import 'package:flutter/material.dart';
+import '../../l10n/tr.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:afrotok/services/api/api_gateway.dart';
@@ -2820,6 +2822,11 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         contentWidgets.add(NewsFeedCard(key: ValueKey('news_card_sport_$i'), slotKey: 'sport_$i', category: 'sport'));
       }
 
+      // Appel à poster (phrases variées, au plus 3 par jour, masquable) : après le 8e post, puis tous les 30 posts
+      if (i == 7 || (i > 7 && (i - 7) % 30 == 0)) {
+        contentWidgets.add(PostCallCard(key: ValueKey('post_call_sport_$i'), slot: i == 7 ? 11 : 12 + (i - 7) ~/ 30));
+      }
+
       // Invitation « Crée ta carte Afrolook » : après le 13e post, puis plus loin (au plus une fois tous les 3 jours, jamais sur le web)
       if (i == 12) {
         contentWidgets.add(const CardFeedInvite(key: ValueKey('card_invite_sport_1')));
@@ -2965,76 +2972,37 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   // FIN DE FEED — BOUTONS D'ACTION
   // ===========================================================================
 
+  /// Fin de feed : UN SEUL bouton « Voir plus de posts », toujours actif. Il charge la suite dans la même page (le serveur cherche d'autres posts non vus,
+  /// d'autres pays, d'autres thèmes, puis re-propose les moins récemment vus : jamais de fil vide). Plus de bouton bloqué tant qu'on ne s'abonne pas.
   List<Widget> _buildEndFeedButtons(AppColors colors) {
     return [
-      if (_infiniteFeed) ...[
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: _reloadDiscoveryInPlace,
-            icon: Icon(Icons.explore_rounded, size: 18, color: colors.primary),
-            label: Text('Voir plus de posts', style: TextStyle(color: colors.primary, fontWeight: FontWeight.w600)),
-            style: OutlinedButton.styleFrom(
-              side: BorderSide(color: colors.primary.withOpacity(0.6)),
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-          ),
-        ),
-        const SizedBox(height: 10),
-      ],
       SizedBox(
         width: double.infinity,
-        child: _isReloadingAfterSubscribe
+        child: _isLoadingMorePosts
             ? Center(
-                child: CircularProgressIndicator(
-                  color: colors.primary,
-                  strokeWidth: 2,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: CircularProgressIndicator(color: colors.primary, strokeWidth: 2),
                 ),
               )
-            : ElevatedButton.icon(
-                onPressed: _hasSubscribedFromEndFeed
-                    ? () async {
-                        setState(() => _isReloadingAfterSubscribe = true);
-                        _resetPagination(clearPosts: true);
-                        await _loadInitialPosts();
-                        if (mounted) {
-                          setState(() {
-                            _hasSubscribedFromEndFeed = false;
-                            _isReloadingAfterSubscribe = false;
-                          });
-                        }
-                      }
-                    : null,
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: const Text('Voir de nouveaux posts'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _hasSubscribedFromEndFeed
-                      ? colors.primary
-                      : colors.primary.withOpacity(0.3),
-                  foregroundColor: Colors.white,
+            : OutlinedButton.icon(
+                key: const ValueKey('see_more_posts'),
+                onPressed: _reloadDiscoveryInPlace,
+                icon: Icon(Icons.expand_more_rounded, size: 20, color: colors.primary),
+                label: Text(context.tr('Voir plus de posts'), style: TextStyle(color: colors.primary, fontWeight: FontWeight.w600)),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: colors.primary.withOpacity(0.6)),
                   padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
       ),
-      if (!_hasSubscribedFromEndFeed)
-        Padding(
-          padding: const EdgeInsets.only(top: 6, bottom: 8),
-          child: Text(
-            'Abonne-toi à un créateur ou canal ci-dessus pour activer ce bouton',
-            style: TextStyle(color: colors.textSecondary, fontSize: 11),
-            textAlign: TextAlign.center,
-          ),
-        ),
     ];
   }
 
   /// Suite infinie du fil Sport : le MÊME fil « pour toi » que l'accueil (abonnements d'abord, goûts, découverte, nouveaux créateurs), filtré par le thème de la page.
   /// Le serveur ne renvoie que des posts NON VUS et, quand le récent est épuisé, élargit la période. Côté application on écarte en plus tout post déjà chargé,
-  /// supprimé, publicitaire, indisponible dans le pays de la personne ou déjà vu : jamais de carte vide ni de repetition.
+  /// supprimé ou publicitaire. Le pays est une préférence du serveur (jamais un filtre) : jamais de carte vide ni de répétition.
   Future<void> _loadInfiniteThemed(Set<String> loadedIds, List<Post> newPosts, int limit, {bool reset = false}) async {
     final theme = (widget.type.isEmpty || widget.type == 'DECOUVERTE') ? null : widget.type;
     final cc = (authProvider.loginUserData.countryData?['countryCode'] as String? ?? '').toUpperCase();
@@ -3042,16 +3010,18 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
     var added = 0;
     var restarts = 0;
     for (var i = 0; i < 6 && added < limit; i++) {
-      final page = await HomeFeedApi.discover(category: theme, cursor: _themeCursor, limit: 30);
+      // Le pays est une PRÉFÉRENCE côté serveur : ses posts d'abord, puis ceux des autres pays, puis (tout épuisé) les posts déjà vus les moins récents : jamais de fin de fil
+      final page = await HomeFeedApi.discover(category: theme, country: cc.isEmpty ? null : cc, cursor: _themeCursor, limit: 30);
       _themeCursor = page.next;
       for (final p in page.posts) {
         if (added >= limit) break;
         final id = p.id;
         if (id == null || loadedIds.contains(id) || _loadedPostIds.contains(id)) continue;
         if (p.isAdvertisement == true || p.status == 'SUPPRIMER') continue;
-        if (cc.isNotEmpty && !p.isAvailableForCountry(cc)) continue;
-        if (_checkIfPostSeen(p)) continue;
-        p.hasBeenSeenByCurrentUser = false;
+        // plus d'écart « pas disponible dans mon pays » : le serveur classe déjà le pays en premier, écarter ici vidait le fil
+        final again = p.feedReason == 'again';   // re-proposé par le serveur parce que tout le non-vu est épuisé : on le garde
+        if (!again && _checkIfPostSeen(p)) continue;
+        p.hasBeenSeenByCurrentUser = again ? _checkIfPostSeen(p) : false;
         loadedIds.add(id);
         newPosts.add(p);
         added++;
@@ -3806,7 +3776,7 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
                         label: AppLocalizations.of(context).feedPostButton,
                         icon: Icons.add,
                         color: Colors.green,
-                        onTap: () => Navigator.pushNamed(context, '/user_posts_form'),
+                        onTap: () => showCreateMenu(context),
                       ),
 
                       SizedBox(width: 6),

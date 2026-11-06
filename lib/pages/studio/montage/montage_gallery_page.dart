@@ -15,12 +15,17 @@ import 'montage_fx.dart';
 import '../artist_sound_common.dart';
 import 'montage_music.dart';
 import 'montage_state.dart';
+import '../studio_theme.dart';
 
-const _c = AppColors.dark;
+AppColors get _c => studioColors;
 
 class MontageGalleryPage extends StatefulWidget {
-  const MontageGalleryPage({super.key, this.forChronique = false, this.presetMusic});
+  const MontageGalleryPage({super.key, this.forChronique = false, this.presetMusic, this.presetVideoPath, this.presetPhotoPath});
   final bool forChronique;
+
+  /// Média déjà préparé (parcours « Créer un post ») : chaque modèle s'ouvre directement dessus.
+  final String? presetVideoPath;
+  final String? presetPhotoPath;
 
   /// Son choisi avant d'arriver ici : chaque modèle s'ouvre avec ce son (payant : prix et solde annoncés dans l'éditeur).
   final MontageMusic? presetMusic;
@@ -53,7 +58,7 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
     _anim.stop();
     final r = await Navigator.push<StudioResult>(
       context,
-      MaterialPageRoute(builder: (_) => MontageEditorPage(template: t, forChronique: widget.forChronique, presetMusic: widget.presetMusic)),
+      MaterialPageRoute(builder: (_) => MontageEditorPage(template: t, forChronique: widget.forChronique, presetMusic: widget.presetMusic, presetVideoPath: widget.presetVideoPath, presetPhotoPath: widget.presetPhotoPath)),
     );
     if (!mounted) return;
     if (r != null) {
@@ -65,6 +70,7 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
 
   @override
   Widget build(BuildContext context) {
+    syncStudioColors(context);
     final me = context.read<UserAuthProvider>().loginUserData;
     final pseudo = me.pseudo ?? '';
     _followers = me.followersCount;
@@ -172,7 +178,10 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
                   child: MontageCanvas(
                     state: _states[t.id]!,
                     animation: t.fx == MontageFx.none ? null : _anim,
-                    media: Image.asset(t.sampleIsVideo ? 'assets/images/intro4.jpg' : t.sample, fit: BoxFit.cover, cacheWidth: 400),
+                    // les aperçus montrent la photo de profil de la personne (et non une photo d'exemple) : elle voit tout de suite son modèle
+                    media: (_avatar != null && _avatar!.startsWith('http') && t.id != kPlainTemplateId)
+                        ? Image.network(_avatar!, fit: BoxFit.cover, cacheWidth: 400, errorBuilder: (_, __, ___) => Image.asset(t.sampleIsVideo ? 'assets/images/intro4.jpg' : t.sample, fit: BoxFit.cover, cacheWidth: 400))
+                        : Image.asset(t.sampleIsVideo ? 'assets/images/intro4.jpg' : t.sample, fit: BoxFit.cover, cacheWidth: 400),
                     secondMedia: t.dualSample != null ? Image.asset(t.dualSample!, fit: BoxFit.cover, cacheWidth: 300) : null,
                     pseudo: pseudo,
                     avatarUrl: _avatar,

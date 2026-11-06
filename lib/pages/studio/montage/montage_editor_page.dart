@@ -1,6 +1,7 @@
 // Éditeur d'un template « prêt à poster » : tout est déjà rempli, la personne change ce qu'elle veut,
 // retire les éléments qui ne l'intéressent pas, puis publie (image fixe ou vidéo animée).
 
+import '../../create/prepare_screen.dart';
 import '../../../widgets/music/music_overlay.dart';
 import 'dart:io';
 
@@ -20,15 +21,24 @@ import 'montage_export.dart';
 import 'montage_fx.dart';
 import '../artist_sound_common.dart';
 import '../../coins/coin_recharge_screen.dart';
+import 'montage_look.dart';
 import 'montage_music.dart';
 import 'montage_state.dart';
+import '../studio_theme.dart';
 
-const _c = AppColors.dark;
+AppColors get _c => studioColors;
 
 class MontageEditorPage extends StatefulWidget {
-  const MontageEditorPage({super.key, required this.template, this.forChronique = false, this.presetMusic});
+  const MontageEditorPage({super.key, required this.template, this.forChronique = false, this.presetMusic, this.presetVideoPath, this.presetPhotoPath, this.focus});
   final MontageTemplate template;
   final bool forChronique;
+
+  /// Média déjà préparé (parcours « Créer un post » : la vidéo qu'on vient de filmer, la photo choisie) : l'éditeur s'ouvre dessus, sans demander de média.
+  final String? presetVideoPath;
+  final String? presetPhotoPath;
+
+  /// Section à montrer d'emblée (« looks » ou « music ») : l'éditeur du parcours ouvre l'outil choisi dans sa barre.
+  final String? focus;
 
   /// Son choisi avant d'arriver ici (« Créer un post avec ce son ») : il remplace la musique du template.
   final MontageMusic? presetMusic;
@@ -44,6 +54,10 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     ..hidden.addAll(widget.template.id == kPlainTemplateId ? MontageLayer.values : const []);
   late final AnimationController _anim = AnimationController(vsync: this, duration: kMontageLoop);
   final _keys = MontageKeys();
+  final _looksKey = GlobalKey();
+  final _textKey = GlobalKey();
+  final _freeText = TextEditingController();
+  final _musicKey = GlobalKey();
   final _picker = ImagePicker();
   VideoPlayerController? _video;
   String? _lastJobId;
@@ -68,6 +82,13 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
   @override
   void initState() {
     super.initState();
+    if (widget.presetVideoPath != null) {
+      s.videoPath = widget.presetVideoPath;
+      s.useVideo = true;
+    } else if (widget.presetPhotoPath != null) {
+      s.photoPath = widget.presetPhotoPath;
+      s.useVideo = false;
+    }
     _syncAnim();
     _syncFields();
     MontageCountries.load().then((_) {
@@ -79,8 +100,14 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     _comments.text = s.commentsLabel();
     _followers.text = s.followersLabel(real) ?? '';
     ArtistSoundPricing.load();
+    if (widget.focus != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final ctx = (widget.focus == 'music' ? _musicKey : widget.focus == 'text' ? _textKey : _looksKey).currentContext;
+        if (ctx != null) Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 250));
+      });
+    }
     // « Ma vidéo avec ce son » : on propose tout de suite de choisir la vidéo
-    if (tp.id == kPlainTemplateId) WidgetsBinding.instance.addPostFrameCallback((_) => mounted ? _pickMedia() : null);
+    if (tp.id == kPlainTemplateId && widget.presetVideoPath == null && widget.presetPhotoPath == null) WidgetsBinding.instance.addPostFrameCallback((_) => mounted ? _pickMedia() : null);
     final preset = widget.presetMusic;
     if (preset != null) {
       s.music = preset;
@@ -256,8 +283,13 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
       );
     }
     if (s.photoPath != null) return Image.file(File(s.photoPath!), fit: BoxFit.cover);
-    if (tp.sampleIsVideo) return Image.asset('assets/images/intro4.jpg', fit: BoxFit.cover);
-    return Image.asset(tp.sample, fit: BoxFit.cover);
+    final sample = tp.sampleIsVideo ? Image.asset('assets/images/intro4.jpg', fit: BoxFit.cover) : Image.asset(tp.sample, fit: BoxFit.cover);
+    // Tant que la personne n'a pas choisi sa propre photo, le modèle s'ouvre sur SA photo de profil (et non sur une photo d'exemple)
+    final avatar = context.read<UserAuthProvider>().loginUserData.imageUrl;
+    if (avatar != null && avatar.startsWith('http') && tp.id != kPlainTemplateId) {
+      return Image.network(avatar, fit: BoxFit.cover, errorBuilder: (_, __, ___) => sample);
+    }
+    return sample;
   }
 
   Widget? _secondWidget() {
@@ -373,16 +405,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
       barrierDismissible: false,
       builder: (_) => PopScope(
         canPop: false,
-        child: AlertDialog(
-          backgroundColor: _c.surface,
-          content: Column(mainAxisSize: MainAxisSize.min, children: [
-            CircularProgressIndicator(color: _c.primary),
-            const SizedBox(height: 16),
-            Text(video ? 'Création de ta vidéo' : 'Création de ton image', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 6),
-            ValueListenableBuilder<String>(valueListenable: step, builder: (_, v, __) => Text(v, style: TextStyle(color: _c.textSecondary, fontSize: 12.5))),
-          ]),
-        ),
+        child: Dialog.fullscreen(child: PrepareScreen(step: step, video: video)),
       ),
     );
     try {
@@ -470,6 +493,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           forChronique: widget.forChronique,
           artistSoundId: s.music?.isArtist == true && video ? s.music!.id : null,
           soundJobId: s.music?.isArtist == true && video ? _lastJobId : null,
+          usedOwnMedia: s.photoPath != null || s.videoPath != null,
         ),
       );
       return;
@@ -484,6 +508,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
 
   @override
   Widget build(BuildContext context) {
+    syncStudioColors(context);
     final me = context.read<UserAuthProvider>().loginUserData;
     final pseudo = me.pseudo ?? '';
     final screenH = MediaQuery.sizeOf(context).height;
@@ -544,7 +569,11 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           if (tp.dualSample != null || tp.baby) _btn(Icons.add_photo_alternate_rounded, tp.baby ? 'Photo de bébé' : '2e photo', () => _pickMedia(second: true)),
         ]),
         const SizedBox(height: 14),
-        _musicSection(),
+        KeyedSubtree(key: _textKey, child: _freeTextSection()),
+        const SizedBox(height: 14),
+        KeyedSubtree(key: _looksKey, child: _looksSection()),
+        const SizedBox(height: 14),
+        KeyedSubtree(key: _musicKey, child: _musicSection()),
         const SizedBox(height: 14),
         _label('Format'),
         _seg(['Chronique 9:16', 'Post 4:5'], s.post ? 1 : 0, (i) => setState(() => s.post = i == 1)),
@@ -803,6 +832,93 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     return '${t ~/ 60}:${(t % 60).toString().padLeft(2, '0')}';
   }
 
+  /// Looks de couleur sobres (style Instagram) : valables pour une photo comme pour une vidéo.
+  /// Outil « Texte » : un texte libre posé sur la photo ou la vidéo (couleur et position au choix).
+  Widget _freeTextSection() {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _label('Texte sur l\'image'),
+      TextField(
+        key: const ValueKey('free_text_field'),
+        controller: _freeText,
+        maxLength: 120,
+        maxLines: 3,
+        minLines: 1,
+        textCapitalization: TextCapitalization.sentences,
+        style: TextStyle(color: _c.textPrimary),
+        onChanged: (v) => setState(() => s.freeText = v),
+        decoration: InputDecoration(
+          hintText: 'Écris ton texte…',
+          hintStyle: TextStyle(color: _c.textSecondary),
+          counterStyle: TextStyle(color: _c.textSecondary),
+          filled: true,
+          fillColor: _c.surface,
+          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _c.border)),
+          focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: _c.primary)),
+        ),
+      ),
+      const SizedBox(height: 4),
+      Row(children: [
+        for (var i = 0; i < kFreeTextColors.length; i++)
+          Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: GestureDetector(
+              key: ValueKey('free_color_$i'),
+              onTap: () => setState(() => s.freeColor = i),
+              child: Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(shape: BoxShape.circle, color: kFreeTextColors[i], border: Border.all(color: s.freeColor == i ? _c.primary : _c.border, width: s.freeColor == i ? 3 : 1)),
+              ),
+            ),
+          ),
+      ]),
+      const SizedBox(height: 10),
+      _seg(['Haut', 'Milieu', 'Bas'], s.freePos, (i) => setState(() => s.freePos = i)),
+    ]);
+  }
+
+  Widget _looksSection() {
+    final sel = s.look?.id;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _label('Look'),
+      SizedBox(
+        height: 84,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: kMontageLooks.length + 1,
+          separatorBuilder: (_, __) => const SizedBox(width: 10),
+          itemBuilder: (_, i) {
+            final look = i == 0 ? null : kMontageLooks[i - 1];
+            final on = i == 0 ? sel == null : sel == look!.id;
+            final colors = look?.swatch ?? const [Color(0xFF3A3A3A), Color(0xFF1A1A1A)];
+            return GestureDetector(
+              onTap: () => setState(() => s.look = look),
+              child: SizedBox(
+                width: 62,
+                child: Column(children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    width: 54,
+                    height: 54,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: colors),
+                      border: Border.all(color: on ? _c.primary : _c.border, width: on ? 3 : 1),
+                    ),
+                    child: i == 0 ? Icon(Icons.auto_awesome_outlined, size: 20, color: _c.textSecondary) : null,
+                  ),
+                  const SizedBox(height: 5),
+                  Text(i == 0 ? 'Modèle' : look!.name,
+                      maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: on ? _c.textPrimary : _c.textSecondary, fontSize: 11, fontWeight: on ? FontWeight.w800 : FontWeight.w600)),
+                ]),
+              ),
+            );
+          },
+        ),
+      ),
+    ]);
+  }
+
   List<MontageLayer> _layers() => [
         MontageLayer.kick,
         MontageLayer.title,
@@ -883,6 +999,7 @@ class _CountrySheetState extends State<_CountrySheet> {
 
   @override
   Widget build(BuildContext context) {
+    syncStudioColors(context);
     final all = MontageCountries.sorted().where((c) => MontageCountries.matches(c.name, c.code, _q)).toList();
     final africa = all.where((c) => c.africa).toList();
     final world = all.where((c) => !c.africa).toList();

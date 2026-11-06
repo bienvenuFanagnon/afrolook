@@ -14,8 +14,9 @@ import 'studio_audio_editor.dart';
 import 'montage/montage_gallery_page.dart';
 import 'montage/montage_music.dart';
 import '../music/music_page.dart';
+import 'studio_theme.dart';
 
-const _c = AppColors.dark;
+AppColors get _c => studioColors;
 
 class StudioEntryPage extends StatelessWidget {
   final bool forChronique;
@@ -24,6 +25,7 @@ class StudioEntryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    syncStudioColors(context);
     return Scaffold(
       backgroundColor: _c.background,
       appBar: AppBar(
@@ -182,6 +184,7 @@ class _MusicStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    syncStudioColors(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -211,6 +214,7 @@ class _ArtistStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    syncStudioColors(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -242,6 +246,7 @@ class _TemplatesBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    syncStudioColors(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -303,6 +308,7 @@ class _TypeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    syncStudioColors(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(

@@ -18,8 +18,9 @@ import '../artist_marketplace.dart';
 import '../../../utils/media_cdn.dart';
 import '../artist_sound_common.dart';
 import '../sound_countries.dart';
+import '../studio_theme.dart';
 
-const _c = AppColors.dark;
+AppColors get _c => studioColors;
 
 class StudioTrack {
   const StudioTrack(this.id, this.title, this.emoji, this.mood, this.durationMs);
@@ -216,6 +217,7 @@ class _MusicSheetState extends State<_MusicSheet> {
 
   @override
   Widget build(BuildContext context) {
+    syncStudioColors(context);
     return DefaultTabController(
       length: 2,
       child: DraggableScrollableSheet(
@@ -355,6 +357,7 @@ class _ArtistCta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    syncStudioColors(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),

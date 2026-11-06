@@ -1,0 +1,12 @@
+import puppeteer from 'puppeteer-core';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+const dir = path.resolve(process.argv[2]), name = process.argv[3], width = Number(process.argv[4] || 1240);
+const b = await puppeteer.launch({ executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe', headless: 'new', args: ['--no-sandbox', '--hide-scrollbars'] });
+const p = await b.newPage();
+await p.setViewport({ width, height: 1000, deviceScaleFactor: 1 });
+await p.goto(pathToFileURL(path.join(dir, 'index.html')).href, { waitUntil: 'load' });
+await new Promise(r => setTimeout(r, 700));
+await p.screenshot({ path: path.join(dir, name), fullPage: true });
+await b.close();
+console.log('ok');

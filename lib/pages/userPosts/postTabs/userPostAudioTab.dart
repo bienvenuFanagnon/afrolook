@@ -65,10 +65,16 @@ import '../../studio/artist_marketplace.dart';
 class UserPostLookAudioTab extends StatefulWidget {
   final Canal? canal;
   final String? defiPostId;
+
+  /// Audio déjà prêt (parcours « Créer un post » : enregistré, effet de voix choisi) : il est pré-rempli et la personne n'a plus qu'à décrire et publier.
+  final File? initialAudio;
+  final int? initialAudioSeconds;
   const UserPostLookAudioTab({
     super.key,
     required this.canal,
     this.defiPostId,
+    this.initialAudio,
+    this.initialAudioSeconds,
   });
 
   @override
@@ -169,6 +175,11 @@ class _UserPostLookAudioTabState extends State<UserPostLookAudioTab> {
     _setupRestrictions();
     _checkPostCooldown();
     _setupAudioListener();
+    if (widget.initialAudio != null) {
+      _audioFile = widget.initialAudio;
+      _audioFileName = widget.initialAudioSeconds != null ? 'Enregistrement ${widget.initialAudioSeconds} s' : 'Audio';
+      _audioDuration = widget.initialAudioSeconds;
+    }
 
     _countrySearchController.addListener(_filterCountries);
 

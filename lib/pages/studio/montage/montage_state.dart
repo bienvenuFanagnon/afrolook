@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import '../../cards/card_flags.dart';
 import '../../cards/card_models.dart' show compactCount;
 import 'montage_catalog.dart';
+import 'montage_look.dart';
 import 'montage_music.dart';
 
 /// Tout ce que la personne a choisi ou modifié sur un template. Ce qui reste à null garde le contenu pré-rempli.
@@ -12,7 +13,7 @@ class MontageState {
   MontageState(this.template)
       : country = template.defaultCountry,
         useVideo = template.sampleIsVideo,
-        animated = template.fx != MontageFx.none,
+        animated = false,   // jamais d'effet animé par défaut : le rendu reste sobre et professionnel ; la personne l'active elle-même
         music = studioTrack(template.music) == null ? null : MontageMusic.free(studioTrack(template.music)!);
 
   final MontageTemplate template;
@@ -36,7 +37,21 @@ class MontageState {
   String? kick;
   String? title;
   String? wish;
-  final Set<MontageLayer> hidden = {};
+  /// Calques masqués. L'effet décoratif (argent, cœurs, pluie…) est masqué par défaut : on part d'un rendu sobre, la personne peut le réactiver.
+  final Set<MontageLayer> hidden = {MontageLayer.fx};
+
+  /// Texte libre posé sur la photo ou la vidéo (outil « Texte » de l'éditeur) : vide = aucun. Fonctionne avec tous les modèles, y compris « sans habillage ».
+  String freeText = '';
+
+  /// Couleur du texte libre (indice dans [kFreeTextColors]) et position verticale (0 haut, 1 milieu, 2 bas).
+  int freeColor = 0;
+  int freePos = 1;
+
+  /// Look de couleur choisi (null = l'ambiance propre au modèle).
+  MontageLook? look;
+
+  double get saturation => look?.saturation ?? template.saturation;
+  double get brightness => look?.brightness ?? template.brightness;
 
   /// Musique (null = sans musique). Avec une musique, le montage est toujours une vidéo.
   MontageMusic? music;

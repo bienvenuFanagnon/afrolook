@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import '../../cards/card_flags.dart';
 import 'montage_catalog.dart';
 import 'montage_fx.dart';
+import 'montage_look.dart' show kFreeTextColors;
 import 'montage_state.dart';
 
 /// Repères de capture : chaque calque est un RepaintBoundary distinct.
@@ -85,9 +86,9 @@ class MontageCanvas extends StatelessWidget {
   }
 
   Widget _filtered(Widget w) {
-    final tp = state.template;
-    if (tp.saturation == 1 && tp.brightness == 0) return w;
-    return ColorFiltered(colorFilter: ColorFilter.matrix(_matrix(tp.saturation, tp.brightness)), child: w);
+    final s = state;
+    if (s.saturation == 1 && s.brightness == 0) return w;
+    return ColorFiltered(colorFilter: ColorFilter.matrix(_matrix(s.saturation, s.brightness)), child: w);
   }
 
   Widget _media(double cq) {
@@ -120,6 +121,11 @@ class MontageCanvas extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: tp.tint, stops: tp.tintStops),
           ),
+        ),
+      // Look de couleur : une teinte douce par-dessus, comprise dans les calques exportés (même rendu à l'écran et dans la vidéo)
+      if (s.look?.tint != null)
+        DecoratedBox(
+          decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: s.look!.tint!)),
         ),
     ]);
   }
@@ -259,6 +265,23 @@ class MontageCanvas extends StatelessWidget {
           ),
         ),
       if (_hasStats(s, followers)) Positioned(right: 5 * cq, bottom: 6 * cq, child: _StatsCapsule(state: s, followers: followers, cq: cq)),
+      // Texte libre de la personne (outil « Texte ») : centré, ombré pour rester lisible sur n'importe quelle image
+      if (s.freeText.trim().isNotEmpty)
+        Positioned.fill(
+          child: Align(
+            alignment: Alignment(0, const [-.62, 0.0, .55][s.freePos.clamp(0, 2)]),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 8 * cq),
+              child: Text(
+                s.freeText.trim(),
+                textAlign: TextAlign.center,
+                maxLines: 5,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontFamily: 'NunitoBold', fontSize: 6.4 * cq, height: 1.15, color: kFreeTextColors[s.freeColor.clamp(0, kFreeTextColors.length - 1)], shadows: shadow),
+              ),
+            ),
+          ),
+        ),
       // Filigrane : toujours présent, même publié dans l'app
       Positioned(
         right: 1.6 * cq,

@@ -11,8 +11,9 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../theme/app_colors.dart';
 import 'studio_models.dart';
+import 'studio_theme.dart';
 
-const _c = AppColors.dark;
+AppColors get _c => studioColors;
 
 class StudioImageEditor extends StatefulWidget {
   final bool forChronique;
@@ -96,6 +97,7 @@ class _StudioImageEditorState extends State<StudioImageEditor> {
 
   @override
   Widget build(BuildContext context) {
+    syncStudioColors(context);
     return Scaffold(
       backgroundColor: _c.background,
       appBar: AppBar(
@@ -223,7 +225,7 @@ class _StudioImageEditorState extends State<StudioImageEditor> {
               maxLines: 1,
               maxLength: 80,
               onChanged: (_) => setState(() {}),
-              style: const TextStyle(fontSize: 13, color: Colors.white),
+              style: TextStyle(fontSize: 13, color: _c.textPrimary),
               decoration: InputDecoration(
                 hintText: 'Texte court (optionnel)…',
                 hintStyle: TextStyle(color: _c.textSecondary),
@@ -342,16 +344,16 @@ class _StudioImageEditorState extends State<StudioImageEditor> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.camera_alt, color: Colors.white),
-              title: const Text('Prendre une photo', style: TextStyle(color: Colors.white)),
+              leading: Icon(Icons.camera_alt, color: _c.textPrimary),
+              title: Text('Prendre une photo', style: TextStyle(color: _c.textPrimary)),
               onTap: () {
                 Navigator.pop(ctx);
                 _pickImage(ImageSource.camera);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library, color: Colors.white),
-              title: const Text('Choisir depuis la galerie', style: TextStyle(color: Colors.white)),
+              leading: Icon(Icons.photo_library, color: _c.textPrimary),
+              title: Text('Choisir depuis la galerie', style: TextStyle(color: _c.textPrimary)),
               onTap: () {
                 Navigator.pop(ctx);
                 _pickImage(ImageSource.gallery);
@@ -384,6 +386,7 @@ class _PhotoPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    syncStudioColors(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -395,16 +398,16 @@ class _PhotoPlaceholder extends StatelessWidget {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.white24, width: 2),
+                border: Border.all(color: _c.border, width: 2),
                 borderRadius: BorderRadius.circular(36),
               ),
-              child: const Icon(Icons.camera_alt, color: Colors.white38, size: 32),
+              child: Icon(Icons.camera_alt, color: _c.textSecondary, size: 32),
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Toucher pour ajouter\nvotre photo',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white38, fontSize: 13),
+              style: TextStyle(color: _c.textSecondary, fontSize: 13),
             ),
           ],
         ),

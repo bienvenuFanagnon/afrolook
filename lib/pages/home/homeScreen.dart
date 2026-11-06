@@ -1,3 +1,4 @@
+import 'package:afrotok/pages/create/create_menu_sheet.dart';
 import '../share/share_earn_page.dart';
 import '../offerwall/offerwall_tasks_page.dart';
 import '../liveshop/live_shop_orders_page.dart';
@@ -1715,7 +1716,7 @@ class _MyHomePageState extends State<MyHomePage>
                         ),
                         GestureDetector(
                           onTap: () => authProvider.checkAppVersionAndProceed(context, () async {
-                            Navigator.pushNamed(context, '/user_posts_form');
+                            showCreateMenu(context);
                           }),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -1937,7 +1938,7 @@ class _MyHomePageState extends State<MyHomePage>
               onTap: () {
 
                 authProvider.checkAppVersionAndProceed(context, () async {
-               Navigator.pushNamed(context, '/user_posts_form');
+               showCreateMenu(context);
 
                 });
               },
@@ -2475,7 +2476,7 @@ class _MyHomePageState extends State<MyHomePage>
             ),
             child: GestureDetector(
               onTap: () => authProvider.checkAppVersionAndProceed(context, () async {
-                Navigator.pushNamed(context, '/user_posts_form');
+                showCreateMenu(context);
               }),
               child: Container(
                 height: 40,

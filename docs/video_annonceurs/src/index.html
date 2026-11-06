@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Afrolook Ads — appel aux annonceurs</title>
+<style>
+  :root { --g1:#0B5A33; --g2:#0F7B43; --g3:#17A05A; --jaune:#FFC400; --creme:#F6F8F5; --texte:#12261B; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 720px; height: 1280px; overflow: hidden; background: #08422a; font-family: "Bahnschrift", "Segoe UI", Arial, sans-serif; color: #fff; }
+  #stage { position: relative; width: 720px; height: 1280px; overflow: hidden; background: linear-gradient(180deg, #0F7B43 0%, #0B5A33 100%); }
+  #fond { position: absolute; inset: -80px; }
+  .bulle { position: absolute; border-radius: 50%; background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.20), rgba(255,255,255,0) 70%); }
+  #noir { position: absolute; inset: 0; background: linear-gradient(180deg, #07130d 0%, #0a2316 100%); opacity: 0; }
+  .scene { position: absolute; inset: 0; opacity: 0; will-change: transform, opacity; }
+  .brand { position: absolute; left: 40px; top: 36px; display: flex; align-items: center; gap: 14px; font-weight: 800; font-size: 30px; letter-spacing: .3px; opacity: .96; }
+  .brand img { width: 52px; height: 52px; border-radius: 14px; }
+  h1, h2 { font-weight: 800; line-height: 1.08; text-wrap: balance; }
+  .big { font-size: 68px; } .mid { font-size: 52px; }
+  .chip { display: inline-block; background: var(--jaune); color: var(--texte); font-weight: 800; border-radius: 22px; padding: 10px 26px; }
+  .abs { position: absolute; } .center { left: 0; right: 0; text-align: center; padding: 0 40px; }
+  .pill { position: absolute; left: 60px; right: 60px; height: 92px; border-radius: 26px; background: var(--creme); color: var(--texte); display: flex; align-items: center; gap: 22px; padding: 0 28px; font-size: 38px; font-weight: 800; box-shadow: 0 12px 30px rgba(0,0,0,.28); }
+  .pill .em { font-size: 44px; }
+  .ville { position: absolute; background: #fff; color: var(--texte); font-weight: 800; font-size: 28px; border-radius: 18px; padding: 8px 18px; box-shadow: 0 8px 20px rgba(0,0,0,.3); white-space: nowrap; }
+  .anneau { position: absolute; border-radius: 50%; border: 4px solid rgba(255,255,255,.55); }
+  .carte { z-index: 5; position: absolute; left: 100px; width: 520px; height: 280px; border-radius: 30px; background: var(--creme); color: var(--texte); padding: 26px 30px; box-shadow: 0 22px 50px rgba(0,0,0,.4); }
+  .carte .tag { display: inline-block; background: var(--jaune); font-weight: 800; font-size: 22px; border-radius: 12px; padding: 4px 12px; }
+  .plat { z-index: 6; position: absolute; background: #fff; color: var(--texte); font-weight: 800; font-size: 32px; border-radius: 20px; padding: 12px 22px 12px 18px; box-shadow: 0 10px 24px rgba(0,0,0,.32); display: flex; align-items: center; gap: 12px; white-space: nowrap; }
+  .plat i { width: 18px; height: 18px; border-radius: 50%; display: block; }
+  .ligne { position: absolute; width: 5px; border-radius: 3px; background: rgba(255,255,255,.6); transform-origin: top center; }
+  .phone { position: absolute; left: 130px; top: 300px; width: 460px; height: 790px; border-radius: 56px; background: #0b0f0d; padding: 10px; box-shadow: 0 26px 60px rgba(0,0,0,.45), 0 0 0 2px #25322b inset; }
+  .screen { position: relative; width: 440px; height: 770px; border-radius: 46px; overflow: hidden; background: #fff; }
+  .screen img { position: absolute; left: 0; top: 0; width: 440px; }
+  #d_lines, #d_dots { position: absolute; inset: 0; }
+  #d_lines { z-index: 1; } #d_dots { z-index: 2; }
+  .petit { font-size: 24px; opacity: .8; }
+  .budgets { position: absolute; left: 40px; right: 40px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .budgets span { background: rgba(255,255,255,.18); border: 3px solid rgba(255,255,255,.35); font-weight: 800; font-size: 32px; border-radius: 18px; padding: 10px 20px; }
+  .budgets span.on { background: var(--jaune); color: var(--texte); border-color: var(--jaune); }
+  .barre { position: absolute; left: 60px; right: 60px; height: 22px; border-radius: 11px; background: rgba(255,255,255,.25); overflow: hidden; }
+  .barre i { display: block; height: 100%; border-radius: 11px; background: var(--jaune); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="fond"></div>
+  <div id="noir"></div>
+
+  <!-- 1. histoire -->
+  <div class="scene" id="sc_histoire">
+    <div id="h_a">
+      <div class="abs center" id="h_an" style="top:150px; font-size:210px; font-weight:800; letter-spacing:-4px; line-height:1">1998</div>
+      <div class="abs center" id="h_sub" style="top:395px; font-size:46px; font-weight:800">Deux étudiants</div>
+      <div class="abs" id="h_bar" style="left:60px; width:600px; top:520px; height:92px; border-radius:46px; background:#fff; color:#223; display:flex; align-items:center; gap:18px; padding:0 30px; box-shadow:0 14px 34px rgba(0,0,0,.4)">
+        <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#667" stroke-width="2.6" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>
+        <span id="h_tape" style="font-size:36px; font-weight:600"></span><span id="h_cur" style="width:3px; height:40px; background:#223"></span>
+      </div>
+      <svg class="abs" id="h_gar" style="left:210px; top:680px" width="300" height="260" viewBox="0 0 300 260" fill="none" stroke="#fff" stroke-width="7" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M20 120 150 30 280 120"/><rect x="45" y="120" width="210" height="120" rx="6" fill="rgba(255,255,255,.08)"/>
+        <rect x="85" y="150" width="130" height="90" fill="rgba(255,196,0,.18)" stroke="#FFC400"/><path d="M85 172H215M85 195H215M85 218H215" stroke="#FFC400" stroke-width="5"/>
+      </svg>
+      <div class="abs center" id="h_gt" style="top:960px; font-size:44px; font-weight:800">depuis un garage</div>
+    </div>
+    <div id="h_b">
+      <div class="abs center" id="h_ct" style="top:250px; font-size:54px; font-weight:800">Aujourd'hui, Google tire<br>l'essentiel de ses revenus<br>de la <span style="color:var(--jaune)">publicité</span></div>
+      <div class="abs" id="h_chart" style="left:60px; width:600px; top:620px">
+        <div style="display:flex; height:78px; border-radius:24px; overflow:hidden; background:rgba(255,255,255,.18)"><div id="h_pub" style="width:0%; background:var(--jaune); color:var(--texte); font-weight:800; font-size:36px; display:flex; align-items:center; padding-left:24px; white-space:nowrap; overflow:hidden">Publicité</div></div>
+        <div style="display:flex; justify-content:space-between; margin-top:14px; font-size:26px; opacity:.85"><span>Part des revenus (ordre de grandeur)</span><span>Autres</span></div>
+      </div>
+    </div>
+    <div class="abs center" id="h_idee" style="top:990px"><span class="chip" style="font-size:54px; line-height:1.2">Une bonne idée,<br>il faut la montrer !</span></div>
+  </div>
+
+  <!-- 2. cibles -->
+  <div class="scene" id="sc_cibles">
+    <div class="brand"><img src="assets/logo_1024.png" alt=""><span>Afrolook Ads</span></div>
+    <div id="c_liste">
+      <div class="pill" style="top:210px"><span class="em">🚀</span>Startup</div>
+      <div class="pill" style="top:320px"><span class="em">🏢</span>Entreprise</div>
+      <div class="pill" style="top:430px"><span class="em">🛍️</span>Boutique</div>
+      <div class="pill" style="top:540px"><span class="em">🌐</span>Site</div>
+      <div class="pill" style="top:650px"><span class="em">📱</span>Application</div>
+    </div>
+    <div id="c_afrique">
+      <div class="abs center" id="c_t" style="top:170px"><span class="chip" style="font-size:62px; line-height:1.15">Partout en Afrique</span></div>
+      <div id="c_net"></div>
+    </div>
+  </div>
+
+  <!-- 3. diffusion -->
+  <div class="scene" id="sc_diffusion">
+    <div class="abs center" id="d_t1" style="top:120px; display:flex; align-items:center; justify-content:center; gap:20px"><img src="assets/logo_1024.png" alt="" style="width:96px; height:96px; border-radius:26px"><span style="font-size:76px; font-weight:800">Afrolook Ads</span></div>
+    <div class="abs center petit" id="d_t2" style="top:250px; font-size:34px; opacity:.95">Ta publicité, partagée par des partageurs</div>
+    <div class="carte" id="d_carte" style="top:520px">
+      <span class="tag">Pub</span>
+      <div style="font-size:46px; font-weight:800; margin-top:14px">Pagnes wax : nouvelle collection</div>
+      <div style="font-size:26px; opacity:.7; margin-top:10px">Livraison dans toute l'Afrique de l'Ouest. Paiement Mobile Money accepté.</div>
+    </div>
+    <div id="d_lines"></div>
+    <div class="plat" id="d_p1" style="left:40px; top:380px"><i style="background:#25D366"></i>WhatsApp</div>
+    <div class="plat" id="d_p2" style="left:430px; top:380px"><i style="background:#1877F2"></i>Facebook</div>
+    <div class="plat" id="d_p3" style="left:40px; top:880px"><i style="background:linear-gradient(45deg,#F9A32B,#DD2A7B,#8134AF)"></i>Instagram</div>
+    <div class="plat" id="d_p4" style="left:440px; top:880px"><i style="background:#229ED9"></i>Telegram</div>
+    <div id="d_dots"></div>
+  </div>
+
+  <!-- 4. contrôle -->
+  <div class="scene" id="sc_controle">
+    <div class="brand"><img src="assets/logo_1024.png" alt=""><span>Afrolook Ads</span></div>
+    <div class="pill" id="k_c1" style="top:190px; height:110px"><span class="em">🎯</span>Tu choisis ton audience</div>
+    <div class="budgets" id="k_bud" style="top:340px"></div>
+    <div class="pill" id="k_c2" style="top:560px; height:110px"><span class="em">🔒</span>Budget jamais dépassé</div>
+    <div class="barre" id="k_barre" style="top:710px"><i id="k_fill" style="width:0%"></i></div>
+    <div class="abs center petit" id="k_note" style="top:760px; font-size:28px">Visites valides seulement · anti-fraude</div>
+  </div>
+
+  <!-- 5. prix -->
+  <div class="scene" id="sc_prix">
+    <div class="brand"><img src="assets/logo_1024.png" alt=""><span>Afrolook Ads</span></div>
+    <div class="abs center" id="x_t1" style="top:250px"><span class="chip" style="font-size:64px; line-height:1.15">À partir de<br>5 000 F</span></div>
+    <div class="abs center" id="x_t2" style="top:520px; font-size:44px; font-weight:800">vise une audience de</div>
+    <div class="abs center" id="x_n" style="top:600px; font-size:150px; font-weight:800; line-height:1">0</div>
+    <div class="abs center" id="x_t3" style="top:780px; font-size:56px; font-weight:800">personnes</div>
+    <div class="abs center petit" id="x_t4" style="top:900px; font-size:28px">Tarif : 500 F pour 1 000 personnes</div>
+  </div>
+
+  <!-- 6. gratuit -->
+  <div class="scene" id="sc_gratuit">
+    <div class="brand"><img src="assets/logo_1024.png" alt=""><span>Afrolook Ads</span></div>
+    <h2 class="abs center mid" id="f_t1" style="top:230px">Pas de budget ?</h2>
+    <div class="abs center" id="f_t2" style="top:380px"><span class="chip" style="font-size:66px; line-height:1.15">Ta première annonce<br>est gratuite</span></div>
+    <div class="abs" id="f_j" style="left:210px; top:660px; width:300px; height:300px; border-radius:50%; background:#fff; color:var(--texte); display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow:0 22px 50px rgba(0,0,0,.4)"><div style="font-size:130px; font-weight:800; line-height:1">14</div><div style="font-size:46px; font-weight:800">jours</div></div>
+    <div class="abs center petit" id="f_t3" style="top:1000px; font-size:26px">1 annonce · non renouvelable</div>
+  </div>
+
+  <!-- 7. final -->
+  <div class="scene" id="sc_final">
+    <div class="abs center" id="z_url" style="top:70px"><span class="chip" style="font-size:46px; padding:14px 30px; border-radius:30px; background:#fff"><span style="opacity:.6">🔗 </span><span id="z_txt"></span></span></div>
+    <div class="phone" id="z_phone"><div class="screen"><img id="z_img" src="../captures/ads_accueil.png" alt=""></div></div>
+    <div class="abs center" id="z_btn" style="top:1130px"><span class="chip" style="font-size:50px; padding:16px 42px; border-radius:34px">Lance ta campagne !</span></div>
+  </div>
+</div>
+
+<script>
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const eo = x => 1 - Math.pow(1 - clamp(x), 3);
+const eio = x => { x = clamp(x); return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+const eb = x => { x = clamp(x); const c1 = 1.4, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); };
+const sg = (t, a, b) => clamp((t - a) / (b - a));
+const $ = id => document.getElementById(id);
+const fmt = n => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+const cue = (n, d) => (window.TL.cues[n] !== undefined ? window.TL.cues[n] : d);
+const pop = (el, p, dy = 28) => { const e = eo(p); el.style.opacity = clamp(p * 1.6); el.style.transform = `translateY(${(1 - e) * dy}px) scale(${0.9 + 0.1 * eb(p)})`; };
+const slideIn = (el, p, dx) => { el.style.opacity = clamp(p * 1.6); el.style.transform = `translateX(${(1 - eo(p)) * dx}px)`; };
+const float = (t, seed, amp = 5) => Math.sin(t * 1.6 + seed) * amp;
+
+const P = {};
+function line(el, x0, y0, x1, y1, p) {
+  const dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy), ang = Math.atan2(dy, dx) - Math.PI / 2;
+  el.style.left = x0 + 'px'; el.style.top = y0 + 'px'; el.style.height = len * eio(p) + 'px'; el.style.transform = `rotate(${ang}rad)`; el.style.opacity = clamp(p * 3);
+}
+function build() {
+  const fond = $('fond');
+  P.bulles = [[120, 200, 520], [520, 700, 640], [260, 1000, 460], [600, 120, 380], [80, 760, 420]].map(([x, y, d], i) => { const b = document.createElement('div'); b.className = 'bulle'; b.style.width = b.style.height = d + 'px'; b.style.left = x + 'px'; b.style.top = y + 'px'; fond.appendChild(b); return { b, i }; });
+  // villes (cercle autour du centre) et anneaux qui pulsent
+  const net = $('c_net');
+  P.anneaux = [0, 1, 2].map(() => { const a = document.createElement('div'); a.className = 'anneau'; net.appendChild(a); return a; });
+  P.villes = ['Dakar', 'Abidjan', 'Lomé', 'Cotonou', 'Douala', 'Kinshasa', 'Nairobi'].map((n, i) => { const v = document.createElement('div'); v.className = 'ville'; v.textContent = n; net.appendChild(v); return v; });
+  for (const b of ['5 000', '10 000', '25 000', '50 000', '100 000']) { const s = document.createElement('span'); s.textContent = b + ' F'; $('k_bud').appendChild(s); }
+  for (let i = 0; i < 4; i++) { const l = document.createElement('div'); l.className = 'ligne'; $('d_lines').appendChild(l); }
+  for (let i = 0; i < 8; i++) { const c = document.createElement('div'); c.style.cssText = 'position:absolute; width:26px; height:26px; border-radius:50%; background:#FFC400; box-shadow:0 4px 10px rgba(0,0,0,.3)'; $('d_dots').appendChild(c); }
+}
+
+function renderScene(id, t, s, e) {
+  const lt = t - s;
+  switch (id) {
+    case 'histoire': {
+      const ca = cue('etudiants', 1.9), cm = cue('moteur', 2.7), cg = cue('garage', 3.8), cgo = cue('google', 5.5), cp = cue('publicite', 7.3), ci = cue('idee', 8.6);
+      const tA = cgo - 0.55;   // « Aujourd'hui » : on passe de 1998 à aujourd'hui
+      $('noir').style.opacity = 1 - eio(sg(t, e - 0.5, e));
+      pop($('h_an'), sg(t, 0.15, 0.8)); pop($('h_sub'), sg(t, ca - 0.25, ca + 0.35));
+      pop($('h_bar'), sg(t, cm - 0.3, cm + 0.2), 20);
+      const txt = 'moteur de recherche', n = Math.round(txt.length * eio(sg(t, cm - 0.05, cm + 0.9)));
+      $('h_tape').textContent = txt.slice(0, n); $('h_cur').style.opacity = Math.floor(t * 2.4) % 2 ? 0.1 : 1;
+      pop($('h_gar'), sg(t, cg - 0.45, cg + 0.1), 30); pop($('h_gt'), sg(t, cg - 0.3, cg + 0.25), 16);
+      const outA = 1 - eio(sg(t, tA, tA + 0.45));
+      $('h_a').style.opacity = outA; $('h_a').style.transform = `translateY(${-(1 - outA) * 40}px)`;
+      const inB = eio(sg(t, tA + 0.2, tA + 0.8));
+      $('h_b').style.opacity = inB; $('h_b').style.transform = `translateY(${(1 - inB) * 30}px)`;
+      $('h_pub').style.width = (76 * eio(sg(t, cp - 0.5, cp + 1.0))) + '%';
+      pop($('h_idee'), sg(t, ci - 0.3, ci + 0.35));
+      break;
+    }
+    case 'cibles': {
+      const names = ['startup', 'entreprise', 'boutique', 'site', 'application'], af = cue('afrique', s + 5.2);
+      const pills = $('c_liste').children, out = eio(sg(t, af - 0.6, af - 0.1));
+      for (let i = 0; i < pills.length; i++) { slideIn(pills[i], sg(t, cue(names[i], s + 0.4 + i * 0.8) - 0.3, cue(names[i], s + 0.4 + i * 0.8) + 0.25), i % 2 ? 140 : -140); pills[i].style.opacity = clamp(parseFloat(pills[i].style.opacity || 0)) * (1 - out); pills[i].style.transform += ` translateY(${float(t, i, 3)}px)`; }
+      $('c_afrique').style.opacity = eio(sg(t, af - 0.3, af + 0.2));
+      pop($('c_t'), sg(t, af - 0.25, af + 0.3));
+      const cx = 360, cy = 700;
+      P.anneaux.forEach((a, i) => { const ph = ((t * 0.5 + i / 3) % 1), r = 80 + ph * 280; a.style.left = (cx - r) + 'px'; a.style.top = (cy - r) + 'px'; a.style.width = a.style.height = (2 * r) + 'px'; a.style.opacity = (1 - ph) * 0.9; });
+      P.villes.forEach((v, i) => { const ang = -Math.PI / 2 + (i / P.villes.length) * Math.PI * 2, R = 215 + (i % 2) * 45, x = cx + Math.cos(ang) * R, y = cy + Math.sin(ang) * R * 0.98; const p = sg(t, af + 0.15 + i * 0.12, af + 0.6 + i * 0.12); v.style.left = (x - 70) + 'px'; v.style.top = (y - 22) + 'px'; pop(v, p, 14); });
+      break;
+    }
+    case 'diffusion': {
+      const ca = cue('ads', s + 0.6), cp = cue('partagee', s + 2.2), cx = [cue('whatsapp', s + 3), cue('facebook', s + 3.8), cue('instagram', s + 4.6), cue('telegram', s + 5.2)];
+      pop($('d_t1'), sg(t, ca - 0.45, ca + 0.15)); pop($('d_t2'), sg(t, cp - 0.9, cp - 0.3), 12);
+      pop($('d_carte'), sg(t, cp - 0.5, cp + 0.15), 40); $('d_carte').style.transform += ` translateY(${float(t, 1, 4)}px)`;
+      const pl = ['d_p1', 'd_p2', 'd_p3', 'd_p4'], px = [[200, 428], [530, 428], [200, 928], [545, 928]];
+      pl.forEach((id2, i) => { pop($(id2), sg(t, cx[i] - 0.3, cx[i] + 0.25), 20); line($('d_lines').children[i], 360, 660, px[i][0], px[i][1] + (i < 2 ? 36 : 0), sg(t, cx[i] - 0.25, cx[i] + 0.4)); });
+      const dots = $('d_dots').children;
+      for (let i = 0; i < dots.length; i++) { const k = i % 4, t0 = cx[k] + 0.35 + Math.floor(i / 4) * 0.9, p = sg(t, t0, t0 + 0.8), x0 = 360, y0 = 660, x1 = px[k][0], y1 = px[k][1] + (k < 2 ? 36 : 0); dots[i].style.left = (x0 + (x1 - x0) * eio(p) - 13) + 'px'; dots[i].style.top = (y0 + (y1 - y0) * eio(p) - 13) + 'px'; dots[i].style.opacity = p > 0 && p < 1 ? 1 : 0; }
+      break;
+    }
+    case 'controle': {
+      const ca = cue('audience', s + 0.5), cb = cue('budget', s + 1.8);
+      pop($('k_c1'), sg(t, ca - 0.3, ca + 0.3));
+      const b = $('k_bud').children; for (let i = 0; i < b.length; i++) { b[i].className = i === 1 && t > ca + 0.7 ? 'on' : ''; }
+      pop($('k_bud'), sg(t, ca + 0.1, ca + 0.6), 16);
+      pop($('k_c2'), sg(t, cb - 0.4, cb + 0.2));
+      $('k_fill').style.width = (100 * eio(sg(t, cb + 0.1, cb + 1.0))) + '%'; pop($('k_barre'), sg(t, cb - 0.2, cb + 0.3), 10); pop($('k_note'), sg(t, cb + 0.6, cb + 1.1), 10);
+      break;
+    }
+    case 'prix': {
+      const c5 = cue('cinq', s + 0.8), c10 = cue('dix', s + 1.6);
+      pop($('x_t1'), sg(t, c5 - 0.3, c5 + 0.3));
+      pop($('x_t2'), sg(t, c10 - 0.7, c10 - 0.2), 14);
+      $('x_n').textContent = fmt(10000 * eio(sg(t, c10 - 0.1, c10 + 0.9))); pop($('x_n'), sg(t, c10 - 0.5, c10 - 0.1), 20);
+      pop($('x_t3'), sg(t, c10 + 0.3, c10 + 0.8), 14); pop($('x_t4'), sg(t, c10 + 0.9, c10 + 1.4), 10);
+      break;
+    }
+    case 'gratuit': {
+      const cg = cue('gratuite', s + 1.2), cq = cue('quatorze', s + 1.9);
+      pop($('f_t1'), sg(lt, 0.05, 0.6)); pop($('f_t2'), sg(t, cg - 0.7, cg - 0.1));
+      pop($('f_j'), sg(t, cq - 0.4, cq + 0.2), 40); $('f_j').style.transform += ` translateY(${float(t, 2, 5)}px)`;
+      pop($('f_t3'), sg(t, cq + 0.4, cq + 0.9), 10);
+      break;
+    }
+    case 'final': {
+      const ca = cue('ads2', s + 2.0), cl = cue('lance', s + 3.4), url = 'afrolookmedia.com/ads';
+      pop($('z_url'), sg(lt, 0.05, 0.6), 20);
+      $('z_txt').textContent = url.slice(0, Math.round(url.length * eio(sg(t, s + 0.3, ca + 0.3))));
+      pop($('z_phone'), sg(lt, 0.1, 0.8), 80); $('z_phone').style.transform += ` translateY(${float(t, 4, 4)}px)`;
+      // la page défile doucement
+      $('z_img').style.top = (-eio(sg(t, s + 1.2, e)) * 160) + 'px';
+      pop($('z_btn'), sg(t, cl - 0.5, cl + 0.1), 30); $('z_btn').firstChild.style.transform = `scale(${1 + 0.05 * Math.sin((t - cl) * 6)})`;
+      break;
+    }
+  }
+}
+
+window.render = function (t) {
+  if (!P.bulles) build();
+  const TL = window.TL;
+  for (const o of P.bulles) o.b.style.transform = `translate(${Math.sin(t * 0.35 + o.i * 1.7) * 38}px, ${Math.cos(t * 0.28 + o.i * 2.3) * 52}px)`;
+  const FADE_IN = 0.4, FADE_OUT = 0.35;
+  TL.scenes.forEach((sc, i) => {
+    const el = $('sc_' + sc.id); if (!el) return;
+    const last = i === TL.scenes.length - 1;
+    if (t < sc.start || t >= sc.end + (last ? 0 : FADE_OUT)) { el.style.opacity = 0; el.style.visibility = 'hidden'; return; }
+    el.style.visibility = 'visible'; el.style.zIndex = i + 2;
+    renderScene(sc.id, t, sc.start, sc.end);
+    const a = eio(sg(t, sc.start, sc.start + FADE_IN)), b = last ? 1 : 1 - eio(sg(t, sc.end, sc.end + FADE_OUT));
+    el.style.opacity = i === 0 ? b : Math.min(a, b);
+    el.style.transform = `translateY(${(1 - a) * 36 - (1 - b) * 36}px)`;
+  });
+  if (TL.scenes[0] && t >= TL.scenes[0].end + FADE_OUT) $('noir').style.opacity = 0;
+};
+</script>
+</body>
+</html>

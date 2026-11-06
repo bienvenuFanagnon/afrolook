@@ -10,8 +10,9 @@ import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:audio_waveforms/audio_waveforms.dart' hide PlayerState;
 import '../../theme/app_colors.dart';
+import 'studio_theme.dart';
 
-const _c = AppColors.dark;
+AppColors get _c => studioColors;
 
 /// Résultat renvoyé par le trimmer
 class TrimResult {
@@ -156,6 +157,7 @@ class _StudioAudioTrimmerState extends State<StudioAudioTrimmer> {
 
   @override
   Widget build(BuildContext context) {
+    syncStudioColors(context);
     return Scaffold(
       backgroundColor: _c.background,
       appBar: AppBar(
@@ -220,7 +222,7 @@ class _StudioAudioTrimmerState extends State<StudioAudioTrimmer> {
                                       playerController: _waveCtrl!,
                                       waveformType: WaveformType.fitWidth,
                                       playerWaveStyle: PlayerWaveStyle(
-                                        fixedWaveColor: Colors.white12,
+                                        fixedWaveColor: _c.border,
                                         liveWaveColor: _c.primary,
                                         spacing: 3,
                                         waveThickness: 2.5,

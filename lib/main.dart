@@ -1,3 +1,4 @@
+import 'package:afrotok/pages/create/create_hub_page.dart';
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:afrotok/services/api/startup_trace.dart';
@@ -507,7 +508,7 @@ class _MyAppState extends State<MyApp> {
             case '/mes_notifications':
               return PageTransition(child: MesNotification(), type: PageTransitionType.fade);
             case '/user_posts_form':
-              return PageTransition(child: UserPostForm(), type: PageTransitionType.fade);
+              return PageTransition(child: const CreateHubPage(), type: PageTransitionType.fade);
             case '/welcome':
               return PageTransition(child: WelcomeScreen(), type: PageTransitionType.fade);
             case '/amis':

@@ -1,3 +1,4 @@
+import 'package:afrotok/pages/create/create_hub_page.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import '../../widgets/safe_network_avatar.dart';
 import 'dart:async';
@@ -953,7 +954,7 @@ class _CanalDetailsState extends State<CanalDetails> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => UserPostForm(canal: widget.canal)),
+                      MaterialPageRoute(builder: (_) => CreateHubPage(canal: widget.canal)),
                     );
                   },
                   style: ElevatedButton.styleFrom(

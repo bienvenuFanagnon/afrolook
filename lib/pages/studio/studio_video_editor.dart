@@ -7,8 +7,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
 import '../../theme/app_colors.dart';
 import 'studio_models.dart';
+import 'studio_theme.dart';
 
-const _c = AppColors.dark;
+AppColors get _c => studioColors;
 
 class StudioVideoEditor extends StatefulWidget {
   final bool forChronique;
@@ -74,6 +75,7 @@ class _StudioVideoEditorState extends State<StudioVideoEditor> with MusicSuspend
 
   @override
   Widget build(BuildContext context) {
+    syncStudioColors(context);
     return Scaffold(
       backgroundColor: _c.background,
       appBar: AppBar(
@@ -159,7 +161,7 @@ class _StudioVideoEditorState extends State<StudioVideoEditor> with MusicSuspend
               maxLines: 1,
               maxLength: 50,
               onChanged: (_) => setState(() {}),
-              style: const TextStyle(fontSize: 13, color: Colors.white),
+              style: TextStyle(fontSize: 13, color: _c.textPrimary),
               decoration: InputDecoration(
                 hintText: 'Titre de la vidéo (optionnel)…',
                 hintStyle: TextStyle(color: _c.textSecondary),
@@ -279,7 +281,7 @@ class _StudioVideoEditorState extends State<StudioVideoEditor> with MusicSuspend
                 Container(
                   height: 2,
                   decoration: BoxDecoration(
-                    color: Colors.white24,
+                    color: _c.border,
                     borderRadius: BorderRadius.circular(99),
                   ),
                   child: FractionallySizedBox(
@@ -318,16 +320,16 @@ class _StudioVideoEditorState extends State<StudioVideoEditor> with MusicSuspend
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.videocam, color: Colors.white),
-              title: const Text('Filmer une vidéo', style: TextStyle(color: Colors.white)),
+              leading: Icon(Icons.videocam, color: _c.textPrimary),
+              title: Text('Filmer une vidéo', style: TextStyle(color: _c.textPrimary)),
               onTap: () {
                 Navigator.pop(ctx);
                 _pickVideo(ImageSource.camera);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.video_library, color: Colors.white),
-              title: const Text('Choisir depuis la galerie', style: TextStyle(color: Colors.white)),
+              leading: Icon(Icons.video_library, color: _c.textPrimary),
+              title: Text('Choisir depuis la galerie', style: TextStyle(color: _c.textPrimary)),
               onTap: () {
                 Navigator.pop(ctx);
                 _pickVideo(ImageSource.gallery);
@@ -361,6 +363,7 @@ class _VideoPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    syncStudioColors(context);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -372,16 +375,16 @@ class _VideoPlaceholder extends StatelessWidget {
               width: 72,
               height: 72,
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.white24, width: 2),
+                border: Border.all(color: _c.border, width: 2),
                 borderRadius: BorderRadius.circular(36),
               ),
-              child: const Icon(Icons.videocam, color: Colors.white38, size: 32),
+              child: Icon(Icons.videocam, color: _c.textSecondary, size: 32),
             ),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               'Toucher pour ajouter\nvotre vidéo',
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white38, fontSize: 13),
+              style: TextStyle(color: _c.textSecondary, fontSize: 13),
             ),
           ],
         ),

@@ -71,3 +71,6 @@ firebase-export-*/
 android/.kotlin/
 pronoflashia/functions/.env.*
 !pronoflashia/functions/.env.example
+
+# Outils de fabrication des vidéos (dépendances, régénérables avec npm install)
+docs/video_partage/src/build/node_modules/

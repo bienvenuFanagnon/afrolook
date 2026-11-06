@@ -1653,6 +1653,16 @@ class Post {
 
   int? adSupportCount = 0; // nombre de fois que la pub de soutien a été vue pour ce post
   bool? isPortrait;
+  /// Origine du média : « captured » = filmé ou enregistré avec l'application (badge « Fait sur Afrolook »), « imported » = choisi dans la galerie, null = autre.
+  String? captureSource;
+  /// Effet de voix choisi par l'auteur d'un audio (étiquette « Voix modifiée »), null = voix d'origine.
+  String? voiceEffect;
+  /// Réponse en vidéo : publication visée, pseudo de son auteur et extrait de sa description.
+  String? replyToPostId;
+  String? replyToUsername;
+  String? replyToExcerpt;
+  /// Raison donnée par le serveur au fil « pour vous » (following, taste, explore, boost, fill…). `again` = post déjà vu que le serveur re-propose parce que tout le non-vu du thème est épuisé.
+  String? feedReason;
 
   // ── Repost ───────────────────────────────────────────────────────────────────
   bool? isRepost;             // true si ce post est une republication
@@ -1787,6 +1797,11 @@ class Post {
     this.challengeMonth,
     this.isAdvertisement = false,
   this.isPortrait,
+  this.captureSource,
+  this.voiceEffect,
+  this.replyToPostId,
+  this.replyToUsername,
+  this.replyToExcerpt,
   this.isRepost,
   this.reposterUserId,
   this.reposterPseudo,
@@ -1923,6 +1938,11 @@ class Post {
       totalInteractions = interactions;
     }
     isPortrait = json['isPortrait']??true;
+    captureSource = json['captureSource'] as String?;
+    voiceEffect = json['voiceEffect'] as String?;
+    replyToPostId = json['replyToPostId'] as String?;
+    replyToUsername = json['replyToUsername'] as String?;
+    replyToExcerpt = json['replyToExcerpt'] as String?;
     isRepost = json['isRepost'] as bool?;
     reposterUserId = json['reposterUserId'] as String?;
     reposterPseudo = json['reposterPseudo'] as String?;
@@ -2050,6 +2070,13 @@ class Post {
     data['isAdvertisement'] = isAdvertisement;
     data['adSupportCount'] = adSupportCount;
     data['isPortrait'] = isPortrait;
+    data['captureSource'] = captureSource;
+    if (voiceEffect != null) data['voiceEffect'] = voiceEffect;
+    if (replyToPostId != null) {
+      data['replyToPostId'] = replyToPostId;
+      data['replyToUsername'] = replyToUsername;
+      data['replyToExcerpt'] = replyToExcerpt;
+    }
     if (isRepost == true) data['isRepost'] = isRepost;
     if (reposterUserId != null) data['reposterUserId'] = reposterUserId;
     if (reposterPseudo != null) data['reposterPseudo'] = reposterPseudo;

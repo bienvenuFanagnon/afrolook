@@ -1,0 +1,338 @@
+<title>Parcours de création</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Concept : une page de revue, lue de haut en bas ; les écrans de l'application sont montrés dans des téléphones sombres posés sur le fond de la page. */
+:root{
+  --bg:#F6F4EE; --card:#FFFFFF; --ink:#15171A; --muted:#5E646C; --line:#E2DED3;
+  --yellow:#FFC400; --on-yellow:#1A1500; --amber:#8A5A00; --red:#E5484D; --green:#1F8A4C;
+  --soft:#EFEBDF; --phone:#0E0F11;
+  --display:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif; --body:'Figtree','Segoe UI',system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#101214; --card:#171A1D; --ink:#F2F0EA; --muted:#A3A9B0; --line:#2A2E33; --amber:#FFC400; --soft:#1E2226; --phone:#050607; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#101214; --card:#171A1D; --ink:#F2F0EA; --muted:#A3A9B0; --line:#2A2E33; --amber:#FFC400; --soft:#1E2226; --phone:#050607; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--body);padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px));padding-block:28px 64px}
+.wrap{max-width:1120px;margin-inline:auto;display:grid;gap:56px}
+h1,h2,h3{font-family:var(--display);line-height:1.1;margin:0;text-wrap:balance}
+h1{font-size:clamp(34px,6vw,60px);font-weight:800;letter-spacing:-.02em}
+h2{font-size:clamp(24px,3.4vw,34px);font-weight:700;letter-spacing:-.01em}
+h3{font-size:18px;font-weight:700}
+p{margin:0}
+.lead{font-size:18px;color:var(--muted);max-width:62ch;margin-top:14px}
+.kicker{font:700 12px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--amber)}
+.sec{display:grid;gap:22px}
+.sec>p{color:var(--muted);max-width:68ch}
+.cmp{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;display:grid;gap:10px;align-content:start}
+.box ul{margin:0;padding-left:18px;display:grid;gap:6px;color:var(--muted)}
+.box.new{border-color:var(--yellow);border-width:2px}
+.tag{display:inline-block;font:700 12px var(--body);padding:3px 10px;border-radius:99px;background:var(--soft);color:var(--muted);justify-self:start}
+.box.new .tag{background:var(--yellow);color:var(--on-yellow)}
+
+/* flux */
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.flow b{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 14px;font-weight:600}
+.flow b.hl{background:var(--yellow);border-color:var(--yellow);color:var(--on-yellow)}
+.flow i{font-style:normal;color:var(--muted)}
+
+/* rangée de téléphones */
+.row{display:flex;gap:28px;overflow-x:auto;padding:8px 4px 20px;scroll-snap-type:x mandatory;scrollbar-width:thin}
+.item{flex:none;width:272px;scroll-snap-align:start;display:grid;gap:12px;align-content:start}
+.item h3{display:flex;gap:10px;align-items:center}
+.item h3 span{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--ink);color:var(--bg);font:700 13px var(--body);flex:none}
+.item p{font-size:14px;color:var(--muted)}
+.ph{width:272px;height:556px;border-radius:38px;background:var(--phone);padding:9px;box-shadow:0 18px 40px -18px rgba(0,0,0,.45);position:relative}
+.scr{width:100%;height:100%;border-radius:30px;overflow:hidden;position:relative;background:#16181B;color:#F3F1EA;font:13px/1.35 var(--body);display:flex;flex-direction:column}
+.sb{display:flex;justify-content:space-between;padding:10px 18px 4px;font-size:11px;color:#C9CDD2;flex:none}
+.top{display:flex;align-items:center;justify-content:space-between;padding:6px 14px 10px;flex:none}
+.top b{font:700 15px var(--display)}
+.logo{font:800 17px var(--display);letter-spacing:-.02em}.logo i{font-style:normal;color:var(--yellow)}
+.sk{height:9px;border-radius:5px;background:#2A2E33;margin:6px 0}.sk.s{width:60%}
+.post{margin:6px 12px;padding:10px;border-radius:14px;background:#1D2024}
+.post .pic{height:92px;border-radius:10px;background:linear-gradient(135deg,#3A2F18,#1E2B22);margin-top:8px}
+.av{width:26px;height:26px;border-radius:50%;background:#33383E;display:inline-block;vertical-align:middle;margin-right:8px}
+.nav{margin-top:auto;display:flex;justify-content:space-around;align-items:center;padding:10px 6px 14px;background:#1D2024;flex:none}
+.nav span{width:22px;height:22px;border-radius:7px;background:#33383E}
+.plus{width:44px;height:44px;border-radius:50%;background:var(--yellow);color:var(--on-yellow);display:grid;place-items:center;font-weight:800;font-size:26px;line-height:1;position:relative}
+.plus.pulse::after{content:"";position:absolute;inset:-6px;border-radius:50%;border:2px solid var(--yellow);opacity:.7}
+.dim{position:absolute;inset:0;background:rgba(0,0,0,.6)}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#1F2226;border-radius:22px 22px 0 0;padding:10px 14px 18px;display:grid;gap:10px}
+.sheet .h{width:38px;height:4px;border-radius:3px;background:#4A5057;margin:0 auto 4px}
+.sheet h4,.ttl{margin:0;font:700 17px var(--display)}
+.opt{display:flex;gap:12px;align-items:center;padding:14px;border-radius:16px;background:#272B30;border:1px solid #343A40}
+.opt .ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none;background:var(--yellow);color:var(--on-yellow)}
+.opt.live .ic{background:var(--red);color:#fff}
+.opt b{display:block;font-size:15px}.opt small{color:#A9AFB6;font-size:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 14px}
+.tile{border-radius:16px;background:#272B30;border:1px solid #343A40;padding:14px 12px;display:grid;gap:8px;min-height:112px;align-content:space-between}
+.tile .ic{width:36px;height:36px;border-radius:11px;background:#343A40;display:grid;place-items:center}
+.tile b{font-size:14px;display:block}.tile small{color:#A9AFB6;font-size:11.5px;line-height:1.3;display:block}
+.tile.main{grid-column:1/-1;background:linear-gradient(135deg,#3A2F0A,#272B30);border-color:#5A4A14;min-height:96px;grid-template-columns:auto 1fr;align-items:center;gap:12px}
+.tile.main .ic{background:var(--yellow);color:var(--on-yellow);width:48px;height:48px;border-radius:14px}
+.btn{display:block;text-align:center;border-radius:14px;padding:12px;font-weight:800;background:var(--yellow);color:var(--on-yellow)}
+.btn.ghost{background:#272B30;color:#F3F1EA;font-weight:700}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{padding:5px 11px;border-radius:99px;background:#272B30;font-size:12px;border:1px solid #343A40}
+.chip.on{background:var(--yellow);color:var(--on-yellow);border-color:var(--yellow);font-weight:700}
+.cam{flex:1;position:relative;background:linear-gradient(180deg,#2B2118 0%,#1A2420 60%,#10161A 100%)}
+.cam .face{position:absolute;left:50%;top:40%;width:110px;height:150px;transform:translate(-50%,-50%);border-radius:50% 50% 46% 46%;background:radial-gradient(circle at 50% 35%,#7A5A44,#4A3426);opacity:.55}
+.cam .rail{position:absolute;right:10px;top:14px;display:grid;gap:10px}
+.cam .rail span,.circ{width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.45);display:grid;place-items:center}
+.cam .time{position:absolute;left:50%;top:12px;transform:translateX(-50%);background:rgba(0,0,0,.5);border-radius:99px;padding:3px 10px;font-weight:700;font-size:12px}
+.cam .time i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);margin-right:6px}
+.cam .bot{position:absolute;left:0;right:0;bottom:0;padding:12px 14px 16px;display:grid;gap:12px}
+.dur{display:flex;gap:6px;justify-content:center}
+.ctl{display:flex;justify-content:space-between;align-items:center}
+.rec{width:68px;height:68px;border-radius:50%;border:4px solid #fff;display:grid;place-items:center;position:relative}
+.rec::before{content:"";width:50px;height:50px;border-radius:50%;background:var(--red)}
+.rec.run::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:4px solid var(--yellow);border-right-color:transparent;border-bottom-color:transparent}
+.gal{width:40px;height:40px;border-radius:10px;border:2px solid #fff;background:linear-gradient(135deg,#6B4A2C,#2F4B3A)}
+.prev{flex:1;position:relative;background:linear-gradient(180deg,#2B2118,#10161A)}
+.tools{position:absolute;right:8px;top:14px;display:grid;gap:12px;text-align:center;font-size:10px}
+.tools div{display:grid;gap:3px;justify-items:center}
+.bar{height:4px;border-radius:3px;background:#343A40;margin:0 14px}.bar i{display:block;height:100%;width:100%;background:var(--yellow);border-radius:3px}
+.foot{display:flex;gap:10px;padding:12px 14px 16px;flex:none}.foot .btn{flex:1}
+.form{padding:0 14px;display:grid;gap:12px;flex:1;align-content:start;overflow:hidden}
+.mini{display:flex;gap:10px;align-items:flex-start}
+.thumb{width:64px;height:84px;border-radius:10px;background:linear-gradient(135deg,#6B4A2C,#2F4B3A);flex:none;position:relative}
+.thumb.sq{height:64px}
+.thumb u{position:absolute;right:4px;bottom:4px;text-decoration:none;background:rgba(0,0,0,.6);border-radius:6px;padding:1px 6px;font-size:10px}
+.ta{flex:1;background:#1D2024;border:1px solid #343A40;border-radius:12px;padding:10px;color:#8D949B;min-height:84px}
+.field{display:flex;justify-content:space-between;align-items:center;padding:11px 12px;border-radius:12px;background:#1D2024;border:1px solid #2F343A}
+.field small{color:#A9AFB6}
+.pick{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:0 10px}
+.pick i{aspect-ratio:1;border-radius:6px;background:linear-gradient(135deg,#4A3A28,#26362E);position:relative}.pick i:nth-child(3n){background:linear-gradient(135deg,#2D3A4A,#262E36)}
+.pick i.sel::after{content:attr(data-n);position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;background:var(--yellow);color:var(--on-yellow);font-weight:800;font-size:11px;display:grid;place-items:center}
+.pick i.cam1{background:#272B30;display:grid;place-items:center}
+.wave{display:flex;gap:3px;align-items:center;justify-content:center;height:70px}.wave i{width:4px;border-radius:2px;background:var(--yellow)}
+.mic{width:76px;height:76px;border-radius:50%;background:var(--red);display:grid;place-items:center;margin:0 auto}
+.paper{margin:0 14px;border-radius:18px;padding:18px;min-height:210px;background:linear-gradient(135deg,#7A2E1F,#3C1F4A);font:800 20px/1.25 var(--display);display:grid;align-content:center;text-align:center}
+.sw{display:flex;gap:8px;justify-content:center;padding:12px 0}.sw i{width:24px;height:24px;border-radius:50%}
+.note{background:var(--soft);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--muted)}
+.note b{color:var(--ink)}
+
+/* sélecteur de type */
+.seg{display:inline-flex;gap:6px;background:var(--soft);padding:5px;border-radius:99px;flex-wrap:wrap}
+.seg button{font:700 14px var(--body);border:0;border-radius:99px;padding:9px 18px;background:transparent;color:var(--muted);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--yellow);color:var(--on-yellow)}
+.seg button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+
+/* questions */
+.q{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.q .box h3{display:flex;gap:10px}
+.q .box h3 span{color:var(--amber);font-family:var(--body)}
+.opts{display:grid;gap:6px;font-size:14px;color:var(--muted)}
+.opts b{color:var(--ink)}
+.reco{font-size:12px;font-weight:700;color:var(--green)}
+@media (max-width:560px){.item,.ph{width:min(272px,78vw)}}
+
+/* v2 */
+.sys{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.sys .box h3{display:flex;gap:8px;align-items:center}
+.sys .chips2{display:flex;flex-wrap:wrap;gap:6px}
+.sys .chips2 span{font-size:12.5px;padding:3px 10px;border-radius:99px;background:var(--soft);color:var(--muted)}
+.dup{background:var(--soft);border-radius:14px;padding:14px 16px;color:var(--muted);font-size:14px;display:grid;gap:4px}
+.dup b{color:var(--ink)}
+.tbl{width:100%;border-collapse:collapse;font-size:14px;min-width:560px}
+.tbl th,.tbl td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+.tbl th{font:700 12px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tbl td:nth-child(2){color:var(--amber);font-weight:700}
+.scroll{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:18px}
+.strip{display:flex;gap:8px;padding:0 14px;overflow:hidden}
+.mt{flex:none;width:78px;height:104px;border-radius:12px;position:relative;overflow:hidden;background:linear-gradient(160deg,#4B2A1E,#1E2B33)}
+.mt:nth-child(2){background:linear-gradient(160deg,#1E4B34,#14202B)}.mt:nth-child(3){background:linear-gradient(160deg,#4B1E3A,#1B1B2E)}.mt:nth-child(4){background:linear-gradient(160deg,#4B4B1E,#2B1E1E)}
+.mt small{position:absolute;left:6px;right:6px;bottom:6px;font-weight:800;font-size:10.5px;line-height:1.15;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+.mt i{position:absolute;top:6px;right:6px;font-style:normal;font-size:9px;background:var(--yellow);color:var(--on-yellow);border-radius:6px;padding:1px 5px;font-weight:800}
+.banner{margin:0 14px;border-radius:14px;padding:10px 12px;background:linear-gradient(135deg,#2E2A12,#272B30);border:1px solid #5A4A14;display:flex;gap:10px;align-items:center}
+.banner b{display:block;font-size:12.5px}.banner small{color:#C9CDD2;font-size:11px}
+.sheet2{position:absolute;left:0;right:0;bottom:0;background:#1F2226;border-radius:22px 22px 0 0;padding:10px 12px 14px;display:grid;gap:10px;box-shadow:0 -10px 30px rgba(0,0,0,.5)}
+.sheet2 .h{width:38px;height:4px;border-radius:3px;background:#4A5057;margin:0 auto}
+.tabs2{display:flex;gap:6px}.tabs2 span{flex:1;text-align:center;padding:7px 4px;border-radius:10px;background:#272B30;font-size:12px;font-weight:700}.tabs2 span.on{background:var(--yellow);color:var(--on-yellow)}
+.trk{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:12px;background:#272B30}
+.trk .pl{width:30px;height:30px;border-radius:50%;background:#343A40;display:grid;place-items:center;font-size:11px;flex:none}
+.trk b{display:block;font-size:12.5px}.trk small{color:#A9AFB6;font-size:11px}
+.trk em{margin-left:auto;font-style:normal;font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:99px;background:#343A40}
+.trk em.pay{background:var(--yellow);color:var(--on-yellow)}
+.tog{display:flex;justify-content:space-between;align-items:center;padding:9px 10px;border-radius:12px;background:#272B30;font-size:12.5px}
+.tog i{width:34px;height:20px;border-radius:99px;background:#4A5057;position:relative}.tog i::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff}
+.tog.on i{background:var(--yellow)}.tog.on i::after{left:16px}
+.tools2{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-around;padding:10px 6px 12px;background:linear-gradient(180deg,transparent,rgba(0,0,0,.7) 40%)}
+.tools2 div{display:grid;gap:3px;justify-items:center;font-size:10px}
+.tools2 .on span{background:var(--yellow);color:var(--on-yellow)}
+.prog{display:grid;gap:14px;justify-items:center;align-content:center;flex:1;text-align:center;padding:0 24px}
+.ring{width:84px;height:84px;border-radius:50%;border:6px solid #343A40;border-top-color:var(--yellow)}
+.price{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:12px;background:#272B30;font-size:12.5px}
+.price b{color:var(--yellow)}
+.cardprev{margin:0 auto;width:150px;aspect-ratio:4/5;border-radius:12px;background:linear-gradient(135deg,#7A4A12,#2B1A0A);border:3px solid #E0A82E;display:grid;place-items:center;text-align:center;padding:10px;font:800 14px/1.2 var(--display)}
+.styles{display:flex;gap:6px;padding:0 12px}.styles span{flex:none;padding:6px 10px;border-radius:10px;background:#272B30;font-size:11.5px;font-weight:700}.styles span.on{background:var(--yellow);color:var(--on-yellow)}
+.cmpgrid{display:grid;gap:14px}
+
+</style>
+
+<div class="wrap">
+<header>
+  <span class="kicker">Proposition n° 2 · à valider ou corriger</span>
+  <h1 style="margin-top:10px">Un seul parcours de création : publication, Studio et Cartes réunis.</h1>
+  <p class="lead">J'ai étudié le Studio, le montage de modèles, les cartes et la page de publication. Aujourd'hui, la même personne passe par trois endroits qui se recoupent. Voici un parcours unique : on choisit ce qu'on crée, on prépare le média, on le retouche dans un éditeur unique (modèles, musique, texte), puis un seul formulaire.</p>
+</header>
+
+<section class="sec">
+  <h2>Ce qui existe aujourd'hui : trois endroits qui se recoupent</h2>
+  <div class="sys">
+    <div class="box"><span class="tag">1 · Page de publication</span><h3>Cinq onglets</h3>
+      <div class="chips2"><span>Audio</span><span>Texte</span><span>Image</span><span>Vidéo</span><span>Carte</span></div>
+      <p style="color:var(--muted);font-size:14px">Chaque onglet a son média et son formulaire. Un petit bouton « Studio » en haut à droite.</p></div>
+    <div class="box"><span class="tag">2 · Studio Afrolook</span><h3>Modèles, sons, éditeurs</h3>
+      <div class="chips2"><span>Modèles prêts à poster</span><span>Texte</span><span>Image</span><span>Vidéo</span><span>Audio</span><span>Espace artiste</span><span>Page Musique</span></div>
+      <p style="color:var(--muted);font-size:14px">Un modèle se remplit avec ta photo ou ta vidéo, une musique gratuite ou d'artiste, des effets animés. Le résultat est fabriqué par le serveur, puis renvoyé à la publication.</p></div>
+    <div class="box"><span class="tag">3 · Studio Cartes</span><h3>Affiches et cartes</h3>
+      <div class="chips2"><span>Texte + 4 images</span><span>Styles Kente, Wax, Néon…</span><span>Modèles événement, promo</span><span>Fête du jour</span><span>Depuis un lien</span></div>
+      <p style="color:var(--muted);font-size:14px">Gratuit selon ton quota du mois, sinon en pièces. On revient ensuite publier avec les règles des posts.</p></div>
+  </div>
+  <div class="dup"><p><b>Ce qui se double :</b> le type de contenu est choisi à deux endroits (onglets et Studio) ; la retouche existe dans trois éditeurs différents ; la musique n'existe que dans les modèles du Studio, pas pour une vidéo filmée dans l'onglet Vidéo ; on sort de la publication, on passe par le Studio, puis on retombe dans la publication.</p></div>
+</section>
+
+<section class="sec">
+  <h2>Le parcours proposé</h2>
+  <div class="flow" aria-label="Étapes du parcours"><b>Accueil</b><i>›</i><b class="hl">Toucher « + »</b><i>›</i><b class="hl">Créer / Live</b><i>›</i><b class="hl">Que créer ?</b><i>›</i><b class="hl">Média</b><i>›</i><b class="hl">Éditeur unique</b><i>›</i><b class="hl">Formulaire unique</b><i>›</i><b>Publier</b></div>
+  <p>L'écran « Que créer ? » reprend l'entrée du Studio d'aujourd'hui (types et modèles) et y ajoute la Carte. L'éditeur unique réunit ce que font aujourd'hui les trois éditeurs : modèles, musique, texte, effets, découpe.</p>
+  <div class="row" id="common"></div>
+</section>
+
+<section class="sec">
+  <h2>Ensuite, selon ce qu'on crée</h2>
+  <div class="seg" role="group" aria-label="Type de création">
+    <button type="button" data-t="video" aria-pressed="true">Vidéo</button>
+    <button type="button" data-t="photo" aria-pressed="false">Photo</button>
+    <button type="button" data-t="audio" aria-pressed="false">Audio</button>
+    <button type="button" data-t="texte" aria-pressed="false">Texte</button>
+    <button type="button" data-t="carte" aria-pressed="false">Carte</button>
+  </div>
+  <p id="tinfo"></p>
+  <div class="row" id="bytype"></div>
+</section>
+
+<section class="sec">
+  <h2>Ce que devient chaque morceau existant</h2>
+  <div class="scroll"><table class="tbl"><thead><tr><th>Aujourd'hui</th><th>Demain</th><th>Remarque</th></tr></thead><tbody>
+    <tr><td>Les cinq onglets de la page de publication</td><td>Écran « Que créer ? »</td><td>Chaque formulaire existant devient le formulaire final de son type.</td></tr>
+    <tr><td>Entrée du Studio (types, modèles)</td><td>Même écran « Que créer ? »</td><td>La bannière des modèles prêts à poster y reste.</td></tr>
+    <tr><td>Éditeurs simples du Studio (texte, image, vidéo, audio)</td><td>Éditeur unique</td><td>Un seul écran de retouche pour tous les médias.</td></tr>
+    <tr><td>Montage de modèles (effets, calques, export)</td><td>Outil « Modèles » de l'éditeur</td><td>S'applique à n'importe quelle photo ou vidéo, y compris celle qu'on vient de filmer.</td></tr>
+    <tr><td>Musique gratuite et sons d'artistes</td><td>Outil « Musique » de l'éditeur</td><td>L'espace artiste reste accessible depuis cette fenêtre et le profil.</td></tr>
+    <tr><td>Studio Cartes</td><td>Type « Carte »</td><td>Quota, prix en pièces et fête du jour inchangés.</td></tr>
+    <tr><td>Bouton « Studio » en haut de la page de publication</td><td>Supprimé</td><td>Le Studio est désormais le parcours lui-même.</td></tr>
+  </tbody></table></div>
+</section>
+
+<section class="sec">
+  <h2>Ce que ça demande côté application</h2>
+  <div class="cmp">
+    <div class="box"><h3>On réutilise</h3><ul><li>Le moteur de modèles, les effets, les musiques et l'export serveur.</li><li>Le résultat commun du Studio, déjà prévu pour tous les types (image, vidéo, audio, texte, modèle utilisé, son d'artiste).</li><li>Les formulaires de publication, qui acceptent déjà un média préparé.</li></ul></div>
+    <div class="box"><h3>On construit</h3><ul><li>Le menu du « + » et l'écran « Que créer ? ».</li><li>La caméra intégrée (vidéo et photo).</li><li>L'éditeur unique, qui assemble les outils existants.</li><li>L'écran « Préparation » : un modèle ou une musique passe par le serveur, avec une attente.</li></ul></div>
+    <div class="box"><h3>Attention</h3><ul><li>La musique d'artiste est payante : le prix est montré avant de l'ajouter.</li><li>La carte suit son quota et ses pièces : le prix est montré avant la publication.</li><li>Un modèle ou une musique transforme une photo en vidéo d'environ 15 s : c'est annoncé.</li></ul></div>
+  </div>
+</section>
+
+<section class="sec">
+  <h2>Ce que je te demande de trancher</h2>
+  <div class="q">
+    <div class="box"><h3><span>1</span>Le menu du « + »</h3><div class="opts"><p><b>A.</b> Deux choix : Créer un post, Passer en live <span class="reco">(recommandé)</span></p><p><b>B.</b> Trois choix, avec « Chronique » (le même parcours, en 9:16)</p></div></div>
+    <div class="box"><h3><span>2</span>Les modèles prêts à poster</h3><div class="opts"><p><b>A.</b> Une bande sur l'écran « Que créer ? » ET un outil dans l'éditeur <span class="reco">(recommandé)</span></p><p><b>B.</b> Seulement dans l'éditeur</p></div></div>
+    <div class="box"><h3><span>3</span>La Carte</h3><div class="opts"><p><b>A.</b> Un type à part, avec la fête du jour en bandeau <span class="reco">(recommandé)</span></p><p><b>B.</b> Un outil de l'éditeur de photo</p></div></div>
+    <div class="box"><h3><span>4</span>Le son d'une vidéo filmée</h3><div class="opts"><p>Avec une musique, garde-t-on le son d'origine ?</p><p><b>A.</b> Oui par défaut, avec un curseur <span class="reco">(plus naturel pour un vlog)</span></p><p><b>B.</b> Non, la musique remplace le son, comme aujourd'hui dans les modèles</p></div></div>
+    <div class="box"><h3><span>5</span>L'attente du serveur</h3><div class="opts"><p>Un modèle ou une musique prend quelques secondes à fabriquer.</p><p><b>A.</b> Écran « Préparation » avec barre de progression, puis le formulaire <span class="reco">(recommandé)</span></p><p><b>B.</b> Le formulaire s'ouvre tout de suite, la vidéo se prépare en arrière-plan</p></div></div>
+    <div class="box"><h3><span>6</span>Les entrées Défi et Canal</h3><div class="opts"><p><b>A.</b> Elles gardent leur contexte et sautent le menu « + » <span class="reco">(recommandé)</span></p><p><b>B.</b> Elles passent par le même menu</p></div></div>
+  </div>
+</section>
+</div>
+
+<script>
+var IC={
+ plus:'<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M11 4h2v7h7v2h-7v7h-2v-7H4v-2h7z"/></svg>',
+ pen:'<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M4 17.25V20h2.75L18.8 7.95l-2.75-2.75L4 17.25zM20.7 6.04a1 1 0 000-1.41l-1.34-1.34a1 1 0 00-1.41 0l-1.13 1.13 2.75 2.75 1.13-1.13z"/></svg>',
+ live:'<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="3.2"/><path d="M6.3 6.3a8 8 0 000 11.4l1.4-1.4a6 6 0 010-8.6L6.3 6.3zm11.4 0l-1.4 1.4a6 6 0 010 8.6l1.4 1.4a8 8 0 000-11.4z"/></svg>',
+ video:'<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M17 10.5V7a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h12a1 1 0 001-1v-3.5l4 4v-11l-4 4z"/></svg>',
+ image:'<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2zM8.5 13.5l2.5 3 3.5-4.5 4.5 6H5l3.5-4.5z"/></svg>',
+ mic:'<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 14a3 3 0 003-3V5a3 3 0 00-6 0v6a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 006 6.9V21h2v-3.1A7 7 0 0019 11h-2z"/></svg>',
+ text:'<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M5 4v3h5.5v12h3V7H19V4H5z"/></svg>',
+ card:'<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16a1 1 0 011 1v14a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1zm2 3v6h12V7H6zm0 8v2h8v-2H6z"/></svg>',
+ x:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.3 5.7L12 12l6.3 6.3-1.4 1.4L10.6 13.4 4.3 19.7 2.9 18.3 9.2 12 2.9 5.7 4.3 4.3l6.3 6.3 6.3-6.3z"/></svg>',
+ flip:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4h-3.2L15 2H9L7.2 4H4a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2zm-8 13a4 4 0 01-3.5-2H11v-2H6.5a5.5 5.5 0 019-2.8l-1.4 1.4A3.5 3.5 0 0012 9.5a3.5 3.5 0 00-3 1.8L7.7 10A5.5 5.5 0 0118 11.5V13h-2v-1.2A3.5 3.5 0 0112 17z"/></svg>',
+ bolt:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>',
+ cut:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M9.6 7.6a3 3 0 10-1.4 1.4L10 11l-1.8 2a3 3 0 101.4 1.4L12 12l7 7h3v-1L9.6 7.6zM6 7a1 1 0 110-2 1 1 0 010 2zm0 12a1 1 0 110-2 1 1 0 010 2z"/></svg>',
+ note:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3v10.55A4 4 0 1014 17V7h4V3h-6z"/></svg>',
+ sparkle:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 6.6L21 11l-6.6 2.4L12 20l-2.4-6.6L3 11l6.6-2.4L12 2z"/></svg>',
+ tmpl:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3h8v8H3V3zm10 0h8v5h-8V3zM3 13h8v8H3v-8zm10-3h8v11h-8V10z"/></svg>',
+ fx:'<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2 5 5 .5-3.8 3.4L16.4 17 12 14.2 7.6 17l1.2-6.1L5 7.5 10 7z"/></svg>'
+};
+function phone(inner){return '<div class="ph"><div class="scr"><div class="sb"><span>9:41</span><span>5G ▮▮▮</span></div>'+inner+'</div></div>';}
+function item(n,title,text,inner){return '<div class="item"><h3><span>'+n+'</span>'+title+'</h3>'+phone(inner)+'<p>'+text+'</p></div>';}
+var feed='<div class="top"><span class="logo">afro<i>look</i></span><span style="color:#A9AFB6">Pour toi · Sport</span></div><div class="post"><span class="av"></span><b>Ama K.</b><div class="sk"></div><div class="pic"></div></div><div class="post"><span class="av"></span><b>Kofi</b><div class="sk"></div><div class="sk s"></div></div>';
+var nav=function(p){return '<div class="nav"><span></span><span></span><div class="plus'+(p?' pulse':'')+'">+</div><span></span><span></span></div>';};
+var finalHead=function(t){return '<div class="top"><span style="color:#A9AFB6">‹</span><b>'+t+'</b><span style="width:12px"></span></div>';};
+var pubBtn='<div class="foot"><div class="btn">Publier</div></div>';
+var wv=function(a){return a.map(function(h){return '<i style="height:'+h+'px"></i>'}).join('');};
+
+/* écrans communs */
+document.getElementById('common').innerHTML=
+ item(1,'Accueil','Rien ne change : le bouton « + » du milieu reste là où il est.',feed+nav(true))+
+ item(2,'Menu du « + »','Deux gros choix. Créer est le premier geste, le live est à un toucher.',
+  feed+'<div class="dim"></div><div class="sheet"><div class="h"></div><h4>Que veux-tu faire ?</h4>'+
+  '<div class="opt"><div class="ic">'+IC.pen+'</div><div><b>Créer un post</b><small>Vidéo, photo, audio, texte ou carte</small></div></div>'+
+  '<div class="opt live"><div class="ic">'+IC.live+'</div><div><b>Passer en live</b><small>Diffuse en direct maintenant</small></div></div></div>')+
+ item(3,'Que créer ?','C\'est l\'entrée du Studio d\'aujourd\'hui, avec la Carte en plus : les types, les modèles prêts à poster et la fête du jour.',
+  '<div class="top"><span style="color:#A9AFB6">'+IC.x+'</span><b>Créer un post</b><span style="width:18px"></span></div>'+
+  '<div class="banner"><span style="font-size:22px">🎉</span><div><b>Fête du jour : crée ta carte</b><small>Aux couleurs de l\'occasion</small></div></div>'+
+  '<div class="grid2" style="margin-top:10px">'+
+  '<div class="tile main"><div class="ic">'+IC.video+'</div><div><b>Vidéo</b><small>Filme ou choisis une vidéo, puis ajoute musique et modèle</small></div></div>'+
+  '<div class="tile"><div class="ic">'+IC.image+'</div><b>Photo</b></div><div class="tile"><div class="ic">'+IC.mic+'</div><b>Audio</b></div>'+
+  '<div class="tile"><div class="ic">'+IC.text+'</div><b>Texte</b></div><div class="tile"><div class="ic">'+IC.card+'</div><b>Carte</b></div></div>'+
+  '<div style="padding:12px 14px 6px;font:700 13px var(--display)">Modèles prêts à poster</div><div class="strip"><div class="mt"><i>Fête</i><small>Bonne année</small></div><div class="mt"><small>Au marché</small></div><div class="mt"><small>Amoureux</small></div><div class="mt"><small>En feu</small></div></div>');
+
+/* écrans par type */
+var cam='<div class="cam"><div class="face"></div><div class="rail"><span>'+IC.flip+'</span><span>'+IC.bolt+'</span></div><div class="time"><i></i>0:18</div><div class="bot"><div class="dur"><span class="chip">15 s</span><span class="chip">30 s</span><span class="chip on">60 s</span></div><div class="ctl"><div class="gal"></div><div class="rec run"></div><div class="circ">'+IC.sparkle+'</div></div><div class="dur" style="gap:16px;font-weight:700"><span style="color:var(--yellow)">VIDÉO</span><span style="color:#A9AFB6">PHOTO</span></div></div></div>';
+var toolbar=function(on){var t=[['tmpl','Modèles'],['note','Musique'],['text','Texte'],['fx','Effets'],['cut','Couper']];return '<div class="tools2">'+t.map(function(x){return '<div'+(x[1]===on?' class="on"':'')+'><span class="circ">'+IC[x[0]]+'</span>'+x[1]+'</div>';}).join('')+'</div>';};
+var editorBase=function(on,extra){return '<div class="prev">'+(extra||'')+toolbar(on)+'</div>';};
+var prep='<div class="prog"><div class="ring"></div><b style="font:700 17px var(--display)">Préparation de ta vidéo</b><span style="color:#A9AFB6">Le modèle et la musique sont assemblés. Ça prend environ 15 secondes.</span><div class="bar" style="width:100%"><i style="width:60%"></i></div></div>';
+var TYPES={
+ video:{info:'On filme (ou on prend une vidéo de la galerie), puis on arrive dans l\'éditeur unique. C\'est là qu\'on ajoute une musique, un modèle ou du texte. Le serveur assemble le tout.',
+  screens:[
+   ['4','Caméra','Vidéo ou photo dans la même caméra. Durée au choix, galerie en bas à gauche.',cam],
+   ['5','Éditeur','Toujours la même barre d\'outils : Modèles, Musique, Texte, Effets, Couper.','<div class="prev"><div class="tools" style="top:12px"><div><span class="circ">'+IC.cut+'</span>0:42</div></div>'+toolbar('')+'</div><div class="bar" style="margin-top:8px"><i style="width:100%"></i></div><div class="foot"><div class="btn ghost">Refaire</div><div class="btn">Suivant</div></div>'],
+   ['6','Outil « Modèles »','Les modèles prêts à poster s\'appliquent sur ta vidéo filmée. Mêmes catégories qu\'aujourd\'hui.','<div class="prev"><div class="sheet2" style="bottom:0"><div class="h"></div><div class="tabs2"><span class="on">Situations</span><span>Émotions</span><span>Fêtes</span><span>Culture</span></div><div class="strip" style="padding:0"><div class="mt"><small>Fauché</small></div><div class="mt"><i>Fête</i><small>Bonne année</small></div><div class="mt"><small>En feu</small></div><div class="mt"><small>Zen</small></div></div></div></div>'],
+   ['7','Outil « Musique »','Pistes gratuites d\'Afrolook et sons d\'artistes (payants : l\'artiste est payé). Garder le son de la vidéo est un réglage.','<div class="prev"><div class="sheet2" style="bottom:0"><div class="h"></div><div class="tabs2"><span class="on">Gratuites</span><span>Artistes</span></div><div class="trk"><div class="pl">▶</div><div><b>Soleil de Lomé</b><small>Afrobeat · 0:30</small></div><em>Gratuit</em></div><div class="trk"><div class="pl">▶</div><div><b>Ma Reine</b><small>Artiste vérifié</small></div><em class="pay">5 pièces</em></div><div class="tog on"><span>Garder le son de ma vidéo</span><i></i></div><div class="note" style="padding:7px 10px;font-size:11.5px"><b>Tu es artiste ?</b> Propose ton son et gagne des pièces.</div></div></div>'],
+   ['8','Préparation','Quand un modèle ou une musique est utilisé, le serveur assemble la vidéo. Une barre montre l\'avancement.',prep],
+   ['9','Formulaire unique','Un seul écran : l\'aperçu, la description, le type de publication, les pays.','<div style="display:flex;flex-direction:column;height:100%">'+finalHead('Nouveau post')+'<div class="form"><div class="mini"><div class="thumb"><u>0:42</u></div><div class="ta">Décris ta vidéo…</div></div><div class="field"><span>Type de publication</span><small>Sport ›</small></div><div class="field"><span>Pays</span><small>Togo ›</small></div><div class="note"><b>Musique :</b> « Soleil de Lomé » ajoutée.</div></div>'+pubBtn+'</div>']]},
+ photo:{info:'On prend une ou plusieurs photos. Avec un modèle ou une musique, la photo devient une courte vidéo animée (environ 15 s) : c\'est annoncé avant.',
+  screens:[
+   ['4','Galerie ou caméra','La première case ouvre la caméra en mode photo. Les images choisies sont numérotées.','<div class="top"><span style="color:#A9AFB6">'+IC.x+'</span><b>Récents ▾</b><b style="color:var(--yellow)">Suivant</b></div><div class="pick"><i class="cam1">'+IC.image+'</i><i class="sel" data-n="1"></i><i></i><i class="sel" data-n="2"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>'],
+   ['5','Éditeur','Mêmes outils que pour la vidéo. Un modèle ou une musique transforme la photo en vidéo animée.','<div class="prev" style="background:linear-gradient(135deg,#4A3A28,#26362E)"><div class="banner" style="margin:14px;position:absolute;top:0;left:0;right:0"><span>🎬</span><div><b>Avec musique : vidéo de 15 s</b><small>Sans musique, l\'image reste fixe</small></div></div>'+toolbar('Modèles')+'</div><div class="foot"><div class="btn ghost">Retour</div><div class="btn">Suivant</div></div>'],
+   ['6','Formulaire unique','Les images en bandeau, puis la description, le type et les pays.','<div style="display:flex;flex-direction:column;height:100%">'+finalHead('Nouveau post')+'<div class="form"><div style="display:flex;gap:8px"><div class="thumb sq"></div><div class="thumb sq" style="background:linear-gradient(135deg,#2D3A4A,#262E36)"></div></div><div class="ta" style="min-height:90px">Décris ton image…</div><div class="field"><span>Type de publication</span><small>Looks ›</small></div><div class="field"><span>Pays</span><small>Togo ›</small></div></div>'+pubBtn+'</div>']]},
+ audio:{info:'On enregistre sa voix ou on importe un son. L\'éditeur permet de couper et de choisir une pochette, comme l\'éditeur audio d\'aujourd\'hui.',
+  screens:[
+   ['4','Enregistrer','Gros bouton micro, « Importer un fichier » pour un son déjà prêt. 3 minutes au plus.','<div class="top"><span style="color:#A9AFB6">'+IC.x+'</span><b>Audio</b><span style="width:18px"></span></div><div style="flex:1;display:grid;align-content:center;gap:18px"><div class="wave">'+wv([16,30,22,46,60,34,52,26,40,20,34,16])+'</div><div style="text-align:center;font:700 22px var(--display)">0:48 <span style="color:#A9AFB6;font-size:13px">/ 3:00</span></div><div class="mic">'+IC.mic+'</div></div><div class="foot"><div class="btn ghost">Importer un fichier</div></div>'],
+   ['5','Éditeur','Couper dans le son, choisir la pochette, écouter avant de continuer.','<div class="top"><span style="color:#A9AFB6">‹</span><b>Ton audio</b><span style="width:12px"></span></div><div style="flex:1;display:grid;align-content:center;gap:16px"><div class="wave">'+wv([20,36,28,52,64,40,56,30,44,24,38,18,30])+'</div><div class="bar"><i style="width:35%"></i></div><div class="chips" style="justify-content:center"><span class="chip on">Couper</span><span class="chip">Pochette</span></div></div><div class="foot"><div class="btn ghost">Refaire</div><div class="btn">Suivant</div></div>'],
+   ['6','Formulaire unique','Pochette facultative, description, type, pays.','<div style="display:flex;flex-direction:column;height:100%">'+finalHead('Nouveau post')+'<div class="form"><div class="mini"><div class="thumb sq" style="background:#272B30;display:grid;place-items:center">'+IC.image+'</div><div class="ta" style="min-height:64px">Description (facultative)…</div></div><div class="field"><span>Type de publication</span><small>Vibes ›</small></div><div class="field"><span>Pays</span><small>Togo ›</small></div></div>'+pubBtn+'</div>']]},
+ texte:{info:'Pas de média à préparer : l\'écriture est l\'étape du média. Les modèles de texte (citation, annonce, humeur, pensée) existent déjà dans le Studio.',
+  screens:[
+   ['4','Écrire','Fond de couleur ou modèle de texte, comme une story.','<div class="top"><span style="color:#A9AFB6">'+IC.x+'</span><b>Texte</b><b style="color:var(--yellow)">Suivant</b></div><div class="paper">Aujourd\'hui, j\'ai enfin lancé ma boutique à Lomé.</div><div class="sw"><i style="background:linear-gradient(135deg,#7A2E1F,#3C1F4A)"></i><i style="background:#1F6B4A"></i><i style="background:#1E3A6B"></i><i style="background:#B07A00"></i><i style="background:#3A3F45"></i></div><div class="chips" style="justify-content:center;padding:0 12px"><span class="chip on">Citation</span><span class="chip">Annonce</span><span class="chip">Humeur</span><span class="chip">Pensée</span></div>'],
+   ['5','Formulaire unique','Le texte en petit, le type de publication et les pays.','<div style="display:flex;flex-direction:column;height:100%">'+finalHead('Nouveau post')+'<div class="form"><div class="mini"><div class="thumb sq" style="background:linear-gradient(135deg,#7A2E1F,#3C1F4A)"></div><div class="ta" style="min-height:64px">Aujourd\'hui, j\'ai enfin lancé ma boutique…</div></div><div class="field"><span>Type de publication</span><small>Business ›</small></div><div class="field"><span>Pays</span><small>Togo ›</small></div></div>'+pubBtn+'</div>']]},
+ carte:{info:'La carte garde son studio : texte, jusqu\'à 4 images, style, format. Elle suit son quota du mois ou ses pièces. Le résultat arrive dans le même formulaire final.',
+  screens:[
+   ['4','Composer la carte','Texte, images, style (Kente, Wax, Néon…) et format. Un modèle événement, promo ou citation peut servir de départ.','<div class="top"><span style="color:#A9AFB6">'+IC.x+'</span><b>Ma carte</b><b style="color:var(--yellow)">Suivant</b></div><div style="padding:6px 0 12px"><div class="cardprev">Grande vente de pagnes ce week-end</div></div><div class="styles"><span class="on">Wax</span><span>Kente</span><span>Néon</span><span>Glass</span><span>Pro</span></div><div class="chips" style="padding:12px 12px 0"><span class="chip on">Portrait</span><span class="chip">Story</span><span class="chip">Carré</span><span class="chip">+ images</span></div>'],
+   ['5','Aperçu et prix','L\'aperçu final et ce que ça coûte avant de continuer : gratuit selon ton quota du mois, sinon en pièces.','<div class="top"><span style="color:#A9AFB6">‹</span><b>Ta carte</b><span style="width:12px"></span></div><div style="padding:6px 0 12px"><div class="cardprev" style="width:130px">Grande vente de pagnes ce week-end</div></div><div class="form"><div class="price"><span>Cartes gratuites ce mois-ci</span><b>2 restantes</b></div><div class="price"><span>Style « Pro »</span><b>10 pièces</b></div></div><div class="foot"><div class="btn">Continuer</div></div>'],
+   ['6','Formulaire unique','La légende est proposée, le reste comme pour un post image : type, pays, hashtags.','<div style="display:flex;flex-direction:column;height:100%">'+finalHead('Nouveau post')+'<div class="form"><div class="mini"><div class="thumb" style="background:linear-gradient(135deg,#7A4A12,#2B1A0A);border:2px solid #E0A82E"></div><div class="ta">Légende proposée…</div></div><div class="field"><span>Type de publication</span><small>Business ›</small></div><div class="field"><span>Pays</span><small>Togo ›</small></div></div>'+pubBtn+'</div>']]}
+};
+function showType(t){
+  var d=TYPES[t];
+  document.getElementById('tinfo').textContent=d.info;
+  document.getElementById('bytype').innerHTML=d.screens.map(function(s){return item(s[0],s[1],s[2],s[3]);}).join('');
+  document.querySelectorAll('.seg button').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.t===t?'true':'false');});
+}
+document.querySelectorAll('.seg button').forEach(function(b){b.addEventListener('click',function(){showType(b.dataset.t);});});
+showType('video');
+</script>

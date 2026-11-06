@@ -57,7 +57,13 @@ Post postFromApi(Map<String, dynamic> j) {
     ..availableCountries = (j['countries'] as List? ?? const []).map((e) => '$e').toList()
     ..postInterests = (j['interests'] as List? ?? const []).map((e) => '$e').toList()
     ..categorie = j['category'] as String?
-    ..isPortrait = j['is_portrait'] as bool?;
+    ..isPortrait = j['is_portrait'] as bool?
+    ..captureSource = j['capture_source'] as String?
+    ..voiceEffect = j['voice_effect'] as String?
+    ..replyToPostId = (j['reply_to'] is Map ? (j['reply_to'] as Map)['id'] : null) as String?
+    ..replyToUsername = (j['reply_to'] is Map && (j['reply_to'] as Map)['author'] is Map ? ((j['reply_to'] as Map)['author'] as Map)['username'] : null) as String?
+    ..replyToExcerpt = (j['reply_to'] is Map ? (j['reply_to'] as Map)['excerpt'] : null) as String?
+    ..feedReason = j['reason'] as String?;
   // Situation de la personne connectée (champs souhaités côté API : voir lacunes_api_publications.md)
   final me = ApiIdentity.myId; // identifiant API (celui de loginUserData.id), pas l'uid Firebase
   if (me != null) {

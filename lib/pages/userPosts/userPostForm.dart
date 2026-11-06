@@ -27,6 +27,8 @@ import '../../providers/authProvider.dart';
 import '../../providers/userProvider.dart';
 import '../cards/card_post_tab.dart';
 import '../studio/studio_sound_link.dart';
+import '../create/create_result.dart';
+import '../../services/post_source_link.dart';
 
 class UserPostForm extends StatefulWidget {
   final Canal? canal;
@@ -35,7 +37,21 @@ class UserPostForm extends StatefulWidget {
   /// Montage déjà fait dans le Studio (ex. « Créer un post avec ce son ») : il pré-remplit le post à l'ouverture.
   final StudioResult? initialStudio;
 
-  const UserPostForm({super.key, this.canal, this.defiPostId, this.initialStudio});
+  /// Parcours « Créer un post » : le type et le média sont déjà choisis. Le formulaire n'affiche alors ni les onglets de type ni le bouton Studio, et son retour
+  /// en arrière renvoie [kCreateBack] pour que l'écran précédent (éditeur) reste ouvert.
+  final bool embedded;
+
+  /// Type de post à ouvrir (parcours « Créer un post »).
+  final CreatePostKind? initialKind;
+
+  /// Photos déjà choisies (plusieurs), pour l'onglet Image.
+  final List<Uint8List>? initialImages;
+
+  /// Audio déjà prêt pour l'onglet Audio (enregistré dans le parcours, avec ou sans effet de voix).
+  final File? initialAudio;
+  final int? initialAudioSeconds;
+
+  const UserPostForm({super.key, this.canal, this.defiPostId, this.initialStudio, this.embedded = false, this.initialKind, this.initialImages, this.initialAudio, this.initialAudioSeconds});
 
   @override
   State<UserPostForm> createState() => _UserPostFormState();
@@ -51,6 +67,14 @@ class _UserPostFormState extends State<UserPostForm> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!await AccountGate.ensureCanPublish(context) && mounted) Navigator.of(context).maybePop();
     });
+    final kind = widget.initialKind;
+    if (kind != null) _selectedMediaIndex = kind.tab;
+    final imgs = widget.initialImages;
+    if (imgs != null && imgs.isNotEmpty) {
+      _studioInitialImages = imgs;
+      _studioImageKey++;
+      _selectedMediaIndex = CreatePostKind.image.tab;
+    }
     final pre = widget.initialStudio;
     if (pre != null) WidgetsBinding.instance.addPostFrameCallback((_) => _applyStudioResult(pre));
   }
@@ -58,6 +82,7 @@ class _UserPostFormState extends State<UserPostForm> {
   @override
   void dispose() {
     StudioSoundLink.clear(); // un montage abandonné ne doit pas se lier à un autre post
+    PostSourceLink.clear(); // l'origine du média ne sert qu'à ce formulaire
     PostTemplateLink.clear();
     super.dispose();
   }
@@ -156,16 +181,17 @@ class _UserPostFormState extends State<UserPostForm> {
     }
     _colors = AppColors.of(context);
 
-    return Scaffold(
+    final scaffold = Scaffold(
       backgroundColor: _colors.background,
       appBar: AppBar(
         backgroundColor: _colors.surfaceVariant,
         elevation: 0,
+        leading: widget.embedded ? BackButton(onPressed: () => Navigator.of(context).pop(kCreateBack)) : null,
         title: NameTag(label: widget.defiPostId != null
               ? '🏆 Répondre au Défi'
               : _isCanal
                   ? '#${widget.canal!.titre ?? 'Canal'}'
-                  : 'Créer une publication',
+                  : widget.embedded ? 'Nouveau post' : 'Créer une publication',
           style: TextStyle(
             color: _colors.textPrimary,
             fontWeight: FontWeight.bold,
@@ -173,7 +199,7 @@ class _UserPostFormState extends State<UserPostForm> {
           )),
         centerTitle: true,
         actions: [
-          GestureDetector(
+          if (!widget.embedded) GestureDetector(
             onTap: _openStudio,
             child: Container(
               margin: const EdgeInsets.only(right: 8, top: 10, bottom: 10),
@@ -210,15 +236,15 @@ class _UserPostFormState extends State<UserPostForm> {
               // ── En-tête : profil user ou carte canal ───────────────
               _isCanal ? _buildCanalHeader() : _buildUserHeader(),
 
-              // ── Sélecteur de type de média ─────────────────────────
-              _buildMediaSelector(),
+              // ── Sélecteur de type de média (absent dans le parcours « Créer un post » : le type est déjà choisi) ──
+              if (!widget.embedded) _buildMediaSelector(),
 
               // ── Contenu de l'onglet sélectionné ───────────────────
               Expanded(
                 child: IndexedStack(
                   index: _selectedMediaIndex,
                   children: [
-                    UserPostLookAudioTab(canal: widget.canal, defiPostId: widget.defiPostId),
+                    UserPostLookAudioTab(canal: widget.canal, defiPostId: widget.defiPostId, initialAudio: widget.initialAudio, initialAudioSeconds: widget.initialAudioSeconds),
                     UserPubText(canal: widget.canal, defiPostId: widget.defiPostId),
                     UserPostLookImageTab(
                       key: ValueKey('img_$_studioImageKey'),
@@ -242,6 +268,16 @@ class _UserPostFormState extends State<UserPostForm> {
           ),
         ),
       ),
+    );
+    // Parcours « Créer un post » : le geste « retour » du téléphone revient à l'écran précédent (éditeur) au lieu de fermer tout le parcours ;
+    // la publication, elle, ferme par un pop sans valeur (non concerné par PopScope).
+    if (!widget.embedded) return scaffold;
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) Navigator.of(context).pop(kCreateBack);
+      },
+      child: scaffold,
     );
   }
 
