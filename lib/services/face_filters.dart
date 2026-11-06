@@ -45,15 +45,26 @@ class FaceFilters {
         FaceFilter.hearts => '😍',
       };
 
-  /// Pose [filter] sur chaque visage de la photo [path] et rend le nouveau fichier. Rend [path] tel quel si aucun visage n'est trouvé ou si la détection échoue
-  /// (la photo n'est jamais perdue). [found] dit combien de visages ont reçu le filtre.
-  static Future<({String path, int found})> apply(String path, FaceFilter filter) async {
-    if (!available || filter == FaceFilter.none) return (path: path, found: 0);
+  /// Cherche les visages de la photo [path]. Rend la photo redressée (à utiliser ensuite à la place de [path]), sa taille et les visages ; null si la détection échoue
+  /// (la photo n'est alors jamais perdue : l'appelant garde l'original).
+  static Future<({String path, Size size, List<FaceBox> faces})?> detect(String path) async {
+    if (!available) return null;
     try {
       final r = Map<String, dynamic>.from(await _channel.invokeMethod('detect', {'path': path}) as Map);
-      final faces = [for (final f in (r['faces'] as List)) FaceBox.fromMap(f as Map)];
-      final upright = r['path'] as String;
-      if (faces.isEmpty) return (path: upright, found: 0);
+      return (
+        path: r['path'] as String,
+        size: Size((r['width'] as num).toDouble(), (r['height'] as num).toDouble()),
+        faces: [for (final f in (r['faces'] as List)) FaceBox.fromMap(f as Map)],
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Pose [filter] sur chaque visage de la photo déjà redressée [upright] et rend le nouveau fichier ; [path] tel quel si rien à faire ou en cas d'échec.
+  static Future<({String path, int found})> apply(String upright, List<FaceBox> faces, FaceFilter filter) async {
+    if (filter == FaceFilter.none || faces.isEmpty) return (path: upright, found: 0);
+    try {
       final bytes = await File(upright).readAsBytes();
       final codec = await ui.instantiateImageCodec(bytes);
       final img = (await codec.getNextFrame()).image;
@@ -70,7 +81,7 @@ class FaceFilters {
       await file.writeAsBytes(png!.buffer.asUint8List(), flush: true);
       return (path: file.path, found: faces.length);
     } catch (_) {
-      return (path: path, found: 0);
+      return (path: upright, found: 0);
     }
   }
 

@@ -8,6 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../../l10n/tr.dart';
 import '../../services/face_filters.dart';
+import 'face_filter_page.dart';
 import '../../theme/app_colors.dart';
 
 /// Ce que la caméra rend : un fichier filmé ou photographié DANS l'application (origine « captured »), ou la demande d'ouvrir la galerie.
@@ -40,7 +41,6 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
   int _camIndex = 0;
   bool _photoMode = false;
   bool _torch = false;
-  FaceFilter _filter = FaceFilter.none; // filtre de visage posé sur la photo après la prise (Android)
   bool _recording = false;
   bool _busy = false;
   String? _error;
@@ -158,10 +158,16 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
         HapticFeedback.mediumImpact();
         final f = await c.takePicture();
         var path = f.path;
-        if (_filter != FaceFilter.none) {
-          final r = await FaceFilters.apply(path, _filter);
-          path = r.path;
-          if (r.found == 0 && mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Aucun visage trouvé : photo gardée sans filtre.'))));
+        // Android : aperçu de la photo avec les filtres de visage AVANT de la garder (si la détection échoue, on garde la photo telle quelle)
+        final det = await FaceFilters.detect(path);
+        if (det != null && mounted) {
+          final chosen = await Navigator.of(context).push<String>(MaterialPageRoute(builder: (_) => FaceFilterPage(path: det.path, size: det.size, faces: det.faces)));
+          if (!mounted) return;
+          if (chosen == null) {
+            setState(() => _busy = false); // « Reprendre » : retour à la caméra
+            return;
+          }
+          path = chosen;
         }
         if (mounted) Navigator.pop(context, CreateCaptureResult.file(path, isVideo: false));
       } catch (_) {
@@ -304,15 +310,6 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
               child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                 for (final s in const [15, 30, 60])
                   if (s <= widget.maxSeconds) _chip('$s s', _limit == s, () => setState(() => _limit = s)),
-              ]),
-            ),
-          if (_photoMode && FaceFilters.available)
-            Padding(
-              key: const ValueKey('face_filters'),
-              padding: const EdgeInsets.only(bottom: 14),
-              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                _chip(context.tr('Sans filtre'), _filter == FaceFilter.none, () => setState(() => _filter = FaceFilter.none)),
-                for (final f in FaceFilter.values.where((f) => f != FaceFilter.none)) _chip(FaceFilters.emoji(f), _filter == f, () => setState(() => _filter = f)),
               ]),
             ),
           Padding(
