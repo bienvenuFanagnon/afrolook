@@ -16,7 +16,9 @@ import '../../theme/app_colors.dart';
 import '../cards/card_entry.dart';
 import '../cards/card_events.dart';
 import '../cards/card_models.dart' show CardStyleId;
+import '../studio/montage/montage_canvas.dart';
 import '../studio/montage/montage_catalog.dart';
+import '../studio/montage/montage_state.dart';
 import '../studio/montage/montage_editor_page.dart';
 import '../studio/montage/montage_gallery_page.dart';
 import 'create_voice_page.dart';
@@ -216,12 +218,40 @@ class _CreateHubPageState extends State<CreateHubPage> {
 
   // ── Écran ────────────────────────────────────────────────────────────────
 
+  /// Les modèles à montrer ici : au plus 8, choisis pour être utiles tout de suite (pas les 10 premiers du catalogue) :
+  /// 1) les fêtes quand un événement approche, 2) le modèle de la fête nationale / du pays, 3) puis un modèle de chaque famille (situations, émotions, insta, musique, culture) ;
+  /// « Tout voir » ouvre la galerie complète.
+  List<MontageTemplate> _curatedTemplates(bool eventSoon) {
+    final all = kMontageTemplates.where((t) => t.id != kPlainTemplateId).toList();
+    final out = <MontageTemplate>[];
+    void add(MontageTemplate t) {
+      if (out.length < 8 && !out.any((o) => o.id == t.id)) out.add(t);
+    }
+
+    if (eventSoon) {
+      for (final t in all.where((t) => t.cat == MontageCat.fetes).take(2)) {
+        add(t);
+      }
+    }
+    for (final t in all.where((t) => t.indep || t.country).take(1)) {
+      add(t);
+    }
+    for (final cat in [MontageCat.situations, MontageCat.emotions, MontageCat.insta, MontageCat.music, MontageCat.culture, MontageCat.fetes]) {
+      final t = all.where((t) => t.cat == cat);
+      if (t.isNotEmpty) add(t.first);
+    }
+    for (final t in all) {
+      add(t);
+    }
+    return out;
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     final me = context.read<UserAuthProvider>().loginUserData;
     final soon = CardEvents.upcoming(me.countryData?['countryCode'], DateTime.now());
-    final templates = kMontageTemplates.where((t) => t.id != kPlainTemplateId).take(10).toList();
+    final templates = _curatedTemplates(soon != null);
     return Scaffold(
       backgroundColor: c.background,
       appBar: AppBar(
@@ -270,12 +300,12 @@ class _CreateHubPageState extends State<CreateHubPage> {
           ]),
           const SizedBox(height: 6),
           SizedBox(
-            height: 132,
+            height: 214,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: templates.length,
               separatorBuilder: (_, __) => const SizedBox(width: 10),
-              itemBuilder: (_, i) => _TemplateCard(template: templates[i], onTap: () => _guard(() => _template(templates[i]))),
+              itemBuilder: (_, i) => _TemplateCard(template: templates[i], pseudo: me.pseudo ?? '', avatarUrl: me.imageUrl, onTap: () => _guard(() => _template(templates[i]))),
             ),
           ),
           const SizedBox(height: 18),
@@ -477,28 +507,51 @@ class _Tile extends StatelessWidget {
   }
 }
 
-class _TemplateCard extends StatelessWidget {
-  const _TemplateCard({required this.template, required this.onTap});
+/// Carte d'un modèle avec son VRAI aperçu : le même rendu que dans la galerie et l'éditeur (photo de la personne si elle en a une, texte, couleurs, effet), en petit.
+class _TemplateCard extends StatefulWidget {
+  const _TemplateCard({required this.template, required this.onTap, this.pseudo = '', this.avatarUrl});
   final MontageTemplate template;
   final VoidCallback onTap;
+  final String pseudo;
+  final String? avatarUrl;
+
+  @override
+  State<_TemplateCard> createState() => _TemplateCardState();
+}
+
+class _TemplateCardState extends State<_TemplateCard> {
+  late final MontageState _state = MontageState(widget.template)..post = false;
 
   @override
   Widget build(BuildContext context) {
-    final t = template;
+    final t = widget.template;
+    final c = AppColors.of(context);
+    final avatar = widget.avatarUrl;
+    final Widget media = (avatar != null && avatar.startsWith('http'))
+        ? Image.network(avatar, fit: BoxFit.cover, cacheWidth: 300, errorBuilder: (_, __, ___) => Image.asset(t.sampleIsVideo ? 'assets/images/intro4.jpg' : t.sample, fit: BoxFit.cover, cacheWidth: 300))
+        : Image.asset(t.sampleIsVideo ? 'assets/images/intro4.jpg' : t.sample, fit: BoxFit.cover, cacheWidth: 300);
     return GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();
-        onTap();
+        widget.onTap();
       },
-      child: Container(
-        width: 104,
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [const Color(0xFF232323), Color.lerp(const Color(0xFF232323), t.accent, .55)!]),
-        ),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.end, children: [
-          Text(t.name, maxLines: 3, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12.5, height: 1.2)),
+      child: SizedBox(
+        width: 108,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: RepaintBoundary(
+              child: MontageCanvas(
+                state: _state,
+                media: media,
+                secondMedia: t.dualSample != null ? Image.asset(t.dualSample!, fit: BoxFit.cover, cacheWidth: 200) : null,
+                pseudo: widget.pseudo,
+                avatarUrl: avatar,
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(t.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 12, height: 1.2)),
         ]),
       ),
     );
