@@ -32,6 +32,12 @@ class PostsApi {
     }
   }
 
+  /// Réponses en vidéo faites à un post (les plus récentes d'abord, première page).
+  static Future<List<Post>> replies(String postId) async {
+    final d = ApiClient.data(await _c.get('/posts/$postId/replies'));
+    return d is List ? [for (final m in d.whereType<Map>()) postFromApi(Map<String, dynamic>.from(m))] : <Post>[];
+  }
+
   /// Plusieurs publications (les introuvables sont ignorées), en parallèle.
   static Future<List<Post>> getMany(Iterable<String> ids) async {
     final out = await Future.wait(ids.map((id) async {

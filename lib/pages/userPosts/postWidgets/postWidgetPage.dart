@@ -74,6 +74,7 @@ import '../../../providers/authProvider.dart';
 import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
 import '../../canaux/detailsCanal.dart';
+import '../reply_videos_page.dart';
 
 import '../../component/showUserDetails.dart';
 import '../../postComments.dart';
@@ -2961,6 +2962,15 @@ Future<void> _sendQuickComment(String text) async {
                 },
               ),
 
+            _buildMenuOption(
+              Icons.video_call_rounded,
+              context.tr('Réponses en vidéo'),
+              colors.textPrimary,
+              () {
+                Navigator.pop(context);
+                Navigator.push(this.context, MaterialPageRoute(builder: (_) => ReplyVideosPage(postId: post.id!)));
+              },
+            ),
             if (post.user_id != authProvider.loginUserData.id)
               _buildMenuOption(
                 Icons.flag,
