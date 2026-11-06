@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Studio Afrolook : catégories, audio, commerce, vidéo épinglée</title>
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--ink:#15201a;--muted:#5d6b63;--line:#e2e0d8;--green:#0f8a3c;--gold:#ffc400;--gold-ink:#3a2c00;--shadow:0 10px 30px rgba(20,30,25,.12)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#101512;--card:#18201b;--ink:#eef3ef;--muted:#9fb0a5;--line:#2a352d;--shadow:0 10px 30px rgba(0,0,0,.45)}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 16px 70px}
+h1{font-size:28px;margin:0 0 6px;letter-spacing:-.01em}
+h2{font-size:21px;margin:42px 0 6px}
+h3{font-size:16px;margin:0 0 6px}
+p.lead{color:var(--muted);margin:0 0 18px;max-width:70ch}
+.grid{display:grid;gap:22px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:var(--shadow)}
+.phone{width:290px;max-width:100%;margin:0 auto;border-radius:34px;border:8px solid #111;background:#111;overflow:hidden;position:relative;aspect-ratio:9/18.5}
+.screen{position:absolute;inset:0;background:linear-gradient(160deg,#394a40,#1b2620 55%,#2a1f14);color:#fff;overflow:hidden}
+.face{position:absolute;left:50%;top:26%;width:150px;height:180px;transform:translateX(-50%);border-radius:50% 50% 46% 46%;background:#7a4b32}
+.eye{position:absolute;top:70px;width:22px;height:14px;border-radius:50%;background:#fff}.eye.l{left:36px}.eye.r{right:36px}
+.mouth{position:absolute;left:55px;right:55px;top:128px;height:14px;border-radius:0 0 20px 20px;background:#3b1b1b}
+.top{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;font-size:12px;opacity:.9}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:99px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;font-weight:700;white-space:nowrap}
+.btn.on{background:var(--gold);color:var(--gold-ink)}
+.rail{position:absolute;left:0;right:0;display:flex;gap:6px;padding:0 10px;overflow:hidden}
+.rec{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);width:58px;height:58px;border-radius:50%;border:4px solid #fff;display:grid;place-items:center}
+.rec i{width:40px;height:40px;border-radius:50%;background:#ff5a64;display:block}
+.ico{width:16px;height:16px;display:inline-block;vertical-align:-3px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:700;background:rgba(15,138,60,.13);color:var(--green)}
+.tag.new{background:rgba(255,196,0,.25);color:var(--gold-ink)}
+.tag.later{background:rgba(120,130,125,.18);color:var(--muted)}
+.pip{position:absolute;right:14px;top:86px;width:96px;height:140px;border-radius:14px;border:2px solid #fff;background:linear-gradient(160deg,#c46a2d,#5a2c12);box-shadow:0 6px 18px rgba(0,0,0,.45)}
+.pip b{position:absolute;right:-7px;bottom:-7px;width:18px;height:18px;border-radius:50%;background:var(--gold);border:2px solid #fff}
+.sticker{position:absolute;left:12px;right:12px;bottom:92px;background:rgba(255,255,255,.96);color:#15201a;border-radius:16px;padding:10px 12px;font-size:12px;box-shadow:0 8px 22px rgba(0,0,0,.4)}
+.sticker .price{font-size:20px;font-weight:800;letter-spacing:-.01em}
+.sticker .row{display:flex;gap:6px;margin-top:8px}
+.sticker .wa{flex:1;background:#25d366;color:#fff;border-radius:10px;padding:7px 8px;text-align:center;font-weight:800}
+.sticker .lk{flex:1;background:#eef1ee;border-radius:10px;padding:7px 8px;text-align:center;font-weight:800}
+.mix{position:absolute;left:12px;right:12px;bottom:84px;background:rgba(0,0,0,.72);border-radius:16px;padding:12px}
+.slider{height:6px;border-radius:99px;background:rgba(255,255,255,.25);margin:6px 0 10px;position:relative}
+.slider i{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:var(--gold)}
+.slider u{position:absolute;top:-5px;width:16px;height:16px;border-radius:50%;background:#fff;transform:translateX(-50%)}
+.wave{display:flex;align-items:end;gap:2px;height:30px;margin:4px 0 8px}.wave i{flex:1;background:var(--gold);border-radius:2px;opacity:.85}
+.note{font-size:13px;color:var(--muted);margin-top:8px}
+.linkcard{position:absolute;left:12px;right:12px;bottom:92px;background:rgba(255,255,255,.97);color:#15201a;border-radius:16px;padding:10px;display:flex;gap:10px;box-shadow:0 8px 22px rgba(0,0,0,.4)}
+.cover{width:54px;height:76px;border-radius:6px;background:linear-gradient(150deg,#0f8a3c,#0b4d23);flex:none;position:relative}
+.cover:after{content:"";position:absolute;left:8px;right:8px;top:12px;height:8px;border-radius:3px;background:rgba(255,255,255,.85)}
+.linkcard .t{font-weight:800;font-size:13px;line-height:1.25}.linkcard .d{font-size:11px;color:#5d6b63;margin:2px 0 6px}
+.linkcard .go{display:inline-block;background:var(--gold);color:#3a2c00;border-radius:10px;padding:7px 10px;font-weight:800;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Studio Afrolook : proposition à valider</h1>
+<p class="lead">Quatre choses à valider : <b>(1)</b> les effets rangés en catégories ; <b>(2)</b> filmer sur un son (musique, voix, fichier) avec le mixage des deux volumes ; <b>(3)</b> la catégorie <b>Commerce</b> (prix, lieu, WhatsApp, lien cliquable) ; <b>(4)</b> épingler la vidéo d'une autre personne et la placer où l'on veut. Les maquettes sont fictives (aucun logo, aucun vrai compte).</p>
+
+<h2>1. Catégories d'effets</h2>
+<p class="lead">Une barre de catégories en bas de la caméra, chacune avec sa propre rangée de choix. Chaque effet a une vraie icône (pas d'emoji). Tout se combine : un effet de visage + un look + un masque + un son.</p>
+<div class="grid">
+  <div class="card"><div class="phone"><div class="screen">
+    <div class="top"><span class="btn">✕</span><span class="btn">⟲</span></div>
+    <div class="face"><span class="eye l"></span><span class="eye r"></span><span class="mouth"></span></div>
+    <div class="rail" style="bottom:128px"><span class="btn on">Elfe</span><span class="btn">Lapin</span><span class="btn">Bébé</span><span class="btn">Alien</span></div>
+    <div class="rail" style="bottom:92px"><span class="btn">Beauté</span><span class="btn on">Visage</span><span class="btn">Pro</span><span class="btn">Comédie</span><span class="btn">Fun</span></div>
+    <div class="rec"><i></i></div>
+  </div></div><p class="note">La barre des catégories défile : Beauté · Visage · Pro · Comédie · Fun · Commerce · Audio · Épingler.</p></div>
+  <div class="card" style="grid-column:span 2;min-width:300px">
+    <table>
+      <tr><th>Catégorie</th><th>Ce qu'elle contient</th><th>Pour qui</th></tr>
+      <tr><td><b>Beauté</b></td><td>Peau lissée, lumière, chaleur, rougeur des joues, yeux plus brillants, silhouette du visage affinée, maquillage léger (lèvres, fard), looks « teint doré » et « glow »</td><td>Les filles et tous ceux qui veulent une belle image naturelle</td></tr>
+      <tr><td><b>Visage</b></td><td>Combinaisons : Elfe, Lapin, Bébé, Alien, Géant, Clown ; et le détail : yeux, bouche, nez, oreilles, visage fin</td><td>Tout le monde, humour</td></tr>
+      <tr><td><b>Pro</b></td><td>Fond flou, fond bureau / studio, éclairage « visage net », lunettes et cravate discrètes, bandeau titre et nom (« Aminata K. · Coach »), sous-titres propres</td><td>Professionnels, formateurs, entrepreneurs, vendeurs</td></tr>
+      <tr><td><b>Comédie</b></td><td>Avatars qui copient vos expressions (chat, robot, lapin, alien), masques de personnages, voix du Studio (grave, aigu, robot), effets de temps (accéléré, ralenti, rembobinage, boomerang)</td><td>Comédiens, humoristes, sketchs</td></tr>
+      <tr><td><b>Fun</b></td><td>Pluie de cœurs, de pièces, d'étoiles, de notes déclenchée par un geste (bouche, sourire, sourcils, clin d'œil, tête tournée) ; looks néon, noir et blanc, vintage, cinéma, pop</td><td>Tout le monde</td></tr>
+      <tr><td><b>Commerce</b></td><td>Étiquette prix, lieu, bouton WhatsApp, lien cliquable, bouton « Appeler » (voir 3)</td><td>Vendeurs, boutiques, services, annonceurs</td></tr>
+      <tr><td><b>Audio</b></td><td>Filmer sur une musique, une voix ou un fichier ; mixage des volumes (voir 2)</td><td>Tout le monde</td></tr>
+      <tr><td><b>Épingler</b></td><td>Mettre la vidéo d'une autre personne dans un coin, la déplacer et la redimensionner (voir 4)</td><td>Réactions, duos, réponses</td></tr>
+    </table>
+  </div>
+</div>
+
+<h2>2. Filmer sur un son, avec le mixage</h2>
+<p class="lead">On choisit un son (musique Afrolook, voix ou son d'un autre créateur, fichier du téléphone) <b>avant</b> de filmer : il joue pendant le tournage et la vidéo est faite dessus. Deux curseurs règlent le son de notre vidéo (micro) et celui du son choisi ; ils restent modifiables dans l'éditeur.</p>
+<div class="grid">
+  <div class="card"><div class="phone"><div class="screen">
+    <div class="top"><span class="btn">✕</span><span class="btn">Son choisi ✓</span></div>
+    <div class="face"><span class="eye l"></span><span class="eye r"></span><span class="mouth"></span></div>
+    <div class="mix">
+      <div style="font-size:12px;font-weight:800">Afro-vibes · 0:42 <span style="float:right;opacity:.7">choisir un extrait</span></div>
+      <div class="wave"><i style="height:30%"></i><i style="height:60%"></i><i style="height:90%"></i><i style="height:50%"></i><i style="height:75%"></i><i style="height:40%"></i><i style="height:95%"></i><i style="height:55%"></i><i style="height:80%"></i><i style="height:35%"></i><i style="height:65%"></i><i style="height:85%"></i><i style="height:45%"></i><i style="height:70%"></i></div>
+      <div style="font-size:12px">Ma voix (micro)</div><div class="slider"><i style="width:80%"></i><u style="left:80%"></u></div>
+      <div style="font-size:12px">Le son choisi</div><div class="slider"><i style="width:45%"></i><u style="left:45%"></u></div>
+    </div>
+    <div class="rec"><i></i></div>
+  </div></div></div>
+  <div class="card"><h3>Ce que ça permet</h3>
+    <ul>
+      <li>Sources : musique Afrolook (gratuite ou d'artiste), voix du Studio, son d'une autre vidéo, fichier audio du téléphone.</li>
+      <li>Choix de l'extrait (début et fin) sur la forme d'onde.</li>
+      <li>Deux volumes séparés : <b>ma voix</b> et <b>le son choisi</b> (ex. musique à 40 %, voix à 100 %).</li>
+      <li>Option « baisser la musique quand je parle » (réglage automatique).</li>
+      <li>Playback en direct dans la caméra ; casque conseillé pour éviter l'écho (message affiché).</li>
+      <li>Même réglage dans l'éditeur après le tournage.</li>
+    </ul>
+    <p class="note">Droits : les musiques d'artistes suivent les règles déjà prévues dans l'application (sons autorisés).</p>
+  </div>
+</div>
+
+<h2>3. Catégorie Commerce : prix, lieu, contact, lien</h2>
+<p class="lead">Le vendeur remplit une fiche (prix, lieu, contact, lien). Une carte s'affiche sur la vidéo et <b>on peut la toucher</b> : un numéro ouvre WhatsApp avec un message prêt (« Bonjour, je suis intéressé par votre vidéo sur Afrolook »), un lien s'ouvre dans l'application, un appel lance le téléphone. La carte se place et se redimensionne comme un autocollant.</p>
+<div class="grid">
+  <div class="card"><div class="phone"><div class="screen">
+    <div class="top"><span class="btn">✕</span><span class="btn on">Commerce</span></div>
+    <div class="face"><span class="eye l"></span><span class="eye r"></span><span class="mouth"></span></div>
+    <div class="sticker"><div style="font-size:11px;color:#5d6b63">Robes wax · Lomé, Tokoin</div><div class="price">15 000 F</div>
+      <div class="row"><span class="wa">WhatsApp</span><span class="lk">Voir la boutique</span></div></div>
+    <div class="rec"><i></i></div>
+  </div></div></div>
+  <div class="card"><h3>La fiche du vendeur</h3>
+    <table>
+      <tr><th>Champ</th><th>Exemple</th><th>Résultat sur la vidéo</th></tr>
+      <tr><td>Titre</td><td>Robes wax</td><td>Ligne du haut de la carte</td></tr>
+      <tr><td>Prix</td><td>15 000 F (devise du pays)</td><td>Gros prix lisible</td></tr>
+      <tr><td>Lieu</td><td>Lomé, Tokoin (ou position)</td><td>« Lomé, Tokoin » ; un toucher ouvre la carte</td></tr>
+      <tr><td>Contact</td><td>+228 …</td><td>Bouton <b>WhatsApp</b> (message prêt) et/ou <b>Appeler</b></td></tr>
+      <tr><td>Lien</td><td>https://…</td><td>Bouton <b>Voir</b> : lien cliquable épinglé sur la vidéo</td></tr>
+    </table>
+    <ul>
+      <li>Les boutons sont <b>dans l'application</b> (cliquables pour le spectateur), pas incrustés dans l'image : ils restent nets et comptés.</li>
+      <li>Le vendeur voit combien de personnes ont touché WhatsApp, le lien ou l'appel.</li>
+      <li>Les liens suspects sont refusés (même vérification que pour les annonces).</li>
+      <li>Les clics ne sont jamais publics (règle déjà en place pour Afrolook Ads).</li>
+    </ul>
+  </div>
+</div>
+
+<h2>3 bis. Carte « lien » pour les entrepreneurs (livres, produits, formations)</h2>
+<p class="lead">Le lien est épinglé sous forme de <b>mini-aperçu</b> : couverture ou photo, titre, site et prix. <b>Seul le bouton « Commander maintenant » est cliquable</b> : toucher le reste de la carte ne fait rien (pas de clic par erreur) ; le bouton ouvre le lien. L'aperçu est lu automatiquement depuis la page (titre et image), et l'entrepreneur peut le corriger.</p>
+<div class="grid">
+  <div class="card"><div class="phone"><div class="screen">
+    <div class="top"><span class="btn">✕</span><span class="btn on">Commerce</span></div>
+    <div class="face"><span class="eye l"></span><span class="eye r"></span><span class="mouth"></span></div>
+    <div class="linkcard"><div class="cover"></div><div><div class="t">Réussir son entreprise en Afrique</div><div class="d">editions-exemple.com · 8 500 F</div><span class="go">Commander maintenant</span></div></div>
+    <div class="rec"><i></i></div>
+  </div></div></div>
+  <div class="card"><h3>Comportement</h3>
+    <ul>
+      <li>Aperçu automatique : image, titre, site, prix (si la page le donne) ; texte du bouton au choix (« Commander maintenant », « Réserver », « S'inscrire », « Télécharger »).</li>
+      <li>Seul le bouton est cliquable : il ouvre le lien (dans l'application, ou la page de commande de l'entrepreneur).</li>
+      <li>Plusieurs liens possibles (livre 1, livre 2) : la carte devient un petit carrousel.</li>
+      <li>Statistiques pour l'entrepreneur : vues de la carte et clics sur « Commander maintenant » (jamais publics).</li>
+      <li>Liens vérifiés avant publication (même contrôle que les annonces).</li>
+    </ul>
+  </div>
+</div>
+
+<h2>4. Épingler la vidéo d'une autre personne</h2>
+<p class="lead">On choisit une vidéo (d'un ami, d'un créateur, une vidéo à laquelle on répond), elle s'affiche dans une petite fenêtre au-dessus de notre caméra. On la <b>glisse</b> n'importe où, on la <b>redimensionne</b> avec le coin, on choisit sa forme (rectangle, rond) et son son (coupé, bas, normal). Utile pour les réactions et les duos.</p>
+<div class="grid">
+  <div class="card"><div class="phone"><div class="screen">
+    <div class="top"><span class="btn">✕</span><span class="btn on">Épingler</span></div>
+    <div class="face"><span class="eye l"></span><span class="eye r"></span><span class="mouth"></span></div>
+    <div class="pip"><b></b></div>
+    <div class="rail" style="bottom:92px"><span class="btn on">Rectangle</span><span class="btn">Rond</span><span class="btn">Son : bas</span></div>
+    <div class="rec"><i></i></div>
+  </div></div></div>
+  <div class="card"><h3>Règles proposées</h3>
+    <ul>
+      <li>Seulement les vidéos dont le créateur autorise la réponse ou le duo (réglage du créateur).</li>
+      <li>La vidéo de l'autre garde son nom visible (« avec @nom ») : crédit automatique et lien vers l'original.</li>
+      <li>Position et taille libres, 3 formes, son réglable séparément.</li>
+      <li>Les deux vidéos sont enregistrées ensemble dans un seul fichier.</li>
+      <li>Le créateur d'origine reçoit une notification à chaque réponse.</li>
+    </ul>
+  </div>
+</div>
+
+<h2>Catalogue complet, par catégorie</h2>
+<div class="card">
+<table>
+<tr><th>Catégorie</th><th>Fonction</th><th>État</th></tr>
+<tr><td rowspan="4"><b>Beauté</b></td><td>Peau lissée, lumière, chaleur</td><td><span class="tag">fait</span></td></tr>
+<tr><td>Joues, lèvres, yeux brillants, visage affiné</td><td><span class="tag new">à faire</span></td></tr>
+<tr><td>Préréglages « naturel », « glamour », « soirée »</td><td><span class="tag new">à faire</span></td></tr>
+<tr><td>Fond flou</td><td><span class="tag later">plus tard (segmentation)</span></td></tr>
+<tr><td rowspan="3"><b>Visage</b></td><td>Yeux, bouche, nez, oreilles, visage fin, combinaisons (Elfe, Lapin…)</td><td><span class="tag">fait</span></td></tr>
+<tr><td>Menton, front, pommettes, sourire élargi</td><td><span class="tag new">à faire</span></td></tr>
+<tr><td>Combinaisons à enregistrer et partager (« recettes »)</td><td><span class="tag later">plus tard</span></td></tr>
+<tr><td rowspan="3"><b>Pro</b></td><td>Fond flou / fond studio / fond bureau</td><td><span class="tag later">plus tard</span></td></tr>
+<tr><td>Bandeau nom + titre, sous-titres propres, cadre « interview »</td><td><span class="tag new">à faire</span></td></tr>
+<tr><td>Éclairage « visage net »</td><td><span class="tag new">à faire</span></td></tr>
+<tr><td rowspan="4"><b>Comédie</b></td><td>Avatars qui copient les expressions (chat, robot, lapin, alien)</td><td><span class="tag">fait</span></td></tr>
+<tr><td>Voix du Studio, effets de temps</td><td><span class="tag">fait</span></td></tr>
+<tr><td>Plus d'avatars (singe, lion, masque africain, pirate…)</td><td><span class="tag new">à faire</span></td></tr>
+<tr><td>Doublage : on mime, la voix d'un personnage parle</td><td><span class="tag later">plus tard</span></td></tr>
+<tr><td rowspan="3"><b>Fun</b></td><td>Pluies (cœurs, pièces, étoiles, notes) déclenchées par un geste choisi</td><td><span class="tag">fait</span></td></tr>
+<tr><td>Looks : néon, noir et blanc, sépia, vintage, cinéma, pop</td><td><span class="tag">fait</span></td></tr>
+<tr><td>Masques qui suivent la tête (lunettes, couronne, chat…)</td><td><span class="tag">fait</span></td></tr>
+<tr><td rowspan="3"><b>Commerce</b></td><td>Carte prix + lieu + contact + lien, boutons cliquables</td><td><span class="tag new">à faire</span></td></tr>
+<tr><td>WhatsApp avec message prêt, appel, lien dans l'application</td><td><span class="tag new">à faire</span></td></tr>
+<tr><td>Statistiques des touchers pour le vendeur</td><td><span class="tag new">à faire</span></td></tr>
+<tr><td>Carte lien avec mini-aperçu (livres, produits) et bouton « Commander maintenant » seul cliquable</td><td><span class="tag new">à faire</span></td></tr>
+<tr><td rowspan="3"><b>Audio</b></td><td>Filmer sur une musique ou une voix, extrait au choix</td><td><span class="tag new">à faire</span></td></tr>
+<tr><td>Deux volumes (ma voix, le son) + baisse automatique de la musique</td><td><span class="tag new">à faire</span></td></tr>
+<tr><td>Son d'une autre vidéo, fichier du téléphone</td><td><span class="tag new">à faire</span></td></tr>
+<tr><td rowspan="2"><b>Épingler</b></td><td>Vidéo d'un autre dans une fenêtre déplaçable, redimensionnable, 3 formes</td><td><span class="tag new">à faire</span></td></tr>
+<tr><td>Crédit automatique, autorisation du créateur, notification</td><td><span class="tag new">à faire</span></td></tr>
+</table>
+</div>
+
+<h2>À valider</h2>
+<div class="card">
+<ol>
+<li>Les 8 catégories et leur ordre (Beauté · Visage · Pro · Comédie · Fun · Commerce · Audio · Épingler) te conviennent-elles ? <i>Recommandé : oui, Commerce et Audio mis en avant.</i></li>
+<li>Commerce : boutons <b>dans l'application</b> (cliquables) plutôt que dessinés dans l'image. <i>Recommandé : oui.</i></li>
+<li>Épingler une vidéo : seulement avec l'autorisation du créateur. <i>Recommandé : oui.</i></li>
+<li>Ordre de réalisation : <b>Audio + mixage</b> → <b>Commerce</b> → <b>Épingler</b> → catégories Beauté / Pro / Comédie enrichies. <i>Recommandé.</i></li>
+</ol>
+</div>
+</div>
+</body>
+</html>

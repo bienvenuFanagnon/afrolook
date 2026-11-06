@@ -84,3 +84,7 @@ Le moteur voit si la bouche est ouverte, si on sourit, si on lève les sourcils,
 - Activer le moteur pour **tous** les utilisateurs Android après quelques jours de test, ou seulement un groupe d'abord ? **Groupe d'abord (10 %), puis tous.**
 - iPhone : le moteur est Android. Pour l'iPhone, faire un moteur équivalent avec Vision/Core Image ? **Oui, après la stabilisation Android.**
 - Les recettes partagées sont-elles gratuites ou vendables en pièces ? **Gratuites au début, vente ensuite.**
+
+## 10. Catégories, audio, commerce et vidéo épinglée (demande du 06/11, maquette à valider)
+
+Maquette : `docs/maquettes/studio_categories.html` (catégories Beauté · Visage · Pro · Comédie · Fun · Commerce · Audio · Épingler ; filmer sur un son avec deux volumes ; carte Commerce avec prix, lieu, WhatsApp et lien ; carte « lien » avec mini-aperçu et bouton « Commander maintenant » seul cliquable ; vidéo d'une autre personne épinglée, déplaçable et redimensionnable ; catalogue complet avec l'état de chaque fonction). Ordre proposé : Audio + mixage → Commerce → Épingler → catégories Beauté / Pro / Comédie enrichies. Faits depuis : groupes d'effets du moteur (Beauté, Visage, Couleur, Masques, Avatars, Magie), combinaisons de déformations (Elfe, Lapin, Bébé, Alien, Clown, Géant), néon en premier, geste au choix pour les effets magiques (bouche, sourire, sourcils, clin d'œil, tête tournée), avatars qui copient les expressions (chat, robot, lapin, alien), vraies icônes à la place des emoji.
