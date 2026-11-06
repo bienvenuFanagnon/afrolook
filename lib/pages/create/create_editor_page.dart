@@ -262,7 +262,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
                 key: ValueKey('time_${e.$1}'),
                 contentPadding: EdgeInsets.zero,
                 enabled: seconds <= StudioTimeApi.maxSeconds(e.$1),
-                leading: Text(e.$3, style: const TextStyle(fontSize: 26)),
+                leading: Icon(e.$3, size: 28, color: const Color(0xFFFFC400)),
                 title: Text(context.tr(e.$2), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
                 subtitle: Text(
                   seconds <= StudioTimeApi.maxSeconds(e.$1) ? '${context.tr('Résultat')} : ${(seconds * e.$4).round()} s' : context.tr('Vidéo trop longue pour cet effet : coupe-la d\'abord.'),

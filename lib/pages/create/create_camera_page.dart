@@ -54,9 +54,11 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
   // ── Moteur maison (Android, APK de test) : caméra, visage, beauté, masques et enregistrement par le moteur ──
   final bool _eng = FaceEngine.enabled;
   bool _engFront = true;
-  String _deform = 'none';
-  int _look = 0;
-  int _magic = -1; // effet d'expression choisi (index dans FaceEngine.magic), -1 = aucun
+  final Set<String> _deforms = {}; // déformations du visage choisies (elles se combinent)
+  int _look = 0; // look de couleur (0 = aucun)
+  int _magic = -1; // effet magique choisi (index dans FaceEngine.magic), -1 = aucun
+  String _gesture = 'mouth'; // geste qui déclenche l'effet magique
+  String _group = 'none'; // groupe d'effets ouvert : face, color, mask, magic
 
   // ── Filtres de visage en direct (Android) ──
   FaceFilter _filter = FaceFilter.none;
@@ -192,8 +194,9 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
       try {
         await FaceEngine.setBeauty(_beautyNow);
         await FaceEngine.setMask(_filter);
-        await FaceEngine.setDeformation(_deform);
+        await FaceEngine.setDeformations(_deforms);
         await FaceEngine.setLook(_look);
+        await FaceEngine.setMagic(_magic < 0 ? null : FaceEngine.magic[_magic], _gesture);
         return;
       } catch (_) {
         await Future<void>.delayed(const Duration(milliseconds: 400));
@@ -204,11 +207,14 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
   Future<void> _pickMagic(int i) async {
     setState(() => _magic = _magic == i ? -1 : i);
     try {
-      if (_magic < 0) {
-        await FaceEngine.setMagic('none', '');
-      } else {
-        await FaceEngine.setMagic(FaceEngine.magic[_magic].$2, FaceEngine.magic[_magic].$3);
-      }
+      await FaceEngine.setMagic(_magic < 0 ? null : FaceEngine.magic[_magic], _gesture);
+    } catch (_) {}
+  }
+
+  Future<void> _pickGesture(String g) async {
+    setState(() => _gesture = g);
+    try {
+      await FaceEngine.setMagic(_magic < 0 ? null : FaceEngine.magic[_magic], _gesture);
     } catch (_) {}
   }
 
@@ -219,10 +225,21 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
     } catch (_) {}
   }
 
-  Future<void> _pickDeform(String name) async {
-    setState(() => _deform = _deform == name ? 'none' : name);
+  Future<void> _toggleDeform(String key) async {
+    setState(() => _deforms.contains(key) ? _deforms.remove(key) : _deforms.add(key));
     try {
-      await FaceEngine.setDeformation(_deform);
+      await FaceEngine.setDeformations(_deforms);
+    } catch (_) {}
+  }
+
+  Future<void> _applyPreset(FacePreset p) async {
+    final same = _deforms.length == p.keys.length && _deforms.containsAll(p.keys);
+    setState(() {
+      _deforms.clear();
+      if (!same) _deforms.addAll(p.keys);
+    });
+    try {
+      await FaceEngine.setDeformations(_deforms);
     } catch (_) {}
   }
 
@@ -674,7 +691,9 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
             ]),
           ),
           const Spacer(),
-          if (FaceFilters.available && !_busy)
+          if (_eng)
+            (_busy ? const SizedBox.shrink() : _engineRail(c))
+          else if (FaceFilters.available && !_busy)
             SizedBox(
               key: const ValueKey('face_filters'),
               height: 46,
@@ -704,50 +723,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
                     icon: const Icon(Icons.tune_rounded, color: Colors.white, size: 20),
                   ),
                 ),
-                if (_eng)
-                  for (var m = 0; m < FaceEngine.magic.length; m++)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        key: ValueKey('magic_$m'),
-                        label: Text('${FaceEngine.magic[m].$3} ${context.tr(FaceEngine.magic[m].$1)}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _magic == m ? c.onAccent : Colors.white)),
-                        selected: _magic == m,
-                        selectedColor: c.accent,
-                        backgroundColor: const Color(0x99000000),
-                        side: BorderSide.none,
-                        onSelected: _recording ? null : (_) => _pickMagic(m),
-                      ),
-                    ),
-                if (_eng)
-                  for (final l in FaceEngine.looks.skip(1))
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        key: ValueKey('look_${l.$2}'),
-                        label: Text(context.tr(l.$1), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _look == l.$2 ? c.onAccent : Colors.white)),
-                        selected: _look == l.$2,
-                        selectedColor: c.accent,
-                        backgroundColor: const Color(0x99000000),
-                        side: BorderSide.none,
-                        onSelected: _recording ? null : (_) => _pickLook(_look == l.$2 ? 0 : l.$2),
-                      ),
-                    ),
-                if (_eng)
-                  for (final d in FaceEngine.deformations)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: ChoiceChip(
-                        key: ValueKey('deform_${d.$1}'),
-                        label: Text(d.$2, style: const TextStyle(fontSize: 20)),
-                        selected: _deform == d.$1,
-                        selectedColor: c.accent,
-                        backgroundColor: const Color(0x99000000),
-                        side: BorderSide.none,
-                        onSelected: _recording ? null : (_) => _pickDeform(d.$1),
-                      ),
-                    ),
                 for (final f in FaceFilter.values)
-                  if (!_eng || f != FaceFilter.blur)
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: ChoiceChip(
@@ -798,6 +774,132 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
             )
           else
             const SizedBox(height: 14),
+        ]),
+      ),
+    ]);
+  }
+
+  // ── Barre du moteur : cinq groupes (Beauté, Visage, Couleur, Masques, Magie), chacun avec ses propres choix ──
+
+  Widget _engChip({required Key key, required IconData icon, required String label, required bool selected, required VoidCallback? onTap, required AppColors c}) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        key: key,
+        avatar: Icon(icon, size: 18, color: selected ? c.onAccent : Colors.white),
+        label: Text(context.tr(label), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: selected ? c.onAccent : Colors.white)),
+        selected: selected,
+        showCheckmark: false,
+        selectedColor: c.accent,
+        backgroundColor: const Color(0x99000000),
+        side: BorderSide.none,
+        onSelected: onTap == null ? null : (_) => onTap(),
+      ),
+    );
+  }
+
+  Widget _engineRail(AppColors c) {
+    final off = _recording;
+    Widget group(String key, IconData icon, String label, bool active) => _engChip(
+          key: ValueKey('group_$key'),
+          icon: icon,
+          label: label,
+          selected: _group == key || active,
+          onTap: off ? null : () => setState(() => _group = _group == key ? 'none' : key),
+          c: c,
+        );
+    final items = <Widget>[];
+    switch (_group) {
+      case 'face':
+        for (final p in FaceEngine.presets) {
+          items.add(_engChip(key: ValueKey('preset_${p.label}'), icon: p.icon, label: p.label, selected: _deforms.length == p.keys.length && _deforms.containsAll(p.keys), onTap: off ? null : () => _applyPreset(p), c: c));
+        }
+        items.add(const Padding(padding: EdgeInsets.only(right: 8), child: SizedBox(height: 28, child: VerticalDivider(color: Colors.white38, width: 1))));
+        for (final d in FaceEngine.deformations) {
+          items.add(_engChip(key: ValueKey('deform_${d.key}'), icon: d.icon, label: d.label, selected: _deforms.contains(d.key), onTap: off ? null : () => _toggleDeform(d.key), c: c));
+        }
+      case 'color':
+        items.add(_engChip(key: const ValueKey('look_0'), icon: Icons.block_rounded, label: 'Aucun', selected: _look == 0, onTap: off ? null : () => _pickLook(0), c: c));
+        for (final l in FaceEngine.looks) {
+          items.add(_engChip(key: ValueKey('look_${l.id}'), icon: l.icon, label: l.label, selected: _look == l.id, onTap: off ? null : () => _pickLook(_look == l.id ? 0 : l.id), c: c));
+        }
+      case 'mask':
+        items.add(_engChip(key: const ValueKey('mask_none'), icon: Icons.block_rounded, label: 'Aucun', selected: _filter == FaceFilter.none, onTap: off ? null : () => _pickFilter(FaceFilter.none), c: c));
+        for (final f in FaceFilter.values) {
+          if (f == FaceFilter.none || f == FaceFilter.blur) continue;
+          items.add(_engChip(key: ValueKey('mask_${f.name}'), icon: FaceEngine.maskIcon(f), label: FaceEngine.maskLabel(f), selected: _filter == f, onTap: off ? null : () => _pickFilter(_filter == f ? FaceFilter.none : f), c: c));
+        }
+      case 'magic':
+        items.add(_engChip(key: const ValueKey('magic_none'), icon: Icons.block_rounded, label: 'Aucun', selected: _magic < 0, onTap: off ? null : () => _pickMagic(_magic < 0 ? 0 : _magic), c: c));
+        for (var m = 0; m < FaceEngine.magic.length; m++) {
+          final mg = FaceEngine.magic[m];
+          items.add(_engChip(key: ValueKey('magic_$m'), icon: mg.icon, label: mg.label, selected: _magic == m, onTap: off ? null : () => _pickMagic(m), c: c));
+        }
+    }
+    final gesture = FaceEngine.gestures.firstWhere((g) => g.key == _gesture);
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      // un effet magique est choisi : on dit quel geste le déclenche, et on peut en changer
+      if (_magic >= 0)
+        Container(
+          key: const ValueKey('gesture_hint'),
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+          decoration: BoxDecoration(color: const Color(0xB3000000), borderRadius: BorderRadius.circular(14)),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(gesture.icon, color: c.accent, size: 20),
+              const SizedBox(width: 8),
+              Flexible(child: Text('${context.tr('Pour déclencher')} ${context.tr(FaceEngine.magic[_magic].label).toLowerCase()} : ${context.tr(gesture.instruction)}', textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w700))),
+            ]),
+            if (_group == 'magic') ...[
+              const SizedBox(height: 8),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(children: [
+                  for (final g in FaceEngine.gestures)
+                    _engChip(key: ValueKey('gesture_${g.key}'), icon: g.icon, label: g.label, selected: _gesture == g.key, onTap: off ? null : () => _pickGesture(g.key), c: c),
+                ]),
+              ),
+            ],
+          ]),
+        ),
+      if (items.isNotEmpty) SizedBox(key: const ValueKey('engine_items'), height: 46, child: ListView(scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 16), children: items)),
+      if (items.isNotEmpty) const SizedBox(height: 6),
+      SizedBox(
+        key: const ValueKey('face_filters'),
+        height: 46,
+        child: ListView(scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 16), children: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              onLongPress: off ? null : _openBeauty,
+              child: ChoiceChip(
+                key: const ValueKey('beauty_chip'),
+                avatar: Icon(Icons.auto_awesome_rounded, size: 18, color: _beautyOn ? c.onAccent : Colors.white),
+                label: Text(context.tr('Beauté'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _beautyOn ? c.onAccent : Colors.white)),
+                selected: _beautyOn,
+                showCheckmark: false,
+                selectedColor: c.accent,
+                backgroundColor: const Color(0x99000000),
+                side: BorderSide.none,
+                onSelected: off ? null : (_) => _toggleBeauty(),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: IconButton(
+              key: const ValueKey('beauty_tune'),
+              visualDensity: VisualDensity.compact,
+              style: IconButton.styleFrom(backgroundColor: const Color(0x99000000)),
+              onPressed: off ? null : _openBeauty,
+              icon: const Icon(Icons.tune_rounded, color: Colors.white, size: 20),
+            ),
+          ),
+          group('face', Icons.face_retouching_natural_rounded, 'Visage', _deforms.isNotEmpty),
+          group('color', Icons.palette_rounded, 'Couleur', _look != 0),
+          group('mask', Icons.masks_rounded, 'Masques', _filter != FaceFilter.none),
+          group('magic', Icons.auto_fix_high_rounded, 'Magie', _magic >= 0),
         ]),
       ),
     ]);

@@ -56,6 +56,8 @@ class _FaceLabPageState extends State<FaceLabPage> {
     final cam = await Permission.camera.request();
     if (!mounted) return;
     setState(() => _ready = cam.isGranted);
+    // le labo est le seul endroit où les points de repère sont visibles
+    Future<void>.delayed(const Duration(milliseconds: 900), () => _channel.invokeMethod('setPoints', {'show': true}).catchError((_) {}));
     _timer = Timer.periodic(const Duration(seconds: 1), (_) async {
       try {
         final s = await _channel.invokeMethod('status');

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/material.dart' show Icons;
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
@@ -11,14 +12,14 @@ import 'wallet_api.dart';
 class StudioTimeApi {
   StudioTimeApi._();
 
-  /// Effets proposés : clé du serveur, libellé et facteur de durée du résultat (null = rampe : durée × 1,17).
+  /// Effets proposés : clé du serveur, libellé, icône et facteur de durée du résultat (null = rampe : durée × 1,17).
   static const effects = [
-    ('fast2', 'Accéléré ×2', '⏩', 0.5),
-    ('fast4', 'Accéléré ×4', '⏭️', 0.25),
-    ('slow', 'Ralenti', '🐢', 2.0),
-    ('reverse', 'Rembobinage', '⏪', 1.0),
-    ('boomerang', 'Boomerang', '🔁', 2.0),
-    ('ramp', 'Rampe de vitesse', '🎢', 1.1667),
+    ('fast2', 'Accéléré ×2', Icons.fast_forward_rounded, 0.5),
+    ('fast4', 'Accéléré ×4', Icons.skip_next_rounded, 0.25),
+    ('slow', 'Ralenti', Icons.slow_motion_video_rounded, 2.0),
+    ('reverse', 'Rembobinage', Icons.fast_rewind_rounded, 1.0),
+    ('boomerang', 'Boomerang', Icons.repeat_rounded, 2.0),
+    ('ramp', 'Rampe de vitesse', Icons.show_chart_rounded, 1.1667),
   ];
 
   /// Durée maximale de la vidéo selon l'effet (le rembobinage et le boomerang gardent tout en mémoire).

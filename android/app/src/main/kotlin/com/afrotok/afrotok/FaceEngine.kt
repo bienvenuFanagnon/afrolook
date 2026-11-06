@@ -459,7 +459,7 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
 
 class FaceRenderer : GLSurfaceView.Renderer {
     @Volatile var landmarks: Landmarks? = null
-    @Volatile var effect: String = "none"
+    @Volatile var effect: String = "none"   // une ou plusieurs déformations séparées par des virgules : bigeyes,bigears,...
     @Volatile var front: Boolean = true
     @Volatile var rotOffset: Int = 90   // mesuré sur un Pixel 8 Pro, caméra avant : image droite avec rotation totale 0° et miroir
     // beauté en direct (0 à 1) : peau lissée, lumière, chaleur
@@ -476,6 +476,8 @@ class FaceRenderer : GLSurfaceView.Renderer {
     private var pLastT = 0L
     private var pAcc = 0f
     private var pWasBlink = false
+    private var browBase = 0f
+    private var smileBase = 0f
     private val rnd = java.util.Random()
     @Volatile var look = 0f   // 0 aucun, 1 noir et blanc, 2 sépia, 3 vintage, 4 cinéma, 5 néon, 6 pop
     // image posée sur le visage (masque, lunettes, couronne…) qui suit la position, la taille et l'inclinaison de la tête
@@ -488,7 +490,7 @@ class FaceRenderer : GLSurfaceView.Renderer {
     private val ovBuf: java.nio.FloatBuffer = ByteBuffer.allocateDirect(16 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
     @Volatile var predGain: Float = 1.0f   // part de la prévision de mouvement utilisée (réglée en direct)
     @Volatile var flipPointsX: Boolean = true   // mesuré sur Pixel 8 Pro : sans cela, tête à gauche = points à droite
-    @Volatile var showPoints: Boolean = true   // points de repère du visage dessinés par-dessus (essais)
+    @Volatile var showPoints: Boolean = false   // points de repère du visage : jamais dans l'application, seulement dans le labo d'essai
     private var ptProgram = 0
     @Volatile var mirror: Boolean = false
 
@@ -657,12 +659,12 @@ class FaceRenderer : GLSurfaceView.Renderer {
         GLES20.glUniform1f(GLES20.glGetUniformLocation(program, "uAspect"), aView)
 
         // paramètres des déformations (espace d'affichage : y vers le haut, recadrage et miroir appliqués)
-        val c = FloatArray(8); val r = FloatArray(4); val s = FloatArray(4)
+        val c = FloatArray(16); val r = FloatArray(8); val s = FloatArray(8)
         val lm = landmarks
         if (lm != null && effect != "none") fillEffect(lm, c, r, s, csx, csy, aView)
-        GLES20.glUniform2fv(GLES20.glGetUniformLocation(program, "uC"), 4, c, 0)
-        GLES20.glUniform1fv(GLES20.glGetUniformLocation(program, "uR"), 4, r, 0)
-        GLES20.glUniform1fv(GLES20.glGetUniformLocation(program, "uS"), 4, s, 0)
+        GLES20.glUniform2fv(GLES20.glGetUniformLocation(program, "uC"), 8, c, 0)
+        GLES20.glUniform1fv(GLES20.glGetUniformLocation(program, "uR"), 8, r, 0)
+        GLES20.glUniform1fv(GLES20.glGetUniformLocation(program, "uS"), 8, s, 0)
         GLES20.glUniform3f(GLES20.glGetUniformLocation(program, "uBeauty"), beautySmooth, beautyBright, beautyWarm)
         GLES20.glUniform1f(GLES20.glGetUniformLocation(program, "uTexel"), 1f / maxOf(bufW, bufH))
         GLES20.glUniform1f(GLES20.glGetUniformLocation(program, "uLook"), look)
@@ -712,8 +714,26 @@ class FaceRenderer : GLSurfaceView.Renderer {
         val mouthOpen = dist(p(13), p(14), aView) / maxOf(0.001f, dist(p(61), p(291), aView))
         val eyeOpen = (dist(p(159), p(145), aView) / maxOf(0.001f, dist(p(33), p(133), aView)) + dist(p(386), p(374), aView) / maxOf(0.001f, dist(p(362), p(263), aView))) / 2f
         val blink = eyeOpen < 0.13f
-        if (trig == "mouth" && mouthOpen > 0.30f) {
-            val m = mid(p(13), p(14))
+        val faceWd = maxOf(0.001f, dist(p(234), p(454), aView))
+        val browGap = (dist(p(105), p(159), aView) + dist(p(334), p(386), aView)) / 2f / faceWd
+        val smileW = dist(p(61), p(291), aView) / faceWd
+        val yaw = kotlin.math.abs(p(1)[0] - (p(234)[0] + p(454)[0]) / 2f) * aView / faceWd   // nez décalé du centre du visage = tête tournée
+        if (browBase == 0f) browBase = browGap
+        if (smileBase == 0f) smileBase = smileW
+        val browsUp = browGap > browBase * 1.18f
+        val smiling = smileW > smileBase * 1.10f && mouthOpen < 0.25f
+        // la référence (visage au repos) se met à jour doucement quand le geste n'est pas fait
+        if (!browsUp) browBase += (browGap - browBase) * 0.02f
+        if (!smiling) smileBase += (smileW - smileBase) * 0.02f
+        val streamAt: FloatArray? = when {
+            trig == "mouth" && mouthOpen > 0.30f -> mid(p(13), p(14))
+            trig == "smile" && smiling -> mid(p(13), p(14))
+            trig == "brows" && browsUp -> p(10)
+            trig == "turn" && yaw > 0.14f -> p(1)
+            else -> null
+        }
+        if (streamAt != null) {
+            val m = streamAt
             pAcc += dt * 14f
             while (pAcc >= 1f) {
                 pAcc -= 1f
@@ -913,16 +933,27 @@ class FaceRenderer : GLSurfaceView.Renderer {
     private fun fillEffect(lm: Landmarks, c: FloatArray, r: FloatArray, s: FloatArray, csx: Float, csy: Float, aspect: Float) {
         if (lm.x.size < 468) return
         fun p(i: Int) = disp(lm, i, csx, csy)
+        val a = p(234); val b = p(454)
+        val left = if (a[0] <= b[0]) a else b; val right = if (a[0] <= b[0]) b else a
         val eyeA = mid(p(33), p(133)); val eyeB = mid(p(362), p(263))
         val eyeR = dist(p(33), p(133), aspect) * 1.25f
         val mouth = mid(p(13), p(14)); val mouthR = dist(p(61), p(291), aspect) * 0.85f
         val nose = p(1); val noseR = dist(p(129), p(358), aspect) * 0.9f
-        val faceC = mid(p(234), p(454)); val faceR = dist(p(234), p(454), aspect) * 0.62f
-        when (effect) {
-            "bigeyes" -> { set(c, r, s, 0, eyeA, eyeR, 0.55f); set(c, r, s, 1, eyeB, eyeR, 0.55f) }
-            "bigmouth" -> set(c, r, s, 2, mouth, mouthR, 0.6f)
-            "bignose" -> set(c, r, s, 2, nose, noseR, 0.55f)
-            "slimface" -> set(c, r, s, 3, faceC, faceR, 0.25f)
+        val faceC = mid(a, b); val faceW = dist(a, b, aspect); val faceH = dist(p(10), p(152), aspect)
+        val faceR = faceW * 0.62f
+        // les oreilles : de chaque côté du visage, un peu en dehors du contour, à hauteur des yeux
+        val earDx = faceW * 0.14f / aspect
+        val earL = floatArrayOf(left[0] - earDx, left[1] + faceH * 0.04f)
+        val earR = floatArrayOf(right[0] + earDx, right[1] + faceH * 0.04f)
+        val earRad = faceW * 0.30f
+        for (name in effect.split(',')) {
+            when (name.trim()) {
+                "bigeyes" -> { set(c, r, s, 0, eyeA, eyeR, 0.55f); set(c, r, s, 1, eyeB, eyeR, 0.55f) }
+                "bigmouth" -> set(c, r, s, 2, mouth, mouthR, 0.6f)
+                "bignose" -> set(c, r, s, 3, nose, noseR, 0.55f)
+                "bigears" -> { set(c, r, s, 4, earL, earRad, 0.6f); set(c, r, s, 5, earR, earRad, 0.6f) }
+                "slimface" -> set(c, r, s, 6, faceC, faceR, 0.25f)
+            }
         }
     }
 
@@ -944,16 +975,16 @@ class FaceRenderer : GLSurfaceView.Renderer {
             uniform mat4 uMap;
             uniform vec2 uCrop;
             uniform float uAspect;
-            uniform vec2 uC[4];
-            uniform float uR[4];
-            uniform float uS[4];
+            uniform vec2 uC[8];
+            uniform float uR[8];
+            uniform float uS[8];
             uniform vec3 uBeauty;
             uniform float uTexel;
             uniform float uLook;
             void main() {
                 vec2 p = vU;
                 // gonflement local (yeux, bouche, nez) : on échantillonne plus près du centre, donc la zone paraît plus grande
-                for (int i = 0; i < 3; i++) {
+                for (int i = 0; i < 6; i++) {
                     if (uS[i] != 0.0) {
                         vec2 d = p - uC[i];
                         float r = length(vec2(d.x * uAspect, d.y));
@@ -966,11 +997,11 @@ class FaceRenderer : GLSurfaceView.Renderer {
                     }
                 }
                 // visage fin : on rapproche horizontalement les bords du visage du centre
-                if (uS[3] != 0.0) {
-                    vec2 d = p - uC[3];
-                    float fy = 1.0 - clamp(abs(d.y) / (uR[3] * 1.8), 0.0, 1.0);
-                    float fx = 1.0 - clamp(abs(d.x * uAspect) / (uR[3] * 1.2), 0.0, 1.0);
-                    p.x = uC[3].x + d.x * (1.0 + uS[3] * fy * (0.3 + 0.7 * fx));
+                if (uS[6] != 0.0) {
+                    vec2 d = p - uC[6];
+                    float fy = 1.0 - clamp(abs(d.y) / (uR[6] * 1.8), 0.0, 1.0);
+                    float fx = 1.0 - clamp(abs(d.x * uAspect) / (uR[6] * 1.2), 0.0, 1.0);
+                    p.x = uC[6].x + d.x * (1.0 + uS[6] * fy * (0.3 + 0.7 * fx));
                 }
                 vec2 img = (p - 0.5) / uCrop + 0.5;
                 vec4 t = uMap * vec4(img, 0.0, 1.0);
