@@ -1,3 +1,5 @@
+import '../../../widgets/commerce_card.dart';
+import '../../../services/api/commerce_api.dart';
 import '../../studio/montage/montage_pin.dart';
 import 'package:afrotok/services/post_orientation.dart';
 import 'package:afrolook_api_client/afrolook_api_client.dart';
@@ -2034,6 +2036,10 @@ Future<void> _handleRepost() async {
             ? Align(alignment: Alignment.centerLeft, child: videoContainer)
             : videoContainer,
 
+        // Carte Commerce : pastille (prix ou titre) dépliée au toucher, boutons WhatsApp / appel / lien
+        if (widget.post.hasCommerce && widget.post.id != null)
+          Positioned(left: 10, bottom: 10, child: PostCommerceOverlay(postId: widget.post.id!)),
+
         // Overlay verrou canal — s'affiche après 10s de lecture
         if (_showCanalLockCta)
           Positioned.fill(
@@ -3032,6 +3038,20 @@ Future<void> _sendQuickComment(String text) async {
                     pseudo: post.user?.pseudo,
                     postId: post.id,
                   );
+                },
+              ),
+
+            if (post.user!.id == authProvider.loginUserData.id && post.id != null)
+              _buildMenuOption(
+                Icons.shopping_bag_outlined,
+                post.hasCommerce ? "Modifier la carte Commerce" : "Ajouter une carte Commerce",
+                colors.textPrimary,
+                () {
+                  Navigator.pop(context);
+                  showCommerceEditor(context, post.id!).then((_) => CommerceApi.get(post.id!).then((c) {
+                        post.hasCommerce = c != null;
+                        if (mounted) setState(() {});
+                      }).catchError((_) {}));
                 },
               ),
 

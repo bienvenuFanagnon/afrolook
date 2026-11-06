@@ -40,6 +40,7 @@ Post postFromApi(Map<String, dynamic> j) {
   );
   post
     ..canal_id = j['channel_id'] as String?
+    ..hasCommerce = j['has_commerce'] == true
     ..images = imageUrls
     ..url_media = dataType == 'IMAGE' ? (imageUrls.isEmpty ? null : imageUrls.first) : main?['url'] as String?
     ..thumbnail = (main?['thumbnail_url'] ?? first?['thumbnail_url']) as String?
