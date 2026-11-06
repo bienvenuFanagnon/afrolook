@@ -594,3 +594,8 @@ div.adsteps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;m
 .adwa-nav{margin-left:auto;background:color-mix(in srgb,var(--green-bright) 12%,transparent);color:var(--green);text-decoration:none}
 .adneed .adsupport{margin:0}
 .rg-note{display:block;margin-top:6px;color:var(--muted);font-size:12.5px}
+.rg-low .rg-bar i{background:#e8a317}
+.rg-used .rg-bar i{background:#c0392b}
+.rg-low .rg-note{font-weight:600}
+.rg-lab{display:block;font-size:13px;margin:6px 0 4px;color:inherit;opacity:.8}
+.rg-sel{width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(128,128,128,.4);background:transparent;color:inherit;font:inherit;margin-bottom:6px}
