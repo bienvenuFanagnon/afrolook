@@ -19,6 +19,5 @@
 -dontwarn com.tapjoy.**
 
 # Moteur d effets de visage : MediaPipe Tasks (classes appelées par le code natif, protos absents de la bibliothèque)
--keep class com.google.mediapipe.** { *; }
+# (les règles de conservation viennent de la bibliothèque elle-même ; ici seulement les protos absents)
 -dontwarn com.google.mediapipe.proto.**
--dontwarn com.google.mediapipe.**
