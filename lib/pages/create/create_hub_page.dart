@@ -16,16 +16,10 @@ import '../../theme/app_colors.dart';
 import '../cards/card_entry.dart';
 import '../cards/card_events.dart';
 import '../cards/card_models.dart' show CardStyleId;
-import '../studio/montage/montage_canvas.dart';
 import '../studio/montage/montage_music.dart' show MontageMusic;
 import '../studio/montage/montage_pin.dart';
-import '../studio/montage/montage_catalog.dart';
-import '../studio/montage/montage_state.dart';
-import '../studio/montage/montage_editor_page.dart';
-import '../studio/montage/montage_gallery_page.dart';
 import 'create_voice_page.dart';
 import 'voice_effect_page.dart';
-import '../studio/studio_models.dart';
 import 'create_camera_page.dart';
 import 'create_editor_page.dart';
 import 'create_flow.dart';
@@ -207,59 +201,13 @@ class _CreateHubPageState extends State<CreateHubPage> {
     if (mounted) _loadQuota();
   }
 
-  /// Un modèle fait dans le Studio est « Fait sur Afrolook » ; si la personne y a mis une photo ou vidéo de sa galerie, il compte dans la limite d'imports du jour.
-  String _studioSource(StudioResult r) => r.usedOwnMedia ? PostSourceLink.edited : PostSourceLink.captured;
-
-  Future<void> _template(MontageTemplate t) async {
-    final result = await Navigator.of(context).push<StudioResult>(MaterialPageRoute(builder: (_) => MontageEditorPage(template: t)));
-    if (result == null || !mounted) return;
-    final r = await openCreateForm(context, studio: result, canal: widget.canal, defiPostId: widget.defiPostId, source: _studioSource(result));
-    await _after(r);
-  }
-
-  Future<void> _allTemplates() async {
-    final result = await Navigator.of(context).push<StudioResult>(MaterialPageRoute(builder: (_) => const MontageGalleryPage()));
-    if (result == null || !mounted) return;
-    final r = await openCreateForm(context, studio: result, canal: widget.canal, defiPostId: widget.defiPostId, source: _studioSource(result));
-    await _after(r);
-  }
-
   // ── Écran ────────────────────────────────────────────────────────────────
-
-  /// Les modèles à montrer ici : au plus 8, choisis pour être utiles tout de suite (pas les 10 premiers du catalogue) :
-  /// 1) les fêtes quand un événement approche, 2) le modèle de la fête nationale / du pays, 3) puis un modèle de chaque famille (situations, émotions, insta, musique, culture) ;
-  /// « Tout voir » ouvre la galerie complète.
-  List<MontageTemplate> _curatedTemplates(bool eventSoon) {
-    final all = kMontageTemplates.where((t) => t.id != kPlainTemplateId).toList();
-    final out = <MontageTemplate>[];
-    void add(MontageTemplate t) {
-      if (out.length < 8 && !out.any((o) => o.id == t.id)) out.add(t);
-    }
-
-    if (eventSoon) {
-      for (final t in all.where((t) => t.cat == MontageCat.fetes).take(2)) {
-        add(t);
-      }
-    }
-    for (final t in all.where((t) => t.indep || t.country).take(1)) {
-      add(t);
-    }
-    for (final cat in [MontageCat.situations, MontageCat.emotions, MontageCat.insta, MontageCat.music, MontageCat.culture, MontageCat.fetes]) {
-      final t = all.where((t) => t.cat == cat);
-      if (t.isNotEmpty) add(t.first);
-    }
-    for (final t in all) {
-      add(t);
-    }
-    return out;
-  }
 
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     final me = context.read<UserAuthProvider>().loginUserData;
     final soon = CardEvents.upcoming(me.countryData?['countryCode'], DateTime.now());
-    final templates = _curatedTemplates(soon != null);
     return Scaffold(
       backgroundColor: c.background,
       appBar: AppBar(
@@ -306,20 +254,6 @@ class _CreateHubPageState extends State<CreateHubPage> {
             ],
           ),
           const SizedBox(height: 22),
-          Row(children: [
-            Expanded(child: Text(context.tr('Modèles prêts à poster'), style: TextStyle(color: c.textPrimary, fontSize: 16, fontWeight: FontWeight.w800))),
-            TextButton(onPressed: () => _guard(_allTemplates), child: Text(context.tr('Tout voir'), style: TextStyle(color: c.primary, fontWeight: FontWeight.w800))),
-          ]),
-          const SizedBox(height: 6),
-          SizedBox(
-            height: 214,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: templates.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
-              itemBuilder: (_, i) => _TemplateCard(template: templates[i], pseudo: me.pseudo ?? '', avatarUrl: me.imageUrl, onTap: () => _guard(() => _template(templates[i]))),
-            ),
-          ),
           const SizedBox(height: 18),
           Text(
             _isChannel
@@ -546,57 +480,6 @@ class _SoundBanner extends StatelessWidget {
           ]),
         ),
       ]),
-    );
-  }
-}
-
-/// Carte d'un modèle avec son VRAI aperçu : le même rendu que dans la galerie et l'éditeur (photo de la personne si elle en a une, texte, couleurs, effet), en petit.
-class _TemplateCard extends StatefulWidget {
-  const _TemplateCard({required this.template, required this.onTap, this.pseudo = '', this.avatarUrl});
-  final MontageTemplate template;
-  final VoidCallback onTap;
-  final String pseudo;
-  final String? avatarUrl;
-
-  @override
-  State<_TemplateCard> createState() => _TemplateCardState();
-}
-
-class _TemplateCardState extends State<_TemplateCard> {
-  late final MontageState _state = MontageState(widget.template)..post = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = widget.template;
-    final c = AppColors.of(context);
-    final avatar = widget.avatarUrl;
-    final Widget media = (avatar != null && avatar.startsWith('http'))
-        ? Image.network(avatar, fit: BoxFit.cover, cacheWidth: 300, errorBuilder: (_, __, ___) => Image.asset(t.sampleIsVideo ? 'assets/images/intro4.jpg' : t.sample, fit: BoxFit.cover, cacheWidth: 300))
-        : Image.asset(t.sampleIsVideo ? 'assets/images/intro4.jpg' : t.sample, fit: BoxFit.cover, cacheWidth: 300);
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        widget.onTap();
-      },
-      child: SizedBox(
-        width: 108,
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: RepaintBoundary(
-              child: MontageCanvas(
-                state: _state,
-                media: media,
-                secondMedia: t.dualSample != null ? Image.asset(t.dualSample!, fit: BoxFit.cover, cacheWidth: 200) : null,
-                pseudo: widget.pseudo,
-                avatarUrl: avatar,
-              ),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(t.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 12, height: 1.2)),
-        ]),
-      ),
     );
   }
 }
