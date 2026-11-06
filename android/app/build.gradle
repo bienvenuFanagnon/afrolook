@@ -188,6 +188,9 @@ dependencies {
 
     // Add the dependencies for any other desired Firebase products
     implementation 'androidx.window:window:1.3.0'
+    // Filtres de visage (photo) : ML Kit en version non groupée = modèle fourni par les services Google Play (quasi 0 Mo ajouté)
+    implementation 'com.google.android.gms:play-services-mlkit-face-detection:17.1.0'
+    implementation 'androidx.exifinterface:exifinterface:1.3.7'
     implementation 'androidx.window:window-java:1.3.0'
 
 

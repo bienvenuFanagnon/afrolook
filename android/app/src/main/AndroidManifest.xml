@@ -70,6 +70,8 @@
         android:largeHeap="true"
         tools:replace="android:label"
         tools:ignore="ExtraText">
+        <!-- ML Kit non groupé : le modèle de visage est téléchargé par les services Google Play au premier usage -->
+        <meta-data android:name="com.google.mlkit.vision.DEPENDENCIES" android:value="face" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
