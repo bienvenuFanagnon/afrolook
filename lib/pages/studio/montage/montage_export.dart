@@ -182,8 +182,10 @@ class MontageExport {
       'brightness': s.brightness,
       'has_under': isVideo,
       if (timedMeta.isNotEmpty) 'timed': timedMeta,
-      if (m != null) 'music': {'type': m.type, 'id': m.id, 'start_ms': s.musicStartMs},
+      if (m != null) 'music': {'type': m.type, 'id': m.id, 'start_ms': s.musicStartMs, 'volume': s.musicVolume},
       'keep_audio': s.keepVideoAudio,
+      if (s.keepVideoAudio) 'video_volume': s.videoVolume,
+      if (s.keepVideoAudio && s.duckMusic) 'duck': true,
       if (!isVideo && m != null) 'seconds': s.musicSeconds.clamp(5, maxSeconds),
     }, idempotencyKey: 'montage:$jobId');
     final url = WalletApi.map(res)['url'] as String;

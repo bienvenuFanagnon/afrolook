@@ -82,6 +82,11 @@ class MontageState {
   /// Vidéo de la personne : garder son propre son sous la musique.
   bool keepVideoAudio = false;
 
+  /// Mixage : volume du son choisi (0 à 1), volume de la voix de la vidéo (0 à 1,5) et baisse automatique de la musique quand on parle.
+  double musicVolume = 1;
+  double videoVolume = .9;
+  bool duckMusic = false;
+
   /// Chiffres affichés (null = exemple du template pour les j'aime/commentaires, vrai nombre d'abonnés).
   String? likesText;
   String? commentsText;

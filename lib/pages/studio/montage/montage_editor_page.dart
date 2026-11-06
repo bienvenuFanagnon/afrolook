@@ -836,11 +836,35 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           title: Text('Garder le son de ma vidéo', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13.5)),
           subtitle: Text(s.keepVideoAudio ? 'Ta voix et la musique sont mélangées.' : 'Le son de ta vidéo est coupé : seule la musique est jouée.', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
         ),
+      if (m != null) ...[
+        _volumeRow('Volume de la musique', s.musicVolume, 1, (v) => setState(() => s.musicVolume = v), const ValueKey('vol_music')),
+        if (s.useVideo && s.keepVideoAudio) ...[
+          _volumeRow('Volume de ma voix (vidéo)', s.videoVolume, 1.5, (v) => setState(() => s.videoVolume = v), const ValueKey('vol_video')),
+          SwitchListTile(
+            key: const ValueKey('duck_music'),
+            contentPadding: EdgeInsets.zero,
+            value: s.duckMusic,
+            onChanged: (v) => setState(() => s.duckMusic = v),
+            activeThumbColor: _c.primary,
+            title: Text('Baisser la musique quand je parle', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13.5)),
+            subtitle: Text('La musique redevient forte dans les silences.', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
+          ),
+        ],
+      ],
       if (m != null)
         Padding(
           padding: const EdgeInsets.only(top: 4),
           child: Text('Avec une musique, ton montage est publié en vidéo.', style: TextStyle(color: _c.textSecondary, fontSize: 11.5)),
         ),
+    ]);
+  }
+
+  /// Un curseur de volume (0 à [max]) avec le pourcentage affiché.
+  Widget _volumeRow(String label, double value, double max, ValueChanged<double> onChanged, Key key) {
+    return Row(children: [
+      Expanded(flex: 5, child: Text(label, style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13))),
+      Expanded(flex: 6, child: Slider(key: key, value: value.clamp(0, max).toDouble(), min: 0, max: max, divisions: (max * 20).round(), onChanged: onChanged, activeColor: _c.primary)),
+      SizedBox(width: 42, child: Text('${(value * 100).round()} %', textAlign: TextAlign.right, style: TextStyle(color: _c.textSecondary, fontSize: 12.5))),
     ]);
   }
 

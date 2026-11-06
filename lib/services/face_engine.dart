@@ -47,10 +47,17 @@ class FaceGesture {
 
 /// Un effet magique : un petit dessin qui s'envole quand on fait le geste choisi.
 class FaceMagic {
-  const FaceMagic(this.label, this.icon, this.color);
+  const FaceMagic(this.label, this.icon, this.color, {this.kind = 'icon', this.text = '', this.color2 = 0xFFFFFFFF});
   final String label;
   final IconData icon;
   final int color;
+
+  /// `icon` (une icône colorée), `note` (un billet de banque dessiné) ou `coin` (une pièce avec un symbole).
+  final String kind;
+
+  /// Symbole écrit sur le billet ou la pièce ($, FCFA, F).
+  final String text;
+  final int color2;
 }
 
 /// Moteur maison d'effets de visage (Android) : caméra, suivi du visage (478 points), déformations, beauté, masques et enregistrement, tout en direct.
@@ -128,6 +135,10 @@ class FaceEngine {
     FaceMagic('Pièces', Icons.monetization_on_rounded, 0xFFFFC400),
     FaceMagic('Étoiles', Icons.star_rounded, 0xFFFFE066),
     FaceMagic('Notes', Icons.music_note_rounded, 0xFF7C4DFF),
+    FaceMagic('Dollars', Icons.attach_money_rounded, 0xFF2E9E57, kind: 'note', text: '\$', color2: 0xFFBFE8C9),
+    FaceMagic('Billets FCFA', Icons.payments_rounded, 0xFFE07B1F, kind: 'note', text: 'FCFA', color2: 0xFFFFE0B8),
+    FaceMagic('Pièces FCFA', Icons.paid_rounded, 0xFFB8C0C8, kind: 'coin', text: 'F', color2: 0xFF5D6670),
+    FaceMagic('Pièces dollar', Icons.monetization_on_rounded, 0xFFFFC400, kind: 'coin', text: '\$', color2: 0xFF8A6A00),
   ];
 
   static const gestures = [
@@ -195,7 +206,7 @@ class FaceEngine {
       await _channel.invokeMethod('setParticles', {'trigger': 'none'});
       return;
     }
-    final png = await iconPng(m.icon, Color(m.color), 96);
+    final png = m.kind == 'icon' ? await iconPng(m.icon, Color(m.color), 96) : await moneyPng(m, 128);
     await _channel.invokeMethod('setParticles', {'trigger': gesture, 'png': png});
   }
 
@@ -208,6 +219,38 @@ class FaceEngine {
       textDirection: TextDirection.ltr,
     )..layout();
     tp.paint(canvas, Offset((size - tp.width) / 2, (size - tp.height) / 2));
+    final img = await rec.endRecording().toImage(size, size);
+    final data = await img.toByteData(format: ui.ImageByteFormat.png);
+    return data!.buffer.asUint8List();
+  }
+
+  /// Dessine un billet de banque ou une pièce (image carrée, le billet est centré) : dollars, FCFA, pièces.
+  static Future<Uint8List> moneyPng(FaceMagic m, int size) async {
+    final rec = ui.PictureRecorder();
+    final canvas = ui.Canvas(rec);
+    final w = size.toDouble();
+    ui.Paint fill(int c) => ui.Paint()..color = Color(c)..isAntiAlias = true;
+    ui.Paint line(int c, double sw) => ui.Paint()..color = Color(c)..style = ui.PaintingStyle.stroke..strokeWidth = sw..isAntiAlias = true;
+    void label(String t, double fs, Offset center, int c) {
+      final tp = TextPainter(text: TextSpan(text: t, style: TextStyle(fontSize: fs, fontWeight: FontWeight.w900, color: Color(c))), textDirection: TextDirection.ltr)..layout();
+      tp.paint(canvas, center - Offset(tp.width / 2, tp.height / 2));
+    }
+
+    if (m.kind == 'coin') {
+      final c = Offset(w / 2, w / 2);
+      canvas.drawCircle(c, w * .44, fill(m.color));
+      canvas.drawCircle(c, w * .44, line(m.color2, w * .04));
+      canvas.drawCircle(c, w * .33, line(m.color2, w * .02));
+      label(m.text, w * (m.text.length > 1 ? .3 : .46), c, m.color2);
+    } else {
+      final r = RRect.fromRectAndRadius(Rect.fromCenter(center: Offset(w / 2, w / 2), width: w * .96, height: w * .56), Radius.circular(w * .06));
+      canvas.drawRRect(r, fill(m.color));
+      canvas.drawRRect(r.deflate(w * .04), line(m.color2, w * .02));
+      canvas.drawCircle(Offset(w / 2, w / 2), w * .16, fill(m.color2));
+      label(m.text, w * (m.text.length > 1 ? .13 : .2), Offset(w / 2, w / 2), m.color);
+      label(m.text, w * .08, Offset(w * .17, w * .27), m.color2);
+      label(m.text, w * .08, Offset(w * .83, w * .73), m.color2);
+    }
     final img = await rec.endRecording().toImage(size, size);
     final data = await img.toByteData(format: ui.ImageByteFormat.png);
     return data!.buffer.asUint8List();
