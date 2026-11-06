@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -47,6 +48,33 @@ class FaceEngine {
   ];
 
   static Future<void> setLook(int look) => _channel.invokeMethod('setLook', {'look': look});
+
+  /// Effets d'expression : un petit dessin s'envole quand on ouvre la bouche ou qu'on cligne des yeux.
+  static const magic = [
+    ('bouche', 'mouth', '❤️'),
+    ('pièces', 'mouth', '🪙'),
+    ('étoiles', 'blink', '⭐'),
+  ];
+
+  static Future<void> setMagic(String trigger, String emoji) async {
+    if (trigger == 'none') {
+      await _channel.invokeMethod('setParticles', {'trigger': 'none'});
+      return;
+    }
+    final png = await emojiPng(emoji, 96);
+    await _channel.invokeMethod('setParticles', {'trigger': trigger, 'png': png});
+  }
+
+  /// Dessine un emoji en image (PNG) pour le moteur.
+  static Future<Uint8List> emojiPng(String emoji, int size) async {
+    final rec = ui.PictureRecorder();
+    final canvas = ui.Canvas(rec);
+    final tp = TextPainter(text: TextSpan(text: emoji, style: TextStyle(fontSize: size * 0.8)), textDirection: TextDirection.ltr)..layout();
+    tp.paint(canvas, Offset((size - tp.width) / 2, (size - tp.height) / 2));
+    final img = await rec.endRecording().toImage(size, size);
+    final data = await img.toByteData(format: ui.ImageByteFormat.png);
+    return data!.buffer.asUint8List();
+  }
 
   static Future<void> setFront(bool front) => _channel.invokeMethod('setFront', {'front': front});
 

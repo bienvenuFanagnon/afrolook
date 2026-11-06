@@ -98,6 +98,13 @@ object FaceEngine {
                     v?.renderer?.beautyWarm = (call.argument<Double>("warm") ?: 0.0).toFloat()
                     result.success(null)
                 }
+                "setParticles" -> {
+                    // effets d'expression : `trigger` = mouth (bouche ouverte) ou blink (clin d'œil) ; `png` = le petit dessin qui s'envole
+                    val bytes = call.argument<ByteArray>("png")
+                    v?.renderer?.particleTrigger = call.argument<String>("trigger") ?: "none"
+                    if (bytes != null) v?.renderer?.particlePending = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                    result.success(null)
+                }
                 "setLook" -> { v?.renderer?.look = (call.argument<Int>("look") ?: 0).toFloat(); result.success(null) }
                 "setOverlay" -> {
                     // image (PNG) posée sur le visage : `anchor` dit où (eyes, top, nose, corner, face, mouth, chin), `size` la taille en largeur de visage
@@ -459,6 +466,17 @@ class FaceRenderer : GLSurfaceView.Renderer {
     @Volatile var beautySmooth = 0f
     @Volatile var beautyBright = 0f
     @Volatile var beautyWarm = 0f
+    @Volatile var particleTrigger = "none"
+    @Volatile var particlePending: Bitmap? = null
+    private var pTex = 0
+    private val pMax = 80
+    private val pxs = FloatArray(80); private val pys = FloatArray(80); private val pvx = FloatArray(80); private val pvy = FloatArray(80)
+    private val plife = FloatArray(80); private val psize = FloatArray(80)
+    private var pn = 0
+    private var pLastT = 0L
+    private var pAcc = 0f
+    private var pWasBlink = false
+    private val rnd = java.util.Random()
     @Volatile var look = 0f   // 0 aucun, 1 noir et blanc, 2 sépia, 3 vintage, 4 cinéma, 5 néon, 6 pop
     // image posée sur le visage (masque, lunettes, couronne…) qui suit la position, la taille et l'inclinaison de la tête
     @Volatile var overlayPending: Bitmap? = null
@@ -509,6 +527,7 @@ class FaceRenderer : GLSurfaceView.Renderer {
         ptProgram = buildPointProgram()
         ovProgram = buildOverlayProgram()
         ovTex = 0
+        pTex = 0
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -550,6 +569,8 @@ class FaceRenderer : GLSurfaceView.Renderer {
         }
         if (frameReady) { frameReady = false; try { st0.updateTexImage() } catch (_: Throwable) {} }
         st0.getTransformMatrix(st)
+
+        updateParticles(landmarks)
 
         // 1) l'écran
         drawScene(viewW, viewH)
@@ -655,11 +676,102 @@ class FaceRenderer : GLSurfaceView.Renderer {
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         GLES20.glDisableVertexAttribArray(pos)
         if (lm != null) drawOverlay(lm, csx, csy, aView)
+        drawParticles(aView)
+    }
+
+    private fun spawnParticle(x: Float, y: Float, vx: Float, vy: Float, size: Float, life: Float) {
+        if (pn >= pMax) return
+        pxs[pn] = x; pys[pn] = y; pvx[pn] = vx; pvy[pn] = vy; psize[pn] = size; plife[pn] = life
+        pn++
+    }
+
+    /** Fait vivre les particules (une fois par image) et en crée quand l'expression choisie se produit : bouche ouverte ou clin d'œil. */
+    private fun updateParticles(lm: Landmarks?) {
+        val now = SystemClock.uptimeMillis()
+        val dt = (if (pLastT == 0L) 16L else (now - pLastT).coerceIn(1L, 50L)) / 1000f
+        pLastT = now
+        var i = 0
+        while (i < pn) {
+            plife[i] -= dt
+            if (plife[i] <= 0f) {
+                val l = pn - 1
+                pxs[i] = pxs[l]; pys[i] = pys[l]; pvx[i] = pvx[l]; pvy[i] = pvy[l]; psize[i] = psize[l]; plife[i] = plife[l]
+                pn--
+                continue
+            }
+            pxs[i] += pvx[i] * dt; pys[i] += pvy[i] * dt
+            i++
+        }
+        val trig = particleTrigger
+        if (lm == null || trig == "none" || lm.x.size < 468) { pWasBlink = false; return }
+        val aView = viewW.toFloat() / viewH
+        val aImg = uprightAspect()
+        val csx = if (aView < aImg) aImg / aView else 1f
+        val csy = if (aView < aImg) 1f else aView / aImg
+        fun p(k: Int) = disp(lm, k, csx, csy)
+        val mouthOpen = dist(p(13), p(14), aView) / maxOf(0.001f, dist(p(61), p(291), aView))
+        val eyeOpen = (dist(p(159), p(145), aView) / maxOf(0.001f, dist(p(33), p(133), aView)) + dist(p(386), p(374), aView) / maxOf(0.001f, dist(p(362), p(263), aView))) / 2f
+        val blink = eyeOpen < 0.13f
+        if (trig == "mouth" && mouthOpen > 0.30f) {
+            val m = mid(p(13), p(14))
+            pAcc += dt * 14f
+            while (pAcc >= 1f) {
+                pAcc -= 1f
+                spawnParticle(m[0] + (rnd.nextFloat() - .5f) * 0.05f, m[1], (rnd.nextFloat() - .5f) * 0.16f, 0.22f + rnd.nextFloat() * 0.22f, 0.05f + rnd.nextFloat() * 0.04f, 1.3f)
+            }
+        } else if (trig == "blink" && blink && !pWasBlink) {
+            val e = mid(p(33), p(263))
+            for (k in 0 until 12) {
+                val ang = rnd.nextFloat() * 6.2831855f
+                val sp = 0.12f + rnd.nextFloat() * 0.25f
+                spawnParticle(e[0], e[1], cos(ang) * sp / aView, sin(ang) * sp, 0.04f + rnd.nextFloat() * 0.04f, 0.9f)
+            }
+        }
+        pWasBlink = blink
+    }
+
+    private fun drawParticles(aspect: Float) {
+        particlePending?.let { bmp ->
+            particlePending = null
+            if (pTex == 0) { val t = IntArray(1); GLES20.glGenTextures(1, t, 0); pTex = t[0] }
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, pTex)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
+            GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bmp, 0)
+            bmp.recycle()
+        }
+        if (pTex == 0 || pn == 0) return
+        GLES20.glUseProgram(ovProgram)
+        GLES20.glEnable(GLES20.GL_BLEND)
+        GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA)
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, pTex)
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(ovProgram, "uOv"), 0)
+        val ap = GLES20.glGetAttribLocation(ovProgram, "aP"); val at = GLES20.glGetAttribLocation(ovProgram, "aT")
+        for (i in 0 until pn) {
+            val s = psize[i]
+            val cx = pxs[i]; val cy = pys[i]
+            GLES20.glUniform1f(GLES20.glGetUniformLocation(ovProgram, "uAlpha"), minOf(1f, plife[i] / 0.4f))
+            ovBuf.clear()
+            val ks = arrayOf(floatArrayOf(-.5f, -.5f), floatArrayOf(.5f, -.5f), floatArrayOf(-.5f, .5f), floatArrayOf(.5f, .5f))
+            for (k in ks) {
+                ovBuf.put((cx + k[0] * s / aspect) * 2f - 1f); ovBuf.put((cy + k[1] * s) * 2f - 1f)
+                ovBuf.put(k[0] + .5f); ovBuf.put(.5f - k[1])
+            }
+            ovBuf.position(0); GLES20.glVertexAttribPointer(ap, 2, GLES20.GL_FLOAT, false, 16, ovBuf); GLES20.glEnableVertexAttribArray(ap)
+            ovBuf.position(2); GLES20.glVertexAttribPointer(at, 2, GLES20.GL_FLOAT, false, 16, ovBuf); GLES20.glEnableVertexAttribArray(at)
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+        }
+        GLES20.glDisableVertexAttribArray(ap); GLES20.glDisableVertexAttribArray(at)
+        GLES20.glDisable(GLES20.GL_BLEND)
+        ovBuf.position(0)
     }
 
     private fun buildOverlayProgram(): Int {
         val vs = "attribute vec2 aP; attribute vec2 aT; varying vec2 vT; void main() { gl_Position = vec4(aP, 0.0, 1.0); vT = aT; }"
-        val fs = "precision mediump float; varying vec2 vT; uniform sampler2D uOv; void main() { gl_FragColor = texture2D(uOv, vT); }"
+        val fs = "precision mediump float; varying vec2 vT; uniform sampler2D uOv; uniform float uAlpha; void main() { gl_FragColor = texture2D(uOv, vT) * uAlpha; }"
         val prog = GLES20.glCreateProgram()
         GLES20.glAttachShader(prog, compile(GLES20.GL_VERTEX_SHADER, vs))
         GLES20.glAttachShader(prog, compile(GLES20.GL_FRAGMENT_SHADER, fs))
@@ -713,6 +825,7 @@ class FaceRenderer : GLSurfaceView.Renderer {
         // (y en espace d'affichage 0 à 1 → -1 à 1)
         for (i in 0 until 4) ovBuf.put(i * 4 + 1, ovBuf.get(i * 4 + 1) * 2f - 1f)
         GLES20.glUseProgram(ovProgram)
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(ovProgram, "uAlpha"), 1f)
         GLES20.glEnable(GLES20.GL_BLEND)
         GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA)
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)

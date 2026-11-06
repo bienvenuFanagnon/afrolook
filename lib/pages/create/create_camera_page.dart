@@ -56,6 +56,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
   bool _engFront = true;
   String _deform = 'none';
   int _look = 0;
+  int _magic = -1; // effet d'expression choisi (index dans FaceEngine.magic), -1 = aucun
 
   // ── Filtres de visage en direct (Android) ──
   FaceFilter _filter = FaceFilter.none;
@@ -198,6 +199,17 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
         await Future<void>.delayed(const Duration(milliseconds: 400));
       }
     }
+  }
+
+  Future<void> _pickMagic(int i) async {
+    setState(() => _magic = _magic == i ? -1 : i);
+    try {
+      if (_magic < 0) {
+        await FaceEngine.setMagic('none', '');
+      } else {
+        await FaceEngine.setMagic(FaceEngine.magic[_magic].$2, FaceEngine.magic[_magic].$3);
+      }
+    } catch (_) {}
   }
 
   Future<void> _pickLook(int look) async {
@@ -633,7 +645,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
       const Positioned(bottom: 0, left: 0, right: 0, height: 260, child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter, colors: [Color(0xCC000000), Color(0x00000000)])))),
       if (_filterNote != null) _filterBanner(),
       if (_preparing || _prepFailed) _prepCard(c),
-      if (const bool.fromEnvironment('TEST_BUILD') && FaceFilters.available) _diagnostic(),
+      if (const bool.fromEnvironment('TEST_BUILD') && FaceFilters.available && !_eng) _diagnostic(),
       SafeArea(
         child: Column(children: [
           Padding(
@@ -692,6 +704,20 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
                     icon: const Icon(Icons.tune_rounded, color: Colors.white, size: 20),
                   ),
                 ),
+                if (_eng)
+                  for (var m = 0; m < FaceEngine.magic.length; m++)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        key: ValueKey('magic_$m'),
+                        label: Text('${FaceEngine.magic[m].$3} ${context.tr(FaceEngine.magic[m].$1)}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _magic == m ? c.onAccent : Colors.white)),
+                        selected: _magic == m,
+                        selectedColor: c.accent,
+                        backgroundColor: const Color(0x99000000),
+                        side: BorderSide.none,
+                        onSelected: _recording ? null : (_) => _pickMagic(m),
+                      ),
+                    ),
                 if (_eng)
                   for (final l in FaceEngine.looks.skip(1))
                     Padding(
