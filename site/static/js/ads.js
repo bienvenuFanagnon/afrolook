@@ -1236,7 +1236,7 @@ async function initRegieAdmin() {
   const fb = await boot(() => load());
   if (!fb) return;
   const { call } = fb;
-  const st = { tab: 'adv', filter: 'pending', afilter: 'open', adv: [], ads: [], pays: [], payMeta: null, page: 1, profiles: [], props: [], alerts: [], alertsOpen: 0, sharers: [], camps: [] };
+  const st = { tab: 'adv', filter: 'pending', afilter: 'open', adv: [], ads: [], pays: [], payMeta: null, page: 1, profiles: [], props: [], alerts: [], alertsOpen: 0, sharers: [], camps: [], mail: null, mstatus: 'all', mkind: '', mq: '' };
   window.addEventListener('afl-admin', () => { if (typeof drawBar === 'function') drawBar(); });   // l'onglet « Soldes » n'apparaît qu'une fois le compte reconnu comme équipe d'argent
   const date = (ms) => (ms ? new Date(Number(ms)).toLocaleDateString('fr-FR') : '—');
   const row = (k, v) => h('div', { class: 'rg-row' }, h('span', { text: k }), h('b', { text: v == null || v === '' ? '—' : String(v) }));
@@ -1244,7 +1244,7 @@ async function initRegieAdmin() {
   const tag = (cls, text) => h('span', { class: 'st ' + cls, text });
   const nice = (e) => { const m = String(e && e.message || ''); if (/administrateurs|permission/.test(m) || (e && e.code === 'functions/permission-denied')) return 'Cette page est réservée aux administrateurs : connecte-toi avec le compte Google utilisé dans l\'application.'; if (/profil_non_valide/.test(m)) return 'Valide d\'abord le profil du diffuseur (onglet Diffuseurs).'; if (/verification_requise/.test(m)) return 'Ce site n\'a pas encore prouvé qu\'il appartient au diffuseur : le diffuseur doit ajouter la balise de vérification sur son site, puis cliquer sur « Vérifier » dans son espace.'; if (/hors_ligne/.test(m)) return 'Ce site ou cette application ne répond pas : il doit être en ligne.'; if (/regles_a_accepter/.test(m)) return 'Le diffuseur doit d\'abord accepter la dernière version des règles (dans son espace).'; if (/motif_obligatoire/.test(m)) return 'Le motif doit faire 5 caractères au moins.'; if (/r.f.rence_obligatoire/.test(m)) return 'La référence du paiement est obligatoire (3 caractères au moins).'; if (/deja_traite/.test(m)) return 'Cette demande a déjà été traitée.'; return friendly(e, m.replace(/^.*?:\s*/, '') || 'Action impossible pour le moment.'); };
 
-  const tabs = { adv: 'Annonceurs', ads: 'Annonces', pub: 'Diffuseurs', prop: 'Sites et applications', share: 'Partageurs', camp: 'Campagnes Partage', pay: 'Retraits', alert: 'Alertes', wal: 'Soldes' };
+  const tabs = { adv: 'Annonceurs', ads: 'Annonces', pub: 'Diffuseurs', prop: 'Sites et applications', share: 'Partageurs', camp: 'Campagnes Partage', pay: 'Retraits', alert: 'Alertes', wal: 'Soldes', mail: 'E-mails' };
   const payFilters = [['requested', 'À payer'], ['paid', 'Payés'], ['refused', 'Refusés'], ['all', 'Tous']];
   const alertFilters = [['open', 'À vérifier'], ['held', 'Paiements bloqués'], ['reviewed', 'Vérifiées'], ['all', 'Toutes']];
   const filters = [['all', 'Tous'], ['pending', 'En attente'], ['active', 'Validés'], ['refused', 'Refusés'], ['suspended', 'Suspendus']];
@@ -1281,8 +1281,8 @@ async function initRegieAdmin() {
     const k = st.k || {}, pick = (x, fallback) => (x ? x.total : fallback);
     const waiting = (key) => !!(k[key] && k[key].wait);
     const count = { adv: pick(k.adv, st.adv.length), ads: pick(k.ads, st.ads.length), pub: pick(k.pub, st.profiles.length), prop: pick(k.prop, st.props.length), share: pick(k.share, st.sharers.length), camp: pick(k.camp, st.camps.length), pay: pick(k.pay, st.pays.length), alert: k.alert ? k.alert.wait : (st.tab === 'alert' && st.afilter === 'open' ? st.alerts.length : st.alertsOpen) };
-    $('#rg-tabs').replaceChildren(...Object.entries(tabs).filter(([tk]) => (tk !== 'pay' || !st.k || st.k.pay) && (tk !== 'wal' || IS_OFFERED)).map(([tk, l]) => h('a', { href: '#', class: (st.tab === tk ? 'on ' : '') + (tk === 'alert' && count.alert ? 'rg-alert' : (waiting(tk) ? 'rg-wait' : '')), onclick: (e) => { e.preventDefault(); st.tab = tk; st.page = 1; if (tk === 'pay' && !payFilters.some(([f]) => f === st.filter)) st.filter = 'requested'; if (tk !== 'pay' && tk !== 'alert' && !filters.some(([f]) => f === st.filter)) st.filter = 'pending'; load(); } }, l, tk === 'wal' ? null : h('i', { text: String(count[tk]) }))));
-    const fl = st.tab === 'wal' ? [] : st.tab === 'alert' ? alertFilters : st.tab === 'pay' ? payFilters : filters, cur = st.tab === 'alert' ? st.afilter : st.filter;
+    $('#rg-tabs').replaceChildren(...Object.entries(tabs).filter(([tk]) => (tk !== 'pay' || !st.k || st.k.pay) && ((tk !== 'wal' && tk !== 'mail') || IS_OFFERED)).map(([tk, l]) => h('a', { href: '#', class: (st.tab === tk ? 'on ' : '') + (tk === 'alert' && count.alert ? 'rg-alert' : (waiting(tk) ? 'rg-wait' : '')), onclick: (e) => { e.preventDefault(); st.tab = tk; st.page = 1; if (tk === 'pay' && !payFilters.some(([f]) => f === st.filter)) st.filter = 'requested'; if (tk !== 'pay' && tk !== 'alert' && !filters.some(([f]) => f === st.filter)) st.filter = 'pending'; load(); } }, l, tk === 'wal' ? null : h('i', { text: String(count[tk]) }))));
+    const fl = (st.tab === 'wal' || st.tab === 'mail') ? [] : st.tab === 'alert' ? alertFilters : st.tab === 'pay' ? payFilters : filters, cur = st.tab === 'alert' ? st.afilter : st.filter;
     $('#rg-filters').replaceChildren(...fl.map(([k, l]) => h('span', { class: cur === k ? 'on' : false, onclick: () => { if (st.tab === 'alert') st.afilter = k; else st.filter = k; st.page = 1; load(); } }, l)));
   };
 
@@ -1448,10 +1448,41 @@ async function initRegieAdmin() {
   }
   function draw() {
     drawBar();
-    const list = st.tab === 'wal' ? [walCard()] : st.tab === 'share' ? st.sharers.map(sharerCard) : st.tab === 'camp' ? st.camps.map(campCard) : st.tab === 'alert' ? st.alerts.map(alertCard) : st.tab === 'adv' ? st.adv.map(advCard) : st.tab === 'ads' ? st.ads.map(adCard) : st.tab === 'pay' ? st.pays.map(payCard) : st.tab === 'pub' ? st.profiles.map(pubCard) : st.props.map(propCard);
+    const list = st.tab === 'wal' ? [walCard()] : st.tab === 'mail' ? [mailCard()] : st.tab === 'share' ? st.sharers.map(sharerCard) : st.tab === 'camp' ? st.camps.map(campCard) : st.tab === 'alert' ? st.alerts.map(alertCard) : st.tab === 'adv' ? st.adv.map(advCard) : st.tab === 'ads' ? st.ads.map(adCard) : st.tab === 'pay' ? st.pays.map(payCard) : st.tab === 'pub' ? st.profiles.map(pubCard) : st.props.map(propCard);
     $('#rg-list').replaceChildren(...(list.length ? list : [h('p', { class: 'adempty', text: 'Rien à afficher pour ce filtre.' })]));
     const pm = st.payMeta;   // retraits : pages de 50
     if (st.tab === 'pay' && pm && pm.total > pm.pageSize) { const pages = Math.ceil(pm.total / pm.pageSize); $('#rg-list').append(h('div', { class: 'rg-act' }, h('button', { class: 'btn btn-line adsm', type: 'button', text: 'Précédent', disabled: st.page <= 1, onclick: () => { st.page -= 1; load(); } }), h('small', { text: `Page ${st.page} sur ${pages} · ${n(pm.total)} demandes` }), h('button', { class: 'btn btn-line adsm', type: 'button', text: 'Suivant', disabled: st.page >= pages, onclick: () => { st.page += 1; load(); } }))); }
+  }
+  // « E-mails » : suivi des e-mails de l'application (équipe d'argent) : état du mode d'envoi, chiffres des 24 h, derniers e-mails avec la raison des échecs, envoyer maintenant, réessayer.
+  // Le texte des e-mails n'est jamais montré : seulement l'objet, le destinataire et l'état.
+  function mailCard() {
+    const m = st.mail || { config: {}, counts24h: {}, kinds: [], items: [] }, cfg = m.config || {}, cnt = m.counts24h || {};
+    const okCfg = cfg.real && (cfg.mailer !== 'smtp' || (cfg.smtpHost && cfg.smtpUser));
+    const banner = h('div', { class: 'rg-note', style: 'border-left:4px solid ' + (okCfg ? '#0f8a3c' : '#c0392b') + ';padding:8px 12px;margin-bottom:10px' },
+      !cfg.real ? 'Les e-mails ne sont PAS vraiment envoyés : le mode d’envoi est « ' + cfg.mailer + ' » (ils sont seulement écrits dans un journal). Il faut régler le fournisseur d’e-mails sur le serveur.'
+        : (cfg.mailer === 'smtp' && !(cfg.smtpHost && cfg.smtpUser)) ? 'Mode SMTP, mais l’hôte ou l’identifiant ne semble pas réglé : les envois risquent d’échouer.'
+          : 'Envoi réel actif (' + cfg.mailer + '). Expéditeur : ' + cfg.from + '.');
+    const tiles = h('div', { class: 'adchips' }, h('span', { text: 'Envoyés (24 h) : ' + n(cnt.sent || 0) }), h('span', { text: 'En attente : ' + n(cnt.pending || 0) }), h('span', { text: 'En échec : ' + n(cnt.failed || 0) }));
+    const act = h('div', { class: 'rg-act' });
+    const reload = () => load();
+    const dispatch = h('button', { class: 'btn btn-primary adsm', type: 'button', text: 'Envoyer maintenant ce qui attend' + (st.mkind ? ' (' + st.mkind + ')' : '') });
+    dispatch.addEventListener('click', async () => {
+      dispatch.disabled = true;
+      try { const r = await call('adsEmailsDispatch', { kind: st.mkind || '' }); status(n(r.sent || 0) + ' envoyé(s), ' + n(r.failed || 0) + ' en échec.'); await reload(); } catch (e) { showError(friendly(e, 'Envoi impossible pour le moment.')); dispatch.disabled = false; }
+    });
+    act.append(dispatch);
+    const statuses = [['all', 'Tous'], ['pending', 'En attente'], ['sent', 'Envoyés'], ['failed', 'En échec']];
+    const fs = h('div', { class: 'adchips' }, ...statuses.map(([k, l]) => h('span', { class: st.mstatus === k ? 'on' : false, text: l, onclick: () => { st.mstatus = k; reload(); } })));
+    const ks = h('div', { class: 'adchips' }, h('span', { class: st.mkind ? false : 'on', text: 'Tous les types', onclick: () => { st.mkind = ''; reload(); } }), ...(m.kinds || []).map((k) => h('span', { class: st.mkind === k ? 'on' : false, text: k, onclick: () => { st.mkind = st.mkind === k ? '' : k; reload(); } })));
+    const q = h('input', { type: 'search', placeholder: 'Chercher une adresse ou un objet', value: st.mq, 'aria-label': 'Chercher un e-mail' });
+    q.addEventListener('keydown', (e) => { if (e.key === 'Enter') { st.mq = q.value.trim(); reload(); } });
+    const rows = (m.items || []).map((it) => {
+      const when = it.sentAt || it.createdAt, d = when ? new Date(when) : null;
+      const retry = it.status === 'failed' ? h('button', { class: 'btn btn-line adsm', type: 'button', text: 'Réessayer', onclick: async () => { try { await call('adsEmailRetry', { id: it.id }); status('Remis en file : il repartira à la prochaine passe ou avec « Envoyer maintenant ».'); await reload(); } catch (e) { showError(friendly(e, 'Action impossible pour le moment.')); } } }) : null;
+      return h('div', { class: 'rg-row' }, h('span', { text: (it.status === 'sent' ? '✅ ' : it.status === 'failed' ? '❌ ' : '⏳ ') + it.subject + ' · ' + it.to + ' · ' + it.kind + (d ? ' · ' + d.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '') + (it.error ? ' · ' + it.error : '') }), retry);
+    });
+    return h('article', { class: 'rg-card' }, h('div', { class: 'rg-h' }, h('div', {}, h('b', { text: 'Suivi des e-mails' }), h('small', { text: 'Derniers e-mails de l’application : état, destinataire et raison des échecs. Le texte n’est jamais affiché.' }))),
+      banner, tiles, act, fs, ks, h('label', { class: 'fl' }, h('span', { text: 'Recherche (Entrée)' }), q), ...(rows.length ? rows : [h('p', { class: 'adempty', text: 'Aucun e-mail ne correspond.' })]));
   }
   // « Soldes » : l'équipe d'argent recharge GRATUITEMENT le solde d'un annonceur, retrouvé par son e-mail (aucun paiement, motif obligatoire, journal de l'équipe)
   let walKey = '';
@@ -1491,6 +1522,12 @@ async function initRegieAdmin() {
   async function load() {
     loadKpis();
     if (st.tab === 'wal') { draw(); return; }
+    if (st.tab === 'mail') {
+      $('#rg-list').replaceChildren(h('p', { class: 'adempty', text: 'Chargement…' }));
+      try { st.mail = await call('adsEmailsAdmin', { status: st.mstatus, kind: st.mkind || undefined, q: st.mq || undefined }); draw(); }
+      catch (e) { $('#rg-list').replaceChildren(h('p', { class: 'adempty', text: friendly(e, 'Impossible de charger les e-mails pour le moment.') })); }
+      return;
+    }
     $('#rg-list').replaceChildren(h('p', { class: 'adempty', text: 'Chargement…' }));
     try {
       if (st.tab === 'pay') { const r = await call('adsPubAdminList', { payouts: true, status: st.filter, page: st.page }); st.pays = r.payouts || []; st.payMeta = r; draw(); return; }
