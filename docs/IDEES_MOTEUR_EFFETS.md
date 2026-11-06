@@ -13,7 +13,9 @@
 | Masques qui suivent la tête | ✅ | lunettes, couronne, nez, cœurs, singe, chat, robot, clown, héros, barre : position, taille et inclinaison suivent le visage |
 | Photo et vidéo avec effets | ✅ | l'image enregistrée est exactement celle de l'écran (son du micro inclus) |
 | Caméra avant et arrière, paysage | ✅ | le sens « selfie » est celui par défaut ; l'image reste droite quand le téléphone tourne |
-| Looks (couleurs) | 🔧 | noir et blanc, sépia, vintage, cinéma, néon, pop |
+| Looks (couleurs) | ✅ | noir et blanc, sépia, vintage, cinéma, néon, pop (se combinent avec tout) |
+| Effets d'expression | ✅ | cœurs ou pièces qui sortent de la bouche ouverte, étoiles au clin d'œil |
+| Effets de temps (Studio) | ✅ | accéléré ×2 et ×4, ralenti, rembobinage, boomerang, rampe de vitesse (API `/v1/studio/time`, outil « Temps » de l'éditeur) |
 
 ## 2. Combinaisons possibles (ce qui rend l'application unique)
 
@@ -24,7 +26,7 @@ Un seul geste, plusieurs effets ensemble : **beauté + look + déformation + mas
 - « Super-héros » : masque héros + look cinéma + voix grave (Studio).
 - **Recettes à partager** 💡 : une combinaison s'enregistre sous un nom, se partage par lien (« essaie ma recette ») et s'ouvre directement dans la caméra. C'est un moteur de viralité : chaque recette partagée ramène des gens dans la caméra Afrolook.
 
-## 3. Effets d'expression (le visage commande l'effet) 💡 📋
+## 3. Effets d'expression (le visage commande l'effet) ✅ bouche ouverte et clin d'œil · 📋 le reste
 
 Le moteur voit si la bouche est ouverte, si on sourit, si on lève les sourcils, si on cligne des yeux, si la tête tourne.
 - **Bouche ouverte** → pluie de cœurs, d'étoiles ou de pièces Afrolook qui sortent de la bouche.
@@ -34,7 +36,7 @@ Le moteur voit si la bouche est ouverte, si on sourit, si on lève les sourcils,
 - **Tête tournée à gauche / droite** → change de masque ou de look (navigation sans toucher l'écran).
 - **Bisou** (bouche en avant) → envoie un cœur à l'ami mis en avant.
 
-## 4. Effets de temps : « accélérer, rembobiner, rouler vite une vidéo » 💡 📋
+## 4. Effets de temps : « accélérer, rembobiner, rouler vite une vidéo » ✅ accéléré, ralenti, rembobinage, boomerang, rampe · 📋 le reste
 
 À appliquer pendant ou après le tournage (le Studio sait déjà couper, régler la voix, mettre des sous-titres) :
 - **Accéléré** (×2, ×4), **ralenti** (×0,5), **rampe de vitesse** (lent → très vite → lent, sur le rythme de la musique).
@@ -70,9 +72,9 @@ Le moteur voit si la bouche est ouverte, si on sourit, si on lève les sourcils,
 ## 8. Ordre de réalisation proposé
 
 1. ✅ Brancher le moteur sur la caméra de création (photo, vidéo, beauté, masques, déformations).
-2. 🔧 Looks de couleur (cheap, très visibles, se combinent avec tout).
-3. 📋 Effets d'expression : bouche ouverte, sourcils, clin d'œil (les 478 points suffisent, rien à télécharger).
-4. 📋 Effets de temps côté Studio (accéléré, ralenti, rembobinage, boucle) : traitement ffmpeg sur l'API.
+2. ✅ Looks de couleur.
+3. ✅ Effets d'expression : bouche ouverte et clin d'œil ; 📋 sourcils, sourire, tête tournée.
+4. ✅ Effets de temps côté Studio (accéléré, ralenti, rembobinage, boomerang, rampe) ; 📋 écho, saut dans le temps, coupe sur le mouvement.
 5. 📋 Recettes d'effets partageables + défi du jour.
 6. 📋 Fond virtuel (nécessite le modèle de segmentation, ~250 Ko).
 7. 💡 Gestes de la main, mur d'amis, pièces en effet.
