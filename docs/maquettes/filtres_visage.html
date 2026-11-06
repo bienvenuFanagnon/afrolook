@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Effets de visage – proposition</title>
+<style>
+:root{--bg:#F6F5F1;--card:#fff;--ink:#17191C;--muted:#5E625F;--line:#E2E0D8;--y:#FFC400;--yt:#8A6500;--ok:#158246;--warn:#B25E00;--no:#C0262D;--cam:#23272C}
+@media (prefers-color-scheme:dark){:root{--bg:#121416;--card:#1D2024;--ink:#F3F1EA;--muted:#A5A8A4;--line:#2F343A;--yt:#FFC400;--ok:#2ECC71;--warn:#FF9248;--no:#FF6B6F}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,Segoe UI,Roboto,sans-serif;padding:24px 16px 64px}
+main{max-width:1080px;margin:auto}h1{font-size:26px;margin:0 0 6px}h2{font-size:19px;margin:34px 0 10px}p.lead{color:var(--muted);margin:0 0 18px;max-width:70ch}
+.tag{display:inline-block;font-size:11.5px;font-weight:800;letter-spacing:.04em;padding:3px 9px;border-radius:99px;text-transform:uppercase}
+.t1{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}.t2{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}.t3{background:color-mix(in srgb,var(--no) 16%,transparent);color:var(--no)}
+.phones{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:22px}
+figure{margin:0}figcaption{margin-top:10px;font-size:13.5px;color:var(--muted)}figcaption b{color:var(--ink);display:block;font-size:14.5px;margin-bottom:2px}
+.phone{width:100%;max-width:250px;aspect-ratio:9/17;margin:auto;border-radius:26px;background:var(--cam);position:relative;overflow:hidden;border:6px solid #0c0d0e;box-shadow:0 8px 24px #0003}
+.phone svg.face{position:absolute;left:50%;top:44%;width:62%;transform:translate(-50%,-50%)}
+.top{position:absolute;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;color:#fff;font-size:18px}
+.note{position:absolute;top:44px;left:50%;transform:translateX(-50%);background:#000a;color:#fff;font-size:11px;font-weight:700;padding:5px 11px;border-radius:99px;white-space:nowrap}
+.tabs{position:absolute;left:0;right:0;bottom:92px;display:flex;gap:6px;padding:0 10px;overflow:hidden}
+.tabs span{font-size:10.5px;font-weight:800;color:#fff;background:#0007;border-radius:99px;padding:4px 9px;white-space:nowrap}.tabs span.on{background:var(--y);color:#17191C}
+.row{position:absolute;left:0;right:0;bottom:44px;display:flex;gap:8px;padding:0 10px;justify-content:center}
+.row i{width:34px;height:34px;border-radius:50%;background:#0008;border:2px solid #fff6;display:grid;place-items:center;font-style:normal;font-size:17px}.row i.on{border-color:var(--y);background:#0009}
+.shutter{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:34px;height:34px;border-radius:50%;border:3px solid #fff;display:grid;place-items:center}.shutter b{width:22px;height:22px;border-radius:50%;background:#E5383B}
+.lock{position:absolute;inset:0;background:#0006;display:grid;place-items:center;color:#fff;font-weight:800;font-size:12px;text-align:center;padding:20px}
+table{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;font-size:14px}
+th,td{padding:10px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}tr:last-child td{border-bottom:0}
+.box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.cta{border-left:4px solid var(--y);padding-left:14px}
+.scroll{overflow-x:auto}
+</style>
+</head>
+<body>
+<main>
+<h1>Effets de visage : proposition</h1>
+<p class="lead">Objectif : que la personne puisse se filmer <b>sans montrer son vrai visage</b>, avec des effets amusants qui suivent ses mouvements. Les visages ci-dessous sont des dessins : ce sont des maquettes, pas le rendu final.</p>
+
+<h2>1. Ce que la caméra pourrait ressembler</h2>
+<div class="phones">
+  <figure>
+    <div class="phone">
+      <div class="top"><span>✕</span><span>⚡ 🔄</span></div>
+      <svg class="face" viewBox="0 0 120 150"><use href="#real"/></svg>
+      <div class="note">Place ton visage devant la caméra</div>
+      <div class="tabs"><span class="on">Cache-visage</span><span>Animaux</span><span>Accessoires</span><span>Fun 🔒</span></div>
+      <div class="row"><i>🚫</i><i class="on">🐵</i><i>🤖</i><i>🎭</i><i>🟦</i></div>
+      <div class="shutter"><b></b></div>
+    </div>
+    <figcaption><b>Écran caméra</b>Une rangée de catégories, puis les effets. Le visage de la personne est remplacé ou masqué en direct.</figcaption>
+  </figure>
+  <figure>
+    <div class="phone">
+      <svg class="face" viewBox="0 0 120 150"><use href="#mask-monkey"/></svg>
+      <div class="top"><span>✕</span><span>⚡ 🔄</span></div>
+      <div class="tabs"><span>Cache-visage</span><span class="on">Animaux</span><span>Accessoires</span></div>
+      <div class="row"><i>🚫</i><i class="on">🐵</i><i>🐱</i><i>🐰</i><i>🦁</i></div>
+      <div class="shutter"><b></b></div>
+    </div>
+    <figcaption><b>Masque complet</b>Un personnage prend la place du visage et suit la tête (tourner, pencher). Le vrai visage n’apparaît jamais.</figcaption>
+  </figure>
+  <figure>
+    <div class="phone">
+      <svg class="face" viewBox="0 0 120 150"><use href="#pixel"/></svg>
+      <div class="top"><span>✕</span><span>⚡ 🔄</span></div>
+      <div class="note">Visage pixellisé</div>
+      <div class="tabs"><span class="on">Cache-visage</span><span>Animaux</span><span>Accessoires</span></div>
+      <div class="row"><i>🚫</i><i>🐵</i><i class="on">🟦</i><i>🌫️</i><i>⬛</i></div>
+      <div class="shutter"><b></b></div>
+    </div>
+    <figcaption><b>Pixels / flou / bandeau noir</b>Anonymat total : on voit la personne bouger et parler, mais pas son visage.</figcaption>
+  </figure>
+  <figure>
+    <div class="phone">
+      <svg class="face" viewBox="0 0 120 150"><use href="#cat"/></svg>
+      <div class="top"><span>✕</span><span>⚡ 🔄</span></div>
+      <div class="tabs"><span>Cache-visage</span><span>Animaux</span><span class="on">Accessoires</span></div>
+      <div class="row"><i>🚫</i><i>🕶️</i><i class="on">🐱</i><i>👑</i><i>🥸</i></div>
+      <div class="shutter"><b></b></div>
+    </div>
+    <figcaption><b>Accessoires</b>Oreilles, moustache, lunettes, couronne, bandeau de super-héros : posés sur le vrai visage.</figcaption>
+  </figure>
+  <figure>
+    <div class="phone">
+      <svg class="face" viewBox="0 0 120 150"><use href="#bigeyes"/></svg>
+      <div class="top"><span>✕</span><span>⚡ 🔄</span></div>
+      <div class="tabs"><span>Animaux</span><span>Accessoires</span><span class="on">Fun 🔒</span></div>
+      <div class="row"><i>🚫</i><i class="on">👀</i><i>👄</i><i>🫠</i><i>🙃</i></div>
+      <div class="shutter"><b></b></div>
+      <div class="lock">Déformations<br>(gros yeux, grande bouche…)<br><small>Gros chantier : voir ci-dessous</small></div>
+    </div>
+    <figcaption><b>Fun : déformations</b>Gros yeux, bouche étirée, visage allongé. C’est le niveau 3 : possible, mais bien plus lourd à fabriquer.</figcaption>
+  </figure>
+  <figure>
+    <div class="phone">
+      <svg class="face" viewBox="0 0 120 150"><use href="#mask-robot"/></svg>
+      <div class="top"><span>✕</span><span>⚡ 🔄</span></div>
+      <div class="note">🎙️ Voix : Robot</div>
+      <div class="tabs"><span class="on">Cache-visage</span><span>Animaux</span><span>Accessoires</span></div>
+      <div class="row"><i>🚫</i><i>🐵</i><i class="on">🤖</i><i>🎭</i><i>🟦</i></div>
+      <div class="shutter"><b></b></div>
+    </div>
+    <figcaption><b>Visage + voix</b>On combine le masque avec l’effet de voix déjà prêt (Grave, Aiguë, Radio, Anonyme…) : identité cachée de bout en bout.</figcaption>
+  </figure>
+</div>
+
+<h2>2. Ce qu’on peut intégrer, et à quel prix</h2>
+<div class="scroll"><table>
+<tr><th>Niveau</th><th>Effets</th><th>Comment</th><th>Effort / risque</th></tr>
+<tr><td><span class="tag t1">1 · Déjà fait</span></td><td>Emoji sur le visage : lunettes 😎, couronne 👑, nez rouge, cœur 💖. En direct sur photo et vidéo.</td><td>Détection du visage (ML Kit, Android). La vidéo reçoit le filtre après coup, par le serveur.</td><td>Fait. À tester sur téléphone.</td></tr>
+<tr><td><span class="tag t2">2 · Prochaine étape</span></td><td><b>Masques complets</b> (singe, chat, robot, clown…), <b>pixels / flou / bandeau</b>, oreilles, moustache, bandeau de héros, lunettes variées. Le personnage suit la tête (tourner, pencher).</td><td>Mêmes outils qu’aujourd’hui : on dessine une image (PNG) sur le visage, qui suit la position et l’inclinaison. Le flou et les pixels se font sur la zone du visage.</td><td>Moyen : quelques jours pour un premier lot. Pas de nouveau plugin, pas de Mo en plus sur iOS. Pas de déformation du vrai visage.</td></tr>
+<tr><td><span class="tag t2">2+ · Option</span></td><td><b>Personnage animé</b> : le personnage ferme les yeux quand la personne cligne, sourit quand elle sourit.</td><td>ML Kit donne la probabilité de sourire et d’yeux ouverts.</td><td>Moyen : animations à dessiner pour chaque personnage.</td></tr>
+<tr><td><span class="tag t3">3 · Gros chantier</span></td><td><b>Déformations réelles</b> : gros yeux, grande bouche, visage allongé, bouche qui bouge avec la voix.</td><td>Il faut un moteur de rendu en temps réel (OpenGL) et un maillage du visage (type MediaPipe Face Mesh), donc refaire la caméra. Ou acheter un kit de filtres tout fait (payant, avec abonnement ou licence, plusieurs dizaines de Mo en plus).</td><td>Élevé : plusieurs semaines, tests sur beaucoup de téléphones, APK plus lourd. Iphone : tout à refaire côté Apple.</td></tr>
+</table></div>
+
+<h2>3. Ma recommandation</h2>
+<div class="cols">
+  <div class="box cta"><b>Faire le niveau 2 maintenant</b><br>Il répond à ton besoin de départ : ne pas montrer son vrai visage. Masque complet, pixels, flou, bandeau, accessoires, plus la voix modifiée. Rapide à tester, et sans alourdir l’application.</div>
+  <div class="box"><b>Garder le niveau 3 pour plus tard</b><br>Les déformations font joli sur TikTok mais coûtent cher. À décider quand le niveau 2 aura été essayé par des vraies personnes.</div>
+  <div class="box"><b>Limite à connaître</b><br>Sur iPhone, ces effets ne sont pas encore disponibles (je ne peux pas compiler ni tester Apple ici). Android d’abord.</div>
+</div>
+</main>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="real" viewBox="0 0 120 150"><ellipse cx="60" cy="76" rx="42" ry="56" fill="#E9B98F"/><ellipse cx="45" cy="66" rx="5" ry="3.5" fill="#222"/><ellipse cx="75" cy="66" rx="5" ry="3.5" fill="#222"/><path d="M44 98q16 12 32 0" stroke="#7a2e2e" stroke-width="4" fill="none" stroke-linecap="round"/><path d="M60 72v14" stroke="#c48f68" stroke-width="3"/></symbol>
+    <symbol id="mask-monkey" viewBox="0 0 120 150"><circle cx="14" cy="64" r="16" fill="#8a5a33"/><circle cx="106" cy="64" r="16" fill="#8a5a33"/><ellipse cx="60" cy="76" rx="44" ry="56" fill="#8a5a33"/><ellipse cx="60" cy="92" rx="30" ry="26" fill="#e8c9a0"/><circle cx="45" cy="64" r="7" fill="#fff"/><circle cx="75" cy="64" r="7" fill="#fff"/><circle cx="46" cy="65" r="3.5" fill="#222"/><circle cx="76" cy="65" r="3.5" fill="#222"/><ellipse cx="60" cy="84" rx="5" ry="3.5" fill="#4a2a14"/><path d="M48 98q12 9 24 0" stroke="#4a2a14" stroke-width="3.5" fill="none" stroke-linecap="round"/></symbol>
+    <symbol id="mask-robot" viewBox="0 0 120 150"><rect x="16" y="22" width="88" height="112" rx="16" fill="#9aa5b1"/><rect x="26" y="52" width="68" height="26" rx="8" fill="#17202a"/><circle cx="44" cy="65" r="7" fill="#37e0ff"/><circle cx="76" cy="65" r="7" fill="#37e0ff"/><rect x="34" y="98" width="52" height="14" rx="4" fill="#17202a"/><path d="M42 105h36" stroke="#9aa5b1" stroke-width="2" stroke-dasharray="4 4"/><rect x="57" y="8" width="6" height="16" fill="#6d7886"/><circle cx="60" cy="8" r="5" fill="#E5383B"/></symbol>
+    <symbol id="pixel" viewBox="0 0 120 150"><g><rect x="22" y="30" width="22" height="22" fill="#d9a57c"/><rect x="44" y="30" width="22" height="22" fill="#c68f66"/><rect x="66" y="30" width="22" height="22" fill="#d9a57c"/><rect x="88" y="30" width="14" height="22" fill="#c68f66"/><rect x="22" y="52" width="22" height="22" fill="#c68f66"/><rect x="44" y="52" width="22" height="22" fill="#6e4a33"/><rect x="66" y="52" width="22" height="22" fill="#6e4a33"/><rect x="88" y="52" width="14" height="22" fill="#d9a57c"/><rect x="22" y="74" width="22" height="22" fill="#d9a57c"/><rect x="44" y="74" width="22" height="22" fill="#c68f66"/><rect x="66" y="74" width="22" height="22" fill="#d9a57c"/><rect x="88" y="74" width="14" height="22" fill="#c68f66"/><rect x="22" y="96" width="22" height="22" fill="#c68f66"/><rect x="44" y="96" width="22" height="22" fill="#a56a5a"/><rect x="66" y="96" width="22" height="22" fill="#a56a5a"/><rect x="88" y="96" width="14" height="22" fill="#d9a57c"/></g></symbol>
+    <symbol id="cat" viewBox="0 0 120 150"><path d="M20 38l10-34 24 22z" fill="#2b2b2b"/><path d="M100 38l-10-34-24 22z" fill="#2b2b2b"/><ellipse cx="60" cy="76" rx="42" ry="56" fill="#E9B98F"/><ellipse cx="45" cy="66" rx="5" ry="3.5" fill="#222"/><ellipse cx="75" cy="66" rx="5" ry="3.5" fill="#222"/><circle cx="60" cy="82" r="5" fill="#E5383B"/><path d="M12 84h30M12 94h30M78 84h30M78 94h30" stroke="#222" stroke-width="2"/><path d="M48 98q12 9 24 0" stroke="#7a2e2e" stroke-width="3.5" fill="none" stroke-linecap="round"/></symbol>
+    <symbol id="bigeyes" viewBox="0 0 120 150"><ellipse cx="60" cy="76" rx="42" ry="56" fill="#E9B98F"/><circle cx="40" cy="62" r="19" fill="#fff"/><circle cx="80" cy="62" r="19" fill="#fff"/><circle cx="42" cy="64" r="9" fill="#222"/><circle cx="78" cy="64" r="9" fill="#222"/><ellipse cx="60" cy="102" rx="22" ry="12" fill="#7a2e2e"/><ellipse cx="60" cy="98" rx="16" ry="5" fill="#fff"/></symbol>
+  </defs>
+</svg>
+</body>
+</html>
