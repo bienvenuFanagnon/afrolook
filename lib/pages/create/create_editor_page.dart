@@ -102,9 +102,22 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
     await _finish(r);
   }
 
-  Future<void> _openStudio(Widget page) async {
+  /// [asSheet] : la page s'ouvre en feuille par-dessus l'éditeur (la vidéo reste visible derrière), comme dans la proposition, au lieu de prendre tout l'écran.
+  Future<void> _openStudio(Widget page, {bool asSheet = false}) async {
     _video?.pause();
-    final result = await Navigator.of(context).push<StudioResult>(MaterialPageRoute(builder: (_) => page));
+    final StudioResult? result = asSheet
+        ? await showModalBottomSheet<StudioResult>(
+            context: context,
+            isScrollControlled: true,
+            useSafeArea: true,
+            backgroundColor: Colors.transparent,
+            builder: (ctx) => ClipRRect(
+              key: const ValueKey('models_sheet'),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+              child: SizedBox(height: MediaQuery.sizeOf(ctx).height * 0.88, child: page),
+            ),
+          )
+        : await Navigator.of(context).push<StudioResult>(MaterialPageRoute(builder: (_) => page));
     if (!mounted) return;
     if (result == null) {
       _video?.play();
@@ -283,7 +296,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
             Padding(
               padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
               child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-                _tool('tool_models', Icons.dashboard_customize_rounded, context.tr('Modèles'), () => _openStudio(MontageGalleryPage(presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
+                _tool('tool_models', Icons.dashboard_customize_rounded, context.tr('Modèles'), () => _openStudio(MontageGalleryPage(presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto), asSheet: true)),
                 _tool('tool_music', Icons.music_note_rounded, context.tr('Musique'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, focus: 'music', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
                 _tool('tool_text', Icons.title_rounded, context.tr('Texte'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, focus: 'text', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
                 _tool('tool_stickers', Icons.emoji_emotions_rounded, context.tr('Autocollants'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, focus: 'stickers', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
