@@ -1,0 +1,126 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Chroniques par le Studio · proposition</title><style>
+:root{--bg:#f7f8f6;--card:#fff;--ink:#14201a;--muted:#5d6b63;--line:#e1e6df;--green:#1b8a3c;--gold:#ffc400;--red:#e5383b;--shadow:0 14px 40px rgba(16,26,20,.16)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0e1411;--card:#17201a;--ink:#eef3ef;--muted:#9fb0a5;--line:#27332b;--shadow:0 14px 40px rgba(0,0,0,.55)}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:26px 16px 80px}
+h1{font-size:28px;margin:0 0 6px}h2{font-size:22px;margin:42px 0 8px}h3{font-size:16px;margin:0 0 6px}
+.lead{color:var(--muted);max-width:80ch;margin:0 0 14px}.note{font-size:13px;color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:16px}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}.tbl{overflow-x:auto}
+.warn{background:rgba(255,196,0,.18);border:1px solid rgba(255,196,0,.5);border-radius:12px;padding:10px 14px;font-size:14px}
+.row{display:flex;gap:26px;flex-wrap:wrap;justify-content:center}.row figure{margin:0;text-align:center;width:262px}.row figcaption{margin-top:10px;font-weight:800}.row figcaption small{display:block;color:var(--muted);font-weight:400;font-size:12.5px}
+.phone{position:relative;width:262px;height:540px;border-radius:34px;background:#0b0f0d;border:7px solid #232f28;box-shadow:0 0 0 1px rgba(255,255,255,.18),var(--shadow);overflow:hidden;margin:0 auto}
+.v{position:absolute;inset:0;color:#fff;font-family:Roboto,system-ui,sans-serif;font-size:10px}
+.v>img.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.38),transparent 22%,transparent 55%,rgba(0,0,0,.62))}
+.tabs{position:absolute;z-index:3;top:12px;left:0;right:0;display:flex;justify-content:center;gap:18px;font-size:12px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.6)}
+.tabs span{opacity:.72;padding-bottom:3px}.tabs .on{opacity:1;border-bottom:2.5px solid #fff}
+.back{position:absolute;z-index:3;top:10px;left:10px;width:30px;height:30px}
+.mute{position:absolute;z-index:3;top:10px;right:10px;width:30px;height:30px}
+.btn{width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.42);border:1px solid rgba(255,255,255,.2);box-shadow:0 2px 8px rgba(0,0,0,.35);display:grid;place-items:center}
+.btn svg{width:21px;height:21px;fill:none;stroke:#fff;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.rail{position:absolute;z-index:3;right:9px;bottom:70px;display:flex;flex-direction:column;align-items:center;gap:9px}
+.rail .n{font-size:10px;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.8);margin-top:-5px}
+.av{position:relative;width:42px;height:42px}.av img{width:42px;height:42px;border-radius:50%;border:2px solid #fff;object-fit:cover;display:block}
+.av i{position:absolute;left:50%;bottom:-7px;margin-left:-8px;width:16px;height:16px;border-radius:50%;background:var(--gold);color:#3a2c00;font-style:normal;font-weight:900;font-size:12px;line-height:16px;text-align:center}
+.like svg{stroke:#fff}.like.on svg{fill:#ff4d57;stroke:#ff4d57}
+.info{position:absolute;z-index:3;left:11px;right:66px;bottom:48px;text-shadow:0 1px 4px rgba(0,0,0,.75)}
+.info b{font-size:12px;display:block}.info .f{display:inline-block;background:var(--gold);color:#3a2c00;border-radius:99px;padding:1px 8px;font-size:9px;font-weight:800;text-shadow:none;margin-left:6px}
+.info p{margin:3px 0;font-size:10.5px;line-height:1.3}.info .s{font-size:9.5px;opacity:.9}
+.field{position:absolute;z-index:3;left:11px;right:11px;bottom:10px;height:30px;border-radius:15px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;padding:0 12px;font-size:10px;color:rgba(255,255,255,.85)}
+.prog{position:absolute;z-index:4;left:0;right:0;bottom:0;height:2.5px;background:rgba(255,255,255,.28)}.prog i{display:block;height:100%;width:42%;background:#fff}
+/* ancien écran (approximation d'après le code) */
+.old .tabs{display:none}.old .shade{background:linear-gradient(180deg,rgba(0,0,0,.2),transparent 30%,rgba(0,0,0,.45))}
+.old .ri{position:absolute;z-index:3;right:7px;bottom:40px;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:9px}
+.old .ri svg{width:24px;height:24px;fill:none;stroke-width:1.8;stroke-linecap:round}
+.old .eye{position:absolute;z-index:3;top:10px;right:10px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.45);display:grid;place-items:center;font-size:12px}
+.old .tt{position:absolute;z-index:3;top:12px;left:10px;font-weight:800;color:#2ecc71;font-size:13px}
+.old .live{position:absolute;z-index:2;left:10px;right:62px;bottom:98px;display:flex;flex-direction:column;gap:3px;opacity:.9}.old .live span{background:rgba(0,0,0,.4);border-radius:9px;padding:2px 7px;align-self:flex-start;font-size:8.5px}
+.old .inf{position:absolute;z-index:3;left:10px;right:64px;bottom:46px;font-size:9px;line-height:1.35}
+.old .chipx{display:inline-block;background:rgba(255,255,255,.2);border-radius:99px;padding:1px 6px;margin:1px 2px 1px 0;font-size:8px}
+.old .qc{position:absolute;z-index:3;left:10px;right:62px;bottom:10px;height:26px;border-radius:13px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:space-between;padding:0 8px;font-size:9px;color:rgba(255,255,255,.6)}
+/* pub */
+.ad{position:absolute;inset:0;background:#0f1a14;color:#fff}.ad>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.adtag{position:absolute;z-index:3;top:46px;left:11px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.25);border-radius:99px;padding:2px 9px;font-size:9px;font-weight:800}
+.adcta{position:absolute;z-index:3;left:11px;right:11px;bottom:44px;background:#fff;color:#14201a;border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:9px}
+.adcta b{font-size:11.5px;display:block}.adcta small{color:#667;font-size:9px}.adcta span{margin-left:auto;background:var(--green);color:#fff;border-radius:99px;padding:5px 12px;font-weight:800;font-size:10px;white-space:nowrap}
+.hint{position:absolute;z-index:3;left:0;right:0;bottom:12px;text-align:center;font-size:9.5px;opacity:.85}
+/* page des commentaires */
+.cp{position:absolute;inset:0;background:#fafaf8;color:#14201a;font-family:Roboto,system-ui,sans-serif;font-size:10px}
+.cp .h{display:flex;align-items:center;gap:8px;padding:10px 12px;font-weight:800;font-size:13px;border-bottom:1px solid #e6e6e0}
+.cm{display:flex;gap:7px;padding:8px 12px}.cm img{width:26px;height:26px;border-radius:50%;object-fit:cover}.cm b{display:block;font-size:10px}.cm span{color:#444;font-size:10px}
+.cp .in{position:absolute;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #e6e6e0;padding:8px 10px;display:flex;gap:8px;align-items:center}.cp .in div{flex:1;background:#f1f1ec;border-radius:99px;padding:7px 12px;color:#777}
+.kb{position:absolute;left:0;right:0;bottom:0;height:150px;background:#d9dbe0;display:grid;place-items:center;color:#667;font-size:10px}
+ul.t{margin:0;padding-left:18px}ul.t li{padding:3px 0}
+.g2{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+
+.chs{position:absolute;inset:0;background:#fafaf8;color:#14201a;font-family:Roboto,system-ui,sans-serif;font-size:10px;overflow:hidden}
+.chs .hd{display:flex;align-items:center;justify-content:space-between;padding:10px 12px 4px}.chs .hd b{font-size:15px}
+.fl2{display:flex;gap:5px;padding:4px 12px;overflow:hidden}.fl2 span{border:1px solid #dcdcd4;background:#fff;border-radius:99px;padding:4px 9px;font-size:9px;font-weight:700;white-space:nowrap}.fl2 .on{background:#14201a;color:#fff;border-color:#14201a}
+.ring{display:flex;gap:9px;padding:6px 12px}.ring div{text-align:center;font-size:8px;width:42px}.ring img{width:40px;height:40px;border-radius:50%;object-fit:cover;border:2.5px solid #1b8a3c;display:block;margin:0 auto 2px}
+.ring i{width:40px;height:40px;border-radius:50%;border:2px dashed #aaa;display:grid;place-items:center;font-style:normal;color:#1b8a3c;font-size:16px;margin:0 auto 2px}
+.gr{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:4px 12px}.gr div{position:relative;border-radius:14px;overflow:hidden;height:150px;background:#222}.gr img{width:100%;height:100%;object-fit:cover;display:block}
+.gr div:after{content:"";position:absolute;inset:0;background:linear-gradient(transparent 50%,rgba(0,0,0,.65))}
+.gr .tg{position:absolute;z-index:2;left:6px;top:6px;background:rgba(0,0,0,.5);color:#fff;border-radius:99px;padding:1px 7px;font-size:8px;font-weight:700}.gr .nm{position:absolute;z-index:2;left:7px;bottom:6px;color:#fff;font-weight:800;font-size:10px;display:flex;gap:5px;align-items:center}
+.gr .nm img{width:18px;height:18px;border-radius:50%;border:1.5px solid #fff}
+.fab{position:absolute;right:12px;bottom:14px;background:#ffc400;color:#3a2c00;border-radius:99px;padding:10px 16px;font-weight:900;font-size:11px;box-shadow:0 6px 18px rgba(0,0,0,.25)}
+.seg{position:absolute;z-index:3;top:8px;left:10px;right:10px;display:flex;gap:3px}.seg i{flex:1;height:2.5px;border-radius:3px;background:rgba(255,255,255,.35);display:block;position:relative}.seg i.d{background:#fff}.seg i.c:after{content:"";position:absolute;left:0;top:0;bottom:0;width:55%;background:#fff;border-radius:3px}
+.chh{position:absolute;z-index:3;top:20px;left:10px;right:10px;display:flex;align-items:center;gap:7px;font-size:11px;font-weight:800}.chh img{width:28px;height:28px;border-radius:50%;object-fit:cover;border:1.5px solid #fff}.chh small{display:block;font-weight:400;opacity:.85;font-size:8.5px}
+.rep{position:absolute;z-index:3;left:11px;right:11px;bottom:10px;display:flex;gap:7px;align-items:center}.rep .f{flex:1;height:36px;border-radius:18px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.22);display:flex;align-items:center;padding:0 13px;font-size:10px;color:rgba(255,255,255,.88)}
+.rep .btn{width:36px;height:36px}.rep .btn svg{width:19px;height:19px}
+.stp{display:flex;gap:4px;padding:2px 12px}.stp i{flex:1;height:3px;border-radius:3px;background:#dcdcd4;display:block}.stp i.on{background:#1b8a3c}
+.tl{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:8px 12px}.tl div{border:1.5px solid #dcdcd4;background:#fff;border-radius:16px;padding:12px 8px;text-align:center;font-weight:800;font-size:11px}.tl div.sel{border-color:#ffc400;background:#fff9de}.tl small{display:block;color:#777;font-weight:400;font-size:8.5px;margin-top:3px}.tl svg{width:24px;height:24px;fill:none;stroke:#14201a;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;display:block;margin:0 auto 5px}
+.cv{position:absolute;left:10px;right:10px;top:42px;bottom:96px;border-radius:20px;display:grid;place-items:center;text-align:center;color:#fff;font-weight:900;font-size:20px;line-height:1.15;padding:18px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.pal{position:absolute;left:0;right:0;bottom:52px;display:flex;gap:7px;justify-content:center}.pal i{width:24px;height:24px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);display:block}.pal i.on{outline:2px solid #14201a}
+.tbr{position:absolute;left:12px;right:12px;bottom:10px;display:flex;justify-content:space-between;align-items:center}.tbr span{background:#fff;border:1px solid #dcdcd4;border-radius:99px;padding:7px 11px;font-weight:800;font-size:10px}.tbr .nx{background:#1b8a3c;color:#fff;border-color:#1b8a3c}
+.ban{position:absolute;z-index:4;top:48px;left:12px;right:12px;background:rgba(255,255,255,.95);color:#14201a;border-radius:14px;padding:8px 10px;font-size:9.5px;line-height:1.35;box-shadow:0 6px 18px rgba(0,0,0,.3)}.ban b{display:block;font-size:10.5px}
+.pb{position:absolute;z-index:4;left:11px;right:11px;bottom:10px;background:rgba(255,255,255,.96);color:#14201a;border-radius:20px;padding:10px}.pb .cost{font-size:9.5px;color:#555;margin-bottom:7px}.pb .two{display:flex;gap:7px}.pb .two span{flex:1;text-align:center;border-radius:14px;padding:9px;font-weight:900;font-size:11px}.pb .a{background:#ffc400;color:#3a2c00}.pb .b{border:1.5px solid #bbb}
+.chip24{position:absolute;z-index:3;right:10px;top:20px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.25);border-radius:99px;padding:3px 9px;font-size:8.5px;font-weight:800}
+
+.ed{position:absolute;inset:0;background:#0f1a14;color:#fff;font-family:Roboto,system-ui,sans-serif;font-size:10px;overflow:hidden}
+.ed>img.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ed .top{position:absolute;z-index:3;top:8px;left:10px;right:10px;display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:11px}
+.ed .top .nx{background:#ffc400;color:#3a2c00;border-radius:99px;padding:6px 12px;font-weight:900}
+.tools{position:absolute;z-index:3;right:8px;top:48px;display:flex;flex-direction:column;gap:9px;align-items:center;font-size:8px;font-weight:700}
+.tools .btn{width:34px;height:34px}.tools .btn svg{width:18px;height:18px}
+.tools .on{outline:2px solid #ffc400;border-radius:50%}
+.pinbox{position:absolute;z-index:2;left:12px;top:120px;width:84px;height:112px;border-radius:12px;overflow:hidden;border:2px solid #fff;box-shadow:0 6px 16px rgba(0,0,0,.45)}.pinbox img{width:100%;height:100%;object-fit:cover}
+.pinbox:after{content:"▶";position:absolute;inset:0;display:grid;place-items:center;font-size:16px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.6)}
+.cc{position:absolute;z-index:3;left:12px;right:12px;bottom:112px;background:#fff;color:#14201a;border-radius:16px;padding:9px 11px;box-shadow:0 8px 22px rgba(0,0,0,.4)}
+.cc b{font-size:12px;display:block}.cc .pr{color:#1b8a3c;font-weight:900;font-size:13px}.cc .rw{display:flex;gap:6px;margin-top:7px}.cc .rw span{flex:1;text-align:center;border-radius:12px;padding:7px 4px;font-weight:800;font-size:9.5px}.cc .go{background:#1b8a3c;color:#fff}.cc .wa{background:#e6f6ec;color:#14663a}
+.sh3{position:absolute;left:0;right:0;bottom:0;background:#fff;color:#14201a;z-index:6;border-radius:22px 22px 0 0;padding:12px 14px 14px;box-shadow:0 -10px 30px rgba(0,0,0,.4)}.sh3 h4{margin:0 0 8px;font-size:13px}
+.sh3 .fi{border:1px solid #dcdcd4;border-radius:11px;padding:8px 10px;margin-bottom:6px;color:#777;font-size:10px;display:flex;justify-content:space-between}.sh3 .fi b{color:#14201a}.sh3 .go2{background:#ffc400;color:#3a2c00;border-radius:20px;padding:10px;text-align:center;font-weight:900;font-size:11.5px;margin-top:8px}
+.dim3{position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:5}
+.chooser{display:flex;flex-direction:column;gap:7px;padding:10px 12px}.chooser div{border:1.5px solid #dcdcd4;border-radius:16px;padding:11px;background:#fff}.chooser div.sel{border-color:#ffc400;background:#fff9de}.chooser b{font-size:11.5px;display:block}.chooser small{color:#666;font-size:9px}
+</style></head><body><div class="wrap">
+<h1>Chroniques : tout passe par le Studio, avec des chroniques business</h1>
+<p class="lead"><b>Rien n'est modifié.</b> Votre remarque change l'architecture, et je la trouve meilleure : la chronique devient une « story » fabriquée dans le Studio de montage, comme les posts. <b>Un seul système d'édition et un seul contrôle</b> : musique, texte, autocollants, vidéo ou image épinglée, voix, carte de vente. Le formulaire à part (<code>chroniqueform.dart</code>, 1 379 lignes) disparaît. Cette proposition complète celle des chroniques (liste, lecture, aperçu), qui reste valable.</p>
+
+<h2>1. Le parcours</h2>
+<div class="row"><figure><div class="phone"><div class="chs"><div class="hd"><b>← Créer</b></div><div class="chooser"><div><b>Publication</b><small>Photo, vidéo, audio ou texte dans le fil</small></div><div class="sel"><b>Chronique (24 h)</b><small>Ouvre le Studio : montage, musique, texte, épinglage</small></div><div><b>Chronique business</b><small>Vends un produit : carte de vente, lien, WhatsApp, appel</small></div><div><b>Live</b><small>En direct, avec cadeaux ou vente</small></div></div></div></div><figcaption>1. Créer<small>« Chronique » et « Chronique business » ouvrent le Studio</small></figcaption></figure>
+<figure><div class="phone"><div class="ed"><img class="bg" src="img/f_8727469.jpg" alt="" style="object-position:center 15%"><div class="shade"></div><div class="top"><span>✕</span><span>Chronique · Studio</span><span class="nx">Aperçu →</span></div><div class="tools"><div style="text-align:center"><div class="btn "><svg viewBox="0 0 24 24"><path d="M5 6h14M12 6v13M9 19h6"/></svg></div>Texte</div><div style="text-align:center"><div class="btn "><svg viewBox="0 0 24 24"><path d="M4 4h12l4 4v12H4z"/><path d="M16 4v4h4"/></svg></div>Autocoll.</div><div style="text-align:center"><div class="btn "><svg viewBox="0 0 24 24"><path d="M9 18V6l10-2v12M9 18a3 3 0 1 1-3-3M19 16a3 3 0 1 1-3-3"/></svg></div>Musique</div><div style="text-align:center"><div class="btn on"><svg viewBox="0 0 24 24"><path d="M9 3h6l-1 6 4 3v2H6v-2l4-3z"/><path d="M12 14v7"/></svg></div>Épingler</div><div style="text-align:center"><div class="btn "><svg viewBox="0 0 24 24"><path d="M4 7h16l-1 5H5zM6 12v8h12v-8"/></svg></div>Vente</div><div style="text-align:center"><div class="btn "><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></div>Voix</div></div><div class="pinbox"><img src="img/n_av_mic.jpg" alt=""></div></div></div><figcaption>2. Studio, mode chronique<small>Texte, autocollants, musique, épingler, vente, voix, au format story</small></figcaption></figure>
+<figure><div class="phone"><div class="ed"><img class="bg" src="img/n_av_food.jpg" alt="" style="object-position:center 25%"><div class="shade"></div><div class="top"><span>✕</span><span>Chronique business</span><span class="nx">Aperçu →</span></div><div class="pinbox" style="top:70px"><img src="img/n_av_mic.jpg" alt=""></div><div class="dim3"></div><div class="sh3"><h4>Carte de vente</h4><div class="fi"><span>Produit</span><b>Jupe en wax</b></div><div class="fi"><span>Prix</span><b>12 500 F</b></div><div class="fi"><span>WhatsApp</span><b>+228 90 00 00 00</b></div><div class="fi"><span>Lien (facultatif)</span><b>afrolookmedia.com/…</b></div><div class="go2">Ajouter à la chronique</div></div></div></div><figcaption>3. Chronique business<small>Carte de vente : produit, prix, WhatsApp, appel, lien</small></figcaption></figure>
+<figure><div class="phone"><div class="v"><img class="bg" src="img/n_av_food.jpg" alt="" style="object-position:center 25%"><div class="shade"></div><div class="seg"><i class="c"></i></div><div class="chh"><img src="img/n_av_food.jpg" alt=""><span>boutique_mariam<small>maintenant</small></span></div><div class="chip24">Disparaît dans 24 h</div><div class="pinbox" style="top:96px;left:12px"><img src="img/n_av_mic.jpg" alt=""></div><div class="cc"><b>Jupe en wax, taille unique</b><span class="pr">12 500 F</span><div class="rw"><span class="go">Commander maintenant</span><span class="wa">WhatsApp</span></div></div><div class="ban" style="top:50px;left:auto;right:12px;width:104px"><b>Aperçu</b>Tel que le verront tes abonnés</div><div class="pb"><div class="cost">Chronique business · 24 h · 1 sur 2 gratuites</div><div class="two"><span class="b">Modifier</span><span class="a">Publier</span></div></div></div></div><figcaption>4. Aperçu avant publication<small>Exactement la lecture réelle, avec la carte « Commander maintenant »</small></figcaption></figure></div>
+
+<h2>2. Ce que ça permet</h2>
+<div class="card"><ul class="t" style="margin:0;padding-left:18px">
+<li><b>Photo, vidéo (30 s) ou audio</b> choisis ou filmés dans l'application (caméra du Studio, enregistrements en priorité), puis montés.</li>
+<li><b>Superposer une vidéo ou une image</b> (épingle) et <b>parler par-dessus</b> (voix), comme dans les posts : on explique son produit en montrant le produit.</li>
+<li><b>Chronique business</b> : carte de vente avec prix, « Commander maintenant » (lien), WhatsApp, appel. <b>Seule la carte est cliquable</b>, comme sur les posts (règle validée).</li>
+<li><b>Un seul contrôle d'authenticité</b> : tout ce qui sort du Studio passe par l'examen des vidéos d'autres réseaux (déjà codé), et reçoit la mention « Fait sur Afrolook ».</li>
+<li><b>Mêmes règles qu'avant</b> : 24 h, 2 chroniques gratuites actives puis 10 pièces, 30 secondes de vidéo.</li></ul></div>
+
+<h2>3. Comment je le code</h2>
+<div class="card tbl"><table><tr><th>Sujet</th><th>Proposition</th></tr>
+<tr><td>Studio</td><td>Un mode « chronique » du Studio : format story 9:16, même éditeur, même export serveur (<code>POST /studio/montages</code>). Le bouton « Aperçu → » remplace « Suivant ».</td></tr>
+<tr><td>Publication</td><td>Le film exporté est publié par le point d'accès des chroniques existant (<code>POST /chronicles</code>, avec le film en média). Aucune nouvelle logique de durée ni de coût.</td></tr>
+<tr><td>Carte de vente</td><td>Colonne <code>commerce</code> (JSON : produit, prix, WhatsApp, téléphone, lien) sur les chroniques, avec la même validation que la carte Commerce des posts ; le serveur renvoie la carte à la lecture.</td></tr>
+<tr><td>Épinglage</td><td>La vidéo ou l'image épinglée est intégrée au film à l'export (comme pour les vidéos des posts). Rendre l'épingle cliquable vers l'original, comme sur les posts, demande une colonne de plus : je le propose en deuxième temps.</td></tr>
+<tr><td>Chronique texte</td><td>Elle aussi passe par le Studio (modèles de fond coloré) : plus de formulaire à part.</td></tr>
+<tr><td>Anciennes chroniques</td><td>Inchangées (elles expirent en 24 h) ; l'ancien formulaire est retiré une fois le Studio en place.</td></tr>
+<tr><td>Chronique business</td><td>Ouverte à toute personne qui a une boutique (entreprise) dans Afrolook ; sinon le lien externe reste possible mais la carte porte la mention « lien externe ».</td></tr></table></div>
+
+<h2>À valider</h2>
+<div class="card"><ol style="margin:0;padding-left:20px"><li>Les chroniques passent <b>toutes</b> par le Studio (le formulaire à part disparaît).</li><li>La « Chronique business » avec la carte de vente cliquable (produit, prix, Commander maintenant, WhatsApp, appel).</li><li>L'épingle intégrée au film dans un premier temps, cliquable plus tard.</li><li>Chronique business réservée aux personnes qui ont une boutique Afrolook, ou ouverte à tous avec la mention « lien externe » ?</li><li>L'ordre de travail : Studio en mode chronique + aperçu, puis lecture, puis liste.</li></ol>
+<p class="note">Rappel : les écrans de lecture, de liste et d'aperçu sont dans la proposition précédente (chroniques_proposition_autonome.html).</p></div>
+</div></body></html>
