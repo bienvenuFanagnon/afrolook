@@ -100,12 +100,13 @@ class PostsApi {
     return postFromApi(_asMap(r));
   }
 
-  /// Imports restants aujourd'hui (médias choisis dans la galerie : 2 par jour). En cas d'erreur réseau, null : l'écran n'empêche rien, le serveur décide.
-  static Future<({int limit, int used, int remaining})?> importQuota() async {
+  /// Imports restants aujourd'hui (médias choisis dans la galerie : 2 par jour, publications de canal comprises). Les comptes Gold ne sont pas limités (`unlimited`) ;
+  /// pour un canal, c'est le plan de son créateur qui compte (`channelId`). En cas d'erreur réseau, null : l'écran n'empêche rien, le serveur décide.
+  static Future<({int limit, int used, int remaining, bool unlimited})?> importQuota({String? channelId}) async {
     try {
-      final d = ApiClient.data(await _c.get('/posts/quota'));
+      final d = ApiClient.data(await _c.get('/posts/quota', query: {if (channelId != null && channelId.isNotEmpty) 'channel_id': channelId}));
       if (d is! Map) return null;
-      return (limit: (d['limit'] as num).toInt(), used: (d['used'] as num).toInt(), remaining: (d['remaining'] as num).toInt());
+      return (limit: (d['limit'] as num).toInt(), used: (d['used'] as num).toInt(), remaining: (d['remaining'] as num).toInt(), unlimited: d['unlimited'] == true);
     } catch (_) {
       return null;
     }

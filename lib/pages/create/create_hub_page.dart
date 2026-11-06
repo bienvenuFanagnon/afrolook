@@ -52,7 +52,7 @@ class CreateHubPage extends StatefulWidget {
 }
 
 class _CreateHubPageState extends State<CreateHubPage> {
-  ({int limit, int used, int remaining})? _quota;
+  ({int limit, int used, int remaining, bool unlimited})? _quota;
   bool _busy = false;
 
   @override
@@ -74,16 +74,15 @@ class _CreateHubPageState extends State<CreateHubPage> {
     super.dispose();
   }
 
-  /// Publier dans un canal : aucune limite de médias de galerie (et pas de live).
+  /// Publier dans un canal : pas de live ; la limite de galerie suit le plan du créateur du canal (Gold : aucune limite, sinon la même réserve de 2 par jour).
   bool get _isChannel => widget.canal != null;
 
   Future<void> _loadQuota() async {
-    if (_isChannel) return;
-    final q = await PostsApi.importQuota();
+    final q = await PostsApi.importQuota(channelId: widget.canal?.id);
     if (mounted) setState(() => _quota = q);
   }
 
-  bool get _galleryOpen => _isChannel || _quota == null || _quota!.remaining > 0;
+  bool get _galleryOpen => _quota == null || _quota!.unlimited || _quota!.remaining > 0;
 
   /// Compte bloqué pour inactivité : déblocage avant de continuer ; un seul parcours à la fois.
   Future<void> _guard(Future<void> Function() run) async {
@@ -234,10 +233,10 @@ class _CreateHubPageState extends State<CreateHubPage> {
           _VideoHero(
             onFilm: () => _guard(() => _openCamera(photo: false)),
             onGallery: _galleryOpen ? () => _guard(() => _pickGallery(video: true)) : () => _guard(() => _quotaDialog(video: true)),
-            galleryLeft: _quota?.remaining,
+            galleryLeft: (_quota?.unlimited ?? false) ? null : _quota?.remaining,
           ),
           const SizedBox(height: 8),
-          if (!_isChannel) _QuotaLine(quota: _quota) else const SizedBox(height: 10),
+          _QuotaLine(quota: _quota),
           const SizedBox(height: 12),
           GridView.count(
             shrinkWrap: true,
@@ -386,13 +385,20 @@ class _VideoHero extends StatelessWidget {
 /// « Galerie aujourd'hui : 1 sur 2 » : deux pastilles qui se vident ; à zéro, on invite à se filmer.
 class _QuotaLine extends StatelessWidget {
   const _QuotaLine({required this.quota});
-  final ({int limit, int used, int remaining})? quota;
+  final ({int limit, int used, int remaining, bool unlimited})? quota;
 
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     final q = quota;
     if (q == null) return const SizedBox(height: 18);
+    if (q.unlimited) {
+      return Row(key: const ValueKey('quota_line'), children: [
+        Icon(Icons.all_inclusive_rounded, size: 16, color: c.accentText),
+        const SizedBox(width: 6),
+        Expanded(child: Text(context.tr('Galerie illimitée avec Gold'), style: TextStyle(color: c.textSecondary, fontSize: 12.5, fontWeight: FontWeight.w600))),
+      ]);
+    }
     final out = q.remaining <= 0;
     return Row(key: const ValueKey('quota_line'), children: [
       for (var i = 0; i < q.limit; i++)
