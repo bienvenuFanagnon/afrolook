@@ -87,6 +87,7 @@ object FaceEngine {
                     v?.renderer?.mirror = call.argument<Boolean>("mirror") ?: false
                     result.success(null)
                 }
+                "setFlipPoints" -> { v?.renderer?.flipPointsX = call.argument<Boolean>("flip") ?: true; result.success(null) }
                 "setPoints" -> { v?.renderer?.showPoints = call.argument<Boolean>("show") ?: true; result.success(null) }
                 "status" -> result.success(v?.status() ?: mapOf("running" to false))
                 "takePhoto" -> {
@@ -118,6 +119,16 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
     private var provider: ProcessCameraProvider? = null
     private val analysisExecutor = Executors.newSingleThreadExecutor()
     @Volatile private var framesAnalysed = 0
+
+    // --- suivi de qualité et réglage automatique (par visage : tout repart à zéro quand le visage disparaît)
+    private var tried = 0          // images envoyées à la détection (fenêtre glissante)
+    private var found = 0          // images où un visage a été trouvé
+    @Volatile private var detectRate = 0   // % de détection sur les ~3 dernières secondes
+    private var windowStart = SystemClock.uptimeMillis()
+    @Volatile private var jitter = 0f      // tremblement moyen au repos (en % de la largeur de l'image)
+    @Volatile private var predErr = 0f     // erreur moyenne de prévision quand ça bouge (en % de la largeur)
+    @Volatile private var alphaBase = 0.4f // lissage de base appris : plus bas = plus stable, plus haut = plus réactif
+    private var learnFrames = 0
     @Volatile private var lastError: String? = null
 
     init {
@@ -156,7 +167,7 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
     private var fpsCount = 0
     private var fpsSince = SystemClock.uptimeMillis()
 
-    fun status(): Map<String, Any?> = mapOf("running" to true, "frames" to framesAnalysed, "face" to (renderer.landmarks != null), "error" to lastError, "rotation" to renderer.rotTotal(), "mirror" to renderer.mirrorTotal(),
+    fun status(): Map<String, Any?> = mapOf("detectRate" to detectRate, "jitter" to jitter, "predErr" to predErr, "alpha" to alphaBase, "predGain" to renderer.predGain, "learned" to learnFrames, "running" to true, "frames" to framesAnalysed, "face" to (renderer.landmarks != null), "error" to lastError, "rotation" to renderer.rotTotal(), "mirror" to renderer.mirrorTotal(),
         "latencyMs" to latencyMs, "fps" to fps, "gpu" to usingGpu)
 
     private var audioRec: MediaRecorder? = null
@@ -273,9 +284,53 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
         }
     }
 
+    private fun updateRate() {
+        val now = SystemClock.uptimeMillis()
+        if (now - windowStart >= 3000) { detectRate = if (tried > 0) found * 100 / tried else 0; tried = 0; found = 0; windowStart = now }
+    }
+
+    /**
+     * Apprentissage en direct, propre à chaque visage (aucune donnée n'est gardée ni envoyée) : on mesure sur quelques points clés
+     * (1) le tremblement quand le visage est presque immobile et (2) l'erreur de la prévision quand il bouge, puis on règle le lissage :
+     * trop de tremblement → lissage plus fort ; prévision qui se trompe → on s'y fie moins ; visage suivi avec retard → plus réactif.
+     */
+    private fun learn(old: Landmarks, xs: FloatArray, ys: FloatArray, now: Long) {
+        val keys = intArrayOf(1, 33, 263, 61, 291, 10, 152)
+        val dt = maxOf(0.016f, (now - old.t) / 1000f)
+        var move = 0f; var err = 0f
+        for (i in keys) {
+            if (i >= xs.size) continue
+            val dx = xs[i] - old.x[i]; val dy = ys[i] - old.y[i]
+            move += hypot(dx, dy)
+            val px = old.x[i] + old.vx[i] * dt; val py = old.y[i] + old.vy[i] * dt
+            err += hypot(xs[i] - px, ys[i] - py)
+        }
+        move /= keys.size; err /= keys.size
+        learnFrames++
+        if (move < 0.004f) {
+            // quasi immobile : ce qui bouge encore est du tremblement
+            jitter = jitter * 0.9f + move * 100f * 0.1f
+            if (jitter > 0.25f) alphaBase = (alphaBase - 0.01f).coerceAtLeast(0.2f)
+            else if (jitter < 0.1f) alphaBase = (alphaBase + 0.005f).coerceAtMost(0.5f)
+        } else {
+            predErr = predErr * 0.9f + err * 100f * 0.1f
+            if (predErr > 0.8f) renderer.predGain = (renderer.predGain - 0.02f).coerceAtLeast(0.3f)
+            else if (predErr < 0.3f) renderer.predGain = (renderer.predGain + 0.01f).coerceAtMost(1.2f)
+        }
+    }
+
     private fun onResult(r: FaceLandmarkerResult) {
         val faces = r.faceLandmarks()
-        if (faces.isEmpty()) { renderer.landmarks = null; return }
+        tried++
+        if (faces.isEmpty()) {
+            renderer.landmarks = null
+            // visage perdu : on repart d'un réglage neutre pour le prochain visage
+            alphaBase = 0.4f; renderer.predGain = 1.0f; learnFrames = 0; jitter = 0f; predErr = 0f
+            updateRate()
+            return
+        }
+        found++
+        updateRate()
         val pts = faces[0]
         val n = pts.size
         val now = SystemClock.uptimeMillis()
@@ -291,7 +346,7 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
                 val dy = ys[i] - old.y[i]
                 // lissage adaptatif : peu de tremblement quand on bouge peu, suit vite quand on bouge vite
                 val speed = hypot(dx, dy) / dt
-                val a = (0.4f + speed * 0.8f).coerceIn(0.4f, 0.95f)
+                val a = (alphaBase + speed * 0.8f).coerceIn(alphaBase, 0.95f)
                 xs[i] = old.x[i] + dx * a
                 ys[i] = old.y[i] + dy * a
                 // vitesse (par seconde), lissée : sert à prévoir où sera le visage à l'image suivante
@@ -299,6 +354,7 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
                 vy[i] = old.vy[i] * 0.5f + ((ys[i] - old.y[i]) / dt) * 0.5f
             }
         }
+        if (old != null && old.x.size == n) learn(old, xs, ys, now)
         renderer.landmarks = Landmarks(xs, ys, vx, vy, now)
         latencyMs = now - r.timestampMs()
         fpsCount++
@@ -357,6 +413,8 @@ class FaceRenderer : GLSurfaceView.Renderer {
     @Volatile var effect: String = "none"
     @Volatile var front: Boolean = true
     @Volatile var rotOffset: Int = 90   // mesuré sur un Pixel 8 Pro, caméra avant : image droite avec rotation totale 0° et miroir
+    @Volatile var predGain: Float = 1.0f   // part de la prévision de mouvement utilisée (réglée en direct)
+    @Volatile var flipPointsX: Boolean = true   // mesuré sur Pixel 8 Pro : sans cela, tête à gauche = points à droite
     @Volatile var showPoints: Boolean = true   // points de repère du visage dessinés par-dessus (essais)
     private var ptProgram = 0
     @Volatile var mirror: Boolean = false
@@ -598,10 +656,10 @@ class FaceRenderer : GLSurfaceView.Renderer {
     /** Position d'un point du visage dans l'espace d'affichage (0 à 1, y vers le haut). */
     private fun disp(lm: Landmarks, i: Int, csx: Float, csy: Float): FloatArray {
         // le visage se déplace pendant que la détection travaille : on prévoit sa position actuelle d'après sa vitesse (au plus 80 ms)
-        val dt = ((SystemClock.uptimeMillis() - lm.t) / 1000f).coerceIn(0f, 0.08f)
+        val dt = ((SystemClock.uptimeMillis() - lm.t) / 1000f).coerceIn(0f, 0.08f) * predGain
         var x = lm.x[i] + lm.vx[i] * dt
         val y = 1f - (lm.y[i] + lm.vy[i] * dt)
-        if (mirrorTotal()) x = 1f - x
+        if (mirrorTotal() != flipPointsX) x = 1f - x
         return floatArrayOf((x - 0.5f) * csx + 0.5f, (y - 0.5f) * csy + 0.5f)
     }
 

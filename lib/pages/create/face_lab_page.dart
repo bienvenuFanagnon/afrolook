@@ -32,6 +32,7 @@ class _FaceLabPageState extends State<FaceLabPage> {
   int _rot = 90; // réglage par défaut mesuré : image droite avec miroir
   bool _points = true;
   bool _mirror = false;
+  bool _flipPts = true; // sens gauche/droite des points (réglage de secours si les points vont à l'envers)
   Map<dynamic, dynamic> _status = const {};
   Timer? _timer;
   bool _recording = false;
@@ -157,7 +158,7 @@ class _FaceLabPageState extends State<FaceLabPage> {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(color: const Color(0xAA000000), borderRadius: BorderRadius.circular(12)),
               child: Text(
-                'Visage : ${faceOk ? 'suivi ✅' : 'non trouvé'}  ·  ${_status['fps'] ?? 0} détections/s  ·  retard ${_status['latencyMs'] ?? 0} ms  ·  ${_status['gpu'] == true ? 'GPU' : 'processeur'}\nRotation : ${_status['rotation'] ?? '?'}°  ·  miroir : ${_status['mirror'] ?? '?'}${_status['error'] != null ? '\nErreur : ${_status['error']}' : ''}',
+                'Visage : ${faceOk ? 'suivi ✅' : 'non trouvé'}  ·  ${_status['fps'] ?? 0} détections/s  ·  retard ${_status['latencyMs'] ?? 0} ms  ·  ${_status['gpu'] == true ? 'GPU' : 'processeur'}\nDétection : ${_status['detectRate'] ?? 0} %  ·  tremblement ${(_status['jitter'] ?? 0).toStringAsFixed(2)}  ·  erreur de prévision ${(_status['predErr'] ?? 0).toStringAsFixed(2)}\nRéglage appris : lissage ${(_status['alpha'] ?? 0).toStringAsFixed(2)}  ·  prévision ${(_status['predGain'] ?? 0).toStringAsFixed(2)}  ·  ${_status['learned'] ?? 0} images\nRotation : ${_status['rotation'] ?? '?'}°  ·  miroir : ${_status['mirror'] ?? '?'}${_status['error'] != null ? '\nErreur : ${_status['error']}' : ''}',
                 style: const TextStyle(color: Colors.white, fontSize: 12.5),
               ),
             ),
@@ -173,6 +174,15 @@ class _FaceLabPageState extends State<FaceLabPage> {
                 },
                 style: OutlinedButton.styleFrom(side: BorderSide(color: _points ? const Color(0xFFFFC400) : Colors.white54)),
                 child: Text(_points ? 'Points ✓' : 'Points', style: const TextStyle(color: Colors.white)),
+              ),
+              OutlinedButton(
+                key: const ValueKey('lab_flip'),
+                onPressed: () async {
+                  setState(() => _flipPts = !_flipPts);
+                  await _channel.invokeMethod('setFlipPoints', {'flip': _flipPts});
+                },
+                style: OutlinedButton.styleFrom(side: BorderSide(color: _flipPts ? const Color(0xFFFFC400) : Colors.white54)),
+                child: Text('Points ⇄', style: const TextStyle(color: Colors.white)),
               ),
               IconButton.filled(key: const ValueKey('lab_photo'), onPressed: _recording ? null : _photo, icon: const Icon(Icons.photo_camera_rounded)),
               IconButton.filled(
