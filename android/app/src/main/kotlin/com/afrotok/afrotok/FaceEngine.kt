@@ -3,6 +3,7 @@ package com.afrotok.afrotok
 import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
+import android.util.Size
 import android.graphics.SurfaceTexture
 import android.media.MediaCodec
 import android.media.MediaCodecInfo
@@ -29,11 +30,15 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.core.SurfaceRequest
+import androidx.camera.core.resolutionselector.AspectRatioStrategy
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.google.mediapipe.framework.image.BitmapImageBuilder
 import com.google.mediapipe.tasks.core.BaseOptions
+import com.google.mediapipe.tasks.core.Delegate
 import com.google.mediapipe.tasks.vision.core.ImageProcessingOptions
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.facelandmarker.FaceLandmarker
@@ -104,7 +109,7 @@ object FaceEngine {
 }
 
 /** Points du visage (coordonnées normalisées de l'image redressée, y vers le bas), lissés d'une image à l'autre. */
-class Landmarks(val x: FloatArray, val y: FloatArray)
+class Landmarks(val x: FloatArray, val y: FloatArray, val vx: FloatArray, val vy: FloatArray, val t: Long)
 
 class FaceEngineView(private val activity: Activity, private var front: Boolean) : PlatformView {
     val glView = GLSurfaceView(activity)
@@ -145,7 +150,14 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
         if (FaceEngine.current === this) FaceEngine.current = null
     }
 
-    fun status(): Map<String, Any?> = mapOf("running" to true, "frames" to framesAnalysed, "face" to (renderer.landmarks != null), "error" to lastError, "rotation" to renderer.rotTotal(), "mirror" to renderer.mirrorTotal())
+    @Volatile private var latencyMs = 0L
+    @Volatile private var fps = 0
+    @Volatile private var usingGpu = false
+    private var fpsCount = 0
+    private var fpsSince = SystemClock.uptimeMillis()
+
+    fun status(): Map<String, Any?> = mapOf("running" to true, "frames" to framesAnalysed, "face" to (renderer.landmarks != null), "error" to lastError, "rotation" to renderer.rotTotal(), "mirror" to renderer.mirrorTotal(),
+        "latencyMs" to latencyMs, "fps" to fps, "gpu" to usingGpu)
 
     private var audioRec: MediaRecorder? = null
     private var tmpVideo: String? = null
@@ -233,21 +245,31 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
         startCamera()
     }
 
+    private fun landmarkerOptions(delegate: Delegate) = FaceLandmarker.FaceLandmarkerOptions.builder()
+        .setBaseOptions(BaseOptions.builder().setModelAssetPath("face_landmarker.task").setDelegate(delegate).build())
+        .setRunningMode(RunningMode.LIVE_STREAM)
+        .setNumFaces(1)
+        .setMinFaceDetectionConfidence(0.5f)
+        .setMinFacePresenceConfidence(0.5f)
+        .setMinTrackingConfidence(0.5f)
+        .setResultListener { r: FaceLandmarkerResult, _ -> onResult(r) }
+        .setErrorListener { e -> lastError = e.message; FaceEngine.log("MediaPipe : ${e.message}") }
+        .build()
+
     private fun initLandmarker() {
+        // le processeur graphique va bien plus vite ; s'il n'est pas disponible sur ce téléphone, on retombe sur le processeur
         try {
-            val opts = FaceLandmarker.FaceLandmarkerOptions.builder()
-                .setBaseOptions(BaseOptions.builder().setModelAssetPath("face_landmarker.task").build())
-                .setRunningMode(RunningMode.LIVE_STREAM)
-                .setNumFaces(1)
-                .setMinFaceDetectionConfidence(0.5f)
-                .setMinTrackingConfidence(0.5f)
-                .setResultListener { r: FaceLandmarkerResult, _ -> onResult(r) }
-                .setErrorListener { e -> lastError = e.message; FaceEngine.log("MediaPipe : ${e.message}") }
-                .build()
-            landmarker = FaceLandmarker.createFromOptions(activity, opts)
+            landmarker = FaceLandmarker.createFromOptions(activity, landmarkerOptions(Delegate.GPU))
+            usingGpu = true
         } catch (e: Throwable) {
-            lastError = "initialisation : ${e.message}"
-            FaceEngine.log(lastError!!)
+            FaceEngine.log("Détection sur GPU impossible (${e.message}) : processeur")
+            try {
+                landmarker = FaceLandmarker.createFromOptions(activity, landmarkerOptions(Delegate.CPU))
+                usingGpu = false
+            } catch (e2: Throwable) {
+                lastError = "initialisation : ${e2.message}"
+                FaceEngine.log(lastError!!)
+            }
         }
     }
 
@@ -256,24 +278,42 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
         if (faces.isEmpty()) { renderer.landmarks = null; return }
         val pts = faces[0]
         val n = pts.size
+        val now = SystemClock.uptimeMillis()
+        val old = renderer.landmarks
         val xs = FloatArray(n) { pts[it].x() }
         val ys = FloatArray(n) { pts[it].y() }
-        val old = renderer.landmarks
+        val vx = FloatArray(n)
+        val vy = FloatArray(n)
         if (old != null && old.x.size == n) {
-            // lissage (moins de tremblements)
-            for (i in 0 until n) { xs[i] = old.x[i] * 0.45f + xs[i] * 0.55f; ys[i] = old.y[i] * 0.45f + ys[i] * 0.55f }
+            val dt = maxOf(0.016f, (now - old.t) / 1000f)
+            for (i in 0 until n) {
+                val dx = xs[i] - old.x[i]
+                val dy = ys[i] - old.y[i]
+                // lissage adaptatif : peu de tremblement quand on bouge peu, suit vite quand on bouge vite
+                val speed = hypot(dx, dy) / dt
+                val a = (0.4f + speed * 0.8f).coerceIn(0.4f, 0.95f)
+                xs[i] = old.x[i] + dx * a
+                ys[i] = old.y[i] + dy * a
+                // vitesse (par seconde), lissée : sert à prévoir où sera le visage à l'image suivante
+                vx[i] = old.vx[i] * 0.5f + ((xs[i] - old.x[i]) / dt) * 0.5f
+                vy[i] = old.vy[i] * 0.5f + ((ys[i] - old.y[i]) / dt) * 0.5f
+            }
         }
-        renderer.landmarks = Landmarks(xs, ys)
+        renderer.landmarks = Landmarks(xs, ys, vx, vy, now)
+        latencyMs = now - r.timestampMs()
+        fpsCount++
+        if (now - fpsSince >= 1000) { fps = fpsCount; fpsCount = 0; fpsSince = now }
     }
 
     private fun analyze(img: ImageProxy) {
         try {
             val lm = landmarker
             if (lm == null) return
-            val bmp = img.toBitmap()
+            val raw = img.toBitmap()
             val rot = img.imageInfo.rotationDegrees
-            val mp = BitmapImageBuilder(bmp).build()
-            lm.detectAsync(mp, ImageProcessingOptions.builder().setRotationDegrees(rot).build(), SystemClock.uptimeMillis())
+            // image redressée ici (rotation dans le sens des aiguilles d'une montre) : les points rendus sont alors exactement ceux de l'image droite
+            val bmp = if (rot == 0) raw else Bitmap.createBitmap(raw, 0, 0, raw.width, raw.height, android.graphics.Matrix().apply { postRotate(rot.toFloat()) }, true)
+            lm.detectAsync(BitmapImageBuilder(bmp).build(), SystemClock.uptimeMillis())
             framesAnalysed++
         } catch (e: Throwable) {
             lastError = "analyse : ${e.message}"
@@ -292,8 +332,12 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
                 val selector = if (front) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
                 val preview = Preview.Builder().setTargetAspectRatio(AspectRatio.RATIO_4_3).setTargetRotation(Surface.ROTATION_0).build()
                 preview.setSurfaceProvider(ContextCompat.getMainExecutor(activity)) { req -> renderer.onSurfaceRequest(req) }
+                val lowRes = ResolutionSelector.Builder()
+                    .setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
+                    .setResolutionStrategy(ResolutionStrategy(Size(480, 360), ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER))
+                    .build()
                 val analysis = ImageAnalysis.Builder()
-                    .setTargetAspectRatio(AspectRatio.RATIO_4_3)
+                    .setResolutionSelector(lowRes)
                     .setTargetRotation(Surface.ROTATION_0)
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                     .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
@@ -553,8 +597,10 @@ class FaceRenderer : GLSurfaceView.Renderer {
 
     /** Position d'un point du visage dans l'espace d'affichage (0 à 1, y vers le haut). */
     private fun disp(lm: Landmarks, i: Int, csx: Float, csy: Float): FloatArray {
-        var x = lm.x[i]
-        val y = 1f - lm.y[i]
+        // le visage se déplace pendant que la détection travaille : on prévoit sa position actuelle d'après sa vitesse (au plus 80 ms)
+        val dt = ((SystemClock.uptimeMillis() - lm.t) / 1000f).coerceIn(0f, 0.08f)
+        var x = lm.x[i] + lm.vx[i] * dt
+        val y = 1f - (lm.y[i] + lm.vy[i] * dt)
         if (mirrorTotal()) x = 1f - x
         return floatArrayOf((x - 0.5f) * csx + 0.5f, (y - 0.5f) * csy + 0.5f)
     }

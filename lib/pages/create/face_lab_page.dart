@@ -157,7 +157,7 @@ class _FaceLabPageState extends State<FaceLabPage> {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(color: const Color(0xAA000000), borderRadius: BorderRadius.circular(12)),
               child: Text(
-                'Visage : ${faceOk ? 'suivi ✅' : 'non trouvé'}  ·  images analysées : ${_status['frames'] ?? 0}\nRotation : ${_status['rotation'] ?? '?'}°  ·  miroir : ${_status['mirror'] ?? '?'}${_status['error'] != null ? '\nErreur : ${_status['error']}' : ''}',
+                'Visage : ${faceOk ? 'suivi ✅' : 'non trouvé'}  ·  ${_status['fps'] ?? 0} détections/s  ·  retard ${_status['latencyMs'] ?? 0} ms  ·  ${_status['gpu'] == true ? 'GPU' : 'processeur'}\nRotation : ${_status['rotation'] ?? '?'}°  ·  miroir : ${_status['mirror'] ?? '?'}${_status['error'] != null ? '\nErreur : ${_status['error']}' : ''}',
                 style: const TextStyle(color: Colors.white, fontSize: 12.5),
               ),
             ),
