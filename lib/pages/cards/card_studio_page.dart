@@ -315,7 +315,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
         backgroundColor: c.background,
         foregroundColor: c.textPrimary,
         elevation: 0,
-        title: Text(context.tr('Carte Afrolook'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+        title: Text(context.tr(widget.compose ? 'Ma carte' : 'Carte Afrolook'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
         actions: [
           IconButton(
             tooltip: context.tr('Comment ça marche'),
@@ -378,17 +378,25 @@ class _CardStudioPageState extends State<CardStudioPage> {
     return tr('Capture {a} 🪙 · Publication {b} 🪙', {'a': q.priceCapture, 'b': q.pricePublish});
   }
 
-  Widget _quotaBanner(AppColors c) => InkWell(
-        onTap: _showPlanSheet,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Row(children: [
-            Icon(Icons.auto_awesome_rounded, size: 16, color: c.supportAccent),
-            const SizedBox(width: 8),
-            Expanded(child: Text(_quotaLine(), style: TextStyle(color: c.textSecondary, fontSize: 12.5, fontWeight: FontWeight.w600))),
-            Text(context.tr('Détails'), style: TextStyle(color: c.primary, fontSize: 12, fontWeight: FontWeight.w700)),
-            Icon(Icons.chevron_right_rounded, size: 18, color: c.primary),
-          ]),
+  Widget _quotaBanner(AppColors c) => Padding(
+        padding: const EdgeInsets.fromLTRB(14, 2, 14, 4),
+        child: Material(
+          color: c.surfaceVariant,
+          borderRadius: BorderRadius.circular(12),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: _showPlanSheet,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Row(children: [
+                Icon(Icons.auto_awesome_rounded, size: 16, color: c.accentText),
+                const SizedBox(width: 8),
+                Expanded(child: Text(_quotaLine(), style: TextStyle(color: c.textPrimary, fontSize: 12.5, fontWeight: FontWeight.w600))),
+                Text(context.tr('Détails'), style: TextStyle(color: c.accentText, fontSize: 12, fontWeight: FontWeight.w800)),
+                Icon(Icons.chevron_right_rounded, size: 18, color: c.accentText),
+              ]),
+            ),
+          ),
         ),
       );
 
@@ -398,7 +406,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: c.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
       builder: (ctx) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(18),
@@ -419,11 +427,12 @@ class _CardStudioPageState extends State<CardStudioPage> {
             _line(c, ctx.tr('Style Pro en plus'), '+${q.priceProStyle} 🪙'),
             const SizedBox(height: 14),
             if (q.passActive)
-              Text(ctx.tr('Ton Pass Studio est actif : tout est gratuit, styles Pro compris.'), style: TextStyle(color: c.primary, fontWeight: FontWeight.w700))
+              Text(ctx.tr('Ton Pass Studio est actif : tout est gratuit, styles Pro compris.'), style: TextStyle(color: c.accentText, fontWeight: FontWeight.w700))
             else
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
+                  style: FilledButton.styleFrom(backgroundColor: c.accent, foregroundColor: c.onAccent, padding: const EdgeInsets.symmetric(vertical: 13), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
                   onPressed: () async {
                     Navigator.pop(ctx);
                     await _buyPass();
@@ -444,7 +453,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(children: [
           Expanded(child: Text(a, style: TextStyle(color: c.textSecondary, fontSize: 14))),
-          Text(b, style: TextStyle(color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.w800)),
+          Text(b, style: TextStyle(color: c.accentText, fontSize: 14, fontWeight: FontWeight.w800)),
         ]),
       );
 
@@ -479,18 +488,31 @@ class _CardStudioPageState extends State<CardStudioPage> {
     }
   }
 
-  Widget _tabBar(AppColors c) => Container(
-        decoration: BoxDecoration(border: Border(top: BorderSide(color: c.border.withOpacity(0.5)))),
+  /// Pastille de choix de la proposition : jaune en FOND quand elle est choisie (texte `onAccent`), sinon fond de surface et contour.
+  Widget _pill(AppColors c, String label, bool selected, VoidCallback? onTap, {IconData? icon, TextStyle? style, double radius = 99}) => Material(
+        color: selected ? c.accent : c.surfaceVariant,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(radius), side: BorderSide(color: selected ? c.accent : c.border)),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+            child: Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
+              if (icon != null) ...[Icon(icon, size: 15, color: selected ? c.onAccent : c.textSecondary), const SizedBox(width: 5)],
+              Flexible(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: (style ?? const TextStyle(fontSize: 12.5)).copyWith(color: selected ? c.onAccent : c.textPrimary, fontWeight: selected ? FontWeight.w800 : FontWeight.w600))),
+            ]),
+          ),
+        ),
+      );
+
+  Widget _tabBar(AppColors c) => Padding(
+        padding: const EdgeInsets.fromLTRB(14, 6, 14, 6),
         child: Row(children: [
           for (var i = 0; i < _tabs.length; i++)
             Expanded(
-              child: InkWell(
-                onTap: () => setState(() => _tab = i),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 11),
-                  decoration: BoxDecoration(border: Border(bottom: BorderSide(color: _tab == i ? c.primary : Colors.transparent, width: 2))),
-                  child: Text(context.tr(_tabs[i]), textAlign: TextAlign.center, style: TextStyle(color: _tab == i ? c.primary : c.textSecondary, fontWeight: _tab == i ? FontWeight.w800 : FontWeight.w500, fontSize: 13)),
-                ),
+              child: Padding(
+                padding: EdgeInsets.only(right: i == _tabs.length - 1 ? 0 : 6),
+                child: _pill(c, context.tr(_tabs[i]), _tab == i, () => setState(() => _tab = i), radius: 10),
               ),
             ),
         ]),
@@ -538,7 +560,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
               isDense: true,
               filled: true,
               fillColor: c.surfaceVariant,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: c.border)),
               suffixIcon: IconButton(
                 icon: const Icon(Icons.content_paste_rounded),
                 onPressed: () async {
@@ -612,6 +634,8 @@ class _CardStudioPageState extends State<CardStudioPage> {
     });
   }
 
+  ButtonStyle _outStyle(AppColors c) => OutlinedButton.styleFrom(foregroundColor: c.textPrimary, side: BorderSide(color: c.border), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)));
+
   Widget _mediaPanel(AppColors c) {
     final imgs = _source.images;
     if (imgs.isEmpty) {
@@ -620,8 +644,8 @@ class _CardStudioPageState extends State<CardStudioPage> {
         if (widget.compose) ...[
           const SizedBox(height: 10),
           Wrap(spacing: 8, runSpacing: 6, children: [
-            OutlinedButton.icon(onPressed: _addImages, icon: const Icon(Icons.add_photo_alternate_rounded), label: Text(context.tr('Ajouter des images'))),
-            OutlinedButton.icon(onPressed: _fromLink, icon: const Icon(Icons.link_rounded), label: Text(context.tr('Depuis un lien'))),
+            OutlinedButton.icon(style: _outStyle(c), onPressed: _addImages, icon: const Icon(Icons.add_photo_alternate_rounded), label: Text(context.tr('Ajouter des images'))),
+            OutlinedButton.icon(style: _outStyle(c), onPressed: _fromLink, icon: const Icon(Icons.link_rounded), label: Text(context.tr('Depuis un lien'))),
           ]),
         ],
       ]);
@@ -656,12 +680,12 @@ class _CardStudioPageState extends State<CardStudioPage> {
                   opacity: on ? 1 : 0.5,
                   child: Container(
                     width: 58,
-                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(9), border: Border.all(color: on ? c.primary : Colors.transparent, width: 2)),
+                    decoration: BoxDecoration(borderRadius: BorderRadius.circular(9), border: Border.all(color: on ? c.accent : Colors.transparent, width: 2)),
                     clipBehavior: Clip.antiAlias,
                     child: Stack(fit: StackFit.expand, children: [
                       Image(image: imgs[i], fit: BoxFit.cover, errorBuilder: (_, __, ___) => const ColoredBox(color: Colors.black26)),
                       if (on)
-                        Positioned(right: 3, top: 3, child: CircleAvatar(radius: 8, backgroundColor: c.primary, child: Text('${pos + 1}', style: TextStyle(color: c.onPrimary, fontSize: 10, fontWeight: FontWeight.w800)))),
+                        Positioned(right: 3, top: 3, child: CircleAvatar(radius: 8, backgroundColor: c.accent, child: Text('${pos + 1}', style: TextStyle(color: c.onAccent, fontSize: 10, fontWeight: FontWeight.w800)))),
                     ]),
                   ),
                 ),
@@ -673,12 +697,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
         const SizedBox(height: 10),
         Wrap(spacing: 8, children: [
           for (final l in CardLayout.values)
-            ChoiceChip(
-              label: Text(context.tr(l.label)),
-              selected: _spec.layout == l,
-              onSelected: (_) => setState(() => _spec.layout = l),
-              visualDensity: VisualDensity.compact,
-            ),
+            _pill(c, context.tr(l.label), _spec.layout == l, () => setState(() => _spec.layout = l)),
         ]),
       ],
       if (!_source.isVideo) ..._zoomControls(c),
@@ -692,8 +711,8 @@ class _CardStudioPageState extends State<CardStudioPage> {
       if (widget.compose) ...[
         const SizedBox(height: 8),
         Wrap(spacing: 4, children: [
-          TextButton.icon(onPressed: _addImages, icon: const Icon(Icons.swap_horiz_rounded, size: 18), label: Text(context.tr('Changer les images'))),
-          TextButton.icon(onPressed: _fromLink, icon: const Icon(Icons.link_rounded, size: 18), label: Text(context.tr('Depuis un lien'))),
+          TextButton.icon(style: TextButton.styleFrom(foregroundColor: c.textPrimary), onPressed: _addImages, icon: const Icon(Icons.swap_horiz_rounded, size: 18), label: Text(context.tr('Changer les images'))),
+          TextButton.icon(style: TextButton.styleFrom(foregroundColor: c.textPrimary), onPressed: _fromLink, icon: const Icon(Icons.link_rounded, size: 18), label: Text(context.tr('Depuis un lien'))),
         ]),
       ],
     ]);
@@ -778,15 +797,8 @@ class _CardStudioPageState extends State<CardStudioPage> {
       Text(context.tr('Choisis un modèle : tu remplis les champs, le style de ta carte reste le tien.'), style: TextStyle(color: c.textSecondary, fontSize: 12.5, height: 1.35)),
       const SizedBox(height: 8),
       Wrap(spacing: 8, runSpacing: 4, children: [
-        ChoiceChip(label: Text(context.tr('Aucun modèle')), selected: t == null, onSelected: (_) => setState(() => _applyTemplate(null)), visualDensity: VisualDensity.compact),
-        for (final m in CardTemplateId.values)
-          ChoiceChip(
-            avatar: Icon(m.icon, size: 16),
-            label: Text(context.tr(m.label)),
-            selected: t == m,
-            onSelected: (_) => setState(() => _applyTemplate(m)),
-            visualDensity: VisualDensity.compact,
-          ),
+        _pill(c, context.tr('Aucun modèle'), t == null, () => setState(() => _applyTemplate(null))),
+        for (final m in CardTemplateId.values) _pill(c, context.tr(m.label), t == m, () => setState(() => _applyTemplate(m)), icon: m.icon),
       ]),
       if (t != null) ...[
         const SizedBox(height: 12),
@@ -806,7 +818,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
                 prefixIcon: Icon(f.icon, size: 18, color: c.textSecondary),
                 filled: true,
                 fillColor: c.surfaceVariant,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: c.border)),
               ),
               onChanged: (v) => setState(() {
                 _spec.fields[f.key] = v;
@@ -827,7 +839,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
               prefixIcon: Icon(Icons.link_rounded, size: 18, color: c.textSecondary),
               filled: true,
               fillColor: c.surfaceVariant,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: c.border)),
             ),
             onChanged: (v) => setState(() {
               _spec.fields['link'] = v;
@@ -857,7 +869,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
           Container(
             width: 70,
             height: 88,
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: on ? c.primary : Colors.transparent, width: 3)),
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: on ? c.accent : Colors.transparent, width: 3)),
             padding: const EdgeInsets.all(2),
             child: Stack(fit: StackFit.expand, children: [
               ClipRRect(
@@ -870,13 +882,13 @@ class _CardStudioPageState extends State<CardStudioPage> {
                   margin: const EdgeInsets.all(3),
                   padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                   decoration: BoxDecoration(color: pro ? c.accent : c.primary, borderRadius: BorderRadius.circular(5)),
-                  child: Text(pro ? '+${_quote.priceProStyle} 🪙' : tr('INCLUS'), style: TextStyle(color: pro ? const Color(0xFF1F1F1F) : c.onPrimary, fontSize: 8.5, fontWeight: FontWeight.w800)),
+                  child: Text(pro ? '+${_quote.priceProStyle} 🪙' : tr('INCLUS'), style: TextStyle(color: pro ? c.onAccent : c.onPrimary, fontSize: 8.5, fontWeight: FontWeight.w800)),
                 ),
               ),
             ]),
           ),
           const SizedBox(height: 4),
-          Text(context.tr(s.label), style: TextStyle(color: on ? c.primary : c.textSecondary, fontSize: 11, fontWeight: on ? FontWeight.w800 : FontWeight.w500)),
+          Text(context.tr(s.label), style: TextStyle(color: on ? c.textPrimary : c.textSecondary, fontSize: 11, fontWeight: on ? FontWeight.w800 : FontWeight.w500)),
         ]),
       ),
     );
@@ -954,7 +966,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
   }
 
   Widget _stylePanel(AppColors c) {
-    Widget toggle(String label, bool v, ValueChanged<bool> f) => FilterChip(label: Text(label), selected: v, onSelected: (x) => setState(() => f(x)), visualDensity: VisualDensity.compact);
+    Widget toggle(String label, bool v, ValueChanged<bool> f) => _pill(c, label, v, () => setState(() => f(!v)));
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       SizedBox(
@@ -963,7 +975,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
           for (final p in CardPack.values)
             Padding(
               padding: const EdgeInsets.only(right: 8),
-              child: ChoiceChip(label: Text(context.tr(p.label)), selected: _pack == p, onSelected: (_) => setState(() => _pack = p), visualDensity: VisualDensity.compact),
+              child: _pill(c, context.tr(p.label), _pack == p, () => setState(() => _pack = p), radius: 10),
             ),
         ]),
       ),
@@ -977,7 +989,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
           child: Text('🎉 ${context.tr('C\'est la fête nationale : les styles drapeau sont offerts aujourd\'hui !')}', style: TextStyle(color: c.textPrimary, fontSize: 12.5, fontWeight: FontWeight.w700)),
         ),
       if (_spec.style.usesFlag) _countryRow(c),
-      Wrap(spacing: 8, children: [
+      Wrap(spacing: 8, runSpacing: 6, children: [
         toggle(context.tr('Pseudo'), _spec.showAuthor, (v) => _spec.showAuthor = v),
         toggle(context.tr('J\'aime · commentaires'), _spec.showStats, (v) => _spec.showStats = v),
         toggle(context.tr('Abonnés'), _spec.showFollowers, (v) => _spec.showFollowers = v),
@@ -1014,7 +1026,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
           prefixIconConstraints: const BoxConstraints(minWidth: 34, minHeight: 30),
           filled: true,
           fillColor: c.surfaceVariant,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: c.border)),
         ),
         onChanged: (v) => setState(() {
           set(v.trim() == real.toString() ? null : v);
@@ -1047,7 +1059,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
           hintText: context.tr('Le texte de ta carte'),
           filled: true,
           fillColor: c.surfaceVariant,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: c.border)),
         ),
         onChanged: (v) => setState(() {
           _source = _source.copyWith(text: v);
@@ -1064,19 +1076,19 @@ class _CardStudioPageState extends State<CardStudioPage> {
       ),
       const SizedBox(height: 8),
       Wrap(spacing: 8, children: [
-        ChoiceChip(label: Text(context.tr('Début')), selected: _spec.textMode == CardTextMode.start, onSelected: (_) => setState(() => _spec.textMode = CardTextMode.start), visualDensity: VisualDensity.compact),
-        if (sentences.length > 1)
-          ChoiceChip(label: Text(context.tr('Choisir les phrases')), selected: _spec.textMode == CardTextMode.pick, onSelected: (_) => setState(() => _spec.textMode = CardTextMode.pick), visualDensity: VisualDensity.compact),
+        _pill(c, context.tr('Début'), _spec.textMode == CardTextMode.start, () => setState(() => _spec.textMode = CardTextMode.start)),
+        if (sentences.length > 1) _pill(c, context.tr('Choisir les phrases'), _spec.textMode == CardTextMode.pick, () => setState(() => _spec.textMode = CardTextMode.pick)),
       ]),
       if (_spec.textMode == CardTextMode.pick && sentences.length > 1) ...[
         const SizedBox(height: 8),
         Wrap(spacing: 6, runSpacing: 6, children: [
           for (var i = 0; i < sentences.length; i++)
-            FilterChip(
-              label: Text(sentences[i].length > 34 ? '${sentences[i].substring(0, 34)}…' : sentences[i], style: const TextStyle(fontSize: 12)),
-              selected: _spec.pickedSentences.contains(i),
-              onSelected: (v) => setState(() => v ? _spec.pickedSentences.add(i) : _spec.pickedSentences.remove(i)),
-              visualDensity: VisualDensity.compact,
+            _pill(
+              c,
+              sentences[i].length > 34 ? '${sentences[i].substring(0, 34)}…' : sentences[i],
+              _spec.pickedSentences.contains(i),
+              () => setState(() => _spec.pickedSentences.contains(i) ? _spec.pickedSentences.remove(i) : _spec.pickedSentences.add(i)),
+              style: const TextStyle(fontSize: 12),
             ),
         ]),
       ],
@@ -1085,12 +1097,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
       const SizedBox(height: 4),
       Wrap(spacing: 8, children: [
         for (final f in CardFont.values)
-          ChoiceChip(
-            label: Text(f == CardFont.auto ? context.tr('Du style') : f.label, style: TextStyle(fontFamily: f.family, fontWeight: f.weight)),
-            selected: _spec.font == f,
-            onSelected: (_) => setState(() => _spec.font = f),
-            visualDensity: VisualDensity.compact,
-          ),
+          _pill(c, f == CardFont.auto ? context.tr('Du style') : f.label, _spec.font == f, () => setState(() => _spec.font = f), style: TextStyle(fontFamily: f.family, fontSize: 12.5)),
       ]),
     ]);
   }
@@ -1103,10 +1110,10 @@ class _CardStudioPageState extends State<CardStudioPage> {
   Widget _votePanel(AppColors c) => Container(
         margin: const EdgeInsets.only(bottom: 14),
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: c.border)),
+        decoration: BoxDecoration(color: c.surfaceVariant, borderRadius: BorderRadius.circular(12), border: Border.all(color: c.border)),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            const Icon(Icons.how_to_vote_rounded, size: 20, color: Color(0xFFFF9500)),
+            Icon(Icons.how_to_vote_rounded, size: 20, color: c.accentText),
             const SizedBox(width: 8),
             Expanded(child: Text(context.tr('Mention « Vote pour moi » et QR code'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 14))),
             Switch(
@@ -1120,17 +1127,12 @@ class _CardStudioPageState extends State<CardStudioPage> {
           Text(context.tr('Quand tu partages ta carte sur un autre réseau, on scanne le QR code ou on ouvre le lien de ton post pour voter dans Afrolook.'), style: TextStyle(color: c.textSecondary, fontSize: 12.5, height: 1.4)),
           if (_spec.hasVote) ...[
             const SizedBox(height: 8),
-            Wrap(spacing: 8, runSpacing: 4, children: [
+            Wrap(spacing: 8, runSpacing: 6, children: [
               for (final t in _voteTexts)
-                ChoiceChip(
-                  label: Text(context.tr(t)),
-                  selected: (_spec.voteText ?? '').trim() == context.tr(t),
-                  onSelected: (_) => setState(() {
-                    _spec.voteText = context.tr(t);
-                    _captureDone = false;
-                  }),
-                  visualDensity: VisualDensity.compact,
-                ),
+                _pill(c, context.tr(t), (_spec.voteText ?? '').trim() == context.tr(t), () => setState(() {
+                      _spec.voteText = context.tr(t);
+                      _captureDone = false;
+                    })),
             ]),
           ],
         ]),
@@ -1138,9 +1140,8 @@ class _CardStudioPageState extends State<CardStudioPage> {
 
   Widget _formatPanel(AppColors c) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         if (widget.defiPostId != null && widget.presetPostId != null) _votePanel(c),
-        Wrap(spacing: 8, children: [
-          for (final f in CardFormat.values)
-            ChoiceChip(label: Text(f.label), selected: _spec.format == f, onSelected: (_) => setState(() => _spec.format = f), visualDensity: VisualDensity.compact),
+        Wrap(spacing: 8, runSpacing: 6, children: [
+          for (final f in CardFormat.values) _pill(c, f.label, _spec.format == f, () => setState(() => _spec.format = f)),
         ]),
         const SizedBox(height: 10),
         Text(
@@ -1151,7 +1152,8 @@ class _CardStudioPageState extends State<CardStudioPage> {
 
   // ── Boutons d'action ──────────────────────────────────────────────────────
 
-  static const _btnStyle = ButtonStyle(padding: WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 8, vertical: 10)), textStyle: WidgetStatePropertyAll(TextStyle(fontSize: 13, fontWeight: FontWeight.w700)));
+  static const _btnPad = WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 8, vertical: 12));
+  static const _btnText = WidgetStatePropertyAll(TextStyle(fontSize: 13, fontWeight: FontWeight.w800));
 
   Widget _actions(AppColors c) {
     Widget btn(IconData i, String label, CardCost? cost, VoidCallback f, {bool primary = false, String? done}) => Expanded(
@@ -1161,11 +1163,11 @@ class _CardStudioPageState extends State<CardStudioPage> {
               SizedBox(
                 width: double.infinity,
                 child: (primary
-                    ? FilledButton.icon(style: _btnStyle, onPressed: _busy ? null : f, icon: Icon(i, size: 16), label: FittedBox(fit: BoxFit.scaleDown, child: Text(label, maxLines: 1)))
-                    : OutlinedButton.icon(style: _btnStyle, onPressed: _busy ? null : f, icon: Icon(i, size: 16), label: FittedBox(fit: BoxFit.scaleDown, child: Text(label, maxLines: 1)))),
+                    ? FilledButton.icon(style: FilledButton.styleFrom(backgroundColor: c.accent, foregroundColor: c.onAccent, disabledBackgroundColor: c.surfaceVariant, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))).copyWith(padding: _btnPad, textStyle: _btnText), onPressed: _busy ? null : f, icon: Icon(i, size: 16), label: FittedBox(fit: BoxFit.scaleDown, child: Text(label, maxLines: 1)))
+                    : OutlinedButton.icon(style: OutlinedButton.styleFrom(foregroundColor: c.textPrimary, side: BorderSide(color: c.border), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))).copyWith(padding: _btnPad, textStyle: _btnText), onPressed: _busy ? null : f, icon: Icon(i, size: 16), label: FittedBox(fit: BoxFit.scaleDown, child: Text(label, maxLines: 1)))),
               ),
               const SizedBox(height: 3),
-              Text(done ?? (cost == null ? '' : cost.label), style: TextStyle(color: (done != null || (cost?.free ?? false)) ? c.primary : c.supportAccent, fontSize: 11.5, fontWeight: FontWeight.w800)),
+              Text(done ?? (cost == null ? '' : cost.label), style: TextStyle(color: (done != null || (cost?.free ?? false)) ? c.primary : c.accentText, fontSize: 11.5, fontWeight: FontWeight.w800)),
             ]),
           ),
         );
@@ -1202,7 +1204,7 @@ class _PriceChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
       decoration: BoxDecoration(color: (cost.free ? c.primary : c.accent).withOpacity(0.18), borderRadius: BorderRadius.circular(8)),
-      child: Text(cost.label, style: TextStyle(color: cost.free ? c.primary : c.supportAccent, fontWeight: FontWeight.w800, fontSize: 12)),
+      child: Text(cost.label, style: TextStyle(color: cost.free ? c.primary : c.accentText, fontWeight: FontWeight.w800, fontSize: 12)),
     );
   }
 }
