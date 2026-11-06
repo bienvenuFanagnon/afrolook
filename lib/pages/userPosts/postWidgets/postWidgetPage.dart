@@ -7,6 +7,7 @@ import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:afrotok/services/read_meter.dart';
 import '../../../services/comments_prefetch.dart';
 import '../../../widgets/original_badge.dart';
+import '../../videos/video_chrome.dart';
 import '../../create/create_hub_page.dart';
 import '../../../widgets/studio/post_template_try.dart';
 import '../../defi/defi_boost.dart';
@@ -1266,12 +1267,27 @@ Future<void> _handleRepost() async {
                 ],
               ),
               _followersText(TextStyle(color: colors.textSecondary, fontSize: 12), topGap: 2),
-              if (OriginalBadge.isCaptured(widget.post.captureSource) || VoiceChangedBadge.has(widget.post.voiceEffect))
+              if (OriginalBadge.isCaptured(widget.post.captureSource) || VoiceChangedBadge.has(widget.post.voiceEffect) || widget.post.authenticity != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Align(alignment: Alignment.centerLeft, child: Wrap(spacing: 6, runSpacing: 4, children: [
                     if (OriginalBadge.isCaptured(widget.post.captureSource)) const OriginalBadge(),
                     if (VoiceChangedBadge.has(widget.post.voiceEffect)) const VoiceChangedBadge(),
+                    // authenticité : « Validé » après plusieurs contrôles propres ; « Non monétisé » si la marque d'un autre réseau a été vue
+                    if (widget.post.authenticity == 'validated') const AuthenticBadge(compact: true),
+                    if (widget.post.authenticity == 'flagged')
+                      GestureDetector(
+                        onTap: () => showNotMonetizedSheet(context, mark: widget.post.authenticityMark ?? 'other'),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(color: const Color(0xFFFFC400), borderRadius: BorderRadius.circular(99)),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            const Icon(Icons.warning_amber_rounded, size: 11, color: Color(0xFF3A2C00)),
+                            const SizedBox(width: 3),
+                            Text(context.tr('Non monétisé'), style: const TextStyle(color: Color(0xFF3A2C00), fontSize: 9, fontWeight: FontWeight.w800)),
+                          ]),
+                        ),
+                      ),
                   ])),
                 ),
               if (widget.post.replyToPostId != null) Align(alignment: Alignment.centerLeft, child: ReplyToLine(username: widget.post.replyToUsername, excerpt: widget.post.replyToExcerpt, onTap: _openReplyTarget)),

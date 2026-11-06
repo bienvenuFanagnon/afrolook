@@ -338,6 +338,23 @@ class ReglesConfidentialitePage extends StatelessWidget {
           ),
           _section(
             colors,
+            icon: Icons.verified_outlined,
+            title: 'Contenus authentiques',
+            items: [
+              _rule('Afrolook met en avant l\'authentique',
+                  'Afrolook met en avant les contenus authentiques, propres à la plateforme : ce que tu filmes, enregistres, écris ou montes toi-même.'),
+              _rule('Vidéos d\'autres réseaux',
+                  'Les vidéos téléchargées d\'autres réseaux (TikTok, Instagram, Facebook…) sont refusées à la publication. Les vidéos montées avec un éditeur (CapCut, InShot…) et celles de Snapchat sont acceptées.'),
+              _rule('Plus de monétisation',
+                  'Une vidéo identifiée comme venant d\'un autre réseau n\'est plus monétisée : ses vues ne rapportent plus de pièces et elle n\'est plus mise en avant. Les publications qui ne sont que des liens vers d\'autres réseaux ne sont jamais monétisées.'),
+              _rule('C\'est ma vidéo',
+                  'Si la vidéo est la tienne, tu peux demander une vérification avec le bouton « C\'est ma vidéo ». Notre équipe l\'examine ; si elle est validée, elle redevient monétisée et reçoit le badge « Validé ».'),
+              _rule('Le badge « Validé »',
+                  'Le badge « Validé » signifie qu\'aucune marque d\'un autre réseau n\'a été détectée après plusieurs contrôles faits à des lectures différentes. Les vidéos filmées avec l\'application sont validées d\'office. Le badge n\'est pas une garantie absolue : l\'équipe peut retirer un contenu à tout moment.'),
+            ],
+          ),
+          _section(
+            colors,
             icon: Icons.copyright_outlined,
             title: 'Droits d\'auteur & Propriété intellectuelle',
             items: [
@@ -390,6 +407,8 @@ class ReglesConfidentialitePage extends StatelessWidget {
             items: [
               _rule('Données collectées',
                   'Afrolook collecte les données nécessaires au fonctionnement de l\'application : profil, publications, interactions, transactions. Aucune donnée n\'est vendue à des tiers.'),
+              _rule('Vérification des vidéos',
+                  'Pendant la lecture d\'une vidéo, ton téléphone peut en analyser quelques images pour y chercher le logo ou le nom d\'un autre réseau. L\'analyse se fait sur ton téléphone, avec une reconnaissance de texte qui fonctionne hors ligne. Aucune image ni aucun texte n\'est envoyé : seul le résultat (« rien détecté » ou « marque détectée ») est envoyé à Afrolook, avec l\'identifiant de la vidéo. Ce résultat sert à afficher le badge « Validé » et à décider de la monétisation de la vidéo ; il n\'est pas lié à ton profil publicitaire.'),
               _rule('Utilisation des données',
                   'Tes données sont utilisées pour personnaliser ton expérience, calculer tes récompenses, et assurer la sécurité de la plateforme.'),
               _rule('Suppression du compte',
@@ -403,7 +422,7 @@ class ReglesConfidentialitePage extends StatelessWidget {
           const SizedBox(height: 16),
           Center(
             child: Text(
-              'Dernière mise à jour : 15 octobre 2026\nCes règles peuvent évoluer. Consulte cette page régulièrement.',
+              'Dernière mise à jour : 7 novembre 2026\nCes règles peuvent évoluer. Consulte cette page régulièrement.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: colors.textSecondary,
