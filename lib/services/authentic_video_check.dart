@@ -101,7 +101,7 @@ class AuthenticVideoCheck {
       };
 
   /// Examine la vidéo choisie. Rend vrai pour continuer (vidéo propre, ou « C'est ma vidéo » : la modération la vérifiera avant publication), faux si la personne renonce.
-  static Future<bool> gate(BuildContext context, String path) async {
+  static Future<bool> gate(BuildContext context, String path, {bool allowClaim = true}) async {
     PostExternalLink.clear();
     final c = AppColors.of(context);
     // petit message pendant l'examen (1 à 3 secondes)
@@ -139,11 +139,14 @@ class AuthenticVideoCheck {
             tr('Afrolook est le réseau des vidéos authentiques : les vidéos téléchargées de {a} ne sont pas acceptées. Publie tes propres vidéos, filmées avec l\'application ou montées avec un éditeur comme CapCut.', {'a': _name(mark)}),
             style: TextStyle(color: c.textSecondary, height: 1.4, fontSize: 14),
           ),
-          const SizedBox(height: 10),
-          Text(tr('Cette vidéo est la tienne ? Notre équipe la vérifie avant de la publier.'), style: TextStyle(color: c.textSecondary, height: 1.4, fontSize: 13)),
+          if (allowClaim) ...[
+            const SizedBox(height: 10),
+            Text(tr('Cette vidéo est la tienne ? Notre équipe la vérifie avant de la publier.'), style: TextStyle(color: c.textSecondary, height: 1.4, fontSize: 13)),
+          ],
         ]),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Compris'), style: TextStyle(color: c.textSecondary))),
+          if (allowClaim)
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(backgroundColor: c.accent, foregroundColor: c.onAccent),
@@ -152,7 +155,7 @@ class AuthenticVideoCheck {
         ],
       ),
     );
-    if (own == true) {
+    if (own == true && allowClaim) {
       PostExternalLink.set(mark, own: true);
       return true;
     }

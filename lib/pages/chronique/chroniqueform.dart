@@ -14,6 +14,7 @@ import 'package:record/record.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:video_player/video_player.dart';
 import 'dart:io';
+import 'package:afrotok/services/authentic_video_check.dart';
 import 'package:provider/provider.dart';
 // models/chronique_model.dart
 // Timestamp : simple type de date (les chroniques sont lues et écrites par l'API) ; les commentaires restent sur Firebase.
@@ -424,6 +425,8 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
         _showErrorDialog('La vidéo est trop longue (${duration.toStringAsFixed(1)}s). Maximum 30 secondes.');
         return;
       }
+      // vidéos authentiques : une vidéo téléchargée d'un autre réseau n'est pas acceptée en chronique (pas de recours : elle ne dure que 24 h)
+      if (!mounted || !await AuthenticVideoCheck.gate(context, video.path, allowClaim: false) || !mounted) return;
 
       setState(() {
         _selectedMedia = file;
