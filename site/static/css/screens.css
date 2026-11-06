@@ -145,10 +145,10 @@
 .afx .x-phone::before,.afx .x-phone::after{display:none}
 .afx-stage{position:relative;width:100%;max-width:340px;height:560px;margin:0 auto}
 .afx-sc{position:absolute;inset:0;opacity:0;transition:opacity .6s;pointer-events:none;display:flex;flex-direction:column;align-items:center}
-.afx-sc.x-on{opacity:1;pointer-events:auto}
+.afx-sc.on{opacity:1;pointer-events:auto}
 .afx-sc .x-phone{transform:rotate(-2deg)}
 .afx-cap{margin-top:14px;font-weight:800;background:#FFD21F;color:#3a2c00;border-radius:99px;padding:7px 16px;font-size:14px;box-shadow:0 8px 20px rgba(0,0,0,.15);text-align:center}
-.afx-dots{display:flex;gap:7px;justify-content:center;margin-top:10px}.afx-dots i{width:8px;height:8px;border-radius:50%;background:rgba(120,130,125,.35);display:block;cursor:pointer}.afx-dots i.x-on{background:#1b8a3c}
+.afx-dots{display:flex;gap:7px;justify-content:center;margin-top:10px}.afx-dots i{width:8px;height:8px;border-radius:50%;background:rgba(120,130,125,.35);display:block;cursor:pointer}.afx-dots i.on{background:#1b8a3c}
 .afx-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:28px 18px;margin-top:36px}
 .afx-grid figure{margin:0;text-align:center}.afx-grid figcaption{margin-top:12px;font-weight:800;font-size:16px}.afx-grid figcaption small{display:block;font-weight:400;color:var(--muted);font-size:13.5px;margin-top:3px}
 @media(max-width:1100px){.afx-grid{grid-template-columns:repeat(2,1fr)}}

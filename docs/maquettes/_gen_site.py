@@ -81,6 +81,7 @@ out.append('''.afx .phone::before,.afx .phone::after{display:none}
 @media(max-width:620px){.afx-grid{grid-template-columns:1fr}.afx-stage{height:540px}}
 ''')
 css_txt = re.sub(r'\.(?!afx)([A-Za-z][A-Za-z0-9_-]*)', lambda m: '.x-' + m.group(1), ''.join(out))
+css_txt = css_txt.replace('.afx-sc.x-on', '.afx-sc.on').replace('.afx-dots i.x-on', '.afx-dots i.on')
 open(os.path.join(SITE, 'static', 'css', 'screens.css'), 'w', encoding='utf-8').write(css_txt)
 
 def phone(k, lang):
