@@ -1,3 +1,4 @@
+import 'package:afrolook_api_client/afrolook_api_client.dart' show ApiException;
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/liveshop/live_shop_orders_page.dart';
 import 'package:afrotok/layout/centered_content.dart';
@@ -838,6 +839,8 @@ class _MesNotificationState extends State<MesNotification> {
   }
 
   /// Récupère un post directement par son ID (lecture unique, sans filtre type).
+  /// Lit le post visé par la notification. Rend null SEULEMENT si le post n'existe plus (404) ; toute autre erreur (réseau, serveur, données illisibles) est
+  /// renvoyée à l'appelant pour qu'il dise « erreur de chargement » (avec la cause dans les APK de test) au lieu d'un faux « post introuvable ».
   Future<Post?> _fetchPostById(String postId) async {
     try {
       final j = JeuxApi.map(await JeuxApi.client.get('/posts/$postId')).cast<String, dynamic>();
@@ -845,8 +848,13 @@ class _MesNotificationState extends State<MesNotification> {
       final post = postFromApi(j);
       post.id = postId;
       return post;
-    } catch (_) {
-      return null;
+    } on ApiException catch (e) {
+      if (e.status == 404) return null;
+      printVm('❌ Notification : lecture du post $postId impossible (${e.status} ${e.message})');
+      rethrow;
+    } catch (e, st) {
+      printVm('❌ Notification : post $postId illisible : $e\n$st');
+      rethrow;
     }
   }
 
@@ -896,7 +904,8 @@ class _MesNotificationState extends State<MesNotification> {
     } catch (e) {
       _hideLoadingOverlay();
       printVm("Erreur post notification: $e");
-      _showErrorSnackBar(_l10n.notifErrorLoadingPost);
+      // APK de test : la cause est affichée pour pouvoir la corriger ; version des boutiques : message simple
+      _showErrorSnackBar(const bool.fromEnvironment('TEST_BUILD') ? '${_l10n.notifErrorLoadingPost} : $e' : _l10n.notifErrorLoadingPost);
       setState(() {
         _isHandlingNotification = false;
       });
