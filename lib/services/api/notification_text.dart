@@ -16,7 +16,7 @@ class NotificationText {
     'Commentaires': ['COMMENT', 'COMMENTAIRE', 'REPLY', 'MENTION'],
     'Abonnés': ['ABONNER', 'FOLLOW_CANAL', 'CANAL_ADMIN', 'INVITATION', 'ACCEPTINVITATION'],
     'Messages': ['MESSAGE'],
-    'Publications & Lives': ['NEWPOST', 'POST', 'REPOST', 'LIVE', 'CHALLENGE'],
+    'Publications & Lives': ['NEWPOST', 'POST', 'REPOST', 'LIVE', 'CHALLENGE', 'FRIEND_ACTIVITY'],
     'Articles & Contenus': ['ARTICLE', 'CHRONIQUE', 'SERVICE'],
     'Récompenses': ['WEEKLY_REWARD'],
     'Commandes': ['ORDER_NEW', 'ORDER_VALIDATED', 'ORDER_FEE', 'ORDER_SHIPPED', 'ORDER_RECEIVED', 'ORDER_CANCELLED', 'ORDER_DISPUTE', 'ORDER_RESOLVED', 'OFFER_NEW', 'OFFER_REPLY'],
@@ -30,6 +30,16 @@ class NotificationText {
   static String? sentence(String? type, {String? body}) {
     final b = (body ?? '').trim();
     switch ((type ?? '').toUpperCase()) {
+      case 'FRIEND_ACTIVITY':
+        // le serveur envoie « action|pseudo de l'auteur de la publication » (action : like, comment ou repost)
+        final parts = b.split('|');
+        final who = parts.length > 1 && parts[1].isNotEmpty ? '@${parts[1]}' : tr('un ami');
+        final verb = switch (parts.first) {
+          'comment' => tr('a commenté la publication de {who}', {'who': who}),
+          'repost' => tr('a republié la publication de {who}', {'who': who}),
+          _ => tr('a aimé la publication de {who}', {'who': who}),
+        };
+        return verb;
       case 'MENTION':
         return b.isEmpty ? tr('vous a mentionné') : '${tr('vous a mentionné')} : « $b »';
       case 'ORDER_NEW':
