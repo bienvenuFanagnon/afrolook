@@ -22,6 +22,11 @@ class MontageSticker {
 
   /// Taille relative (1 = taille normale), entre [kStickerMinScale] et [kStickerMaxScale].
   double scale;
+
+  /// Affichage temporisé (vidéo seulement) : l'élément n'apparaît que de [startSec] à [endSec] (secondes depuis le début). Sans valeurs, il reste affiché tout le long.
+  double? startSec;
+  double? endSec;
+  bool get timed => startSec != null && endSec != null;
 }
 
 const double kStickerMinScale = .5;

@@ -17,6 +17,7 @@ import 'package:uuid/uuid.dart';
 
 import 'montage_canvas.dart';
 import 'montage_state.dart';
+import 'montage_stickers.dart';
 
 // Calques envoyés au serveur (studio_uploads/{uid}/{jobId}/) :
 // base.jpg (photo + teintes) ou base.mp4 + under.png (teintes), fx_000…029.png (effet), top.png (textes, filigrane).
@@ -129,7 +130,24 @@ class MontageExport {
     }
     await setT(.3);
     onStep('Textes et décor…');
-    up('top.png', await png(keys.foreground, 720), 'image/png');
+    // messages affichés seulement un temps (vidéo) : un calque image par message, le calque principal n'en contient aucun
+    final timedStickers = isVideo ? s.stickers.where((e) => e.timed).take(8).toList() : <MontageSticker>[];
+    final timedMeta = <Map<String, dynamic>>[];
+    try {
+      s.exportExcludeTimed = timedStickers.isNotEmpty;
+      if (timedStickers.isNotEmpty) await setT(.3);
+      up('top.png', await png(keys.foreground, 720), 'image/png');
+      for (var i = 0; i < timedStickers.length; i++) {
+        s.exportOnlySticker = timedStickers[i].id;
+        await setT(.3);
+        up('timed_$i.png', await png(keys.foreground, 720), 'image/png');
+        timedMeta.add({'key': 'timed_$i.png', 'start': timedStickers[i].startSec, 'end': timedStickers[i].endSec});
+      }
+    } finally {
+      s.exportOnlySticker = null;
+      s.exportExcludeTimed = false;
+      if (timedStickers.isNotEmpty) await setT(.3);
+    }
 
     onStep('Envoi…');
     final ids = <String, String>{};
@@ -163,6 +181,7 @@ class MontageExport {
       'saturation': s.saturation,
       'brightness': s.brightness,
       'has_under': isVideo,
+      if (timedMeta.isNotEmpty) 'timed': timedMeta,
       if (m != null) 'music': {'type': m.type, 'id': m.id, 'start_ms': s.musicStartMs},
       'keep_audio': s.keepVideoAudio,
       if (!isVideo && m != null) 'seconds': s.musicSeconds.clamp(5, maxSeconds),

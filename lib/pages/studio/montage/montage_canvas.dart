@@ -90,7 +90,7 @@ class MontageCanvas extends StatelessWidget {
                 ]),
               ),
               _rb(keys?.fx, s.fxActive ? CustomPaint(painter: MontageFxPainter(tp.fx, anim: animation, fixedT: t), size: Size.infinite) : const SizedBox.expand()),
-              _rb(keys?.foreground, _foreground(cq, texts)),
+              _rb(keys?.foreground, s.exportOnlySticker != null ? _stickerOnly(cq) : _foreground(cq, texts)),
             ]),
           ),
         );
@@ -164,6 +164,15 @@ class MontageCanvas extends StatelessWidget {
       onTap: onTap,
       child: child,
     );
+  }
+
+  /// Calque d'un seul autocollant (message temporisé) : le même dessin et la même place que dans le montage, sans rien d'autre.
+  Widget _stickerOnly(double cq) {
+    final st = state.stickers.where((e) => e.id == state.exportOnlySticker).firstOrNull;
+    if (st == null) return const SizedBox.expand();
+    return Stack(fit: StackFit.expand, children: [
+      _slot('st:${st.id}', cq, dflt: st.center, center: st.center, scalable: true, scale: st.scale, child: StickerView(sticker: st, cq: cq, selected: false)),
+    ]);
   }
 
   Widget _foreground(double cq, MontageTexts texts) {
@@ -293,6 +302,7 @@ class MontageCanvas extends StatelessWidget {
         ),
       // Autocollants (emojis, pastilles, logo) : chacun peut être déplacé et agrandi ; le dernier ajouté est au-dessus
       for (final st in s.stickers)
+        if (!(s.exportExcludeTimed && st.timed))
         _slot('st:${st.id}', cq, dflt: st.center, center: st.center, scalable: true, scale: st.scale, onTap: onTapSticker == null ? null : () => onTapSticker!(st.id), child: StickerView(sticker: st, cq: cq, selected: onMove != null && selectedSticker == st.id)),
       // Filigrane : toujours présent, même publié dans l'app
       Positioned(

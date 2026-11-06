@@ -36,6 +36,10 @@ class MontageState {
   String customDate = '';
 
   int textIndex = 0;
+
+  /// Export seulement : n'afficher que cet autocollant (calque d'un message temporisé), ou tous sauf les temporisés (calque principal).
+  String? exportOnlySticker;
+  bool exportExcludeTimed = false;
   String? kick;
   String? title;
   String? wish;

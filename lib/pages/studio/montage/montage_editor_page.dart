@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 // Éditeur d'un template « prêt à poster » : tout est déjà rempli, la personne change ce qu'elle veut,
 // retire les éléments qui ne l'intéressent pas, puis publie (image fixe ou vidéo animée).
 
@@ -870,6 +871,81 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     if (st != null) setState(() => st.scale = scale.clamp(kStickerMinScale, kStickerMaxScale));
   }
 
+  /// Durée de la vidéo en secondes (10 s par défaut tant qu'elle n'est pas lue).
+  double get _videoSeconds {
+    final v = _video;
+    final d = (v != null && v.value.isInitialized) ? v.value.duration.inMilliseconds / 1000 : 10.0;
+    return d < 1 ? 10 : d;
+  }
+
+  String _sec(double v) => v.toStringAsFixed(1).replaceAll('.', ',');
+
+  /// Choisir de quel instant à quel instant un élément est affiché. Renvoie `null` si on annule, `(0, 0)` pour « toujours affiché ».
+  Future<(double, double)?> _pickTimeRange({double? start, double? end}) {
+    final total = _videoSeconds;
+    var range = RangeValues((start ?? 0).clamp(0, total).toDouble(), (end ?? math.min(total, 3.0)).clamp(0.3, total).toDouble());
+    return showDialog<(double, double)>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setD) => AlertDialog(
+          backgroundColor: _c.surface,
+          title: Text('Quand l\'afficher ?', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w800)),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text('De ${_sec(range.start)} s à ${_sec(range.end)} s (vidéo de ${_sec(total)} s)', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700)),
+            RangeSlider(
+              key: const ValueKey('timed_range'),
+              values: range,
+              min: 0,
+              max: total,
+              divisions: (total * 10).round().clamp(1, 600),
+              onChanged: (v) => setD(() => range = v.end - v.start < 0.3 ? RangeValues(v.start, math.min(total, v.start + 0.3)) : v),
+            ),
+            Text('L\'élément n\'apparaît que pendant ce temps.', style: TextStyle(color: _c.textSecondary, fontSize: 12.5)),
+          ]),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
+            TextButton(onPressed: () => Navigator.pop(ctx, (0.0, 0.0)), child: const Text('Toujours afficher')),
+            FilledButton(key: const ValueKey('timed_ok'), onPressed: () => Navigator.pop(ctx, (range.start, range.end)), child: const Text('Valider')),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// « Message à l'écran » : un texte court affiché de tel instant à tel instant de la vidéo.
+  Future<void> _addTimedMessage() async {
+    if (s.stickers.length >= kMaxStickers) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Tu peux mettre jusqu\'à $kMaxStickers éléments.')));
+      return;
+    }
+    final ctrl = TextEditingController();
+    final text = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _c.surface,
+        title: Text('Message à l\'écran', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w800)),
+        content: TextField(key: const ValueKey('timed_text'), controller: ctrl, autofocus: true, maxLength: 40, style: TextStyle(color: _c.textPrimary), decoration: const InputDecoration(hintText: 'Ex. : Livraison gratuite aujourd\'hui')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, ctrl.text.trim()), child: const Text('Suivant')),
+        ],
+      ),
+    );
+    if (text == null || text.isEmpty || !mounted) return;
+    final range = await _pickTimeRange();
+    if (range == null || !mounted) return;
+    final n = s.stickers.length;
+    final st = MontageSticker(id: '${DateTime.now().microsecondsSinceEpoch}_$n', kind: 'badge', value: text, center: const Offset(.5, .2));
+    if (range.$2 > range.$1) {
+      st.startSec = range.$1;
+      st.endSec = range.$2;
+    }
+    setState(() {
+      s.stickers.add(st);
+      _selSticker = st.id;
+    });
+  }
+
   Future<void> _addSticker() async {
     if (s.stickers.length >= kMaxStickers) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Tu peux mettre jusqu\'à $kMaxStickers autocollants.')));
@@ -897,10 +973,37 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
       const SizedBox(height: 10),
       Wrap(spacing: 8, runSpacing: 8, children: [
         _btn(Icons.add_reaction_rounded, 'Ajouter un autocollant', _addSticker),
+        if (s.hasVideo) _btn(Icons.timer_rounded, 'Message à l\'écran', _addTimedMessage),
         if (s.moved.isNotEmpty) _btn(Icons.restart_alt_rounded, 'Tout remettre en place', () => setState(s.moved.clear)),
       ]),
       if (sel != null) ...[
         const SizedBox(height: 10),
+        if (s.hasVideo)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(children: [
+              Icon(Icons.timer_rounded, size: 18, color: _c.textSecondary),
+              const SizedBox(width: 6),
+              Expanded(child: Text(sel.timed ? 'Affiché de ${_sec(sel.startSec!)} s à ${_sec(sel.endSec!)} s' : 'Affiché pendant toute la vidéo', style: TextStyle(color: _c.textSecondary, fontSize: 13))),
+              TextButton(
+                key: const ValueKey('sticker_time'),
+                onPressed: () async {
+                  final r = await _pickTimeRange(start: sel.startSec, end: sel.endSec);
+                  if (r == null || !mounted) return;
+                  setState(() {
+                    if (r.$2 > r.$1) {
+                      sel.startSec = r.$1;
+                      sel.endSec = r.$2;
+                    } else {
+                      sel.startSec = null;
+                      sel.endSec = null;
+                    }
+                  });
+                },
+                child: const Text('Régler le temps'),
+              ),
+            ]),
+          ),
         Row(children: [
           Text('Autocollant', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700)),
           const Spacer(),

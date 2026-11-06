@@ -111,4 +111,32 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('messages temporisés : le calque principal les exclut, chaque message a son calque, et un autocollant normal reste partout', (tester) async {
+    final timed = MontageSticker(id: 't', kind: 'badge', value: 'PROMO', center: const Offset(.5, .2))
+      ..startSec = 2
+      ..endSec = 4;
+    final normal = MontageSticker(id: 'n', kind: 'emoji', value: '🎉', center: const Offset(.5, .6));
+    expect(timed.timed, isTrue);
+    expect(normal.timed, isFalse);
+    final s = MontageState(kPlainTemplate)..stickers.addAll([timed, normal]);
+    // aperçu normal : les deux
+    await tester.pumpWidget(_host(_canvas(s)));
+    await tester.pump();
+    expect(find.byType(StickerView), findsNWidgets(2));
+    // calque principal : sans le message temporisé
+    s.exportExcludeTimed = true;
+    await tester.pumpWidget(_host(_canvas(s)));
+    await tester.pump();
+    expect(find.byType(StickerView), findsOneWidget);
+    expect(tester.widget<StickerView>(find.byType(StickerView)).sticker.id, 'n');
+    // calque du message temporisé : lui seul
+    s
+      ..exportExcludeTimed = false
+      ..exportOnlySticker = 't';
+    await tester.pumpWidget(_host(_canvas(s)));
+    await tester.pump();
+    expect(find.byType(StickerView), findsOneWidget);
+    expect(tester.widget<StickerView>(find.byType(StickerView)).sticker.id, 't');
+  });
 }
