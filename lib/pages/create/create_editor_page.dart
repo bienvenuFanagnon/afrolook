@@ -205,6 +205,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
                 _tool('tool_models', Icons.dashboard_customize_rounded, context.tr('Modèles'), () => _openStudio(MontageGalleryPage(presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
                 _tool('tool_music', Icons.music_note_rounded, context.tr('Musique'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, focus: 'music', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
                 _tool('tool_text', Icons.title_rounded, context.tr('Texte'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, focus: 'text', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
+                _tool('tool_stickers', Icons.emoji_emotions_rounded, context.tr('Autocollants'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, focus: 'stickers', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
                 _tool('tool_looks', Icons.star_rounded, context.tr('Effets'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, focus: 'looks', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
                 if (widget.isVideo) _tool('tool_trim', Icons.content_cut_rounded, context.tr('Couper'), _trim),
               ]),
@@ -279,11 +280,11 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
                 onTap();
               },
         child: SizedBox(
-          width: 62,
+          width: 54,
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Container(width: 46, height: 46, decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0x66000000)), child: Icon(icon, color: Colors.white, size: 22)),
+            Container(width: 44, height: 44, decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0x66000000)), child: Icon(icon, color: Colors.white, size: 22)),
             const SizedBox(height: 5),
-            Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w700, shadows: [Shadow(color: Color(0x99000000), blurRadius: 4)])),
+            Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w700, shadows: [Shadow(color: Color(0x99000000), blurRadius: 4)])),
           ]),
         ),
       );

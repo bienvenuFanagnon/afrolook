@@ -113,6 +113,7 @@ const Map<String, Map<String, String>> kTrCreation = {
   'Répondre en vidéo': {'en': 'Reply with a video'},
   'Voir plus de posts': {'en': 'See more posts'},
   'Ajouter un autocollant': {'en': 'Add a sticker'},
+  'Autocollants': {'en': 'Stickers'},
   'Visages': {'en': 'Faces'},
   'Cœurs': {'en': 'Hearts'},
   'Fête': {'en': 'Party'},

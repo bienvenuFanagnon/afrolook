@@ -42,7 +42,7 @@ void main() {
       await tester.pumpWidget(_host(CreateEditorPage(path: photo.path, isVideo: false, source: PostSourceLink.imported), b: b));
       await tester.pump();
       expect(find.byKey(const ValueKey('photo_banner')), findsOneWidget);
-      for (final k in ['tool_models', 'tool_music', 'tool_text', 'tool_looks', 'editor_next', 'editor_redo', 'editor_back']) {
+      for (final k in ['tool_models', 'tool_music', 'tool_text', 'tool_stickers', 'tool_looks', 'editor_next', 'editor_redo', 'editor_back']) {
         expect(find.byKey(ValueKey(k)), findsOneWidget, reason: k);
       }
       expect(find.byKey(const ValueKey('tool_trim')), findsNothing);
