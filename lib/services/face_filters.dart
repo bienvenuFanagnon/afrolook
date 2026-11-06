@@ -10,11 +10,15 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'beauty.dart';
+import 'face_masks.dart';
 
 /// Un visage trouvé dans la photo (pixels de la photo redressée).
 class FaceBox {
-  const FaceBox({required this.rect, this.leftEye, this.rightEye, this.nose});
+  const FaceBox({required this.rect, this.leftEye, this.rightEye, this.nose, this.roll = 0});
   final Rect rect;
+
+  /// Inclinaison de la tête (degrés, sens horaire dans l'image) : les masques suivent la tête qui penche.
+  final double roll;
   final Offset? leftEye;
   final Offset? rightEye;
   final Offset? nose;
@@ -25,6 +29,7 @@ class FaceBox {
         leftEye: leftEye == null ? null : Offset(w - leftEye!.dx, leftEye!.dy),
         rightEye: rightEye == null ? null : Offset(w - rightEye!.dx, rightEye!.dy),
         nose: nose == null ? null : Offset(w - nose!.dx, nose!.dy),
+        roll: -roll,
       );
 
   factory FaceBox.fromMap(Map m) {
@@ -34,13 +39,14 @@ class FaceBox {
       leftEye: o('leftEye'),
       rightEye: o('rightEye'),
       nose: o('nose'),
+      roll: (m['roll'] as num?)?.toDouble() ?? 0,
     );
   }
 }
 
 /// Filtres posés sur les visages d'une photo prise avec la caméra de l'application.
 /// Disponibles sur Android seulement (détection ML Kit non groupée, sur le téléphone, sans envoi à un serveur) : ailleurs [available] est faux et l'écran cache les filtres.
-enum FaceFilter { none, glasses, crown, nose, hearts }
+enum FaceFilter { none, glasses, crown, nose, hearts, monkey, cat, robot, clown, hero, bar, blur }
 
 class FaceFilters {
   FaceFilters._();
@@ -71,7 +77,29 @@ class FaceFilters {
         FaceFilter.crown => '👑',
         FaceFilter.nose => '🤡',
         FaceFilter.hearts => '😍',
+        FaceFilter.monkey => '🐵',
+        FaceFilter.cat => '🐱',
+        FaceFilter.robot => '🤖',
+        FaceFilter.clown => '🤪',
+        FaceFilter.hero => '🦸',
+        FaceFilter.bar => '⬛',
+        FaceFilter.blur => '🌫️',
       };
+
+  /// Filtres qui remplacent le visage par un dessin (masques complets, héros, bandeau).
+  static MaskKind? maskOf(FaceFilter f) => switch (f) {
+        FaceFilter.monkey => MaskKind.monkey,
+        FaceFilter.cat => MaskKind.cat,
+        FaceFilter.robot => MaskKind.robot,
+        FaceFilter.clown => MaskKind.clown,
+        FaceFilter.hero => MaskKind.hero,
+        FaceFilter.bar => MaskKind.bar,
+        _ => null,
+      };
+
+  /// Cache le visage en le floutant (aucun dessin à poser : le serveur ou l'aperçu floute la zone).
+  static bool isBlur(FaceFilter f) => f == FaceFilter.blur;
+
 
   /// Cherche les visages de la photo [path]. Rend la photo redressée (à utiliser ensuite à la place de [path]), sa taille et les visages ; null si la détection échoue
   /// (la photo n'est alors jamais perdue : l'appelant garde l'original).
@@ -103,6 +131,18 @@ class FaceFilters {
       } else {
         BeautyPainter.paint(canvas, img, faces, beauty);
       }
+      if (isBlur(filter)) {
+        for (final f in faces) {
+          final oval = Rect.fromCenter(center: f.rect.center, width: f.rect.width * 1.15, height: f.rect.height * 1.2);
+          final sigma = math.max(6.0, f.rect.width * .07);
+          canvas.save();
+          canvas.clipPath(ui.Path()..addOval(oval));
+          canvas.saveLayer(oval.inflate(sigma * 3), ui.Paint()..imageFilter = ui.ImageFilter.blur(sigmaX: sigma, sigmaY: sigma, tileMode: ui.TileMode.clamp));
+          canvas.drawImage(img, Offset.zero, ui.Paint());
+          canvas.restore();
+          canvas.restore();
+        }
+      }
       for (final f in faces) {
         drawOn(canvas, f, filter);
       }
@@ -133,14 +173,37 @@ class FaceFilters {
       case FaceFilter.nose:
         return (center: f.nose ?? Offset(face.center.dx, face.top + face.height * 0.62), size: face.width * 0.26);
       case FaceFilter.hearts:
-        return (center: Offset(face.right, face.top), size: face.width * 0.4);
+        return (center: Offset(face.right, face.top), size: face.width * .4);
+      case FaceFilter.monkey:
+      case FaceFilter.cat:
+      case FaceFilter.robot:
+      case FaceFilter.clown:
+        return (center: Offset(face.center.dx, face.center.dy - face.height * .04), size: face.width * 1.45);
+      case FaceFilter.hero:
+      case FaceFilter.bar:
+        final a = f.leftEye, b = f.rightEye;
+        final eyes = (a != null && b != null) ? Offset((a.dx + b.dx) / 2, (a.dy + b.dy) / 2) : Offset(face.center.dx, face.top + face.height * .4);
+        return (center: eyes, size: face.width * 1.3);
+      case FaceFilter.blur:
+        return (center: face.center, size: face.width * 1.2);
     }
   }
 
   /// Dessine le filtre sur un visage (séparé pour pouvoir être testé sans téléphone).
   static void drawOn(ui.Canvas canvas, FaceBox f, FaceFilter filter) {
     final a = anchor(f, filter);
-    if (a != null) _emoji(canvas, filter == FaceFilter.hearts ? '💖' : _glyph(filter), a.center, a.size);
+    if (a == null) return;
+    final mask = maskOf(filter);
+    if (mask != null) {
+      canvas.save();
+      canvas.translate(a.center.dx, a.center.dy);
+      canvas.rotate(f.roll * math.pi / 180);
+      FaceMasks.draw(canvas, mask, a.size);
+      canvas.restore();
+      return;
+    }
+    if (isBlur(filter)) return;
+    _emoji(canvas, filter == FaceFilter.hearts ? '💖' : _glyph(filter), a.center, a.size);
   }
 
   static String _glyph(FaceFilter f) => switch (f) {
@@ -155,7 +218,13 @@ class FaceFilters {
     final px = sizePx.clamp(24, 900);
     final rec = ui.PictureRecorder();
     final canvas = ui.Canvas(rec);
-    _emoji(canvas, _glyph(filter), Offset(px / 2, px / 2), px * 0.85);
+    final mask = maskOf(filter);
+    if (mask != null) {
+      canvas.translate(px / 2, px / 2);
+      FaceMasks.draw(canvas, mask, px.toDouble());
+    } else {
+      _emoji(canvas, _glyph(filter), Offset(px / 2, px / 2), px * 0.85);
+    }
     final img = await rec.endRecording().toImage(px, px);
     return (await img.toByteData(format: ui.ImageByteFormat.png))!.buffer.asUint8List();
   }

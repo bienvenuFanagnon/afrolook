@@ -39,7 +39,7 @@ object FaceChannel {
 
     private fun faceMap(f: com.google.mlkit.vision.face.Face): Map<String, Any> {
         val b = f.boundingBox
-        val m = hashMapOf<String, Any>("left" to b.left, "top" to b.top, "width" to b.width(), "height" to b.height())
+        val m = hashMapOf<String, Any>("left" to b.left, "top" to b.top, "width" to b.width(), "height" to b.height(), "roll" to f.headEulerAngleZ.toDouble())
         f.getLandmark(FaceLandmark.LEFT_EYE)?.position?.let { m["leftEye"] = mapOf("x" to it.x, "y" to it.y) }
         f.getLandmark(FaceLandmark.RIGHT_EYE)?.position?.let { m["rightEye"] = mapOf("x" to it.x, "y" to it.y) }
         f.getLandmark(FaceLandmark.NOSE_BASE)?.position?.let { m["nose"] = mapOf("x" to it.x, "y" to it.y) }

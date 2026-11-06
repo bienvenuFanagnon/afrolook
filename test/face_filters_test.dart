@@ -1,11 +1,13 @@
 import 'dart:ui' as ui;
 
 import 'package:afrotok/services/face_filters.dart';
+import 'package:afrotok/services/face_masks.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   liveTests();
+  maskTests();
   test('chaque filtre se dessine sur un visage sans erreur, même sans repères des yeux ni du nez', () {
     const full = FaceBox(rect: Rect.fromLTWH(200, 150, 300, 380), leftEye: Offset(290, 280), rightEye: Offset(410, 282), nose: Offset(350, 380));
     const bare = FaceBox(rect: Rect.fromLTWH(200, 150, 300, 380));
@@ -60,5 +62,36 @@ void liveTests() {
     final png = await FaceFilters.filterPng(FaceFilter.crown, 120);
     expect(png.length, greaterThan(100));
     expect(png.sublist(1, 4), [0x50, 0x4E, 0x47]);
+  });
+}
+
+void maskTests() {
+  test('chaque masque se dessine (singe, chat, robot, clown, héros, bandeau) dans un carré, sans erreur', () {
+    for (final k in MaskKind.values) {
+      final rec = ui.PictureRecorder();
+      FaceMasks.draw(Canvas(rec), k, 300);
+      rec.endRecording().dispose();
+    }
+  });
+
+  test('les filtres masque ont une ancre qui couvre le visage ; le flou n\'a pas de dessin', () {
+    const f = FaceBox(rect: Rect.fromLTWH(200, 150, 300, 380), leftEye: Offset(290, 280), rightEye: Offset(410, 282), nose: Offset(350, 380), roll: 12);
+    for (final k in [FaceFilter.monkey, FaceFilter.cat, FaceFilter.robot, FaceFilter.clown]) {
+      final a = FaceFilters.anchor(f, k)!;
+      expect(a.size, greaterThan(f.rect.width), reason: '$k couvre tout le visage');
+      expect(FaceFilters.maskOf(k), isNotNull);
+    }
+    expect(FaceFilters.anchor(f, FaceFilter.bar)!.center, const Offset(350, 281));
+    expect(FaceFilters.isBlur(FaceFilter.blur), isTrue);
+    expect(FaceFilters.maskOf(FaceFilter.blur), isNull);
+    final rec = ui.PictureRecorder();
+    FaceFilters.drawOn(Canvas(rec), f, FaceFilter.blur);   // ne dessine rien
+    rec.endRecording().dispose();
+  });
+
+  test('l\'inclinaison de la tête est renversée par le miroir', () {
+    const f = FaceBox(rect: Rect.fromLTWH(100, 50, 200, 260), roll: 15);
+    expect(f.mirrored(720).roll, -15);
+    expect(FaceBox.fromMap({'left': 1, 'top': 2, 'width': 3, 'height': 4, 'roll': 7.5}).roll, 7.5);
   });
 }

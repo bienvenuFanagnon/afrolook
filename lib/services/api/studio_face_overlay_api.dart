@@ -23,12 +23,14 @@ class FaceTrackPoint {
 class StudioBeautyApi {
   StudioBeautyApi._();
 
-  static Future<File> apply(File video, BeautyLevel beauty, List<FaceTrackPoint> track, {void Function(double)? onProgress}) async {
+  static Future<File> apply(File video, BeautyLevel beauty, List<FaceTrackPoint> track, {double? coverBlurSize, void Function(double)? onProgress}) async {
     final id = await UploadsApi.upload(video, contentType: 'video/mp4', onProgress: onProgress);
     final res = await ApiGateway.instance.client.post('/studio/beauty', body: {
       'upload_id': id,
       'beauty': beauty.toJson(),
-      if (beauty.smooth > 0 && track.any((p) => p.x != null)) 'track': [for (final p in track) p.toJson()],
+      if ((beauty.smooth > 0 || coverBlurSize != null) && track.any((p) => p.x != null)) 'track': [for (final p in track) p.toJson()],
+      // visage flouté (anonymat) : taille de la zone en fraction de la largeur de l'image
+      if (coverBlurSize != null) 'cover': {'size': coverBlurSize},
     });
     final url = WalletApi.map(res)['url'] as String;
     final r = await http.get(Uri.parse(url));

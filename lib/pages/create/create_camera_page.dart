@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' show ImageFilter;
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -387,6 +388,11 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
       await probe.initialize();
       final videoW = probe.value.size.width;
       await probe.dispose();
+      // visage flouté : le serveur floute la zone suivie ; sinon il pose le dessin du filtre
+      if (FaceFilters.isBlur(_filter)) {
+        final out = await StudioBeautyApi.apply(File(path), const BeautyLevel.off(), List.of(_faceTrack), coverBlurSize: _trackSize.clamp(.15, .9));
+        return out.path;
+      }
       final png = await FaceFilters.filterPng(_filter, (_trackSize * videoW).round());
       final out = await StudioFaceOverlayApi.apply(File(path), png, List.of(_track));
       return out.path;
@@ -589,6 +595,25 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
     final s = _liveSize;
     if (_filter == FaceFilter.none || s == null || _liveFaces.isEmpty) return null;
     final front = _cameras[_camIndex].lensDirection == CameraLensDirection.front;
+    final faces = [for (final f in _liveFaces) front ? f.mirrored(s.width) : f];
+    if (FaceFilters.isBlur(_filter)) {
+      // visage flouté en direct : le flou est appliqué sur la zone du visage, dans le même cadre que l'image
+      return IgnorePointer(
+        child: LayoutBuilder(builder: (context, box) {
+          final k = box.maxWidth / s.width;
+          return Stack(children: [
+            for (final f in faces)
+              Positioned(
+                left: (f.rect.center.dx - f.rect.width * .575) * k,
+                top: (f.rect.center.dy - f.rect.height * .6) * k,
+                width: f.rect.width * 1.15 * k,
+                height: f.rect.height * 1.2 * k,
+                child: ClipOval(child: BackdropFilter(filter: ImageFilter.blur(sigmaX: f.rect.width * .07 * k, sigmaY: f.rect.width * .07 * k, tileMode: TileMode.clamp), child: const SizedBox.expand())),
+              ),
+          ]);
+        }),
+      );
+    }
     return IgnorePointer(child: CustomPaint(painter: _LivePainter(_liveFaces, s, _filter, front)));
   }
 
