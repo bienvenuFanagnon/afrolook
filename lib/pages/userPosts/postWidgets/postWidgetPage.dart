@@ -1,3 +1,4 @@
+import '../../studio/montage/montage_pin.dart';
 import 'package:afrotok/services/post_orientation.dart';
 import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:afrotok/services/read_meter.dart';
@@ -2453,6 +2454,14 @@ Future<void> _handleRepost() async {
                 widget.onViewed?.call();
               } : null,
             ),
+          if (hasAccess && widget.post.isAdvertisement != true && widget.post.type == PostType.POST.name && widget.post.dataType == PostDataType.VIDEO.name)
+            IconButton(
+              key: const ValueKey('pin_video_button'),
+              tooltip: context.tr('Épingler cette vidéo'),
+              visualDensity: VisualDensity.compact,
+              icon: Icon(Icons.push_pin_outlined, size: 21, color: colors.textSecondary),
+              onPressed: _pinThisVideo,
+            ),
           if (hasAccess && widget.post.isAdvertisement != true && widget.post.type == PostType.POST.name)
             IconButton(
               key: const ValueKey('reply_video_button'),
@@ -2499,6 +2508,14 @@ Future<void> _handleRepost() async {
       ],
     );
   }
+  /// « Épingler cette vidéo » : la caméra s'ouvre ; cette vidéo (un extrait léger) est posée dans le coin de ce qu'on filme, réglable dans le Studio.
+  Future<void> _pinThisVideo() async {
+    final id = widget.post.id;
+    if (id == null) return;
+    final src = MontagePinSource(postId: id, thumbUrl: widget.post.thumbnail ?? '', authorPseudo: widget.post.user?.pseudo ?? 'créateur', durationSec: 0);
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => CreateHubPage(start: CreateStart.video, pinSource: src)));
+  }
+
   /// « Répondre en vidéo » : la caméra s'ouvre tout de suite (15 s au plus) ; la publication part avec le lien vers ce post.
   Future<void> _replyWithVideo() async {
     final id = widget.post.id;

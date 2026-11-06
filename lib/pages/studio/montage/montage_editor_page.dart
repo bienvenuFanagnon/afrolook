@@ -26,6 +26,7 @@ import 'montage_look.dart';
 import 'montage_text_style.dart';
 import '../../../l10n/tr.dart';
 import 'montage_music.dart';
+import 'montage_pin.dart';
 import 'montage_state.dart';
 import 'montage_stickers.dart';
 import '../studio_theme.dart';
@@ -33,7 +34,7 @@ import '../studio_theme.dart';
 AppColors get _c => studioColors;
 
 class MontageEditorPage extends StatefulWidget {
-  const MontageEditorPage({super.key, required this.template, this.forChronique = false, this.presetMusic, this.presetKeepAudio = false, this.presetVideoPath, this.presetPhotoPath, this.focus});
+  const MontageEditorPage({super.key, required this.template, this.forChronique = false, this.presetMusic, this.presetKeepAudio = false, this.presetVideoPath, this.presetPhotoPath, this.focus, this.presetPin});
   final MontageTemplate template;
   final bool forChronique;
 
@@ -46,6 +47,9 @@ class MontageEditorPage extends StatefulWidget {
 
   /// Son choisi avant d'arriver ici (« Créer un post avec ce son ») : il remplace la musique du template.
   final MontageMusic? presetMusic;
+
+  /// « Épingler cette vidéo » : la vidéo d'un autre à poser dans le coin, avec son extrait, sa taille et son créneau réglables.
+  final MontagePinSource? presetPin;
 
   /// Musique choisie dans la feuille de l'éditeur avec « Garder le son de ma vidéo » activé.
   final bool presetKeepAudio;
@@ -117,6 +121,8 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     }
     // « Ma vidéo avec ce son » : on propose tout de suite de choisir la vidéo
     if (tp.id == kPlainTemplateId && widget.presetVideoPath == null && widget.presetPhotoPath == null) WidgetsBinding.instance.addPostFrameCallback((_) => mounted ? _pickMedia() : null);
+    final pinSrc = widget.presetPin;
+    if (pinSrc != null) WidgetsBinding.instance.addPostFrameCallback((_) => mounted ? _addPin(pinSrc) : null);
     final preset = widget.presetMusic;
     if (preset != null) {
       s.music = preset;
@@ -878,7 +884,13 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
 
   void _moveElement(String id, Offset center) {
     setState(() {
-      if (id.startsWith('st:')) {
+      if (id.startsWith('pin:')) {
+        final pin = s.pins.where((e) => 'pin:${e.id}' == id).firstOrNull;
+        if (pin != null) {
+          pin.center = center;
+          _selSticker = id;
+        }
+      } else if (id.startsWith('st:')) {
         final st = s.stickers.where((e) => 'st:${e.id}' == id).firstOrNull;
         if (st != null) {
           st.center = center;
@@ -891,6 +903,11 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
   }
 
   void _scaleSticker(String id, double scale) {
+    if (id.startsWith('pin:')) {
+      final pin = s.pins.where((e) => 'pin:${e.id}' == id).firstOrNull;
+      if (pin != null) setState(() => pin.scale = scale.clamp(.5, 2.0));
+      return;
+    }
     final st = s.stickers.where((e) => 'st:${e.id}' == id).firstOrNull;
     if (st != null) setState(() => st.scale = scale.clamp(kStickerMinScale, kStickerMaxScale));
   }
@@ -970,6 +987,95 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     });
   }
 
+  /// Pose la vidéo d'un autre dans le coin (une seule à la fois) avec son crédit « avec @nom ».
+  void _addPin(MontagePinSource src) {
+    if (!s.hasVideo) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Épingler une vidéo demande une vidéo : filme-toi d\'abord.')));
+      return;
+    }
+    if (s.pins.isNotEmpty) {
+      s.stickers.removeWhere((e) => e.id.startsWith('credit_'));
+      s.pins.clear();
+    }
+    final pin = MontagePin(id: '${DateTime.now().microsecondsSinceEpoch}', source: src);
+    pin.startSec = 0;
+    pin.endSec = math.min(_videoSeconds, math.max(1.0, pin.clipSeconds));
+    setState(() {
+      s.pins.add(pin);
+      // crédit visible : le créateur d'origine est toujours cité
+      s.stickers.add(MontageSticker(id: 'credit_${pin.id}', kind: 'badge', value: 'avec @${src.authorPseudo}', center: const Offset(.5, .94)));
+      _selSticker = 'pin:${pin.id}';
+    });
+  }
+
+  void _removePin() {
+    setState(() {
+      for (final p in s.pins) {
+        s.stickers.removeWhere((e) => e.id == 'credit_${p.id}');
+      }
+      s.pins.clear();
+      _selSticker = null;
+    });
+  }
+
+  /// Réglages de la vidéo épinglée : extrait de la vidéo d'origine, créneau d'affichage, forme et taille.
+  Widget _pinSection() {
+    if (s.pins.isEmpty) return const SizedBox.shrink();
+    final p = s.pins.first;
+    final dur = p.source.durationSec > 0 ? p.source.durationSec : 15.0;
+    final clipMax = math.min(dur, 15.0);
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const SizedBox(height: 14),
+      _label('Vidéo épinglée · @${p.source.authorPseudo}'),
+      Text('Extrait de sa vidéo : de ${_sec(p.clipStartSec)} s à ${_sec(p.clipEndSec)} s (${_sec(p.clipSeconds)} s, 15 s au plus). Le téléphone ne charge que cet extrait, léger.', style: TextStyle(color: _c.textSecondary, fontSize: 12.5)),
+      RangeSlider(
+        key: const ValueKey('pin_clip_range'),
+        values: RangeValues(p.clipStartSec.clamp(0, dur).toDouble(), p.clipEndSec.clamp(0, dur).toDouble()),
+        min: 0,
+        max: dur,
+        divisions: (dur * 10).round().clamp(1, 900),
+        onChanged: (v) => setState(() {
+          var a = v.start, b = v.end;
+          if (b - a > clipMax) {
+            if (a != p.clipStartSec) {
+              b = a + clipMax;
+            } else {
+              a = b - clipMax;
+            }
+          }
+          if (b - a < 1) b = math.min(dur, a + 1);
+          p.clipStartSec = a;
+          p.clipEndSec = b;
+        }),
+      ),
+      Row(children: [
+        Icon(Icons.timer_rounded, size: 18, color: _c.textSecondary),
+        const SizedBox(width: 6),
+        Expanded(child: Text('Affichée de ${_sec(p.startSec)} s à ${_sec(p.endSec)} s de ta vidéo', style: TextStyle(color: _c.textSecondary, fontSize: 13))),
+        TextButton(
+          key: const ValueKey('pin_time'),
+          onPressed: () async {
+            final r = await _pickTimeRange(start: p.startSec, end: p.endSec);
+            if (r == null || !mounted) return;
+            setState(() {
+              p.startSec = r.$2 > r.$1 ? r.$1 : 0;
+              p.endSec = r.$2 > r.$1 ? r.$2 : _videoSeconds;
+            });
+          },
+          child: const Text('Régler le temps'),
+        ),
+      ]),
+      Wrap(spacing: 8, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
+        ChoiceChip(key: const ValueKey('pin_rect'), label: const Text('Rectangle'), selected: !p.circle, onSelected: (_) => setState(() => p.circle = false)),
+        ChoiceChip(key: const ValueKey('pin_round'), label: const Text('Rond'), selected: p.circle, onSelected: (_) => setState(() => p.circle = true)),
+        IconButton(key: const ValueKey('pin_smaller'), tooltip: 'Plus petite', icon: Icon(Icons.remove_circle_outline_rounded, color: _c.textPrimary), onPressed: () => setState(() => p.scale = (p.scale - .15).clamp(.5, 2.0))),
+        IconButton(key: const ValueKey('pin_bigger'), tooltip: 'Plus grande', icon: Icon(Icons.add_circle_outline_rounded, color: _c.textPrimary), onPressed: () => setState(() => p.scale = (p.scale + .15).clamp(.5, 2.0))),
+        IconButton(key: const ValueKey('pin_delete'), tooltip: 'Retirer la vidéo épinglée', icon: Icon(Icons.delete_outline_rounded, color: _c.textPrimary), onPressed: _removePin),
+      ]),
+      Text('Glisse la vidéo pour la placer, pince-la pour la zoomer. Elle est sans son et n\'apparaît que pendant son créneau. Les spectateurs peuvent la toucher pour voir la vidéo d\'origine.', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
+    ]);
+  }
+
   Future<void> _addSticker() async {
     if (s.stickers.length >= kMaxStickers) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Tu peux mettre jusqu\'à $kMaxStickers autocollants.')));
@@ -1000,6 +1106,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
         if (s.hasVideo) _btn(Icons.timer_rounded, 'Message à l\'écran', _addTimedMessage),
         if (s.moved.isNotEmpty) _btn(Icons.restart_alt_rounded, 'Tout remettre en place', () => setState(s.moved.clear)),
       ]),
+      _pinSection(),
       if (sel != null) ...[
         const SizedBox(height: 10),
         if (s.hasVideo)

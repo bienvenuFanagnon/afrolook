@@ -10,6 +10,7 @@ import 'montage_catalog.dart';
 import 'montage_fx.dart';
 import 'montage_text_style.dart';
 import 'montage_state.dart';
+import 'montage_pin.dart';
 import 'montage_stickers.dart';
 
 /// Repères de capture : chaque calque est un RepaintBoundary distinct.
@@ -304,6 +305,10 @@ class MontageCanvas extends StatelessWidget {
       for (final st in s.stickers)
         if (!(s.exportExcludeTimed && st.timed))
         _slot('st:${st.id}', cq, dflt: st.center, center: st.center, scalable: true, scale: st.scale, onTap: onTapSticker == null ? null : () => onTapSticker!(st.id), child: StickerView(sticker: st, cq: cq, selected: onMove != null && selectedSticker == st.id)),
+      // Vidéos épinglées : un aperçu seulement dans l'éditeur (jamais dans le fichier final : le serveur pose la vraie vidéo)
+      if (onMove != null)
+        for (final p in s.pins)
+          _slot('pin:${p.id}', cq, dflt: p.center, center: p.center, scalable: true, scale: p.scale, onTap: onTapSticker == null ? null : () => onTapSticker!('pin:${p.id}'), child: MontagePinView(pin: p, cq: cq, selected: selectedSticker == 'pin:${p.id}')),
       // Filigrane : toujours présent, même publié dans l'app
       Positioned(
         right: 1.6 * cq,

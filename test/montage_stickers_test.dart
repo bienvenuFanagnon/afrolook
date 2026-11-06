@@ -1,6 +1,7 @@
 import 'package:afrotok/pages/studio/montage/montage_canvas.dart';
 import 'package:afrotok/pages/studio/montage/montage_catalog.dart';
 import 'package:afrotok/pages/studio/montage/montage_state.dart';
+import 'package:afrotok/pages/studio/montage/montage_pin.dart';
 import 'package:afrotok/pages/studio/montage/montage_stickers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -138,5 +139,33 @@ void main() {
     await tester.pump();
     expect(find.byType(StickerView), findsOneWidget);
     expect(tester.widget<StickerView>(find.byType(StickerView)).sticker.id, 't');
+  });
+
+  testWidgets('vidéo épinglée : aperçu seulement dans l éditeur (jamais dans l export), réglages envoyés au serveur avec taille bornée', (tester) async {
+    const src = MontagePinSource(postId: 'post-1', thumbUrl: '', authorPseudo: 'awa', durationSec: 30);
+    final pin = MontagePin(id: 'p1', source: src, scale: 5, circle: true, clipStartSec: 4, clipEndSec: 12)
+      ..startSec = 1.5
+      ..endSec = 7;
+    final s = MontageState(kPlainTemplate)..pins.add(pin);
+    // export / galerie (sans geste) : rien dessiné
+    await tester.pumpWidget(_host(_canvas(s)));
+    await tester.pump();
+    expect(find.byType(MontagePinView), findsNothing);
+    // éditeur (avec geste) : l'aperçu apparaît
+    await tester.pumpWidget(_host(_canvas(s, onMove: (_, __) {})));
+    await tester.pump();
+    expect(find.byType(MontagePinView), findsOneWidget);
+    // réglages pour le serveur : taille bornée à 60 % de la largeur, extrait et créneau en millisecondes / secondes
+    final api = pin.toApi();
+    expect(api['post_id'], 'post-1');
+    expect(api['w'], .6);
+    expect(api['shape'], 'circle');
+    expect(api['clip_start_ms'], 4000);
+    expect(api['clip_end_ms'], 12000);
+    expect(api['start'], 1.5);
+    expect(api['end'], 7);
+    expect(MontagePin(id: 'p2', source: src, scale: .1).widthFrac, .15);
+    // sans durée connue : extrait de 6 s au plus depuis le début
+    expect(MontagePin(id: 'p3', source: const MontagePinSource(postId: 'x', thumbUrl: '', authorPseudo: 'a', durationSec: 0)).clipSeconds, 6);
   });
 }

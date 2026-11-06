@@ -182,6 +182,7 @@ class MontageExport {
       'brightness': s.brightness,
       'has_under': isVideo,
       if (timedMeta.isNotEmpty) 'timed': timedMeta,
+      if (isVideo && s.pins.isNotEmpty) 'pins': [for (final p in s.pins.take(2)) p.toApi()],
       if (m != null) 'music': {'type': m.type, 'id': m.id, 'start_ms': s.musicStartMs, 'volume': s.musicVolume},
       'keep_audio': s.keepVideoAudio,
       if (s.keepVideoAudio) 'video_volume': s.videoVolume,

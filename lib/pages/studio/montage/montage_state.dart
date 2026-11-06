@@ -8,6 +8,7 @@ import '../../cards/card_models.dart' show compactCount;
 import 'montage_catalog.dart';
 import 'montage_look.dart';
 import 'montage_music.dart';
+import 'montage_pin.dart';
 import 'montage_stickers.dart';
 
 /// Tout ce que la personne a choisi ou modifié sur un template. Ce qui reste à null garde le contenu pré-rempli.
@@ -52,6 +53,9 @@ class MontageState {
 
   /// Autocollants (emojis, pastilles, logo) ajoutés par la personne, du plus ancien au plus récent (le dernier est au-dessus).
   final List<MontageSticker> stickers = [];
+
+  /// Vidéos épinglées (extraits d'autres vidéos), posées par le serveur ; seulement un aperçu dans l'éditeur.
+  final List<MontagePin> pins = [];
 
   /// Texte libre posé sur la photo ou la vidéo (outil « Texte » de l'éditeur) : vide = aucun. Fonctionne avec tous les modèles, y compris « sans habillage ».
   String freeText = '';

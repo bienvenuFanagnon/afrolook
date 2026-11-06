@@ -18,6 +18,7 @@ import '../cards/card_events.dart';
 import '../cards/card_models.dart' show CardStyleId;
 import '../studio/montage/montage_canvas.dart';
 import '../studio/montage/montage_music.dart' show MontageMusic;
+import '../studio/montage/montage_pin.dart';
 import '../studio/montage/montage_catalog.dart';
 import '../studio/montage/montage_state.dart';
 import '../studio/montage/montage_editor_page.dart';
@@ -37,7 +38,7 @@ enum CreateStart { none, video, audio }
 /// Écran « Que créer ? » : l'entrée unique de la création (publication, Studio et cartes réunis). On choisit le type, on prépare le média, on le retouche, puis
 /// un seul formulaire demande le reste. Ce qui est filmé ou enregistré dans l'application passe en premier ; la galerie est limitée à 2 médias par jour.
 class CreateHubPage extends StatefulWidget {
-  const CreateHubPage({super.key, this.canal, this.defiPostId, this.start = CreateStart.none, this.replyToPostId, this.presetSound});
+  const CreateHubPage({super.key, this.canal, this.defiPostId, this.start = CreateStart.none, this.replyToPostId, this.presetSound, this.pinSource});
 
   final Canal? canal;
   final String? defiPostId;
@@ -48,6 +49,9 @@ class CreateHubPage extends StatefulWidget {
 
   /// « Créer avec ce son » : ce son devient l'audio du post. La caméra le joue pendant qu'on filme, puis l'éditeur l'applique ; photo et galerie marchent aussi.
   final MontageMusic? presetSound;
+
+  /// « Épingler cette vidéo » : la vidéo d'un autre, à poser dans le coin de ce qu'on filme (réglée dans le Studio).
+  final MontagePinSource? pinSource;
 
   @override
   State<CreateHubPage> createState() => _CreateHubPageState();
@@ -143,7 +147,7 @@ class _CreateHubPageState extends State<CreateHubPage> {
 
   Future<void> _editor(String path, bool isVideo, String source) async {
     final r = await Navigator.of(context).push<String>(MaterialPageRoute(
-      builder: (_) => CreateEditorPage(path: path, isVideo: isVideo, source: source, canal: widget.canal, defiPostId: widget.defiPostId, sound: widget.presetSound),
+      builder: (_) => CreateEditorPage(path: path, isVideo: isVideo, source: source, canal: widget.canal, defiPostId: widget.defiPostId, sound: widget.presetSound, pin: widget.pinSource),
     ));
     if (r == kCreateRedo && mounted) {
       // « Refaire » : on rouvre la caméra (ou la galerie si le média venait de la galerie)

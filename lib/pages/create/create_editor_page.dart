@@ -17,6 +17,7 @@ import '../studio/montage/montage_catalog.dart';
 import '../studio/montage/montage_editor_page.dart';
 import '../studio/montage/montage_gallery_page.dart';
 import '../studio/montage/montage_music.dart';
+import '../studio/montage/montage_pin.dart';
 import '../studio/studio_models.dart';
 import 'create_flow.dart';
 import 'create_result.dart';
@@ -31,7 +32,7 @@ import 'trim_sheet.dart';
 /// Les outils réutilisent le Studio existant : « Modèles » ouvre les modèles prêts à poster sur ce média, « Musique », « Texte » et « Effets » ouvrent l'éditeur sans
 /// habillage (musique gratuite ou d'artiste, texte libre, looks de couleur sobres), « Couper » garde un passage de la vidéo (découpe faite par le serveur).
 class CreateEditorPage extends StatefulWidget {
-  const CreateEditorPage({super.key, required this.path, required this.isVideo, required this.source, this.canal, this.defiPostId, this.sound});
+  const CreateEditorPage({super.key, required this.path, required this.isVideo, required this.source, this.canal, this.defiPostId, this.sound, this.pin});
 
   final String path;
   final bool isVideo;
@@ -43,6 +44,9 @@ class CreateEditorPage extends StatefulWidget {
 
   /// « Créer avec ce son » : le Studio s'ouvre tout de suite avec ce son sur le média (la voix de la vidéo est coupée, on peut la garder dans le Studio).
   final MontageMusic? sound;
+
+  /// Vidéo d'un autre à épingler : le Studio s'ouvre tout de suite avec elle posée dans le coin.
+  final MontagePinSource? pin;
 
   @override
   State<CreateEditorPage> createState() => _CreateEditorPageState();
@@ -65,9 +69,9 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
       _initVideo();
       _checkSubtitles();
     }
-    if (widget.sound != null) {
+    if (widget.sound != null || widget.pin != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _openStudio(MontageEditorPage(template: kPlainTemplate, presetMusic: widget.sound, presetKeepAudio: false, presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto));
+        if (mounted) _openStudio(MontageEditorPage(template: kPlainTemplate, presetMusic: widget.sound, presetKeepAudio: widget.sound == null, presetPin: widget.pin, presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto));
       });
     }
   }
