@@ -164,7 +164,7 @@ class _FaceLabPageState extends State<FaceLabPage> {
             if (_result != null)
               Padding(padding: const EdgeInsets.fromLTRB(16, 6, 16, 0), child: Text(_result!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 12))),
             const SizedBox(height: 8),
-            Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Wrap(alignment: WrapAlignment.center, crossAxisAlignment: WrapCrossAlignment.center, spacing: 8, runSpacing: 4, children: [
               OutlinedButton(
                 key: const ValueKey('lab_points'),
                 onPressed: () async {
@@ -174,16 +174,13 @@ class _FaceLabPageState extends State<FaceLabPage> {
                 style: OutlinedButton.styleFrom(side: BorderSide(color: _points ? const Color(0xFFFFC400) : Colors.white54)),
                 child: Text(_points ? 'Points ✓' : 'Points', style: const TextStyle(color: Colors.white)),
               ),
-              const SizedBox(width: 10),
               IconButton.filled(key: const ValueKey('lab_photo'), onPressed: _recording ? null : _photo, icon: const Icon(Icons.photo_camera_rounded)),
-              const SizedBox(width: 12),
               IconButton.filled(
                 key: const ValueKey('lab_rec'),
                 style: IconButton.styleFrom(backgroundColor: _recording ? Colors.white : const Color(0xFFE5383B)),
                 onPressed: _toggleRecording,
                 icon: Icon(_recording ? Icons.stop_rounded : Icons.fiber_manual_record_rounded, color: _recording ? Colors.black : Colors.white),
               ),
-              const SizedBox(width: 12),
               OutlinedButton(
                 key: const ValueKey('lab_rot'),
                 onPressed: () async {
@@ -193,7 +190,6 @@ class _FaceLabPageState extends State<FaceLabPage> {
                 style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.white54)),
                 child: Text('Tourner (+$_rot°)', style: const TextStyle(color: Colors.white)),
               ),
-              const SizedBox(width: 10),
               OutlinedButton(
                 key: const ValueKey('lab_mirror'),
                 onPressed: () async {
