@@ -22,6 +22,8 @@ import 'montage_fx.dart';
 import '../artist_sound_common.dart';
 import '../../coins/coin_recharge_screen.dart';
 import 'montage_look.dart';
+import 'montage_text_style.dart';
+import '../../../l10n/tr.dart';
 import 'montage_music.dart';
 import 'montage_state.dart';
 import 'montage_stickers.dart';
@@ -955,6 +957,67 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
       ]),
       const SizedBox(height: 10),
       _seg(['Haut', 'Milieu', 'Bas'], s.freePos, (i) => setState(() => s.freePos = i)),
+      const SizedBox(height: 16),
+      _label(tr('Style d\'écriture')),
+      SizedBox(
+        height: 64,
+        child: ListView(scrollDirection: Axis.horizontal, children: [
+          for (var i = 0; i < kFreeTextFonts.length; i++)
+            GestureDetector(
+              key: ValueKey('free_font_$i'),
+              onTap: () => setState(() => s.freeFont = i),
+              child: Container(
+                width: 74,
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: s.freeFont == i ? _c.primary : _c.border, width: s.freeFont == i ? 2.5 : 1)),
+                child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Text('Aa', style: TextStyle(fontFamily: kFreeTextFonts[i].family, fontSize: 22, color: _c.textPrimary, height: 1.1)),
+                  Text(tr(kFreeTextFonts[i].name), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 10.5, color: _c.textSecondary, fontWeight: FontWeight.w700)),
+                ]),
+              ),
+            ),
+        ]),
+      ),
+      const SizedBox(height: 16),
+      _label(tr('Arrière-plan du texte')),
+      _seg([for (final m in kFreeBgModes) tr(m)], s.freeBg, (i) => setState(() => s.freeBg = i)),
+      if (s.freeBg > 0) ...[
+        const SizedBox(height: 10),
+        Row(children: [
+          for (var i = 0; i < kFreeTextColors.length; i++)
+            Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: GestureDetector(
+                key: ValueKey('free_bg_color_$i'),
+                onTap: () => setState(() => s.freeBgColor = i),
+                child: Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: kFreeTextColors[i], border: Border.all(color: s.freeBgColor == i ? _c.primary : _c.border, width: s.freeBgColor == i ? 3 : 1)),
+                ),
+              ),
+            ),
+        ]),
+      ],
+      const SizedBox(height: 16),
+      _label(tr('Cadre')),
+      SizedBox(
+        height: 40,
+        child: ListView(scrollDirection: Axis.horizontal, children: [
+          for (var i = 0; i < kFreeFrames.length; i++)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: ChoiceChip(
+                key: ValueKey('free_frame_$i'),
+                label: Text(tr(kFreeFrames[i]), style: TextStyle(color: s.freeFrame == i ? Colors.white : _c.textPrimary, fontWeight: FontWeight.w700, fontSize: 12.5)),
+                selected: s.freeFrame == i,
+                selectedColor: _c.primary,
+                backgroundColor: _c.surface,
+                onSelected: (_) => setState(() => s.freeFrame = i),
+              ),
+            ),
+        ]),
+      ),
     ]);
   }
 

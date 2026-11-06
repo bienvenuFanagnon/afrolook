@@ -1,0 +1,23 @@
+// Traductions des réglages du texte libre du montage (style d'écriture, arrière-plan, cadre) — voir tr.dart.
+const Map<String, Map<String, String>> kTrTexte = {
+  "Style d'écriture": {'en': 'Writing style', 'es': "Estilo de escritura", 'pt': "Estilo de escrita", 'de': "Schriftstil", 'ar': "نمط الكتابة", 'zh': "字体样式", 'sw': "Mtindo wa uandishi"},
+  'Arrière-plan du texte': {'en': 'Text background', 'es': "Fondo del texto", 'pt': "Fundo do texto", 'de': "Texthintergrund", 'ar': "خلفية النص", 'zh': "文字背景", 'sw': "Mandharinyuma ya maandishi"},
+  'Cadre': {'en': 'Frame', 'es': "Marco", 'pt': "Moldura", 'de': "Rahmen", 'ar': "إطار", 'zh': "边框", 'sw': "Fremu"},
+  'Classique': {'en': 'Classic', 'es': "Clásico", 'pt': "Clássico", 'de': "Klassisch", 'ar': "كلاسيكي", 'zh': "经典", 'sw': "Kawaida"},
+  'Affiche': {'en': 'Poster', 'es': "Cartel", 'pt': "Cartaz", 'de': "Plakat", 'ar': "ملصق", 'zh': "海报", 'sw': "Bango"},
+  'Marqueur': {'en': 'Marker', 'es': "Rotulador", 'pt': "Marcador", 'de': "Marker", 'ar': "قلم تحديد", 'zh': "马克笔", 'sw': "Kalamu ya rangi"},
+  'Élégant': {'en': 'Elegant', 'es': "Elegante", 'pt': "Elegante", 'de': "Elegant", 'ar': "أنيق", 'zh': "优雅", 'sw': "Maridadi"},
+  'Néon': {'en': 'Neon', 'es': "Neón", 'pt': "Néon", 'de': "Neon", 'ar': "نيون", 'zh': "霓虹", 'sw': "Neon"},
+  'Rétro': {'en': 'Retro', 'es': "Retro", 'pt': "Retro", 'de': "Retro", 'ar': "ريترو", 'zh': "复古", 'sw': "Zamani"},
+  'BD': {'en': 'Comic', 'es': "Cómic", 'pt': "BD", 'de': "Comic", 'ar': "كوميك", 'zh': "漫画", 'sw': "Katuni"},
+  'Tech': {'en': 'Tech', 'es': "Tech", 'pt': "Tech", 'de': "Tech", 'ar': "تقني", 'zh': "科技", 'sw': "Teknolojia"},
+  'Sans fond': {'en': 'No background', 'es': "Sin fondo", 'pt': "Sem fundo", 'de': "Kein Hintergrund", 'ar': "بلا خلفية", 'zh': "无背景", 'sw': "Bila mandharinyuma"},
+  'Plein': {'en': 'Solid', 'es': "Sólido", 'pt': "Cheio", 'de': "Voll", 'ar': "ممتلئ", 'zh': "实心", 'sw': "Imejaa"},
+  'Transparent': {'en': 'Transparent', 'es': "Transparente", 'pt': "Transparente", 'de': "Transparent", 'ar': "شفاف", 'zh': "半透明", 'sw': "Wazi"},
+  'Contour': {'en': 'Outline', 'es': "Contorno", 'pt': "Contorno", 'de': "Kontur", 'ar': "حدود", 'zh': "描边", 'sw': "Kingo"},
+  'Sans cadre': {'en': 'No frame', 'es': "Sin marco", 'pt': "Sem moldura", 'de': "Kein Rahmen", 'ar': "بلا إطار", 'zh': "无边框", 'sw': "Bila fremu"},
+  'Cadre fin': {'en': 'Thin frame', 'es': "Marco fino", 'pt': "Moldura fina", 'de': "Dünner Rahmen", 'ar': "إطار رفيع", 'zh': "细边框", 'sw': "Fremu nyembamba"},
+  'Double trait': {'en': 'Double line', 'es': "Doble línea", 'pt': "Linha dupla", 'de': "Doppellinie", 'ar': "خط مزدوج", 'zh': "双线", 'sw': "Mstari maradufu"},
+  'Bulle': {'en': 'Bubble', 'es': "Burbuja", 'pt': "Balão", 'de': "Blase", 'ar': "فقاعة", 'zh': "气泡", 'sw': "Kiputo"},
+  'Soulignement': {'en': 'Underline', 'es': "Subrayado", 'pt': "Sublinhado", 'de': "Unterstreichung", 'ar': "تسطير", 'zh': "下划线", 'sw': "Mstari chini"},
+};

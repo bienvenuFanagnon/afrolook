@@ -56,6 +56,12 @@ class MontageState {
   int freeColor = 0;
   int freePos = 1;
 
+  /// Style d'écriture (indice dans [kFreeTextFonts]), arrière-plan (0 aucun, 1 plein, 2 transparent, 3 contour) et sa couleur (indice dans [kFreeTextColors]), cadre (0 à 4).
+  int freeFont = 0;
+  int freeBg = 0;
+  int freeBgColor = 2;
+  int freeFrame = 0;
+
   /// Look de couleur choisi (null = l'ambiance propre au modèle).
   MontageLook? look;
 

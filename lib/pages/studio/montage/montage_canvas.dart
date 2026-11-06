@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 import '../../cards/card_flags.dart';
 import 'montage_catalog.dart';
 import 'montage_fx.dart';
-import 'montage_look.dart' show kFreeTextColors;
+import 'montage_text_style.dart';
 import 'montage_state.dart';
 import 'montage_stickers.dart';
 
@@ -289,13 +289,7 @@ class MontageCanvas extends StatelessWidget {
       // Texte libre de la personne (outil « Texte ») : centré, ombré pour rester lisible sur n'importe quelle image
       if (s.freeText.trim().isNotEmpty)
         _slot('text', cq, dflt: Offset(.5, const [.19, .5, .775][s.freePos.clamp(0, 2)]), maxWidth: 84 * cq,
-          child: Text(
-            s.freeText.trim(),
-            textAlign: TextAlign.center,
-            maxLines: 5,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontFamily: 'NunitoBold', fontSize: 6.4 * cq, height: 1.15, color: kFreeTextColors[s.freeColor.clamp(0, kFreeTextColors.length - 1)], shadows: shadow),
-          ),
+          child: FreeTextView(text: s.freeText.trim(), cq: cq, font: s.freeFont, color: s.freeColor, bg: s.freeBg, bgColor: s.freeBgColor, frame: s.freeFrame),
         ),
       // Autocollants (emojis, pastilles, logo) : chacun peut être déplacé et agrandi ; le dernier ajouté est au-dessus
       for (final st in s.stickers)
