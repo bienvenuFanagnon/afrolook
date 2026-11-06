@@ -9,6 +9,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 
+import 'beauty.dart';
+
 /// Un visage trouvé dans la photo (pixels de la photo redressée).
 class FaceBox {
   const FaceBox({required this.rect, this.leftEye, this.rightEye, this.nose});
@@ -88,15 +90,19 @@ class FaceFilters {
   }
 
   /// Pose [filter] sur chaque visage de la photo déjà redressée [upright] et rend le nouveau fichier ; [path] tel quel si rien à faire ou en cas d'échec.
-  static Future<({String path, int found})> apply(String upright, List<FaceBox> faces, FaceFilter filter) async {
-    if (filter == FaceFilter.none || faces.isEmpty) return (path: upright, found: 0);
+  static Future<({String path, int found})> apply(String upright, List<FaceBox> faces, FaceFilter filter, {BeautyLevel beauty = const BeautyLevel.off()}) async {
+    if ((filter == FaceFilter.none || faces.isEmpty) && beauty.isOff) return (path: upright, found: 0);
     try {
       final bytes = await File(upright).readAsBytes();
       final codec = await ui.instantiateImageCodec(bytes);
       final img = (await codec.getNextFrame()).image;
       final rec = ui.PictureRecorder();
       final canvas = ui.Canvas(rec);
-      canvas.drawImage(img, Offset.zero, ui.Paint());
+      if (beauty.isOff) {
+        canvas.drawImage(img, Offset.zero, ui.Paint());
+      } else {
+        BeautyPainter.paint(canvas, img, faces, beauty);
+      }
       for (final f in faces) {
         drawOn(canvas, f, filter);
       }

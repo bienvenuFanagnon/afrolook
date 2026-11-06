@@ -3,13 +3,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../l10n/tr.dart';
+import '../../services/beauty.dart';
 import '../../services/face_filters.dart';
+import 'beauty_sheet.dart';
 import '../../theme/app_colors.dart';
 
 /// Aperçu de la photo prise AVANT de la garder : on essaie les filtres de visage d'un toucher et on voit tout de suite le résultat.
 /// Rend le fichier à utiliser (avec ou sans filtre), ou null si la personne choisit de reprendre la photo.
 class FaceFilterPage extends StatefulWidget {
-  const FaceFilterPage({super.key, required this.path, required this.size, required this.faces, this.initial = FaceFilter.none});
+  const FaceFilterPage({super.key, required this.path, required this.size, required this.faces, this.initial = FaceFilter.none, this.initialBeauty = const BeautyLevel.off()});
 
   final String path; // photo redressée
   final Size size;
@@ -18,17 +20,40 @@ class FaceFilterPage extends StatefulWidget {
   /// Filtre déjà choisi dans la caméra (affiché tout de suite).
   final FaceFilter initial;
 
+  /// Beauté choisie dans la caméra (appliquée à la photo gardée ; modifiable ici).
+  final BeautyLevel initialBeauty;
+
   @override
   State<FaceFilterPage> createState() => _FaceFilterPageState();
 }
 
 class _FaceFilterPageState extends State<FaceFilterPage> {
   late FaceFilter _filter = widget.initial;
+  late BeautyLevel _beauty = widget.initialBeauty;
+  late String _shown = widget.path; // photo montrée : avec la beauté déjà appliquée
   bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!_beauty.isOff) _refreshBeauty();
+  }
+
+  Future<void> _refreshBeauty() async {
+    final r = await FaceFilters.apply(widget.path, widget.faces, FaceFilter.none, beauty: _beauty);
+    if (mounted) setState(() => _shown = _beauty.isOff ? widget.path : r.path);
+  }
+
+  Future<void> _openBeauty() async {
+    final r = await showBeautySheet(context, _beauty.isOff ? const BeautyLevel() : _beauty);
+    if (r == null || !mounted) return;
+    _beauty = r;
+    await _refreshBeauty();
+  }
 
   Future<void> _use() async {
     setState(() => _busy = true);
-    final r = await FaceFilters.apply(widget.path, widget.faces, _filter);
+    final r = await FaceFilters.apply(widget.path, widget.faces, _filter, beauty: _beauty);
     if (mounted) Navigator.pop(context, r.path);
   }
 
@@ -48,7 +73,7 @@ class _FaceFilterPageState extends State<FaceFilterPage> {
                   width: widget.size.width,
                   height: widget.size.height,
                   child: Stack(fit: StackFit.expand, children: [
-                    Image.file(File(widget.path), fit: BoxFit.fill),
+                    Image.file(File(_shown), key: ValueKey(_shown), fit: BoxFit.fill),
                     CustomPaint(key: const ValueKey('face_overlay'), painter: _OverlayPainter(widget.faces, _filter)),
                   ]),
                 ),
@@ -78,8 +103,14 @@ class _FaceFilterPageState extends State<FaceFilterPage> {
                   ),
               ]),
             ),
+          TextButton.icon(
+            key: const ValueKey('page_beauty'),
+            onPressed: _busy ? null : _openBeauty,
+            icon: const Icon(Icons.auto_awesome_rounded, color: Colors.white70, size: 18),
+            label: Text(_beauty.isOff ? context.tr('✨ Beauté : désactivée') : context.tr('✨ Beauté : réglable'), style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w700)),
+          ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 6, 16, 14),
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
             child: Row(children: [
               Expanded(
                 child: SizedBox(

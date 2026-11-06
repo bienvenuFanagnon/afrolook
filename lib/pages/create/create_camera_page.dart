@@ -10,7 +10,9 @@ import 'package:permission_handler/permission_handler.dart';
 
 import '../../l10n/tr.dart';
 import '../../services/api/studio_face_overlay_api.dart';
+import '../../services/beauty.dart';
 import '../../services/face_filters.dart';
+import 'beauty_sheet.dart';
 import 'face_filter_page.dart';
 import '../../theme/app_colors.dart';
 
@@ -47,6 +49,13 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
 
   // ── Filtres de visage en direct (Android) ──
   FaceFilter _filter = FaceFilter.none;
+
+  // Beauté : activée par défaut à un niveau naturel (le réglage est gardé tant que l'application reste ouverte)
+  static BeautyLevel _savedBeauty = const BeautyLevel();
+  static bool _savedBeautyOn = true;
+  BeautyLevel _beauty = _savedBeauty;
+  bool _beautyOn = _savedBeautyOn;
+  BeautyLevel get _beautyNow => _beautyOn ? _beauty : const BeautyLevel.off();
   bool _streaming = false;
   bool _frameBusy = false;
   int _lastFrameMs = 0;
@@ -153,6 +162,27 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
 
   // ── Filtres en direct ────────────────────────────────────────────────────
 
+  void _toggleBeauty() {
+    setState(() => _beautyOn = !_beautyOn);
+    _savedBeautyOn = _beautyOn;
+  }
+
+  Future<void> _openBeauty() async {
+    final r = await showBeautySheet(context, _beauty, onChanged: (b) => setState(() {
+          _beauty = b;
+          _beautyOn = true;
+        }));
+    if (!mounted) return;
+    setState(() {
+      if (r != null) {
+        _beauty = r;
+        _beautyOn = true;
+      }
+    });
+    _savedBeauty = _beauty;
+    _savedBeautyOn = _beautyOn;
+  }
+
   Future<void> _pickFilter(FaceFilter f) async {
     setState(() {
       _filter = f;
@@ -255,7 +285,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
         // Android : aperçu de la photo avec les filtres de visage AVANT de la garder (si la détection échoue, on garde la photo telle quelle)
         final det = await FaceFilters.detect(path);
         if (det != null && mounted) {
-          final chosen = await Navigator.of(context).push<String>(MaterialPageRoute(builder: (_) => FaceFilterPage(path: det.path, size: det.size, faces: det.faces, initial: _filter)));
+          final chosen = await Navigator.of(context).push<String>(MaterialPageRoute(builder: (_) => FaceFilterPage(path: det.path, size: det.size, faces: det.faces, initial: _filter, initialBeauty: _beautyNow)));
           if (!mounted) return;
           if (chosen == null) {
             setState(() => _busy = false); // « Reprendre » : retour à la caméra
@@ -392,7 +422,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
         ClipRect(
           child: Transform.scale(
             scale: _coverScale(ctrl),
-            child: Center(child: CameraPreview(ctrl, child: _liveOverlay(ctrl))),
+            child: Center(child: _beautyNow.hasColor ? ColorFiltered(colorFilter: _beautyNow.colorFilter, child: CameraPreview(ctrl, child: _liveOverlay(ctrl))) : CameraPreview(ctrl, child: _liveOverlay(ctrl))),
           ),
         )
       else
@@ -430,6 +460,31 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
               key: const ValueKey('face_filters'),
               height: 46,
               child: ListView(scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 16), children: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: GestureDetector(
+                    onLongPress: _recording ? null : _openBeauty,
+                    child: ChoiceChip(
+                      key: const ValueKey('beauty_chip'),
+                      label: Text(context.tr('✨ Beauté'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _beautyOn ? c.onAccent : Colors.white)),
+                      selected: _beautyOn,
+                      selectedColor: c.accent,
+                      backgroundColor: const Color(0x99000000),
+                      side: BorderSide.none,
+                      onSelected: _recording ? null : (_) => _toggleBeauty(),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: IconButton(
+                    key: const ValueKey('beauty_tune'),
+                    visualDensity: VisualDensity.compact,
+                    style: IconButton.styleFrom(backgroundColor: const Color(0x99000000)),
+                    onPressed: _recording ? null : _openBeauty,
+                    icon: const Icon(Icons.tune_rounded, color: Colors.white, size: 20),
+                  ),
+                ),
                 for (final f in FaceFilter.values)
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
