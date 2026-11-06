@@ -20,7 +20,11 @@ void main() {
     expect(trFor('en', 'En réponse à {who}', {'who': '@kofi'}), 'In reply to @kofi');
     expect(trFor('en', '{n} s gardées', {'n': '3.0'}), '3.0 s kept');
     expect(trFor('fr', 'Nouveau post'), 'Nouveau post');
-    // langue sans traduction : repli sur l'anglais, jamais un texte vide
-    expect(trFor('sw', 'Pochette'), 'Cover');
+    // les six autres langues sont traduites, avec leurs variables
+    expect(trFor('sw', 'Pochette'), 'Jalada');
+    expect(trFor('es', 'En réponse à {who}', {'who': '@kofi'}), contains('@kofi'));
+    expect(trFor('ar', '{n} s gardées', {'n': '3'}), contains('3'));
+    // texte inconnu : jamais vide, le français est rendu tel quel
+    expect(trFor('sw', 'Un texte jamais traduit'), 'Un texte jamais traduit');
   });
 }
