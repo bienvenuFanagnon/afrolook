@@ -24,6 +24,7 @@ import '../../coins/coin_recharge_screen.dart';
 import 'montage_look.dart';
 import 'montage_music.dart';
 import 'montage_state.dart';
+import 'montage_stickers.dart';
 import '../studio_theme.dart';
 
 AppColors get _c => studioColors;
@@ -56,6 +57,8 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
   final _keys = MontageKeys();
   final _looksKey = GlobalKey();
   final _textKey = GlobalKey();
+  final _stickersKey = GlobalKey();
+  String? _selSticker;   // autocollant sélectionné (cadre blanc sur l'aperçu)
   final _freeText = TextEditingController();
   final _musicKey = GlobalKey();
   final _picker = ImagePicker();
@@ -102,7 +105,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     ArtistSoundPricing.load();
     if (widget.focus != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        final ctx = (widget.focus == 'music' ? _musicKey : widget.focus == 'text' ? _textKey : _looksKey).currentContext;
+        final ctx = (widget.focus == 'music' ? _musicKey : widget.focus == 'text' ? _textKey : widget.focus == 'stickers' ? _stickersKey : _looksKey).currentContext;
         if (ctx != null) Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 250));
       });
     }
@@ -548,6 +551,11 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
                   pseudo: pseudo,
                   avatarUrl: me.imageUrl,
                   followers: me.followersCount,
+                  // la personne glisse elle-même le pseudo, les chiffres, le texte, le logo et les autocollants ; tout reste dans le cadre
+                  onMove: _moveElement,
+                  onScale: _scaleSticker,
+                  onTapSticker: (id) => setState(() => _selSticker = id),
+                  selectedSticker: _selSticker,
                 ),
               ),
             ),
@@ -568,6 +576,8 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           _btn(Icons.add_a_photo_rounded, tp.canUseVideo ? 'Ma photo ou vidéo' : 'Ma photo', () => _pickMedia()),
           if (tp.dualSample != null || tp.baby) _btn(Icons.add_photo_alternate_rounded, tp.baby ? 'Photo de bébé' : '2e photo', () => _pickMedia(second: true)),
         ]),
+        const SizedBox(height: 14),
+        KeyedSubtree(key: _stickersKey, child: _stickersSection()),
         const SizedBox(height: 14),
         KeyedSubtree(key: _textKey, child: _freeTextSection()),
         const SizedBox(height: 14),
@@ -833,6 +843,77 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
   }
 
   /// Looks de couleur sobres (style Instagram) : valables pour une photo comme pour une vidéo.
+  // ── Déplacer et autocollants ─────────────────────────────────────────────
+
+  void _moveElement(String id, Offset center) {
+    setState(() {
+      if (id.startsWith('st:')) {
+        final st = s.stickers.where((e) => 'st:${e.id}' == id).firstOrNull;
+        if (st != null) {
+          st.center = center;
+          _selSticker = st.id;
+        }
+      } else {
+        s.moved[id] = center;
+      }
+    });
+  }
+
+  void _scaleSticker(String id, double scale) {
+    final st = s.stickers.where((e) => 'st:${e.id}' == id).firstOrNull;
+    if (st != null) setState(() => st.scale = scale.clamp(kStickerMinScale, kStickerMaxScale));
+  }
+
+  Future<void> _addSticker() async {
+    if (s.stickers.length >= kMaxStickers) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Tu peux mettre jusqu\'à $kMaxStickers autocollants.')));
+      return;
+    }
+    final pick = await showStickerPicker(context);
+    if (pick == null || !mounted) return;
+    // posé au centre, légèrement décalé à chaque ajout pour ne pas cacher le précédent
+    final n = s.stickers.length;
+    final st = MontageSticker(id: '${DateTime.now().microsecondsSinceEpoch}_$n', kind: pick.kind, value: pick.value, center: Offset(.5 + ((n % 3) - 1) * .12, .42 + ((n ~/ 3) % 3) * .1));
+    setState(() {
+      s.stickers.add(st);
+      _selSticker = st.id;
+    });
+  }
+
+  MontageSticker? get _selected => s.stickers.where((e) => e.id == _selSticker).firstOrNull;
+
+  /// Outil « Placer » : déplacer les éléments avec le doigt, ajouter des autocollants du pack, les agrandir ou les retirer.
+  Widget _stickersSection() {
+    final sel = _selected;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _label('Placer et décorer'),
+      Text('Touche et glisse le pseudo, les chiffres, le texte ou un autocollant pour le poser où tu veux. Pince un autocollant pour l\'agrandir. Tout reste toujours visible dans l\'image.', style: TextStyle(color: _c.textSecondary, fontSize: 12.5, height: 1.35)),
+      const SizedBox(height: 10),
+      Wrap(spacing: 8, runSpacing: 8, children: [
+        _btn(Icons.add_reaction_rounded, 'Ajouter un autocollant', _addSticker),
+        if (s.moved.isNotEmpty) _btn(Icons.restart_alt_rounded, 'Tout remettre en place', () => setState(s.moved.clear)),
+      ]),
+      if (sel != null) ...[
+        const SizedBox(height: 10),
+        Row(children: [
+          Text('Autocollant', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700)),
+          const Spacer(),
+          IconButton(key: const ValueKey('sticker_smaller'), tooltip: 'Plus petit', icon: Icon(Icons.remove_circle_outline_rounded, color: _c.textPrimary), onPressed: () => _scaleSticker('st:${sel.id}', sel.scale / 1.2)),
+          IconButton(key: const ValueKey('sticker_bigger'), tooltip: 'Plus grand', icon: Icon(Icons.add_circle_outline_rounded, color: _c.textPrimary), onPressed: () => _scaleSticker('st:${sel.id}', sel.scale * 1.2)),
+          IconButton(
+            key: const ValueKey('sticker_delete'),
+            tooltip: 'Retirer',
+            icon: Icon(Icons.delete_outline_rounded, color: _c.textPrimary),
+            onPressed: () => setState(() {
+              s.stickers.removeWhere((e) => e.id == sel.id);
+              _selSticker = null;
+            }),
+          ),
+        ]),
+      ],
+    ]);
+  }
+
   /// Outil « Texte » : un texte libre posé sur la photo ou la vidéo (couleur et position au choix).
   Widget _freeTextSection() {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

@@ -161,3 +161,8 @@ Décisions du propriétaire (06/11) : on suit les recommandations ; **les écran
 5. Ancienne page `UserPostForm` : encore utilisée par le Défi ; ne la retirer qu'après accord.
 6. **Essai sur un vrai téléphone** : caméra, micro, onde en direct, découpe vidéo et audio (appel réel à l'API), Préparation pendant un vrai montage, « Répondre en vidéo », texte transformé en image.
 7. Traductions es, pt, de, ar, zh, sw des nouveaux textes.
+
+### Ajout du 06/11/2026 (soir) : placer et décorer dans le Studio
+- **Déplacer soi-même** le pseudo, les j'aime/commentaires, le texte libre, le logo Afrolook et le bloc de texte du modèle : on touche et on glisse sur l'aperçu (`MontageCanvas.onMove`, état `MontageState.moved`, placement `_Movable` / `_SlotDelegate`). **L'élément est toujours ramené entièrement dans le cadre** (marge de 1,2 %) : il ne peut pas se perdre ; test `montage_stickers_test`. Bouton « Tout remettre en place ».
+- **Pack d'autocollants prêt à choisir** (`montage_stickers.dart`) : 9 thèmes (Visages, Cœurs, Fête, Afrique avec drapeaux, Sport, Gestes, Objets, Pastilles de texte NOUVEAU/PROMO/-50 %…, logo Afrolook), jusqu'à 12 par montage ; on les glisse, on les pince pour les agrandir (ou boutons − / +), on les retire ; le dernier ajouté est au-dessus. Ils font partie du calque d'avant-plan : ils sont exportés tels quels (image et vidéo).
+- Section « Placer et décorer » de l'éditeur de montage (`focus: 'stickers'` possible). Pas encore d'outil dédié dans la barre de l'éditeur plein écran (à décider).

@@ -10,6 +10,7 @@ import 'montage_catalog.dart';
 import 'montage_fx.dart';
 import 'montage_look.dart' show kFreeTextColors;
 import 'montage_state.dart';
+import 'montage_stickers.dart';
 
 /// Repères de capture : chaque calque est un RepaintBoundary distinct.
 class MontageKeys {
@@ -32,6 +33,10 @@ class MontageCanvas extends StatelessWidget {
     this.avatarUrl,
     this.followers = 0,
     this.keys,
+    this.onMove,
+    this.onScale,
+    this.onTapSticker,
+    this.selectedSticker,
   });
 
   final MontageState state;
@@ -53,6 +58,14 @@ class MontageCanvas extends StatelessWidget {
   /// Vrai nombre d'abonnés de la personne (affiché si elle n'a pas écrit le sien).
   final int followers;
   final MontageKeys? keys;
+
+  /// Édition : un élément a été glissé (identifiant, nouveau centre en fraction du cadre). Null = aperçu sans geste (export, aperçus de la galerie).
+  final void Function(String id, Offset center)? onMove;
+
+  /// Édition : pincement sur un autocollant (identifiant, nouvelle taille).
+  final void Function(String id, double scale)? onScale;
+  final void Function(String id)? onTapSticker;
+  final String? selectedSticker;
 
   Widget _rb(GlobalKey? k, Widget child) => k == null ? child : RepaintBoundary(key: k, child: child);
 
@@ -128,6 +141,29 @@ class MontageCanvas extends StatelessWidget {
           decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: s.look!.tint!)),
         ),
     ]);
+  }
+
+  /// Place un élément du montage : à son emplacement d'origine, ou là où la personne l'a posé ([MontageState.moved]). Il est TOUJOURS ramené à l'intérieur du cadre.
+  /// Avec [onMove], un doigt glissé le déplace (un pincement l'agrandit s'il est [scalable]).
+  Widget _slot(String id, double cq, {required Widget child, double? left, double? right, double? top, double? bottom, double? width, double? maxWidth, Offset? dflt, Offset? center, bool scalable = false, double scale = 1, VoidCallback? onTap}) {
+    return _Movable(
+      id: id,
+      cq: cq,
+      frameKey: keys?.foreground,
+      center: center ?? state.moved[id] ?? dflt,
+      moved: center != null || state.moved.containsKey(id),
+      left: left,
+      right: right,
+      top: top,
+      bottom: bottom,
+      width: width,
+      maxWidth: maxWidth,
+      onMove: onMove,
+      onScale: scalable ? onScale : null,
+      scale: scale,
+      onTap: onTap,
+      child: child,
+    );
   }
 
   Widget _foreground(double cq, MontageTexts texts) {
@@ -219,9 +255,7 @@ class MontageCanvas extends StatelessWidget {
                 ),
         ),
       if (s.shows(MontageLayer.brand))
-        Positioned(
-          top: 4.5 * cq,
-          left: 5 * cq,
+        _slot('brand', cq, left: 5 * cq, top: 4.5 * cq,
           child: Container(
             padding: EdgeInsets.fromLTRB(.9 * cq, .9 * cq, 2.6 * cq, .9 * cq),
             decoration: BoxDecoration(color: const Color(0x66000000), borderRadius: BorderRadius.circular(99)),
@@ -247,41 +281,25 @@ class MontageCanvas extends StatelessWidget {
             child: Text(frSpaces(tp.chip!), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: 'NunitoBold', fontSize: 3.1 * cq, color: Colors.white)),
           ),
         ),
-      Positioned(
-        left: 7 * cq,
-        right: 7 * cq,
-        top: tp.pos == MontagePos.top ? 15 * cq : null,
-        bottom: tp.pos == MontagePos.bottom ? 17 * cq : null,
-        child: tp.pos == MontagePos.center ? const SizedBox.shrink() : block,
-      ),
-      if (tp.pos == MontagePos.center) Positioned(left: 7 * cq, right: 7 * cq, top: 0, bottom: 0, child: Center(child: block)),
+      // Bloc de texte du modèle (surtitre, titre, vœu) : à sa place d'origine, ou là où la personne l'a posé
+      _slot('block', cq, left: 7 * cq, top: tp.pos == MontagePos.top ? 15 * cq : null, bottom: tp.pos == MontagePos.bottom ? 17 * cq : null, width: 86 * cq, child: block),
       if (s.shows(MontageLayer.pseudo) && pseudo.isNotEmpty)
-        Positioned(
-          left: 7 * cq,
-          bottom: 6 * cq,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: (_hasStats(s, followers) ? 42 : 86) * cq),
-            child: _PseudoCapsule(pseudo: pseudo, cq: cq, avatarUrl: avatarUrl),
-          ),
-        ),
-      if (_hasStats(s, followers)) Positioned(right: 5 * cq, bottom: 6 * cq, child: _StatsCapsule(state: s, followers: followers, cq: cq)),
+        _slot('pseudo', cq, left: 7 * cq, bottom: 6 * cq, maxWidth: (_hasStats(s, followers) ? 42 : 86) * cq, child: _PseudoCapsule(pseudo: pseudo, cq: cq, avatarUrl: avatarUrl)),
+      if (_hasStats(s, followers)) _slot('stats', cq, right: 5 * cq, bottom: 6 * cq, child: _StatsCapsule(state: s, followers: followers, cq: cq)),
       // Texte libre de la personne (outil « Texte ») : centré, ombré pour rester lisible sur n'importe quelle image
       if (s.freeText.trim().isNotEmpty)
-        Positioned.fill(
-          child: Align(
-            alignment: Alignment(0, const [-.62, 0.0, .55][s.freePos.clamp(0, 2)]),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8 * cq),
-              child: Text(
-                s.freeText.trim(),
-                textAlign: TextAlign.center,
-                maxLines: 5,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontFamily: 'NunitoBold', fontSize: 6.4 * cq, height: 1.15, color: kFreeTextColors[s.freeColor.clamp(0, kFreeTextColors.length - 1)], shadows: shadow),
-              ),
-            ),
+        _slot('text', cq, dflt: Offset(.5, const [.19, .5, .775][s.freePos.clamp(0, 2)]), maxWidth: 84 * cq,
+          child: Text(
+            s.freeText.trim(),
+            textAlign: TextAlign.center,
+            maxLines: 5,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontFamily: 'NunitoBold', fontSize: 6.4 * cq, height: 1.15, color: kFreeTextColors[s.freeColor.clamp(0, kFreeTextColors.length - 1)], shadows: shadow),
           ),
         ),
+      // Autocollants (emojis, pastilles, logo) : chacun peut être déplacé et agrandi ; le dernier ajouté est au-dessus
+      for (final st in s.stickers)
+        _slot('st:${st.id}', cq, dflt: st.center, center: st.center, scalable: true, scale: st.scale, onTap: onTapSticker == null ? null : () => onTapSticker!(st.id), child: StickerView(sticker: st, cq: cq, selected: onMove != null && selectedSticker == st.id)),
       // Filigrane : toujours présent, même publié dans l'app
       Positioned(
         right: 1.6 * cq,
@@ -477,3 +495,122 @@ List<double> _matrix(double sat, double bri) {
 }
 
 ui.ImageFilter _blur(double sigma) => ui.ImageFilter.blur(sigmaX: sigma, sigmaY: sigma, tileMode: TileMode.decal);
+
+/// Couche pleine taille qui place UN élément (à son emplacement d'origine ou à son centre choisi) et le laisse glisser avec le doigt.
+class _Movable extends StatefulWidget {
+  const _Movable({
+    required this.id,
+    required this.cq,
+    required this.frameKey,
+    required this.center,
+    required this.moved,
+    required this.child,
+    this.left,
+    this.right,
+    this.top,
+    this.bottom,
+    this.width,
+    this.maxWidth,
+    this.onMove,
+    this.onScale,
+    this.scale = 1,
+    this.onTap,
+  });
+
+  final String id;
+  final double cq;
+
+  /// Repère du cadre (le calque d'avant-plan) pour convertir la position du doigt en fraction du cadre.
+  final GlobalKey? frameKey;
+  final Offset? center;
+  final bool moved;
+  final Widget child;
+  final double? left, right, top, bottom, width, maxWidth;
+  final void Function(String id, Offset center)? onMove;
+  final void Function(String id, double scale)? onScale;
+  final double scale;
+  final VoidCallback? onTap;
+
+  @override
+  State<_Movable> createState() => _MovableState();
+}
+
+class _MovableState extends State<_Movable> {
+  final _childKey = GlobalKey();
+  Offset _grab = Offset.zero;
+  double _startScale = 1;
+
+  void _start(ScaleStartDetails d) {
+    final box = _childKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return;
+    _grab = d.focalPoint - box.localToGlobal(box.size.center(Offset.zero));
+    _startScale = widget.scale;
+  }
+
+  void _update(ScaleUpdateDetails d) {
+    final frame = widget.frameKey?.currentContext?.findRenderObject() as RenderBox?;
+    if (frame == null || !frame.hasSize || widget.onMove == null) return;
+    final local = frame.globalToLocal(d.focalPoint - _grab);
+    widget.onMove!(widget.id, Offset((local.dx / frame.size.width).clamp(0.0, 1.0), (local.dy / frame.size.height).clamp(0.0, 1.0)));
+    if (widget.onScale != null && d.pointerCount >= 2) {
+      widget.onScale!(widget.id, (_startScale * d.scale).clamp(kStickerMinScale, kStickerMaxScale));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    Widget content = KeyedSubtree(key: _childKey, child: widget.child);
+    if (widget.onMove != null) {
+      content = GestureDetector(behavior: HitTestBehavior.opaque, onTap: widget.onTap, onScaleStart: _start, onScaleUpdate: _update, child: content);
+    }
+    return Positioned.fill(
+      child: CustomSingleChildLayout(
+        delegate: _SlotDelegate(
+          center: widget.moved ? widget.center : null,
+          fallbackCenter: widget.center,
+          margin: 1.2 * widget.cq,
+          left: widget.left,
+          right: widget.right,
+          top: widget.top,
+          bottom: widget.bottom,
+          width: widget.width,
+          maxWidth: widget.maxWidth,
+        ),
+        child: content,
+      ),
+    );
+  }
+}
+
+/// Place l'enfant : au centre choisi (toujours entièrement dans le cadre, marge comprise), sinon à son emplacement d'origine (bords ou centre).
+class _SlotDelegate extends SingleChildLayoutDelegate {
+  _SlotDelegate({required this.center, required this.fallbackCenter, required this.margin, this.left, this.right, this.top, this.bottom, this.width, this.maxWidth});
+
+  final Offset? center;
+  final Offset? fallbackCenter;
+  final double margin;
+  final double? left, right, top, bottom, width, maxWidth;
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints c) {
+    final room = c.maxWidth - 2 * margin;
+    if (width != null && center == null) return BoxConstraints.tightFor(width: width!.clamp(0.0, room));
+    final w = maxWidth == null ? room : maxWidth!.clamp(0.0, room);
+    return BoxConstraints(maxWidth: w, maxHeight: c.maxHeight - 2 * margin);
+  }
+
+  @override
+  Offset getPositionForChild(Size size, Size child) {
+    double clampX(double x) => x.clamp(margin, (size.width - child.width - margin).clamp(margin, double.infinity));
+    double clampY(double y) => y.clamp(margin, (size.height - child.height - margin).clamp(margin, double.infinity));
+    final c = center ?? ((left == null && right == null && top == null && bottom == null) ? fallbackCenter : null);
+    if (c != null) return Offset(clampX(c.dx * size.width - child.width / 2), clampY(c.dy * size.height - child.height / 2));
+    final x = left != null ? left! : (right != null ? size.width - child.width - right! : (size.width - child.width) / 2);
+    final y = top != null ? top! : (bottom != null ? size.height - child.height - bottom! : (size.height - child.height) / 2);
+    return Offset(clampX(x), clampY(y));
+  }
+
+  @override
+  bool shouldRelayout(covariant _SlotDelegate o) =>
+      o.center != center || o.fallbackCenter != fallbackCenter || o.margin != margin || o.left != left || o.right != right || o.top != top || o.bottom != bottom || o.width != width || o.maxWidth != maxWidth;
+}

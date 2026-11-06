@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui' show Offset;
 
 import 'package:flutter/services.dart';
 
@@ -7,6 +8,7 @@ import '../../cards/card_models.dart' show compactCount;
 import 'montage_catalog.dart';
 import 'montage_look.dart';
 import 'montage_music.dart';
+import 'montage_stickers.dart';
 
 /// Tout ce que la personne a choisi ou modifié sur un template. Ce qui reste à null garde le contenu pré-rempli.
 class MontageState {
@@ -39,6 +41,13 @@ class MontageState {
   String? wish;
   /// Calques masqués. L'effet décoratif (argent, cœurs, pluie…) est masqué par défaut : on part d'un rendu sobre, la personne peut le réactiver.
   final Set<MontageLayer> hidden = {MontageLayer.fx};
+
+  /// Éléments que la personne a DÉPLACÉS (`pseudo`, `stats`, `text`, `brand`, `block`) : identifiant → centre dans le cadre (fraction 0 à 1). Absent = emplacement du modèle.
+  /// L'affichage ramène toujours l'élément à l'intérieur du cadre : il ne se perd jamais.
+  final Map<String, Offset> moved = {};
+
+  /// Autocollants (emojis, pastilles, logo) ajoutés par la personne, du plus ancien au plus récent (le dernier est au-dessus).
+  final List<MontageSticker> stickers = [];
 
   /// Texte libre posé sur la photo ou la vidéo (outil « Texte » de l'éditeur) : vide = aucun. Fonctionne avec tous les modèles, y compris « sans habillage ».
   String freeText = '';
