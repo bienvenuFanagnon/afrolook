@@ -21,6 +21,7 @@ import 'tr_restes.dart';
 import 'tr_audit.dart';
 import 'tr_refonte.dart';
 import 'tr_live.dart';
+import 'tr_videos.dart';
 import 'tr_extra.dart';
 import 'tr_extra2.dart';
 import 'tr_extra3.dart';
@@ -42,7 +43,7 @@ import 'tr_beaute.dart';
 /// Les dictionnaires sont rangés par zone (tr_menu.dart, tr_money.dart…),
 /// avec pour chaque texte français ses traductions en, es, de, ar, pt, zh, sw.
 /// Repli : langue demandée → anglais → texte français.
-const List<Map<String, Map<String, String>>> _dictionaries = [kTrOfferwall, kTrShare, kTrPromo, kTrMenu, kTrMoney, kTrCanaux, kTrTuto, kTrSocial, kTrRewards, kTrQuiz, kTrQuizChallenge, kTrEtude, kTrDefi, kTrTemplates, kTrCard, kTrB2, kTrRestes, kTrAudit, kTrPartnerTasks, kTrRefonte, kTrLive, kTrExtra, kTrExtra2, kTrExtra3, kTrExtra4, kTrExtra5, kTrCreation, kTrReplies, kTrTexte, kTrAmis, kTrBeaute];
+const List<Map<String, Map<String, String>>> _dictionaries = [kTrOfferwall, kTrShare, kTrPromo, kTrMenu, kTrMoney, kTrCanaux, kTrTuto, kTrSocial, kTrRewards, kTrQuiz, kTrQuizChallenge, kTrEtude, kTrDefi, kTrTemplates, kTrCard, kTrB2, kTrRestes, kTrAudit, kTrPartnerTasks, kTrRefonte, kTrLive, kTrExtra, kTrExtra2, kTrExtra3, kTrExtra4, kTrExtra5, kTrCreation, kTrReplies, kTrTexte, kTrAmis, kTrBeaute, kTrVideos];
 
 final Map<String, Map<String, String>> _all = {
   for (final d in _dictionaries) ...d,

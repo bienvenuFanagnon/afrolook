@@ -198,6 +198,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   bool _oldVideosExhausted = false;
 
   // Video controllers
+  /// Post auquel appartient le lecteur courant : une page n'affiche JAMAIS le lecteur d'un autre post (avant : la page voisine montrait la vidéo en cours).
+  String? _playerPostId;
   VideoPlayerController? _currentVideoController;
   ChewieController? _chewieController;
   bool _isVideoInitialized = false;
@@ -631,7 +633,10 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   void _disposeCurrentVideo() {
     _removeMidrollListener();
     _chewieController?.dispose();
-    _currentVideoController?.dispose();
+    final cur = _currentVideoController;
+    cur?.dispose();
+    if (cur != null) _preloadedControllers.removeWhere((_, c) => identical(c, cur));   // un lecteur libéré ne doit plus être proposé à une page
+    _playerPostId = null;
     if (mounted) setState(() => _isVideoInitialized = false);
   }
   // ==================== MÉTHODES DE PRÉCHARGEMENT ====================
@@ -730,6 +735,12 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         _currentVideoController!.dispose();
       }
 
+      // l'ancienne vidéo s'arrête (elle reste préchargée derrière : si on remonte, elle repart tout de suite)
+      if (_currentVideoController != null && !identical(_currentVideoController, preloadedController)) {
+        try {
+          _currentVideoController!.pause();
+        } catch (_) {}
+      }
       _currentVideoController = preloadedController;
 
       // Créer le nouveau ChewieController avec autoPlay true
@@ -758,7 +769,10 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         autoInitialize: true,
       );
 
-      setState(() => _isVideoInitialized = true);
+      setState(() {
+        _isVideoInitialized = true;
+        _playerPostId = post.id;
+      });
       if (_learnOrientation(post)) return;
       _videoPlayCount++;
       if ((_videoPlayCount - 1) % 3 == 0 && !_isUserPremium() && false) _attachMidrollListener();
@@ -800,7 +814,10 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         autoInitialize: true,
       );
 
-      setState(() => _isVideoInitialized = true);
+      setState(() {
+        _isVideoInitialized = true;
+        _playerPostId = post.id;
+      });
       if (_learnOrientation(post)) return;
       _videoPlayCount++;
       if ((_videoPlayCount - 1) % 3 == 0 && !_isUserPremium() && false) _attachMidrollListener();
@@ -2266,13 +2283,25 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       }
       return SmartVideoPlayer(url: url, autoPlay: true, looping: true, progressColor: _afroGreen);
     }
-    if (!_isVideoInitialized) {
-      return Container(
-        color: _afroBlack,
-        child: const Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [CircularProgressIndicator(color: _afroGreen), SizedBox(height: 16), Text('Chargement...', style: TextStyle(color: Colors.white))])),
-      );
+    final id = post.id;
+    // 1) la vidéo en cours de lecture : son propre lecteur, et seulement pour son propre post
+    if (id != null && _isVideoInitialized && _chewieController != null && _playerPostId == id) {
+      return Chewie(controller: _chewieController!);
     }
-    return Chewie(controller: _chewieController!);
+    // 2) une vidéo déjà préchargée (page voisine pendant le défilement) : sa première image est affichée tout de suite, sans attendre
+    final pre = id == null ? null : _preloadedControllers[id];
+    if (pre != null && pre.value.isInitialized && !identical(pre, _currentVideoController)) {
+      return Container(color: _afroBlack, child: Center(child: AspectRatio(aspectRatio: pre.value.aspectRatio, child: VideoPlayer(pre))));
+    }
+    // 3) pas encore prête : la vignette du post (jamais la vidéo d'un autre) et un petit indicateur
+    final thumb = post.thumbnail;
+    return Container(
+      color: _afroBlack,
+      child: Stack(fit: StackFit.expand, children: [
+        if (thumb != null && thumb.isNotEmpty) Image.network(thumb, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+        const Center(child: SizedBox(width: 26, height: 26, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white70))),
+      ]),
+    );
   }
 
   Widget _buildUserInfo(Post post) {
@@ -3314,9 +3343,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     return Stack(
       children: [
         Positioned.fill(
-          child: GestureDetector(
-            // translucent : les glissements atteignent le PageView ; IgnorePointer : le lecteur n'absorbe aucun geste
-            behavior: HitTestBehavior.translucent,
+          // toucher = pause / lecture, deux touchers = j'aime, glissement horizontal = avancer / reculer (les glissements verticaux vont au PageView)
+          child: VideoGestureLayer(
+            controller: (index == _currentPage && _playerPostId == post.id) ? _currentVideoController : null,
             onDoubleTap: () => _handleLike(post),
             child: IgnorePointer(child: _buildVideoPlayer(post)),
           ),

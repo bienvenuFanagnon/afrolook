@@ -364,3 +364,121 @@ class VideoCommentFieldLight extends StatelessWidget {
     );
   }
 }
+
+
+/// Gestes sur la vidéo verticale : un toucher met en pause ou reprend, deux touchers rapides aiment (comme avant), un glissement horizontal avance ou recule.
+/// Le toucher agit tout de suite (pas d'attente) ; si un deuxième toucher suit dans les 300 ms, le premier est annulé et c'est un « j'aime ».
+class VideoGestureLayer extends StatefulWidget {
+  const VideoGestureLayer({super.key, required this.controller, required this.onDoubleTap, required this.child});
+
+  /// Lecteur de cette page (null si ce n'est pas la vidéo en cours : aucun geste de lecture).
+  final VideoPlayerController? controller;
+  final VoidCallback onDoubleTap;
+  final Widget child;
+
+  @override
+  State<VideoGestureLayer> createState() => _VideoGestureLayerState();
+}
+
+class _VideoGestureLayerState extends State<VideoGestureLayer> {
+  DateTime? _lastTap;
+  bool _dragging = false;
+  bool _wasPlaying = false;
+  Duration _start = Duration.zero;
+  Duration _pos = Duration.zero;
+  double _dx = 0;
+
+  void _toggle() {
+    final vc = widget.controller;
+    if (vc == null || !vc.value.isInitialized) return;
+    vc.value.isPlaying ? vc.pause() : vc.play();
+  }
+
+  void _tap() {
+    final now = DateTime.now();
+    final last = _lastTap;
+    if (last != null && now.difference(last) < const Duration(milliseconds: 300)) {
+      _lastTap = null;
+      _toggle();   // annule la pause du premier toucher
+      widget.onDoubleTap();
+      return;
+    }
+    _lastTap = now;
+    _toggle();
+  }
+
+  String _fmt(Duration d) {
+    final m = d.inMinutes.remainder(60).toString();
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final vc = widget.controller;
+    final width = MediaQuery.of(context).size.width;
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: _tap,
+      onHorizontalDragStart: vc == null || !vc.value.isInitialized
+          ? null
+          : (_) {
+              _dragging = true;
+              _wasPlaying = vc.value.isPlaying;
+              _start = vc.value.position;
+              _pos = _start;
+              _dx = 0;
+              vc.pause();
+              setState(() {});
+            },
+      onHorizontalDragUpdate: vc == null || !_dragging
+          ? null
+          : (d) {
+              _dx += d.delta.dx;
+              final total = vc.value.duration.inMilliseconds;
+              final target = (_start.inMilliseconds + total * (_dx / width)).round().clamp(0, total);
+              setState(() => _pos = Duration(milliseconds: target));
+            },
+      onHorizontalDragEnd: vc == null || !_dragging
+          ? null
+          : (_) async {
+              _dragging = false;
+              await vc.seekTo(_pos);
+              if (_wasPlaying) await vc.play();
+              if (mounted) setState(() {});
+            },
+      onHorizontalDragCancel: () {
+        if (_dragging) {
+          _dragging = false;
+          if (_wasPlaying) vc?.play();
+          if (mounted) setState(() {});
+        }
+      },
+      child: Stack(fit: StackFit.expand, children: [
+        widget.child,
+        if (vc != null)
+          IgnorePointer(
+            child: ValueListenableBuilder<VideoPlayerValue>(
+              valueListenable: vc,
+              builder: (context, v, _) {
+                if (_dragging) {
+                  return Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                      decoration: BoxDecoration(color: Colors.black.withOpacity(0.55), borderRadius: BorderRadius.circular(16)),
+                      child: Text('${_fmt(_pos)} / ${_fmt(v.duration)}', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+                    ),
+                  );
+                }
+                // en pause : un grand bouton lecture discret au centre
+                if (v.isInitialized && !v.isPlaying) {
+                  return Center(child: VideoPill(size: 72, child: const Icon(Icons.play_arrow_rounded, size: 44, color: Colors.white)));
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+      ]),
+    );
+  }
+}

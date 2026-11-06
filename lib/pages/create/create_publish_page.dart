@@ -486,6 +486,24 @@ class _CreatePublishPageState extends State<CreatePublishPage> {
         ),
       );
 
+  /// Message de garde (page de texte) : ce qui vient d'autres réseaux est refusé, et s'il passe il ne rapporte rien ; Afrolook met en avant l'authentique.
+  Widget _authenticNote(AppColors c) => Container(
+        key: const ValueKey('authentic_note'),
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: c.surfaceVariant, borderRadius: BorderRadius.circular(14), border: Border.all(color: c.border)),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(Icons.verified_outlined, size: 20, color: c.accentText),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              context.tr('Afrolook met en avant les contenus authentiques. Les publications copiées d\'autres réseaux sociaux sont refusées, et si l\'une passe, elle ne rapporte aucune pièce.'),
+              style: TextStyle(color: c.textSecondary, fontSize: 12.5, height: 1.4),
+            ),
+          ),
+        ]),
+      );
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
@@ -510,6 +528,8 @@ class _CreatePublishPageState extends State<CreatePublishPage> {
         body: Column(children: [
           Expanded(
             child: ListView(padding: const EdgeInsets.fromLTRB(16, 4, 16, 16), children: [
+              // garde : Afrolook met en avant les contenus authentiques, propres à la plateforme
+              if (isText) _authenticNote(c),
               Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 if (!isText) ...[_preview(c), const SizedBox(width: 12)],
                 Expanded(
