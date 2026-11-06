@@ -12,6 +12,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../l10n/tr.dart';
 import '../../services/api/studio_face_overlay_api.dart';
 import '../../services/beauty.dart';
+import '../../services/face_avatars.dart';
 import '../../services/face_engine.dart';
 import '../../services/face_filters.dart';
 import 'package:path_provider/path_provider.dart';
@@ -58,7 +59,8 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
   int _look = 0; // look de couleur (0 = aucun)
   int _magic = -1; // effet magique choisi (index dans FaceEngine.magic), -1 = aucun
   String _gesture = 'mouth'; // geste qui déclenche l'effet magique
-  String _group = 'none'; // groupe d'effets ouvert : face, color, mask, magic
+  String _group = 'none'; // groupe d'effets ouvert : face, color, mask, avatar, magic
+  FaceAvatar? _avatar; // avatar choisi (copie les expressions)
 
   // ── Filtres de visage en direct (Android) ──
   FaceFilter _filter = FaceFilter.none;
@@ -196,6 +198,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
         await FaceEngine.setMask(_filter);
         await FaceEngine.setDeformations(_deforms);
         await FaceEngine.setLook(_look);
+        await FaceEngine.setAvatar(_avatar);
         await FaceEngine.setMagic(_magic < 0 ? null : FaceEngine.magic[_magic], _gesture);
         return;
       } catch (_) {
@@ -222,6 +225,13 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
     setState(() => _look = look);
     try {
       await FaceEngine.setLook(look);
+    } catch (_) {}
+  }
+
+  Future<void> _pickAvatar(FaceAvatar? a) async {
+    setState(() => _avatar = _avatar?.key == a?.key ? null : a);
+    try {
+      await FaceEngine.setAvatar(_avatar);
     } catch (_) {}
   }
 
@@ -829,6 +839,11 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
           if (f == FaceFilter.none || f == FaceFilter.blur) continue;
           items.add(_engChip(key: ValueKey('mask_${f.name}'), icon: FaceEngine.maskIcon(f), label: FaceEngine.maskLabel(f), selected: _filter == f, onTap: off ? null : () => _pickFilter(_filter == f ? FaceFilter.none : f), c: c));
         }
+      case 'avatar':
+        items.add(_engChip(key: const ValueKey('avatar_none'), icon: Icons.block_rounded, label: 'Aucun', selected: _avatar == null, onTap: off ? null : () => _pickAvatar(null), c: c));
+        for (final av in FaceAvatar.all) {
+          items.add(_engChip(key: ValueKey('avatar_${av.key}'), icon: av.icon, label: av.label, selected: _avatar?.key == av.key, onTap: off ? null : () => _pickAvatar(av), c: c));
+        }
       case 'magic':
         items.add(_engChip(key: const ValueKey('magic_none'), icon: Icons.block_rounded, label: 'Aucun', selected: _magic < 0, onTap: off ? null : () => _pickMagic(_magic < 0 ? 0 : _magic), c: c));
         for (var m = 0; m < FaceEngine.magic.length; m++) {
@@ -899,6 +914,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
           group('face', Icons.face_retouching_natural_rounded, 'Visage', _deforms.isNotEmpty),
           group('color', Icons.palette_rounded, 'Couleur', _look != 0),
           group('mask', Icons.masks_rounded, 'Masques', _filter != FaceFilter.none),
+          group('avatar', Icons.theater_comedy_rounded, 'Avatars', _avatar != null),
           group('magic', Icons.auto_fix_high_rounded, 'Magie', _magic >= 0),
         ]),
       ),

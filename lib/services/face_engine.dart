@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import 'beauty.dart';
+import 'face_avatars.dart';
 import 'face_filters.dart';
 
 /// Une déformation du visage (elles se combinent entre elles).
@@ -176,6 +177,16 @@ class FaceEngine {
     }
     final png = await FaceFilters.filterPng(f, 512);
     await _channel.invokeMethod('setOverlay', {'png': Uint8List.fromList(png), 'anchor': p.anchor, 'size': p.size, 'dy': p.dy});
+  }
+
+  /// Avatar : un personnage dont les yeux et la bouche font comme les vôtres (`null` = retire l'avatar).
+  static Future<void> setAvatar(FaceAvatar? a) async {
+    if (a == null) {
+      await _channel.invokeMethod('setAvatar', {});
+      return;
+    }
+    final png = await a.render();
+    await _channel.invokeMethod('setAvatar', {'head': png[0], 'eye': png[1], 'mouth': png[2], 'headSize': a.headSize, 'eyeScale': a.eyeScale, 'mouthScale': a.mouthScale});
   }
 
   /// Effet magique [m] déclenché par le geste [gesture] (`null` = rien).

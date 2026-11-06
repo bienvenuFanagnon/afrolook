@@ -105,6 +105,23 @@ object FaceEngine {
                     if (bytes != null) v?.renderer?.particlePending = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
                     result.success(null)
                 }
+                "setAvatar" -> {
+                    // avatar : tête, œil et bouche (PNG) ; les yeux et la bouche s'ouvrent comme ceux de la personne
+                    val head = call.argument<ByteArray>("head")
+                    if (head == null) {
+                        v?.renderer?.avatarOn = false
+                    } else {
+                        val eye = call.argument<ByteArray>("eye")!!
+                        val mouth = call.argument<ByteArray>("mouth")!!
+                        val r = v?.renderer
+                        r?.avatarHeadSize = (call.argument<Double>("headSize") ?: 1.5).toFloat()
+                        r?.avatarEyeScale = (call.argument<Double>("eyeScale") ?: 1.0).toFloat()
+                        r?.avatarMouthScale = (call.argument<Double>("mouthScale") ?: 1.0).toFloat()
+                        r?.avatarPending = arrayOf(BitmapFactory.decodeByteArray(head, 0, head.size), BitmapFactory.decodeByteArray(eye, 0, eye.size), BitmapFactory.decodeByteArray(mouth, 0, mouth.size))
+                        r?.avatarOn = true
+                    }
+                    result.success(null)
+                }
                 "setLook" -> { v?.renderer?.look = (call.argument<Int>("look") ?: 0).toFloat(); result.success(null) }
                 "setOverlay" -> {
                     // image (PNG) posée sur le visage : `anchor` dit où (eyes, top, nose, corner, face, mouth, chin), `size` la taille en largeur de visage
@@ -479,6 +496,13 @@ class FaceRenderer : GLSurfaceView.Renderer {
     private var browBase = 0f
     private var smileBase = 0f
     private val rnd = java.util.Random()
+    // avatar : un personnage dont les yeux et la bouche suivent ceux de la personne
+    @Volatile var avatarOn = false
+    @Volatile var avatarPending: Array<Bitmap>? = null
+    @Volatile var avatarHeadSize = 1.5f
+    @Volatile var avatarEyeScale = 1f
+    @Volatile var avatarMouthScale = 1f
+    private val avTex = IntArray(3)
     @Volatile var look = 0f   // 0 aucun, 1 noir et blanc, 2 sépia, 3 vintage, 4 cinéma, 5 néon, 6 pop
     // image posée sur le visage (masque, lunettes, couronne…) qui suit la position, la taille et l'inclinaison de la tête
     @Volatile var overlayPending: Bitmap? = null
@@ -530,6 +554,7 @@ class FaceRenderer : GLSurfaceView.Renderer {
         ovProgram = buildOverlayProgram()
         ovTex = 0
         pTex = 0
+        avTex.fill(0)
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -678,7 +703,83 @@ class FaceRenderer : GLSurfaceView.Renderer {
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         GLES20.glDisableVertexAttribArray(pos)
         if (lm != null) drawOverlay(lm, csx, csy, aView)
+        if (lm != null) drawAvatar(lm, csx, csy, aView)
         drawParticles(aView)
+    }
+
+    private fun upload2d(tex: Int, bmp: Bitmap) {
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, tex)
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR)
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
+        GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bmp, 0)
+    }
+
+    /** Dessine un rectangle texturé centré en [c] (espace d'affichage), de [w] × [h] (en hauteur d'écran), incliné de [theta]. */
+    private fun quadAt(tex: Int, c: FloatArray, w: Float, h: Float, theta: Float, aspect: Float) {
+        val cs = cos(theta); val sn = sin(theta)
+        val ks = arrayOf(floatArrayOf(-.5f, -.5f), floatArrayOf(.5f, -.5f), floatArrayOf(-.5f, .5f), floatArrayOf(.5f, .5f))
+        ovBuf.clear()
+        for (k in ks) {
+            val lx = k[0] * w; val ly = k[1] * h
+            val rx = lx * cs - ly * sn; val ry = lx * sn + ly * cs
+            ovBuf.put((c[0] + rx / aspect) * 2f - 1f); ovBuf.put((c[1] + ry) * 2f - 1f)
+            ovBuf.put(k[0] + .5f); ovBuf.put(.5f - k[1])
+        }
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, tex)
+        val ap = GLES20.glGetAttribLocation(ovProgram, "aP"); val at = GLES20.glGetAttribLocation(ovProgram, "aT")
+        ovBuf.position(0); GLES20.glVertexAttribPointer(ap, 2, GLES20.GL_FLOAT, false, 16, ovBuf); GLES20.glEnableVertexAttribArray(ap)
+        ovBuf.position(2); GLES20.glVertexAttribPointer(at, 2, GLES20.GL_FLOAT, false, 16, ovBuf); GLES20.glEnableVertexAttribArray(at)
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+        GLES20.glDisableVertexAttribArray(ap); GLES20.glDisableVertexAttribArray(at)
+        ovBuf.position(0)
+    }
+
+    /** L'avatar remplace le visage : la tête suit la tête, chaque œil se ferme quand l'œil de la personne se ferme, la bouche s'ouvre comme sa bouche. */
+    private fun drawAvatar(lm: Landmarks, csx: Float, csy: Float, aspect: Float) {
+        avatarPending?.let { bm ->
+            avatarPending = null
+            for (i in 0 until 3) {
+                if (avTex[i] == 0) { val t = IntArray(1); GLES20.glGenTextures(1, t, 0); avTex[i] = t[0] }
+                upload2d(avTex[i], bm[i])
+                bm[i].recycle()
+            }
+        }
+        if (!avatarOn || avTex[0] == 0 || lm.x.size < 468) return
+        fun p(i: Int) = disp(lm, i, csx, csy)
+        val e1 = p(33); val e2 = p(263)
+        val a = if (e1[0] <= e2[0]) e1 else e2
+        val b = if (e1[0] <= e2[0]) e2 else e1
+        val theta = atan2(b[1] - a[1], (b[0] - a[0]) * aspect)
+        val faceW = dist(p(234), p(454), aspect)
+        val faceH = dist(p(10), p(152), aspect)
+        val faceC = mid(mid(p(234), p(454)), mid(p(10), p(152)))
+        GLES20.glUseProgram(ovProgram)
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(ovProgram, "uAlpha"), 1f)
+        GLES20.glEnable(GLES20.GL_BLEND)
+        GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA)
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(ovProgram, "uOv"), 0)
+        // la tête
+        val headSize = faceW * avatarHeadSize
+        quadAt(avTex[0], floatArrayOf(faceC[0], faceC[1] + faceH * 0.04f), headSize, headSize, theta, aspect)
+        // les yeux : ouverture = écart des paupières ÷ largeur de l'œil (0,26 environ yeux ouverts)
+        fun eye(top: Int, bottom: Int, outer: Int, inner: Int) {
+            val w = dist(p(outer), p(inner), aspect)
+            val open = (dist(p(top), p(bottom), aspect) / maxOf(0.001f, w) / 0.26f).coerceIn(0.07f, 1f)
+            val size = w * 1.9f * avatarEyeScale
+            quadAt(avTex[1], mid(p(outer), p(inner)), size, size * open, theta, aspect)
+        }
+        eye(159, 145, 33, 133)
+        eye(386, 374, 362, 263)
+        // la bouche : ouverture = écart des lèvres ÷ largeur de la bouche
+        val mw = dist(p(61), p(291), aspect)
+        val mopen = (dist(p(13), p(14), aspect) / maxOf(0.001f, mw) / 0.55f).coerceIn(0.10f, 1f)
+        val mc = mid(mid(p(61), p(291)), mid(p(13), p(14)))
+        val msize = mw * 1.35f * avatarMouthScale
+        quadAt(avTex[2], mc, msize, msize * 0.66f * mopen, theta, aspect)
+        GLES20.glDisable(GLES20.GL_BLEND)
     }
 
     private fun spawnParticle(x: Float, y: Float, vx: Float, vy: Float, size: Float, life: Float) {
