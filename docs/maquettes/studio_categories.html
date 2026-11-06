@@ -59,6 +59,14 @@ th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute
 .sizes{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:10px 0}
 .sizes>div{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px;font-size:12px}
 .sizes .ex{display:block;margin-bottom:6px;background:#fff;color:#15201a;border-radius:10px;padding:6px 8px;font-weight:800}
+.hand{position:absolute;width:34px;height:42px;border-radius:14px 14px 18px 18px;background:#c98a63;border:2px solid rgba(255,255,255,.7)}
+.hrt{position:absolute;width:16px;height:16px;transform:rotate(45deg);background:#ff3b5c;border-radius:3px}
+.hrt:before,.hrt:after{content:"";position:absolute;width:16px;height:16px;border-radius:50%;background:#ff3b5c}
+.hrt:before{left:-8px}.hrt:after{top:-8px}
+.bill{position:absolute;width:30px;height:18px;border-radius:4px;background:#2e9e57;border:1.5px solid #bfe8c9;color:#fff;font:700 9px/16px system-ui;text-align:center}
+.thought{position:absolute;left:50%;top:44px;transform:translateX(-10%);width:112px;min-height:68px;border-radius:50%;background:rgba(255,255,255,.95);color:#15201a;display:grid;place-items:center;padding:8px;box-shadow:0 8px 20px rgba(0,0,0,.35);font-size:11px;font-weight:800;text-align:center}
+.thought:before,.thought:after{content:"";position:absolute;border-radius:50%;background:rgba(255,255,255,.95)}
+.thought:before{width:14px;height:14px;left:6px;bottom:-14px}.thought:after{width:8px;height:8px;left:-4px;bottom:-26px}
 </style>
 </head>
 <body>
@@ -215,6 +223,9 @@ th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute
 <tr><td rowspan="3"><b>Commerce</b></td><td>Carte prix + lieu + contact + lien, boutons cliquables</td><td><span class="tag new">à faire</span></td></tr>
 <tr><td>WhatsApp avec message prêt, appel, lien dans l'application</td><td><span class="tag new">à faire</span></td></tr>
 <tr><td>Éléments réduits (pastille, compacte, complète), zoom au pincement, déplacement, zones protégées</td><td><span class="tag new">à faire</span></td></tr>
+<tr><td>Gestes de la main : signe cœur (cœurs depuis la poitrine), signe argent (billets depuis la tête), pouce, main ouverte, V</td><td><span class="tag new">à faire</span></td></tr>
+<tr><td>Bulle de pensée qui suit la tête (cœurs, billets, vidéo épinglée, photo)</td><td><span class="tag new">à faire</span></td></tr>
+<tr><td>Durée d'affichage réglable pour la vidéo épinglée, la bulle, les cartes</td><td><span class="tag new">à faire</span></td></tr>
 <tr><td>Statistiques des touchers pour le vendeur</td><td><span class="tag new">à faire</span></td></tr>
 <tr><td>Carte lien avec mini-aperçu (livres, produits) et bouton « Commander maintenant » seul cliquable</td><td><span class="tag new">à faire</span></td></tr>
 <tr><td rowspan="3"><b>Audio</b></td><td>Filmer sur une musique ou une voix, extrait au choix</td><td><span class="tag new">à faire</span></td></tr>
@@ -259,6 +270,56 @@ th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute
     </ul>
   </div>
 </div>
+
+<h2>6. Gestes de la main, signes et bulles de pensée</h2>
+<p class="lead">Le suivi des <b>mains</b> s'ajoute au suivi du visage (modèle gratuit de MediaPipe, sur le téléphone). Un signe de la main déclenche un effet, et l'effet sort de l'endroit logique : les cœurs depuis le cœur de la personne, l'argent depuis la tête. On peut aussi faire « penser » la personne : une <b>bulle de pensée</b> suit la tête et montre à quoi elle pense.</p>
+<div class="grid">
+  <div class="card"><div class="phone"><div class="screen">
+    <div class="top"><span class="btn">✕</span><span class="btn on">Signe cœur</span></div>
+    <div class="face"><span class="eye l"></span><span class="eye r"></span><span class="mouth"></span></div>
+    <div class="hand" style="left:96px;top:300px"></div><div class="hand" style="left:150px;top:300px"></div>
+    <span class="hrt" style="left:132px;top:268px"></span><span class="hrt" style="left:112px;top:240px;transform:rotate(45deg) scale(.7)"></span><span class="hrt" style="left:160px;top:236px;transform:rotate(45deg) scale(.8)"></span>
+    <div class="rec"><i></i></div>
+  </div></div><p class="note">Signe cœur avec les mains : des cœurs montent depuis la poitrine.</p></div>
+  <div class="card"><div class="phone"><div class="screen">
+    <div class="top"><span class="btn">✕</span><span class="btn on">Signe argent</span></div>
+    <div class="face"><span class="eye l"></span><span class="eye r"></span><span class="mouth"></span></div>
+    <span class="bill" style="left:118px;top:70px">F CFA</span><span class="bill" style="left:150px;top:46px;transform:rotate(-14deg)">$</span><span class="bill" style="left:94px;top:44px;transform:rotate(12deg)">F CFA</span><span class="bill" style="left:178px;top:80px;transform:rotate(18deg)">$</span>
+    <div class="hand" style="left:210px;top:330px"></div>
+    <div class="rec"><i></i></div>
+  </div></div><p class="note">Signe de l'argent (pouce et index qui se frottent) : billets et pièces sortent de la tête.</p></div>
+  <div class="card"><div class="phone"><div class="screen">
+    <div class="top"><span class="btn">✕</span><span class="btn on">Bulle de pensée</span></div>
+    <div class="thought"><div><span class="hrt" style="position:relative;display:inline-block;margin:0 10px 0 6px;transform:rotate(45deg) scale(.7)"></span><br>amour</div></div>
+    <div class="face" style="top:34%"><span class="eye l"></span><span class="eye r"></span><span class="mouth"></span></div>
+    <div class="rec"><i></i></div>
+  </div></div><p class="note">La bulle suit la tête. Contenu au choix : cœurs (je pense à l'amour), billets (je pense à l'argent), une vidéo épinglée (« je pense à cette vidéo »), une photo, une icône.</p></div>
+  <div class="card"><h3>Ce qui est prévu</h3>
+    <table>
+      <tr><th>Signe</th><th>Effet</th><th>Sort de</th></tr>
+      <tr><td>Signe cœur (2 mains ou pouce + index)</td><td>Cœurs</td><td>Du cœur (poitrine)</td></tr>
+      <tr><td>Signe argent (pouce et index qui se frottent)</td><td>Dollars, billets FCFA, pièces</td><td>De la tête</td></tr>
+      <tr><td>Pouce levé</td><td>« J'aime » géant, applaudissements</td><td>De la main</td></tr>
+      <tr><td>Main ouverte</td><td>Étoiles, confettis</td><td>De la paume</td></tr>
+      <tr><td>Signe V (paix)</td><td>Étincelles</td><td>De la main</td></tr>
+      <tr><td>Doigt sur la tempe</td><td>Ouvre la bulle de pensée</td><td>Au-dessus de la tête</td></tr>
+    </table>
+    <ul>
+      <li>Le signe se choisit comme les gestes du visage ; un texte dit toujours « Fais ce signe pour déclencher l'effet ».</li>
+      <li>Les gestes de la main et du visage se combinent (cœurs au signe cœur + billets au clin d'œil).</li>
+      <li><b>Bulle de pensée avec une vidéo épinglée</b> : la vidéo de l'autre apparaît dans la bulle, cliquable (ouvre l'original), avec sa durée d'affichage.</li>
+    </ul>
+  </div>
+</div>
+
+<h2>7. Durée d'affichage de la vidéo épinglée</h2>
+<p class="lead">Comme pour les messages à l'écran : la vidéo épinglée n'est pas obligée de rester tout le temps. On règle <b>de quand à quand</b> elle est visible (curseur à deux poignées sur la durée de notre vidéo), avec un apparition et une disparition douces. Même règle pour la bulle de pensée et les cartes Commerce.</p>
+<div class="card"><ul>
+  <li>Réglage « Afficher de 3,0 s à 9,5 s » sur la vidéo épinglée, la bulle de pensée, la carte Commerce et la carte lien.</li>
+  <li>Plusieurs éléments peuvent avoir chacun leur créneau (ex. la carte prix à 1 s, la vidéo épinglée de 3 s à 8 s, le lien à la fin).</li>
+  <li>Hors créneau, l'élément n'est pas visible et ne se touche pas ; au spectateur, un petit repère sur la barre de lecture montre quand il apparaît.</li>
+  <li>Pendant le créneau, la vidéo épinglée joue depuis le début (ou depuis un instant choisi de la vidéo d'origine).</li>
+</ul></div>
 
 <h2>À valider</h2>
 <div class="card">
