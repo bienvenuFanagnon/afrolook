@@ -2,7 +2,19 @@ package com.afrotok.afrotok
 
 import android.app.Activity
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
+import android.media.MediaCodec
+import android.media.MediaCodecInfo
+import android.media.MediaExtractor
+import android.media.MediaFormat
+import android.media.MediaMuxer
+import android.media.MediaRecorder
+import android.opengl.EGL14
+import android.opengl.EGLExt
+import android.opengl.EGLSurface
+import android.os.Handler
+import android.os.Looper
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
@@ -71,6 +83,17 @@ object FaceEngine {
                     result.success(null)
                 }
                 "status" -> result.success(v?.status() ?: mapOf("running" to false))
+                "takePhoto" -> {
+                    val path = call.argument<String>("path")
+                    if (v == null || path == null) result.error("no_view", "Vue du moteur absente", null) else v.renderer.takePhoto(path) { out -> Handler(Looper.getMainLooper()).post { if (out != null) result.success(out) else result.error("photo_failed", "Photo impossible", null) } }
+                }
+                "startRecording" -> {
+                    val path = call.argument<String>("path")
+                    if (v == null || path == null) result.error("no_view", "Vue du moteur absente", null) else v.startRecording(path, call.argument<Boolean>("audio") ?: true) { err -> Handler(Looper.getMainLooper()).post { if (err == null) result.success(null) else result.error("record_failed", err, null) } }
+                }
+                "stopRecording" -> {
+                    if (v == null) result.error("no_view", "Vue du moteur absente", null) else v.stopRecording { out, err -> Handler(Looper.getMainLooper()).post { if (out != null) result.success(out) else result.error("record_failed", err ?: "Enregistrement impossible", null) } }
+                }
                 else -> result.notImplemented()
             }
         }
@@ -93,6 +116,18 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
 
     init {
         glView.setEGLContextClientVersion(2)
+        // configuration EGL 8 bits par canal et « enregistrable » : le même contexte sert à dessiner aussi dans l'encodeur vidéo
+        glView.setEGLConfigChooser { egl, display ->
+            val attrs = intArrayOf(EGL14.EGL_RED_SIZE, 8, EGL14.EGL_GREEN_SIZE, 8, EGL14.EGL_BLUE_SIZE, 8, EGL14.EGL_ALPHA_SIZE, 8,
+                EGL14.EGL_RENDERABLE_TYPE, EGL14.EGL_OPENGL_ES2_BIT, 0x3142 /* EGL_RECORDABLE_ANDROID */, 1, EGL14.EGL_NONE)
+            val cfgs = arrayOfNulls<EGLConfig>(1)
+            val n = IntArray(1)
+            if (!egl.eglChooseConfig(display, attrs, cfgs, 1, n) || n[0] == 0) {
+                val basic = intArrayOf(EGL14.EGL_RED_SIZE, 8, EGL14.EGL_GREEN_SIZE, 8, EGL14.EGL_BLUE_SIZE, 8, EGL14.EGL_RENDERABLE_TYPE, EGL14.EGL_OPENGL_ES2_BIT, EGL14.EGL_NONE)
+                egl.eglChooseConfig(display, basic, cfgs, 1, n)
+            }
+            cfgs[0]
+        }
         glView.setRenderer(renderer)
         glView.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
         renderer.front = front
@@ -110,6 +145,86 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
     }
 
     fun status(): Map<String, Any?> = mapOf("running" to true, "frames" to framesAnalysed, "face" to (renderer.landmarks != null), "error" to lastError, "rotation" to renderer.rotTotal(), "mirror" to renderer.mirrorTotal())
+
+    private var audioRec: MediaRecorder? = null
+    private var tmpVideo: String? = null
+    private var tmpAudio: String? = null
+    private var finalPath: String? = null
+
+    /** Démarre l'enregistrement : la vidéo (avec les effets) est dessinée dans l'encodeur ; le son est enregistré à part puis réuni à la fin. */
+    fun startRecording(path: String, audio: Boolean, done: (String?) -> Unit) {
+        finalPath = path
+        tmpVideo = "$path.video.mp4"
+        tmpAudio = if (audio) "$path.audio.m4a" else null
+        if (audio) {
+            try {
+                audioRec = MediaRecorder().apply {
+                    setAudioSource(MediaRecorder.AudioSource.MIC)
+                    setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                    setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                    setAudioEncodingBitRate(128000)
+                    setAudioSamplingRate(44100)
+                    setOutputFile(tmpAudio)
+                    prepare()
+                    start()
+                }
+            } catch (e: Throwable) {
+                audioRec = null; tmpAudio = null   // pas de micro : la vidéo est enregistrée sans son
+                FaceEngine.log("Micro indisponible : ${e.message}")
+            }
+        }
+        renderer.startRecording(tmpVideo!!, done)
+    }
+
+    fun stopRecording(done: (String?, String?) -> Unit) {
+        renderer.stopRecording { videoOk, err ->
+            try { audioRec?.stop() } catch (_: Throwable) {}
+            try { audioRec?.release() } catch (_: Throwable) {}
+            audioRec = null
+            Thread {
+                try {
+                    if (!videoOk) { done(null, err); return@Thread }
+                    mux(tmpVideo!!, tmpAudio, finalPath!!)
+                    java.io.File(tmpVideo!!).delete()
+                    tmpAudio?.let { java.io.File(it).delete() }
+                    done(finalPath, null)
+                } catch (e: Throwable) { done(null, "assemblage : ${e.message}") }
+            }.start()
+        }
+    }
+
+    /** Réunit la vidéo et le son (deux fichiers terminés) dans un seul MP4, sans réencoder. */
+    private fun mux(video: String, audio: String?, out: String) {
+        val muxer = MediaMuxer(out, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
+        val ve = MediaExtractor().apply { setDataSource(video) }
+        val vIdx = (0 until ve.trackCount).first { ve.getTrackFormat(it).getString(MediaFormat.KEY_MIME)!!.startsWith("video/") }
+        ve.selectTrack(vIdx)
+        val vTrack = muxer.addTrack(ve.getTrackFormat(vIdx))
+        var ae: MediaExtractor? = null
+        var aTrack = -1
+        if (audio != null && java.io.File(audio).length() > 0) {
+            try {
+                val e = MediaExtractor().apply { setDataSource(audio) }
+                val aIdx = (0 until e.trackCount).firstOrNull { e.getTrackFormat(it).getString(MediaFormat.KEY_MIME)!!.startsWith("audio/") }
+                if (aIdx != null) { e.selectTrack(aIdx); aTrack = muxer.addTrack(e.getTrackFormat(aIdx)); ae = e }
+            } catch (_: Throwable) { ae = null }
+        }
+        muxer.start()
+        fun copy(ex: MediaExtractor, track: Int) {
+            val buf = ByteBuffer.allocate(1 shl 20)
+            val info = MediaCodec.BufferInfo()
+            while (true) {
+                val size = ex.readSampleData(buf, 0)
+                if (size < 0) break
+                info.set(0, size, ex.sampleTime, if (ex.sampleFlags and MediaExtractor.SAMPLE_FLAG_SYNC != 0) MediaCodec.BUFFER_FLAG_KEY_FRAME else 0)
+                muxer.writeSampleData(track, buf, info)
+                ex.advance()
+            }
+        }
+        copy(ve, vTrack)
+        if (ae != null && aTrack >= 0) copy(ae, aTrack)
+        muxer.stop(); muxer.release(); ve.release(); ae?.release()
+    }
 
     fun setFront(f: Boolean) {
         front = f
@@ -238,6 +353,29 @@ class FaceRenderer : GLSurfaceView.Renderer {
         GLES20.glViewport(0, 0, width, height)
     }
 
+    @Volatile private var photoPath: String? = null
+    @Volatile private var photoCb: ((String?) -> Unit)? = null
+    private var recorder: GlRecorder? = null
+    private var recFirstTs = -1L
+
+    fun takePhoto(path: String, cb: (String?) -> Unit) { photoCb = cb; photoPath = path }
+
+    fun startRecording(path: String, done: (String?) -> Unit) {
+        val rw = 720
+        val rh = (((rw.toFloat() * viewH / viewW) / 2f).toInt() * 2).coerceIn(640, 1600)
+        try {
+            val r = GlRecorder(path, rw, rh)
+            pendingRecorder = r
+            recFirstTs = -1L
+            done(null)
+        } catch (e: Throwable) { done("encodeur : ${e.message}") }
+    }
+
+    @Volatile private var pendingRecorder: GlRecorder? = null
+    @Volatile private var stopCb: ((Boolean, String?) -> Unit)? = null
+
+    fun stopRecording(cb: (Boolean, String?) -> Unit) { stopCb = cb }
+
     override fun onDrawFrame(gl: GL10?) {
         val st0 = surfaceTexture ?: return
         pending?.let { req ->
@@ -249,16 +387,66 @@ class FaceRenderer : GLSurfaceView.Renderer {
         }
         if (frameReady) { frameReady = false; try { st0.updateTexImage() } catch (_: Throwable) {} }
         st0.getTransformMatrix(st)
+
+        // 1) l'écran
+        drawScene(viewW, viewH)
+
+        // 2) une photo demandée : lecture des pixels de l'écran
+        val pp = photoPath
+        if (pp != null) {
+            photoPath = null
+            val cb = photoCb
+            try {
+                val buf = ByteBuffer.allocateDirect(viewW * viewH * 4).order(ByteOrder.nativeOrder())
+                GLES20.glReadPixels(0, 0, viewW, viewH, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, buf)
+                val w = viewW; val h = viewH
+                Thread {
+                    try {
+                        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+                        bmp.copyPixelsFromBuffer(buf)
+                        val flip = android.graphics.Matrix().apply { preScale(1f, -1f) }
+                        val up = Bitmap.createBitmap(bmp, 0, 0, w, h, flip, true)
+                        java.io.FileOutputStream(pp).use { up.compress(Bitmap.CompressFormat.JPEG, 92, it) }
+                        cb?.invoke(pp)
+                    } catch (e: Throwable) { cb?.invoke(null) }
+                }.start()
+            } catch (e: Throwable) { cb?.invoke(null) }
+        }
+
+        // 3) l'enregistrement : même scène dessinée dans l'encodeur vidéo
+        pendingRecorder?.let { r -> pendingRecorder = null; try { r.attachEgl(); recorder = r } catch (e: Throwable) { FaceEngine.log("EGL enregistrement : ${e.message}"); r.release() } }
+        val rec = recorder
+        if (rec != null) {
+            try {
+                if (recFirstTs < 0) recFirstTs = st0.timestamp
+                rec.drawFrame(st0.timestamp - recFirstTs) { drawScene(rec.w, rec.h) }
+            } catch (e: Throwable) { FaceEngine.log("Image enregistrée : ${e.message}") }
+            val cb = stopCb
+            if (cb != null) {
+                stopCb = null
+                recorder = null
+                val err = rec.finish()
+                cb(err == null, err)
+            }
+        } else {
+            val cb = stopCb
+            if (cb != null) { stopCb = null; cb(false, "aucun enregistrement en cours") }
+        }
+    }
+
+    /** Dessine la caméra avec les effets dans une zone de [w] × [h] pixels (l'écran ou l'encodeur). */
+    private fun drawScene(w: Int, h: Int) {
+        GLES20.glViewport(0, 0, w, h)
         GLES20.glClearColor(0f, 0f, 0f, 1f)
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
         GLES20.glUseProgram(program)
 
-        // image redressée : dimensions après rotation, puis recadrage au format de l'écran (comme CameraPreview en mode « cover »)
+        // image redressée : dimensions après rotation, puis recadrage au format de la zone (comme CameraPreview en mode « cover »)
         val rot = rotTotal()
         val upW = if (rot % 180 == 0) bufW else bufH
         val upH = if (rot % 180 == 0) bufH else bufW
         val aImg = upW.toFloat() / upH
-        val aView = viewW.toFloat() / viewH
+        val aView = w.toFloat() / h
         val csx = if (aView < aImg) aImg / aView else 1f
         val csy = if (aView < aImg) 1f else aView / aImg
 
@@ -395,5 +583,96 @@ class FaceRenderer : GLSurfaceView.Renderer {
         GLES20.glGetShaderiv(sh, GLES20.GL_COMPILE_STATUS, ok, 0)
         if (ok[0] == 0) FaceEngine.log("Shader GL : ${GLES20.glGetShaderInfoLog(sh)}")
         return sh
+    }
+}
+
+
+/** Encodeur vidéo H.264 alimenté par une surface : la scène OpenGL (caméra + effets) y est dessinée image par image. La vidéo est écrite sans son (réuni ensuite). */
+class GlRecorder(path: String, val w: Int, val h: Int) {
+    private val encoder: MediaCodec = MediaCodec.createEncoderByType("video/avc")
+    private val inputSurface: Surface
+    private val muxer = MediaMuxer(path, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
+    private val info = MediaCodec.BufferInfo()
+    private var track = -1
+    private var started = false
+    private var display = EGL14.EGL_NO_DISPLAY
+    private var context = EGL14.EGL_NO_CONTEXT
+    private var eglSurface: EGLSurface = EGL14.EGL_NO_SURFACE
+    private var frames = 0
+
+    init {
+        val fmt = MediaFormat.createVideoFormat("video/avc", w, h).apply {
+            setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface)
+            setInteger(MediaFormat.KEY_BIT_RATE, 6_000_000)
+            setInteger(MediaFormat.KEY_FRAME_RATE, 30)
+            setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1)
+        }
+        encoder.configure(fmt, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
+        inputSurface = encoder.createInputSurface()
+        encoder.start()
+    }
+
+    /** À appeler sur le fil OpenGL : crée la surface d'écriture avec la configuration du contexte courant. */
+    fun attachEgl() {
+        display = EGL14.eglGetCurrentDisplay()
+        context = EGL14.eglGetCurrentContext()
+        val id = IntArray(1)
+        EGL14.eglQueryContext(display, context, EGL14.EGL_CONFIG_ID, id, 0)
+        val cfgs = arrayOfNulls<android.opengl.EGLConfig>(1)
+        val n = IntArray(1)
+        EGL14.eglChooseConfig(display, intArrayOf(EGL14.EGL_CONFIG_ID, id[0], EGL14.EGL_NONE), 0, cfgs, 0, 1, n, 0)
+        eglSurface = EGL14.eglCreateWindowSurface(display, cfgs[0], inputSurface, intArrayOf(EGL14.EGL_NONE), 0)
+    }
+
+    fun drawFrame(timestampNs: Long, draw: () -> Unit) {
+        val prevDraw = EGL14.eglGetCurrentSurface(EGL14.EGL_DRAW)
+        val prevRead = EGL14.eglGetCurrentSurface(EGL14.EGL_READ)
+        EGL14.eglMakeCurrent(display, eglSurface, eglSurface, context)
+        draw()
+        EGLExt.eglPresentationTimeANDROID(display, eglSurface, maxOf(0L, timestampNs))
+        EGL14.eglSwapBuffers(display, eglSurface)
+        EGL14.eglMakeCurrent(display, prevDraw, prevRead, context)
+        frames++
+        drain(false)
+    }
+
+    private fun drain(end: Boolean) {
+        if (end) encoder.signalEndOfInputStream()
+        while (true) {
+            val i = encoder.dequeueOutputBuffer(info, if (end) 10_000 else 0)
+            when {
+                i == MediaCodec.INFO_TRY_AGAIN_LATER -> { if (!end) return }
+                i == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> { track = muxer.addTrack(encoder.outputFormat); muxer.start(); started = true }
+                i >= 0 -> {
+                    val buf = encoder.getOutputBuffer(i)
+                    if (info.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG != 0) info.size = 0
+                    if (info.size > 0 && started && buf != null) {
+                        buf.position(info.offset); buf.limit(info.offset + info.size)
+                        muxer.writeSampleData(track, buf, info)
+                    }
+                    encoder.releaseOutputBuffer(i, false)
+                    if (info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) return
+                }
+            }
+        }
+    }
+
+    /** Termine l'enregistrement : rend null si tout va bien, sinon la cause. */
+    fun finish(): String? {
+        return try {
+            if (frames == 0) { release(); return "aucune image enregistrée" }
+            drain(true)
+            release()
+            null
+        } catch (e: Throwable) { release(); e.message ?: "erreur d'encodage" }
+    }
+
+    fun release() {
+        try { encoder.stop() } catch (_: Throwable) {}
+        try { encoder.release() } catch (_: Throwable) {}
+        try { if (started) muxer.stop() } catch (_: Throwable) {}
+        try { muxer.release() } catch (_: Throwable) {}
+        try { if (eglSurface != EGL14.EGL_NO_SURFACE) EGL14.eglDestroySurface(display, eglSurface) } catch (_: Throwable) {}
+        try { inputSurface.release() } catch (_: Throwable) {}
     }
 }

@@ -6,7 +6,9 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:video_player/video_player.dart';
 
 /// Laboratoire du moteur maison d'effets de visage (Android, version d'essai, visible seulement dans les APK de test) :
 /// caméra en direct avec déformations (gros yeux, grande bouche, gros nez, visage fin). Les boutons « Tourner » et « Miroir » servent à régler l'orientation
@@ -31,6 +33,8 @@ class _FaceLabPageState extends State<FaceLabPage> {
   bool _mirror = false;
   Map<dynamic, dynamic> _status = const {};
   Timer? _timer;
+  bool _recording = false;
+  String? _result;
 
   static const _effects = [
     ('none', 'Aucun', '🚫'),
@@ -67,6 +71,46 @@ class _FaceLabPageState extends State<FaceLabPage> {
   Future<void> _set(String effect) async {
     setState(() => _effect = effect);
     await _channel.invokeMethod('setEffect', {'name': effect});
+  }
+
+  Future<String> _tmp(String ext) async => '${(await getTemporaryDirectory()).path}/labo_${DateTime.now().millisecondsSinceEpoch}.$ext';
+
+  Future<void> _photo() async {
+    try {
+      final out = await _channel.invokeMethod<String>('takePhoto', {'path': await _tmp('jpg')});
+      if (!mounted) return;
+      setState(() => _result = 'Photo : $out');
+      await showDialog<void>(context: context, builder: (c) => Dialog(child: Image.file(File(out!))));
+    } catch (e) {
+      if (mounted) setState(() => _result = 'Photo impossible : $e');
+    }
+  }
+
+  Future<void> _toggleRecording() async {
+    try {
+      if (!_recording) {
+        await _channel.invokeMethod('startRecording', {'path': await _tmp('mp4'), 'audio': await Permission.microphone.request().isGranted});
+        if (mounted) setState(() => _recording = true);
+      } else {
+        setState(() => _recording = false);
+        final out = await _channel.invokeMethod<String>('stopRecording');
+        if (!mounted) return;
+        final size = File(out!).lengthSync();
+        setState(() => _result = 'Vidéo : $out (${(size / 1024).round()} Ko)');
+        final v = VideoPlayerController.file(File(out));
+        await v.initialize();
+        await v.setLooping(true);
+        await v.play();
+        if (!mounted) return;
+        await showDialog<void>(context: context, builder: (c) => Dialog(child: AspectRatio(aspectRatio: v.value.aspectRatio, child: VideoPlayer(v))));
+        await v.dispose();
+      }
+    } catch (e) {
+      if (mounted) setState(() {
+        _recording = false;
+        _result = 'Enregistrement impossible : $e';
+      });
+    }
   }
 
   Future<void> _orient() => _channel.invokeMethod('setOrientation', {'rotation': _rot, 'mirror': _mirror});
@@ -116,8 +160,19 @@ class _FaceLabPageState extends State<FaceLabPage> {
                 style: const TextStyle(color: Colors.white, fontSize: 12.5),
               ),
             ),
+            if (_result != null)
+              Padding(padding: const EdgeInsets.fromLTRB(16, 6, 16, 0), child: Text(_result!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 12))),
             const SizedBox(height: 8),
             Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              IconButton.filled(key: const ValueKey('lab_photo'), onPressed: _recording ? null : _photo, icon: const Icon(Icons.photo_camera_rounded)),
+              const SizedBox(width: 12),
+              IconButton.filled(
+                key: const ValueKey('lab_rec'),
+                style: IconButton.styleFrom(backgroundColor: _recording ? Colors.white : const Color(0xFFE5383B)),
+                onPressed: _toggleRecording,
+                icon: Icon(_recording ? Icons.stop_rounded : Icons.fiber_manual_record_rounded, color: _recording ? Colors.black : Colors.white),
+              ),
+              const SizedBox(width: 12),
               OutlinedButton(
                 key: const ValueKey('lab_rot'),
                 onPressed: () async {
