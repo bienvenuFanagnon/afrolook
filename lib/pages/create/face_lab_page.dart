@@ -29,7 +29,8 @@ class _FaceLabPageState extends State<FaceLabPage> {
   bool _ready = false;
   bool _front = true;
   String _effect = 'none';
-  int _rot = 0;
+  int _rot = 90; // réglage par défaut mesuré : image droite avec miroir
+  bool _points = true;
   bool _mirror = false;
   Map<dynamic, dynamic> _status = const {};
   Timer? _timer;
@@ -164,6 +165,16 @@ class _FaceLabPageState extends State<FaceLabPage> {
               Padding(padding: const EdgeInsets.fromLTRB(16, 6, 16, 0), child: Text(_result!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 12))),
             const SizedBox(height: 8),
             Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+              OutlinedButton(
+                key: const ValueKey('lab_points'),
+                onPressed: () async {
+                  setState(() => _points = !_points);
+                  await _channel.invokeMethod('setPoints', {'show': _points});
+                },
+                style: OutlinedButton.styleFrom(side: BorderSide(color: _points ? const Color(0xFFFFC400) : Colors.white54)),
+                child: Text(_points ? 'Points ✓' : 'Points', style: const TextStyle(color: Colors.white)),
+              ),
+              const SizedBox(width: 10),
               IconButton.filled(key: const ValueKey('lab_photo'), onPressed: _recording ? null : _photo, icon: const Icon(Icons.photo_camera_rounded)),
               const SizedBox(width: 12),
               IconButton.filled(

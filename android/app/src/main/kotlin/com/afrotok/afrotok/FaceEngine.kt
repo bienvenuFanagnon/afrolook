@@ -82,6 +82,7 @@ object FaceEngine {
                     v?.renderer?.mirror = call.argument<Boolean>("mirror") ?: false
                     result.success(null)
                 }
+                "setPoints" -> { v?.renderer?.showPoints = call.argument<Boolean>("show") ?: true; result.success(null) }
                 "status" -> result.success(v?.status() ?: mapOf("running" to false))
                 "takePhoto" -> {
                     val path = call.argument<String>("path")
@@ -311,7 +312,9 @@ class FaceRenderer : GLSurfaceView.Renderer {
     @Volatile var landmarks: Landmarks? = null
     @Volatile var effect: String = "none"
     @Volatile var front: Boolean = true
-    @Volatile var rotOffset: Int = 0
+    @Volatile var rotOffset: Int = 90   // mesuré sur un Pixel 8 Pro, caméra avant : image droite avec rotation totale 0° et miroir
+    @Volatile var showPoints: Boolean = true   // points de repère du visage dessinés par-dessus (essais)
+    private var ptProgram = 0
     @Volatile var mirror: Boolean = false
 
     @Volatile private var pending: SurfaceRequest? = null
@@ -346,6 +349,7 @@ class FaceRenderer : GLSurfaceView.Renderer {
         GLES20.glTexParameteri(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
         surfaceTexture = SurfaceTexture(texId).also { it.setOnFrameAvailableListener { frameReady = true } }
         program = buildProgram()
+        ptProgram = buildPointProgram()
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -413,6 +417,9 @@ class FaceRenderer : GLSurfaceView.Renderer {
             } catch (e: Throwable) { cb?.invoke(null) }
         }
 
+        // les points de repère se dessinent sur l'écran seulement (jamais dans la photo ni la vidéo)
+        if (showPoints) drawPoints()
+
         // 3) l'enregistrement : même scène dessinée dans l'encodeur vidéo
         pendingRecorder?.let { r -> pendingRecorder = null; try { r.attachEgl(); recorder = r } catch (e: Throwable) { FaceEngine.log("EGL enregistrement : ${e.message}"); r.release() } }
         val rec = recorder
@@ -443,9 +450,7 @@ class FaceRenderer : GLSurfaceView.Renderer {
 
         // image redressée : dimensions après rotation, puis recadrage au format de la zone (comme CameraPreview en mode « cover »)
         val rot = rotTotal()
-        val upW = if (rot % 180 == 0) bufW else bufH
-        val upH = if (rot % 180 == 0) bufH else bufW
-        val aImg = upW.toFloat() / upH
+        val aImg = uprightAspect()
         val aView = w.toFloat() / h
         val csx = if (aView < aImg) aImg / aView else 1f
         val csy = if (aView < aImg) 1f else aView / aImg
@@ -487,6 +492,63 @@ class FaceRenderer : GLSurfaceView.Renderer {
         GLES20.glVertexAttribPointer(pos, 2, GLES20.GL_FLOAT, false, 0, quad)
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         GLES20.glDisableVertexAttribArray(pos)
+    }
+
+    /**
+     * Format (largeur ÷ hauteur) de l'image REDRESSÉE. Il dépend de la vraie rotation de la caméra (90° ou 270° sur un téléphone tenu droit : l'image
+     * du capteur est couchée, donc la redressée est plus haute que large), jamais des boutons d'essai « Tourner » qui ne font que choisir le sens.
+     */
+    private fun uprightAspect(): Float {
+        val sideways = infoRotation % 180 != 0
+        val upW = if (sideways) bufH else bufW
+        val upH = if (sideways) bufW else bufH
+        return upW.toFloat() / upH
+    }
+
+    /** Recadrage (comme dans drawScene) pour une zone de [w] × [h] pixels. */
+    private fun crop(w: Int, h: Int): FloatArray {
+        val aImg = uprightAspect()
+        val aView = w.toFloat() / h
+        return floatArrayOf(if (aView < aImg) aImg / aView else 1f, if (aView < aImg) 1f else aView / aImg)
+    }
+
+    /** Dessine les points du visage : les 478 en petits points jaunes, puis yeux, nez et bouche en gros points de couleur. */
+    private fun drawPoints() {
+        val lm = landmarks ?: return
+        val n = lm.x.size
+        if (n < 468) return
+        GLES20.glViewport(0, 0, viewW, viewH)
+        val c = crop(viewW, viewH)
+        fun put(buf: FloatArray, k: Int, i: Int) { val p = disp(lm, i, c[0], c[1]); buf[k * 2] = p[0] * 2f - 1f; buf[k * 2 + 1] = p[1] * 2f - 1f }
+        fun draw(idx: IntArray, size: Float, r: Float, g: Float, b: Float) {
+            val arr = FloatArray(idx.size * 2)
+            for (k in idx.indices) put(arr, k, idx[k])
+            val fb = ByteBuffer.allocateDirect(arr.size * 4).order(ByteOrder.nativeOrder()).asFloatBuffer().apply { put(arr); position(0) }
+            GLES20.glUseProgram(ptProgram)
+            GLES20.glUniform1f(GLES20.glGetUniformLocation(ptProgram, "uSize"), size)
+            GLES20.glUniform4f(GLES20.glGetUniformLocation(ptProgram, "uCol"), r, g, b, 1f)
+            val pos = GLES20.glGetAttribLocation(ptProgram, "aP")
+            GLES20.glEnableVertexAttribArray(pos)
+            GLES20.glVertexAttribPointer(pos, 2, GLES20.GL_FLOAT, false, 0, fb)
+            GLES20.glDrawArrays(GLES20.GL_POINTS, 0, idx.size)
+            GLES20.glDisableVertexAttribArray(pos)
+        }
+        draw(IntArray(minOf(n, 478)) { it }, 7f, 1f, 0.85f, 0f)                    // tous les points : jaune
+        draw(intArrayOf(33, 133, 362, 263), 20f, 0f, 0.9f, 1f)                     // coins des yeux : cyan
+        draw(intArrayOf(1), 24f, 1f, 0.2f, 0.2f)                                   // bout du nez : rouge
+        draw(intArrayOf(13, 14, 61, 291), 20f, 1f, 0f, 0.8f)                       // bouche : rose
+        draw(intArrayOf(234, 454, 10, 152), 20f, 0.3f, 1f, 0.3f)                   // contour du visage : vert
+    }
+
+    private fun buildPointProgram(): Int {
+        val vs = "attribute vec2 aP; uniform float uSize; void main() { gl_Position = vec4(aP, 0.0, 1.0); gl_PointSize = uSize; }"
+        val fs = "precision mediump float; uniform vec4 uCol; void main() { gl_FragColor = uCol; }"
+        val v = compile(GLES20.GL_VERTEX_SHADER, vs)
+        val f = compile(GLES20.GL_FRAGMENT_SHADER, fs)
+        val prog = GLES20.glCreateProgram()
+        GLES20.glAttachShader(prog, v); GLES20.glAttachShader(prog, f)
+        GLES20.glLinkProgram(prog)
+        return prog
     }
 
     /** Position d'un point du visage dans l'espace d'affichage (0 à 1, y vers le haut). */
