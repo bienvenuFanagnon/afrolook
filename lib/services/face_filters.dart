@@ -59,15 +59,26 @@ class FaceFilters {
   static String? lastError;
 
   /// Fait télécharger le module de visage de Google Play si besoin (première utilisation) ; rend faux si impossible (pas de connexion, Play indisponible).
-  static Future<bool> ensureReady() async {
+  static Future<bool> ensureReady({void Function(String state, double? progress)? onProgress}) async {
     if (!available) return false;
+    // la progression du téléchargement est interrogée pendant que l'installation se fait
+    final poll = Timer.periodic(const Duration(milliseconds: 500), (_) async {
+      try {
+        final s = Map<String, dynamic>.from(await _channel.invokeMethod('moduleStatus') as Map);
+        final total = (s['total'] as num?)?.toDouble() ?? 0;
+        final bytes = (s['bytes'] as num?)?.toDouble() ?? 0;
+        onProgress?.call('${s['state']}', total > 0 ? (bytes / total).clamp(0.0, 1.0) : null);
+      } catch (_) {}
+    });
     try {
-      await _channel.invokeMethod('ensureModule').timeout(const Duration(seconds: 60));
-      lastError = null;
-      return true;
+      final ok = await _channel.invokeMethod('ensureModule').timeout(const Duration(minutes: 5));
+      lastError = ok == true ? null : 'module non disponible';
+      return ok == true;
     } catch (e) {
       lastError = e is PlatformException ? (e.message ?? e.code) : e.toString();
       return false;
+    } finally {
+      poll.cancel();
     }
   }
 

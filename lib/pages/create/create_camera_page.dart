@@ -66,6 +66,10 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
   final List<FaceTrackPoint> _faceTrack = []; // trajectoire du centre du visage, pour adoucir la peau
   final Stopwatch _recWatch = Stopwatch();
   bool _moduleReady = false;
+  bool _preparing = false; // téléchargement du module de visage en cours
+  bool _prepFailed = false;
+  String _prepState = 'PENDING';
+  double? _prepValue;
   int _framesSeen = 0; // images reçues du flux (diagnostic des APK de test)
   String? _streamErr;
   String? _filterNote; // message affiché sur l'aperçu (préparation, visage non trouvé, erreur)
@@ -197,9 +201,8 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
       if (f == FaceFilter.none) _liveFaces = const [];
     });
     if (f != FaceFilter.none && !_moduleReady) {
-      // première utilisation : le téléphone télécharge le module de visage (Google Play) ; on le dit à la personne
-      setState(() => _filterNote = context.tr('Préparation du filtre… (téléchargement du module de visage)'));
-      _moduleReady = await FaceFilters.ensureReady();
+      // première utilisation : le téléphone télécharge le module de visage (Google Play) ; la progression est affichée
+      await _prepareModule();
       if (!mounted) return;
       if (!_moduleReady) {
         setState(() {
@@ -208,9 +211,69 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
         });
         return;
       }
-      setState(() => _filterNote = null);
     }
     await _syncStream();
+  }
+
+  /// Prépare le module de visage de Google Play (téléchargement la première fois) en montrant « Préparation du studio » et la progression.
+  Future<void> _prepareModule() async {
+    if (_preparing) {
+      while (_preparing && mounted) {
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+      }
+      return;
+    }
+    setState(() {
+      _preparing = true;
+      _prepFailed = false;
+      _prepState = 'PENDING';
+      _prepValue = null;
+    });
+    final ok = await FaceFilters.ensureReady(onProgress: (state, p) {
+      if (mounted) setState(() {
+        _prepState = state;
+        _prepValue = p;
+      });
+    });
+    _moduleReady = ok;
+    if (mounted) setState(() {
+      _preparing = false;
+      _prepFailed = !ok;
+    });
+  }
+
+  /// Carte « Préparation du studio » : visible tant que le module de visage se télécharge (avec le pourcentage), puis message et bouton Réessayer si ça échoue.
+  Widget _prepCard(AppColors c) {
+    final pct = _prepValue == null ? null : (_prepValue! * 100).round();
+    final detail = _prepFailed
+        ? context.tr('Le module de visage n\'a pas pu être téléchargé. Vérifie ta connexion.')
+        : switch (_prepState) {
+            'DOWNLOADING' => pct == null ? context.tr('Téléchargement du module de visage…') : context.tr('Téléchargement du module de visage : {p} %', {'p': '$pct'}),
+            'INSTALLING' => context.tr('Installation du module de visage…'),
+            'PAUSED' => context.tr('Téléchargement en pause (connexion ?)'),
+            _ => context.tr('Vérification du module de visage…'),
+          };
+    return Positioned(
+      left: 24,
+      right: 24,
+      top: 200,
+      child: Container(
+        key: const ValueKey('studio_prep'),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: const Color(0xDD15171A), borderRadius: BorderRadius.circular(16)),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text(context.tr('Préparation du studio'), style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 10),
+          if (!_prepFailed) LinearProgressIndicator(value: _prepValue, minHeight: 6, color: c.accent, backgroundColor: Colors.white24),
+          const SizedBox(height: 10),
+          Text(detail, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 13)),
+          if (_prepFailed) ...[
+            const SizedBox(height: 10),
+            FilledButton(key: const ValueKey('studio_prep_retry'), onPressed: _prepareModule, style: FilledButton.styleFrom(backgroundColor: c.accent, foregroundColor: c.onAccent), child: Text(context.tr('Réessayer'))),
+          ],
+        ]),
+      ),
+    );
   }
 
   /// Lit les images de la caméra seulement si un filtre est choisi ou si la peau doit être adoucie (sinon aucun coût).
@@ -220,7 +283,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
     final c = _ctrl;
     if (c == null || !c.value.isInitialized || !FaceFilters.available) return;
     try {
-      if (_needsStream && !_moduleReady) _moduleReady = await FaceFilters.ensureReady();
+      if (_needsStream && !_moduleReady) await _prepareModule();
       if (!mounted) return;
       if (_needsStream && _moduleReady && !_streaming) {
         _streaming = true;
@@ -465,6 +528,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
       const Positioned(top: 0, left: 0, right: 0, height: 130, child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xAA000000), Color(0x00000000)])))),
       const Positioned(bottom: 0, left: 0, right: 0, height: 260, child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter, colors: [Color(0xCC000000), Color(0x00000000)])))),
       if (_filterNote != null) _filterBanner(),
+      if (_preparing || _prepFailed) _prepCard(c),
       if (const bool.fromEnvironment('TEST_BUILD') && FaceFilters.available) _diagnostic(),
       SafeArea(
         child: Column(children: [

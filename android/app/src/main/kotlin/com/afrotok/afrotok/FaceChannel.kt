@@ -4,7 +4,9 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.content.Context
 import android.graphics.Matrix
+import com.google.android.gms.common.moduleinstall.InstallStatusListener
 import com.google.android.gms.common.moduleinstall.ModuleInstall
+import com.google.android.gms.common.moduleinstall.ModuleInstallStatusUpdate
 import com.google.android.gms.common.moduleinstall.ModuleInstallRequest
 import androidx.exifinterface.media.ExifInterface
 import com.google.mlkit.vision.common.InputImage
@@ -25,6 +27,9 @@ import java.io.FileOutputStream
  */
 object FaceChannel {
     private const val NAME = "afrolook/faces"
+    @Volatile private var modState = "IDLE"
+    @Volatile private var modBytes = 0L
+    @Volatile private var modTotal = 0L
     private const val MAX_SIDE = 1600
 
     /** Détecteur gardé pour le direct (une image toutes les ~150 ms) : le recréer à chaque image coûterait trop cher. */
@@ -49,6 +54,10 @@ object FaceChannel {
     fun register(engine: FlutterEngine, context: Context) {
         val cacheDir = context.cacheDir
         MethodChannel(engine.dartExecutor.binaryMessenger, NAME).setMethodCallHandler { call, result ->
+            if (call.method == "moduleStatus") {
+                result.success(mapOf("state" to modState, "bytes" to modBytes, "total" to modTotal))
+                return@setMethodCallHandler
+            }
             if (call.method == "ensureModule") {
                 // Le modèle de visage (ML Kit non groupé) est fourni par les services Google Play : on le fait télécharger AVANT la première détection,
                 // sinon elle échoue silencieusement tant que le module n'est pas là (cas d'une application installée hors du Play Store).
@@ -57,11 +66,30 @@ object FaceChannel {
                     client.areModulesAvailable(live)
                         .addOnSuccessListener { avail ->
                             if (avail.areModulesAvailable()) {
+                                modState = "READY"
                                 result.success(true)
                             } else {
-                                client.installModules(ModuleInstallRequest.newBuilder().addApi(live).build())
-                                    .addOnSuccessListener { r -> result.success(r.areModulesAlreadyInstalled() || true) }
-                                    .addOnFailureListener { e -> result.error("module_failed", e.message, null) }
+                                modState = "PENDING"; modBytes = 0; modTotal = 0
+                                val listener = InstallStatusListener { u: ModuleInstallStatusUpdate ->
+                                    modState = when (u.installState) {
+                                        ModuleInstallStatusUpdate.InstallState.STATE_PENDING -> "PENDING"
+                                        ModuleInstallStatusUpdate.InstallState.STATE_DOWNLOADING -> "DOWNLOADING"
+                                        ModuleInstallStatusUpdate.InstallState.STATE_DOWNLOAD_PAUSED -> "PAUSED"
+                                        ModuleInstallStatusUpdate.InstallState.STATE_INSTALLING -> "INSTALLING"
+                                        ModuleInstallStatusUpdate.InstallState.STATE_COMPLETED -> "READY"
+                                        ModuleInstallStatusUpdate.InstallState.STATE_FAILED -> "FAILED"
+                                        else -> "PENDING"
+                                    }
+                                    u.progressInfo?.let { modBytes = it.bytesDownloaded; modTotal = it.totalBytesToDownload }
+                                }
+                                client.installModules(ModuleInstallRequest.newBuilder().addApi(live).setListener(listener).build())
+                                    .addOnSuccessListener {
+                                        // la demande est acceptée : on confirme que le module est bien disponible avant de répondre
+                                        client.areModulesAvailable(live)
+                                            .addOnSuccessListener { a2 -> modState = if (a2.areModulesAvailable()) "READY" else modState; result.success(a2.areModulesAvailable()) }
+                                            .addOnFailureListener { e -> result.error("module_failed", e.message, null) }
+                                    }
+                                    .addOnFailureListener { e -> modState = "FAILED"; result.error("module_failed", e.message, null) }
                             }
                         }
                         .addOnFailureListener { e -> result.error("module_failed", e.message, null) }
