@@ -309,3 +309,58 @@ class _NudgeCard extends StatelessWidget {
     );
   }
 }
+
+
+/// Pastille d'action claire de la page vidéo paysage (j'aime, commentaires, cadeau, partager, menu) : même famille d'icônes que la page verticale.
+class VideoActionChip extends StatelessWidget {
+  const VideoActionChip({super.key, required this.icon, this.label, required this.onTap, this.active = false, this.activeColor});
+
+  final IconData icon;
+  final String? label;
+  final VoidCallback onTap;
+  final bool active;
+  final Color? activeColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final tint = active ? (activeColor ?? c.danger) : c.textPrimary;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: label == null ? 11 : 13, vertical: 9),
+        decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(99), border: Border.all(color: c.border)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(icon, size: 19, color: tint),
+          if (label != null) ...[
+            const SizedBox(width: 6),
+            Text(label!, style: TextStyle(color: c.textPrimary, fontSize: 13, fontWeight: FontWeight.w700)),
+          ],
+        ]),
+      ),
+    );
+  }
+}
+
+/// « Ajouter un commentaire… » de la page paysage : ouvre la page des commentaires.
+class VideoCommentFieldLight extends StatelessWidget {
+  const VideoCommentFieldLight({super.key, required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return GestureDetector(
+      key: const ValueKey('video_comment_field_light'),
+      onTap: onTap,
+      child: Container(
+        height: 42,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        alignment: Alignment.centerLeft,
+        decoration: BoxDecoration(color: c.surfaceVariant, borderRadius: BorderRadius.circular(21), border: Border.all(color: c.border)),
+        child: Text(context.tr('Ajouter un commentaire…'), style: TextStyle(color: c.textSecondary, fontSize: 14)),
+      ),
+    );
+  }
+}

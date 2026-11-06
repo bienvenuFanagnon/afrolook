@@ -69,6 +69,8 @@ import '../theme/app_colors.dart';
 import '../models/coin_pack.dart';
 import '../widgets/gifts/gift_sent_overlay.dart';
 import '../widgets/gifts/quick_gift_bar.dart';
+import 'package:afrotok/pages/videos/video_chrome.dart';
+import 'package:afrotok/utils/post_time_ago.dart';
 
 import '../providers/locale_provider.dart';
 
@@ -704,6 +706,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
   @override
   void dispose() {
     // Plus de pub plein écran déclenchée par la fermeture de la page (décision du 01/11/2026) : elle pouvait s'afficher avant la vidéo suivante.
+    _giftNudgeTimer?.cancel();
     _midrollTimer?.cancel();
     _midrollVideoController?.dispose();
     _midrollVideoController = null;
@@ -877,7 +880,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
         autoInitialize: true,
       );
       if (mounted) setState(() => _isVideoInitialized = true);
-      _attachMidrollListener();
+      _scheduleGiftNudge();
       await _recordPostView();
     } catch (e) {
       printVm('Erreur initialisation vidéo: $e');
@@ -1378,7 +1381,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     final items = <dynamic>[];
     for (int i = 0; i < suggestions.length; i++) {
       items.add(suggestions[i]);
-      if (i == 0 || (i > 0 && i % 3 == 0)) items.add('ad_$i');
+      if (i > 0 && i % 4 == 0) items.add('ad_$i');
     }
 
     return Column(
@@ -2302,7 +2305,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
       appBar: AppBar(
         backgroundColor: colors.surface,
         elevation: 0,
-        leading: IconButton(icon: Icon(Icons.arrow_back, color: _afroYellow), onPressed: () => Navigator.pop(context)),
+        leading: IconButton(icon: Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: colors.textPrimary), onPressed: () => Navigator.pop(context)),
         title: _currentPost.type == PostType.DEFI.name
             ? Row(
                 mainAxisSize: MainAxisSize.min,
@@ -2327,7 +2330,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
                   Text('Vidéo', style: TextStyle(color: _afroGreen, fontWeight: FontWeight.bold)),
                 ],
               )
-            : Text('Afrolook Vidéo', style: TextStyle(color: _afroGreen, fontWeight: FontWeight.bold)),
+            : Text(tr('Vidéo'), style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800)),
         actions: [
           IconButton(
             icon: Icon(Icons.refresh_rounded, color: _afroYellow.withOpacity(0.7), size: 22),
@@ -2344,9 +2347,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               // Lecteur vidéo
               isLocked ? Container(height: MediaQuery.of(context).size.width * 9 / 16, child: _buildLockedOverlay()) : _buildVideoPlayer(),
-              // Badges Tier + Pays
-              _PostDetailBadgesRow(post: _currentPost, feedTier: widget.feedTier),
-              // Informations
               // Badge SPONSORISÉ si publicité
               if (_currentPost.isAdvertisement == true)
                 _buildAdvertisementHeader(),
@@ -2354,24 +2354,21 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 child: _buildBoostSection(),
               ),
-              Padding(padding: EdgeInsets.all(8), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                _buildTitleBlock(),
+                const SizedBox(height: 10),
                 _buildUserHeader(),
-                SizedBox(height: 12),
-                if (_currentPost.description != null && _currentPost.description!.isNotEmpty)
-                  _buildExpandableDescription(
-                    _translatedDescriptions[_currentPost.id] ?? _currentPost.description!,
-                  ),
-                SizedBox(height: 12),
-                _buildCommentPreview(!_isLockedContent()),
-                SizedBox(height: 4),
-                _buildActionButtons(),
-                SizedBox(height: 8),
-                PostGiftsList(
-                  postId: _currentPost.id!,
-                  compactLevel: CompactLevel.light,
-                  maxDisplayItems: 10,
-                ),
-                _buildPostScoreBadge(),
+                const SizedBox(height: 12),
+                if (!isLocked) _buildPillRow(),
+                if (!isLocked) ...[
+                  const SizedBox(height: 12),
+                  VideoCommentFieldLight(onTap: _showCommentsModal),
+                ],
+                // Musique et template du post : « Utiliser · 🪙 5 », « Essayer ce template »
+                PostCtaRow(post: _currentPost),
+                // Pub : réseau (Appodeal / AdMob) d'abord, Afrolook Ads sinon, rien pour les comptes Gold
+                if (_currentPost.type != PostType.DEFI.name)
+                  Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: _buildAdBanner(key: 'ad_detail_top')),
 
                 // ── Nouvelle section DÉFI ─────────────────────────
                 if (_currentPost.type == PostType.DEFI.name)
@@ -2416,6 +2413,101 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
         ],
       ),
     );
+  }
+
+  /// Titre (première ligne de la description), vues et date, puis le reste de la description repliée.
+  Widget _buildTitleBlock() {
+    final colors = AppColors.of(context);
+    final text = (_translatedDescriptions[_currentPost.id] ?? _currentPost.description ?? '').trim();
+    final nl = text.indexOf('\n');
+    final title = nl > 0 ? text.substring(0, nl).trim() : text;
+    final rest = nl > 0 ? text.substring(nl + 1).trim() : '';
+    final views = _currentPost.vues ?? _currentPost.totalInteractions ?? 0;
+    final ago = postTimeAgo(_currentPost.createdAt);
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      if (title.isNotEmpty)
+        Text(title, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: colors.textPrimary, fontSize: 18, fontWeight: FontWeight.w800, height: 1.25)),
+      const SizedBox(height: 3),
+      Text('${_formatCount(views)} ${tr('vues')}${ago.isNotEmpty ? ' · $ago' : ''}', style: TextStyle(color: colors.textSecondary, fontSize: 13)),
+      if (rest.isNotEmpty || title.length > 90) ...[
+        const SizedBox(height: 6),
+        _buildExpandableDescription(rest.isNotEmpty ? rest : title),
+      ],
+    ]);
+  }
+
+  /// Une seule rangée de pastilles : j'aime, commentaires, cadeau, partager, menu (favoris, booster, signaler, supprimer).
+  Widget _buildPillRow() {
+    final colors = AppColors.of(context);
+    final me = authProvider.loginUserData.id;
+    final isLiked = _currentPost.users_love_id?.contains(me) ?? false;
+    final isOwner = me == _currentPost.user_id;
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(children: [
+        VideoActionChip(
+          icon: isLiked ? Icons.favorite : Icons.favorite_border,
+          label: _formatCount(_currentPost.loves ?? 0),
+          active: isLiked,
+          activeColor: colors.danger,
+          onTap: _isLiking ? () {} : _handleLike,
+        ),
+        const SizedBox(width: 8),
+        VideoActionChip(icon: Icons.chat_bubble_outline_rounded, label: _formatCount(_currentPost.comments ?? 0), onTap: _showCommentsModal),
+        if (!isOwner && _currentPost.user_id != null) ...[
+          const SizedBox(width: 8),
+          VideoActionChip(icon: Icons.card_giftcard_rounded, label: _formatCount(_currentPost.users_cadeau_id?.length ?? 0), onTap: _openGiftDialog),
+        ],
+        const SizedBox(width: 8),
+        VideoActionChip(icon: Icons.ios_share_rounded, label: tr('Partager'), onTap: () => _showShareOptions(_currentPost)),
+        const SizedBox(width: 8),
+        VideoActionChip(icon: Icons.more_horiz_rounded, onTap: _showPostMenu),
+      ]),
+    );
+  }
+
+  void _openGiftDialog() {
+    final post = _currentPost;
+    if (post.user_id == null) return;
+    final me = authProvider.loginUserData.id;
+    showDialog(
+      context: context,
+      builder: (_) => CoinGiftDialog(
+        receiverId: post.user_id!,
+        receiverName: post.user?.pseudo ?? tr('Créateur'),
+        receiverAvatar: post.user?.imageUrl ?? '',
+        post: post,
+        onGiftSuccess: () {
+          if (!mounted) return;
+          setState(() {
+            post.users_cadeau_id ??= [];
+            if (me != null && !post.users_cadeau_id!.contains(me)) post.users_cadeau_id!.add(me);
+          });
+          if (me != null) Provider.of<CoinGiftUserProvider>(context, listen: false).refreshBalance(me);
+        },
+      ),
+    );
+  }
+
+  // ── Invitation à offrir un cadeau (même modale fluide que dans les vidéos verticales) ─────────
+  Timer? _giftNudgeTimer;
+  bool _nudged = false;
+
+  /// Après 14 secondes de lecture : une seule invitation par vidéo, jamais pour sa propre vidéo, une pub, un contenu verrouillé ni si un cadeau a déjà été envoyé.
+  void _scheduleGiftNudge() {
+    _giftNudgeTimer?.cancel();
+    final me = authProvider.loginUserData.id;
+    final post = _currentPost;
+    if (_nudged || post.isAdvertisement == true || post.user_id == null || post.user_id == me || _isLockedContent()) return;
+    if (post.users_cadeau_id?.contains(me) ?? false) return;
+    _giftNudgeTimer = Timer(const Duration(seconds: 14), () {
+      if (!mounted || _nudged) return;
+      final vc = _videoController;
+      if (vc == null || !vc.value.isPlaying) return;
+      if (ModalRoute.of(context)?.isCurrent != true) return;
+      _nudged = true;
+      VideoGiftNudge.show(context, creatorName: post.user?.pseudo ?? tr('ce créateur'), avatarUrl: post.user?.imageUrl ?? '', onGift: _openGiftDialog);
+    });
   }
 
   Widget _buildTabbarBadge(String typeTabbar) {
