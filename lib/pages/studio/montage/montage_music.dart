@@ -3,6 +3,7 @@ import 'package:afrotok/services/api/api_identity.dart';
 // functions/scripts/gen_studio_music.cjs, sans droits d'auteur) et sons des artistes validés (payants, l'artiste est payé).
 
 import 'dart:async';
+import 'package:afrotok/l10n/tr.dart';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -165,11 +166,14 @@ Future<List<ArtistSound>> loadArtistSounds() => _MusicSheetState._loadArtists();
 /// Choix de la musique : pistes gratuites, sons des artistes, ou aucune. Renvoie null si on ferme sans choisir,
 /// et un [MusicPick] sinon (music == null : « Sans musique »).
 class MusicPick {
-  const MusicPick(this.music);
+  const MusicPick(this.music, {this.keepVideoAudio = false});
   final MontageMusic? music;
+
+  /// « Garder le son de ma vidéo » (proposé seulement pour une vidéo) : la voix de la vidéo est mélangée à la musique.
+  final bool keepVideoAudio;
 }
 
-Future<MusicPick?> showMontageMusicPicker(BuildContext context, {MontageMusic? current, required VoidCallback onArtistCta}) async {
+Future<MusicPick?> showMontageMusicPicker(BuildContext context, {MontageMusic? current, required VoidCallback onArtistCta, bool offerKeepAudio = false}) async {
   await ArtistSoundPricing.load();
   if (!context.mounted) return null;
   final r = await showModalBottomSheet<MusicPick>(
@@ -177,16 +181,17 @@ Future<MusicPick?> showMontageMusicPicker(BuildContext context, {MontageMusic? c
     isScrollControlled: true,
     backgroundColor: _c.surface,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(18))),
-    builder: (_) => _MusicSheet(current: current, onArtistCta: onArtistCta),
+    builder: (_) => _MusicSheet(current: current, onArtistCta: onArtistCta, offerKeepAudio: offerKeepAudio),
   );
   await MontageMusicPlayer.stop();
   return r;
 }
 
 class _MusicSheet extends StatefulWidget {
-  const _MusicSheet({required this.current, required this.onArtistCta});
+  const _MusicSheet({required this.current, required this.onArtistCta, this.offerKeepAudio = false});
   final MontageMusic? current;
   final VoidCallback onArtistCta;
+  final bool offerKeepAudio;
 
   @override
   State<_MusicSheet> createState() => _MusicSheetState();
@@ -195,6 +200,7 @@ class _MusicSheet extends StatefulWidget {
 class _MusicSheetState extends State<_MusicSheet> {
   String? _playing;
   String? _loading;
+  bool _keepAudio = false;
 
   Future<void> _toggle(MontageMusic m) async {
     final key = '${m.type}:${m.id}';
@@ -238,6 +244,17 @@ class _MusicSheetState extends State<_MusicSheet> {
               ),
             ]),
           ),
+          if (widget.offerKeepAudio)
+            SwitchListTile(
+              key: const ValueKey('keep_video_audio'),
+              dense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+              activeColor: _c.accent,
+              title: Text(tr('Garder le son de ma vidéo'), style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700, fontSize: 14)),
+              subtitle: Text(_keepAudio ? tr('Ta voix et la musique sont mélangées.') : tr('Le son de ta vidéo est coupé, seule la musique reste.'), style: TextStyle(color: _c.textSecondary, fontSize: 12)),
+              value: _keepAudio,
+              onChanged: (v) => setState(() => _keepAudio = v),
+            ),
           TabBar(
             labelColor: _c.accent,
             unselectedLabelColor: _c.textSecondary,
@@ -292,7 +309,7 @@ class _MusicSheetState extends State<_MusicSheet> {
                 : Icon(_playing == key ? Icons.pause_circle_filled_rounded : Icons.play_circle_fill_rounded, color: _c.primary, size: 30),
           ),
         ]),
-        onTap: () => Navigator.pop(context, MusicPick(m)),
+        onTap: () => Navigator.pop(context, MusicPick(m, keepVideoAudio: _keepAudio)),
       ),
     );
   }

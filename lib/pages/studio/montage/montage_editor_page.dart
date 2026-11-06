@@ -32,7 +32,7 @@ import '../studio_theme.dart';
 AppColors get _c => studioColors;
 
 class MontageEditorPage extends StatefulWidget {
-  const MontageEditorPage({super.key, required this.template, this.forChronique = false, this.presetMusic, this.presetVideoPath, this.presetPhotoPath, this.focus});
+  const MontageEditorPage({super.key, required this.template, this.forChronique = false, this.presetMusic, this.presetKeepAudio = false, this.presetVideoPath, this.presetPhotoPath, this.focus});
   final MontageTemplate template;
   final bool forChronique;
 
@@ -45,6 +45,9 @@ class MontageEditorPage extends StatefulWidget {
 
   /// Son choisi avant d'arriver ici (« Créer un post avec ce son ») : il remplace la musique du template.
   final MontageMusic? presetMusic;
+
+  /// Musique choisie dans la feuille de l'éditeur avec « Garder le son de ma vidéo » activé.
+  final bool presetKeepAudio;
 
   @override
   State<MontageEditorPage> createState() => _MontageEditorPageState();
@@ -116,6 +119,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     final preset = widget.presetMusic;
     if (preset != null) {
       s.music = preset;
+      s.keepVideoAudio = widget.presetKeepAudio;
       // Son payant : on informe tout de suite (prix, solde) ; refus ou solde insuffisant = musique du template
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         if (!await _confirmArtistCost(preset)) {

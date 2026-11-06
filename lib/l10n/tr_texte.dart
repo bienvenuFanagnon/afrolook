@@ -1,5 +1,8 @@
 // Traductions des réglages du texte libre du montage (style d'écriture, arrière-plan, cadre) — voir tr.dart.
 const Map<String, Map<String, String>> kTrTexte = {
+  'Garder le son de ma vidéo': {'en': 'Keep my video\'s sound', 'es': "Mantener el sonido de mi vídeo", 'pt': "Manter o som do meu vídeo", 'de': "Ton meines Videos behalten", 'ar': "الاحتفاظ بصوت الفيديو", 'zh': "保留视频原声", 'sw': "Weka sauti ya video yangu"},
+  'Ta voix et la musique sont mélangées.': {'en': 'Your voice and the music are mixed.', 'es': "Tu voz y la música se mezclan.", 'pt': "A tua voz e a música são misturadas.", 'de': "Deine Stimme und die Musik werden gemischt.", 'ar': "يتم دمج صوتك مع الموسيقى.", 'zh': "你的声音与音乐会混合。", 'sw': "Sauti yako na muziki vinachanganywa."},
+  'Le son de ta vidéo est coupé, seule la musique reste.': {'en': 'Your video\'s sound is muted, only the music stays.', 'es': "El sonido de tu vídeo se silencia, solo queda la música.", 'pt': "O som do teu vídeo é cortado, fica só a música.", 'de': "Der Ton deines Videos wird stummgeschaltet, nur die Musik bleibt.", 'ar': "يُكتم صوت الفيديو وتبقى الموسيقى فقط.", 'zh': "视频原声会被静音，只保留音乐。", 'sw': "Sauti ya video yako imenyamazishwa, muziki pekee unabaki."},
   "Style d'écriture": {'en': 'Writing style', 'es': "Estilo de escritura", 'pt': "Estilo de escrita", 'de': "Schriftstil", 'ar': "نمط الكتابة", 'zh': "字体样式", 'sw': "Mtindo wa uandishi"},
   'Arrière-plan du texte': {'en': 'Text background', 'es': "Fondo del texto", 'pt': "Fundo do texto", 'de': "Texthintergrund", 'ar': "خلفية النص", 'zh': "文字背景", 'sw': "Mandharinyuma ya maandishi"},
   'Cadre': {'en': 'Frame', 'es': "Marco", 'pt': "Moldura", 'de': "Rahmen", 'ar': "إطار", 'zh': "边框", 'sw': "Fremu"},

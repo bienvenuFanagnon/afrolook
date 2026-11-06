@@ -15,6 +15,7 @@ import '../../widgets/original_badge.dart';
 import '../studio/montage/montage_catalog.dart';
 import '../studio/montage/montage_editor_page.dart';
 import '../studio/montage/montage_gallery_page.dart';
+import '../studio/montage/montage_music.dart';
 import '../studio/studio_models.dart';
 import 'create_flow.dart';
 import 'create_result.dart';
@@ -133,6 +134,21 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
 
   String? get _presetVideo => widget.isVideo ? _path : null;
   String? get _presetPhoto => widget.isVideo ? null : _path;
+
+  // ── Musique ──────────────────────────────────────────────────────────────
+
+  /// Feuille « Musique » par-dessus la vidéo : on choisit une piste (gratuite ou d'artiste) en l'écoutant ; pour une vidéo, on décide aussi de garder ou non son propre son.
+  /// Une fois la piste choisie, l'éditeur de montage s'ouvre directement avec elle.
+  Future<void> _music() async {
+    _video?.pause();
+    final pick = await showMontageMusicPicker(context, onArtistCta: () => openArtistSpace(context), offerKeepAudio: widget.isVideo);
+    if (!mounted) return;
+    if (pick == null || pick.music == null) {
+      _video?.play();
+      return;
+    }
+    await _openStudio(MontageEditorPage(template: kPlainTemplate, presetMusic: pick.music, presetKeepAudio: pick.keepVideoAudio, presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto));
+  }
 
   // ── Voix ─────────────────────────────────────────────────────────────────
 
@@ -297,7 +313,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
               padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
               child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
                 _tool('tool_models', Icons.dashboard_customize_rounded, context.tr('Modèles'), () => _openStudio(MontageGalleryPage(presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto), asSheet: true)),
-                _tool('tool_music', Icons.music_note_rounded, context.tr('Musique'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, focus: 'music', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
+                _tool('tool_music', Icons.music_note_rounded, context.tr('Musique'), _music),
                 _tool('tool_text', Icons.title_rounded, context.tr('Texte'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, focus: 'text', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
                 _tool('tool_stickers', Icons.emoji_emotions_rounded, context.tr('Autocollants'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, focus: 'stickers', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
                 _tool('tool_looks', Icons.star_rounded, context.tr('Effets'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, focus: 'looks', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
