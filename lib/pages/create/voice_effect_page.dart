@@ -29,6 +29,7 @@ class VoiceEffectPage extends StatefulWidget {
     this.render = StudioVoiceApi.apply,
     this.loadEffects = StudioVoiceApi.effects,
     this.autoPlay = true,
+    this.isVideo = false,
   });
 
   final File original;
@@ -38,6 +39,9 @@ class VoiceEffectPage extends StatefulWidget {
 
   /// Écoute automatique du rendu dès qu'il est prêt (désactivée dans les tests).
   final bool autoPlay;
+
+  /// Voix d'une VIDÉO : la vidéo est envoyée, seule sa piste audio est transformée (l'image est gardée telle quelle) ; l'écoute montre le son seulement.
+  final bool isVideo;
 
   @override
   State<VoiceEffectPage> createState() => _VoiceEffectPageState();
@@ -88,8 +92,8 @@ class _VoiceEffectPageState extends State<VoiceEffectPage> {
       _error = null;
     });
     try {
-      _uploadId ??= await widget.upload(widget.original);
-      _rendered[effect] = await widget.render(_uploadId!, effect);
+      _uploadId ??= (widget.isVideo && widget.upload == StudioVoiceApi.upload) ? await StudioVoiceApi.upload(widget.original, video: true) : await widget.upload(widget.original);
+      _rendered[effect] = (widget.isVideo && widget.render == StudioVoiceApi.apply) ? await StudioVoiceApi.apply(_uploadId!, effect, video: true) : await widget.render(_uploadId!, effect);
       if (!mounted) return;
       setState(() {
         _selected = effect;

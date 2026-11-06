@@ -19,6 +19,7 @@ import '../studio/studio_models.dart';
 import 'create_flow.dart';
 import 'create_result.dart';
 import 'subtitles_sheet.dart';
+import 'voice_effect_page.dart';
 import 'trim_sheet.dart';
 
 /// Écran de retouche du parcours « Créer un post » (écran 5 de la proposition) : le média en plein écran, les outils en bas (Modèles, Musique, Texte, Effets, Couper),
@@ -49,6 +50,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
 
   /// Outil utilisé : le média est désormais retouché dans le Studio d'Afrolook (mention « Fait sur Afrolook »).
   bool _touched = false;
+  String? _voiceEffect; // effet de voix choisi pour la vidéo (mention « Voix modifiée »)
   bool _subtitlesOk = false; // le serveur sait transcrire (service réglé)
 
   @override
@@ -93,7 +95,9 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
     final result = StudioResult(type: widget.isVideo ? StudioContentType.video : StudioContentType.image, mediaFile: File(_path));
     // un passage coupé dans l'éditeur compte comme retouché dans notre Studio
     final source = (_touched && widget.source != PostSourceLink.captured) ? PostSourceLink.edited : widget.source;
+    if (widget.isVideo && _voiceEffect != null) PostVoiceLink.set(_voiceEffect);
     final r = await openCreateForm(context, studio: result, canal: widget.canal, defiPostId: widget.defiPostId, source: source);
+    PostVoiceLink.clear();
     if (r == kCreateBack) _video?.play();
     await _finish(r);
   }
@@ -116,6 +120,25 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
 
   String? get _presetVideo => widget.isVideo ? _path : null;
   String? get _presetPhoto => widget.isVideo ? null : _path;
+
+  // ── Voix ─────────────────────────────────────────────────────────────────
+
+  /// Change la voix de la vidéo : on essaie les effets en écoutant le vrai rendu du serveur ; l'image reste intacte.
+  Future<void> _voice() async {
+    final v = _video;
+    if (!widget.isVideo || v == null || !v.value.isInitialized || _busy) return;
+    v.pause();
+    final choice = await Navigator.of(context).push<VoiceChoice>(MaterialPageRoute(builder: (_) => VoiceEffectPage(original: File(_path), isVideo: true)));
+    if (!mounted) return;
+    if (choice == null || choice.effect == null) {
+      v.play();
+      return;
+    }
+    _path = choice.file.path;
+    _voiceEffect = choice.effect;
+    _touched = true;
+    await _initVideo();
+  }
 
   // ── Sous-titres ──────────────────────────────────────────────────────────
 
@@ -226,6 +249,10 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
                     _round(key: const ValueKey('tool_trim_top'), icon: Icons.content_cut_rounded, size: 40, onTap: _trim),
                     const SizedBox(height: 4),
                     Text(trimClock(v.value.duration.inMilliseconds), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700, shadows: shadow)),
+                    const SizedBox(height: 10),
+                    _round(key: const ValueKey('tool_voice'), icon: Icons.record_voice_over_rounded, size: 40, onTap: _voice),
+                    const SizedBox(height: 4),
+                    Text(context.tr('Voix'), style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w700, shadows: shadow)),
                     if (_subtitlesOk) ...[
                       const SizedBox(height: 10),
                       _round(key: const ValueKey('tool_subtitles'), icon: Icons.closed_caption_rounded, size: 40, onTap: _subtitles),

@@ -115,6 +115,7 @@ const Map<String, Map<String, String>> kTrCreation = {
   'Ajouter un autocollant': {'en': 'Add a sticker'},
   'Autocollants': {'en': 'Stickers'},
   'Sous-titres': {'en': 'Subtitles'},
+  'Voix': {'en': 'Voice'},
   'Sans filtre': {'en': 'No filter'},
   'Aucun visage trouvé : tu peux garder la photo telle quelle.': {'en': 'No face found: you can keep the photo as it is.'},
   'Reprendre': {'en': 'Retake'},

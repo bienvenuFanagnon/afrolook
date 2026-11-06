@@ -42,7 +42,8 @@ class StudioVoiceApi {
     return fallback;
   }
 
-  static String contentType(String path) {
+  static String contentType(String path, {bool video = false}) {
+    if (video) return path.toLowerCase().endsWith('.mov') ? 'video/quicktime' : 'video/mp4';
     final p = path.toLowerCase();
     if (p.endsWith('.mp3')) return 'audio/mpeg';
     if (p.endsWith('.wav')) return 'audio/wav';
@@ -52,15 +53,15 @@ class StudioVoiceApi {
   }
 
   /// Envoie l'audio au stockage une fois et rend son identifiant : on peut ensuite essayer plusieurs effets sans le renvoyer.
-  static Future<String> upload(File audio) async => ArgentUpload.bytes(await audio.readAsBytes(), contentType: contentType(audio.path));
+  static Future<String> upload(File audio, {bool video = false}) async => ArgentUpload.bytes(await audio.readAsBytes(), contentType: contentType(audio.path, video: video));
 
   /// Applique [effect] à l'audio déjà envoyé ([uploadId]) et rend le fichier transformé, prêt à écouter puis à publier.
-  static Future<File> apply(String uploadId, String effect) async {
+  static Future<File> apply(String uploadId, String effect, {bool video = false}) async {
     final res = await ApiGateway.instance.client.post('/studio/voice', body: {'upload_id': uploadId, 'effect': effect});
     final url = WalletApi.map(res)['url'] as String;
     final r = await http.get(Uri.parse(url));
     if (r.statusCode != 200) throw StateError('Téléchargement impossible');
     final dir = await getTemporaryDirectory();
-    return File('${dir.path}/voix_${effect}_${DateTime.now().microsecondsSinceEpoch}.m4a').writeAsBytes(r.bodyBytes, flush: true);
+    return File('${dir.path}/voix_${effect}_${DateTime.now().microsecondsSinceEpoch}.${video ? 'mp4' : 'm4a'}').writeAsBytes(r.bodyBytes, flush: true);
   }
 }
