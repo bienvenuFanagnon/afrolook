@@ -12,7 +12,9 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../l10n/tr.dart';
 import '../../services/api/studio_face_overlay_api.dart';
 import '../../services/beauty.dart';
+import '../../services/face_engine.dart';
 import '../../services/face_filters.dart';
+import 'package:path_provider/path_provider.dart';
 import 'beauty_sheet.dart';
 import 'face_filter_page.dart';
 import 'face_lab_page.dart';
@@ -48,6 +50,12 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
   int _camIndex = 0;
   bool _photoMode = false;
   bool _torch = false;
+
+  // ── Moteur maison (Android, APK de test) : caméra, visage, beauté, masques et enregistrement par le moteur ──
+  final bool _eng = FaceEngine.enabled;
+  bool _engFront = true;
+  String _deform = 'none';
+  int _look = 0;
 
   // ── Filtres de visage en direct (Android) ──
   FaceFilter _filter = FaceFilter.none;
@@ -121,6 +129,12 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
         if (mounted) setState(() => _denied = true);
         return;
       }
+      if (_eng) {
+        _micOk = mic.isGranted;
+        if (mounted) setState(() {});
+        await _engSync();
+        return;
+      }
       _cameras = await availableCameras();
       if (_cameras.isEmpty) {
         if (mounted) setState(() => _error = 'Aucune caméra trouvée sur cet appareil.');
@@ -171,6 +185,35 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
 
   // ── Filtres en direct ────────────────────────────────────────────────────
 
+  /// Moteur : envoie la beauté et le masque choisis (le moteur démarre avec la vue ; on réessaie un peu au début).
+  Future<void> _engSync() async {
+    for (var i = 0; i < 6; i++) {
+      try {
+        await FaceEngine.setBeauty(_beautyNow);
+        await FaceEngine.setMask(_filter);
+        await FaceEngine.setDeformation(_deform);
+        await FaceEngine.setLook(_look);
+        return;
+      } catch (_) {
+        await Future<void>.delayed(const Duration(milliseconds: 400));
+      }
+    }
+  }
+
+  Future<void> _pickLook(int look) async {
+    setState(() => _look = look);
+    try {
+      await FaceEngine.setLook(look);
+    } catch (_) {}
+  }
+
+  Future<void> _pickDeform(String name) async {
+    setState(() => _deform = _deform == name ? 'none' : name);
+    try {
+      await FaceEngine.setDeformation(_deform);
+    } catch (_) {}
+  }
+
   void _toggleBeauty() {
     setState(() => _beautyOn = !_beautyOn);
     _savedBeautyOn = _beautyOn;
@@ -195,6 +238,13 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
   }
 
   Future<void> _pickFilter(FaceFilter f) async {
+    if (_eng) {
+      setState(() => _filter = f);
+      try {
+        await FaceEngine.setMask(f);
+      } catch (_) {}
+      return;
+    }
     setState(() {
       _filter = f;
       _filterNote = null;
@@ -281,6 +331,12 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
   bool get _needsStream => _filter != FaceFilter.none || (_beautyNow.smooth > 0 && FaceFilters.available);
 
   Future<void> _syncStream() async {
+    if (_eng) {
+      try {
+        await FaceEngine.setBeauty(_beautyNow);
+      } catch (_) {}
+      return;
+    }
     final c = _ctrl;
     if (c == null || !c.value.isInitialized || !FaceFilters.available) return;
     try {
@@ -335,6 +391,15 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
   }
 
   Future<void> _flip() async {
+    if (_eng) {
+      if (_recording || _busy) return;
+      HapticFeedback.selectionClick();
+      setState(() => _engFront = !_engFront);
+      try {
+        await FaceEngine.setFront(_engFront);
+      } catch (_) {}
+      return;
+    }
     if (_cameras.length < 2 || _recording || _busy) return;
     HapticFeedback.selectionClick();
     await _start((_camIndex + 1) % _cameras.length);
@@ -352,7 +417,26 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
     }
   }
 
+  Future<String> _engTmp(String ext) async => '${(await getTemporaryDirectory()).path}/afrolook_${DateTime.now().millisecondsSinceEpoch}.$ext';
+
   Future<void> _shutter() async {
+    if (_eng) {
+      if (_busy) return;
+      if (_photoMode) {
+        setState(() => _busy = true);
+        try {
+          HapticFeedback.mediumImpact();
+          final out = await FaceEngine.takePhoto(await _engTmp('jpg'));
+          if (mounted && out != null) Navigator.pop(context, CreateCaptureResult.file(out, isVideo: false));
+          if (mounted && out == null) setState(() => _busy = false);
+        } catch (_) {
+          if (mounted) setState(() => _busy = false);
+        }
+        return;
+      }
+      _recording ? await _stopRecording() : await _startRecording();
+      return;
+    }
     final c = _ctrl;
     if (c == null || !c.value.isInitialized || _busy) return;
     if (_photoMode) {
@@ -383,7 +467,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
 
   Future<void> _startRecording() async {
     final c = _ctrl;
-    if (c == null) return;
+    if (c == null && !_eng) return;
     try {
       HapticFeedback.mediumImpact();
       _track.clear();
@@ -391,7 +475,11 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
       _recWatch
         ..reset()
         ..start();
-      await c.startVideoRecording();
+      if (_eng) {
+        await FaceEngine.startRecording(await _engTmp('mp4'), audio: _micOk);
+      } else {
+        await c!.startVideoRecording();
+      }
       _elapsedMs = 0;
       _tick = Timer.periodic(const Duration(milliseconds: 100), (t) {
         _elapsedMs += 100;
@@ -411,13 +499,24 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
   Future<void> _stopRecording() async {
     final c = _ctrl;
     _tick?.cancel();
-    if (c == null || !_recording) return;
+    if ((c == null && !_eng) || !_recording) return;
     setState(() {
       _recording = false;
       _busy = true;
     });
     try {
-      final f = await c.stopVideoRecording();
+      if (_eng) {
+        final out = await FaceEngine.stopRecording();
+        _recWatch.stop();
+        if (!mounted) return;
+        if (_elapsedMs < 1000 || out == null) {
+          setState(() => _busy = false);
+          return;
+        }
+        Navigator.pop(context, CreateCaptureResult.file(out, isVideo: true));
+        return;
+      }
+      final f = await c!.stopVideoRecording();
       _recWatch.stop();
       if (!mounted) return;
       // un clip de moins d'une seconde n'a pas de sens : on recommence
@@ -515,13 +614,15 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
 
   Widget _camera(AppColors c) {
     final ctrl = _ctrl;
-    final ready = ctrl != null && ctrl.value.isInitialized;
+    final ready = _eng || (ctrl != null && ctrl.value.isInitialized);
     final remaining = ((_limit * 1000 - _elapsedMs) / 1000).ceil().clamp(0, _limit);
     return Stack(fit: StackFit.expand, children: [
-      if (ready)
+      if (_eng)
+        Positioned.fill(child: FaceEngine.view(front: _engFront))
+      else if (ready)
         ClipRect(
           child: Transform.scale(
-            scale: _coverScale(ctrl),
+            scale: _coverScale(ctrl!),
             child: Center(child: _beautyNow.hasColor ? ColorFiltered(colorFilter: _beautyNow.colorFilter, child: CameraPreview(ctrl, child: _liveOverlay(ctrl))) : CameraPreview(ctrl, child: _liveOverlay(ctrl))),
           ),
         )
@@ -555,8 +656,8 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
               if (FaceLabPage.available && FaceFilters.available)
                 _round(Icons.science_rounded, () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FaceLabPage()))),
               if (FaceLabPage.available && FaceFilters.available) const SizedBox(width: 8),
-              _round(_torch ? Icons.flash_on_rounded : Icons.flash_off_rounded, _toggleTorch, active: _torch),
-              const SizedBox(width: 8),
+              if (!_eng) _round(_torch ? Icons.flash_on_rounded : Icons.flash_off_rounded, _toggleTorch, active: _torch),
+              if (!_eng) const SizedBox(width: 8),
               _round(Icons.cameraswitch_rounded, _flip),
             ]),
           ),
@@ -591,7 +692,36 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
                     icon: const Icon(Icons.tune_rounded, color: Colors.white, size: 20),
                   ),
                 ),
+                if (_eng)
+                  for (final l in FaceEngine.looks.skip(1))
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        key: ValueKey('look_${l.$2}'),
+                        label: Text(context.tr(l.$1), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: _look == l.$2 ? c.onAccent : Colors.white)),
+                        selected: _look == l.$2,
+                        selectedColor: c.accent,
+                        backgroundColor: const Color(0x99000000),
+                        side: BorderSide.none,
+                        onSelected: _recording ? null : (_) => _pickLook(_look == l.$2 ? 0 : l.$2),
+                      ),
+                    ),
+                if (_eng)
+                  for (final d in FaceEngine.deformations)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        key: ValueKey('deform_${d.$1}'),
+                        label: Text(d.$2, style: const TextStyle(fontSize: 20)),
+                        selected: _deform == d.$1,
+                        selectedColor: c.accent,
+                        backgroundColor: const Color(0x99000000),
+                        side: BorderSide.none,
+                        onSelected: _recording ? null : (_) => _pickDeform(d.$1),
+                      ),
+                    ),
                 for (final f in FaceFilter.values)
+                  if (!_eng || f != FaceFilter.blur)
                   Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: ChoiceChip(

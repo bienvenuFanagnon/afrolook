@@ -3,6 +3,8 @@ package com.afrotok.afrotok
 import android.app.Activity
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.opengl.GLUtils
 import android.util.Size
 import android.graphics.SurfaceTexture
 import android.media.MediaCodec
@@ -55,6 +57,9 @@ import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import kotlin.math.abs
 import kotlin.math.hypot
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
 
 /**
  * Moteur maison d'effets de visage (Android), gratuit : CameraX + MediaPipe Face Landmarker (478 points, sur le téléphone) + OpenGL.
@@ -85,6 +90,22 @@ object FaceEngine {
                 "setOrientation" -> {
                     v?.renderer?.rotOffset = call.argument<Int>("rotation") ?: 0
                     v?.renderer?.mirror = call.argument<Boolean>("mirror") ?: false
+                    result.success(null)
+                }
+                "setBeauty" -> {
+                    v?.renderer?.beautySmooth = (call.argument<Double>("smooth") ?: 0.0).toFloat()
+                    v?.renderer?.beautyBright = (call.argument<Double>("bright") ?: 0.0).toFloat()
+                    v?.renderer?.beautyWarm = (call.argument<Double>("warm") ?: 0.0).toFloat()
+                    result.success(null)
+                }
+                "setLook" -> { v?.renderer?.look = (call.argument<Int>("look") ?: 0).toFloat(); result.success(null) }
+                "setOverlay" -> {
+                    // image (PNG) posée sur le visage : `anchor` dit où (eyes, top, nose, corner, face, mouth, chin), `size` la taille en largeur de visage
+                    val bytes = call.argument<ByteArray>("png")
+                    v?.renderer?.overlayAnchor = call.argument<String>("anchor") ?: "none"
+                    v?.renderer?.overlaySize = (call.argument<Double>("size") ?: 1.0).toFloat()
+                    v?.renderer?.overlayDy = (call.argument<Double>("dy") ?: 0.0).toFloat()
+                    if (bytes != null) v?.renderer?.overlayPending = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
                     result.success(null)
                 }
                 "setFlipPoints" -> { v?.renderer?.flipPointsX = call.argument<Boolean>("flip") ?: true; result.success(null) }
@@ -119,6 +140,22 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
     private var provider: ProcessCameraProvider? = null
     private val analysisExecutor = Executors.newSingleThreadExecutor()
     @Volatile private var framesAnalysed = 0
+    private var previewUc: Preview? = null
+    private var analysisUc: ImageAnalysis? = null
+    private val displayManager = activity.getSystemService(Context.DISPLAY_SERVICE) as android.hardware.display.DisplayManager
+    @Suppress("DEPRECATION")
+    private fun screenRotation(): Int = activity.windowManager.defaultDisplay.rotation
+    // paysage : quand l'écran tourne, la caméra recalcule la rotation de l'image (les points et l'image restent droits)
+    private val displayListener = object : android.hardware.display.DisplayManager.DisplayListener {
+        override fun onDisplayAdded(displayId: Int) {}
+        override fun onDisplayRemoved(displayId: Int) {}
+        override fun onDisplayChanged(displayId: Int) {
+            val r = screenRotation()
+            previewUc?.targetRotation = r
+            analysisUc?.targetRotation = r
+        }
+    }
+    init { displayManager.registerDisplayListener(displayListener, Handler(Looper.getMainLooper())) }
 
     // --- suivi de qualité et réglage automatique (par visage : tout repart à zéro quand le visage disparaît)
     private var tried = 0          // images envoyées à la détection (fenêtre glissante)
@@ -155,6 +192,7 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
     override fun getView(): View = glView
 
     override fun dispose() {
+        try { displayManager.unregisterDisplayListener(displayListener) } catch (_: Throwable) {}
         try { provider?.unbindAll() } catch (_: Throwable) {}
         try { landmarker?.close() } catch (_: Throwable) {}
         analysisExecutor.shutdown()
@@ -389,7 +427,7 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
                 provider = p
                 p.unbindAll()
                 val selector = if (front) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
-                val preview = Preview.Builder().setTargetAspectRatio(AspectRatio.RATIO_4_3).setTargetRotation(Surface.ROTATION_0).build()
+                val preview = Preview.Builder().setTargetAspectRatio(AspectRatio.RATIO_4_3).setTargetRotation(screenRotation()).build()
                 preview.setSurfaceProvider(ContextCompat.getMainExecutor(activity)) { req -> renderer.onSurfaceRequest(req) }
                 val lowRes = ResolutionSelector.Builder()
                     .setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
@@ -397,11 +435,12 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
                     .build()
                 val analysis = ImageAnalysis.Builder()
                     .setResolutionSelector(lowRes)
-                    .setTargetRotation(Surface.ROTATION_0)
+                    .setTargetRotation(screenRotation())
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                     .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
                     .build()
                 analysis.setAnalyzer(analysisExecutor) { analyze(it) }
+                previewUc = preview; analysisUc = analysis
                 p.bindToLifecycle(activity as LifecycleOwner, selector, preview, analysis)
             } catch (e: Throwable) {
                 lastError = "caméra : ${e.message}"
@@ -416,6 +455,19 @@ class FaceRenderer : GLSurfaceView.Renderer {
     @Volatile var effect: String = "none"
     @Volatile var front: Boolean = true
     @Volatile var rotOffset: Int = 90   // mesuré sur un Pixel 8 Pro, caméra avant : image droite avec rotation totale 0° et miroir
+    // beauté en direct (0 à 1) : peau lissée, lumière, chaleur
+    @Volatile var beautySmooth = 0f
+    @Volatile var beautyBright = 0f
+    @Volatile var beautyWarm = 0f
+    @Volatile var look = 0f   // 0 aucun, 1 noir et blanc, 2 sépia, 3 vintage, 4 cinéma, 5 néon, 6 pop
+    // image posée sur le visage (masque, lunettes, couronne…) qui suit la position, la taille et l'inclinaison de la tête
+    @Volatile var overlayPending: Bitmap? = null
+    @Volatile var overlayAnchor = "none"
+    @Volatile var overlaySize = 1f
+    @Volatile var overlayDy = 0f
+    private var ovTex = 0
+    private var ovProgram = 0
+    private val ovBuf: java.nio.FloatBuffer = ByteBuffer.allocateDirect(16 * 4).order(ByteOrder.nativeOrder()).asFloatBuffer()
     @Volatile var predGain: Float = 1.0f   // part de la prévision de mouvement utilisée (réglée en direct)
     @Volatile var flipPointsX: Boolean = true   // mesuré sur Pixel 8 Pro : sans cela, tête à gauche = points à droite
     @Volatile var showPoints: Boolean = true   // points de repère du visage dessinés par-dessus (essais)
@@ -455,6 +507,8 @@ class FaceRenderer : GLSurfaceView.Renderer {
         surfaceTexture = SurfaceTexture(texId).also { it.setOnFrameAvailableListener { frameReady = true } }
         program = buildProgram()
         ptProgram = buildPointProgram()
+        ovProgram = buildOverlayProgram()
+        ovTex = 0
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -588,6 +642,9 @@ class FaceRenderer : GLSurfaceView.Renderer {
         GLES20.glUniform2fv(GLES20.glGetUniformLocation(program, "uC"), 4, c, 0)
         GLES20.glUniform1fv(GLES20.glGetUniformLocation(program, "uR"), 4, r, 0)
         GLES20.glUniform1fv(GLES20.glGetUniformLocation(program, "uS"), 4, s, 0)
+        GLES20.glUniform3f(GLES20.glGetUniformLocation(program, "uBeauty"), beautySmooth, beautyBright, beautyWarm)
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(program, "uTexel"), 1f / maxOf(bufW, bufH))
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(program, "uLook"), look)
 
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
         GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, texId)
@@ -597,6 +654,77 @@ class FaceRenderer : GLSurfaceView.Renderer {
         GLES20.glVertexAttribPointer(pos, 2, GLES20.GL_FLOAT, false, 0, quad)
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         GLES20.glDisableVertexAttribArray(pos)
+        if (lm != null) drawOverlay(lm, csx, csy, aView)
+    }
+
+    private fun buildOverlayProgram(): Int {
+        val vs = "attribute vec2 aP; attribute vec2 aT; varying vec2 vT; void main() { gl_Position = vec4(aP, 0.0, 1.0); vT = aT; }"
+        val fs = "precision mediump float; varying vec2 vT; uniform sampler2D uOv; void main() { gl_FragColor = texture2D(uOv, vT); }"
+        val prog = GLES20.glCreateProgram()
+        GLES20.glAttachShader(prog, compile(GLES20.GL_VERTEX_SHADER, vs))
+        GLES20.glAttachShader(prog, compile(GLES20.GL_FRAGMENT_SHADER, fs))
+        GLES20.glLinkProgram(prog)
+        return prog
+    }
+
+    /** Pose l'image du masque sur le visage : position selon l'ancre, taille selon la largeur du visage, inclinaison selon la ligne des yeux. */
+    private fun drawOverlay(lm: Landmarks, csx: Float, csy: Float, aspect: Float) {
+        overlayPending?.let { bmp ->
+            overlayPending = null
+            if (ovTex == 0) { val t = IntArray(1); GLES20.glGenTextures(1, t, 0); ovTex = t[0] }
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, ovTex)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
+            GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
+            GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bmp, 0)
+            bmp.recycle()
+        }
+        val anchor = overlayAnchor
+        if (ovTex == 0 || anchor == "none" || lm.x.size < 468) return
+        fun p(i: Int) = disp(lm, i, csx, csy)
+        val e1 = p(33); val e2 = p(263)
+        val a = if (e1[0] <= e2[0]) e1 else e2
+        val b = if (e1[0] <= e2[0]) e2 else e1
+        val theta = atan2(b[1] - a[1], (b[0] - a[0]) * aspect)   // inclinaison de la tête
+        val faceW = dist(p(234), p(454), aspect)
+        val faceH = dist(p(10), p(152), aspect)
+        val faceC = mid(mid(p(234), p(454)), mid(p(10), p(152)))
+        val c = when (anchor) {
+            "eyes" -> mid(a, b)
+            "top" -> p(10)
+            "nose" -> p(1)
+            "corner" -> floatArrayOf(p(454)[0].coerceAtLeast(p(234)[0]), p(10)[1])
+            "mouth" -> mid(p(13), p(14))
+            "chin" -> p(152)
+            else -> floatArrayOf(faceC[0], faceC[1] + faceH * 0.04f)   // « face » : tout le visage
+        }
+        val size = faceW * overlaySize
+        val cy = c[1] + faceH * overlayDy
+        val cs = cos(theta); val sn = sin(theta)
+        val corners = arrayOf(floatArrayOf(-.5f, -.5f), floatArrayOf(.5f, -.5f), floatArrayOf(-.5f, .5f), floatArrayOf(.5f, .5f))
+        ovBuf.clear()
+        for (k in corners) {
+            val lx = k[0] * size; val ly = k[1] * size
+            val rx = lx * cs - ly * sn; val ry = lx * sn + ly * cs
+            ovBuf.put((c[0] + rx / aspect) * 2f - 1f); ovBuf.put(cy + ry).also { }   // y corrigé ci-dessous
+            ovBuf.put(k[0] + .5f); ovBuf.put(.5f - k[1])
+        }
+        // (y en espace d'affichage 0 à 1 → -1 à 1)
+        for (i in 0 until 4) ovBuf.put(i * 4 + 1, ovBuf.get(i * 4 + 1) * 2f - 1f)
+        GLES20.glUseProgram(ovProgram)
+        GLES20.glEnable(GLES20.GL_BLEND)
+        GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA)
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, ovTex)
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(ovProgram, "uOv"), 0)
+        val ap = GLES20.glGetAttribLocation(ovProgram, "aP"); val at = GLES20.glGetAttribLocation(ovProgram, "aT")
+        ovBuf.position(0); GLES20.glVertexAttribPointer(ap, 2, GLES20.GL_FLOAT, false, 16, ovBuf); GLES20.glEnableVertexAttribArray(ap)
+        ovBuf.position(2); GLES20.glVertexAttribPointer(at, 2, GLES20.GL_FLOAT, false, 16, ovBuf); GLES20.glEnableVertexAttribArray(at)
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+        GLES20.glDisableVertexAttribArray(ap); GLES20.glDisableVertexAttribArray(at)
+        GLES20.glDisable(GLES20.GL_BLEND)
+        ovBuf.position(0)
     }
 
     /**
@@ -706,6 +834,9 @@ class FaceRenderer : GLSurfaceView.Renderer {
             uniform vec2 uC[4];
             uniform float uR[4];
             uniform float uS[4];
+            uniform vec3 uBeauty;
+            uniform float uTexel;
+            uniform float uLook;
             void main() {
                 vec2 p = vU;
                 // gonflement local (yeux, bouche, nez) : on échantillonne plus près du centre, donc la zone paraît plus grande
@@ -730,7 +861,40 @@ class FaceRenderer : GLSurfaceView.Renderer {
                 }
                 vec2 img = (p - 0.5) / uCrop + 0.5;
                 vec4 t = uMap * vec4(img, 0.0, 1.0);
-                gl_FragColor = texture2D(uTex, t.xy);
+                vec4 c = texture2D(uTex, t.xy);
+                if (uBeauty.x > 0.0) {
+                    // peau lissée : moyenne des voisins, seulement sur les tons de peau et loin des contours (yeux, bouche, cheveux restent nets)
+                    vec2 o = vec2(uTexel) * (1.5 + 3.0 * uBeauty.x);
+                    vec3 b = c.rgb * 0.25;
+                    b += (texture2D(uTex, t.xy + vec2(o.x, 0.0)).rgb + texture2D(uTex, t.xy - vec2(o.x, 0.0)).rgb + texture2D(uTex, t.xy + vec2(0.0, o.y)).rgb + texture2D(uTex, t.xy - vec2(0.0, o.y)).rgb) * 0.125;
+                    b += (texture2D(uTex, t.xy + o).rgb + texture2D(uTex, t.xy - o).rgb + texture2D(uTex, t.xy + vec2(o.x, -o.y)).rgb + texture2D(uTex, t.xy + vec2(-o.x, o.y)).rgb) * 0.0625;
+                    float cb = -0.169 * c.r - 0.331 * c.g + 0.5 * c.b + 0.5;
+                    float cr = 0.5 * c.r - 0.419 * c.g - 0.081 * c.b + 0.5;
+                    float skin = smoothstep(0.28, 0.33, cb) * (1.0 - smoothstep(0.48, 0.53, cb)) * smoothstep(0.50, 0.54, cr) * (1.0 - smoothstep(0.66, 0.71, cr));
+                    float edge = length(c.rgb - b);
+                    float k = uBeauty.x * skin * (1.0 - smoothstep(0.06, 0.16, edge));
+                    c.rgb = mix(c.rgb, b, clamp(k * 0.9, 0.0, 1.0));
+                }
+                c.rgb += vec3(uBeauty.y * 0.10 + uBeauty.z * 0.035, uBeauty.y * 0.10, uBeauty.y * 0.10 - uBeauty.z * 0.035);
+                if (uLook > 0.5) {
+                    float l = dot(c.rgb, vec3(0.299, 0.587, 0.114));
+                    if (uLook < 1.5) {
+                        c.rgb = vec3(clamp((l - 0.5) * 1.15 + 0.5, 0.0, 1.0));                          // noir et blanc contrasté
+                    } else if (uLook < 2.5) {
+                        c.rgb = vec3(l * 1.08, l * 0.95, l * 0.74);                                      // sépia
+                    } else if (uLook < 3.5) {
+                        c.rgb = mix(vec3(l), c.rgb, 0.72) * vec3(1.05, 0.98, 0.90) * 0.92 + 0.07;        // vintage : couleurs fanées, noirs relevés
+                    } else if (uLook < 4.5) {
+                        vec3 g = mix(c.rgb, vec3(l), 0.18);                                              // cinéma : ombres bleutées, hautes lumières chaudes
+                        c.rgb = g + vec3((l - 0.45) * 0.16, (l - 0.45) * 0.02, -(l - 0.45) * 0.16);
+                        c.rgb = (c.rgb - 0.5) * 1.08 + 0.5;
+                    } else if (uLook < 5.5) {
+                        c.rgb = mix(vec3(l), c.rgb, 1.7) * vec3(0.92, 0.82, 1.18);                       // néon
+                    } else {
+                        c.rgb = (mix(vec3(l), c.rgb, 1.5) - 0.5) * 1.12 + 0.5;                           // pop : couleurs vives
+                    }
+                }
+                gl_FragColor = vec4(clamp(c.rgb, 0.0, 1.0), 1.0);
             }
         """.trimIndent()
         val v = compile(GLES20.GL_VERTEX_SHADER, vs)
