@@ -23,6 +23,7 @@ class MainActivity : AudioServiceFragmentActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         FaceChannel.register(flutterEngine, this)
+        FaceEngine.register(flutterEngine, this)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             if (call.method == "getInitialLink") {
                 result.success(initialLink)

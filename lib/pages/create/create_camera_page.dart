@@ -15,6 +15,7 @@ import '../../services/beauty.dart';
 import '../../services/face_filters.dart';
 import 'beauty_sheet.dart';
 import 'face_filter_page.dart';
+import 'face_lab_page.dart';
 import '../../theme/app_colors.dart';
 
 /// Ce que la caméra rend : un fichier filmé ou photographié DANS l'application (origine « captured »), ou la demande d'ouvrir la galerie.
@@ -479,6 +480,10 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
                   ]),
                 ),
               const Spacer(),
+              // laboratoire du moteur maison (APK de test seulement)
+              if (FaceLabPage.available && FaceFilters.available)
+                _round(Icons.science_rounded, () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FaceLabPage()))),
+              if (FaceLabPage.available && FaceFilters.available) const SizedBox(width: 8),
               _round(_torch ? Icons.flash_on_rounded : Icons.flash_off_rounded, _toggleTorch, active: _torch),
               const SizedBox(width: 8),
               _round(Icons.cameraswitch_rounded, _flip),
