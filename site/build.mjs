@@ -184,6 +184,10 @@ const crumbs = (lang, items) => `<nav class="crumbs" aria-label="Fil d'Ariane">$
 const ctaStores = (lang) => `<div class="cta">${storeBtns(T[lang])}</div>`;
 
 // ───────── pages ─────────
+import { frHero, frGrid, enHero, enGrid } from './src/screens.mjs';
+const screens = (lang) => (lang === 'fr' ? { hero: frHero, grid: frGrid } : { hero: enHero, grid: enGrid });
+const screensHead = '<link rel="stylesheet" href="/css/screens.css?v=${ASSET_V}">';
+const screensScript = '<script>(function(){var s=[].slice.call(document.querySelectorAll("#afxh .afx-sc")),d=[].slice.call(document.querySelectorAll("#afxd i")),i=0,t;function go(n){s[i].classList.remove("on");d[i].classList.remove("on");i=n;s[i].classList.add("on");d[i].classList.add("on")}if(!s.length)return;d.forEach(function(e,n){e.addEventListener("click",function(){go(n)})});if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)return;t=setInterval(function(){go((i+1)%s.length)},4500)})();</script>';
 function homePage(lang) {
   const t = T[lang], h = t.home, [coins, fcfa] = fmt(lang, cfg.example);
   const eur = cfg.example.eur;
@@ -198,20 +202,8 @@ function homePage(lang) {
   <div class="cta">${storeBtns(t)}</div>
   <p class="note">${h.note}</p>
  </div>
- <div class="stage">
-  <div class="wallet"><div class="scr"><div class="t">${h.wallet}</div><div class="bal">${coins}<small>${h.coins}</small></div>
-   <div class="conv"><span><b>${fcfa}</b> FCFA</span><span><b>${eur}</b> €</span></div>
-   <div class="row"><i>${svgIcon('heart')}</i><span><b>${h.likes[0]}</b><small>${h.likes[1]}</small></span><em>+${lang === 'fr' ? '118 400' : '118,400'}</em></div>
-   <div class="row"><i>${svgIcon('gift')}</i><span><b>${h.gifts[0]}</b><small>${h.gifts[1]}</small></span><em>+${lang === 'fr' ? '96 350' : '96,350'}</em></div>
-   <div class="row"><i>${svgIcon('tv')}</i><span><b>${h.channel[0]}</b><small>${h.channel[1]}</small></span><em>+${lang === 'fr' ? '252 000' : '252,000'}</em></div>
-   <div class="row"><i>${svgIcon('live')}</i><span><b>${h.lives[0]}</b><small>${h.lives[1]}</small></span><em>+${lang === 'fr' ? '158 000' : '158,000'}</em></div>
-   <div class="btnw">${h.withdraw}</div></div></div>
-  <div class="fan"><span class="lab">${svgIcon('sparkle')} ${t.nav.cards}</span>
-   <img class="k1" src="${card('manga')}" width="230" height="288" alt="Carte Afrolook, style manga"><img class="k2" src="${card('collector')}" width="230" height="288" alt="Carte Afrolook, style collector"><img class="k3" src="${card('passport')}" width="230" height="288" alt="Carte Afrolook, style passeport"><img class="k4" src="${card('pride')}" width="230" height="288" alt="Carte Afrolook, style couronne de drapeaux">
-   <span class="share">${svgIcon('send')} ${h.share}</span></div>
-  <div class="toast c"><i>${svgIcon('send')}</i><span><b>${h.withdrawn[0]}</b><small>${fcfa} FCFA ${h.withdrawn[1]}</small></span></div>
-  <p class="fine">${h.fine}</p>
- </div></div></section>
+ <div class="stage" style="flex-direction:column;justify-content:flex-start">${screens(lang).hero}<p class="fine" style="position:static;margin-top:8px">${h.fine}</p></div>
+ </div></section>
 
 <div class="platforms"><div class="wrap in"><span>${h.payment}</span>${h.plat.map((x) => `<span>${x}</span>`).join('')}</div></div>
 
@@ -223,8 +215,7 @@ function homePage(lang) {
 ${adsHomeBlock(lang)}
 
 <section class="appscreens" id="ecrans" style="padding-block:56px"><div class="wrap"><span class="kicker">${h.screens.k}</span><h2 class="h2">${h.screens.h}</h2><p class="sub">${h.screens.p}</p>
- <div style="margin-top:36px">${appMocks(lang, 'main')}</div>
- <div style="margin-top:56px"><h3 class="h2" style="font-size:clamp(22px,3vw,32px);text-align:center">${h.screens.liveH}</h3><p class="sub" style="text-align:center;margin:10px auto 28px">${h.screens.liveP}</p>${appMocks(lang, 'lives')}<p class="fine" style="text-align:center;margin-top:16px">${h.screens.fine}</p></div></div></section>
+ ${screens(lang).grid}<p class="fine" style="text-align:center;margin-top:16px">${h.screens.fine}</p></div></section>
 
 <section class="musicteaser" id="musique" style="background:var(--surface);border-block:1px solid var(--line)"><div class="wrap">
  <div class="twocol"><div><span class="kicker">${t.music.teaserK}</span><h2 class="h2">${t.music.teaserH}</h2><p class="sub">${t.music.teaserP}</p>
@@ -271,7 +262,7 @@ ${jobsHtml(lang)}
 
 <section class="contact" id="contact" style="background:var(--soft)"><div class="wrap"><span class="kicker">${t.nav.contact}</span><h2 class="h2">${lang === 'fr' ? 'Une question, une idée, un partenariat ?' : 'A question, an idea, a partnership?'}</h2>
  <div class="grid"><div><p class="sub" style="margin-top:0">${t.contact.lead}</p>${contactBlock(lang)}</div>${contactForm(lang)}</div></div></section>`;
-  emit(lang, 'home', P[lang].home, { alt, title: h.title, desc: h.desc, body: body + adsBar(lang), jsonld: [mailtoOrg, appLd(lang), faqLd(lang)], extraHead: adsHead });
+  emit(lang, 'home', P[lang].home, { alt, title: h.title, desc: h.desc, body: body + adsBar(lang) + screensScript, jsonld: [mailtoOrg, appLd(lang), faqLd(lang)], extraHead: adsHead + screensHead.replace('${ASSET_V}', ASSET_V) });
 }
 
 function musicPage(lang) {
