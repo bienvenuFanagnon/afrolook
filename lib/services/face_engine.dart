@@ -36,6 +36,16 @@ class FaceLook {
   final IconData icon;
 }
 
+/// Un choix de fond (flou ou dégradé de couleurs) ou de couleur (cheveux, habits).
+class FaceSeg {
+  const FaceSeg(this.label, this.color, {this.color2 = 0, this.mode = 0, this.blur = 0.6});
+  final String label;
+  final int color; // couleur (ARGB) ; pour un fond : haut du dégradé
+  final int color2; // bas du dégradé
+  final int mode; // fond : 1 flou, 2 dégradé
+  final double blur;
+}
+
 /// Un geste qui déclenche un effet magique.
 class FaceGesture {
   const FaceGesture(this.key, this.label, this.instruction, this.icon);
@@ -98,6 +108,43 @@ class FaceEngine {
     FaceLook('Pop', 6, Icons.color_lens_rounded),
   ];
 
+  // ── Fond, cheveux, habits : la personne est séparée du reste (segmentation sur le téléphone) ──
+  static const backgrounds = [
+    FaceSeg('Flou léger', 0, mode: 1, blur: 0.25),
+    FaceSeg('Flou fort', 0, mode: 1, blur: 0.9),
+    FaceSeg('Studio', 0xFFEDEFF2, color2: 0xFF98A2AD, mode: 2),
+    FaceSeg('Bureau', 0xFFF4F6FA, color2: 0xFFC3CEDF, mode: 2),
+    FaceSeg('Savane', 0xFFFFC46B, color2: 0xFFB5532A, mode: 2),
+    FaceSeg('Coucher de soleil', 0xFFFF8A3D, color2: 0xFF5B2A86, mode: 2),
+    FaceSeg('Océan', 0xFF3FB6E8, color2: 0xFF0B4E7A, mode: 2),
+    FaceSeg('Nuit', 0xFF1B2A5C, color2: 0xFF05070F, mode: 2),
+    FaceSeg('Écran vert', 0xFF1FD14B, color2: 0xFF1FD14B, mode: 2),
+  ];
+
+  static const hairColors = [
+    FaceSeg('Noir', 0xFF1B1B1B),
+    FaceSeg('Brun', 0xFF5A3A22),
+    FaceSeg('Blond', 0xFFE2C36B),
+    FaceSeg('Roux', 0xFFB5532A),
+    FaceSeg('Rose', 0xFFE86FA6),
+    FaceSeg('Bleu', 0xFF3B7DDD),
+    FaceSeg('Violet', 0xFF8E4FD6),
+    FaceSeg('Vert', 0xFF2FA866),
+    FaceSeg('Gris', 0xFFD3D3D3),
+  ];
+
+  static const clothColors = [
+    FaceSeg('Rouge', 0xFFD62839),
+    FaceSeg('Orange', 0xFFF28A1E),
+    FaceSeg('Jaune', 0xFFFFC400),
+    FaceSeg('Vert', 0xFF1E9E55),
+    FaceSeg('Bleu', 0xFF2B6FD6),
+    FaceSeg('Violet', 0xFF7B3FD0),
+    FaceSeg('Rose', 0xFFE86FA6),
+    FaceSeg('Noir', 0xFF151515),
+    FaceSeg('Blanc', 0xFFF2F2F2),
+  ];
+
   // ── Masques : une vraie icône par masque ──
   static IconData maskIcon(FaceFilter f) => switch (f) {
         FaceFilter.glasses => Icons.remove_red_eye_rounded,
@@ -158,6 +205,18 @@ class FaceEngine {
       );
 
   static Future<void> setLook(int look) => _channel.invokeMethod('setLook', {'look': look});
+
+  /// Fond, couleur des cheveux et des habits (`null` = aucun effet).
+  static Future<void> setSegment({FaceSeg? background, FaceSeg? hair, FaceSeg? cloth}) => _channel.invokeMethod('setSegment', {
+        'bg': background?.mode ?? 0,
+        'blur': background?.blur ?? 0.0,
+        'bgA': background?.color ?? 0,
+        'bgB': background?.color2 ?? 0,
+        'hair': hair?.color ?? 0,
+        'hairAmt': hair == null ? 0.0 : 0.85,
+        'cloth': cloth?.color ?? 0,
+        'clothAmt': cloth == null ? 0.0 : 0.8,
+      });
 
   static Future<void> setFront(bool front) => _channel.invokeMethod('setFront', {'front': front});
 

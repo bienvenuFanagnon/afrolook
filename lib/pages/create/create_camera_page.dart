@@ -61,6 +61,9 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
   String _gesture = 'mouth'; // geste qui déclenche l'effet magique
   String _group = 'none'; // groupe d'effets ouvert : face, color, mask, avatar, magic
   FaceAvatar? _avatar; // avatar choisi (copie les expressions)
+  FaceSeg? _bg; // fond choisi (flou ou dégradé)
+  FaceSeg? _hair; // couleur des cheveux
+  FaceSeg? _cloth; // couleur des habits
 
   // ── Filtres de visage en direct (Android) ──
   FaceFilter _filter = FaceFilter.none;
@@ -199,6 +202,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
         await FaceEngine.setDeformations(_deforms);
         await FaceEngine.setLook(_look);
         await FaceEngine.setAvatar(_avatar);
+        await FaceEngine.setSegment(background: _bg, hair: _hair, cloth: _cloth);
         await FaceEngine.setMagic(_magic < 0 ? null : FaceEngine.magic[_magic], _gesture);
         return;
       } catch (_) {
@@ -226,6 +230,54 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
     try {
       await FaceEngine.setLook(look);
     } catch (_) {}
+  }
+
+  Future<void> _pickSeg(String kind, FaceSeg? v) async {
+    setState(() {
+      switch (kind) {
+        case 'bg':
+          _bg = _bg?.label == v?.label ? null : v;
+        case 'hair':
+          _hair = _hair?.label == v?.label ? null : v;
+        default:
+          _cloth = _cloth?.label == v?.label ? null : v;
+      }
+    });
+    try {
+      await FaceEngine.setSegment(background: _bg, hair: _hair, cloth: _cloth);
+    } catch (_) {}
+  }
+
+  Widget _swatchChip(String kind, FaceSeg v, FaceSeg? current, AppColors c, {bool background = false}) {
+    final selected = current?.label == v.label;
+    final fill = background && v.mode == 1
+        ? const Color(0xFF8D99A6)
+        : Color(v.color);
+    final swatch = Container(
+      width: 18,
+      height: 18,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 1.4),
+        gradient: background && v.mode == 2 ? LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(v.color), Color(v.color2)]) : null,
+        color: background && v.mode == 2 ? null : fill,
+      ),
+      child: background && v.mode == 1 ? const Icon(Icons.blur_on_rounded, size: 12, color: Colors.white) : null,
+    );
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        key: ValueKey('${kind}_${v.label}'),
+        avatar: swatch,
+        label: Text(context.tr(v.label), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: selected ? c.onAccent : Colors.white)),
+        selected: selected,
+        showCheckmark: false,
+        selectedColor: c.accent,
+        backgroundColor: const Color(0x99000000),
+        side: BorderSide.none,
+        onSelected: _recording ? null : (_) => _pickSeg(kind, v),
+      ),
+    );
   }
 
   Future<void> _pickAvatar(FaceAvatar? a) async {
@@ -839,6 +891,21 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
           if (f == FaceFilter.none || f == FaceFilter.blur) continue;
           items.add(_engChip(key: ValueKey('mask_${f.name}'), icon: FaceEngine.maskIcon(f), label: FaceEngine.maskLabel(f), selected: _filter == f, onTap: off ? null : () => _pickFilter(_filter == f ? FaceFilter.none : f), c: c));
         }
+      case 'bg':
+        items.add(_engChip(key: const ValueKey('bg_none'), icon: Icons.block_rounded, label: 'Aucun', selected: _bg == null, onTap: off ? null : () => _pickSeg('bg', _bg), c: c));
+        for (final v in FaceEngine.backgrounds) {
+          items.add(_swatchChip('bg', v, _bg, c, background: true));
+        }
+      case 'hair':
+        items.add(_engChip(key: const ValueKey('hair_none'), icon: Icons.block_rounded, label: 'Aucune', selected: _hair == null, onTap: off ? null : () => _pickSeg('hair', _hair), c: c));
+        for (final v in FaceEngine.hairColors) {
+          items.add(_swatchChip('hair', v, _hair, c));
+        }
+      case 'cloth':
+        items.add(_engChip(key: const ValueKey('cloth_none'), icon: Icons.block_rounded, label: 'Aucune', selected: _cloth == null, onTap: off ? null : () => _pickSeg('cloth', _cloth), c: c));
+        for (final v in FaceEngine.clothColors) {
+          items.add(_swatchChip('cloth', v, _cloth, c));
+        }
       case 'avatar':
         items.add(_engChip(key: const ValueKey('avatar_none'), icon: Icons.block_rounded, label: 'Aucun', selected: _avatar == null, onTap: off ? null : () => _pickAvatar(null), c: c));
         for (final av in FaceAvatar.all) {
@@ -914,6 +981,9 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
           group('face', Icons.face_retouching_natural_rounded, 'Visage', _deforms.isNotEmpty),
           group('color', Icons.palette_rounded, 'Couleur', _look != 0),
           group('mask', Icons.masks_rounded, 'Masques', _filter != FaceFilter.none),
+          group('bg', Icons.wallpaper_rounded, 'Fond', _bg != null),
+          group('hair', Icons.face_3_rounded, 'Cheveux', _hair != null),
+          group('cloth', Icons.checkroom_rounded, 'Habits', _cloth != null),
           group('avatar', Icons.theater_comedy_rounded, 'Avatars', _avatar != null),
           group('magic', Icons.auto_fix_high_rounded, 'Magie', _magic >= 0),
         ]),

@@ -44,6 +44,9 @@ import com.google.mediapipe.tasks.core.Delegate
 import com.google.mediapipe.tasks.vision.core.ImageProcessingOptions
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.facelandmarker.FaceLandmarker
+import com.google.mediapipe.tasks.vision.imagesegmenter.ImageSegmenter
+import com.google.mediapipe.tasks.vision.imagesegmenter.ImageSegmenterResult
+import com.google.mediapipe.framework.image.ByteBufferExtractor
 import com.google.mediapipe.tasks.vision.facelandmarker.FaceLandmarkerResult
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -105,6 +108,19 @@ object FaceEngine {
                     if (bytes != null) v?.renderer?.particlePending = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
                     result.success(null)
                 }
+                "setSegment" -> {
+                    // fond (0 aucun, 1 flou, 2 dégradé), couleur des cheveux et des habits (0 = aucune) : tout passe par la segmentation de la personne
+                    val r = v?.renderer
+                    fun f(k: String) = (call.argument<Double>(k) ?: 0.0).toFloat()
+                    fun col(k: String): FloatArray { val c = call.argument<Number>(k)?.toLong()?.toInt() ?: 0; return floatArrayOf(((c shr 16) and 255) / 255f, ((c shr 8) and 255) / 255f, (c and 255) / 255f) }
+                    r?.bgMode = call.argument<Int>("bg") ?: 0
+                    r?.bgBlur = f("blur")
+                    r?.bgA = col("bgA"); r?.bgB = col("bgB")
+                    r?.hairColor = col("hair"); r?.hairAmt = f("hairAmt")
+                    r?.clothColor = col("cloth"); r?.clothAmt = f("clothAmt")
+                    v?.setSegActive((r?.bgMode ?: 0) != 0 || (r?.hairAmt ?: 0f) > 0f || (r?.clothAmt ?: 0f) > 0f)
+                    result.success(null)
+                }
                 "setAvatar" -> {
                     // avatar : tête, œil et bouche (PNG) ; les yeux et la bouche s'ouvrent comme ceux de la personne
                     val head = call.argument<ByteArray>("head")
@@ -155,6 +171,8 @@ object FaceEngine {
 }
 
 /** Points du visage (coordonnées normalisées de l'image redressée, y vers le bas), lissés d'une image à l'autre. */
+class SegMask(val w: Int, val h: Int, val rgb: ByteArray)
+
 class Landmarks(val x: FloatArray, val y: FloatArray, val vx: FloatArray, val vy: FloatArray, val t: Long)
 
 class FaceEngineView(private val activity: Activity, private var front: Boolean) : PlatformView {
@@ -164,6 +182,57 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
     private var provider: ProcessCameraProvider? = null
     private val analysisExecutor = Executors.newSingleThreadExecutor()
     @Volatile private var framesAnalysed = 0
+    private var segmenter: ImageSegmenter? = null
+    @Volatile private var segActive = false
+    private var segFrame = 0
+    private var segLastTs = 0L
+
+    /** Active ou coupe la segmentation (personne / cheveux / habits / fond). Le modèle ne se charge que la première fois qu'un effet en a besoin. */
+    fun setSegActive(on: Boolean) {
+        segActive = on
+        renderer.segOn = on
+        if (on && segmenter == null) analysisExecutor.execute { initSegmenter() }
+    }
+
+    private fun segOptions(delegate: Delegate) = ImageSegmenter.ImageSegmenterOptions.builder()
+        .setBaseOptions(BaseOptions.builder().setModelAssetPath("selfie_multiclass_256x256.tflite").setDelegate(delegate).build())
+        .setRunningMode(RunningMode.LIVE_STREAM)
+        .setOutputConfidenceMasks(true)
+        .setOutputCategoryMask(false)
+        .setResultListener { r: ImageSegmenterResult, _ -> onSegResult(r) }
+        .setErrorListener { e -> FaceEngine.log("Segmentation : ${e.message}") }
+        .build()
+
+    private fun initSegmenter() {
+        if (segmenter != null) return
+        try {
+            segmenter = ImageSegmenter.createFromOptions(activity, segOptions(Delegate.GPU))
+        } catch (e: Throwable) {
+            FaceEngine.log("Segmentation sur GPU impossible (${e.message}) : processeur")
+            try { segmenter = ImageSegmenter.createFromOptions(activity, segOptions(Delegate.CPU)) } catch (e2: Throwable) { FaceEngine.log("Segmentation : ${e2.message}") }
+        }
+    }
+
+    /** Masques de confiance (0 fond, 1 cheveux, 4 habits) rangés dans une image rouge / verte / bleue pour le dessin. */
+    private fun onSegResult(r: ImageSegmenterResult) {
+        try {
+            val masks = r.confidenceMasks().orElse(null) ?: return
+            if (masks.size < 5) return
+            val w = masks[0].width; val h = masks[0].height
+            fun floats(i: Int): java.nio.FloatBuffer = ByteBufferExtractor.extract(masks[i]).duplicate().order(ByteOrder.nativeOrder()).asFloatBuffer()
+            val bg = floats(0); val hair = floats(1); val cloth = floats(4)
+            val out = ByteArray(w * h * 3)
+            for (i in 0 until w * h) {
+                out[i * 3] = (bg.get(i).coerceIn(0f, 1f) * 255f).toInt().toByte()
+                out[i * 3 + 1] = (hair.get(i).coerceIn(0f, 1f) * 255f).toInt().toByte()
+                out[i * 3 + 2] = (cloth.get(i).coerceIn(0f, 1f) * 255f).toInt().toByte()
+            }
+            renderer.segPending = SegMask(w, h, out)
+        } catch (e: Throwable) {
+            FaceEngine.log("Masques de segmentation : ${e.message}")
+        }
+    }
+
     private var previewUc: Preview? = null
     private var analysisUc: ImageAnalysis? = null
     private val displayManager = activity.getSystemService(Context.DISPLAY_SERVICE) as android.hardware.display.DisplayManager
@@ -219,6 +288,7 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
         try { displayManager.unregisterDisplayListener(displayListener) } catch (_: Throwable) {}
         try { provider?.unbindAll() } catch (_: Throwable) {}
         try { landmarker?.close() } catch (_: Throwable) {}
+        try { segmenter?.close() } catch (_: Throwable) {}
         analysisExecutor.shutdown()
         if (FaceEngine.current === this) FaceEngine.current = null
     }
@@ -435,6 +505,12 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
             // image redressée ici (rotation dans le sens des aiguilles d'une montre) : les points rendus sont alors exactement ceux de l'image droite
             val bmp = if (rot == 0) raw else Bitmap.createBitmap(raw, 0, 0, raw.width, raw.height, android.graphics.Matrix().apply { postRotate(rot.toFloat()) }, true)
             lm.detectAsync(BitmapImageBuilder(bmp).build(), SystemClock.uptimeMillis())
+            // la segmentation tourne une image sur deux (le détecteur de visage garde toute sa cadence)
+            val sg = segmenter
+            if (segActive && sg != null && (segFrame++ % 2 == 0)) {
+                val ts = SystemClock.uptimeMillis()
+                if (ts > segLastTs) { segLastTs = ts; sg.segmentAsync(BitmapImageBuilder(bmp).build(), ts) }
+            }
             framesAnalysed++
         } catch (e: Throwable) {
             lastError = "analyse : ${e.message}"
@@ -503,6 +579,19 @@ class FaceRenderer : GLSurfaceView.Renderer {
     @Volatile var avatarEyeScale = 1f
     @Volatile var avatarMouthScale = 1f
     private val avTex = IntArray(3)
+    // segmentation : fond, cheveux, habits
+    @Volatile var segOn = false
+    @Volatile var segPending: SegMask? = null
+    @Volatile var bgMode = 0
+    @Volatile var bgBlur = 0.6f
+    @Volatile var bgA = floatArrayOf(0f, 0f, 0f)
+    @Volatile var bgB = floatArrayOf(0f, 0f, 0f)
+    @Volatile var hairColor = floatArrayOf(0f, 0f, 0f)
+    @Volatile var hairAmt = 0f
+    @Volatile var clothColor = floatArrayOf(0f, 0f, 0f)
+    @Volatile var clothAmt = 0f
+    private var segTex = 0
+    private var segReady = false
     @Volatile var look = 0f   // 0 aucun, 1 noir et blanc, 2 sépia, 3 vintage, 4 cinéma, 5 néon, 6 pop
     // image posée sur le visage (masque, lunettes, couronne…) qui suit la position, la taille et l'inclinaison de la tête
     @Volatile var overlayPending: Bitmap? = null
@@ -555,6 +644,15 @@ class FaceRenderer : GLSurfaceView.Renderer {
         ovTex = 0
         pTex = 0
         avTex.fill(0)
+        // image de masque : un pixel noir au départ (pas d'effet tant qu'il n'y a pas de masque)
+        val st1 = IntArray(1); GLES20.glGenTextures(1, st1, 0); segTex = st1[0]
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, segTex)
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MIN_FILTER, GLES20.GL_LINEAR)
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR)
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_S, GLES20.GL_CLAMP_TO_EDGE)
+        GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_WRAP_T, GLES20.GL_CLAMP_TO_EDGE)
+        GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGB, 1, 1, 0, GLES20.GL_RGB, GLES20.GL_UNSIGNED_BYTE, ByteBuffer.allocateDirect(4).order(ByteOrder.nativeOrder()))
+        segReady = false
     }
 
     override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -693,6 +791,27 @@ class FaceRenderer : GLSurfaceView.Renderer {
         GLES20.glUniform3f(GLES20.glGetUniformLocation(program, "uBeauty"), beautySmooth, beautyBright, beautyWarm)
         GLES20.glUniform1f(GLES20.glGetUniformLocation(program, "uTexel"), 1f / maxOf(bufW, bufH))
         GLES20.glUniform1f(GLES20.glGetUniformLocation(program, "uLook"), look)
+        // segmentation : nouveau masque à envoyer ? puis uniformes
+        segPending?.let { m ->
+            segPending = null
+            GLES20.glActiveTexture(GLES20.GL_TEXTURE1)
+            GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, segTex)
+            GLES20.glPixelStorei(GLES20.GL_UNPACK_ALIGNMENT, 1)
+            GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGB, m.w, m.h, 0, GLES20.GL_RGB, GLES20.GL_UNSIGNED_BYTE, ByteBuffer.allocateDirect(m.rgb.size).order(ByteOrder.nativeOrder()).put(m.rgb).also { it.position(0) })
+            segReady = true
+        }
+        val segActiveNow = segOn && segReady
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(program, "uSegOn"), if (segActiveNow) 1f else 0f)
+        GLES20.glUniform1f(GLES20.glGetUniformLocation(program, "uMaskFlip"), if (mirrorTotal() != flipPointsX) 1f else 0f)
+        GLES20.glUniform2f(GLES20.glGetUniformLocation(program, "uBg"), bgMode.toFloat(), bgBlur)
+        GLES20.glUniform3f(GLES20.glGetUniformLocation(program, "uBgA"), bgA[0], bgA[1], bgA[2])
+        GLES20.glUniform3f(GLES20.glGetUniformLocation(program, "uBgB"), bgB[0], bgB[1], bgB[2])
+        GLES20.glUniform4f(GLES20.glGetUniformLocation(program, "uHair"), hairColor[0], hairColor[1], hairColor[2], hairAmt)
+        GLES20.glUniform4f(GLES20.glGetUniformLocation(program, "uCloth"), clothColor[0], clothColor[1], clothColor[2], clothAmt)
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE1)
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, segTex)
+        GLES20.glUniform1i(GLES20.glGetUniformLocation(program, "uMask"), 1)
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
 
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
         GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, texId)
@@ -1082,6 +1201,14 @@ class FaceRenderer : GLSurfaceView.Renderer {
             uniform vec3 uBeauty;
             uniform float uTexel;
             uniform float uLook;
+            uniform sampler2D uMask;
+            uniform float uSegOn;
+            uniform float uMaskFlip;
+            uniform vec2 uBg;
+            uniform vec3 uBgA;
+            uniform vec3 uBgB;
+            uniform vec4 uHair;
+            uniform vec4 uCloth;
             void main() {
                 vec2 p = vU;
                 // gonflement local (yeux, bouche, nez) : on échantillonne plus près du centre, donc la zone paraît plus grande
@@ -1107,6 +1234,29 @@ class FaceRenderer : GLSurfaceView.Renderer {
                 vec2 img = (p - 0.5) / uCrop + 0.5;
                 vec4 t = uMap * vec4(img, 0.0, 1.0);
                 vec4 c = texture2D(uTex, t.xy);
+                if (uSegOn > 0.5) {
+                    // masque de la personne (rouge = fond, vert = cheveux, bleu = habits), dans l'image droite non retournée
+                    vec2 mc = vec2(uMaskFlip > 0.5 ? 1.0 - img.x : img.x, 1.0 - img.y);
+                    vec3 m = texture2D(uMask, mc).rgb;
+                    float lum = dot(c.rgb, vec3(0.299, 0.587, 0.114));
+                    float hairK = smoothstep(0.30, 0.60, m.g) * uHair.a;
+                    float clothK = smoothstep(0.30, 0.60, m.b) * uCloth.a;
+                    c.rgb = mix(c.rgb, uHair.rgb * (0.25 + 1.05 * lum), hairK);
+                    c.rgb = mix(c.rgb, uCloth.rgb * (0.25 + 1.05 * lum), clothK);
+                    if (uBg.x > 0.5) {
+                        float bgK = smoothstep(0.35, 0.70, m.r);
+                        vec3 back;
+                        if (uBg.x < 1.5) {
+                            vec2 o = vec2(uTexel) * (14.0 + 26.0 * uBg.y);
+                            back = c.rgb * 0.2;
+                            back += (texture2D(uTex, t.xy + vec2(o.x, 0.0)).rgb + texture2D(uTex, t.xy - vec2(o.x, 0.0)).rgb + texture2D(uTex, t.xy + vec2(0.0, o.y)).rgb + texture2D(uTex, t.xy - vec2(0.0, o.y)).rgb) * 0.12;
+                            back += (texture2D(uTex, t.xy + o).rgb + texture2D(uTex, t.xy - o).rgb + texture2D(uTex, t.xy + vec2(o.x, -o.y)).rgb + texture2D(uTex, t.xy + vec2(-o.x, o.y)).rgb) * 0.08;
+                        } else {
+                            back = mix(uBgA, uBgB, clamp(1.0 - img.y, 0.0, 1.0));
+                        }
+                        c.rgb = mix(c.rgb, back, bgK);
+                    }
+                }
                 if (uBeauty.x > 0.0) {
                     // peau lissée : moyenne des voisins, seulement sur les tons de peau et loin des contours (yeux, bouche, cheveux restent nets)
                     vec2 o = vec2(uTexel) * (1.5 + 3.0 * uBeauty.x);
