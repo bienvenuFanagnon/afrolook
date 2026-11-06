@@ -300,6 +300,8 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
 
   Future<void> _onFrame(CameraImage img) async {
     _framesSeen++;
+    // le diagnostic (APK de test) se rafraîchit même quand la détection échoue ou ne trouve rien
+    if (_framesSeen % 5 == 0 && mounted) setState(() {});
     final now = DateTime.now().millisecondsSinceEpoch;
     if (_frameBusy || now - _lastFrameMs < 140 || !mounted) return;
     _frameBusy = true;
