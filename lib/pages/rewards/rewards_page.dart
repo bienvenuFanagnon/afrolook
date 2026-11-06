@@ -1,3 +1,4 @@
+import '../../services/coin_checkout.dart';
 import 'package:afrotok/layout/centered_content.dart';
 import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:flutter/material.dart';
@@ -194,7 +195,7 @@ class _RewardsPageState extends State<RewardsPage> {
         const SizedBox(width: 12),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(context.tr('Passer Gold : {p} F par mois', {'p': RewardsService.goldPriceMonth}), style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 14)),
+            Text(context.tr('Passer Gold : {p} par mois', {'p': CoinCheckout.priceLabel(RewardsService.goldPriceMonth)}), style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 14)),
             const SizedBox(height: 2),
             Text(context.tr('Sans pub, toutes les fonctions du Studio et l\'export libres, tout le temps.'),
                 style: TextStyle(color: colors.textSecondary, fontSize: 12, height: 1.3)),

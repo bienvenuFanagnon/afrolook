@@ -1,3 +1,4 @@
+import '../services/coin_checkout.dart';
 import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:flutter/material.dart';
 
@@ -117,7 +118,7 @@ class GoldGate {
               child: OutlinedButton(
                 key: const ValueKey('gate_gold'),
                 onPressed: () => Navigator.pop(ctx, _Choice.gold),
-                child: Text(context.tr('Passer Gold · {p} F par mois', {'p': RewardsService.goldPriceMonth})),
+                child: Text(context.tr('Passer Gold · {p} par mois', {'p': CoinCheckout.priceLabel(RewardsService.goldPriceMonth)})),
               ),
             ),
             Center(child: TextButton(onPressed: () => Navigator.pop(ctx), child: Text(context.tr('Plus tard')))),

@@ -1,3 +1,4 @@
+import '../utils/platform_guard.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -70,7 +71,8 @@ class _PostCommerceOverlayState extends State<PostCommerceOverlay> {
         ),
       );
     }
-    final hasLink = c.linkUrl != null;
+    // sur iPhone / iPad le bouton de lien externe n'est pas montré (règle App Store sur les achats de contenus numériques hors achat intégré) ; WhatsApp et appel restent
+    final hasLink = c.linkUrl != null && !kIsAppleStore;
     return Container(
       key: const ValueKey('commerce_card'),
       constraints: const BoxConstraints(maxWidth: 300),
