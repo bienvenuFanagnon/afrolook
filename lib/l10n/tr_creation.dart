@@ -116,6 +116,7 @@ const Map<String, Map<String, String>> kTrCreation = {
   'Autocollants': {'en': 'Stickers'},
   'Sous-titres': {'en': 'Subtitles'},
   'Voix': {'en': 'Voice'},
+  'Le filtre n\'a pas pu être posé : vidéo gardée sans filtre.': {'en': 'The filter could not be applied: video kept without a filter.'},
   'Sans filtre': {'en': 'No filter'},
   'Aucun visage trouvé : tu peux garder la photo telle quelle.': {'en': 'No face found: you can keep the photo as it is.'},
   'Reprendre': {'en': 'Retake'},

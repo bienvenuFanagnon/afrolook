@@ -1,12 +1,15 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:video_player/video_player.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 import '../../l10n/tr.dart';
+import '../../services/api/studio_face_overlay_api.dart';
 import '../../services/face_filters.dart';
 import 'face_filter_page.dart';
 import '../../theme/app_colors.dart';
@@ -41,6 +44,17 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
   int _camIndex = 0;
   bool _photoMode = false;
   bool _torch = false;
+
+  // ── Filtres de visage en direct (Android) ──
+  FaceFilter _filter = FaceFilter.none;
+  bool _streaming = false;
+  bool _frameBusy = false;
+  int _lastFrameMs = 0;
+  Size? _liveSize;
+  List<FaceBox> _liveFaces = const [];
+  final List<FaceTrackPoint> _track = []; // trajectoire du visage pendant le tournage
+  final Stopwatch _recWatch = Stopwatch();
+  double _trackSize = 0.3; // taille du filtre en fraction de la largeur de l'image
   bool _recording = false;
   bool _busy = false;
   String? _error;
@@ -110,7 +124,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
     final old = _ctrl;
     _ctrl = null;
     await old?.dispose();
-    final c = CameraController(_cameras[index], ResolutionPreset.high, enableAudio: _micOk, imageFormatGroup: ImageFormatGroup.jpeg);
+    final c = CameraController(_cameras[index], ResolutionPreset.high, enableAudio: _micOk, imageFormatGroup: FaceFilters.available ? ImageFormatGroup.nv21 : ImageFormatGroup.jpeg);
     try {
       await c.initialize();
       await c.setFlashMode(FlashMode.off);
@@ -124,11 +138,65 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
       await c.dispose();
       return;
     }
+    _streaming = false;
+    _liveFaces = const [];
     setState(() {
       _ctrl = c;
       _camIndex = index;
       _error = null;
     });
+    _syncStream();
+  }
+
+  // ── Filtres en direct ────────────────────────────────────────────────────
+
+  Future<void> _pickFilter(FaceFilter f) async {
+    setState(() {
+      _filter = f;
+      if (f == FaceFilter.none) _liveFaces = const [];
+    });
+    await _syncStream();
+  }
+
+  /// Lit les images de la caméra seulement quand un filtre est choisi (sinon aucun coût).
+  Future<void> _syncStream() async {
+    final c = _ctrl;
+    if (c == null || !c.value.isInitialized || !FaceFilters.available) return;
+    try {
+      if (_filter != FaceFilter.none && !_streaming) {
+        _streaming = true;
+        await c.startImageStream(_onFrame);
+      } else if (_filter == FaceFilter.none && _streaming && !_recording) {
+        _streaming = false;
+        await c.stopImageStream();
+      }
+    } catch (_) {
+      _streaming = false;
+    }
+  }
+
+  Future<void> _onFrame(CameraImage img) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    if (_frameBusy || now - _lastFrameMs < 140 || !mounted) return;
+    _frameBusy = true;
+    _lastFrameMs = now;
+    try {
+      final r = await FaceFilters.detectFrame(img, _cameras[_camIndex].sensorOrientation);
+      if (!mounted || r == null) return;
+      setState(() {
+        _liveSize = r.size;
+        _liveFaces = r.faces;
+      });
+      if (_recording) {
+        // seul le plus grand visage est suivi dans la vidéo
+        final main = r.faces.isEmpty ? null : (r.faces.toList()..sort((a, b) => (b.rect.width * b.rect.height).compareTo(a.rect.width * a.rect.height))).first;
+        final a = main == null ? null : FaceFilters.anchor(main, _filter);
+        _track.add(FaceTrackPoint(_recWatch.elapsedMilliseconds, a == null ? null : (a.center.dx / r.size.width).clamp(-0.4, 1.4), a == null ? null : (a.center.dy / r.size.height).clamp(-0.4, 1.4)));
+        if (a != null) _trackSize = a.size / r.size.width;
+      }
+    } finally {
+      _frameBusy = false;
+    }
   }
 
   Future<void> _flip() async {
@@ -161,7 +229,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
         // Android : aperçu de la photo avec les filtres de visage AVANT de la garder (si la détection échoue, on garde la photo telle quelle)
         final det = await FaceFilters.detect(path);
         if (det != null && mounted) {
-          final chosen = await Navigator.of(context).push<String>(MaterialPageRoute(builder: (_) => FaceFilterPage(path: det.path, size: det.size, faces: det.faces)));
+          final chosen = await Navigator.of(context).push<String>(MaterialPageRoute(builder: (_) => FaceFilterPage(path: det.path, size: det.size, faces: det.faces, initial: _filter)));
           if (!mounted) return;
           if (chosen == null) {
             setState(() => _busy = false); // « Reprendre » : retour à la caméra
@@ -183,6 +251,10 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
     if (c == null) return;
     try {
       HapticFeedback.mediumImpact();
+      _track.clear();
+      _recWatch
+        ..reset()
+        ..start();
       await c.startVideoRecording();
       _elapsedMs = 0;
       _tick = Timer.periodic(const Duration(milliseconds: 100), (t) {
@@ -210,15 +282,37 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
     });
     try {
       final f = await c.stopVideoRecording();
+      _recWatch.stop();
       if (!mounted) return;
       // un clip de moins d'une seconde n'a pas de sens : on recommence
       if (_elapsedMs < 1000) {
         setState(() => _busy = false);
         return;
       }
-      Navigator.pop(context, CreateCaptureResult.file(f.path, isVideo: true));
+      var path = f.path;
+      // filtre de visage choisi : le serveur le pose sur la trajectoire du visage ; en cas d'échec la vidéo est gardée telle quelle
+      if (_filter != FaceFilter.none && _track.any((p) => p.x != null)) {
+        path = await _burnFilter(path);
+        if (!mounted) return;
+      }
+      Navigator.pop(context, CreateCaptureResult.file(path, isVideo: true));
     } catch (_) {
       if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<String> _burnFilter(String path) async {
+    try {
+      final probe = VideoPlayerController.file(File(path));
+      await probe.initialize();
+      final videoW = probe.value.size.width;
+      await probe.dispose();
+      final png = await FaceFilters.filterPng(_filter, (_trackSize * videoW).round());
+      final out = await StudioFaceOverlayApi.apply(File(path), png, List.of(_track));
+      return out.path;
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Le filtre n\'a pas pu être posé : vidéo gardée sans filtre.'))));
+      return path;
     }
   }
 
@@ -272,7 +366,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
         ClipRect(
           child: Transform.scale(
             scale: _coverScale(ctrl),
-            child: Center(child: CameraPreview(ctrl)),
+            child: Center(child: CameraPreview(ctrl, child: _liveOverlay(ctrl))),
           ),
         )
       else
@@ -304,6 +398,26 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
             ]),
           ),
           const Spacer(),
+          if (FaceFilters.available && !_busy)
+            SizedBox(
+              key: const ValueKey('face_filters'),
+              height: 46,
+              child: ListView(scrollDirection: Axis.horizontal, padding: const EdgeInsets.symmetric(horizontal: 16), children: [
+                for (final f in FaceFilter.values)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      key: ValueKey('live_${f.name}'),
+                      label: Text(f == FaceFilter.none ? context.tr('Sans filtre') : FaceFilters.emoji(f), style: TextStyle(fontSize: f == FaceFilter.none ? 13 : 20, fontWeight: FontWeight.w700, color: _filter == f ? c.onAccent : Colors.white)),
+                      selected: _filter == f,
+                      selectedColor: c.accent,
+                      backgroundColor: const Color(0x99000000),
+                      side: BorderSide.none,
+                      onSelected: _recording ? null : (_) => _pickFilter(f),
+                    ),
+                  ),
+              ]),
+            ),
           if (!_photoMode && !_recording)
             Padding(
               padding: const EdgeInsets.only(bottom: 14),
@@ -343,6 +457,14 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
         ]),
       ),
     ]);
+  }
+
+  /// Le filtre posé en direct sur l'aperçu (dans le même cadre que l'image, donc au bon endroit) ; la caméra avant est affichée en miroir.
+  Widget? _liveOverlay(CameraController ctrl) {
+    final s = _liveSize;
+    if (_filter == FaceFilter.none || s == null || _liveFaces.isEmpty) return null;
+    final front = _cameras[_camIndex].lensDirection == CameraLensDirection.front;
+    return IgnorePointer(child: CustomPaint(painter: _LivePainter(_liveFaces, s, _filter, front)));
   }
 
   double _coverScale(CameraController ctrl) {
@@ -403,4 +525,24 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
       ),
     );
   }
+}
+
+
+class _LivePainter extends CustomPainter {
+  _LivePainter(this.faces, this.imageSize, this.filter, this.mirror);
+  final List<FaceBox> faces;
+  final Size imageSize;
+  final FaceFilter filter;
+  final bool mirror;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.scale(size.width / imageSize.width, size.height / imageSize.height);
+    for (final f in faces) {
+      FaceFilters.drawOn(canvas, mirror ? f.mirrored(imageSize.width) : f, filter);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_LivePainter old) => true;
 }

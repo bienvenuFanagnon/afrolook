@@ -9,18 +9,21 @@ import '../../theme/app_colors.dart';
 /// Aperçu de la photo prise AVANT de la garder : on essaie les filtres de visage d'un toucher et on voit tout de suite le résultat.
 /// Rend le fichier à utiliser (avec ou sans filtre), ou null si la personne choisit de reprendre la photo.
 class FaceFilterPage extends StatefulWidget {
-  const FaceFilterPage({super.key, required this.path, required this.size, required this.faces});
+  const FaceFilterPage({super.key, required this.path, required this.size, required this.faces, this.initial = FaceFilter.none});
 
   final String path; // photo redressée
   final Size size;
   final List<FaceBox> faces;
+
+  /// Filtre déjà choisi dans la caméra (affiché tout de suite).
+  final FaceFilter initial;
 
   @override
   State<FaceFilterPage> createState() => _FaceFilterPageState();
 }
 
 class _FaceFilterPageState extends State<FaceFilterPage> {
-  FaceFilter _filter = FaceFilter.none;
+  late FaceFilter _filter = widget.initial;
   bool _busy = false;
 
   Future<void> _use() async {

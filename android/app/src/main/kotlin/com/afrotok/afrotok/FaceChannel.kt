@@ -24,8 +24,49 @@ object FaceChannel {
     private const val NAME = "afrolook/faces"
     private const val MAX_SIDE = 1600
 
+    /** Détecteur gardé pour le direct (une image toutes les ~150 ms) : le recréer à chaque image coûterait trop cher. */
+    private val live by lazy {
+        FaceDetection.getClient(
+            FaceDetectorOptions.Builder()
+                .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_FAST)
+                .setLandmarkMode(FaceDetectorOptions.LANDMARK_MODE_ALL)
+                .build()
+        )
+    }
+
+    private fun faceMap(f: com.google.mlkit.vision.face.Face): Map<String, Any> {
+        val b = f.boundingBox
+        val m = hashMapOf<String, Any>("left" to b.left, "top" to b.top, "width" to b.width(), "height" to b.height())
+        f.getLandmark(FaceLandmark.LEFT_EYE)?.position?.let { m["leftEye"] = mapOf("x" to it.x, "y" to it.y) }
+        f.getLandmark(FaceLandmark.RIGHT_EYE)?.position?.let { m["rightEye"] = mapOf("x" to it.x, "y" to it.y) }
+        f.getLandmark(FaceLandmark.NOSE_BASE)?.position?.let { m["nose"] = mapOf("x" to it.x, "y" to it.y) }
+        return m
+    }
+
     fun register(engine: FlutterEngine, cacheDir: File) {
         MethodChannel(engine.dartExecutor.binaryMessenger, NAME).setMethodCallHandler { call, result ->
+            if (call.method == "detectFrame") {
+                // Image de la caméra (NV21) : rend les visages dans l'image REDRESSÉE (rotation appliquée), sans miroir
+                val bytes = call.argument<ByteArray>("bytes")
+                val w = call.argument<Int>("width")
+                val h = call.argument<Int>("height")
+                val rot = call.argument<Int>("rotation") ?: 0
+                if (bytes == null || w == null || h == null) {
+                    result.error("bad_args", "image manquante", null)
+                    return@setMethodCallHandler
+                }
+                try {
+                    live.process(InputImage.fromByteArray(bytes, w, h, rot, InputImage.IMAGE_FORMAT_NV21))
+                        .addOnSuccessListener { faces ->
+                            val upright = rot == 90 || rot == 270
+                            result.success(mapOf("width" to (if (upright) h else w), "height" to (if (upright) w else h), "faces" to faces.map { faceMap(it) }))
+                        }
+                        .addOnFailureListener { e -> result.error("detect_failed", e.message, null) }
+                } catch (e: Throwable) {
+                    result.error("detect_failed", e.message, null)
+                }
+                return@setMethodCallHandler
+            }
             if (call.method != "detect") {
                 result.notImplemented()
                 return@setMethodCallHandler
