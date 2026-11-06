@@ -570,7 +570,7 @@ pre.doc-code code{background:none;padding:0;color:inherit;font:inherit;overflow-
 @media (max-width:620px){.adneed .btn{width:100%}}
 
 /* Création d'annonce en 4 étapes : quoi, ton annonce, destination, diffusion */
-.adsteps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:14px}
+div.adsteps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:14px}
 .adsteps span{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--muted);font-weight:700;font-size:13.5px;min-width:0}
 .adsteps span i{display:grid;place-items:center;flex:none;width:24px;height:24px;border-radius:50%;background:var(--soft);font-style:normal;font-size:12.5px}
 .adsteps span.on{border-color:var(--green-bright);color:var(--text)}.adsteps span.on i,.adsteps span.done i{background:var(--green-bright);color:#fff}
@@ -584,7 +584,7 @@ pre.doc-code code{background:none;padding:0;color:inherit;font:inherit;overflow-
 .dfmain b{display:block;font-size:15px}.dfmain small{display:block;color:var(--muted);font-weight:400;font-size:12.8px;line-height:1.4;margin-top:2px}
 .dfbud{display:flex;align-items:center;gap:6px;font-weight:700}.dfbud input{width:110px;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:inherit;font:inherit}
 .dfest{grid-column:2 / -1;color:var(--green);font-weight:700;font-size:12.8px}.dfest:empty{display:none}
-@media (max-width:620px){.adsteps{grid-template-columns:repeat(2,minmax(0,1fr))}.dfopt{grid-template-columns:auto minmax(0,1fr)}.dfbud{grid-column:2}.dfbud input{width:100%}}
+@media (max-width:620px){div.adsteps{grid-template-columns:repeat(2,minmax(0,1fr))}.dfopt{grid-template-columns:auto minmax(0,1fr)}.dfbud{grid-column:2}.dfbud input{width:100%}}
 .adt7{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
 .adbtnchip{display:inline-block;margin-top:10px;background:var(--yellow);color:#14201a;font-weight:800;font-size:13px;border-radius:999px;padding:6px 14px}
 
