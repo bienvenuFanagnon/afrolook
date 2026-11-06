@@ -76,7 +76,9 @@ class PostsApi {
     final voiceEffect = PostVoiceLink.take();
     final replyToId = PostReplyLink.take();
     final studioPins = PostPinLink.take();
+    final external = PostExternalLink.take();   // vidéo portant la marque d'un autre réseau : « C'est ma vidéo », vérifiée par la modération avant publication
     final body = <String, dynamic>{
+      if (external != null && uploadIds.isNotEmpty) ...{'external_mark': external.$1, 'own_claim': external.$2},
       if (source != null && uploadIds.isNotEmpty) 'capture_source': source,
       if (voiceEffect != null && uploadIds.isNotEmpty) 'voice_effect': voiceEffect,
       if (replyToId != null) 'reply_to_id': replyToId,
@@ -97,6 +99,7 @@ class PostsApi {
     };
     // Clé d'idempotence : un nouvel essai réseau ne crée pas deux publications.
     final r = await _c.post('/posts', body: body, idempotencyKey: ApiClient.newIdempotencyKey());
+    if (_asMap(r)['pending_review'] == true) PostExternalLink.markPending();   // en vérification par la modération
     return postFromApi(_asMap(r));
   }
 

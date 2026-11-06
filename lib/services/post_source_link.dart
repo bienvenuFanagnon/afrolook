@@ -87,3 +87,39 @@ class PostReplyLink {
     return v;
   }
 }
+
+/// Repère posé par l'examen pour la publication en cours : « C'est ma vidéo » envoie la vidéo à la modération avant publication (une seule fois, comme PostSourceLink).
+class PostExternalLink {
+  PostExternalLink._();
+
+  static String? _mark;
+  static bool _own = false;
+  static bool _notice = false;
+
+  static void set(String? mark, {bool own = false}) {
+    _mark = mark;
+    _own = own && mark != null;
+  }
+
+  static void clear() {
+    _mark = null;
+    _own = false;
+  }
+
+  /// À la création du post : (marque, « c'est ma vidéo »), puis effacé.
+  static (String, bool)? take() {
+    final m = _mark;
+    final o = _own;
+    clear();
+    return m == null ? null : (m, o);
+  }
+
+  /// La publication attend la modération : l'écran de création le dit une fois.
+  static void markPending() => _notice = true;
+
+  static bool takeNotice() {
+    final n = _notice;
+    _notice = false;
+    return n;
+  }
+}

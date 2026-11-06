@@ -12,6 +12,7 @@ import '../../providers/authProvider.dart';
 import '../../services/account_gate.dart';
 import '../../services/api/posts_api.dart';
 import '../../services/post_source_link.dart';
+import '../../services/authentic_video_check.dart';
 import '../../theme/app_colors.dart';
 import '../cards/card_entry.dart';
 import '../cards/card_events.dart';
@@ -70,6 +71,7 @@ class _CreateHubPageState extends State<CreateHubPage> {
 
   @override
   void dispose() {
+    PostExternalLink.clear();
     if (widget.replyToPostId != null) PostReplyLink.clear();
     super.dispose();
   }
@@ -97,6 +99,9 @@ class _CreateHubPageState extends State<CreateHubPage> {
   }
 
   Future<void> _after(String r) async {
+    if (PostExternalLink.takeNotice() && mounted) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(context.tr('Ta vidéo est en vérification : elle sera publiée dès que notre équipe l\'aura validée.'))));
+    }
     if (r == kCreateDone && mounted) Navigator.of(context).pop(kCreateDone);
     if (mounted) _loadQuota();
   }
@@ -123,6 +128,8 @@ class _CreateHubPageState extends State<CreateHubPage> {
     if (video) {
       final x = await picker.pickVideo(source: ImageSource.gallery);
       if (x == null || !mounted) return;
+      // vidéos authentiques : une vidéo téléchargée d'un autre réseau n'est pas acceptée (sauf « C'est ma vidéo » : la modération vérifie)
+      if (!await AuthenticVideoCheck.gate(context, x.path) || !mounted) return;
       await _editor(x.path, true, PostSourceLink.imported);
     } else {
       final xs = await picker.pickMultiImage(maxWidth: 1600, imageQuality: 92, limit: 4);
