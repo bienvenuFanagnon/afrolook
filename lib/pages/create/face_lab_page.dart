@@ -31,7 +31,7 @@ class _FaceLabPageState extends State<FaceLabPage> {
   String _effect = 'none';
   int _rot = 90; // réglage par défaut mesuré : image droite avec miroir
   bool _points = true;
-  bool _mirror = false;
+  bool _mirror = true; // sens « selfie » dès l'ouverture (caméra avant)
   bool _flipPts = true; // sens gauche/droite des points (réglage de secours si les points vont à l'envers)
   Map<dynamic, dynamic> _status = const {};
   Timer? _timer;
@@ -145,7 +145,7 @@ class _FaceLabPageState extends State<FaceLabPage> {
                 IconButton(
                   key: const ValueKey('lab_flip'),
                   onPressed: () async {
-                    setState(() => _front = !_front);
+                    setState(() { _front = !_front; _mirror = _front; });
                     await _channel.invokeMethod('setFront', {'front': _front});
                   },
                   icon: const Icon(Icons.cameraswitch_rounded, color: Colors.white),
@@ -176,7 +176,7 @@ class _FaceLabPageState extends State<FaceLabPage> {
                 child: Text(_points ? 'Points ✓' : 'Points', style: const TextStyle(color: Colors.white)),
               ),
               OutlinedButton(
-                key: const ValueKey('lab_flip'),
+                key: const ValueKey('lab_flip_points'),
                 onPressed: () async {
                   setState(() => _flipPts = !_flipPts);
                   await _channel.invokeMethod('setFlipPoints', {'flip': _flipPts});

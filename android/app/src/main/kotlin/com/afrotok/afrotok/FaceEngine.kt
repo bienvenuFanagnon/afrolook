@@ -74,7 +74,7 @@ object FaceEngine {
         engine.platformViewsController.registry.registerViewFactory(VIEW, object : PlatformViewFactory(StandardMessageCodec.INSTANCE) {
             override fun create(context: Context, viewId: Int, args: Any?): PlatformView {
                 val front = (args as? Map<*, *>)?.get("front") as? Boolean ?: true
-                return FaceEngineView(activity, front).also { current = it }
+                return FaceEngineView(activity, front).also { it.renderer.mirror = front; current = it }
             }
         })
         MethodChannel(engine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
@@ -127,7 +127,7 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
     private var windowStart = SystemClock.uptimeMillis()
     @Volatile private var jitter = 0f      // tremblement moyen au repos (en % de la largeur de l'image)
     @Volatile private var predErr = 0f     // erreur moyenne de prévision quand ça bouge (en % de la largeur)
-    @Volatile private var alphaBase = 0.4f // lissage de base appris : plus bas = plus stable, plus haut = plus réactif
+    @Volatile private var alphaBase = 1.5f // fréquence de coupure minimale (Hz) du filtre One Euro, apprise : plus bas = plus stable, plus haut = plus réactif
     private var learnFrames = 0
     @Volatile private var lastError: String? = null
 
@@ -253,6 +253,7 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
     fun setFront(f: Boolean) {
         front = f
         renderer.front = f
+        renderer.mirror = f   // sens « selfie » par défaut en caméra avant (le bouton Miroir du labo l'inverse)
         startCamera()
     }
 
@@ -310,8 +311,8 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
         if (move < 0.004f) {
             // quasi immobile : ce qui bouge encore est du tremblement
             jitter = jitter * 0.9f + move * 100f * 0.1f
-            if (jitter > 0.25f) alphaBase = (alphaBase - 0.01f).coerceAtLeast(0.2f)
-            else if (jitter < 0.1f) alphaBase = (alphaBase + 0.005f).coerceAtMost(0.5f)
+            if (jitter > 0.25f) alphaBase = (alphaBase - 0.05f).coerceAtLeast(0.5f)
+            else if (jitter < 0.1f) alphaBase = (alphaBase + 0.02f).coerceAtMost(4f)
         } else {
             predErr = predErr * 0.9f + err * 100f * 0.1f
             if (predErr > 0.8f) renderer.predGain = (renderer.predGain - 0.02f).coerceAtLeast(0.3f)
@@ -325,7 +326,7 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
         if (faces.isEmpty()) {
             renderer.landmarks = null
             // visage perdu : on repart d'un réglage neutre pour le prochain visage
-            alphaBase = 0.4f; renderer.predGain = 1.0f; learnFrames = 0; jitter = 0f; predErr = 0f
+            alphaBase = 1.5f; renderer.predGain = 1.0f; learnFrames = 0; jitter = 0f; predErr = 0f
             updateRate()
             return
         }
@@ -341,17 +342,19 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
         val vy = FloatArray(n)
         if (old != null && old.x.size == n) {
             val dt = maxOf(0.016f, (now - old.t) / 1000f)
+            // filtre « One Euro » (référence pour le suivi de points) : la coupure monte avec la vitesse du point,
+            // donc très stable à l'arrêt et sans retard quand le visage bouge vite
+            val twoPi = 6.2831855f
+            val aD = 1f / (1f + 1f / (twoPi * 2f * dt))   // lissage de la vitesse (coupure 2 Hz)
             for (i in 0 until n) {
-                val dx = xs[i] - old.x[i]
-                val dy = ys[i] - old.y[i]
-                // lissage adaptatif : peu de tremblement quand on bouge peu, suit vite quand on bouge vite
-                val speed = hypot(dx, dy) / dt
-                val a = (alphaBase + speed * 0.8f).coerceIn(alphaBase, 0.95f)
-                xs[i] = old.x[i] + dx * a
-                ys[i] = old.y[i] + dy * a
-                // vitesse (par seconde), lissée : sert à prévoir où sera le visage à l'image suivante
-                vx[i] = old.vx[i] * 0.5f + ((xs[i] - old.x[i]) / dt) * 0.5f
-                vy[i] = old.vy[i] * 0.5f + ((ys[i] - old.y[i]) / dt) * 0.5f
+                val rvx = (xs[i] - old.x[i]) / dt
+                val rvy = (ys[i] - old.y[i]) / dt
+                vx[i] = old.vx[i] + aD * (rvx - old.vx[i])
+                vy[i] = old.vy[i] + aD * (rvy - old.vy[i])
+                val cutoff = alphaBase + 12f * hypot(vx[i], vy[i])
+                val a = 1f / (1f + 1f / (twoPi * cutoff * dt))
+                xs[i] = old.x[i] + (xs[i] - old.x[i]) * a
+                ys[i] = old.y[i] + (ys[i] - old.y[i]) * a
             }
         }
         if (old != null && old.x.size == n) learn(old, xs, ys, now)
