@@ -615,8 +615,24 @@ async function initSpace() {
         const zone = h('div', { class: 'rg-act' });
         const act = (name, okMsg) => async () => { zone.querySelectorAll('button').forEach((x) => { x.disabled = true; }); try { await call(name, { id: c.id }); status(okMsg); await loadShareMine(); } catch (e) { showError(friendly(e, 'Action impossible pour le moment. Réessaie.')); zone.querySelectorAll('button').forEach((x) => { x.disabled = false; }); } };
         const ask = (msg, label, fn) => zone.replaceChildren(h('p', { class: 'addlg-conf', text: msg }), h('div', { class: 'addlg-row' }, h('button', { class: 'btn adsm adred', type: 'button', text: label, onclick: fn }), h('button', { class: 'btn btn-line adsm', type: 'button', text: 'Annuler', onclick: () => draw() })));
+        // ajout de budget à tout moment : l'annonceur choisit combien de personnes en plus, voit le prix exact et son solde, puis confirme (payé sur son solde, un seul débit par envoi)
+        const topUp = () => {
+          const ref = 'tu' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), bal = wal.data ? wal.data.balanceXof : null;
+          const sel = h('select', { class: 'rg-sel' }, ...[1000, 5000, 10000, 50000, 100000].filter((x) => x + Number(c.targetAudience) <= 5000000).map((x) => h('option', { value: String(x), text: '+ ' + nf(x) + ' personnes' })));
+          const priceOf = () => Math.round((Number(sel.value) / 1000) * wal.per1000);
+          const line = h('p', { class: 'addlg-conf' });
+          const refresh = () => { const pr = priceOf(); line.textContent = c.free ? 'Offert par l’équipe : aucun paiement.' : 'Prix : ' + nf(pr) + ' F, payé sur ton solde' + (bal != null ? ' (' + nf(bal) + ' F disponibles).' : '.') + (bal != null && bal < pr ? ' Ton solde est insuffisant : recharge-le d’abord.' : ''); };
+          sel.onchange = refresh; refresh();
+          const go = async () => {
+            zone.querySelectorAll('button').forEach((x) => { x.disabled = true; });
+            try { await call('adsShareCampaignTopUp', { id: c.id, extraAudience: Number(sel.value), ref }); status('Budget ajouté : la diffusion continue.'); loadWallet(); await loadShareMine(); }
+            catch (e) { showError(friendly(e, 'Ajout impossible pour le moment. Réessaie.')); zone.querySelectorAll('button').forEach((x) => { x.disabled = false; }); }
+          };
+          zone.replaceChildren(h('label', { class: 'rg-lab', text: 'Combien de personnes en plus ?' }), sel, line, h('div', { class: 'addlg-row' }, h('button', { class: 'btn adsm', type: 'button', text: 'Ajouter ce budget', onclick: go }), h('button', { class: 'btn btn-line adsm', type: 'button', text: 'Annuler', onclick: () => draw() })));
+        };
         const draw = () => {
           const b = [];
+          if (['pending', 'active', 'paused', 'ended'].includes(c.status)) b.push(h('button', { class: 'btn adsm' + (c.budgetState === 'ok' ? ' btn-line' : ''), type: 'button', text: 'Ajouter du budget', onclick: topUp }));
           if (['pending', 'active', 'paused'].includes(c.status)) b.push(h('button', { class: 'btn btn-line adsm', type: 'button', text: 'Arrêter la diffusion', onclick: () => ask('Arrêter la diffusion ? La campagne ne sera plus proposée aux partageurs. Ce qui a déjà été diffusé n’est pas remboursé.', 'Oui, arrêter', act('adsShareCampaignStop', 'Campagne arrêtée.')) }));
           b.push(h('button', { class: 'btn adsm adred-o', type: 'button', text: 'Supprimer', onclick: () => ask('Supprimer cette campagne ? Elle sera retirée de ta liste et de la diffusion. Aucun remboursement n’est possible.', 'Oui, supprimer', act('adsShareCampaignDelete', 'Campagne supprimée.')) }));
           zone.replaceChildren(...b);
@@ -624,11 +640,12 @@ async function initSpace() {
         draw();
         return h('article', { class: 'rg-card' },
           h('div', { class: 'rg-h' }, h('div', {}, h('b', { text: c.title }), h('small', { text: c.free ? 'Campagne offerte par l’équipe' : nf(c.priceFcfa || c.listPriceFcfa) + ' F pour ' + nf(c.targetAudience) + ' personnes' })), h('span', { class: 'st ' + cls, text: lab })),
-          h('div', { class: 'rg-reach' }, h('small', { text: 'Personnes touchées (estimation)' }), h('b', { text: nf(reached) + ' sur ' + nf(c.targetAudience) }),
-            h('div', { class: 'rg-bar' }, h('i', { style: 'width:' + pctDone + '%' })),
-            h('small', { class: 'rg-note', text: reach.high > 0 ? 'Estimation : entre ' + nf(reach.low) + ' et ' + nf(reach.high) + ' personnes (de ' + pc(ctr[0]) + ' à ' + pc(ctr[1]) + ' des personnes qui voient le partage cliquent). ' : 'Estimé à partir des clics valides : pas encore de clic valide. ' }, c.status === 'ended' ? 'Campagne terminée : le budget est entièrement utilisé.' : 'La campagne se termine quand son budget est utilisé.')),
-          h('div', { class: 'rg-row' }, h('span', { text: 'Clics' }), h('b', { text: nf(c.valid) })),
-          h('div', { class: 'rg-row' }, h('span', { text: 'Budget utilisé' }), h('b', { text: c.usedPct + ' %' })),
+          h('div', { class: 'rg-reach rg-' + (c.budgetState || 'ok') }, h('small', { text: 'Budget consommé' }), h('b', { text: c.usedPct + ' %' }),
+            h('div', { class: 'rg-bar' }, h('i', { style: 'width:' + Math.min(100, c.usedPct || 0) + '%' })),
+            h('small', { class: 'rg-note', text: c.status === 'ended' || c.budgetState === 'used' ? 'Budget entièrement consommé : la diffusion est terminée.' : c.budgetState === 'low' ? 'Il reste ' + Math.max(0, 100 - c.usedPct) + ' % du budget : la diffusion va bientôt se terminer. Tu peux lancer une nouvelle campagne pour continuer.' : 'Il reste ' + Math.max(0, 100 - c.usedPct) + ' % du budget. La diffusion se termine quand il est entièrement consommé.' })),
+          h('div', { class: 'rg-row' }, h('span', { text: 'Clics valides' }), h('b', { text: nf(c.valid) })),
+          c.status === 'active' ? h('div', { class: 'rg-row' }, h('span', { text: 'Clics encore possibles' }), h('b', { text: nf(c.clicksLeft) })) : null,
+          h('div', { class: 'rg-row' }, h('span', { text: 'Audience touchée (estimation)' }), h('b', { text: reach.high > 0 ? nf(reach.low) + ' à ' + nf(reach.high) + ' personnes' : 'pas encore de clic valide' })),
           c.reason ? h('div', { class: 'rg-row' }, h('span', { text: 'Motif' }), h('b', { text: c.reason })) : null,
           h('details', { class: 'rg-more' }, h('summary', { text: 'Plus de détails' }),
             h('div', { class: 'rg-row' }, h('span', { text: 'Partageurs qui ont publié' }), h('b', { text: nf(c.sharersPublished) + ' / ' + nf(c.sharers) })),
