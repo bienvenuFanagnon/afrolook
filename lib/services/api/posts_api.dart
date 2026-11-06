@@ -92,7 +92,7 @@ class PostsApi {
     return postFromApi(_asMap(r));
   }
 
-  /// Imports restants aujourd'hui (médias choisis dans la galerie : 3 par jour). En cas d'erreur réseau, null : l'écran n'empêche rien, le serveur décide.
+  /// Imports restants aujourd'hui (médias choisis dans la galerie : 2 par jour). En cas d'erreur réseau, null : l'écran n'empêche rien, le serveur décide.
   static Future<({int limit, int used, int remaining})?> importQuota() async {
     try {
       final d = ApiClient.data(await _c.get('/posts/quota'));

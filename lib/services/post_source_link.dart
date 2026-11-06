@@ -1,7 +1,7 @@
 /// Origine du média du post en cours de création (parcours « Créer un post ») : envoyée avec la publication, une seule fois.
 ///
 /// - [captured] : filmé, photographié ou enregistré avec l'application (caméra, micro) : badge « Fait sur Afrolook », avantage dans le fil, aucun délai.
-/// - [imported] : choisi dans la galerie : au plus 3 par jour ; le reste de la journée, il faut filmer ou enregistrer dans l'application.
+/// - [imported] : choisi dans la galerie : au plus 2 par jour ; le reste de la journée, il faut filmer ou enregistrer dans l'application.
 ///
 /// Même principe que `StudioSoundLink` : le parcours le pose avant d'ouvrir le formulaire, la création du post le consomme, et la fermeture du formulaire
 /// l'efface (un parcours abandonné ne doit pas étiqueter un autre post).

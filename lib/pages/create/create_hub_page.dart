@@ -32,7 +32,7 @@ import 'create_text_page.dart';
 enum CreateStart { none, video, audio }
 
 /// Écran « Que créer ? » : l'entrée unique de la création (publication, Studio et cartes réunis). On choisit le type, on prépare le média, on le retouche, puis
-/// un seul formulaire demande le reste. Ce qui est filmé ou enregistré dans l'application passe en premier ; la galerie est limitée à 3 médias par jour.
+/// un seul formulaire demande le reste. Ce qui est filmé ou enregistré dans l'application passe en premier ; la galerie est limitée à 2 médias par jour.
 class CreateHubPage extends StatefulWidget {
   const CreateHubPage({super.key, this.canal, this.defiPostId, this.start = CreateStart.none, this.replyToPostId});
 
@@ -108,7 +108,7 @@ class _CreateHubPageState extends State<CreateHubPage> {
     await _editor(r.path!, r.isVideo, PostSourceLink.captured);
   }
 
-  /// Galerie : au plus 3 médias par jour ; après, la personne est invitée à se filmer.
+  /// Galerie : au plus 2 médias par jour ; après, la personne est invitée à se filmer.
   Future<void> _pickGallery({required bool video}) async {
     await _loadQuota();
     if (!mounted) return;
@@ -152,7 +152,7 @@ class _CreateHubPageState extends State<CreateHubPage> {
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: c.surface,
-        title: Text(context.tr('Tes 3 médias de galerie du jour sont utilisés'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 17)),
+        title: Text(context.tr('Tes 2 médias de galerie du jour sont utilisés'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 17)),
         content: Text(context.tr('Pour continuer aujourd\'hui, filme-toi ou enregistre-toi avec l\'application. Demain, tu retrouveras ta galerie.'), style: TextStyle(color: c.textSecondary, height: 1.4)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(context.tr('Plus tard'))),
@@ -407,7 +407,7 @@ class _VideoHero extends StatelessWidget {
   }
 }
 
-/// « Galerie aujourd'hui : 2 sur 3 » : trois pastilles qui se vident ; à zéro, on invite à se filmer.
+/// « Galerie aujourd'hui : 1 sur 2 » : deux pastilles qui se vident ; à zéro, on invite à se filmer.
 class _QuotaLine extends StatelessWidget {
   const _QuotaLine({required this.quota});
   final ({int limit, int used, int remaining})? quota;

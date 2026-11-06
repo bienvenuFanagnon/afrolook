@@ -6,6 +6,7 @@ import 'package:video_player/video_player.dart';
 
 import '../../l10n/tr.dart';
 import '../../models/model_data.dart';
+import '../../services/api/studio_subtitles_api.dart';
 import '../../services/api/studio_trim_api.dart';
 import '../../services/post_source_link.dart';
 import '../../theme/app_colors.dart';
@@ -17,6 +18,7 @@ import '../studio/montage/montage_gallery_page.dart';
 import '../studio/studio_models.dart';
 import 'create_flow.dart';
 import 'create_result.dart';
+import 'subtitles_sheet.dart';
 import 'trim_sheet.dart';
 
 /// Écran de retouche du parcours « Créer un post » (écran 5 de la proposition) : le média en plein écran, les outils en bas (Modèles, Musique, Texte, Effets, Couper),
@@ -47,17 +49,26 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
 
   /// Outil utilisé : le média est désormais retouché dans le Studio d'Afrolook (mention « Fait sur Afrolook »).
   bool _touched = false;
+  bool _subtitlesOk = false; // le serveur sait transcrire (service réglé)
 
   @override
   void initState() {
     super.initState();
-    if (widget.isVideo) _initVideo();
+    if (widget.isVideo) {
+      _initVideo();
+      _checkSubtitles();
+    }
   }
 
   @override
   void dispose() {
     _video?.dispose();
     super.dispose();
+  }
+
+  Future<void> _checkSubtitles() async {
+    final ok = await StudioSubtitlesApi.available();
+    if (mounted && ok != _subtitlesOk) setState(() => _subtitlesOk = ok);
   }
 
   Future<void> _initVideo() async {
@@ -105,6 +116,43 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
 
   String? get _presetVideo => widget.isVideo ? _path : null;
   String? get _presetPhoto => widget.isVideo ? null : _path;
+
+  // ── Sous-titres ──────────────────────────────────────────────────────────
+
+  Future<void> _subtitles() async {
+    final v = _video;
+    if (!widget.isVideo || v == null || !v.value.isInitialized || _busy) return;
+    v.pause();
+    setState(() => _busy = true);
+    try {
+      final found = await StudioSubtitlesApi.transcribe(File(_path));
+      if (!mounted) return;
+      setState(() => _busy = false);
+      if (found.isEmpty) {
+        v.play();
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Aucune parole reconnue dans cette vidéo.'))));
+        return;
+      }
+      final checked = await showSubtitlesSheet(context, found);
+      if (!mounted) return;
+      if (checked == null || checked.isEmpty) {
+        v.play();
+        return;
+      }
+      setState(() => _busy = true);
+      final out = await StudioSubtitlesApi.burn(File(_path), checked);
+      if (!mounted) return;
+      _path = out.path;
+      _touched = true;
+      _busy = false;
+      await _initVideo();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      v.play();
+      handleApiError(context, e, onRetry: _subtitles, fallback: context.tr('Les sous-titres n\'ont pas pu être ajoutés. Réessaie.'));
+    }
+  }
 
   // ── Couper ───────────────────────────────────────────────────────────────
 
@@ -178,6 +226,12 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
                     _round(key: const ValueKey('tool_trim_top'), icon: Icons.content_cut_rounded, size: 40, onTap: _trim),
                     const SizedBox(height: 4),
                     Text(trimClock(v.value.duration.inMilliseconds), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700, shadows: shadow)),
+                    if (_subtitlesOk) ...[
+                      const SizedBox(height: 10),
+                      _round(key: const ValueKey('tool_subtitles'), icon: Icons.closed_caption_rounded, size: 40, onTap: _subtitles),
+                      const SizedBox(height: 4),
+                      Text(context.tr('Sous-titres'), style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w700, shadows: shadow)),
+                    ],
                   ]),
               ]),
             ),

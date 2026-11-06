@@ -301,7 +301,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
           Padding(
             padding: const EdgeInsets.fromLTRB(28, 0, 28, 10),
             child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, crossAxisAlignment: CrossAxisAlignment.center, children: [
-              // Galerie : possible, mais limitée à 3 médias par jour ; filmer ou se photographier ici n'a pas de limite
+              // Galerie : possible, mais limitée à 2 médias par jour ; filmer ou se photographier ici n'a pas de limite
               GestureDetector(
                 onTap: _recording ? null : () => Navigator.pop(context, CreateCaptureResult.gallery(isVideo: !_photoMode)),
                 child: Container(
