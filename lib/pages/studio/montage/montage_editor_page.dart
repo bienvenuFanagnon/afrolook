@@ -510,6 +510,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           artistSoundId: s.music?.isArtist == true && video ? s.music!.id : null,
           soundJobId: s.music?.isArtist == true && video ? _lastJobId : null,
           usedOwnMedia: s.photoPath != null || s.videoPath != null,
+          pins: video && s.pins.isNotEmpty ? [for (final p in s.pins.take(2)) p.toLink()] : null,
         ),
       );
       return;

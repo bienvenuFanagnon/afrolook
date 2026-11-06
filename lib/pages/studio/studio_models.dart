@@ -33,7 +33,11 @@ class StudioResult {
     this.artistSoundId,
     this.soundJobId,
     this.usedOwnMedia = false,
+    this.pins,
   });
+
+  /// Vidéos épinglées dans le montage (position, taille, créneau, vidéo d'origine) : gardées avec le post.
+  final List<Map<String, dynamic>>? pins;
 }
 
 /// Définition d'un template Studio

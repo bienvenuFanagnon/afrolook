@@ -880,9 +880,12 @@ class FaceRenderer : GLSurfaceView.Renderer {
         GLES20.glBlendFunc(GLES20.GL_ONE, GLES20.GL_ONE_MINUS_SRC_ALPHA)
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
         GLES20.glUniform1i(GLES20.glGetUniformLocation(ovProgram, "uOv"), 0)
-        // la tête
+        // la tête : elle se rétrécit en largeur quand la personne tourne la tête (nez décalé du centre du visage) et se décale du côté où elle regarde
+        val yawF = (p(1)[0] - faceC[0]) * aspect / maxOf(0.001f, faceW)            // environ -0,3 (gauche) à 0,3 (droite)
+        val pitchF = (p(1)[1] - faceC[1]) / maxOf(0.001f, faceH)                    // nez plus haut ou plus bas : tête qui monte ou qui baisse
+        val squash = 1f - (kotlin.math.abs(yawF) * 1.1f).coerceAtMost(0.32f)
         val headSize = faceW * avatarHeadSize
-        quadAt(avTex[0], floatArrayOf(faceC[0], faceC[1] + faceH * 0.04f), headSize, headSize, theta, aspect)
+        quadAt(avTex[0], floatArrayOf(faceC[0] + yawF * faceW * 0.25f / aspect, faceC[1] + faceH * 0.04f + pitchF * faceH * 0.12f), headSize * squash, headSize, theta, aspect)
         // les yeux : ouverture = écart des paupières ÷ largeur de l'œil (0,26 environ yeux ouverts)
         fun eye(top: Int, bottom: Int, outer: Int, inner: Int) {
             val w = dist(p(outer), p(inner), aspect)
@@ -1209,6 +1212,25 @@ class FaceRenderer : GLSurfaceView.Renderer {
             uniform vec3 uBgB;
             uniform vec4 uHair;
             uniform vec4 uCloth;
+            vec3 rgb2hsv(vec3 c) {
+                vec4 K = vec4(0.0, -1.0 / 3.0, 2.0 / 3.0, -1.0);
+                vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+                vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+                float d = q.x - min(q.w, q.y);
+                float e = 1.0e-10;
+                return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+            }
+            vec3 hsv2rgb(vec3 c) {
+                vec3 p = abs(fract(c.xxx + vec3(1.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - 3.0);
+                return c.z * mix(vec3(1.0), clamp(p - 1.0, 0.0, 1.0), c.y);
+            }
+            // recolorer en gardant la lumière et la matière : teinte et saturation de la cible, luminosité de l'original (relevée pour que le noir devienne vraiment coloré)
+            vec3 recolor(vec3 c, vec3 target) {
+                vec3 th = rgb2hsv(target);
+                float v = rgb2hsv(c).z;
+                float lifted = mix(v, pow(v, 0.55), 0.85);
+                return hsv2rgb(vec3(th.x, th.y * (0.75 + 0.25 * v), clamp(lifted * (0.35 + 0.9 * th.z), 0.0, 1.0)));
+            }
             void main() {
                 vec2 p = vU;
                 // gonflement local (yeux, bouche, nez) : on échantillonne plus près du centre, donc la zone paraît plus grande
@@ -1239,10 +1261,17 @@ class FaceRenderer : GLSurfaceView.Renderer {
                     vec2 mc = vec2(uMaskFlip > 0.5 ? 1.0 - img.x : img.x, 1.0 - img.y);
                     vec3 m = texture2D(uMask, mc).rgb;
                     float lum = dot(c.rgb, vec3(0.299, 0.587, 0.114));
-                    float hairK = smoothstep(0.30, 0.60, m.g) * uHair.a;
-                    float clothK = smoothstep(0.30, 0.60, m.b) * uCloth.a;
-                    c.rgb = mix(c.rgb, uHair.rgb * (0.25 + 1.05 * lum), hairK);
-                    c.rgb = mix(c.rgb, uCloth.rgb * (0.25 + 1.05 * lum), clothK);
+                    // cheveux : on élargit le masque (le plus fort des voisins) pour que la couleur dépasse un peu et couvre toute la tête
+                    float rr = 0.022;
+                    float hg = max(m.g, max(max(texture2D(uMask, mc + vec2(rr, 0.0)).g, texture2D(uMask, mc - vec2(rr, 0.0)).g), max(texture2D(uMask, mc + vec2(0.0, rr)).g, texture2D(uMask, mc - vec2(0.0, rr)).g)));
+                    hg = max(hg, max(max(texture2D(uMask, mc + vec2(rr, rr)).g, texture2D(uMask, mc - vec2(rr, rr)).g), max(texture2D(uMask, mc + vec2(rr, -rr)).g, texture2D(uMask, mc + vec2(-rr, rr)).g)));
+                    float hairK = smoothstep(0.10, 0.34, hg) * uHair.a;
+                    // habits : on rétrécit un peu le masque (le plus faible des voisins) pour ne pas déborder sur la peau, avec un seuil plus exigeant
+                    float re = 0.010;
+                    float cb = min(m.b, min(min(texture2D(uMask, mc + vec2(re, 0.0)).b, texture2D(uMask, mc - vec2(re, 0.0)).b), min(texture2D(uMask, mc + vec2(0.0, re)).b, texture2D(uMask, mc - vec2(0.0, re)).b)));
+                    float clothK = smoothstep(0.45, 0.80, cb) * uCloth.a;
+                    c.rgb = mix(c.rgb, recolor(c.rgb, uHair.rgb), hairK);
+                    c.rgb = mix(c.rgb, recolor(c.rgb, uCloth.rgb), clothK);
                     if (uBg.x > 0.5) {
                         float bgK = smoothstep(0.35, 0.70, m.r);
                         vec3 back;

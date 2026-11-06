@@ -2036,6 +2036,42 @@ Future<void> _handleRepost() async {
             ? Align(alignment: Alignment.centerLeft, child: videoContainer)
             : videoContainer,
 
+        // Vidéo épinglée dans le post : un toucher ouvre la vidéo d'origine (repère « ▶ voir l'original » à l'endroit où elle est posée)
+        if (widget.post.studioPins.isNotEmpty)
+          Positioned.fill(
+            child: LayoutBuilder(builder: (context, box) {
+              return Stack(children: [
+                for (final p in widget.post.studioPins.take(2))
+                  Positioned(
+                    left: (((p['x'] as num?)?.toDouble() ?? .8) * box.maxWidth - 46).clamp(4, box.maxWidth - 96).toDouble(),
+                    top: (((p['y'] as num?)?.toDouble() ?? .2) * box.maxHeight + ((p['w'] as num?)?.toDouble() ?? .3) * box.maxWidth * .3).clamp(4, box.maxHeight - 34).toDouble(),
+                    child: GestureDetector(
+                      key: ValueKey('pin_open_${p['post_id']}'),
+                      onTap: () async {
+                        final id = '${p['post_id']}';
+                        final target = await PostsApi.get(id);
+                        if (!mounted) return;
+                        if (target == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Vidéo indisponible'))));
+                          return;
+                        }
+                        Navigator.of(context).push(MaterialPageRoute(builder: (_) => PostOrientation.of(target) ? PostDetailsVideoFormatTel(initialPost: target, isIn: false) : VideoYoutubePageDetails(initialPost: target, feedTier: widget.feedTier)));
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(color: const Color(0xB3000000), borderRadius: BorderRadius.circular(99)),
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          const Icon(Icons.play_arrow_rounded, size: 14, color: Colors.white),
+                          const SizedBox(width: 3),
+                          Text(context.tr('Voir l\'original'), style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w800)),
+                        ]),
+                      ),
+                    ),
+                  ),
+              ]);
+            }),
+          ),
+
         // Carte Commerce : pastille (prix ou titre) dépliée au toucher, boutons WhatsApp / appel / lien
         if (widget.post.hasCommerce && widget.post.id != null)
           Positioned(left: 10, bottom: 10, child: PostCommerceOverlay(postId: widget.post.id!)),

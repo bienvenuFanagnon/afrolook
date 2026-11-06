@@ -84,6 +84,7 @@ class _UserPostFormState extends State<UserPostForm> {
     StudioSoundLink.clear(); // un montage abandonné ne doit pas se lier à un autre post
     PostSourceLink.clear(); // l'origine du média ne sert qu'à ce formulaire
     PostTemplateLink.clear();
+    PostPinLink.clear();
     super.dispose();
   }
   late UserAuthProvider authProvider =
@@ -129,6 +130,7 @@ class _UserPostFormState extends State<UserPostForm> {
     // Montage fait avec un son d'artiste : le post sera relié au son une fois publié (vérifié par le serveur)
     StudioSoundLink.set(result.artistSoundId != null ? result.soundJobId : null);
     PostTemplateLink.set(TemplateRef.fromStudioId(result.templateId)?.code); // le post affichera « Essayer ce template »
+    PostPinLink.set(result.pins); // vidéos épinglées : un toucher sur le post ouvre l'original
     switch (result.type) {
       case StudioContentType.image:
         if (result.mediaFile != null) {

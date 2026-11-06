@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -22,7 +23,14 @@ class FaceAvatar {
     FaceAvatar(key: 'cat', label: 'Chat', icon: Icons.pets_rounded, head: 0xFF4A4A4F, eye: 0xFFFFD43B, mouth: 0xFF7A1F2B, headSize: 1.6),
     FaceAvatar(key: 'robot', label: 'Robot', icon: Icons.smart_toy_rounded, head: 0xFF9FB1C0, eye: 0xFF19D3F0, mouth: 0xFF16202A, headSize: 1.5, eyeScale: 1.15),
     FaceAvatar(key: 'bunny', label: 'Lapin', icon: Icons.cruelty_free_rounded, head: 0xFFF2EEE8, eye: 0xFF3B2A22, mouth: 0xFFD6546E, headSize: 1.65),
-    FaceAvatar(key: 'alien', label: 'Alien', icon: Icons.rocket_launch_rounded, head: 0xFF6DDB6D, eye: 0xFF10131A, mouth: 0xFF1B4D2B, headSize: 1.5, eyeScale: 1.35),
+    FaceAvatar(key: 'alien', label: 'Alien vert', icon: Icons.rocket_launch_rounded, head: 0xFF6DDB6D, eye: 0xFF10131A, mouth: 0xFF1B4D2B, headSize: 1.5, eyeScale: 1.35),
+    FaceAvatar(key: 'alien_purple', label: 'Alien violet', icon: Icons.blur_circular_rounded, head: 0xFF9B6BDB, eye: 0xFFFFE066, mouth: 0xFF3A1B5C, headSize: 1.55, eyeScale: 1.5),
+    FaceAvatar(key: 'alien_blue', label: 'Alien bleu', icon: Icons.stars_rounded, head: 0xFF5BB6E8, eye: 0xFF0B1A33, mouth: 0xFF0B3A5C, headSize: 1.6, eyeScale: 1.25),
+    FaceAvatar(key: 'dog', label: 'Chien', icon: Icons.pets_rounded, head: 0xFFC98A55, eye: 0xFF2A1A10, mouth: 0xFF8A2B3A, headSize: 1.6),
+    FaceAvatar(key: 'mouse', label: 'Souris', icon: Icons.cruelty_free_rounded, head: 0xFFB9B9C4, eye: 0xFF1B1B25, mouth: 0xFFD6546E, headSize: 1.55),
+    FaceAvatar(key: 'panda', label: 'Panda', icon: Icons.emoji_nature_rounded, head: 0xFFF4F4F4, eye: 0xFFFFFFFF, mouth: 0xFF7A1F2B, headSize: 1.6),
+    FaceAvatar(key: 'lion', label: 'Lion', icon: Icons.sentiment_very_satisfied_rounded, head: 0xFFE0A33A, eye: 0xFF3B2A12, mouth: 0xFF7A1F2B, headSize: 1.75),
+    FaceAvatar(key: 'monkey', label: 'Singe', icon: Icons.mood_rounded, head: 0xFF7A4B2A, eye: 0xFF1B1B1B, mouth: 0xFF5C1B22, headSize: 1.6),
   ];
 
   /// Les trois images PNG : [tête, œil, bouche].
@@ -82,6 +90,65 @@ class FaceAvatar {
             c.drawCircle(const ui.Offset(170, 340), 34, _fill(0x33F28CA8));
             c.drawCircle(const ui.Offset(342, 340), 34, _fill(0x33F28CA8));
             c.drawOval(ui.Rect.fromCenter(center: const ui.Offset(256, 322), width: 36, height: 24), _fill(0xFFE59AA8));
+          case 'dog':
+            // oreilles tombantes, museau clair, truffe
+            c.drawOval(ui.Rect.fromCenter(center: const ui.Offset(96, 230), width: 110, height: 220), _fill(0xFF8A5530));
+            c.drawOval(ui.Rect.fromCenter(center: const ui.Offset(416, 230), width: 110, height: 220), _fill(0xFF8A5530));
+            c.drawCircle(mid, 185, base);
+            c.drawOval(ui.Rect.fromCenter(center: const ui.Offset(256, 345), width: 200, height: 140), _fill(0xFFF1D9B8));
+            c.drawOval(ui.Rect.fromCenter(center: const ui.Offset(256, 318), width: 56, height: 38), _fill(0xFF1B1B1B));
+          case 'mouse':
+            // grandes oreilles rondes roses, museau
+            c.drawCircle(const ui.Offset(120, 110), 82, base);
+            c.drawCircle(const ui.Offset(392, 110), 82, base);
+            c.drawCircle(const ui.Offset(120, 110), 52, _fill(0xFFF2B6C4));
+            c.drawCircle(const ui.Offset(392, 110), 52, _fill(0xFFF2B6C4));
+            c.drawCircle(mid, 185, base);
+            c.drawOval(ui.Rect.fromCenter(center: const ui.Offset(256, 330), width: 40, height: 30), _fill(0xFFE59AA8));
+            for (final y in [330.0, 356.0]) {
+              c.drawLine(ui.Offset(150, y), ui.Offset(70, y - 10), _line(0xFF888894, 4));
+              c.drawLine(ui.Offset(362, y), ui.Offset(442, y - 10), _line(0xFF888894, 4));
+            }
+          case 'panda':
+            c.drawCircle(const ui.Offset(120, 110), 70, _fill(0xFF1B1B1B));
+            c.drawCircle(const ui.Offset(392, 110), 70, _fill(0xFF1B1B1B));
+            c.drawCircle(mid, 190, base);
+            c.drawOval(ui.Rect.fromCenter(center: const ui.Offset(184, 245), width: 96, height: 120), _fill(0xFF1B1B1B));
+            c.drawOval(ui.Rect.fromCenter(center: const ui.Offset(328, 245), width: 96, height: 120), _fill(0xFF1B1B1B));
+            c.drawOval(ui.Rect.fromCenter(center: const ui.Offset(256, 330), width: 54, height: 38), _fill(0xFF1B1B1B));
+          case 'lion':
+            // crinière
+            c.drawCircle(mid, 240, _fill(0xFF9A5B1E));
+            for (var i = 0; i < 14; i++) {
+              final a = i * math.pi * 2 / 14;
+              c.drawCircle(ui.Offset(256 + 215 * math.cos(a), 270 + 215 * math.sin(a)), 46, _fill(0xFFB5712A));
+            }
+            c.drawCircle(const ui.Offset(150, 120), 40, base);
+            c.drawCircle(const ui.Offset(362, 120), 40, base);
+            c.drawCircle(mid, 170, base);
+            c.drawOval(ui.Rect.fromCenter(center: const ui.Offset(256, 345), width: 150, height: 110), _fill(0xFFF3DDB0));
+            c.drawPath(ui.Path()..moveTo(236, 318)..lineTo(276, 318)..lineTo(256, 340)..close(), _fill(0xFF5C2B1B));
+          case 'monkey':
+            c.drawCircle(const ui.Offset(78, 270), 62, base);
+            c.drawCircle(const ui.Offset(434, 270), 62, base);
+            c.drawCircle(const ui.Offset(78, 270), 36, _fill(0xFFE6B890));
+            c.drawCircle(const ui.Offset(434, 270), 36, _fill(0xFFE6B890));
+            c.drawCircle(mid, 185, base);
+            c.drawOval(ui.Rect.fromCenter(center: const ui.Offset(256, 300), width: 260, height: 210), _fill(0xFFE6B890));
+            c.drawOval(ui.Rect.fromCenter(center: const ui.Offset(256, 270), width: 280, height: 90), _fill(0xFFE6B890));
+          case 'alien_purple':
+            // trois antennes
+            for (final x in [176.0, 256.0, 336.0]) {
+              c.drawLine(ui.Offset(x, 110), ui.Offset(x + (x - 256) * .6, 28), _line(0xFF7A4FB5, 8));
+              c.drawCircle(ui.Offset(x + (x - 256) * .6, 28), 14, _fill(0xFFFFE066));
+            }
+            c.drawOval(ui.Rect.fromCenter(center: const ui.Offset(256, 270), width: 400, height: 420), base);
+          case 'alien_blue':
+            // grandes oreilles pointues
+            _ear(c, base, const ui.Offset(70, 250), const ui.Offset(10, 120), const ui.Offset(120, 190));
+            _ear(c, base, const ui.Offset(442, 250), const ui.Offset(502, 120), const ui.Offset(392, 190));
+            c.drawOval(ui.Rect.fromCenter(center: const ui.Offset(256, 265), width: 360, height: 430), base);
+            c.drawCircle(const ui.Offset(256, 120), 10, _fill(0xFFFFFFFF));
           default: // alien
             c.drawOval(ui.Rect.fromCenter(center: const ui.Offset(256, 255), width: 360, height: 460), base);
             c.drawOval(ui.Rect.fromCenter(center: const ui.Offset(256, 255), width: 360, height: 460), _line(0x33000000, 6));
@@ -100,8 +167,14 @@ class FaceAvatar {
           c.drawRRect(ui.RRect.fromRectAndRadius(ui.Rect.fromLTWH(22, 36, 84, 56), const ui.Radius.circular(12)), _fill(eye));
           return;
         }
-        c.drawOval(ui.Rect.fromLTWH(6, 14, 116, 100), _fill(key == 'alien' ? 0xFF10131A : 0xFFFFFFFF));
-        if (key == 'alien') {
+        final dark = key == 'alien' || key == 'alien_purple' || key == 'alien_blue';
+        c.drawOval(ui.Rect.fromLTWH(6, 14, 116, 100), _fill(dark ? 0xFF10131A : (key == 'panda' ? 0xFF1B1B1B : 0xFFFFFFFF)));
+        if (key == 'panda') {
+          c.drawCircle(const ui.Offset(64, 64), 26, _fill(0xFFFFFFFF));
+          c.drawCircle(const ui.Offset(64, 64), 12, _fill(0xFF000000));
+          return;
+        }
+        if (dark) {
           c.drawOval(ui.Rect.fromLTWH(34, 34, 28, 22), _fill(0x66FFFFFF));
           return;
         }

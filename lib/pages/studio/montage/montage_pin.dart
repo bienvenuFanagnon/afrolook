@@ -44,6 +44,9 @@ class MontagePin {
 
   double get clipSeconds => clipEndSec - clipStartSec;
 
+  /// Ce qui est gardé avec la publication : de quelle vidéo, où et quand (un toucher sur la vidéo épinglée ouvre l'original).
+  Map<String, dynamic> toLink() => {'post_id': source.postId, 'x': center.dx.clamp(0, 1), 'y': center.dy.clamp(0, 1), 'w': widthFrac, 'shape': circle ? 'circle' : 'rect', 'start': startSec, 'end': endSec};
+
   Map<String, dynamic> toApi() => {
         'post_id': source.postId,
         'clip_start_ms': (clipStartSec * 1000).round(),

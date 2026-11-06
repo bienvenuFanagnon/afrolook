@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gold, pubs et récompenses : proposition à valider</title>
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--ink:#15201a;--muted:#5d6b63;--line:#e2e0d8;--green:#0f8a3c;--gold:#ffc400;--gold-ink:#3a2c00;--shadow:0 10px 30px rgba(20,30,25,.1)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#101512;--card:#18201b;--ink:#eef3ef;--muted:#9fb0a5;--line:#2a352d;--shadow:0 10px 30px rgba(0,0,0,.45)}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:28px 16px 70px}
+h1{font-size:28px;margin:0 0 6px;letter-spacing:-.01em}h2{font-size:21px;margin:38px 0 8px}h3{font-size:16px;margin:0 0 6px}
+p.lead{color:var(--muted);margin:0 0 16px;max-width:72ch}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:var(--shadow);margin-bottom:16px}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.tag{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:800}
+.free{background:rgba(120,130,125,.18);color:var(--muted)}.ads{background:rgba(15,138,60,.14);color:var(--green)}.gold{background:var(--gold);color:var(--gold-ink)}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.phone{width:280px;max-width:100%;margin:0 auto;border-radius:30px;border:8px solid #111;background:#111;overflow:hidden;aspect-ratio:9/16}
+.scr{height:100%;background:var(--bg);padding:14px;display:flex;flex-direction:column;gap:10px;font-size:12.5px}
+.gc{border-radius:16px;padding:12px;background:linear-gradient(140deg,#ffd84a,#ffb300);color:#3a2c00}
+.dots{display:flex;gap:6px;margin:8px 0}.dots i{width:22px;height:22px;border-radius:50%;background:rgba(58,44,0,.18);display:block}.dots i.on{background:#3a2c00}
+.btn{display:block;text-align:center;border-radius:12px;padding:9px;font-weight:800;background:#3a2c00;color:#ffd84a}
+.row{display:flex;justify-content:space-between;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 11px}
+.note{font-size:13px;color:var(--muted)}
+.warn{border-left:4px solid var(--gold);padding:8px 12px;background:rgba(255,196,0,.12);border-radius:8px;font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Gold, pubs et récompenses : proposition à valider</h1>
+<p class="lead">Ce que vous avez décidé : plus de plan Premium ; deux plans seulement (Gratuit et Gold) ; les fonctions importantes du Studio sont <b>Gold</b> ; sans Gold, on les débloque en regardant des pubs plein écran ; l'<b>export</b> est Gold ou 2 pubs ; plus de récompenses en pièces ni en Premium. Voici comment je le ferais, avec les chiffres. <b>Rien n'est encore modifié dans l'application ni sur le serveur.</b></p>
+
+<h2>1. Les prix aujourd'hui</h2>
+<div class="card"><table>
+<tr><th>Plan</th><th>1 mois</th><th>2 mois</th><th>3 mois</th><th>6 mois</th><th>12 mois</th></tr>
+<tr><td><b>Gold</b></td><td>500 F</td><td>950 F</td><td>1 350 F</td><td>2 500 F</td><td>4 500 F</td></tr>
+<tr><td>Premium (à supprimer)</td><td>200 F</td><td>400 F</td><td>500 F</td><td>1 000 F</td><td>1 900 F</td></tr>
+</table><p class="note">Sources : `CoinRules::subscriptionCoins` (API) et `AfrolookAbonnement` (application). Les prix se paient en pièces (1 pièce = 1 F).</p></div>
+
+<h2>2. Ce que donne une pub aujourd'hui (page Récompenses)</h2>
+<div class="card"><table>
+<tr><th>Offre actuelle</th><th>Pubs</th><th>Ce qu'on reçoit</th><th>Décision proposée</th></tr>
+<tr><td>Premium 5 h / 10 h / 24 h</td><td>2 / 3 / 5</td><td>Plan Premium temporaire</td><td><b>Supprimée</b> (le plan disparaît)</td></tr>
+<tr><td>2 pièces</td><td>1</td><td>2 pièces (20 par semaine au plus)</td><td><b>Supprimée</b> (vous ne voulez plus de pièces par pub)</td></tr>
+<tr><td>Sans pub 24 h</td><td>1</td><td>24 h sans publicités</td><td><b>Supprimée</b> : elle fait perdre les revenus qu'on veut gagner</td></tr>
+<tr><td>3 autocollants</td><td>1</td><td>3 autocollants du Studio</td><td>Reprise dans « débloquer une fonction » (voir 4)</td></tr>
+<tr><td>3 photos</td><td>2</td><td>3 photos en plus</td><td>Reprise dans « débloquer une fonction »</td></tr>
+<tr><td>Capture de carte</td><td>1</td><td>1 capture de carte</td><td>Reprise dans « débloquer une fonction »</td></tr>
+<tr><td>Bouclier de flamme</td><td>1</td><td>Protège la série du jour</td><td>Gardée (1 pub)</td></tr>
+</table><p class="note">Limite actuelle : 10 pubs par jour au plus (réglable côté serveur).</p></div>
+
+<h2>3. Gold gratuit par les pubs : la règle proposée</h2>
+<div class="grid">
+  <div class="card"><div class="phone"><div class="scr">
+    <b style="font-size:15px">Récompenses</b>
+    <div class="gc"><b>Gold gratuit · 30 min</b><div class="dots"><i class="on"></i><i class="on"></i><i></i></div>2 pubs sur 3 regardées<span class="btn" style="margin-top:8px">Regarder la prochaine pub</span></div>
+    <div class="row"><span>Passe suivante (après les 30 min)</span><b>5 pubs</b></div>
+    <div class="row"><span>Export de ma vidéo</span><b>2 pubs</b></div>
+    <div class="row"><span>Passer Gold maintenant</span><b>500 F</b></div>
+    <span class="note">Aujourd'hui : 1 passe utilisée sur 4</span>
+  </div></div><p class="note">Maquette de la page Récompenses refaite : plus de Premium, plus de pièces.</p></div>
+  <div class="card"><h3>Les passes de la journée</h3><table>
+    <tr><th>Passe</th><th>Pubs</th><th>Durée</th></tr>
+    <tr><td>1<sup>re</sup></td><td><b>3</b></td><td>30 min de Gold</td></tr>
+    <tr><td>2<sup>e</sup></td><td><b>5</b></td><td>30 min de Gold</td></tr>
+    <tr><td>3<sup>e</sup>, 4<sup>e</sup>…</td><td><b>5</b></td><td>30 min chacune, jusqu'au plafond</td></tr>
+    <tr><td>Export d'une vidéo ou d'une photo</td><td><b>2 pubs</b></td><td>un export (pas de filigrane payant)</td></tr>
+    </table><ul>
+    <li>Le compteur repart à zéro chaque jour. Pendant une passe, toutes les fonctions Gold sont ouvertes.</li>
+    <li>À tout moment, <b>payer Gold</b> (500 F pour un mois) s'offre à la place des pubs ; le prix du mois s'affiche à côté du compteur.</li>
+    <li>Plafond de sécurité : <b>25 pubs par jour</b> (contre 10 aujourd'hui), pour rester dans les règles des régies de publicité.</li>
+    </ul></div>
+</div>
+
+<h2>4. Quelles fonctions sont libres, à pubs ou Gold</h2>
+<div class="card"><table>
+<tr><th>Niveau</th><th>Fonctions</th></tr>
+<tr><td><span class="tag free">Libre</span></td><td>Caméra, beauté simple, 3 looks de couleur, 4 masques de base, poster une publication, filmer, photo, texte, carte simple, lire, commenter</td></tr>
+<tr><td><span class="tag ads">2 pubs</span></td><td>Looks avancés (néon, cinéma…), déformations du visage, effets d'argent par geste, accélérer / ralentir</td></tr>
+<tr><td><span class="tag ads">3 pubs</span></td><td>Avatars (chat, chien, alien…), fond flou, couleur des cheveux, message à l'écran, mixage des volumes</td></tr>
+<tr><td><span class="tag ads">5 pubs</span></td><td>Fond virtuel, couleur des habits, vidéo épinglée, carte Commerce, gestes de la main</td></tr>
+<tr><td><span class="tag gold">Gold</span></td><td>Tout ce qui précède sans pubs, <b>export gratuit</b> des vidéos et images créées dans le Studio, modèles du Studio sans limite, quotas élevés</td></tr>
+</table><p class="note">Une fonction débloquée par pubs reste ouverte jusqu'à la fin de la journée (une seule fois à payer en pubs par fonction et par jour). Gold ou une passe de 30 min ouvre tout d'un coup.</p></div>
+
+<h2>5. L'export des créations du Studio</h2>
+<div class="card"><ul>
+<li><b>Poster dans Afrolook</b> : toujours possible pour tout le monde, avec le filigrane « Créé sur Afrolook ».</li>
+<li><b>Exporter (enregistrer dans le téléphone, partager hors de l'application)</b> : Gold, ou <b>2 pubs plein écran</b> pour cet export-là.</li>
+<li>S'il n'y a pas de pub disponible au moment voulu : l'export reste fermé, avec le choix « Passer Gold » ou « Réessayer dans un moment » (on n'offre pas l'export gratuitement parce que la régie n'a pas de pub).</li>
+</ul></div>
+
+<h2>6. Est-ce rentable ?</h2>
+<p class="lead">Une pub plein écran rapporte ce que la régie paie pour 1 000 affichages (eCPM) divisé par 1 000. Le vrai eCPM se lit dans l'écran d'administration « Suivi de la page Travail ». En attendant, trois hypothèses (1 dollar ≈ 600 F) :</p>
+<div class="card"><table>
+<tr><th>eCPM</th><th>Une pub</th><th>Passe 1 (3 pubs)</th><th>Passe 2 (5 pubs)</th><th>Export (2 pubs)</th><th>Une journée à 13 pubs</th></tr>
+<tr><td>1 $ (prudent)</td><td>0,6 F</td><td>1,8 F</td><td>3 F</td><td>1,2 F</td><td>7,8 F</td></tr>
+<tr><td>2 $ (probable)</td><td>1,2 F</td><td>3,6 F</td><td>6 F</td><td>2,4 F</td><td>15,6 F</td></tr>
+<tr><td>4 $ (bon)</td><td>2,4 F</td><td>7,2 F</td><td>12 F</td><td>4,8 F</td><td>31,2 F</td></tr>
+</table>
+<p class="note">Un abonné Gold paie environ 16,7 F par jour (500 F ÷ 30). Une personne qui regarde 13 pubs par jour rapporte à peu près autant qu'un abonné à 4 $ d'eCPM, et deux fois moins à 2 $ : <b>le Gold payant reste le meilleur revenu</b>, d'où le prix du mois toujours visible. Le coût serveur d'une passe ou d'un export (montage vidéo) reste inférieur à 1 F.</p>
+<div class="warn">À régler d'après les vrais chiffres : si l'eCPM réel est sous 1 $, passer la passe 1 à 4 pubs et l'export à 3 pubs.</div></div>
+
+<h2>7. Supprimer Premium partout</h2>
+<div class="card"><ul>
+<li><b>Plus de vente</b> du plan Premium (application, site, API). Les écrans de choix de plan n'affichent que Gratuit et Gold.</li>
+<li><b>Abonnés Premium en cours</b> (ils ont payé jusqu'à une date) : <b>recommandé</b> : ils gardent leur avantage jusqu'à la fin, traité comme Gold, puis rien ne se renouvelle. Alternative : remboursement au prorata en pièces.</li>
+<li>Touchés dans le code : API (`premium` dans les abonnements, quotas des autocollants et des cartes, groupes, chroniques, récompenses), application (pages d'abonnement, badges, avantages), site.</li>
+<li>Les quotas qui étaient « Premium » (autocollants, cartes) deviennent « Gold » ou « pubs ».</li>
+</ul></div>
+
+<h2>À valider</h2>
+<div class="card"><ol>
+<li>Les passes : 3 pubs (30 min), puis 5 pubs par passe, plafond 25 pubs par jour. <i>Recommandé.</i></li>
+<li>Export : Gold ou 2 pubs par export. <i>Recommandé.</i></li>
+<li>Niveaux de fonctions : 2 / 3 / 5 pubs comme au tableau 4. <i>Recommandé.</i></li>
+<li>Supprimer les récompenses en pièces, en Premium et « sans pub 24 h ». <i>Recommandé.</i></li>
+<li>Abonnés Premium actuels : garder l'avantage jusqu'à la fin (traité comme Gold), sans renouvellement. <i>Recommandé.</i></li>
+<li>Ordre de réalisation : API (passes, déblocages, export) → page Récompenses → blocages dans le Studio → suppression de Premium. <i>Recommandé.</i></li>
+</ol></div>
+</div>
+</body>
+</html>

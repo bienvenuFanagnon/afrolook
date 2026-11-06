@@ -52,6 +52,24 @@ class PostVoiceLink {
 }
 
 /// Publication à laquelle le post en cours de création répond (« Répondre en vidéo ») : envoyée avec la publication, une seule fois.
+/// Vidéos épinglées dans le montage : posées par le Studio, consommées une seule fois à la création du post (le serveur les garde avec la publication,
+/// pour qu'un toucher sur la vidéo épinglée ouvre l'original).
+class PostPinLink {
+  PostPinLink._();
+
+  static List<Map<String, dynamic>>? _pins;
+
+  static void set(List<Map<String, dynamic>>? pins) => _pins = (pins == null || pins.isEmpty) ? null : pins;
+
+  static void clear() => _pins = null;
+
+  static List<Map<String, dynamic>>? take() {
+    final v = _pins;
+    _pins = null;
+    return v;
+  }
+}
+
 class PostReplyLink {
   PostReplyLink._();
 

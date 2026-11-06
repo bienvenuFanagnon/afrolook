@@ -75,10 +75,12 @@ class PostsApi {
     // Effet de voix (audio) et publication à laquelle on répond en vidéo : posés par le parcours, consommés ici une seule fois
     final voiceEffect = PostVoiceLink.take();
     final replyToId = PostReplyLink.take();
+    final studioPins = PostPinLink.take();
     final body = <String, dynamic>{
       if (source != null && uploadIds.isNotEmpty) 'capture_source': source,
       if (voiceEffect != null && uploadIds.isNotEmpty) 'voice_effect': voiceEffect,
       if (replyToId != null) 'reply_to_id': replyToId,
+      if (studioPins != null && uploadIds.isNotEmpty) 'studio_pins': studioPins,
       if (description != null && description.trim().isNotEmpty) 'description': description.trim(),
       if (linkUrl != null && linkUrl.trim().isNotEmpty) 'link_url': linkUrl.trim(),
       if (category != null && category.isNotEmpty) 'category': category,
