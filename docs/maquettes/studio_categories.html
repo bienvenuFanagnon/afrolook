@@ -52,6 +52,13 @@ th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute
 .cover:after{content:"";position:absolute;left:8px;right:8px;top:12px;height:8px;border-radius:3px;background:rgba(255,255,255,.85)}
 .linkcard .t{font-weight:800;font-size:13px;line-height:1.25}.linkcard .d{font-size:11px;color:#5d6b63;margin:2px 0 6px}
 .linkcard .go{display:inline-block;background:var(--gold);color:#3a2c00;border-radius:10px;padding:7px 10px;font-weight:800;font-size:12px}
+.mini{position:absolute;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.96);color:#15201a;border-radius:99px;padding:6px 10px;font-weight:800;font-size:12px;box-shadow:0 6px 16px rgba(0,0,0,.4)}
+.mini .dot{width:16px;height:16px;border-radius:50%;background:#25d366;display:inline-block}
+.handle{position:absolute;width:16px;height:16px;border-radius:50%;background:var(--gold);border:2px solid #fff}
+.sel{position:absolute;border:2px dashed var(--gold);border-radius:14px}
+.sizes{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:10px 0}
+.sizes>div{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px;font-size:12px}
+.sizes .ex{display:block;margin-bottom:6px;background:#fff;color:#15201a;border-radius:10px;padding:6px 8px;font-weight:800}
 </style>
 </head>
 <body>
@@ -203,6 +210,7 @@ th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute
 <tr><td>Masques qui suivent la tête (lunettes, couronne, chat…)</td><td><span class="tag">fait</span></td></tr>
 <tr><td rowspan="3"><b>Commerce</b></td><td>Carte prix + lieu + contact + lien, boutons cliquables</td><td><span class="tag new">à faire</span></td></tr>
 <tr><td>WhatsApp avec message prêt, appel, lien dans l'application</td><td><span class="tag new">à faire</span></td></tr>
+<tr><td>Éléments réduits (pastille, compacte, complète), zoom au pincement, déplacement, zones protégées</td><td><span class="tag new">à faire</span></td></tr>
 <tr><td>Statistiques des touchers pour le vendeur</td><td><span class="tag new">à faire</span></td></tr>
 <tr><td>Carte lien avec mini-aperçu (livres, produits) et bouton « Commander maintenant » seul cliquable</td><td><span class="tag new">à faire</span></td></tr>
 <tr><td rowspan="3"><b>Audio</b></td><td>Filmer sur une musique ou une voix, extrait au choix</td><td><span class="tag new">à faire</span></td></tr>
@@ -213,12 +221,47 @@ th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute
 </table>
 </div>
 
+<h2>5. Les éléments sur la vidéo : réduits, déplaçables, zoomables</h2>
+<p class="lead">Cartes Commerce, cartes lien, vidéo épinglée, autocollants : <b>aucun ne doit cacher la vidéo</b>. Trois tailles, un pincement pour zoomer, un glissement pour déplacer. Le créateur choisit la taille de départ ; le spectateur voit la version réduite et la déplie d'un toucher.</p>
+<div class="grid">
+  <div class="card"><div class="phone"><div class="screen">
+    <div class="top"><span class="btn">✕</span><span class="btn on">Modifier l'élément</span></div>
+    <div class="face"><span class="eye l"></span><span class="eye r"></span><span class="mouth"></span></div>
+    <div class="sel" style="left:20px;right:20px;bottom:88px;height:82px"></div>
+    <div class="sticker" style="bottom:92px"><div style="font-size:11px;color:#5d6b63">Robes wax · Lomé</div><div class="price" style="font-size:17px">15 000 F</div><div class="row"><span class="wa">WhatsApp</span></div></div>
+    <span class="handle" style="left:14px;top:auto;bottom:162px"></span><span class="handle" style="right:14px;bottom:162px"></span><span class="handle" style="right:14px;bottom:82px"></span><span class="handle" style="left:14px;bottom:82px"></span>
+    <div class="rec"><i></i></div>
+  </div></div><p class="note">Création : poignées aux quatre coins (redimensionner), pincement (zoom), glissement (déplacer), double toucher (taille par défaut), corbeille pour retirer.</p></div>
+  <div class="card"><div class="phone"><div class="screen">
+    <div class="top"><span class="btn">⌂</span><span class="btn">♥ 24</span></div>
+    <div class="face"><span class="eye l"></span><span class="eye r"></span><span class="mouth"></span></div>
+    <div class="mini" style="left:14px;bottom:100px"><span class="dot"></span>15 000 F</div>
+    <div class="pip" style="width:64px;height:92px;top:70px"><b></b></div>
+  </div></div><p class="note">Vue du spectateur : la carte est une petite pastille (prix + icône) et la vidéo épinglée une petite fenêtre. Un toucher déplie la carte.</p></div>
+  <div class="card"><h3>Les trois tailles</h3>
+    <div class="sizes">
+      <div><span class="ex" style="border-radius:99px">● 15 000 F</span>Pastille (réduite)</div>
+      <div><span class="ex">Robes wax · 15 000 F · WhatsApp</span>Compacte</div>
+      <div><span class="ex" style="padding:12px 10px">Robes wax · Lomé<br>15 000 F<br>WhatsApp · Voir la boutique</span>Complète</div>
+    </div>
+    <ul>
+      <li><b>Créateur</b> : taille de départ au choix (pastille par défaut), position et zoom libres, jamais plus de 35 % de la hauteur de l'écran.</li>
+      <li><b>Spectateur</b> : pastille ou compacte ; un toucher ouvre la carte complète, un second toucher hors de la carte la referme. Le bouton « Commander maintenant » ou « WhatsApp » reste le seul à ouvrir un lien.</li>
+      <li><b>Zones protégées</b> : l'élément ne se place pas sur les boutons de l'application (j'aime, commentaires, cadeau) ni sur la barre de titre ; il se recale tout seul.</li>
+      <li><b>Visage</b> : un message prévient si l'élément cache le visage détecté.</li>
+      <li><b>Vidéo épinglée</b> : mêmes gestes, taille minimale lisible, option « agrandir au toucher ».</li>
+      <li>Plusieurs éléments : chacun a sa pastille ; ils ne se chevauchent pas (le plus récent passe devant).</li>
+    </ul>
+  </div>
+</div>
+
 <h2>À valider</h2>
 <div class="card">
 <ol>
 <li>Les 8 catégories et leur ordre (Beauté · Visage · Pro · Comédie · Fun · Commerce · Audio · Épingler) te conviennent-elles ? <i>Recommandé : oui, Commerce et Audio mis en avant.</i></li>
 <li>Commerce : boutons <b>dans l'application</b> (cliquables) plutôt que dessinés dans l'image. <i>Recommandé : oui.</i></li>
 <li>Épingler une vidéo : seulement avec l'autorisation du créateur. <i>Recommandé : oui.</i></li>
+<li>Éléments sur la vidéo : pastille réduite par défaut, dépliée au toucher, zoom au pincement. <i>Recommandé : oui.</i></li>
 <li>Ordre de réalisation : <b>Audio + mixage</b> → <b>Commerce</b> → <b>Épingler</b> → catégories Beauté / Pro / Comédie enrichies. <i>Recommandé.</i></li>
 </ol>
 </div>
