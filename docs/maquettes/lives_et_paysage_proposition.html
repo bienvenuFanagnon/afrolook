@@ -1,0 +1,132 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Vidéo paysage, création de live, onglet Lives · proposition</title><style>
+:root{--bg:#f7f8f6;--card:#fff;--ink:#14201a;--muted:#5d6b63;--line:#e1e6df;--green:#1b8a3c;--gold:#ffc400;--red:#e5383b;--shadow:0 14px 40px rgba(16,26,20,.16)}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0e1411;--card:#17201a;--ink:#eef3ef;--muted:#9fb0a5;--line:#27332b;--shadow:0 14px 40px rgba(0,0,0,.55)}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:26px 16px 80px}
+h1{font-size:28px;margin:0 0 6px}h2{font-size:22px;margin:42px 0 8px}h3{font-size:16px;margin:0 0 6px}
+.lead{color:var(--muted);max-width:80ch;margin:0 0 14px}.note{font-size:13px;color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:16px}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}.tbl{overflow-x:auto}
+.warn{background:rgba(255,196,0,.18);border:1px solid rgba(255,196,0,.5);border-radius:12px;padding:10px 14px;font-size:14px}
+.row{display:flex;gap:26px;flex-wrap:wrap;justify-content:center}.row figure{margin:0;text-align:center;width:262px}.row figcaption{margin-top:10px;font-weight:800}.row figcaption small{display:block;color:var(--muted);font-weight:400;font-size:12.5px}
+.phone{position:relative;width:262px;height:540px;border-radius:34px;background:#0b0f0d;border:7px solid #232f28;box-shadow:0 0 0 1px rgba(255,255,255,.18),var(--shadow);overflow:hidden;margin:0 auto}
+.v{position:absolute;inset:0;color:#fff;font-family:Roboto,system-ui,sans-serif;font-size:10px}
+.v>img.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.38),transparent 22%,transparent 55%,rgba(0,0,0,.62))}
+.tabs{position:absolute;z-index:3;top:12px;left:0;right:0;display:flex;justify-content:center;gap:18px;font-size:12px;font-weight:700;text-shadow:0 1px 4px rgba(0,0,0,.6)}
+.tabs span{opacity:.72;padding-bottom:3px}.tabs .on{opacity:1;border-bottom:2.5px solid #fff}
+.back{position:absolute;z-index:3;top:10px;left:10px;width:30px;height:30px}
+.mute{position:absolute;z-index:3;top:10px;right:10px;width:30px;height:30px}
+.btn{width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.42);border:1px solid rgba(255,255,255,.2);box-shadow:0 2px 8px rgba(0,0,0,.35);display:grid;place-items:center}
+.btn svg{width:21px;height:21px;fill:none;stroke:#fff;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.rail{position:absolute;z-index:3;right:9px;bottom:70px;display:flex;flex-direction:column;align-items:center;gap:9px}
+.rail .n{font-size:10px;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.8);margin-top:-5px}
+.av{position:relative;width:42px;height:42px}.av img{width:42px;height:42px;border-radius:50%;border:2px solid #fff;object-fit:cover;display:block}
+.av i{position:absolute;left:50%;bottom:-7px;margin-left:-8px;width:16px;height:16px;border-radius:50%;background:var(--gold);color:#3a2c00;font-style:normal;font-weight:900;font-size:12px;line-height:16px;text-align:center}
+.like svg{stroke:#fff}.like.on svg{fill:#ff4d57;stroke:#ff4d57}
+.info{position:absolute;z-index:3;left:11px;right:66px;bottom:48px;text-shadow:0 1px 4px rgba(0,0,0,.75)}
+.info b{font-size:12px;display:block}.info .f{display:inline-block;background:var(--gold);color:#3a2c00;border-radius:99px;padding:1px 8px;font-size:9px;font-weight:800;text-shadow:none;margin-left:6px}
+.info p{margin:3px 0;font-size:10.5px;line-height:1.3}.info .s{font-size:9.5px;opacity:.9}
+.field{position:absolute;z-index:3;left:11px;right:11px;bottom:10px;height:30px;border-radius:15px;background:rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.2);display:flex;align-items:center;padding:0 12px;font-size:10px;color:rgba(255,255,255,.85)}
+.prog{position:absolute;z-index:4;left:0;right:0;bottom:0;height:2.5px;background:rgba(255,255,255,.28)}.prog i{display:block;height:100%;width:42%;background:#fff}
+/* ancien écran (approximation d'après le code) */
+.old .tabs{display:none}.old .shade{background:linear-gradient(180deg,rgba(0,0,0,.2),transparent 30%,rgba(0,0,0,.45))}
+.old .ri{position:absolute;z-index:3;right:7px;bottom:40px;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:9px}
+.old .ri svg{width:24px;height:24px;fill:none;stroke-width:1.8;stroke-linecap:round}
+.old .eye{position:absolute;z-index:3;top:10px;right:10px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.45);display:grid;place-items:center;font-size:12px}
+.old .tt{position:absolute;z-index:3;top:12px;left:10px;font-weight:800;color:#2ecc71;font-size:13px}
+.old .live{position:absolute;z-index:2;left:10px;right:62px;bottom:98px;display:flex;flex-direction:column;gap:3px;opacity:.9}.old .live span{background:rgba(0,0,0,.4);border-radius:9px;padding:2px 7px;align-self:flex-start;font-size:8.5px}
+.old .inf{position:absolute;z-index:3;left:10px;right:64px;bottom:46px;font-size:9px;line-height:1.35}
+.old .chipx{display:inline-block;background:rgba(255,255,255,.2);border-radius:99px;padding:1px 6px;margin:1px 2px 1px 0;font-size:8px}
+.old .qc{position:absolute;z-index:3;left:10px;right:62px;bottom:10px;height:26px;border-radius:13px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:space-between;padding:0 8px;font-size:9px;color:rgba(255,255,255,.6)}
+/* pub */
+.ad{position:absolute;inset:0;background:#0f1a14;color:#fff}.ad>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.adtag{position:absolute;z-index:3;top:46px;left:11px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.25);border-radius:99px;padding:2px 9px;font-size:9px;font-weight:800}
+.adcta{position:absolute;z-index:3;left:11px;right:11px;bottom:44px;background:#fff;color:#14201a;border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:9px}
+.adcta b{font-size:11.5px;display:block}.adcta small{color:#667;font-size:9px}.adcta span{margin-left:auto;background:var(--green);color:#fff;border-radius:99px;padding:5px 12px;font-weight:800;font-size:10px;white-space:nowrap}
+.hint{position:absolute;z-index:3;left:0;right:0;bottom:12px;text-align:center;font-size:9.5px;opacity:.85}
+/* page des commentaires */
+.cp{position:absolute;inset:0;background:#fafaf8;color:#14201a;font-family:Roboto,system-ui,sans-serif;font-size:10px}
+.cp .h{display:flex;align-items:center;gap:8px;padding:10px 12px;font-weight:800;font-size:13px;border-bottom:1px solid #e6e6e0}
+.cm{display:flex;gap:7px;padding:8px 12px}.cm img{width:26px;height:26px;border-radius:50%;object-fit:cover}.cm b{display:block;font-size:10px}.cm span{color:#444;font-size:10px}
+.cp .in{position:absolute;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #e6e6e0;padding:8px 10px;display:flex;gap:8px;align-items:center}.cp .in div{flex:1;background:#f1f1ec;border-radius:99px;padding:7px 12px;color:#777}
+.kb{position:absolute;left:0;right:0;bottom:0;height:150px;background:#d9dbe0;display:grid;place-items:center;color:#667;font-size:10px}
+ul.t{margin:0;padding-left:18px}ul.t li{padding:3px 0}
+.g2{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+
+.lp{position:absolute;inset:0;background:#fafaf8;color:#14201a;font-family:Roboto,system-ui,sans-serif;font-size:10px;overflow:hidden}
+.lp .hd{display:flex;align-items:center;gap:8px;padding:10px 12px;font-weight:800;font-size:13px}
+.player{position:relative;height:148px;background:#000}.player img{width:100%;height:100%;object-fit:cover;display:block}
+.player .ctl{position:absolute;left:0;right:0;bottom:0;padding:6px 9px;color:#fff;font-size:9px;display:flex;gap:7px;align-items:center;background:linear-gradient(transparent,rgba(0,0,0,.6))}
+.player .ctl i{flex:1;height:3px;background:rgba(255,255,255,.35);border-radius:3px;position:relative}.player .ctl i:after{content:"";position:absolute;left:0;top:0;bottom:0;width:35%;background:#fff;border-radius:3px}
+.ttl{padding:8px 12px 0;font-weight:800;font-size:12.5px;line-height:1.25}.meta{padding:2px 12px;color:#777;font-size:9px}
+.cr{display:flex;align-items:center;gap:8px;padding:6px 12px}.cr img{width:32px;height:32px;border-radius:50%;object-fit:cover}.cr b{display:block;font-size:11px}.cr small{color:#777;font-size:8.5px}
+.cr .fo{margin-left:auto;background:#1b8a3c;color:#fff;border-radius:99px;padding:5px 13px;font-weight:800;font-size:10px}
+.pl{display:flex;gap:6px;padding:2px 12px}.pl span{display:flex;align-items:center;gap:4px;border:1px solid #dcdcd4;background:#fff;border-radius:99px;padding:5px 9px;font-weight:700;font-size:9.5px}
+.pl svg{width:14px;height:14px;fill:none;stroke:#14201a;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}.pl .on svg{stroke:#e5383b;fill:#e5383b}
+.cf{margin:8px 12px;height:32px;border-radius:16px;background:#f0f0ea;border:1px solid #e2e2dc;display:flex;align-items:center;padding:0 12px;color:#777;font-size:10px}
+.sg{display:flex;gap:8px;padding:4px 12px}.sg img{width:92px;height:56px;border-radius:8px;object-fit:cover;flex:none}.sg b{font-size:10px;display:block;line-height:1.25}.sg small{color:#777;font-size:8.5px}
+.nat{margin:6px 12px;border:1px solid #e2e2dc;border-radius:12px;background:#fff;padding:7px 9px;display:flex;gap:8px;align-items:center;font-size:9px}.nat span{background:#eee;border-radius:6px;padding:1px 6px;font-size:8px;font-weight:800;color:#555}
+.cam{position:relative;margin:4px 12px;height:190px;border-radius:18px;overflow:hidden}.cam img{width:100%;height:100%;object-fit:cover}.cam .tg{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.5);color:#fff;border-radius:99px;padding:2px 8px;font-size:8.5px;font-weight:700}
+.cam .fl{position:absolute;right:8px;top:8px;display:flex;gap:6px}.cam .fl div{width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.45);display:grid;place-items:center;color:#fff;font-size:12px}
+.mo{display:flex;gap:7px;padding:6px 12px}.mo div{flex:1;border:1.5px solid #dcdcd4;background:#fff;border-radius:14px;padding:8px}.mo div.sel{border-color:#ffc400;background:#fff9de}
+.mo b{font-size:11px;display:block}.mo small{color:#666;font-size:8.5px;line-height:1.25;display:block;margin-top:2px}
+.fi{margin:4px 12px;border:1px solid #dcdcd4;background:#fff;border-radius:12px;padding:8px 10px;color:#888;font-size:10px}
+.sgm{display:flex;margin:6px 12px;background:#eee;border-radius:99px;padding:3px}.sgm span{flex:1;text-align:center;padding:5px;border-radius:99px;font-weight:700;font-size:10px;color:#555}.sgm .on{background:#fff;color:#14201a;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.opt{margin:4px 12px;display:flex;justify-content:space-between;padding:8px 2px;border-top:1px solid #e6e6e0;font-size:10px;font-weight:700}
+.go{position:absolute;left:12px;right:12px;bottom:12px;background:#ffc400;color:#3a2c00;text-align:center;font-weight:900;border-radius:24px;padding:12px;font-size:13px}
+.prods{display:flex;gap:6px;padding:2px 12px}.prods div{width:70px;font-size:8px}.prods img{width:70px;height:70px;border-radius:10px;object-fit:cover;display:block}.prods b{display:block;margin-top:2px}.prods .ck{position:relative}.prods .ck:after{content:"✓";position:absolute;right:4px;top:4px;width:15px;height:15px;border-radius:50%;background:#1b8a3c;color:#fff;font-size:9px;display:grid;place-items:center}
+.liveE{position:absolute;inset:0;color:#fff;background:#000}.liveE>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.tag{position:absolute;z-index:3;top:50px;left:11px;display:flex;gap:6px}.tag span{border-radius:99px;padding:2px 9px;font-size:9px;font-weight:800;background:rgba(0,0,0,.55)}.tag .r{background:#e5383b}
+.jn{position:absolute;z-index:3;left:11px;right:66px;bottom:22px}.jn b{font-size:13px;display:block;text-shadow:0 1px 4px rgba(0,0,0,.7)}.jn p{margin:3px 0 8px;font-size:10.5px;text-shadow:0 1px 4px rgba(0,0,0,.7)}.jn .b{background:#ffc400;color:#3a2c00;border-radius:22px;padding:10px;text-align:center;font-weight:900;font-size:12px}
+.emp{position:absolute;inset:0;background:#000;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 26px}.emp h4{margin:16px 0 6px;font-size:16px}.emp p{margin:0 0 18px;font-size:11px;opacity:.75;line-height:1.4}.emp .b{background:#ffc400;color:#3a2c00;border-radius:24px;padding:12px;width:100%;font-weight:900;font-size:13px}.emp small{margin-top:10px;opacity:.7}
+.nd{position:absolute;inset:0;background:rgba(0,0,0,.35)}.nc{position:absolute;left:10px;right:10px;bottom:10px;background:rgba(255,255,255,.96);border:1.5px solid #ffd21f;border-radius:26px;padding:12px;text-align:center}
+.nc h5{margin:6px 0 2px;font-size:13px}.nc p{margin:0 0 8px;font-size:9.5px;color:#666}.nc .gs{display:flex;gap:6px;justify-content:center;margin-bottom:8px}.nc .gs div{background:#f0f0ea;border-radius:12px;padding:6px 12px;font-size:9px;font-weight:700}.nc .gs i{display:block;font-style:normal;font-size:18px}
+.nc .b{background:#ffc400;border-radius:20px;padding:9px;font-weight:900;font-size:11.5px}.nc small{display:block;margin-top:6px;color:#888}
+</style></head><body><div class="wrap">
+<h1>Vidéo paysage, création de live et onglet Lives : proposition à valider</h1>
+<p class="lead"><b>Rien n'est modifié pour ces trois pages.</b> Déjà fait et commité (à tester sur téléphone) : la page des vidéos verticales validée, avec l'invitation à offrir un cadeau et un premier onglet Lives vertical. Ici, ce que je propose pour harmoniser le reste.</p>
+
+<h2>1. Page vidéo paysage (YouTube-like)</h2>
+<div class="row"><figure><div class="phone"><div class="lp"><div class="hd"><span style="font-size:15px">←</span> Vidéo</div><div class="player"><img src="img/n_ig_b.jpg" alt="" style="object-position:center 25%"><div class="ctl">▶ <i></i> 1:12</div></div><div class="ttl">Mon premier concert à Lomé : les coulisses</div><div class="meta">24 k vues · il y a 2 h</div><div class="cr"><img src="img/h_3864774.jpg" alt=""><div><b>jay.beats</b><small>50 k abonnés</small></div><span class="fo">Suivre</span></div><div class="pl"><span class="on"><svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z"/></svg> 12,4 k</span><span><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9.5L5 20v-4H4z"/></svg> 320</span><span><svg viewBox="0 0 24 24"><rect x="3.5" y="9" width="17" height="11" rx="1.5"/><path d="M12 9v11M3.5 13h17M12 9C9.5 9 8 8 8 6.6 8 5.5 9 5 10 5c1.5 0 2 2 2 4zm0 0c2.5 0 4-1 4-2.4C16 5.5 15 5 14 5c-1.5 0-2 2-2 4z"/></svg> 58</span><span><svg viewBox="0 0 24 24"><path d="M14 4l7 7-7 7v-4c-5 0-8 1.5-10 5 .5-6 3.5-10 10-10z"/></svg></span><span><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/></svg></span></div><div class="cf">Ajouter un commentaire…</div><div class="nat"><span>Annonce</span><div>Emplacement pub du réseau (Appodeal / AdMob), sinon Afrolook Ads</div></div><div class="sg"><img src="img/n_dj.jpg" alt=""><div><b>Répétition du week-end</b><small>zuri.danse · 12 k vues</small></div></div><div class="sg"><img src="img/n_food.jpg" alt=""><div><b>Cuisine du dimanche</b><small>mama.cuisine · 8 k vues</small></div></div></div></div><figcaption>Nouvelle page<small>Même famille d'icônes et de pastilles que la page verticale</small></figcaption></figure>
+<figure><div class="phone"><div class="lp"><div class="hd"><span style="font-size:15px">←</span> Vidéo</div><div class="player"><img src="img/n_ig_b.jpg" alt="" style="object-position:center 25%"><div class="ctl">▶ <i></i> 1:12</div></div><div class="ttl">Mon premier concert à Lomé : les coulisses</div><div class="meta">24 k vues · il y a 2 h</div><div class="cr"><img src="img/h_3864774.jpg" alt=""><div><b>jay.beats</b><small>50 k abonnés</small></div><span class="fo">Suivre</span></div><div class="pl"><span class="on"><svg viewBox="0 0 24 24"><path d="M12 20.5s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.6a4.3 4.3 0 0 1 7.5 2.7c0 5.6-7.5 10.2-7.5 10.2z"/></svg> 12,4 k</span><span><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9.5L5 20v-4H4z"/></svg> 320</span><span><svg viewBox="0 0 24 24"><rect x="3.5" y="9" width="17" height="11" rx="1.5"/><path d="M12 9v11M3.5 13h17M12 9C9.5 9 8 8 8 6.6 8 5.5 9 5 10 5c1.5 0 2 2 2 4zm0 0c2.5 0 4-1 4-2.4C16 5.5 15 5 14 5c-1.5 0-2 2-2 4z"/></svg> 58</span><span><svg viewBox="0 0 24 24"><path d="M14 4l7 7-7 7v-4c-5 0-8 1.5-10 5 .5-6 3.5-10 10-10z"/></svg></span><span><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="12" cy="19" r="1.2"/></svg></span></div><div class="cf">Ajouter un commentaire…</div><div class="nat"><span>Annonce</span><div>Emplacement pub du réseau (Appodeal / AdMob), sinon Afrolook Ads</div></div><div class="sg"><img src="img/n_dj.jpg" alt=""><div><b>Répétition du week-end</b><small>zuri.danse · 12 k vues</small></div></div><div class="sg"><img src="img/n_food.jpg" alt=""><div><b>Cuisine du dimanche</b><small>mama.cuisine · 8 k vues</small></div></div><div class="nd"></div><div class="nc"><h5>Cette vidéo te plaît ?</h5><p>Remercie jay.beats avec un cadeau : il le reçoit tout de suite.</p><div class="gs"><div><i>🌹</i>Rose 10</div><div><i>❤️</i>Coeur 25</div><div><i>👑</i>Couronne 50</div></div><div class="b">Offrir un cadeau</div><small>Plus tard</small></div></div></div><figcaption>Invitation à offrir un cadeau<small>La même modale fluide que dans les vidéos verticales</small></figcaption></figure>
+<div style="flex:1;min-width:300px;max-width:520px"><div class="card"><h3>Ce que j'ai relevé dans la page actuelle (<code>postDetailsVideo.dart</code>, 2 563 lignes)</h3><ul class="t">
+<li>Lecteur 16/9, en-tête créateur avec « Suivre », rangée de statistiques, rangée de boutons d'action, aperçu du dernier commentaire, badge de score, section « Booster », liste de vidéos suggérées, bannière et pub native.</li>
+<li>Plusieurs couleurs et tailles d'icônes, boutons sans pastille, textes en dur (pas tous traduits), badge de score et pièces en plus.</li></ul></div>
+<div class="card"><h3>Ce que je propose</h3><ul class="t">
+<li><b>Une seule rangée de boutons en pastilles claires</b> : j'aime, commentaires, cadeau, partager, « ⋯ » (favoris, booster, signaler, supprimer dans le menu).</li>
+<li><b>Champ « Ajouter un commentaire… »</b> qui ouvre la page des commentaires (même règle que dans les vidéos verticales), plus d'aperçu de commentaire.</li>
+<li><b>Titre, vues, date, créateur + Suivre</b> en tête ; description repliée (« plus »).</li>
+<li><b>Pub</b> : un emplacement entre la description et les suggestions et un autre toutes les 4 suggestions : pub du réseau (Appodeal / AdMob) d'abord, Afrolook Ads sinon, jamais pour les comptes Gold.</li>
+<li><b>Invitation à offrir un cadeau</b> après 14 secondes de lecture, mêmes règles qu'en vertical.</li>
+<li><b>Plein écran paysage</b> : le lecteur passe en plein écran, les pastilles restent dessous. Le badge de score et les pièces reçues quittent la page (visibles dans « ⋯ »).</li></ul></div></div></div>
+
+<h2>2. Création d'un live : deux modes, une seule page</h2>
+<div class="row"><figure><div class="phone"><div class="lp"><div class="hd"><span style="font-size:15px">←</span> Lancer un live</div><div class="cam"><img src="img/f_7229044.jpg" alt="" style="object-position:center 20%"><span class="tg">Aperçu · caméra avant</span><div class="fl"><div>⟲</div><div>✦</div></div></div><div class="mo"><div class="sel"><b>Discussion</b><small>Parle, échange, reçois des cadeaux</small></div><div><b>Vente en direct</b><small>Vends les articles de ta boutique</small></div></div><div class="fi">Donne un titre à ton live…</div><div class="sgm"><span class="on">Gratuit</span><span>Payant</span></div><div class="opt"><span>Options</span><span>Qualité, flou, invités ›</span></div><div class="go">Passer en direct</div></div></div><figcaption>Mode « Discussion »<small>Aperçu caméra, titre, Gratuit / Payant, Options repliées</small></figcaption></figure>
+<figure><div class="phone"><div class="lp"><div class="hd"><span style="font-size:15px">←</span> Lancer un live</div><div class="cam" style="height:120px"><img src="img/n_av_food.jpg" alt="" style="object-position:center 20%"><span class="tg">Aperçu · caméra arrière</span></div><div class="mo"><div><b>Discussion</b><small>Parle, échange, reçois des cadeaux</small></div><div class="sel"><b>Vente en direct</b><small>Vends les articles de ta boutique</small></div></div><div class="ttl" style="padding-top:4px;font-size:11px">Produits à épingler (3 sur 5)</div><div class="prods"><div class="ck"><img src="img/n_av_mic.jpg" alt=""><b>Jupe wax</b>12 500 F</div><div class="ck"><img src="img/n_av_mic.jpg" alt=""><b>Robe</b>18 000 F</div><div><img src="img/n_av_food.jpg" alt=""><b>Sac</b>9 000 F</div></div><div class="fi" style="margin-top:8px">Titre : Vente flash du samedi</div><div class="opt"><span>Livraison et codes promo</span><span>Mes réglages ›</span></div><div class="go">Passer en direct</div></div></div><figcaption>Mode « Vente en direct »<small>Produits à épingler, livraison et codes promo</small></figcaption></figure>
+<div style="flex:1;min-width:300px;max-width:520px"><div class="card"><h3>Page actuelle (<code>create_live_page.dart</code>, 2 615 lignes)</h3><ul class="t">
+<li>Choix « Format du live » (Discussion ou Vente en direct), « Type de live » (gratuit ou payant), titre, prix, durée d'essai, comportement du son et du flou après l'essai, limites mensuelles.</li>
+<li><b>Écrans qui vendent encore « Premium »</b> (comparaison SD / HD, « Passer à Premium », « 500 pièces/mois ») alors que le plan Premium n'existe plus : à remplacer par Gold (abonnement ou pubs).</li>
+<li>Des icônes en emoji dans les listes (« ✅ », « ❌ », « 🔇 »), des boutons en majuscules, un formulaire long.</li></ul></div>
+<div class="card"><h3>Ce que je propose</h3><ul class="t">
+<li><b>Aperçu de la caméra tout en haut</b> (on se voit avant de lancer), boutons pour retourner la caméra et pour les effets.</li>
+<li><b>Deux grandes cartes</b> pour le mode : « Discussion » et « Vente en direct ». Le choix change la suite du formulaire : en vente, la liste des produits à épingler, la livraison et les codes promo.</li>
+<li><b>Gratuit / Payant</b> en sélecteur ; le prix, l'essai gratuit et le comportement après l'essai n'apparaissent que si « Payant ».</li>
+<li><b>Options repliées</b> (qualité, flou, invités) ; un grand bouton jaune « Passer en direct ».</li>
+<li><b>Gold</b> remplace Premium : la qualité HD s'obtient avec Gold (abonnement ou pubs), expliquée en une ligne, pas en deux pages de comparaison.</li>
+<li>Couleurs et icônes du thème (aucun emoji), textes dans les 8 langues.</li></ul></div></div></div>
+
+<h2>3. Onglet Lives de la page verticale</h2>
+<div class="row"><figure><div class="phone"><div class="v"><div class="liveE"><img src="img/f_7229044.jpg" alt="" style="object-position:center 15%"><div class="shade"></div><div class="tabs"><span>Suivis</span><span>Pour toi</span><span class="on">Lives</span></div><div class="tag"><span class="r">EN DIRECT</span><span>12,4 k</span></div><div class="rail"><div class="btn"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9zM17 9l4 6M21 9l-4 6"/></svg></div></div><div class="jn"><b>@mariam.live</b><p>Vente flash du samedi, jupes en wax</p><div class="b">Rejoindre le live</div></div></div></div></div><figcaption>Un live en plein écran<small>On défile de live en live, un toucher rejoint</small></figcaption></figure>
+<figure><div class="phone"><div class="v"><div class="emp"><div class="btn" style="width:70px;height:70px"><svg viewBox="0 0 24 24" style="width:34px;height:34px"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/></svg></div><h4>Aucun live en ce moment</h4><p>Sois le premier : lance ton live et ta communauté te rejoint, avec cadeaux et vente en direct.</p><div class="b">Lancer un live</div><small>Voir les vidéos</small></div><div class="tabs"><span>Suivis</span><span>Pour toi</span><span class="on">Lives</span></div></div></div><figcaption>Aucun live<small>La page invite à lancer le sien</small></figcaption></figure>
+<div style="flex:1;min-width:300px;max-width:520px"><div class="card"><h3>État de ce qui est déjà codé</h3><ul class="t">
+<li>Les lives en cours défilent en plein écran (image de couverture, EN DIRECT, spectateurs, @hôte, titre, « Rejoindre le live »).</li>
+<li>Sans live : « Aucun live en ce moment », bouton « Lancer un live » (ouvre la page de création) et « Voir les vidéos ».</li>
+<li><b>Limite actuelle</b> : la vignette est une image ; lire le live directement dans le défilement (flux Agora) demande de tester à deux téléphones, je le propose en deuxième temps.</li></ul></div></div></div>
+
+<h2>À valider</h2>
+<div class="card"><ol style="margin:0;padding-left:20px"><li>La page vidéo paysage : une rangée de 5 pastilles, champ qui ouvre les commentaires, pubs en 2 emplacements, invitation cadeau.</li>
+<li>La création de live : aperçu caméra, deux cartes de mode, formulaire qui change selon le mode, options repliées, Gold à la place de Premium.</li>
+<li>L'onglet Lives : image de couverture au début, lecture directe du flux plus tard.</li></ol>
+<p class="note">Photos d'exemple (Pexels). Après votre accord, je code la page paysage, puis la création de live.</p></div>
+</div></body></html>
