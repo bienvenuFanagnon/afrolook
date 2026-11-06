@@ -115,6 +115,7 @@ const Map<String, Map<String, String>> kTrCreation = {
   'Ajouter un autocollant': {'en': 'Add a sticker'},
   'Autocollants': {'en': 'Stickers'},
   'Sous-titres': {'en': 'Subtitles'},
+  'Le post d\'origine n\'est plus disponible.': {'en': 'The original post is no longer available.'},
   'Relis tes sous-titres': {'en': 'Check your subtitles'},
   'Corrige un mot si besoin, ou retire une phrase.': {'en': 'Fix a word if needed, or remove a line.'},
   'Retirer': {'en': 'Remove'},

@@ -2509,9 +2509,14 @@ Future<void> _handleRepost() async {
   void _openReplyTarget() {
     final id = widget.post.replyToPostId;
     if (id == null) return;
+    void gone() {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Le post d\'origine n\'est plus disponible.'))));
+    }
     PostsApi.get(id).then((p) {
-      if (p != null && mounted) Navigator.push(context, MaterialPageRoute(builder: (_) => DetailsPost(post: p)));
-    }).catchError((_) {});
+      if (!mounted) return;
+      if (p == null) return gone();
+      Navigator.push(context, MaterialPageRoute(builder: (_) => DetailsPost(post: p)));
+    }).catchError((_) => gone());
   }
 
   Widget _buildInteractionsTotalBadge(int total, AppColors colors) {
