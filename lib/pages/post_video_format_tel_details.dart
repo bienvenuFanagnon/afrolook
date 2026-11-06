@@ -82,6 +82,11 @@ import 'package:afrotok/providers/authProvider.dart';
 import 'package:afrotok/providers/postProvider.dart';
 
 import 'package:afrotok/pages/postComments.dart';
+import 'package:afrotok/pages/videos/video_chrome.dart';
+import 'package:afrotok/services/api/posts_api.dart';
+import 'package:afrotok/providers/sound_provider.dart';
+import 'package:afrotok/pages/videos/vertical_lives_view.dart';
+import 'package:afrotok/ads/ad_slot.dart';
 
 import 'package:afrotok/services/linkService.dart';
 
@@ -328,6 +333,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       if (_feedItems.isNotEmpty && _feedItems[0] is Post && !_isVideoInitialized) {
         _preloadNeighborhood(0);
         _initializeVideo(_feedItems[0] as Post, index: 0);
+        _scheduleGiftNudge(_feedItems[0] as Post);
       }
     });
   }
@@ -448,6 +454,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     WidgetsBinding.instance.removeObserver(this);
     _likeAnimationTimer?.cancel();
     _liveCommentTimer?.cancel();
+    _giftNudgeTimer?.cancel();
     _quickCommentController.dispose();
 
     // Nettoyer tous les
@@ -754,7 +761,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       setState(() => _isVideoInitialized = true);
       if (_learnOrientation(post)) return;
       _videoPlayCount++;
-      if ((_videoPlayCount - 1) % 3 == 0 && !_isUserPremium() && post.isAdvertisement != true) _attachMidrollListener();
+      if ((_videoPlayCount - 1) % 3 == 0 && !_isUserPremium() && false) _attachMidrollListener();
       await _recordPostView(post);
       _startSuggestionModalTimer();
       return;
@@ -796,7 +803,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       setState(() => _isVideoInitialized = true);
       if (_learnOrientation(post)) return;
       _videoPlayCount++;
-      if ((_videoPlayCount - 1) % 3 == 0 && !_isUserPremium() && post.isAdvertisement != true) _attachMidrollListener();
+      if ((_videoPlayCount - 1) % 3 == 0 && !_isUserPremium() && false) _attachMidrollListener();
       await _recordPostView(post);
       _startSuggestionModalTimer();
     } catch (e) {
@@ -938,6 +945,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   }
 
   void _rebuildFeedItems() {
+    if (_tab != 1) return;   // l'onglet Suivis garde sa propre liste ; le fil « Pour toi » se reconstruit au retour
     // Première construction : vidéos du pays de l'utilisateur en premier
     // (la vidéo ouverte reste en tête ; tri local, sans index Firestore).
     if (_feedItems.isEmpty && _videoPosts.length > 2) {
@@ -1005,12 +1013,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       postCount++;
       if (postCount == 1 && _showTutoReminder) _feedItems.add(const _TutoReminderSentinel());
 
-      // Pub toutes les 3 vidéos (gratuit uniquement)
-      if (!skipAds &&
-          postCount % 3 == 0 &&
-          i != mixedPosts.length - 1 &&
-          adIdx < ads.length) {
-        _feedItems.add(ads[adIdx]);
+      // Une page de pub toutes les 4 vidéos (gratuit uniquement) : pub du réseau (Appodeal / AdMob) d'abord, pub Afrolook Ads sinon
+      if (!skipAds && postCount % 4 == 0 && i != mixedPosts.length - 1) {
+        _feedItems.add(_VideoAdSentinel(ads.isEmpty ? null : ads[adIdx % ads.length]));
         adIdx++;
       }
 
@@ -1053,9 +1058,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       videoIdx++;
       if (videoIdx == 1 && _showTutoReminder) _feedItems.add(const _TutoReminderSentinel());
 
-      // Toutes les 3 vidéos (gratuit uniquement)
-      if (!skipAds && videoIdx % 3 == 0 && videoIdx < _videoPosts.length && adIdx < ads.length) {
-        _feedItems.add(ads[adIdx]);
+      // Toutes les 4 vidéos (gratuit uniquement)
+      if (!skipAds && videoIdx % 4 == 0 && videoIdx < _videoPosts.length) {
+        _feedItems.add(_VideoAdSentinel(ads.isEmpty ? null : ads[adIdx % ads.length]));
         adIdx++;
       }
     }
@@ -1958,6 +1963,11 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
                   DefiConvert.openFromPost(this.context, post);
                 },
               ),
+            ListTile(
+              leading: Icon(_isFavorite ? Icons.bookmark : Icons.bookmark_border, color: colors.accentText),
+              title: Text(_isFavorite ? tr('Retirer des favoris') : tr('Enregistrer dans mes favoris'), style: TextStyle(color: colors.textPrimary)),
+              onTap: () { Navigator.pop(context); _toggleFavorite(); },
+            ),
             // Bouton Partager (externe)
             ListTile(
               leading: Icon(Icons.share, color: colors.info),
@@ -3299,152 +3309,306 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   }
 
   Widget _buildVideoPage(Post post, int index) {
+    final bool isAd = post.isAdvertisement == true;
+    final double bottomInset = MediaQuery.of(context).padding.bottom;
     return Stack(
       children: [
-        // Vidéo avec son propre détecteur de double tap
         Positioned.fill(
           child: GestureDetector(
-            // translucent : les swipes atteignent le PageView même si le child (Chewie)
-            // aurait normalement absorbé tous les événements tactiles.
+            // translucent : les glissements atteignent le PageView ; IgnorePointer : le lecteur n'absorbe aucun geste
             behavior: HitTestBehavior.translucent,
-            onDoubleTap: () {
-              _handleLike(post);
-            },
-            child: IgnorePointer(
-              // Chewie ajoute ses propres GestureDetectors (opaque) qui bloquent le
-              // VerticalDragRecognizer du PageView sur toute la surface vidéo.
-              // IgnorePointer désactive complètement leur hit-testing ; tous les gestes
-              // sont gérés ici ou par le PageView parent.
-              child: _buildVideoPlayer(post),
-            ),
+            onDoubleTap: () => _handleLike(post),
+            child: IgnorePointer(child: _buildVideoPlayer(post)),
           ),
         ),
-
-        // Overlay pub spécifique (badge + stats + bouton d'action) — toujours visible pour les pubs
-        if (post.isAdvertisement == true) ...[
+        if (isAd) ...[
           _buildVideoAdOverlay(post),
-          // Bouton 3-points toujours visible (remplace le toggle pour les pubs)
           Positioned(
-            top: MediaQuery.of(context).padding.top + 10,
+            top: MediaQuery.of(context).padding.top + 56,
             right: 12,
-            child: GestureDetector(
-              onTap: () => _showPostMenu(post),
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.5),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.more_vert, color: Colors.white, size: 24),
-              ),
-            ),
+            child: GestureDetector(onTap: () => _showPostMenu(post), child: const VideoPill(size: 36, child: Icon(Icons.more_horiz_rounded, color: Colors.white, size: 20))),
           ),
+        ] else ...[
+          const Positioned.fill(child: IgnorePointer(child: VideoShade())),
+          _buildCreatorInfo(post),
+          _buildRail(post),
+          Positioned(left: 12, right: 12, bottom: 12 + bottomInset, child: VideoCommentField(onTap: () => _showCommentsModal(post))),
         ],
-
-        // Overlay interactions (like / commentaire / partage / favoris)
-        // Identique pour tous les posts, y compris les pubs.
-        // Pour les pubs : toujours visible (opacity 1.0, non masquable).
-        // Pour les posts normaux : contrôlé par _showOverlay.
-        Positioned.fill(
-          child: AnimatedOpacity(
-            opacity: post.isAdvertisement == true ? 1.0 : (_showOverlay ? 1.0 : 0.0),
-            duration: const Duration(milliseconds: 250),
-            child: IgnorePointer(
-              ignoring: post.isAdvertisement == true ? false : !_showOverlay,
-              child: Stack(
-                children: [
-                  _buildActionButtons(post),
-                  _buildQuickCommentOverlay(post),
-                  _buildUserInfo(post),
-                  // Hint de scroll uniquement pour les posts normaux
-                  if (post.isAdvertisement != true) _buildScrollHint(),
-                ],
-              ),
-            ),
-          ),
-        ),
-
-        // Animation des cœurs (toujours visible même sans overlay)
         ..._buildFlyingHearts(),
-
-        // Bouton toggle overlay — uniquement pour les posts normaux
-        // (les pubs ont le bouton 3-points toujours visible à la place)
-        if (post.isAdvertisement != true) _buildOverlayToggle(),
-
-        if (widget.isIn)
-          Positioned(
-            top: 12,
-            left: 10,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back, color: Colors.yellow)),
-                    if (post.type == PostType.DEFI.name) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: const Color(0x33FF9500),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFFFF9500).withOpacity(0.6)),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.emoji_events, color: Color(0xFFFF9500), size: 13),
-                            SizedBox(width: 4),
-                            Text('DÉFI', style: TextStyle(color: Color(0xFFFF9500), fontSize: 11, fontWeight: FontWeight.bold)),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                    const Text('Vibe vidéos', style: TextStyle(color: _afroGreen, fontSize: 20, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-              ],
-            ),
-          ),
+        if (index == _currentPage) Positioned(left: 0, right: 0, bottom: 0, child: VideoProgressLine(controller: _currentVideoController)),
         if (_isLoadingMore && _videoPosts.length - _currentPage <= _preloadThreshold)
-          const Positioned(bottom: 100, child: Center(child: CircularProgressIndicator(color: _afroGreen))),
-
-        // Badges Tier + Pays — uniquement pour le post initial (tier connu depuis le feed)
-        if (_currentPage == 0 && (widget.feedTier != null || !(post.availableCountries.contains('ALL') || post.availableCountries.isEmpty)))
-          Positioned(
-            top: MediaQuery.of(context).padding.top + (widget.isIn ? 60 : 12),
-            left: 12,
-            child: _VideoPageBadges(post: post, feedTier: _currentPage == 0 ? widget.feedTier : null),
-          ),
-        // Cadeau rapide + badge — à droite, visible pour les non-propriétaires
-        if (_currentPage == 0 && post.isAdvertisement != true && post.user_id != null && post.user_id != authProvider.loginUserData.id)
-          Positioned(
-            // Sous le bouton œil (top + 10, ~40 px) pour ne jamais le chevaucher
-            top: MediaQuery.of(context).padding.top + 60,
-            right: 12,
-            child: CadeauBadge(
-              receiverId: post.user_id!,
-              receiverName: post.user?.pseudo ?? 'Créateur',
-              receiverAvatar: post.user?.imageUrl ?? '',
-              post: post,
-              giftCount: post.totalGiftCoinsSentOnThisPost ?? 0,
-              showCount: false,
-              onGiftSuccess: () {
-                setState(() {
-                  post.users_cadeau_id ??= [];
-                  if (!post.users_cadeau_id!.contains(authProvider.loginUserData.id!)) {
-                    post.users_cadeau_id!.add(authProvider.loginUserData.id!);
-                  }
-                });
-                Provider.of<CoinGiftUserProvider>(context, listen: false)
-                    .refreshBalance(authProvider.loginUserData.id!);
-              },
-            ),
-          ),
+          const Positioned(bottom: 100, left: 0, right: 0, child: Center(child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)))),
       ],
     );
   }
+
+  /// Colonne de droite : créateur, j'aime, commentaires, cadeau, partager, menu. Pastilles sombres : lisibles sur tous les fonds.
+  Widget _buildRail(Post post) {
+    if ((post.user == null && post.user_id != null) || (post.canal == null && post.canal_id != null)) {
+      _lazyLoadPostRelations(post);
+    }
+    final colors = AppColors.of(context);
+    final user = post.user;
+    final canal = post.canal;
+    final bool canalPending = canal == null && post.canal_id != null && post.canal_id!.isNotEmpty;
+    final me = authProvider.loginUserData.id;
+    final bool liked = _likedPosts[post.id] ?? (post.users_love_id?.contains(me) ?? false);
+    final int loves = _lovesCount[post.id] ?? post.loves ?? 0;
+    final bool isOwner = post.user_id == me;
+    return Positioned(
+      right: 10,
+      bottom: 62 + MediaQuery.of(context).padding.bottom,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () {
+              if (canal != null) {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => CanalDetails(canal: canal)));
+              } else if (user != null) {
+                showUserDetailsModalDialog(user, MediaQuery.of(context).size.width, MediaQuery.of(context).size.height, context);
+              }
+            },
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(1.5),
+                  decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                  child: canalPending
+                      ? Container(width: 42, height: 42, decoration: BoxDecoration(color: Colors.white24, shape: BoxShape.circle))
+                      : SafeNetworkAvatar(url: canal?.urlImage ?? user?.imageUrl, radius: 21),
+                ),
+                if (!canalPending) _buildSubscribeIcon(post),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          VideoRailButton(
+            child: LikeCoinHeart(icon: liked ? Icons.favorite : Icons.favorite_border, color: liked ? colors.danger : Colors.white, size: 24),
+            label: _formatNumber(loves),
+            onTap: _isLiking ? () {} : () => _handleLike(post),
+          ),
+          const SizedBox(height: 14),
+          VideoRailButton(icon: Icons.chat_bubble_outline_rounded, label: _formatNumber(post.comments ?? 0), onTap: () => _showCommentsModal(post)),
+          if (!isOwner && post.user_id != null) ...[
+            const SizedBox(height: 14),
+            VideoRailButton(icon: Icons.card_giftcard_rounded, label: _formatNumber(post.users_cadeau_id?.length ?? 0), onTap: () => _openGiftDialog(post)),
+          ],
+          const SizedBox(height: 14),
+          VideoRailButton(icon: Icons.ios_share_rounded, label: tr('Partager'), onTap: () => _sharePost(post)),
+          const SizedBox(height: 14),
+          VideoRailButton(icon: Icons.more_horiz_rounded, onTap: () => _showPostMenu(post)),
+        ],
+      ),
+    );
+  }
+
+  /// Bas de l'écran : @pseudo, « Fait sur Afrolook », abonnés, description sur 2 lignes, son utilisé.
+  Widget _buildCreatorInfo(Post post) {
+    final user = post.user;
+    final canal = post.canal;
+    final String name = canal != null ? '#${canal.titre ?? ''}' : '@${user?.pseudo ?? ''}';
+    final bool madeHere = post.captureSource == 'captured' || post.captureSource == 'edited';
+    return Positioned(
+      left: 12,
+      right: 74,
+      bottom: 60 + MediaQuery.of(context).padding.bottom,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (post.isRepost == true)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 3),
+              child: Text(tr('@{p} a republié', {'p': post.reposterPseudo ?? post.reposterUserId ?? tr('quelqu\'un')}), style: const TextStyle(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.w500)),
+            ),
+          Row(mainAxisSize: MainAxisSize.min, children: [
+            Flexible(child: NameTag(label: name, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis)),
+            if (user != null) ...[const SizedBox(width: 4), UserBadgeWidget(user: user, size: 12)],
+            if (madeHere)
+              Container(
+                margin: const EdgeInsets.only(left: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(color: const Color(0xFFFFD21F), borderRadius: BorderRadius.circular(99)),
+                child: Text(tr('Fait sur Afrolook'), style: const TextStyle(color: Color(0xFF3A2C00), fontSize: 10, fontWeight: FontWeight.w800)),
+              ),
+            if (post.type == PostType.DEFI.name)
+              Container(
+                margin: const EdgeInsets.only(left: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(color: const Color(0x33FF9500), borderRadius: BorderRadius.circular(99), border: Border.all(color: const Color(0xFFFF9500).withOpacity(0.6))),
+                child: const Text('DÉFI', style: TextStyle(color: Color(0xFFFF9500), fontSize: 10, fontWeight: FontWeight.w800)),
+              ),
+          ]),
+          const SizedBox(height: 2),
+          canal != null
+              ? Text('${_formatNumber(canal.membersCount)} ${tr('abonnés')}', style: const TextStyle(color: Colors.white70, fontSize: 12, shadows: [Shadow(color: Color(0xCC000000), blurRadius: 4)]))
+              : FollowersCountBuilder(
+                  userId: user?.id ?? post.user_id,
+                  fallback: user?.followersCount ?? 0,
+                  builder: (_, c) => Text('${_formatNumber(c)} ${tr('abonnés')}', style: const TextStyle(color: Colors.white70, fontSize: 12, shadows: [Shadow(color: Color(0xCC000000), blurRadius: 4)])),
+                ),
+          if (post.description != null && post.description!.trim().isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              _translatedDescriptions[post.id] ?? post.description!,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: Colors.white, fontSize: 13.5, height: 1.3, shadows: [Shadow(color: Color(0xCC000000), blurRadius: 4)]),
+            ),
+            if (post.id != null)
+              TranslatableDescription(
+                postId: post.id!,
+                text: post.description!,
+                targetLang: Provider.of<LocaleProvider>(context, listen: false).locale.languageCode,
+                style: const TextStyle(color: Colors.white),
+                onToggle: (translated) => setState(() {
+                  if (translated == null) {
+                    _translatedDescriptions.remove(post.id);
+                  } else {
+                    _translatedDescriptions[post.id!] = translated;
+                  }
+                }),
+              ),
+          ],
+          PostCtaRow(post: post, dark: true),
+        ],
+      ),
+    );
+  }
+
+  void _openGiftDialog(Post post) {
+    if (post.user_id == null) return;
+    final me = authProvider.loginUserData.id;
+    showDialog(
+      context: context,
+      builder: (_) => CoinGiftDialog(
+        receiverId: post.user_id!,
+        receiverName: post.user?.pseudo ?? tr('Créateur'),
+        receiverAvatar: post.user?.imageUrl ?? '',
+        post: post,
+        onGiftSuccess: () {
+          if (!mounted) return;
+          setState(() {
+            post.users_cadeau_id ??= [];
+            if (me != null && !post.users_cadeau_id!.contains(me)) post.users_cadeau_id!.add(me);
+          });
+          if (me != null) Provider.of<CoinGiftUserProvider>(context, listen: false).refreshBalance(me);
+        },
+      ),
+    );
+  }
+
+  // ── Invitation à offrir un cadeau (modale fluide) ─────────────────────────
+  Timer? _giftNudgeTimer;
+  int _nudgesShown = 0;
+  DateTime? _lastNudgeAt;
+  final Set<String> _nudgedPostIds = {};
+
+  String? _currentPostId() => _currentPage < _feedItems.length && _feedItems[_currentPage] is Post ? (_feedItems[_currentPage] as Post).id : null;
+
+  /// Après 14 secondes de lecture de la même vidéo : une invitation à remercier le créateur (3 par séance au plus, 3 minutes entre deux, jamais deux fois sur la même vidéo,
+  /// jamais pour sa propre vidéo, une pub, ni si un cadeau a déjà été envoyé sur cette vidéo).
+  void _scheduleGiftNudge(Post post) {
+    _giftNudgeTimer?.cancel();
+    final me = authProvider.loginUserData.id;
+    if (post.isAdvertisement == true || post.id == null || post.user_id == null || post.user_id == me) return;
+    if (_nudgesShown >= 3 || _nudgedPostIds.contains(post.id)) return;
+    if (_lastNudgeAt != null && DateTime.now().difference(_lastNudgeAt!) < const Duration(minutes: 3)) return;
+    if (post.users_cadeau_id?.contains(me) ?? false) return;
+    final id = post.id!;
+    _giftNudgeTimer = Timer(const Duration(seconds: 14), () {
+      if (!mounted || _tab == 2 || _currentPostId() != id) return;
+      final vc = _currentVideoController;
+      if (vc == null || !vc.value.isPlaying) return;
+      if (ModalRoute.of(context)?.isCurrent != true) return;
+      _nudgedPostIds.add(id);
+      _nudgesShown++;
+      _lastNudgeAt = DateTime.now();
+      VideoGiftNudge.show(context, creatorName: post.user?.pseudo ?? tr('ce créateur'), avatarUrl: post.user?.imageUrl ?? '', onGift: () => _openGiftDialog(post));
+    });
+  }
+
+  // ── Onglets : 0 Suivis · 1 Pour toi · 2 Lives ─────────────────────────────
+  int _tab = 1;
+  List<dynamic> _forYouBackup = [];
+  int _forYouPage = 0;
+  final List<Post> _followPosts = [];
+  String? _followCursor;
+  bool _followLoading = false;
+  bool _followDone = false;
+
+  Future<void> _switchTab(int t) async {
+    if (t == _tab || !mounted) return;
+    _giftNudgeTimer?.cancel();
+    if (_tab == 1) {
+      _forYouBackup = List<dynamic>.from(_feedItems);
+      _forYouPage = _currentPage;
+    }
+    _currentVideoController?.pause();
+    setState(() => _tab = t);
+    if (t == 2) return;   // les lives : la vue verticale des lives prend la place
+    if (t == 0) {
+      _followPosts.clear();
+      _followCursor = null;
+      _followDone = false;
+      setState(() {
+        _feedItems = [];
+        _currentPage = 0;
+      });
+      await _loadFollowing();
+    } else {
+      setState(() {
+        _feedItems = List<dynamic>.from(_forYouBackup);
+        _currentPage = _forYouPage;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_pageController.hasClients) _pageController.jumpToPage(_forYouPage);
+        _startCurrentVideo();
+      });
+    }
+  }
+
+  void _startCurrentVideo() {
+    if (!mounted || _currentPage >= _feedItems.length || _feedItems[_currentPage] is! Post) return;
+    final post = _feedItems[_currentPage] as Post;
+    _preloadNeighborhood(_currentPage);
+    _initializeVideo(post, index: _currentPage);
+    _scheduleGiftNudge(post);
+  }
+
+  Future<void> _loadFollowing() async {
+    if (_followLoading || _followDone) return;
+    _followLoading = true;
+    try {
+      final page = await PostsApi.followingVideos(cursor: _followCursor);
+      _followCursor = page.next;
+      if (page.next == null) _followDone = true;
+      for (final row in page.items) {
+        final p = postFromApi(row);
+        if (p.id != null && p.url_media != null && !_followPosts.any((x) => x.id == p.id)) {
+          _followPosts.add(p);
+          _loadPostRelations(p).ignore();
+        }
+      }
+    } catch (e) {
+      printVm('Erreur chargement des vidéos suivies: ${PubApi.message(e)}');
+    } finally {
+      _followLoading = false;
+    }
+    if (!mounted || _tab != 0) return;
+    final firstLoad = _feedItems.isEmpty;
+    setState(() => _feedItems = List<dynamic>.from(_followPosts));
+    if (firstLoad && _feedItems.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_pageController.hasClients) _pageController.jumpToPage(0);
+        _startCurrentVideo();
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -3454,7 +3618,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       children: [
         Scaffold(
           backgroundColor: _afroBlack,
-          body: _isLoadingFeed
+          body: _tab == 2
+              ? VerticalLivesView(onBackToVideos: () => _switchTab(1))
+              : _isLoadingFeed
               ? Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -3484,9 +3650,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
             controller: _pageController,
             scrollDirection: Axis.vertical,
             itemCount: _feedItems.length,
-            physics: const BouncingScrollPhysics(  // Ajoute cette ligne
-              parent: AlwaysScrollableScrollPhysics(),
-            ),
+            physics: const AlwaysScrollableScrollPhysics(parent: ClampingScrollPhysics()),
             onPageChanged: (index) async {
               if (!mounted) return;
               // Fermer le midroll si l'utilisateur swipe pendant qu'une pub est affichée
@@ -3511,7 +3675,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
               if (index < _feedItems.length && _feedItems[index] is Post) {
                 final post = _feedItems[index] as Post;
                 _initializeVideo(post, index: index);
-                _initLiveComments(post);
+                _scheduleGiftNudge(post);
+                if (_tab == 0 && _feedItems.length - index <= 3) _loadFollowing();
               }
             },
             itemBuilder: (context, index) {
@@ -3526,6 +3691,15 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
                 return ShopPromoVideoItem(articles: _promoArticles);
               } else if (item is _TutoReminderSentinel) {
                 return const FeedMonetizationReminder(feed: 'video', fullScreen: true);
+              } else if (item is _VideoAdSentinel) {
+                return _VideoAdPage(
+                  adData: item.adData,
+                  onNext: () {
+                    if (_pageController.hasClients && _pageController.page?.toInt() == index) {
+                      _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeOutCubic);
+                    }
+                  },
+                );
               } else if (item is Map<String, dynamic>) {
                 return AdPostWidget(
                   adData: item,
@@ -3542,18 +3716,23 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
             },
           ),
         ),
-        // Live comments — toujours dans une position fixe du Stack (évite doublon GlobalKey)
-        if (!_isLoadingFeed) _buildLiveCommentsOverlay(),
-        // Pas de bannière fixe dans la page portrait — la pub passe en midroll modal
-        // Pub midroll — grand format centré, vidéo en pause (gratuit uniquement)
-        if (_showMidrollAd && !_isUserPremium())
-          MidrollAdCard(
-            key: ValueKey(_midrollAdData.hashCode),
-            adData: _midrollAdData,
-            videoController: _midrollVideoController,
-            videoInitialized: _midrollVideoInitialized,
-            onClose: _closeMidrollOverlay,
+        // Barre du haut : Suivis · Pour toi · Lives (fixe au-dessus des pages, jamais redessinée par page)
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: VideoTopBar(
+            index: _tab,
+            onChanged: _switchTab,
+            onBack: (widget.isIn || Navigator.of(context).canPop()) ? () => Navigator.maybePop(context) : null,
+            trailing: Consumer<SoundProvider>(
+              builder: (context, sound, _) => GestureDetector(
+                onTap: sound.toggleSound,
+                child: VideoPill(size: 34, child: Icon(sound.isMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded, size: 18, color: Colors.white)),
+              ),
+            ),
           ),
+        ),
       ],
     );
     if (_isWide) {
@@ -3566,6 +3745,53 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       return _wrapWithControls(scaffold);
     }
     return _videoStack;
+  }
+}
+
+/// Page de pub entre deux vidéos (une pub Afrolook Ads de repli, éventuellement absente).
+class _VideoAdSentinel {
+  const _VideoAdSentinel(this.adData);
+  final Map<String, dynamic>? adData;
+}
+
+/// Pub en plein écran dans le défilement : pub du réseau (Appodeal / AdMob) en priorité, pub Afrolook Ads sinon, jamais les deux ; on la passe en glissant.
+class _VideoAdPage extends StatelessWidget {
+  const _VideoAdPage({required this.adData, required this.onNext});
+  final Map<String, dynamic>? adData;
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final data = adData;
+    return Container(
+      color: Colors.black,
+      child: Stack(
+        children: [
+          Center(
+            child: AdSlot(
+              kind: AdSlotKind.detailMrec,
+              own: () => data == null ? const SizedBox.shrink() : AdPostWidget(adData: data, width: size.width, height: size.height, onComplete: onNext),
+            ),
+          ),
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 56,
+            left: 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(99), border: Border.all(color: Colors.white24)),
+              child: Text(tr('Annonce'), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
+            ),
+          ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 24 + MediaQuery.of(context).padding.bottom,
+            child: Text(tr('Glisse pour continuer'), textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+          ),
+        ],
+      ),
+    );
   }
 }
 

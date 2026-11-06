@@ -100,6 +100,14 @@ class PostsApi {
     return postFromApi(_asMap(r));
   }
 
+  /// Onglet « Suivis » de la page des vidéos verticales : vidéos des comptes et canaux suivis, du plus récent au plus ancien.
+  static Future<({List<Map<String, dynamic>> items, String? next})> followingVideos({String? cursor, int limit = 10}) async {
+    final r = await _c.get('/feed/videos/following', query: {'limit': limit, if (cursor != null) 'cursor': cursor});
+    final m = Map<String, dynamic>.from(r as Map);
+    final items = ((m['data'] as List?) ?? const []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    return (items: items, next: m['next_cursor'] as String?);
+  }
+
   /// Imports restants aujourd'hui (médias choisis dans la galerie : 2 par jour, publications de canal comprises). Les comptes Gold ne sont pas limités (`unlimited`) ;
   /// pour un canal, c'est le plan de son créateur qui compte (`channelId`). En cas d'erreur réseau, null : l'écran n'empêche rien, le serveur décide.
   static Future<({int limit, int used, int remaining, bool unlimited})?> importQuota({String? channelId}) async {

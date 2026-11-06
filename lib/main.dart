@@ -31,6 +31,7 @@ import 'package:afrotok/pages/contact.dart';
 import 'package:afrotok/pages/entreprise/profile/ProfileEntreprise.dart';
 import 'package:afrotok/pages/entreprise/profile/newEntreprise.dart';
 import 'package:afrotok/pages/home/HomeConstPost.dart';
+import 'package:afrotok/pages/post_video_format_tel_details.dart';
 import 'package:afrotok/pages/home/homeScreen.dart';
 
 import 'package:afrotok/pages/info.dart';
@@ -490,7 +491,8 @@ class _MyAppState extends State<MyApp> {
             case '/home':
               return PageTransition(child: MyHomePage(title: ""), type: PageTransitionType.fade);
             case '/videos':
-              return PageTransition(child: HideMusicOverlay(pause: true, child: HomeConstPostPage(type: '', isVideoPage: true)), type: PageTransitionType.fade);
+              // Le bouton Vidéos ouvre la page verticale (Suivis · Pour toi · Lives) ; la même page reçoit une vidéo en paramètre quand on en touche une ailleurs
+              return PageTransition(child: HideMusicOverlay(pause: true, child: const PostDetailsVideoFormatTel(isIn: true)), type: PageTransitionType.fade);
             case '/home_profile_user':
               return PageTransition(child: UserProfil(), type: PageTransitionType.fade);
             case '/profile_entreprise':
