@@ -12,8 +12,10 @@ import 'package:afrotok/services/api/chat_api.dart';
 import 'package:afrotok/services/api/lives_mapper.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:afrotok/services/api/live_shop_api.dart';
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
+import '../../services/api/shop_api.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../models/model_data.dart';
@@ -77,6 +79,15 @@ class _CreateLivePageState extends State<CreateLivePage> {
   // Variables pour la comparaison Gratuit vs Premium
   bool _showComparison = false;
 
+  // Aperçu de la caméra, produits à épingler, options repliées (page refaite le 06/11/2026)
+  CameraController? _cam;
+  List<CameraDescription> _cams = [];
+  int _camIndex = 0;
+  bool _camReady = false;
+  List<ArticleData> _myArticles = [];
+  final List<String> _pickedArticles = [];
+  bool _showOptions = false;
+
   @override
   void initState() {
     super.initState();
@@ -85,6 +96,9 @@ class _CreateLivePageState extends State<CreateLivePage> {
       if (!await AccountGate.ensureCanPublish(context) && mounted) Navigator.of(context).maybePop();
     });
     _loadLiveRestrictions();
+    _pickedArticles.addAll(widget.articleIds);
+    _initPreview();
+    if (_isShoppingLive) _loadArticles();
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkActiveLive());
   }
 
@@ -155,6 +169,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
   @override
   void dispose() {
     _creationTimer?.cancel();
+    _cam?.dispose();
     super.dispose();
   }
 
@@ -993,64 +1008,320 @@ class _CreateLivePageState extends State<CreateLivePage> {
     );
   }
 
+  // ── Aperçu de la caméra ────────────────────────────────────────────────────
+  Future<void> _initPreview() async {
+    try {
+      if (_cams.isEmpty) _cams = await availableCameras();
+      if (_cams.isEmpty) return;
+      final want = _cams.indexWhere((c) => c.lensDirection == (_camIndex == 0 ? CameraLensDirection.front : CameraLensDirection.back));
+      final desc = _cams[want >= 0 ? want : 0];
+      final old = _cam;
+      final ctl = CameraController(desc, ResolutionPreset.medium, enableAudio: false);
+      await ctl.initialize();
+      if (!mounted) {
+        await ctl.dispose();
+        return;
+      }
+      setState(() {
+        _cam = ctl;
+        _camReady = true;
+      });
+      await old?.dispose();
+    } catch (_) {
+      if (mounted) setState(() => _camReady = false);
+    }
+  }
+
+  Future<void> _flipCamera() async {
+    setState(() {
+      _camIndex = _camIndex == 0 ? 1 : 0;
+      _camReady = false;
+    });
+    await _initPreview();
+  }
+
+  Future<void> _stopPreview() async {
+    final c = _cam;
+    _cam = null;
+    _camReady = false;
+    await c?.dispose();
+  }
+
+  Future<void> _loadArticles() async {
+    if (_myArticles.isNotEmpty) return;
+    try {
+      final id = ApiIdentity.myId;
+      if (id == null) return;
+      final mine = await ShopApi.articles(ownerId: id, limit: 50);
+      if (mounted) setState(() => _myArticles = mine.items.where((a) => a.id != null).toList());
+    } catch (_) {}
+  }
+
+  bool get _canCreate {
+    final isAdmin = _liveRestrictions['isAdmin'] == true;
+    final isPremium = _liveRestrictions['isPremium'] == true;
+    final remaining = _liveRestrictions['remainingLives'] ?? 0;
+    return isAdmin || isPremium || remaining > 0;
+  }
+
+  static const Color _gold = Color(0xFFFFC400);
+
+  Widget _buildPreviewCard() {
+    final front = _camIndex == 0;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: SizedBox(
+        height: 220,
+        child: Stack(fit: StackFit.expand, children: [
+          Container(color: Colors.black),
+          if (_camReady && _cam != null && _cam!.value.isInitialized)
+            FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(width: _cam!.value.previewSize?.height ?? 1, height: _cam!.value.previewSize?.width ?? 1, child: CameraPreview(_cam!)),
+            )
+          else
+            const Center(child: SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white54))),
+          Positioned(
+            left: 10,
+            top: 10,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(99)),
+              child: Text(front ? tr('Aperçu · caméra avant') : tr('Aperçu · caméra arrière'), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+            ),
+          ),
+          Positioned(
+            right: 10,
+            top: 10,
+            child: GestureDetector(
+              onTap: _flipCamera,
+              child: Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.black.withOpacity(0.45), border: Border.all(color: Colors.white24)),
+                child: const Icon(Icons.cameraswitch_rounded, color: Colors.white, size: 20),
+              ),
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Widget _modeCard({required String title, required String subtitle, required IconData icon, required bool selected, required VoidCallback onTap}) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: selected ? _gold.withOpacity(0.14) : _c.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: selected ? _gold : _c.border, width: selected ? 2 : 1),
+          ),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Icon(icon, size: 20, color: selected ? _c.accentText : _c.textSecondary),
+              const Spacer(),
+              if (selected) Icon(Icons.check_circle_rounded, size: 18, color: _c.accentText),
+            ]),
+            const SizedBox(height: 8),
+            Text(title, style: TextStyle(color: _c.textPrimary, fontSize: 15, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 2),
+            Text(subtitle, style: TextStyle(color: _c.textSecondary, fontSize: 12, height: 1.3)),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModeCards() {
+    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _modeCard(
+        title: tr('Discussion'),
+        subtitle: tr('Parle, échange, reçois des cadeaux'),
+        icon: Icons.forum_outlined,
+        selected: !_isShoppingLive,
+        onTap: () => setState(() => _isShoppingLive = false),
+      ),
+      const SizedBox(width: 10),
+      _modeCard(
+        title: tr('Vente en direct'),
+        subtitle: tr('Vends les articles de ta boutique'),
+        icon: Icons.shopping_bag_outlined,
+        selected: _isShoppingLive,
+        onTap: () {
+          setState(() => _isShoppingLive = true);
+          _loadArticles();
+        },
+      ),
+    ]);
+  }
+
+  Widget _buildProductStrip() {
+    final n = _pickedArticles.length;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Text(_myArticles.isEmpty ? tr('Produits à épingler') : tr('Produits à épingler ({a} sur {b})', {'a': '$n', 'b': '${_myArticles.length}'}), style: TextStyle(color: _c.textPrimary, fontSize: 14, fontWeight: FontWeight.w800)),
+      const SizedBox(height: 8),
+      if (_myArticles.isEmpty)
+        Text(tr('Ajoute des articles à ta boutique pour les vendre en direct. Tu pourras aussi les épingler pendant le live.'), style: TextStyle(color: _c.textSecondary, fontSize: 12.5, height: 1.4))
+      else
+        SizedBox(
+          height: 112,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: _myArticles.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (_, i) {
+              final a = _myArticles[i];
+              final picked = _pickedArticles.contains(a.id);
+              final img = (a.images != null && a.images!.isNotEmpty) ? a.images!.first : '';
+              return GestureDetector(
+                onTap: () => setState(() => picked ? _pickedArticles.remove(a.id) : _pickedArticles.add(a.id!)),
+                child: SizedBox(
+                  width: 76,
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Stack(children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          width: 76,
+                          height: 76,
+                          color: _c.surfaceVariant,
+                          child: img.isEmpty ? Icon(Icons.image_outlined, color: _c.textSecondary) : Image.network(img, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.image_outlined, color: _c.textSecondary)),
+                        ),
+                      ),
+                      if (picked)
+                        Positioned(
+                          right: 4,
+                          top: 4,
+                          child: Container(width: 20, height: 20, decoration: BoxDecoration(color: _c.success, shape: BoxShape.circle), child: const Icon(Icons.check, size: 14, color: Colors.white)),
+                        ),
+                    ]),
+                    const SizedBox(height: 3),
+                    Text(a.titre ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: _c.textPrimary, fontSize: 11, fontWeight: FontWeight.w700)),
+                    Text('${a.prix ?? 0} F', style: TextStyle(color: _c.textSecondary, fontSize: 10.5)),
+                  ]),
+                ),
+              );
+            },
+          ),
+        ),
+    ]);
+  }
+
+  Widget _buildFreePaidSegment() {
+    Widget seg(String label, bool on, VoidCallback tap) => Expanded(
+          child: GestureDetector(
+            onTap: tap,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: BoxDecoration(color: on ? _c.surface : Colors.transparent, borderRadius: BorderRadius.circular(99), boxShadow: on ? [BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 4, offset: const Offset(0, 1))] : null),
+              alignment: Alignment.center,
+              child: Text(label, style: TextStyle(color: on ? _c.textPrimary : _c.textSecondary, fontWeight: FontWeight.w700, fontSize: 14)),
+            ),
+          ),
+        );
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(color: _c.surfaceVariant, borderRadius: BorderRadius.circular(99)),
+      child: Row(children: [
+        seg(tr('Gratuit'), !_isPaidLive, () => setState(() => _isPaidLive = false)),
+        seg(tr('Payant'), _isPaidLive, () => setState(() => _isPaidLive = true)),
+      ]),
+    );
+  }
+
+  Widget _buildOptionsSection() {
+    final isAdmin = _liveRestrictions['isAdmin'] == true;
+    final canHd = _liveRestrictions['canChooseHD'] == true || isAdmin;
+    final canLow = _liveRestrictions['canChooseLowLatency'] == true || isAdmin;
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => setState(() => _showOptions = !_showOptions),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(border: Border(top: BorderSide(color: _c.border))),
+          child: Row(children: [
+            Text(tr('Options'), style: TextStyle(color: _c.textPrimary, fontSize: 14, fontWeight: FontWeight.w800)),
+            const Spacer(),
+            Text(tr('Couverture, qualité'), style: TextStyle(color: _c.textSecondary, fontSize: 12.5)),
+            Icon(_showOptions ? Icons.expand_less_rounded : Icons.chevron_right_rounded, color: _c.textSecondary),
+          ]),
+        ),
+      ),
+      if (_showOptions) ...[
+        _buildCoverImagePicker(),
+        const SizedBox(height: 10),
+        if (canHd)
+          SwitchListTile(contentPadding: EdgeInsets.zero, value: _useHDQuality, activeColor: _c.accent, onChanged: (v) => setState(() => _useHDQuality = v), title: Text(tr('Qualité HD'), style: TextStyle(color: _c.textPrimary)))
+        else
+          Text(tr('La qualité HD est réservée à Gold (abonnement, ou en regardant des pubs).'), style: TextStyle(color: _c.textSecondary, fontSize: 12.5, height: 1.4)),
+        if (canLow)
+          SwitchListTile(contentPadding: EdgeInsets.zero, value: _useLowLatency, activeColor: _c.accent, onChanged: (v) => setState(() => _useLowLatency = v), title: Text(tr('Faible latence'), style: TextStyle(color: _c.textPrimary))),
+      ],
+    ]);
+  }
+
+  Widget _buildGoButton() {
+    final disabled = _isCreating || !_canCreate;
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      if (!_canCreate)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: GestureDetector(
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AbonnementScreen())),
+            child: Text(tr('Tu as utilisé tes lives gratuits de ce mois. Passe à Gold pour des lives illimités.'), textAlign: TextAlign.center, style: TextStyle(color: _c.accentText, fontSize: 12.5, fontWeight: FontWeight.w700)),
+          ),
+        ),
+      SizedBox(
+        width: double.infinity,
+        height: 50,
+        child: FilledButton(
+          onPressed: disabled ? null : _createLive,
+          style: FilledButton.styleFrom(backgroundColor: _gold, foregroundColor: const Color(0xFF3A2C00), disabledBackgroundColor: _c.border, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25))),
+          child: _isCreating
+              ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Color(0xFF3A2C00)))
+              : Text(tr('Passer en direct'), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+        ),
+      ),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: _c.background,
       appBar: AppBar(
-        title: Text(tr('Créer un live'), style: TextStyle(color: Color(0xFFF9A825))),
         backgroundColor: _c.background,
         elevation: 0,
+        leading: IconButton(icon: Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: _c.textPrimary), onPressed: () => Navigator.maybePop(context)),
+        title: Text(tr('Lancer un live'), style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w800)),
       ),
-      backgroundColor: _c.background,
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(height: 10),
-
-                // Header restrictions
-                _buildRestrictionsHeader(),
-
-                SizedBox(height: 20),
-
-                // Image de couverture
-                _buildCoverImagePicker(),
-
-                SizedBox(height: 20),
-
-                // Titre
-                _buildTitleField(),
-
-                SizedBox(height: 20),
-
-                // Comparaison Gratuit vs Premium
-                _buildQualityComparisonSection(),
-
-                SizedBox(height: 20),
-
-                // Format du live : discussion ou vente en direct
-                _buildFormatSection(),
-                SizedBox(height: 16),
-
-                // Type de live
-                _buildLiveTypeSection(),
-
-                if (_isPaidLive) ..._buildPaidLiveOptions(),
-
-                SizedBox(height: 30),
-
-                // Bouton de création
-                _buildCreateButton(),
-
-                SizedBox(height: 20),
-              ],
-            ),
+      body: Form(
+        key: _formKey,
+        child: Stack(children: [
+          ListView(
+            padding: EdgeInsets.fromLTRB(16, 4, 16, 130 + MediaQuery.of(context).padding.bottom),
+            children: [
+              _buildPreviewCard(),
+              const SizedBox(height: 14),
+              _buildModeCards(),
+              if (_isShoppingLive) ...[const SizedBox(height: 14), _buildProductStrip()],
+              const SizedBox(height: 14),
+              _buildTitleField(),
+              const SizedBox(height: 14),
+              _buildFreePaidSegment(),
+              if (_isPaidLive) ..._buildPaidLiveOptions(),
+              const SizedBox(height: 10),
+              _buildOptionsSection(),
+            ],
           ),
-        ),
+          Positioned(left: 16, right: 16, bottom: 12 + MediaQuery.of(context).padding.bottom, child: _buildGoButton()),
+        ]),
       ),
     );
   }
@@ -1870,9 +2141,9 @@ class _CreateLivePageState extends State<CreateLivePage> {
         },
       );
       // Vente en direct lancée depuis la boutique : les articles choisis sont épinglés tout de suite (le premier choisi s'affiche en premier)
-      if (_isShoppingLive && widget.articleIds.isNotEmpty) {
+      if (_isShoppingLive && _pickedArticles.isNotEmpty) {
         try {
-          for (final id in widget.articleIds.reversed) {
+          for (final id in _pickedArticles.reversed) {
             await LiveShopApi.enableSelling(id);
             await LiveShopApi.pin('${apiLive['id']}', id);
           }
@@ -1905,6 +2176,8 @@ class _CreateLivePageState extends State<CreateLivePage> {
 
       // Navigation vers le live (le verrou reste posé jusqu'à la fermeture de la page)
       created = true;
+      await _stopPreview();
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -1924,7 +2197,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
       // Quota mensuel gratuit atteint (appliqué par le serveur) : message clair, pas d'erreur technique
       if (e is ApiException && e.code == 'monthly_limit') {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.tr('Tu as utilisé tes lives gratuits de ce mois. Passe à Premium pour des lives illimités.')), backgroundColor: Colors.orange, duration: const Duration(seconds: 5)),
+          SnackBar(content: Text(context.tr('Tu as utilisé tes lives gratuits de ce mois. Passe à Gold pour des lives illimités.')), backgroundColor: Colors.orange, duration: const Duration(seconds: 5)),
         );
         return;
       }
