@@ -39,6 +39,7 @@ class RewardsService {
   static DateTime? _cfgAt;
   static RewardsStatus _lastStatus = RewardsStatus.empty;
   static bool _serverSsv = false;
+  static Map<String, dynamic> _gold = {};   // état Gold du serveur : accès, passes, export, fonctions (GET /rewards/state → gold)
 
   /// Vérification AdMob côté serveur active ? (le serveur est seul juge)
   static bool get serverSsv => _serverSsv;
@@ -66,14 +67,20 @@ class RewardsService {
     }
     _cfg = {'enabled': offersRaw.isNotEmpty || d['offers'] == null, 'maxAdsPerDay': d['max_ads_per_day'], 'offers': offers};
     _serverSsv = d['ssv'] == true;
+    _gold = d['gold'] is Map ? Map<String, dynamic>.from(d['gold'] as Map) : <String, dynamic>{};
+    claims['gold_pass'] = (_gold['passes_today'] as num?)?.toInt() ?? 0;
+    final feats = _gold['features'] is Map ? Map<String, dynamic>.from(_gold['features'] as Map) : <String, dynamic>{};
+    for (final e in feats.entries) {
+      if (e.value is Map && (e.value as Map)['unlocked'] == true) claims['feature:${e.key}'] = 1;
+    }
     _lastStatus = RewardsStatus((d['watched'] as num?)?.toInt() ?? 0, (d['pending'] as num?)?.toInt() ?? 0, claims);
     _cfgAt = DateTime.now();
   }
 
-  static const _knownIds = ['premium_5h', 'premium_10h', 'premium_24h', 'adfree_24h', 'coins_2', 'flame_shield', 'stickers_3', 'photos_3', 'card_capture'];
+  static const _knownIds = ['flame_shield', 'card_capture'];
 
   static bool get enabledByConfig => _cfg['enabled'] != false;
-  static int get maxAdsPerDay => ((_cfg['maxAdsPerDay'] as num?)?.toInt() ?? 10).clamp(1, 30);
+  static int get maxAdsPerDay => ((_cfg['maxAdsPerDay'] as num?)?.toInt() ?? 30).clamp(1, 60);
 
   /// Offre avec les réglages Firestore ; null si désactivée.
   static RewardOffer? effective(RewardOffer o) {
@@ -86,17 +93,76 @@ class RewardsService {
   }
 
   static const offers = <RewardOffer>[
-    RewardOffer('premium_5h', Icons.star_rounded, 'Premium 5 heures', 'Tout le Premium : photos multiples, live HD, stickers…', 2, 3, premium: true, hours: 5),
-    RewardOffer('premium_10h', Icons.star_rounded, 'Premium 10 heures', 'Tout le Premium pendant 10 heures', 3, 3, premium: true, hours: 10),
-    RewardOffer('premium_24h', Icons.workspace_premium_rounded, 'Premium 24 heures', 'Tout le Premium pendant un jour', 5, 2, premium: true, hours: 24),
-    RewardOffer('adfree_24h', Icons.block_rounded, 'Une journée sans pub', '24 h sans publicité', 1, 2),
-    RewardOffer('coins_2', Icons.monetization_on_rounded, '2 pièces cadeau', 'Pour offrir des cadeaux et liker', 1, 5),
     RewardOffer('flame_shield', Icons.local_fire_department_rounded, 'Bouclier de flamme', 'Protège ta série de commentaires une fois', 1, 1),
-    RewardOffer('stickers_3', Icons.sticky_note_2_rounded, '3 stickers aujourd\'hui', 'Pour les comptes gratuits', 1, 2, freeOnly: true),
-    RewardOffer('photos_3', Icons.photo_library_rounded, 'Post avec 3 photos', 'Une publication avec plusieurs photos', 2, 3, freeOnly: true),
     // Studio Cartes : une pub = une capture de carte sans pièces (proposée depuis le studio)
     RewardOffer('card_capture', Icons.auto_awesome_rounded, 'Une carte Afrolook', 'Une capture de carte offerte', 1, 2, hidden: true),
   ];
+
+  // ── Gold gagné avec des pubs, export et fonctions du Studio (le serveur calcule le nombre de pubs d'après le prix d'une pub) ──
+
+  static Map<String, dynamic> get gold => _gold;
+
+  static int _gi(String k) => (_gold[k] as num?)?.toInt() ?? 0;
+
+  /// Gold actif maintenant (abonnement, passe de pubs ou équipe).
+  static bool get goldActive => _gold['active'] == true;
+
+  /// `staff`, `paid` (abonnement), `pass` (gagné avec des pubs) ou null.
+  static String? get goldSource => _gold['source'] as String?;
+
+  static DateTime? get goldUntil => DateTime.tryParse('${_gold['until']}')?.toLocal();
+
+  static int get passMinutes => _gi('pass_minutes') == 0 ? 30 : _gi('pass_minutes');
+  static int get passesToday => _gi('passes_today');
+  static int get maxPasses => _gi('max_passes') == 0 ? 6 : _gi('max_passes');
+  static int? get nextPassAds => _gold['next_pass_ads'] is num ? (_gold['next_pass_ads'] as num).toInt() : null;
+  static int get exportAds => _gi('export_ads') == 0 ? 3 : _gi('export_ads');
+  static int get exportCredits => _gi('export_credits');
+  static int get goldPriceMonth => _gi('gold_price_month_fcfa') == 0 ? 500 : _gi('gold_price_month_fcfa');
+
+  static Map<String, dynamic> _feat(String key) => _gold['features'] is Map && (_gold['features'] as Map)[key] is Map ? Map<String, dynamic>.from((_gold['features'] as Map)[key] as Map) : <String, dynamic>{};
+
+  static bool featureUnlocked(String key) => goldActive || _feat(key)['unlocked'] == true;
+
+  static int featureAds(String key) => (_feat(key)['ads'] as num?)?.toInt() ?? 4;
+
+  /// Fonctions du Studio à débloquer (clé du serveur, libellé, icône), par ordre d'importance croissante.
+  static const featureCatalog = <(String, String, IconData)>[
+    ('looks_pro', 'Looks avancés', Icons.palette_rounded),
+    ('face_deform', 'Déformations du visage', Icons.face_retouching_natural_rounded),
+    ('money_gestures', 'Effets d\'argent par geste', Icons.attach_money_rounded),
+    ('time_effects', 'Accélérer et ralentir', Icons.speed_rounded),
+    ('avatars', 'Avatars', Icons.theater_comedy_rounded),
+    ('bg_blur', 'Fond flou', Icons.blur_on_rounded),
+    ('hair_color', 'Couleur des cheveux', Icons.face_3_rounded),
+    ('timed_message', 'Message à l\'écran', Icons.timer_rounded),
+    ('audio_mix', 'Mixage des volumes', Icons.tune_rounded),
+    ('bg_virtual', 'Fond virtuel', Icons.wallpaper_rounded),
+    ('cloth_color', 'Couleur des habits', Icons.checkroom_rounded),
+    ('pin_video', 'Vidéo épinglée', Icons.push_pin_rounded),
+    ('commerce_card', 'Carte Commerce', Icons.shopping_bag_rounded),
+    ('hand_gestures', 'Gestes de la main', Icons.back_hand_rounded),
+  ];
+
+  static String featureLabel(String key) => featureCatalog.where((f) => f.$1 == key).map((f) => f.$2).firstOrNull ?? key;
+
+  /// Offre dynamique à partir de l'état du serveur : `gold_pass`, `export` ou `feature:<clé>` (null si inconnue ou si le plafond de passes est atteint).
+  static RewardOffer? dynamicOffer(String id) {
+    if (id == 'gold_pass') {
+      final n = nextPassAds;
+      return n == null ? null : RewardOffer(id, Icons.workspace_premium_rounded, 'Gold gratuit $passMinutes minutes', 'Toutes les fonctions Gold, sans limite, pendant $passMinutes minutes', n, maxPasses, premium: true, hours: 0);
+    }
+    if (id == 'export') {
+      return RewardOffer(id, Icons.file_download_rounded, 'Un export', 'Enregistrer ou partager une création du Studio hors d\'Afrolook', exportAds, 10);
+    }
+    if (id.startsWith('feature:')) {
+      final k = id.substring(8);
+      final f = featureCatalog.where((e) => e.$1 == k).firstOrNull;
+      if (f == null) return null;
+      return RewardOffer(id, f.$3, f.$2, 'Débloquée jusqu\'à la fin de la journée', featureAds(k), 1);
+    }
+    return null;
+  }
 
   /// La page et les pubs récompensées sont-elles proposées à cette personne ?
   /// (Gold : aucune pub et tout déjà débloqué ; admin : toujours, pour vérifier.)
@@ -108,14 +174,15 @@ class RewardsService {
     return AdGate.subscriptionBypass > 0 || u.abonnement?.estGold != true;
   }
 
-  /// Offres affichées selon le rôle : un vrai Premium (payé) ne voit pas les offres Premium.
+  /// Offres affichées : Gold gratuit par passes, export, bouclier de flamme. Les fonctions du Studio sont listées à part dans la page (`featureCatalog`).
   static List<RewardOffer> visibleOffers(UserData u) {
-    final all = offers.where((o) => !o.hidden).map(effective).whereType<RewardOffer>().toList();
-    if (AbonnementUtils.isAdmin(u.role)) return all;
-    final ab = u.abonnement;
-    final paidPremium = ab?.estPremium == true && ab?.methodePaiement != 'pubs';
-    final anyPremium = ab?.estPremium == true;
-    return all.where((o) => !(o.premium && paidPremium) && !(o.freeOnly && anyPremium)).toList();
+    final out = <RewardOffer>[];
+    final pass = dynamicOffer('gold_pass');
+    if (pass != null) out.add(pass);
+    final ex = dynamicOffer('export');
+    if (ex != null) out.add(ex);
+    out.addAll(offers.where((o) => !o.hidden).map(effective).whereType<RewardOffer>());
+    return out;
   }
 
   static Future<RewardsStatus> status(String uid) async {
@@ -152,6 +219,8 @@ class RewardsService {
 
   /// L'offre d'id [id] avec les réglages Firestore ; null si inconnue ou désactivée.
   static RewardOffer? offerById(String id) {
+    final dyn = dynamicOffer(id);
+    if (dyn != null) return dyn;
     for (final o in offers) {
       if (o.id == id) return effective(o);
     }

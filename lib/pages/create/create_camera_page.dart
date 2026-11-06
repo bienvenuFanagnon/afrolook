@@ -12,6 +12,9 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../l10n/tr.dart';
 import '../../services/api/studio_face_overlay_api.dart';
 import '../../services/beauty.dart';
+import '../../ads/gold_gate.dart';
+import '../../providers/authProvider.dart';
+import 'package:provider/provider.dart';
 import '../../services/face_avatars.dart';
 import '../studio/montage/montage_music.dart' show MontageMusic, MontageMusicPlayer;
 import '../../services/face_engine.dart';
@@ -216,7 +219,13 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
     }
   }
 
+  /// Porte Gold d'une fonction : libre avec Gold ou une passe, sinon quelques pubs pour la journée (voir `GoldGate`).
+  Future<bool> _gate(String key) => GoldGate.feature(context, context.read<UserAuthProvider>().loginUserData.id ?? '', key);
+
   Future<void> _pickMagic(int i) async {
+    // effets d'argent (dollars, billets, pièces) : fonction à débloquer
+    if (_magic != i && FaceEngine.magic[i].kind != 'icon' && !await _gate('money_gestures')) return;
+    if (!mounted) return;
     setState(() => _magic = _magic == i ? -1 : i);
     try {
       await FaceEngine.setMagic(_magic < 0 ? null : FaceEngine.magic[_magic], _gesture);
@@ -231,6 +240,9 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
   }
 
   Future<void> _pickLook(int look) async {
+    // néon, cinéma et pop : looks avancés à débloquer
+    if (look != 0 && look != _look && const {4, 5, 6}.contains(look) && !await _gate('looks_pro')) return;
+    if (!mounted) return;
     setState(() => _look = look);
     try {
       await FaceEngine.setLook(look);
@@ -238,6 +250,11 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
   }
 
   Future<void> _pickSeg(String kind, FaceSeg? v) async {
+    if (v != null) {
+      final key = kind == 'hair' ? 'hair_color' : (kind == 'cloth' ? 'cloth_color' : (v.mode == 1 ? 'bg_blur' : 'bg_virtual'));
+      if (!await _gate(key)) return;
+      if (!mounted) return;
+    }
     setState(() {
       switch (kind) {
         case 'bg':
@@ -286,6 +303,8 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
   }
 
   Future<void> _pickAvatar(FaceAvatar? a) async {
+    if (a != null && _avatar?.key != a.key && !await _gate('avatars')) return;
+    if (!mounted) return;
     setState(() => _avatar = _avatar?.key == a?.key ? null : a);
     try {
       await FaceEngine.setAvatar(_avatar);
@@ -293,6 +312,8 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
   }
 
   Future<void> _toggleDeform(String key) async {
+    if (!_deforms.contains(key) && !await _gate('face_deform')) return;
+    if (!mounted) return;
     setState(() => _deforms.contains(key) ? _deforms.remove(key) : _deforms.add(key));
     try {
       await FaceEngine.setDeformations(_deforms);
@@ -300,6 +321,8 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
   }
 
   Future<void> _applyPreset(FacePreset p) async {
+    if (!await _gate('face_deform')) return;
+    if (!mounted) return;
     final same = _deforms.length == p.keys.length && _deforms.containsAll(p.keys);
     setState(() {
       _deforms.clear();

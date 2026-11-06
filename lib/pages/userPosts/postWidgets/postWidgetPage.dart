@@ -1,3 +1,4 @@
+import '../../../ads/gold_gate.dart';
 import '../../../widgets/commerce_card.dart';
 import '../../../services/api/commerce_api.dart';
 import '../../studio/montage/montage_pin.dart';
@@ -3082,8 +3083,10 @@ Future<void> _sendQuickComment(String text) async {
                 Icons.shopping_bag_outlined,
                 post.hasCommerce ? "Modifier la carte Commerce" : "Ajouter une carte Commerce",
                 colors.textPrimary,
-                () {
+                () async {
                   Navigator.pop(context);
+                  if (!await GoldGate.feature(context, authProvider.loginUserData.id ?? '', 'commerce_card')) return;
+                  if (!context.mounted) return;
                   showCommerceEditor(context, post.id!).then((_) => CommerceApi.get(post.id!).then((c) {
                         post.hasCommerce = c != null;
                         if (mounted) setState(() {});

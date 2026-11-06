@@ -14,8 +14,8 @@ import '../../theme/app_colors.dart';
 import '../user/userAbonnementPage.dart';
 import '../../widgets/offerwall_entry_card.dart';
 
-/// Page « Récompenses » : on regarde des pubs (au choix) pour débloquer du Premium temporaire,
-/// une journée sans pub, des pièces cadeau ou un bouclier de flamme. Le serveur décide de tout.
+/// Page « Récompenses » : on regarde des pubs plein écran pour avoir du Gold gratuit (passes de 30 minutes), exporter une création du Studio,
+/// débloquer une fonction du Studio pour la journée, ou un bouclier de flamme. Il n'y a que deux plans : Gratuit et Gold. Le serveur décide de tout.
 class RewardsPage extends StatefulWidget {
   /// [autoOffer] : identifiant d'une offre à lancer tout de suite à l'ouverture (ex. `coins_2` depuis la carte « cadeau » du fil).
   const RewardsPage({Key? key, this.autoOffer}) : super(key: key);
@@ -133,7 +133,7 @@ class _RewardsPageState extends State<RewardsPage> {
     final offers = RewardsService.visibleOffers(user);
     final admin = AbonnementUtils.isAdmin(user.role);
     final remainingAds = RewardsService.maxAdsPerDay - _status.watched;
-    final showUpsell = !admin && user.abonnement?.estPremium != true || (user.abonnement?.methodePaiement == 'pubs' && !admin);
+    final showUpsell = !admin;
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -166,9 +166,11 @@ class _RewardsPageState extends State<RewardsPage> {
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
                       children: [
                         const OfferwallEntryCard(),
+                        _goldBanner(colors),
                         _progressCard(colors, admin),
                         const SizedBox(height: 12),
                         for (final o in offers) _offerCard(o, colors, admin, remainingAds),
+                        _featuresSection(colors, admin, remainingAds),
                         if (showUpsell) _upsellCard(colors),
                       ],
                     ),
@@ -192,9 +194,9 @@ class _RewardsPageState extends State<RewardsPage> {
         const SizedBox(width: 12),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(context.tr('Envie de plus ?'), style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 14)),
+            Text(context.tr('Passer Gold : {p} F par mois', {'p': RewardsService.goldPriceMonth}), style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 14)),
             const SizedBox(height: 2),
-            Text(context.tr('Avec un abonnement : pas de limite par jour ou par semaine, et tout le temps disponible.'),
+            Text(context.tr('Sans pub, toutes les fonctions du Studio et l\'export libres, tout le temps.'),
                 style: TextStyle(color: colors.textSecondary, fontSize: 12, height: 1.3)),
           ]),
         ),
@@ -210,6 +212,50 @@ class _RewardsPageState extends State<RewardsPage> {
         ),
       ]),
     );
+  }
+
+  /// Où j'en suis avec le Gold gratuit : passe en cours (jusqu'à quelle heure) ou combien de pubs pour la prochaine.
+  Widget _goldBanner(AppColors colors) {
+    final until = RewardsService.goldUntil;
+    final active = RewardsService.goldActive && RewardsService.goldSource == 'pass' && until != null;
+    final left = active ? until.difference(DateTime.now()) : Duration.zero;
+    final n = RewardsService.nextPassAds;
+    final text = active
+        ? context.tr('Gold gratuit actif : encore {m} min', {'m': left.inMinutes.clamp(0, 999)})
+        : (n == null
+            ? context.tr('Plus de passe Gold gratuite aujourd\'hui. Reviens demain, ou passe Gold.')
+            : context.tr('{n} pubs plein écran = {m} minutes de Gold gratuit', {'n': n, 'm': RewardsService.passMinutes}));
+    return Container(
+      key: const ValueKey('gold_banner'),
+      margin: const EdgeInsets.only(top: 4),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(color: colors.accent, borderRadius: BorderRadius.circular(14)),
+      child: Row(children: [
+        Icon(Icons.workspace_premium_rounded, color: colors.onAccent, size: 30),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(context.tr('Gold gratuit'), style: TextStyle(color: colors.onAccent, fontWeight: FontWeight.w900, fontSize: 15)),
+            const SizedBox(height: 2),
+            Text(text, style: TextStyle(color: colors.onAccent, fontSize: 12.5, height: 1.3)),
+            Text(context.tr('Passes aujourd\'hui : {a}/{b}', {'a': RewardsService.passesToday, 'b': RewardsService.maxPasses}), style: TextStyle(color: colors.onAccent.withValues(alpha: .75), fontSize: 11.5)),
+          ]),
+        ),
+      ]),
+    );
+  }
+
+  /// Fonctions du Studio : chacune se débloque pour la journée avec quelques pubs (ou est incluse dans Gold / une passe).
+  Widget _featuresSection(AppColors colors, bool admin, int remainingAds) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(2, 14, 2, 6),
+        child: Text(context.tr('Fonctions du Studio'), style: TextStyle(color: colors.textPrimary, fontSize: 15, fontWeight: FontWeight.w900)),
+      ),
+      for (final f in RewardsService.featureCatalog)
+        if (RewardsService.dynamicOffer('feature:${f.$1}') case final o?)
+          _offerCard(o, colors, admin, remainingAds, unlocked: RewardsService.featureUnlocked(f.$1)),
+    ]);
   }
 
   Widget _progressCard(AppColors colors, bool admin) {
@@ -251,14 +297,14 @@ class _RewardsPageState extends State<RewardsPage> {
     );
   }
 
-  Widget _offerCard(RewardOffer o, AppColors colors, bool admin, int remainingAds) {
+  Widget _offerCard(RewardOffer o, AppColors colors, bool admin, int remainingAds, {bool unlocked = false}) {
     final claimed = _status.claims[o.id] ?? 0;
-    final capReached = !admin && claimed >= o.cap;
+    final capReached = !admin && (unlocked || claimed >= o.cap);
     final needed = (o.ads - _status.pending).clamp(0, o.ads);
     final dayLimit = !admin && needed > remainingAds;
     final busy = _busyOffer == o.id;
     final disabled = _busyOffer != null || capReached || dayLimit;
-    final title = o.premium ? context.tr('Premium {h} heures', {'h': o.hours}) : context.tr(o.title);
+    final title = context.tr(o.title);
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
@@ -280,7 +326,7 @@ class _RewardsPageState extends State<RewardsPage> {
             Text(title, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 14)),
             const SizedBox(height: 2),
             Text(
-              capReached ? context.tr('Limite du jour atteinte') : context.tr(o.desc),
+              unlocked ? context.tr('Débloquée aujourd\'hui') : (capReached ? context.tr('Limite du jour atteinte') : context.tr(o.desc)),
               style: TextStyle(color: colors.textSecondary, fontSize: 12, height: 1.3),
             ),
             if (busy && _progress.isNotEmpty)

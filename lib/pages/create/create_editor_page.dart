@@ -1,3 +1,6 @@
+import 'package:provider/provider.dart';
+import '../../providers/authProvider.dart';
+import '../../ads/gold_gate.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -257,6 +260,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
   Future<void> _time() async {
     final v = _video;
     if (!widget.isVideo || v == null || !v.value.isInitialized || _busy) return;
+    if (!await GoldGate.feature(context, context.read<UserAuthProvider>().loginUserData.id ?? '', 'time_effects') || !mounted) return;
     final seconds = v.value.duration.inMilliseconds / 1000;
     v.pause();
     final key = await showModalBottomSheet<String>(

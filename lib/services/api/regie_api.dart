@@ -57,6 +57,8 @@ class RegieApi {
   // ── Récompenses ──
   static Future<Map<String, dynamic>> rewardsState() => getMap('/rewards/state');
   static Future<Map<String, dynamic>> rewardsView() async => _map(await _c.post('/rewards/views'));
+  /// Export d'une création du Studio : libre avec Gold ou une passe, sinon consomme un crédit (402 `export_locked` sinon).
+  static Future<Map<String, dynamic>> rewardsExport() async => _map(await _c.post('/rewards/export', body: const {}));
   static Future<Map<String, dynamic>> rewardsClaim(String offerId) async => _map(await _c.post('/rewards/claim', body: {'offer_id': offerId}));
 
   // ── Pubs de la régie dans l'application (choix de l'annonce par le serveur) ──

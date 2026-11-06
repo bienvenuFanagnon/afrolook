@@ -1,3 +1,5 @@
+import '../../../ads/gold_gate.dart';
+import '../../../ads/rewards_service.dart';
 import 'dart:math' as math;
 // Éditeur d'un template « prêt à poster » : tout est déjà rempli, la personne change ce qu'elle veut,
 // retire les éléments qui ne l'intéressent pas, puis publie (image fixe ou vidéo animée).
@@ -494,6 +496,12 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
       );
       if (!mounted || choice == null || choice == 'edit') return;
       if (choice == 'save' || choice == 'both') {
+        // l'export (enregistrer hors d'Afrolook) demande Gold ou 2-3 pubs ; publier dans Afrolook reste libre
+        if (!await GoldGate.export(context, context.read<UserAuthProvider>().loginUserData.id ?? '')) {
+          if (!mounted) return;
+          continue;
+        }
+        if (!mounted) return;
         saved = await MontageExport.saveToGallery(file, video: video);
         if (!mounted) return;
         if (!saved) _say('Impossible d’enregistrer : autorise l’accès aux photos dans les réglages du téléphone.');
@@ -844,8 +852,16 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           subtitle: Text(s.keepVideoAudio ? 'Ta voix et la musique sont mélangées.' : 'Le son de ta vidéo est coupé : seule la musique est jouée.', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
         ),
       if (m != null) ...[
-        _volumeRow('Volume de la musique', s.musicVolume, 1, (v) => setState(() => s.musicVolume = v), const ValueKey('vol_music')),
-        if (s.useVideo && s.keepVideoAudio) ...[
+        if (!RewardsService.featureUnlocked('audio_mix'))
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: _btn(Icons.lock_rounded, 'Débloquer le mixage des volumes', () async {
+              if (await _gate('audio_mix') && mounted) setState(() {});
+            }),
+          )
+        else
+          _volumeRow('Volume de la musique', s.musicVolume, 1, (v) => setState(() => s.musicVolume = v), const ValueKey('vol_music')),
+        if (RewardsService.featureUnlocked('audio_mix') && s.useVideo && s.keepVideoAudio) ...[
           _volumeRow('Volume de ma voix (vidéo)', s.videoVolume, 1.5, (v) => setState(() => s.videoVolume = v), const ValueKey('vol_video')),
           SwitchListTile(
             key: const ValueKey('duck_music'),
@@ -913,6 +929,8 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     if (st != null) setState(() => st.scale = scale.clamp(kStickerMinScale, kStickerMaxScale));
   }
 
+  Future<bool> _gate(String key) => GoldGate.feature(context, context.read<UserAuthProvider>().loginUserData.id ?? '', key);
+
   /// Durée de la vidéo en secondes (10 s par défaut tant qu'elle n'est pas lue).
   double get _videoSeconds {
     final v = _video;
@@ -956,6 +974,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
 
   /// « Message à l'écran » : un texte court affiché de tel instant à tel instant de la vidéo.
   Future<void> _addTimedMessage() async {
+    if (!await _gate('timed_message') || !mounted) return;
     if (s.stickers.length >= kMaxStickers) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Tu peux mettre jusqu\'à $kMaxStickers éléments.')));
       return;
@@ -990,6 +1009,12 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
 
   /// Pose la vidéo d'un autre dans le coin (une seule à la fois) avec son crédit « avec @nom ».
   void _addPin(MontagePinSource src) {
+    if (!RewardsService.featureUnlocked('pin_video')) {
+      _gate('pin_video').then((ok) {
+        if (ok && mounted) _addPin(src);
+      });
+      return;
+    }
     if (!s.hasVideo) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Épingler une vidéo demande une vidéo : filme-toi d\'abord.')));
       return;
