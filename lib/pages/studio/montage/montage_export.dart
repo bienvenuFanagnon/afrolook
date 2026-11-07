@@ -90,9 +90,10 @@ class MontageExport {
     final tagRec = ui.PictureRecorder();
     final tc = Canvas(tagRec);
     final a = text(tr('Rejoins-nous sur Afrolook'), 12, FontWeight.w500, const Color(0xCCFFFFFF), maxWidth: W * .9);
-    a.paint(tc, Offset((W - a.width) / 2, H * .83 - 10 * k));
+    final inviteTop = capTop + capH + 20 * k;   // de l'air sous la capsule du nom, sur tous les formats
+    a.paint(tc, Offset((W - a.width) / 2, inviteTop));
     final b = text(tr('Gratuit  ·  Gagne  ·  Crée'), 11, FontWeight.w500, const Color(0x8CFFFFFF), maxWidth: W * .9);
-    b.paint(tc, Offset((W - b.width) / 2, H * .87 - 9 * k));
+    b.paint(tc, Offset((W - b.width) / 2, inviteTop + a.height + 8 * k));
     final tag = await finish(tagRec);
     return (pill, tag);
   }
