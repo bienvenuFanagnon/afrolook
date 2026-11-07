@@ -1,5 +1,6 @@
 ﻿// pages/chronique/chronique_detail_page.dart
 
+import '../create/chronique_flow.dart';
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/services/ads_engine_service.dart';
 import '../../utils/media_cdn.dart';
@@ -1501,7 +1502,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
               Text('Aucune chronique disponible', style: TextStyle(color: Colors.white, fontSize: 18)),
               SizedBox(height: 20),
               ElevatedButton.icon(
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => AddChroniquePage())),
+                onPressed: () => showChroniqueChoice(context),
                 icon: Icon(Icons.add, color: Colors.black),
                 label: Text('Créer une chronique'),
                 style: ElevatedButton.styleFrom(backgroundColor: Color(0xFFFFD700), foregroundColor: Colors.black),
@@ -1806,7 +1807,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
       onSelected: (v) {
         switch (v) {
           case 'add':
-            Navigator.push(context, MaterialPageRoute(builder: (_) => AddChroniquePage()));
+            showChroniqueChoice(context);
             break;
           case 'comments':
             _openComments(c);

@@ -9,16 +9,19 @@ import 'package:flutter_test/flutter_test.dart';
 Widget _host(Widget child, {Brightness b = Brightness.light}) => MaterialApp(theme: ThemeData(brightness: b), locale: const Locale('fr'), supportedLocales: const [Locale('fr')], localizationsDelegates: GlobalMaterialLocalizations.delegates, home: Scaffold(body: child));
 
 void main() {
-  testWidgets('menu du « + » : deux choix, créer un post et passer en live, avec le pseudo dans le titre', (tester) async {
-    var created = 0, live = 0;
-    await tester.pumpWidget(_host(CreateMenuSheet(pseudo: 'Ama', onCreate: () => created++, onLive: () => live++)));
+  testWidgets('menu du « + » : Publication, Chronique (24 h), Chronique business et Live, avec le pseudo dans le titre', (tester) async {
+    var created = 0, live = 0, chron = 0, biz = 0;
+    await tester.pumpWidget(_host(CreateMenuSheet(pseudo: 'Ama', onCreate: () => created++, onChronique: () => chron++, onBusiness: () => biz++, onLive: () => live++)));
     expect(find.textContaining('Ama'), findsOneWidget);
-    expect(find.text('Créer un post'), findsOneWidget);
-    expect(find.text('Passer en live'), findsOneWidget);
+    expect(find.text('Publication'), findsOneWidget);
+    expect(find.text('Chronique (24 h)'), findsOneWidget);
+    expect(find.text('Chronique business'), findsOneWidget);
+    expect(find.text('Live'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('menu_create')));
+    await tester.tap(find.byKey(const ValueKey('menu_chronique')));
+    await tester.tap(find.byKey(const ValueKey('menu_business')));
     await tester.tap(find.byKey(const ValueKey('menu_live')));
-    expect(created, 1);
-    expect(live, 1);
+    expect([created, chron, biz, live], [1, 1, 1, 1]);
     expect(tester.takeException(), isNull);
   });
 

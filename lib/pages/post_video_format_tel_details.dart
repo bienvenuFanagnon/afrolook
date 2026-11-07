@@ -112,6 +112,9 @@ import 'coins/coin_gift_dialog.dart';
 import 'coins/coin_recharge_screen.dart';
 import '../widgets/like_coins_helper.dart';
 import '../models/coin_pack.dart';
+import '../services/quick_gift_service.dart';
+import '../services/coin_checkout.dart';
+import '../services/coin_gift_service.dart';
 import '../widgets/gifts/gift_sent_overlay.dart';
 import '../widgets/gifts/quick_gift_bar.dart';
 
@@ -3529,6 +3532,46 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     );
   }
 
+  DateTime? _lastQuickGiftAt;
+
+  /// Envoi rapide d'un cadeau depuis l'invitation : retour immédiat à l'écran, envoi réel en arrière-plan (même logique que la barre de cadeaux rapides).
+  void _sendQuickGift(Post post, CoinPack pack) {
+    if (post.id == null || post.user_id == null) return;
+    final now = DateTime.now();
+    if (_lastQuickGiftAt != null && now.difference(_lastQuickGiftAt!).inMilliseconds < 1500) return;   // évite les doubles envois
+    _lastQuickGiftAt = now;
+    final coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
+    final senderId = authProvider.loginUserData.id;
+    if (senderId == null) return;
+    if (coinProvider.giftCoinsBalance < pack.coins) {
+      CoinCheckout.insufficient(context, pack.coins);
+      return;
+    }
+    showGiftSentOverlay(context, pack, post.user?.pseudo ?? tr('Créateur'));
+    setState(() {
+      post.users_cadeau_id ??= [];
+      if (!post.users_cadeau_id!.contains(senderId)) post.users_cadeau_id!.add(senderId);
+    });
+    unawaited(QuickGiftService.recordRecentGift(pack));
+    CoinGiftService.postGiftAutoComment(senderId: senderId, senderData: authProvider.loginUserData, postId: post.id!, giftPack: pack, coinsAmount: pack.coins, quantity: 1);
+    unawaited(coinProvider
+        .sendGift(
+          senderId: senderId,
+          receiverId: post.user_id!,
+          coinsAmount: pack.coins,
+          post: post,
+          context: context,
+          giftPack: pack,
+          onSuccess: () => coinProvider.refreshBalance(senderId),
+        )
+        .then((ok) {
+          if (!ok) coinProvider.refreshBalance(senderId);
+        })
+        .catchError((_) {
+          coinProvider.refreshBalance(senderId);
+        }));
+  }
+
   void _openGiftDialog(Post post) {
     if (post.user_id == null) return;
     final me = authProvider.loginUserData.id;
@@ -3644,7 +3687,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       _nudgedPostIds.add(id);
       _nudgesShown++;
       _lastNudgeAt = DateTime.now();
-      VideoGiftNudge.show(context, creatorName: post.user?.pseudo ?? tr('ce créateur'), avatarUrl: post.user?.imageUrl ?? '', onGift: () => _openGiftDialog(post));
+      VideoGiftNudge.show(context, creatorName: post.user?.pseudo ?? tr('ce créateur'), avatarUrl: post.user?.imageUrl ?? '', onGift: () => _openGiftDialog(post), onQuick: (pack) => _sendQuickGift(post, pack));
     });
   }
 
@@ -3656,6 +3699,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   String? _followCursor;
   bool _followLoading = false;
   bool _followDone = false;
+  bool _followFailed = false;
 
   Future<void> _switchTab(int t) async {
     if (t == _tab || !mounted) return;
@@ -3671,6 +3715,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       _followPosts.clear();
       _followCursor = null;
       _followDone = false;
+      _followFailed = false;
       setState(() {
         _feedItems = [];
         _currentPage = 0;
@@ -3699,6 +3744,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   Future<void> _loadFollowing() async {
     if (_followLoading || _followDone) return;
     _followLoading = true;
+    _followFailed = false;
     try {
       final page = await PostsApi.followingVideos(cursor: _followCursor);
       _followCursor = page.next;
@@ -3712,6 +3758,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       }
     } catch (e) {
       printVm('Erreur chargement des vidéos suivies: ${PubApi.message(e)}');
+      _followFailed = true;
     } finally {
       _followLoading = false;
     }
@@ -3726,6 +3773,45 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     }
   }
 
+  /// Onglet « Suivis » sans vidéo à lire : chargement, ou message clair (aucune vidéo de tes abonnements / chargement impossible) au lieu d'une page noire.
+  Widget _buildFollowingEmpty() {
+    final loading = !_followDone && !_followFailed;
+    return Container(
+      color: _afroBlack,
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: loading
+          ? const CircularProgressIndicator(color: Colors.white70)
+          : Column(mainAxisSize: MainAxisSize.min, children: [
+              Icon(_followFailed ? Icons.wifi_off_rounded : Icons.people_outline_rounded, size: 54, color: Colors.white38),
+              const SizedBox(height: 14),
+              Text(
+                _followFailed ? tr('Impossible de charger les vidéos de tes abonnements pour le moment.') : tr('Aucune vidéo de tes abonnements pour l\'instant.'),
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white, fontSize: 15.5, fontWeight: FontWeight.w700, height: 1.35),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                _followFailed ? tr('Vérifie ta connexion puis réessaie.') : tr('Suis des créateurs pour voir leurs vidéos ici, ou découvre « Pour toi ».'),
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white60, fontSize: 13, height: 1.35),
+              ),
+              const SizedBox(height: 18),
+              FilledButton(
+                onPressed: _followFailed
+                    ? () async {
+                        setState(() => _followFailed = false);
+                        await _loadFollowing();
+                        if (mounted) setState(() {});
+                      }
+                    : () => _switchTab(1),
+                style: FilledButton.styleFrom(backgroundColor: AppColors.of(context).accent, foregroundColor: AppColors.of(context).onAccent, padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12)),
+                child: Text(_followFailed ? tr('Réessayer') : tr('Voir « Pour toi »'), style: const TextStyle(fontWeight: FontWeight.w800)),
+              ),
+            ]),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -3737,6 +3823,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
           backgroundColor: _afroBlack,
           body: _tab == 2
               ? VerticalLivesView(onBackToVideos: () => _switchTab(1))
+              : (_tab == 0 && _feedItems.isEmpty)
+              ? _buildFollowingEmpty()
               : _isLoadingFeed
               ? Center(
             child: Column(

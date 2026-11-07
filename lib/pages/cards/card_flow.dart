@@ -16,7 +16,8 @@ import '../../models/model_data.dart';
 import '../../services/template_link.dart';
 import '../../providers/authProvider.dart';
 import '../../theme/app_colors.dart';
-import '../chronique/chroniqueform.dart';
+import '../create/chronique_flow.dart';
+import '../create/create_result.dart' show kCreateDone;
 import '../coins/coin_recharge_screen.dart';
 import '../userPosts/postTabs/userPostImageTab.dart';
 import 'card_models.dart';
@@ -280,17 +281,8 @@ class CardFlow {
     final dir = await getTemporaryDirectory();
     final file = await File('${dir.path}/carte_chronique_${DateTime.now().millisecondsSinceEpoch}.jpg').writeAsBytes(r.image, flush: true);
     if (!context.mounted) return false;
-    final done = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(
-        builder: (ctx) => AddChroniquePage(
-          initialImage: file,
-          initialText: caption ?? '',
-          beforePublish: () => commit(ctx, CardKind.publish, pro: r.pro, quote: quote),
-        ),
-      ),
-    );
-    return done == true;
+    final res = await finishChronique(context, imageFile: file, caption: caption ?? '', beforePublish: () => commit(context, CardKind.publish, pro: r.pro, quote: quote));
+    return res == kCreateDone;
   }
 }
 

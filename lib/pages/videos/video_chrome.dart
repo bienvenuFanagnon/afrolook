@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../l10n/tr.dart';
+import '../../models/coin_pack.dart';
+import '../../services/quick_gift_service.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/safe_network_avatar.dart';
 
@@ -189,6 +191,7 @@ class VideoGiftNudge {
     required String creatorName,
     required String avatarUrl,
     required VoidCallback onGift,
+    required void Function(CoinPack pack) onQuick,
   }) {
     return showGeneralDialog<void>(
       context: context,
@@ -196,10 +199,19 @@ class VideoGiftNudge {
       barrierLabel: 'cadeau',
       barrierColor: Colors.black.withOpacity(0.28),
       transitionDuration: const Duration(milliseconds: 420),
-      pageBuilder: (ctx, _, __) => _NudgeCard(creatorName: creatorName, avatarUrl: avatarUrl, onGift: () {
-        Navigator.of(ctx).pop();
-        onGift();
-      }),
+      pageBuilder: (ctx, _, __) => _NudgeCard(
+        creatorName: creatorName,
+        avatarUrl: avatarUrl,
+        onGift: () {
+          Navigator.of(ctx).pop();
+          onGift();
+        },
+        // envoi rapide : un toucher sur un des 3 cadeaux l'envoie tout de suite
+        onQuick: (pack) {
+          Navigator.of(ctx).pop();
+          onQuick(pack);
+        },
+      ),
       transitionBuilder: (ctx, anim, _, child) {
         final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
         return FadeTransition(
@@ -215,16 +227,11 @@ class VideoGiftNudge {
 }
 
 class _NudgeCard extends StatelessWidget {
-  const _NudgeCard({required this.creatorName, required this.avatarUrl, required this.onGift});
+  const _NudgeCard({required this.creatorName, required this.avatarUrl, required this.onGift, required this.onQuick});
   final String creatorName;
   final String avatarUrl;
   final VoidCallback onGift;
-
-  static const _gifts = [
-    ('🌹', 'Rose', 10),
-    ('❤️', 'Coeur', 25),
-    ('👑', 'Couronne', 50),
-  ];
+  final void Function(CoinPack pack) onQuick;
 
   @override
   Widget build(BuildContext context) {
@@ -270,23 +277,32 @@ class _NudgeCard extends StatelessWidget {
                         ),
                       ]),
                       const SizedBox(height: 14),
-                      Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
-                        for (final g in _gifts)
-                          GestureDetector(
-                            onTap: onGift,
-                            child: Container(
-                              width: 92,
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              decoration: BoxDecoration(color: c.surfaceVariant, borderRadius: BorderRadius.circular(16)),
-                              child: Column(children: [
-                                Text(g.$1, style: const TextStyle(fontSize: 26)),
-                                const SizedBox(height: 4),
-                                Text(context.tr(g.$2), style: TextStyle(color: c.textPrimary, fontSize: 12, fontWeight: FontWeight.w700)),
-                                Text('${g.$3}', style: TextStyle(color: c.accentText, fontSize: 12, fontWeight: FontWeight.w800)),
-                              ]),
-                            ),
-                          ),
-                      ]),
+                      // les 3 cadeaux rapides de la personne (épinglés, récents, ou ceux par défaut) : un toucher et c'est envoyé
+                      FutureBuilder<List<({CoinPack pack, bool pinned})>>(
+                        future: QuickGiftService.getShortcuts(),
+                        builder: (ctx, snap) {
+                          final packs = [for (final e in (snap.data ?? const <({CoinPack pack, bool pinned})>[]).take(3)) e.pack];
+                          return Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
+                            for (var i = 0; i < packs.length; i++)
+                              GestureDetector(
+                                key: ValueKey('nudge_gift_$i'),
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () => onQuick(packs[i]),
+                                child: Container(
+                                  width: 92,
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  decoration: BoxDecoration(color: c.surfaceVariant, borderRadius: BorderRadius.circular(16)),
+                                  child: Column(children: [
+                                    Text(packs[i].icon, style: const TextStyle(fontSize: 26)),
+                                    const SizedBox(height: 4),
+                                    Text(context.tr(packs[i].label), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textPrimary, fontSize: 12, fontWeight: FontWeight.w700)),
+                                    Text('${packs[i].coins}', style: TextStyle(color: c.accentText, fontSize: 12, fontWeight: FontWeight.w800)),
+                                  ]),
+                                ),
+                              ),
+                          ]);
+                        },
+                      ),
                       const SizedBox(height: 14),
                       SizedBox(
                         width: double.infinity,
@@ -294,7 +310,7 @@ class _NudgeCard extends StatelessWidget {
                         child: FilledButton(
                           onPressed: onGift,
                           style: FilledButton.styleFrom(backgroundColor: c.accent, foregroundColor: c.onAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(23))),
-                          child: Text(context.tr('Offrir un cadeau'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                          child: Text(context.tr('Voir tous les cadeaux'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
                         ),
                       ),
                       TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(context.tr('Plus tard'), style: TextStyle(color: c.textSecondary))),

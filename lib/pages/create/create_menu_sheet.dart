@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../l10n/tr.dart';
 import '../../providers/authProvider.dart';
 import '../../theme/app_colors.dart';
+import 'chronique_flow.dart';
 import 'create_hub_page.dart';
 
 /// Menu du bouton « + » : deux gros choix, créer un post ou passer en live. Le choix du type de post (vidéo, photo, audio, texte, carte) vient ensuite,
@@ -23,6 +24,14 @@ Future<void> showCreateMenu(BuildContext context) {
         Navigator.pop(ctx);
         nav.push(MaterialPageRoute(builder: (_) => const CreateHubPage()));
       },
+      onChronique: () {
+        Navigator.pop(ctx);
+        nav.push(MaterialPageRoute(builder: (_) => const CreateHubPage(chronique: ChroniqueKind.normal)));
+      },
+      onBusiness: () {
+        Navigator.pop(ctx);
+        nav.push(MaterialPageRoute(builder: (_) => const CreateHubPage(chronique: ChroniqueKind.business)));
+      },
       onLive: () {
         Navigator.pop(ctx);
         nav.pushNamed('/create_live');
@@ -32,11 +41,15 @@ Future<void> showCreateMenu(BuildContext context) {
 }
 
 class CreateMenuSheet extends StatelessWidget {
-  const CreateMenuSheet({super.key, this.pseudo = '', required this.onCreate, required this.onLive});
+  const CreateMenuSheet({super.key, this.pseudo = '', required this.onCreate, this.onChronique, this.onBusiness, required this.onLive});
 
   /// Prénom ou pseudo affiché dans le titre (vide = titre sans nom).
   final String pseudo;
   final VoidCallback onCreate;
+
+  /// Chronique de 24 h et chronique business : elles ouvrent le Studio comme un post (null = choix masqué).
+  final VoidCallback? onChronique;
+  final VoidCallback? onBusiness;
   final VoidCallback onLive;
 
   @override
@@ -70,12 +83,44 @@ class CreateMenuSheet extends StatelessWidget {
               iconBg: const Color(0x24000000),
               icon: Icons.add_rounded,
               iconColor: c.onAccent,
-              title: context.tr('Créer un post'),
-              subtitle: context.tr('Vidéo, photo, audio, texte ou carte'),
+              title: context.tr('Publication'),
+              subtitle: context.tr('Photo, vidéo, audio ou texte dans le fil'),
               titleColor: c.onAccent,
               subtitleColor: c.onAccent.withOpacity(.72),
               onTap: onCreate,
             ),
+            if (onChronique != null) ...[
+              const SizedBox(height: 10),
+              _MenuCard(
+                key: const ValueKey('menu_chronique'),
+                color: c.surfaceVariant,
+                border: c.border,
+                iconBg: c.accent,
+                icon: Icons.history_toggle_off_rounded,
+                iconColor: c.onAccent,
+                title: context.tr('Chronique (24 h)'),
+                subtitle: context.tr('Ouvre le Studio : montage, musique, texte, épinglage'),
+                titleColor: c.textPrimary,
+                subtitleColor: c.textSecondary,
+                onTap: onChronique!,
+              ),
+            ],
+            if (onBusiness != null) ...[
+              const SizedBox(height: 10),
+              _MenuCard(
+                key: const ValueKey('menu_business'),
+                color: c.surfaceVariant,
+                border: c.border,
+                iconBg: c.primary,
+                icon: Icons.storefront_rounded,
+                iconColor: Colors.white,
+                title: context.tr('Chronique business'),
+                subtitle: context.tr('Vends un produit : carte de vente, lien, WhatsApp, appel'),
+                titleColor: c.textPrimary,
+                subtitleColor: c.textSecondary,
+                onTap: onBusiness!,
+              ),
+            ],
             const SizedBox(height: 10),
             _MenuCard(
               key: const ValueKey('menu_live'),
@@ -84,8 +129,8 @@ class CreateMenuSheet extends StatelessWidget {
               iconBg: c.danger,
               icon: Icons.sensors_rounded,
               iconColor: Colors.white,
-              title: context.tr('Passer en live'),
-              subtitle: context.tr('Diffuse en direct maintenant'),
+              title: context.tr('Live'),
+              subtitle: context.tr('En direct, avec cadeaux ou vente'),
               titleColor: c.textPrimary,
               subtitleColor: c.textSecondary,
               trailing: Container(

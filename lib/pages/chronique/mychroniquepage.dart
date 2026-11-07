@@ -1,5 +1,6 @@
 ﻿// pages/chronique/my_chroniques_page.dart
 
+import '../create/chronique_flow.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -73,10 +74,7 @@ class _MyChroniquesPageState extends State<MyChroniquesPage> {
           IconButton(
             icon: Icon(Icons.add, color: Color(0xFFFFD700)),
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => AddChroniquePage()),
-              );
+              showChroniqueChoice(context);
             },
           ),
         ],
@@ -88,10 +86,7 @@ class _MyChroniquesPageState extends State<MyChroniquesPage> {
           : _buildChroniquesList(),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => AddChroniquePage()),
-          );
+          showChroniqueChoice(context);
         },
         backgroundColor: Color(0xFFFFD700),
         child: Icon(Icons.add, color: Colors.black),
@@ -269,10 +264,7 @@ class _MyChroniquesPageState extends State<MyChroniquesPage> {
           SizedBox(height: 20),
           ElevatedButton(
             onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => AddChroniquePage()),
-              );
+              showChroniqueChoice(context);
             },
             child: Text('CRÉER UNE CHRONIQUE', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
             style: ElevatedButton.styleFrom(

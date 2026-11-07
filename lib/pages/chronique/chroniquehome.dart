@@ -1,3 +1,4 @@
+import '../create/chronique_flow.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -170,7 +171,7 @@ class _ChroniqueHomePageState extends State<ChroniqueHomePage> with SingleTicker
   }
 
   void _create([ChroniqueType? type]) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => AddChroniquePage(initialType: type))).then((published) {
+    showChroniqueChoice(context).then((published) {
       if (published == true) _loadMore(reset: true);
     });
   }

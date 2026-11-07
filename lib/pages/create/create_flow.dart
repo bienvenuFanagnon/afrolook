@@ -7,6 +7,7 @@ import '../../l10n/tr.dart';
 import '../../models/model_data.dart';
 import '../../services/post_source_link.dart';
 import '../studio/studio_models.dart';
+import 'chronique_flow.dart';
 import 'create_publish_page.dart';
 import 'create_result.dart';
 
@@ -26,6 +27,11 @@ Future<String> openCreateForm(
   int? audioSeconds,
   File? audioCover,
 }) async {
+  // chronique en cours de création : même Studio, mais la fin du parcours est l'aperçu puis la publication de la chronique
+  final ck = ChroniqueFlow.active;
+  if (ck != null) {
+    return finishChronique(context, studio: studio, audio: audio, audioCover: audioCover, images: images, kind: ck);
+  }
   PostSourceLink.set(source);
   var k = kind ?? CreatePostKind.text;
   File? video;

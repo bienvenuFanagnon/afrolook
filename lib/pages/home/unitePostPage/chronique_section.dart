@@ -1,3 +1,4 @@
+import '../../create/chronique_flow.dart';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -50,7 +51,7 @@ class _ChroniqueSectionComponentState extends State<ChroniqueSectionComponent> w
     super.dispose();
   }
 
-  void _create() => Navigator.push(context, MaterialPageRoute(builder: (_) => AddChroniquePage()));
+  void _create() => showChroniqueChoice(context);
 
   void _openAll() => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChroniqueHomePage()));
 

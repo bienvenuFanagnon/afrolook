@@ -67,6 +67,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../theme/app_colors.dart';
 import '../models/coin_pack.dart';
+import '../services/quick_gift_service.dart';
+import '../services/coin_checkout.dart';
+import '../services/coin_gift_service.dart';
 import '../widgets/gifts/gift_sent_overlay.dart';
 import '../widgets/gifts/quick_gift_bar.dart';
 import 'package:afrotok/pages/videos/video_chrome.dart';
@@ -2476,6 +2479,47 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     );
   }
 
+  DateTime? _lastQuickGiftAt;
+
+  /// Envoi rapide d'un cadeau depuis l'invitation : retour immédiat à l'écran, envoi réel en arrière-plan.
+  void _sendQuickGift(CoinPack pack) {
+    final post = _currentPost;
+    if (post.id == null || post.user_id == null) return;
+    final now = DateTime.now();
+    if (_lastQuickGiftAt != null && now.difference(_lastQuickGiftAt!).inMilliseconds < 1500) return;
+    _lastQuickGiftAt = now;
+    final coinProvider = Provider.of<CoinGiftUserProvider>(context, listen: false);
+    final senderId = authProvider.loginUserData.id;
+    if (senderId == null) return;
+    if (coinProvider.giftCoinsBalance < pack.coins) {
+      CoinCheckout.insufficient(context, pack.coins);
+      return;
+    }
+    showGiftSentOverlay(context, pack, post.user?.pseudo ?? tr('Créateur'));
+    setState(() {
+      post.users_cadeau_id ??= [];
+      if (!post.users_cadeau_id!.contains(senderId)) post.users_cadeau_id!.add(senderId);
+    });
+    unawaited(QuickGiftService.recordRecentGift(pack));
+    CoinGiftService.postGiftAutoComment(senderId: senderId, senderData: authProvider.loginUserData, postId: post.id!, giftPack: pack, coinsAmount: pack.coins, quantity: 1);
+    unawaited(coinProvider
+        .sendGift(
+          senderId: senderId,
+          receiverId: post.user_id!,
+          coinsAmount: pack.coins,
+          post: post,
+          context: context,
+          giftPack: pack,
+          onSuccess: () => coinProvider.refreshBalance(senderId),
+        )
+        .then((ok) {
+          if (!ok) coinProvider.refreshBalance(senderId);
+        })
+        .catchError((_) {
+          coinProvider.refreshBalance(senderId);
+        }));
+  }
+
   void _openGiftDialog() {
     final post = _currentPost;
     if (post.user_id == null) return;
@@ -2516,7 +2560,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
       if (vc == null || !vc.value.isPlaying) return;
       if (ModalRoute.of(context)?.isCurrent != true) return;
       _nudged = true;
-      VideoGiftNudge.show(context, creatorName: post.user?.pseudo ?? tr('ce créateur'), avatarUrl: post.user?.imageUrl ?? '', onGift: _openGiftDialog);
+      VideoGiftNudge.show(context, creatorName: post.user?.pseudo ?? tr('ce créateur'), avatarUrl: post.user?.imageUrl ?? '', onGift: _openGiftDialog, onQuick: _sendQuickGift);
     });
   }
 

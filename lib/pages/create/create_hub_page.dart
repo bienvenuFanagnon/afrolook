@@ -23,6 +23,7 @@ import 'create_voice_page.dart';
 import 'voice_effect_page.dart';
 import 'create_camera_page.dart';
 import 'create_editor_page.dart';
+import 'chronique_flow.dart';
 import 'create_flow.dart';
 import 'create_result.dart';
 import 'create_text_page.dart';
@@ -33,7 +34,10 @@ enum CreateStart { none, video, audio }
 /// Écran « Que créer ? » : l'entrée unique de la création (publication, Studio et cartes réunis). On choisit le type, on prépare le média, on le retouche, puis
 /// un seul formulaire demande le reste. Ce qui est filmé ou enregistré dans l'application passe en premier ; la galerie est limitée à 2 médias par jour.
 class CreateHubPage extends StatefulWidget {
-  const CreateHubPage({super.key, this.canal, this.defiPostId, this.start = CreateStart.none, this.replyToPostId, this.presetSound, this.pinSource});
+  const CreateHubPage({super.key, this.canal, this.defiPostId, this.start = CreateStart.none, this.replyToPostId, this.presetSound, this.pinSource, this.chronique});
+
+  /// Création d'une chronique (24 h) ou d'une chronique business : même parcours et même Studio que les posts, puis aperçu et publication de la chronique.
+  final ChroniqueKind? chronique;
 
   final Canal? canal;
   final String? defiPostId;
@@ -60,6 +64,7 @@ class _CreateHubPageState extends State<CreateHubPage> {
   void initState() {
     super.initState();
     if (widget.replyToPostId != null) PostReplyLink.set(widget.replyToPostId);
+    if (widget.chronique != null) ChroniqueFlow.active = widget.chronique;
     _loadQuota();
     if (widget.start != CreateStart.none) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -73,6 +78,7 @@ class _CreateHubPageState extends State<CreateHubPage> {
   void dispose() {
     PostExternalLink.clear();
     if (widget.replyToPostId != null) PostReplyLink.clear();
+    if (widget.chronique != null) ChroniqueFlow.active = null;
     super.dispose();
   }
 
@@ -110,7 +116,7 @@ class _CreateHubPageState extends State<CreateHubPage> {
 
   Future<void> _openCamera({required bool photo}) async {
     if (kIsWeb) return _pickGallery(video: !photo);
-    final r = await Navigator.of(context).push<CreateCaptureResult>(MaterialPageRoute(builder: (_) => CreateCameraPage(startOnPhoto: photo && widget.replyToPostId == null, maxSeconds: widget.replyToPostId != null ? 15 : 60, sound: widget.presetSound)));
+    final r = await Navigator.of(context).push<CreateCaptureResult>(MaterialPageRoute(builder: (_) => CreateCameraPage(startOnPhoto: photo && widget.replyToPostId == null, maxSeconds: widget.replyToPostId != null ? 15 : (widget.chronique != null ? ChroniqueFlow.maxVideoSeconds : 60), sound: widget.presetSound)));
     if (r == null || !mounted) return;
     if (r.openGallery) return _pickGallery(video: r.isVideo);
     await _editor(r.path!, r.isVideo, PostSourceLink.captured);
@@ -129,14 +135,17 @@ class _CreateHubPageState extends State<CreateHubPage> {
       final x = await picker.pickVideo(source: ImageSource.gallery);
       if (x == null || !mounted) return;
       // vidéos authentiques : une vidéo téléchargée d'un autre réseau n'est pas acceptée (sauf « C'est ma vidéo » : la modération vérifie)
-      if (!await AuthenticVideoCheck.gate(context, x.path) || !mounted) return;
+      if (!await AuthenticVideoCheck.gate(context, x.path, allowClaim: widget.chronique == null) || !mounted) return;
       await _editor(x.path, true, PostSourceLink.imported);
     } else {
-      final xs = await picker.pickMultiImage(maxWidth: 1600, imageQuality: 92, limit: 4);
+      // une chronique n'a qu'une image ; un post peut en avoir plusieurs
+      final xs = widget.chronique != null
+          ? [if (await picker.pickImage(source: ImageSource.gallery, maxWidth: 1600, imageQuality: 92) case final one?) one]
+          : await picker.pickMultiImage(maxWidth: 1600, imageQuality: 92, limit: 4);
       if (xs.isEmpty || !mounted) return;
       // contenu sexuellement explicite : refusé (modèle gratuit sur le téléphone) ; « C'est une erreur » envoie à la modération
       for (final x in xs) {
-        if (!await AuthenticVideoCheck.gateImage(context, x.path) || !mounted) return;
+        if (!await AuthenticVideoCheck.gateImage(context, x.path, allowClaim: widget.chronique == null) || !mounted) return;
       }
       if (xs.length == 1) {
         await _editor(xs.first.path, false, PostSourceLink.imported);
@@ -217,7 +226,7 @@ class _CreateHubPageState extends State<CreateHubPage> {
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
     final me = context.read<UserAuthProvider>().loginUserData;
-    final soon = CardEvents.upcoming(me.countryData?['countryCode'], DateTime.now());
+    final soon = widget.chronique != null ? null : CardEvents.upcoming(me.countryData?['countryCode'], DateTime.now());
     return Scaffold(
       backgroundColor: c.background,
       appBar: AppBar(
@@ -226,7 +235,7 @@ class _CreateHubPageState extends State<CreateHubPage> {
         foregroundColor: c.textPrimary,
         leading: IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.of(context).pop()),
         title: Text(
-          widget.defiPostId != null ? '🏆 ${context.tr('Répondre au Défi')}' : (widget.canal != null ? '#${widget.canal!.titre ?? 'Canal'}' : context.tr('Créer un post')),
+          widget.chronique == ChroniqueKind.business ? context.tr('Chronique business') : widget.chronique == ChroniqueKind.normal ? context.tr('Chronique (24 h)') : widget.defiPostId != null ? '🏆 ${context.tr('Répondre au Défi')}' : (widget.canal != null ? '#${widget.canal!.titre ?? 'Canal'}' : context.tr('Créer un post')),
           style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
         ),
         centerTitle: true,
@@ -260,7 +269,7 @@ class _CreateHubPageState extends State<CreateHubPage> {
               _Tile(key: const ValueKey('tile_photo'), icon: Icons.photo_camera_rounded, color: c.info, label: context.tr('Photo'), hint: context.tr('Prends-toi en photo'), onTap: () => _guard(() => _openCamera(photo: true))),
               _Tile(key: const ValueKey('tile_audio'), icon: Icons.mic_rounded, color: const Color(0xFF9B59B6), label: context.tr('Audio'), hint: context.tr('Ta voix, sans montrer ton visage'), onTap: () => _guard(_audio)),
               _Tile(key: const ValueKey('tile_text'), icon: Icons.text_fields_rounded, color: c.primary, label: context.tr('Texte'), hint: context.tr('Écris sur un fond de couleur'), onTap: () => _guard(_text)),
-              _Tile(key: const ValueKey('tile_card'), icon: Icons.auto_awesome_rounded, color: c.accentText, label: context.tr('Carte'), hint: context.tr('Une affiche à ton style'), onTap: () => _guard(_card)),
+              if (widget.chronique == null) _Tile(key: const ValueKey('tile_card'), icon: Icons.auto_awesome_rounded, color: c.accentText, label: context.tr('Carte'), hint: context.tr('Une affiche à ton style'), onTap: () => _guard(_card)),
             ],
           ),
           const SizedBox(height: 22),
@@ -268,7 +277,9 @@ class _CreateHubPageState extends State<CreateHubPage> {
           Text(
             _isChannel
                 ? context.tr('Dans un canal, tu peux publier autant de médias de ta galerie que tu veux.')
-                : context.tr('Ce que tu filmes ou enregistres ici passe en premier dans le fil, avec la mention « Fait sur Afrolook ».'),
+                : widget.chronique != null
+                    ? context.tr('Ta chronique reste visible 24 heures. Vidéo de 30 secondes au plus : filme-toi ou choisis un média, puis monte-le dans le Studio.')
+                    : context.tr('Ce que tu filmes ou enregistres ici passe en premier dans le fil, avec la mention « Fait sur Afrolook ».'),
             style: TextStyle(color: c.textSecondary, fontSize: 12.5, height: 1.4),
           ),
         ]),

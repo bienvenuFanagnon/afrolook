@@ -18,7 +18,7 @@ import 'package:afrotok/pages/userPosts/postTabs/userPostVideoTab.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../studio/studio_entry_page.dart';
+import '../studio/montage/montage_gallery_page.dart';
 import '../studio/studio_models.dart';
 
 import '../../../theme/app_colors.dart';
@@ -118,7 +118,7 @@ class _UserPostFormState extends State<UserPostForm> {
     final result = await Navigator.push<StudioResult>(
       context,
       MaterialPageRoute(
-        builder: (_) => const StudioEntryPage(forChronique: false),
+        builder: (_) => const MontageGalleryPage(),
       ),
     );
     if (result == null || !mounted) return;
