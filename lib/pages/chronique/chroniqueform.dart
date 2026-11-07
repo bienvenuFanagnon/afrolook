@@ -2,6 +2,7 @@
 
 import 'package:afrotok/services/account_gate.dart';
 import 'chronique_commerce.dart';
+import 'chronique_preview.dart';
 import 'package:afrotok/l10n/tr.dart';
 import 'dart:async';
 import 'package:afrotok/ads/ad_config.dart';
@@ -547,6 +548,33 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
       }
       _templateId = result.templateId;
     });
+  }
+
+  /// Aperçu avant publication : l'écran de lecture tel que le verront les abonnés, puis « Modifier » ou « Publier ».
+  Future<void> _previewThenPublish() async {
+    if (!_isFormValid) return;
+    final me = Provider.of<UserAuthProvider>(context, listen: false).loginUserData;
+    final ok = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => ChroniquePreviewPage(
+          type: _selectedType,
+          pseudo: me.pseudo ?? '',
+          avatarUrl: me.imageUrl,
+          text: _textController.text,
+          backgroundColor: _selectedType == ChroniqueType.TEXT ? _selectedColor : null,
+          mediaFile: _selectedMedia,
+          coverFile: _coverImageFile,
+          videoController: _videoController,
+          commerce: _commerce,
+          musicTitle: _selectedType == ChroniqueType.AUDIO ? null : _music?.title,
+          textX: _overlayX,
+          textY: _overlayY,
+        ),
+      ),
+    );
+    if (ok == true && mounted) await _publishChronique();
   }
 
   /// Carte de vente de la chronique business (null = chronique ordinaire).
@@ -1389,7 +1417,7 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
   Widget _buildPublishButton(AppColors colors) {
     final canPublish = !_isUploading && _isFormValid;
     return GestureDetector(
-      onTap: canPublish ? _publishChronique : null,
+      onTap: canPublish ? _previewThenPublish : null,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         height: 52,
