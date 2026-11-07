@@ -284,6 +284,12 @@ class _RewardsPageState extends State<RewardsPage> {
                   style: TextStyle(color: colors.accentText, fontWeight: FontWeight.w800, fontSize: 11)),
             ),
         ]),
+        const SizedBox(height: 4),
+        Text(
+          key: const ValueKey('reserve_hint'),
+          context.tr('Tes pubs vues servent à n\'importe quelle récompense : choisis celle à réclamer.'),
+          style: TextStyle(color: colors.textSecondary, fontSize: 11.5, height: 1.3),
+        ),
         const SizedBox(height: 8),
         ClipRRect(
           borderRadius: BorderRadius.circular(4),
@@ -303,6 +309,7 @@ class _RewardsPageState extends State<RewardsPage> {
     final capReached = !admin && (unlocked || claimed >= o.cap);
     final needed = (o.ads - _status.pending).clamp(0, o.ads);
     final seen = (_status.pending).clamp(0, o.ads);   // pubs déjà vues qui comptent pour cette récompense
+    final ready = !capReached && !unlocked && o.ads > 0 && needed == 0;   // déjà payée par la réserve : on n'a plus qu'à la récupérer
     final dayLimit = !admin && needed > remainingAds;
     final busy = _busyOffer == o.id;
     final disabled = _busyOffer != null || capReached || dayLimit;
@@ -313,7 +320,7 @@ class _RewardsPageState extends State<RewardsPage> {
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: colors.border),
+        border: Border.all(color: ready ? colors.accent : colors.border, width: ready ? 2 : 1),
       ),
       child: Row(children: [
         Container(
@@ -325,7 +332,18 @@ class _RewardsPageState extends State<RewardsPage> {
         const SizedBox(width: 12),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(title, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 14)),
+            Row(children: [
+              Flexible(child: Text(title, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 14))),
+              if (ready) ...[
+                const SizedBox(width: 6),
+                Container(
+                  key: ValueKey('offer_ready_${o.id}'),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                  decoration: BoxDecoration(color: colors.accent, borderRadius: BorderRadius.circular(99)),
+                  child: Text(context.tr('Prête'), style: TextStyle(color: colors.onAccent, fontSize: 9.5, fontWeight: FontWeight.w900)),
+                ),
+              ],
+            ]),
             const SizedBox(height: 2),
             Text(
               unlocked ? context.tr('Débloquée aujourd\'hui') : (capReached ? context.tr('Limite du jour atteinte') : context.tr(o.desc)),
