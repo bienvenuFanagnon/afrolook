@@ -5,6 +5,9 @@ import 'package:flutter/material.dart';
 
 import '../../l10n/tr.dart';
 import '../../models/model_data.dart';
+import '../../services/api/posts_api.dart';
+import '../../services/authentic_video_check.dart';
+import '../../services/media_fingerprint.dart';
 import '../../services/post_source_link.dart';
 import '../studio/studio_models.dart';
 import 'chronique_flow.dart';
@@ -32,7 +35,6 @@ Future<String> openCreateForm(
   if (ck != null) {
     return finishChronique(context, studio: studio, audio: audio, audioCover: audioCover, images: images, kind: ck);
   }
-  PostSourceLink.set(source);
   var k = kind ?? CreatePostKind.text;
   File? video;
   final imageFiles = <File>[];
@@ -61,6 +63,19 @@ Future<String> openCreateForm(
   } else if (images != null && images.isNotEmpty) {
     k = CreatePostKind.image;
   }
+  // Contenu déjà publié par un autre compte ? L'empreinte visuelle est calculée ici (sur le téléphone) ; un doublon est refusé, sauf « C'est le mien » (la modération vérifie)
+  PostFingerprintLink.clear();
+  if (video != null || imageFiles.isNotEmpty || (images != null && images.isNotEmpty)) {
+    final isVideo = video != null;
+    final hashes = isVideo ? await MediaFingerprint.ofVideo(video) : await MediaFingerprint.ofImageBytes(imageFiles.isNotEmpty ? await imageFiles.first.readAsBytes() : images!.first);
+    final author = await PostsApi.duplicateOf(isVideo ? 'video' : 'image', hashes);
+    if (author != null) {
+      if (!context.mounted) return kCreateBack;
+      if (!await AuthenticVideoCheck.duplicateDialog(context, author: author, video: isVideo)) return kCreateBack;
+    }
+    PostFingerprintLink.set(hashes);
+  }
+  PostSourceLink.set(source);
   final r = await Navigator.of(context).push<String>(
     MaterialPageRoute(
       builder: (_) => CreatePublishPage(
@@ -80,5 +95,6 @@ Future<String> openCreateForm(
   );
   PostSourceLink.clear();
   PostVoiceLink.clear();
+  PostFingerprintLink.clear();
   return r == kCreateBack ? kCreateBack : kCreateDone;
 }

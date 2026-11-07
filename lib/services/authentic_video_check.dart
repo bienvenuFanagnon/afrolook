@@ -254,6 +254,44 @@ class AuthenticVideoCheck {
     return _blocked(context, mark, allowClaim, image: true);
   }
 
+  /// Contenu déjà publié sur Afrolook par un autre compte : message de refus ; « C'est le mien » envoie à la modération (publication en attente de vérification).
+  /// Rend vrai pour continuer (réclamation faite), faux si la personne renonce.
+  static Future<bool> duplicateDialog(BuildContext context, {required String author, required bool video}) async {
+    final c = AppColors.of(context);
+    final own = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: c.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+        title: Text(tr('Contenu déjà publié'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 18)),
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(
+            author.isEmpty
+                ? tr('Ce contenu existe déjà sur Afrolook. Afrolook est le réseau des contenus authentiques : on ne republie pas le contenu d\'un autre compte.')
+                : tr('Ce contenu existe déjà sur Afrolook (publié par @{a}). Afrolook est le réseau des contenus authentiques : on ne republie pas le contenu d\'un autre compte.', {'a': author}),
+            style: TextStyle(color: c.textSecondary, height: 1.4, fontSize: 14),
+          ),
+          const SizedBox(height: 10),
+          Text(tr('C\'est ton contenu ? Notre équipe le vérifie avant de le publier.'), style: TextStyle(color: c.textSecondary, height: 1.4, fontSize: 13)),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Compris'), style: TextStyle(color: c.textSecondary))),
+          FilledButton(
+            key: const ValueKey('duplicate_own'),
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(backgroundColor: c.accent, foregroundColor: c.onAccent),
+            child: Text(video ? tr('C\'est ma vidéo') : tr('C\'est mon image'), style: const TextStyle(fontWeight: FontWeight.w800)),
+          ),
+        ],
+      ),
+    );
+    if (own == true) {
+      PostExternalLink.set('duplicate', own: true);
+      return true;
+    }
+    return false;
+  }
+
   /// Message de refus (marque d'un autre réseau ou contenu explicite) ; « C'est ma vidéo » / « C'est une erreur » envoie à la modération (si [allowClaim]).
   static Future<bool> _blocked(BuildContext context, String mark, bool allowClaim, {bool image = false}) async {
     final c = AppColors.of(context);

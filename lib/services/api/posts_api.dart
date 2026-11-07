@@ -1,3 +1,4 @@
+import '../media_fingerprint.dart';
 import 'dart:io';
 
 import 'package:afrolook_api_client/afrolook_api_client.dart';
@@ -77,8 +78,10 @@ class PostsApi {
     final replyToId = PostReplyLink.take();
     final studioPins = PostPinLink.take();
     final external = PostExternalLink.take();   // vidéo portant la marque d'un autre réseau : « C'est ma vidéo », vérifiée par la modération avant publication
+    final fingerprint = PostFingerprintLink.take();   // empreinte visuelle : le serveur refuse un contenu déjà publié par un autre compte
     final body = <String, dynamic>{
       if (external != null && uploadIds.isNotEmpty) ...{'external_mark': external.$1, 'own_claim': external.$2},
+      if (fingerprint != null && uploadIds.isNotEmpty) 'media_fingerprint': fingerprint,
       if (source != null && uploadIds.isNotEmpty) 'capture_source': source,
       if (voiceEffect != null && uploadIds.isNotEmpty) 'voice_effect': voiceEffect,
       if (replyToId != null) 'reply_to_id': replyToId,
@@ -101,6 +104,18 @@ class PostsApi {
     final r = await _c.post('/posts', body: body, idempotencyKey: ApiClient.newIdempotencyKey());
     if (_asMap(r)['pending_review'] == true) PostExternalLink.markPending();   // en vérification par la modération
     return postFromApi(_asMap(r));
+  }
+
+  /// Contrôle avant publication : ce contenu (empreinte calculée sur le téléphone) existe-t-il déjà chez un AUTRE compte ? Rend le pseudo de l'auteur d'origine, « » si inconnu, null si aucun doublon
+  /// (ou si le contrôle n'a pas pu se faire : on ne bloque jamais sur un échec technique).
+  static Future<String?> duplicateOf(String kind, List<String> hashes) async {
+    if (hashes.isEmpty) return null;
+    try {
+      final r = await _c.post('/posts/fingerprint-check', body: {'kind': kind, 'media_fingerprint': hashes});
+      final d = ApiClient.data(r);
+      if (d is Map && d['duplicate'] == true) return (d['author'] as String?) ?? '';
+    } catch (_) {}
+    return null;
   }
 
   /// Résultat d'un contrôle d'authenticité fait sur ce téléphone pendant une lecture : « clean » ou « mark » (+ marque). Rend l'état public de la vidéo (validated, flagged, null).
