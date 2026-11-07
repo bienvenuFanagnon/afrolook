@@ -43,6 +43,19 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.widget<FilledButton>(find.byKey(const ValueKey('download_go'))).onPressed, isNull);
   });
+  testWidgets('fenêtre « terminé » : reste affichée au milieu avec son message jusqu’à OK (une pub plein écran ne la ferme pas)', (tester) async {
+    await tester.pumpWidget(_app(Builder(builder: (ctx) => TextButton(onPressed: () => showDialog<void>(context: ctx, builder: (_) => PostDownload.doneForTest('Ton média est dans ta galerie.')), child: const Text('go')))));
+    await tester.tap(find.text('go'));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('download_done')), findsOneWidget);
+    expect(find.text('Téléchargement terminé'), findsOneWidget);
+    expect(find.text('Ton média est dans ta galerie.'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 6));   // le temps passe : elle ne disparaît pas toute seule
+    expect(find.byKey(const ValueKey('download_done')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('download_done_ok')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('download_done')), findsNothing);
+  });
   testWidgets('fenêtre d’avancement : étape et barre visibles au milieu, elles suivent les changements', (tester) async {
     final step = ValueNotifier<String>('Préparation…');
     final progress = ValueNotifier<double?>(null);

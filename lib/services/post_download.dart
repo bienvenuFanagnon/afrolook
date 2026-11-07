@@ -64,7 +64,42 @@ class _DownloadProgress extends StatelessWidget {
   }
 }
 
+/// Fenêtre « Téléchargement terminé » : elle reste affichée jusqu'à ce que la personne la ferme, même si une pub plein écran la cache un moment (un message passager serait perdu).
+class _DownloadDone extends StatelessWidget {
+  const _DownloadDone({required this.message});
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return Center(
+      child: Container(
+        key: const ValueKey('download_done'),
+        width: 290,
+        padding: const EdgeInsets.fromLTRB(22, 22, 22, 14),
+        decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(22), boxShadow: const [BoxShadow(color: Color(0x55000000), blurRadius: 24)]),
+        child: Material(
+          color: Colors.transparent,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(width: 56, height: 56, decoration: BoxDecoration(color: c.accent, shape: BoxShape.circle), child: Icon(Icons.check_rounded, color: c.onAccent, size: 32)),
+            const SizedBox(height: 14),
+            Text(context.tr('Téléchargement terminé'), textAlign: TextAlign.center, style: TextStyle(color: c.textPrimary, fontSize: 16.5, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 6),
+            Text(message, textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary, fontSize: 13, height: 1.3)),
+            const SizedBox(height: 10),
+            TextButton(key: const ValueKey('download_done_ok'), onPressed: () => Navigator.of(context, rootNavigator: true).pop(), child: Text(context.tr('OK'), style: const TextStyle(fontWeight: FontWeight.w900))),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
 class PostDownload {
+  /// Pour les essais : la fenêtre « terminé » seule.
+  @visibleForTesting
+  static Widget doneForTest(String message) => _DownloadDone(message: message);
+
   /// Pour les essais : la fenêtre d'avancement seule.
   @visibleForTesting
   static Widget progressForTest(ValueListenable<String> step, ValueListenable<double?> progress, List<String> kinds) => _DownloadProgress(step: step, progress: progress, kinds: kinds);
@@ -308,7 +343,12 @@ class PostDownload {
       _say(context, context.tr('Impossible d\'enregistrer : autorise l\'accès aux photos dans les réglages du téléphone.'));
       return;
     }
-    _say(context, audioPath != null ? context.tr('Audio prêt : choisis où l\'enregistrer.') : context.tr('Téléchargé dans ta galerie (album Afrolook).'));
+    // Fenêtre au milieu, qui RESTE : la pub plein écran qui suit peut la cacher un moment, la personne la retrouve à la fin et la ferme avec OK.
+    showDialog<void>(
+      context: context,
+      useRootNavigator: true,
+      builder: (_) => _DownloadDone(message: audioPath != null ? context.tr('Audio prêt : choisis où l\'enregistrer.') : context.tr('Ton média est dans ta galerie (album Afrolook).')),
+    );
     // pub plein écran après le téléchargement, si elle existe : jamais obligatoire, jamais bloquante
     try {
       await AdmobService.showInterstitialAndWait(me, maxPerDay: 6, capKey: 'ad_inter_download', warmup: false);

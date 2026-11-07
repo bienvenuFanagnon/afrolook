@@ -3,6 +3,8 @@
 const Map<String, Map<String, String>> kTrVideos = {
   "Préparation…": {'en': "Preparing…", 'es': "Preparando…", 'de': "Vorbereitung…", 'ar': "جارٍ التحضير…", 'pt': "Preparando…", 'zh': "准备中…", 'sw': "Inaandaa…"},
   "Signature de la vidéo…": {'en': "Signing the video…", 'es': "Firmando el vídeo…", 'de': "Video wird signiert…", 'ar': "جارٍ توقيع الفيديو…", 'pt': "Assinando o vídeo…", 'zh': "正在为视频签名…", 'sw': "Inatia sahihi video…"},
+  "Téléchargement terminé": {'en': "Download complete", 'es': "Descarga completada", 'de': "Download abgeschlossen", 'ar': "اكتمل التنزيل", 'pt': "Download concluído", 'zh': "下载完成", 'sw': "Upakuaji umekamilika"},
+  "Ton média est dans ta galerie (album Afrolook).": {'en': "Your media is in your gallery (Afrolook album).", 'es': "Tu archivo está en tu galería (álbum Afrolook).", 'de': "Deine Datei ist in deiner Galerie (Album Afrolook).", 'ar': "ملفك في معرض الصور (ألبوم أفرولوك).", 'pt': "Seu arquivo está na galeria (álbum Afrolook).", 'zh': "文件已保存到相册（Afrolook 相簿）。", 'sw': "Faili yako iko kwenye jumba lako la picha (albamu ya Afrolook)."},
   "Récupérer": {'en': "Claim", 'es': "Reclamar", 'de': "Abholen", 'ar': "استلام", 'pt': "Resgatar", 'zh': "领取", 'sw': "Chukua"},
   "pubs déjà vues": {'en': "ads already watched", 'es': "anuncios ya vistos", 'de': "Werbung schon gesehen", 'ar': "إعلانات سبق مشاهدتها", 'pt': "anúncios já vistos", 'zh': "广告已看完", 'sw': "matangazo yameshatazamwa"},
   "Pubs vues : {p}/{n}": {'en': "Ads watched: {p}/{n}", 'es': "Anuncios vistos: {p}/{n}", 'de': "Gesehene Werbung: {p}/{n}", 'ar': "الإعلانات المشاهَدة: {p}/{n}", 'pt': "Anúncios vistos: {p}/{n}", 'zh': "已看广告：{p}/{n}", 'sw': "Matangazo yaliyotazamwa: {p}/{n}"},
