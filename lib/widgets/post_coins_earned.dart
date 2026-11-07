@@ -225,10 +225,35 @@ class LikeCoinHeart extends StatelessWidget {
   final Color color;
   final double size;
 
-  const LikeCoinHeart({super.key, required this.icon, required this.color, this.size = 21});
+  /// Vrai : le cœur reste parfaitement centré et le « +1 » se superpose au-dessus de lui (pastille ronde des vidéos verticales).
+  final bool overlay;
+
+  /// Faux : pas de « +1 » (publication non monétisée par son créateur).
+  final bool showBadge;
+
+  const LikeCoinHeart({super.key, required this.icon, required this.color, this.size = 21, this.overlay = false, this.showBadge = true});
 
   @override
   Widget build(BuildContext context) {
+    if (overlay) {
+      return SizedBox(
+        width: size,
+        height: size,
+        child: Stack(clipBehavior: Clip.none, alignment: Alignment.center, children: [
+          Icon(icon, size: size, color: color),
+          if (showBadge)
+            Positioned(
+              top: -size * 0.62,
+              right: -size * 0.55,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0.5),
+                decoration: BoxDecoration(color: PostCoins.border, borderRadius: BorderRadius.circular(8), border: Border.all(color: Colors.black.withOpacity(0.35), width: 0.6)),
+                child: const Text('+1', style: TextStyle(color: Color(0xFF412402), fontSize: 9, fontWeight: FontWeight.w900, height: 1.2)),
+              ),
+            ),
+        ]),
+      );
+    }
     // Même hauteur que le cœur : la pastille se place à droite, dans la largeur réservée
     return SizedBox(
       width: size + 13,

@@ -43,7 +43,10 @@ class FollowersCountBuilder extends StatefulWidget {
   final int fallback;
   final Widget Function(BuildContext context, int count) builder;
 
-  const FollowersCountBuilder({super.key, required this.userId, required this.fallback, required this.builder});
+  /// Vrai : tant que le vrai nombre n'est pas connu et que la valeur locale est vide (0), rien n'est affiché (au lieu d'un faux « 0 »).
+  final bool hideUntilKnown;
+
+  const FollowersCountBuilder({super.key, required this.userId, required this.fallback, required this.builder, this.hideUntilKnown = false});
 
   @override
   State<FollowersCountBuilder> createState() => _FollowersCountBuilderState();
@@ -77,5 +80,8 @@ class _FollowersCountBuilderState extends State<FollowersCountBuilder> {
   }
 
   @override
-  Widget build(BuildContext context) => widget.builder(context, _count ?? widget.fallback);
+  Widget build(BuildContext context) {
+    if (widget.hideUntilKnown && _count == null && widget.fallback <= 0) return const SizedBox(height: 16);
+    return widget.builder(context, _count ?? widget.fallback);
+  }
 }

@@ -213,7 +213,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   // Clé = identifiant du POST (pas la position) : l'insertion d'une pub ou d'une page entre deux vidéos ne décale plus jamais un lecteur préchargé
   final Map<String, VideoPlayerController> _preloadedControllers = {};
   // Préchargement « façon TikTok » : 3 vidéos d'avance et 1 en arrière, prêtes à lire (lecteur initialisé, premières images en mémoire)
-  final int _preloadAhead = 3;
+  final int _preloadAhead = 2;
   final int _preloadBehind = 1;
   final Set<String> _preloadingIndices = {};
 
@@ -657,10 +657,12 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     if (_preloadingIndices.contains(key)) return;
 
     _preloadingIndices.add(key);
+    final uid = post.user?.id ?? post.user_id;
+    if (uid != null && uid.isNotEmpty) FollowersCountService.instance.fresh(uid).ignore();
 
     try {
       final optimizedUrl = authProvider.convertToCdnUrl(post.url_media!, authProvider.appDefaultData);
-      final controller = await MediaCacheService.videoController(optimizedUrl);
+      final controller = await MediaCacheService.videoController(optimizedUrl, cacheToDisk: false);
       await controller.initialize();
       // NE PAS jouer, NE PAS mettre en pause, NE PAS seek
       // L'initialisation seule suffit à remplir le buffer
@@ -673,20 +675,20 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     }
   }
 
-  void _preloadNeighborhood(int currentIndex) {
-    final start = max(0, currentIndex - _preloadBehind);
-    final end = min(_feedItems.length - 1, currentIndex + _preloadAhead);
+  int _preloadRun = 0;
 
-    // Les plus proches d'abord : la suivante est prête avant celle d'après
-    for (int i = max(currentIndex, start); i <= end; i++) {
-      if (_feedItems[i] is Post) {
-        _preloadVideoAtIndex(i);
-      }
-    }
-    for (int i = currentIndex - 1; i >= start; i--) {
-      if (_feedItems[i] is Post) {
-        _preloadVideoAtIndex(i);
-      }
+  /// Préchargement à la file : la vidéo en cours d'abord (réseau pour elle seule), puis la suivante, puis celle d'après, puis celle d'avant.
+  /// Une seule à la fois : plus de téléchargements en parallèle qui ralentissent la lecture.
+  Future<void> _preloadNeighborhood(int currentIndex) async {
+    final run = ++_preloadRun;
+    final order = <int>[
+      for (int i = currentIndex; i <= currentIndex + _preloadAhead; i++) i,
+      for (int i = currentIndex - 1; i >= currentIndex - _preloadBehind; i--) i,
+    ];
+    for (final i in order) {
+      if (!mounted || run != _preloadRun) return;   // la personne a déjà changé de vidéo : on repart de la nouvelle position
+      if (i < 0 || i >= _feedItems.length || _feedItems[i] is! Post) continue;
+      await _preloadVideoAtIndex(i);
     }
   }
 
@@ -2871,6 +2873,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
                     : FollowersCountBuilder(
                         userId: user?.id ?? post.user_id,
                         fallback: subscriberCount,
+                        hideUntilKnown: true,
                         builder: (_, c) => Text(_formatNumber(c), style: const TextStyle(color: Colors.white70, fontSize: 9)),
                       ),
               ],
@@ -3427,7 +3430,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
           ),
           const SizedBox(height: 18),
           VideoRailButton(
-            child: LikeCoinHeart(icon: liked ? Icons.favorite : Icons.favorite_border, color: liked ? colors.danger : Colors.white, size: 24),
+            child: LikeCoinHeart(icon: liked ? Icons.favorite : Icons.favorite_border, color: liked ? colors.danger : Colors.white, size: 24, overlay: true, showBadge: post.isMonetized),
             label: _formatNumber(loves),
             onTap: _isLiking ? () {} : () => _handleLike(post),
           ),
@@ -3493,6 +3496,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
               : FollowersCountBuilder(
                   userId: user?.id ?? post.user_id,
                   fallback: user?.followersCount ?? 0,
+                  hideUntilKnown: true,
                   builder: (_, c) => Text('${_formatNumber(c)} ${tr('abonnés')}', style: const TextStyle(color: Colors.white70, fontSize: 12, shadows: [Shadow(color: Color(0xCC000000), blurRadius: 4)])),
                 ),
           if (post.description != null && post.description!.trim().isNotEmpty) ...[
@@ -3581,7 +3585,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     final me = authProvider.loginUserData.id;
     if (kIsWeb || post.isAdvertisement == true || post.id == null || post.url_media == null || post.user_id == me || post.authenticity != null) return;
     final id = post.id!;
-    _authTimer = Timer(const Duration(seconds: 6), () async {
+    _authTimer = Timer(const Duration(seconds: 10), () async {
       if (!mounted || _authBusy || _authScans >= 6 || _currentPostId() != id) return;
       if ((await _loadAuthChecked()).contains(id)) return;
       final vc = _currentVideoController;
@@ -3590,7 +3594,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       _authScans++;
       try {
         final url = authProvider.convertToCdnUrl(post.url_media!, authProvider.appDefaultData);
-        final res = await AuthenticVideoCheck.scanUrl(url, vc.value.duration.inMilliseconds);
+        final res = await AuthenticVideoCheck.scanUrl(url, vc.value.duration.inMilliseconds, stillWanted: () => mounted && _currentPostId() == id);
         if (res == null) return;
         await _rememberChecked(id);
         final state = await PostsApi.reportAuthenticity(id, clean: res == 'clean', mark: res == 'clean' ? null : res);

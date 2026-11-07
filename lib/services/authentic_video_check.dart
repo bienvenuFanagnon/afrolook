@@ -104,7 +104,7 @@ class AuthenticVideoCheck {
 
   /// Même examen sur une vidéo qui se lit (adresse du film et durée déjà connues) : sert aux contrôles d'authenticité pendant les lectures.
   /// Rend la marque vue (tiktok, instagram…), « clean » si rien, null si l'examen n'a pas pu se faire (rien n'est envoyé dans ce cas).
-  static Future<String?> scanUrl(String url, int durationMs) async {
+  static Future<String?> scanUrl(String url, int durationMs, {bool Function()? stillWanted}) async {
     if (kIsWeb || durationMs <= 0) return null;
     final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
     try {
@@ -119,7 +119,10 @@ class AuthenticVideoCheck {
       final texts = <String>[];
       final nsfw = <List<double>>[];
       for (final t in times) {
-        final f = await VideoThumbnail.thumbnailFile(video: url, imageFormat: ImageFormat.JPEG, timeMs: t, maxWidth: 720, quality: 70);
+        // invisible : on abandonne dès que la personne passe à une autre vidéo, et on laisse respirer la lecture entre deux images
+        if (stillWanted != null && !stillWanted()) return null;
+        await Future<void>.delayed(const Duration(milliseconds: 400));
+        final f = await VideoThumbnail.thumbnailFile(video: url, imageFormat: ImageFormat.JPEG, timeMs: t, maxWidth: 480, quality: 60);
         if (f == null) continue;
         final r = await recognizer.processImage(InputImage.fromFilePath(f));
         texts.add(r.text);

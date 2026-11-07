@@ -98,7 +98,7 @@ class MediaCacheService {
 
   /// Retourne un [VideoPlayerController] prêt à être initialisé.
   /// Appeler [initialize()] ensuite comme d'habitude.
-  static Future<VideoPlayerController> videoController(String url) async {
+  static Future<VideoPlayerController> videoController(String url, {bool cacheToDisk = true}) async {
     if (url.isEmpty) {
       return VideoPlayerController.networkUrl(Uri.parse(''));
     }
@@ -110,8 +110,8 @@ class MediaCacheService {
       }
     } catch (_) {}
 
-    // Pas en cache → réseau immédiat + mise en cache silencieuse en arrière-plan
-    _videoMgr.downloadFile(url).catchError((_) {});
+    // Pas en cache → réseau immédiat + mise en cache silencieuse en arrière-plan (seulement si demandé : évite de télécharger deux fois chaque vidéo à l'avance)
+    if (cacheToDisk) _videoMgr.downloadFile(url).catchError((_) {});
     return VideoPlayerController.networkUrl(Uri.parse(url));
   }
 
