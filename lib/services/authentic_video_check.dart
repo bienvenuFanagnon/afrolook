@@ -35,11 +35,12 @@ class AuthenticResult {
 class AuthenticVideoCheck {
   AuthenticVideoCheck._();
 
-  /// Marques cherchées (Snapchat n'est PAS bloqué : beaucoup de créateurs s'en servent pour créer leurs contenus). `strong` : une seule image suffit (le filigrane de TikTok est très reconnaissable) ; sinon il en faut deux (jamais sur un mot isolé).
+  /// Marques cherchées (TikTok, Instagram, Facebook, Snapchat…). `strong` : une seule image suffit (le filigrane de TikTok est très reconnaissable) ; sinon il en faut deux (jamais sur un mot isolé).
   static const _marks = <(String, List<String>, bool)>[
     ('tiktok', ['tiktok', 'douyin'], true),
     ('instagram', ['instagram'], false),
     ('facebook', ['facebook'], false),
+    ('snapchat', ['snapchat'], false),
     ('other', ['likee', 'kwai', 'triller'], false),
   ];
 
@@ -49,13 +50,65 @@ class AuthenticVideoCheck {
     return words.any(t.contains);
   }
 
+  static final _handleRe = RegExp(r'@\s?([\p{L}\p{N}._]{3,30})', unicode: true);
+
+  /// Les @pseudos incrustés dans une image (filigrane du créateur : TikTok, Instagram, Likee…), sans le « @ ». Une phrase n'est pas un filigrane : seules les lignes
+  /// courtes comptent ([oneWordOnly] : une ligne qui ne contient que le pseudo, pour une photo isolée). Une image qui porte « Afrolook » (fin animée, modèles du Studio)
+  /// n'est jamais comptée : ses @pseudos sont les nôtres.
+  static Set<String> handlesIn(String text, {bool oneWordOnly = false}) {
+    final t = text.toLowerCase();
+    if (t.replaceAll(RegExp(r'\s'), '').contains('afrolook')) return {};
+    final out = <String>{};
+    for (final line in t.split(RegExp(r'[\r\n]+'))) {
+      final words = line.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+      if (words.isEmpty || words.length > (oneWordOnly ? 1 : 3)) continue;
+      for (final m in _handleRe.allMatches(line)) {
+        final h = m.group(1)!.replaceAll(RegExp(r'[._]+$'), '');
+        if (h.length >= 3) out.add(h);
+      }
+    }
+    return out;
+  }
+
+  static int _distance(String a, String b) {
+    var prev = List<int>.generate(b.length + 1, (i) => i);
+    for (var i = 1; i <= a.length; i++) {
+      final cur = <int>[i, ...List<int>.filled(b.length, 0)];
+      for (var j = 1; j <= b.length; j++) {
+        cur[j] = [prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] == b[j - 1] ? 0 : 1)].reduce((x, y) => x < y ? x : y);
+      }
+      prev = cur;
+    }
+    return prev[b.length];
+  }
+
+  /// Même pseudo d'une image à l'autre (la lecture du texte peut se tromper d'une lettre).
+  static bool _sameHandle(String a, String b) => a == b || (a.length >= 5 && b.length >= 5 && _distance(a, b) <= 1);
+
   /// Marque trouvée à partir du texte lu dans chaque image (null si la vidéo est propre). Séparé de l'examen pour être testé sans téléphone.
+  /// 1) le nom d'un réseau (TikTok : une image suffit ; les autres : deux images) ; 2) le même @pseudo de créateur sur au moins deux images : c'est le filigrane
+  /// d'un autre réseau (Instagram affiche le logo et le pseudo, sans le nom), classé « other ».
   static String? decide(List<String> frameTexts) {
     for (final (mark, words, strong) in _marks) {
       final hits = frameTexts.where((t) => containsMark(t, words)).length;
       if (hits >= (strong ? 1 : 2)) return mark;
     }
+    final perFrame = [for (final t in frameTexts) handlesIn(t)];
+    for (var i = 0; i < perFrame.length; i++) {
+      for (final h in perFrame[i]) {
+        final frames = [for (final s in perFrame) s.any((x) => _sameHandle(h, x))].where((v) => v).length;
+        if (frames >= 2) return 'other';
+      }
+    }
     return null;
+  }
+
+  /// Marque trouvée dans UNE image isolée (photo de publication, couverture) : le nom d'un réseau, ou un @pseudo seul sur sa ligne (capture d'écran ou image téléchargée).
+  static String? decideImage(String text) {
+    for (final (mark, words, _) in _marks) {
+      if (containsMark(text, words)) return mark;
+    }
+    return handlesIn(text, oneWordOnly: true).isNotEmpty ? 'other' : null;
   }
 
   static Future<AuthenticResult> scan(String path) async {
@@ -146,6 +199,7 @@ class AuthenticVideoCheck {
         'tiktok' => 'TikTok',
         'instagram' => 'Instagram',
         'facebook' => 'Facebook',
+        'snapchat' => 'Snapchat',
         _ => tr('d\'autres réseaux'),
       };
 
@@ -183,29 +237,44 @@ class AuthenticVideoCheck {
   static Future<bool> gateImage(BuildContext context, String path, {bool allowClaim = true}) async {
     PostExternalLink.clear();
     final sc = await NsfwCheck.score(path);
-    if (sc == null || !NsfwCheck.decide([sc]) || !context.mounted) return true;
-    return _blocked(context, 'explicit', allowClaim);
+    if (sc != null && NsfwCheck.decide([sc]) && context.mounted) return _blocked(context, 'explicit', allowClaim);
+    // image téléchargée d'un autre réseau : nom du réseau ou @pseudo du créateur incrusté (lecture de texte gratuite, sur le téléphone)
+    if (kIsWeb || !context.mounted) return true;
+    String? mark;
+    final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
+    try {
+      final r = await recognizer.processImage(InputImage.fromFilePath(path));
+      mark = decideImage(r.text);
+    } catch (_) {
+      mark = null;   // échec technique : l'image passe
+    } finally {
+      await recognizer.close();
+    }
+    if (mark == null || !context.mounted) return true;
+    return _blocked(context, mark, allowClaim, image: true);
   }
 
   /// Message de refus (marque d'un autre réseau ou contenu explicite) ; « C'est ma vidéo » / « C'est une erreur » envoie à la modération (si [allowClaim]).
-  static Future<bool> _blocked(BuildContext context, String mark, bool allowClaim) async {
+  static Future<bool> _blocked(BuildContext context, String mark, bool allowClaim, {bool image = false}) async {
     final c = AppColors.of(context);
     final own = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: c.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        title: Text(mark == 'explicit' ? tr('Contenu non accepté') : tr('Vidéo non acceptée'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 18)),
+        title: Text(mark == 'explicit' ? tr('Contenu non accepté') : (image ? tr('Image non acceptée') : tr('Vidéo non acceptée')), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 18)),
         content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(
             mark == 'explicit'
                 ? tr('Afrolook n\'accepte pas les contenus sexuellement explicites. Les tenues légères et les danses restent permises.')
-                : tr('Afrolook est le réseau des vidéos authentiques : les vidéos téléchargées de {a} ne sont pas acceptées. Publie tes propres vidéos, filmées avec l\'application ou montées avec un éditeur comme CapCut.', {'a': _name(mark)}),
+                : image
+                    ? tr('Afrolook est le réseau des contenus authentiques : les images téléchargées de {a} ne sont pas acceptées. Publie tes propres images, prises avec l\'application ou créées dans le Studio.', {'a': _name(mark)})
+                    : tr('Afrolook est le réseau des vidéos authentiques : les vidéos téléchargées de {a} ne sont pas acceptées. Publie tes propres vidéos, filmées avec l\'application ou montées avec un éditeur comme CapCut.', {'a': _name(mark)}),
             style: TextStyle(color: c.textSecondary, height: 1.4, fontSize: 14),
           ),
           if (allowClaim) ...[
             const SizedBox(height: 10),
-            Text(mark == 'explicit' ? tr('Une erreur ? Notre équipe la vérifie avant de la publier.') : tr('Cette vidéo est la tienne ? Notre équipe la vérifie avant de la publier.'), style: TextStyle(color: c.textSecondary, height: 1.4, fontSize: 13)),
+            Text(mark == 'explicit' ? tr('Une erreur ? Notre équipe la vérifie avant de la publier.') : (image ? tr('Cette image est la tienne ? Notre équipe la vérifie avant de la publier.') : tr('Cette vidéo est la tienne ? Notre équipe la vérifie avant de la publier.')), style: TextStyle(color: c.textSecondary, height: 1.4, fontSize: 13)),
           ],
         ]),
         actions: [
@@ -214,7 +283,7 @@ class AuthenticVideoCheck {
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(backgroundColor: c.accent, foregroundColor: c.onAccent),
-            child: Text(mark == 'explicit' ? tr('C\'est une erreur') : tr('C\'est ma vidéo'), style: const TextStyle(fontWeight: FontWeight.w800)),
+            child: Text(mark == 'explicit' ? tr('C\'est une erreur') : (image ? tr('C\'est mon image') : tr('C\'est ma vidéo')), style: const TextStyle(fontWeight: FontWeight.w800)),
           ),
         ],
       ),

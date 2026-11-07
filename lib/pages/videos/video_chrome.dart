@@ -548,6 +548,7 @@ Future<void> showNotMonetizedSheet(BuildContext context, {required String mark, 
     'tiktok' => 'TikTok',
     'instagram' => 'Instagram',
     'facebook' => 'Facebook',
+    'snapchat' => 'Snapchat',
     _ => context.tr('d\'autres réseaux'),
   };
   return showModalBottomSheet<void>(

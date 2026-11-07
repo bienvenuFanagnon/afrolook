@@ -344,7 +344,7 @@ class ReglesConfidentialitePage extends StatelessWidget {
               _rule('Afrolook met en avant l\'authentique',
                   'Afrolook met en avant les contenus authentiques, propres à la plateforme : ce que tu filmes, enregistres, écris ou montes toi-même.'),
               _rule('Vidéos d\'autres réseaux',
-                  'Les vidéos téléchargées d\'autres réseaux (TikTok, Instagram, Facebook…) sont refusées à la publication. Les vidéos montées avec un éditeur (CapCut, InShot…) et celles de Snapchat sont acceptées.'),
+                  'Les vidéos téléchargées d\'autres réseaux (TikTok, Snapchat, Instagram, Facebook…) sont refusées à la publication. Les vidéos montées avec un éditeur (CapCut, InShot…) sont acceptées.'),
               _rule('Plus de monétisation',
                   'Une vidéo identifiée comme venant d\'un autre réseau n\'est plus monétisée : ses vues ne rapportent plus de pièces et elle n\'est plus mise en avant. Les publications qui ne sont que des liens vers d\'autres réseaux ne sont jamais monétisées.'),
               _rule('C\'est ma vidéo',
