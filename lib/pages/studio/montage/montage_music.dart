@@ -111,18 +111,19 @@ class MontageMusic {
 class MontageMusicPlayer {
   MontageMusicPlayer._();
   static final AudioPlayer _player = AudioPlayer();
-  static final Map<String, String> _urls = {};
+  static final Map<String, ({String url, DateTime at})> _urls = {};   // le lien d'écoute dure une heure : on le garde 50 minutes
   static String? playingKey;
 
   static Future<String?> urlOf(MontageMusic m) async {
     if (m.url != null) return m.url;
     if (m.isArtist) return null;
     final key = 'free:${m.id}';
-    if (_urls[key] != null) return _urls[key];
+    final hit = _urls[key];
+    if (hit != null && DateTime.now().difference(hit.at) < const Duration(minutes: 50)) return hit.url;
     try {
-      // Musiques gratuites d'Afrolook : adresse donnée par l'API (voir lacunes_api_argent_creations.md)
+      // Musiques gratuites d'Afrolook : adresse donnée par l'API (lien valable une heure)
       final u = MediaCdn.url(await MusicApi.freeTrackUrl(m.id));
-      _urls[key] = u;
+      _urls[key] = (url: u, at: DateTime.now());
       return u;
     } catch (_) {
       return null;

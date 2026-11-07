@@ -127,7 +127,7 @@ class MusicApi {
   static Future<List<ArtistSound>> latestValidated({int limit = 50}) async => (await sounds(limit: limit)).items.where((s) => s.previewUrl != null).toList();
 
   /// Mes titres déposés.
-  /// Adresse d'écoute d'une musique gratuite d'Afrolook. Point d'accès prévu : GET /music/free/{id} (absent pour l'instant).
+  /// Adresse d'écoute d'une musique gratuite d'Afrolook (lien valable une heure) : GET /music/free/{id}. Lève une erreur (404) si le fichier n'est pas encore sur le stockage.
   static Future<String> freeTrackUrl(String id) async => '${_map(await _c.get('/music/free/$id'))['url']}';
 
   static Future<List<ArtistSound>> mySounds() async => (await sounds(mine: true, limit: 50)).items;
