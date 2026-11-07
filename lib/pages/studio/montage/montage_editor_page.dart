@@ -940,16 +940,25 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           ),
         ],
       ],
+      // la fin Afrolook : obligatoire pour tout le monde ; SEUL le plan Gold peut la retirer (le serveur l'impose aussi). Les autres ne voient aucun interrupteur.
       if (s.useVideo)
-        SwitchListTile(
-          key: const ValueKey('outro_switch'),
-          contentPadding: EdgeInsets.zero,
-          value: s.outro,
-          onChanged: RewardsService.goldActive ? (v) => setState(() => s.outro = v) : null,
-          activeThumbColor: _c.primary,
-          title: Text(context.tr('Ajouter la fin Afrolook'), style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13.5)),
-          subtitle: Text(RewardsService.goldActive ? context.tr('2,8 secondes à la fin de ta vidéo : logo, ton @pseudo et une invitation.') : context.tr('Incluse dans les vidéos des comptes gratuits. Gold peut la retirer.'), style: TextStyle(color: _c.textSecondary, fontSize: 12)),
-        ),
+        RewardsService.goldActive
+            ? SwitchListTile(
+                key: const ValueKey('outro_switch'),
+                contentPadding: EdgeInsets.zero,
+                value: s.outro,
+                onChanged: (v) => setState(() => s.outro = v),
+                activeThumbColor: _c.primary,
+                title: Text(context.tr('Ajouter la fin Afrolook'), style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13.5)),
+                subtitle: Text(context.tr('2,8 secondes à la fin de ta vidéo : logo, ton @pseudo et une invitation. Avec Gold, tu peux la retirer.'), style: TextStyle(color: _c.textSecondary, fontSize: 12)),
+              )
+            : ListTile(
+                key: const ValueKey('outro_locked'),
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.lock_outline_rounded, color: _c.textSecondary, size: 22),
+                title: Text(context.tr('Fin Afrolook incluse'), style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13.5)),
+                subtitle: Text(context.tr('2,8 secondes à la fin de ta vidéo : logo, ton @pseudo et une invitation. Seul le plan Gold peut la retirer.'), style: TextStyle(color: _c.textSecondary, fontSize: 12)),
+              ),
       if (m != null)
         Padding(
           padding: const EdgeInsets.only(top: 4),
