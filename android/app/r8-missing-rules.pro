@@ -21,3 +21,14 @@
 # Moteur d effets de visage : MediaPipe Tasks (classes appelées par le code natif, protos absents de la bibliothèque)
 # (les règles de conservation viennent de la bibliothèque elle-même ; ici seulement les protos absents)
 -dontwarn com.google.mediapipe.proto.**
+
+# Lecture de texte ML Kit (contrôle des vidéos d autres réseaux) : le plugin mentionne les modèles chinois, japonais, coréen et devanagari, non inclus
+# (l application n utilise que l alphabet latin). Classes absentes seulement mentionnées : sans effet à l exécution.
+-dontwarn com.google.mlkit.vision.text.chinese.**
+-dontwarn com.google.mlkit.vision.text.japanese.**
+-dontwarn com.google.mlkit.vision.text.korean.**
+-dontwarn com.google.mlkit.vision.text.devanagari.**
+
+# Filtre de contenu explicite (TensorFlow Lite) : le délégué GPU optionnel est mentionné mais absent
+-dontwarn org.tensorflow.lite.gpu.GpuDelegateFactory$Options
+-dontwarn org.tensorflow.lite.gpu.**
