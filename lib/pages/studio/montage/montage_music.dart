@@ -113,7 +113,6 @@ class MontageMusicPlayer {
   static final AudioPlayer _player = AudioPlayer();
   static final Map<String, ({String url, DateTime at})> _urls = {};   // le lien d'écoute dure une heure : on le garde 50 minutes
   static String? playingKey;
-  static bool _mixSet = false;
 
   static Future<String?> urlOf(MontageMusic m) async {
     if (m.url != null) return m.url;
@@ -132,26 +131,27 @@ class MontageMusicPlayer {
   }
 
   /// Joue [m] en boucle à partir de [startMs]. Renvoie false si la musique n'a pas pu être chargée.
-  static Future<bool> play(MontageMusic m, {int startMs = 0}) async {
+  static Future<bool> play(MontageMusic m, {int startMs = 0, double volume = 1}) async {
     final url = await urlOf(m);
     if (url == null) return false;
     try {
-      if (!_mixSet) {
-        // la musique d'aperçu se mélange aux autres sons : elle ne prend pas le « focus audio » (qui arrêtait la vidéo de l'éditeur)
-        await _player.setAudioContext(AudioContext(
-          android: const AudioContextAndroid(audioFocus: AndroidAudioFocus.none),
-          iOS: AudioContextIOS(category: AVAudioSessionCategory.playback, options: const [AVAudioSessionOptions.mixWithOthers]),
-        ));
-        _mixSet = true;
-      }
       await _player.stop();
       await _player.setReleaseMode(ReleaseMode.loop);
+      await _player.setVolume(volume.clamp(0.0, 1.0));
       await _player.play(UrlSource(url), position: Duration(milliseconds: startMs));
       playingKey = '${m.type}:${m.id}';
       return true;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Aperçu de la musique impossible : $e');   // visible dans la console : la cause d'un silence
       return false;
     }
+  }
+
+  /// Volume de l'aperçu (0 à 1), appliqué tout de suite si la musique joue.
+  static Future<void> setVolume(double v) async {
+    try {
+      await _player.setVolume(v.clamp(0.0, 1.0));
+    } catch (_) {}
   }
 
   static Future<void> stop() async {

@@ -38,6 +38,8 @@ import '../../create/chronique_flow.dart' show ChroniqueFlow;
 import 'montage_state.dart';
 import 'montage_stickers.dart';
 import '../studio_theme.dart';
+import '../../../widgets/gold_badge.dart';
+import '../../../widgets/gold_lock_row.dart';
 
 AppColors get _c => studioColors;
 
@@ -154,10 +156,17 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
 
   // ── Musique ──
 
+  /// Ce qu'on entend dans l'éditeur suit les réglages : la voix de la vidéo (si gardée) et la musique, chacune à son volume.
+  void _applyVolumes() {
+    final v = _video;
+    if (v != null && v.value.isInitialized) v.setVolume(s.keepVideoAudio ? s.videoVolume.clamp(0.0, 1.0) : 0);
+    MontageMusicPlayer.setVolume(s.musicVolume);
+  }
+
   Future<void> _playMusic() async {
     final m = s.music;
     if (m == null || !mounted) return;
-    final ok = await MontageMusicPlayer.play(m, startMs: s.musicStartMs);
+    final ok = await MontageMusicPlayer.play(m, startMs: s.musicStartMs, volume: s.musicVolume);
     if (!mounted) return;
     setState(() => _musicPlaying = ok);
     // la vidéo continue de tourner pendant que la musique joue (elle ne doit jamais se figer à l'arrivée du son)
@@ -238,7 +247,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     try {
       await v.initialize();
       await v.setLooping(true);
-      await v.setVolume(0);
+      await v.setVolume(s.keepVideoAudio ? s.videoVolume.clamp(0.0, 1.0) : 0);   // la voix de la vidéo s'entend seulement si « Garder le son de ma vidéo » est activé
       await v.play();
       // certains téléphones n'animent l'image qu'après un second « lecture » (la surface vidéo n'est prête qu'après le premier affichage) : on vérifie et on relance
       Future<void>.delayed(const Duration(milliseconds: 900), () async {
@@ -917,23 +926,35 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
           value: s.keepVideoAudio,
-          onChanged: (v) => setState(() => s.keepVideoAudio = v),
+          onChanged: (v) {
+            setState(() => s.keepVideoAudio = v);
+            _applyVolumes();
+          },
           activeThumbColor: _c.primary,
           title: Text('Garder le son de ma vidéo', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13.5)),
           subtitle: Text(s.keepVideoAudio ? 'Ta voix et la musique sont mélangées.' : 'Le son de ta vidéo est coupé : seule la musique est jouée.', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
         ),
       if (m != null) ...[
         if (!RewardsService.featureUnlocked('audio_mix'))
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: _btn(Icons.lock_rounded, 'Débloquer le mixage des volumes', () async {
+          GoldLockRow(
+            key: const ValueKey('audio_mix_locked'),
+            title: context.tr('Mixage des volumes'),
+            subtitle: context.tr('Règle le volume de la musique et de ta voix. Inclus avec Gold, ou ouvert jusqu\'à la fin de la journée en regardant {n} pubs.', {'n': RewardsService.featureAds('audio_mix')}),
+            actionLabel: context.tr('Débloquer'),
+            onAction: () async {
               if (await _gate('audio_mix') && mounted) setState(() {});
-            }),
+            },
           )
         else
-          _volumeRow('Volume de la musique', s.musicVolume, 1, (v) => setState(() => s.musicVolume = v), const ValueKey('vol_music')),
+          _volumeRow('Volume de la musique', s.musicVolume, 1, (v) {
+          setState(() => s.musicVolume = v);
+          _applyVolumes();
+        }, const ValueKey('vol_music')),
         if (RewardsService.featureUnlocked('audio_mix') && s.useVideo && s.keepVideoAudio) ...[
-          _volumeRow('Volume de ma voix (vidéo)', s.videoVolume, 1.5, (v) => setState(() => s.videoVolume = v), const ValueKey('vol_video')),
+          _volumeRow('Volume de ma voix (vidéo)', s.videoVolume, 1.5, (v) {
+            setState(() => s.videoVolume = v);
+            _applyVolumes();
+          }, const ValueKey('vol_video')),
           SwitchListTile(
             key: const ValueKey('duck_music'),
             contentPadding: EdgeInsets.zero,
@@ -957,12 +978,10 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
                 title: Text(context.tr('Ajouter la fin Afrolook'), style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13.5)),
                 subtitle: Text(context.tr('2,8 secondes à la fin de ta vidéo : logo, ton @pseudo et une invitation. Avec Gold, tu peux la retirer.'), style: TextStyle(color: _c.textSecondary, fontSize: 12)),
               )
-            : ListTile(
+            : GoldLockRow(
                 key: const ValueKey('outro_locked'),
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(Icons.lock_outline_rounded, color: _c.textSecondary, size: 22),
-                title: Text(context.tr('Fin Afrolook incluse'), style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13.5)),
-                subtitle: Text(context.tr('2,8 secondes à la fin de ta vidéo : logo, ton @pseudo et une invitation. Seul le plan Gold peut la retirer.'), style: TextStyle(color: _c.textSecondary, fontSize: 12)),
+                title: context.tr('Fin Afrolook incluse'),
+                subtitle: context.tr('2,8 secondes à la fin de ta vidéo : logo, ton @pseudo et une invitation. Seul le plan Gold peut la retirer.'),
               ),
       if (m != null)
         Padding(
@@ -1219,7 +1238,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
       const SizedBox(height: 10),
       Wrap(spacing: 8, runSpacing: 8, children: [
         _btn(Icons.add_reaction_rounded, 'Ajouter un autocollant', _addSticker),
-        if (s.hasVideo) _btn(Icons.timer_rounded, 'Message à l\'écran', _addTimedMessage),
+        if (s.hasVideo) _btn(Icons.timer_rounded, 'Message à l\'écran', _addTimedMessage, gold: 'timed_message'),
         if (s.moved.isNotEmpty) _btn(Icons.restart_alt_rounded, 'Tout remettre en place', () => setState(s.moved.clear)),
       ]),
       _pinSection(),
@@ -1437,10 +1456,14 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
         child: Text(t.toUpperCase(), style: TextStyle(color: _c.textSecondary, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.2)),
       );
 
-  Widget _btn(IconData icon, String label, VoidCallback onTap) => OutlinedButton.icon(
+  Widget _btn(IconData icon, String label, VoidCallback onTap, {String? gold}) => OutlinedButton.icon(
         onPressed: onTap,
         icon: Icon(icon, size: 18, color: _c.primary),
-        label: Text(label, style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700)),
+        label: Row(mainAxisSize: MainAxisSize.min, children: [
+          Text(label, style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700)),
+          // option réservée à Gold et encore fermée : pastille GOLD ; un toucher propose Gold ou des pubs
+          if (GoldBadge.locked(gold)) ...[const SizedBox(width: 8), const GoldBadge()],
+        ]),
         style: OutlinedButton.styleFrom(side: BorderSide(color: _c.border), padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12)),
       );
 

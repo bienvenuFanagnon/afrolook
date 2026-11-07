@@ -1,3 +1,4 @@
+import '../../widgets/gold_badge.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui' show ImageFilter;
@@ -873,13 +874,17 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
 
   // ── Barre du moteur : cinq groupes (Beauté, Visage, Couleur, Masques, Magie), chacun avec ses propres choix ──
 
-  Widget _engChip({required Key key, required IconData icon, required String label, required bool selected, required VoidCallback? onTap, required AppColors c}) {
+  Widget _engChip({required Key key, required IconData icon, required String label, required bool selected, required VoidCallback? onTap, required AppColors c, String? gold}) {
+    final lockedGold = GoldBadge.locked(gold);   // option réservée à Gold et encore fermée : pastille GOLD, un toucher propose Gold ou des pubs
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: ChoiceChip(
         key: key,
         avatar: Icon(icon, size: 18, color: selected ? c.onAccent : Colors.white),
-        label: Text(context.tr(label), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: selected ? c.onAccent : Colors.white)),
+        label: Row(mainAxisSize: MainAxisSize.min, children: [
+          Text(context.tr(label), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: selected ? c.onAccent : Colors.white)),
+          if (lockedGold) ...[const SizedBox(width: 6), const GoldBadge(compact: true)],
+        ]),
         selected: selected,
         showCheckmark: false,
         selectedColor: c.accent,
@@ -904,16 +909,16 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
     switch (_group) {
       case 'face':
         for (final p in FaceEngine.presets) {
-          items.add(_engChip(key: ValueKey('preset_${p.label}'), icon: p.icon, label: p.label, selected: _deforms.length == p.keys.length && _deforms.containsAll(p.keys), onTap: off ? null : () => _applyPreset(p), c: c));
+          items.add(_engChip(key: ValueKey('preset_${p.label}'), icon: p.icon, label: p.label, selected: _deforms.length == p.keys.length && _deforms.containsAll(p.keys), onTap: off ? null : () => _applyPreset(p), c: c, gold: 'face_deform'));
         }
         items.add(const Padding(padding: EdgeInsets.only(right: 8), child: SizedBox(height: 28, child: VerticalDivider(color: Colors.white38, width: 1))));
         for (final d in FaceEngine.deformations) {
-          items.add(_engChip(key: ValueKey('deform_${d.key}'), icon: d.icon, label: d.label, selected: _deforms.contains(d.key), onTap: off ? null : () => _toggleDeform(d.key), c: c));
+          items.add(_engChip(key: ValueKey('deform_${d.key}'), icon: d.icon, label: d.label, selected: _deforms.contains(d.key), onTap: off ? null : () => _toggleDeform(d.key), c: c, gold: 'face_deform'));
         }
       case 'color':
         items.add(_engChip(key: const ValueKey('look_0'), icon: Icons.block_rounded, label: 'Aucun', selected: _look == 0, onTap: off ? null : () => _pickLook(0), c: c));
         for (final l in FaceEngine.looks) {
-          items.add(_engChip(key: ValueKey('look_${l.id}'), icon: l.icon, label: l.label, selected: _look == l.id, onTap: off ? null : () => _pickLook(_look == l.id ? 0 : l.id), c: c));
+          items.add(_engChip(key: ValueKey('look_${l.id}'), icon: l.icon, label: l.label, selected: _look == l.id, onTap: off ? null : () => _pickLook(_look == l.id ? 0 : l.id), c: c, gold: const {4, 5, 6}.contains(l.id) ? 'looks_pro' : null));
         }
       case 'mask':
         items.add(_engChip(key: const ValueKey('mask_none'), icon: Icons.block_rounded, label: 'Aucun', selected: _filter == FaceFilter.none, onTap: off ? null : () => _pickFilter(FaceFilter.none), c: c));
@@ -939,13 +944,13 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
       case 'avatar':
         items.add(_engChip(key: const ValueKey('avatar_none'), icon: Icons.block_rounded, label: 'Aucun', selected: _avatar == null, onTap: off ? null : () => _pickAvatar(null), c: c));
         for (final av in FaceAvatar.all) {
-          items.add(_engChip(key: ValueKey('avatar_${av.key}'), icon: av.icon, label: av.label, selected: _avatar?.key == av.key, onTap: off ? null : () => _pickAvatar(av), c: c));
+          items.add(_engChip(key: ValueKey('avatar_${av.key}'), icon: av.icon, label: av.label, selected: _avatar?.key == av.key, onTap: off ? null : () => _pickAvatar(av), c: c, gold: 'avatars'));
         }
       case 'magic':
         items.add(_engChip(key: const ValueKey('magic_none'), icon: Icons.block_rounded, label: 'Aucun', selected: _magic < 0, onTap: off ? null : () => _pickMagic(_magic < 0 ? 0 : _magic), c: c));
         for (var m = 0; m < FaceEngine.magic.length; m++) {
           final mg = FaceEngine.magic[m];
-          items.add(_engChip(key: ValueKey('magic_$m'), icon: mg.icon, label: mg.label, selected: _magic == m, onTap: off ? null : () => _pickMagic(m), c: c));
+          items.add(_engChip(key: ValueKey('magic_$m'), icon: mg.icon, label: mg.label, selected: _magic == m, onTap: off ? null : () => _pickMagic(m), c: c, gold: mg.kind != 'icon' ? 'money_gestures' : null));
         }
     }
     final gesture = FaceEngine.gestures.firstWhere((g) => g.key == _gesture);

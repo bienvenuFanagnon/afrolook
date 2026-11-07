@@ -1,3 +1,4 @@
+import '../../widgets/gold_badge.dart';
 import 'package:provider/provider.dart';
 import '../../providers/authProvider.dart';
 import '../../ads/gold_gate.dart';
@@ -382,7 +383,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
                     const SizedBox(height: 4),
                     Text(context.tr('Voix'), style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w700, shadows: shadow)),
                     const SizedBox(height: 10),
-                    _round(key: const ValueKey('tool_time'), icon: Icons.speed_rounded, size: 40, onTap: _time),
+                    _round(key: const ValueKey('tool_time'), icon: Icons.speed_rounded, size: 40, onTap: _time, gold: 'time_effects'),
                     const SizedBox(height: 4),
                     Text(context.tr('Temps'), style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w700, shadows: shadow)),
                     if (_subtitlesOk) ...[
@@ -477,10 +478,14 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
   }
 
   /// Bouton rond posé sur le média : fond sombre translucide, icône blanche.
-  Widget _round({required Key key, required IconData icon, required double size, required VoidCallback onTap}) => GestureDetector(
+  Widget _round({required Key key, required IconData icon, required double size, required VoidCallback onTap, String? gold}) => GestureDetector(
         key: key,
         onTap: onTap,
-        child: Container(width: size, height: size, decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0x66000000)), child: Icon(icon, color: Colors.white, size: size * .6)),
+        child: Stack(clipBehavior: Clip.none, children: [
+          Container(width: size, height: size, decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0x66000000)), child: Icon(icon, color: Colors.white, size: size * .6)),
+          // option réservée à Gold et encore fermée : pastille GOLD ; un toucher propose Gold ou des pubs
+          if (GoldBadge.locked(gold)) const Positioned(top: -4, right: -8, child: GoldBadge(compact: true)),
+        ]),
       );
 
   Widget _tool(String key, IconData icon, String label, VoidCallback onTap) => GestureDetector(
