@@ -939,23 +939,13 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           title: Text('Garder le son de ma vidéo', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13.5)),
           subtitle: Text(s.keepVideoAudio ? 'Ta voix et la musique sont mélangées.' : 'Le son de ta vidéo est coupé : seule la musique est jouée.', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
         ),
+      // réglage des volumes : gratuit pour tout le monde (musique, voix de la vidéo, baisse automatique de la musique)
       if (m != null) ...[
-        if (!RewardsService.featureUnlocked('audio_mix'))
-          GoldLockRow(
-            key: const ValueKey('audio_mix_locked'),
-            title: context.tr('Mixage des volumes'),
-            subtitle: context.tr('Règle le volume de la musique et de ta voix. Inclus avec Gold, ou ouvert jusqu\'à la fin de la journée en regardant {n} pubs.', {'n': RewardsService.featureAds('audio_mix')}),
-            actionLabel: context.tr('Débloquer'),
-            onAction: () async {
-              if (await _gate('audio_mix') && mounted) setState(() {});
-            },
-          )
-        else
-          _volumeRow('Volume de la musique', s.musicVolume, 1, (v) {
+        _volumeRow('Volume de la musique', s.musicVolume, 1, (v) {
           setState(() => s.musicVolume = v);
           _applyVolumes();
         }, const ValueKey('vol_music')),
-        if (RewardsService.featureUnlocked('audio_mix') && s.useVideo && s.keepVideoAudio) ...[
+        if (s.useVideo && s.keepVideoAudio) ...[
           _volumeRow('Volume de ma voix (vidéo)', s.videoVolume, 1.5, (v) {
             setState(() => s.videoVolume = v);
             _applyVolumes();

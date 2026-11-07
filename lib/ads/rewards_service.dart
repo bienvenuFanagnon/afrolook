@@ -138,7 +138,6 @@ class RewardsService {
     ('bg_blur', 'Fond flou', Icons.blur_on_rounded),
     ('hair_color', 'Couleur des cheveux', Icons.face_3_rounded),
     ('timed_message', 'Message à l\'écran', Icons.timer_rounded),
-    ('audio_mix', 'Mixage des volumes', Icons.tune_rounded),
     ('bg_virtual', 'Fond virtuel', Icons.wallpaper_rounded),
     ('cloth_color', 'Couleur des habits', Icons.checkroom_rounded),
     ('pin_video', 'Vidéo épinglée', Icons.push_pin_rounded),

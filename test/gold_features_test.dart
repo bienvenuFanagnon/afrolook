@@ -3,10 +3,10 @@ import 'package:afrotok/services/face_engine.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('fonctions du Studio à débloquer : les 14 clés du serveur, sans doublon, chacune avec un libellé', () {
+  test('fonctions du Studio à débloquer : les 13 clés du serveur (le mixage des volumes est gratuit), sans doublon, chacune avec un libellé', () {
     const serveur = {
       'looks_pro', 'face_deform', 'money_gestures', 'time_effects', //
-      'avatars', 'bg_blur', 'hair_color', 'timed_message', 'audio_mix',
+      'avatars', 'bg_blur', 'hair_color', 'timed_message',
       'bg_virtual', 'cloth_color', 'pin_video', 'commerce_card', 'hand_gestures',
     };
     final cles = RewardsService.featureCatalog.map((f) => f.$1).toList();
