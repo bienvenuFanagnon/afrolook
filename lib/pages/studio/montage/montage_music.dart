@@ -113,6 +113,7 @@ class MontageMusicPlayer {
   static final AudioPlayer _player = AudioPlayer();
   static final Map<String, ({String url, DateTime at})> _urls = {};   // le lien d'écoute dure une heure : on le garde 50 minutes
   static String? playingKey;
+  static bool _mixSet = false;
 
   static Future<String?> urlOf(MontageMusic m) async {
     if (m.url != null) return m.url;
@@ -135,6 +136,14 @@ class MontageMusicPlayer {
     final url = await urlOf(m);
     if (url == null) return false;
     try {
+      if (!_mixSet) {
+        // la musique d'aperçu se mélange aux autres sons : elle ne prend pas le « focus audio » (qui arrêtait la vidéo de l'éditeur)
+        await _player.setAudioContext(AudioContext(
+          android: const AudioContextAndroid(audioFocus: AndroidAudioFocus.none),
+          iOS: AudioContextIOS(category: AVAudioSessionCategory.playback, options: const [AVAudioSessionOptions.mixWithOthers]),
+        ));
+        _mixSet = true;
+      }
       await _player.stop();
       await _player.setReleaseMode(ReleaseMode.loop);
       await _player.play(UrlSource(url), position: Duration(milliseconds: startMs));

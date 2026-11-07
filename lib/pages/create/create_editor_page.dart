@@ -93,7 +93,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
 
   Future<void> _initVideo() async {
     final old = _video;
-    final v = VideoPlayerController.file(File(_path));
+    final v = VideoPlayerController.file(File(_path), videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));   // sans « focus audio » : un son joué à côté ne met pas la vidéo en pause
     _video = v;
     old?.dispose();
     try {

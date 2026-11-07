@@ -160,6 +160,9 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     final ok = await MontageMusicPlayer.play(m, startMs: s.musicStartMs);
     if (!mounted) return;
     setState(() => _musicPlaying = ok);
+    // la vidéo continue de tourner pendant que la musique joue (elle ne doit jamais se figer à l'arrivée du son)
+    final v = _video;
+    if (s.useVideo && v != null && v.value.isInitialized && !v.value.isPlaying) await v.play();
     if (ok) {
       final known = m.isArtist ? null : studioTrack(m.id)?.durationMs;
       final d = known ?? (await MontageMusicPlayer.duration())?.inMilliseconds;
@@ -227,7 +230,9 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
 
   Future<void> _initVideo() async {
     final old = _video;
-    final v = s.videoPath != null ? VideoPlayerController.file(File(s.videoPath!)) : VideoPlayerController.asset(kMontageSampleVideo);
+    // mixWithOthers : la vidéo ne demande pas le « focus audio » du téléphone, sinon la musique d'aperçu (qui le demande) mettait la vidéo en pause
+    final opts = VideoPlayerOptions(mixWithOthers: true);
+    final v = s.videoPath != null ? VideoPlayerController.file(File(s.videoPath!), videoPlayerOptions: opts) : VideoPlayerController.asset(kMontageSampleVideo, videoPlayerOptions: opts);
     _video = v;
     await old?.dispose();
     try {
