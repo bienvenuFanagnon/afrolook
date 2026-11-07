@@ -1,4 +1,5 @@
 import '../../widgets/gold_badge.dart';
+import '../../widgets/reply_banner.dart';
 import 'package:provider/provider.dart';
 import '../../providers/authProvider.dart';
 import '../../ads/gold_gate.dart';
@@ -364,6 +365,8 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
         // voiles haut et bas : les commandes restent lisibles sur n'importe quelle image
         const Positioned(top: 0, left: 0, right: 0, height: 130, child: IgnorePointer(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0x99000000), Color(0x00000000)]))))),
         const Positioned(bottom: 0, left: 0, right: 0, height: 300, child: IgnorePointer(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0x00000000), Color(0xDD000000)]))))),
+        // réponse en vidéo : à quelle publication on répond (sous la rangée du haut, à gauche des outils)
+        Positioned(top: MediaQuery.of(context).padding.top + 58, left: 12, right: 66, child: const Align(alignment: Alignment.centerLeft, child: ReplyBanner())),
         SafeArea(
           child: Column(children: [
             Padding(

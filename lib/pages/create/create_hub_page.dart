@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import '../../widgets/reply_banner.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -63,7 +64,10 @@ class _CreateHubPageState extends State<CreateHubPage> {
   @override
   void initState() {
     super.initState();
-    if (widget.replyToPostId != null) PostReplyLink.set(widget.replyToPostId);
+    if (widget.replyToPostId != null) {
+      PostReplyLink.set(widget.replyToPostId);
+      ReplyBanner.load(widget.replyToPostId);   // « Tu réponds à @pseudo » sur chaque écran du parcours
+    }
     if (widget.chronique != null) ChroniqueFlow.active = widget.chronique;
     _loadQuota();
     if (widget.start != CreateStart.none) {
@@ -86,7 +90,10 @@ class _CreateHubPageState extends State<CreateHubPage> {
   @override
   void dispose() {
     PostExternalLink.clear();
-    if (widget.replyToPostId != null) PostReplyLink.clear();
+    if (widget.replyToPostId != null) {
+      PostReplyLink.clear();
+      ReplyBanner.clear();
+    }
     if (widget.chronique != null) ChroniqueFlow.active = null;
     super.dispose();
   }

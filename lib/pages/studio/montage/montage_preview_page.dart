@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import '../../../widgets/reply_banner.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
@@ -95,6 +96,7 @@ class _MontagePreviewPageState extends State<MontagePreviewPage> {
             ]),
           ),
         ),
+        Positioned(top: inset.top + 66, left: 16, right: 16, child: const Align(alignment: Alignment.centerLeft, child: ReplyBanner())),
         Positioned(
           left: 16,
           right: 16,

@@ -1,4 +1,5 @@
 import '../../widgets/gold_badge.dart';
+import '../../widgets/reply_banner.dart';
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui' show ImageFilter;
@@ -241,8 +242,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
   }
 
   Future<void> _pickLook(int look) async {
-    // néon, cinéma et pop : looks avancés à débloquer
-    if (look != 0 && look != _look && const {4, 5, 6}.contains(look) && !await _gate('looks_pro')) return;
+    // tous les filtres couleur sont GRATUITS, néon, cinéma et pop compris
     if (!mounted) return;
     setState(() => _look = look);
     try {
@@ -783,6 +783,8 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
               _round(Icons.cameraswitch_rounded, _flip),
             ]),
           ),
+          // réponse en vidéo : on rappelle à quelle publication on répond
+          const Padding(padding: EdgeInsets.fromLTRB(16, 8, 16, 0), child: Align(alignment: Alignment.centerLeft, child: ReplyBanner())),
           const Spacer(),
           if (_eng)
             (_busy ? const SizedBox.shrink() : _engineRail(c))
@@ -869,8 +871,24 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
             const SizedBox(height: 14),
         ]),
       ),
+      // après l'enregistrement : le traitement (fin du fichier, beauté, filtre) peut durer quelques secondes ; on le dit au lieu de laisser une image figée
+      if (_busy && !_recording) _busyOverlay(),
     ]);
   }
+
+  Widget _busyOverlay() => Positioned.fill(
+        key: const ValueKey('camera_busy'),
+        child: ColoredBox(
+          color: const Color(0x99000000),
+          child: Center(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              const SizedBox(width: 38, height: 38, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 3)),
+              const SizedBox(height: 14),
+              Text(context.tr('Préparation de ta vidéo…'), style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800, decoration: TextDecoration.none)),
+            ]),
+          ),
+        ),
+      );
 
   // ── Barre du moteur : cinq groupes (Beauté, Visage, Couleur, Masques, Magie), chacun avec ses propres choix ──
 
@@ -920,7 +938,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
       case 'color':
         items.add(_engChip(key: const ValueKey('look_0'), icon: Icons.block_rounded, label: 'Aucun', selected: _look == 0, onTap: off ? null : () => _pickLook(0), c: c));
         for (final l in FaceEngine.looks) {
-          items.add(_engChip(key: ValueKey('look_${l.id}'), icon: l.icon, label: l.label, selected: _look == l.id, onTap: off ? null : () => _pickLook(_look == l.id ? 0 : l.id), c: c, gold: const {4, 5, 6}.contains(l.id) ? 'looks_pro' : null));
+          items.add(_engChip(key: ValueKey('look_${l.id}'), icon: l.icon, label: l.label, selected: _look == l.id, onTap: off ? null : () => _pickLook(_look == l.id ? 0 : l.id), c: c));
         }
       case 'mask':
         items.add(_engChip(key: const ValueKey('mask_none'), icon: Icons.block_rounded, label: 'Aucun', selected: _filter == FaceFilter.none, onTap: off ? null : () => _pickFilter(FaceFilter.none), c: c));

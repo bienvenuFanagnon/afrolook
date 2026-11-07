@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../../widgets/reply_banner.dart';
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -530,6 +531,8 @@ class _CreatePublishPageState extends State<CreatePublishPage> {
         body: Column(children: [
           Expanded(
             child: ListView(padding: const EdgeInsets.fromLTRB(16, 4, 16, 16), children: [
+              // réponse en vidéo : à quelle publication on répond
+              const Padding(padding: EdgeInsets.only(bottom: 10), child: Align(alignment: Alignment.centerLeft, child: ReplyBanner(dark: false))),
               // garde : Afrolook met en avant les contenus authentiques, propres à la plateforme
               if (isText) _authenticNote(c),
               Row(crossAxisAlignment: CrossAxisAlignment.start, children: [

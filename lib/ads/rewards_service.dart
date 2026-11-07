@@ -130,7 +130,6 @@ class RewardsService {
 
   /// Fonctions du Studio à débloquer (clé du serveur, libellé, icône), par ordre d'importance croissante.
   static const featureCatalog = <(String, String, IconData)>[
-    ('looks_pro', 'Looks avancés', Icons.palette_rounded),
     ('face_deform', 'Déformations du visage', Icons.face_retouching_natural_rounded),
     ('money_gestures', 'Effets d\'argent par geste', Icons.attach_money_rounded),
     ('time_effects', 'Accélérer et ralentir', Icons.speed_rounded),

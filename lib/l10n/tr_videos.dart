@@ -3,6 +3,10 @@
 const Map<String, Map<String, String>> kTrVideos = {
   "Préparation…": {'en': "Preparing…", 'es': "Preparando…", 'de': "Vorbereitung…", 'ar': "جارٍ التحضير…", 'pt': "Preparando…", 'zh': "准备中…", 'sw': "Inaandaa…"},
   "Signature de la vidéo…": {'en': "Signing the video…", 'es': "Firmando el vídeo…", 'de': "Video wird signiert…", 'ar': "جارٍ توقيع الفيديو…", 'pt': "Assinando o vídeo…", 'zh': "正在为视频签名…", 'sw': "Inatia sahihi video…"},
+  "Tu réponds à @{p}": {'en': "You are replying to @{p}", 'es': "Respondes a @{p}", 'de': "Du antwortest @{p}", 'ar': "أنت ترد على @{p}", 'pt': "Você está respondendo a @{p}", 'zh': "你正在回复 @{p}", 'sw': "Unajibu @{p}"},
+  "Tu réponds à une publication": {'en': "You are replying to a post", 'es': "Respondes a una publicación", 'de': "Du antwortest auf einen Beitrag", 'ar': "أنت ترد على منشور", 'pt': "Você está respondendo a uma publicação", 'zh': "你正在回复一条帖子", 'sw': "Unajibu chapisho"},
+  "Préparation de ta vidéo…": {'en': "Preparing your video…", 'es': "Preparando tu vídeo…", 'de': "Dein Video wird vorbereitet…", 'ar': "جارٍ تجهيز الفيديو…", 'pt': "Preparando seu vídeo…", 'zh': "正在准备你的视频…", 'sw': "Inaandaa video yako…"},
+  "Image": {'en': "Image", 'es': "Imagen", 'de': "Bild", 'ar': "صورة", 'pt': "Imagem", 'zh': "图片", 'sw': "Picha"},
   "Studio": {'en': "Studio", 'es': "Estudio", 'de': "Studio", 'ar': "الاستوديو", 'pt': "Estúdio", 'zh': "工作室", 'sw': "Studio"},
   "Publications et médias": {'en': "Posts and media", 'es': "Publicaciones y medios", 'de': "Beiträge und Medien", 'ar': "المنشورات والوسائط", 'pt': "Publicações e mídias", 'zh': "帖子和媒体", 'sw': "Machapisho na vyombo"},
   "Accès et invitation": {'en': "Access and invitation", 'es': "Acceso e invitación", 'de': "Zugang und Einladung", 'ar': "الوصول والدعوة", 'pt': "Acesso e convite", 'zh': "访问与邀请", 'sw': "Ufikiaji na mwaliko"},
