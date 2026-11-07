@@ -80,12 +80,13 @@ void main() {
     expect(find.text('Choisir les phrases'), findsOneWidget);
   });
 
-  testWidgets('mode brouillon : un seul bouton « Utiliser cette carte »', (t) async {
+  testWidgets('mode brouillon : « Utiliser cette carte » est le bouton principal, avec Enregistrer et Partager avant', (t) async {
     await bigScreen(t);
     await t.pumpWidget(app(CardStudioPage(source: CardDemo.textOnly(), compose: true)));
     await t.pump(const Duration(milliseconds: 400));
     expect(find.text('Utiliser cette carte'), findsOneWidget);
-    expect(find.text('Enregistrer'), findsNothing);
+    expect(find.text('Enregistrer'), findsOneWidget);   // carte neuve : on peut l'enregistrer ou la partager avant de l'utiliser
+    expect(find.text('Publier'), findsNothing);
   });
 
   testWidgets('un style drapeau propose le choix du pays (celui de l\'auteur par défaut)', (t) async {

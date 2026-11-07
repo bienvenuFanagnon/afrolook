@@ -40,7 +40,7 @@ void main() {
       return http.Response(jsonEncode({'ok': true, 'ad': _ad()}), 200);
     });
     await _pump(tester, const AfrolookAdsBanner(pubId: 'ap_aaaaaaaaaa', visitorId: vid, size: AdsBannerSize.large), client);
-    expect(asked?.path, '/adsServe');
+    expect(asked?.path, '/v1/ads/serve');
     expect(asked?.queryParameters['size'], '320x100');
     expect(asked?.queryParameters['fmt'], 'banner');
     expect(asked?.queryParameters['pub'], 'ap_aaaaaaaaaa');
