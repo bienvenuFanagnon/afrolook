@@ -115,6 +115,7 @@ import '../models/coin_pack.dart';
 import '../services/quick_gift_service.dart';
 import '../services/coin_checkout.dart';
 import '../services/coin_gift_service.dart';
+import '../services/post_download.dart';
 import '../widgets/gifts/gift_sent_overlay.dart';
 import '../widgets/gifts/quick_gift_bar.dart';
 
@@ -1992,6 +1993,14 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
               title: Text(_isFavorite ? tr('Retirer des favoris') : tr('Enregistrer dans mes favoris'), style: TextStyle(color: colors.textPrimary)),
               onTap: () { Navigator.pop(context); _toggleFavorite(); },
             ),
+            if (PostDownload.canDownload(post))
+              ListTile(
+                key: const ValueKey('menu_download'),
+                leading: Icon(Icons.download_rounded, color: colors.success),
+                title: Text(tr('Télécharger'), style: TextStyle(color: colors.textPrimary)),
+                subtitle: Text(post.user_id == authProvider.loginUserData.id ? tr('Gratuit : c\'est ta publication') : tr('Pubs ou pièces'), style: TextStyle(color: colors.textSecondary, fontSize: 12)),
+                onTap: () { Navigator.pop(context); PostDownload.start(this.context, post); },
+              ),
             // Bouton Partager (externe)
             ListTile(
               leading: Icon(Icons.share, color: colors.info),

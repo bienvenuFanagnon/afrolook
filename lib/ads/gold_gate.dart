@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../l10n/tr.dart';
 import '../pages/user/userAbonnementPage.dart';
 import '../services/api/regie_api.dart';
+import '../services/api/wallet_api.dart';
 import '../theme/app_colors.dart';
 import 'rewards_service.dart';
 
@@ -36,6 +37,64 @@ class GoldGate {
     if (choice == _Choice.gold) {
       if (context.mounted) await Navigator.push(context, MaterialPageRoute(builder: (_) => const AbonnementScreen()));
       return false;
+    }
+    if (choice != _Choice.ads || !context.mounted) return false;
+    if (!await _watch(context, 'export', uid)) return false;
+    try {
+      await RegieApi.rewardsExport();
+      return true;
+    } on ApiException catch (e) {
+      if (context.mounted) _say(context, e.message);
+      return false;
+    }
+  }
+
+  /// Téléchargement du média d'une publication d'un AUTRE (le propriétaire ne passe jamais ici) : libre avec Gold ou un crédit d'export ; sinon on regarde des pubs plein écran
+  /// OU on paie quelques pièces (prix annoncé par le serveur), ou on passe Gold. `true` si le téléchargement est permis.
+  static Future<bool> download(BuildContext context, String uid, {required String postId}) async {
+    await RewardsService.loadConfig(force: true);
+    try {
+      await RegieApi.rewardsExport();
+      return true;
+    } on ApiException catch (e) {
+      if (e.status != 402) {
+        if (context.mounted) _say(context, e.message.isNotEmpty ? e.message : context.tr('Téléchargement impossible pour le moment.'));
+        return false;
+      }
+    }
+    if (!context.mounted) return false;
+    int? coins;
+    try {
+      coins = await WalletApi.instance.quote('post_download', refId: postId);
+    } catch (_) {
+      coins = null;   // prix inconnu : seules les pubs et Gold sont proposés
+    }
+    if (!context.mounted) return false;
+    final ads = RewardsService.exportAds;
+    final choice = await _ask(
+      context,
+      title: context.tr('Télécharger ce média'),
+      text: context.tr('Le téléchargement est libre avec le plan Gold, et toujours gratuit pour le créateur de la publication. Sinon, regarde {n} pubs plein écran ou paie quelques pièces.', {'n': ads}),
+      ads: ads,
+      coins: coins,
+    );
+    if (choice == _Choice.gold) {
+      if (context.mounted) await Navigator.push(context, MaterialPageRoute(builder: (_) => const AbonnementScreen()));
+      return false;
+    }
+    if (choice == _Choice.coins && coins != null) {
+      try {
+        await WalletApi.instance.buy('post_download', refId: postId);
+        return true;
+      } on ApiException catch (e) {
+        if (!context.mounted) return false;
+        if (e.isInsufficientCoins) {
+          CoinCheckout.insufficient(context, coins);
+        } else {
+          _say(context, e.message.isNotEmpty ? e.message : context.tr('Paiement impossible pour le moment.'));
+        }
+        return false;
+      }
     }
     if (choice != _Choice.ads || !context.mounted) return false;
     if (!await _watch(context, 'export', uid)) return false;
@@ -85,7 +144,7 @@ class GoldGate {
     ..hideCurrentSnackBar()
     ..showSnackBar(SnackBar(content: Text(m)));
 
-  static Future<_Choice?> _ask(BuildContext context, {required String title, required String text, required int ads}) {
+  static Future<_Choice?> _ask(BuildContext context, {required String title, required String text, required int ads, int? coins}) {
     final c = AppColors.of(context);
     return showModalBottomSheet<_Choice>(
       context: context,
@@ -112,6 +171,18 @@ class GoldGate {
                 label: Text(context.tr(ads > 1 ? 'Regarder {n} pubs' : 'Regarder {n} pub', {'n': ads})),
               ),
             ),
+            if (coins != null) ...[
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.tonalIcon(
+                  key: const ValueKey('gate_coins'),
+                  onPressed: () => Navigator.pop(ctx, _Choice.coins),
+                  icon: const Icon(Icons.monetization_on_rounded),
+                  label: Text(context.tr('Payer {n} pièces', {'n': coins})),
+                ),
+              ),
+            ],
             const SizedBox(height: 8),
             SizedBox(
               width: double.infinity,
@@ -129,4 +200,4 @@ class GoldGate {
   }
 }
 
-enum _Choice { ads, gold }
+enum _Choice { ads, gold, coins }

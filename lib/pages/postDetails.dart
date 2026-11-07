@@ -1,3 +1,4 @@
+import '../services/post_download.dart';
 import 'package:afrotok/services/post_orientation.dart';
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/services/ads_engine_service.dart';
@@ -2674,6 +2675,11 @@ class _DetailsPostState extends State<DetailsPost>
                 _toggleFavorite();
               },
             ),
+            if (PostDownload.canDownload(post))
+              _buildMenuOption(Icons.download_rounded, post.user_id == authProvider.loginUserData.id ? 'Télécharger (gratuit)' : 'Télécharger', Colors.green.shade600, () {
+                Navigator.pop(context);
+                PostDownload.start(this.context, post);
+              }),
             if (post.user_id != authProvider.loginUserData.id) ...[
               if (authProvider.loginUserData.role == UserRole.ADM.name) ...[
                 _buildMenuOption(

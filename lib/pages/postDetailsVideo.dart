@@ -70,6 +70,7 @@ import '../models/coin_pack.dart';
 import '../services/quick_gift_service.dart';
 import '../services/coin_checkout.dart';
 import '../services/coin_gift_service.dart';
+import '../services/post_download.dart';
 import '../widgets/gifts/gift_sent_overlay.dart';
 import '../widgets/gifts/quick_gift_bar.dart';
 import 'package:afrotok/pages/videos/video_chrome.dart';
@@ -1290,6 +1291,11 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
                 _toggleFavorite();
               },
             ),
+            if (PostDownload.canDownload(_currentPost))
+              _buildMenuOption(Icons.download_rounded, _currentPost.user_id == authProvider.loginUserData.id ? 'Télécharger (gratuit)' : 'Télécharger', Colors.green.shade600, () {
+                Navigator.pop(context);
+                PostDownload.start(this.context, _currentPost);
+              }),
             if (_currentPost.user_id != authProvider.loginUserData.id) ...[
               if (authProvider.loginUserData.role == UserRole.ADM.name) ...[
                 _buildMenuOption(Icons.gavel, 'Modérer ce post', Colors.orange.shade700,
