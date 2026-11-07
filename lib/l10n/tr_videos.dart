@@ -3,6 +3,8 @@
 const Map<String, Map<String, String>> kTrVideos = {
   "Préparation…": {'en': "Preparing…", 'es': "Preparando…", 'de': "Vorbereitung…", 'ar': "جارٍ التحضير…", 'pt': "Preparando…", 'zh': "准备中…", 'sw': "Inaandaa…"},
   "Signature de la vidéo…": {'en': "Signing the video…", 'es': "Firmando el vídeo…", 'de': "Video wird signiert…", 'ar': "جارٍ توقيع الفيديو…", 'pt': "Assinando o vídeo…", 'zh': "正在为视频签名…", 'sw': "Inatia sahihi video…"},
+  "Récupérer": {'en': "Claim", 'es': "Reclamar", 'de': "Abholen", 'ar': "استلام", 'pt': "Resgatar", 'zh': "领取", 'sw': "Chukua"},
+  "pubs déjà vues": {'en': "ads already watched", 'es': "anuncios ya vistos", 'de': "Werbung schon gesehen", 'ar': "إعلانات سبق مشاهدتها", 'pt': "anúncios já vistos", 'zh': "广告已看完", 'sw': "matangazo yameshatazamwa"},
   "Pubs vues : {p}/{n}": {'en': "Ads watched: {p}/{n}", 'es': "Anuncios vistos: {p}/{n}", 'de': "Gesehene Werbung: {p}/{n}", 'ar': "الإعلانات المشاهَدة: {p}/{n}", 'pt': "Anúncios vistos: {p}/{n}", 'zh': "已看广告：{p}/{n}", 'sw': "Matangazo yaliyotazamwa: {p}/{n}"},
   "encore {n} pubs": {'en': "{n} more ads", 'es': "{n} anuncios más", 'de': "noch {n} Werbungen", 'ar': "تبقّى {n} إعلانات", 'pt': "mais {n} anúncios", 'zh': "还差 {n} 条", 'sw': "bado matangazo {n}"},
   "encore {n} pub": {'en': "{n} more ad", 'es': "{n} anuncio más", 'de': "noch {n} Werbung", 'ar': "تبقّى إعلان واحد", 'pt': "mais {n} anúncio", 'zh': "还差 {n} 条", 'sw': "bado tangazo {n}"},
