@@ -176,10 +176,12 @@ class MusicPick {
 Future<MusicPick?> showMontageMusicPicker(BuildContext context, {MontageMusic? current, required VoidCallback onArtistCta, bool offerKeepAudio = false}) async {
   await ArtistSoundPricing.load();
   if (!context.mounted) return null;
+  // le fond de la feuille et les textes viennent du MÊME thème (clair ou sombre) : sans cela, le fond restait sombre alors que les textes passaient en sombre aussi (illisible)
+  syncStudioColors(context);
   final r = await showModalBottomSheet<MusicPick>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: _c.surface,
+    backgroundColor: AppColors.of(context).surface,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(18))),
     builder: (_) => _MusicSheet(current: current, onArtistCta: onArtistCta, offerKeepAudio: offerKeepAudio),
   );

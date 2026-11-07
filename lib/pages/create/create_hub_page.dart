@@ -12,6 +12,7 @@ import '../../providers/authProvider.dart';
 import '../../services/account_gate.dart';
 import '../../services/api/posts_api.dart';
 import '../../services/post_source_link.dart';
+import '../../services/watermark.dart';
 import '../../services/authentic_video_check.dart';
 import '../../theme/app_colors.dart';
 import '../cards/card_entry.dart';
@@ -29,7 +30,7 @@ import 'create_result.dart';
 import 'create_text_page.dart';
 
 /// Ce que le parcours démarre tout seul à l'ouverture (appel à poster dans le fil : « Filme-toi », « Laisse un message vocal »).
-enum CreateStart { none, video, audio }
+enum CreateStart { none, video, audio, galleryVideo }
 
 /// Écran « Que créer ? » : l'entrée unique de la création (publication, Studio et cartes réunis). On choisit le type, on prépare le média, on le retouche, puis
 /// un seul formulaire demande le reste. Ce qui est filmé ou enregistré dans l'application passe en premier ; la galerie est limitée à 2 médias par jour.
@@ -69,7 +70,16 @@ class _CreateHubPageState extends State<CreateHubPage> {
     if (widget.start != CreateStart.none) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        widget.start == CreateStart.video ? _guard(() => _openCamera(photo: false)) : _guard(_audio);
+        switch (widget.start) {
+          case CreateStart.video:
+            _guard(() => _openCamera(photo: false));
+          case CreateStart.audio:
+            _guard(_audio);
+          case CreateStart.galleryVideo:
+            _guard(() => _pickGallery(video: true));   // « Ma vidéo avec ce son » : on choisit sa vidéo, puis l'éditeur l'ouvre avec la musique
+          case CreateStart.none:
+            break;
+        }
       });
     }
   }
@@ -151,7 +161,8 @@ class _CreateHubPageState extends State<CreateHubPage> {
         await _editor(xs.first.path, false, PostSourceLink.imported);
       } else {
         // plusieurs photos : directement au formulaire (l'éditeur ne retouche qu'un seul média)
-        final bytes = [for (final x in xs) await File(x.path).readAsBytes()];
+        final pseudo = context.read<UserAuthProvider>().loginUserData.pseudo ?? '';
+        final bytes = [for (final x in xs) await Watermark.signImageBytes(await File(x.path).readAsBytes(), pseudo)];
         final r = await openCreateForm(context, kind: CreatePostKind.image, images: bytes, canal: widget.canal, defiPostId: widget.defiPostId, source: PostSourceLink.imported);
         await _after(r);
       }

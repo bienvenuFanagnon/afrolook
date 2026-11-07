@@ -278,6 +278,7 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
         glView.setRenderer(renderer)
         glView.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
         renderer.front = front
+        renderer.rotOffset = rotOffsetFor(front)
         initLandmarker()
         startCamera()
     }
@@ -386,8 +387,15 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
         front = f
         renderer.front = f
         renderer.mirror = f   // sens « selfie » par défaut en caméra avant (le bouton Miroir du labo l'inverse)
+        renderer.rotOffset = rotOffsetFor(f)
         startCamera()
     }
+
+    /**
+     * Décalage de rotation selon la caméra. 90° a été mesuré sur la caméra AVANT (capteur monté à 270°). Le capteur de la caméra ARRIÈRE est monté à 90° : avec 90° l'image
+     * s'affichait à l'envers (180° d'écart), il lui faut 270°. L'arrière n'est pas en miroir (réglé par setFront).
+     */
+    private fun rotOffsetFor(frontCamera: Boolean): Int = if (frontCamera) 90 else 270
 
     private fun landmarkerOptions(delegate: Delegate) = FaceLandmarker.FaceLandmarkerOptions.builder()
         .setBaseOptions(BaseOptions.builder().setModelAssetPath("face_landmarker.task").setDelegate(delegate).build())

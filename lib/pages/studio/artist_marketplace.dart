@@ -28,18 +28,13 @@ import '../../providers/authProvider.dart';
 import '../../theme/app_colors.dart';
 import '../postDetails.dart';
 import '../post_video_format_tel_details.dart';
-import '../userPosts/userPostForm.dart';
 import '../../services/offline_music_service.dart';
 import 'artist_sound_common.dart';
-import 'montage/montage_catalog.dart';
-import 'montage/montage_editor_page.dart';
-import 'montage/montage_gallery_page.dart';
 import 'montage/montage_music.dart';
 import '../create/create_hub_page.dart';
 import '../../ads/music_ads.dart';
 import '../../utils/media_cdn.dart';
 import 'sound_countries.dart';
-import 'studio_models.dart';
 import '../music/music_page.dart';
 import '../../services/music_queue.dart';
 import '../../widgets/music/music_overlay.dart';
@@ -47,7 +42,6 @@ import '../../widgets/music/streams_text.dart';
 import '../../widgets/music/music_like.dart';
 import '../../widgets/music/vinyl.dart';
 import '../../services/stream_counts.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import '../coins/coin_recharge_screen.dart';
 
 export 'artist_sound_common.dart' show ArtistSoundPricing;
@@ -658,34 +652,15 @@ Future<void> startPostWithSound(BuildContext context, ArtistSound s) => startPos
 /// [ownVideo] : « Ma vidéo avec ce son » — directement la vidéo de la personne et la musique, sans modèle ni habillage ;
 /// le son d'origine de la vidéo est coupé (seule la musique est jouée), la personne peut le garder dans l'éditeur.
 Future<void> startPostWithMusic(BuildContext context, MontageMusic music, {bool ownVideo = false}) async {
-  // « Créer avec ce son » : l'écran « Créer un post » s'ouvre avec ce son comme audio (caméra qui le joue, photo, galerie dans la limite du jour), puis le Studio
-  if (!ownVideo) {
-    final token = Object();
-    MusicQueue.suspend(token);
-    MusicOverlay.add(1);
-    try {
-      if (!context.mounted) return;
-      await Navigator.push(context, MaterialPageRoute(builder: (_) => CreateHubPage(presetSound: music)));
-    } finally {
-      MusicOverlay.add(-1);
-      MusicQueue.release(token);
-    }
-    return;
-  }
-  // Le Studio joue sa propre musique : le lecteur flottant se met en pause et se masque, puis reprend au retour
+  // « Créer avec ce son » : l'écran « Créer un post » s'ouvre avec ce son comme audio (caméra qui le joue, photo, galerie dans la limite du jour), puis le Studio.
+  // « Ma vidéo avec ce son » : la personne choisit sa vidéo tout de suite ; l'éditeur l'ouvre en lecture avec la musique (le son d'origine est coupé, il peut être gardé).
+  // Le Studio joue sa propre musique : le lecteur flottant se met en pause et se masque, puis reprend au retour.
   final token = Object();
   MusicQueue.suspend(token);
   MusicOverlay.add(1);
   try {
     if (!context.mounted) return;
-    final r = await Navigator.push<StudioResult>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ownVideo ? MontageEditorPage(template: kPlainTemplate, presetMusic: music) : MontageGalleryPage(presetMusic: music),
-      ),
-    );
-    if (r == null || !context.mounted) return;
-    await Navigator.push(context, MaterialPageRoute(builder: (_) => UserPostForm(initialStudio: r)));
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => CreateHubPage(presetSound: music, start: ownVideo ? CreateStart.galleryVideo : CreateStart.none)));
   } finally {
     MusicOverlay.add(-1);
     MusicQueue.release(token);
