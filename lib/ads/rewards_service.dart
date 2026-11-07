@@ -124,7 +124,13 @@ class RewardsService {
 
   static Map<String, dynamic> _feat(String key) => _gold['features'] is Map && (_gold['features'] as Map)[key] is Map ? Map<String, dynamic>.from((_gold['features'] as Map)[key] as Map) : <String, dynamic>{};
 
-  static bool featureUnlocked(String key) => goldActive || _feat(key)['unlocked'] == true;
+  /// Tout est gratuit pour l'instant (décision du 08/11/2026) : le serveur le dit (`all_free`) et marque chaque fonction comme ouverte. Réversible depuis le serveur (REWARDS_ALL_FREE).
+  static bool get allFree => _gold['all_free'] == true;
+
+  /// Date de fin de la gratuité annoncée par le serveur (null = pas de date de fin).
+  static DateTime? get freeUntil => allFree ? DateTime.tryParse('${_gold['free_until']}')?.toLocal() : null;
+
+  static bool featureUnlocked(String key) => allFree || goldActive || _feat(key)['unlocked'] == true;
 
   static int featureAds(String key) => (_feat(key)['ads'] as num?)?.toInt() ?? 4;
 

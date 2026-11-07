@@ -3,6 +3,9 @@
 const Map<String, Map<String, String>> kTrVideos = {
   "Préparation…": {'en': "Preparing…", 'es': "Preparando…", 'de': "Vorbereitung…", 'ar': "جارٍ التحضير…", 'pt': "Preparando…", 'zh': "准备中…", 'sw': "Inaandaa…"},
   "Signature de la vidéo…": {'en': "Signing the video…", 'es': "Firmando el vídeo…", 'de': "Video wird signiert…", 'ar': "جارٍ توقيع الفيديو…", 'pt': "Assinando o vídeo…", 'zh': "正在为视频签名…", 'sw': "Inatia sahihi video…"},
+  "Ouverture…": {'en': "Opening…", 'es': "Abriendo…", 'de': "Wird geöffnet…", 'ar': "جارٍ الفتح…", 'pt': "Abrindo…", 'zh': "正在打开…", 'sw': "Inafungua…"},
+  "Ouverture de la caméra…": {'en': "Opening the camera…", 'es': "Abriendo la cámara…", 'de': "Kamera wird geöffnet…", 'ar': "جارٍ فتح الكاميرا…", 'pt': "Abrindo a câmera…", 'zh': "正在打开相机…", 'sw': "Inafungua kamera…"},
+  "Gratuit jusqu'au {d}": {'en': "Free until {d}", 'es': "Gratis hasta el {d}", 'de': "Gratis bis {d}", 'ar': "مجاني حتى {d}", 'pt': "Grátis até {d}", 'zh': "免费至 {d}", 'sw': "Bure hadi {d}"},
   "Tu réponds à @{p}": {'en': "You are replying to @{p}", 'es': "Respondes a @{p}", 'de': "Du antwortest @{p}", 'ar': "أنت ترد على @{p}", 'pt': "Você está respondendo a @{p}", 'zh': "你正在回复 @{p}", 'sw': "Unajibu @{p}"},
   "Tu réponds à une publication": {'en': "You are replying to a post", 'es': "Respondes a una publicación", 'de': "Du antwortest auf einen Beitrag", 'ar': "أنت ترد على منشور", 'pt': "Você está respondendo a uma publicação", 'zh': "你正在回复一条帖子", 'sw': "Unajibu chapisho"},
   "Préparation de ta vidéo…": {'en': "Preparing your video…", 'es': "Preparando tu vídeo…", 'de': "Dein Video wird vorbereitet…", 'ar': "جارٍ تجهيز الفيديو…", 'pt': "Preparando seu vídeo…", 'zh': "正在准备你的视频…", 'sw': "Inaandaa video yako…"},

@@ -982,11 +982,12 @@ class _AbonnementScreenState extends State<AbonnementScreen>
 
   /// Fonctions du Studio incluses dans Gold : lues dans le catalogue des fonctions (mêmes noms que la page Récompenses), pour rester à jour toutes seules.
   List<_Feature> _studioGoldFeatures() => [
-        for (final f in RewardsService.featureCatalog) _Feature(context.tr(f.$2), true, isGoldOnly: true),
-        _Feature(context.tr('Tous les effets de visage (les 2 premiers sont gratuits pour tous)'), true, isGoldOnly: true),
+        // pour l'instant les fonctions du Studio, l'export et le téléchargement sont gratuits pour tout le monde : pas de pastille GOLD dessus (seule la fin animée reste réservée)
+        for (final f in RewardsService.featureCatalog) _Feature(context.tr(f.$2), true, isGoldOnly: !RewardsService.allFree),
+        _Feature(context.tr('Tous les effets de visage (les 2 premiers sont gratuits pour tous)'), true, isGoldOnly: !RewardsService.allFree),
         _Feature(context.tr('Retirer la fin animée Afrolook de vos vidéos'), true, isGoldOnly: true),
-        _Feature(context.tr('Exporter : enregistrer ou partager hors d\'Afrolook, sans limite'), true, isGoldOnly: true),
-        _Feature(context.tr('Télécharger les médias des autres, sans pub ni pièces'), true, isGoldOnly: true),
+        _Feature(context.tr('Exporter : enregistrer ou partager hors d\'Afrolook, sans limite'), true, isGoldOnly: !RewardsService.allFree),
+        _Feature(context.tr('Télécharger les médias des autres, sans pub ni pièces'), true, isGoldOnly: !RewardsService.allFree),
       ];
 
   List<_FeatureGroup> _freeGroups() => [
@@ -1000,13 +1001,21 @@ class _AbonnementScreenState extends State<AbonnementScreen>
           _Feature(context.tr('Groupes privés payants'), false),
           _Feature(context.tr('Badge exclusif'), false),
         ]),
-        _FeatureGroup('🎬', context.tr('Studio'), [
-          _Feature(context.tr('Montage, textes, musique gratuite et effets de base'), true),
-          _Feature(context.tr('2 effets de visage gratuits'), true),
-          _Feature(context.tr('Fonctions avancées du Studio (looks, déformations, fonds, avatars…)'), false),
-          _Feature(context.tr('Exporter et télécharger librement'), false),
-          _Feature(context.tr('Retirer la fin animée Afrolook'), false),
-        ]),
+        _FeatureGroup('🎬', context.tr('Studio'), RewardsService.allFree
+            // pour l'instant tout le Studio est gratuit (le serveur le dit) : seule la fin animée Afrolook reste réservée à Gold
+            ? [
+                if (RewardsService.freeUntil != null) _Feature(context.tr('Gratuit jusqu\'au {d}', {'d': '${RewardsService.freeUntil!.day.toString().padLeft(2, '0')}/${RewardsService.freeUntil!.month.toString().padLeft(2, '0')}'}), true),
+                _Feature(context.tr('Toutes les fonctions du Studio, effets de visage et fonds compris'), true),
+                _Feature(context.tr('Exporter et télécharger librement'), true),
+                _Feature(context.tr('Retirer la fin animée Afrolook'), false),
+              ]
+            : [
+                _Feature(context.tr('Montage, textes, musique gratuite et effets de base'), true),
+                _Feature(context.tr('2 effets de visage gratuits'), true),
+                _Feature(context.tr('Fonctions avancées du Studio (looks, déformations, fonds, avatars…)'), false),
+                _Feature(context.tr('Exporter et télécharger librement'), false),
+                _Feature(context.tr('Retirer la fin animée Afrolook'), false),
+              ]),
       ];
 
   List<_FeatureGroup> _goldGroups() => [

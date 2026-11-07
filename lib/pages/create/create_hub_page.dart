@@ -61,6 +61,18 @@ class _CreateHubPageState extends State<CreateHubPage> {
   ({int limit, int used, int remaining, bool unlimited})? _quota;
   bool _busy = false;
 
+  /// Un travail démarre en arrière-plan (ouverture de la caméra, vérification du compte) : on affiche une roue de chargement au lieu de laisser l'écran figé.
+  bool _opening = false;
+  String _openingLabel = '';
+
+  void _setOpening(bool v, [String? label]) {
+    if (!mounted) return;
+    setState(() {
+      _opening = v;
+      if (label != null) _openingLabel = label;
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -71,6 +83,8 @@ class _CreateHubPageState extends State<CreateHubPage> {
     if (widget.chronique != null) ChroniqueFlow.active = widget.chronique;
     _loadQuota();
     if (widget.start != CreateStart.none) {
+      // ouverture directe (icône « répondre en vidéo » d'un post, « Ma vidéo avec ce son »…) : la roue s'affiche tout de suite, sans montrer le menu une seconde
+      _opening = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         switch (widget.start) {
@@ -112,11 +126,13 @@ class _CreateHubPageState extends State<CreateHubPage> {
   Future<void> _guard(Future<void> Function() run) async {
     if (_busy) return;
     _busy = true;
+    _setOpening(true, context.tr('Chargement…'));
     try {
       if (!await AccountGate.ensureCanPublish(context) || !mounted) return;
       await run();
     } finally {
       _busy = false;
+      _setOpening(false);
     }
   }
 
@@ -132,7 +148,12 @@ class _CreateHubPageState extends State<CreateHubPage> {
 
   Future<void> _openCamera({required bool photo}) async {
     if (kIsWeb) return _pickGallery(video: !photo);
+    // la roue est dessinée AVANT d'ouvrir la caméra (son ouverture occupe l'appareil un instant) ; elle disparaît au retour
+    _setOpening(true, context.tr('Ouverture de la caméra…'));
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
     final r = await Navigator.of(context).push<CreateCaptureResult>(MaterialPageRoute(builder: (_) => CreateCameraPage(startOnPhoto: photo && widget.replyToPostId == null, maxSeconds: widget.replyToPostId != null ? 15 : (widget.chronique != null ? ChroniqueFlow.maxVideoSeconds : 60), sound: widget.presetSound)));
+    _setOpening(false);
     if (r == null || !mounted) return;
     if (r.openGallery) return _pickGallery(video: r.isVideo);
     await _editor(r.path!, r.isVideo, PostSourceLink.captured);
@@ -256,7 +277,8 @@ class _CreateHubPageState extends State<CreateHubPage> {
         ),
         centerTitle: true,
       ),
-      body: SafeArea(
+      body: Stack(children: [
+        SafeArea(
         child: ListView(padding: const EdgeInsets.fromLTRB(16, 4, 16, 28), children: [
           if (soon != null) ...[
             _EventBanner(event: soon, onTap: () => _card(text: soon.event.text, hint: CardStyleHint(soon.event.style, soon.event.country))),
@@ -300,6 +322,21 @@ class _CreateHubPageState extends State<CreateHubPage> {
           ),
         ]),
       ),
+        if (_opening)
+          Positioned.fill(
+            key: const ValueKey('hub_opening'),
+            child: ColoredBox(
+              color: c.background.withOpacity(.88),
+              child: Center(
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  SizedBox(width: 36, height: 36, child: CircularProgressIndicator(color: c.primary, strokeWidth: 3)),
+                  const SizedBox(height: 14),
+                  Text(_openingLabel.isEmpty ? context.tr('Ouverture…') : _openingLabel, style: TextStyle(color: c.textPrimary, fontSize: 15, fontWeight: FontWeight.w800)),
+                ]),
+              ),
+            ),
+          ),
+      ]),
     );
   }
 }
