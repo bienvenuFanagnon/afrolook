@@ -8,6 +8,7 @@ import 'package:video_thumbnail/video_thumbnail.dart';
 
 import '../l10n/tr.dart';
 import '../theme/app_colors.dart';
+import 'nsfw_check.dart';
 import 'post_source_link.dart';
 
 /// Résultat de l'examen d'une vidéo choisie dans la galerie.
@@ -16,6 +17,10 @@ class AuthenticResult {
       : ok = true,
         mark = null;
   const AuthenticResult.foreign(this.mark) : ok = false;
+  /// Contenu sexuellement explicite vu par le modèle gratuit du téléphone (mark = 'explicit').
+  const AuthenticResult.explicit()
+      : ok = false,
+        mark = 'explicit';
 
   final bool ok;
 
@@ -75,15 +80,19 @@ class AuthenticVideoCheck {
       }.where((t) => t >= 0 && t < durationMs).toList()
         ..sort();
       final texts = <String>[];
+      final nsfw = <List<double>>[];
       for (final t in times) {
         final f = await VideoThumbnail.thumbnailFile(video: path, imageFormat: ImageFormat.JPEG, timeMs: t, maxWidth: 720, quality: 70);
         if (f == null) continue;
         final r = await recognizer.processImage(InputImage.fromFilePath(f));
         texts.add(r.text);
+        final sc = await NsfwCheck.score(f);   // contenu explicite : modèle gratuit sur le téléphone
+        if (sc != null) nsfw.add(sc);
         try {
           await File(f).delete();
         } catch (_) {}
       }
+      if (NsfwCheck.decide(nsfw)) return const AuthenticResult.explicit();
       final mark = decide(texts);
       return mark == null ? const AuthenticResult.ok() : AuthenticResult.foreign(mark);
     } catch (_) {
@@ -108,16 +117,20 @@ class AuthenticVideoCheck {
       }.where((t) => t >= 0 && t < durationMs).toList()
         ..sort();
       final texts = <String>[];
+      final nsfw = <List<double>>[];
       for (final t in times) {
         final f = await VideoThumbnail.thumbnailFile(video: url, imageFormat: ImageFormat.JPEG, timeMs: t, maxWidth: 720, quality: 70);
         if (f == null) continue;
         final r = await recognizer.processImage(InputImage.fromFilePath(f));
         texts.add(r.text);
+        final sc = await NsfwCheck.score(f);
+        if (sc != null) nsfw.add(sc);
         try {
           await File(f).delete();
         } catch (_) {}
       }
       if (texts.length < 2) return null;   // trop peu d'images lues : pas de verdict
+      if (NsfwCheck.decide(nsfw)) return 'explicit';
       return decide(texts) ?? 'clean';
     } catch (_) {
       return null;
@@ -160,21 +173,36 @@ class AuthenticVideoCheck {
     if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
     if (res.ok || !context.mounted) return true;
 
-    final mark = res.mark!;
+    return _blocked(context, res.mark!, allowClaim);
+  }
+
+  /// Examine une IMAGE choisie dans la galerie (contenu sexuellement explicite seulement) : photo de publication, image de couverture, images d'un contenu payant.
+  static Future<bool> gateImage(BuildContext context, String path, {bool allowClaim = true}) async {
+    PostExternalLink.clear();
+    final sc = await NsfwCheck.score(path);
+    if (sc == null || !NsfwCheck.decide([sc]) || !context.mounted) return true;
+    return _blocked(context, 'explicit', allowClaim);
+  }
+
+  /// Message de refus (marque d'un autre réseau ou contenu explicite) ; « C'est ma vidéo » / « C'est une erreur » envoie à la modération (si [allowClaim]).
+  static Future<bool> _blocked(BuildContext context, String mark, bool allowClaim) async {
+    final c = AppColors.of(context);
     final own = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: c.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        title: Text(tr('Vidéo non acceptée'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 18)),
+        title: Text(mark == 'explicit' ? tr('Contenu non accepté') : tr('Vidéo non acceptée'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 18)),
         content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(
-            tr('Afrolook est le réseau des vidéos authentiques : les vidéos téléchargées de {a} ne sont pas acceptées. Publie tes propres vidéos, filmées avec l\'application ou montées avec un éditeur comme CapCut.', {'a': _name(mark)}),
+            mark == 'explicit'
+                ? tr('Afrolook n\'accepte pas les contenus sexuellement explicites. Les tenues légères et les danses restent permises.')
+                : tr('Afrolook est le réseau des vidéos authentiques : les vidéos téléchargées de {a} ne sont pas acceptées. Publie tes propres vidéos, filmées avec l\'application ou montées avec un éditeur comme CapCut.', {'a': _name(mark)}),
             style: TextStyle(color: c.textSecondary, height: 1.4, fontSize: 14),
           ),
           if (allowClaim) ...[
             const SizedBox(height: 10),
-            Text(tr('Cette vidéo est la tienne ? Notre équipe la vérifie avant de la publier.'), style: TextStyle(color: c.textSecondary, height: 1.4, fontSize: 13)),
+            Text(mark == 'explicit' ? tr('Une erreur ? Notre équipe la vérifie avant de la publier.') : tr('Cette vidéo est la tienne ? Notre équipe la vérifie avant de la publier.'), style: TextStyle(color: c.textSecondary, height: 1.4, fontSize: 13)),
           ],
         ]),
         actions: [
@@ -183,7 +211,7 @@ class AuthenticVideoCheck {
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(backgroundColor: c.accent, foregroundColor: c.onAccent),
-            child: Text(tr('C\'est ma vidéo'), style: const TextStyle(fontWeight: FontWeight.w800)),
+            child: Text(mark == 'explicit' ? tr('C\'est une erreur') : tr('C\'est ma vidéo'), style: const TextStyle(fontWeight: FontWeight.w800)),
           ),
         ],
       ),

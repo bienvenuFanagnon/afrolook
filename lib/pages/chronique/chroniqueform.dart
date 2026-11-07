@@ -406,6 +406,7 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
   Future<void> _pickImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
+      if (!await AuthenticVideoCheck.gateImage(context, image.path, allowClaim: false) || !mounted) return;
       File file = File(image.path);
       double fileSize = await _getFileSize(file);
 

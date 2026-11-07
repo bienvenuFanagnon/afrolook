@@ -134,6 +134,10 @@ class _CreateHubPageState extends State<CreateHubPage> {
     } else {
       final xs = await picker.pickMultiImage(maxWidth: 1600, imageQuality: 92, limit: 4);
       if (xs.isEmpty || !mounted) return;
+      // contenu sexuellement explicite : refusé (modèle gratuit sur le téléphone) ; « C'est une erreur » envoie à la modération
+      for (final x in xs) {
+        if (!await AuthenticVideoCheck.gateImage(context, x.path) || !mounted) return;
+      }
       if (xs.length == 1) {
         await _editor(xs.first.path, false, PostSourceLink.imported);
       } else {

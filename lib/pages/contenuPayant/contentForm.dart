@@ -1,4 +1,5 @@
 import '../../services/media_shrink.dart';
+import '../../services/authentic_video_check.dart';
 import '../../utils/count_format.dart';
 import 'dart:async';
 import 'dart:io';
@@ -138,6 +139,8 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
       );
 
       if (pickedFile != null) {
+        // contenus payants : une vidéo d'un autre réseau ou explicite n'est pas acceptée (pas de recours ici)
+        if (!await AuthenticVideoCheck.gate(context, pickedFile.path, allowClaim: false) || !mounted) return;
         File file = File(pickedFile.path);
         final fileSize = await file.length();
         final fileSizeMB = fileSize / (1024 * 1024);
@@ -225,6 +228,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
       );
 
       if (pickedFile != null) {
+        if (!await AuthenticVideoCheck.gateImage(context, pickedFile.path, allowClaim: false) || !mounted) return;
         File file = File(pickedFile.path);
         setState(() {
           _thumbnailFile = file;
@@ -324,6 +328,7 @@ class _ContentFormScreenState extends State<ContentFormScreen> {
     try {
       final XFile? picked = await _picker.pickVideo(source: ImageSource.gallery);
       if (picked == null) return;
+      if (!await AuthenticVideoCheck.gate(context, picked.path, allowClaim: false) || !mounted) return;
       final file = File(picked.path);
       final sizeMB = (await file.length()) / (1024 * 1024);
       if (sizeMB > 20) {
