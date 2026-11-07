@@ -14,6 +14,7 @@ import '../../services/abonnement_service.dart';
 import '../../services/utils/abonnement_utils.dart';
 import '../../theme/app_colors.dart';
 import '../../l10n/tr.dart';
+import '../../ads/rewards_service.dart';
 
 class AbonnementScreen extends StatefulWidget {
   final int? initialTab;
@@ -155,16 +156,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
           badgeColor: colors.primary,
         ),
         const SizedBox(height: 20),
-        _buildFeatureList(colors, [
-          _Feature(context.tr('Messagerie privée'), true),
-          _Feature(context.tr('Rejoindre des groupes publics'), true),
-          _Feature(context.tr('Posts visibles dans son pays'), true),
-          _Feature(context.tr('1 photo par look'), true),
-          _Feature(context.tr('Créer un groupe'), false),
-          _Feature(context.tr('Live HD'), false),
-          _Feature(context.tr('Groupes privés payants'), false),
-          _Feature(context.tr('Badge exclusif'), false),
-        ]),
+        _buildFeatureGroups(colors, _freeGroups()),
         const SizedBox(height: 20),
         _buildInfoCard(colors, [
           context.tr('⏰ À l\'expiration d\'un plan payant, retour automatique au plan Gratuit'),
@@ -212,7 +204,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
         ],
 
         const SizedBox(height: 16),
-        _buildFeatureList(colors, _goldFeatures()),
+        _buildFeatureGroups(colors, _goldGroups()),
 
         // Avertissement Gold expiré
         const SizedBox(height: 16),
@@ -423,45 +415,41 @@ class _AbonnementScreenState extends State<AbonnementScreen>
     );
   }
 
-  Widget _buildFeatureList(AppColors colors, List<_Feature> features) {
+  /// Fonctionnalités d'un plan REGROUPÉES par thème (Studio, publications, groupes…) : un seul cadre, un titre par groupe.
+  Widget _buildFeatureGroups(AppColors colors, List<_FeatureGroup> groups) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      key: const ValueKey('plan_feature_groups'),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: colors.border),
       ),
       child: Column(
-        children: features.map((f) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 5),
-            child: Row(
-              children: [
-                Text(f.enabled ? '✅' : '❌', style: const TextStyle(fontSize: 14)),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(f.label,
-                      style: TextStyle(
-                          color: f.enabled ? colors.textPrimary : colors.textSecondary,
-                          fontSize: 13)),
-                ),
-                if (f.isGoldOnly)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: _c.primary.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text('GOLD',
-                        style: TextStyle(
-                            color: _c.primary,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold)),
-                  ),
-              ],
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final g in groups) ...[
+            Padding(
+              padding: const EdgeInsets.only(top: 12, bottom: 4),
+              child: Text('${g.icon}  ${g.title.toUpperCase()}', style: TextStyle(color: colors.textSecondary, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: .8)),
             ),
-          );
-        }).toList(),
+            for (final f in g.features)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(children: [
+                  Text(f.enabled ? '✅' : '❌', style: const TextStyle(fontSize: 14)),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(f.label, style: TextStyle(color: f.enabled ? colors.textPrimary : colors.textSecondary, fontSize: 13))),
+                  if (f.isGoldOnly)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(color: _c.primary.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
+                      child: Text('GOLD', style: TextStyle(color: _c.primary, fontSize: 9, fontWeight: FontWeight.bold)),
+                    ),
+                ]),
+              ),
+          ],
+        ],
       ),
     );
   }
@@ -992,35 +980,70 @@ class _AbonnementScreenState extends State<AbonnementScreen>
   // ── Listes de fonctionnalités ────────────────────────────────────────────
 
 
-  List<_Feature> _goldFeatures() => [
-    // ── Hérité du plan Premium
-    _Feature(context.tr('Tout le plan Premium inclus'), true),
-    // ── Posts & médias
-    _Feature(context.tr('5 photos par look (Premium : 3)'), true, isGoldOnly: true),
-    _Feature(context.tr('Vidéos jusqu\'à 100 Mo (Premium : 40 Mo)'), true, isGoldOnly: true),
-    // ── Groupes : limites levées
-    _Feature(context.tr('Groupes illimités (Premium : 2 max)'), true, isGoldOnly: true),
-    _Feature(context.tr('Membres illimités par groupe (Premium : 100 max)'), true, isGoldOnly: true),
-    // ── Groupes privés
-    _Feature(context.tr('Groupes privés payants · 70% des revenus vous revient'), true, isGoldOnly: true),
-    _Feature(context.tr('Abonnés groupes : renouvellement à la demande (non expulsés)'), true, isGoldOnly: true),
-    // ── Accès & invitation
-    _Feature(context.tr('Code unique d\'accès (valide 30 jours, régénérable)'), true, isGoldOnly: true),
-    _Feature(context.tr('Lien d\'invitation partageable (WhatsApp, SMS…)'), true, isGoldOnly: true),
-    _Feature(context.tr('Lien redirige directement vers le groupe dans l\'app'), true, isGoldOnly: true),
-    // ── Contrôle des membres
-    _Feature(context.tr('Contrôle d\'écriture global (activer/désactiver pour tous)'), true, isGoldOnly: true),
-    _Feature(context.tr('Contrôle de partage global (posts, produits, lives)'), true, isGoldOnly: true),
-    _Feature(context.tr('Permissions individuelles par membre'), true, isGoldOnly: true),
-    // ── Messages enrichis
-    _Feature(context.tr('Liens externes cliquables dans les messages'), true, isGoldOnly: true),
-    _Feature(context.tr('Masquer un message existant (sans le supprimer)'), true, isGoldOnly: true),
-    _Feature(context.tr('Choisir qui peut voir un message (destinataires ciblés)'), true, isGoldOnly: true),
-    // ── Visibilité & badge
-    _Feature(context.tr('Carousel pub dans la page Groupes (aléatoire)'), true, isGoldOnly: true),
-    _Feature(context.tr('Badge Gold 👑 exclusif sur votre profil et vos groupes'), true, isGoldOnly: true),
-    _Feature(context.tr('Groupe gelé automatiquement si plan expire (membres conservés)'), true, isGoldOnly: true),
-  ];
+  /// Fonctions du Studio incluses dans Gold : lues dans le catalogue des fonctions (mêmes noms que la page Récompenses), pour rester à jour toutes seules.
+  List<_Feature> _studioGoldFeatures() => [
+        for (final f in RewardsService.featureCatalog) _Feature(context.tr(f.$2), true, isGoldOnly: true),
+        _Feature(context.tr('Tous les effets de visage (les 2 premiers sont gratuits pour tous)'), true, isGoldOnly: true),
+        _Feature(context.tr('Retirer la fin animée Afrolook de vos vidéos'), true, isGoldOnly: true),
+        _Feature(context.tr('Exporter : enregistrer ou partager hors d\'Afrolook, sans limite'), true, isGoldOnly: true),
+        _Feature(context.tr('Télécharger les médias des autres, sans pub ni pièces'), true, isGoldOnly: true),
+      ];
+
+  List<_FeatureGroup> _freeGroups() => [
+        _FeatureGroup('💬', context.tr('Général'), [
+          _Feature(context.tr('Messagerie privée'), true),
+          _Feature(context.tr('Rejoindre des groupes publics'), true),
+          _Feature(context.tr('Posts visibles dans son pays'), true),
+          _Feature(context.tr('1 photo par look'), true),
+          _Feature(context.tr('Créer un groupe'), false),
+          _Feature(context.tr('Live HD'), false),
+          _Feature(context.tr('Groupes privés payants'), false),
+          _Feature(context.tr('Badge exclusif'), false),
+        ]),
+        _FeatureGroup('🎬', context.tr('Studio'), [
+          _Feature(context.tr('Montage, textes, musique gratuite et effets de base'), true),
+          _Feature(context.tr('2 effets de visage gratuits'), true),
+          _Feature(context.tr('Fonctions avancées du Studio (looks, déformations, fonds, avatars…)'), false),
+          _Feature(context.tr('Exporter et télécharger librement'), false),
+          _Feature(context.tr('Retirer la fin animée Afrolook'), false),
+        ]),
+      ];
+
+  List<_FeatureGroup> _goldGroups() => [
+        _FeatureGroup('🎬', context.tr('Studio'), _studioGoldFeatures()),
+        _FeatureGroup('📸', context.tr('Publications et médias'), [
+          _Feature(context.tr('Tout le plan Premium inclus'), true),
+          _Feature(context.tr('5 photos par look (Premium : 3)'), true, isGoldOnly: true),
+          _Feature(context.tr('Vidéos jusqu\'à 100 Mo (Premium : 40 Mo)'), true, isGoldOnly: true),
+        ]),
+        _FeatureGroup('👥', context.tr('Groupes'), [
+          _Feature(context.tr('Groupes illimités (Premium : 2 max)'), true, isGoldOnly: true),
+          _Feature(context.tr('Membres illimités par groupe (Premium : 100 max)'), true, isGoldOnly: true),
+          _Feature(context.tr('Groupes privés payants · 70% des revenus vous revient'), true, isGoldOnly: true),
+          _Feature(context.tr('Abonnés groupes : renouvellement à la demande (non expulsés)'), true, isGoldOnly: true),
+          _Feature(context.tr('Groupe gelé automatiquement si plan expire (membres conservés)'), true, isGoldOnly: true),
+        ]),
+        _FeatureGroup('🔗', context.tr('Accès et invitation'), [
+          _Feature(context.tr('Code unique d\'accès (valide 30 jours, régénérable)'), true, isGoldOnly: true),
+          _Feature(context.tr('Lien d\'invitation partageable (WhatsApp, SMS…)'), true, isGoldOnly: true),
+          _Feature(context.tr('Lien redirige directement vers le groupe dans l\'app'), true, isGoldOnly: true),
+        ]),
+        _FeatureGroup('🛡️', context.tr('Contrôle des membres'), [
+          _Feature(context.tr('Contrôle d\'écriture global (activer/désactiver pour tous)'), true, isGoldOnly: true),
+          _Feature(context.tr('Contrôle de partage global (posts, produits, lives)'), true, isGoldOnly: true),
+          _Feature(context.tr('Permissions individuelles par membre'), true, isGoldOnly: true),
+        ]),
+        _FeatureGroup('✉️', context.tr('Messages enrichis'), [
+          _Feature(context.tr('Liens externes cliquables dans les messages'), true, isGoldOnly: true),
+          _Feature(context.tr('Masquer un message existant (sans le supprimer)'), true, isGoldOnly: true),
+          _Feature(context.tr('Choisir qui peut voir un message (destinataires ciblés)'), true, isGoldOnly: true),
+        ]),
+        _FeatureGroup('👑', context.tr('Visibilité et confort'), [
+          _Feature(context.tr('Carousel pub dans la page Groupes (aléatoire)'), true, isGoldOnly: true),
+          _Feature(context.tr('Badge Gold 👑 exclusif sur votre profil et vos groupes'), true, isGoldOnly: true),
+          _Feature(context.tr('Aucune pub plein écran'), true, isGoldOnly: true),
+        ]),
+      ];
 
   // ── Actions ─────────────────────────────────────────────────────────────
 
@@ -1213,6 +1236,13 @@ class _AbonnementScreenState extends State<AbonnementScreen>
 }
 
 // ── Modèle local pour les fonctionnalités ────────────────────────────────────
+
+class _FeatureGroup {
+  final String icon;
+  final String title;
+  final List<_Feature> features;
+  const _FeatureGroup(this.icon, this.title, this.features);
+}
 
 class _Feature {
   final String label;
