@@ -1,4 +1,7 @@
 import 'package:afrotok/services/post_orientation.dart';
+import 'package:afrotok/services/authenticity_watcher.dart';
+import '../../l10n/tr.dart' show tr;
+import '../videos/video_chrome.dart' show AuthenticBadge, NotMonetizedChip, showNotMonetizedSheet;
 import 'package:afrotok/services/read_meter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../utils/media_cdn.dart';
@@ -295,6 +298,51 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   @override
   bool get wantKeepAlive => true;
 
+  // Authenticité : même contrôle que sur la page des vidéos verticales (marque d'un autre réseau = plus monétisée)
+  final AuthenticityWatcher _authWatch = AuthenticityWatcher();
+
+  /// Pastille « plus monétisé » (vidéo marquée) ou mot « Authentique » (vidéo validée), posés sur la vidéo ; rien tant que la vidéo n'est pas jugée.
+  Widget _authenticityOverlay() {
+    final post = widget.post;
+    if (post.authenticity == 'flagged') {
+      return Positioned(
+        left: 8,
+        top: 8,
+        right: 60,
+        child: Align(
+          alignment: Alignment.centerLeft,
+          child: NotMonetizedChip(
+            onTap: () => showNotMonetizedSheet(context, mark: post.authenticityMark ?? 'other', isOwner: post.user_id == _authProvider.loginUserData.id, onOwnClaim: () async {
+              if (post.id == null) return;
+              final ok = await PostsApi.claimOwnership(post.id!);
+              if (!mounted) return;
+              ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(ok ? tr('Merci : notre équipe va vérifier ta vidéo.') : tr('Impossible pour le moment. Réessaie plus tard.'))));
+            }),
+          ),
+        ),
+      );
+    }
+    if (post.authenticity == 'validated') return const Positioned(left: 8, top: 8, child: AuthenticBadge());
+    return const SizedBox.shrink();
+  }
+
+  void _watchAuthenticity() {
+    _authWatch.schedule(
+      post: widget.post,
+      me: _authProvider.loginUserData.id,
+      controller: () => _videoController,
+      cdn: (u) => _authProvider.convertToCdnUrl(u, _authProvider.appDefaultData),
+      stillWanted: () => mounted && _isVisible,
+      onState: (state, mark) {
+        if (!mounted) return;
+        setState(() {
+          widget.post.authenticity = state;
+          if (state == 'flagged') widget.post.authenticityMark = mark;
+        });
+      },
+    );
+  }
+
   // Contrôleurs vidéo
   VideoPlayerController? _videoController;
   ChewieController? _chewieController;
@@ -531,6 +579,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         if (_videoController!.value.isPlaying && _isVisible && !_hasRecordedInteraction) {
           _recordVideoInteraction();
         }
+        if (_videoController!.value.isPlaying && _isVisible) _watchAuthenticity();
       });
 
       final colors = AppColors.of(context);
@@ -739,6 +788,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         if (_videoController!.value.isPlaying && _isVisible && !_hasRecordedInteraction) {
           _recordVideoInteraction();
         }
+        if (_videoController!.value.isPlaying && _isVisible) _watchAuthenticity();
       });
 
       final colors = AppColors.of(context);
@@ -1770,6 +1820,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
             // Verrou canal privé — s'affiche après 10s de lecture
             if (_showCanalLockCta)
               _buildCanalLockOverlay(colors),
+            _authenticityOverlay(),
             Positioned(
               bottom: 8, right: 8,
               child: Container(
@@ -1873,6 +1924,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                     ),
                   ),
                 ),
+              _authenticityOverlay(),
               Positioned(
                 bottom: 8, right: 8,
                 child: Container(
@@ -2531,6 +2583,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     _visibilityTimer?.cancel();
     _seeMoreTimer?.cancel();
     _canalLockTimer?.cancel();
+    _authWatch.cancel();
     WidgetsBinding.instance.removeObserver(this);
     MediaPlaybackManager.unregisterMedia(widget.post.id ?? '');
     _disposeVideoControllers();
