@@ -10,6 +10,8 @@ import 'chronique_comments_sheet.dart';
 import 'chronique_reply_sheet.dart';
 import 'chronique_overlay_text.dart';
 import 'chronique_text_view.dart';
+import '../../models/post_widget.dart';
+import '../../widgets/post_widget_view.dart';
 import 'chronique_widgets.dart';
 import '../../widgets/music/music_overlay.dart';
 import '../pub/ad_actions.dart';
@@ -1618,6 +1620,8 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
               _buildStatsPill(currentChronique),
               _buildMusicPill(currentChronique),
               // chronique business : carte de vente (seule la carte est cliquable), au-dessus de la rangée du bas
+              if (currentChronique.widgets.isNotEmpty)
+                Positioned.fill(child: PostWidgetsLayer(widgets: currentChronique.widgets)),
               if (currentChronique.commerce != null)
                 Positioned(left: 14, right: 14, bottom: 92, child: ChroniqueCommerceCard(commerce: currentChronique.commerce!)),
               _buildBottomRow(currentChronique),

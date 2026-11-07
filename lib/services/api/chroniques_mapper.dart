@@ -1,4 +1,5 @@
 import 'package:afrotok/pages/chronique/chroniqueform.dart';
+import 'package:afrotok/models/post_widget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart' show Timestamp;
 
 String chroniqueTypeToApi(ChroniqueType t) => switch (t) {
@@ -27,6 +28,7 @@ Chronique chroniqueFromApi(Map<String, dynamic> j, {String? myId}) {
   return Chronique(
     id: j['id'] as String?,
     commerce: j['commerce'] is Map ? Map<String, dynamic>.from(j['commerce'] as Map) : null,
+    widgets: PostWidget.listFromApi(j['widgets']),
     userId: '${author['id'] ?? ''}',
     userPseudo: '${author['username'] ?? ''}',
     userImageUrl: '${author['avatar_url'] ?? ''}',

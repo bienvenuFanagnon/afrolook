@@ -1,6 +1,7 @@
 ﻿// Modèle des chroniques (Chronique, ChroniqueMessage, ChroniqueType). La création passe désormais par le Studio : lib/pages/create/chronique_flow.dart.
 
 import 'package:afrotok/services/account_gate.dart';
+import 'package:afrotok/models/post_widget.dart';
 import 'chronique_commerce.dart';
 import 'chronique_preview.dart';
 import 'package:afrotok/l10n/tr.dart';
@@ -41,6 +42,8 @@ class Chronique {
   String? id;
   /// Chronique business : carte de vente (produit, prix, lieu, WhatsApp, téléphone, lien), null = chronique ordinaire.
   Map<String, dynamic>? commerce;
+  /// Widgets vivants posés sur la chronique (sondage, question, lien…).
+  List<PostWidget> widgets;
   String userId;
   String userPseudo;
   String userImageUrl;
@@ -91,6 +94,7 @@ class Chronique {
   Chronique({
     this.id,
     this.commerce,
+    this.widgets = const [],
     required this.userId,
     required this.userPseudo,
     required this.userImageUrl,
