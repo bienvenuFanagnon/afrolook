@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Widgets à ajouter : proposition</title>
+<style>
+:root{--bg:#f4f6f5;--card:#fff;--ink:#14201a;--sub:#5b6a62;--line:#dfe6e2;--green:#1b8a3c;--gold:#ffd21f}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1512;--card:#17201b;--ink:#eef4f0;--sub:#9fb0a6;--line:#27342d}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:20px 16px 40px}
+h1{font-size:20px;margin:0 0 4px}p.lead{margin:0 0 16px;color:var(--sub);font-size:14px;max-width:820px;line-height:1.45}
+.row{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;max-width:1120px}
+.col{width:250px}
+.cap{font-size:13px;font-weight:800;margin:0 0 8px}.sub{font-size:12px;color:var(--sub);margin:8px 0 0;line-height:1.4}
+.phone{background:#000;border-radius:26px;padding:8px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.scr{position:relative;border-radius:19px;overflow:hidden;height:470px;background:linear-gradient(160deg,#3a2a5a,#b5532e 55%,#1e6fa8);color:#fff}
+.scr.light{background:var(--card);color:var(--ink)}
+.tools{position:absolute;right:8px;top:52px;display:flex;flex-direction:column;gap:9px;align-items:center}
+.tool{width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;font-size:15px;position:relative}
+.tool.hot{background:var(--gold);color:#14201a;box-shadow:0 0 0 3px rgba(255,210,31,.35)}
+.tl{font-size:9px;font-weight:700;margin-top:-6px}
+.top{position:absolute;left:8px;top:10px;right:8px;display:flex;justify-content:space-between;align-items:center}
+.pill{background:rgba(0,0,0,.5);border-radius:99px;padding:5px 10px;font-size:11px;font-weight:800}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--card);color:var(--ink);border-radius:20px 20px 0 0;padding:12px 12px 14px;height:78%}
+.sheet h3{margin:2px 0 8px;font-size:14px}.grip{width:36px;height:4px;background:var(--line);border-radius:3px;margin:0 auto 8px}
+.cat{font-size:10.5px;font-weight:800;color:var(--sub);letter-spacing:.6px;margin:9px 0 5px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.w{border:1px solid var(--line);border-radius:12px;padding:8px 4px;text-align:center;font-size:10.5px;font-weight:700;background:var(--bg)}
+.w b{display:block;font-size:17px;margin-bottom:2px}
+.g{position:absolute;top:-6px;right:-4px;background:var(--gold);color:#14201a;border-radius:99px;font-size:7.5px;font-weight:900;padding:1px 4px}
+.poll{position:absolute;left:16px;right:60px;top:160px;background:rgba(255,255,255,.94);color:#14201a;border-radius:16px;padding:10px 12px;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.poll .q{font-weight:900;font-size:12.5px;margin-bottom:7px}.opt{background:#eef2ef;border-radius:9px;padding:6px 9px;font-size:11.5px;margin-top:5px;font-weight:700}
+.handle{position:absolute;width:9px;height:9px;border-radius:50%;background:#fff;border:2px solid var(--gold)}
+.field{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:9px 10px;font-size:11.5px;color:var(--sub);margin-bottom:8px}
+.chip{display:inline-flex;align-items:center;gap:5px;background:var(--bg);border:1px solid var(--line);border-radius:99px;padding:5px 9px;font-size:11px;font-weight:700;margin:0 5px 5px 0}
+.card{border:1px solid var(--line);border-radius:14px;padding:10px;margin-bottom:8px;background:var(--bg)}
+.btn{background:var(--green);color:#fff;border-radius:10px;padding:8px;text-align:center;font-size:12px;font-weight:800}
+.notes{max-width:1120px;margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.notes .card2{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px}.notes h2{font-size:14px;margin:0 0 6px}.notes ul{margin:0;padding-left:18px;color:var(--sub);font-size:13px;line-height:1.55}
+</style></head><body>
+<h1>Widgets à ajouter : proposition</h1>
+<p class="lead">Où ajouter les widgets d'interaction et de vente quand on crée un post, une chronique ou une chronique business. Exemple à valider, rien n'est codé : un seul bouton « Widgets » dans le Studio, une feuille classée par catégories, le widget posé sur l'image (déplaçable) et un résumé dans « Nouveau post ».</p>
+<div class="row">
+  <div class="col"><p class="cap">1 · Un bouton « Widgets » dans le Studio</p>
+    <div class="phone"><div class="scr">
+      <div class="top"><span class="pill">‹</span><span class="pill">Suivant</span></div>
+      <div class="tools">
+        <div class="tool">✂</div><div class="tool">🎙</div><div class="tool">⏱</div><div class="tool">CC</div>
+        <div class="tool hot">▦</div><div class="tl">Widgets</div>
+      </div>
+    </div></div>
+    <p class="sub">Dans la colonne d'outils à droite, à côté de Voix, Temps et Sous-titres. Même endroit pour un post, une chronique et une chronique business.</p></div>
+
+  <div class="col"><p class="cap">2 · La feuille « Ajouter un widget »</p>
+    <div class="phone"><div class="scr">
+      <div class="top"><span class="pill">‹</span><span class="pill">Suivant</span></div>
+      <div class="sheet"><div class="grip"></div><h3>Ajouter un widget</h3>
+        <div class="cat">INTERAGIR</div>
+        <div class="grid"><div class="w"><b>📊</b>Sondage</div><div class="w"><b>❓</b>Question</div><div class="w"><b>🧠</b>Quiz</div><div class="w"><b>😍</b>Réaction</div><div class="w"><b>⏳</b>Compte à rebours</div><div class="w"><b>🔔</b>Rappel</div></div>
+        <div class="cat">VENDRE</div>
+        <div class="grid"><div class="w"><b>🛍️</b>Carte vente<span class="g" style="position:static;display:inline-block;margin-left:3px">GOLD</span></div><div class="w"><b>💬</b>WhatsApp</div><div class="w"><b>📞</b>Appeler</div></div>
+        <div class="cat">INFOS</div>
+        <div class="grid"><div class="w"><b>📍</b>Lieu</div><div class="w"><b>🔗</b>Lien</div><div class="w"><b>@</b>Mention</div></div>
+      </div>
+    </div></div>
+    <p class="sub">Trois catégories : Interagir (le public répond), Vendre (carte de vente, WhatsApp, appel), Infos (lieu, lien, mention). Les widgets réservés à Gold affichent la pastille GOLD et proposent pubs ou abonnement.</p></div>
+
+  <div class="col"><p class="cap">3 · Le widget posé sur l'image</p>
+    <div class="phone"><div class="scr">
+      <div class="top"><span class="pill">‹</span><span class="pill">Suivant</span></div>
+      <div class="tools"><div class="tool">✂</div><div class="tool">🎙</div><div class="tool">⏱</div><div class="tool hot">▦</div></div>
+      <div class="poll"><div class="q">Ton plat préféré ?</div><div class="opt">Riz sauce arachide</div><div class="opt">Attiéké poisson</div><div class="opt">+ Ajouter un choix</div>
+        <div class="handle" style="left:-5px;top:-5px"></div><div class="handle" style="right:-5px;top:-5px"></div><div class="handle" style="left:-5px;bottom:-5px"></div><div class="handle" style="right:-5px;bottom:-5px"></div></div>
+    </div></div>
+    <p class="sub">On le déplace, on le redimensionne et on le modifie en le touchant. Il reste actif une fois publié : le public vote, répond ou touche le bouton.</p></div>
+
+  <div class="col"><p class="cap">4 · Récapitulatif dans « Nouveau post »</p>
+    <div class="phone"><div class="scr light">
+      <div style="padding:14px 12px"><div style="text-align:center;font-weight:900;font-size:14px;margin-bottom:10px">Nouveau post</div>
+        <div class="field">Décris ta vidéo…</div>
+        <div class="cat" style="margin-top:2px">WIDGETS AJOUTÉS</div>
+        <div><span class="chip">📊 Sondage · 2 choix ✎</span><span class="chip">🛍️ Carte vente ✎</span><span class="chip">+ Ajouter</span></div>
+        <div class="card"><div style="font-size:12px;font-weight:900">🛍️ Carte vente</div><div style="font-size:11px;color:var(--sub);margin:3px 0 7px">Pagne wax · 8 000 F · Lomé</div><div class="btn">Commander maintenant</div></div>
+      </div></div></div>
+    <p class="sub">Les widgets du post sont listés avant la publication, avec un crayon pour les modifier ou les retirer. Pour une chronique business, la carte de vente s'ajoute ici aussi, plus seulement avant le Studio.</p></div>
+</div>
+<div class="notes">
+  <div class="card2"><h2>Ce qui change</h2><ul>
+    <li>Un <b>seul point d'entrée</b> (« Widgets ») au lieu de chercher dans plusieurs écrans.</li>
+    <li>Valable pour les <b>posts</b>, les <b>chroniques (24 h)</b> et les <b>chroniques business</b>.</li>
+    <li>La carte de vente actuelle des chroniques business (demandée avant le Studio) passe dans cette même feuille.</li></ul></div>
+  <div class="card2"><h2>À décider avec vous</h2><ul>
+    <li>Quels widgets garder : sondage, question, quiz, réaction, compte à rebours, rappel, carte vente, WhatsApp, appel, lieu, lien, mention ?</li>
+    <li>Lesquels réservés à Gold ? (je suggère : carte vente, quiz)</li>
+    <li>Combien de widgets par publication ? (je suggère : 3)</li></ul></div>
+</div>
+</body></html>
