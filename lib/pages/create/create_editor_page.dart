@@ -21,6 +21,8 @@ import '../studio/montage/montage_editor_page.dart';
 import '../studio/montage/montage_gallery_page.dart';
 import '../studio/montage/montage_music.dart';
 import '../studio/montage/montage_pin.dart';
+import '../studio/montage/montage_preview_page.dart';
+import 'chronique_flow.dart' show ChroniqueFlow;
 import '../studio/studio_models.dart';
 import 'create_flow.dart';
 import 'create_result.dart';
@@ -122,6 +124,15 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
     _video?.pause();
     final media = File(_path);   // aucune signature dans le média publié : elle n'est posée qu'au téléchargement (comme sur TikTok)
     if (!mounted) return;
+    // Aperçu final AVANT « Nouveau post » : on regarde (et on entend) exactement ce qui sera publié ; « Modifier » revient ici, « Poursuivre » continue.
+    // (Dans un parcours de chronique, l'aperçu de la chronique suit déjà.)
+    if (ChroniqueFlow.active == null) {
+      final go = await Navigator.of(context).push<bool>(MaterialPageRoute(fullscreenDialog: true, builder: (_) => MontagePreviewPage(file: media, video: widget.isVideo)));
+      if (go != true || !mounted) {
+        _video?.play();
+        return;
+      }
+    }
     final result = StudioResult(type: widget.isVideo ? StudioContentType.video : StudioContentType.image, mediaFile: media);
     // un passage coupé dans l'éditeur compte comme retouché dans notre Studio
     final source = (_touched && widget.source != PostSourceLink.captured) ? PostSourceLink.edited : widget.source;
