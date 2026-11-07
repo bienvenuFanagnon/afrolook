@@ -1,4 +1,6 @@
 import 'package:afrotok/services/post_orientation.dart';
+import 'package:afrotok/widgets/post_widget_view.dart';
+import 'package:afrotok/services/post_reply.dart';
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/services/ads_engine_service.dart';
 import '../services/comments_prefetch.dart';
@@ -3377,6 +3379,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
           ),
         ] else ...[
           const Positioned.fill(child: IgnorePointer(child: VideoShade())),
+          if (post.widgets.isNotEmpty) Positioned.fill(child: PostWidgetsLayer(widgets: post.widgets)),   // sondage, question, lien… posés par le créateur
           _buildCreatorInfo(post),
           if (post.authenticity == 'flagged')
             Positioned(
@@ -3449,6 +3452,10 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
           ),
           const SizedBox(height: 14),
           VideoRailButton(icon: Icons.chat_bubble_outline_rounded, label: _formatNumber(post.comments ?? 0), onTap: () => _showCommentsModal(post)),
+          if (PostReply.canReply(post)) ...[
+            const SizedBox(height: 14),
+            VideoRailButton(icon: Icons.videocam_outlined, label: tr('Répondre'), onTap: () => PostReply.start(context, post)),   // réponse en vidéo à ce post
+          ],
           if (!isOwner && post.user_id != null) ...[
             const SizedBox(height: 14),
             VideoRailButton(icon: Icons.card_giftcard_rounded, label: _formatNumber(post.users_cadeau_id?.length ?? 0), onTap: () => _openGiftDialog(post)),

@@ -1,4 +1,7 @@
 import '../../widgets/gold_badge.dart';
+import '../../widgets/widgets_sheet.dart';
+import '../../widgets/post_widget_view.dart';
+import '../../models/post_widget.dart';
 import '../../widgets/reply_banner.dart';
 import 'package:provider/provider.dart';
 import '../../providers/authProvider.dart';
@@ -339,6 +342,74 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
 
   // ── Écran ────────────────────────────────────────────────────────────────
 
+  // ── Widgets ───────────────────────────────────────────────────────
+
+  Future<void> _addWidget() async {
+    if (PostWidgetsLink.isFull) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(context.tr('3 widgets au plus par publication.'))));
+      return;
+    }
+    _video?.pause();
+    final w = await addWidgetFlow(context);
+    if (w != null) PostWidgetsLink.add(w);
+    if (mounted && !_pausedByUser) _video?.play();
+  }
+
+  Future<void> _widgetMenu(PostWidget w) async {
+    final c = AppColors.of(context);
+    final act = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: c.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(key: const ValueKey('wm_edit'), leading: const Icon(Icons.edit_rounded), title: Text(context.tr('Modifier')), onTap: () => Navigator.pop(ctx, 'edit')),
+          ListTile(key: const ValueKey('wm_bigger'), leading: const Icon(Icons.zoom_in_rounded), title: Text(context.tr('Plus grand')), onTap: () => Navigator.pop(ctx, 'bigger')),
+          ListTile(key: const ValueKey('wm_smaller'), leading: const Icon(Icons.zoom_out_rounded), title: Text(context.tr('Plus petit')), onTap: () => Navigator.pop(ctx, 'smaller')),
+          ListTile(key: const ValueKey('wm_delete'), leading: Icon(Icons.delete_outline_rounded, color: c.danger), title: Text(context.tr('Retirer'), style: TextStyle(color: c.danger)), onTap: () => Navigator.pop(ctx, 'delete')),
+        ]),
+      ),
+    );
+    if (!mounted || act == null) return;
+    switch (act) {
+      case 'edit':
+        final n = await editWidget(context, w.kind, existing: w);
+        if (n != null) PostWidgetsLink.replace(w, n);
+      case 'bigger':
+        w.scale = (w.scale + .15).clamp(.6, 1.6);
+        PostWidgetsLink.drafts.value = [...PostWidgetsLink.drafts.value];
+      case 'smaller':
+        w.scale = (w.scale - .15).clamp(.6, 1.6);
+        PostWidgetsLink.drafts.value = [...PostWidgetsLink.drafts.value];
+      case 'delete':
+        PostWidgetsLink.remove(w);
+    }
+  }
+
+  Widget _widgetsLayer() => ValueListenableBuilder<List<PostWidget>>(
+        valueListenable: PostWidgetsLink.drafts,
+        builder: (context, list, _) => LayoutBuilder(
+          builder: (context, box) => Stack(children: [
+            for (final w in list)
+              Positioned.fill(
+                child: Align(
+                  alignment: Alignment((w.x * 2 - 1).clamp(-1.0, 1.0), (w.y * 2 - 1).clamp(-1.0, 1.0)),
+                  child: GestureDetector(
+                    key: ValueKey('draft_widget_${list.indexOf(w)}'),
+                    onTap: () => _widgetMenu(w),
+                    onPanUpdate: (d) {
+                      w.x = (w.x + d.delta.dx / box.maxWidth).clamp(.08, .92);
+                      w.y = (w.y + d.delta.dy / box.maxHeight).clamp(.1, .9);
+                      PostWidgetsLink.drafts.value = [...list];
+                    },
+                    child: Transform.scale(scale: w.scale, child: IgnorePointer(child: PostWidgetView(widget: w, preview: true))),
+                  ),
+                ),
+              ),
+          ]),
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
@@ -365,6 +436,8 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
         // voiles haut et bas : les commandes restent lisibles sur n'importe quelle image
         const Positioned(top: 0, left: 0, right: 0, height: 130, child: IgnorePointer(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0x99000000), Color(0x00000000)]))))),
         const Positioned(bottom: 0, left: 0, right: 0, height: 300, child: IgnorePointer(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0x00000000), Color(0xDD000000)]))))),
+        // widgets posés (sondage, question, lien…) : déplaçables au doigt, un toucher ouvre le menu
+        Positioned.fill(child: _widgetsLayer()),
         // réponse en vidéo : à quelle publication on répond (sous la rangée du haut, à gauche des outils)
         Positioned(top: MediaQuery.of(context).padding.top + 58, left: 12, right: 66, child: const Align(alignment: Alignment.centerLeft, child: ReplyBanner())),
         SafeArea(
@@ -423,6 +496,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
                 _tool('tool_music', Icons.music_note_rounded, context.tr('Musique'), _music),
                 _tool('tool_text', Icons.title_rounded, context.tr('Texte'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, focus: 'text', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
                 _tool('tool_stickers', Icons.emoji_emotions_rounded, context.tr('Autocollants'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, focus: 'stickers', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
+                _tool('tool_widgets', Icons.widgets_rounded, context.tr('Widgets'), _addWidget),
                 _tool('tool_looks', Icons.star_rounded, context.tr('Effets'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, focus: 'looks', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
                 if (widget.isVideo) _tool('tool_trim', Icons.content_cut_rounded, context.tr('Couper'), _trim),
               ]),

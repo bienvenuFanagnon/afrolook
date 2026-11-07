@@ -1,4 +1,5 @@
 import '../media_fingerprint.dart';
+import '../../models/post_widget.dart';
 import 'dart:io';
 
 import 'package:afrolook_api_client/afrolook_api_client.dart';
@@ -77,6 +78,7 @@ class PostsApi {
     final voiceEffect = PostVoiceLink.take();
     final replyToId = PostReplyLink.take();
     final studioPins = PostPinLink.take();
+    final widgets = PostWidgetsLink.take();   // sondage, question, lien… posés dans l'éditeur : envoyés une seule fois avec la publication
     final external = PostExternalLink.take();   // vidéo portant la marque d'un autre réseau : « C'est ma vidéo », vérifiée par la modération avant publication
     final fingerprint = PostFingerprintLink.take();   // empreinte visuelle : le serveur refuse un contenu déjà publié par un autre compte
     final body = <String, dynamic>{
@@ -86,6 +88,7 @@ class PostsApi {
       if (voiceEffect != null && uploadIds.isNotEmpty) 'voice_effect': voiceEffect,
       if (replyToId != null) 'reply_to_id': replyToId,
       if (studioPins != null && uploadIds.isNotEmpty) 'studio_pins': studioPins,
+      if (widgets != null) 'widgets': widgets,
       if (description != null && description.trim().isNotEmpty) 'description': description.trim(),
       if (linkUrl != null && linkUrl.trim().isNotEmpty) 'link_url': linkUrl.trim(),
       if (category != null && category.isNotEmpty) 'category': category,

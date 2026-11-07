@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import '../../models/post_widget.dart';
 import '../../widgets/reply_banner.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -109,6 +110,7 @@ class _CreateHubPageState extends State<CreateHubPage> {
       ReplyBanner.clear();
     }
     if (widget.chronique != null) ChroniqueFlow.active = null;
+    PostWidgetsLink.clear();   // widgets non publiés : on les oublie à la fin du parcours
     super.dispose();
   }
 

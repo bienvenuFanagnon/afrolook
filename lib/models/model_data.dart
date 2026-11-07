@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'post_widget.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/pages/LiveAgora/livesAgora.dart';
@@ -1590,6 +1591,7 @@ class Post {
   String? artistSoundId; // son d'artiste du montage (écrit par le serveur uniquement : jamais dans toJson)
   String? artistSoundTitle;
   List<Map<String, dynamic>> studioPins = const []; // vidéos épinglées dans la vidéo du post (position, créneau, créateur d'origine)
+  List<PostWidget> widgets = const []; // widgets vivants posés sur la publication (sondage, question, quiz, lien, carte de vente…) : voir lib/models/post_widget.dart
   bool hasCommerce = false; // la publication a une carte Commerce (prix, lieu, WhatsApp, lien) : lue à la demande
   String? studioTemplate; // template Studio / modèle de carte du post (« Essayer ce template »), voir template_link.dart
   int templateTries = 0; // personnes qui ont publié avec ce template depuis ce post

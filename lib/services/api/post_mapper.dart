@@ -1,4 +1,5 @@
 import 'package:afrotok/models/model_data.dart';
+import '../../models/post_widget.dart';
 import 'package:afrotok/services/api/api_identity.dart';
 import 'package:afrotok/services/api/post_social_models.dart';
 
@@ -42,6 +43,7 @@ Post postFromApi(Map<String, dynamic> j) {
     ..canal_id = j['channel_id'] as String?
     ..hasCommerce = j['has_commerce'] == true
     ..studioPins = [for (final p in (j['studio_pins'] as List? ?? const []).whereType<Map>()) Map<String, dynamic>.from(p)]
+    ..widgets = PostWidget.listFromApi(j['widgets'])
     ..images = imageUrls
     ..url_media = dataType == 'IMAGE' ? (imageUrls.isEmpty ? null : imageUrls.first) : main?['url'] as String?
     ..thumbnail = (main?['thumbnail_url'] ?? first?['thumbnail_url']) as String?

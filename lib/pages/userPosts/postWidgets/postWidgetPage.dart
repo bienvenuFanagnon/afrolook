@@ -1,4 +1,5 @@
 import '../../../ads/gold_gate.dart';
+import 'package:afrotok/services/post_reply.dart';
 import '../../../widgets/commerce_card.dart';
 import '../../../services/api/commerce_api.dart';
 import '../../studio/montage/montage_pin.dart';
@@ -2577,9 +2578,7 @@ Future<void> _handleRepost() async {
 
   /// « Répondre en vidéo » : la caméra s'ouvre tout de suite (15 s au plus) ; la publication part avec le lien vers ce post.
   Future<void> _replyWithVideo() async {
-    final id = widget.post.id;
-    if (id == null) return;
-    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => CreateHubPage(start: CreateStart.video, replyToPostId: id)));
+    await PostReply.start(context, widget.post);
   }
 
   /// Ouvre le post auquel celui-ci répond.

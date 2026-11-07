@@ -1,4 +1,5 @@
 import 'package:afrotok/services/post_orientation.dart';
+import 'package:afrotok/services/post_reply.dart';
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/services/ads_engine_service.dart';
 import '../services/suggestions_modal_once.dart';
@@ -2473,6 +2474,10 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
         ),
         const SizedBox(width: 8),
         VideoActionChip(icon: Icons.chat_bubble_outline_rounded, label: _formatCount(_currentPost.comments ?? 0), onTap: _showCommentsModal),
+        if (PostReply.canReply(_currentPost)) ...[
+          const SizedBox(width: 8),
+          VideoActionChip(icon: Icons.videocam_outlined, label: tr('Répondre'), onTap: () => PostReply.start(context, _currentPost)),   // réponse en vidéo à ce post
+        ],
         if (!isOwner && _currentPost.user_id != null) ...[
           const SizedBox(width: 8),
           VideoActionChip(icon: Icons.card_giftcard_rounded, label: _formatCount(_currentPost.users_cadeau_id?.length ?? 0), onTap: _openGiftDialog),

@@ -1,4 +1,6 @@
 import '../services/post_download.dart';
+import 'package:afrotok/widgets/post_widget_view.dart';
+import 'package:afrotok/services/post_reply.dart';
 import 'package:afrotok/services/post_orientation.dart';
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/services/ads_engine_service.dart';
@@ -3993,6 +3995,18 @@ class _DetailsPostState extends State<DetailsPost>
             isLocked: !hasAccess,
           ),
         ),
+        if (PostReply.canReply(post))
+          GestureDetector(
+            key: const ValueKey('details_reply_video'),
+            behavior: HitTestBehavior.opaque,
+            onTap: hasAccess ? () => PostReply.start(context, post) : null,   // réponse en vidéo à ce post
+            child: Column(children: [
+              Icon(Icons.videocam_outlined, color: hasAccess ? _colors.textSecondary : _colors.textSecondary.withOpacity(0.3), size: 20),
+              const SizedBox(height: 5),
+              Text(tr('Répondre'), style: TextStyle(color: hasAccess ? _colors.textPrimary : _colors.textSecondary.withOpacity(0.3), fontWeight: FontWeight.bold, fontSize: 12)),
+              Text(tr('en vidéo'), style: TextStyle(color: _colors.textSecondary.withOpacity(hasAccess ? 1 : 0.3), fontSize: 10)),
+            ]),
+          ),
         Builder(builder: (ctx) {
           final isOwner = authProvider.loginUserData.id == post.user_id;
           if (isOwner || !hasAccess) {
@@ -4033,6 +4047,13 @@ class _DetailsPostState extends State<DetailsPost>
         ),
       ],
         ),
+        // widgets posés par le créateur (sondage, question, quiz, lien, carte de vente…) : on peut y répondre ici
+        if (post.widgets.isNotEmpty)
+          Padding(
+            key: const ValueKey('details_widgets'),
+            padding: const EdgeInsets.only(top: 14),
+            child: Wrap(spacing: 10, runSpacing: 10, children: [for (final w in post.widgets) PostWidgetView(widget: w)]),
+          ),
       ],
     );
   }

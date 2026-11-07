@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../../models/post_widget.dart';
 import '../../widgets/reply_banner.dart';
 import 'dart:typed_data';
 
@@ -531,6 +532,27 @@ class _CreatePublishPageState extends State<CreatePublishPage> {
         body: Column(children: [
           Expanded(
             child: ListView(padding: const EdgeInsets.fromLTRB(16, 4, 16, 16), children: [
+              // widgets posés dans l'éditeur : récapitulatif, avec une croix pour en retirer un
+              ValueListenableBuilder<List<PostWidget>>(
+                valueListenable: PostWidgetsLink.drafts,
+                builder: (context, list, _) => list.isEmpty
+                    ? const SizedBox.shrink()
+                    : Padding(
+                        key: const ValueKey('publish_widgets'),
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(context.tr('WIDGETS AJOUTÉS'), style: TextStyle(color: c.textSecondary, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: .8)),
+                          const SizedBox(height: 6),
+                          Wrap(spacing: 6, runSpacing: 6, children: [
+                            for (final w in list)
+                              InputChip(
+                                label: Text('${w.kind.emoji} ${context.tr(w.kind.label)}${w.question.isEmpty ? '' : ' · ${w.question.length > 22 ? '${w.question.substring(0, 22)}…' : w.question}'}', style: TextStyle(color: c.textPrimary, fontSize: 12, fontWeight: FontWeight.w700)),
+                                onDeleted: () => PostWidgetsLink.remove(w),
+                              ),
+                          ]),
+                        ]),
+                      ),
+              ),
               // réponse en vidéo : à quelle publication on répond
               const Padding(padding: EdgeInsets.only(bottom: 10), child: Align(alignment: Alignment.centerLeft, child: ReplyBanner(dark: false))),
               // garde : Afrolook met en avant les contenus authentiques, propres à la plateforme
