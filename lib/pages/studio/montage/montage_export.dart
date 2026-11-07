@@ -186,6 +186,36 @@ class MontageExport {
     return tempFile(await jpeg(p, 1080), 'jpg');
   }
 
+  /// Attend la fin d'un montage lancé en mode asynchrone : « running » → on patiente, « done » → l'adresse de la vidéo, « failed » → l'erreur du serveur (message précis).
+  static Future<String> _waitForMontage(String jobId, void Function(String step) onStep) async {
+    final deadline = DateTime.now().add(const Duration(minutes: 10));
+    var misses = 0;
+    while (DateTime.now().isBefore(deadline)) {
+      await Future<void>.delayed(const Duration(seconds: 2));
+      Map<String, dynamic> st;
+      try {
+        st = WalletApi.map(await ApiGateway.instance.client.get('/studio/montages/$jobId'));
+        misses = 0;
+      } on ApiException catch (e) {
+        if (e.status == 404) throw ApiException(status: 404, code: 'montage_failed', message: 'Le montage a été perdu côté serveur. Réessaie.');
+        if (++misses >= 5) rethrow;   // réseau instable : quelques ratés sont tolérés
+        continue;
+      }
+      switch (st['status']) {
+        case 'done':
+          final data = st['data'];
+          final url = data is Map ? (data['url'] ?? (data['data'] is Map ? (data['data'] as Map)['url'] : null)) : null;
+          if (url is String && url.isNotEmpty) return url;
+          throw ApiException(status: 500, code: 'montage_failed', message: 'Le montage est terminé mais la vidéo est introuvable. Réessaie.');
+        case 'failed':
+          throw ApiException(status: (st['http'] as num?)?.toInt() ?? 500, code: '${st['code'] ?? 'montage_failed'}', message: '${st['message'] ?? 'Le montage a échoué.'}');
+        default:
+          onStep('Montage de la vidéo…');
+      }
+    }
+    throw ApiException(status: 504, code: 'montage_timeout', message: 'Le montage prend trop de temps. Réessaie avec une vidéo plus courte.');
+  }
+
   /// Vidéo prête à publier. [setT] fige l'animation à l'instant demandé et attend le dessin.
   static Future<File> video({
     required MontageKeys keys,
@@ -290,6 +320,7 @@ class MontageExport {
     onStep('Montage de la vidéo…');
     // POST /studio/montages : montage assemblé par le serveur (ffmpeg), calques envoyés par /uploads
     final res = await ApiGateway.instance.client.post('/studio/montages', body: {
+      'async': true,   // le serveur répond tout de suite et travaille ensuite : l'avancement se lit ci-dessous (aucune limite de durée de requête)
       'job_id': jobId,
       'uploads': ids,
       'base_type': isVideo ? 'video' : 'image',
@@ -309,7 +340,9 @@ class MontageExport {
       if (s.keepVideoAudio && s.duckMusic) 'duck': true,
       if (!isVideo && m != null) 'seconds': s.musicSeconds.clamp(5, maxSeconds),
     }, idempotencyKey: 'montage:$jobId:${const Uuid().v4().substring(0, 8)}', longJob: true);   // une clé par essai : un échec n'est jamais rejoué à la place d'un nouvel essai
-    final url = WalletApi.map(res)['url'] as String;
+    final first = WalletApi.map(res);
+    // ancien serveur : la vidéo est déjà prête dans la réponse ; sinon on attend la fin du montage en demandant l'avancement toutes les 2 secondes
+    final url = first['url'] is String ? first['url'] as String : await _waitForMontage(jobId, onStep);
 
     onStep('Téléchargement…');
     final r = await http.get(Uri.parse(url));
