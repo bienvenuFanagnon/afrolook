@@ -24,11 +24,11 @@ class Watermark {
     final h = 104 * k;
     final rec = ui.PictureRecorder();
     final c = Canvas(rec);
-    c.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(0, 0, width.toDouble(), h), Radius.circular(h / 2)), Paint()..color = const Color(0xC8000000));
+    c.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(0, 0, width.toDouble(), h), Radius.circular(h / 2)), Paint()..color = const Color(0x4D000000));   // fond léger et transparent (30 % de noir) : la signature se voit sans écraser la vidéo
     // logo dans un rond blanc
     final d = 80 * k;
     final off = Offset(12 * k, (h - d) / 2);
-    c.drawCircle(off + Offset(d / 2, d / 2), d / 2, Paint()..color = Colors.white);
+    c.drawCircle(off + Offset(d / 2, d / 2), d / 2, Paint()..color = const Color(0xE6FFFFFF));
     try {
       final data = await rootBundle.load(_logo);
       final codec = await ui.instantiateImageCodec(data.buffer.asUint8List(), targetWidth: (d * 0.78).round());
@@ -39,9 +39,9 @@ class Watermark {
     final textLeft = off.dx + d + 14 * k;
     final maxW = width - textLeft - 18 * k;
     TextPainter tp(String t, double size, FontWeight w, Color color) =>
-        TextPainter(text: TextSpan(text: t, style: TextStyle(color: color, fontSize: size * k, fontWeight: w, height: 1.1)), textDirection: TextDirection.ltr, maxLines: 1, ellipsis: '…')..layout(maxWidth: maxW);
-    final brand = tp('Afrolook', 24, FontWeight.w900, const Color(0xFFFFD21F));
-    final p = pseudo.trim().isEmpty ? null : tp('@${pseudo.trim()}', 30, FontWeight.w800, Colors.white);
+        TextPainter(text: TextSpan(text: t, style: TextStyle(color: color, fontSize: size * k, fontWeight: w, height: 1.1, shadows: [Shadow(color: const Color(0x80000000), blurRadius: 2.5 * k)])), textDirection: TextDirection.ltr, maxLines: 1, ellipsis: '…')..layout(maxWidth: maxW);   // petite ombre : lisible même sur une vidéo claire
+    final brand = tp('Afrolook', 24, FontWeight.w900, const Color(0xF2FFD21F));
+    final p = pseudo.trim().isEmpty ? null : tp('@${pseudo.trim()}', 30, FontWeight.w800, const Color(0xEBFFFFFF));
     final total = brand.height + (p?.height ?? 0) + (p == null ? 0 : 3 * k);
     var y = (h - total) / 2;
     brand.paint(c, Offset(textLeft, y));
@@ -77,7 +77,7 @@ class Watermark {
       // bande fine : 5,5 % de la largeur (entre 30 et 96 px), fond sombre translucide, contenu centré
       final bh = (w * 0.055).clamp(30.0, 96.0);
       final top = h - bh;
-      c.drawRect(Rect.fromLTWH(0, top, w, bh), Paint()..color = const Color(0x99000000));
+      c.drawRect(Rect.fromLTWH(0, top, w, bh), Paint()..color = const Color(0x59000000));   // bande légère et transparente
       final fs = bh * 0.42;
       TextPainter tp(String t, FontWeight fw, Color col) => TextPainter(text: TextSpan(text: t, style: TextStyle(color: col, fontSize: fs, fontWeight: fw, height: 1.0)), textDirection: TextDirection.ltr, maxLines: 1)..layout(maxWidth: w * 0.8);
       final a1 = tp('Créé sur Afrolook', FontWeight.w700, Colors.white);

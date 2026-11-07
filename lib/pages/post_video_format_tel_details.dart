@@ -1678,9 +1678,10 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   void _showFirstScrollModalIfNeeded() async {
     final userId = authProvider.loginUserData.id;
     final key = 'first_scroll_modal_shown_$userId';
-    final shown = _prefs.getBool(key) ?? false;
+    final prefs = await SharedPreferences.getInstance();   // lu ici (le champ _prefs n'est pas encore prêt au démarrage de la page)
+    final shown = prefs.getBool(key) ?? false;
     if (!shown && mounted) {
-      await _prefs.setBool(key, true);
+      await prefs.setBool(key, true);
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) _showFirstScrollModal();
       });
@@ -1971,7 +1972,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       ),
       builder: (context) => Container(
         padding: const EdgeInsets.all(16),
-        child: Column(
+        child: SingleChildScrollView(child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (CardEntry.canMake(post, authProvider.loginUserData))
@@ -2114,7 +2115,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
               onTap: () => Navigator.pop(context),
             ),
           ],
-        ),
+        )),
       ),
     );
   }

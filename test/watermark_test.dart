@@ -17,7 +17,7 @@ void main() {
     expect(d.hasAlpha, isTrue);
     // le coin haut-gauche est transparent (pastille arrondie), le centre est opaque
     expect(d.getPixel(0, 0).a, 0);
-    expect(d.getPixel(d.width ~/ 2, d.height ~/ 2).a, greaterThan(100));
+    expect(d.getPixel(d.width ~/ 2, d.height ~/ 2).a, greaterThan(40));   // fond léger : visible mais transparent
   });
 
   test('une image signée garde sa taille et porte une fine bande en bas sur toute la largeur (haut de l’image inchangé)', () async {

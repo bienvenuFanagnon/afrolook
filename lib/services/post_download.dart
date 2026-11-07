@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show ValueListenable, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
@@ -20,7 +21,53 @@ import 'watermark.dart';
 /// Téléchargement du média d'une publication (vidéo, audio, images). Le propriétaire télécharge librement ; les autres regardent des pubs (3 par défaut) ou paient des pièces,
 /// ou ont Gold. Une fois le fichier enregistré, une pub plein écran s'affiche si elle existe, sans jamais être obligatoire.
 /// Les vidéos et les images créées dans le Studio portent la signature « Afrolook + @pseudo » de leur créateur : elle reste dans le fichier téléchargé.
+/// Fenêtre d'avancement du téléchargement (au milieu de l'écran) : icône du média, étape en cours, barre qui avance.
+class _DownloadProgress extends StatelessWidget {
+  const _DownloadProgress({required this.step, required this.progress, required this.kinds});
+  final ValueListenable<String> step;
+  final ValueListenable<double?> progress;
+  final List<String> kinds;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final icon = kinds.contains('video') ? Icons.videocam_rounded : kinds.contains('audio') ? Icons.graphic_eq_rounded : Icons.photo_library_rounded;
+    return Center(
+      child: Container(
+        key: const ValueKey('download_progress'),
+        width: 290,
+        padding: const EdgeInsets.fromLTRB(22, 22, 22, 20),
+        decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(22), boxShadow: const [BoxShadow(color: Color(0x55000000), blurRadius: 24)]),
+        child: Material(
+          color: Colors.transparent,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(width: 56, height: 56, decoration: BoxDecoration(color: c.accent, shape: BoxShape.circle), child: Icon(icon, color: c.onAccent, size: 28)),
+            const SizedBox(height: 14),
+            Text(context.tr('Téléchargement en cours'), style: TextStyle(color: c.textPrimary, fontSize: 16.5, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 6),
+            ValueListenableBuilder<String>(
+              valueListenable: step,
+              builder: (_, v, __) => Text(v, textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary, fontSize: 13, height: 1.3)),
+            ),
+            const SizedBox(height: 16),
+            ValueListenableBuilder<double?>(
+              valueListenable: progress,
+              builder: (_, v, __) => ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(minHeight: 7, value: (v == null || v <= 0) ? null : v.clamp(0.05, 1.0), color: c.primary, backgroundColor: c.border)),
+            ),
+            const SizedBox(height: 12),
+            Text(context.tr('Ne ferme pas l\'application.'), style: TextStyle(color: c.textSecondary, fontSize: 11.5)),
+          ]),
+        ),
+      ),
+    );
+  }
+}
+
 class PostDownload {
+  /// Pour les essais : la fenêtre d'avancement seule.
+  @visibleForTesting
+  static Widget progressForTest(ValueListenable<String> step, ValueListenable<double?> progress, List<String> kinds) => _DownloadProgress(step: step, progress: progress, kinds: kinds);
+
   PostDownload._();
 
   /// Médias téléchargeables d'une publication : (adresse, nature).
@@ -144,13 +191,34 @@ class PostDownload {
       if (post.id == null || !await GoldGate.download(context, me.id ?? '', postId: post.id!)) return;
       if (!context.mounted) return;
     }
-    _say(context, context.tr('Téléchargement en cours…'));
+    // Fenêtre au centre pendant tout le téléchargement (elle ne se ferme pas toute seule et ne peut pas être fermée par erreur) : étape en cours et barre d'avancement.
+    final step = ValueNotifier<String>(context.tr('Préparation…'));
+    final progress = ValueNotifier<double?>(null);
+    var dialogOpen = true;
+    void closeProgress() {
+      if (dialogOpen && context.mounted) {
+        dialogOpen = false;
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+    }
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      useRootNavigator: true,
+      builder: (ctx) => PopScope(canPop: false, child: _DownloadProgress(step: step, progress: progress, kinds: items.map((e) => e.kind).toList())),
+    );
     var saved = 0;
     var unsigned = 0;   // médias non livrés parce que la signature n'a pas pu être posée
     String? audioPath;
     try {
       final dir = await getTemporaryDirectory();
+      var index = 0;
       for (final it in items) {
+        index++;
+        final prefix = items.length > 1 ? '$index/${items.length} · ' : '';
+        progress.value = (index - 1) / items.length;
+        step.value = prefix + (it.kind == 'video' ? context.tr('Signature de la vidéo…') : it.kind == 'image' ? context.tr('Téléchargement de l\'image…') : context.tr('Téléchargement de l\'audio…'));
         var url = auth.convertToCdnUrl(it.url, auth.appDefaultData);
         // La signature Afrolook (logo + @pseudo du créateur) n'est PAS dans la vidéo ou l'image qu'on regarde dans l'application : elle est posée ici, sur la copie téléchargée (comme sur TikTok).
         // Vidéo : le serveur la pose (la vidéo signée change de coin) ; image : sur le téléphone. En cas d'échec, la copie est téléchargée sans signature : jamais de blocage.
@@ -164,6 +232,7 @@ class PostDownload {
             continue;   // tout ce qui sort d'Afrolook est signé : sans signature, pas de fichier
           }
         }
+        step.value = prefix + context.tr('Téléchargement…');
         final r = await http.get(Uri.parse(url)).timeout(const Duration(minutes: 3));
         if (r.statusCode != 200) continue;
         final ext = it.kind == 'video' ? 'mp4' : it.kind == 'audio' ? 'm4a' : 'jpg';
@@ -176,6 +245,7 @@ class PostDownload {
             continue;
           }
         }
+        step.value = prefix + (it.kind == 'audio' ? context.tr('Préparation de l\'audio…') : context.tr('Enregistrement dans ta galerie…'));
         final f = await File('${dir.path}/afrolook_${DateTime.now().microsecondsSinceEpoch}.$ext').writeAsBytes(bytes, flush: true);
         if (it.kind == 'audio') {
           audioPath = f.path;
@@ -185,9 +255,16 @@ class PostDownload {
         }
       }
     } catch (_) {
+      closeProgress();
+      step.dispose();
+      progress.dispose();
       if (context.mounted) _say(context, context.tr('Le téléchargement a échoué. Vérifie ta connexion et réessaie.'));
       return;
     }
+    progress.value = 1;
+    closeProgress();   // la fenêtre se ferme seulement quand tout est terminé
+    step.dispose();
+    progress.dispose();
     if (!context.mounted) return;
     if (audioPath != null) {
       await Share.shareXFiles([XFile(audioPath)], text: context.tr('Audio téléchargé depuis Afrolook'));

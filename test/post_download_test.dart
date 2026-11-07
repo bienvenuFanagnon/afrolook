@@ -43,4 +43,20 @@ void main() {
     await tester.pumpAndSettle();
     expect(tester.widget<FilledButton>(find.byKey(const ValueKey('download_go'))).onPressed, isNull);
   });
+  testWidgets('fenêtre d’avancement : étape et barre visibles au milieu, elles suivent les changements', (tester) async {
+    final step = ValueNotifier<String>('Préparation…');
+    final progress = ValueNotifier<double?>(null);
+    await tester.pumpWidget(_app(Builder(builder: (ctx) => TextButton(onPressed: () => showDialog<void>(context: ctx, barrierDismissible: false, builder: (_) => PostDownload.progressForTest(step, progress, const ['video'])), child: const Text('go')))));
+    await tester.tap(find.text('go'));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('download_progress')), findsOneWidget);
+    expect(find.text('Téléchargement en cours'), findsOneWidget);
+    expect(find.text('Préparation…'), findsOneWidget);
+    step.value = '2/3 · Signature de la vidéo…';
+    progress.value = 0.4;
+    await tester.pump();
+    expect(find.text('2/3 · Signature de la vidéo…'), findsOneWidget);
+    expect(tester.widget<LinearProgressIndicator>(find.byType(LinearProgressIndicator)).value, 0.4);
+    expect(tester.takeException(), isNull);
+  });
 }

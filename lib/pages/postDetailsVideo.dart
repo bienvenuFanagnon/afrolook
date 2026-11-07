@@ -1267,7 +1267,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
         final sheetColors = AppColors.of(context);
         return Container(
           padding: EdgeInsets.all(16),
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
+          child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
             if (CardEntry.canMake(_currentPost, authProvider.loginUserData))
               CardMenuTile(
                 onTap: () {
@@ -1331,7 +1331,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
             Container(height: 0.5, color: sheetColors.border),
             SizedBox(height: 8),
             _buildMenuOption(Icons.cancel, 'Annuler', sheetColors.textSecondary, () => Navigator.pop(context)),
-          ]),
+          ])),
         );
       },
     );

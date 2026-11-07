@@ -2649,7 +2649,7 @@ class _DetailsPostState extends State<DetailsPost>
       ),
       builder: (context) => Container(
         padding: EdgeInsets.all(16),
-        child: Column(
+        child: SingleChildScrollView(child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (CardEntry.canMake(post, authProvider.loginUserData))
@@ -2747,7 +2747,7 @@ class _DetailsPostState extends State<DetailsPost>
               Navigator.pop(context);
             }),
           ],
-        ),
+        )),
       ),
     );
   }
