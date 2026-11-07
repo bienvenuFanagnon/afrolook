@@ -3,6 +3,9 @@
 const Map<String, Map<String, String>> kTrVideos = {
   "Préparation…": {'en': "Preparing…", 'es': "Preparando…", 'de': "Vorbereitung…", 'ar': "جارٍ التحضير…", 'pt': "Preparando…", 'zh': "准备中…", 'sw': "Inaandaa…"},
   "Signature de la vidéo…": {'en': "Signing the video…", 'es': "Firmando el vídeo…", 'de': "Video wird signiert…", 'ar': "جارٍ توقيع الفيديو…", 'pt': "Assinando o vídeo…", 'zh': "正在为视频签名…", 'sw': "Inatia sahihi video…"},
+  "Pubs vues : {p}/{n}": {'en': "Ads watched: {p}/{n}", 'es': "Anuncios vistos: {p}/{n}", 'de': "Gesehene Werbung: {p}/{n}", 'ar': "الإعلانات المشاهَدة: {p}/{n}", 'pt': "Anúncios vistos: {p}/{n}", 'zh': "已看广告：{p}/{n}", 'sw': "Matangazo yaliyotazamwa: {p}/{n}"},
+  "encore {n} pubs": {'en': "{n} more ads", 'es': "{n} anuncios más", 'de': "noch {n} Werbungen", 'ar': "تبقّى {n} إعلانات", 'pt': "mais {n} anúncios", 'zh': "还差 {n} 条", 'sw': "bado matangazo {n}"},
+  "encore {n} pub": {'en': "{n} more ad", 'es': "{n} anuncio más", 'de': "noch {n} Werbung", 'ar': "تبقّى إعلان واحد", 'pt': "mais {n} anúncio", 'zh': "还差 {n} 条", 'sw': "bado tangazo {n}"},
   "Voir la page des récompenses": {'en': "See the rewards page", 'es': "Ver la página de recompensas", 'de': "Belohnungsseite ansehen", 'ar': "عرض صفحة المكافآت", 'pt': "Ver a página de recompensas", 'zh': "查看奖励页面", 'sw': "Tazama ukurasa wa zawadi"},
   "Rejoins-nous sur Afrolook": {'en': "Join us on Afrolook", 'es': "Únete a nosotros en Afrolook", 'de': "Komm zu uns auf Afrolook", 'ar': "انضم إلينا على أفرولوك", 'pt': "Junte-se a nós no Afrolook", 'zh': "来 Afrolook 加入我们", 'sw': "Jiunge nasi kwenye Afrolook"},
   "Gratuit  ·  Gagne  ·  Crée": {'en': "Free  ·  Earn  ·  Create", 'es': "Gratis  ·  Gana  ·  Crea", 'de': "Gratis  ·  Verdiene  ·  Erstelle", 'ar': "مجاني  ·  اربح  ·  أبدع", 'pt': "Grátis  ·  Ganhe  ·  Crie", 'zh': "免费  ·  赚钱  ·  创作", 'sw': "Bure  ·  Pata  ·  Unda"},

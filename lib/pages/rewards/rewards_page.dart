@@ -302,6 +302,7 @@ class _RewardsPageState extends State<RewardsPage> {
     final claimed = _status.claims[o.id] ?? 0;
     final capReached = !admin && (unlocked || claimed >= o.cap);
     final needed = (o.ads - _status.pending).clamp(0, o.ads);
+    final seen = (_status.pending).clamp(0, o.ads);   // pubs déjà vues qui comptent pour cette récompense
     final dayLimit = !admin && needed > remainingAds;
     final busy = _busyOffer == o.id;
     final disabled = _busyOffer != null || capReached || dayLimit;
@@ -330,6 +331,22 @@ class _RewardsPageState extends State<RewardsPage> {
               unlocked ? context.tr('Débloquée aujourd\'hui') : (capReached ? context.tr('Limite du jour atteinte') : context.tr(o.desc)),
               style: TextStyle(color: colors.textSecondary, fontSize: 12, height: 1.3),
             ),
+            // avancement de CETTE récompense : pubs déjà vues (en réserve) sur pubs demandées, toujours visible (0/3, 1/3…)
+            if (!capReached && o.ads > 0)
+              Padding(
+                key: ValueKey('offer_progress_${o.id}'),
+                padding: const EdgeInsets.only(top: 6),
+                child: Row(children: [
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(value: seen / o.ads, minHeight: 5, backgroundColor: colors.surfaceVariant, valueColor: AlwaysStoppedAnimation(colors.accent)),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(context.tr('Pubs vues : {p}/{n}', {'p': seen, 'n': o.ads}), style: TextStyle(color: colors.textSecondary, fontSize: 11, fontWeight: FontWeight.w700)),
+                ]),
+              ),
             if (busy && _progress.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
@@ -355,7 +372,7 @@ class _RewardsPageState extends State<RewardsPage> {
                 ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: colors.onPrimary))
                 : Column(mainAxisSize: MainAxisSize.min, children: [
                     Text(context.tr('Regarder'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
-                    Text(context.tr(o.ads > 1 ? '{n} pubs' : '{n} pub', {'n': o.ads}),
+                    Text(seen > 0 && needed > 0 ? context.tr(needed > 1 ? 'encore {n} pubs' : 'encore {n} pub', {'n': needed}) : context.tr(o.ads > 1 ? '{n} pubs' : '{n} pub', {'n': o.ads}),
                         style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w600)),
                   ]),
           ),
