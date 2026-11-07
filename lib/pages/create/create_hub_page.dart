@@ -25,6 +25,7 @@ import 'create_voice_page.dart';
 import 'voice_effect_page.dart';
 import 'create_camera_page.dart';
 import 'create_editor_page.dart';
+import '../../services/create_draft.dart';
 import 'chronique_flow.dart';
 import 'create_flow.dart';
 import 'create_result.dart';
@@ -64,6 +65,12 @@ class _CreateHubPageState extends State<CreateHubPage> {
 
   /// Un travail démarre en arrière-plan (ouverture de la caméra, vérification du compte) : on affiche une roue de chargement au lieu de laisser l'écran figé.
   bool _opening = false;
+  CreateDraft? _draft;   // brouillon enregistré en quittant l'éditeur
+
+  Future<void> _loadDraft() async {
+    final d = await CreateDraft.load();
+    if (mounted) setState(() => _draft = d);
+  }
   String _openingLabel = '';
 
   void _setOpening(bool v, [String? label]) {
@@ -83,6 +90,7 @@ class _CreateHubPageState extends State<CreateHubPage> {
     }
     if (widget.chronique != null) ChroniqueFlow.active = widget.chronique;
     _loadQuota();
+    if (widget.chronique == null && widget.canal == null && widget.defiPostId == null) _loadDraft();
     if (widget.start != CreateStart.none) {
       // ouverture directe (icône « répondre en vidéo » d'un post, « Ma vidéo avec ce son »…) : la roue s'affiche tout de suite, sans montrer le menu une seconde
       _opening = true;
@@ -197,10 +205,11 @@ class _CreateHubPageState extends State<CreateHubPage> {
     }
   }
 
-  Future<void> _editor(String path, bool isVideo, String source) async {
+  Future<void> _editor(String path, bool isVideo, String source, {CreateDraft? draft}) async {
     final r = await Navigator.of(context).push<String>(MaterialPageRoute(
-      builder: (_) => CreateEditorPage(path: path, isVideo: isVideo, source: source, canal: widget.canal, defiPostId: widget.defiPostId, sound: widget.presetSound, pin: widget.pinSource),
+      builder: (_) => CreateEditorPage(path: path, isVideo: isVideo, source: source, canal: widget.canal, defiPostId: widget.defiPostId, sound: widget.presetSound, pin: widget.pinSource, draft: draft),
     ));
+    if (mounted && widget.chronique == null && widget.canal == null && widget.defiPostId == null) _loadDraft();
     if (r == kCreateRedo && mounted) {
       // « Refaire » : on rouvre la caméra (ou la galerie si le média venait de la galerie)
       return source == PostSourceLink.captured ? _openCamera(photo: !isVideo) : _pickGallery(video: isVideo);
@@ -289,6 +298,17 @@ class _CreateHubPageState extends State<CreateHubPage> {
           if (widget.presetSound != null) ...[
             _SoundBanner(sound: widget.presetSound!),
             const SizedBox(height: 10),
+          ],
+          if (_draft != null) ...[
+            _DraftBanner(
+              draft: _draft!,
+              onResume: () => _guard(() => _editor(_draft!.path, _draft!.isVideo, _draft!.source, draft: _draft)),
+              onDelete: () async {
+                await CreateDraft.clear();
+                if (mounted) setState(() => _draft = null);
+              },
+            ),
+            const SizedBox(height: 12),
           ],
           _VideoHero(
             onFilm: () => _guard(() => _openCamera(photo: false)),
@@ -562,6 +582,37 @@ class _SoundBanner extends StatelessWidget {
             Text(context.tr('Ce son sera l\'audio de ton post. Filme-toi, prends une photo ou choisis un média.'), maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 12)),
           ]),
         ),
+      ]),
+    );
+  }
+}
+
+/// « Reprendre ton brouillon » : le média retouché enregistré en quittant l'éditeur (reprendre ou supprimer).
+class _DraftBanner extends StatelessWidget {
+  const _DraftBanner({required this.draft, required this.onResume, required this.onDelete});
+
+  final CreateDraft draft;
+  final VoidCallback onResume;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return Container(
+      key: const ValueKey('draft_banner'),
+      padding: const EdgeInsets.fromLTRB(14, 10, 6, 10),
+      decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: c.border)),
+      child: Row(children: [
+        Icon(draft.isVideo ? Icons.videocam_rounded : Icons.photo_rounded, color: c.accentText),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(context.tr('Reprendre ton brouillon'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 14.5)),
+            Text(draft.isVideo ? context.tr('Une vidéo en cours de retouche') : context.tr('Une photo en cours de retouche'), style: TextStyle(color: c.textSecondary, fontSize: 12.5)),
+          ]),
+        ),
+        TextButton(key: const ValueKey('draft_resume'), onPressed: onResume, child: Text(context.tr('Reprendre'))),
+        IconButton(key: const ValueKey('draft_delete'), tooltip: context.tr('Supprimer'), icon: Icon(Icons.delete_outline_rounded, color: c.danger), onPressed: onDelete),
       ]),
     );
   }

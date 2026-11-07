@@ -2,6 +2,7 @@ import '../../widgets/gold_badge.dart';
 import '../../widgets/widgets_sheet.dart';
 import '../../widgets/post_widget_view.dart';
 import '../../models/post_widget.dart';
+import '../../services/create_draft.dart';
 import '../../widgets/reply_banner.dart';
 import 'package:provider/provider.dart';
 import '../../providers/authProvider.dart';
@@ -42,7 +43,7 @@ import 'trim_sheet.dart';
 /// Les outils réutilisent le Studio existant : « Modèles » ouvre les modèles prêts à poster sur ce média, « Musique », « Texte » et « Effets » ouvrent l'éditeur sans
 /// habillage (musique gratuite ou d'artiste, texte libre, looks de couleur sobres), « Couper » garde un passage de la vidéo (découpe faite par le serveur).
 class CreateEditorPage extends StatefulWidget {
-  const CreateEditorPage({super.key, required this.path, required this.isVideo, required this.source, this.canal, this.defiPostId, this.sound, this.pin});
+  const CreateEditorPage({super.key, required this.path, required this.isVideo, required this.source, this.canal, this.defiPostId, this.sound, this.pin, this.draft});
 
   final String path;
   final bool isVideo;
@@ -57,6 +58,9 @@ class CreateEditorPage extends StatefulWidget {
 
   /// Vidéo d'un autre à épingler : le Studio s'ouvre tout de suite avec elle posée dans le coin.
   final MontagePinSource? pin;
+
+  /// Brouillon repris : l'effet de voix et les widgets sont remis comme ils étaient.
+  final CreateDraft? draft;
 
   @override
   State<CreateEditorPage> createState() => _CreateEditorPageState();
@@ -76,6 +80,12 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
   @override
   void initState() {
     super.initState();
+    final dr = widget.draft;
+    if (dr != null) {
+      _voiceEffect = dr.voiceEffect;
+      _touched = dr.touched;
+      PostWidgetsLink.drafts.value = [for (final w in dr.widgets) w.copy()];
+    }
     if (widget.isVideo) {
       _initVideo();
       _checkSubtitles();
@@ -122,6 +132,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
   }
 
   Future<void> _finish(String r) async {
+    if (r == kCreateDone) await CreateDraft.clear();   // publié : plus de brouillon
     if (r == kCreateDone && mounted) Navigator.of(context).pop(kCreateDone);
   }
 
@@ -180,6 +191,77 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
   String? get _presetVideo => widget.isVideo ? _path : null;
   String? get _presetPhoto => widget.isVideo ? null : _path;
 
+  // ── Annuler / brouillon ──────────────────────────────────────────────────
+
+  /// Chaque changement (voix, sous-titres, découpe, temps, widgets) garde l'état d'avant : « Annuler » revient en arrière, autant de fois que nécessaire.
+  final List<_EditSnapshot> _history = [];
+  int? _timeIdx;   // position dans l'historique avant le premier effet de temps : sert à « Vitesse normale »
+
+  _EditSnapshot _snap() => _EditSnapshot(_path, _voiceEffect, _touched, [for (final w in PostWidgetsLink.drafts.value) w.copy()]);
+
+  void _remember() {
+    _history.add(_snap());
+    if (_history.length > 20) {
+      _history.removeAt(0);
+      if (_timeIdx != null) _timeIdx = _timeIdx! > 0 ? _timeIdx! - 1 : null;
+    }
+  }
+
+  Future<void> _restore(_EditSnapshot s) async {
+    final mediaChanged = s.path != _path;
+    _path = s.path;
+    _voiceEffect = s.voice;
+    _touched = s.touched;
+    PostWidgetsLink.drafts.value = s.widgets;
+    _selWidget = null;
+    if (mediaChanged && widget.isVideo) {
+      await _initVideo();
+    } else if (mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _undo() async {
+    if (_history.isEmpty || _busy) return;
+    final s = _history.removeLast();
+    if (_timeIdx != null && _history.length < _timeIdx!) _timeIdx = null;
+    await _restore(s);
+  }
+
+  /// Quitter l'éditeur (bouton retour de l'application ou du téléphone) : on demande avant de perdre le travail.
+  Future<void> _leave() async {
+    if (_busy) return;
+    final c = AppColors.of(context);
+    _video?.pause();
+    final act = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: c.surface,
+        title: Text(context.tr('Quitter la retouche ?'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800)),
+        content: Text(context.tr('Ce que tu as fait sur ce média sera perdu, sauf si tu l\'enregistres en brouillon pour le reprendre plus tard.'), style: TextStyle(color: c.textSecondary)),
+        actionsOverflowDirection: VerticalDirection.down,
+        actionsOverflowButtonSpacing: 4,
+        actions: [
+          TextButton(key: const ValueKey('leave_stay'), onPressed: () => Navigator.pop(ctx, 'stay'), child: Text(context.tr('Continuer la retouche'))),
+          TextButton(key: const ValueKey('leave_save'), onPressed: () => Navigator.pop(ctx, 'save'), child: Text(context.tr('Enregistrer en brouillon'))),
+          TextButton(key: const ValueKey('leave_discard'), onPressed: () => Navigator.pop(ctx, 'discard'), child: Text(context.tr('Supprimer et quitter'), style: TextStyle(color: c.danger))),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    if (act == 'save') {
+      await CreateDraft.save(path: _path, isVideo: widget.isVideo, source: widget.source, voiceEffect: _voiceEffect, widgets: PostWidgetsLink.drafts.value, touched: _touched);
+      if (!mounted) return;
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(context.tr('Brouillon enregistré. Tu le retrouveras dans « Créer ».'))));
+      Navigator.of(context).pop(kCreateBack);
+    } else if (act == 'discard') {
+      await CreateDraft.clear();
+      if (mounted) Navigator.of(context).pop(kCreateBack);
+    } else if (!_pausedByUser) {
+      _video?.play();
+    }
+  }
+
   // ── Musique ──────────────────────────────────────────────────────────────
 
   /// Feuille « Musique » par-dessus la vidéo : on choisit une piste (gratuite ou d'artiste) en l'écoutant ; pour une vidéo, on décide aussi de garder ou non son propre son.
@@ -208,6 +290,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
       v.play();
       return;
     }
+    _remember();
     _path = choice.file.path;
     _voiceEffect = choice.effect;
     _touched = true;
@@ -239,6 +322,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
       setState(() => _busy = true);
       final out = await StudioSubtitlesApi.burn(File(_path), checked);
       if (!mounted) return;
+      _remember();
       _path = out.path;
       _touched = true;
       _busy = false;
@@ -272,6 +356,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
     try {
       final out = await StudioTrimApi.trim(File(_path), isVideo: true, startMs: picked.start.round(), endMs: picked.end.round());
       if (!mounted) return;
+      _remember();
       _path = out.path;
       _touched = true;
       _busy = false;
@@ -302,6 +387,15 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(context.tr('Jouer avec le temps'), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
             const SizedBox(height: 10),
+            if (_timeIdx != null)
+              ListTile(
+                key: const ValueKey('time_normal'),
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.restart_alt_rounded, size: 28, color: Colors.white),
+                title: Text(context.tr('Revenir à la vitesse normale'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                subtitle: Text(context.tr('Retire l\'effet de temps appliqué.'), style: const TextStyle(color: Colors.white60, fontSize: 12.5)),
+                onTap: () => Navigator.pop(c, 'normal'),
+              ),
             for (final e in StudioTimeApi.effects)
               ListTile(
                 key: ValueKey('time_${e.$1}'),
@@ -324,10 +418,19 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
       v.play();
       return;
     }
+    if (key == 'normal' && _timeIdx != null && _timeIdx! < _history.length) {
+      final base = _history[_timeIdx!];
+      _history.removeRange(_timeIdx!, _history.length);
+      _timeIdx = null;
+      await _restore(base);
+      return;
+    }
     setState(() => _busy = true);
     try {
       final out = await StudioTimeApi.apply(File(_path), key);
       if (!mounted) return;
+      _timeIdx ??= _history.length;
+      _remember();
       _path = out.path;
       _touched = true;
       _busy = false;
@@ -351,59 +454,90 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
     }
     _video?.pause();
     final w = await addWidgetFlow(context);
-    if (w != null) PostWidgetsLink.add(w);
+    if (w != null) {
+      _remember();
+      PostWidgetsLink.add(w);
+    }
     if (mounted && !_pausedByUser) _video?.play();
   }
 
-  Future<void> _widgetMenu(PostWidget w) async {
-    final c = AppColors.of(context);
-    final act = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: c.surface,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
-      builder: (ctx) => SafeArea(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          ListTile(key: const ValueKey('wm_edit'), leading: const Icon(Icons.edit_rounded), title: Text(context.tr('Modifier')), onTap: () => Navigator.pop(ctx, 'edit')),
-          ListTile(key: const ValueKey('wm_bigger'), leading: const Icon(Icons.zoom_in_rounded), title: Text(context.tr('Plus grand')), onTap: () => Navigator.pop(ctx, 'bigger')),
-          ListTile(key: const ValueKey('wm_smaller'), leading: const Icon(Icons.zoom_out_rounded), title: Text(context.tr('Plus petit')), onTap: () => Navigator.pop(ctx, 'smaller')),
-          ListTile(key: const ValueKey('wm_delete'), leading: Icon(Icons.delete_outline_rounded, color: c.danger), title: Text(context.tr('Retirer'), style: TextStyle(color: c.danger)), onTap: () => Navigator.pop(ctx, 'delete')),
-        ]),
-      ),
-    );
-    if (!mounted || act == null) return;
-    switch (act) {
-      case 'edit':
-        final n = await editWidget(context, w.kind, existing: w);
-        if (n != null) PostWidgetsLink.replace(w, n);
-      case 'bigger':
-        w.scale = (w.scale + .15).clamp(.6, 1.6);
-        PostWidgetsLink.drafts.value = [...PostWidgetsLink.drafts.value];
-      case 'smaller':
-        w.scale = (w.scale - .15).clamp(.6, 1.6);
-        PostWidgetsLink.drafts.value = [...PostWidgetsLink.drafts.value];
-      case 'delete':
-        PostWidgetsLink.remove(w);
+  PostWidget? _selWidget;
+  double _scaleStart = 1;
+
+  void _refreshWidgets() => PostWidgetsLink.drafts.value = [...PostWidgetsLink.drafts.value];
+
+  void _scaleWidget(PostWidget w, double delta) {
+    w.scale = (w.scale + delta).clamp(.6, 1.6);
+    _refreshWidgets();
+  }
+
+  Future<void> _editSelected(PostWidget w) async {
+    final n = await editWidget(context, w.kind, existing: w);
+    if (n != null) {
+      _remember();
+      PostWidgetsLink.replace(w, n);
+      if (mounted) setState(() => _selWidget = n);
     }
   }
 
+  Widget _ctl(Key k, IconData icon, VoidCallback onTap, {Color bg = Colors.black87, Color fg = Colors.white}) => GestureDetector(
+        key: k,
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          width: 32,
+          height: 32,
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          decoration: BoxDecoration(color: bg, shape: BoxShape.circle, border: Border.all(color: Colors.white54)),
+          child: Icon(icon, size: 18, color: fg),
+        ),
+      );
+
+  /// Calque des widgets : on glisse pour déplacer, on pince (ou on utilise − / +) pour redimensionner, on touche pour afficher les commandes (modifier, supprimer).
   Widget _widgetsLayer() => ValueListenableBuilder<List<PostWidget>>(
         valueListenable: PostWidgetsLink.drafts,
         builder: (context, list, _) => LayoutBuilder(
-          builder: (context, box) => Stack(children: [
+          builder: (context, box) => Stack(clipBehavior: Clip.none, children: [
+            // toucher le fond désélectionne
+            if (_selWidget != null) Positioned.fill(child: GestureDetector(behavior: HitTestBehavior.translucent, onTap: () => setState(() => _selWidget = null))),
             for (final w in list)
               Positioned.fill(
                 child: Align(
                   alignment: Alignment((w.x * 2 - 1).clamp(-1.0, 1.0), (w.y * 2 - 1).clamp(-1.0, 1.0)),
-                  child: GestureDetector(
-                    key: ValueKey('draft_widget_${list.indexOf(w)}'),
-                    onTap: () => _widgetMenu(w),
-                    onPanUpdate: (d) {
-                      w.x = (w.x + d.delta.dx / box.maxWidth).clamp(.08, .92);
-                      w.y = (w.y + d.delta.dy / box.maxHeight).clamp(.1, .9);
-                      PostWidgetsLink.drafts.value = [...list];
-                    },
-                    child: Transform.scale(scale: w.scale, child: IgnorePointer(child: PostWidgetView(widget: w, preview: true))),
-                  ),
+                  child: Stack(clipBehavior: Clip.none, alignment: Alignment.center, children: [
+                    GestureDetector(
+                      key: ValueKey('draft_widget_${list.indexOf(w)}'),
+                      onTap: () => setState(() => _selWidget = identical(_selWidget, w) ? null : w),
+                      onScaleStart: (_) {
+                        _scaleStart = w.scale;
+                        if (!identical(_selWidget, w)) setState(() => _selWidget = w);
+                      },
+                      onScaleUpdate: (d) {
+                        w.x = (w.x + d.focalPointDelta.dx / box.maxWidth).clamp(.04, .96);
+                        w.y = (w.y + d.focalPointDelta.dy / box.maxHeight).clamp(.04, .96);
+                        if (d.pointerCount > 1) w.scale = (_scaleStart * d.scale).clamp(.6, 1.6);
+                        _refreshWidgets();
+                      },
+                      child: Container(
+                        decoration: identical(_selWidget, w) ? BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white, width: 1.5)) : null,
+                        child: Transform.scale(scale: w.scale, child: IgnorePointer(child: PostWidgetView(widget: w, preview: true))),
+                      ),
+                    ),
+                    if (identical(_selWidget, w))
+                      Positioned(
+                        top: -44,
+                        child: Row(mainAxisSize: MainAxisSize.min, children: [
+                          _ctl(const ValueKey('wm_smaller'), Icons.remove_rounded, () => _scaleWidget(w, -.15)),
+                          _ctl(const ValueKey('wm_bigger'), Icons.add_rounded, () => _scaleWidget(w, .15)),
+                          _ctl(const ValueKey('wm_edit'), Icons.edit_rounded, () => _editSelected(w)),
+                          _ctl(const ValueKey('wm_delete'), Icons.delete_outline_rounded, () {
+                            _remember();
+                            PostWidgetsLink.remove(w);
+                            setState(() => _selWidget = null);
+                          }, bg: Colors.redAccent),
+                        ]),
+                      ),
+                  ]),
                 ),
               ),
           ]),
@@ -417,7 +551,12 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
     final ready = widget.isVideo && v != null && v.value.isInitialized;
     final showBadge = widget.source == PostSourceLink.captured || _touched;
     const shadow = [Shadow(color: Color(0x99000000), blurRadius: 4)];
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _leave();
+      },
+      child: Scaffold(
       backgroundColor: Colors.black,
       body: Stack(fit: StackFit.expand, children: [
         // média plein écran
@@ -448,6 +587,10 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
                 _round(key: const ValueKey('editor_back'), icon: Icons.chevron_left_rounded, size: 40, onTap: () => Navigator.of(context).maybePop()),
                 const SizedBox(width: 8),
                 if (showBadge) const Padding(padding: EdgeInsets.only(top: 6), child: OriginalBadge()),
+                if (_history.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  _round(key: const ValueKey('editor_undo'), icon: Icons.undo_rounded, size: 40, onTap: _undo),
+                ],
                 const Spacer(),
                 if (ready)
                   Column(children: [
@@ -551,6 +694,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
             ),
           ),
       ]),
+    ),
     );
   }
 
@@ -583,4 +727,13 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
           ]),
         ),
       );
+}
+
+/// État de la retouche à un instant donné (pour « Annuler »).
+class _EditSnapshot {
+  _EditSnapshot(this.path, this.voice, this.touched, this.widgets);
+  final String path;
+  final String? voice;
+  final bool touched;
+  final List<PostWidget> widgets;
 }
