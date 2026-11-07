@@ -1,3 +1,4 @@
+import 'package:afrolook_api_client/afrolook_api_client.dart' show ApiException;
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -196,12 +197,14 @@ class MontageExport {
     required int maxSeconds,
     void Function(int coins)? onPaid,
     void Function(String jobId)? onJob,
+    String? jobId0,
     String? outroPseudo,
     String? outroAvatarUrl,
   }) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) throw StateError('Connecte-toi pour créer une vidéo.');
-    final jobId = const Uuid().v4().replaceAll('-', '').substring(0, 20);
+    // même identifiant de montage à chaque nouvel essai : un son déjà payé pour ce montage n'est jamais débité une deuxième fois
+    final jobId = jobId0 ?? const Uuid().v4().replaceAll('-', '').substring(0, 20);
     onJob?.call(jobId);
     final uploads = <String, Future<String>>{};
     void up(String name, Uint8List bytes, String type) => uploads[name] = ArgentUpload.bytes(bytes, contentType: type);
@@ -267,8 +270,18 @@ class MontageExport {
     final m = s.music;
     if (m != null && m.isArtist) {
       if (m.paid && m.useCoins > 0) {
-        await MusicApi.buyUse(m.id, jobId);
-        paid = m.useCoins;
+        // un son déjà acheté (ou déjà réglé) ne se paie pas une deuxième fois : le serveur le trace sans débit ; sinon (402) on le paie maintenant
+        var covered = false;
+        try {
+          await MusicApi.freeUse(m.id, jobId);
+          covered = true;
+        } on ApiException catch (e) {
+          if (e.status != 402) rethrow;
+        }
+        if (!covered) {
+          await MusicApi.buyUse(m.id, jobId);
+          paid = m.useCoins;
+        }
       } else {
         await MusicApi.freeUse(m.id, jobId);
       }
@@ -296,7 +309,7 @@ class MontageExport {
       if (s.keepVideoAudio) 'video_volume': s.videoVolume,
       if (s.keepVideoAudio && s.duckMusic) 'duck': true,
       if (!isVideo && m != null) 'seconds': s.musicSeconds.clamp(5, maxSeconds),
-    }, idempotencyKey: 'montage:$jobId');
+    }, idempotencyKey: 'montage:$jobId:${const Uuid().v4().substring(0, 8)}');   // une clé par essai : un échec n'est jamais rejoué à la place d'un nouvel essai
     final url = WalletApi.map(res)['url'] as String;
 
     onStep('Téléchargement…');

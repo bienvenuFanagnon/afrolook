@@ -1,3 +1,4 @@
+import 'dart:async';
 import '../../../ads/gold_gate.dart';
 import '../../../ads/rewards_service.dart';
 import 'dart:math' as math;
@@ -28,7 +29,12 @@ import 'montage_look.dart';
 import 'montage_text_style.dart';
 import '../../../l10n/tr.dart';
 import 'montage_music.dart';
+import '../../../services/api/music_api.dart';
+import '../../../services/music_likes.dart';
+import '../../../services/music_queue.dart';
 import 'montage_pin.dart';
+import 'montage_preview_page.dart';
+import '../../create/chronique_flow.dart' show ChroniqueFlow;
 import 'montage_state.dart';
 import 'montage_stickers.dart';
 import '../studio_theme.dart';
@@ -76,6 +82,10 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
   final _picker = ImagePicker();
   VideoPlayerController? _video;
   String? _lastJobId;
+
+  /// Identifiant du montage, gardé d'un essai à l'autre tant que le son est le même : un échec puis un nouvel essai ne repaie jamais le son.
+  String? _payJobId;
+  String? _payJobSoundId;
   double? _frozenT;
   bool _busy = false;
 
@@ -353,12 +363,23 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     await WidgetsBinding.instance.endOfFrame;
   }
 
+  /// Le titre est-il déjà dans la bibliothèque de la personne (acheté) ? On le demande au serveur si on ne le sait pas encore.
+  Future<bool> _ownsSound(String id) async {
+    if (MusicQueue.ownedIds.value.contains(id)) return true;
+    try {
+      MusicLikes.start();
+      await MusicApi.sound(id);
+    } catch (_) {}
+    return MusicQueue.ownedIds.value.contains(id);
+  }
+
   /// Son d'artiste payant : on informe avant (prix, part de l'artiste, solde) et on bloque si le solde est insuffisant.
   /// Rien n'est débité ici : le serveur débite seulement quand le montage est réussi.
   Future<bool> _confirmArtistCost([MontageMusic? music]) async {
     final m = music ?? s.music;
     final user = context.read<UserAuthProvider>().loginUserData;
     if (m == null || !m.isArtist || !m.paid || m.artistId == user.id) return true;
+    if (await _ownsSound(m.id)) return true;   // déjà acheté : utilisable sans second paiement
     await ArtistSoundPricing.load();
     final price = m.useCoins;
     final balance = user.giftCoinsBalance ?? 0;
@@ -418,6 +439,14 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     });
     final step = ValueNotifier<String>('Préparation…');
     final video = s.exportsVideo;
+    var dialogOpen = true;
+    void closeDialog() {
+      if (dialogOpen && mounted) {
+        dialogOpen = false;
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+    }
+
     showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -426,10 +455,10 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
         child: Dialog.fullscreen(child: PrepareScreen(step: step, video: video)),
       ),
     );
+    File? made;
     try {
-      final File file;
       if (video) {
-        file = await MontageExport.video(
+        made = await MontageExport.video(
           keys: _keys,
           s: s,
           videoPath: s.videoPath,
@@ -437,29 +466,26 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           setT: _setT,
           onStep: (v) => step.value = v,
           maxSeconds: widget.forChronique ? 30 : 60,
-          onJob: (id) => _lastJobId = id,
+          jobId0: (_payJobId != null && _payJobSoundId == s.music?.id) ? _payJobId : null,
+          onJob: (id) {
+            _lastJobId = id;
+            _payJobId = id;
+            _payJobSoundId = s.music?.id;
+          },
           onPaid: (coins) => _say('🎤 $coins pièces utilisées pour le son de l’artiste. Merci de soutenir les artistes !'),
           outroPseudo: context.read<UserAuthProvider>().loginUserData.pseudo,
           outroAvatarUrl: context.read<UserAuthProvider>().loginUserData.imageUrl,
         );
       } else {
         await _setT(.3);
-        file = await MontageExport.still(_keys);
+        made = await MontageExport.still(_keys);
       }
-      if (!mounted) return;
-      Navigator.of(context, rootNavigator: true).pop();
-      setState(() => _frozenT = null);
-      await _afterCreate(file, video);
     } catch (e) {
-      if (!mounted) return;
-      Navigator.of(context, rootNavigator: true).pop();
-      if (e is ApiException && e.isInsufficientCoins) {
-        _say('Solde insuffisant : il te faut ${s.music?.useCoins ?? 0} pièces pour ce son. Recharge ou choisis une musique gratuite.');
-      } else {
-        _say(e is ApiException ? (e.message.isNotEmpty ? e.message : 'Le montage a échoué.') : 'Le montage a échoué. Vérifie ta connexion et réessaie.');
-      }
+      closeDialog();
+      if (mounted) _say(_exportErrorText(e));
     } finally {
       step.dispose();
+      closeDialog();
       if (mounted) {
         setState(() {
           _busy = false;
@@ -467,10 +493,38 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
         });
       }
     }
+    // la suite (aperçu, publication) est hors du « try » : une erreur d'enregistrement ne doit jamais fermer la page de montage
+    if (made != null && mounted) await _afterCreate(made, video);
+  }
+
+  /// Message clair pour chaque échec possible du montage (le texte du serveur quand il est précis).
+  String _exportErrorText(Object e) {
+    if (e is ApiException) {
+      if (e.isInsufficientCoins) return 'Solde insuffisant : il te faut ${s.music?.useCoins ?? 0} pièces pour ce son. Recharge ou choisis une musique gratuite.';
+      switch (e.code) {
+        case 'montage_busy':
+          return 'Un montage précédent se termine encore. Patiente quelques secondes puis réessaie.';
+        case 'music_unavailable':
+          return e.message.isNotEmpty ? e.message : 'Ce son n’est plus disponible. Choisis une autre musique.';
+        case 'payment_required':
+          return 'Le paiement du son n’a pas pu être confirmé. Réessaie : tu n’es débité(e) qu’une seule fois.';
+        case 'upload_invalid':
+        case 'layers_missing':
+          return 'Une partie du montage n’a pas été reçue. Vérifie ta connexion et réessaie.';
+      }
+      return e.message.isNotEmpty ? e.message : 'Le montage a échoué.';
+    }
+    if (e is TimeoutException) return 'La connexion est trop lente pour terminer le montage. Réessaie avec une meilleure connexion.';
+    return 'Le montage a échoué. Vérifie ta connexion et réessaie.';
   }
 
   /// Montage prêt : publier, l'enregistrer dans la galerie, les deux, ou continuer à le modifier.
   Future<void> _afterCreate(File file, bool video) async {
+    // d'abord on regarde le résultat (avec le son) : « Modifier » revient à l'éditeur, « Poursuivre » continue. Dans un parcours de chronique, l'aperçu de la chronique suit déjà.
+    if (ChroniqueFlow.active == null) {
+      final go = await Navigator.of(context).push<bool>(MaterialPageRoute(fullscreenDialog: true, builder: (_) => MontagePreviewPage(file: file, video: video)));
+      if (go != true || !mounted) return;
+    }
     var saved = false;
     while (mounted) {
       final choice = await showModalBottomSheet<String>(
