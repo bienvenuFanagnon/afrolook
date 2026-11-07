@@ -488,17 +488,19 @@ class AuthenticBadge extends StatelessWidget {
   const AuthenticBadge({super.key, this.compact = false});
   final bool compact;
 
+  /// Fin et sobre : un simple liseré avec le mot « Authentique », sans icône ni pastille pleine qui rappellerait la certification d'un compte.
   @override
-  Widget build(BuildContext context) => Container(
-        key: const ValueKey('authentic_badge'),
-        padding: EdgeInsets.symmetric(horizontal: compact ? 6 : 8, vertical: 2),
-        decoration: BoxDecoration(color: const Color(0xF21B8A3C), borderRadius: BorderRadius.circular(99)),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.verified_rounded, size: compact ? 11 : 12, color: Colors.white),
-          const SizedBox(width: 3),
-          Text(context.tr('Validé'), style: TextStyle(color: Colors.white, fontSize: compact ? 9 : 10, fontWeight: FontWeight.w800)),
-        ]),
-      );
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final onVideo = !compact;   // sur une vidéo : texte clair ; dans le fil : couleurs du thème
+    final tint = onVideo ? Colors.white : c.textSecondary;
+    return Container(
+      key: const ValueKey('authentic_badge'),
+      padding: EdgeInsets.symmetric(horizontal: compact ? 6 : 7, vertical: 1.5),
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(5), border: Border.all(color: tint.withOpacity(0.75), width: 0.8)),
+      child: Text(context.tr('Authentique'), style: TextStyle(color: tint, fontSize: compact ? 9 : 9.5, fontWeight: FontWeight.w600, letterSpacing: 0.3, height: 1.2)),
+    );
+  }
 }
 
 /// Pastille jaune d'une vidéo marquée : « Ce post n'est plus monétisé · En savoir plus ».

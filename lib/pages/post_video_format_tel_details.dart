@@ -3453,10 +3453,13 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     final String name = canal != null ? '#${canal.titre ?? ''}' : '@${user?.pseudo ?? ''}';
     final bool madeHere = post.captureSource == 'captured' || post.captureSource == 'edited';
     return Positioned(
-      left: 12,
+      left: 10,
       right: 74,
       bottom: 60 + MediaQuery.of(context).padding.bottom,
-      child: Column(
+      // tout est collé à gauche contre l'écran, jamais centré
+      child: Align(
+        alignment: Alignment.bottomLeft,
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -3517,6 +3520,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
           ],
           PostCtaRow(post: post, dark: true),
         ],
+      ),
       ),
     );
   }

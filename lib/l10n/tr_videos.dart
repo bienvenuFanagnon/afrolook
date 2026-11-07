@@ -1,6 +1,7 @@
 // Traductions des écrans refaits le 06-07/11/2026 : vidéos verticales, vidéo paysage, création de live, onglet Lives, fin animée Afrolook, vidéos authentiques.
 // Anglais, espagnol, allemand, arabe, portugais, chinois, swahili : écrites à la main, à faire relire par un locuteur de chaque langue.
 const Map<String, Map<String, String>> kTrVideos = {
+  "Authentique": {'en': "Authentic", 'es': "Auténtico", 'de': "Authentisch", 'ar': "أصلي", 'pt': "Autêntico", 'zh': "原创", 'sw': "Halisi"},
   "Suivis": {'en': "Following", 'es': "Siguiendo", 'de': "Abonniert", 'ar': "المتابَعون", 'pt': "A seguir", 'zh': "关注", 'sw': "Unaowafuata"},
   "Pour toi": {'en': "For you", 'es': "Para ti", 'de': "Für dich", 'ar': "من أجلك", 'pt': "Para você", 'zh': "为你推荐", 'sw': "Kwa ajili yako"},
   "Ajouter un commentaire…": {'en': "Add a comment…", 'es': "Añade un comentario…", 'de': "Kommentar hinzufügen…", 'ar': "أضف تعليقًا…", 'pt': "Adicionar um comentário…", 'zh': "添加评论…", 'sw': "Ongeza maoni…"},
