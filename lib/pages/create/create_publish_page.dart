@@ -19,6 +19,7 @@ import '../../services/template_link.dart';
 import '../../services/utils/abonnement_utils.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/api_error_dialogs.dart';
+import '../../widgets/monetized_post_option.dart';
 import '../../widgets/original_badge.dart';
 import '../defi/defi_ui.dart';
 import '../studio/studio_sound_link.dart';
@@ -99,6 +100,7 @@ class _CreatePublishPageState extends State<CreatePublishPage> {
   final List<String> _countries = [];
   bool _all = false;
   bool _busy = false;
+  bool _monetized = false;   // likes payants et vues qui rapportent : désactivé par défaut, comme dans l'ancien formulaire (jamais pour un Défi)
   final _progress = ValueNotifier<double>(0);
   VideoPlayerController? _vc;
   Duration? _videoDuration;
@@ -403,7 +405,7 @@ class _CreatePublishPageState extends State<CreatePublishPage> {
         bytes: bytes,
         bytesContentType: contentType,
         category: type,
-        monetized: false,
+        monetized: _monetized,
         countries: countries,
         canal: widget.canal,
         eventDate: type == 'EVENEMENT' ? _eventDate : null,
@@ -562,6 +564,11 @@ class _CreatePublishPageState extends State<CreatePublishPage> {
               if (!_isDefi && _type == 'EVENEMENT')
                 _field(c, key: const ValueKey('field_date'), label: context.tr('Date de l\'événement'), value: _eventDate == null ? context.tr('Choisir') : '${_eventDate!.day}/${_eventDate!.month}/${_eventDate!.year}', icon: Icons.calendar_today_rounded, onTap: _pickDate),
               _field(c, key: const ValueKey('field_countries'), label: context.tr('Pays'), value: _countriesLabel, icon: Icons.public_rounded, onTap: _pickCountries),
+              // monétisation : choisie ici par l'auteur (désactivée par défaut) ; un Défi n'est jamais monétisé, un post lien d'un autre réseau non plus (décidé par le serveur)
+              if (!_isDefi) ...[
+                const SizedBox(height: 14),
+                MonetizedPostOption(key: const ValueKey('field_monetized'), value: _monetized, onChanged: (v) => setState(() => _monetized = v)),
+              ],
               if (OriginalBadge.isCaptured(src) || notes.isNotEmpty) ...[
                 const SizedBox(height: 14),
                 Container(

@@ -17,6 +17,12 @@ Widget _host(Widget child, {Brightness b = Brightness.light}) => MaterialApp(
 UserData _user() => UserData()..countryData = {'countryCode': 'TG'};
 
 void main() {
+  void tall(WidgetTester tester) {
+    tester.view.physicalSize = const Size(800, 2600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+  }
+
   tearDown(() {
     PostSourceLink.clear();
     PostVoiceLink.clear();
@@ -42,6 +48,7 @@ void main() {
   });
 
   testWidgets('un texte vide n\'est pas publié ; la mention « Fait sur Afrolook » et la voix modifiée s\'affichent dans la note', (tester) async {
+    tall(tester);
     PostSourceLink.set(PostSourceLink.edited);
     PostVoiceLink.set('deep');
     var calls = 0;
@@ -67,5 +74,20 @@ void main() {
     expect(find.textContaining('1 pays en version gratuite'), findsOneWidget);
     expect(find.byKey(const ValueKey('countries_all')), findsNothing);
     expect(tester.takeException(), isNull);
+  });
+  testWidgets('l’option « Post monétisé » est dans le formulaire final : désactivée par défaut, activable, absente pour un Défi', (tester) async {
+    tall(tester);
+    await tester.pumpWidget(_host(CreatePublishPage(kind: CreatePostKind.text, me: _user(), publish: (d, t, c) async {})));
+    expect(find.byKey(const ValueKey('field_monetized')), findsOneWidget);
+    expect(find.textContaining('Désactivé : ce post n\'est pas monétisé'), findsOneWidget);
+    final sw = find.descendant(of: find.byKey(const ValueKey('field_monetized')), matching: find.byType(Switch));
+    await tester.ensureVisible(sw);
+    await tester.tap(sw);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Activé : ce post est monétisé'), findsOneWidget);
+
+    await tester.pumpWidget(_host(CreatePublishPage(kind: CreatePostKind.text, me: _user(), defiPostId: 'defi1', publish: (d, t, c) async {})));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('field_monetized')), findsNothing);
   });
 }
