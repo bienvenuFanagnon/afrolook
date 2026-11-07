@@ -50,7 +50,9 @@ class ApiClient {
 
   Future<dynamic> get(String path, {Map<String, dynamic>? query}) => _send('GET', path, query: query);
 
-  Future<dynamic> post(String path, {Object? body, String? idempotencyKey}) => _send('POST', path, body: body, idempotencyKey: idempotencyKey);
+  /// [longJob] : travail lourd du serveur (montage vidéo, découpe, signature…) qui peut durer plusieurs minutes. Le délai d'attente passe à 6 minutes et la requête n'est JAMAIS
+  /// rejouée toute seule : un rejeu relancerait un second travail pendant que le premier tourne encore (« montage déjà en cours »).
+  Future<dynamic> post(String path, {Object? body, String? idempotencyKey, bool longJob = false}) => _send('POST', path, body: body, idempotencyKey: idempotencyKey, longJob: longJob);
 
   Future<dynamic> put(String path, {Object? body, String? idempotencyKey}) => _send('PUT', path, body: body, idempotencyKey: idempotencyKey);
 
@@ -65,8 +67,8 @@ class ApiClient {
   /// Renvoie le champ `data` de la réponse (ou la réponse entière si elle n'en a pas).
   static dynamic data(dynamic response) => response is Map && response.containsKey('data') ? response['data'] : response;
 
-  Future<dynamic> _send(String method, String path, {Object? body, Map<String, dynamic>? query, String? idempotencyKey}) async {
-    final safeToRetry = method == 'GET' || idempotencyKey != null;
+  Future<dynamic> _send(String method, String path, {Object? body, Map<String, dynamic>? query, String? idempotencyKey, bool longJob = false}) async {
+    final safeToRetry = !longJob && (method == 'GET' || idempotencyKey != null);
     var refreshed = false;
     var emailAsked = false;
     var attempt = 0;
@@ -77,7 +79,7 @@ class ApiClient {
           path,
           data: body,
           queryParameters: query,
-          options: Options(method: method, headers: await _headers(idempotencyKey, forceRefresh: refreshed)),
+          options: Options(method: method, headers: await _headers(idempotencyKey, forceRefresh: refreshed), receiveTimeout: longJob ? const Duration(minutes: 6) : null, sendTimeout: longJob ? const Duration(minutes: 2) : null),
         );
       } on DioException catch (e) {
         if (safeToRetry && attempt < maxRetries) {

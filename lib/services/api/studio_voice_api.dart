@@ -57,7 +57,7 @@ class StudioVoiceApi {
 
   /// Applique [effect] à l'audio déjà envoyé ([uploadId]) et rend le fichier transformé, prêt à écouter puis à publier.
   static Future<File> apply(String uploadId, String effect, {bool video = false}) async {
-    final res = await ApiGateway.instance.client.post('/studio/voice', body: {'upload_id': uploadId, 'effect': effect});
+    final res = await ApiGateway.instance.client.post('/studio/voice', body: {'upload_id': uploadId, 'effect': effect}, longJob: true);
     final url = WalletApi.map(res)['url'] as String;
     final r = await http.get(Uri.parse(url));
     if (r.statusCode != 200) throw StateError('Téléchargement impossible');

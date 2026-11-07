@@ -318,7 +318,7 @@ class MontageExport {
       if (s.keepVideoAudio) 'video_volume': s.videoVolume,
       if (s.keepVideoAudio && s.duckMusic) 'duck': true,
       if (!isVideo && m != null) 'seconds': s.musicSeconds.clamp(5, maxSeconds),
-    }, idempotencyKey: 'montage:$jobId:${const Uuid().v4().substring(0, 8)}');   // une clé par essai : un échec n'est jamais rejoué à la place d'un nouvel essai
+    }, idempotencyKey: 'montage:$jobId:${const Uuid().v4().substring(0, 8)}', longJob: true);   // une clé par essai : un échec n'est jamais rejoué à la place d'un nouvel essai
     final url = WalletApi.map(res)['url'] as String;
 
     onStep('Téléchargement…');

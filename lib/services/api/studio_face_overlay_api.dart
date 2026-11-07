@@ -31,7 +31,7 @@ class StudioBeautyApi {
       if ((beauty.smooth > 0 || coverBlurSize != null) && track.any((p) => p.x != null)) 'track': [for (final p in track) p.toJson()],
       // visage flouté (anonymat) : taille de la zone en fraction de la largeur de l'image
       if (coverBlurSize != null) 'cover': {'size': coverBlurSize},
-    });
+    }, longJob: true);
     final url = WalletApi.map(res)['url'] as String;
     final r = await http.get(Uri.parse(url));
     if (r.statusCode != 200) throw StateError('Téléchargement impossible');
@@ -47,7 +47,7 @@ class StudioFaceOverlayApi {
   static Future<File> apply(File video, List<int> filterPng, List<FaceTrackPoint> track, {void Function(double)? onProgress}) async {
     final videoId = await UploadsApi.upload(video, contentType: 'video/mp4', onProgress: onProgress);
     final imageId = await ArgentUpload.bytes(Uint8List.fromList(filterPng), contentType: 'image/png');
-    final res = await ApiGateway.instance.client.post('/studio/face-overlay', body: {'upload_id': videoId, 'overlay_upload_id': imageId, 'track': [for (final p in track) p.toJson()]});
+    final res = await ApiGateway.instance.client.post('/studio/face-overlay', body: {'upload_id': videoId, 'overlay_upload_id': imageId, 'track': [for (final p in track) p.toJson()]}, longJob: true);
     final url = WalletApi.map(res)['url'] as String;
     final r = await http.get(Uri.parse(url));
     if (r.statusCode != 200) throw StateError('Téléchargement impossible');

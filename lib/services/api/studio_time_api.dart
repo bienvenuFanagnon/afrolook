@@ -27,7 +27,7 @@ class StudioTimeApi {
 
   static Future<File> apply(File file, String effect, {void Function(double)? onProgress}) async {
     final id = await UploadsApi.upload(file, contentType: 'video/mp4', onProgress: onProgress);
-    final res = await ApiGateway.instance.client.post('/studio/time', body: {'upload_id': id, 'effect': effect});
+    final res = await ApiGateway.instance.client.post('/studio/time', body: {'upload_id': id, 'effect': effect}, longJob: true);
     final url = WalletApi.map(res)['url'] as String;
     final r = await http.get(Uri.parse(url));
     if (r.statusCode != 200) throw StateError('Téléchargement impossible');

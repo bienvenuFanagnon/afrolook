@@ -14,7 +14,7 @@ class StudioTrimApi {
   /// Découpe [file] entre [startMs] et [endMs] et rend le nouveau fichier (même nature : vidéo ou audio).
   static Future<File> trim(File file, {required bool isVideo, required int startMs, required int endMs, void Function(double)? onProgress}) async {
     final id = await UploadsApi.upload(file, contentType: isVideo ? 'video/mp4' : 'audio/mp4', onProgress: onProgress);
-    final res = await ApiGateway.instance.client.post('/studio/trim', body: {'upload_id': id, 'start_ms': startMs, 'end_ms': endMs});
+    final res = await ApiGateway.instance.client.post('/studio/trim', body: {'upload_id': id, 'start_ms': startMs, 'end_ms': endMs}, longJob: true);
     final url = WalletApi.map(res)['url'] as String;
     final r = await http.get(Uri.parse(url));
     if (r.statusCode != 200) throw StateError('Téléchargement impossible');

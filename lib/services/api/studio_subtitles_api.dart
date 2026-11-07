@@ -37,7 +37,7 @@ class StudioSubtitlesApi {
   /// Envoie la vidéo et rend les passages reconnus (à relire avant l'incrustation).
   static Future<List<SubtitleSegment>> transcribe(File video, {String? language, void Function(double)? onProgress}) async {
     final id = await UploadsApi.upload(video, contentType: 'video/mp4', onProgress: onProgress);
-    final res = await ApiGateway.instance.client.post('/studio/subtitles', body: {'upload_id': id, if (language != null) 'language': language});
+    final res = await ApiGateway.instance.client.post('/studio/subtitles', body: {'upload_id': id, if (language != null) 'language': language}, longJob: true);
     final list = (WalletApi.map(res)['segments'] as List?) ?? const [];
     return [for (final s in list) SubtitleSegment.fromJson(Map<String, dynamic>.from(s as Map))];
   }
@@ -45,7 +45,7 @@ class StudioSubtitlesApi {
   /// Incruste les [segments] dans la vidéo et rend le nouveau fichier.
   static Future<File> burn(File video, List<SubtitleSegment> segments, {void Function(double)? onProgress}) async {
     final id = await UploadsApi.upload(video, contentType: 'video/mp4', onProgress: onProgress);
-    final res = await ApiGateway.instance.client.post('/studio/subtitles/burn', body: {'upload_id': id, 'segments': [for (final s in segments) s.toJson()]});
+    final res = await ApiGateway.instance.client.post('/studio/subtitles/burn', body: {'upload_id': id, 'segments': [for (final s in segments) s.toJson()]}, longJob: true);
     final url = WalletApi.map(res)['url'] as String;
     final r = await http.get(Uri.parse(url));
     if (r.statusCode != 200) throw StateError('Téléchargement impossible');

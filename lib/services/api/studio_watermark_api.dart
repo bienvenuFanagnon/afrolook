@@ -16,7 +16,7 @@ class StudioWatermarkApi {
   static Future<File> sign(File video, Uint8List pill, {void Function(double)? onProgress}) async {
     final videoId = await UploadsApi.upload(video, contentType: 'video/mp4', onProgress: onProgress);
     final pillId = await ArgentUpload.bytes(pill, contentType: 'image/png');
-    final res = await ApiGateway.instance.client.post('/studio/watermark', body: {'upload_id': videoId, 'wm_upload_id': pillId});
+    final res = await ApiGateway.instance.client.post('/studio/watermark', body: {'upload_id': videoId, 'wm_upload_id': pillId}, longJob: true);
     final url = WalletApi.map(res)['url'] as String;
     final r = await http.get(Uri.parse(url));
     if (r.statusCode != 200) throw StateError('Téléchargement impossible');
