@@ -472,6 +472,10 @@
    [
     "Contenus sexuellement explicites",
     "Les contenus sexuellement explicites (actes sexuels, nudité explicite) sont interdits sur Afrolook. Les tenues légères, les danses et les maillots de bain sont permis. Un contrôle automatique fait sur ton téléphone refuse ce type de contenu à la publication, y compris dans les contenus payants et les chroniques ; si c'est une erreur, tu peux demander la vérification de l'équipe. Un contenu explicite retrouvé plus tard est retiré et peut entraîner une sanction."
+   ],
+   [
+    "Signature Afrolook et contenus déjà publiés",
+    "Les vidéos et les images créées dans le Studio (filmées ou choisies) portent la signature d'Afrolook avec le @pseudo de leur créateur ; sur les vidéos, elle change de coin comme sur TikTok. Il est interdit de la masquer ou de la rogner. Republier un contenu déjà publié sur Afrolook par un autre compte est refusé : si le contenu est le tien, tu peux demander la vérification de l'équipe."
    ]
   ]
  },
@@ -551,7 +555,7 @@
    ],
    [
     "Vérification des vidéos",
-    "Pendant la lecture d'une vidéo, ton téléphone peut en analyser quelques images pour y chercher le logo ou le nom d'un autre réseau. L'analyse se fait sur ton téléphone, avec une reconnaissance de texte qui fonctionne hors ligne. Aucune image ni aucun texte n'est envoyé : seul le résultat (« rien détecté » ou « marque détectée ») est envoyé à Afrolook, avec l'identifiant de la vidéo. Ce résultat sert à afficher le badge « Authentique », à décider de la monétisation de la vidéo et à retirer les contenus sexuellement explicites ; il n'est pas lié à ton profil publicitaire. Le contrôle des contenus explicites utilise un modèle libre qui tourne entièrement sur ton téléphone."
+    "Pendant la lecture d'une vidéo, ton téléphone peut en analyser quelques images pour y chercher le logo ou le nom d'un autre réseau. L'analyse se fait sur ton téléphone, avec une reconnaissance de texte qui fonctionne hors ligne. Aucune image ni aucun texte n'est envoyé : seul le résultat (« rien détecté » ou « marque détectée ») est envoyé à Afrolook, avec l'identifiant de la vidéo. Ce résultat sert à afficher le badge « Authentique », à décider de la monétisation de la vidéo et à retirer les contenus sexuellement explicites ; il n'est pas lié à ton profil publicitaire. Le contrôle des contenus explicites utilise un modèle libre qui tourne entièrement sur ton téléphone. Une empreinte visuelle (quelques nombres calculés sur ton téléphone, pas ton contenu) est aussi conservée pour empêcher qu'un contenu déjà publié soit republié par un autre compte."
    ],
    [
     "Utilisation des données",
