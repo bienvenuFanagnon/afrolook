@@ -488,7 +488,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
         );
       } else {
         await _setT(.3);
-        made = await MontageExport.still(_keys, pseudo: context.read<UserAuthProvider>().loginUserData.pseudo ?? '');
+        made = await MontageExport.still(_keys);
       }
     } catch (e) {
       closeDialog();

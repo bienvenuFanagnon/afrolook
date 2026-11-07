@@ -12,7 +12,6 @@ import '../../providers/authProvider.dart';
 import '../../services/account_gate.dart';
 import '../../services/api/posts_api.dart';
 import '../../services/post_source_link.dart';
-import '../../services/watermark.dart';
 import '../../services/authentic_video_check.dart';
 import '../../theme/app_colors.dart';
 import '../cards/card_entry.dart';
@@ -161,8 +160,7 @@ class _CreateHubPageState extends State<CreateHubPage> {
         await _editor(xs.first.path, false, PostSourceLink.imported);
       } else {
         // plusieurs photos : directement au formulaire (l'éditeur ne retouche qu'un seul média)
-        final pseudo = context.read<UserAuthProvider>().loginUserData.pseudo ?? '';
-        final bytes = [for (final x in xs) await Watermark.signImageBytes(await File(x.path).readAsBytes(), pseudo)];
+        final bytes = [for (final x in xs) await File(x.path).readAsBytes()];
         final r = await openCreateForm(context, kind: CreatePostKind.image, images: bytes, canal: widget.canal, defiPostId: widget.defiPostId, source: PostSourceLink.imported);
         await _after(r);
       }

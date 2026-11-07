@@ -20,7 +20,7 @@ void main() {
     expect(d.getPixel(d.width ~/ 2, d.height ~/ 2).a, greaterThan(100));
   });
 
-  test('une image signée garde sa taille et porte la pastille en bas à droite (coin haut-gauche inchangé)', () async {
+  test('une image signée garde sa taille et porte une fine bande en bas sur toute la largeur (haut de l’image inchangé)', () async {
     final rec = ui.PictureRecorder();
     Canvas(rec).drawRect(const Rect.fromLTWH(0, 0, 600, 800), Paint()..color = Colors.white);
     final im = await rec.endRecording().toImage(600, 800);
@@ -30,7 +30,9 @@ void main() {
     expect((d.width, d.height), (600, 800));
     final tl = d.getPixel(10, 10);
     expect(tl.r, greaterThan(240));   // haut-gauche : toujours blanc
-    final br = d.getPixel(600 - 40, 800 - 40);
-    expect(br.r, lessThan(200));      // bas-droite : la pastille sombre est passée par là
+    expect(d.getPixel(20, 800 - 8).r, lessThan(200));          // bas-gauche : la bande sombre
+    expect(d.getPixel(580, 800 - 8).r, lessThan(200));         // bas-droite : la bande couvre toute la largeur
+    expect(d.getPixel(300, 400).r, greaterThan(240));          // le milieu de l'image n'est pas touché
+    expect(d.getPixel(300, 800 - 60).r, greaterThan(240));     // la bande reste fine (moins de 50 px sur 800)
   });
 }

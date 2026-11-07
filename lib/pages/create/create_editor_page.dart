@@ -13,8 +13,6 @@ import '../../services/api/studio_subtitles_api.dart';
 import '../../services/api/studio_trim_api.dart';
 import '../../services/api/studio_time_api.dart';
 import '../../services/post_source_link.dart';
-import '../../services/watermark.dart';
-import 'prepare_screen.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/api_error_dialogs.dart';
 import '../../widgets/original_badge.dart';
@@ -120,31 +118,9 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
     if (r == kCreateDone && mounted) Navigator.of(context).pop(kCreateDone);
   }
 
-  /// Signe ce qui part au formulaire : vidéo = pastille « Afrolook + @pseudo » qui change de coin (posée par le serveur) ; image = pastille fixe. Un échec ne bloque jamais.
-  Future<File> _signed(File f) async {
-    final pseudo = context.read<UserAuthProvider>().loginUserData.pseudo ?? '';
-    if (!widget.isVideo) return Watermark.signImage(f, pseudo);
-    final step = ValueNotifier<String>(context.tr('Signature de ta vidéo…'));
-    showDialog<void>(context: context, barrierDismissible: false, useRootNavigator: true, builder: (_) => PopScope(canPop: false, child: Dialog.fullscreen(child: PrepareScreen(step: step, video: true))));
-    try {
-      return await Watermark.signVideo(f, pseudo);
-    } finally {
-      if (mounted) Navigator.of(context, rootNavigator: true).pop();
-      step.dispose();
-    }
-  }
-
-  String? _signedFor;
-  File? _signedFile;
-
   Future<void> _next() async {
     _video?.pause();
-    // le fichier signé est gardé tant que le média ne change pas (retour depuis le formulaire puis « Suivant » : pas de seconde signature)
-    if (_signedFor != _path) {
-      _signedFile = await _signed(File(_path));
-      _signedFor = _path;
-    }
-    final media = _signedFile!;
+    final media = File(_path);   // aucune signature dans le média publié : elle n'est posée qu'au téléchargement (comme sur TikTok)
     if (!mounted) return;
     final result = StudioResult(type: widget.isVideo ? StudioContentType.video : StudioContentType.image, mediaFile: media);
     // un passage coupé dans l'éditeur compte comme retouché dans notre Studio

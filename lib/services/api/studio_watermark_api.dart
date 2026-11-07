@@ -13,6 +13,13 @@ import 'wallet_api.dart';
 class StudioWatermarkApi {
   StudioWatermarkApi._();
 
+  /// Téléchargement d'une vidéo de publication : le serveur pose la signature (logo + @pseudo du créateur, qui change de coin) sur une copie de la vidéo et rend son adresse.
+  static Future<String> signedDownload(String postId, Uint8List pill) async {
+    final pillId = await ArgentUpload.bytes(pill, contentType: 'image/png');
+    final res = await ApiGateway.instance.client.post('/posts/$postId/signed-download', body: {'wm_upload_id': pillId}, longJob: true);
+    return WalletApi.map(res)['url'] as String;
+  }
+
   static Future<File> sign(File video, Uint8List pill, {void Function(double)? onProgress}) async {
     final videoId = await UploadsApi.upload(video, contentType: 'video/mp4', onProgress: onProgress);
     final pillId = await ArgentUpload.bytes(pill, contentType: 'image/png');

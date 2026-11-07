@@ -4,7 +4,6 @@ import 'dart:ui' as ui;
 
 import '../../../services/api/api_gateway.dart';
 import '../../../services/api/argent_upload.dart';
-import '../../../services/watermark.dart';
 import '../../../services/api/music_api.dart';
 import '../../../services/api/wallet_api.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -182,11 +181,9 @@ class MontageExport {
   }
 
   /// Image fixe prête à publier (1080 px de large).
-  static Future<File> still(MontageKeys keys, {String? pseudo}) async {
+  static Future<File> still(MontageKeys keys) async {
     final p = await png(keys.all, 1080);
-    final bytes = await jpeg(p, 1080);
-    // image créée dans le Studio : signée « Afrolook + @pseudo » (pastille fixe en bas à droite)
-    return tempFile(pseudo == null ? bytes : await Watermark.signImageBytes(bytes, pseudo), 'jpg');
+    return tempFile(await jpeg(p, 1080), 'jpg');
   }
 
   /// Vidéo prête à publier. [setT] fige l'animation à l'instant demandé et attend le dessin.
@@ -261,13 +258,6 @@ class MontageExport {
         up('outro_tag.png', l.$2, 'image/png');
       } catch (_) {}   // sans ces calques, le serveur n'ajoute pas la fin : la vidéo reste valable
     }
-    // filigrane mobile « Afrolook + @pseudo » (change de coin comme sur TikTok), posé par le serveur sur toute vidéo du Studio
-    if (isVideo) {
-      try {
-        up('wm.png', await Watermark.pillPng(outroPseudo ?? ''), 'image/png');
-      } catch (_) {}
-    }
-
     onStep('Envoi…');
     final ids = <String, String>{};
     for (final e in uploads.entries) {

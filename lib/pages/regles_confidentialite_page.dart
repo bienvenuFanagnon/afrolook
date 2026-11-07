@@ -354,7 +354,7 @@ class ReglesConfidentialitePage extends StatelessWidget {
               _rule('Contenus sexuellement explicites',
                   'Les contenus sexuellement explicites (actes sexuels, nudité explicite) sont interdits sur Afrolook. Les tenues légères, les danses et les maillots de bain sont permis. Un contrôle automatique fait sur ton téléphone refuse ce type de contenu à la publication, y compris dans les contenus payants et les chroniques ; si c\'est une erreur, tu peux demander la vérification de l\'équipe. Un contenu explicite retrouvé plus tard est retiré et peut entraîner une sanction.'),
               _rule('Signature Afrolook et contenus déjà publiés',
-                  'Les vidéos et les images créées dans le Studio (filmées ou choisies) portent la signature d\'Afrolook avec le @pseudo de leur créateur ; sur les vidéos, elle change de coin comme sur TikTok. Il est interdit de la masquer ou de la rogner. Republier un contenu déjà publié sur Afrolook par un autre compte est refusé : si le contenu est le tien, tu peux demander la vérification de l\'équipe.'),
+                  'Ce qui est téléchargé depuis Afrolook (vidéo ou image) porte toujours la signature d\'Afrolook avec le @pseudo du créateur : en bas des images, et sur les vidéos elle change de coin comme sur TikTok. Elle n\'apparaît pas dans l\'application. Il est interdit de la masquer ou de la rogner. Republier un contenu déjà publié sur Afrolook par un autre compte est refusé : si le contenu est le tien, tu peux demander la vérification de l\'équipe.'),
             ],
           ),
           _section(
