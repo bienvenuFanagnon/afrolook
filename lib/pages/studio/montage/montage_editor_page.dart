@@ -235,7 +235,17 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
       await v.setLooping(true);
       await v.setVolume(0);
       await v.play();
-    } catch (_) {}
+      // certains téléphones n'animent l'image qu'après un second « lecture » (la surface vidéo n'est prête qu'après le premier affichage) : on vérifie et on relance
+      Future<void>.delayed(const Duration(milliseconds: 900), () async {
+        if (mounted && identical(_video, v) && v.value.isInitialized && !v.value.isPlaying) {
+          await v.seekTo(Duration.zero);
+          await v.play();
+          if (mounted) setState(() {});
+        }
+      });
+    } catch (_) {
+      if (mounted) _say('La vidéo ne peut pas être lue dans l’éditeur (format non pris en charge). Elle sera quand même utilisée telle quelle.');
+    }
     if (mounted) setState(() {});
   }
 

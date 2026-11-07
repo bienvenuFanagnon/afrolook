@@ -61,6 +61,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
   late String _path = widget.path;
   VideoPlayerController? _video;
   bool _busy = false;
+  bool _pausedByUser = false;   // la personne a mis la vidéo en pause : on ne la relance pas toute seule
 
   /// Outil utilisé : le média est désormais retouché dans le Studio d'Afrolook (mention « Fait sur Afrolook »).
   bool _touched = false;
@@ -101,7 +102,17 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
       await v.initialize();
       await v.setLooping(true);
       await v.play();
-    } catch (_) {}
+      // certains téléphones n'animent l'image qu'après un second « lecture » : on vérifie et on relance
+      Future<void>.delayed(const Duration(milliseconds: 900), () async {
+        if (mounted && identical(_video, v) && v.value.isInitialized && !v.value.isPlaying && !_pausedByUser) {
+          await v.seekTo(Duration.zero);
+          await v.play();
+          if (mounted) setState(() {});
+        }
+      });
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(context.tr('La vidéo ne peut pas être lue ici (format non pris en charge). Elle sera quand même utilisée telle quelle.'))));
+    }
     if (mounted) setState(() {});
   }
 
@@ -353,7 +364,10 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
         if (widget.isVideo)
           (ready
               ? GestureDetector(
-                  onTap: () => setState(() => v.value.isPlaying ? v.pause() : v.play()),
+                  onTap: () => setState(() {
+                    _pausedByUser = v.value.isPlaying;
+                    v.value.isPlaying ? v.pause() : v.play();
+                  }),
                   child: FittedBox(fit: BoxFit.cover, clipBehavior: Clip.hardEdge, child: SizedBox(width: v.value.size.width, height: v.value.size.height, child: VideoPlayer(v))),
                 )
               : const Center(child: CircularProgressIndicator(color: Colors.white54)))
