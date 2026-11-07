@@ -428,7 +428,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           const SizedBox(height: 8),
           Text('Ton solde : $balance pièces → ${balance - price} après.', style: TextStyle(color: _c.textSecondary)),
           const SizedBox(height: 8),
-          Text('Tu n’es débité(e) que si ta vidéo est bien créée.', style: TextStyle(color: _c.textSecondary, fontSize: 12.5)),
+          Text('Les pièces sont débitées quand tu lances « Terminer ». Si le montage échoue, tu peux réessayer sans repayer ce son.', style: TextStyle(color: _c.textSecondary, fontSize: 12.5)),
         ]),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text('Annuler', style: TextStyle(color: _c.textSecondary))),
