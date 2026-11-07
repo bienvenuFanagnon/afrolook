@@ -1,7 +1,11 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
+
 import 'package:afrolook_api_client/afrolook_api_client.dart' show ApiException;
+import 'package:crypto/crypto.dart' show sha1;
+import 'dart:convert' show utf8;
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
@@ -19,7 +23,26 @@ class StudioWatermarkApi {
   /// le serveur toutes les 2 secondes (une requête longue serait coupée par Cloudflare). [onStep] reçoit « sending » puis « working » (pour la fenêtre d'avancement).
   ///
   /// [layers] : `pill` (pastille), `logo` (silhouette), `qr` (tuile du QR) et, pour la fin Afrolook, `story_pill`, `story_tag` (720 × 1280) et `post_pill`, `post_tag` (720 × 900) et `land_pill`, `land_tag` (1280 × 720).
+  /// Ordre fixe des calques pour l'empreinte : le même que sur le serveur (`StudioWatermarkController::LAYER_ORDER`).
+  static const _layerOrder = ['pill', 'logo', 'qr', 'story_pill', 'story_tag', 'post_pill', 'post_tag', 'land_pill', 'land_tag'];
+
+  /// Empreinte des calques : sha1 de « role:sha1(octets) » joints par « | », dans l'ordre fixe. Deux demandes avec les mêmes dessins ont la même empreinte,
+  /// donc la même copie gardée sur le serveur (pour tout le monde : la signature est celle du créateur, pas de la personne qui télécharge).
+  @visibleForTesting
+  static String layersHash(Map<String, Uint8List> layers) {
+    final parts = [for (final role in _layerOrder) if (layers[role] != null) '$role:${sha1.convert(layers[role]!)}'];
+    return sha1.convert(utf8.encode(parts.join('|'))).toString();
+  }
+
   static Future<String> signedDownload(String postId, Map<String, Uint8List> layers, {void Function(String step)? onStep}) async {
+    // copie déjà gardée pour cette vidéo et ces dessins ? on la prend tout de suite : rien à envoyer ni à fabriquer
+    final hash = layersHash(layers);
+    try {
+      final hit = WalletApi.map(await ApiGateway.instance.client.get('/posts/$postId/signed-download/cached', query: {'hash': hash}));
+      if (hit['url'] is String && (hit['url'] as String).isNotEmpty) return hit['url'] as String;
+    } catch (_) {
+      // pas de copie (404) ou serveur ancien : on la fabrique
+    }
     onStep?.call('sending');
     final ids = <String, String>{};
     await Future.wait([
@@ -35,6 +58,7 @@ class StudioWatermarkApi {
           if (ids[k] != null) k: ids[k],
       },
       'async': true,
+      'layers_hash': hash,
     };
     final res = await ApiGateway.instance.client.post('/posts/$postId/signed-download', body: body, longJob: true);
     final first = WalletApi.map(res);
