@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Répondre en vidéo : montages proposés</title>
+<style>
+:root{--bg:#f4f6f5;--card:#fff;--ink:#14201a;--sub:#5b6a62;--line:#dfe6e2;--green:#1b8a3c;--gold:#ffd21f}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1512;--card:#17201b;--ink:#eef4f0;--sub:#9fb0a6;--line:#27342d}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:20px 16px 40px}
+h1{font-size:20px;margin:0 0 4px}p.lead{margin:0 0 16px;color:var(--sub);font-size:14px;max-width:780px;line-height:1.45}
+.wrap{display:flex;flex-wrap:wrap;gap:22px;align-items:flex-start;max-width:1000px}
+.phone{background:#000;border-radius:30px;padding:10px;box-shadow:0 10px 30px rgba(0,0,0,.25);width:fit-content}
+canvas{display:block;border-radius:22px;max-width:100%;height:auto}
+.side{flex:1;min-width:280px;max-width:560px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin-bottom:12px}
+.card h2{font-size:14px;margin:0 0 8px}.card ul{margin:0;padding-left:18px;color:var(--sub);font-size:13px;line-height:1.55}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+button{background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:8px 12px;font-weight:700;font-size:12.5px;cursor:pointer}
+button.on{background:var(--gold);color:#14201a;border-color:var(--gold)}
+.tag{display:inline-block;background:var(--gold);color:#14201a;border-radius:99px;padding:1px 7px;font-size:10px;font-weight:900;margin-left:6px}
+.small{font-size:12px;color:var(--sub);margin-top:6px}
+</style></head><body>
+<h1>Répondre en vidéo : montages proposés</h1>
+<p class="lead">Exemples à valider (rien n'est codé). On répond à un post en gardant sa vidéo dans le cadre. Choisissez un montage ci-dessous : l'aperçu montre l'écran partagé que verrait la personne, avec le bandeau « Tu réponds à… » en haut. Le post d'origine peut être une vidéo, une image, un audio ou un texte.</p>
+<div class="wrap">
+  <div class="phone"><canvas id="cv" width="360" height="640"></canvas></div>
+  <div class="side">
+    <div class="card"><h2>Montage</h2><div class="row" id="layouts"></div>
+      <div class="small" id="layoutNote"></div></div>
+    <div class="card"><h2>Post d'origine</h2><div class="row" id="kinds"></div>
+      <div class="small">Quel que soit son type, il se place dans « sa » moitié.</div></div>
+    <div class="card"><h2>Réglages</h2><div class="row"><button id="swap">Inverser haut / bas</button><button id="snd" class="on">Son d'origine : oui</button></div>
+      <div class="small">Le son d'origine se règle avec le même curseur de volume que la musique (gratuit).</div></div>
+    <div class="card"><h2>Comment ça se passe</h2><ul>
+      <li><b>Caméra :</b> on voit le montage choisi EN DIRECT. Le post d'origine joue dans sa moitié pendant qu'on se filme dans l'autre (réaction, duo).</li>
+      <li><b>Studio :</b> on peut encore changer de montage, inverser, régler les volumes et ajuster la taille de l'encart.</li>
+      <li><b>Bandeau « Tu réponds à @pseudo » :</b> présent sur la caméra, le Studio, l'aperçu et « Nouveau post ».</li>
+      <li><b>Durée :</b> 15 s au plus (comme aujourd'hui). La vidéo publiée garde un lien cliquable vers le post d'origine.</li>
+      <li><b>Pour toutes les personnes :</b> les montages « haut / bas », « côte à côte » et « encart » sont gratuits ; « fond vert » (toi détouré devant le post) demande Gold ou des pubs, comme le fond virtuel.</li></ul></div>
+  </div>
+</div>
+<script>
+const W=360,H=640,cv=document.getElementById('cv'),g=cv.getContext('2d');
+const PSEUDO='@zuri_style';
+const LAYOUTS=[
+  {id:'tb',name:'Haut / bas',note:'Le post d\'origine en haut, toi en bas. Le plus utilisé pour réagir.',gold:false},
+  {id:'sbs',name:'Côte à côte',note:'Deux colonnes égales. Idéal pour un duo.',gold:false},
+  {id:'pip',name:'Encart',note:'Toi en plein écran, le post dans un coin (déplaçable, c\'est la « vidéo épinglée »).',gold:false},
+  {id:'bar',name:'Bandeau',note:'Le post d\'origine en bandeau large en haut, toi en dessous (grande place pour ton visage).',gold:false},
+  {id:'gs',name:'Fond vert',note:'Le post d\'origine en plein écran, toi détouré devant. Demande la détection de la personne.',gold:true},
+];
+const KINDS=[['video','Vidéo'],['image','Image'],['audio','Audio'],['text','Texte']];
+let layout='tb',kind='video',swapped=false,sound=true,t0=performance.now();
+function rr(x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()}
+function origin(x,y,w,h,t){
+  g.save();rr(x,y,w,h,0);g.clip();
+  if(kind==='video'){const gr=g.createLinearGradient(x,y,x+w,y+h);gr.addColorStop(0,'#3a2a5a');gr.addColorStop(.55,'#b5532e');gr.addColorStop(1,'#1e6fa8');g.fillStyle=gr;g.fillRect(x,y,w,h);
+    g.fillStyle='rgba(255,255,255,.12)';for(let i=0;i<4;i++){const cx=x+((i*.27+t*.05*(i%2?1:-1)+1)%1.2)*w-20;g.beginPath();g.arc(cx,y+h*(.25+.17*i),h*.09,0,7);g.fill()}
+    g.fillStyle='#4a2f1f';g.beginPath();g.ellipse(x+w/2+Math.sin(t*1.3)*w*.05,y+h*.52,w*.16,h*.2,0,0,7);g.fill();
+    g.fillStyle='rgba(255,255,255,.9)';g.beginPath();g.moveTo(x+w-34,y+h-30);g.lineTo(x+w-34,y+h-10);g.lineTo(x+w-18,y+h-20);g.closePath();g.fill()}
+  else if(kind==='image'){const gr=g.createLinearGradient(x,y,x,y+h);gr.addColorStop(0,'#c7d9ee');gr.addColorStop(1,'#6a8fbf');g.fillStyle=gr;g.fillRect(x,y,w,h);g.fillStyle='#2b1a12';g.beginPath();g.ellipse(x+w/2,y+h*.55,w*.2,h*.22,0,0,7);g.fill();g.fillStyle='rgba(255,255,255,.85)';g.font='700 12px system-ui';g.textAlign='left';g.fillText('Photo',x+10,y+h-10)}
+  else if(kind==='audio'){g.fillStyle='#14201a';g.fillRect(x,y,w,h);g.fillStyle='#ffd21f';const n=22;for(let i=0;i<n;i++){const bh=(.25+.65*Math.abs(Math.sin(t*3+i*.7)))*h*.45;g.fillRect(x+w*.1+i*(w*.8/n),y+h/2-bh/2,Math.max(2,w*.8/n-3),bh)}
+    g.fillStyle='#fff';g.font='700 13px system-ui';g.textAlign='center';g.fillText('Ma chanson',x+w/2,y+h*.8)}
+  else{g.fillStyle='#f4f1e6';g.fillRect(x,y,w,h);g.fillStyle='#14201a';g.font='700 '+Math.max(11,Math.min(18,w/13))+'px system-ui';g.textAlign='left';
+    ['Si tu sais que tu te','fâche vite, faut pas','faire amitié avec nous.'].forEach((s,i)=>g.fillText(s,x+12,y+h*.3+i*Math.max(16,w/10)))}
+  g.restore();g.textAlign='left'}
+function me(x,y,w,h,t,cut){
+  g.save();rr(x,y,w,h,0);g.clip();
+  if(!cut){const gr=g.createLinearGradient(x,y,x,y+h);gr.addColorStop(0,'#2c3e50');gr.addColorStop(1,'#1a252f');g.fillStyle=gr;g.fillRect(x,y,w,h)}
+  const cx=x+w/2+Math.sin(t*1.1)*w*.03,cy=y+h*.5;
+  g.fillStyle='#8a5a3b';g.beginPath();g.ellipse(cx,cy-h*.1,w*.17,h*.17,0,0,7);g.fill();
+  g.fillStyle='#2e4a7a';g.beginPath();g.ellipse(cx,cy+h*.32,w*.3,h*.2,0,0,7);g.fill();
+  if(!cut){g.fillStyle='rgba(255,255,255,.8)';g.font='700 12px system-ui';g.fillText('Toi (caméra)',x+10,y+h-10)}
+  g.restore()}
+function layoutRects(){
+  const gap=4;
+  switch(layout){
+    case 'tb':return swapped?{me:[0,0,W,H/2-gap/2],o:[0,H/2+gap/2,W,H/2-gap/2]}:{o:[0,0,W,H/2-gap/2],me:[0,H/2+gap/2,W,H/2-gap/2]};
+    case 'sbs':return swapped?{me:[0,0,W/2-gap/2,H],o:[W/2+gap/2,0,W/2-gap/2,H]}:{o:[0,0,W/2-gap/2,H],me:[W/2+gap/2,0,W/2-gap/2,H]};
+    case 'pip':return {me:[0,0,W,H],o:swapped?[16,H-216,110,200]:[W-126,80,110,200],pip:true};
+    case 'bar':return swapped?{me:[0,0,W,H-210],o:[0,H-210+gap,W,210-gap]}:{o:[0,0,W,210],me:[0,214,W,H-214]};
+    case 'gs':return {o:[0,0,W,H],me:[40,H*.38,W-80,H*.62],cut:true};
+  }}
+function frame(now){
+  const t=(now-t0)/1000;g.clearRect(0,0,W,H);g.fillStyle='#000';g.fillRect(0,0,W,H);
+  const r=layoutRects();
+  origin(...r.o,t);
+  if(r.pip){g.save();rr(...r.o,14);g.clip();origin(...r.o,t);g.restore();g.strokeStyle='#fff';g.lineWidth=2;rr(...r.o,14);g.stroke()}
+  me(...r.me,t,r.cut);
+  // séparateur
+  if(layout==='tb'||layout==='bar'){g.fillStyle='#000'}
+  // bandeau « Tu réponds à »
+  g.fillStyle='rgba(0,0,0,.62)';rr(12,46,W-24,40,12);g.fill();
+  g.fillStyle='rgba(255,255,255,.18)';rr(18,51,30,30,7);g.fill();g.fillStyle='#fff';g.font='700 14px system-ui';g.textAlign='center';g.fillText({video:'▶',image:'▣',audio:'♪',text:'≡'}[kind],33,72);
+  g.textAlign='left';g.fillStyle='#fff';g.font='800 12px system-ui';g.fillText('Tu réponds à '+PSEUDO,56,64);g.fillStyle='rgba(255,255,255,.75)';g.font='500 11px system-ui';g.fillText({video:'Vidéo · Ma vidéo du jour',image:'Image · Photo',audio:'Audio · Ma chanson',text:'Texte · Si tu sais que tu te fâche…'}[kind],56,79);
+  // son d'origine
+  g.fillStyle='rgba(0,0,0,.55)';rr(W-86,100,74,26,13);g.fill();g.fillStyle='#fff';g.font='700 11px system-ui';g.fillText((sound?'🔊 ':'🔇 ')+'Origine',W-80,117);
+  // bouton d'enregistrement
+  g.strokeStyle='#fff';g.lineWidth=4;g.beginPath();g.arc(W/2,H-52,28,0,7);g.stroke();g.fillStyle='#ff5a5f';g.beginPath();g.arc(W/2,H-52,21,0,7);g.fill();
+  g.fillStyle='rgba(255,255,255,.9)';g.font='700 12px system-ui';g.textAlign='center';g.fillText('15 s',W/2,H-14);g.textAlign='left';
+  requestAnimationFrame(frame)}
+const L=document.getElementById('layouts'),K=document.getElementById('kinds'),N=document.getElementById('layoutNote');
+function renderBtns(){L.innerHTML='';LAYOUTS.forEach(l=>{const b=document.createElement('button');b.textContent=l.name;if(l.gold){const s=document.createElement('span');s.className='tag';s.textContent='GOLD';b.appendChild(s)}if(l.id===layout)b.classList.add('on');b.onclick=()=>{layout=l.id;swapped=false;renderBtns()};L.appendChild(b)});
+  N.textContent=LAYOUTS.find(l=>l.id===layout).note;
+  K.innerHTML='';KINDS.forEach(([id,label])=>{const b=document.createElement('button');b.textContent=label;if(id===kind)b.classList.add('on');b.onclick=()=>{kind=id;renderBtns()};K.appendChild(b)})}
+document.getElementById('swap').onclick=()=>{swapped=!swapped};
+document.getElementById('snd').onclick=e=>{sound=!sound;e.target.textContent="Son d'origine : "+(sound?'oui':'non');e.target.classList.toggle('on',sound)};
+const m=location.hash.match(/l=(\w+)/);if(m)layout=m[1];const mk=location.hash.match(/k=(\w+)/);if(mk)kind=mk[1];
+renderBtns();requestAnimationFrame(frame);
+</script></body></html>

@@ -78,7 +78,9 @@ class FaceEngine {
   static const _channel = MethodChannel('afrolook/face_engine');
   static const _viewType = 'afrolook/face_engine_view';
 
-  static bool get enabled => !kIsWeb && Platform.isAndroid && const bool.fromEnvironment('TEST_BUILD');
+  /// Le moteur de filtres de visage maison est actif sur TOUS les Android (versions publiées comprises) ; l'iPhone garde l'ancienne liste de filtres.
+  /// Interrupteur de secours : construire avec `--dart-define=NO_FACE_ENGINE=true` pour le couper sans toucher au code.
+  static bool get enabled => !kIsWeb && Platform.isAndroid && !const bool.fromEnvironment('NO_FACE_ENGINE');
 
   // ── Visage : déformations qui se combinent ──
   static const deformations = [
