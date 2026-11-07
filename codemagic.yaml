@@ -36,7 +36,7 @@ workflows:
           echo "TAPJOY_SDK_KEY_IOS=$TAPJOY_SDK_KEY_IOS" > assets/env/tapjoy.env
       - name: Build iOS release
         script: |
-          flutter build ipa --release \
+          flutter build ipa --release --analyze-size \
             --export-options-plist=/Users/builder/export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa
