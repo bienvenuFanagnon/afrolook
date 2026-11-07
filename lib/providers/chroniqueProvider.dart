@@ -7,6 +7,7 @@ import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'dart:async';
 import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:afrotok/services/api/chroniques_api.dart';
+import 'package:afrotok/pages/chronique/chronique_commerce.dart';
 import 'package:afrotok/services/api/chroniques_mapper.dart';
 // Les COMMENTAIRES des chroniques (`chronique_messages`) restent sur Firebase (messages en temps réel) : seul Firestore pour cela.
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -101,6 +102,7 @@ class ChroniqueProvider with ChangeNotifier {
       }
 
       final hasText = (textContent ?? '').trim().isNotEmpty;
+      final commerceCard = ChroniqueCommerceLink.take();   // chronique business : carte de vente posée par le formulaire
       final body = <String, dynamic>{
         'type': chroniqueTypeToApi(type),
         if (hasText) 'text': textContent!.trim(),
@@ -114,6 +116,7 @@ class ChroniqueProvider with ChangeNotifier {
         if (audioEndMs != null) 'audio_end_ms': audioEndMs,
         if ((type == ChroniqueType.IMAGE || type == ChroniqueType.VIDEO) && hasText && textX != null && textY != null) ...{'text_x': textX.clamp(0.0, 1.0), 'text_y': textY.clamp(0.0, 1.0)},
         if (musicBody != null) 'music': musicBody,
+        if (commerceCard != null) 'commerce': commerceCard,
       };
 
       final created = await ChroniquesApi.create(body, myId: userId, idempotencyKey: idempotencyKey);

@@ -98,6 +98,7 @@ import 'package:video_player/video_player.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'chronique_commerce.dart';
 
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
@@ -1615,6 +1616,9 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
             if (!_isShowingAd) ...[
               _buildStatsPill(currentChronique),
               _buildMusicPill(currentChronique),
+              // chronique business : carte de vente (seule la carte est cliquable), au-dessus de la rangée du bas
+              if (currentChronique.commerce != null)
+                Positioned(left: 14, right: 14, bottom: 92, child: ChroniqueCommerceCard(commerce: currentChronique.commerce!)),
               _buildBottomRow(currentChronique),
               _buildHeartAnimation(),
             ] else if (_currentDisplayAd != null)

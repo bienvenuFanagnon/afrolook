@@ -26,6 +26,7 @@ Chronique chroniqueFromApi(Map<String, dynamic> j, {String? myId}) {
   final me = myId ?? '';
   return Chronique(
     id: j['id'] as String?,
+    commerce: j['commerce'] is Map ? Map<String, dynamic>.from(j['commerce'] as Map) : null,
     userId: '${author['id'] ?? ''}',
     userPseudo: '${author['username'] ?? ''}',
     userImageUrl: '${author['avatar_url'] ?? ''}',

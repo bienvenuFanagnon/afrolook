@@ -1,6 +1,8 @@
 ﻿// pages/chronique/add_chronique_page.dart
 
 import 'package:afrotok/services/account_gate.dart';
+import 'chronique_commerce.dart';
+import 'package:afrotok/l10n/tr.dart';
 import 'dart:async';
 import 'package:afrotok/ads/ad_config.dart';
 import 'package:afrotok/ads/admob_service.dart';
@@ -38,6 +40,8 @@ enum ChroniqueType { TEXT, IMAGE, VIDEO, AUDIO }
 
 class Chronique {
   String? id;
+  /// Chronique business : carte de vente (produit, prix, lieu, WhatsApp, téléphone, lien), null = chronique ordinaire.
+  Map<String, dynamic>? commerce;
   String userId;
   String userPseudo;
   String userImageUrl;
@@ -87,6 +91,7 @@ class Chronique {
 
   Chronique({
     this.id,
+    this.commerce,
     required this.userId,
     required this.userPseudo,
     required this.userImageUrl,
@@ -543,6 +548,14 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
     });
   }
 
+  /// Carte de vente de la chronique business (null = chronique ordinaire).
+  Map<String, dynamic>? _commerce;
+
+  Future<void> _editCommerce() async {
+    final r = await showChroniqueCommerceEditor(context, initial: _commerce);
+    if (r != null && mounted) setState(() => _commerce = r);
+  }
+
   Future<void> _publishChronique() async {
     if (!_isFormValid) return;
 
@@ -584,6 +597,7 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
         return;
       }
 
+      ChroniqueCommerceLink.set(_commerce);   // lue une seule fois par la publication
       final uploadedMediaUrl = await chroniqueProvider.publishChronique(
         userId: authProvider.loginUserData.id!,
         userPseudo: authProvider.loginUserData.pseudo!,
@@ -731,6 +745,23 @@ class _AddChroniquePageState extends State<AddChroniquePage> {
               const SizedBox(height: 16),
               _buildMusicRow(colors),
             ],
+            // Chronique business : carte de vente (produit, prix, WhatsApp, appel, lien « Commander maintenant »)
+            const SizedBox(height: 12),
+            GestureDetector(
+              key: const ValueKey('chronique_commerce_row'),
+              onTap: _editCommerce,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                decoration: BoxDecoration(color: colors.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: colors.border)),
+                child: Row(children: [
+                  Icon(Icons.shopping_bag_outlined, color: colors.accentText, size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(_commerce == null ? context.tr('Ajouter une carte de vente') : '${_commerce!['title']}${_commerce!['price_text'] != null ? ' · ${_commerce!['price_text']}' : ''}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700))),
+                  if (_commerce != null) GestureDetector(onTap: () => setState(() => _commerce = null), child: Padding(padding: const EdgeInsets.all(4), child: Icon(Icons.close_rounded, size: 20, color: colors.textSecondary))) else Icon(Icons.chevron_right_rounded, color: colors.textSecondary),
+                ]),
+              ),
+            ),
+            if (_commerce != null) ...[const SizedBox(height: 10), Align(alignment: Alignment.centerLeft, child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 320), child: ChroniqueCommerceCard(commerce: _commerce!, preview: true)))],
 
             const SizedBox(height: 24),
 
