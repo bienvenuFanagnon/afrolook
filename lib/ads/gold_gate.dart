@@ -3,6 +3,7 @@ import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:flutter/material.dart';
 
 import '../l10n/tr.dart';
+import '../pages/rewards/rewards_page.dart';
 import '../pages/user/userAbonnementPage.dart';
 import '../services/api/regie_api.dart';
 import '../services/api/wallet_api.dart';
@@ -36,6 +37,10 @@ class GoldGate {
     );
     if (choice == _Choice.gold) {
       if (context.mounted) await Navigator.push(context, MaterialPageRoute(builder: (_) => const AbonnementScreen()));
+      return false;
+    }
+    if (choice == _Choice.rewards) {
+      if (context.mounted) await Navigator.push(context, MaterialPageRoute(builder: (_) => const RewardsPage()));
       return false;
     }
     if (choice != _Choice.ads || !context.mounted) return false;
@@ -82,6 +87,10 @@ class GoldGate {
       if (context.mounted) await Navigator.push(context, MaterialPageRoute(builder: (_) => const AbonnementScreen()));
       return false;
     }
+    if (choice == _Choice.rewards) {
+      if (context.mounted) await Navigator.push(context, MaterialPageRoute(builder: (_) => const RewardsPage()));
+      return false;
+    }
     if (choice == _Choice.coins && coins != null) {
       try {
         await WalletApi.instance.buy('post_download', refId: postId);
@@ -122,6 +131,11 @@ class GoldGate {
     if (choice == _Choice.gold) {
       if (context.mounted) await Navigator.push(context, MaterialPageRoute(builder: (_) => const AbonnementScreen()));
       return false;
+    }
+    if (choice == _Choice.rewards) {
+      if (context.mounted) await Navigator.push(context, MaterialPageRoute(builder: (_) => RewardsPage(autoOffer: 'feature:$key')));
+      await RewardsService.loadConfig(force: true);
+      return RewardsService.featureUnlocked(key);   // la personne a pu débloquer la fonction depuis la page des récompenses
     }
     if (choice != _Choice.ads || !context.mounted) return false;
     final ok = await _watch(context, 'feature:$key', uid);
@@ -192,6 +206,14 @@ class GoldGate {
                 child: Text(context.tr('Passer Gold · {p} par mois', {'p': CoinCheckout.priceLabel(RewardsService.goldPriceMonth)})),
               ),
             ),
+            Center(
+              child: TextButton.icon(
+                key: const ValueKey('gate_rewards'),
+                onPressed: () => Navigator.pop(ctx, _Choice.rewards),
+                icon: const Icon(Icons.card_giftcard_rounded, size: 18),
+                label: Text(context.tr('Voir la page des récompenses')),
+              ),
+            ),
             Center(child: TextButton(onPressed: () => Navigator.pop(ctx), child: Text(context.tr('Plus tard')))),
           ]),
         ),
@@ -200,4 +222,4 @@ class GoldGate {
   }
 }
 
-enum _Choice { ads, gold, coins }
+enum _Choice { ads, gold, coins, rewards }

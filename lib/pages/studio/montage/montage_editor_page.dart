@@ -40,6 +40,7 @@ import 'montage_stickers.dart';
 import '../studio_theme.dart';
 import '../../../widgets/gold_badge.dart';
 import '../../../widgets/gold_lock_row.dart';
+import '../../../services/watermark.dart';
 
 AppColors get _c => studioColors;
 
@@ -497,8 +498,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
             _payJobSoundId = s.music?.id;
           },
           onPaid: (coins) => _say('🎤 $coins pièces utilisées pour le son de l’artiste. Merci de soutenir les artistes !'),
-          outroPseudo: context.read<UserAuthProvider>().loginUserData.pseudo,
-          outroAvatarUrl: context.read<UserAuthProvider>().loginUserData.imageUrl,
+          outroLabel: Watermark.userLabel(context.read<UserAuthProvider>().loginUserData.pseudo),
         );
       } else {
         await _setT(.3);

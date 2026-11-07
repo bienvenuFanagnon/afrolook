@@ -89,6 +89,9 @@ class FaceEngine {
     FaceDeform('slimface', 'Visage fin', Icons.face_retouching_natural_rounded),
   ];
 
+  /// Les deux premiers effets du groupe « Visage » (Elfe, Lapin) sont gratuits pour tout le monde ; les autres demandent Gold (ou des pubs).
+  static const freePresets = 2;
+
   static const presets = [
     FacePreset('Elfe', Icons.auto_awesome_rounded, ['bigears', 'bigeyes', 'slimface']),
     FacePreset('Lapin', Icons.cruelty_free_rounded, ['bigears', 'bignose', 'bigeyes']),

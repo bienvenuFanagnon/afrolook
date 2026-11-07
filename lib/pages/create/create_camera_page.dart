@@ -321,8 +321,8 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
     } catch (_) {}
   }
 
-  Future<void> _applyPreset(FacePreset p) async {
-    if (!await _gate('face_deform')) return;
+  Future<void> _applyPreset(FacePreset p, {bool free = false}) async {
+    if (!free && !await _gate('face_deform')) return;
     if (!mounted) return;
     final same = _deforms.length == p.keys.length && _deforms.containsAll(p.keys);
     setState(() {
@@ -908,8 +908,10 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
     final items = <Widget>[];
     switch (_group) {
       case 'face':
-        for (final p in FaceEngine.presets) {
-          items.add(_engChip(key: ValueKey('preset_${p.label}'), icon: p.icon, label: p.label, selected: _deforms.length == p.keys.length && _deforms.containsAll(p.keys), onTap: off ? null : () => _applyPreset(p), c: c, gold: 'face_deform'));
+        for (var i = 0; i < FaceEngine.presets.length; i++) {
+          final p = FaceEngine.presets[i];
+          final free = i < FaceEngine.freePresets;   // les deux premiers sont gratuits, les autres affichent GOLD et ouvrent le choix pubs / Gold
+          items.add(_engChip(key: ValueKey('preset_${p.label}'), icon: p.icon, label: p.label, selected: _deforms.length == p.keys.length && _deforms.containsAll(p.keys), onTap: off ? null : () => _applyPreset(p, free: free), c: c, gold: free ? null : 'face_deform'));
         }
         items.add(const Padding(padding: EdgeInsets.only(right: 8), child: SizedBox(height: 28, child: VerticalDivider(color: Colors.white38, width: 1))));
         for (final d in FaceEngine.deformations) {

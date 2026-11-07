@@ -12,6 +12,7 @@ import '../ads/admob_service.dart';
 import '../ads/gold_gate.dart';
 import '../l10n/tr.dart';
 import '../models/model_data.dart';
+import '../pages/cards/card_models.dart' show cardPostLink;
 import '../pages/studio/montage/montage_export.dart';
 import '../providers/authProvider.dart';
 import '../theme/app_colors.dart';
@@ -20,7 +21,7 @@ import 'watermark.dart';
 
 /// Téléchargement du média d'une publication (vidéo, audio, images). Le propriétaire télécharge librement ; les autres regardent des pubs (3 par défaut) ou paient des pièces,
 /// ou ont Gold. Une fois le fichier enregistré, une pub plein écran s'affiche si elle existe, sans jamais être obligatoire.
-/// Les vidéos et les images créées dans le Studio portent la signature « Afrolook + @pseudo » de leur créateur : elle reste dans le fichier téléchargé.
+/// Tout fichier téléchargé porte la signature sobre d'Afrolook (silhouette du logo, « Afrolook », #canal ou @pseudo) et un QR qui retrouve la publication ; les vidéos reçoivent en plus la fin Afrolook si elles ne l'ont pas.
 /// Fenêtre d'avancement du téléchargement (au milieu de l'écran) : icône du média, étape en cours, barre qui avance.
 class _DownloadProgress extends StatelessWidget {
   const _DownloadProgress({required this.step, required this.progress, required this.kinds});
@@ -86,6 +87,17 @@ class PostDownload {
   }
 
   static bool canDownload(Post p) => mediaOf(p).isNotEmpty && p.isAdvertisement != true;
+
+  /// Nom affiché dans la signature : « #canal » si la publication vient d'un canal (et qu'on connaît son nom), sinon « @pseudo » de son créateur.
+  @visibleForTesting
+  static String signatureLabel(Post p) {
+    if ((p.canal_id ?? '').isNotEmpty) {
+      final title = p.canal?.titre ?? (p.canalSnapshot?['titre'] is String ? p.canalSnapshot!['titre'] as String : null);
+      final l = Watermark.channelLabel(title);
+      if (l.isNotEmpty) return l;
+    }
+    return Watermark.userLabel(p.user?.pseudo);
+  }
 
   static void _say(BuildContext context, String m) => ScaffoldMessenger.maybeOf(context)
     ?..hideCurrentSnackBar()
@@ -220,13 +232,32 @@ class PostDownload {
         progress.value = (index - 1) / items.length;
         step.value = prefix + (it.kind == 'video' ? context.tr('Signature de la vidéo…') : it.kind == 'image' ? context.tr('Téléchargement de l\'image…') : context.tr('Téléchargement de l\'audio…'));
         var url = auth.convertToCdnUrl(it.url, auth.appDefaultData);
-        // La signature Afrolook (logo + @pseudo du créateur) n'est PAS dans la vidéo ou l'image qu'on regarde dans l'application : elle est posée ici, sur la copie téléchargée (comme sur TikTok).
+        // La signature Afrolook (logo + #canal ou @pseudo) n'est PAS dans la vidéo ou l'image qu'on regarde dans l'application : elle est posée ici, sur la copie téléchargée (comme sur TikTok).
         // Vidéo : le serveur la pose (la vidéo signée change de coin) ; image : sur le téléphone. En cas d'échec, la copie est téléchargée sans signature : jamais de blocage.
-        final pseudo = post.user?.pseudo ?? '';
+        final label = signatureLabel(post);
+        final qrLink = post.id == null ? null : cardPostLink(post.id!);
         if (it.kind == 'video') {
           if (post.id == null) continue;
           try {
-            url = await StudioWatermarkApi.signedDownload(post.id!, await Watermark.pillPng(pseudo));
+            // calques dessinés ici (police et textes de l'application) : pastille, logo animé, QR et, pour la fin Afrolook, ses deux formats (story et 4:5)
+            final story = await MontageExport.outroLayers(label: label, W: 720, H: 1280);
+            final fourFive = await MontageExport.outroLayers(label: label, W: 720, H: 900);
+            url = await StudioWatermarkApi.signedDownload(
+              post.id!,
+              {
+                'pill': await Watermark.pillPng(label),
+                'logo': await Watermark.logoPng(),
+                'qr': await Watermark.qrPng(qrLink!),
+                'story_pill': story.$1,
+                'story_tag': story.$2,
+                'post_pill': fourFive.$1,
+                'post_tag': fourFive.$2,
+              },
+              onStep: (st) {
+                if (!context.mounted) return;
+                step.value = prefix + (st == 'sending' ? context.tr('Préparation de la signature…') : context.tr('Signature et fin Afrolook de la vidéo…'));
+              },
+            );
           } catch (_) {
             unsigned++;
             continue;   // tout ce qui sort d'Afrolook est signé : sans signature, pas de fichier
@@ -239,7 +270,7 @@ class PostDownload {
         Uint8List bytes = r.bodyBytes;
         if (it.kind == 'image') {
           try {
-            bytes = await Watermark.signImageBytes(r.bodyBytes, pseudo, strict: true);
+            bytes = await Watermark.signImageBytes(r.bodyBytes, label, strict: true, qrData: qrLink);
           } catch (_) {
             unsigned++;
             continue;
