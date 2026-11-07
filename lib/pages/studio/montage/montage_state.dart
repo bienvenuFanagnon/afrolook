@@ -28,6 +28,23 @@ class MontageState {
   String? secondPhotoPath;
 
   bool post = false;
+
+  /// Format paysage 16:9 (vidéo filmée ou choisie en paysage : elle garde sa forme). Sinon [post] = 4:5, et par défaut 9:16.
+  bool landscape = false;
+
+  /// `story` (9:16), `post` (4:5) ou `landscape` (16:9) : ce que le serveur fabrique.
+  String get format => landscape ? 'landscape' : (post ? 'post' : 'story');
+
+  double get aspect => landscape ? 16 / 9 : (post ? 4 / 5 : 9 / 16);
+
+  /// Taille du film fabriqué par le serveur (largeur, hauteur), aussi celle des calques de la fin Afrolook.
+  (int, int) get filmSize => landscape ? (1280, 720) : (post ? (720, 900) : (720, 1280));
+
+  void setFormat(String f) {
+    landscape = f == 'landscape';
+    post = f == 'post';
+  }
+
   bool animated;
   String prenom = 'Kofi';
   String country;

@@ -18,7 +18,7 @@ class StudioWatermarkApi {
   /// de la vidéo, ajoute la fin Afrolook si elle ne l'a pas (avec le QR de la publication) et rend l'adresse du fichier. Le travail se fait APRÈS la réponse : on l'attend en interrogeant
   /// le serveur toutes les 2 secondes (une requête longue serait coupée par Cloudflare). [onStep] reçoit « sending » puis « working » (pour la fenêtre d'avancement).
   ///
-  /// [layers] : `pill` (pastille), `logo` (silhouette), `qr` (tuile du QR) et, pour la fin Afrolook, `story_pill`, `story_tag` (720 × 1280) et `post_pill`, `post_tag` (720 × 900).
+  /// [layers] : `pill` (pastille), `logo` (silhouette), `qr` (tuile du QR) et, pour la fin Afrolook, `story_pill`, `story_tag` (720 × 1280) et `post_pill`, `post_tag` (720 × 900) et `land_pill`, `land_tag` (1280 × 720).
   static Future<String> signedDownload(String postId, Map<String, Uint8List> layers, {void Function(String step)? onStep}) async {
     onStep?.call('sending');
     final ids = <String, String>{};
@@ -31,7 +31,7 @@ class StudioWatermarkApi {
       if (ids['logo'] != null) 'logo_upload_id': ids['logo'],
       if (ids['qr'] != null) 'qr_upload_id': ids['qr'],
       'outro': {
-        for (final k in const ['story_pill', 'story_tag', 'post_pill', 'post_tag'])
+        for (final k in const ['story_pill', 'story_tag', 'post_pill', 'post_tag', 'land_pill', 'land_tag'])
           if (ids[k] != null) k: ids[k],
       },
       'async': true,

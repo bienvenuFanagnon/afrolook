@@ -75,7 +75,7 @@ class MontageCanvas extends StatelessWidget {
     final s = state;
     final tp = s.template;
     return AspectRatio(
-      aspectRatio: s.post ? 4 / 5 : 9 / 16,
+      aspectRatio: s.aspect,
       child: LayoutBuilder(builder: (context, c) {
         final cq = c.maxWidth / 100;
         final texts = resolveMontageTexts(s);

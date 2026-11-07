@@ -56,7 +56,7 @@ class MontageExport {
   /// sombre, la silhouette blanche du logo et l'animation (et le QR de la publication au téléchargement), et les fait apparaître au bon moment. [W] × [H] = taille du film.
   /// [label] : « #canal » si la publication vient d'un canal, sinon « @pseudo ». Rend (« Afrolook » et capsule du nom, invitation et ligne « Gratuit · Gagne · Crée »).
   static Future<(Uint8List, Uint8List)> outroLayers({required String label, required int W, required int H}) async {
-    final k = W / 360.0;   // les mesures de la maquette sont données pour un film de 360 px de large
+    final k = (W < H ? W : H) / 360.0;   // les mesures de la maquette sont données pour un film de 360 px sur son petit côté (720 px = deux fois plus)
 
     TextPainter text(String t, double size, FontWeight w, Color c, {double maxWidth = double.infinity}) {
       final tp = TextPainter(text: TextSpan(text: t, style: TextStyle(color: c, fontSize: size * k, fontWeight: w, height: 1.0)), textDirection: TextDirection.ltr, maxLines: 1, ellipsis: '…');
@@ -235,7 +235,8 @@ class MontageExport {
     final wantOutro = isVideo && s.outro;
     if (wantOutro) {
       try {
-        final l = await outroLayers(label: outroLabel ?? '', W: 720, H: s.post ? 900 : 1280);
+        final sz = s.filmSize;
+        final l = await outroLayers(label: outroLabel ?? '', W: sz.$1, H: sz.$2);
         up('outro_pill.png', l.$1, 'image/png');
         up('outro_tag.png', l.$2, 'image/png');
       } catch (_) {}   // sans ces calques, le serveur n'ajoute pas la fin : la vidéo reste valable
@@ -278,7 +279,7 @@ class MontageExport {
       'base_type': isVideo ? 'video' : 'image',
       'fx_frames': frames,
       'fx_fps': fxFps,
-      'format': s.post ? 'post' : 'story',
+      'format': s.format,
       'max_seconds': maxSeconds,
       'saturation': s.saturation,
       'brightness': s.brightness,

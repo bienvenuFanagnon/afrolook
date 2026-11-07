@@ -247,6 +247,11 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     await old?.dispose();
     try {
       await v.initialize();
+      // la vidéo de la personne garde sa forme : paysage = cadre 16:9, 4:5 ou carré = 4:5, vertical long = 9:16 (une chronique reste verticale)
+      if (s.videoPath != null && !widget.forChronique && v.value.size.height > 0) {
+        final r = v.value.size.width / v.value.size.height;
+        s.setFormat(r > 1.1 ? 'landscape' : (r >= 0.7 ? 'post' : 'story'));
+      }
       await v.setLooping(true);
       await v.setVolume(s.keepVideoAudio ? s.videoVolume.clamp(0.0, 1.0) : 0);   // la voix de la vidéo s'entend seulement si « Garder le son de ma vidéo » est activé
       await v.play();
@@ -688,7 +693,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
         KeyedSubtree(key: _musicKey, child: _musicSection()),
         const SizedBox(height: 14),
         _label('Format'),
-        _seg(['Chronique 9:16', 'Post 4:5'], s.post ? 1 : 0, (i) => setState(() => s.post = i == 1)),
+        _seg(['Chronique 9:16', 'Post 4:5', 'Paysage 16:9'], s.landscape ? 2 : (s.post ? 1 : 0), (i) => setState(() => s.setFormat(const ['story', 'post', 'landscape'][i]))),
         if (tp.fx != MontageFx.none) ...[
           const SizedBox(height: 10),
           SwitchListTile(

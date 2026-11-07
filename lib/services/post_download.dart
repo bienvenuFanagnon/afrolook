@@ -277,6 +277,7 @@ class PostDownload {
             // calques dessinés ici (police et textes de l'application) : pastille, logo animé, QR et, pour la fin Afrolook, ses deux formats (story et 4:5)
             final story = await MontageExport.outroLayers(label: label, W: 720, H: 1280);
             final fourFive = await MontageExport.outroLayers(label: label, W: 720, H: 900);
+            final wide = await MontageExport.outroLayers(label: label, W: 1280, H: 720);
             url = await StudioWatermarkApi.signedDownload(
               post.id!,
               {
@@ -287,6 +288,8 @@ class PostDownload {
                 'story_tag': story.$2,
                 'post_pill': fourFive.$1,
                 'post_tag': fourFive.$2,
+                'land_pill': wide.$1,
+                'land_tag': wide.$2,
               },
               onStep: (st) {
                 if (!context.mounted) return;
