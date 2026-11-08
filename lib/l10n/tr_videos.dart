@@ -282,4 +282,5 @@ const Map<String, Map<String, String>> kTrVideos = {
   "Côte à côte": {'en': "Side by side", 'es': "Lado a lado", 'de': "Nebeneinander", 'ar': "جنبًا إلى جنب", 'pt': "Lado a lado", 'zh': "并排", 'sw': "Pembeni"},
   "Bandeau": {'en': "Banner", 'es': "Banda", 'de': "Banner", 'ar': "شريط", 'pt': "Faixa", 'zh': "横幅", 'sw': "Bango"},
   "Inverser": {'en': "Swap", 'es': "Invertir", 'de': "Tauschen", 'ar': "عكس", 'pt': "Inverter", 'zh': "互换", 'sw': "Badilisha"},
+  "2 vidéos": {'en': "Two videos", 'es': "2 videos", 'de': "2 Videos", 'ar': "فيديوهان", 'pt': "2 vídeos", 'zh': "两个视频", 'sw': "Video 2"},
 };

@@ -680,6 +680,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
                 _tool('tool_stickers', Icons.emoji_emotions_rounded, context.tr('Autocollants'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, focus: 'stickers', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
                 _tool('tool_widgets', Icons.widgets_rounded, context.tr('Widgets'), _addWidget),
                 _tool('tool_looks', Icons.star_rounded, context.tr('Effets'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, focus: 'looks', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
+                if (widget.isVideo) _tool('tool_two', Icons.splitscreen_rounded, context.tr('2 vidéos'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, focus: 'second', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
                 if (widget.isVideo) _tool('tool_trim', Icons.content_cut_rounded, context.tr('Couper'), _trim),
               ]),
             ),

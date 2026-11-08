@@ -131,7 +131,9 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     _comments.text = s.commentsLabel();
     _followers.text = s.followersLabel(real) ?? '';
     ArtistSoundPricing.load();
-    if (widget.focus != null) {
+    if (widget.focus == 'second') {   // bouton « 2 vidéos » de l'éditeur : on ouvre directement la galerie
+      WidgetsBinding.instance.addPostFrameCallback((_) => mounted ? _pickGalleryPin() : null);
+    } else if (widget.focus != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final ctx = (widget.focus == 'music' ? _musicKey : widget.focus == 'text' ? _textKey : widget.focus == 'stickers' ? _stickersKey : _looksKey).currentContext;
         if (ctx != null) Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 250));
