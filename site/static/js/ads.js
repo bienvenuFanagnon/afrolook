@@ -1236,7 +1236,7 @@ async function initRegieAdmin() {
   const fb = await boot(() => load());
   if (!fb) return;
   const { call } = fb;
-  const st = { tab: 'adv', filter: 'pending', afilter: 'open', adv: [], ads: [], pays: [], payMeta: null, page: 1, profiles: [], props: [], alerts: [], alertsOpen: 0, sharers: [], camps: [], mail: null, mstatus: 'all', mkind: '', mq: '' };
+  const st = { tab: 'adv', filter: 'pending', afilter: 'open', adv: [], ads: [], pays: [], payMeta: null, page: 1, profiles: [], props: [], alerts: [], alertsOpen: 0, sharers: [], camps: [], mail: null, mstatus: 'all', mkind: '', mq: '', totals: null, shq: '', shSort: 'earned', shSel: null, shLimit: 24 };
   window.addEventListener('afl-admin', () => { if (typeof drawBar === 'function') drawBar(); });   // l'onglet « Soldes » n'apparaît qu'une fois le compte reconnu comme équipe d'argent
   const date = (ms) => (ms ? new Date(Number(ms)).toLocaleDateString('fr-FR') : '—');
   const row = (k, v) => h('div', { class: 'rg-row' }, h('span', { text: k }), h('b', { text: v == null || v === '' ? '—' : String(v) }));
@@ -1282,8 +1282,8 @@ async function initRegieAdmin() {
     const waiting = (key) => !!(k[key] && k[key].wait);
     const count = { adv: pick(k.adv, st.adv.length), ads: pick(k.ads, st.ads.length), pub: pick(k.pub, st.profiles.length), prop: pick(k.prop, st.props.length), share: pick(k.share, st.sharers.length), camp: pick(k.camp, st.camps.length), pay: pick(k.pay, st.pays.length), alert: k.alert ? k.alert.wait : (st.tab === 'alert' && st.afilter === 'open' ? st.alerts.length : st.alertsOpen) };
     $('#rg-tabs').replaceChildren(...Object.entries(tabs).filter(([tk]) => (tk !== 'pay' || !st.k || st.k.pay) && ((tk !== 'wal' && tk !== 'mail') || IS_OFFERED)).map(([tk, l]) => h('a', { href: '#', class: (st.tab === tk ? 'on ' : '') + (tk === 'alert' && count.alert ? 'rg-alert' : (waiting(tk) ? 'rg-wait' : '')), onclick: (e) => { e.preventDefault(); st.tab = tk; st.page = 1; if (tk === 'pay' && !payFilters.some(([f]) => f === st.filter)) st.filter = 'requested'; if (tk !== 'pay' && tk !== 'alert' && !filters.some(([f]) => f === st.filter)) st.filter = 'pending'; load(); } }, l, tk === 'wal' ? null : h('i', { text: String(count[tk]) }))));
-    const fl = (st.tab === 'wal' || st.tab === 'mail') ? [] : st.tab === 'alert' ? alertFilters : st.tab === 'pay' ? payFilters : filters, cur = st.tab === 'alert' ? st.afilter : st.filter;
-    $('#rg-filters').replaceChildren(...fl.map(([k, l]) => h('span', { class: cur === k ? 'on' : false, onclick: () => { if (st.tab === 'alert') st.afilter = k; else st.filter = k; st.page = 1; load(); } }, l)));
+    const fl = (st.tab === 'wal' || st.tab === 'mail') ? [] : st.tab === 'alert' ? alertFilters : st.tab === 'pay' ? payFilters : st.tab === 'share' ? [...filters, ['hold', 'Gains bloqués']] : filters, cur = st.tab === 'alert' ? st.afilter : st.filter;
+    $('#rg-filters').replaceChildren(...fl.map(([k, l]) => h('span', { class: cur === k ? 'on' : false, onclick: () => { if (st.tab === 'alert') st.afilter = k; else { st.filter = k; st.shLimit = 24; st.shSel = null; } st.page = 1; load(); } }, l)));
   };
 
   /** Zone de décision avec motif : jamais de fenêtre du navigateur, tout est dans la carte. */
@@ -1396,15 +1396,43 @@ async function initRegieAdmin() {
     if (p.status === 'active') specs.push({ label: 'Suspendre', ask: 'Motif de la suspension', fn: 'adsPubAdminReview', data: { target: 'property', id: p.id, decision: 'suspend' } });
     decide(c, specs); return c;
   }
-  /** Partageur (utilisateur de l'application) : audience déclarée à valider avant ses premières missions ; fraude confirmée = gains retirés. */
-  function sharerCard(p) {
-    const stl = { pending: ['wait', 'En validation'], active: ['ok', 'Validé'], refused: ['rej', 'Refusé'], suspended: ['rej', 'Suspendu'] }[p.status] || ['end', p.status];
-    const c = h('article', { class: 'rg-card' },
-      h('div', { class: 'rg-h' }, h('div', {}, h('b', { text: p.name || p.email || p.uid }), h('small', { text: [p.country, p.city].filter(Boolean).join(' · ') })), tag(stl[0], stl[1])),
-      row('Contact', [p.whatsapp, p.email].filter(Boolean).join(' · ')),
-      row('Audience déclarée', n(p.declared) + ' personnes (statut ' + n(p.statusAudience) + ', Telegram ' + n(p.telegramAudience) + ', autres ' + n(p.otherAudience) + ', groupes ' + (p.groups || []).length + ')'),
-      row('Groupes', (p.groups || []).map((g) => g.name + ' (' + g.members + ')').join(', ')), row('Présentation', p.about),
-      p.status === 'active' ? row('Audience retenue', n(p.retained)) : null, p.fraudHold ? row('Gains', 'Bloqués : fraude possible') : null, p.reason ? row('Motif', p.reason) : null);
+  /** Partageur (utilisateur de l'application) : petite carte dans une grille, détails et décisions dans le panneau sous la grille. Fraude confirmée = gains retirés. */
+  const coinsFmt = (v) => Number(v || 0).toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+  const money = (m) => h('span', { class: 'sh-m' }, h('b', { text: coinsFmt(m.coins) }), h('small', { text: ' pièces ≈ ' + n(Math.round(m.fcfa)) + ' FCFA' }));
+  const stlOf = (p) => ({ pending: ['wait', 'En validation'], active: ['ok', 'Validé'], refused: ['rej', 'Refusé'], suspended: ['rej', 'Suspendu'] }[p.status] || ['end', p.status]);
+  const initials = (p) => String(p.name || p.email || '?').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+  function sharerMini(p) {
+    const stl = stlOf(p), e = p.earned || { coins: 0, fcfa: 0 }, w = p.pending || { coins: 0, fcfa: 0 };
+    const place = [p.country, p.city].filter(Boolean).join(' · ');
+    return h('button', { type: 'button', class: 'sh-mini' + (p.fraudHold ? ' hold' : '') + (st.shSel === p.uid ? ' sel' : ''), 'data-uid': p.uid, 'aria-pressed': st.shSel === p.uid ? 'true' : 'false',
+      onclick: () => { st.shSel = st.shSel === p.uid ? null : p.uid; drawShare(); const el = $('.sh-sheet'); el && el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } },
+      h('span', { class: 'sh-top' }, h('span', { class: 'sh-av', text: initials(p) }), h('span', { class: 'sh-nm' }, h('b', { text: p.name || p.email || p.uid }), h('small', { text: place || '—' }))),
+      h('span', { class: 'sh-fig' },
+        h('span', {}, h('small', { text: 'Gagné' }), h('b', { class: 'g', text: coinsFmt(e.coins) }), h('em', { text: '≈ ' + n(Math.round(e.fcfa)) + ' FCFA' })),
+        h('span', {}, h('small', { text: 'En attente' }), h('b', { class: 'w', text: coinsFmt(w.coins) }), h('em', { text: '≈ ' + n(Math.round(w.fcfa)) + ' FCFA' }))),
+      h('span', { class: 'sh-foot' }, h('span', { text: n(p.validClicks) + ' clics valides' }), p.fraudHold ? h('span', { class: 'sh-alert', text: '⚠ Gains bloqués' }) : tag(stl[0], stl[1])));
+  }
+  function sharerSheet(p) {
+    const stl = stlOf(p), e = p.earned || { coins: 0, fcfa: 0 }, w = p.pending || { coins: 0, fcfa: 0 };
+    const kv = (k, v) => (v == null || v === '' ? null : h('div', { class: 'sh-kv' }, h('span', { text: k }), h('b', { text: String(v) })));
+    const dayLab = { released: 'Versé', held: 'Retenu 24 h', blocked: 'Bloqué' };
+    const days = (p.days || []).length
+      ? h('table', { class: 'sh-days' }, h('thead', {}, h('tr', {}, ...['Jour', 'Clics', 'Pièces', 'FCFA', 'État'].map((t, i) => h('th', { class: i ? 'n' : '', text: t })))),
+        h('tbody', {}, ...p.days.map((d) => h('tr', {}, h('td', { text: d.day }), h('td', { class: 'n', text: n(d.clicks) }), h('td', { class: 'n', text: coinsFmt(d.coins) }), h('td', { class: 'n', text: n(Math.round(d.fcfa)) }), h('td', { text: dayLab[d.status] || d.status })))))
+      : h('p', { class: 'adempty', text: 'Aucun gain pour le moment.' });
+    const c = h('article', { class: 'rg-card sh-sheet' + (p.fraudHold ? ' hold' : '') },
+      h('div', { class: 'rg-h' }, h('span', { class: 'sh-av', text: initials(p) }), h('div', {}, h('b', { text: p.name || p.email || p.uid }), h('small', { text: [p.country, p.city].filter(Boolean).join(' · ') })), p.fraudHold ? h('span', { class: 'sh-alert', text: '⚠ Gains bloqués : fraude possible' }) : null, tag(stl[0], stl[1]),
+        h('button', { class: 'adlinkbtn', type: 'button', text: 'Fermer', onclick: () => { st.shSel = null; drawShare(); } })),
+      h('div', { class: 'sh-cols' },
+        h('div', { class: 'sh-blk' }, h('h3', { text: 'Gains' }),
+          h('div', { class: 'sh-kv' }, h('span', { text: 'Gagné' }), money(e)),
+          h('div', { class: 'sh-kv' }, h('span', { text: 'En attente' }), money(w)),
+          kv('Prochain versement', w.releaseAt ? date(w.releaseAt) : null), kv('Clics valides', n(p.validClicks))),
+        h('div', { class: 'sh-blk' }, h('h3', { text: 'Audience' }),
+          kv('Déclarée', n(p.declared) + ' personnes'), kv('Détail', 'statut ' + n(p.statusAudience) + ' · Telegram ' + n(p.telegramAudience) + ' · autres ' + n(p.otherAudience)),
+          kv('Groupes', (p.groups || []).map((g) => g.name + ' (' + g.members + ')').join(', ')), p.status === 'active' ? kv('Retenue', n(p.retained)) : null, kv('Présentation', p.about)),
+        h('div', { class: 'sh-blk' }, h('h3', { text: 'Contact' }), kv('WhatsApp', p.whatsapp), kv('E-mail', p.email), kv('Inscrit le', date(p.createdAt)), kv('Motif', p.reason))),
+      h('div', { class: 'sh-blk' }, h('h3', { text: 'Derniers jours' }), h('div', { class: 'sh-scroll' }, days)));
     const d = (decision) => ({ target: 'sharer', id: p.uid, decision }), specs = [];
     if (p.status === 'pending' || p.status === 'refused') specs.push({ label: 'Valider', primary: true, audience: p.declared, audienceKey: 'audienceRetained', fn: 'adsPubAdminReview', data: d('approve') });
     if (p.status === 'suspended') specs.push({ label: 'Réactiver', primary: true, audience: p.declared, audienceKey: 'audienceRetained', fn: 'adsPubAdminReview', data: d('reactivate') });
@@ -1413,6 +1441,32 @@ async function initRegieAdmin() {
     if (p.fraudHold) specs.push({ label: 'Vérifié : lever le blocage', fn: 'adsPubAdminReview', data: d('clear') });
     if (p.status !== 'refused') specs.push({ label: 'Fraude confirmée : retirer les gains', ask: 'Motif (gardé dans le journal)', fn: 'adsPubAdminReview', data: d('fraud') });
     decide(c, specs); return c;
+  }
+  /** Onglet Partageurs : bandeau de totaux, recherche + tri, grille de petites cartes, panneau de détails, « Voir la suite ». */
+  function sharersView() {
+    const t = st.totals;
+    const q = st.shq.trim().toLowerCase();
+    let list = st.sharers.filter((p) => (st.filter !== 'hold' || p.fraudHold) && (!q || [p.name, p.email, p.country, p.city, p.whatsapp].filter(Boolean).join(' ').toLowerCase().includes(q)));
+    const key = { earned: (p) => (p.earned || {}).fcfa || 0, pending: (p) => (p.pending || {}).fcfa || 0, clicks: (p) => p.validClicks || 0, recent: (p) => p.createdAt || 0 }[st.shSort];
+    list = [...list].sort((a, b) => key(b) - key(a));
+    const sum = t ? h('div', { class: 'sh-sum' },
+      h('div', {}, h('small', { text: 'Partageurs validés' }), h('b', { text: n(t.validated) })),
+      h('div', {}, h('small', { text: 'Total gagné' }), h('b', { class: 'g', text: coinsFmt(t.earned.coins) + ' pièces' }), h('em', { text: '≈ ' + n(Math.round(t.earned.fcfa)) + ' FCFA' })),
+      h('div', {}, h('small', { text: 'Total en attente' }), h('b', { class: 'w', text: coinsFmt(t.pending.coins) + ' pièces' }), h('em', { text: '≈ ' + n(Math.round(t.pending.fcfa)) + ' FCFA' })),
+      h('div', {}, h('small', { text: 'Clics valides' }), h('b', { text: n(t.validClicks) }), t.blocked ? h('em', { class: 'r', text: t.blocked + ' compte(s) bloqué(s)' }) : null)) : null;
+    const search = h('input', { type: 'search', class: 'sh-in', placeholder: 'Chercher un nom, un pays, un e-mail…', value: st.shq, 'aria-label': 'Chercher un partageur', oninput: (e) => { st.shq = e.target.value; st.shLimit = 24; drawShare(true); } });
+    const sort = h('select', { class: 'sh-in sh-sort', 'aria-label': 'Trier', onchange: (e) => { st.shSort = e.target.value; drawShare(); } },
+      ...[['earned', 'Trier : plus gagné'], ['pending', 'Trier : plus en attente'], ['clicks', 'Trier : plus de clics'], ['recent', 'Trier : plus récents']].map(([v, l]) => h('option', { value: v, text: l, selected: v === st.shSort ? true : false })));
+    const shown = list.slice(0, st.shLimit);
+    const grid = shown.length ? h('div', { class: 'sh-grid' }, ...shown.map(sharerMini)) : h('p', { class: 'adempty', text: 'Rien à afficher pour ce filtre.' });
+    const sel = st.shSel && st.sharers.find((p) => p.uid === st.shSel);
+    return h('div', { class: 'sh' }, sum, h('div', { class: 'sh-tools' }, search, sort), grid,
+      list.length > shown.length ? h('button', { class: 'btn btn-line adsm sh-more', type: 'button', text: 'Voir la suite (' + (list.length - shown.length) + ')', onclick: () => { st.shLimit += 24; drawShare(); } }) : null,
+      sel ? sharerSheet(sel) : null);
+  }
+  function drawShare(keepFocus) {
+    $('#rg-list').replaceChildren(sharersView());
+    if (keepFocus) { const i = $('.sh-in'); if (i) { i.focus(); const l = i.value.length; i.setSelectionRange && i.setSelectionRange(l, l); } }
   }
   /** Campagne Partage : à valider une fois le paiement reçu ; l'équipe peut aussi la mettre en pause ou la terminer. */
   function campCard(p) {
@@ -1448,6 +1502,7 @@ async function initRegieAdmin() {
   }
   function draw() {
     drawBar();
+    if (st.tab === 'share') return drawShare();
     const list = st.tab === 'wal' ? [walCard()] : st.tab === 'mail' ? [mailCard()] : st.tab === 'share' ? st.sharers.map(sharerCard) : st.tab === 'camp' ? st.camps.map(campCard) : st.tab === 'alert' ? st.alerts.map(alertCard) : st.tab === 'adv' ? st.adv.map(advCard) : st.tab === 'ads' ? st.ads.map(adCard) : st.tab === 'pay' ? st.pays.map(payCard) : st.tab === 'pub' ? st.profiles.map(pubCard) : st.props.map(propCard);
     $('#rg-list').replaceChildren(...(list.length ? list : [h('p', { class: 'adempty', text: 'Rien à afficher pour ce filtre.' })]));
     const pm = st.payMeta;   // retraits : pages de 50
@@ -1532,7 +1587,7 @@ async function initRegieAdmin() {
     try {
       if (st.tab === 'pay') { const r = await call('adsPubAdminList', { payouts: true, status: st.filter, page: st.page }); st.pays = r.payouts || []; st.payMeta = r; draw(); return; }
       if (st.tab === 'ads') { const r = await call('adsPubAdminList', { ads: true, status: st.filter }); if (!Array.isArray(r.ads)) throw new Error('API pas à jour : la liste des annonces n’existe pas encore sur le serveur. Redéploie l’API.'); st.ads = r.ads; draw(); return; }
-      if (st.tab === 'share') { st.sharers = (await call('adsPubAdminList', { sharers: true, status: st.filter })).sharers; draw(); return; }
+      if (st.tab === 'share') { const r = await call('adsPubAdminList', { sharers: true, status: st.filter === 'hold' ? 'all' : st.filter }); st.sharers = r.sharers; st.totals = r.totals || null; draw(); return; }
       if (st.tab === 'camp') { st.camps = (await call('adsPubAdminList', { campaigns: true, status: st.filter })).campaigns; draw(); return; }
       if (st.tab === 'alert') { const r = await call('adsPubAdminList', { alerts: true, status: st.afilter }); st.alerts = r.alerts; if (st.afilter === 'open') st.alertsOpen = r.alerts.length; draw(); return; }
       const advStatus = ({ all: 'all', pending: 'pending', active: 'approved', refused: 'rejected' })[st.filter];
