@@ -284,4 +284,6 @@ const Map<String, Map<String, String>> kTrVideos = {
   "Inverser": {'en': "Swap", 'es': "Invertir", 'de': "Tauschen", 'ar': "عكس", 'pt': "Inverter", 'zh': "互换", 'sw': "Badilisha"},
   "2 vidéos": {'en': "Two videos", 'es': "2 videos", 'de': "2 Videos", 'ar': "فيديوهان", 'pt': "2 vídeos", 'zh': "两个视频", 'sw': "Video 2"},
   "2e média": {'en': "2nd media", 'es': "2.º medio", 'de': "2. Medium", 'ar': "وسيط ثانٍ", 'pt': "2.ª mídia", 'zh': "第二个媒体", 'sw': "Media ya 2"},
+  "vous a répondu en vidéo": {'en': "replied to your post with a video", 'es': "te ha respondido con un vídeo", 'de': "hat per Video auf deinen Beitrag geantwortet", 'ar': "ردّ على منشورك بفيديو", 'pt': "respondeu ao seu post com um vídeo", 'zh': "用视频回复了你的帖子", 'sw': "amejibu chapisho lako kwa video"},
+  "Réponses en vidéo": {'en': "Video replies", 'es': "Respuestas en vídeo", 'de': "Videoantworten", 'ar': "ردود بالفيديو", 'pt': "Respostas em vídeo", 'zh': "视频回复", 'sw': "Majibu ya video"},
 };

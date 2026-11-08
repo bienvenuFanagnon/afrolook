@@ -8,12 +8,12 @@ class NotificationText {
 
   /// Nouveaux types : mention, j'aime d'un commentaire, republication, soutien par pub, abonné à un canal,
   /// puis (lot « restes ») boost à valider (équipe), nomination comme administrateur d'un canal, intérêt pour un service.
-  static const newTypes = {'MENTION', 'COMMENT_LIKE', 'REPOST', 'SUPPORT', 'FOLLOW_CANAL', 'BOOST_SOUMIS', 'CANAL_ADMIN', 'SERVICE', 'STAFF_VERIF', 'STAFF_FRAUD', 'STAFF_DISPUTE', 'STAFF_ADS'};
+  static const newTypes = {'VIDEO_REPLY', 'MENTION', 'COMMENT_LIKE', 'REPOST', 'SUPPORT', 'FOLLOW_CANAL', 'BOOST_SOUMIS', 'CANAL_ADMIN', 'SERVICE', 'STAFF_VERIF', 'STAFF_FRAUD', 'STAFF_DISPUTE', 'STAFF_ADS'};
 
   /// Groupes de la page (clé = libellé français, traduit à l'affichage), types rangés dans chacun et filtre « par type » correspondant.
   static const Map<String, List<String>> groupTypes = {
     'J\'aime': ['FAVORITE', 'LIKE', 'COMMENT_LIKE'],
-    'Commentaires': ['COMMENT', 'COMMENTAIRE', 'REPLY', 'MENTION'],
+    'Commentaires': ['COMMENT', 'COMMENTAIRE', 'REPLY', 'MENTION', 'VIDEO_REPLY'],
     'Abonnés': ['ABONNER', 'FOLLOW_CANAL', 'CANAL_ADMIN', 'INVITATION', 'ACCEPTINVITATION'],
     'Messages': ['MESSAGE'],
     'Publications & Lives': ['NEWPOST', 'POST', 'REPOST', 'LIVE', 'CHALLENGE', 'FRIEND_ACTIVITY'],
@@ -62,6 +62,8 @@ class NotificationText {
         return b.isEmpty ? tr('propose un prix sur votre article') : '${tr('propose un prix sur votre article')} : $b';
       case 'OFFER_REPLY':
         return tr('a répondu à votre offre');
+      case 'VIDEO_REPLY':
+        return tr('vous a répondu en vidéo');
       case 'COMMENT_LIKE':
         return tr('a aimé votre commentaire');
       case 'REPOST':
@@ -98,6 +100,7 @@ class NotificationText {
 
   /// Nom lisible d'un type dans le filtre « par type » (le code brut pour les types plus anciens).
   static String typeLabel(String type) => switch (type.toUpperCase()) {
+        'VIDEO_REPLY' => tr('Réponses en vidéo'),
         'MENTION' => tr('Mentions'),
         'COMMENT_LIKE' => tr('J\'aime de commentaires'),
         'REPOST' => tr('Republications'),
@@ -115,6 +118,7 @@ class NotificationText {
 
   /// Icône et couleur (rôle : 0 = danger, 1 = info, 2 = succès, 3 = avertissement) du type de notification.
   static ({IconData icon, int tone})? look(String? type) => switch ((type ?? '').toUpperCase()) {
+        'VIDEO_REPLY' => (icon: Icons.videocam_outlined, tone: 2),
         'MENTION' => (icon: Icons.alternate_email, tone: 1),
         'COMMENT_LIKE' => (icon: Icons.thumb_up_alt_outlined, tone: 0),
         'REPOST' => (icon: Icons.repeat, tone: 2),

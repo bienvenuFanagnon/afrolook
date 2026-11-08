@@ -606,6 +606,7 @@ class _MesNotificationState extends State<MesNotification> {
         case 'SUPPORT':
         case 'LIKE':
         case 'REPLY':
+        case 'VIDEO_REPLY':
           if ((notification.post_id ?? '').isNotEmpty) {
             await _handlePostNotification(notification);
           } else {
