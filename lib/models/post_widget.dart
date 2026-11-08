@@ -60,6 +60,7 @@ class PostWidget {
     this.counts = const {},
     this.myValue,
     this.responsesCount = 0,
+    this.isAuthor = false,
   });
 
   final String? id;
@@ -73,6 +74,7 @@ class PostWidget {
   Map<String, int> counts;
   String? myValue;
   int responsesCount;
+  bool isAuthor;   // la personne connectée a publié ce widget : elle lit les réponses
 
   String get question => '${config['question'] ?? config['title'] ?? config['label'] ?? config['name'] ?? config['product'] ?? ''}';
 
@@ -81,7 +83,7 @@ class PostWidget {
   /// Bonne réponse d'un quiz (connue seulement après avoir répondu, ou de l'auteur).
   int? get correct => config['correct'] is num ? (config['correct'] as num).toInt() : null;
 
-  PostWidget copy() => PostWidget(id: id, kind: kind, config: Map<String, dynamic>.from(config), x: x, y: y, scale: scale, start: start, end: end, counts: Map.of(counts), myValue: myValue, responsesCount: responsesCount);
+  PostWidget copy() => PostWidget(id: id, kind: kind, config: Map<String, dynamic>.from(config), x: x, y: y, scale: scale, start: start, end: end, counts: Map.of(counts), myValue: myValue, responsesCount: responsesCount, isAuthor: isAuthor);
 
   Map<String, dynamic> toApi() => {
         'type': kind.id,
@@ -112,6 +114,7 @@ class PostWidget {
       counts: counts,
       myValue: j['my_value'] == null ? null : '${j['my_value']}',
       responsesCount: (j['responses_count'] as num?)?.toInt() ?? 0,
+      isAuthor: j['is_author'] == true,
     );
   }
 

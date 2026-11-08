@@ -150,6 +150,46 @@ class _PostWidgetViewState extends State<PostWidgetView> {
     return days > 0 ? '${days} j ${h} h ${m} min' : '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
+  /// Feuille des réponses reçues (réservée à l'auteur) : pseudo et texte, les plus récentes d'abord.
+  Future<void> _showAnswers(BuildContext context) async {
+    final id = w.id;
+    if (id == null) return;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+      builder: (ctx) => SizedBox(
+        height: MediaQuery.sizeOf(ctx).height * .6,
+        child: FutureBuilder<List<({String user, String text})>>(
+          future: WidgetsApi.responses(id),
+          builder: (ctx, snap) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 16, 18, 8),
+              child: Text('${w.question}', style: const TextStyle(color: _ink, fontSize: 16, fontWeight: FontWeight.w800)),
+            ),
+            Expanded(
+              child: snap.connectionState != ConnectionState.done
+                  ? const Center(child: CircularProgressIndicator())
+                  : (snap.data ?? const []).isEmpty
+                      ? Center(child: Text(context.tr('Aucune réponse pour le moment.'), style: const TextStyle(color: _sub)))
+                      : ListView(padding: const EdgeInsets.fromLTRB(18, 0, 18, 24), children: [
+                          for (final a in snap.data!)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                Text('@${a.user}', style: const TextStyle(color: _sub, fontSize: 12, fontWeight: FontWeight.w700)),
+                                Text(a.text, style: const TextStyle(color: _ink, fontSize: 14.5)),
+                              ]),
+                            ),
+                        ]),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = w.config;
@@ -162,7 +202,13 @@ class _PostWidgetViewState extends State<PostWidgetView> {
         final answered = w.myValue != null;
         return _card([
           _title('❓ ${c['question'] ?? ''}'),
-          if (answered && !widget.preview)
+          if (w.isAuthor && !widget.preview)
+            GestureDetector(
+              key: const ValueKey('widget_see_answers'),
+              onTap: () => _showAnswers(context),
+              child: Text('${context.tr('Voir les réponses')} (${w.responsesCount})', style: const TextStyle(color: _green, fontWeight: FontWeight.w800, fontSize: 13, decoration: TextDecoration.none)),
+            )
+          else if (answered && !widget.preview)
             Text('${context.tr('Envoyé')} ✓', style: const TextStyle(color: _green, fontWeight: FontWeight.w800, fontSize: 12.5, decoration: TextDecoration.none))
           else
             Row(children: [

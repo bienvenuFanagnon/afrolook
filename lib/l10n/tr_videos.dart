@@ -272,4 +272,6 @@ const Map<String, Map<String, String>> kTrVideos = {
   "Les changements faits dans le Studio seront perdus.": {'en': "Changes made in the Studio will be lost.", 'es': "Los cambios hechos en el Estudio se perderán.", 'de': "Änderungen im Studio gehen verloren.", 'ar': "ستضيع التغييرات التي أجريتها في الاستوديو.", 'pt': "As alterações feitas no Estúdio serão perdidas.", 'zh': "在工作室中所做的更改将丢失。", 'sw': "Mabadiliko yaliyofanywa kwenye Studio yatapotea."},
   "Continuer le montage": {'en': "Keep editing", 'es': "Seguir con el montaje", 'de': "Weiter schneiden", 'ar': "متابعة المونتاج", 'pt': "Continuar a montagem", 'zh': "继续剪辑", 'sw': "Endelea na uhariri"},
   "Quitter": {'en': "Leave", 'es': "Salir", 'de': "Verlassen", 'ar': "مغادرة", 'pt': "Sair", 'zh': "退出", 'sw': "Toka"},
+  "Voir les réponses": {'en': "See the answers", 'es': "Ver las respuestas", 'de': "Antworten ansehen", 'ar': "عرض الإجابات", 'pt': "Ver as respostas", 'zh': "查看回复", 'sw': "Ona majibu"},
+  "Aucune réponse pour le moment.": {'en': "No answers yet.", 'es': "Aún no hay respuestas.", 'de': "Noch keine Antworten.", 'ar': "لا توجد إجابات حتى الآن.", 'pt': "Nenhuma resposta ainda.", 'zh': "暂无回复。", 'sw': "Bado hakuna majibu."},
 };
