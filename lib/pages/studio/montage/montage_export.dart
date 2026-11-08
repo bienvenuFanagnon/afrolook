@@ -19,6 +19,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../l10n/tr.dart';
 import 'montage_canvas.dart';
+import 'montage_pin.dart' show kMaxPins;
 import 'montage_state.dart';
 import 'montage_stickers.dart';
 
@@ -246,7 +247,7 @@ class MontageExport {
       } catch (_) {}   // sans ces calques, le serveur n'ajoute pas la fin : la vidéo reste valable
     }
     // vidéos de la galerie épinglées : envoyées d'abord (le serveur ne lit que des envois de la personne ou des publications publiques)
-    for (final p in s.pins.take(2)) {
+    for (final p in s.pins.take(kMaxPins)) {
       if (p.source.isLocal && p.uploadId == null) {
         onStep('Envoi de ta 2e vidéo…');
         final path = p.source.isImage ? p.source.localImagePath! : (await MediaShrink.video(File(p.source.localVideoPath!))).path;
@@ -300,7 +301,7 @@ class MontageExport {
       if (isVideo) 'outro': s.outro,
       if (timedMeta.isNotEmpty) 'timed': timedMeta,
       if (isVideo && s.pins.isNotEmpty) 'pins': [
-        for (var i = 0; i < s.pins.take(2).length; i++)
+        for (var i = 0; i < s.pins.take(kMaxPins).length; i++)
           {
             ...s.pins[i].toApi(),
             // dans une disposition à deux médias, la place de la vidéo ajoutée reste occupée pendant TOUT le film (jamais de zone noire ni de créneau trop court)

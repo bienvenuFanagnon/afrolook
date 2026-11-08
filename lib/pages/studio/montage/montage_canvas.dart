@@ -312,8 +312,9 @@ class MontageCanvas extends StatelessWidget {
         _slot('st:${st.id}', cq, dflt: st.center, center: st.center, scalable: true, scale: st.scale, onTap: onTapSticker == null ? null : () => onTapSticker!(st.id), child: StickerView(sticker: st, cq: cq, selected: onMove != null && selectedSticker == st.id)),
       // Vidéos épinglées : un aperçu seulement dans l'éditeur (jamais dans le fichier final : le serveur pose la vraie vidéo)
       if (onMove != null && !s.exportCapture && s.layout != null && s.pins.isNotEmpty) Positioned.fill(child: MontageLayoutPreview(state: s, meVideo: meVideo)),
-      if (onMove != null && !s.exportCapture && s.layout == null)
-        for (final p in s.pins)
+      // en disposition, la 1re épingle tient sa place (aperçu ci-dessus) ; les images ajoutées ensuite restent posées librement par-dessus
+      if (onMove != null && !s.exportCapture)
+        for (final p in (s.layout == null ? s.pins : s.pins.skip(1)))
           _slot('pin:${p.id}', cq, dflt: p.center, center: p.center, scalable: true, scale: p.scale, onTap: onTapSticker == null ? null : () => onTapSticker!('pin:${p.id}'), child: MontagePinView(pin: p, cq: cq, selected: selectedSticker == 'pin:${p.id}', volume: s.originAudio ? s.originVolume : 0, loop: s.originLoop)),
       // Filigrane : toujours présent, même publié dans l'app
       Positioned(
@@ -380,8 +381,10 @@ class _PseudoCapsule extends StatelessWidget {
   Widget build(BuildContext context) {
     const gold = Color(0xFFFFD400);
     final base = TextStyle(fontFamily: 'NunitoBold', fontSize: 3.5 * cq, color: Colors.white);
-    final clean = pseudo.startsWith('@') ? pseudo.substring(1) : pseudo;
-    final spans = <TextSpan>[TextSpan(text: '@', style: base.copyWith(color: gold))];
+    // « @pseudo » pour une personne, « #titre » pour un canal (le préfixe est doré dans les deux cas)
+    final isChannel = pseudo.startsWith('#');
+    final clean = (pseudo.startsWith('@') || isChannel) ? pseudo.substring(1) : pseudo;
+    final spans = <TextSpan>[TextSpan(text: isChannel ? '#' : '@', style: base.copyWith(color: gold))];
     final parts = clean.split('.');
     for (var i = 0; i < parts.length; i++) {
       if (i > 0) spans.add(TextSpan(text: '.', style: base.copyWith(color: gold)));

@@ -18,6 +18,7 @@ import '../../models/model_data.dart';
 import '../../services/api/studio_subtitles_api.dart';
 import '../../services/api/studio_trim_api.dart';
 import '../../services/api/studio_time_api.dart';
+import '../../services/montage_signature.dart';
 import '../../services/post_source_link.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/api_error_dialogs.dart';
@@ -81,6 +82,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
   @override
   void initState() {
     super.initState();
+    MontageSignature.setCanal(widget.canal);   // post de canal : la signature du montage est « #titre », jamais le pseudo
     final dr = widget.draft;
     if (dr != null) {
       _voiceEffect = dr.voiceEffect;
@@ -102,6 +104,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
 
   @override
   void dispose() {
+    MontageSignature.clear();
     _video?.dispose();
     super.dispose();
   }

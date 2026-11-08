@@ -76,8 +76,28 @@ class MontageState {
   /// Autocollants (emojis, pastilles, logo) ajoutés par la personne, du plus ancien au plus récent (le dernier est au-dessus).
   final List<MontageSticker> stickers = [];
 
-  /// Vidéos épinglées (extraits d'autres vidéos), posées par le serveur ; seulement un aperçu dans l'éditeur.
+  /// Médias épinglés (extraits d'autres vidéos, images de la galerie), au plus [kMaxPins], posés par le serveur ; seulement un aperçu dans l'éditeur.
+  /// Le 1er peut tenir une disposition ([layout]) ; les suivants sont des images posées librement.
   final List<MontagePin> pins = [];
+
+  bool get canAddPin => pins.length < kMaxPins;
+
+  /// Retire UN média épinglé et son crédit « avec @nom ». Si c'était le 1er (celui des dispositions) ou le dernier, les dispositions s'arrêtent : les images restantes sont libres.
+  void removePin(MontagePin p) {
+    final wasFirst = pins.isNotEmpty && identical(pins.first, p);
+    stickers.removeWhere((e) => e.id == 'credit_${p.id}');
+    pins.remove(p);
+    if (pins.isEmpty || wasFirst) layout = null;
+  }
+
+  /// Retire TOUS les médias épinglés (et leurs crédits).
+  void clearPins() {
+    for (final p in pins) {
+      stickers.removeWhere((e) => e.id == 'credit_${p.id}');
+    }
+    pins.clear();
+    layout = null;
+  }
 
   /// Montage à DEUX vidéos (réponse en vidéo) : `tb` haut/bas, `sbs` côte à côte, `bar` bandeau en haut ; null = vidéo épinglée dans un coin.
   String? layout;

@@ -39,6 +39,7 @@ import '../../../services/api/music_api.dart';
 import '../../../services/music_likes.dart';
 import '../../../services/music_queue.dart';
 import 'montage_pin.dart';
+import '../../../services/montage_signature.dart';
 import '../../../widgets/reply_split.dart';
 import 'montage_preview_page.dart';
 import '../../create/chronique_flow.dart' show ChroniqueFlow;
@@ -47,7 +48,6 @@ import 'montage_stickers.dart';
 import '../studio_theme.dart';
 import '../../../widgets/gold_badge.dart';
 import '../../../widgets/gold_lock_row.dart';
-import '../../../services/watermark.dart';
 
 AppColors get _c => studioColors;
 
@@ -328,7 +328,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           ),
         );
         if (ok != true || !mounted) return;
-        _removePin();
+        _clearPins();
       }
       setState(() {
         if (second) {
@@ -545,7 +545,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
             _payJobSoundId = s.music?.id;
           },
           onPaid: (coins) => _say('🎤 $coins pièces utilisées pour le son de l’artiste. Merci de soutenir les artistes !'),
-          outroLabel: Watermark.userLabel(context.read<UserAuthProvider>().loginUserData.pseudo),
+          outroLabel: MontageSignature.outroLabel(context.read<UserAuthProvider>().loginUserData.pseudo),
         );
       } else {
         await _setT(.3);
@@ -646,7 +646,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           artistSoundId: s.music?.isArtist == true && video ? s.music!.id : null,
           soundJobId: s.music?.isArtist == true && video ? _lastJobId : null,
           usedOwnMedia: s.photoPath != null || s.videoPath != null,
-          pins: video && s.pins.any((p) => !p.source.isLocal) ? [for (final p in s.pins.take(2).where((p) => !p.source.isLocal)) p.toLink()] : null,   // une vidéo de galerie n'a pas de publication à ouvrir
+          pins: video && s.pins.any((p) => !p.source.isLocal) ? [for (final p in s.pins.take(kMaxPins).where((p) => !p.source.isLocal)) p.toLink()] : null,   // une vidéo de galerie n'a pas de publication à ouvrir
         ),
       );
       return;
@@ -663,7 +663,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
   Widget build(BuildContext context) {
     syncStudioColors(context);
     final me = context.read<UserAuthProvider>().loginUserData;
-    final pseudo = me.pseudo ?? '';
+    final pseudo = MontageSignature.label(me.pseudo);   // « #titre » dans un canal, sinon le pseudo
     final screenH = MediaQuery.sizeOf(context).height;
     return PopScope(
       canPop: false,
@@ -706,8 +706,8 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
                   secondMedia: _secondWidget(),
                   meVideo: s.useVideo ? _video : null,
                   pseudo: pseudo,
-                  avatarUrl: me.imageUrl,
-                  followers: me.followersCount,
+                  avatarUrl: MontageSignature.avatar(me.imageUrl),
+                  followers: MontageSignature.followers(me.followersCount),
                   // la personne glisse elle-même le pseudo, les chiffres, le texte, le logo et les autocollants ; tout reste dans le cadre
                   onMove: _moveElement,
                   onScale: _scaleSticker,
@@ -788,14 +788,28 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     v == 'image' ? await _pickGalleryImagePin() : await _pickGalleryPin();
   }
 
-  /// IMAGE de la galerie posée comme 2e média : mêmes dispositions, mêmes réglages qu'une vidéo (sans son, sans extrait). Elle passe la vérification d'authenticité des images.
+  /// IMAGES de la galerie posées comme médias épinglés, jusqu'à [kMaxPins] au total : la 1re (si rien n'est épinglé) prend les dispositions, les autres sont posées librement,
+  /// chacune avec sa taille, sa place et son créneau. Sans son, sans extrait. Chaque image passe la vérification d'authenticité des images.
   Future<void> _pickGalleryImagePin() async {
-    final x = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 92, maxWidth: 2000);
-    if (x == null || !mounted) return;
-    if (!await AuthenticVideoCheck.gateImage(context, x.path, allowClaim: false) || !mounted) return;
-    final me = context.read<UserAuthProvider>().loginUserData.pseudo ?? '';
-    _addPin(MontagePinSource(postId: '', thumbUrl: x.path, authorPseudo: me, durationSec: 2, localImagePath: x.path));
-    if (s.layout == null) setState(() => s.layout = 'tb');
+    final room = kMaxPins - s.pins.length;
+    if (room <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('5 médias au plus.')));
+      return;
+    }
+    List<XFile> files;
+    if (room == 1) {
+      final x = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 92, maxWidth: 2000);
+      files = x == null ? const [] : [x];
+    } else {
+      files = (await _picker.pickMultiImage(imageQuality: 92, maxWidth: 2000, limit: room)).take(room).toList();
+    }
+    for (final x in files) {
+      if (!mounted) return;
+      if (!await AuthenticVideoCheck.gateImage(context, x.path, allowClaim: false) || !mounted) continue;
+      final first = s.pins.isEmpty;
+      _addPin(MontagePinSource(postId: '', thumbUrl: x.path, authorPseudo: '', durationSec: 2, localImagePath: x.path), extra: !first);
+      if (first && s.layout == null && s.pins.isNotEmpty) setState(() => s.layout = 'tb');
+    }
   }
 
   Widget _controls() {
@@ -1273,11 +1287,12 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     });
   }
 
-  /// Pose la vidéo d'un autre dans le coin (une seule à la fois) avec son crédit « avec @nom ».
-  void _addPin(MontagePinSource src) {
+  /// Pose un média épinglé avec, pour la vidéo d'un autre, son crédit « avec @nom ». Le 1er remplace l'ancien (vidéo ou image, il peut tenir une disposition) ;
+  /// avec [extra], c'est une IMAGE de plus (jusqu'à [kMaxPins] médias au total) : elle s'ajoute sans rien effacer, posée librement à une place libre.
+  void _addPin(MontagePinSource src, {bool extra = false}) {
     if (!RewardsService.featureUnlocked('pin_video')) {
       _gate('pin_video').then((ok) {
-        if (ok && mounted) _addPin(src);
+        if (ok && mounted) _addPin(src, extra: extra);
       });
       return;
     }
@@ -1285,13 +1300,23 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Épingler une vidéo demande une vidéo : filme-toi d\'abord.')));
       return;
     }
-    if (s.pins.isNotEmpty) {
+    if (extra) {
+      if (!s.canAddPin) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('5 médias au plus.')));
+        return;
+      }
+    } else if (s.pins.isNotEmpty) {
       s.stickers.removeWhere((e) => e.id.startsWith('credit_'));
       s.pins.clear();
     }
-    final pin = MontagePin(id: '${DateTime.now().microsecondsSinceEpoch}', source: src);
-    s.layout = ReplyLayout.id.value;   // choisie dans la caméra (réponse en vidéo) ; null = vidéo dans un coin
-    s.layoutSwap = ReplyLayout.swap.value;
+    final pin = MontagePin(id: '${DateTime.now().microsecondsSinceEpoch}_${s.pins.length}', source: src);
+    if (extra) {
+      pin.center = kPinSpots[s.pins.length % kPinSpots.length].$2;   // chaque image arrive à une place différente : elles ne se cachent pas entre elles
+      pin.scale = .8;
+    } else {
+      s.layout = ReplyLayout.id.value;   // choisie dans la caméra (réponse en vidéo) ; null = vidéo dans un coin
+      s.layoutSwap = ReplyLayout.swap.value;
+    }
     pin.startSec = 0;
     pin.endSec = src.isImage ? math.max(1.0, _videoSeconds) : math.min(_videoSeconds, math.max(1.0, pin.clipSeconds));
     setState(() {
@@ -1329,33 +1354,65 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     if (s.layout == null) setState(() => s.layout = 'tb');   // une 2e vidéo de galerie se montre d'abord en haut / bas : on peut la mettre dans un coin ensuite
   }
 
-  void _removePin() {
+  /// Retire TOUS les médias épinglés (la vidéo de base devient une photo : plus rien à épingler).
+  void _clearPins() {
     setState(() {
-      for (final p in s.pins) {
-        s.stickers.removeWhere((e) => e.id == 'credit_${p.id}');
-      }
-      s.pins.clear();
+      s.clearPins();
       _selSticker = null;
     });
   }
 
-  /// Réglages de la vidéo épinglée : extrait de la vidéo d'origine, créneau d'affichage, forme et taille.
+  /// Retire UN média épinglé (et son crédit) ; les autres restent. Si c'était le 1er (celui des dispositions) et qu'il en reste, les dispositions s'arrêtent : les images restantes sont libres.
+  void _removePin(MontagePin p) {
+    setState(() {
+      s.removePin(p);
+      _selSticker = s.pins.isEmpty ? null : 'pin:${s.pins.first.id}';
+    });
+  }
+
+  /// Le média épinglé choisi (touché sur l'aperçu ou dans la rangée de pastilles) ; null si aucun.
+  MontagePin? get _selPin => s.pins.where((e) => 'pin:${e.id}' == _selSticker).firstOrNull;
+
+  /// Réglages des médias épinglés (jusqu'à 5) : on choisit un média, puis sa taille, sa place, son créneau, sa forme ; chacun se retire seul.
+  /// Les dispositions (haut / bas, côte à côte, bandeau), l'extrait, le son et le rebouclage ne concernent que le 1er média.
   Widget _pinSection() {
     if (s.pins.isEmpty) return const SizedBox.shrink();
-    final p = s.pins.first;
-    final inLayout = s.layout != null;
+    final p = _selPin ?? s.pins.first;
+    final isFirst = identical(p, s.pins.first);
+    final inLayout = s.layout != null && isFirst;
+    final free = !inLayout;   // taille, place et créneau libres (le 1er média en disposition occupe sa place)
     final dur = p.source.durationSec > 0 ? p.source.durationSec : 15.0;
     final clipMax = math.min(dur, 15.0);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const SizedBox(height: 14),
-      _label(p.source.isImage ? 'Image ajoutée' : 'Vidéo ajoutée${p.source.authorPseudo.isEmpty ? '' : ' · @${p.source.authorPseudo}'}'),
-      Wrap(spacing: 8, runSpacing: 4, children: [
-        for (final e in const [(null, 'Dans un coin'), ('tb', 'Haut / bas'), ('sbs', 'Côte à côte'), ('bar', 'Bandeau')])
-          ChoiceChip(key: ValueKey('layout_${e.$1 ?? 'corner'}'), label: Text(e.$2), selected: s.layout == e.$1, onSelected: (_) => setState(() {
-            s.layout = e.$1;
-            s.layoutRatio = null;   // chaque disposition repart de son partage de base
-          })),
-      ]),
+      if (s.pins.length < kMaxPins)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: _btn(Icons.add_photo_alternate_rounded, 'Ajouter une image (${s.pins.length}/$kMaxPins)', _pickGalleryImagePin),
+        ),
+      if (s.pins.length > 1) ...[
+        _label('Mes médias épinglés'),
+        Wrap(spacing: 8, runSpacing: 4, children: [
+          for (var i = 0; i < s.pins.length; i++)
+            ChoiceChip(
+              key: ValueKey('pin_pick_$i'),
+              avatar: Icon(s.pins[i].source.isImage ? Icons.image_rounded : Icons.videocam_rounded, size: 16, color: _c.textSecondary),
+              label: Text('${i + 1}'),
+              selected: identical(s.pins[i], p),
+              onSelected: (_) => setState(() => _selSticker = 'pin:${s.pins[i].id}'),
+            ),
+        ]),
+        const SizedBox(height: 8),
+      ],
+      _label(isFirst ? (p.source.isImage ? 'Image ajoutée' : 'Vidéo ajoutée${p.source.authorPseudo.isEmpty || p.source.isLocal ? '' : ' · @${p.source.authorPseudo}'}') : 'Image ${s.pins.indexOf(p) + 1}'),
+      if (isFirst)
+        Wrap(spacing: 8, runSpacing: 4, children: [
+          for (final e in const [(null, 'Dans un coin'), ('tb', 'Haut / bas'), ('sbs', 'Côte à côte'), ('bar', 'Bandeau')])
+            ChoiceChip(key: ValueKey('layout_${e.$1 ?? 'corner'}'), label: Text(e.$2), selected: s.layout == e.$1, onSelected: (_) => setState(() {
+              s.layout = e.$1;
+              s.layoutRatio = null;   // chaque disposition repart de son partage de base
+            })),
+        ]),
       if (inLayout) ...[
         Text('Part de la place ${s.layout == 'sbs' ? 'de gauche' : 'du haut'} : ${(s.firstShare * 100).round()} %', style: TextStyle(color: _c.textSecondary, fontSize: 13)),
         Slider(key: const ValueKey('layout_ratio'), value: s.firstShare, min: .25, max: .75, onChanged: (v) => setState(() => s.layoutRatio = v)),
@@ -1365,8 +1422,8 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
         Slider(key: const ValueKey('layout_me_zoom'), value: s.meZoom, min: 1, max: 2.5, onChanged: (v) => setState(() => s.meZoom = v)),
         SwitchListTile(key: const ValueKey('layout_swap'), contentPadding: EdgeInsets.zero, title: const Text('Inverser les places'), value: s.layoutSwap, onChanged: (v) => setState(() => s.layoutSwap = v)),
       ],
-      if (!p.source.isImage) Text('Extrait de sa vidéo : de ${_sec(p.clipStartSec)} s à ${_sec(p.clipEndSec)} s (${_sec(p.clipSeconds)} s, 15 s au plus). Le téléphone ne charge que cet extrait, léger.', style: TextStyle(color: _c.textSecondary, fontSize: 12.5)),
-      if (!p.source.isImage) RangeSlider(
+      if (isFirst && !p.source.isImage) Text('Extrait de sa vidéo : de ${_sec(p.clipStartSec)} s à ${_sec(p.clipEndSec)} s (${_sec(p.clipSeconds)} s, 15 s au plus). Le téléphone ne charge que cet extrait, léger.', style: TextStyle(color: _c.textSecondary, fontSize: 12.5)),
+      if (isFirst && !p.source.isImage) RangeSlider(
         key: const ValueKey('pin_clip_range'),
         values: RangeValues(p.clipStartSec.clamp(0, dur).toDouble(), p.clipEndSec.clamp(0, dur).toDouble()),
         min: 0,
@@ -1386,7 +1443,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           p.clipEndSec = b;
         }),
       ),
-      if (!inLayout) Row(children: [
+      if (free) Row(children: [
         Icon(Icons.timer_rounded, size: 18, color: _c.textSecondary),
         const SizedBox(width: 6),
         Expanded(child: Text('Affichée de ${_sec(p.startSec)} s à ${_sec(p.endSec)} s de ta vidéo', style: TextStyle(color: _c.textSecondary, fontSize: 13))),
@@ -1403,17 +1460,28 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           child: const Text('Régler le temps'),
         ),
       ]),
+      if (free) ...[
+        Text('Taille : ${(p.widthFrac * 100).round()} % de la largeur', style: TextStyle(color: _c.textSecondary, fontSize: 13)),
+        Slider(key: const ValueKey('pin_size'), value: p.scale.clamp(.5, 3.3).toDouble(), min: .5, max: 3.3, onChanged: (v) => setState(() => p.scale = v)),
+        Text('Place', style: TextStyle(color: _c.textSecondary, fontSize: 13)),
+        Wrap(spacing: 8, runSpacing: 4, children: [
+          for (var i = 0; i < kPinSpots.length; i++)
+            ActionChip(key: ValueKey('pin_spot_$i'), label: Text(kPinSpots[i].$1), onPressed: () => setState(() => p.center = kPinSpots[i].$2)),
+        ]),
+      ],
       Wrap(spacing: 8, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
-        ChoiceChip(key: const ValueKey('pin_rect'), label: const Text('Rectangle'), selected: !p.circle, onSelected: (_) => setState(() => p.circle = false)),
-        ChoiceChip(key: const ValueKey('pin_round'), label: const Text('Rond'), selected: p.circle, onSelected: (_) => setState(() => p.circle = true)),
-        IconButton(key: const ValueKey('pin_smaller'), tooltip: 'Plus petite', icon: Icon(Icons.remove_circle_outline_rounded, color: _c.textPrimary), onPressed: () => setState(() => p.scale = (p.scale - .25).clamp(.5, 3.3))),
-        IconButton(key: const ValueKey('pin_bigger'), tooltip: 'Plus grande', icon: Icon(Icons.add_circle_outline_rounded, color: _c.textPrimary), onPressed: () => setState(() => p.scale = (p.scale + .25).clamp(.5, 3.3))),
-        IconButton(key: const ValueKey('pin_delete'), tooltip: 'Retirer la vidéo épinglée', icon: Icon(Icons.delete_outline_rounded, color: _c.textPrimary), onPressed: _removePin),
+        if (free) ...[
+          ChoiceChip(key: const ValueKey('pin_rect'), label: const Text('Rectangle'), selected: !p.circle, onSelected: (_) => setState(() => p.circle = false)),
+          ChoiceChip(key: const ValueKey('pin_round'), label: const Text('Rond'), selected: p.circle, onSelected: (_) => setState(() => p.circle = true)),
+          IconButton(key: const ValueKey('pin_smaller'), tooltip: 'Plus petite', icon: Icon(Icons.remove_circle_outline_rounded, color: _c.textPrimary), onPressed: () => setState(() => p.scale = (p.scale - .25).clamp(.5, 3.3))),
+          IconButton(key: const ValueKey('pin_bigger'), tooltip: 'Plus grande', icon: Icon(Icons.add_circle_outline_rounded, color: _c.textPrimary), onPressed: () => setState(() => p.scale = (p.scale + .25).clamp(.5, 3.3))),
+        ],
+        IconButton(key: const ValueKey('pin_delete'), tooltip: p.source.isImage ? 'Retirer cette image' : 'Retirer la vidéo épinglée', icon: Icon(Icons.delete_outline_rounded, color: _c.textPrimary), onPressed: () => _removePin(p)),
       ]),
-      if (!p.source.isImage) SwitchListTile(key: const ValueKey('layout_origin_audio'), contentPadding: EdgeInsets.zero, title: const Text('Garder le son de la vidéo ajoutée'), value: s.originAudio, onChanged: (v) => setState(() => s.originAudio = v)),
-      if (s.originAudio && !p.source.isImage) _volumeRow('Volume de la vidéo ajoutée', s.originVolume, 1.5, (v) => setState(() => s.originVolume = v), const ValueKey('layout_origin_volume')),
-      if (!p.source.isImage) SwitchListTile(key: const ValueKey('layout_origin_loop'), contentPadding: EdgeInsets.zero, title: const Text('Reboucler la vidéo ajoutée'), subtitle: Text('Elle recommence tant que ta vidéo dure ; sinon elle reste figée sur sa dernière image.', style: TextStyle(color: _c.textSecondary, fontSize: 12)), value: s.originLoop, onChanged: (v) => setState(() => s.originLoop = v)),
-      Text('Glisse la vidéo pour la placer, pince-la pour la zoomer. Son créneau règle quand elle apparaît (et quand on l\'entend). Les spectateurs peuvent la toucher pour voir la vidéo d\'origine.', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
+      if (isFirst && !p.source.isImage) SwitchListTile(key: const ValueKey('layout_origin_audio'), contentPadding: EdgeInsets.zero, title: const Text('Garder le son de la vidéo ajoutée'), value: s.originAudio, onChanged: (v) => setState(() => s.originAudio = v)),
+      if (isFirst && s.originAudio && !p.source.isImage) _volumeRow('Volume de la vidéo ajoutée', s.originVolume, 1.5, (v) => setState(() => s.originVolume = v), const ValueKey('layout_origin_volume')),
+      if (isFirst && !p.source.isImage) SwitchListTile(key: const ValueKey('layout_origin_loop'), contentPadding: EdgeInsets.zero, title: const Text('Reboucler la vidéo ajoutée'), subtitle: Text('Elle recommence tant que ta vidéo dure ; sinon elle reste figée sur sa dernière image.', style: TextStyle(color: _c.textSecondary, fontSize: 12)), value: s.originLoop, onChanged: (v) => setState(() => s.originLoop = v)),
+      Text('Touche un média pour le choisir, glisse-le pour le placer, pince-le pour le zoomer. Son créneau règle quand il apparaît${isFirst && !p.source.isImage ? ' (et quand on l\'entend)' : ''}. Tu peux en poser 5 au plus.', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
     ]);
   }
 

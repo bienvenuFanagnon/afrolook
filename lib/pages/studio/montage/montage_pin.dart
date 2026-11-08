@@ -3,6 +3,18 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
+/// Nombre de médias épinglés au plus (décision du propriétaire, 08/11/2026) : le 1er peut être une vidéo ou une image, les suivants sont des IMAGES de la galerie posées librement.
+const int kMaxPins = 5;
+
+/// Les 5 places proposées pour poser un média épinglé : haut droite, haut gauche, bas gauche, bas droite, centre (centre dans le cadre, 0 à 1).
+const List<(String, Offset)> kPinSpots = [
+  ('Haut droite', Offset(.78, .22)),
+  ('Haut gauche', Offset(.22, .22)),
+  ('Bas gauche', Offset(.22, .78)),
+  ('Bas droite', Offset(.78, .78)),
+  ('Centre', Offset(.5, .5)),
+];
+
 /// La vidéo d'un autre à épingler (avant d'être posée dans le montage) : son identifiant, sa vignette, son créateur et sa durée.
 class MontagePinSource {
   const MontagePinSource({required this.postId, required this.thumbUrl, required this.authorPseudo, required this.durationSec, this.localVideoPath, this.localImagePath, this.previewUrl});
@@ -205,11 +217,12 @@ class _MontagePinViewState extends State<MontagePinView> {
           child: thumb,
         ),
         if (!playing && !pin.source.isImage) Center(child: Icon(Icons.play_circle_fill_rounded, color: Colors.white70, size: w * .3)),
+        if (!pin.source.isLocal && pin.source.authorPseudo.isNotEmpty)   // jamais de pseudo sur un média de la galerie (le tien)
         Positioned(
           left: 0,
           right: 0,
           bottom: pin.circle ? h * .1 : 2,
-          child: Text(pin.source.authorPseudo.isEmpty ? '' : '@${pin.source.authorPseudo}', maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: (w * .09).clamp(7, 12).toDouble(), fontWeight: FontWeight.w800, shadows: const [Shadow(color: Colors.black87, blurRadius: 3)])),
+          child: Text('@${pin.source.authorPseudo}', maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: (w * .09).clamp(7, 12).toDouble(), fontWeight: FontWeight.w800, shadows: const [Shadow(color: Colors.black87, blurRadius: 3)])),
         ),
       ]),
     );
@@ -349,7 +362,8 @@ class _MontageLayoutPreviewState extends State<MontageLayoutPreview> {
             pin.source.isImage
                 ? ClipRect(child: Transform.scale(scale: oz, child: Image.file(File(pin.source.localImagePath!), fit: BoxFit.cover, errorBuilder: (_, __, ___) => thumb)))
                 : _cover(_origin, oz, thumb),
-            Positioned(left: 6, bottom: 4, child: Text(pin.source.authorPseudo.isEmpty ? '' : '@${pin.source.authorPseudo}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800, shadows: [Shadow(color: Colors.black87, blurRadius: 4)]))),
+            if (!pin.source.isLocal && pin.source.authorPseudo.isNotEmpty)   // jamais de pseudo sur un média de la galerie (le tien)
+              Positioned(left: 6, bottom: 4, child: Text('@${pin.source.authorPseudo}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800, shadows: [Shadow(color: Colors.black87, blurRadius: 4)]))),
           ]),
         ),
         Positioned.fromRect(
