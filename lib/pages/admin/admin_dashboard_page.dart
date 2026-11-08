@@ -28,6 +28,7 @@ import 'admin_groups_page.dart';
 import 'ads_regie_admin_page.dart';
 import 'admin_email_screen.dart';
 import 'commissions_admin_page.dart';
+import 'team_admin_page.dart';
 import 'influencer_requests_page.dart';
 import 'moderation_reports_page.dart';
 import 'news_admin_page.dart';
@@ -414,6 +415,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       _Module(Icons.auto_stories_rounded, 'Contes', const Color(0xFFB07A1F), 0, const ContesAdminPage()),
       _Module(Icons.newspaper_rounded, 'Actualités', c.info, 0, const NewsAdminPage()),
       _Module(Icons.pie_chart_rounded, 'Commissions', c.primary, 0, const CommissionsAdminPage()),
+      _Module(Icons.admin_panel_settings_rounded, 'Équipe', c.danger, 0, const TeamAdminPage()),
       _Module(Icons.account_balance_wallet_rounded, 'Rémunération', c.primary, 0, RemunerationAdminPage()),
       _Module(Icons.storefront_rounded, 'Contenus payants', c.supportAccent, 0, const AdminContentPage()),
       _Module(Icons.mail_rounded, 'Emailing', c.textSecondary, 0, AdminEmailScreen()),
