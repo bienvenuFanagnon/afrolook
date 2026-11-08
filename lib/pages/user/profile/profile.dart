@@ -18,7 +18,7 @@ import '../../../providers/postProvider.dart';
 import '../../../providers/userProvider.dart';
 import '../../../theme/app_colors.dart';
 import '../../admin/admin_dashboard_page.dart';
-import '../../admin/team/team_admin_page.dart';
+import '../../admin/team_admin_page.dart';
 import '../../team/team_hub_page.dart';
 import '../official_account/request_official_account_page.dart';
 import '../../../models/official_account/official_account_enums.dart';
@@ -70,6 +70,15 @@ class _UserProfilState extends State<UserProfil> {
     if (uid.isEmpty) return false;
     try {
       return (await UsersApi.capabilities())['is_staff'] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Le serveur dit si ce compte peut gérer l'équipe (super-administrateur) : seule source de vérité, pas le rôle du profil.
+  Future<bool> _canManageStaff() async {
+    try {
+      return ((await UsersApi.capabilities())['permissions'] as List? ?? const []).contains('staff.manage');
     } catch (_) {
       return false;
     }
@@ -389,6 +398,12 @@ class _UserProfilState extends State<UserProfil> {
                     if (snap.data != true) return const SizedBox.shrink();
                     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       _sectionTitle(context.tr('Équipe')),
+                      FutureBuilder<bool>(
+                        future: _canManageStaff(),
+                        builder: (ctx, s2) => s2.data == true
+                            ? _row(icon: Icons.group_outlined, label: context.tr('Gestion d\'équipe'), chip: 'ADMIN', onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TeamAdminPage())))
+                            : const SizedBox.shrink(),
+                      ),
                       _row(icon: Icons.dashboard_rounded, label: context.tr('Hub Équipe'), chip: context.tr('ÉQUIPE'), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TeamHubPage()))),
                     ]);
                   },
