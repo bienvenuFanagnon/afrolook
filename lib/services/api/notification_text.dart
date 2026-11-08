@@ -106,6 +106,7 @@ class NotificationText {
         'MENTION' => tr('Mentions'),
         'COMMENT_LIKE' => tr('J\'aime de commentaires'),
         'REPOST' => tr('Republications'),
+        'VIRAL' => tr('Posts qui décollent'),
         'SUPPORT' => tr('Soutiens par pub'),
         'FOLLOW_CANAL' => tr('Abonnés de canal'),
         'BOOST_SOUMIS' => tr('Boosts à valider'),
