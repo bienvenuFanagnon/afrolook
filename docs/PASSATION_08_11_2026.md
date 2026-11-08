@@ -76,7 +76,7 @@ Source `src/*.mjs`, scripts `static/js/*.js`, CSS `static/css/*.css`, sortie `di
 
 ## 8. Reste à faire (ordre proposé)
 
-1. Valider puis réaliser la refonte de l'onglet Partageurs du site (API : trois chiffres de plus ; site : grille + détail).
+1. ~~Refonte de l'onglet Partageurs~~ **faite le 08/11** (maquette validée) : API `SpaceAdmin::sharers()` + `totals` (commit `b0935c4`, à déployer) ; site `static/js/ads.js` (`sharersView`, `sharerMini`, `sharerSheet`), `ads.css` (`.sh-*`), `ASSET_V = 24`, `dist/` reconstruit. Reste : `firebase deploy --only hosting` par le propriétaire et vérification à l'écran (jamais vu avec de vraies données).
 2. Retours du propriétaire après l'essai sur téléphone (voir §4).
 3. Éventuelle carte-texte colorée vivante (§5) et montage multi-images : retouche par image ajoutée au diaporama, si demandée.
 4. Gestion de l'équipe : tout est fait côté code ; reste l'usage réel (créer des membres depuis l'écran Équipe).
