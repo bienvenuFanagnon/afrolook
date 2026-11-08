@@ -1,3 +1,4 @@
+import '../widgets/post_widget_view.dart';
 import 'package:afrotok/services/post_orientation.dart';
 import 'package:afrotok/services/post_reply.dart';
 import 'package:afrotok/services/read_meter.dart';
@@ -1451,7 +1452,10 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
       }
       return AspectRatio(
         aspectRatio: 16 / 9,
-        child: SmartVideoPlayer(url: url, autoPlay: true, progressColor: _afroGreen),
+        child: Stack(children: [
+          Positioned.fill(child: SmartVideoPlayer(url: url, autoPlay: true, progressColor: _afroGreen)),
+          if (_currentPost.widgets.isNotEmpty) Positioned.fill(child: PostWidgetsLayer(widgets: _currentPost.widgets)),
+        ]),
       );
     }
     if (!_isVideoInitialized || _chewieController == null) {
@@ -1461,7 +1465,13 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
         child: Center(child: CircularProgressIndicator(color: _afroGreen)),
       );
     }
-    return AspectRatio(aspectRatio: 16 / 9, child: Chewie(controller: _chewieController!));
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: Stack(children: [
+        Positioned.fill(child: Chewie(controller: _chewieController!)),
+        if (_currentPost.widgets.isNotEmpty) Positioned.fill(child: PostWidgetsLayer(widgets: _currentPost.widgets)),   // sondage, question, lien… posés par le créateur
+      ]),
+    );
   }
 
   Widget _buildUserHeader() {

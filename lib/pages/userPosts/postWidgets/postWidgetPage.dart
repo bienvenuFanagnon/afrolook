@@ -8,6 +8,7 @@ import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:afrotok/services/read_meter.dart';
 import '../../../services/comments_prefetch.dart';
 import '../../../widgets/original_badge.dart';
+import '../../../widgets/post_widget_view.dart';
 import '../../videos/video_chrome.dart';
 import '../../create/create_hub_page.dart';
 import '../../../widgets/studio/post_template_try.dart';
@@ -854,11 +855,17 @@ Future<void> _loadCanalData() async {
                       if ((widget.post.images?.isNotEmpty ?? false) &&
                           widget.post.dataType != PostDataType.AUDIO.name) ...[
                         const SizedBox(height: 8),
-                        _buildMediaContent(h, isLocked),
+                        Stack(children: [
+                          _buildMediaContent(h, isLocked),
+                          if (!isLocked && widget.post.widgets.isNotEmpty) Positioned.fill(child: PostWidgetsLayer(widgets: widget.post.widgets)),
+                        ]),
                       ],
                       if (_isVideoPost(widget.post)) ...[
                         const SizedBox(height: 8),
-                        _buildVideoContent(h, isLocked),
+                        Stack(children: [
+                          _buildVideoContent(h, isLocked),
+                          if (!isLocked && widget.post.widgets.isNotEmpty) Positioned.fill(child: PostWidgetsLayer(widgets: widget.post.widgets)),
+                        ]),
                       ],
                       if (isLocked && _showCanalLockCta) _buildSubscribeButton(),
                       if (!widget.isAdContext) ...[
