@@ -1,3 +1,4 @@
+import '../../../services/authentic_video_check.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:async';
@@ -317,6 +318,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
       final maxSec = widget.forChronique ? 30 : 60;
       final x = await _picker.pickVideo(source: src, maxDuration: Duration(seconds: maxSec));
       if (x == null || !mounted) return;
+      if (src == ImageSource.gallery && (!await AuthenticVideoCheck.gate(context, x.path, allowClaim: !widget.forChronique) || !mounted)) return;   // vidéo de la galerie : vérification d'authenticité
       if (await File(x.path).length() > 60 * 1024 * 1024) {
         _say('La vidéo est trop lourde (60 Mo maximum).');
         return;
@@ -1174,6 +1176,8 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
   Future<void> _pickGalleryPin() async {
     final x = await _picker.pickVideo(source: ImageSource.gallery, maxDuration: const Duration(seconds: 60));
     if (x == null || !mounted) return;
+    // comme toute vidéo de la galerie : refusée si elle vient d'un autre réseau (TikTok, Instagram…) ou si elle est explicite ; ici pas de « C'est la mienne » (elle n'a pas de publication à vérifier)
+    if (!await AuthenticVideoCheck.gate(context, x.path, allowClaim: false) || !mounted) return;
     double secs = 0;
     String thumb = '';
     try {
@@ -1216,9 +1220,18 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
       _label('Vidéo épinglée · @${p.source.authorPseudo}'),
       Wrap(spacing: 8, runSpacing: 4, children: [
         for (final e in const [(null, 'Dans un coin'), ('tb', 'Haut / bas'), ('sbs', 'Côte à côte'), ('bar', 'Bandeau')])
-          ChoiceChip(key: ValueKey('layout_${e.$1 ?? 'corner'}'), label: Text(e.$2), selected: s.layout == e.$1, onSelected: (_) => setState(() => s.layout = e.$1)),
+          ChoiceChip(key: ValueKey('layout_${e.$1 ?? 'corner'}'), label: Text(e.$2), selected: s.layout == e.$1, onSelected: (_) => setState(() {
+            s.layout = e.$1;
+            s.layoutRatio = null;   // chaque disposition repart de son partage de base
+          })),
       ]),
       if (inLayout) ...[
+        Text('Part de la place ${s.layout == 'sbs' ? 'de gauche' : 'du haut'} : ${(s.firstShare * 100).round()} %', style: TextStyle(color: _c.textSecondary, fontSize: 13)),
+        Slider(key: const ValueKey('layout_ratio'), value: s.firstShare, min: .25, max: .75, onChanged: (v) => setState(() => s.layoutRatio = v)),
+        Text('Zoom de la vidéo ajoutée : ${s.originZoom.toStringAsFixed(1)} ×', style: TextStyle(color: _c.textSecondary, fontSize: 13)),
+        Slider(key: const ValueKey('layout_origin_zoom'), value: s.originZoom, min: 1, max: 2.5, onChanged: (v) => setState(() => s.originZoom = v)),
+        Text('Zoom de ta vidéo : ${s.meZoom.toStringAsFixed(1)} ×', style: TextStyle(color: _c.textSecondary, fontSize: 13)),
+        Slider(key: const ValueKey('layout_me_zoom'), value: s.meZoom, min: 1, max: 2.5, onChanged: (v) => setState(() => s.meZoom = v)),
         SwitchListTile(key: const ValueKey('layout_swap'), contentPadding: EdgeInsets.zero, title: const Text('Inverser les places'), value: s.layoutSwap, onChanged: (v) => setState(() => s.layoutSwap = v)),
         SwitchListTile(key: const ValueKey('layout_origin_audio'), contentPadding: EdgeInsets.zero, title: const Text('Garder le son de la vidéo d\'origine'), value: s.originAudio, onChanged: (v) => setState(() => s.originAudio = v)),
         if (s.originAudio) Slider(key: const ValueKey('layout_origin_volume'), value: s.originVolume, min: 0, max: 1.5, onChanged: (v) => setState(() => s.originVolume = v)),

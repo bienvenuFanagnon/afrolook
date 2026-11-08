@@ -2579,7 +2579,7 @@ Future<void> _handleRepost() async {
   Future<void> _pinThisVideo() async {
     final id = widget.post.id;
     if (id == null) return;
-    final src = MontagePinSource(postId: id, thumbUrl: widget.post.thumbnail ?? '', authorPseudo: widget.post.user?.pseudo ?? 'créateur', durationSec: 0);
+    final src = MontagePinSource(postId: id, thumbUrl: widget.post.thumbnail ?? '', authorPseudo: widget.post.user?.pseudo ?? 'créateur', durationSec: 0, previewUrl: widget.post.url_media);
     await Navigator.of(context).push(MaterialPageRoute(builder: (_) => CreateHubPage(start: CreateStart.video, pinSource: src)));
   }
 

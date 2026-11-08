@@ -294,7 +294,7 @@ class MontageExport {
       if (isVideo) 'outro': s.outro,
       if (timedMeta.isNotEmpty) 'timed': timedMeta,
       if (isVideo && s.pins.isNotEmpty) 'pins': [for (var i = 0; i < s.pins.take(2).length; i++) {...s.pins[i].toApi(), if (i == 0 && s.layout != null && s.originAudio) 'audio': true}],
-      if (isVideo && s.pins.isNotEmpty && s.layout != null) 'layout': {'id': s.layout, 'swap': s.layoutSwap},
+      if (isVideo && s.pins.isNotEmpty && s.layout != null) 'layout': {'id': s.layout, 'swap': s.layoutSwap, if (s.layoutRatio != null) 'ratio': s.layoutRatio, 'origin_zoom': s.originZoom, 'me_zoom': s.meZoom},
       if (isVideo && s.pins.isNotEmpty && s.layout != null && s.originAudio) 'origin_volume': s.originVolume,
       if (m != null) 'music': {'type': m.type, 'id': m.id, 'start_ms': s.musicStartMs, 'volume': s.musicVolume},
       'keep_audio': s.keepVideoAudio,

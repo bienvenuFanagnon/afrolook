@@ -749,7 +749,8 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
         ]),
       );
 
-  Widget _tool(String key, IconData icon, String label, VoidCallback onTap) => GestureDetector(
+  Widget _tool(String key, IconData icon, String label, VoidCallback onTap) => Expanded(
+      child: GestureDetector(
         key: ValueKey(key),
         behavior: HitTestBehavior.opaque,
         onTap: _busy
@@ -759,14 +760,14 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
                 onTap();
               },
         child: SizedBox(
-          width: 54,
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Container(width: 44, height: 44, decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0x66000000)), child: Icon(icon, color: Colors.white, size: 22)),
             const SizedBox(height: 5),
             Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w700, shadows: [Shadow(color: Color(0x99000000), blurRadius: 4)])),
           ]),
         ),
-      );
+      ),
+    );
 }
 
 /// État de la retouche à un instant donné (pour « Annuler »).

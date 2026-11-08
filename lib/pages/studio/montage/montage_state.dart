@@ -80,12 +80,22 @@ class MontageState {
   /// Inverse les places (ta vidéo en premier).
   bool layoutSwap = false;
 
+  /// Part de la PREMIÈRE place (haut ou gauche), 25 % à 75 % ; null = la moitié (bandeau : son format 16:9).
+  double? layoutRatio;
+
+  /// Zoom (1 à 2,5) de la vidéo ajoutée et de la tienne dans leur place : la vidéo remplit la place puis est recadrée au centre.
+  double originZoom = 1;
+  double meZoom = 1;
+
   /// Garder le son de la vidéo d'origine, et son volume (0 à 1,5).
   bool originAudio = true;
   double originVolume = 1.0;
 
   /// Les deux places en fractions du cadre (même découpage que le serveur) : (vidéo d'origine, ta vidéo). Null si aucune disposition.
-  ({Rect origin, Rect me})? get layoutFracs => layout == null ? null : montageLayoutFracs(layout!, layoutSwap, aspect);
+  /// Part de la première place (haut ou gauche) : celle réglée, sinon la moitié (le bandeau garde son format 16:9).
+  double get firstShare => (layoutRatio ?? (layout == 'bar' ? ((9 / 16) * aspect).clamp(0.0, .4).toDouble() : .5)).clamp(.25, .75).toDouble();
+
+  ({Rect origin, Rect me})? get layoutFracs => layout == null ? null : montageLayoutFracs(layout!, layoutSwap, aspect, ratio: layoutRatio);
 
   /// Texte libre posé sur la photo ou la vidéo (outil « Texte » de l'éditeur) : vide = aucun. Fonctionne avec tous les modèles, y compris « sans habillage ».
   String freeText = '';
@@ -245,22 +255,25 @@ String frSpaces(String s) => s.replaceAllMapped(RegExp(r' ([!?:;»])'), (m) => '
 
 
 /// Les deux places d'une disposition, en fractions du cadre (largeur / hauteur = [aspect]) : (vidéo d'origine, ta vidéo). Null si la disposition est inconnue.
-({Rect origin, Rect me})? montageLayoutFracs(String id, bool swap, double aspect) {
-    const g = .004;
-    Rect a, b;
-    switch (id) {
-      case 'tb':
-        a = const Rect.fromLTWH(0, 0, 1, .5 - g);
-        b = const Rect.fromLTWH(0, .5 + g, 1, .5 - g);
-      case 'sbs':
-        a = const Rect.fromLTWH(0, 0, .5 - g, 1);
-        b = const Rect.fromLTWH(.5 + g, 0, .5 - g, 1);
-      case 'bar':
-        final h = ((9 / 16) * aspect).clamp(0.0, .4).toDouble();   // hauteur du bandeau en fraction du cadre (comme le serveur : min(L x 9/16, H x 0,4))
-        a = Rect.fromLTWH(0, 0, 1, h);
-        b = Rect.fromLTWH(0, a.height + g, 1, 1 - a.height - g);
-      default:
-        return null;
-    }
-    return swap ? (origin: b, me: a) : (origin: a, me: b);
+({Rect origin, Rect me})? montageLayoutFracs(String id, bool swap, double aspect, {double? ratio}) {
+  final share = ratio?.clamp(0.25, 0.75).toDouble();
+  Rect a, b;
+  switch (id) {
+    case 'tb':
+      final h = share ?? .5;
+      a = Rect.fromLTWH(0, 0, 1, h);
+      b = Rect.fromLTWH(0, h, 1, 1 - h);
+    case 'sbs':
+      final w = share ?? .5;
+      a = Rect.fromLTWH(0, 0, w, 1);
+      b = Rect.fromLTWH(w, 0, 1 - w, 1);
+    case 'bar':
+      final h = share ?? ((9 / 16) * aspect).clamp(0.0, .4).toDouble();   // comme le serveur : min(L x 9/16, H x 0,4)
+      a = Rect.fromLTWH(0, 0, 1, h);
+      b = Rect.fromLTWH(0, h, 1, 1 - h);
+    default:
+      return null;
+  }
+  // les deux vidéos sont collées (aucun espace) ; `swap` met la vidéo ajoutée en second
+  return swap ? (origin: b, me: a) : (origin: a, me: b);
 }

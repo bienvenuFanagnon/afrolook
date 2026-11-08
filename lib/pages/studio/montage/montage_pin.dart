@@ -1,10 +1,14 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 
 /// La vidéo d'un autre à épingler (avant d'être posée dans le montage) : son identifiant, sa vignette, son créateur et sa durée.
 class MontagePinSource {
-  const MontagePinSource({required this.postId, required this.thumbUrl, required this.authorPseudo, required this.durationSec, this.localVideoPath});
+  const MontagePinSource({required this.postId, required this.thumbUrl, required this.authorPseudo, required this.durationSec, this.localVideoPath, this.previewUrl});
+
+  /// Adresse de lecture de la vidéo d'un autre (aperçu en direct dans le Studio) ; vide pour une vidéo de galerie (on lit le fichier).
+  final String? previewUrl;
 
   /// Vidéo de la GALERIE de la personne (aucune publication) : envoyée au serveur avant le montage. [postId] est alors vide.
   final String? localVideoPath;
@@ -110,29 +114,132 @@ class MontagePinView extends StatelessWidget {
   }
 }
 
-/// Aperçu de la disposition à deux vidéos dans l'éditeur : la vignette de la vidéo d'origine dans sa place, et « Ta vidéo » dans l'autre (la vraie vidéo est assemblée par le serveur).
-class MontageLayoutPreview extends StatelessWidget {
+/// Aperçu EN DIRECT de la disposition à deux vidéos dans l'éditeur : la vidéo ajoutée et la tienne jouent chacune dans leur place (collées), avec leur zoom, comme le rendra le serveur.
+/// Sans lecteur (vidéo d'un autre sans adresse, erreur), la vignette est affichée à la place.
+class MontageLayoutPreview extends StatefulWidget {
   const MontageLayoutPreview({super.key, required this.state});
 
   final dynamic state;   // MontageState (évite une dépendance circulaire)
 
   @override
+  State<MontageLayoutPreview> createState() => _MontageLayoutPreviewState();
+}
+
+class _MontageLayoutPreviewState extends State<MontageLayoutPreview> {
+  VideoPlayerController? _origin;
+  VideoPlayerController? _me;
+  String? _originKey;
+  String? _meKey;
+
+  MontagePin? get _pin => widget.state.pins.isEmpty ? null : widget.state.pins.first as MontagePin;
+
+  @override
+  void initState() {
+    super.initState();
+    _sync();
+  }
+
+  @override
+  void didUpdateWidget(MontageLayoutPreview old) {
+    super.didUpdateWidget(old);
+    _sync();
+  }
+
+  Future<VideoPlayerController?> _open(VideoPlayerController c) async {
+    try {
+      await c.initialize();
+      await c.setVolume(0);
+      await c.setLooping(true);
+      await c.play();
+      return c;
+    } catch (_) {
+      await c.dispose();
+      return null;
+    }
+  }
+
+  void _sync() {
+    final pin = _pin;
+    final originKey = pin == null ? null : (pin.source.localVideoPath ?? pin.source.previewUrl);
+    if (originKey != _originKey) {
+      _originKey = originKey;
+      final old = _origin;
+      _origin = null;
+      old?.dispose();
+      if (originKey != null && originKey.isNotEmpty) {
+        final c = pin!.source.isLocal ? VideoPlayerController.file(File(originKey)) : VideoPlayerController.networkUrl(Uri.parse(originKey), videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
+        _open(c).then((v) {
+          if (!mounted || _originKey != originKey) {
+            v?.dispose();
+            return;
+          }
+          setState(() => _origin = v);
+        });
+      }
+    }
+    final String? meKey = widget.state.videoPath as String?;
+    if (meKey != _meKey) {
+      _meKey = meKey;
+      final old = _me;
+      _me = null;
+      old?.dispose();
+      if (meKey != null && File(meKey).existsSync()) {
+        _open(VideoPlayerController.file(File(meKey), videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true))).then((v) {
+          if (!mounted || _meKey != meKey) {
+            v?.dispose();
+            return;
+          }
+          setState(() => _me = v);
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _origin?.dispose();
+    _me?.dispose();
+    super.dispose();
+  }
+
+  Widget _cover(VideoPlayerController? v, double zoom, Widget fallback) {
+    if (v == null || !v.value.isInitialized) return fallback;
+    return ClipRect(
+      child: Transform.scale(
+        scale: zoom,
+        child: FittedBox(fit: BoxFit.cover, clipBehavior: Clip.hardEdge, child: SizedBox(width: v.value.size.width, height: v.value.size.height, child: VideoPlayer(v))),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final f = state.layoutFracs as ({Rect origin, Rect me})?;
-    final pin = state.pins.isEmpty ? null : state.pins.first as MontagePin;
+    final f = widget.state.layoutFracs as ({Rect origin, Rect me})?;
+    final pin = _pin;
     if (f == null || pin == null) return const SizedBox.shrink();
     return LayoutBuilder(builder: (context, box) {
       Rect px(Rect r) => Rect.fromLTWH(r.left * box.maxWidth, r.top * box.maxHeight, r.width * box.maxWidth, r.height * box.maxHeight);
       final o = px(f.origin);
       final m = px(f.me);
       final thumb = pinThumb(pin.source.thumbUrl);
+      final oz = (widget.state.originZoom as num).toDouble();
+      final mz = (widget.state.meZoom as num).toDouble();
       return Stack(children: [
-        Positioned.fromRect(rect: o, child: Stack(fit: StackFit.expand, children: [
-          thumb,
-          const Center(child: Icon(Icons.play_circle_fill_rounded, color: Colors.white70, size: 36)),
-          Positioned(left: 6, bottom: 4, child: Text('@${pin.source.authorPseudo}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800, shadows: [Shadow(color: Colors.black87, blurRadius: 4)]))),
-        ])),
-        Positioned.fromRect(rect: m, child: IgnorePointer(child: Align(alignment: Alignment.topLeft, child: Container(margin: const EdgeInsets.all(6), padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(8)), child: const Text('Ta vidéo', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)))))),
+        const Positioned.fill(child: ColoredBox(color: Colors.black)),
+        Positioned.fromRect(
+          rect: o,
+          child: Stack(fit: StackFit.expand, children: [
+            _cover(_origin, oz, thumb),
+            Positioned(left: 6, bottom: 4, child: Text(pin.source.authorPseudo.isEmpty ? '' : '@${pin.source.authorPseudo}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800, shadows: [Shadow(color: Colors.black87, blurRadius: 4)]))),
+          ]),
+        ),
+        Positioned.fromRect(
+          rect: m,
+          child: Stack(fit: StackFit.expand, children: [
+            _cover(_me, mz, const ColoredBox(color: Color(0xFF1B1B1B))),
+            Positioned(left: 6, top: 6, child: Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(8)), child: const Text('Ta vidéo', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)))),
+          ]),
+        ),
       ]);
     });
   }
