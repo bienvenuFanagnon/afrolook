@@ -1621,7 +1621,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
               _buildMusicPill(currentChronique),
               // chronique business : carte de vente (seule la carte est cliquable), au-dessus de la rangée du bas
               if (currentChronique.widgets.isNotEmpty)
-                Positioned.fill(child: PostWidgetsLayer(widgets: currentChronique.widgets)),
+                Positioned.fill(child: PostWidgetsLayer(widgets: currentChronique.widgets, mediaAspect: currentChronique.type == ChroniqueType.VIDEO && _isVideoInitialized && _videoController != null ? _videoController!.value.aspectRatio : null)),
               if (currentChronique.commerce != null)
                 Positioned(left: 14, right: 14, bottom: 92, child: ChroniqueCommerceCard(commerce: currentChronique.commerce!)),
               _buildBottomRow(currentChronique),
@@ -2132,9 +2132,11 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
         return ClipRRect(
           borderRadius: BorderRadius.circular(15),
           child: Stack(
+            fit: StackFit.expand,
             children: [
+              // la vidéo en entier, dans son format réel (jamais recadrée ni collée en haut)
               if (_videoController != null && _isVideoInitialized)
-                AspectRatio(aspectRatio: _videoController!.value.aspectRatio, child: VideoPlayer(_videoController!)),
+                Center(child: AspectRatio(aspectRatio: _videoController!.value.aspectRatio, child: Stack(fit: StackFit.expand, children: [VideoPlayer(_videoController!), _overlayTextOf(chronique)]))),   // le texte de l'auteur se place dans le cadre de la vidéo
               if (!_isVideoInitialized)
                 Positioned.fill(
                   child: Stack(
@@ -2152,7 +2154,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
                     ],
                   ),
                 ),
-              _overlayTextOf(chronique),
+              if (!(_videoController != null && _isVideoInitialized)) _overlayTextOf(chronique),
               Center(
                 child: IconButton(
                   icon: Icon(_videoController?.value.isPlaying == true ? Icons.pause_circle_filled : Icons.play_circle_filled, color: Colors.white.withOpacity(0.7), size: 50),

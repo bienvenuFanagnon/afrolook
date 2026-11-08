@@ -87,6 +87,9 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
   final _freeText = TextEditingController();
   final _musicKey = GlobalKey();
   final _picker = ImagePicker();
+
+  /// Sections ouvertes de la liste de réglages (la première s'ouvre d'office ; celle qu'on utilise reste ouverte).
+  final Set<String> _openGroups = {'media'};
   VideoPlayerController? _video;
   String? _lastJobId;
 
@@ -132,9 +135,11 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     _comments.text = s.commentsLabel();
     _followers.text = s.followersLabel(real) ?? '';
     ArtistSoundPricing.load();
-    if (widget.focus == 'second') {   // bouton « 2 vidéos » de l'éditeur : on ouvre directement la galerie
-      WidgetsBinding.instance.addPostFrameCallback((_) => mounted ? _pickGalleryPin() : null);
+    if (widget.focus == 'second') {   // bouton « 2 vidéos » de l'éditeur : on propose vidéo ou image de la galerie
+      _openGroups.add('pin');
+      WidgetsBinding.instance.addPostFrameCallback((_) => mounted ? _pickSecond() : null);
     } else if (widget.focus != null) {
+      _openGroups.add(widget.focus == 'music' ? 'music' : widget.focus == 'looks' ? 'looks' : 'text');
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final ctx = (widget.focus == 'music' ? _musicKey : widget.focus == 'text' ? _textKey : widget.focus == 'stickers' ? _stickersKey : _looksKey).currentContext;
         if (ctx != null) Scrollable.ensureVisible(ctx, duration: const Duration(milliseconds: 250));
@@ -704,26 +709,92 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     if (leave == true && mounted) Navigator.of(context).pop();
   }
 
+  /// Une section repliable de la liste de réglages : titre, icône, et son contenu quand elle est ouverte.
+  Widget _group(String id, IconData icon, String title, List<Widget> kids) {
+    final open = _openGroups.contains(id);
+    return Container(
+      key: ValueKey('group_$id'),
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: open ? _c.primary : _c.border)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        InkWell(
+          key: ValueKey('group_head_$id'),
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => setState(() => open ? _openGroups.remove(id) : _openGroups.add(id)),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+            child: Row(children: [
+              Icon(icon, color: _c.primary, size: 22),
+              const SizedBox(width: 10),
+              Expanded(child: Text(title, style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w800, fontSize: 15))),
+              Icon(open ? Icons.expand_less_rounded : Icons.expand_more_rounded, color: _c.textSecondary),
+            ]),
+          ),
+        ),
+        if (open) Padding(padding: const EdgeInsets.fromLTRB(14, 0, 14, 14), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: kids)),
+      ]),
+    );
+  }
+
+  /// « 2 vidéos » depuis l'éditeur : on choisit une vidéo ou une image de la galerie.
+  Future<void> _pickSecond() async {
+    final v = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: _c.surface,
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          _sheetTile(ctx, Icons.video_library_rounded, 'Une vidéo de ma galerie', 'video'),
+          _sheetTile(ctx, Icons.image_rounded, 'Une image de ma galerie', 'image'),
+        ]),
+      ),
+    );
+    if (!mounted || v == null) return;
+    v == 'image' ? await _pickGalleryImagePin() : await _pickGalleryPin();
+  }
+
+  /// IMAGE de la galerie posée comme 2e média : mêmes dispositions, mêmes réglages qu'une vidéo (sans son, sans extrait). Elle passe la vérification d'authenticité des images.
+  Future<void> _pickGalleryImagePin() async {
+    final x = await _picker.pickImage(source: ImageSource.gallery, imageQuality: 92, maxWidth: 2000);
+    if (x == null || !mounted) return;
+    if (!await AuthenticVideoCheck.gateImage(context, x.path, allowClaim: false) || !mounted) return;
+    final me = context.read<UserAuthProvider>().loginUserData.pseudo ?? '';
+    _addPin(MontagePinSource(postId: '', thumbUrl: x.path, authorPseudo: me, durationSec: 2, localImagePath: x.path));
+    if (s.layout == null) setState(() => s.layout = 'tb');
+  }
+
   Widget _controls() {
     final r = resolveMontageTexts(s);
     final day = kNationalDays[s.country];
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 6, 16, 28),
       children: [
-        Wrap(spacing: 8, runSpacing: 8, children: [
-          _btn(Icons.add_a_photo_rounded, tp.canUseVideo ? 'Ma photo ou vidéo' : 'Ma photo', () => _pickMedia()),
-          if (tp.dualSample != null || tp.baby) _btn(Icons.add_photo_alternate_rounded, tp.baby ? 'Photo de bébé' : '2e photo', () => _pickMedia(second: true)),
-          if (s.hasVideo && s.pins.isEmpty && !widget.forChronique) _btn(Icons.video_library_rounded, 'Ajouter une 2e vidéo de ma galerie', _pickGalleryPin),
+        // Les réglages sont rangés par sujet, dans l'ordre où on s'en sert : ma vidéo, 2e vidéo ou image, texte et autocollants, musique et sons, effets, format.
+        _group('media', Icons.perm_media_rounded, 'Ma vidéo ou ma photo', [
+          Wrap(spacing: 8, runSpacing: 8, children: [
+            _btn(Icons.add_a_photo_rounded, tp.canUseVideo ? 'Changer ma photo ou vidéo' : 'Changer ma photo', () => _pickMedia()),
+            if (tp.dualSample != null || tp.baby) _btn(Icons.add_photo_alternate_rounded, tp.baby ? 'Photo de bébé' : '2e photo', () => _pickMedia(second: true)),
+          ]),
         ]),
-        const SizedBox(height: 14),
-        KeyedSubtree(key: _stickersKey, child: _stickersSection()),
-        const SizedBox(height: 14),
-        KeyedSubtree(key: _textKey, child: _freeTextSection()),
-        const SizedBox(height: 14),
-        KeyedSubtree(key: _looksKey, child: _looksSection()),
-        const SizedBox(height: 14),
-        KeyedSubtree(key: _musicKey, child: _musicSection()),
-        const SizedBox(height: 14),
+        if ((s.hasVideo && !widget.forChronique) || s.pins.isNotEmpty)
+          _group('pin', Icons.splitscreen_rounded, 'Deuxième vidéo ou image', [
+            if (s.pins.isEmpty) ...[
+              Text('Ajoute une autre vidéo ou une image de ta galerie : en haut / en bas, côte à côte, en bandeau ou dans un coin.', style: TextStyle(color: _c.textSecondary, fontSize: 12.5, height: 1.35)),
+              const SizedBox(height: 8),
+              Wrap(spacing: 8, runSpacing: 8, children: [
+                _btn(Icons.video_library_rounded, 'Vidéo de ma galerie', _pickGalleryPin),
+                _btn(Icons.image_rounded, 'Image de ma galerie', _pickGalleryImagePin),
+              ]),
+            ],
+            _pinSection(),
+          ]),
+        _group('text', Icons.title_rounded, 'Texte et autocollants', [
+          KeyedSubtree(key: _textKey, child: _freeTextSection()),
+          const SizedBox(height: 14),
+          KeyedSubtree(key: _stickersKey, child: _stickersSection()),
+        ]),
+        _group('music', Icons.music_note_rounded, 'Musique et sons', [KeyedSubtree(key: _musicKey, child: _musicSection())]),
+        _group('looks', Icons.auto_awesome_rounded, 'Effets et couleurs', [KeyedSubtree(key: _looksKey, child: _looksSection())]),
+        _group('format', Icons.tune_rounded, 'Format et contenu du modèle', [
         _label('Format'),
         _seg(['Chronique 9:16', 'Post 4:5', 'Paysage 16:9'], s.landscape ? 2 : (s.post ? 1 : 0), (i) => setState(() => s.setFormat(const ['story', 'post', 'landscape'][i]))),
         if (tp.fx != MontageFx.none) ...[
@@ -868,6 +939,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
         ]),
         const SizedBox(height: 8),
         Text('« Créé sur Afrolook » reste toujours, en petit, en bas à droite.', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
+        ]),
       ],
     );
   }
@@ -1163,8 +1235,9 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     s.layout = ReplyLayout.id.value;   // choisie dans la caméra (réponse en vidéo) ; null = vidéo dans un coin
     s.layoutSwap = ReplyLayout.swap.value;
     pin.startSec = 0;
-    pin.endSec = math.min(_videoSeconds, math.max(1.0, pin.clipSeconds));
+    pin.endSec = src.isImage ? math.max(1.0, _videoSeconds) : math.min(_videoSeconds, math.max(1.0, pin.clipSeconds));
     setState(() {
+      _openGroups.add('pin');
       s.pins.add(pin);
       // crédit visible : le créateur d'origine est toujours cité
       if (!src.isLocal) s.stickers.add(MontageSticker(id: 'credit_${pin.id}', kind: 'badge', value: 'avec @${src.authorPseudo}', center: const Offset(.5, .94)));
@@ -1217,7 +1290,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     final clipMax = math.min(dur, 15.0);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const SizedBox(height: 14),
-      _label('Vidéo épinglée · @${p.source.authorPseudo}'),
+      _label(p.source.isImage ? 'Image ajoutée' : 'Vidéo ajoutée${p.source.authorPseudo.isEmpty ? '' : ' · @${p.source.authorPseudo}'}'),
       Wrap(spacing: 8, runSpacing: 4, children: [
         for (final e in const [(null, 'Dans un coin'), ('tb', 'Haut / bas'), ('sbs', 'Côte à côte'), ('bar', 'Bandeau')])
           ChoiceChip(key: ValueKey('layout_${e.$1 ?? 'corner'}'), label: Text(e.$2), selected: s.layout == e.$1, onSelected: (_) => setState(() {
@@ -1228,14 +1301,14 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
       if (inLayout) ...[
         Text('Part de la place ${s.layout == 'sbs' ? 'de gauche' : 'du haut'} : ${(s.firstShare * 100).round()} %', style: TextStyle(color: _c.textSecondary, fontSize: 13)),
         Slider(key: const ValueKey('layout_ratio'), value: s.firstShare, min: .25, max: .75, onChanged: (v) => setState(() => s.layoutRatio = v)),
-        Text('Zoom de la vidéo ajoutée : ${s.originZoom.toStringAsFixed(1)} ×', style: TextStyle(color: _c.textSecondary, fontSize: 13)),
+        Text('Zoom de ${p.source.isImage ? 'l\'image' : 'la vidéo'} ajoutée : ${s.originZoom.toStringAsFixed(1)} ×', style: TextStyle(color: _c.textSecondary, fontSize: 13)),
         Slider(key: const ValueKey('layout_origin_zoom'), value: s.originZoom, min: 1, max: 2.5, onChanged: (v) => setState(() => s.originZoom = v)),
         Text('Zoom de ta vidéo : ${s.meZoom.toStringAsFixed(1)} ×', style: TextStyle(color: _c.textSecondary, fontSize: 13)),
         Slider(key: const ValueKey('layout_me_zoom'), value: s.meZoom, min: 1, max: 2.5, onChanged: (v) => setState(() => s.meZoom = v)),
         SwitchListTile(key: const ValueKey('layout_swap'), contentPadding: EdgeInsets.zero, title: const Text('Inverser les places'), value: s.layoutSwap, onChanged: (v) => setState(() => s.layoutSwap = v)),
       ],
-      Text('Extrait de sa vidéo : de ${_sec(p.clipStartSec)} s à ${_sec(p.clipEndSec)} s (${_sec(p.clipSeconds)} s, 15 s au plus). Le téléphone ne charge que cet extrait, léger.', style: TextStyle(color: _c.textSecondary, fontSize: 12.5)),
-      RangeSlider(
+      if (!p.source.isImage) Text('Extrait de sa vidéo : de ${_sec(p.clipStartSec)} s à ${_sec(p.clipEndSec)} s (${_sec(p.clipSeconds)} s, 15 s au plus). Le téléphone ne charge que cet extrait, léger.', style: TextStyle(color: _c.textSecondary, fontSize: 12.5)),
+      if (!p.source.isImage) RangeSlider(
         key: const ValueKey('pin_clip_range'),
         values: RangeValues(p.clipStartSec.clamp(0, dur).toDouble(), p.clipEndSec.clamp(0, dur).toDouble()),
         min: 0,
@@ -1279,8 +1352,8 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
         IconButton(key: const ValueKey('pin_bigger'), tooltip: 'Plus grande', icon: Icon(Icons.add_circle_outline_rounded, color: _c.textPrimary), onPressed: () => setState(() => p.scale = (p.scale + .25).clamp(.5, 3.3))),
         IconButton(key: const ValueKey('pin_delete'), tooltip: 'Retirer la vidéo épinglée', icon: Icon(Icons.delete_outline_rounded, color: _c.textPrimary), onPressed: _removePin),
       ]),
-      SwitchListTile(key: const ValueKey('layout_origin_audio'), contentPadding: EdgeInsets.zero, title: const Text('Garder le son de la vidéo ajoutée'), value: s.originAudio, onChanged: (v) => setState(() => s.originAudio = v)),
-      if (s.originAudio) Slider(key: const ValueKey('layout_origin_volume'), value: s.originVolume, min: 0, max: 1.5, onChanged: (v) => setState(() => s.originVolume = v)),
+      if (!p.source.isImage) SwitchListTile(key: const ValueKey('layout_origin_audio'), contentPadding: EdgeInsets.zero, title: const Text('Garder le son de la vidéo ajoutée'), value: s.originAudio, onChanged: (v) => setState(() => s.originAudio = v)),
+      if (s.originAudio && !p.source.isImage) Slider(key: const ValueKey('layout_origin_volume'), value: s.originVolume, min: 0, max: 1.5, onChanged: (v) => setState(() => s.originVolume = v)),
       Text('Glisse la vidéo pour la placer, pince-la pour la zoomer. Son créneau règle quand elle apparaît (et quand on l\'entend). Les spectateurs peuvent la toucher pour voir la vidéo d\'origine.', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
     ]);
   }
@@ -1315,7 +1388,6 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
         if (s.hasVideo) _btn(Icons.timer_rounded, 'Message à l\'écran', _addTimedMessage, gold: 'timed_message'),
         if (s.moved.isNotEmpty) _btn(Icons.restart_alt_rounded, 'Tout remettre en place', () => setState(s.moved.clear)),
       ]),
-      _pinSection(),
       if (sel != null) ...[
         const SizedBox(height: 10),
         if (s.hasVideo)

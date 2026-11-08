@@ -245,7 +245,8 @@ class MontageExport {
     for (final p in s.pins.take(2)) {
       if (p.source.isLocal && p.uploadId == null) {
         onStep('Envoi de ta 2e vidéo…');
-        p.uploadId = await ArgentUpload.bytes(await File(p.source.localVideoPath!).readAsBytes(), contentType: 'video/mp4');
+        final path = p.source.isImage ? p.source.localImagePath! : p.source.localVideoPath!;
+        p.uploadId = await ArgentUpload.bytes(await File(path).readAsBytes(), contentType: p.source.isImage ? ArgentUpload.imageType(path) : 'video/mp4');
       }
     }
     onStep('Envoi…');
@@ -293,7 +294,7 @@ class MontageExport {
       'has_under': isVideo,
       if (isVideo) 'outro': s.outro,
       if (timedMeta.isNotEmpty) 'timed': timedMeta,
-      if (isVideo && s.pins.isNotEmpty) 'pins': [for (var i = 0; i < s.pins.take(2).length; i++) {...s.pins[i].toApi(), if (i == 0 && s.originAudio) 'audio': true}],
+      if (isVideo && s.pins.isNotEmpty) 'pins': [for (var i = 0; i < s.pins.take(2).length; i++) {...s.pins[i].toApi(), if (i == 0 && s.originAudio && !s.pins[i].source.isImage) 'audio': true}],
       if (isVideo && s.pins.isNotEmpty && s.layout != null) 'layout': {'id': s.layout, 'swap': s.layoutSwap, if (s.layoutRatio != null) 'ratio': s.layoutRatio, 'origin_zoom': s.originZoom, 'me_zoom': s.meZoom},
       if (isVideo && s.pins.isNotEmpty && s.originAudio) 'origin_volume': s.originVolume,
       if (m != null) 'music': {'type': m.type, 'id': m.id, 'start_ms': s.musicStartMs, 'volume': s.musicVolume},

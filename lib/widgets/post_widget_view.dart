@@ -285,7 +285,10 @@ class _PostWidgetViewState extends State<PostWidgetView> {
 
 /// Couche de widgets au-dessus d'un média : chaque widget à sa place (fractions du cadre) et à sa taille. Les widgets réagissent aux touchers ; le reste de la couche laisse passer les gestes.
 class PostWidgetsLayer extends StatelessWidget {
-  const PostWidgetsLayer({super.key, required this.widgets, this.video});
+  const PostWidgetsLayer({super.key, required this.widgets, this.video, this.mediaAspect});
+
+  /// Format réel du média (largeur / hauteur) quand il est affiché en entier, sans recadrage : les positions des widgets se comptent dans CE cadre et non dans tout l'écran.
+  final double? mediaAspect;
 
   final List<PostWidget> widgets;
 
@@ -313,6 +316,7 @@ class PostWidgetsLayer extends StatelessWidget {
   Widget _stack(List<PostWidget> widgets) {
     if (widgets.isEmpty) return const SizedBox.shrink();
     return LayoutBuilder(builder: (context, box) {
+      final frame = mediaFrame(Size(box.maxWidth, box.maxHeight), mediaAspect);
       return Stack(children: [
         for (final w in widgets)
           Positioned(
@@ -321,11 +325,27 @@ class PostWidgetsLayer extends StatelessWidget {
             width: box.maxWidth,
             height: box.maxHeight,
             child: Align(
-              alignment: Alignment((w.x * 2 - 1).clamp(-1.0, 1.0), (w.y * 2 - 1).clamp(-1.0, 1.0)),
+              alignment: widgetAlignment(w, Size(box.maxWidth, box.maxHeight), frame),
               child: Transform.scale(scale: w.scale, child: PostWidgetView(widget: w)),
             ),
           ),
       ]);
     });
   }
+}
+
+/// Cadre du média dans une zone : tout l'espace, ou le plus grand rectangle de format [aspect] centré (média affiché en entier, bandes noires autour).
+Rect mediaFrame(Size box, double? aspect) {
+  if (aspect == null || aspect <= 0 || box.width <= 0 || box.height <= 0) return Offset.zero & box;
+  final boxAspect = box.width / box.height;
+  final w = aspect > boxAspect ? box.width : box.height * aspect;
+  final h = aspect > boxAspect ? box.width / aspect : box.height;
+  return Rect.fromLTWH((box.width - w) / 2, (box.height - h) / 2, w, h);
+}
+
+/// Position d'un widget (fractions 0 à 1 du CADRE du média) convertie en alignement dans la zone entière.
+Alignment widgetAlignment(PostWidget w, Size box, Rect frame) {
+  final cx = frame.left + w.x.clamp(0.0, 1.0) * frame.width;
+  final cy = frame.top + w.y.clamp(0.0, 1.0) * frame.height;
+  return Alignment((cx / box.width * 2 - 1).clamp(-1.0, 1.0), (cy / box.height * 2 - 1).clamp(-1.0, 1.0));
 }

@@ -5,7 +5,7 @@ import 'package:video_player/video_player.dart';
 
 /// La vidéo d'un autre à épingler (avant d'être posée dans le montage) : son identifiant, sa vignette, son créateur et sa durée.
 class MontagePinSource {
-  const MontagePinSource({required this.postId, required this.thumbUrl, required this.authorPseudo, required this.durationSec, this.localVideoPath, this.previewUrl});
+  const MontagePinSource({required this.postId, required this.thumbUrl, required this.authorPseudo, required this.durationSec, this.localVideoPath, this.localImagePath, this.previewUrl});
 
   /// Adresse de lecture de la vidéo d'un autre (aperçu en direct dans le Studio) ; vide pour une vidéo de galerie (on lit le fichier).
   final String? previewUrl;
@@ -13,7 +13,12 @@ class MontagePinSource {
   /// Vidéo de la GALERIE de la personne (aucune publication) : envoyée au serveur avant le montage. [postId] est alors vide.
   final String? localVideoPath;
 
-  bool get isLocal => localVideoPath != null;
+  /// IMAGE de la galerie (pas une vidéo) : posée comme une vidéo fixe ; envoyée au serveur avant le montage, sans son.
+  final String? localImagePath;
+
+  bool get isImage => localImagePath != null;
+
+  bool get isLocal => localVideoPath != null || localImagePath != null;
 
   final String postId;
   final String thumbUrl;
@@ -93,11 +98,18 @@ class MontagePinView extends StatefulWidget {
 class _MontagePinViewState extends State<MontagePinView> {
   VideoPlayerController? _v;
   String? _key;
+  double? _imgAspect;   // format réel d'une image épinglée
 
   @override
   void initState() {
     super.initState();
     _open();
+    final img = widget.pin.source.localImagePath;
+    if (img != null) {
+      File(img).readAsBytes().then(decodeImageFromList).then((i) {
+        if (mounted && i.height > 0) setState(() => _imgAspect = i.width / i.height);
+      }).catchError((_) {});
+    }
   }
 
   @override
@@ -110,7 +122,7 @@ class _MontagePinViewState extends State<MontagePinView> {
     }
   }
 
-  static String? _playKey(MontagePin p) => p.source.localVideoPath ?? p.source.previewUrl;
+  static String? _playKey(MontagePin p) => p.source.isImage ? null : (p.source.localVideoPath ?? p.source.previewUrl);
 
   Future<void> _open() async {
     final key = _playKey(widget.pin);
@@ -123,7 +135,7 @@ class _MontagePinViewState extends State<MontagePinView> {
     final c = src.isLocal ? VideoPlayerController.file(File(key)) : VideoPlayerController.networkUrl(Uri.parse(key), videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
     try {
       await c.initialize();
-      await c.setLooping(true);
+      await c.setLooping(false);   // la vidéo se joue une fois puis reste sur sa dernière image
       await c.setVolume(widget.volume.clamp(0.0, 1.0));
       // l'extrait commence là où la personne l'a réglé
       if (widget.pin.clipStartSec > 0) await c.seekTo(Duration(milliseconds: (widget.pin.clipStartSec * 1000).round()));
@@ -147,11 +159,15 @@ class _MontagePinViewState extends State<MontagePinView> {
   @override
   Widget build(BuildContext context) {
     final pin = widget.pin;
-    final w = .3 * 100 * widget.cq;   // taille de base ; le zoom (pincement) est appliqué par le cadre qui contient l'élément
-    final h = pin.circle ? w : w * 9 / 16;
+    final w = pin.widthFrac * 100 * widget.cq;   // la taille réelle (30 % de la largeur x le zoom) : elle grandit quand on pince ou qu'on touche « + »
     final v = _v;
     final playing = v != null && v.value.isInitialized;
-    Widget thumb = playing
+    // le format RÉEL de la mini-vidéo (portrait, carré ou paysage) ; 16:9 le temps qu'on le connaisse
+    final aspect = pin.source.isImage ? (_imgAspect ?? 16 / 9) : (playing && v.value.size.height > 0 ? v.value.aspectRatio : 16 / 9);
+    final h = pin.circle ? w : w / aspect;
+    Widget thumb = pin.source.isImage
+        ? Image.file(File(pin.source.localImagePath!), fit: BoxFit.cover, errorBuilder: (_, __, ___) => pinThumb(pin.source.thumbUrl))
+        : playing
         ? FittedBox(fit: BoxFit.cover, clipBehavior: Clip.hardEdge, child: SizedBox(width: v.value.size.width, height: v.value.size.height, child: VideoPlayer(v)))
         : pinThumb(pin.source.thumbUrl);
     thumb = pin.circle ? ClipOval(child: thumb) : ClipRRect(borderRadius: BorderRadius.circular(w * .06), child: thumb);
@@ -168,7 +184,7 @@ class _MontagePinViewState extends State<MontagePinView> {
           ),
           child: thumb,
         ),
-        if (!playing) Center(child: Icon(Icons.play_circle_fill_rounded, color: Colors.white70, size: w * .3)),
+        if (!playing && !pin.source.isImage) Center(child: Icon(Icons.play_circle_fill_rounded, color: Colors.white70, size: w * .3)),
         Positioned(
           left: 0,
           right: 0,
@@ -218,7 +234,7 @@ class _MontageLayoutPreviewState extends State<MontageLayoutPreview> {
     try {
       await c.initialize();
       await c.setVolume(vol);
-      await c.setLooping(true);
+      await c.setLooping(false);   // une seule lecture, puis arrêt sur la dernière image
       await c.play();
       return c;
     } catch (_) {
@@ -229,7 +245,7 @@ class _MontageLayoutPreviewState extends State<MontageLayoutPreview> {
 
   void _sync() {
     final pin = _pin;
-    final originKey = pin == null ? null : (pin.source.localVideoPath ?? pin.source.previewUrl);
+    final originKey = pin == null || pin.source.isImage ? null : (pin.source.localVideoPath ?? pin.source.previewUrl);
     if (originKey != _originKey) {
       _originKey = originKey;
       final old = _origin;
@@ -298,7 +314,9 @@ class _MontageLayoutPreviewState extends State<MontageLayoutPreview> {
         Positioned.fromRect(
           rect: o,
           child: Stack(fit: StackFit.expand, children: [
-            _cover(_origin, oz, thumb),
+            pin.source.isImage
+                ? ClipRect(child: Transform.scale(scale: oz, child: Image.file(File(pin.source.localImagePath!), fit: BoxFit.cover, errorBuilder: (_, __, ___) => thumb)))
+                : _cover(_origin, oz, thumb),
             Positioned(left: 6, bottom: 4, child: Text(pin.source.authorPseudo.isEmpty ? '' : '@${pin.source.authorPseudo}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800, shadows: [Shadow(color: Colors.black87, blurRadius: 4)]))),
           ]),
         ),

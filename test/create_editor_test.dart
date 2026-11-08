@@ -31,7 +31,9 @@ void main() {
   });
 
   tearDownAll(() async {
-    if (await photo.exists()) await photo.delete();
+    try {
+      if (await photo.exists()) await photo.delete();
+    } catch (_) {}   // Windows : le fichier peut encore être lu par l'aperçu de l'éditeur (format réel de la photo)
   });
 
   for (final b in [Brightness.light, Brightness.dark]) {

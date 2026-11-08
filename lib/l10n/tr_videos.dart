@@ -283,4 +283,5 @@ const Map<String, Map<String, String>> kTrVideos = {
   "Bandeau": {'en': "Banner", 'es': "Banda", 'de': "Banner", 'ar': "شريط", 'pt': "Faixa", 'zh': "横幅", 'sw': "Bango"},
   "Inverser": {'en': "Swap", 'es': "Invertir", 'de': "Tauschen", 'ar': "عكس", 'pt': "Inverter", 'zh': "互换", 'sw': "Badilisha"},
   "2 vidéos": {'en': "Two videos", 'es': "2 videos", 'de': "2 Videos", 'ar': "فيديوهان", 'pt': "2 vídeos", 'zh': "两个视频", 'sw': "Video 2"},
+  "2e média": {'en': "2nd media", 'es': "2.º medio", 'de': "2. Medium", 'ar': "وسيط ثانٍ", 'pt': "2.ª mídia", 'zh': "第二个媒体", 'sw': "Media ya 2"},
 };

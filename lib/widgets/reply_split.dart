@@ -41,7 +41,7 @@ class _ReplySplitPreviewState extends State<ReplySplitPreview> {
     _v = v;
     v.initialize().then((_) async {
       await v.setVolume(0);
-      await v.setLooping(true);
+      await v.setLooping(false);   // une seule lecture, puis arrêt sur la dernière image
       if (mounted) setState(() {});
     }).catchError((_) {});
   }

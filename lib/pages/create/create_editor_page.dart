@@ -74,6 +74,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
 
   /// Outil utilisé : le média est désormais retouché dans le Studio d'Afrolook (mention « Fait sur Afrolook »).
   bool _touched = false;
+  double? _imgAspect; // format réel de la photo (largeur / hauteur)
   String? _voiceEffect; // effet de voix choisi pour la vidéo (mention « Voix modifiée »)
   bool _subtitlesOk = false; // le serveur sait transcrire (service réglé)
 
@@ -89,6 +90,8 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
     if (widget.isVideo) {
       _initVideo();
       _checkSubtitles();
+    } else {
+      _loadImageAspect();
     }
     if (widget.sound != null || widget.pin != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -101,6 +104,20 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
   void dispose() {
     _video?.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadImageAspect() async {
+    try {
+      final img = await decodeImageFromList(await File(_path).readAsBytes());
+      if (mounted && img.height > 0) setState(() => _imgAspect = img.width / img.height);
+    } catch (_) {}
+  }
+
+  /// Format réel du média affiché (vidéo ou photo) : il est montré EN ENTIER, tel qu'il sera partout (publication, chronique…).
+  double? get _mediaAspect {
+    final v = _video;
+    if (widget.isVideo) return (v != null && v.value.isInitialized && v.value.size.height > 0) ? v.value.aspectRatio : null;
+    return _imgAspect;
   }
 
   Future<void> _checkSubtitles() async {
@@ -535,14 +552,17 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
   Widget _widgetsLayer() => ValueListenableBuilder<List<PostWidget>>(
         valueListenable: PostWidgetsLink.drafts,
         builder: (context, list, _) => LayoutBuilder(
-          builder: (context, box) => Stack(clipBehavior: Clip.none, children: [
+          builder: (context, box) {
+            final frame = mediaFrame(Size(box.maxWidth, box.maxHeight), _mediaAspect);   // les positions se comptent dans le cadre du média
+            return Stack(clipBehavior: Clip.none, children: [
             // toucher le fond désélectionne
             if (_selWidget != null) Positioned.fill(child: GestureDetector(behavior: HitTestBehavior.translucent, onTap: () => setState(() => _selWidget = null))),
             for (final w in list)
               Positioned.fill(
                 child: Align(
-                  alignment: Alignment((w.x * 2 - 1).clamp(-1.0, 1.0), (w.y * 2 - 1).clamp(-1.0, 1.0)),
+                  alignment: widgetAlignment(w, Size(box.maxWidth, box.maxHeight), frame),
                   child: Stack(clipBehavior: Clip.none, alignment: Alignment.center, children: [
+
                     GestureDetector(
                       key: ValueKey('draft_widget_${list.indexOf(w)}'),
                       onTap: () => setState(() => _selWidget = identical(_selWidget, w) ? null : w),
@@ -551,8 +571,8 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
                         if (!identical(_selWidget, w)) setState(() => _selWidget = w);
                       },
                       onScaleUpdate: (d) {
-                        w.x = (w.x + d.focalPointDelta.dx / box.maxWidth).clamp(.04, .96);
-                        w.y = (w.y + d.focalPointDelta.dy / box.maxHeight).clamp(.04, .96);
+                        w.x = (w.x + d.focalPointDelta.dx / frame.width).clamp(.04, .96);
+                        w.y = (w.y + d.focalPointDelta.dy / frame.height).clamp(.04, .96);
                         if (d.pointerCount > 1) w.scale = (_scaleStart * d.scale).clamp(.6, 1.6);
                         _refreshWidgets();
                       },
@@ -579,7 +599,8 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
                   ]),
                 ),
               ),
-          ]),
+          ]);
+          },
         ),
       );
 
@@ -606,11 +627,11 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
                     _pausedByUser = v.value.isPlaying;
                     v.value.isPlaying ? v.pause() : v.play();
                   }),
-                  child: FittedBox(fit: BoxFit.cover, clipBehavior: Clip.hardEdge, child: SizedBox(width: v.value.size.width, height: v.value.size.height, child: VideoPlayer(v))),
+                  child: Center(child: AspectRatio(aspectRatio: v.value.aspectRatio, child: VideoPlayer(v))),   // format réel, jamais recadré
                 )
               : const Center(child: CircularProgressIndicator(color: Colors.white54)))
         else
-          Image.file(File(_path), fit: BoxFit.cover),
+          Center(child: Image.file(File(_path), fit: BoxFit.contain)),
         // voiles haut et bas : les commandes restent lisibles sur n'importe quelle image
         const Positioned(top: 0, left: 0, right: 0, height: 130, child: IgnorePointer(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0x99000000), Color(0x00000000)]))))),
         const Positioned(bottom: 0, left: 0, right: 0, height: 300, child: IgnorePointer(child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0x00000000), Color(0xDD000000)]))))),
@@ -680,7 +701,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
                 _tool('tool_stickers', Icons.emoji_emotions_rounded, context.tr('Autocollants'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, focus: 'stickers', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
                 _tool('tool_widgets', Icons.widgets_rounded, context.tr('Widgets'), _addWidget),
                 _tool('tool_looks', Icons.star_rounded, context.tr('Effets'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, focus: 'looks', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
-                if (widget.isVideo) _tool('tool_two', Icons.splitscreen_rounded, context.tr('2 vidéos'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, focus: 'second', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
+                if (widget.isVideo) _tool('tool_two', Icons.splitscreen_rounded, context.tr('2e média'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, focus: 'second', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
                 if (widget.isVideo) _tool('tool_trim', Icons.content_cut_rounded, context.tr('Couper'), _trim),
               ]),
             ),
