@@ -3,122 +3,106 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Modal de profil : proposition</title>
+<title>Modal de profil : trois propositions</title>
 <style>
   :root{
     --bg:#f4f5f2; --ink:#16201a; --sub:#5b665f; --card:#ffffff; --line:#dfe3dc;
-    --green:#2ECC71; --green-d:#158246; --yellow:#FFD400; --amber:#b88600;
+    --green:#2ECC71; --green-d:#158246; --yellow:#FFD400;
+    --sheet:#ffffff; --sheet-ink:#13201a; --sheet-sub:#5d6a62; --sheet-line:#e3e8e2; --tile:#f1f5f0;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#101412;--ink:#eef2ee;--sub:#a3ada6;--card:#18201c;--line:#2a332d;
+      --sheet:#17201b;--sheet-ink:#eef3ee;--sheet-sub:#a3b0a7;--sheet-line:#2b362f;--tile:#1f2923}
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:24px 16px 56px}
   h1{font-size:24px;margin:0 0 4px}
-  h2{font-size:17px;margin:34px 0 10px}
-  p.lead{color:var(--sub);margin:0 0 20px;max-width:70ch}
-  .row{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
-  .col{flex:1 1 320px;min-width:0}
-  .phone{width:300px;height:620px;border-radius:30px;background:#000;position:relative;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.25);border:6px solid #111;flex:none}
+  p.lead{color:var(--sub);margin:0 0 18px;max-width:75ch}
+  .row{display:flex;flex-wrap:wrap;gap:30px;align-items:flex-start}
+  .opt{flex:1 1 300px;min-width:0;max-width:340px}
+  .opt h2{font-size:17px;margin:0 0 2px}
+  .opt .tagline{color:var(--sub);font-size:13px;margin:0 0 10px}
+  .phone{width:300px;height:620px;border-radius:30px;background:#000;position:relative;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,.25);border:6px solid #111;margin-bottom:12px}
   .photo{position:absolute;inset:0;background:
-      radial-gradient(120px 150px at 50% 36%,#2b1a10 0 60%,transparent 61%),
-      radial-gradient(180px 130px at 50% 82%,#d9d2c6 0 62%,transparent 63%),
+      radial-gradient(70px 88px at 50% 33%,#2b1a10 0 60%,transparent 61%),
+      radial-gradient(118px 86px at 50% 56%,#e9e1d3 0 62%,transparent 63%),
       linear-gradient(180deg,#d06417,#a84a0b 55%,#6a2d06)}
-  .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.25) 0,rgba(0,0,0,0) 28%,rgba(0,0,0,.55) 60%,rgba(0,0,0,.92) 100%)}
-  .top{position:absolute;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:center}
-  .pill{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:99px;font-size:12px;font-weight:700;color:#fff}
-  .close{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:18px}
-  .flag{display:inline-block;width:20px;height:13px;background:linear-gradient(#2a8f4a 0 20%,#ffd400 20% 40%,#2a8f4a 40% 60%,#ffd400 60% 80%,#2a8f4a 80%);border-radius:2px}
-  .bottom{position:absolute;left:0;right:0;bottom:0;padding:14px 14px 16px;color:#fff}
-  .center{text-align:center}
+  .photo.hero{height:58%;bottom:auto;background:
+      radial-gradient(70px 88px at 50% 38%,#2b1a10 0 60%,transparent 61%),
+      radial-gradient(118px 86px at 50% 66%,#e9e1d3 0 62%,transparent 63%),
+      linear-gradient(180deg,#d06417,#a84a0b 70%,#8a3c08)}
+  .shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.3) 0,rgba(0,0,0,0) 26%,rgba(0,0,0,.35) 52%,rgba(0,0,0,.92) 100%)}
+  .top{position:absolute;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:center;z-index:3}
+  .glass{background:rgba(20,24,22,.55);border:1px solid rgba(255,255,255,.18);backdrop-filter:blur(8px);color:#fff}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:99px;font-size:12px;font-weight:700}
+  .close{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-size:17px}
+  .flag{display:inline-block;width:20px;height:13px;border-radius:2px;background:linear-gradient(#2a8f4a 0 20%,#ffd400 20% 40%,#2a8f4a 40% 60%,#ffd400 60% 80%,#2a8f4a 80%)}
+  .bottom{position:absolute;left:0;right:0;bottom:0;padding:14px;color:#fff;z-index:2}
   .btn{display:flex;align-items:center;justify-content:center;gap:7px;height:42px;border-radius:14px;font-weight:800;font-size:14px}
-  .mock-label{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--sub);margin:0 0 8px}
+  .green{background:var(--green);color:#04210f}
+  .badge{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;background:var(--green);color:#04210f;font-size:10px;font-weight:900}
+  ul.l{margin:6px 0 0;padding-left:20px;font-size:13.5px}ul.l li{margin:3px 0}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:0 0 16px;max-width:900px}
 
-  /* ───── Aujourd'hui ───── */
-  .now .pill{background:rgba(0,0,0,.8);border:1px solid #FFD700}
-  .now .close{background:rgba(0,0,0,.7)}
-  .now .tag{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.35);padding:4px 10px;border-radius:99px;font-weight:700;font-size:14px;margin-bottom:8px}
-  .now .tag i{display:grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#ffd400;color:#000;font-style:normal;font-size:11px}
-  .now .stats{display:flex;justify-content:space-around;background:rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.2);border-radius:18px;padding:12px 6px}
-  .now .stats b{display:block;font-size:20px;text-align:center}
-  .now .stats small{font-size:11px;opacity:.85}
-  .now .likes{display:flex;gap:10px;justify-content:center;align-items:center;margin:8px 0;font-size:13px}
-  .now .likes span{border:1px solid rgba(255,255,255,.4);padding:4px 10px;border-radius:99px}
-  .now .two{display:flex;gap:10px;margin-bottom:8px}.now .two .btn{flex:1}
-  .now .a{background:#2196f3}.now .b{background:#e53935}
-  .now .full{background:linear-gradient(90deg,#ffd400,#8b0000);color:#fff}
+  /* ═════════ A : Verre ═════════ */
+  .A .panel{background:rgba(16,20,18,.72);border:1px solid rgba(255,255,255,.12);border-radius:22px;padding:14px 14px 12px;backdrop-filter:blur(14px)}
+  .A .name{display:flex;align-items:center;justify-content:center;gap:6px;font-size:18px;font-weight:800}
+  .A .handle{font-size:12px;color:rgba(255,255,255,.65);text-align:center;margin:1px 0 10px}
+  .A .stats{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid rgba(255,255,255,.1);border-bottom:1px solid rgba(255,255,255,.1);padding:10px 0;margin-bottom:10px}
+  .A .stat{text-align:center}.A .stat+.stat{border-left:1px solid rgba(255,255,255,.1)}
+  .A .stat b{display:block;font-size:19px}.A .stat small{font-size:11px;color:rgba(255,255,255,.65)}
+  .A .pop{height:4px;border-radius:4px;background:rgba(255,255,255,.14);margin:6px 14px 0;overflow:hidden}.A .pop i{display:block;height:100%;width:42%;background:var(--green)}
+  .A .likes{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:rgba(255,255,255,.85);margin-bottom:10px}
+  .A .lk{padding:5px 12px;border-radius:99px;border:1px solid rgba(255,255,255,.3);font-weight:700;color:#fff}
+  .A .two{display:flex;gap:9px;margin-bottom:9px}.A .two .btn{flex:1}
+  .A .inv{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff}
+  .A .full{border:1px solid rgba(255,255,255,.28);height:38px;font-weight:700;color:#fff}.A .full b{color:var(--yellow)}
 
-  /* ───── Proposition ───── */
-  .new .pill,.new .close{background:rgba(20,24,22,.55);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(8px)}
-  .new .panel{background:rgba(16,20,18,.72);border:1px solid rgba(255,255,255,.12);border-radius:22px;padding:14px 14px 12px;backdrop-filter:blur(14px)}
-  .new .name{display:flex;align-items:center;justify-content:center;gap:6px;font-size:18px;font-weight:800}
-  .new .badge{width:18px;height:18px;border-radius:50%;background:var(--green);color:#04210f;display:grid;place-items:center;font-size:11px;font-weight:900}
-  .new .handle{font-size:12px;color:rgba(255,255,255,.65);text-align:center;margin:1px 0 10px}
-  .new .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid rgba(255,255,255,.1);border-bottom:1px solid rgba(255,255,255,.1);padding:10px 0;margin-bottom:10px}
-  .new .stat{text-align:center}
-  .new .stat+.stat{border-left:1px solid rgba(255,255,255,.1)}
-  .new .stat b{display:block;font-size:19px;font-weight:800}
-  .new .stat small{font-size:11px;color:rgba(255,255,255,.65)}
-  .new .pop{height:4px;border-radius:4px;background:rgba(255,255,255,.14);margin:6px 14px 0;overflow:hidden}
-  .new .pop i{display:block;height:100%;width:42%;background:var(--green)}
-  .new .likes{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:rgba(255,255,255,.85);margin-bottom:10px}
-  .new .likes .lk{padding:5px 12px;border-radius:99px;border:1px solid rgba(255,255,255,.3);font-weight:700;color:#fff}
-  .new .two{display:flex;gap:9px;margin-bottom:9px}.new .two .btn{flex:1}
-  .new .sub{background:var(--green);color:#04210f}
-  .new .inv{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff}
-  .new .full{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.28);height:38px;font-weight:700}
-  .new .full b{color:var(--yellow)}
+  /* ═════════ B : Feuille claire ═════════ */
+  .B .phone{background:var(--sheet)}
+  .B .sheet{position:absolute;left:0;right:0;bottom:0;top:49%;background:var(--sheet);border-radius:26px 26px 0 0;padding:44px 16px 16px;color:var(--sheet-ink);z-index:2;box-shadow:0 -8px 24px rgba(0,0,0,.18)}
+  .B .ava{position:absolute;left:50%;top:-38px;transform:translateX(-50%);width:76px;height:76px;border-radius:50%;border:4px solid var(--sheet);background:radial-gradient(22px 26px at 50% 36%,#2b1a10 0 60%,transparent 61%),radial-gradient(36px 24px at 50% 78%,#e9e1d3 0 62%,transparent 63%),linear-gradient(180deg,#d06417,#a84a0b)}
+  .B .name{display:flex;align-items:center;justify-content:center;gap:6px;font-size:18px;font-weight:800}
+  .B .meta{display:flex;justify-content:center;align-items:center;gap:8px;font-size:12px;color:var(--sheet-sub);margin:2px 0 12px}
+  .B .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+  .B .tile{background:var(--tile);border-radius:14px;padding:9px 4px;text-align:center}
+  .B .tile b{display:block;font-size:18px}.B .tile small{font-size:11px;color:var(--sheet-sub)}
+  .B .pop{height:4px;border-radius:4px;background:var(--sheet-line);margin:5px 12px 0;overflow:hidden}.B .pop i{display:block;height:100%;width:42%;background:var(--green-d)}
+  .B .two{display:flex;gap:9px;margin-bottom:9px}.B .two .btn{flex:1}
+  .B .green{background:var(--green-d);color:#fff}
+  .B .inv{background:var(--tile);color:var(--sheet-ink);border:1px solid var(--sheet-line)}
+  .B .link{display:flex;justify-content:space-between;align-items:center;padding:10px 4px 2px;font-weight:700;font-size:14px;border-top:1px solid var(--sheet-line)}
+  .B .link span:last-child{color:var(--green-d)}
+  .B .lk{display:flex;justify-content:center;align-items:center;gap:8px;font-size:13px;color:var(--sheet-sub);margin:-2px 0 10px}
+  .B .lk b{color:var(--sheet-ink);border:1px solid var(--sheet-line);padding:4px 11px;border-radius:99px}
 
-  ul.inv-list{margin:6px 0 0;padding-left:20px}
-  ul.inv-list li{margin:3px 0}
-  .sw{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
-  .sw span{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;background:var(--card);border:1px solid var(--line);border-radius:99px;padding:3px 10px 3px 4px}
-  .sw i{width:20px;height:20px;border-radius:50%;display:inline-block;border:1px solid rgba(0,0,0,.15)}
-  .note{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:10px 0}
-  @media (prefers-color-scheme:dark){
-    :root{--bg:#101412;--ink:#eef2ee;--sub:#a3ada6;--card:#18201c;--line:#2a332d}
-  }
+  /* ═════════ C : Immersif ═════════ */
+  .C .shade{background:linear-gradient(180deg,rgba(0,0,0,.28) 0,rgba(0,0,0,0) 22%,rgba(0,0,0,0) 40%,rgba(0,0,0,.88) 78%,rgba(0,0,0,.96) 100%)}
+  .C .name{display:flex;align-items:center;justify-content:center;gap:7px;font-size:23px;font-weight:800;letter-spacing:-.01em}
+  .C .handle{text-align:center;font-size:12.5px;color:rgba(255,255,255,.7);margin:0 0 8px}
+  .C .inline{display:flex;justify-content:center;align-items:center;gap:10px;font-size:13px;color:rgba(255,255,255,.85);margin-bottom:14px}
+  .C .inline b{font-size:15px;color:#fff}.C .inline i{width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,.5)}
+  .C .actions{display:flex;justify-content:center;align-items:center;gap:14px;margin-bottom:12px}
+  .C .round{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-size:19px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);color:#fff;position:relative}
+  .C .round small{position:absolute;bottom:-17px;font-size:10px;color:rgba(255,255,255,.8);white-space:nowrap}
+  .C .big{height:54px;padding:0 24px;border-radius:99px;display:flex;align-items:center;gap:8px;background:var(--green);color:#04210f;font-weight:800;font-size:15px}
+  .C .more{text-align:center;color:#fff;font-weight:700;font-size:13.5px;margin-top:22px}.C .more b{color:var(--yellow)}
 </style>
 </head>
 <body>
-<h1>Modal de profil : proposition à valider</h1>
-<p class="lead">À gauche, ce que le modal affiche <b>aujourd'hui</b> (relevé dans le code, écran « profil d'un utilisateur » ouvert depuis le fil). À droite, la <b>proposition</b>. Rien n'est modifié dans l'application tant que tu n'as pas validé.</p>
+<h1>Modal de profil : trois propositions</h1>
+<p class="lead">Même contenu que l'actuel (photo, pays, croix, pseudo + badge, abonnés / popularité / parrainages, likes du profil + Like, Inviter ou Message, S'abonner, Voir le profil complet), avec une palette réduite : <b>vert Afrolook</b> pour l'action principale, <b>blancs et verre</b> pour le reste, <b>jaune</b> seulement en petit accent. Plus de rouge foncé, de bleu ciel, ni de dégradé jaune → bordeaux. Choisis A, B ou C (ou mélange).</p>
+
+<div class="box"><b>Ce que le modal affiche aujourd'hui</b> (relevé dans le code) : photo plein écran (touche = agrandir) sous un voile noir ; en haut le pays (pastille à contour jaune) et la croix ; en bas le pseudo avec le badge de certification, trois chiffres (abonnés en jaune, popularité en bordeaux, parrainages en bleu ciel), « N Likes profil » avec le bouton Like, « Inviter » (bleu) ou « Message » / « Invitation envoyée », « S'abonner » (rouge) ou « Abonné », puis le grand bouton « Voir le profil complet ». Sur son propre profil, Inviter et S'abonner disparaissent.</div>
 
 <div class="row">
-  <div class="col">
-    <p class="mock-label">Aujourd'hui</p>
-    <div class="phone now">
-      <div class="photo"></div><div class="shade"></div>
-      <div class="top"><span class="pill"><i class="flag"></i>Togo</span><span class="close">✕</span></div>
-      <div class="bottom">
-        <div class="center"><span class="tag"><i>@</i>hassim.poudiougou</span></div>
-        <div class="stats">
-          <div><b style="color:#ffd700">0</b><small>Abonnés</small></div>
-          <div><b style="color:#8b0000">0.0%</b><small>Popularité</small></div>
-          <div><b style="color:#4fc3f7">0</b><small>Parrainages</small></div>
-        </div>
-        <div class="likes">❤ 0 Likes profil <span>♡ Like</span></div>
-        <div class="two"><div class="btn a">＋ Inviter</div><div class="btn b">＋ S'abonner</div></div>
-        <div class="btn full">👁 Voir le profil complet</div>
-      </div>
-    </div>
-    <ul class="inv-list">
-      <li>Photo de profil en plein écran (touche = agrandir), voile noir en bas.</li>
-      <li>Haut : pays (pastille à contour jaune) et croix de fermeture.</li>
-      <li>Bas : pseudo, badge de certification, 3 chiffres (abonnés, popularité, parrainages), likes du profil + bouton Like, « Inviter » / « Message » / « Invitation envoyée », « S'abonner » / « Abonné », « Voir le profil complet ».</li>
-      <li>Sur son propre profil, les deux boutons Inviter et S'abonner disparaissent.</li>
-    </ul>
-    <p><b>Ce qui ne va pas :</b></p>
-    <ul class="inv-list">
-      <li>Six couleurs qui se battent : jaune, <b>rouge foncé illisible</b> (popularité sur fond noir), bleu ciel, bleu vif, rouge vif, et le dégradé jaune → bordeaux du grand bouton.</li>
-      <li>Les chiffres ne sont pas alignés sur les couleurs du reste de l'application (vert / noir / jaune en fond seulement).</li>
-      <li>Le grand bouton en dégradé est le plus voyant alors que « S'abonner » est l'action principale.</li>
-      <li>Le texte posé directement sur la photo n'est pas toujours lisible (photo claire).</li>
-    </ul>
-  </div>
 
-  <div class="col">
-    <p class="mock-label">Proposition</p>
-    <div class="phone new">
+  <div class="opt A">
+    <h2>A · Verre</h2>
+    <p class="tagline">La photo reste plein écran ; un panneau de verre sombre porte les informations.</p>
+    <div class="phone">
       <div class="photo"></div><div class="shade"></div>
-      <div class="top"><span class="pill"><i class="flag"></i>Togo</span><span class="close">✕</span></div>
+      <div class="top"><span class="pill glass"><i class="flag"></i>Togo</span><span class="close glass">✕</span></div>
       <div class="bottom">
         <div class="panel">
           <div class="name">hassim.poudiougou <span class="badge">✓</span></div>
@@ -129,34 +113,67 @@
             <div class="stat"><b>0</b><small>Parrainages</small></div>
           </div>
           <div class="likes"><span>❤ 0 likes sur le profil</span><span class="lk">♡ Like</span></div>
-          <div class="two"><div class="btn inv">＋ Inviter</div><div class="btn sub">＋ S'abonner</div></div>
+          <div class="two"><div class="btn inv">＋ Inviter</div><div class="btn green">＋ S'abonner</div></div>
           <div class="btn full">Voir le profil complet <b>›</b></div>
         </div>
       </div>
     </div>
-    <div class="sw">
-      <span><i style="background:#2ECC71"></i>Vert Afrolook : action principale, jauge</span>
-      <span><i style="background:rgba(255,255,255,.15)"></i>Verre sombre : panneau et boutons secondaires</span>
-      <span><i style="background:#FFD400"></i>Jaune : petite flèche seulement</span>
-    </div>
-    <div class="note"><b>Ce qui change</b>
-      <ul class="inv-list">
-        <li><b>Une seule couleur d'action</b> : « S'abonner » en vert plein (texte foncé). « Inviter » devient un bouton de verre discret. Quand on est déjà abonné : bouton vert contour « Abonné ✓ ». Quand l'invitation est envoyée : « Invitation envoyée » grisé.</li>
-        <li><b>Un panneau de verre</b> (flou + noir transparent) sous le pseudo : tout le texte reste lisible quelle que soit la photo, de jour comme de nuit.</li>
-        <li><b>Chiffres tous blancs</b>, séparés par de fines lignes ; la popularité gagne une petite jauge verte.</li>
-        <li><b>Pastille du pays et croix</b> en verre, plus de contour jaune.</li>
-        <li><b>« Voir le profil complet »</b> devient un bouton à contour (secondaire), avec une flèche jaune ; il ne concurrence plus « S'abonner ».</li>
-        <li>Le pseudo passe au-dessus (grand, centré) avec le badge de certification ; « @ » en petit dessous.</li>
-        <li>La feuille garde sa hauteur et son glissement actuels ; la photo reste cliquable pour l'agrandir.</li>
-      </ul>
-    </div>
-    <div class="note"><b>Deux petites questions</b>
-      <ul class="inv-list">
-        <li>Garder « Likes profil » avec son bouton Like, ou le ranger plus discrètement (un cœur seul à côté du pseudo) ?</li>
-        <li>Sur son propre profil, afficher un bouton « Modifier mon profil » à la place de Inviter / S'abonner ?</li>
-      </ul>
-    </div>
+    <ul class="l"><li>Le plus proche de l'actuel : on garde l'esprit « photo qui occupe tout ».</li><li>Texte toujours lisible, même sur une photo claire.</li><li>Popularité avec une petite jauge verte.</li></ul>
   </div>
+
+  <div class="opt B">
+    <h2>B · Feuille</h2>
+    <p class="tagline">La photo en haut, une feuille aux couleurs du thème (claire ou sombre) en bas, avatar rond au centre.</p>
+    <div class="phone">
+      <div class="photo hero"></div>
+      <div class="top"><span class="pill glass"><i class="flag"></i>Togo</span><span class="close glass">✕</span></div>
+      <div class="sheet">
+        <div class="ava"></div>
+        <div class="name">hassim.poudiougou <span class="badge">✓</span></div>
+        <div class="meta"><span>@hassim.poudiougou</span></div>
+        <div class="tiles">
+          <div class="tile"><b>0</b><small>Abonnés</small></div>
+          <div class="tile"><b>0 %</b><small>Popularité</small><div class="pop"><i></i></div></div>
+          <div class="tile"><b>0</b><small>Parrainages</small></div>
+        </div>
+        <div class="lk">❤ 0 likes <b>♡ Like</b></div>
+        <div class="two"><div class="btn inv">＋ Inviter</div><div class="btn green">＋ S'abonner</div></div>
+        <div class="link"><span>Voir le profil complet</span><span>›</span></div>
+      </div>
+    </div>
+    <ul class="l"><li>Lisibilité maximale : texte sur fond uni, plus rien sur la photo.</li><li>Suit le thème clair / sombre de l'application.</li><li>La photo reste cliquable pour l'agrandir ; la feuille se glisse comme aujourd'hui.</li></ul>
+  </div>
+
+  <div class="opt C">
+    <h2>C · Immersif</h2>
+    <p class="tagline">La photo domine ; presque rien par-dessus : un nom, une ligne de chiffres, des boutons ronds.</p>
+    <div class="phone">
+      <div class="photo"></div><div class="shade"></div>
+      <div class="top"><span class="pill glass"><i class="flag"></i>Togo</span><span class="close glass">✕</span></div>
+      <div class="bottom">
+        <div class="name">hassim.poudiougou <span class="badge">✓</span></div>
+        <div class="handle">@hassim.poudiougou</div>
+        <div class="inline"><span><b>0</b> abonnés</span><i></i><span><b>0 %</b> popularité</span><i></i><span><b>0</b> parrainages</span></div>
+        <div class="actions">
+          <div class="round">♡<small>Like · 0</small></div>
+          <div class="big">＋ S'abonner</div>
+          <div class="round">✉<small>Inviter</small></div>
+        </div>
+        <div class="more">Voir le profil complet <b>›</b></div>
+      </div>
+    </div>
+    <ul class="l"><li>Le plus léger et le plus moderne, façon réseaux sociaux.</li><li>Boutons ronds : « Inviter » devient « Message » une fois amis.</li><li>Les chiffres tiennent sur une seule ligne.</li></ul>
+  </div>
+
+</div>
+
+<div class="box" style="margin-top:12px"><b>Pour tous les trois</b>
+  <ul class="l">
+    <li>« S'abonner » vert plein ; déjà abonné : « Abonné ✓ » en contour vert. Invitation envoyée : grisé.</li>
+    <li>Sur son propre profil : un bouton « Modifier mon profil » à la place de Inviter / S'abonner (à confirmer).</li>
+    <li>Le pays reste en haut à gauche, la croix à droite, en verre ; le jaune ne sert plus que de petit accent (flèche).</li>
+    <li>Textes traduits dans les 8 langues comme le reste de l'application.</li>
+  </ul>
 </div>
 </body>
 </html>
