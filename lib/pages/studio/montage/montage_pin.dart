@@ -1,8 +1,15 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 /// La vidéo d'un autre à épingler (avant d'être posée dans le montage) : son identifiant, sa vignette, son créateur et sa durée.
 class MontagePinSource {
-  const MontagePinSource({required this.postId, required this.thumbUrl, required this.authorPseudo, required this.durationSec});
+  const MontagePinSource({required this.postId, required this.thumbUrl, required this.authorPseudo, required this.durationSec, this.localVideoPath});
+
+  /// Vidéo de la GALERIE de la personne (aucune publication) : envoyée au serveur avant le montage. [postId] est alors vide.
+  final String? localVideoPath;
+
+  bool get isLocal => localVideoPath != null;
 
   final String postId;
   final String thumbUrl;
@@ -47,8 +54,11 @@ class MontagePin {
   /// Ce qui est gardé avec la publication : de quelle vidéo, où et quand (un toucher sur la vidéo épinglée ouvre l'original).
   Map<String, dynamic> toLink() => {'post_id': source.postId, 'x': center.dx.clamp(0, 1), 'y': center.dy.clamp(0, 1), 'w': widthFrac, 'shape': circle ? 'circle' : 'rect', 'start': startSec, 'end': endSec};
 
+  /// Identifiant d'envoi de la vidéo de galerie (rempli au moment de l'export).
+  String? uploadId;
+
   Map<String, dynamic> toApi() => {
-        'post_id': source.postId,
+        if (source.isLocal) 'upload_id': uploadId else 'post_id': source.postId,
         'clip_start_ms': (clipStartSec * 1000).round(),
         'clip_end_ms': (clipEndSec * 1000).round(),
         'x': center.dx.clamp(0, 1),
@@ -73,9 +83,7 @@ class MontagePinView extends StatelessWidget {
   Widget build(BuildContext context) {
     final w = .3 * 100 * cq;   // taille de base ; le zoom (pincement) est appliqué par le cadre qui contient l'élément
     final h = pin.circle ? w : w * 9 / 16;
-    Widget thumb = pin.source.thumbUrl.startsWith('http')
-        ? Image.network(pin.source.thumbUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const ColoredBox(color: Color(0xFF3A3A3A)))
-        : const ColoredBox(color: Color(0xFF3A3A3A));
+    Widget thumb = pinThumb(pin.source.thumbUrl);
     thumb = pin.circle ? ClipOval(child: thumb) : ClipRRect(borderRadius: BorderRadius.circular(w * .06), child: thumb);
     return SizedBox(
       width: w,
@@ -117,9 +125,7 @@ class MontageLayoutPreview extends StatelessWidget {
       Rect px(Rect r) => Rect.fromLTWH(r.left * box.maxWidth, r.top * box.maxHeight, r.width * box.maxWidth, r.height * box.maxHeight);
       final o = px(f.origin);
       final m = px(f.me);
-      final thumb = pin.source.thumbUrl.startsWith('http')
-          ? Image.network(pin.source.thumbUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const ColoredBox(color: Color(0xFF3A3A3A)))
-          : const ColoredBox(color: Color(0xFF3A3A3A));
+      final thumb = pinThumb(pin.source.thumbUrl);
       return Stack(children: [
         Positioned.fromRect(rect: o, child: Stack(fit: StackFit.expand, children: [
           thumb,
@@ -130,4 +136,12 @@ class MontageLayoutPreview extends StatelessWidget {
       ]);
     });
   }
+}
+
+/// Vignette d'une vidéo épinglée : adresse du réseau, fichier local (vidéo de galerie) ou fond gris.
+Widget pinThumb(String thumb) {
+  const grey = ColoredBox(color: Color(0xFF3A3A3A));
+  if (thumb.startsWith('http')) return Image.network(thumb, fit: BoxFit.cover, errorBuilder: (_, __, ___) => grey);
+  if (thumb.isNotEmpty && File(thumb).existsSync()) return Image.file(File(thumb), fit: BoxFit.cover, errorBuilder: (_, __, ___) => grey);
+  return grey;
 }

@@ -241,6 +241,13 @@ class MontageExport {
         up('outro_tag.png', l.$2, 'image/png');
       } catch (_) {}   // sans ces calques, le serveur n'ajoute pas la fin : la vidéo reste valable
     }
+    // vidéos de la galerie épinglées : envoyées d'abord (le serveur ne lit que des envois de la personne ou des publications publiques)
+    for (final p in s.pins.take(2)) {
+      if (p.source.isLocal && p.uploadId == null) {
+        onStep('Envoi de ta 2e vidéo…');
+        p.uploadId = await ArgentUpload.bytes(await File(p.source.localVideoPath!).readAsBytes(), contentType: 'video/mp4');
+      }
+    }
     onStep('Envoi…');
     final ids = <String, String>{};
     for (final e in uploads.entries) {

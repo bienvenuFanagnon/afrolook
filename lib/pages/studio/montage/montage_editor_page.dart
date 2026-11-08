@@ -1,3 +1,5 @@
+import 'package:video_thumbnail/video_thumbnail.dart';
+import 'package:path_provider/path_provider.dart';
 import 'dart:async';
 import '../../../ads/gold_gate.dart';
 import '../../../ads/rewards_service.dart';
@@ -604,7 +606,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           artistSoundId: s.music?.isArtist == true && video ? s.music!.id : null,
           soundJobId: s.music?.isArtist == true && video ? _lastJobId : null,
           usedOwnMedia: s.photoPath != null || s.videoPath != null,
-          pins: video && s.pins.isNotEmpty ? [for (final p in s.pins.take(2)) p.toLink()] : null,
+          pins: video && s.pins.any((p) => !p.source.isLocal) ? [for (final p in s.pins.take(2).where((p) => !p.source.isLocal)) p.toLink()] : null,   // une vidéo de galerie n'a pas de publication à ouvrir
         ),
       );
       return;
@@ -707,6 +709,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
         Wrap(spacing: 8, runSpacing: 8, children: [
           _btn(Icons.add_a_photo_rounded, tp.canUseVideo ? 'Ma photo ou vidéo' : 'Ma photo', () => _pickMedia()),
           if (tp.dualSample != null || tp.baby) _btn(Icons.add_photo_alternate_rounded, tp.baby ? 'Photo de bébé' : '2e photo', () => _pickMedia(second: true)),
+          if (s.hasVideo && s.pins.isEmpty && !widget.forChronique) _btn(Icons.video_library_rounded, 'Ajouter une 2e vidéo de ma galerie', _pickGalleryPin),
         ]),
         const SizedBox(height: 14),
         KeyedSubtree(key: _stickersKey, child: _stickersSection()),
@@ -1160,9 +1163,33 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     setState(() {
       s.pins.add(pin);
       // crédit visible : le créateur d'origine est toujours cité
-      s.stickers.add(MontageSticker(id: 'credit_${pin.id}', kind: 'badge', value: 'avec @${src.authorPseudo}', center: const Offset(.5, .94)));
+      if (!src.isLocal) s.stickers.add(MontageSticker(id: 'credit_${pin.id}', kind: 'badge', value: 'avec @${src.authorPseudo}', center: const Offset(.5, .94)));
       _selSticker = 'pin:${pin.id}';
     });
+  }
+
+  /// 2e vidéo choisie dans la GALERIE : posée comme une vidéo épinglée (coin, haut/bas, côte à côte ou bandeau), sans son ; elle est envoyée au serveur au moment de terminer.
+  Future<void> _pickGalleryPin() async {
+    final x = await _picker.pickVideo(source: ImageSource.gallery, maxDuration: const Duration(seconds: 60));
+    if (x == null || !mounted) return;
+    double secs = 0;
+    String thumb = '';
+    try {
+      final v = VideoPlayerController.file(File(x.path));
+      await v.initialize();
+      secs = v.value.duration.inMilliseconds / 1000;
+      await v.dispose();
+      final dir = await getTemporaryDirectory();
+      thumb = await VideoThumbnail.thumbnailFile(video: x.path, thumbnailPath: dir.path, imageFormat: ImageFormat.JPEG, maxWidth: 480, quality: 70) ?? '';
+    } catch (_) {}
+    if (!mounted) return;
+    if (secs > 0 && secs < 1) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cette vidéo est trop courte (1 seconde au moins).')));
+      return;
+    }
+    final me = context.read<UserAuthProvider>().loginUserData.pseudo ?? '';
+    _addPin(MontagePinSource(postId: '', thumbUrl: thumb, authorPseudo: me, durationSec: secs, localVideoPath: x.path));
+    if (s.layout == null) setState(() => s.layout = 'tb');   // une 2e vidéo de galerie se montre d'abord en haut / bas : on peut la mettre dans un coin ensuite
   }
 
   void _removePin() {
