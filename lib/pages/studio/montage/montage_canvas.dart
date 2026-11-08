@@ -306,7 +306,8 @@ class MontageCanvas extends StatelessWidget {
         if (!(s.exportExcludeTimed && st.timed))
         _slot('st:${st.id}', cq, dflt: st.center, center: st.center, scalable: true, scale: st.scale, onTap: onTapSticker == null ? null : () => onTapSticker!(st.id), child: StickerView(sticker: st, cq: cq, selected: onMove != null && selectedSticker == st.id)),
       // Vidéos épinglées : un aperçu seulement dans l'éditeur (jamais dans le fichier final : le serveur pose la vraie vidéo)
-      if (onMove != null)
+      if (onMove != null && s.layout != null && s.pins.isNotEmpty) Positioned.fill(child: MontageLayoutPreview(state: s)),
+      if (onMove != null && s.layout == null)
         for (final p in s.pins)
           _slot('pin:${p.id}', cq, dflt: p.center, center: p.center, scalable: true, scale: p.scale, onTap: onTapSticker == null ? null : () => onTapSticker!('pin:${p.id}'), child: MontagePinView(pin: p, cq: cq, selected: selectedSticker == 'pin:${p.id}')),
       // Filigrane : toujours présent, même publié dans l'app

@@ -74,6 +74,39 @@ class MontageState {
   /// Vidéos épinglées (extraits d'autres vidéos), posées par le serveur ; seulement un aperçu dans l'éditeur.
   final List<MontagePin> pins = [];
 
+  /// Montage à DEUX vidéos (réponse en vidéo) : `tb` haut/bas, `sbs` côte à côte, `bar` bandeau en haut ; null = vidéo épinglée dans un coin.
+  String? layout;
+
+  /// Inverse les places (ta vidéo en premier).
+  bool layoutSwap = false;
+
+  /// Garder le son de la vidéo d'origine, et son volume (0 à 1,5).
+  bool originAudio = true;
+  double originVolume = 1.0;
+
+  /// Les deux places en fractions du cadre (même découpage que le serveur) : (vidéo d'origine, ta vidéo). Null si aucune disposition.
+  ({Rect origin, Rect me})? get layoutFracs {
+    final id = layout;
+    if (id == null) return null;
+    const g = .004;
+    Rect a, b;
+    switch (id) {
+      case 'tb':
+        a = const Rect.fromLTWH(0, 0, 1, .5 - g);
+        b = const Rect.fromLTWH(0, .5 + g, 1, .5 - g);
+      case 'sbs':
+        a = const Rect.fromLTWH(0, 0, .5 - g, 1);
+        b = const Rect.fromLTWH(.5 + g, 0, .5 - g, 1);
+      case 'bar':
+        final h = ((9 / 16) * aspect).clamp(0.0, .4).toDouble();   // hauteur du bandeau en fraction du cadre (comme le serveur : min(L x 9/16, H x 0,4))
+        a = Rect.fromLTWH(0, 0, 1, h);
+        b = Rect.fromLTWH(0, a.height + g, 1, 1 - a.height - g);
+      default:
+        return null;
+    }
+    return layoutSwap ? (origin: b, me: a) : (origin: a, me: b);
+  }
+
   /// Texte libre posé sur la photo ou la vidéo (outil « Texte » de l'éditeur) : vide = aucun. Fonctionne avec tous les modèles, y compris « sans habillage ».
   String freeText = '';
 

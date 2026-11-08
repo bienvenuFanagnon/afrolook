@@ -1176,11 +1176,21 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
   Widget _pinSection() {
     if (s.pins.isEmpty) return const SizedBox.shrink();
     final p = s.pins.first;
+    final inLayout = s.layout != null;
     final dur = p.source.durationSec > 0 ? p.source.durationSec : 15.0;
     final clipMax = math.min(dur, 15.0);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const SizedBox(height: 14),
       _label('Vidéo épinglée · @${p.source.authorPseudo}'),
+      Wrap(spacing: 8, runSpacing: 4, children: [
+        for (final e in const [(null, 'Dans un coin'), ('tb', 'Haut / bas'), ('sbs', 'Côte à côte'), ('bar', 'Bandeau')])
+          ChoiceChip(key: ValueKey('layout_${e.$1 ?? 'corner'}'), label: Text(e.$2), selected: s.layout == e.$1, onSelected: (_) => setState(() => s.layout = e.$1)),
+      ]),
+      if (inLayout) ...[
+        SwitchListTile(key: const ValueKey('layout_swap'), contentPadding: EdgeInsets.zero, title: const Text('Inverser les places'), value: s.layoutSwap, onChanged: (v) => setState(() => s.layoutSwap = v)),
+        SwitchListTile(key: const ValueKey('layout_origin_audio'), contentPadding: EdgeInsets.zero, title: const Text('Garder le son de la vidéo d\'origine'), value: s.originAudio, onChanged: (v) => setState(() => s.originAudio = v)),
+        if (s.originAudio) Slider(key: const ValueKey('layout_origin_volume'), value: s.originVolume, min: 0, max: 1.5, onChanged: (v) => setState(() => s.originVolume = v)),
+      ],
       Text('Extrait de sa vidéo : de ${_sec(p.clipStartSec)} s à ${_sec(p.clipEndSec)} s (${_sec(p.clipSeconds)} s, 15 s au plus). Le téléphone ne charge que cet extrait, léger.', style: TextStyle(color: _c.textSecondary, fontSize: 12.5)),
       RangeSlider(
         key: const ValueKey('pin_clip_range'),

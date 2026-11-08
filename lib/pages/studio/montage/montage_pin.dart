@@ -101,3 +101,33 @@ class MontagePinView extends StatelessWidget {
     );
   }
 }
+
+/// Aperçu de la disposition à deux vidéos dans l'éditeur : la vignette de la vidéo d'origine dans sa place, et « Ta vidéo » dans l'autre (la vraie vidéo est assemblée par le serveur).
+class MontageLayoutPreview extends StatelessWidget {
+  const MontageLayoutPreview({super.key, required this.state});
+
+  final dynamic state;   // MontageState (évite une dépendance circulaire)
+
+  @override
+  Widget build(BuildContext context) {
+    final f = state.layoutFracs as ({Rect origin, Rect me})?;
+    final pin = state.pins.isEmpty ? null : state.pins.first as MontagePin;
+    if (f == null || pin == null) return const SizedBox.shrink();
+    return LayoutBuilder(builder: (context, box) {
+      Rect px(Rect r) => Rect.fromLTWH(r.left * box.maxWidth, r.top * box.maxHeight, r.width * box.maxWidth, r.height * box.maxHeight);
+      final o = px(f.origin);
+      final m = px(f.me);
+      final thumb = pin.source.thumbUrl.startsWith('http')
+          ? Image.network(pin.source.thumbUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const ColoredBox(color: Color(0xFF3A3A3A)))
+          : const ColoredBox(color: Color(0xFF3A3A3A));
+      return Stack(children: [
+        Positioned.fromRect(rect: o, child: Stack(fit: StackFit.expand, children: [
+          thumb,
+          const Center(child: Icon(Icons.play_circle_fill_rounded, color: Colors.white70, size: 36)),
+          Positioned(left: 6, bottom: 4, child: Text('@${pin.source.authorPseudo}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800, shadows: [Shadow(color: Colors.black87, blurRadius: 4)]))),
+        ])),
+        Positioned.fromRect(rect: m, child: IgnorePointer(child: Align(alignment: Alignment.topLeft, child: Container(margin: const EdgeInsets.all(6), padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(8)), child: const Text('Ta vidéo', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)))))),
+      ]);
+    });
+  }
+}
