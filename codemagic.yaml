@@ -19,9 +19,22 @@ workflows:
       - name: Get Flutter packages
         script: flutter pub get
       - name: Pod install
+        # GitHub répond parfois 503 / 504 quand CocoaPods télécharge un SDK (ex. UnityAds.zip) : jusqu'à 5 essais, 60 s d'attente entre deux ; les SDK déjà téléchargés restent en cache
         script: |
           cd ios
-          pod install --repo-update
+          for attempt in 1 2 3 4 5; do
+            if [ "$attempt" = "1" ]; then
+              pod install --repo-update && break
+            else
+              pod install && break
+            fi
+            if [ "$attempt" = "5" ]; then
+              echo "pod install a échoué 5 fois de suite"
+              exit 1
+            fi
+            echo "Téléchargement impossible (essai $attempt sur 5) : nouvelle tentative dans 60 s…"
+            sleep 60
+          done
       - name: Set up Xcode signing
         script: xcode-project use-profiles
       - name: Set build number
@@ -116,9 +129,22 @@ workflows:
       - name: Get Flutter packages
         script: flutter pub get
       - name: Pod install
+        # GitHub répond parfois 503 / 504 quand CocoaPods télécharge un SDK (ex. UnityAds.zip) : jusqu'à 5 essais, 60 s d'attente entre deux ; les SDK déjà téléchargés restent en cache
         script: |
           cd ios
-          pod install --repo-update
+          for attempt in 1 2 3 4 5; do
+            if [ "$attempt" = "1" ]; then
+              pod install --repo-update && break
+            else
+              pod install && break
+            fi
+            if [ "$attempt" = "5" ]; then
+              echo "pod install a échoué 5 fois de suite"
+              exit 1
+            fi
+            echo "Téléchargement impossible (essai $attempt sur 5) : nouvelle tentative dans 60 s…"
+            sleep 60
+          done
       - name: Créer le fichier de clé des tâches (Tapjoy iPhone)
         # assets/env/*.env sont ignorés par Git (clés non versionnées) : on recrée ici celui de Tapjoy (clé iPhone) à partir de la variable sécurisée TAPJOY_SDK_KEY_IOS du groupe « offerwall_keys » (Codemagic ne sert que pour iOS ; ayeT n'est pas dans la version iPhone)
         script: |
