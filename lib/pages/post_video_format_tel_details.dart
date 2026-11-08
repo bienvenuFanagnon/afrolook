@@ -3473,7 +3473,10 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   Widget _buildCreatorInfo(Post post) {
     final user = post.user;
     final canal = post.canal;
-    final String name = canal != null ? '#${canal.titre ?? ''}' : '@${user?.pseudo ?? ''}';
+    final String pseudoShown = (user?.pseudo ?? '').trim();
+    final String fullName = '${user?.prenom ?? ''} ${user?.nom ?? ''}'.trim();
+    // un compte sans pseudo (officiel, ancien) n'affiche plus « @ » tout seul : son nom, sinon Afrolook
+    final String name = canal != null ? '#${canal.titre ?? ''}' : (pseudoShown.isNotEmpty ? '@$pseudoShown' : (fullName.isNotEmpty ? fullName : 'Afrolook'));
     final bool madeHere = post.captureSource == 'captured' || post.captureSource == 'edited';
     return Positioned(
       left: 10,

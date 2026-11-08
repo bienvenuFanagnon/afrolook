@@ -189,6 +189,8 @@ class AfrolookAdsPool {
       adType: it['ad_type'] != null && '${it['ad_type']}'.isNotEmpty ? '${it['ad_type']}' : null,
       productPrice: (it['price'] as num?)?.toInt(),
       videoSeconds: (media['duration'] as num?)?.toInt(),
+      views: (it['views'] as num?)?.toInt() ?? 0,   // compteurs réels de l'annonce (jusqu'ici toujours 0 : le stock ne les envoyait pas)
+      clicks: (it['clicks'] as num?)?.toInt() ?? 0,
     );
 
     Map<String, dynamic>? post;
