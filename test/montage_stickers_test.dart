@@ -155,10 +155,10 @@ void main() {
     await tester.pumpWidget(_host(_canvas(s, onMove: (_, __) {})));
     await tester.pump();
     expect(find.byType(MontagePinView), findsOneWidget);
-    // réglages pour le serveur : taille bornée à 60 % de la largeur, extrait et créneau en millisecondes / secondes
+    // réglages pour le serveur : taille bornée à toute la largeur (100 %), extrait et créneau en millisecondes / secondes
     final api = pin.toApi();
     expect(api['post_id'], 'post-1');
-    expect(api['w'], .6);
+    expect(api['w'], 1.0);
     expect(api['shape'], 'circle');
     expect(api['clip_start_ms'], 4000);
     expect(api['clip_end_ms'], 12000);
