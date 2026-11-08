@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Site : onglet Partageurs, proposition</title>
+<style>
+  :root{
+    --bg:#F7F9F6; --surface:#FFFFFF; --soft:#EDF2EC; --ink:#0D1511; --muted:#566159; --line:#DDE5DC;
+    --green:#158246; --green-bright:#2ECC71; --on-green:#06210F; --yellow:#FFD21F; --red:#E5484D;
+    --display:'Bricolage Grotesque',system-ui,sans-serif; --body:'Figtree',system-ui,-apple-system,"Segoe UI",sans-serif;
+    --wait:#8a6a00;
+  }
+  @media (prefers-color-scheme:dark){:root{--bg:#0B110D;--surface:#121A14;--soft:#17221A;--ink:#F1F6F0;--muted:#9DAAA0;--line:#233028;--green:#2ECC71;--wait:#FFD21F}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 var(--body);padding:24px 16px 64px}
+  .wrap{width:min(1180px,100%);margin-inline:auto}
+  h1{font:800 26px var(--display);margin:0 0 4px;letter-spacing:-.02em} h2{font:800 18px var(--display);margin:34px 0 10px}
+  .lead{color:var(--muted);max-width:80ch;margin:0 0 18px}
+  .box{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin:0 0 16px}
+  ul.l{margin:6px 0 0;padding-left:20px}ul.l li{margin:3px 0}
+  .st{font-size:12px;font-weight:800;padding:4px 11px;border-radius:99px;white-space:nowrap;letter-spacing:.01em}
+  .st.ok{background:color-mix(in srgb,var(--green-bright) 18%,transparent);color:var(--green)}
+  .st.wait{background:color-mix(in srgb,var(--yellow) 30%,transparent);color:var(--wait)}
+  .st.rej{background:color-mix(in srgb,var(--red) 14%,transparent);color:var(--red)}
+  .st.end{background:var(--soft);color:var(--muted)}
+  .btn{font:700 14px var(--body);border-radius:12px;padding:9px 14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:default}
+  .btn.p{background:var(--green-bright);border-color:var(--green-bright);color:var(--on-green)}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}.tabs a{padding:8px 14px;border-radius:12px;border:1px solid var(--line);font-weight:700;font-size:14px;background:var(--surface)}.tabs a.on{background:var(--green-bright);color:var(--on-green);border-color:var(--green-bright)}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}.filters span{padding:7px 14px;border-radius:99px;border:1px solid var(--line);font-weight:700;font-size:13.5px;background:var(--surface)}.filters span.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+  /* ───── Aujourd'hui : une grande carte par partageur ───── */
+  .now .card{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:22px 24px;display:grid;gap:10px;max-width:760px;box-shadow:0 10px 28px -14px rgba(13,21,17,.18)}
+  .now .h{display:flex;gap:12px;align-items:center}.now .h>div{flex:1}.now .h b{font-size:18px}.now .h small{display:block;color:var(--muted);font-size:13.5px}
+  .now .r{display:grid;grid-template-columns:170px 1fr;gap:10px;padding-top:6px;border-top:1px solid color-mix(in srgb,var(--line) 55%,transparent);font-size:14.5px}
+  .now .r span{color:var(--muted);font-size:12.5px;font-weight:600;letter-spacing:.02em;text-transform:uppercase}
+  .now .act{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .shrink{max-height:340px;overflow:hidden;position:relative}.shrink:after{content:"… et ainsi de suite pour chaque partageur : une carte entière par personne";position:absolute;left:0;right:0;bottom:0;padding:40px 16px 10px;background:linear-gradient(transparent,var(--bg) 70%);color:var(--muted);font-size:13px;text-align:center}
+
+  /* ───── Proposition : petite grille ───── */
+  .sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:0 0 16px}
+  .sum div{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 14px}
+  .sum small{display:block;color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
+  .sum b{font:800 22px var(--display)}.sum b.g{color:var(--green)}.sum b.w{color:var(--wait)}
+  .tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:0 0 14px}
+  .tools .in{flex:1;min-width:200px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface);color:var(--muted)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+  .mini{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:13px;display:grid;gap:9px;cursor:pointer;transition:border-color .15s,transform .15s;min-width:0}
+  .mini:hover,.mini.sel{border-color:var(--green-bright);transform:translateY(-1px)}
+  .mini.hold{border-color:var(--red)}
+  .mini .top{display:flex;gap:10px;align-items:center;min-width:0}
+  .av{flex:none;width:38px;height:38px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font:800 15px var(--display);color:var(--green)}
+  .mini .nm{min-width:0}.mini .nm b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mini .nm small{color:var(--muted);font-size:12px}
+  .mini .fig{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .mini .fig div{background:var(--soft);border-radius:12px;padding:7px 9px}
+  .mini .fig small{display:block;color:var(--muted);font-size:10.5px;font-weight:700;letter-spacing:.03em;text-transform:uppercase}
+  .mini .fig b{font:800 16px var(--display)}.mini .fig b.g{color:var(--green)}.mini .fig b.w{color:var(--wait)}
+  .mini .foot{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted)}
+  .alert{font-size:11.5px;font-weight:800;color:var(--red)}
+
+  /* panneau de détails */
+  .sheet{margin-top:18px;background:var(--surface);border:1px solid var(--green-bright);border-radius:22px;padding:20px 22px;display:grid;gap:14px;max-width:880px}
+  .sheet .hd{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.sheet .hd>div{flex:1;min-width:180px}.sheet .hd b{font:800 20px var(--display)}.sheet .hd small{display:block;color:var(--muted)}
+  .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+  .blk{border:1px solid var(--line);border-radius:16px;padding:12px 14px}
+  .blk h3{font:800 13px var(--display);letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+  .kv{display:grid;grid-template-columns:130px 1fr;gap:6px;font-size:14px;padding:3px 0;border-top:1px solid color-mix(in srgb,var(--line) 55%,transparent)}.kv:first-of-type{border-top:0}.kv span{color:var(--muted);font-size:12.5px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}th{color:var(--muted);font-size:11.5px;text-align:left;letter-spacing:.03em;text-transform:uppercase}td,th{padding:6px 4px;border-top:1px solid color-mix(in srgb,var(--line) 55%,transparent)}td.n{text-align:right;font-variant-numeric:tabular-nums}
+  .act{display:flex;gap:8px;flex-wrap:wrap}.btn.d{color:var(--red);border-color:color-mix(in srgb,var(--red) 40%,var(--line))}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Site : onglet « Partageurs », proposition à valider</h1>
+<p class="lead">Page d'administration de la régie Afrolook Ads (<code>ads/espace</code>, onglet <b>Partageurs</b>). Avant la proposition, voici ce que la page affiche aujourd'hui, relevé dans le code du site (<code>static/js/ads.js</code>, fonction <code>sharerCard</code>) et de l'API (<code>adsPubAdminList</code>).</p>
+
+<div class="box"><b>Aujourd'hui</b> : une <b>grande carte pleine largeur par partageur</b>, empilées (200 au plus). Chaque carte contient : le nom et le pays · la ville, l'étiquette de statut (En validation, Validé, Refusé, Suspendu), puis des lignes : Contact (WhatsApp · e-mail), Audience déclarée (statut, Telegram, autres, nombre de groupes), Groupes (noms et membres), Présentation, Audience retenue (si validé), « Gains bloqués : fraude possible » (si alerte), Motif ; enfin les boutons de décision (Valider, Refuser, Suspendre, Réactiver, Lever le blocage, Fraude confirmée). Filtres : Tous, En attente, Validés, Refusés, Suspendus.
+  <ul class="l"><li><b>Ce qui manque</b> : <u>aucun chiffre de gains</u> (ni gagné, ni en attente, ni clics), alors que l'API les a (<code>share_earnings</code>, <code>share_links.valid_total</code>).</li><li><b>Ce qui gêne</b> : chaque carte fait environ 450 px de haut ; avec dix partageurs il faut défiler très longtemps pour comparer.</li></ul></div>
+
+<h2>Aujourd'hui (réduit pour tenir sur la page)</h2>
+<div class="now"><div class="shrink">
+  <article class="card">
+    <div class="h"><div><b>Awa Kossi</b><small>TG · Lomé</small></div><span class="st ok">Validé</span></div>
+    <div class="r"><span>Contact</span><b>+228 90 12 34 56 · awa@exemple.com</b></div>
+    <div class="r"><span>Audience déclarée</span><b>1 800 personnes (statut 900, Telegram 400, autres 100, groupes 2)</b></div>
+    <div class="r"><span>Groupes</span><b>Mode Lomé (400), Bonnes affaires (400)</b></div>
+    <div class="r"><span>Présentation</span><b>Je partage les bons plans de boutiques à Lomé.</b></div>
+    <div class="r"><span>Audience retenue</span><b>1 500</b></div>
+    <div class="act"><button class="btn">Suspendre</button><button class="btn d">Fraude confirmée : retirer les gains</button></div>
+  </article>
+  <article class="card" style="margin-top:14px"><div class="h"><div><b>Kofi Mensah</b><small>GH · Accra</small></div><span class="st wait">En validation</span></div></article>
+</div></div>
+
+<h2>Proposition</h2>
+<div class="tabs"><a>Annonceurs</a><a>Diffuseurs</a><a>Sites et applications</a><a class="on">Partageurs</a><a>Campagnes Partage</a><a>Alertes</a></div>
+<div class="sum">
+  <div><small>Partageurs validés</small><b>312</b></div>
+  <div><small>Total gagné (versé)</small><b class="g">84 250 pièces</b></div>
+  <div><small>En attente (72 h)</small><b class="w">6 410 pièces</b></div>
+  <div><small>Clics valides</small><b>128 904</b></div>
+</div>
+<div class="filters"><span>Tous</span><span>En attente</span><span class="on">Validés</span><span>Refusés</span><span>Suspendus</span><span>⚠ Gains bloqués (3)</span></div>
+<div class="tools"><div class="in">Rechercher un nom, un e-mail, un numéro…</div><div class="btn">Trier : plus gros gains ▾</div></div>
+
+<div class="grid">
+  <article class="mini sel"><div class="top"><span class="av">AK</span><div class="nm"><b>Awa Kossi</b><small>TG · Lomé</small></div></div>
+    <div class="fig"><div><small>Gagné</small><b class="g">1 240</b></div><div><small>En attente</small><b class="w">86</b></div></div>
+    <div class="foot"><span>2 410 clics</span><span class="st ok">Validé</span></div></article>
+  <article class="mini"><div class="top"><span class="av">KM</span><div class="nm"><b>Kofi Mensah</b><small>GH · Accra</small></div></div>
+    <div class="fig"><div><small>Gagné</small><b class="g">980</b></div><div><small>En attente</small><b class="w">120</b></div></div>
+    <div class="foot"><span>1 905 clics</span><span class="st ok">Validé</span></div></article>
+  <article class="mini hold"><div class="top"><span class="av">YD</span><div class="nm"><b>Yao Dossou</b><small>BJ · Cotonou</small></div></div>
+    <div class="fig"><div><small>Gagné</small><b class="g">410</b></div><div><small>En attente</small><b class="w">340</b></div></div>
+    <div class="foot"><span class="alert">⚠ Gains bloqués</span><span class="st rej">Suspendu</span></div></article>
+  <article class="mini"><div class="top"><span class="av">FN</span><div class="nm"><b>Fatou Ndiaye</b><small>SN · Dakar</small></div></div>
+    <div class="fig"><div><small>Gagné</small><b class="g">0</b></div><div><small>En attente</small><b class="w">0</b></div></div>
+    <div class="foot"><span>0 clic</span><span class="st wait">En validation</span></div></article>
+  <article class="mini"><div class="top"><span class="av">JB</span><div class="nm"><b>Jean-Baptiste Ouédraogo</b><small>BF · Ouagadougou</small></div></div>
+    <div class="fig"><div><small>Gagné</small><b class="g">2 760</b></div><div><small>En attente</small><b class="w">45</b></div></div>
+    <div class="foot"><span>5 230 clics</span><span class="st ok">Validé</span></div></article>
+  <article class="mini"><div class="top"><span class="av">MA</span><div class="nm"><b>Mariam Alassane</b><small>NE · Niamey</small></div></div>
+    <div class="fig"><div><small>Gagné</small><b class="g">315</b></div><div><small>En attente</small><b class="w">22</b></div></div>
+    <div class="foot"><span>690 clics</span><span class="st ok">Validé</span></div></article>
+  <article class="mini"><div class="top"><span class="av">SB</span><div class="nm"><b>Sènami Bocco</b><small>BJ · Porto-Novo</small></div></div>
+    <div class="fig"><div><small>Gagné</small><b class="g">150</b></div><div><small>En attente</small><b class="w">0</b></div></div>
+    <div class="foot"><span>310 clics</span><span class="st end">Refusé</span></div></article>
+  <article class="mini"><div class="top"><span class="av">+</span><div class="nm"><b>Voir la suite</b><small>50 de plus</small></div></div></article>
+</div>
+
+<div class="sheet">
+  <div class="hd"><span class="av" style="width:48px;height:48px">AK</span><div><b>Awa Kossi</b><small>TG · Lomé · inscrite le 12/10/2026</small></div><span class="st ok">Validé</span><button class="btn">✕ Fermer</button></div>
+  <div class="cols">
+    <div class="blk"><h3>Gains</h3>
+      <div class="kv"><span>Gagné (versé)</span><b style="color:var(--green)">1 240 pièces</b></div>
+      <div class="kv"><span>En attente</span><b style="color:var(--wait)">86 pièces · libérés dans 2 jours</b></div>
+      <div class="kv"><span>Clics valides</span><b>2 410</b></div>
+      <div class="kv"><span>Aujourd'hui</span><b>34 clics · 3,4 pièces</b></div></div>
+    <div class="blk"><h3>Audience</h3>
+      <div class="kv"><span>Déclarée</span><b>1 800 personnes</b></div>
+      <div class="kv"><span>Détail</span><b>statut 900 · Telegram 400 · autres 100 · 2 groupes</b></div>
+      <div class="kv"><span>Retenue</span><b>1 500</b></div>
+      <div class="kv"><span>Groupes</span><b>Mode Lomé (400), Bonnes affaires (400)</b></div></div>
+    <div class="blk"><h3>Contact</h3>
+      <div class="kv"><span>WhatsApp</span><b>+228 90 12 34 56</b></div>
+      <div class="kv"><span>E-mail</span><b>awa@exemple.com</b></div>
+      <div class="kv"><span>Présentation</span><b>Je partage les bons plans de boutiques à Lomé.</b></div></div>
+  </div>
+  <div class="blk"><h3>Derniers jours</h3>
+    <table><tr><th>Jour</th><th class="n">Clics</th><th class="n">Pièces</th><th>État</th></tr>
+      <tr><td>07/11</td><td class="n">34</td><td class="n">3,4</td><td>En attente</td></tr>
+      <tr><td>06/11</td><td class="n">51</td><td class="n">5,1</td><td>En attente</td></tr>
+      <tr><td>05/11</td><td class="n">47</td><td class="n">4,7</td><td>Versé</td></tr></table></div>
+  <div class="act"><button class="btn">Suspendre</button><button class="btn d">Fraude confirmée : retirer les gains</button></div>
+</div>
+
+<div class="box" style="margin-top:20px"><b>Ce qui change</b>
+  <ul class="l">
+    <li><b>Une petite carte par partageur</b>, en grille (4 par ligne sur ordinateur, 2 sur tablette, 1 sur téléphone) : initiales, nom, pays · ville, <b>Gagné</b>, <b>En attente</b>, clics valides et statut. Hauteur d'environ 130 px au lieu de 450 px : une trentaine de partageurs tiennent sur un écran.</li>
+    <li><b>Un bandeau de totaux</b> en haut : partageurs validés, total gagné (versé), total en attente, clics valides.</li>
+    <li><b>Un clic ouvre le détail</b> sous la grille : gains, audience, contact, les derniers jours, et <b>tous les boutons de décision actuels</b> (Valider, Refuser, Suspendre, Réactiver, Lever le blocage, Fraude confirmée), avec le même formulaire de motif qu'aujourd'hui.</li>
+    <li><b>Alerte visible</b> sur la petite carte : contour rouge et « ⚠ Gains bloqués » quand une fraude est suspectée ; un filtre « Gains bloqués » le montre d'un coup.</li>
+    <li><b>Recherche et tri</b> (nom, e-mail, numéro ; plus gros gains, plus récents, plus de clics) et « Voir la suite » pour les 200 premiers puis les suivants.</li>
+    <li>Mêmes couleurs, polices et thème clair/sombre que le site ; rien de l'application mobile n'est mentionné (règle Afrolook Ads).</li>
+  </ul></div>
+
+<div class="box"><b>Données utilisées</b>
+  <ul class="l">
+    <li><b>Gagné</b> = pièces déjà versées (<code>share_earnings</code> en état « released », colonne <code>coins_paid</code>).</li>
+    <li><b>En attente</b> = gains du jour retenus pendant la durée de blocage (états « held » et « blocked », en centièmes de pièce, convertis en pièces) ; les gains annulés (fraude) ne comptent pas.</li>
+    <li><b>Clics valides</b> = somme des clics valides des liens du partageur (<code>share_links.valid_total</code>).</li>
+    <li>Côté serveur : j'ajoute ces trois chiffres à la liste des partageurs de l'administration, sans changer les autres.</li>
+  </ul>
+  <b>À confirmer :</b> afficher les montants en <b>pièces</b> (comme la page Récompenses de l'application) ou en <b>FCFA</b> (le site parle en FCFA pour les annonceurs) ? Je propose les deux : pièces en gros, équivalent FCFA en petit.
+</div>
+</div>
+</body>
+</html>
