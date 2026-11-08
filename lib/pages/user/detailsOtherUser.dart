@@ -562,6 +562,21 @@ class _UserProfileModalState extends State<UserProfileModal> {
         widget.user.usersParrainer = fresh.usersParrainer;
         if (fresh.abonnes != null) widget.user.abonnes = fresh.abonnes;
         if (fresh.userlikes != null) widget.user.userlikes = fresh.userlikes;
+        // La liste des comptes suivis n'est pas entièrement chargée au démarrage : le serveur dit si on suit déjà cette personne (sinon le bouton « S'abonner » restait actif à tort)
+        final myId = authProvider.loginUserData.id ?? '';
+        if (myId.isNotEmpty && raw.containsKey('is_following')) {
+          final followers = List<String>.from(widget.user.userAbonnesIds ?? const <String>[]);
+          final following = List<String>.from(authProvider.loginUserData.followingIds ?? const <String>[]);
+          if (raw['is_following'] == true) {
+            if (!followers.contains(myId)) followers.add(myId);
+            if (!following.contains(id)) following.add(id);
+          } else {
+            followers.remove(myId);
+            following.remove(id);
+          }
+          widget.user.userAbonnesIds = followers;
+          authProvider.loginUserData.followingIds = following;
+        }
       });
     } catch (_) {}   // sans connexion : les chiffres connus restent affichés
   }
