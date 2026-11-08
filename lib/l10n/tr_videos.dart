@@ -268,4 +268,8 @@ const Map<String, Map<String, String>> kTrVideos = {
   "Une vidéo en cours de retouche": {'en': "A video being edited", 'es': "Un video en edición", 'de': "Ein Video in Bearbeitung", 'ar': "فيديو قيد التعديل", 'pt': "Um vídeo em edição", 'zh': "正在编辑的视频", 'sw': "Video inayohaririwa"},
   "Une photo en cours de retouche": {'en': "A photo being edited", 'es': "Una foto en edición", 'de': "Ein Foto in Bearbeitung", 'ar': "صورة قيد التعديل", 'pt': "Uma foto em edição", 'zh': "正在编辑的照片", 'sw': "Picha inayohaririwa"},
   "Reprendre": {'en': "Resume", 'es': "Retomar", 'de': "Fortsetzen", 'ar': "استئناف", 'pt': "Retomar", 'zh': "继续", 'sw': "Endelea"},
+  "Quitter le montage ?": {'en': "Leave the edit?", 'es': "¿Salir del montaje?", 'de': "Montage verlassen?", 'ar': "مغادرة المونتاج؟", 'pt': "Sair da montagem?", 'zh': "退出剪辑？", 'sw': "Kuacha uhariri?"},
+  "Les changements faits dans le Studio seront perdus.": {'en': "Changes made in the Studio will be lost.", 'es': "Los cambios hechos en el Estudio se perderán.", 'de': "Änderungen im Studio gehen verloren.", 'ar': "ستضيع التغييرات التي أجريتها في الاستوديو.", 'pt': "As alterações feitas no Estúdio serão perdidas.", 'zh': "在工作室中所做的更改将丢失。", 'sw': "Mabadiliko yaliyofanywa kwenye Studio yatapotea."},
+  "Continuer le montage": {'en': "Keep editing", 'es': "Seguir con el montaje", 'de': "Weiter schneiden", 'ar': "متابعة المونتاج", 'pt': "Continuar a montagem", 'zh': "继续剪辑", 'sw': "Endelea na uhariri"},
+  "Quitter": {'en': "Leave", 'es': "Salir", 'de': "Verlassen", 'ar': "مغادرة", 'pt': "Sair", 'zh': "退出", 'sw': "Toka"},
 };

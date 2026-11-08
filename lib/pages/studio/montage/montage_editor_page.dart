@@ -622,7 +622,12 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     final me = context.read<UserAuthProvider>().loginUserData;
     final pseudo = me.pseudo ?? '';
     final screenH = MediaQuery.sizeOf(context).height;
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _confirmLeave();
+      },
+      child: Scaffold(
       backgroundColor: _c.background,
       appBar: AppBar(
         backgroundColor: _c.background,
@@ -670,7 +675,26 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
         ),
         Expanded(child: _controls()),
       ]),
+    ),
     );
+  }
+
+  /// Retour (bouton de l'application ou du téléphone) : on demande avant de perdre le montage.
+  Future<void> _confirmLeave() async {
+    if (_busy) return;
+    final leave = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: _c.surface,
+        title: Text(context.tr('Quitter le montage ?'), style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w800)),
+        content: Text(context.tr('Les changements faits dans le Studio seront perdus.'), style: TextStyle(color: _c.textSecondary)),
+        actions: [
+          TextButton(key: const ValueKey('studio_stay'), onPressed: () => Navigator.pop(ctx, false), child: Text(context.tr('Continuer le montage'))),
+          TextButton(key: const ValueKey('studio_leave'), onPressed: () => Navigator.pop(ctx, true), child: Text(context.tr('Quitter'), style: TextStyle(color: _c.danger))),
+        ],
+      ),
+    );
+    if (leave == true && mounted) Navigator.of(context).pop();
   }
 
   Widget _controls() {
