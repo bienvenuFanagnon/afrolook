@@ -323,4 +323,7 @@ const Map<String, Map<String, String>> kTrVideos = {
   "Fin du classement": {'en': "End of the ranking", 'es': "Fin de la clasificación", 'de': "Ende der Rangliste", 'ar': "نهاية الترتيب", 'pt': "Fim do ranking", 'zh': "排行榜到底了", 'sw': "Mwisho wa orodha"},
   "Publicité": {'en': "Advertisement", 'es': "Publicidad", 'de': "Werbung", 'ar': "إعلان", 'pt': "Publicidade", 'zh': "广告", 'sw': "Tangazo"},
   "Suivant dans": {'en': "Next in", 'es': "Siguiente en", 'de': "Weiter in", 'ar': "التالي خلال", 'pt': "Próximo em", 'zh': "下一个将在", 'sw': "Inayofuata baada ya"},
+  "Suivre": {'en': "Follow", 'es': "Seguir", 'de': "Folgen", 'ar': "متابعة", 'pt': "Seguir", 'zh': "关注", 'sw': "Fuata"},
+  "S'abonner": {'en': "Subscribe", 'es': "Suscribirse", 'de': "Abonnieren", 'ar': "اشتراك", 'pt': "Inscrever-se", 'zh': "订阅", 'sw': "Jiunge"},
+  "L'abonnement a échoué. Réessaie.": {'en': "Couldn't subscribe. Try again.", 'es': "No se pudo suscribir. Inténtalo de nuevo.", 'de': "Abonnieren fehlgeschlagen. Versuche es erneut.", 'ar': "فشل الاشتراك. حاول مرة أخرى.", 'pt': "Não foi possível seguir. Tente novamente.", 'zh': "订阅失败，请重试。", 'sw': "Imeshindwa kujiunga. Jaribu tena."},
 };

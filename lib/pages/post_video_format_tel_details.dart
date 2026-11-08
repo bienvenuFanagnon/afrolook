@@ -1,3 +1,4 @@
+import 'package:afrotok/services/api/canaux_api.dart';
 import '../ads/fullscreen_ad_page.dart';
 import 'package:afrotok/services/post_orientation.dart';
 import 'package:afrotok/widgets/post_widget_view.dart';
@@ -2851,7 +2852,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
                       ? const CircleAvatar(radius: 25, child: CircularProgressIndicator(strokeWidth: 2))
                       : SafeNetworkAvatar(url: canal?.urlImage ?? user?.imageUrl, radius: 25),
                 ),
-                if (!canalPending) _buildSubscribeIcon(post),
               ],
             ),
           ),
@@ -3441,7 +3441,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
                       ? Container(width: 42, height: 42, decoration: BoxDecoration(color: Colors.white24, shape: BoxShape.circle))
                       : SafeNetworkAvatar(url: canal?.urlImage ?? user?.imageUrl, radius: 21),
                 ),
-                if (!canalPending) _buildSubscribeIcon(post),
               ],
             ),
           ),
@@ -3471,6 +3470,58 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   }
 
   /// Bas de l'écran : @pseudo, « Fait sur Afrolook », abonnés, description sur 2 lignes, son utilisé.
+  final Set<String> _followBusy = {};
+
+  /// Bouton texte « Suivre » (compte) ou « S'abonner » (canal), sur la ligne du pseudo. Rien quand c'est son propre compte ou quand on suit déjà.
+  Widget _followButton(Post post) {
+    final me = authProvider.loginUserData.id;
+    if (me == null) return const SizedBox.shrink();
+    final isCanal = (post.canal_id ?? '').isNotEmpty;
+    final canal = post.canal;
+    if (isCanal && canal == null) return const SizedBox.shrink();   // canal pas encore chargé : on n'affiche rien plutôt qu'un bouton faux
+    final targetId = isCanal ? canal!.id : (post.user?.id ?? post.user_id);
+    if (targetId == null || targetId.isEmpty) return const SizedBox.shrink();
+    if (isCanal) {
+      if (canal!.userId == me || (canal.usersSuiviId?.contains(me) ?? false)) return const SizedBox.shrink();
+    } else {
+      if (targetId == me || FollowService.isFollowing(authProvider.loginUserData, post.user)) return const SizedBox.shrink();
+    }
+    final busy = _followBusy.contains(targetId);
+    final c = AppColors.of(context);
+    return GestureDetector(
+      key: ValueKey('follow_${post.id}'),
+      behavior: HitTestBehavior.opaque,
+      onTap: busy ? null : () => _doFollow(post, isCanal, targetId),
+      child: Container(
+        height: 24,
+        padding: const EdgeInsets.symmetric(horizontal: 11),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(color: busy ? c.accent.withOpacity(0.5) : c.accent, borderRadius: BorderRadius.circular(99)),
+        child: Text(isCanal ? tr("S'abonner") : tr('Suivre'), style: TextStyle(color: c.onAccent, fontSize: 11.5, fontWeight: FontWeight.w800)),
+      ),
+    );
+  }
+
+  Future<void> _doFollow(Post post, bool isCanal, String targetId) async {
+    final me = authProvider.loginUserData;
+    setState(() => _followBusy.add(targetId));
+    try {
+      if (isCanal) {
+        await CanauxApi.join(targetId);
+        post.canal?.usersSuiviId = [...?post.canal?.usersSuiviId, if (me.id != null) me.id!];
+      } else {
+        await FollowService.follow(targetId);
+        me.followingIds = [...?me.followingIds, targetId];
+      }
+    } on ApiException catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message.isNotEmpty ? e.message : tr("L'abonnement a échoué. Réessaie."))));
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr("L'abonnement a échoué. Réessaie."))));
+    } finally {
+      if (mounted) setState(() => _followBusy.remove(targetId));
+    }
+  }
+
   Widget _buildCreatorInfo(Post post) {
     final user = post.user;
     final canal = post.canal;
@@ -3495,20 +3546,23 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
               padding: const EdgeInsets.only(bottom: 3),
               child: Text(tr('@{p} a republié', {'p': post.reposterPseudo ?? post.reposterUserId ?? tr('quelqu\'un')}), style: const TextStyle(fontSize: 11, color: Colors.white70, fontWeight: FontWeight.w500)),
             ),
-          Row(mainAxisSize: MainAxisSize.min, children: [
-            Flexible(child: NameTag(label: name, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis)),
-            if (user != null) ...[const SizedBox(width: 4), UserBadgeWidget(user: user, size: 12)],
+          // une seule ligne pour : le pseudo, son badge, le bouton Suivre / S'abonner, puis « Authentique » ; « Fait sur Afrolook » et « DÉFI » passent dessous si la place manque
+          Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 6, runSpacing: 4, children: [
+            ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.34),
+              child: NameTag(label: name, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800), maxLines: 1, overflow: TextOverflow.ellipsis),
+            ),
+            if (user != null) UserBadgeWidget(user: user, size: 12),
+            _followButton(post),
+            if (post.authenticity == 'validated') const AuthenticBadge(),
             if (madeHere)
               Container(
-                margin: const EdgeInsets.only(left: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(color: const Color(0xFFFFD21F), borderRadius: BorderRadius.circular(99)),
                 child: Text(tr('Fait sur Afrolook'), style: const TextStyle(color: Color(0xFF3A2C00), fontSize: 10, fontWeight: FontWeight.w800)),
               ),
-            if (post.authenticity == 'validated') ...[const SizedBox(width: 8), const AuthenticBadge()],
             if (post.type == PostType.DEFI.name)
               Container(
-                margin: const EdgeInsets.only(left: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(color: const Color(0x33FF9500), borderRadius: BorderRadius.circular(99), border: Border.all(color: const Color(0xFFFF9500).withOpacity(0.6))),
                 child: const Text('DÉFI', style: TextStyle(color: Color(0xFFFF9500), fontSize: 10, fontWeight: FontWeight.w800)),
