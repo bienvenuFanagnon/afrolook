@@ -309,7 +309,7 @@ class MontageCanvas extends StatelessWidget {
       if (onMove != null && s.layout != null && s.pins.isNotEmpty) Positioned.fill(child: MontageLayoutPreview(state: s)),
       if (onMove != null && s.layout == null)
         for (final p in s.pins)
-          _slot('pin:${p.id}', cq, dflt: p.center, center: p.center, scalable: true, scale: p.scale, onTap: onTapSticker == null ? null : () => onTapSticker!('pin:${p.id}'), child: MontagePinView(pin: p, cq: cq, selected: selectedSticker == 'pin:${p.id}')),
+          _slot('pin:${p.id}', cq, dflt: p.center, center: p.center, scalable: true, scale: p.scale, onTap: onTapSticker == null ? null : () => onTapSticker!('pin:${p.id}'), child: MontagePinView(pin: p, cq: cq, selected: selectedSticker == 'pin:${p.id}', volume: s.originAudio ? s.originVolume : 0)),
       // Filigrane : toujours présent, même publié dans l'app
       Positioned(
         right: 1.6 * cq,

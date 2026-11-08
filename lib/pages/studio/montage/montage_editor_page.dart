@@ -1058,7 +1058,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
   void _scaleSticker(String id, double scale) {
     if (id.startsWith('pin:')) {
       final pin = s.pins.where((e) => 'pin:${e.id}' == id).firstOrNull;
-      if (pin != null) setState(() => pin.scale = scale.clamp(.5, 2.0));
+      if (pin != null) setState(() => pin.scale = scale.clamp(.5, 3.3));
       return;
     }
     final st = s.stickers.where((e) => 'st:${e.id}' == id).firstOrNull;
@@ -1233,8 +1233,6 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
         Text('Zoom de ta vidéo : ${s.meZoom.toStringAsFixed(1)} ×', style: TextStyle(color: _c.textSecondary, fontSize: 13)),
         Slider(key: const ValueKey('layout_me_zoom'), value: s.meZoom, min: 1, max: 2.5, onChanged: (v) => setState(() => s.meZoom = v)),
         SwitchListTile(key: const ValueKey('layout_swap'), contentPadding: EdgeInsets.zero, title: const Text('Inverser les places'), value: s.layoutSwap, onChanged: (v) => setState(() => s.layoutSwap = v)),
-        SwitchListTile(key: const ValueKey('layout_origin_audio'), contentPadding: EdgeInsets.zero, title: const Text('Garder le son de la vidéo d\'origine'), value: s.originAudio, onChanged: (v) => setState(() => s.originAudio = v)),
-        if (s.originAudio) Slider(key: const ValueKey('layout_origin_volume'), value: s.originVolume, min: 0, max: 1.5, onChanged: (v) => setState(() => s.originVolume = v)),
       ],
       Text('Extrait de sa vidéo : de ${_sec(p.clipStartSec)} s à ${_sec(p.clipEndSec)} s (${_sec(p.clipSeconds)} s, 15 s au plus). Le téléphone ne charge que cet extrait, léger.', style: TextStyle(color: _c.textSecondary, fontSize: 12.5)),
       RangeSlider(
@@ -1277,11 +1275,13 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
       Wrap(spacing: 8, runSpacing: 4, crossAxisAlignment: WrapCrossAlignment.center, children: [
         ChoiceChip(key: const ValueKey('pin_rect'), label: const Text('Rectangle'), selected: !p.circle, onSelected: (_) => setState(() => p.circle = false)),
         ChoiceChip(key: const ValueKey('pin_round'), label: const Text('Rond'), selected: p.circle, onSelected: (_) => setState(() => p.circle = true)),
-        IconButton(key: const ValueKey('pin_smaller'), tooltip: 'Plus petite', icon: Icon(Icons.remove_circle_outline_rounded, color: _c.textPrimary), onPressed: () => setState(() => p.scale = (p.scale - .15).clamp(.5, 2.0))),
-        IconButton(key: const ValueKey('pin_bigger'), tooltip: 'Plus grande', icon: Icon(Icons.add_circle_outline_rounded, color: _c.textPrimary), onPressed: () => setState(() => p.scale = (p.scale + .15).clamp(.5, 2.0))),
+        IconButton(key: const ValueKey('pin_smaller'), tooltip: 'Plus petite', icon: Icon(Icons.remove_circle_outline_rounded, color: _c.textPrimary), onPressed: () => setState(() => p.scale = (p.scale - .25).clamp(.5, 3.3))),
+        IconButton(key: const ValueKey('pin_bigger'), tooltip: 'Plus grande', icon: Icon(Icons.add_circle_outline_rounded, color: _c.textPrimary), onPressed: () => setState(() => p.scale = (p.scale + .25).clamp(.5, 3.3))),
         IconButton(key: const ValueKey('pin_delete'), tooltip: 'Retirer la vidéo épinglée', icon: Icon(Icons.delete_outline_rounded, color: _c.textPrimary), onPressed: _removePin),
       ]),
-      Text('Glisse la vidéo pour la placer, pince-la pour la zoomer. Elle est sans son et n\'apparaît que pendant son créneau. Les spectateurs peuvent la toucher pour voir la vidéo d\'origine.', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
+      SwitchListTile(key: const ValueKey('layout_origin_audio'), contentPadding: EdgeInsets.zero, title: const Text('Garder le son de la vidéo ajoutée'), value: s.originAudio, onChanged: (v) => setState(() => s.originAudio = v)),
+      if (s.originAudio) Slider(key: const ValueKey('layout_origin_volume'), value: s.originVolume, min: 0, max: 1.5, onChanged: (v) => setState(() => s.originVolume = v)),
+      Text('Glisse la vidéo pour la placer, pince-la pour la zoomer. Son créneau règle quand elle apparaît (et quand on l\'entend). Les spectateurs peuvent la toucher pour voir la vidéo d\'origine.', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
     ]);
   }
 

@@ -36,7 +36,7 @@ class MontagePin {
   /// Centre dans le cadre (fraction de la largeur et de la hauteur).
   Offset center;
 
-  /// Taille relative (1 = 30 % de la largeur du cadre), entre 0,5 et 2.
+  /// Taille relative (1 = 30 % de la largeur du cadre), entre 0,5 et 3,3 (jusqu'à toute la largeur).
   double scale;
   bool circle;
 
@@ -50,8 +50,8 @@ class MontagePin {
 
   static double _defaultClipEnd(double duration) => duration <= 0 ? 6 : duration.clamp(1, 6).toDouble();
 
-  /// Largeur à l'écran, en fraction de la largeur du cadre (0,15 à 0,6).
-  double get widthFrac => (.3 * scale).clamp(.15, .6).toDouble();
+  /// Largeur à l'écran, en fraction de la largeur du cadre (0,15 à 1).
+  double get widthFrac => (.3 * scale).clamp(.15, 1.0).toDouble();
 
   double get clipSeconds => clipEndSec - clipStartSec;
 
@@ -76,18 +76,84 @@ class MontagePin {
 
 /// Aperçu d'une vidéo épinglée dans l'éditeur : la vignette de la vidéo d'origine (rectangle ou rond), « ▶ » et le nom du créateur. N'apparaît jamais dans le fichier final
 /// (la vraie vidéo est posée par le serveur).
-class MontagePinView extends StatelessWidget {
-  const MontagePinView({super.key, required this.pin, required this.cq, this.selected = false});
+class MontagePinView extends StatefulWidget {
+  const MontagePinView({super.key, required this.pin, required this.cq, this.selected = false, this.volume = 0});
 
   final MontagePin pin;
   final double cq;
   final bool selected;
 
+  /// Volume de l'aperçu (0 = muet) : le son d'origine, réglé dans l'éditeur.
+  final double volume;
+
+  @override
+  State<MontagePinView> createState() => _MontagePinViewState();
+}
+
+class _MontagePinViewState extends State<MontagePinView> {
+  VideoPlayerController? _v;
+  String? _key;
+
+  @override
+  void initState() {
+    super.initState();
+    _open();
+  }
+
+  @override
+  void didUpdateWidget(MontagePinView old) {
+    super.didUpdateWidget(old);
+    if (_playKey(widget.pin) != _key) {
+      _open();
+    } else {
+      _v?.setVolume(widget.volume.clamp(0.0, 1.0));
+    }
+  }
+
+  static String? _playKey(MontagePin p) => p.source.localVideoPath ?? p.source.previewUrl;
+
+  Future<void> _open() async {
+    final key = _playKey(widget.pin);
+    _key = key;
+    final old = _v;
+    _v = null;
+    await old?.dispose();
+    if (key == null || key.isEmpty) return;
+    final src = widget.pin.source;
+    final c = src.isLocal ? VideoPlayerController.file(File(key)) : VideoPlayerController.networkUrl(Uri.parse(key), videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
+    try {
+      await c.initialize();
+      await c.setLooping(true);
+      await c.setVolume(widget.volume.clamp(0.0, 1.0));
+      // l'extrait commence là où la personne l'a réglé
+      if (widget.pin.clipStartSec > 0) await c.seekTo(Duration(milliseconds: (widget.pin.clipStartSec * 1000).round()));
+      await c.play();
+      if (!mounted || _key != key) {
+        await c.dispose();
+        return;
+      }
+      setState(() => _v = c);
+    } catch (_) {
+      await c.dispose();
+    }
+  }
+
+  @override
+  void dispose() {
+    _v?.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final w = .3 * 100 * cq;   // taille de base ; le zoom (pincement) est appliqué par le cadre qui contient l'élément
+    final pin = widget.pin;
+    final w = .3 * 100 * widget.cq;   // taille de base ; le zoom (pincement) est appliqué par le cadre qui contient l'élément
     final h = pin.circle ? w : w * 9 / 16;
-    Widget thumb = pinThumb(pin.source.thumbUrl);
+    final v = _v;
+    final playing = v != null && v.value.isInitialized;
+    Widget thumb = playing
+        ? FittedBox(fit: BoxFit.cover, clipBehavior: Clip.hardEdge, child: SizedBox(width: v.value.size.width, height: v.value.size.height, child: VideoPlayer(v)))
+        : pinThumb(pin.source.thumbUrl);
     thumb = pin.circle ? ClipOval(child: thumb) : ClipRRect(borderRadius: BorderRadius.circular(w * .06), child: thumb);
     return SizedBox(
       width: w,
@@ -97,17 +163,17 @@ class MontagePinView extends StatelessWidget {
           decoration: BoxDecoration(
             shape: pin.circle ? BoxShape.circle : BoxShape.rectangle,
             borderRadius: pin.circle ? null : BorderRadius.circular(w * .06),
-            border: Border.all(color: selected ? const Color(0xFFFFC400) : Colors.white, width: selected ? 2 : 1.4),
+            border: Border.all(color: widget.selected ? const Color(0xFFFFC400) : Colors.white, width: widget.selected ? 2 : 1.4),
             boxShadow: const [BoxShadow(color: Color(0x66000000), blurRadius: 8)],
           ),
           child: thumb,
         ),
-        Center(child: Icon(Icons.play_circle_fill_rounded, color: Colors.white70, size: w * .3)),
+        if (!playing) Center(child: Icon(Icons.play_circle_fill_rounded, color: Colors.white70, size: w * .3)),
         Positioned(
           left: 0,
           right: 0,
           bottom: pin.circle ? h * .1 : 2,
-          child: Text('@${pin.source.authorPseudo}', maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: (w * .09).clamp(7, 12).toDouble(), fontWeight: FontWeight.w800, shadows: const [Shadow(color: Colors.black, blurRadius: 3)])),
+          child: Text(pin.source.authorPseudo.isEmpty ? '' : '@${pin.source.authorPseudo}', maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: TextStyle(color: Colors.white, fontSize: (w * .09).clamp(7, 12).toDouble(), fontWeight: FontWeight.w800, shadows: const [Shadow(color: Colors.black87, blurRadius: 3)])),
         ),
       ]),
     );
@@ -143,12 +209,15 @@ class _MontageLayoutPreviewState extends State<MontageLayoutPreview> {
   void didUpdateWidget(MontageLayoutPreview old) {
     super.didUpdateWidget(old);
     _sync();
+    _origin?.setVolume(_originVol);
   }
 
-  Future<VideoPlayerController?> _open(VideoPlayerController c) async {
+  double get _originVol => (widget.state.originAudio as bool) ? (widget.state.originVolume as num).toDouble().clamp(0.0, 1.0) : 0.0;
+
+  Future<VideoPlayerController?> _open(VideoPlayerController c, {double vol = 0}) async {
     try {
       await c.initialize();
-      await c.setVolume(0);
+      await c.setVolume(vol);
       await c.setLooping(true);
       await c.play();
       return c;
@@ -168,7 +237,7 @@ class _MontageLayoutPreviewState extends State<MontageLayoutPreview> {
       old?.dispose();
       if (originKey != null && originKey.isNotEmpty) {
         final c = pin!.source.isLocal ? VideoPlayerController.file(File(originKey)) : VideoPlayerController.networkUrl(Uri.parse(originKey), videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
-        _open(c).then((v) {
+        _open(c, vol: _originVol).then((v) {
           if (!mounted || _originKey != originKey) {
             v?.dispose();
             return;
