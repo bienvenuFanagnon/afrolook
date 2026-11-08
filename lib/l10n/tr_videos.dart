@@ -277,4 +277,9 @@ const Map<String, Map<String, String>> kTrVideos = {
   "Visible de… à…": {'en': "Visible from… to…", 'es': "Visible de… a…", 'de': "Sichtbar von… bis…", 'ar': "ظاهر من… إلى…", 'pt': "Visível de… até…", 'zh': "显示时间：从…到…", 'sw': "Inaonekana kuanzia… hadi…"},
   "Toute la durée": {'en': "Whole video", 'es': "Toda la duración", 'de': "Ganze Dauer", 'ar': "كامل المدة", 'pt': "Duração toda", 'zh': "全程", 'sw': "Muda wote"},
   "Valider": {'en': "Confirm", 'es': "Validar", 'de': "Bestätigen", 'ar': "تأكيد", 'pt': "Confirmar", 'zh': "确认", 'sw': "Thibitisha"},
+  "Plein écran": {'en': "Full screen", 'es': "Pantalla completa", 'de': "Vollbild", 'ar': "ملء الشاشة", 'pt': "Tela cheia", 'zh': "全屏", 'sw': "Skrini nzima"},
+  "Haut / bas": {'en': "Top / bottom", 'es': "Arriba / abajo", 'de': "Oben / unten", 'ar': "أعلى / أسفل", 'pt': "Cima / baixo", 'zh': "上 / 下", 'sw': "Juu / chini"},
+  "Côte à côte": {'en': "Side by side", 'es': "Lado a lado", 'de': "Nebeneinander", 'ar': "جنبًا إلى جنب", 'pt': "Lado a lado", 'zh': "并排", 'sw': "Pembeni"},
+  "Bandeau": {'en': "Banner", 'es': "Banda", 'de': "Banner", 'ar': "شريط", 'pt': "Faixa", 'zh': "横幅", 'sw': "Bango"},
+  "Inverser": {'en': "Swap", 'es': "Invertir", 'de': "Tauschen", 'ar': "عكس", 'pt': "Inverter", 'zh': "互换", 'sw': "Badilisha"},
 };

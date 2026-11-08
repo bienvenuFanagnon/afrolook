@@ -33,6 +33,7 @@ import '../../../services/api/music_api.dart';
 import '../../../services/music_likes.dart';
 import '../../../services/music_queue.dart';
 import 'montage_pin.dart';
+import '../../../widgets/reply_split.dart';
 import 'montage_preview_page.dart';
 import '../../create/chronique_flow.dart' show ChroniqueFlow;
 import 'montage_state.dart';
@@ -1152,6 +1153,8 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
       s.pins.clear();
     }
     final pin = MontagePin(id: '${DateTime.now().microsecondsSinceEpoch}', source: src);
+    s.layout = ReplyLayout.id.value;   // choisie dans la caméra (réponse en vidéo) ; null = vidéo dans un coin
+    s.layoutSwap = ReplyLayout.swap.value;
     pin.startSec = 0;
     pin.endSec = math.min(_videoSeconds, math.max(1.0, pin.clipSeconds));
     setState(() {

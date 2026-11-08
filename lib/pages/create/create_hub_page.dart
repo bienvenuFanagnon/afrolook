@@ -26,6 +26,7 @@ import 'voice_effect_page.dart';
 import 'create_camera_page.dart';
 import 'create_editor_page.dart';
 import '../../services/create_draft.dart';
+import '../../widgets/reply_split.dart';
 import 'chronique_flow.dart';
 import 'create_flow.dart';
 import 'create_result.dart';
@@ -89,6 +90,7 @@ class _CreateHubPageState extends State<CreateHubPage> {
       ReplyBanner.load(widget.replyToPostId);   // « Tu réponds à @pseudo » sur chaque écran du parcours
     }
     if (widget.chronique != null) ChroniqueFlow.active = widget.chronique;
+    ReplyLayout.clear();
     _loadQuota();
     if (widget.chronique == null && widget.canal == null && widget.defiPostId == null) _loadDraft();
     if (widget.start != CreateStart.none) {

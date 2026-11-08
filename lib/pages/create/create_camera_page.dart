@@ -1,3 +1,4 @@
+import '../../widgets/reply_split.dart';
 import '../../widgets/gold_badge.dart';
 import '../../widgets/reply_banner.dart';
 import 'dart:async';
@@ -734,22 +735,61 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
     );
   }
 
+  /// Réponse à une vidéo : l'aperçu devient deux vidéos (celle d'origine et la caméra) selon la disposition choisie.
+  Widget _splitWrap(Widget cam) => ValueListenableBuilder<String?>(
+        valueListenable: ReplyLayout.id,
+        builder: (context, id, _) => ValueListenableBuilder<bool>(
+          valueListenable: ReplyLayout.swap,
+          builder: (context, swap, _) {
+            final url = ReplyBanner.info.value?.videoUrl;
+            if (id == null || url == null || widget.startOnPhoto) return cam;
+            return ReplySplitPreview(key: ValueKey('split_$url'), camera: cam, videoUrl: url, layout: id, swap: swap, recording: _recording);
+          },
+        ),
+      );
+
+  /// Choix de la disposition de la réponse (seulement pour répondre à une vidéo, hors enregistrement).
+  Widget _layoutChips() => ValueListenableBuilder<ReplyInfo?>(
+        valueListenable: ReplyBanner.info,
+        builder: (context, info, _) {
+          if (info?.videoUrl == null || _recording || widget.startOnPhoto) return const SizedBox.shrink();
+          return ValueListenableBuilder<String?>(
+            valueListenable: ReplyLayout.id,
+            builder: (context, id, _) => SizedBox(
+              height: 44,
+              child: ListView(scrollDirection: Axis.horizontal, padding: const EdgeInsets.fromLTRB(16, 8, 16, 0), children: [
+                for (final e in [(null, context.tr('Plein écran')), ('tb', context.tr('Haut / bas')), ('sbs', context.tr('Côte à côte')), ('bar', context.tr('Bandeau'))])
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(key: ValueKey('reply_layout_${e.$1 ?? 'full'}'), label: Text(e.$2), selected: id == e.$1, onSelected: (_) => ReplyLayout.id.value = e.$1),
+                  ),
+                if (id != null)
+                  ActionChip(key: const ValueKey('reply_layout_swap'), avatar: const Icon(Icons.swap_vert_rounded, size: 18), label: Text(context.tr('Inverser')), onPressed: () => ReplyLayout.swap.value = !ReplyLayout.swap.value),
+              ]),
+            ),
+          );
+        },
+      );
+
   Widget _camera(AppColors c) {
     final ctrl = _ctrl;
     final ready = _eng || (ctrl != null && ctrl.value.isInitialized);
     final remaining = ((_limit * 1000 - _elapsedMs) / 1000).ceil().clamp(0, _limit);
     return Stack(fit: StackFit.expand, children: [
-      if (_eng)
-        Positioned.fill(child: FaceEngine.view(front: _engFront))
-      else if (ready)
-        ClipRect(
-          child: Transform.scale(
-            scale: _coverScale(ctrl!),
-            child: Center(child: _beautyNow.hasColor ? ColorFiltered(colorFilter: _beautyNow.colorFilter, child: CameraPreview(ctrl, child: _liveOverlay(ctrl))) : CameraPreview(ctrl, child: _liveOverlay(ctrl))),
-          ),
-        )
-      else
-        const Center(child: CircularProgressIndicator(color: Colors.white)),
+      Positioned.fill(
+        child: _splitWrap(
+          _eng
+              ? FaceEngine.view(front: _engFront)
+              : ready
+                  ? ClipRect(
+                      child: Transform.scale(
+                        scale: _coverScale(ctrl!),
+                        child: Center(child: _beautyNow.hasColor ? ColorFiltered(colorFilter: _beautyNow.colorFilter, child: CameraPreview(ctrl, child: _liveOverlay(ctrl))) : CameraPreview(ctrl, child: _liveOverlay(ctrl))),
+                      ),
+                    )
+                  : const Center(child: CircularProgressIndicator(color: Colors.white)),
+        ),
+      ),
       // dégradés haut et bas : les boutons restent lisibles sur n'importe quelle image
       const Positioned(top: 0, left: 0, right: 0, height: 130, child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xAA000000), Color(0x00000000)])))),
       const Positioned(bottom: 0, left: 0, right: 0, height: 260, child: DecoratedBox(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter, colors: [Color(0xCC000000), Color(0x00000000)])))),
@@ -785,6 +825,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
           ),
           // réponse en vidéo : on rappelle à quelle publication on répond
           const Padding(padding: EdgeInsets.fromLTRB(16, 8, 16, 0), child: Align(alignment: Alignment.centerLeft, child: ReplyBanner())),
+          _layoutChips(),
           const Spacer(),
           if (_eng)
             (_busy ? const SizedBox.shrink() : _engineRail(c))

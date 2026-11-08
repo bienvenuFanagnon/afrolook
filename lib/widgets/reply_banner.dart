@@ -8,7 +8,7 @@ import '../theme/app_colors.dart';
 
 /// Ce à quoi la personne répond (quel que soit le type du post d'origine : texte, image, vidéo, audio).
 class ReplyInfo {
-  const ReplyInfo({required this.postId, required this.pseudo, required this.kind, required this.excerpt, this.thumbUrl});
+  const ReplyInfo({required this.postId, required this.pseudo, required this.kind, required this.excerpt, this.thumbUrl, this.videoUrl});
   final String postId;
   final String pseudo;
 
@@ -17,13 +17,16 @@ class ReplyInfo {
   final String excerpt;
   final String? thumbUrl;
 
+  /// Adresse de la vidéo d'origine (pour l'aperçu à deux vidéos de la caméra).
+  final String? videoUrl;
+
   static ReplyInfo fromPost(Post p) {
     final type = (p.dataType ?? '').toUpperCase();
     final kind = type == PostDataType.VIDEO.name ? 'video' : type == PostDataType.IMAGE.name ? 'image' : type == PostDataType.AUDIO.name ? 'audio' : 'text';
     final firstImage = (p.images ?? const <String>[]).where((u) => u.trim().isNotEmpty).firstOrNull;
     final thumb = kind == 'video' ? p.thumbnail : (kind == 'image' ? (firstImage ?? p.url_media) : null);
     final text = (p.description ?? '').trim().replaceAll(RegExp(r'\s+'), ' ');
-    return ReplyInfo(postId: p.id ?? '', pseudo: (p.user?.pseudo ?? '').trim(), kind: kind, excerpt: text.length > 70 ? '${text.substring(0, 70)}…' : text, thumbUrl: (thumb ?? '').isEmpty ? null : thumb);
+    return ReplyInfo(postId: p.id ?? '', pseudo: (p.user?.pseudo ?? '').trim(), kind: kind, excerpt: text.length > 70 ? '${text.substring(0, 70)}…' : text, thumbUrl: (thumb ?? '').isEmpty ? null : thumb, videoUrl: kind == 'video' && (p.url_media ?? '').startsWith('http') ? p.url_media : null);
   }
 }
 

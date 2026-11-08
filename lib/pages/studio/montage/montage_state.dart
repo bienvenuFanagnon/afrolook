@@ -85,27 +85,7 @@ class MontageState {
   double originVolume = 1.0;
 
   /// Les deux places en fractions du cadre (même découpage que le serveur) : (vidéo d'origine, ta vidéo). Null si aucune disposition.
-  ({Rect origin, Rect me})? get layoutFracs {
-    final id = layout;
-    if (id == null) return null;
-    const g = .004;
-    Rect a, b;
-    switch (id) {
-      case 'tb':
-        a = const Rect.fromLTWH(0, 0, 1, .5 - g);
-        b = const Rect.fromLTWH(0, .5 + g, 1, .5 - g);
-      case 'sbs':
-        a = const Rect.fromLTWH(0, 0, .5 - g, 1);
-        b = const Rect.fromLTWH(.5 + g, 0, .5 - g, 1);
-      case 'bar':
-        final h = ((9 / 16) * aspect).clamp(0.0, .4).toDouble();   // hauteur du bandeau en fraction du cadre (comme le serveur : min(L x 9/16, H x 0,4))
-        a = Rect.fromLTWH(0, 0, 1, h);
-        b = Rect.fromLTWH(0, a.height + g, 1, 1 - a.height - g);
-      default:
-        return null;
-    }
-    return layoutSwap ? (origin: b, me: a) : (origin: a, me: b);
-  }
+  ({Rect origin, Rect me})? get layoutFracs => layout == null ? null : montageLayoutFracs(layout!, layoutSwap, aspect);
 
   /// Texte libre posé sur la photo ou la vidéo (outil « Texte » de l'éditeur) : vide = aucun. Fonctionne avec tous les modèles, y compris « sans habillage ».
   String freeText = '';
@@ -262,3 +242,25 @@ MontageTexts resolveMontageTexts(MontageState s) {
 
 /// Espaces insécables avant « ! ? : ; » (typographie française) : la ponctuation ne part jamais seule à la ligne.
 String frSpaces(String s) => s.replaceAllMapped(RegExp(r' ([!?:;»])'), (m) => ' ${m[1]}');
+
+
+/// Les deux places d'une disposition, en fractions du cadre (largeur / hauteur = [aspect]) : (vidéo d'origine, ta vidéo). Null si la disposition est inconnue.
+({Rect origin, Rect me})? montageLayoutFracs(String id, bool swap, double aspect) {
+    const g = .004;
+    Rect a, b;
+    switch (id) {
+      case 'tb':
+        a = const Rect.fromLTWH(0, 0, 1, .5 - g);
+        b = const Rect.fromLTWH(0, .5 + g, 1, .5 - g);
+      case 'sbs':
+        a = const Rect.fromLTWH(0, 0, .5 - g, 1);
+        b = const Rect.fromLTWH(.5 + g, 0, .5 - g, 1);
+      case 'bar':
+        final h = ((9 / 16) * aspect).clamp(0.0, .4).toDouble();   // hauteur du bandeau en fraction du cadre (comme le serveur : min(L x 9/16, H x 0,4))
+        a = Rect.fromLTWH(0, 0, 1, h);
+        b = Rect.fromLTWH(0, a.height + g, 1, 1 - a.height - g);
+      default:
+        return null;
+    }
+    return swap ? (origin: b, me: a) : (origin: a, me: b);
+}
