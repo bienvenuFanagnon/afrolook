@@ -1,4 +1,3 @@
-import 'dart:io';
 
 import '../../models/post_widget.dart';
 import '../../widgets/reply_banner.dart';
@@ -25,6 +24,7 @@ import 'create_voice_page.dart';
 import 'voice_effect_page.dart';
 import 'create_camera_page.dart';
 import 'create_editor_page.dart';
+import 'multi_images_page.dart';
 import '../../services/create_draft.dart';
 import '../../widgets/reply_split.dart';
 import 'chronique_flow.dart';
@@ -190,7 +190,7 @@ class _CreateHubPageState extends State<CreateHubPage> {
       // une chronique n'a qu'une image ; un post peut en avoir plusieurs
       final xs = widget.chronique != null
           ? [if (await picker.pickImage(source: ImageSource.gallery, maxWidth: 1600, imageQuality: 92) case final one?) one]
-          : await picker.pickMultiImage(maxWidth: 1600, imageQuality: 92, limit: 4);
+          : await picker.pickMultiImage(maxWidth: 1600, imageQuality: 92, limit: 5);
       if (xs.isEmpty || !mounted) return;
       // contenu sexuellement explicite : refusé (modèle gratuit sur le téléphone) ; « C'est une erreur » envoie à la modération
       for (final x in xs) {
@@ -199,10 +199,10 @@ class _CreateHubPageState extends State<CreateHubPage> {
       if (xs.length == 1) {
         await _editor(xs.first.path, false, PostSourceLink.imported);
       } else {
-        // plusieurs photos : directement au formulaire (l'éditeur ne retouche qu'un seul média)
-        final bytes = [for (final x in xs) await File(x.path).readAsBytes()];
-        final r = await openCreateForm(context, kind: CreatePostKind.image, images: bytes, canal: widget.canal, defiPostId: widget.defiPostId, source: PostSourceLink.imported);
-        await _after(r);
+        // plusieurs photos : l'écran « Mes images » (carrousel, collage ou diaporama vidéo)
+        final r = await Navigator.of(context).push<String>(MaterialPageRoute(builder: (_) => MultiImagesPage(paths: [for (final x in xs) x.path], canal: widget.canal, defiPostId: widget.defiPostId)));
+        if (r == kCreateRedo && mounted) return _pickGallery(video: false);
+        await _after(r ?? kCreateBack);
       }
     }
   }
