@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/post_menu_sheet.dart';
 import '../../../ads/gold_gate.dart';
 import 'package:afrotok/services/post_reply.dart';
 import '../../../widgets/commerce_card.dart';
@@ -3002,153 +3003,16 @@ Future<void> _sendQuickComment(String text) async {
   }
 
   void _showPostMenu(Post post) {
-    final colors = AppColors.of(context);
-    final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    final postProvider = Provider.of<PostProvider>(context, listen: false);
-
-    showResponsiveBottomSheet(
-      context: context,
-      backgroundColor: colors.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) => Container(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (CardEntry.canMake(post, authProvider.loginUserData))
-              CardMenuTile(
-                onTap: () {
-                  Navigator.pop(context);
-                  CardEntry.openFromPost(this.context, post);
-                },
-              ),
-            if (DefiConvert.canConvert(post, authProvider.loginUserData))
-              DefiMenuTile(
-                onTap: () {
-                  Navigator.pop(context);
-                  DefiConvert.openFromPost(this.context, post);
-                },
-              ),
-            if (post.user!.id == authProvider.loginUserData.id &&
-                post.isAdvertisement != true)
-              _buildMenuOption(
-                Icons.rocket_launch_outlined,
-                "Booster ce post",
-                const Color(0xFFFFD700),
-                () {
-                  Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(
-                    builder: (_) => boostPageFor(post),
-                  ));
-                },
-              ),
-
-            _buildMenuOption(
-              Icons.video_call_rounded,
-              context.tr('Réponses en vidéo'),
-              colors.textPrimary,
-              () {
-                Navigator.pop(context);
-                Navigator.push(this.context, MaterialPageRoute(builder: (_) => ReplyVideosPage(postId: post.id!)));
-              },
-            ),
-            if (post.id != null && post.isAdvertisement != true)
-              _buildMenuOption(
-                Icons.rocket_launch_outlined,
-                context.tr('Diffusion'),
-                colors.textPrimary,
-                () {
-                  Navigator.pop(context);
-                  showPostDiffusionSheet(this.context, post.id!);   // vagues de diffusion : visible par tous
-                },
-              ),
-            if (post.user_id != authProvider.loginUserData.id)
-              _buildMenuOption(
-                Icons.flag,
-                "Signaler",
-                colors.textPrimary,
-                    () async {
-                  Navigator.pop(context);
-                  // Même Cloud Function que les pages de détail : le signalement entre dans la
-                  // file de modération et les admins sont prévenus (règle App Store 1.2).
-                  bool value;
-                  try {
-                    await PostsApi.report(post.id!);
-                    value = true;
-                  } on ApiException catch (e) {
-                    value = e.status == 409 || e.code == 'already_reported';
-                  } catch (_) {
-                    value = false;
-                  }
-                  if (!mounted) return;
-
-                  final snackBar = SnackBar(
-                    content: Text(
-                      value ? 'Post signalé, merci ! Notre équipe va l\'examiner.' : 'Échec du signalement, réessaie.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: value ? AppColors.of(context).primary : AppColors.of(context).danger),
-                    ),
-                  );
-                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                },
-              ),
-
-            if (post.user_id != null && post.user_id != authProvider.loginUserData.id)
-              _buildMenuOption(
-                Icons.block,
-                "Bloquer cet utilisateur",
-                colors.danger,
-                () {
-                  Navigator.pop(context);
-                  confirmAndBlockUser(
-                    context,
-                    userId: post.user_id!,
-                    pseudo: post.user?.pseudo,
-                    postId: post.id,
-                  );
-                },
-              ),
-
-            if (post.user!.id == authProvider.loginUserData.id && post.id != null)
-              _buildMenuOption(
-                Icons.shopping_bag_outlined,
-                post.hasCommerce ? "Modifier la carte Commerce" : "Ajouter une carte Commerce",
-                colors.textPrimary,
-                () async {
-                  Navigator.pop(context);
-                  if (!await GoldGate.feature(context, authProvider.loginUserData.id ?? '', 'commerce_card')) return;
-                  if (!context.mounted) return;
-                  showCommerceEditor(context, post.id!).then((_) => CommerceApi.get(post.id!).then((c) {
-                        post.hasCommerce = c != null;
-                        if (mounted) setState(() {});
-                      }).catchError((_) {}));
-                },
-              ),
-
-            if (post.user!.id == authProvider.loginUserData.id ||
-                authProvider.loginUserData.role == UserRole.ADM.name)
-              _buildMenuOption(
-                Icons.delete,
-                "Supprimer",
-                colors.danger,
-                () {
-                  Navigator.pop(context);
-                  _confirmAndDeletePost(post);
-                },
-              ),
-
-            SizedBox(height: 8),
-            Container(height: 0.5, color: colors.divider),
-            SizedBox(height: 8),
-
-            _buildMenuOption(Icons.cancel, "Annuler", colors.textSecondary, () {
-              Navigator.pop(context);
-            }),
-          ],
-        ),
-      ),
+    // menu unique, le même que dans les pages détail et les vidéos (lib/widgets/post_menu_sheet.dart)
+    showPostMenuSheet(
+      context,
+      post: post,
+      isFavorite: _isFavorite,
+      onToggleFavorite: _toggleFavorite,
+      onDelete: () => _confirmAndDeletePost(post),
+      onChanged: () {
+        if (mounted) setState(() {});
+      },
     );
   }
 

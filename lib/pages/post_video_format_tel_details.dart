@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/post_menu_sheet.dart';
 import '../widgets/post_media_overlays.dart';
 import 'package:afrotok/services/api/canaux_api.dart';
 import 'package:afrotok/services/watch_tracker.dart';
@@ -1974,170 +1975,27 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
   void _showPostMenu(Post post) {
     final colors = AppColors.of(context);
-    showResponsiveBottomSheet(
-      context: context,
-      backgroundColor: colors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: SingleChildScrollView(child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (CardEntry.canMake(post, authProvider.loginUserData))
-              CardMenuTile(
-                onTap: () {
-                  Navigator.pop(context);
-                  CardEntry.openFromPost(this.context, post);
-                },
-              ),
-            if (DefiConvert.canConvert(post, authProvider.loginUserData))
-              DefiMenuTile(
-                onTap: () {
-                  Navigator.pop(context);
-                  DefiConvert.openFromPost(this.context, post);
-                },
-              ),
-            ListTile(
-              leading: Icon(_isFavorite ? Icons.bookmark : Icons.bookmark_border, color: colors.accentText),
-              title: Text(_isFavorite ? tr('Retirer des favoris') : tr('Enregistrer dans mes favoris'), style: TextStyle(color: colors.textPrimary)),
-              onTap: () { Navigator.pop(context); _toggleFavorite(); },
-            ),
-            if (PostDownload.canDownload(post))
-              ListTile(
-                key: const ValueKey('menu_download'),
-                leading: Icon(Icons.download_rounded, color: colors.success),
-                title: Text(tr('Télécharger'), style: TextStyle(color: colors.textPrimary)),
-                subtitle: Text(post.user_id == authProvider.loginUserData.id ? tr('Gratuit : c\'est ta publication') : tr('Pubs ou pièces'), style: TextStyle(color: colors.textSecondary, fontSize: 12)),
-                onTap: () { Navigator.pop(context); PostDownload.start(this.context, post); },
-              ),
-            // Bouton Partager (externe)
-            ListTile(
-              leading: Icon(Icons.share, color: colors.info),
-              title: Text('Partager', style: TextStyle(color: colors.textPrimary)),
-              onTap: () async {
-                Navigator.pop(context);
-                 _sharePost(post);
-              },
-            ).animate().fadeIn(duration: 200.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
-
-            if (post.user_id != authProvider.loginUserData.id)
-              ListTile(
-                leading: Icon(Icons.repeat, color: colors.success),
-                title: Text(tr('Republier'), style: TextStyle(color: colors.textPrimary)),
-                onTap: () { Navigator.pop(context); _handleRepost(post); },
-              ).animate().fadeIn(duration: 200.ms, delay: 20.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
-
-            // Bouton Envoyer dans le chat
-            ListTile(
-              leading: Icon(Icons.send_rounded, color: colors.primary),
-              title: Text('Envoyer dans un chat', style: TextStyle(color: colors.textPrimary)),
-              onTap: () {
-                Navigator.pop(context);
-                showResponsiveBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (_) => PostShareSheet(post: post),
-                );
-              },
-            ).animate().fadeIn(duration: 200.ms, delay: 40.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
-
-            // Diffusion (vagues) : visible par tous
-            if (post.id != null)
-              ListTile(
-                leading: Icon(Icons.rocket_launch_outlined, color: colors.primary),
-                title: Text(tr('Diffusion'), style: TextStyle(color: colors.textPrimary)),
-                onTap: () {
-                  Navigator.pop(context);
-                  showPostDiffusionSheet(this.context, post.id!);
-                },
-              ).animate().fadeIn(duration: 200.ms, delay: 50.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
-
-            if (post.user_id != authProvider.loginUserData.id) ...[
-              if (authProvider.loginUserData.role == UserRole.ADM.name) ...[
-                ListTile(
-                  leading: Icon(Icons.gavel, color: Colors.orange.shade700),
-                  title: Text('Modérer ce post', style: TextStyle(color: Colors.orange.shade700)),
-                  onTap: () => _reportPostWithScore(post, isAdmin: true, reportType: 'standard'),
-                ).animate().fadeIn(duration: 200.ms, delay: 40.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
-                ListTile(
-                  leading: Icon(Icons.category_outlined, color: Colors.deepOrange.shade700),
-                  title: Text('Hors catégorie (admin)', style: TextStyle(color: Colors.deepOrange.shade700)),
-                  onTap: () => _reportPostWithScore(post, isAdmin: true, reportType: 'wrong_category'),
-                ).animate().fadeIn(duration: 200.ms, delay: 60.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
-              ] else ...[
-                if (!(post.reporterIds?.contains(authProvider.loginUserData.id) ?? false))
-                  ListTile(
-                    leading: Icon(Icons.flag_outlined, color: colors.textPrimary),
-                    title: Text('Signaler', style: TextStyle(color: colors.textPrimary)),
-                    onTap: () => _reportPostWithScore(post, isAdmin: false, reportType: 'standard'),
-                  ).animate().fadeIn(duration: 200.ms, delay: 40.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
-                if (!(post.wrongCategoryReporterIds?.contains(authProvider.loginUserData.id) ?? false))
-                  ListTile(
-                    leading: Icon(Icons.category_outlined, color: colors.textSecondary),
-                    title: Text('Contenu hors catégorie', style: TextStyle(color: colors.textSecondary)),
-                    onTap: () => _reportPostWithScore(post, isAdmin: false, reportType: 'wrong_category'),
-                  ).animate().fadeIn(duration: 200.ms, delay: 60.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
-              ],
-              if (post.user_id != null)
-                ListTile(
-                  leading: Icon(Icons.block, color: colors.danger),
-                  title: Text('Bloquer cet utilisateur', style: TextStyle(color: colors.danger)),
-                  onTap: () async {
-                    Navigator.pop(context);
-                    final blocked = await confirmAndBlockUser(
-                      this.context,
-                      userId: post.user_id!,
-                      pseudo: post.user?.pseudo,
-                      postId: post.id,
-                    );
-                    if (blocked && mounted) Navigator.pop(this.context);
-                  },
-                ).animate().fadeIn(duration: 200.ms, delay: 80.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
-            ],
-
-            if (post.user_id == authProvider.loginUserData.id ||
-                authProvider.loginUserData.role == UserRole.ADM.name)
-              ListTile(
-                leading: Icon(Icons.delete, color: colors.danger),
-                title: Text('Supprimer', style: TextStyle(color: colors.danger)),
-                onTap: () {
-                  Navigator.pop(context);
-                  // Utilise le contexte de la page, pas celui du sheet (déjà fermé)
-                  _confirmAndDeletePost(post);
-                },
-              ).animate().fadeIn(duration: 200.ms, delay: 80.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
-
-            // Option "Booster ce post" — créateur + admin uniquement
-            if (post.user_id == authProvider.loginUserData.id ||
-                authProvider.loginUserData.role == UserRole.ADM.name)
-              ListTile(
-                leading: Icon(Icons.rocket_launch, color: colors.accentText),
-                title: Text('Booster ce post', style: TextStyle(color: colors.textPrimary)),
-                subtitle: Text('Transformer en publicité', style: TextStyle(color: colors.textSecondary, fontSize: 12)),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => boostPageFor(post),
-                    ),
-                  );
-                },
-              ).animate().fadeIn(duration: 200.ms, delay: 100.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
-
-            Divider(color: colors.divider),
-
-            ListTile(
-              leading: Icon(Icons.cancel, color: colors.textPrimary),
-              title: Text('Annuler', style: TextStyle(color: colors.textPrimary)),
-              onTap: () => Navigator.pop(context),
-            ),
-          ],
-        )),
-      ),
+    // menu unique, le même que dans le fil et les pages détail (lib/widgets/post_menu_sheet.dart) ; ici en plus : partager, republier, envoyer dans un chat
+    showPostMenuSheet(
+      context,
+      post: post,
+      isFavorite: _isFavorite,
+      onToggleFavorite: _toggleFavorite,
+      onDelete: () => _confirmAndDeletePost(post),
+      closePageAfterBlock: true,
+      onChanged: () {
+        if (mounted) setState(() {});
+      },
+      extras: [
+        PostMenuExtra(icon: Icons.share, label: tr('Partager'), color: colors.info, onTap: () => _sharePost(post)),
+        if (post.user_id != authProvider.loginUserData.id) PostMenuExtra(icon: Icons.repeat, label: tr('Republier'), color: colors.success, onTap: () => _handleRepost(post)),
+        PostMenuExtra(
+          icon: Icons.send_rounded,
+          label: tr('Envoyer dans un chat'),
+          color: colors.primary,
+          onTap: () => showResponsiveBottomSheet(context: context, isScrollControlled: true, backgroundColor: Colors.transparent, builder: (_) => PostShareSheet(post: post)),
+        ),
+      ],
     );
   }
   Future<void> _reportPostWithScore(Post post, {required bool isAdmin, required String reportType}) async {

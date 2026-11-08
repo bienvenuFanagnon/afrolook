@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/post_menu_sheet.dart';
 import '../widgets/post_media_overlays.dart';
 import '../widgets/post_widget_view.dart';
 import 'package:afrotok/services/post_orientation.dart';
@@ -1266,86 +1267,16 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
   }
 
   void _showPostMenu() {
-    final colors = AppColors.of(context);
-    showResponsiveBottomSheet(
-      context: context,
-      backgroundColor: colors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
-      builder: (context) {
-        final sheetColors = AppColors.of(context);
-        return Container(
-          padding: EdgeInsets.all(16),
-          child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
-            if (CardEntry.canMake(_currentPost, authProvider.loginUserData))
-              CardMenuTile(
-                onTap: () {
-                  Navigator.pop(context);
-                  CardEntry.openFromPost(this.context, _currentPost);
-                },
-              ),
-            if (DefiConvert.canConvert(_currentPost, authProvider.loginUserData))
-              DefiMenuTile(
-                onTap: () {
-                  Navigator.pop(context);
-                  DefiConvert.openFromPost(this.context, _currentPost);
-                },
-              ),
-            _buildMenuOption(
-              _isFavorite ? Icons.bookmark : Icons.bookmark_border,
-              _isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris',
-              _isFavorite ? const Color(0xFFFFD600) : sheetColors.textPrimary,
-              () {
-                Navigator.pop(context);
-                _toggleFavorite();
-              },
-            ),
-            if (_currentPost.id != null)
-              _buildMenuOption(Icons.rocket_launch_outlined, tr('Diffusion'), sheetColors.textPrimary, () {
-                Navigator.pop(context);
-                showPostDiffusionSheet(this.context, _currentPost.id!);   // vagues de diffusion : visible par tous
-              }),
-            if (PostDownload.canDownload(_currentPost))
-              _buildMenuOption(Icons.download_rounded, _currentPost.user_id == authProvider.loginUserData.id ? 'Télécharger (gratuit)' : 'Télécharger', Colors.green.shade600, () {
-                Navigator.pop(context);
-                PostDownload.start(this.context, _currentPost);
-              }),
-            if (_currentPost.user_id != authProvider.loginUserData.id) ...[
-              if (authProvider.loginUserData.role == UserRole.ADM.name) ...[
-                _buildMenuOption(Icons.gavel, 'Modérer ce post', Colors.orange.shade700,
-                    () => _reportPostWithScore(_currentPost, isAdmin: true, reportType: 'standard', sheetContext: context)),
-                _buildMenuOption(Icons.category_outlined, 'Contenu hors catégorie (admin)', Colors.deepOrange.shade700,
-                    () => _reportPostWithScore(_currentPost, isAdmin: true, reportType: 'wrong_category', sheetContext: context)),
-              ] else ...[
-                if (!(_currentPost.reporterIds?.contains(authProvider.loginUserData.id) ?? false))
-                  _buildMenuOption(Icons.flag_outlined, 'Signaler', sheetColors.textPrimary,
-                      () => _reportPostWithScore(_currentPost, isAdmin: false, reportType: 'standard', sheetContext: context)),
-                if (!(_currentPost.wrongCategoryReporterIds?.contains(authProvider.loginUserData.id) ?? false))
-                  _buildMenuOption(Icons.category_outlined, 'Contenu hors catégorie', sheetColors.textSecondary,
-                      () => _reportPostWithScore(_currentPost, isAdmin: false, reportType: 'wrong_category', sheetContext: context)),
-              ],
-              if (_currentPost.user_id != null)
-                _buildMenuOption(Icons.block, 'Bloquer cet utilisateur', Colors.red, () async {
-                  Navigator.pop(context);
-                  final blocked = await confirmAndBlockUser(
-                    this.context,
-                    userId: _currentPost.user_id!,
-                    pseudo: _currentPost.user?.pseudo,
-                    postId: _currentPost.id,
-                  );
-                  if (blocked && mounted) Navigator.pop(this.context);
-                }),
-            ],
-            if (_currentPost.user_id == authProvider.loginUserData.id || authProvider.loginUserData.role == UserRole.ADM.name)
-              _buildMenuOption(Icons.delete, 'Supprimer', Colors.red, () {
-                Navigator.pop(context);
-                _confirmAndDeletePost();
-              }),
-            SizedBox(height: 8),
-            Container(height: 0.5, color: sheetColors.border),
-            SizedBox(height: 8),
-            _buildMenuOption(Icons.cancel, 'Annuler', sheetColors.textSecondary, () => Navigator.pop(context)),
-          ])),
-        );
+    // menu unique, le même que dans le fil et les autres pages (lib/widgets/post_menu_sheet.dart)
+    showPostMenuSheet(
+      context,
+      post: _currentPost,
+      isFavorite: _isFavorite,
+      onToggleFavorite: _toggleFavorite,
+      onDelete: _confirmAndDeletePost,
+      closePageAfterBlock: true,
+      onChanged: () {
+        if (mounted) setState(() {});
       },
     );
   }
