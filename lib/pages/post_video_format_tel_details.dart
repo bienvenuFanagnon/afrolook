@@ -3379,7 +3379,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
           ),
         ] else ...[
           const Positioned.fill(child: IgnorePointer(child: VideoShade())),
-          if (post.widgets.isNotEmpty) Positioned.fill(child: PostWidgetsLayer(widgets: post.widgets)),   // sondage, question, lien… posés par le créateur
+          if (post.widgets.isNotEmpty) Positioned.fill(child: PostWidgetsLayer(widgets: post.widgets, video: (post.id != null && _playerPostId == post.id) ? _chewieController?.videoPlayerController : null)),   // sondage, question, lien… posés par le créateur
           _buildCreatorInfo(post),
           if (post.authenticity == 'flagged')
             Positioned(

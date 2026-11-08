@@ -274,4 +274,7 @@ const Map<String, Map<String, String>> kTrVideos = {
   "Quitter": {'en': "Leave", 'es': "Salir", 'de': "Verlassen", 'ar': "مغادرة", 'pt': "Sair", 'zh': "退出", 'sw': "Toka"},
   "Voir les réponses": {'en': "See the answers", 'es': "Ver las respuestas", 'de': "Antworten ansehen", 'ar': "عرض الإجابات", 'pt': "Ver as respostas", 'zh': "查看回复", 'sw': "Ona majibu"},
   "Aucune réponse pour le moment.": {'en': "No answers yet.", 'es': "Aún no hay respuestas.", 'de': "Noch keine Antworten.", 'ar': "لا توجد إجابات حتى الآن.", 'pt': "Nenhuma resposta ainda.", 'zh': "暂无回复。", 'sw': "Bado hakuna majibu."},
+  "Visible de… à…": {'en': "Visible from… to…", 'es': "Visible de… a…", 'de': "Sichtbar von… bis…", 'ar': "ظاهر من… إلى…", 'pt': "Visível de… até…", 'zh': "显示时间：从…到…", 'sw': "Inaonekana kuanzia… hadi…"},
+  "Toute la durée": {'en': "Whole video", 'es': "Toda la duración", 'de': "Ganze Dauer", 'ar': "كامل المدة", 'pt': "Duração toda", 'zh': "全程", 'sw': "Muda wote"},
+  "Valider": {'en': "Confirm", 'es': "Validar", 'de': "Bestätigen", 'ar': "تأكيد", 'pt': "Confirmar", 'zh': "确认", 'sw': "Thibitisha"},
 };

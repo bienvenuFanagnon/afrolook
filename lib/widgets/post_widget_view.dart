@@ -1,3 +1,4 @@
+import 'package:video_player/video_player.dart';
 import 'dart:async';
 
 import 'package:afrolook_api_client/afrolook_api_client.dart' show ApiException;
@@ -284,12 +285,32 @@ class _PostWidgetViewState extends State<PostWidgetView> {
 
 /// Couche de widgets au-dessus d'un média : chaque widget à sa place (fractions du cadre) et à sa taille. Les widgets réagissent aux touchers ; le reste de la couche laisse passer les gestes.
 class PostWidgetsLayer extends StatelessWidget {
-  const PostWidgetsLayer({super.key, required this.widgets});
+  const PostWidgetsLayer({super.key, required this.widgets, this.video});
 
   final List<PostWidget> widgets;
 
+  /// Lecteur de la vidéo : un widget posé « de… à… » n'apparaît que dans sa plage. Sans lecteur, tous les widgets sont montrés.
+  final VideoPlayerController? video;
+
+  static bool visibleAt(PostWidget w, double seconds) => (w.start == null || seconds >= w.start!) && (w.end == null || seconds <= w.end!);
+
   @override
   Widget build(BuildContext context) {
+    if (widgets.isEmpty) return const SizedBox.shrink();
+    final v = video;
+    if (v != null && widgets.any((w) => w.start != null || w.end != null)) {
+      return ValueListenableBuilder<VideoPlayerValue>(
+        valueListenable: v,
+        builder: (context, val, _) {
+          final sec = val.position.inMilliseconds / 1000;
+          return _stack([for (final w in widgets) if (visibleAt(w, sec)) w]);
+        },
+      );
+    }
+    return _stack(widgets);
+  }
+
+  Widget _stack(List<PostWidget> widgets) {
     if (widgets.isEmpty) return const SizedBox.shrink();
     return LayoutBuilder(builder: (context, box) {
       return Stack(children: [

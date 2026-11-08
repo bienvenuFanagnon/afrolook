@@ -480,6 +480,44 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
     }
   }
 
+  /// « Visible de… à… » : le widget n'apparaît que dans cette partie de la vidéo (par défaut, toute la durée).
+  Future<void> _editRange(PostWidget w) async {
+    final v = _video;
+    if (v == null || !v.value.isInitialized) return;
+    final total = v.value.duration.inMilliseconds / 1000;
+    if (total < 1) return;
+    var range = RangeValues((w.start ?? 0).clamp(0, total).toDouble(), (w.end ?? total).clamp(0, total).toDouble());
+    final c = AppColors.of(context);
+    final res = await showDialog<RangeValues?>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) => AlertDialog(
+          backgroundColor: c.surface,
+          title: Text(context.tr('Visible de… à…'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800)),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            Text('${range.start.toStringAsFixed(1)} s  →  ${range.end.toStringAsFixed(1)} s', style: TextStyle(color: c.textSecondary, fontWeight: FontWeight.w700)),
+            RangeSlider(key: const ValueKey('range_slider'), values: range, min: 0, max: total, divisions: (total * 2).round().clamp(1, 600), onChanged: (r) => setS(() => range = r)),
+          ]),
+          actionsOverflowDirection: VerticalDirection.down,
+          actions: [
+            TextButton(key: const ValueKey('range_all'), onPressed: () => Navigator.pop(ctx, const RangeValues(-1, -1)), child: Text(context.tr('Toute la durée'))),
+            TextButton(key: const ValueKey('range_ok'), onPressed: () => Navigator.pop(ctx, range), child: Text(context.tr('Valider'))),
+          ],
+        ),
+      ),
+    );
+    if (res == null) return;
+    _remember();
+    if (res.start < 0 || (res.start <= 0.05 && res.end >= total - 0.05)) {
+      w.start = null;
+      w.end = null;
+    } else {
+      w.start = res.start;
+      w.end = (res.end - res.start) < 0.5 ? res.start + 0.5 : res.end;
+    }
+    _refreshWidgets();
+  }
+
   Widget _ctl(Key k, IconData icon, VoidCallback onTap, {Color bg = Colors.black87, Color fg = Colors.white}) => GestureDetector(
         key: k,
         onTap: onTap,
@@ -529,6 +567,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
                         child: Row(mainAxisSize: MainAxisSize.min, children: [
                           _ctl(const ValueKey('wm_smaller'), Icons.remove_rounded, () => _scaleWidget(w, -.15)),
                           _ctl(const ValueKey('wm_bigger'), Icons.add_rounded, () => _scaleWidget(w, .15)),
+                          if (widget.isVideo && (_video?.value.isInitialized ?? false)) _ctl(const ValueKey('wm_range'), Icons.timelapse_rounded, () => _editRange(w), bg: (w.start != null || w.end != null) ? const Color(0xFFFFC400) : Colors.black87, fg: (w.start != null || w.end != null) ? Colors.black : Colors.white),
                           _ctl(const ValueKey('wm_edit'), Icons.edit_rounded, () => _editSelected(w)),
                           _ctl(const ValueKey('wm_delete'), Icons.delete_outline_rounded, () {
                             _remember();
