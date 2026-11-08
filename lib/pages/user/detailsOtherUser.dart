@@ -535,6 +535,8 @@ class _UserProfileModalState extends State<UserProfileModal> {
   late UserProvider userProvider;
   bool inviteTap = false;
   bool abonneTap = false;
+  bool _serverFriend = false;   // déjà amis (d'après le serveur) : bouton « Message »
+  bool _serverInvited = false;  // invitation déjà envoyée
 
   @override
   void initState() {
@@ -549,9 +551,13 @@ class _UserProfileModalState extends State<UserProfileModal> {
     final id = widget.user.id;
     if (id == null || id.isEmpty) return;
     try {
-      final fresh = userFromApi(await UsersApi.publicProfile(id));
+      final raw = await UsersApi.publicProfile(id);
+      final fresh = userFromApi(raw);
       if (!mounted) return;
       setState(() {
+        // la liste d'amis du compte connecté n'est pas chargée au démarrage : le serveur dit si on est déjà amis (bouton « Message ») ou si l'invitation est partie
+        _serverFriend = raw['is_friend'] == true;
+        _serverInvited = raw['invitation_sent'] == true;
         widget.user.popularite = fresh.popularite;
         widget.user.usersParrainer = fresh.usersParrainer;
         if (fresh.abonnes != null) widget.user.abonnes = fresh.abonnes;
@@ -963,8 +969,8 @@ class _UserProfileModalState extends State<UserProfileModal> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     double taux = widget.user.popularite ?? 0.0;
-    bool isFriend = isMyFriend(widget.user, authProvider.loginUserData);
-    bool isInvited = isInvite(widget.user, authProvider.loginUserData);
+    bool isFriend = _serverFriend || isMyFriend(widget.user, authProvider.loginUserData);
+    bool isInvited = !isFriend && (_serverInvited || isInvite(widget.user, authProvider.loginUserData));
     bool isAbonne = isUserAbonne(widget.user.userAbonnesIds ?? [], authProvider.loginUserData?.id ?? '');
     bool isOwnProfile = authProvider.loginUserData.id == widget.user.id;
     return Container(

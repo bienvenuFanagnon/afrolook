@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Montage de plusieurs images : proposition</title>
+<style>
+  :root{--bg:#f4f5f2;--ink:#16201a;--sub:#5b665f;--card:#fff;--line:#dfe3dc;--green:#2ECC71;--yellow:#FFD400}
+  @media (prefers-color-scheme:dark){:root{--bg:#101412;--ink:#eef2ee;--sub:#a3ada6;--card:#18201c;--line:#2a332d}}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding:24px 16px 56px}
+  h1{font-size:24px;margin:0 0 4px} p.lead{color:var(--sub);margin:0 0 18px;max-width:78ch}
+  .row{display:flex;flex-wrap:wrap;gap:28px;align-items:flex-start}
+  .opt{flex:1 1 300px;max-width:340px}.opt h2{font-size:17px;margin:0 0 2px}.opt .t{color:var(--sub);font-size:13px;margin:0 0 10px}
+  .phone{width:300px;height:620px;border-radius:30px;background:#0b0b0b;position:relative;overflow:hidden;border:6px solid #111;box-shadow:0 10px 30px rgba(0,0,0,.25);color:#fff;margin-bottom:12px}
+  .bar{position:absolute;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:center;z-index:3}
+  .circ{width:34px;height:34px;border-radius:50%;background:rgba(20,24,22,.6);border:1px solid rgba(255,255,255,.18);display:grid;place-items:center}
+  .ttl{font-weight:800;font-size:14px}
+  .img{position:absolute;border-radius:10px;overflow:hidden}
+  .i1{background:linear-gradient(135deg,#d06417,#6a2d06)}.i2{background:linear-gradient(135deg,#1f8f5a,#0b3d26)}.i3{background:linear-gradient(135deg,#3b6fd0,#142a5c)}.i4{background:linear-gradient(135deg,#c2457a,#561632)}.i5{background:linear-gradient(135deg,#caa63a,#5c4a0c)}
+  .strip{position:absolute;left:0;right:0;bottom:118px;padding:0 12px;display:flex;gap:8px;align-items:center}
+  .th{width:46px;height:60px;border-radius:9px;position:relative;border:2px solid transparent;flex:none}
+  .th.sel{border-color:var(--green)}
+  .th b{position:absolute;top:-6px;right:-6px;width:17px;height:17px;border-radius:50%;background:#222;border:1px solid #666;font-size:10px;display:grid;place-items:center}
+  .add{width:46px;height:60px;border-radius:9px;border:2px dashed rgba(255,255,255,.4);display:grid;place-items:center;font-size:20px;flex:none}
+  .tools{position:absolute;left:0;right:0;bottom:66px;display:flex;justify-content:space-around;padding:0 6px;font-size:10px;text-align:center}
+  .tools div{display:grid;gap:3px;justify-items:center}.tools i{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.12);display:grid;place-items:center;font-style:normal;font-size:16px}
+  .foot{position:absolute;left:12px;right:12px;bottom:12px;display:flex;gap:10px}
+  .btn{flex:1;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-weight:800}
+  .g{background:var(--green);color:#04210f}.o{border:1px solid rgba(255,255,255,.3)}.y{background:var(--yellow);color:#000}
+  .modes{position:absolute;left:12px;right:12px;bottom:66px;display:flex;gap:6px}
+  .mode{flex:1;text-align:center;padding:8px 2px;border-radius:12px;border:1px solid rgba(255,255,255,.25);font-size:11px;font-weight:700;background:rgba(255,255,255,.06)}
+  .mode.sel{background:var(--green);color:#04210f;border-color:var(--green)}
+  .lay{position:absolute;left:12px;right:12px;bottom:130px;display:flex;gap:8px}
+  .lo{width:54px;height:54px;border-radius:10px;border:2px solid rgba(255,255,255,.25);padding:4px;display:grid;gap:2px}
+  .lo.sel{border-color:var(--green)}.lo span{background:rgba(255,255,255,.5);border-radius:2px}
+  .tag{position:absolute;left:12px;top:60px;z-index:3;background:rgba(20,24,22,.6);border:1px solid rgba(255,255,255,.18);border-radius:99px;font-size:11px;font-weight:700;padding:3px 10px}
+  ul.l{margin:6px 0 0;padding-left:20px;font-size:13.5px}ul.l li{margin:3px 0}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:0 0 16px;max-width:980px}
+</style>
+</head>
+<body>
+<h1>Montage de plusieurs images : proposition à valider</h1>
+<p class="lead">Aujourd'hui : tu peux choisir de 2 à 4 images dans la galerie, mais elles partent directement au formulaire (le Studio ne retouche qu'un seul média). Voici ce que je propose : un écran « Mes images » dans le parcours de création, avec <b>trois façons de publier</b> le même lot. Limite portée à <b>5 images</b>.</p>
+
+<div class="box"><b>Le parcours</b> : Créer → Photo → Galerie (choix de 2 à 5 images) → <b>écran Mes images</b> (écran 1) → au choix <b>Carrousel</b>, <b>Collage</b> ou <b>Diaporama vidéo</b> (écrans 2 et 3) → « Suivant » → Nouveau post. Les images viennent de la galerie : elles passent toutes la vérification d'authenticité (aucune image d'un autre réseau).</div>
+
+<div class="row">
+
+  <div class="opt">
+    <h2>1 · Mes images (carrousel)</h2>
+    <p class="t">Chaque image se retouche seule ; on glisse pour changer l'ordre.</p>
+    <div class="phone">
+      <div class="bar"><span class="circ">‹</span><span class="ttl">Mes images · 3 / 5</span><span class="circ">↶</span></div>
+      <div class="img i1" style="left:30px;right:30px;top:64px;height:330px"></div>
+      <div class="tag">Image 1 · format d'origine</div>
+      <div class="strip">
+        <div class="th i1 sel"><b>✕</b></div><div class="th i2"><b>✕</b></div><div class="th i3"><b>✕</b></div><div class="add">＋</div>
+      </div>
+      <div class="modes"><div class="mode sel">Carrousel</div><div class="mode">Collage</div><div class="mode">Diaporama</div></div>
+      <div class="tools"><div><i>T</i>Texte</div><div><i>☺</i>Autocoll.</div><div><i>▦</i>Widgets</div><div><i>★</i>Effets</div><div><i>✂</i>Recadrer</div></div>
+      <div class="foot"><div class="btn o">Refaire</div><div class="btn g">Suivant</div></div>
+    </div>
+    <ul class="l"><li>Une vignette par image, la sélectionnée en vert ; croix pour retirer, « ＋ » pour en ajouter (jusqu'à 5).</li><li><b>Texte, autocollants, widgets, effets</b> : sur l'image sélectionnée, avec « appliquer à toutes » pour les effets de couleur.</li><li>Chaque image garde son <b>format réel</b> (pas de recadrage forcé).</li><li>Publié comme aujourd'hui : un post avec 2 à 5 images à faire défiler.</li></ul>
+  </div>
+
+  <div class="opt">
+    <h2>2 · Collage</h2>
+    <p class="t">Les images sont collées dans UNE seule image.</p>
+    <div class="phone">
+      <div class="bar"><span class="circ">‹</span><span class="ttl">Collage</span><span class="circ">↶</span></div>
+      <div class="img i1" style="left:30px;width:118px;top:64px;height:300px"></div>
+      <div class="img i2" style="left:152px;right:30px;top:64px;height:148px"></div>
+      <div class="img i3" style="left:152px;right:30px;top:216px;height:148px"></div>
+      <div class="tag">Collage de 3 images</div>
+      <div class="lay">
+        <div class="lo" style="grid-template-columns:1fr 1fr"><span></span><span></span></div>
+        <div class="lo" style="grid-template-rows:1fr 1fr"><span></span><span></span></div>
+        <div class="lo sel" style="grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr"><span style="grid-row:1/3"></span><span></span><span></span></div>
+        <div class="lo" style="grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr"><span></span><span></span><span></span><span></span></div>
+      </div>
+      <div class="modes"><div class="mode">Carrousel</div><div class="mode sel">Collage</div><div class="mode">Diaporama</div></div>
+      <div class="tools"><div><i>⇄</i>Échanger</div><div><i>▭</i>Espaces</div><div><i>T</i>Texte</div><div><i>★</i>Effets</div><div><i>⌖</i>Zoom</div></div>
+      <div class="foot"><div class="btn o">Refaire</div><div class="btn g">Suivant</div></div>
+    </div>
+    <ul class="l"><li>Choix de la mise en page (2, 3, 4 ou 5 images) comme pour les deux vidéos : haut/bas, côte à côte, 1 grande + petites, grille.</li><li>On touche une case pour <b>échanger</b>, <b>zoomer</b> ou <b>déplacer</b> l'image dedans ; épaisseur des espaces réglable (même zéro : collées).</li><li>Résultat : une seule image au format du post, prête à publier.</li></ul>
+  </div>
+
+  <div class="opt">
+    <h2>3 · Diaporama vidéo</h2>
+    <p class="t">Les images deviennent une courte vidéo, avec musique.</p>
+    <div class="phone">
+      <div class="bar"><span class="circ">‹</span><span class="ttl">Diaporama</span><span class="circ">↶</span></div>
+      <div class="img i2" style="left:30px;right:30px;top:64px;height:330px"></div>
+      <div class="tag">Image 2 · 3 s · fondu</div>
+      <div style="position:absolute;left:30px;right:30px;top:366px;height:4px;background:rgba(255,255,255,.2);border-radius:4px;z-index:3"><i style="display:block;width:38%;height:100%;background:var(--green);border-radius:4px"></i></div>
+      <div class="strip" style="bottom:150px">
+        <div class="th i1"></div><div class="th i2 sel"></div><div class="th i3"></div><div class="th i4"></div><div class="th i5"></div>
+      </div>
+      <div class="modes"><div class="mode">Carrousel</div><div class="mode">Collage</div><div class="mode sel">Diaporama</div></div>
+      <div class="tools"><div><i>⏱</i>Durée</div><div><i>≈</i>Transition</div><div><i>♪</i>Musique</div><div><i>T</i>Texte</div><div><i>★</i>Effets</div></div>
+      <div class="foot"><div class="btn o">Refaire</div><div class="btn g">Suivant</div></div>
+    </div>
+    <ul class="l"><li>Durée par image (2 à 5 s), transitions (fondu, glissé, zoom lent), <b>musique gratuite ou d'artiste</b> comme dans le Studio.</li><li>Vidéo de 15 s à 30 s au plus, au format choisi (story, post, paysage).</li><li>Rendu par le serveur comme les autres montages ; fin « Afrolook » et signature de téléchargement gérées comme d'habitude.</li></ul>
+  </div>
+
+</div>
+
+<div class="box"><b>À décider avec toi</b>
+  <ul class="l">
+    <li>Ces trois façons ensemble, ou seulement Carrousel + Collage pour commencer (le Diaporama demande un nouveau rendu côté serveur) ?</li>
+    <li>Limite : 5 images (au lieu de 4) pour un post, mais seulement 1 image pour une chronique (comme aujourd'hui) ?</li>
+    <li>Le collage compte-t-il comme « retouché dans le Studio » (mention « Fait sur Afrolook ») ? Je propose oui.</li>
+  </ul>
+</div>
+</body>
+</html>

@@ -590,6 +590,19 @@ class _MyHomePageState extends State<MyHomePage>
                       icon: Icons.account_balance_wallet_rounded,
                       label: context.tr('Mon portefeuille'),
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => MonetisationPage()))),
+                  // Récompenses (en haut du menu) : Premium temporaire, journée sans pub… en regardant des pubs (si les pubs sont actives)
+                  if (RewardsService.available(authProvider.loginUserData))
+                    _dItem(context, colors,
+                        icon: Icons.card_giftcard_rounded,
+                        iconColor: const Color(0xFFFFD700),
+                        label: context.tr('Récompenses'),
+                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RewardsPage()))),
+                  // Top stars : le classement des comptes par points
+                  _dItem(context, colors,
+                      icon: Icons.emoji_events_rounded,
+                      iconColor: const Color(0xFFFFD700),
+                      label: l10n.menuTopStars,
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UserClassement()))),
                   _dItem(context, colors,
                       icon: Icons.school_rounded,
                       label: context.tr('Tous les tutoriels'),
@@ -627,14 +640,6 @@ class _MyHomePageState extends State<MyHomePage>
                       iconColor: const Color(0xFFE91E63),
                       label: context.tr('Musique'),
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MusicPage()))),
-
-                  // Récompenses : Premium temporaire, journée sans pub… en regardant des pubs (si les pubs sont actives)
-                  if (RewardsService.available(authProvider.loginUserData))
-                    _dItem(context, colors,
-                        icon: Icons.card_giftcard_rounded,
-                        iconColor: const Color(0xFFFFD700),
-                        label: context.tr('Récompenses'),
-                        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RewardsPage()))),
 
                   // ── Mes contenus ───────────────────────────────────────────
                   _dSection(colors, 'Mes contenus'),
