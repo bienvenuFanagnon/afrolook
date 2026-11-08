@@ -395,7 +395,7 @@ class _DetailsPostState extends State<DetailsPost>
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          _suggStatItem(Icons.trending_up_rounded, _formatCount(post.totalInteractions ?? (post.loves ?? 0) + (post.comments ?? 0))),
+                          _suggStatItem(Icons.trending_up_rounded, _formatCount(post.interactionsCount)),
                           const SizedBox(width: 12),
                           _suggStatItem(Icons.favorite_rounded, _formatCount(post.loves ?? 0), color: const Color(0xFFFF6B6B)),
                           const SizedBox(width: 12),
@@ -3964,7 +3964,7 @@ class _DetailsPostState extends State<DetailsPost>
           icon: Icons.bar_chart,
           count: post!.isAdvertisement!
               ? _advertisement!.views!
-              : post.totalInteractions ?? 0,
+              : post.interactionsCount,
           label: 'Interactions',
         ),
         GestureDetector(

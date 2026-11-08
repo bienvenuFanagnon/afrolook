@@ -2051,8 +2051,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
 
         // ── Stat passive (loin, discrète) ────────────────────────────────
         const Spacer(),
-        if ((_currentPost.totalInteractions ?? 0) > 0)
-          _buildInteractionsBadge(_currentPost.totalInteractions!, colors),
+        if (_currentPost.interactionsCount > 0)
+          _buildInteractionsBadge(_currentPost.interactionsCount, colors),
       ],
         ),
       ],

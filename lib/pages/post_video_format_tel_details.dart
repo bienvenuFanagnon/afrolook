@@ -2940,7 +2940,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
             onTap: () {},
             child: Column(children: [
               const Icon(Icons.bar_chart, color: Colors.blue, size: 35),
-              Text('${post.totalInteractions ?? 0}', style: const TextStyle(color: Colors.white)),
+              Text('${post.interactionsCount}', style: const TextStyle(color: Colors.white)),
             ]),
           ),
           GestureDetector(

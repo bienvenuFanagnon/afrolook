@@ -2567,8 +2567,8 @@ Future<void> _handleRepost() async {
 
           // ── Stat passive (loin, discrète) ────────────────────────────────
           const Spacer(),
-          if ((widget.post.totalInteractions ?? 0) > 0)
-            _buildInteractionsTotalBadge(widget.post.totalInteractions!, colors),
+          if (widget.post.interactionsCount > 0)
+            _buildInteractionsTotalBadge(widget.post.interactionsCount, colors),
         ],
       ),
     ),

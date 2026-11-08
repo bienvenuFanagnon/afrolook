@@ -2310,7 +2310,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     final isLiked = widget.post.users_love_id?.contains(_authProvider.loginUserData.id) ?? false;
     final hasAccess = !_isLockedContent;
     final myId = _authProvider.loginUserData.id;
-    final totalInteractions = widget.post.totalInteractions ?? 0;
+    final totalInteractions = widget.post.interactionsCount;
     final isAd = widget.post.isAdvertisement == true;
     final hasReposted = widget.post.users_republier_id?.contains(myId) ?? false;
 
