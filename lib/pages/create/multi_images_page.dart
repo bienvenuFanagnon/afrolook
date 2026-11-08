@@ -150,7 +150,8 @@ class _MultiImagesPageState extends State<MultiImagesPage> {
     _setBusy(context.tr('Envoi des images…'));
     final ids = <String>[];
     for (final p in _paths) {
-      ids.add(await ArgentUpload.bytes(await File(p).readAsBytes(), contentType: ArgentUpload.imageType(p)));
+      final bytes = await File(p).readAsBytes();
+      ids.add(await ArgentUpload.bytes(bytes, contentType: ArgentUpload.sniffImageType(bytes, path: p)));   // type réel du contenu, pas celui de l'extension
     }
     _setBusy(context.tr('Montage du diaporama…'));
     final res = await ApiGateway.instance.client.post('/studio/slideshow', body: {'uploads': ids, 'seconds': _seconds, 'transition': _transition, 'format': _format}, idempotencyKey: 'slideshow:${const Uuid().v4()}', longJob: true);

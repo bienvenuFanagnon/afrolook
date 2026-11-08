@@ -246,7 +246,8 @@ class MontageExport {
       if (p.source.isLocal && p.uploadId == null) {
         onStep('Envoi de ta 2e vidéo…');
         final path = p.source.isImage ? p.source.localImagePath! : p.source.localVideoPath!;
-        p.uploadId = await ArgentUpload.bytes(await File(path).readAsBytes(), contentType: p.source.isImage ? ArgentUpload.imageType(path) : 'video/mp4');
+        final bytes = await File(path).readAsBytes();
+        p.uploadId = await ArgentUpload.bytes(bytes, contentType: p.source.isImage ? ArgentUpload.sniffImageType(bytes, path: path) : 'video/mp4');
       }
     }
     onStep('Envoi…');

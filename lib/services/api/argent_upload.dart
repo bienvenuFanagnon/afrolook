@@ -39,6 +39,16 @@ class ArgentUpload {
     return id;
   }
 
+  /// Type RÉEL d'une image, lu dans ses premiers octets (le serveur refuse un fichier dont le contenu ne correspond pas au type annoncé : une capture d'écran
+  /// en PNG enregistrée sous un nom en `.jpg` faisait échouer l'envoi). À défaut, le type déduit de l'extension de [path].
+  static String sniffImageType(List<int> b, {String path = ''}) {
+    if (b.length >= 3 && b[0] == 0xFF && b[1] == 0xD8 && b[2] == 0xFF) return 'image/jpeg';
+    if (b.length >= 8 && b[0] == 0x89 && b[1] == 0x50 && b[2] == 0x4E && b[3] == 0x47) return 'image/png';
+    if (b.length >= 12 && b[0] == 0x52 && b[1] == 0x49 && b[2] == 0x46 && b[3] == 0x46 && b[8] == 0x57 && b[9] == 0x45 && b[10] == 0x42 && b[11] == 0x50) return 'image/webp';
+    if (b.length >= 6 && b[0] == 0x47 && b[1] == 0x49 && b[2] == 0x46 && b[3] == 0x38) return 'image/gif';
+    return imageType(path);
+  }
+
   static String imageType(String path) {
     final p = path.toLowerCase();
     if (p.endsWith('.png')) return 'image/png';
