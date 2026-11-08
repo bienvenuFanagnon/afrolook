@@ -1,6 +1,8 @@
 import '../widgets/post_media_overlays.dart';
 import '../widgets/post_widget_view.dart';
 import 'package:afrotok/services/post_orientation.dart';
+import 'package:afrotok/services/watch_tracker.dart';
+import 'package:afrotok/widgets/post_diffusion_sheet.dart';
 import 'package:afrotok/services/post_reply.dart';
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/services/ads_engine_service.dart';
@@ -719,6 +721,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     _midrollVideoController?.dispose();
     _midrollVideoController = null;
     _removeMidrollListener();
+    WatchTracker.instance.flush();   // visionnage anonyme : tranche regardée, envoyée une seule fois
     _videoController?.dispose();
     _chewieController?.dispose();
     _quickCommentController.dispose();
@@ -866,12 +869,14 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     // Sur web, SmartVideoPlayer gère l'affichage nativement via <video> HTML
     if (kIsWeb) return;
     if (_currentPost.url_media == null || _currentPost.url_media!.isEmpty) return;
+    WatchTracker.instance.flush();   // la vidéo précédente quitte l'écran
     _videoController?.dispose();
     _chewieController?.dispose();
     try {
       final String optimizedUrl = authProvider.convertToCdnUrl(_currentPost.url_media!, authProvider.appDefaultData);
       _videoController = await MediaCacheService.videoController(optimizedUrl);
       await _videoController!.initialize();
+      WatchTracker.instance.start(_currentPost.id, _videoController);   // visionnage anonyme
       _chewieController = ChewieController(
         videoPlayerController: _videoController!,
         autoPlay: true,
@@ -1294,6 +1299,11 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
                 _toggleFavorite();
               },
             ),
+            if (_currentPost.id != null)
+              _buildMenuOption(Icons.rocket_launch_outlined, tr('Diffusion'), sheetColors.textPrimary, () {
+                Navigator.pop(context);
+                showPostDiffusionSheet(this.context, _currentPost.id!);   // vagues de diffusion : visible par tous
+              }),
             if (PostDownload.canDownload(_currentPost))
               _buildMenuOption(Icons.download_rounded, _currentPost.user_id == authProvider.loginUserData.id ? 'Télécharger (gratuit)' : 'Télécharger', Colors.green.shade600, () {
                 Navigator.pop(context);

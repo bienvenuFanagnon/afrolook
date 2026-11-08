@@ -1,5 +1,6 @@
 import 'package:afrotok/services/post_orientation.dart';
 import 'package:afrotok/services/authenticity_watcher.dart';
+import 'package:afrotok/services/watch_tracker.dart';
 import '../../l10n/tr.dart' show tr;
 import '../videos/video_chrome.dart' show AuthenticBadge, NotMonetizedChip, showNotMonetizedSheet;
 import 'package:afrotok/services/read_meter.dart';
@@ -347,6 +348,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
 
   // Contrôleurs vidéo
   VideoPlayerController? _videoController;
+  final WatchTracker _watch = WatchTracker();   // visionnage anonyme de cette carte
   ChewieController? _chewieController;
   bool _isVideoInitialized = false;
   bool _isVideoLoading = false;
@@ -569,6 +571,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         // Attendre l'initialisation (chargement des métadonnées)
         await _videoController!.initialize();
       }
+      _watch.start(widget.post.id, _videoController);   // visionnage anonyme (tranche regardée, envoyée une fois)
 
       _videoController!.addListener(() {
         if (_videoController == null) return;
@@ -778,6 +781,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         _videoController = await MediaCacheService.videoController(optimizedUrl);
         await _videoController!.initialize();
       }
+      _watch.start(widget.post.id, _videoController);   // visionnage anonyme
 
       _videoController!.addListener(() {
         if (_videoController == null) return;
@@ -890,6 +894,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
   }
 
   Future<void> _disposeVideoControllers() async {
+    _watch.flush();   // la vidéo quitte l'écran : tranche regardée envoyée (anonyme)
     _chewieController?.dispose();
     await _videoController?.dispose();
     _chewieController = null;

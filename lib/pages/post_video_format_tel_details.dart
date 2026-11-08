@@ -1,5 +1,7 @@
 import '../widgets/post_media_overlays.dart';
 import 'package:afrotok/services/api/canaux_api.dart';
+import 'package:afrotok/services/watch_tracker.dart';
+import 'package:afrotok/widgets/post_diffusion_sheet.dart';
 import '../ads/fullscreen_ad_page.dart';
 import 'package:afrotok/services/post_orientation.dart';
 import 'package:afrotok/widgets/post_widget_view.dart';
@@ -642,6 +644,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   // ────────────────────────────────────────────────────────────────────────────
 
   void _disposeCurrentVideo() {
+    WatchTracker.instance.flush();   // la vidéo quitte l'écran : on envoie la tranche regardée (anonyme)
     _removeMidrollListener();
     _chewieController?.dispose();
     final cur = _currentVideoController;
@@ -755,6 +758,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         } catch (_) {}
       }
       _currentVideoController = preloadedController;
+      WatchTracker.instance.start(post.id, preloadedController);   // visionnage anonyme : envoie le précédent, suit celui-ci
 
       // Créer le nouveau ChewieController avec autoPlay true
       _chewieController = ChewieController(
@@ -802,6 +806,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       final String optimizedUrl = authProvider.convertToCdnUrl(post.url_media!, authProvider.appDefaultData);
       _currentVideoController = await MediaCacheService.videoController(optimizedUrl);
       await _currentVideoController!.initialize();
+      WatchTracker.instance.start(post.id, _currentVideoController);   // visionnage anonyme
       _chewieController = ChewieController(
         videoPlayerController: _currentVideoController!,
         autoPlay: true,
@@ -2038,6 +2043,17 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
                 );
               },
             ).animate().fadeIn(duration: 200.ms, delay: 40.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
+
+            // Diffusion (vagues) : visible par tous
+            if (post.id != null)
+              ListTile(
+                leading: Icon(Icons.rocket_launch_outlined, color: colors.primary),
+                title: Text(tr('Diffusion'), style: TextStyle(color: colors.textPrimary)),
+                onTap: () {
+                  Navigator.pop(context);
+                  showPostDiffusionSheet(this.context, post.id!);
+                },
+              ).animate().fadeIn(duration: 200.ms, delay: 50.ms).slideX(begin: -0.05, end: 0, duration: 200.ms, curve: Curves.easeOut),
 
             if (post.user_id != authProvider.loginUserData.id) ...[
               if (authProvider.loginUserData.role == UserRole.ADM.name) ...[

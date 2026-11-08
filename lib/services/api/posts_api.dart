@@ -1,4 +1,5 @@
 import '../media_fingerprint.dart';
+import 'post_diffusion.dart';
 import '../../models/post_widget.dart';
 import 'dart:io';
 
@@ -213,6 +214,22 @@ class PostsApi {
     } catch (e) {
       if (kDebugMode) debugPrint('API signal $type $id : $e');
     }
+  }
+
+  /// Visionnage ANONYME d'une vidéo (08/11/2026), envoyé UNE fois quand elle quitte l'écran : [bucket] = q (moins de la moitié), h (au moins la moitié),
+  /// f (presque la fin), l (revue en boucle). Le serveur ajoute 1 à un compteur de la publication, sans garder qui a regardé. Jamais bloquant (erreur ignorée).
+  static Future<void> watch(String id, String bucket, {int? durationSec}) async {
+    try {
+      await _c.post('/posts/$id/watch', body: {'b': bucket, if (durationSec != null) 'd': durationSec});
+    } catch (e) {
+      if (kDebugMode) debugPrint('API watch $bucket $id : $e');
+    }
+  }
+
+  /// Carte « Diffusion » (vagues) : visible par tous. `null` si la publication n'est pas (encore) dans les vagues.
+  static Future<PostDiffusion?> diffusion(String id) async {
+    final m = _asMap(await _c.get('/posts/$id/diffusion'));
+    return m.isEmpty ? null : PostDiffusion.fromJson(m);
   }
 
   /// Cadeau à une publication. [body] : voir `GiftController@toPost` (clé d'idempotence conservée par l'écran).

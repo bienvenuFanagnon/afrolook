@@ -1,6 +1,7 @@
 import '../../../ads/gold_gate.dart';
 import 'package:afrotok/services/post_reply.dart';
 import '../../../widgets/commerce_card.dart';
+import '../../../widgets/post_diffusion_sheet.dart';
 import '../../../services/api/commerce_api.dart';
 import '../../studio/montage/montage_pin.dart';
 import 'package:afrotok/services/post_orientation.dart';
@@ -3053,6 +3054,16 @@ Future<void> _sendQuickComment(String text) async {
                 Navigator.push(this.context, MaterialPageRoute(builder: (_) => ReplyVideosPage(postId: post.id!)));
               },
             ),
+            if (post.id != null && post.isAdvertisement != true)
+              _buildMenuOption(
+                Icons.rocket_launch_outlined,
+                context.tr('Diffusion'),
+                colors.textPrimary,
+                () {
+                  Navigator.pop(context);
+                  showPostDiffusionSheet(this.context, post.id!);   // vagues de diffusion : visible par tous
+                },
+              ),
             if (post.user_id != authProvider.loginUserData.id)
               _buildMenuOption(
                 Icons.flag,
