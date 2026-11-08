@@ -634,6 +634,14 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     _scrollController.addListener(_scrollListener);
   }
 
+  /// Le fil vient de se (re)charger : si la personne a publié il y a moins de 2 minutes, son post revient en tête (le serveur ne renvoie jamais ses propres posts).
+  void _reapplyOwnNewPost() {
+    final r = NewContentBus.instance.recentOwn;
+    if (r == null || r.id == null || !mounted) return;
+    if (_posts.isNotEmpty && _posts.first.id == r.id) return;
+    _insertOwnNewPost(r);
+  }
+
   /// Place en tête du fil le post que la personne vient de publier, et remonte tout en haut.
   void _insertOwnNewPost(Post post) {
     final id = post.id;
@@ -1787,6 +1795,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
             _isLoadingPosts = false;
             _isFirstLoad = false;
           });
+          _reapplyOwnNewPost();
           printVm('⏱️ [PERF] 1er affichage (${newPosts.length} posts): ${_sw.elapsedMilliseconds}ms');
           StartupTrace.mark('PREMIERS POSTS AFFICHÉS');
           _logBadgeSummary();
@@ -1878,6 +1887,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         // File infinie : le fil continue tant que le serveur a des posts non vus ; sinon (anciens écrans) T2+T3 sur demande
         _hasMorePosts = _infiniteFeed;
       });
+      _reapplyOwnNewPost();
       _logBadgeSummary();
       // Auto-déclencher T2+T3 une seule fois quand T1 est épuisé
       if (!_t2AutoTriggered && !_infiniteFeed) {

@@ -364,6 +364,8 @@ const Map<String, Map<String, String>> kTrVideos = {
   "Retirer l'image": {'en': "Remove the image", 'es': "Quitar la imagen", 'de': "Bild entfernen", 'ar': "إزالة الصورة", 'pt': "Remover a imagem", 'zh': "移除图片", 'sw': "Ondoa picha"},
   "L'image n'a pas pu être épinglée. Réessaie.": {'en': "The image couldn't be pinned. Try again.", 'es': "No se pudo fijar la imagen. Inténtalo de nuevo.", 'de': "Das Bild konnte nicht angeheftet werden. Versuch es nochmal.", 'ar': "تعذّر تثبيت الصورة. حاول مرة أخرى.", 'pt': "Não foi possível fixar a imagem. Tente de novo.", 'zh': "无法置顶这张图片，请重试。", 'sw': "Picha haikuweza kubandikwa. Jaribu tena."},
   // ── Vagues de diffusion (08/11/2026) : carte « Diffusion » ──
+  "interactions": {'en': "interactions", 'es': "interacciones", 'de': "Interaktionen", 'ar': "تفاعلات", 'pt': "interações", 'zh': "次互动", 'sw': "mwingiliano"},
+  "interaction": {'en': "interaction", 'es': "interacción", 'de': "Interaktion", 'ar': "تفاعل", 'pt': "interação", 'zh': "次互动", 'sw': "mwingiliano"},
   "Diffusion": {'en': "Reach", 'es': "Alcance", 'de': "Reichweite", 'ar': "الانتشار", 'pt': "Alcance", 'zh': "传播情况", 'sw': "Usambazaji"},
   "Diffusion de cette publication": {'en': "Reach of this post", 'es': "Alcance de esta publicación", 'de': "Reichweite dieses Beitrags", 'ar': "انتشار هذا المنشور", 'pt': "Alcance desta publicação", 'zh': "此帖子的传播情况", 'sw': "Usambazaji wa chapisho hili"},
   "Vague": {'en': "Wave", 'es': "Oleada", 'de': "Welle", 'ar': "موجة", 'pt': "Onda", 'zh': "波次", 'sw': "Wimbi"},

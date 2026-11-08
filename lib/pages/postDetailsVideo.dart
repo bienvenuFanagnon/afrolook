@@ -476,7 +476,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          _suggStatItem(Icons.remove_red_eye_outlined, _formatCount(post.vues ?? post.totalInteractions ?? 0)),
+                          _suggStatItem(Icons.trending_up_rounded, _formatCount(post.interactionsCount)),
                           const SizedBox(width: 12),
                           _suggStatItem(Icons.favorite_rounded, _formatCount(post.loves ?? 0), color: const Color(0xFFFF6B6B)),
                           const SizedBox(width: 12),
@@ -1503,7 +1503,6 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [bar(130, 14), const SizedBox(height: 7), bar(80, 10), const SizedBox(height: 5), bar(56, 10)]),
           ),
-          Icon(Icons.more_vert, color: colors.textPrimary.withOpacity(0.35)),
         ],
       );
     }
@@ -1566,12 +1565,8 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
             ]),
           ),
         ),
-        // Bouton Suivre / S'abonner
+        // Bouton Suivre / S'abonner. Le menu du post est dans la rangée de pastilles (« ··· ») : un seul bouton de menu sur la page.
         _buildFollowButton(canal, user, myId),
-        IconButton(
-          icon: Icon(Icons.more_vert, color: colors.textPrimary),
-          onPressed: _showPostMenu,
-        ),
       ],
     );
   }
@@ -2454,13 +2449,13 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     final nl = text.indexOf('\n');
     final title = nl > 0 ? text.substring(0, nl).trim() : text;
     final rest = nl > 0 ? text.substring(nl + 1).trim() : '';
-    final views = _currentPost.vues ?? _currentPost.totalInteractions ?? 0;
+    final interactions = _currentPost.interactionsCount;   // total des interactions (j'aime, commentaires, partages, republications), plus le nombre de vues
     final ago = postTimeAgo(_currentPost.createdAt);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       if (title.isNotEmpty)
         Text(title, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: colors.textPrimary, fontSize: 18, fontWeight: FontWeight.w800, height: 1.25)),
       const SizedBox(height: 3),
-      Text('${_formatCount(views)} ${tr('vues')}${ago.isNotEmpty ? ' · $ago' : ''}', style: TextStyle(color: colors.textSecondary, fontSize: 13)),
+      Text('${_formatCount(interactions)} ${tr(interactions == 1 ? 'interaction' : 'interactions')}${ago.isNotEmpty ? ' · $ago' : ''}', style: TextStyle(color: colors.textSecondary, fontSize: 13)),
       if (_currentPost.authenticity == 'validated') const Padding(padding: EdgeInsets.only(top: 6), child: Align(alignment: Alignment.centerLeft, child: AuthenticBadge())),
       if (_currentPost.authenticity == 'flagged')
         Padding(

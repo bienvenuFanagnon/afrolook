@@ -15,6 +15,7 @@ import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../../services/api/post_publisher.dart';
 import '../../services/media_shrink.dart';
+import '../../services/new_content_bus.dart';
 import '../../services/postService/post_cooldown_service.dart';
 import '../../services/post_source_link.dart';
 import '../../services/template_link.dart';
@@ -424,6 +425,7 @@ class _CreatePublishPageState extends State<CreatePublishPage> {
       widget.canal!.updatedAt = DateTime.now().microsecondsSinceEpoch;
       widget.canal!.publication = (widget.canal!.publication ?? 0) + 1;
     }
+    NewContentBus.instance.rememberPublished(post);   // le post créé passe en tête du fil dès le retour à l'accueil
     addPointsForAction(UserAction.post);
     if (mounted) _say(context.tr('Publié !'));
   }

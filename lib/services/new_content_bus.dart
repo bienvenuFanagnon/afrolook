@@ -2,7 +2,7 @@ import 'package:afrotok/services/api/api_identity.dart';
 import 'dart:async';
 
 import 'package:afrotok/services/api/post_mapper.dart';
-import 'package:afrotok/services/api/regie_api.dart';
+import 'package:afrotok/services/api/users_api.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:provider/provider.dart';
@@ -36,6 +36,27 @@ class NewContentBus {
 
   /// Une chronique vient d'être publiée (la barre des chroniques doit se rafraîchir).
   Stream<void> get chroniquePublished => _chroniques.stream;
+
+  Post? _justPublished;
+  Post? _recentOwn;
+  DateTime? _recentOwnAt;
+
+  /// Le post publié il y a moins de 2 minutes : un fil qui se (re)charge après l'annonce le remet en tête (les propres posts ne sont jamais dans le fil du serveur).
+  Post? get recentOwn {
+    final at = _recentOwnAt;
+    if (at == null || DateTime.now().difference(at) > const Duration(minutes: 2)) return null;
+    return _recentOwn;
+  }
+
+  void _emit(Post post) {
+    _recentOwn = post;
+    _recentOwnAt = DateTime.now();
+    _posts.add(post);
+  }
+
+  /// Le post qui vient d'être créé (réponse du serveur), à placer en tête du fil dès le retour à l'accueil. À appeler juste avant [onPublished]
+  /// (via `addPointsForAction(UserAction.post)`). Sans lui, on cherche le dernier post de la personne dans sa liste de posts (voir [_showLatestOwnPost]).
+  void rememberPublished(Post? post) => _justPublished = post;
 
   /// Une publication (post, post de canal…) vient de réussir.
   void onPublished() {
@@ -81,19 +102,25 @@ class NewContentBus {
 
   Future<void> _showLatestOwnPost() async {
     try {
+      // le post créé est déjà connu (réponse du serveur) : on l'affiche tel quel
+      final known = _justPublished;
+      _justPublished = null;
       await Future.delayed(const Duration(milliseconds: 1200));
+      if (known != null && (known.id ?? '').isNotEmpty) {
+        _emit(known);
+        return;
+      }
       final uid = ApiIdentity.myId;
       if (uid == null) return;
-      final r = await RegieApi.get('/feed', query: {'limit': 5});
-      final rows = ((r is Map ? r['data'] : null) as List? ?? const []).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
-      final mine = rows.where((j) => '${j['author_id'] ?? j['user_id']}' == uid).toList();
-      if (mine.isEmpty) return;
-      final post = postFromApi(mine.first);
+      // Les propres posts de la personne ne sont JAMAIS dans son fil (`/feed` les exclut) : on lit sa liste de posts, du plus récent au plus ancien.
+      final r = await UsersApi.userPosts(uid, limit: 3);
+      if (r.items.isEmpty) return;
+      final post = postFromApi(r.items.first);
       // seulement un post tout juste publié (jamais un ancien post si la publication n'a pas créé de post)
       var created = post.createdAt ?? 0;
       if (created > 100000000000000) created ~/= 1000; // microsecondes → millisecondes
       if (DateTime.now().millisecondsSinceEpoch - created > 3 * 60 * 1000) return;
-      _posts.add(post);
+      _emit(post);
     } catch (_) {}
   }
 }
