@@ -1,3 +1,4 @@
+import 'dart:ui' show ImageFilter;
 
 import 'package:afrotok/services/conversation_opener.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
@@ -540,6 +541,23 @@ class _UserProfileModalState extends State<UserProfileModal> {
     super.initState();
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
     userProvider = Provider.of<UserProvider>(context, listen: false);
+    _loadStats();
+  }
+
+  /// Chiffres du profil lus sur le serveur à l'ouverture (popularité, filleuls, abonnés, likes) : l'aperçu venu d'une publication ne les contient pas.
+  Future<void> _loadStats() async {
+    final id = widget.user.id;
+    if (id == null || id.isEmpty) return;
+    try {
+      final fresh = userFromApi(await UsersApi.publicProfile(id));
+      if (!mounted) return;
+      setState(() {
+        widget.user.popularite = fresh.popularite;
+        widget.user.usersParrainer = fresh.usersParrainer;
+        if (fresh.abonnes != null) widget.user.abonnes = fresh.abonnes;
+        if (fresh.userlikes != null) widget.user.userlikes = fresh.userlikes;
+      });
+    } catch (_) {}   // sans connexion : les chiffres connus restent affichés
   }
 
   String formatNumber(int number) {
@@ -915,9 +933,9 @@ class _UserProfileModalState extends State<UserProfileModal> {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.8),
+        color: const Color(0x8C141816),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Color(0xFFFFD700)),
+        border: Border.all(color: Colors.white.withOpacity(0.18)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1006,11 +1024,12 @@ class _UserProfileModalState extends State<UserProfileModal> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
+                      Colors.black.withOpacity(0.25),
                       Colors.transparent,
-                      Colors.black.withOpacity(0.7),
-                      Colors.black.withOpacity(0.9),
+                      Colors.black.withOpacity(0.55),
+                      Colors.black.withOpacity(0.92),
                     ],
-                    stops: const [0.0, 0.5, 1.0],
+                    stops: const [0.0, 0.26, 0.6, 1.0],
                   ),
                 ),
               ),
@@ -1033,8 +1052,9 @@ class _UserProfileModalState extends State<UserProfileModal> {
                       _buildCountryInfo(),
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.7),
+                          color: const Color(0x8C141816),
                           shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white.withOpacity(0.18)),
                         ),
                         child: IconButton(
                           icon: const Icon(
@@ -1055,215 +1075,7 @@ class _UserProfileModalState extends State<UserProfileModal> {
               /// =========================
               /// SECTION BAS PROFIL
               /// =========================
-              Container(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  children: [
-
-                    /// NOM + BADGE
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          constraints: BoxConstraints(
-                            maxWidth: widget.w * 0.7,
-                          ),
-                          child: PseudoTag(label: '@${widget.user.pseudo ?? l10n.profileDefaultUser}',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              shadows: [
-                                Shadow(
-                                  blurRadius: 10,
-                                  color: Colors.black,
-                                ),
-                              ],
-                            ),
-                            textAlign: TextAlign.center,
-                            overflow: TextOverflow.ellipsis),
-                        ),
-                        const SizedBox(width: 8),
-                        UserBadgeWidget(user: widget.user, size: 18),
-                      ],
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    /// STATISTIQUES
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 20, horizontal: 24),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.2),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          FollowersCountBuilder(userId: widget.user.id, fallback: widget.user.followersCount, builder: (_, c) => _buildStatItem(
-                            formatCompactCount(c),
-                            l10n.profileFollowers,
-                            const Color(0xFFFFD700),
-                          )),
-                          _buildStatItem(
-                            '${taux.toStringAsFixed(1)}%',
-                            l10n.profilePopularity,
-                            const Color(0xFF8B0000),
-                          ),
-                          _buildStatItem(
-                            (widget.user.usersParrainer?.length ?? 0).toString(),
-                            l10n.profileReferrals,
-                            Colors.lightBlue,
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 5),
-                    _buildProfileLikesSection(),
-                    const SizedBox(height: 10),
-
-                    /// BOUTONS ACTION
-                    if (!isOwnProfile) ...[
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-
-                          /// MESSAGE / INVITATION
-                          _buildActionButton(
-                            text: isFriend
-                                ? l10n.profileMessage
-                                : (isInvited
-                                ? l10n.profileInviteSent
-                                : l10n.profileInvite),
-                            color: isFriend
-                                ? Colors.green
-                                : (isInvited
-                                ? Colors.grey
-                                : Colors.blue),
-                            isDisabled: isInvited,
-                            isLoading: inviteTap,
-                            icon: isFriend
-                                ? Icons.message
-                                : Icons.person_add,
-                            width: isFriend ? 140 : 160,
-                            onPressed: isFriend
-                                ? () async {
-                              try {
-                                Chat chat =
-                                await getChatsData(widget.user);
-                                Navigator.of(context).pop();
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => MyChat(
-                                      title:
-                                      'Chat avec ${widget.user.pseudo}',
-                                      chat: chat,
-                                    ),
-                                  ),
-                                );
-                              } catch (e) {
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(
-                                  SnackBar(
-                                    backgroundColor: Colors.red,
-                                    content: Text(
-                                      'Erreur: $e',
-                                      style: const TextStyle(
-                                          color: Colors.white),
-                                    ),
-                                  ),
-                                );
-                              }
-                            }
-                                : isInvited
-                                    ? () {} // déjà invité — isDisabled gère le blocage
-                                    : () => _sendInvitation(widget.user),
-                          ),
-
-                          /// ABONNEMENT
-                          _buildActionButton(
-                            text: isAbonne
-                                ? l10n.profileSubscribed
-                                : l10n.profileSubscribe,
-                            color: isAbonne
-                                ? Colors.green
-                                : Colors.red,
-                            isDisabled: isAbonne,
-                            isLoading: abonneTap,
-                            icon:
-                            isAbonne ? Icons.check : Icons.add,
-                            width: 140,
-                            onPressed: () =>
-                                _toggleAbonnement(widget.user),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-
-                    /// VOIR PROFIL COMPLET
-                    Container(
-                      width: double.infinity,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [
-                            Color(0xFFFFD700),
-                            Color(0xFF8B0000)
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(25),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFFFD700)
-                                .withOpacity(0.4),
-                            blurRadius: 15,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  OtherUserPage(
-                                      otherUser: widget.user),
-                            ),
-                          );
-                        },
-                        child: Row(
-                          mainAxisAlignment:
-                          MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.remove_red_eye,
-                                color: Colors.white, size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              l10n.profileSeeFullProfile,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 10),
-                  ],
-                ),
-              ),
+              _buildGlassPanel(l10n, taux: taux, isFriend: isFriend, isInvited: isInvited, isAbonne: isAbonne, isOwnProfile: isOwnProfile),
             ],
           ),
         ],
@@ -1584,6 +1396,148 @@ class _UserProfileModalState extends State<UserProfileModal> {
     return '${(count / 1000000).toStringAsFixed(1)}M';
   }
   // Dans le UserProfileModal, ajoutez cette section après les statistiques existantes
+  // ── Panneau de verre (proposition A validée) : nom, trois chiffres, likes, boutons ─────────────────────
+
+  static const Color _green = Color(0xFF2ECC71);
+
+  Widget _statCell(String value, String label, {Widget? extra}) => Expanded(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text(value, style: const TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 1),
+          Text(label, style: TextStyle(color: Colors.white.withOpacity(0.65), fontSize: 11)),
+          if (extra != null) extra,
+        ]),
+      );
+
+  Widget _glassBtn({required String text, required IconData icon, required VoidCallback? onTap, bool loading = false, bool green = false, bool outlined = false}) {
+    final bg = green ? _green : (outlined ? Colors.transparent : Colors.white.withOpacity(0.12));
+    final fg = green ? const Color(0xFF04210F) : (outlined ? _green : Colors.white);
+    final border = green ? null : Border.all(color: outlined ? _green : Colors.white.withOpacity(0.2));
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: 44,
+          decoration: BoxDecoration(color: onTap == null && !outlined ? Colors.white.withOpacity(0.06) : bg, borderRadius: BorderRadius.circular(14), border: border),
+          child: loading
+              ? Center(child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: fg)))
+              : Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Icon(icon, color: onTap == null && !outlined ? Colors.white38 : fg, size: 18),
+                  const SizedBox(width: 6),
+                  Flexible(child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: onTap == null && !outlined ? Colors.white38 : fg, fontWeight: FontWeight.w800, fontSize: 14))),
+                ]),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGlassPanel(AppLocalizations l10n, {required double taux, required bool isFriend, required bool isInvited, required bool isAbonne, required bool isOwnProfile}) {
+    final pseudo = widget.user.pseudo ?? l10n.profileDefaultUser;
+    final popularity = taux.clamp(0.0, 100.0).toDouble();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 0, 14, 16),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+            decoration: BoxDecoration(color: const Color(0xB8101412), borderRadius: BorderRadius.circular(22), border: Border.all(color: Colors.white.withOpacity(0.12))),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              // nom + badge de certification, puis le @ en petit
+              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Flexible(
+                  child: PseudoTag(
+                    label: pseudo,
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                UserBadgeWidget(user: widget.user, size: 18),
+              ]),
+              const SizedBox(height: 10),
+              // trois chiffres, tous blancs, séparés par de fines lignes ; la popularité a sa jauge verte
+              Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(border: Border.symmetric(horizontal: BorderSide(color: Colors.white.withOpacity(0.1)))),
+                child: IntrinsicHeight(
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                    FollowersCountBuilder(
+                      userId: widget.user.id,
+                      fallback: widget.user.followersCount,
+                      builder: (_, c) => _statCell(formatCompactCount(c), l10n.profileFollowers),
+                    ),
+                    VerticalDivider(width: 1, color: Colors.white.withOpacity(0.1)),
+                    _statCell('${popularity.toStringAsFixed(popularity >= 10 ? 1 : 2)} %', l10n.profilePopularity),
+                    VerticalDivider(width: 1, color: Colors.white.withOpacity(0.1)),
+                    _statCell('${widget.user.usersParrainer?.length ?? 0}', l10n.profileReferrals),
+                  ]),
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildProfileLikesSection(),
+              if (!isOwnProfile) ...[
+                const SizedBox(height: 4),
+                Row(children: [
+                  // message si déjà amis, sinon invitation
+                  _glassBtn(
+                    text: isFriend ? l10n.profileMessage : (isInvited ? l10n.profileInviteSent : l10n.profileInvite),
+                    icon: isFriend ? Icons.chat_bubble_outline_rounded : Icons.person_add_alt_1_rounded,
+                    loading: inviteTap,
+                    onTap: isInvited
+                        ? null
+                        : (isFriend
+                            ? () async {
+                                try {
+                                  final Chat chat = await getChatsData(widget.user);
+                                  if (!mounted) return;
+                                  Navigator.of(context).pop();
+                                  Navigator.push(context, MaterialPageRoute(builder: (context) => MyChat(title: 'Chat avec ${widget.user.pseudo}', chat: chat)));
+                                } catch (e) {
+                                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(backgroundColor: Colors.red, content: Text('Erreur: $e', style: const TextStyle(color: Colors.white))));
+                                }
+                              }
+                            : () => _sendInvitation(widget.user)),
+                  ),
+                  const SizedBox(width: 9),
+                  // abonnement : vert plein ; déjà abonné : « Abonné » en contour vert
+                  _glassBtn(
+                    text: isAbonne ? l10n.profileSubscribed : l10n.profileSubscribe,
+                    icon: isAbonne ? Icons.check_rounded : Icons.add_rounded,
+                    loading: abonneTap,
+                    green: !isAbonne,
+                    outlined: isAbonne,
+                    onTap: isAbonne ? null : () => _toggleAbonnement(widget.user),
+                  ),
+                ]),
+                const SizedBox(height: 9),
+              ],
+              // voir le profil complet : bouton à contour, flèche jaune
+              GestureDetector(
+                onTap: () {
+                  Navigator.of(context).pop();
+                  Navigator.push(context, MaterialPageRoute(builder: (context) => OtherUserPage(otherUser: widget.user)));
+                },
+                child: Container(
+                  height: 40,
+                  width: double.infinity,
+                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.white.withOpacity(0.28))),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Text(l10n.profileSeeFullProfile, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14)),
+                    const SizedBox(width: 6),
+                    const Icon(Icons.chevron_right_rounded, color: Color(0xFFFFD400), size: 20),
+                  ]),
+                ),
+              ),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildProfileLikesSection() {
     // Un profil ouvert depuis un aperçu (snapshot de post) peut ne pas avoir d'identifiant : section masquée
     if (widget.user.id == null || widget.user.id!.isEmpty) return const SizedBox.shrink();
@@ -1602,23 +1556,11 @@ class _UserProfileModalState extends State<UserProfileModal> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.favorite, color: Colors.red, size: 20),
-              SizedBox(width: 8),
+              const Icon(Icons.favorite_rounded, color: Colors.white, size: 16),
+              const SizedBox(width: 6),
               Text(
-                _formatCount(likesCount),
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(width: 4),
-              Text(
-                l10n.profileLikes,
-                style: TextStyle(
-                  color: Colors.grey[400],
-                  fontSize: 14,
-                ),
+                '${_formatCount(likesCount)} ${l10n.profileLikes}',
+                style: TextStyle(color: Colors.white.withOpacity(0.85), fontSize: 13),
               ),
               if (!isOwnProfile) ...[
                 SizedBox(width: 20),

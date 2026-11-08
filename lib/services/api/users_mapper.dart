@@ -101,6 +101,12 @@ UserData userFromApi(Map<String, dynamic> j, {String? viewerId}) {
   if (j['followers_count'] != null) u.abonnes = _i(j['followers_count']);
   u.isVerify = j['is_verified'] == true;
   if (j['likes_count'] != null) u.userlikes = _i(j['likes_count']);
+  // chiffres du modal de profil : popularité (rang parmi les comptes qui ont des abonnés, en %) et filleuls (comptes parrainés)
+  if (j['popularity'] is num) u.popularite = (j['popularity'] as num).toDouble();
+  if (j['referrals_count'] != null) {
+    final r = _i(j['referrals_count']);
+    u.usersParrainer = List<String>.filled(r, '');
+  }
   // La personne connectée suit-elle ce compte ? (champ `is_following` du profil public)
   if (viewerId != null && j['is_following'] == true) u.userAbonnesIds = [viewerId];
   u.completeData = true;

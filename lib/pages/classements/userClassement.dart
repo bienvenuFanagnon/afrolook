@@ -521,7 +521,7 @@ class _TopFiveUserItemState extends State<TopFiveUserItem> {
                     Icon(Icons.star, size: 12, color: Colors.yellow[700]),
                     SizedBox(width: 4),
                     Text(
-                      "${((widget.user.totalPoints/authProvider.appDefaultData.appTotalPoints ?? 0) * 100).toStringAsFixed(0)}%",
+                      "${(widget.user.popularite ?? 0).toStringAsFixed(2)}%",   // part des points de l'application, calculée par le serveur
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.yellow[700],
