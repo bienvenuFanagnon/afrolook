@@ -69,6 +69,8 @@ import '../../widgets/gifts/quick_gift_bar.dart' show QuickGiftBar, CadeauBadge;
 import '../component/showUserDetails.dart';
 import '../postComments.dart';
 import '../postDetails.dart';
+import '../../widgets/post_media_overlays.dart';
+import '../../widgets/original_badge.dart';
 import '../postDetailsVideo.dart';
 
 import '../../services/utils/abonnement_utils.dart';
@@ -1226,6 +1228,21 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     );
   }
 
+  /// Ouvre le post auquel celui-ci répond (réponse en vidéo).
+  void _openReplyTarget() {
+    final id = widget.post.replyToPostId;
+    if (id == null) return;
+    void gone() {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Le post d'origine n'est plus disponible.")));
+    }
+    PostsApi.get(id).then((p) {
+      if (!mounted) return;
+      if (p == null) return gone();
+      _pauseVideo();
+      Navigator.push(context, MaterialPageRoute(builder: (_) => DetailsPost(post: p)));
+    }).catchError((_) => gone());
+  }
+
   void _navigateToDetails() {
     _pauseVideo();
     Navigator.push(
@@ -1589,6 +1606,17 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                   );
                 },
               ),
+              if (OriginalBadge.isCaptured(widget.post.captureSource) || VoiceChangedBadge.has(widget.post.voiceEffect))
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Wrap(spacing: 6, runSpacing: 4, children: [
+                    if (OriginalBadge.isCaptured(widget.post.captureSource)) const OriginalBadge(),
+                    if (VoiceChangedBadge.has(widget.post.voiceEffect)) const VoiceChangedBadge(),
+                  ]),
+                ),
+              // réponse en vidéo : à quel post on répond (un toucher l'ouvre)
+              if (widget.post.replyToPostId != null)
+                Align(alignment: Alignment.centerLeft, child: ReplyToLine(username: widget.post.replyToUsername, excerpt: widget.post.replyToExcerpt, onTap: _openReplyTarget)),
             ],
           ),
         ),
@@ -1925,6 +1953,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                   ),
                 ),
               _authenticityOverlay(),
+              // widgets du créateur (sondage, quiz, question, lien…) et vidéos épinglées : comme dans les pages de détail
+              if (!isLocked && !isAd) Positioned.fill(child: PostMediaOverlays(post: widget.post, video: _isVideoInitialized ? _videoController : null)),
               Positioned(
                 bottom: 8, right: 8,
                 child: Container(
@@ -2039,6 +2069,9 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
                 color: Colors.black.withOpacity(0.18),
                 child: Center(child: CircularProgressIndicator(color: colors.primary)),
               ),
+            // --- Widgets du créateur et vidéos épinglées ---
+            if (!isLocked && !isAd)
+              Positioned.fill(child: PostMediaOverlays(post: widget.post, video: _isVideoInitialized ? _chewieController?.videoPlayerController : null)),
             // --- Verrou canal privé — s'affiche après 10s de lecture ---
             if (_showCanalLockCta)
               _buildCanalLockOverlay(colors),

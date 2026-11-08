@@ -1,3 +1,4 @@
+import '../widgets/post_media_overlays.dart';
 import 'package:afrotok/services/api/canaux_api.dart';
 import '../ads/fullscreen_ad_page.dart';
 import 'package:afrotok/services/post_orientation.dart';
@@ -3380,7 +3381,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
           ),
         ] else ...[
           const Positioned.fill(child: IgnorePointer(child: VideoShade())),
-          if (post.widgets.isNotEmpty) Positioned.fill(child: PostWidgetsLayer(widgets: post.widgets, video: (post.id != null && _playerPostId == post.id) ? _chewieController?.videoPlayerController : null)),   // sondage, question, lien… posés par le créateur
+          if (post.widgets.isNotEmpty || post.studioPins.isNotEmpty) Positioned.fill(child: PostMediaOverlays(post: post, video: (post.id != null && _playerPostId == post.id) ? _chewieController?.videoPlayerController : null)),   // sondage, question, lien… posés par le créateur
           _buildCreatorInfo(post),
           if (post.authenticity == 'flagged')
             Positioned(

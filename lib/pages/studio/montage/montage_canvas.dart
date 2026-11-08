@@ -4,6 +4,7 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 
 import '../../cards/card_flags.dart';
 import 'montage_catalog.dart';
@@ -38,9 +39,13 @@ class MontageCanvas extends StatelessWidget {
     this.onScale,
     this.onTapSticker,
     this.selectedSticker,
+    this.meVideo,
   });
 
   final MontageState state;
+
+  /// Lecteur de la vidéo de la personne (éditeur) : l'horloge de l'aperçu à deux vidéos.
+  final VideoPlayerController? meVideo;
 
   /// Instant de l'effet quand [animation] est null (export image par image).
   final double t;
@@ -306,10 +311,10 @@ class MontageCanvas extends StatelessWidget {
         if (!(s.exportExcludeTimed && st.timed))
         _slot('st:${st.id}', cq, dflt: st.center, center: st.center, scalable: true, scale: st.scale, onTap: onTapSticker == null ? null : () => onTapSticker!(st.id), child: StickerView(sticker: st, cq: cq, selected: onMove != null && selectedSticker == st.id)),
       // Vidéos épinglées : un aperçu seulement dans l'éditeur (jamais dans le fichier final : le serveur pose la vraie vidéo)
-      if (onMove != null && s.layout != null && s.pins.isNotEmpty) Positioned.fill(child: MontageLayoutPreview(state: s)),
-      if (onMove != null && s.layout == null)
+      if (onMove != null && !s.exportCapture && s.layout != null && s.pins.isNotEmpty) Positioned.fill(child: MontageLayoutPreview(state: s, meVideo: meVideo)),
+      if (onMove != null && !s.exportCapture && s.layout == null)
         for (final p in s.pins)
-          _slot('pin:${p.id}', cq, dflt: p.center, center: p.center, scalable: true, scale: p.scale, onTap: onTapSticker == null ? null : () => onTapSticker!('pin:${p.id}'), child: MontagePinView(pin: p, cq: cq, selected: selectedSticker == 'pin:${p.id}', volume: s.originAudio ? s.originVolume : 0)),
+          _slot('pin:${p.id}', cq, dflt: p.center, center: p.center, scalable: true, scale: p.scale, onTap: onTapSticker == null ? null : () => onTapSticker!('pin:${p.id}'), child: MontagePinView(pin: p, cq: cq, selected: selectedSticker == 'pin:${p.id}', volume: s.originAudio ? s.originVolume : 0, loop: s.originLoop)),
       // Filigrane : toujours présent, même publié dans l'app
       Positioned(
         right: 1.6 * cq,

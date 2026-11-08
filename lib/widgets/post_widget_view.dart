@@ -12,10 +12,13 @@ import '../services/api/widgets_api.dart';
 /// Un widget posé sur une publication : sondage, quiz, question, réaction, rappel (le public répond), compte à rebours, lien, lieu, WhatsApp, appel, carte de vente.
 /// `preview` : aperçu dans l'éditeur (rien ne s'envoie). Fond clair et texte sombre : lisible sur n'importe quelle image ou vidéo, en mode clair comme sombre.
 class PostWidgetView extends StatefulWidget {
-  const PostWidgetView({super.key, required this.widget, this.preview = false, this.onChanged});
+  const PostWidgetView({super.key, required this.widget, this.preview = false, this.onChanged, this.showResults = false});
 
   final PostWidget widget;
   final bool preview;
+
+  /// Dessin hors écran (vidéo téléchargée) : l'auteur voit les résultats comme à l'écran, même en aperçu.
+  final bool showResults;
   final VoidCallback? onChanged;
 
   @override
@@ -38,6 +41,25 @@ class _PostWidgetViewState extends State<PostWidgetView> {
   void initState() {
     super.initState();
     if (w.kind == WidgetKind.countdown) _tick = Timer.periodic(const Duration(seconds: 1), (_) => mounted ? setState(() {}) : null);
+    // sondage, quiz, réaction, rappel : les chiffres viennent du serveur (jamais figés sur ceux de l'ouverture du fil) ; rafraîchis à l'ouverture puis toutes les 20 s
+    if (!widget.preview && w.id != null && const {WidgetKind.poll, WidgetKind.quiz, WidgetKind.reaction, WidgetKind.reminder, WidgetKind.question}.contains(w.kind)) {
+      _refresh();
+      _tick = Timer.periodic(const Duration(seconds: 20), (_) => _refresh());
+    }
+  }
+
+  Future<void> _refresh() async {
+    if (!mounted || _sending || w.id == null) return;
+    try {
+      final r = await WidgetsApi.get(w.id!);
+      if (r == null || !mounted || _sending) return;
+      setState(() {
+        w.counts = r.counts;
+        w.responsesCount = r.responsesCount;
+        if (r.myValue != null) w.myValue = r.myValue;
+        if (r.correct != null) w.config['correct'] = r.correct;
+      });
+    } catch (_) {}   // hors ligne : on garde les derniers chiffres
   }
 
   @override
@@ -48,7 +70,12 @@ class _PostWidgetViewState extends State<PostWidgetView> {
   }
 
   Future<void> _respond(Object value) async {
-    if (widget.preview || _sending || w.id == null) return;
+    if (widget.preview || _sending) return;
+    if (w.id == null) {
+      // ce widget n'a pas encore d'identifiant côté serveur : on le dit au lieu de ne rien faire (la réponse ne serait pas enregistrée)
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(context.tr('Impossible pour le moment. Réessaie plus tard.'))));
+      return;
+    }
     setState(() => _sending = true);
     try {
       final r = await WidgetsApi.respond(w.id!, value);
@@ -105,13 +132,14 @@ class _PostWidgetViewState extends State<PostWidgetView> {
   /// Options d'un sondage ou d'un quiz : avant la réponse des boutons ; après, des barres de pourcentage (et le bon choix d'un quiz).
   Widget _choices({required bool quiz}) {
     final opts = w.options;
-    final answered = w.myValue != null;
+    final voted = w.myValue != null;
+    final answered = voted || (w.isAuthor && (!widget.preview || widget.showResults));   // l'auteur voit les résultats sans avoir à voter
     final total = w.counts.values.fold<int>(0, (a, b) => a + b);
     return Column(children: [
       for (var i = 0; i < opts.length; i++)
         GestureDetector(
           key: ValueKey('widget_option_$i'),
-          onTap: answered || widget.preview ? null : () => _respond(i),
+          onTap: voted || widget.preview ? null : () => _respond(i),
           child: Container(
             margin: const EdgeInsets.only(top: 6),
             decoration: BoxDecoration(color: const Color(0xFFEEF2EF), borderRadius: BorderRadius.circular(10), border: Border.all(color: answered && quiz && w.correct == i ? _green : Colors.transparent, width: 1.6)),
@@ -130,7 +158,7 @@ class _PostWidgetViewState extends State<PostWidgetView> {
                 child: Row(children: [
                   Expanded(child: Text(opts[i], style: const TextStyle(color: _ink, fontWeight: FontWeight.w700, fontSize: 12.5, decoration: TextDecoration.none))),
                   if (answered && total > 0) Text('${(((w.counts['$i'] ?? 0) / total) * 100).round()} %', style: const TextStyle(color: _sub, fontWeight: FontWeight.w800, fontSize: 11.5, decoration: TextDecoration.none)),
-                  if (answered && w.myValue == '$i') const Padding(padding: EdgeInsets.only(left: 4), child: Icon(Icons.check_circle_rounded, size: 15, color: _green)),
+                  if (voted && w.myValue == '$i') const Padding(padding: EdgeInsets.only(left: 4), child: Icon(Icons.check_circle_rounded, size: 15, color: _green)),
                 ]),
               ),
             ]),

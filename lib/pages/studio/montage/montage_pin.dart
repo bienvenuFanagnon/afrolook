@@ -82,7 +82,7 @@ class MontagePin {
 /// Aperçu d'une vidéo épinglée dans l'éditeur : la vignette de la vidéo d'origine (rectangle ou rond), « ▶ » et le nom du créateur. N'apparaît jamais dans le fichier final
 /// (la vraie vidéo est posée par le serveur).
 class MontagePinView extends StatefulWidget {
-  const MontagePinView({super.key, required this.pin, required this.cq, this.selected = false, this.volume = 0});
+  const MontagePinView({super.key, required this.pin, required this.cq, this.selected = false, this.volume = 0, this.loop = true});
 
   final MontagePin pin;
   final double cq;
@@ -90,6 +90,9 @@ class MontagePinView extends StatefulWidget {
 
   /// Volume de l'aperçu (0 = muet) : le son d'origine, réglé dans l'éditeur.
   final double volume;
+
+  /// L'extrait recommence quand il se termine (sinon il reste sur sa dernière image), comme dans la vidéo finale.
+  final bool loop;
 
   @override
   State<MontagePinView> createState() => _MontagePinViewState();
@@ -122,6 +125,22 @@ class _MontagePinViewState extends State<MontagePinView> {
     }
   }
 
+  /// Garde l'aperçu dans l'extrait choisi : à la fin de l'extrait, il recommence (ou s'arrête sur sa dernière image).
+  void _watchClip() {
+    final c = _v;
+    final pin = widget.pin;
+    if (c == null || !c.value.isInitialized || pin.clipEndSec - pin.clipStartSec < .5) return;
+    final pos = c.value.position.inMilliseconds / 1000;
+    if (pos >= pin.clipEndSec - .05) {
+      if (widget.loop) {
+        c.seekTo(Duration(milliseconds: (pin.clipStartSec * 1000).round()));
+        if (!c.value.isPlaying) c.play();
+      } else if (c.value.isPlaying) {
+        c.pause();
+      }
+    }
+  }
+
   static String? _playKey(MontagePin p) => p.source.isImage ? null : (p.source.localVideoPath ?? p.source.previewUrl);
 
   Future<void> _open() async {
@@ -144,6 +163,7 @@ class _MontagePinViewState extends State<MontagePinView> {
         await c.dispose();
         return;
       }
+      c.addListener(_watchClip);
       setState(() => _v = c);
     } catch (_) {
       await c.dispose();
@@ -197,11 +217,15 @@ class _MontagePinViewState extends State<MontagePinView> {
 }
 
 /// Aperçu EN DIRECT de la disposition à deux vidéos dans l'éditeur : la vidéo ajoutée et la tienne jouent chacune dans leur place (collées), avec leur zoom, comme le rendra le serveur.
-/// Sans lecteur (vidéo d'un autre sans adresse, erreur), la vignette est affichée à la place.
+/// UNE SEULE horloge : ta vidéo (le lecteur de l'éditeur, qui boucle). La vidéo ajoutée se cale dessus : elle recommence avec son extrait (ou reste figée sur sa dernière image si « Reboucler » est coupé),
+/// exactement comme dans la vidéo finale. Sans lecteur (vidéo d'un autre sans adresse, erreur), la vignette est affichée à la place.
 class MontageLayoutPreview extends StatefulWidget {
-  const MontageLayoutPreview({super.key, required this.state});
+  const MontageLayoutPreview({super.key, required this.state, this.meVideo});
 
   final dynamic state;   // MontageState (évite une dépendance circulaire)
+
+  /// Le lecteur de ta vidéo (celui de l'éditeur) : il fait office d'horloge.
+  final VideoPlayerController? meVideo;
 
   @override
   State<MontageLayoutPreview> createState() => _MontageLayoutPreviewState();
@@ -209,9 +233,8 @@ class MontageLayoutPreview extends StatefulWidget {
 
 class _MontageLayoutPreviewState extends State<MontageLayoutPreview> {
   VideoPlayerController? _origin;
-  VideoPlayerController? _me;
   String? _originKey;
-  String? _meKey;
+  VideoPlayerController? _clock;   // le lecteur écouté (ta vidéo)
 
   MontagePin? get _pin => widget.state.pins.isEmpty ? null : widget.state.pins.first as MontagePin;
 
@@ -230,20 +253,36 @@ class _MontageLayoutPreviewState extends State<MontageLayoutPreview> {
 
   double get _originVol => (widget.state.originAudio as bool) ? (widget.state.originVolume as num).toDouble().clamp(0.0, 1.0) : 0.0;
 
-  Future<VideoPlayerController?> _open(VideoPlayerController c, {double vol = 0}) async {
-    try {
-      await c.initialize();
-      await c.setVolume(vol);
-      await c.setLooping(false);   // une seule lecture, puis arrêt sur la dernière image
-      await c.play();
-      return c;
-    } catch (_) {
-      await c.dispose();
-      return null;
+  /// Cale la vidéo ajoutée sur l'horloge : position = début de l'extrait + temps écoulé (modulo la durée de l'extrait si elle reboucle).
+  void _follow() {
+    final me = widget.meVideo;
+    final o = _origin;
+    final pin = _pin;
+    if (me == null || o == null || pin == null || !me.value.isInitialized || !o.value.isInitialized) return;
+    final len = pin.clipEndSec - pin.clipStartSec;
+    if (len < .5) return;
+    final t = me.value.position.inMilliseconds / 1000;
+    final loop = widget.state.originLoop as bool;
+    final rel = loop ? t % len : (t > len ? len : t);
+    final target = pin.clipStartSec + rel;
+    final actual = o.value.position.inMilliseconds / 1000;
+    final frozen = !loop && t >= len;   // fini : dernière image figée
+    if ((actual - target).abs() > .4 && !frozen) o.seekTo(Duration(milliseconds: (target * 1000).round()));
+    if (frozen) {
+      if (o.value.isPlaying) o.pause();
+    } else if (me.value.isPlaying && !o.value.isPlaying) {
+      o.play();
+    } else if (!me.value.isPlaying && o.value.isPlaying) {
+      o.pause();
     }
   }
 
   void _sync() {
+    if (!identical(_clock, widget.meVideo)) {
+      _clock?.removeListener(_follow);
+      _clock = widget.meVideo;
+      _clock?.addListener(_follow);
+    }
     final pin = _pin;
     final originKey = pin == null || pin.source.isImage ? null : (pin.source.localVideoPath ?? pin.source.previewUrl);
     if (originKey != _originKey) {
@@ -252,38 +291,31 @@ class _MontageLayoutPreviewState extends State<MontageLayoutPreview> {
       _origin = null;
       old?.dispose();
       if (originKey != null && originKey.isNotEmpty) {
-        final c = pin!.source.isLocal ? VideoPlayerController.file(File(originKey)) : VideoPlayerController.networkUrl(Uri.parse(originKey), videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
-        _open(c, vol: _originVol).then((v) {
-          if (!mounted || _originKey != originKey) {
-            v?.dispose();
-            return;
+        final c = pin!.source.isLocal ? VideoPlayerController.file(File(originKey), videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true)) : VideoPlayerController.networkUrl(Uri.parse(originKey), videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
+        () async {
+          try {
+            await c.initialize();
+            await c.setVolume(_originVol);
+            await c.setLooping(false);   // c'est l'horloge de ta vidéo qui le fait recommencer
+            await c.seekTo(Duration(milliseconds: (pin.clipStartSec * 1000).round()));
+            await c.play();
+            if (!mounted || _originKey != originKey) {
+              await c.dispose();
+              return;
+            }
+            setState(() => _origin = c);
+          } catch (_) {
+            await c.dispose();
           }
-          setState(() => _origin = v);
-        });
-      }
-    }
-    final String? meKey = widget.state.videoPath as String?;
-    if (meKey != _meKey) {
-      _meKey = meKey;
-      final old = _me;
-      _me = null;
-      old?.dispose();
-      if (meKey != null && File(meKey).existsSync()) {
-        _open(VideoPlayerController.file(File(meKey), videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true))).then((v) {
-          if (!mounted || _meKey != meKey) {
-            v?.dispose();
-            return;
-          }
-          setState(() => _me = v);
-        });
+        }();
       }
     }
   }
 
   @override
   void dispose() {
+    _clock?.removeListener(_follow);
     _origin?.dispose();
-    _me?.dispose();
     super.dispose();
   }
 
@@ -323,7 +355,7 @@ class _MontageLayoutPreviewState extends State<MontageLayoutPreview> {
         Positioned.fromRect(
           rect: m,
           child: Stack(fit: StackFit.expand, children: [
-            _cover(_me, mz, const ColoredBox(color: Color(0xFF1B1B1B))),
+            _cover(widget.meVideo, mz, const ColoredBox(color: Color(0xFF1B1B1B))),
             Positioned(left: 6, top: 6, child: Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(8)), child: const Text('Ta vidéo', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)))),
           ]),
         ),

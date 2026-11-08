@@ -1,6 +1,6 @@
 import '../../widgets/gold_badge.dart';
 import '../../widgets/widgets_sheet.dart';
-import '../../widgets/post_widget_view.dart';
+import '../../widgets/draft_widgets_layer.dart';
 import '../../models/post_widget.dart';
 import '../../services/create_draft.dart';
 import '../../widgets/reply_banner.dart';
@@ -230,7 +230,6 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
     _voiceEffect = s.voice;
     _touched = s.touched;
     PostWidgetsLink.drafts.value = s.widgets;
-    _selWidget = null;
     if (mediaChanged && widget.isVideo) {
       await _initVideo();
     } else if (mounted) {
@@ -478,130 +477,14 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
     if (mounted && !_pausedByUser) _video?.play();
   }
 
-  PostWidget? _selWidget;
-  double _scaleStart = 1;
-
-  void _refreshWidgets() => PostWidgetsLink.drafts.value = [...PostWidgetsLink.drafts.value];
-
-  void _scaleWidget(PostWidget w, double delta) {
-    w.scale = (w.scale + delta).clamp(.6, 1.6);
-    _refreshWidgets();
-  }
-
-  Future<void> _editSelected(PostWidget w) async {
-    final n = await editWidget(context, w.kind, existing: w);
-    if (n != null) {
-      _remember();
-      PostWidgetsLink.replace(w, n);
-      if (mounted) setState(() => _selWidget = n);
-    }
-  }
-
-  /// « Visible de… à… » : le widget n'apparaît que dans cette partie de la vidéo (par défaut, toute la durée).
-  Future<void> _editRange(PostWidget w) async {
-    final v = _video;
-    if (v == null || !v.value.isInitialized) return;
-    final total = v.value.duration.inMilliseconds / 1000;
-    if (total < 1) return;
-    var range = RangeValues((w.start ?? 0).clamp(0, total).toDouble(), (w.end ?? total).clamp(0, total).toDouble());
-    final c = AppColors.of(context);
-    final res = await showDialog<RangeValues?>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setS) => AlertDialog(
-          backgroundColor: c.surface,
-          title: Text(context.tr('Visible de… à…'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800)),
-          content: Column(mainAxisSize: MainAxisSize.min, children: [
-            Text('${range.start.toStringAsFixed(1)} s  →  ${range.end.toStringAsFixed(1)} s', style: TextStyle(color: c.textSecondary, fontWeight: FontWeight.w700)),
-            RangeSlider(key: const ValueKey('range_slider'), values: range, min: 0, max: total, divisions: (total * 2).round().clamp(1, 600), onChanged: (r) => setS(() => range = r)),
-          ]),
-          actionsOverflowDirection: VerticalDirection.down,
-          actions: [
-            TextButton(key: const ValueKey('range_all'), onPressed: () => Navigator.pop(ctx, const RangeValues(-1, -1)), child: Text(context.tr('Toute la durée'))),
-            TextButton(key: const ValueKey('range_ok'), onPressed: () => Navigator.pop(ctx, range), child: Text(context.tr('Valider'))),
-          ],
-        ),
-      ),
-    );
-    if (res == null) return;
-    _remember();
-    if (res.start < 0 || (res.start <= 0.05 && res.end >= total - 0.05)) {
-      w.start = null;
-      w.end = null;
-    } else {
-      w.start = res.start;
-      w.end = (res.end - res.start) < 0.5 ? res.start + 0.5 : res.end;
-    }
-    _refreshWidgets();
-  }
-
-  Widget _ctl(Key k, IconData icon, VoidCallback onTap, {Color bg = Colors.black87, Color fg = Colors.white}) => GestureDetector(
-        key: k,
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          width: 32,
-          height: 32,
-          margin: const EdgeInsets.symmetric(horizontal: 3),
-          decoration: BoxDecoration(color: bg, shape: BoxShape.circle, border: Border.all(color: Colors.white54)),
-          child: Icon(icon, size: 18, color: fg),
-        ),
-      );
-
-  /// Calque des widgets : on glisse pour déplacer, on pince (ou on utilise − / +) pour redimensionner, on touche pour afficher les commandes (modifier, supprimer).
-  Widget _widgetsLayer() => ValueListenableBuilder<List<PostWidget>>(
-        valueListenable: PostWidgetsLink.drafts,
-        builder: (context, list, _) => LayoutBuilder(
-          builder: (context, box) {
-            final frame = mediaFrame(Size(box.maxWidth, box.maxHeight), _mediaAspect);   // les positions se comptent dans le cadre du média
-            return Stack(clipBehavior: Clip.none, children: [
-            // toucher le fond désélectionne
-            if (_selWidget != null) Positioned.fill(child: GestureDetector(behavior: HitTestBehavior.translucent, onTap: () => setState(() => _selWidget = null))),
-            for (final w in list)
-              Positioned.fill(
-                child: Align(
-                  alignment: widgetAlignment(w, Size(box.maxWidth, box.maxHeight), frame),
-                  child: Stack(clipBehavior: Clip.none, alignment: Alignment.center, children: [
-
-                    GestureDetector(
-                      key: ValueKey('draft_widget_${list.indexOf(w)}'),
-                      onTap: () => setState(() => _selWidget = identical(_selWidget, w) ? null : w),
-                      onScaleStart: (_) {
-                        _scaleStart = w.scale;
-                        if (!identical(_selWidget, w)) setState(() => _selWidget = w);
-                      },
-                      onScaleUpdate: (d) {
-                        w.x = (w.x + d.focalPointDelta.dx / frame.width).clamp(.04, .96);
-                        w.y = (w.y + d.focalPointDelta.dy / frame.height).clamp(.04, .96);
-                        if (d.pointerCount > 1) w.scale = (_scaleStart * d.scale).clamp(.6, 1.6);
-                        _refreshWidgets();
-                      },
-                      child: Container(
-                        decoration: identical(_selWidget, w) ? BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white, width: 1.5)) : null,
-                        child: Transform.scale(scale: w.scale, child: IgnorePointer(child: PostWidgetView(widget: w, preview: true))),
-                      ),
-                    ),
-                    if (identical(_selWidget, w))
-                      Positioned(
-                        top: -44,
-                        child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          _ctl(const ValueKey('wm_smaller'), Icons.remove_rounded, () => _scaleWidget(w, -.15)),
-                          _ctl(const ValueKey('wm_bigger'), Icons.add_rounded, () => _scaleWidget(w, .15)),
-                          if (widget.isVideo && (_video?.value.isInitialized ?? false)) _ctl(const ValueKey('wm_range'), Icons.timelapse_rounded, () => _editRange(w), bg: (w.start != null || w.end != null) ? const Color(0xFFFFC400) : Colors.black87, fg: (w.start != null || w.end != null) ? Colors.black : Colors.white),
-                          _ctl(const ValueKey('wm_edit'), Icons.edit_rounded, () => _editSelected(w)),
-                          _ctl(const ValueKey('wm_delete'), Icons.delete_outline_rounded, () {
-                            _remember();
-                            PostWidgetsLink.remove(w);
-                            setState(() => _selWidget = null);
-                          }, bg: Colors.redAccent),
-                        ]),
-                      ),
-                  ]),
-                ),
-              ),
-          ]);
-          },
-        ),
+  /// Calque des widgets : le même composant que dans le Studio (déplacer, redimensionner, durée, modifier, supprimer).
+  Widget _widgetsLayer() => DraftWidgetsLayer(
+        mediaAspect: _mediaAspect,
+        videoSeconds: () {
+          final v = _video;
+          return widget.isVideo && v != null && v.value.isInitialized ? v.value.duration.inMilliseconds / 1000 : null;
+        },
+        onBeforeChange: _remember,
       );
 
   @override

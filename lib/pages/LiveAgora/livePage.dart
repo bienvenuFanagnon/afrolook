@@ -33,6 +33,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
+import 'package:image_picker/image_picker.dart';
+import '../../services/api/argent_upload.dart';
 import 'package:video_player/video_player.dart';
 
 
@@ -155,6 +157,20 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   int get _liveMinutes => _durationOverride ?? widget.postLive.safeLiveDurationMinutes;
   bool _endHandled = false;
 
+  /// L'hôte a quitté sans terminer : le live est en pause (« L'hôte revient bientôt »), il reste ouvert et se termine seul après 15 minutes sans signal.
+  bool _awayMarked = false;
+  Timer? _pausePollTimer;
+
+  /// Image épinglée par l'hôte (les spectateurs la touchent pour la voir en grand).
+  String? _pinnedImageUrl;
+
+  /// Filtres de beauté de l'hôte (Agora), réglages de 0 à 1.
+  bool _beautyOn = false;
+  double _beautySmooth = .5;
+  double _beautyLight = .4;
+  double _beautyRed = .1;
+  double _beautySharp = .3;
+
   // ANIMATIONS
   final List<GiftEffect> _giftEffects = [];
   final ScrollController _commentsScrollController = ScrollController();
@@ -215,6 +231,10 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       _startHeartbeat();
       _startDurationLimit();
       _startVoiceWatch();
+      _resumeIfAway();
+    } else {
+      // pendant la pause de l'hôte, le serveur peut terminer le live seul (15 minutes sans signal) : on le vérifie sans attendre un message de Firestore
+      _pausePollTimer = Timer.periodic(const Duration(seconds: 45), (_) => _checkEndedWhilePaused());
     }
 
     // Vérification de la session Firebase avant toute connexion Agora/Firestore
@@ -668,6 +688,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
       if (widget.isHost || _isParticipant) {
         await _engine.startPreview();
+        if (_beautyOn) await _applyBeauty();
       }
 
       final uid = 0;
@@ -776,6 +797,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
       if (widget.isHost || _isParticipant) {
         await _engine.startPreview();
+        if (_beautyOn) await _applyBeauty();
       }
 
       final uid = 0;
@@ -872,6 +894,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       ));
 
       setState(() => _isScreenSharing = true);
+      // l'hôte peut quitter l'application pour partager un autre écran : le serveur ne termine pas le live pour inactivité tant qu'il partage
+      if (widget.isHost) LivesApi.update(widget.liveId, {'screen_sharing': true}).catchError((_) => <String, dynamic>{});
       await _updateScreenSharingState(isSharing: true, sharerId: ApiIdentity.myId!);
     } catch (e) {
       printVm("❌ Erreur démarrage partage écran: $e");
@@ -888,6 +912,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       ));
 
       setState(() => _isScreenSharing = false);
+      if (widget.isHost) LivesApi.update(widget.liveId, {'screen_sharing': false}).catchError((_) => <String, dynamic>{});
       await _updateScreenSharingState(isSharing: false, sharerId: null);
     } catch (e) {
       printVm("❌ Erreur arrêt partage écran: $e");
@@ -1117,6 +1142,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           _paidParticipationTotal = (data['paidParticipationTotal'] ?? 0).toDouble();
           _isLivePaused = data['isPaused'] == true;
           _pauseMessage = data['pauseMessage'] as String?;
+          _pinnedImageUrl = data['pinnedImageUrl'] as String?;
           _topDonors = topDonors;
           final currentUserId = ApiIdentity.myId;
           _isParticipant = currentUserId != null && _participants.contains(currentUserId);
@@ -1615,6 +1641,10 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }
 
   void _leaveLive() async {
+    if (widget.isHost) {
+      _confirmHostExit();   // l'hôte confirme d'abord : rester, quitter en pause ou terminer
+      return;
+    }
     try {
       if (!widget.isHost) {
         await _firestore.collection('lives').doc(widget.liveId).update({
@@ -1738,7 +1768,229 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
   // ==================== WIDGETS PRINCIPAUX ====================
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => PopScope(
+        // l'hôte n'est jamais sorti d'un coup : « Quitter, je reviens » ou « Terminer le live » (le live ne se coupe plus tout seul à la sortie)
+        canPop: !widget.isHost || _endHandled || _awayMarked,
+        onPopInvokedWithResult: (didPop, _) {
+          if (!didPop) _confirmHostExit();
+        },
+        child: _buildScaffold(context),
+      );
+
+  /// L'hôte veut quitter : on lui demande, et on lui dit ce qui se passe (le live reste ouvert 15 minutes, pas de coupure instantanée).
+  Future<void> _confirmHostExit() async {
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: Text(tr('Quitter ton live ?'), style: const TextStyle(color: Colors.white)),
+        content: Text(
+          tr('Ton live ne sera pas coupé tout de suite : il reste ouvert 15 minutes en pause. Reviens avant pour le reprendre (Mes lives), sinon il se terminera seul. Tes spectateurs verront « L\'hôte revient bientôt ».'),
+          style: const TextStyle(color: Colors.white70, height: 1.35),
+        ),
+        actions: [
+          TextButton(key: const ValueKey('live_exit_stay'), onPressed: () => Navigator.pop(ctx, 'stay'), child: Text(tr('Rester'), style: const TextStyle(color: Colors.white70))),
+          TextButton(key: const ValueKey('live_exit_away'), onPressed: () => Navigator.pop(ctx, 'away'), child: Text(tr('Quitter, je reviens'), style: const TextStyle(color: Color(0xFFF9A825)))),
+          TextButton(key: const ValueKey('live_exit_end'), onPressed: () => Navigator.pop(ctx, 'end'), child: Text(tr('Terminer le live'), style: const TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+    if (!mounted) return;
+    if (choice == 'away') {
+      await _markAway();
+      if (mounted) Navigator.pop(context);
+    } else if (choice == 'end') {
+      _endLive();
+    }
+  }
+
+  /// Met le live en pause pour les spectateurs et relance le compte des 15 minutes (serveur) ; ne termine rien.
+  Future<void> _markAway() async {
+    if (_awayMarked || !widget.isHost || _endHandled) return;
+    _awayMarked = true;
+    final msg = tr("L'hôte revient bientôt");
+    try {
+      await LivesApi.update(widget.liveId, {'is_paused': true, 'pause_message': msg});
+    } catch (_) {}
+    try {
+      await _firestore.collection('lives').doc(widget.liveId).update({'isPaused': true, 'pauseMessage': msg});
+    } catch (_) {}
+  }
+
+  /// L'hôte revient dans son live : la pause est levée.
+  Future<void> _resumeIfAway() async {
+    try {
+      await LivesApi.update(widget.liveId, {'is_paused': false, 'pause_message': null});
+    } catch (_) {}
+    try {
+      await _firestore.collection('lives').doc(widget.liveId).update({'isPaused': false, 'pauseMessage': null});
+    } catch (_) {}
+  }
+
+  /// Spectateur : le live est en pause, l'hôte a-t-il fini par ne pas revenir ? (le serveur l'a alors terminé)
+  Future<void> _checkEndedWhilePaused() async {
+    if (!mounted || _endHandled || !_isLivePaused || widget.isHost) return;
+    try {
+      final l = await LivesApi.get(widget.liveId);
+      if (l['is_live'] == false) await _onLiveEndedRemotely();
+    } catch (_) {}
+  }
+
+  // ==================== IMAGE ÉPINGLÉE (hôte) ====================
+
+  /// L'hôte épingle une image de sa galerie (ou change/retire celle qui est posée) : les spectateurs la voient en vignette et la touchent pour l'agrandir.
+  Future<void> _pinImage() async {
+    if (_pinnedImageUrl != null) {
+      final c = await showModalBottomSheet<String>(
+        context: context,
+        backgroundColor: const Color(0xFF1A1A2E),
+        builder: (ctx) => SafeArea(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            ListTile(key: const ValueKey('pin_image_change'), leading: const Icon(Icons.image_rounded, color: Colors.white), title: Text(tr("Changer l'image"), style: const TextStyle(color: Colors.white)), onTap: () => Navigator.pop(ctx, 'change')),
+            ListTile(key: const ValueKey('pin_image_remove'), leading: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent), title: Text(tr("Retirer l'image"), style: const TextStyle(color: Colors.redAccent)), onTap: () => Navigator.pop(ctx, 'remove')),
+          ]),
+        ),
+      );
+      if (c == 'remove') return _setPinnedImage(null);
+      if (c != 'change') return;
+    }
+    final x = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1600, imageQuality: 85);
+    if (x == null || !mounted) return;
+    try {
+      final bytes = await x.readAsBytes();
+      final id = await ArgentUpload.bytes(bytes, contentType: ArgentUpload.sniffImageType(bytes, path: x.path));
+      await _setPinnedImage(id);
+    } catch (e) {
+      printVm("❌ Erreur image épinglée: $e");
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr("L'image n'a pas pu être épinglée. Réessaie."))));
+    }
+  }
+
+  Future<void> _setPinnedImage(String? uploadId) async {
+    final r = await LivesApi.update(widget.liveId, {'pinned_image_upload_id': uploadId});
+    final url = r['pinned_image_url'] as String?;
+    try {
+      await _firestore.collection('lives').doc(widget.liveId).update({'pinnedImageUrl': url ?? FieldValue.delete()});
+    } catch (_) {}
+    if (mounted) setState(() => _pinnedImageUrl = url);
+  }
+
+  void _openPinnedImage() {
+    final url = _pinnedImageUrl;
+    if (url == null) return;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => Dialog.fullscreen(
+        backgroundColor: Colors.black,
+        child: Stack(children: [
+          Positioned.fill(child: InteractiveViewer(minScale: 1, maxScale: 5, child: Center(child: Image.network(url, fit: BoxFit.contain, errorBuilder: (_, __, ___) => const Icon(Icons.broken_image_rounded, color: Colors.white54, size: 48))))),
+          Positioned(top: MediaQuery.of(ctx).padding.top + 8, right: 12, child: IconButton(key: const ValueKey('pinned_image_close'), icon: const Icon(Icons.close_rounded, color: Colors.white, size: 28), onPressed: () => Navigator.pop(ctx))),
+        ]),
+      ),
+    );
+  }
+
+  Widget _buildPinnedImage() {
+    final url = _pinnedImageUrl;
+    if (url == null || url.isEmpty) return const SizedBox.shrink();
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 190,
+      left: 16,
+      child: GestureDetector(
+        key: const ValueKey('pinned_image'),
+        onTap: _openPinnedImage,
+        child: Container(
+          width: 72,
+          height: 72,
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFF9A825), width: 2), boxShadow: const [BoxShadow(color: Color(0x66000000), blurRadius: 8)]),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Stack(fit: StackFit.expand, children: [
+              Image.network(url, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const ColoredBox(color: Color(0xFF333333))),
+              const Positioned(right: 3, bottom: 3, child: Icon(Icons.zoom_out_map_rounded, color: Colors.white, size: 16, shadows: [Shadow(color: Colors.black87, blurRadius: 4)])),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ==================== FILTRES DE BEAUTÉ (hôte) ====================
+
+  Future<void> _applyBeauty() async {
+    try {
+      await _engine.setBeautyEffectOptions(
+        enabled: _beautyOn,
+        options: BeautyOptions(
+          lighteningContrastLevel: LighteningContrastLevel.lighteningContrastNormal,
+          lighteningLevel: _beautyLight,
+          smoothnessLevel: _beautySmooth,
+          rednessLevel: _beautyRed,
+          sharpnessLevel: _beautySharp,
+        ),
+      );
+    } catch (e) {
+      printVm('⚠️ Filtres de beauté indisponibles : $e');
+    }
+  }
+
+  void _showBeautySheet() {
+    const presets = <(String, double, double, double, double)>[
+      ('Aucun', 0, 0, 0, 0),
+      ('Naturel', .4, .3, .05, .3),
+      ('Doux', .7, .4, .1, .2),
+      ('Éclatant', .5, .7, .15, .5),
+    ];
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A2E),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) {
+          Widget slider(String label, double v, ValueChanged<double> onChanged, Key key) => Row(children: [
+                SizedBox(width: 78, child: Text(tr(label), style: const TextStyle(color: Colors.white70, fontSize: 13))),
+                Expanded(child: Slider(key: key, value: v, min: 0, max: 1, activeColor: const Color(0xFFF9A825), onChanged: onChanged)),
+              ]);
+          void change(void Function() f) {
+            setSheet(f);
+            setState(() {});
+            _beautyOn = _beautySmooth + _beautyLight + _beautyRed + _beautySharp > 0;
+            _applyBeauty();
+          }
+
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 16),
+              child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(tr('Filtres du live'), style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800)),
+                const SizedBox(height: 10),
+                Wrap(spacing: 8, children: [
+                  for (final pr in presets)
+                    ActionChip(
+                      key: ValueKey('beauty_${pr.$1}'),
+                      label: Text(tr(pr.$1)),
+                      onPressed: () => change(() {
+                        _beautySmooth = pr.$2;
+                        _beautyLight = pr.$3;
+                        _beautyRed = pr.$4;
+                        _beautySharp = pr.$5;
+                      }),
+                    ),
+                ]),
+                const SizedBox(height: 6),
+                slider('Lissage', _beautySmooth, (v) => change(() => _beautySmooth = v), const ValueKey('beauty_smooth')),
+                slider('Éclat', _beautyLight, (v) => change(() => _beautyLight = v), const ValueKey('beauty_light')),
+                slider('Teint', _beautyRed, (v) => change(() => _beautyRed = v), const ValueKey('beauty_red')),
+                slider('Netteté', _beautySharp, (v) => change(() => _beautySharp = v), const ValueKey('beauty_sharp')),
+              ]),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildScaffold(BuildContext context) {
     final isLandscape = MediaQuery.of(context).orientation == Orientation.landscape;
     return Scaffold(
       backgroundColor: Colors.black,
@@ -1923,6 +2175,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       _buildHostOverlay(),
       _buildViewerInfo(),
       _buildPinnedTextSection(),
+      _buildPinnedImage(),
       LivePinnedProduct(liveId: widget.liveId, isHost: widget.isHost),   // Live Shopping : produit épinglé
       _buildLeaderboard(),
       _buildCommentsSection(),
@@ -2744,6 +2997,22 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
               label: tr('Caméra'),
               onTap: _switchCamera,
             ),
+            if (widget.isHost) ...[
+              const SizedBox(width: 20),
+              _buildCtrlBtn(
+                icon: Icons.auto_awesome_rounded,
+                label: tr('Filtres'),
+                onTap: _showBeautySheet,
+                active: !_beautyOn,
+              ),
+              const SizedBox(width: 20),
+              _buildCtrlBtn(
+                icon: Icons.push_pin_rounded,
+                label: tr('Image'),
+                onTap: _pinImage,
+                active: _pinnedImageUrl == null,
+              ),
+            ],
           ],
         ],
       ),
@@ -2902,12 +3171,12 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }
   @override
   void dispose() {
-    // L'hôte quitte la page sans avoir terminé (retour, fermeture) : sa diffusion s'arrête, le live doit donc se terminer tout de suite côté serveur
-    // (sinon il reste affiché dans le fil jusqu'à 6 minutes, 20 pour une vente en direct)
+    // L'hôte quitte la page sans avoir terminé (retour, fermeture) : le live n'est PLUS coupé tout de suite. Il passe en pause (« L'hôte revient bientôt »)
+    // et le serveur le termine seul après 15 minutes sans signal de l'hôte.
     if (widget.isHost && !_endHandled) {
-      _endHandled = true;
-      LivesApi.end(widget.liveId).then((_) {}, onError: (_) {});
+      _markAway();
     }
+    _pausePollTimer?.cancel();
     _removeUserFromSpectators();
     _heartbeatTimer?.cancel();
     _durationTimer?.cancel();

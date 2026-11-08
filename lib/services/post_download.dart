@@ -1,3 +1,4 @@
+import 'widget_raster.dart';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -257,6 +258,21 @@ class PostDownload {
     );
     var saved = 0;
     var unsigned = 0;   // médias non livrés parce que la signature n'a pas pu être posée
+    // widgets du créateur (sondage, question, lien…) : dessinés UNE fois, tels qu'ils sont affichés maintenant, puis incrustés dans la vidéo (serveur) ou les images (téléphone)
+    List<WidgetLayer>? shownWidgets;
+    Future<List<WidgetLayer>> widgetLayers() async {
+      if (shownWidgets != null) return shownWidgets!;
+      final out = <WidgetLayer>[];
+      if (context.mounted) {
+        for (final w in post.widgets.take(3)) {
+          try {
+            final l = await WidgetRaster.render(context, w);
+            if (l != null) out.add(l);
+          } catch (_) {}   // un widget qui ne se dessine pas ne bloque jamais le téléchargement
+        }
+      }
+      return shownWidgets = out;
+    }
     String? audioPath;
     try {
       final dir = await getTemporaryDirectory();
@@ -278,6 +294,7 @@ class PostDownload {
             final story = await MontageExport.outroLayers(label: label, W: 720, H: 1280);
             final fourFive = await MontageExport.outroLayers(label: label, W: 720, H: 900);
             final wide = await MontageExport.outroLayers(label: label, W: 1280, H: 720);
+            final layersOfWidgets = await widgetLayers();
             url = await StudioWatermarkApi.signedDownload(
               post.id!,
               {
@@ -291,6 +308,7 @@ class PostDownload {
                 'land_pill': wide.$1,
                 'land_tag': wide.$2,
               },
+              widgets: layersOfWidgets,
               onStep: (st) {
                 if (!context.mounted) return;
                 step.value = prefix + (st == 'sending' ? context.tr('Préparation de la signature…') : context.tr('Signature et fin Afrolook de la vidéo…'));
@@ -308,7 +326,8 @@ class PostDownload {
         Uint8List bytes = r.bodyBytes;
         if (it.kind == 'image') {
           try {
-            bytes = await Watermark.signImageBytes(r.bodyBytes, label, strict: true, qrData: qrLink);
+            final withWidgets = await WidgetRaster.compositeOnImage(r.bodyBytes, await widgetLayers());
+            bytes = await Watermark.signImageBytes(withWidgets, label, strict: true, qrData: qrLink);
           } catch (_) {
             unsigned++;
             continue;

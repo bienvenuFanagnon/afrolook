@@ -1,3 +1,4 @@
+import '../widgets/post_media_overlays.dart';
 import '../services/post_download.dart';
 import 'package:afrotok/widgets/post_widget_view.dart';
 import 'package:afrotok/services/post_reply.dart';
@@ -3200,6 +3201,9 @@ class _DetailsPostState extends State<DetailsPost>
               },
             ),
 
+            // widgets du créateur et vidéos épinglées posés SUR l'image, comme dans le fil (sondage, question, lien…)
+            Positioned.fill(child: PostMediaOverlays(post: post)),
+
             // 🔥 INDICATEUR DE PAGE (dots)
             if (imageCount > 1)
               Positioned(
@@ -4048,7 +4052,7 @@ class _DetailsPostState extends State<DetailsPost>
       ],
         ),
         // widgets posés par le créateur (sondage, question, quiz, lien, carte de vente…) : on peut y répondre ici
-        if (post.widgets.isNotEmpty)
+        if (post.widgets.isNotEmpty && (post.images?.isEmpty ?? true))
           Padding(
             key: const ValueKey('details_widgets'),
             padding: const EdgeInsets.only(top: 14),

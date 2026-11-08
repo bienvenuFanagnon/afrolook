@@ -1,3 +1,4 @@
+import '../widget_raster.dart';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -34,10 +35,12 @@ class StudioWatermarkApi {
     return sha1.convert(utf8.encode(parts.join('|'))).toString();
   }
 
-  static Future<String> signedDownload(String postId, Map<String, Uint8List> layers, {void Function(String step)? onStep}) async {
+  static Future<String> signedDownload(String postId, Map<String, Uint8List> layers, {void Function(String step)? onStep, List<WidgetLayer> widgets = const []}) async {
     // copie déjà gardée pour cette vidéo et ces dessins ? on la prend tout de suite : rien à envoyer ni à fabriquer
+    // (avec des widgets affichés, le serveur calcule lui-même l'empreinte, qui compte leur dessin et leur place : pas de sonde ici)
     final hash = layersHash(layers);
     try {
+      if (widgets.isNotEmpty) throw StateError('widgets');
       final hit = WalletApi.map(await ApiGateway.instance.client.get('/posts/$postId/signed-download/cached', query: {'hash': hash}));
       if (hit['url'] is String && (hit['url'] as String).isNotEmpty) return hit['url'] as String;
     } catch (_) {
@@ -49,8 +52,15 @@ class StudioWatermarkApi {
       for (final e in layers.entries)
         ArgentUpload.bytes(e.value, contentType: 'image/png').then((id) => ids[e.key] = id),
     ]);
+    // widgets du créateur tels qu'affichés maintenant : un PNG par widget, posé par le serveur dans la vidéo téléchargée
+    final widgetBody = <Map<String, Object?>>[];
+    for (final w in widgets.take(3)) {
+      final id = await ArgentUpload.bytes(w.png, contentType: 'image/png');
+      widgetBody.add({'upload_id': id, 'x': w.x, 'y': w.y, 'w': w.width, if (w.start != null) 'start': w.start, if (w.end != null) 'end': w.end});
+    }
     final body = <String, Object?>{
       'wm_upload_id': ids['pill'],
+      if (widgetBody.isNotEmpty) 'widgets': widgetBody,
       if (ids['logo'] != null) 'logo_upload_id': ids['logo'],
       if (ids['qr'] != null) 'qr_upload_id': ids['qr'],
       'outro': {
@@ -58,7 +68,7 @@ class StudioWatermarkApi {
           if (ids[k] != null) k: ids[k],
       },
       'async': true,
-      'layers_hash': hash,
+      if (widgetBody.isEmpty) 'layers_hash': hash,
     };
     final res = await ApiGateway.instance.client.post('/posts/$postId/signed-download', body: body, longJob: true);
     final first = WalletApi.map(res);

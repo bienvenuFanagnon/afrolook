@@ -44,6 +44,16 @@ void main() {
     expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
   });
 
+  testWidgets('sondage : l\'auteur voit les pourcentages et le nombre de réponses sans avoir voté, un visiteur qui n\'a pas voté non', (tester) async {
+    PostWidget mk({required bool author}) => PostWidget(kind: WidgetKind.poll, config: {'question': 'Ton plat ?', 'options': ['Riz', 'Attiéké']}, counts: {'0': 1, '1': 3}, responsesCount: 4, isAuthor: author);
+    await tester.pumpWidget(_app(PostWidgetView(widget: mk(author: true))));
+    expect(find.text('25 %'), findsOneWidget);
+    expect(find.text('75 %'), findsOneWidget);
+    expect(find.text('4 réponses'), findsOneWidget);
+    await tester.pumpWidget(_app(PostWidgetView(widget: mk(author: false))));
+    expect(find.textContaining('%'), findsNothing);
+  });
+
   testWidgets('quiz : la bonne réponse est entourée une fois qu\'on a répondu ; compte à rebours, lien et carte de vente s\'affichent', (tester) async {
     final quiz = PostWidget(id: 'q', kind: WidgetKind.quiz, config: {'question': 'Capitale ?', 'options': ['Accra', 'Lomé'], 'correct': 1}, counts: {'1': 2}, myValue: '0', responsesCount: 2);
     await tester.pumpWidget(_app(PostWidgetView(widget: quiz, preview: true)));

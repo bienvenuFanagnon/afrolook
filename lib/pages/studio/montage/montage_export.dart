@@ -6,6 +6,7 @@ import '../../../services/api/api_gateway.dart';
 import '../../../services/api/argent_upload.dart';
 import '../../../services/api/music_api.dart';
 import '../../../services/api/wallet_api.dart';
+import '../../../services/media_shrink.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -194,7 +195,8 @@ class MontageExport {
     onStep('Préparation du fond…');
     final isVideo = s.hasVideo;
     if (isVideo) {
-      final f = videoPath != null ? File(videoPath) : await assetToFile(videoAsset!, 'mp4');
+      // la vidéo part en 720p au plus (le film fabriqué fait au plus 1280 px) : bien moins d'octets à envoyer sur le réseau mobile ; inchangée si elle est petite ou si la réduction échoue
+      final f = videoPath != null ? await MediaShrink.video(File(videoPath)) : await assetToFile(videoAsset!, 'mp4');
       up('base.mp4', await f.readAsBytes(), 'video/mp4');
       up('under.png', await png(keys.underlay, 540), 'image/png');
     } else {
@@ -210,6 +212,7 @@ class MontageExport {
       }
       frames = fxFrames;
     }
+    s.exportCapture = true;   // les aperçus des 2e médias restent hors des calques envoyés
     await setT(.3);
     onStep('Textes et décor…');
     // messages affichés seulement un temps (vidéo) : un calque image par message, le calque principal n'en contient aucun
@@ -228,6 +231,7 @@ class MontageExport {
     } finally {
       s.exportOnlySticker = null;
       s.exportExcludeTimed = false;
+      s.exportCapture = false;   // les aperçus reviennent au prochain dessin de l'éditeur
       if (timedStickers.isNotEmpty) await setT(.3);
     }
 
@@ -245,7 +249,7 @@ class MontageExport {
     for (final p in s.pins.take(2)) {
       if (p.source.isLocal && p.uploadId == null) {
         onStep('Envoi de ta 2e vidéo…');
-        final path = p.source.isImage ? p.source.localImagePath! : p.source.localVideoPath!;
+        final path = p.source.isImage ? p.source.localImagePath! : (await MediaShrink.video(File(p.source.localVideoPath!))).path;
         final bytes = await File(path).readAsBytes();
         p.uploadId = await ArgentUpload.bytes(bytes, contentType: p.source.isImage ? ArgentUpload.sniffImageType(bytes, path: path) : 'video/mp4');
       }
@@ -295,7 +299,16 @@ class MontageExport {
       'has_under': isVideo,
       if (isVideo) 'outro': s.outro,
       if (timedMeta.isNotEmpty) 'timed': timedMeta,
-      if (isVideo && s.pins.isNotEmpty) 'pins': [for (var i = 0; i < s.pins.take(2).length; i++) {...s.pins[i].toApi(), if (i == 0 && s.originAudio && !s.pins[i].source.isImage) 'audio': true}],
+      if (isVideo && s.pins.isNotEmpty) 'pins': [
+        for (var i = 0; i < s.pins.take(2).length; i++)
+          {
+            ...s.pins[i].toApi(),
+            // dans une disposition à deux médias, la place de la vidéo ajoutée reste occupée pendant TOUT le film (jamais de zone noire ni de créneau trop court)
+            if (i == 0 && s.layout != null) ...{'start': 0.0, 'end': maxSeconds.toDouble()},
+            if (i == 0 && !s.pins[i].source.isImage) 'loop': s.originLoop,
+            if (i == 0 && s.originAudio && !s.pins[i].source.isImage) 'audio': true,
+          },
+      ],
       if (isVideo && s.pins.isNotEmpty && s.layout != null) 'layout': {'id': s.layout, 'swap': s.layoutSwap, if (s.layoutRatio != null) 'ratio': s.layoutRatio, 'origin_zoom': s.originZoom, 'me_zoom': s.meZoom},
       if (isVideo && s.pins.isNotEmpty && s.originAudio) 'origin_volume': s.originVolume,
       if (m != null) 'music': {'type': m.type, 'id': m.id, 'start_ms': s.musicStartMs, 'volume': s.musicVolume},

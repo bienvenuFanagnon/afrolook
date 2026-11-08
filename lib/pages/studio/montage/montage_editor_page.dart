@@ -1,3 +1,6 @@
+import '../../../widgets/draft_widgets_layer.dart';
+import '../../../widgets/widgets_sheet.dart';
+import '../../../models/post_widget.dart';
 import '../../../services/authentic_video_check.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:path_provider/path_provider.dart';
@@ -213,10 +216,15 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     }
     if (!mounted) return;
     setState(() {
+      final hadMusic = s.music != null;
       s.music = pick.music;
       s.musicStartMs = 0;
       _musicDurationMs = null;
-      if (pick.music == null) s.keepVideoAudio = false;
+      if (pick.music == null) {
+        s.keepVideoAudio = true;   // musique retirée : ta voix revient
+      } else if (!hadMusic) {
+        s.keepVideoAudio = false;   // première musique : seule la musique joue, sauf si tu gardes ta voix
+      }
     });
     await _playMusic();
   }
@@ -305,6 +313,23 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     if (choice.startsWith('p')) {
       final x = await _picker.pickImage(source: src, maxWidth: 1600, imageQuality: 92);
       if (x == null || !mounted) return;
+      // une photo à la place de la vidéo : la 2e vidéo (ou image) posée ne pourrait plus être montée ; on prévient avant de la retirer
+      if (!second && s.pins.isNotEmpty) {
+        final ok = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: _c.surface,
+            title: Text('Remplacer ta vidéo par une photo ?', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w800)),
+            content: Text('Le montage deviendrait une image : la 2e vidéo ou image ajoutée sera retirée.', style: TextStyle(color: _c.textSecondary)),
+            actions: [
+              TextButton(key: const ValueKey('swap_keep'), onPressed: () => Navigator.pop(ctx, false), child: const Text('Garder ma vidéo')),
+              TextButton(key: const ValueKey('swap_photo'), onPressed: () => Navigator.pop(ctx, true), child: Text('Remplacer', style: TextStyle(color: _c.danger))),
+            ],
+          ),
+        );
+        if (ok != true || !mounted) return;
+        _removePin();
+      }
       setState(() {
         if (second) {
           s.secondPhotoPath = x.path;
@@ -473,6 +498,11 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
 
   Future<void> _publish() async {
     if (_busy) return;
+    // garde-fou : une 2e vidéo ou image sans vidéo de base ne serait pas montée (le résultat serait une image) ; on ne laisse jamais partir ce montage à moitié
+    if (s.pins.isNotEmpty && !s.hasVideo) {
+      _say('Une 2e vidéo ou image demande une vidéo de base : filme-toi ou retire-la.');
+      return;
+    }
     if (!await _confirmArtistCost() || !mounted) return;
     await MontageMusicPlayer.stop();
     setState(() {
@@ -529,6 +559,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
       closeDialog();
       if (mounted) {
         setState(() {
+          s.exportCapture = false;
           _busy = false;
           _frozenT = null;
         });
@@ -663,7 +694,8 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           child: Center(
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              child: ClipRRect(
+              child: Stack(clipBehavior: Clip.none, children: [
+               ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: MontageCanvas(
                   state: s,
@@ -672,6 +704,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
                   animation: _frozenT == null && _anim.isAnimating ? _anim : null,
                   media: _mediaWidget(),
                   secondMedia: _secondWidget(),
+                  meVideo: s.useVideo ? _video : null,
                   pseudo: pseudo,
                   avatarUrl: me.imageUrl,
                   followers: me.followersCount,
@@ -681,7 +714,10 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
                   onTapSticker: (id) => setState(() => _selSticker = id),
                   selectedSticker: _selSticker,
                 ),
-              ),
+               ),
+               // widgets (sondage, question, lien…) : les mêmes qu'à l'écran de création, déplaçables, redimensionnables et supprimables ici aussi, quel que soit le média
+               Positioned.fill(child: DraftWidgetsLayer(videoSeconds: () => s.hasVideo ? _videoSeconds : null)),
+              ]),
             ),
           ),
         ),
@@ -774,6 +810,27 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
             _btn(Icons.add_a_photo_rounded, tp.canUseVideo ? 'Changer ma photo ou vidéo' : 'Changer ma photo', () => _pickMedia()),
             if (tp.dualSample != null || tp.baby) _btn(Icons.add_photo_alternate_rounded, tp.baby ? 'Photo de bébé' : '2e photo', () => _pickMedia(second: true)),
           ]),
+          // son de CHAQUE vidéo réglé ici, sans musique nécessaire (la vidéo ajoutée a son propre curseur dans « Deuxième vidéo ou image »)
+          if (s.hasVideo) ...[
+            const SizedBox(height: 6),
+            SwitchListTile(
+              key: const ValueKey('own_audio'),
+              contentPadding: EdgeInsets.zero,
+              value: s.keepVideoAudio,
+              onChanged: (v) {
+                setState(() => s.keepVideoAudio = v);
+                _applyVolumes();
+              },
+              activeThumbColor: _c.primary,
+              title: Text('Son de ma vidéo', style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13.5)),
+              subtitle: Text(s.keepVideoAudio ? 'Ta voix est gardée dans le montage.' : 'Ta vidéo est muette dans le montage.', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
+            ),
+            if (s.keepVideoAudio)
+              _volumeRow('Volume de ma vidéo', s.videoVolume, 1.5, (v) {
+                setState(() => s.videoVolume = v);
+                _applyVolumes();
+              }, const ValueKey('vol_own')),
+          ],
         ]),
         if ((s.hasVideo && !widget.forChronique) || s.pins.isNotEmpty)
           _group('pin', Icons.splitscreen_rounded, 'Deuxième vidéo ou image', [
@@ -991,9 +1048,10 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
                 await MontageMusicPlayer.stop();
                 setState(() {
                   s.music = null;
-                  s.keepVideoAudio = false;
+                  s.keepVideoAudio = true;   // sans musique, ta voix revient
                   _musicPlaying = false;
                 });
+                _applyVolumes();
               },
               icon: Icon(Icons.close_rounded, color: _c.textSecondary),
             ),
@@ -1096,7 +1154,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
       Expanded(flex: 5, child: Text(label, style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700, fontSize: 13))),
       Expanded(flex: 6, child: Slider(key: key, value: value.clamp(0, max).toDouble(), min: 0, max: max, divisions: (max * 20).round(), onChanged: onChanged, activeColor: _c.primary)),
       SizedBox(width: 42, child: Text('${(value * 100).round()} %', textAlign: TextAlign.right, style: TextStyle(color: _c.textSecondary, fontSize: 12.5))),
-    ]);
+    ]);   // au-delà de 100 %, le renforcement ne s'entend que dans la vidéo finale (l'aperçu du téléphone s'arrête à 100 %)
   }
 
   String _mmss(int ms) {
@@ -1328,7 +1386,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           p.clipEndSec = b;
         }),
       ),
-      Row(children: [
+      if (!inLayout) Row(children: [
         Icon(Icons.timer_rounded, size: 18, color: _c.textSecondary),
         const SizedBox(width: 6),
         Expanded(child: Text('Affichée de ${_sec(p.startSec)} s à ${_sec(p.endSec)} s de ta vidéo', style: TextStyle(color: _c.textSecondary, fontSize: 13))),
@@ -1353,9 +1411,20 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
         IconButton(key: const ValueKey('pin_delete'), tooltip: 'Retirer la vidéo épinglée', icon: Icon(Icons.delete_outline_rounded, color: _c.textPrimary), onPressed: _removePin),
       ]),
       if (!p.source.isImage) SwitchListTile(key: const ValueKey('layout_origin_audio'), contentPadding: EdgeInsets.zero, title: const Text('Garder le son de la vidéo ajoutée'), value: s.originAudio, onChanged: (v) => setState(() => s.originAudio = v)),
-      if (s.originAudio && !p.source.isImage) Slider(key: const ValueKey('layout_origin_volume'), value: s.originVolume, min: 0, max: 1.5, onChanged: (v) => setState(() => s.originVolume = v)),
+      if (s.originAudio && !p.source.isImage) _volumeRow('Volume de la vidéo ajoutée', s.originVolume, 1.5, (v) => setState(() => s.originVolume = v), const ValueKey('layout_origin_volume')),
+      if (!p.source.isImage) SwitchListTile(key: const ValueKey('layout_origin_loop'), contentPadding: EdgeInsets.zero, title: const Text('Reboucler la vidéo ajoutée'), subtitle: Text('Elle recommence tant que ta vidéo dure ; sinon elle reste figée sur sa dernière image.', style: TextStyle(color: _c.textSecondary, fontSize: 12)), value: s.originLoop, onChanged: (v) => setState(() => s.originLoop = v)),
       Text('Glisse la vidéo pour la placer, pince-la pour la zoomer. Son créneau règle quand elle apparaît (et quand on l\'entend). Les spectateurs peuvent la toucher pour voir la vidéo d\'origine.', style: TextStyle(color: _c.textSecondary, fontSize: 12)),
     ]);
+  }
+
+  /// Ajoute un widget (sondage, question, lien…) depuis le Studio : même parcours que l'éditeur de création (3 au plus par publication).
+  Future<void> _addDraftWidget() async {
+    if (PostWidgetsLink.isFull) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('3 widgets au plus par publication.')));
+      return;
+    }
+    final w = await addWidgetFlow(context);
+    if (w != null) PostWidgetsLink.add(w);
   }
 
   Future<void> _addSticker() async {
@@ -1385,6 +1454,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
       const SizedBox(height: 10),
       Wrap(spacing: 8, runSpacing: 8, children: [
         _btn(Icons.add_reaction_rounded, 'Ajouter un autocollant', _addSticker),
+        _btn(Icons.widgets_rounded, 'Ajouter un widget', _addDraftWidget),
         if (s.hasVideo) _btn(Icons.timer_rounded, 'Message à l\'écran', _addTimedMessage, gold: 'timed_message'),
         if (s.moved.isNotEmpty) _btn(Icons.restart_alt_rounded, 'Tout remettre en place', () => setState(s.moved.clear)),
       ]),

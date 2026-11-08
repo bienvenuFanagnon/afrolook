@@ -1,3 +1,4 @@
+import '../widgets/post_media_overlays.dart';
 import '../widgets/post_widget_view.dart';
 import 'package:afrotok/services/post_orientation.dart';
 import 'package:afrotok/services/post_reply.dart';
@@ -1454,7 +1455,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
         aspectRatio: 16 / 9,
         child: Stack(children: [
           Positioned.fill(child: SmartVideoPlayer(url: url, autoPlay: true, progressColor: _afroGreen)),
-          if (_currentPost.widgets.isNotEmpty) Positioned.fill(child: PostWidgetsLayer(widgets: _currentPost.widgets)),
+          if (_currentPost.widgets.isNotEmpty || _currentPost.studioPins.isNotEmpty) Positioned.fill(child: PostMediaOverlays(post: _currentPost, video: _videoController, feedTier: widget.feedTier)),
         ]),
       );
     }
@@ -1469,7 +1470,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
       aspectRatio: 16 / 9,
       child: Stack(children: [
         Positioned.fill(child: Chewie(controller: _chewieController!)),
-        if (_currentPost.widgets.isNotEmpty) Positioned.fill(child: PostWidgetsLayer(widgets: _currentPost.widgets)),   // sondage, question, lien… posés par le créateur
+        if (_currentPost.widgets.isNotEmpty || _currentPost.studioPins.isNotEmpty) Positioned.fill(child: PostMediaOverlays(post: _currentPost, video: _videoController, feedTier: widget.feedTier)),   // sondage, question, lien… posés par le créateur
       ]),
     );
   }

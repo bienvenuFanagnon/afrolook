@@ -14,6 +14,12 @@ class WidgetsApi {
     return PostWidget.fromApi(WalletApi.map(r));
   }
 
+  /// Le widget à jour (décomptes, ma réponse) : sert à rafraîchir les chiffres d'un sondage déjà affiché. Null si indisponible.
+  static Future<PostWidget?> get(String widgetId) async {
+    final r = await ApiGateway.instance.client.get('/widgets/$widgetId');
+    return PostWidget.fromApi(WalletApi.map(r));
+  }
+
   /// Les réponses reçues par une question (pour l'AUTEUR de la publication) : (pseudo, texte).
   static Future<List<({String user, String text})>> responses(String widgetId) async {
     final r = await ApiGateway.instance.client.get('/widgets/$widgetId/responses');

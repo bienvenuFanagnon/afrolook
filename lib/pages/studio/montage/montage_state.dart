@@ -16,6 +16,7 @@ class MontageState {
   MontageState(this.template)
       : country = template.defaultCountry,
         useVideo = template.sampleIsVideo,
+        keepVideoAudio = studioTrack(template.music) == null,   // sans musique, ta voix est gardée ; avec la musique d'un modèle, seule la musique joue (comme avant)
         animated = false,   // jamais d'effet animé par défaut : le rendu reste sobre et professionnel ; la personne l'active elle-même
         music = studioTrack(template.music) == null ? null : MontageMusic.free(studioTrack(template.music)!);
 
@@ -58,6 +59,10 @@ class MontageState {
   /// Export seulement : n'afficher que cet autocollant (calque d'un message temporisé), ou tous sauf les temporisés (calque principal).
   String? exportOnlySticker;
   bool exportExcludeTimed = false;
+
+  /// Capture des calques pour l'export en cours : les aperçus en direct des 2e médias (vidéo, image) n'y entrent JAMAIS (le serveur pose les vraies vidéos ; sinon l'aperçu opaque
+  /// serait collé par-dessus tout le film et le figerait).
+  bool exportCapture = false;
   String? kick;
   String? title;
   String? wish;
@@ -91,6 +96,9 @@ class MontageState {
   bool originAudio = true;
   double originVolume = 1.0;
 
+  /// La vidéo ajoutée reboucle tant que ta vidéo dure (sinon elle reste figée sur sa dernière image).
+  bool originLoop = true;
+
   /// Les deux places en fractions du cadre (même découpage que le serveur) : (vidéo d'origine, ta vidéo). Null si aucune disposition.
   /// Part de la première place (haut ou gauche) : celle réglée, sinon la moitié (le bandeau garde son format 16:9).
   double get firstShare => (layoutRatio ?? (layout == 'bar' ? ((9 / 16) * aspect).clamp(0.0, .4).toDouble() : .5)).clamp(.25, .75).toDouble();
@@ -123,8 +131,8 @@ class MontageState {
   /// Durée de la vidéo quand la base est une photo et qu'il y a une musique (secondes).
   int musicSeconds = 15;
 
-  /// Vidéo de la personne : garder son propre son sous la musique.
-  bool keepVideoAudio = false;
+  /// Son de la vidéo de la personne (interrupteur « Son de ma vidéo ») : gardé ou coupé ; son volume est [videoVolume].
+  bool keepVideoAudio;
 
   /// Mixage : volume du son choisi (0 à 1), volume de la voix de la vidéo (0 à 1,5) et baisse automatique de la musique quand on parle.
   double musicVolume = 1;

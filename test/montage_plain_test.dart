@@ -9,7 +9,7 @@ void main() {
     expect(kMontageTemplates.any((t) => t.id == kPlainTemplateId), isFalse);
     final s = MontageState(kPlainTemplate)..hidden.addAll(MontageLayer.values);
     expect(s.music, isNull);
-    expect(s.keepVideoAudio, isFalse);
+    expect(s.keepVideoAudio, isTrue);   // sans musique, ta voix est gardée ; avec la musique d'un modèle elle est coupée
     for (final l in MontageLayer.values) {
       expect(s.shows(l), isFalse);
     }

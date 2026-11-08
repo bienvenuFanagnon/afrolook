@@ -434,9 +434,25 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
 
   static final Map<String, UserData> _ownerCache = {};
 
+  /// Format (largeur / hauteur) des images de chronique déjà lues : sert à placer les widgets dans le cadre réel de l'image.
+  final Map<String, double> _imageAspects = {};
+
+  void _resolveImageAspect(Chronique c) {
+    final url = c.mediaUrl;
+    if (c.type != ChroniqueType.IMAGE || url == null || url.isEmpty || _imageAspects.containsKey(url)) return;
+    final stream = CachedNetworkImageProvider(url).resolve(ImageConfiguration.empty);
+    late final ImageStreamListener l;
+    l = ImageStreamListener((info, _) {
+      stream.removeListener(l);
+      if (info.image.height > 0 && mounted) setState(() => _imageAspects[url] = info.image.width / info.image.height);
+    }, onError: (_, __) => stream.removeListener(l));
+    stream.addListener(l);
+  }
+
   void _initializeCurrentMedia() async {
     if (_allChroniques.isEmpty) return;
     final currentChronique = _allChroniques[_currentPage];
+    _resolveImageAspect(currentChronique);
 
     // Réinitialiser le flag AVANT de disposer pour éviter que le widget tente
     // de rendre un VideoPlayer avec un controller déjà libéré.
@@ -1616,7 +1632,12 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
               _buildMusicPill(currentChronique),
               // chronique business : carte de vente (seule la carte est cliquable), au-dessus de la rangée du bas
               if (currentChronique.widgets.isNotEmpty)
-                Positioned.fill(child: PostWidgetsLayer(widgets: currentChronique.widgets, mediaAspect: currentChronique.type == ChroniqueType.VIDEO && _isVideoInitialized && _videoController != null ? _videoController!.value.aspectRatio : null)),
+                Positioned.fill(child: PostWidgetsLayer(
+                  widgets: currentChronique.widgets,
+                  // une vidéo ou une image est montrée EN ENTIER : les widgets se placent dans le cadre réel du média (comme à la création), et ceux « de… à… » suivent la vidéo
+                  video: currentChronique.type == ChroniqueType.VIDEO && _isVideoInitialized ? _videoController : null,
+                  mediaAspect: currentChronique.type == ChroniqueType.VIDEO && _isVideoInitialized && _videoController != null ? _videoController!.value.aspectRatio : (currentChronique.type == ChroniqueType.IMAGE ? _imageAspects[currentChronique.mediaUrl] : null),
+                )),
               if (currentChronique.commerce != null)
                 Positioned(left: 14, right: 14, bottom: 92, child: ChroniqueCommerceCard(commerce: currentChronique.commerce!)),
               _buildBottomRow(currentChronique),
