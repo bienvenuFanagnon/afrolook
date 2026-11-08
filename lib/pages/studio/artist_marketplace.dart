@@ -1556,8 +1556,31 @@ class _MySoundTile extends StatelessWidget {
 
 // ─── Page Admin : écoute, doublons, validation, signalements ─────────────────
 
-class AdminArtistSoundsPage extends StatelessWidget {
-  const AdminArtistSoundsPage({Key? key}) : super(key: key);
+/// Page de l'équipe : sons à valider, signalés ou suspendus. Après chaque décision (valider, refuser, rétablir) la liste est rechargée et un message confirme le résultat
+/// (08/11/2026 : avant, le bouton « Valider » tournait puis revenait sans rien dire ni retirer la fiche).
+class AdminArtistSoundsPage extends StatefulWidget {
+  const AdminArtistSoundsPage({Key? key, this.loadQueue, this.review}) : super(key: key);
+
+  /// Remplacent l'API (tests).
+  final Future<List<ArtistSound>> Function()? loadQueue;
+  final Future<void> Function(String id, String action, {String? reason})? review;
+
+  @override
+  State<AdminArtistSoundsPage> createState() => _AdminArtistSoundsPageState();
+}
+
+class _AdminArtistSoundsPageState extends State<AdminArtistSoundsPage> {
+  late Future<List<ArtistSound>> _queue = _load();
+
+  Future<List<ArtistSound>> _load() => (widget.loadQueue ?? MusicApi.adminQueue)();
+
+  void _reload() {
+    if (mounted) {
+      setState(() {
+        _queue = _load();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1588,9 +1611,17 @@ class AdminArtistSoundsPage extends StatelessWidget {
 
   Widget _list(AppColors c, List<ArtistSound> Function(List<ArtistSound>) pick, String empty, bool reports) {
     return FutureBuilder<List<ArtistSound>>(
-      future: MusicApi.adminQueue(),
+      future: _queue,
       builder: (_, snap) {
-        if (snap.hasError) return Center(child: Text(MusicApi.message(snap.error!, fallback: 'Chargement impossible.'), style: TextStyle(color: c.textSecondary)));
+        if (snap.hasError) {
+          return Center(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Text(MusicApi.message(snap.error!, fallback: 'Chargement impossible.'), style: TextStyle(color: c.textSecondary)),
+              const SizedBox(height: 8),
+              TextButton(onPressed: _reload, child: const Text('Réessayer')),
+            ]),
+          );
+        }
         if (!snap.hasData) return Center(child: CircularProgressIndicator(color: c.primary));
         final docs = pick(snap.data!);
         if (docs.isEmpty) {
@@ -1606,7 +1637,7 @@ class AdminArtistSoundsPage extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           itemCount: docs.length,
           separatorBuilder: (_, __) => const SizedBox(height: 12),
-          itemBuilder: (_, i) => _AdminSoundReviewTile(key: ValueKey(docs[i].id), sound: docs[i], colors: c, reports: reports),
+          itemBuilder: (_, i) => _AdminSoundReviewTile(key: ValueKey(docs[i].id), sound: docs[i], colors: c, reports: reports, review: widget.review ?? MusicApi.adminReview, onDone: _reload),
         );
       },
     );
@@ -1617,7 +1648,11 @@ class _AdminSoundReviewTile extends StatefulWidget {
   final ArtistSound sound;
   final AppColors colors;
   final bool reports;
-  const _AdminSoundReviewTile({super.key, required this.sound, required this.colors, required this.reports});
+  final Future<void> Function(String id, String action, {String? reason}) review;
+
+  /// Appelé après une décision réussie : la liste se recharge (la fiche quitte l'onglet où elle n'a plus sa place).
+  final VoidCallback onDone;
+  const _AdminSoundReviewTile({super.key, required this.sound, required this.colors, required this.reports, required this.review, required this.onDone});
 
   @override
   State<_AdminSoundReviewTile> createState() => _AdminSoundReviewTileState();
@@ -1626,11 +1661,12 @@ class _AdminSoundReviewTile extends StatefulWidget {
 class _AdminSoundReviewTileState extends State<_AdminSoundReviewTile> {
   bool _loading = false;
   bool _fullPlaying = false;
-  final AudioPlayer _full = AudioPlayer();
+  AudioPlayer? _player;
+  AudioPlayer get _full => _player ??= AudioPlayer();   // créé seulement quand on écoute l'original
 
   @override
   void dispose() {
-    _full.dispose();
+    _player?.dispose();
     super.dispose();
   }
 
@@ -1658,14 +1694,29 @@ class _AdminSoundReviewTileState extends State<_AdminSoundReviewTile> {
   }
 
   Future<void> _set(String action, {String? reason}) async {
+    final messenger = ScaffoldMessenger.of(context);   // pris avant : la fiche peut disparaître quand la liste se recharge
     setState(() => _loading = true);
     try {
-      await MusicApi.adminReview(widget.sound.id, action, reason: reason);
+      await widget.review(widget.sound.id, action, reason: reason);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(MusicApi.message(e, fallback: 'Action impossible.'))));
-    } finally {
+      // l'erreur est toujours dite (jamais un bouton qui tourne puis s'arrête sans rien)
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(SnackBar(backgroundColor: Colors.red.shade700, content: Text(MusicApi.message(e, fallback: 'Action impossible : la décision n\'a pas été enregistrée.'))));
       if (mounted) setState(() => _loading = false);
+      return;
     }
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(SnackBar(
+      backgroundColor: action == 'refuse' ? Colors.orange.shade800 : Colors.green.shade700,
+      content: Text(switch (action) {
+        'validate' => '✅ Son validé : « ${widget.sound.title} » est en ligne.',
+        'restore' => '✅ Son rétabli : « ${widget.sound.title} » est de nouveau en ligne.',
+        'refuse' => 'Son refusé : « ${widget.sound.title} ».',
+        _ => 'Décision enregistrée.',
+      }),
+    ));
+    if (mounted) setState(() => _loading = false);
+    widget.onDone();   // recharge la liste : la fiche traitée n'y est plus
   }
 
   Future<void> _validate() async {
@@ -1727,14 +1778,20 @@ class _AdminSoundReviewTileState extends State<_AdminSoundReviewTile> {
       ),
     );
     if (ok != true) return;
+    final messenger = ScaffoldMessenger.of(context);
     setState(() => _loading = true);
     try {
       await MusicApi.delete(widget.sound.id);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Suppression impossible : ${MusicApi.message(e)}')));
-    } finally {
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(SnackBar(backgroundColor: Colors.red.shade700, content: Text('Suppression impossible : ${MusicApi.message(e)}')));
       if (mounted) setState(() => _loading = false);
+      return;
     }
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(SnackBar(backgroundColor: Colors.green.shade700, content: Text('Son supprimé : « ${widget.sound.title} ».')));
+    if (mounted) setState(() => _loading = false);
+    widget.onDone();   // recharge la liste
   }
 
   String _kindLabel(String? k) => switch (k) {
