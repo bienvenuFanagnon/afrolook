@@ -1,3 +1,4 @@
+import '../ads/fullscreen_ad_page.dart';
 import 'package:afrotok/services/post_orientation.dart';
 import 'package:afrotok/widgets/post_widget_view.dart';
 import 'package:afrotok/services/post_reply.dart';
@@ -3919,6 +3920,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
               } else if (item is _VideoAdSentinel) {
                 return _VideoAdPage(
                   adData: item.adData,
+                  active: index == _currentPage,
                   onNext: () {
                     if (_pageController.hasClients && _pageController.page?.toInt() == index) {
                       _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeOutCubic);
@@ -3979,43 +3981,25 @@ class _VideoAdSentinel {
   final Map<String, dynamic>? adData;
 }
 
-/// Pub en plein écran dans le défilement : pub du réseau (Appodeal / AdMob) en priorité, pub Afrolook Ads sinon, jamais les deux ; on la passe en glissant.
+/// Pub en plein écran dans le défilement : la pub du réseau (Appodeal / AdMob) est chargée avant d'être montrée, avec un décompte de 5 s ; si elle n'est pas prête,
+/// la pub Afrolook Ads (3 s une image, 5 s une vidéo) prend la place ; s'il n'y a rien, la page se passe toute seule. Jamais de page noire.
 class _VideoAdPage extends StatelessWidget {
-  const _VideoAdPage({required this.adData, required this.onNext});
+  const _VideoAdPage({required this.adData, required this.onNext, required this.active});
   final Map<String, dynamic>? adData;
   final VoidCallback onNext;
+  final bool active;
 
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final data = adData;
-    return Container(
-      color: Colors.black,
-      child: Stack(
-        children: [
-          Center(
-            child: AdSlot(
-              kind: AdSlotKind.detailMrec,
-              own: () => data == null ? const SizedBox.shrink() : AdPostWidget(adData: data, width: size.width, height: size.height, onComplete: onNext),
-            ),
-          ),
-          Positioned(
-            top: MediaQuery.of(context).padding.top + 56,
-            left: 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-              decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(99), border: Border.all(color: Colors.white24)),
-              child: Text(tr('Annonce'), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
-            ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 24 + MediaQuery.of(context).padding.bottom,
-            child: Text(tr('Glisse pour continuer'), textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 12)),
-          ),
-        ],
-      ),
+    final post = data?['post'];
+    final isVideoAd = post is Map && ('${post['dataType']}' == 'VIDEO' || '${post['url_media'] ?? ''}'.contains('.mp4'));
+    return FullScreenAdPage(
+      active: active,
+      onNext: onNext,
+      ownSeconds: isVideoAd ? 5 : 3,
+      ownBuilder: data == null ? null : (done) => AdPostWidget(adData: data, width: size.width, height: size.height, onComplete: done),
     );
   }
 }

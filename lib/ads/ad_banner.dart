@@ -13,9 +13,12 @@ import 'appodeal_widgets.dart';
 /// même temps sur un emplacement. Après 3 échecs de suite, les emplacements vont directement à AdMob pendant 10 minutes, puis Appodeal est
 /// retenté ([AppodealService.skipBanners]). [onFailed] n'est appelé que si AdMob échoue aussi (l'écran peut alors montrer une pub Afrolook).
 class AdBanner extends StatefulWidget {
-  const AdBanner({Key? key, this.mrec = false, this.onFailed, this.unitKey = 'banner', this.onPaid}) : super(key: key);
+  const AdBanner({Key? key, this.mrec = false, this.onFailed, this.onLoaded, this.unitKey = 'banner', this.onPaid}) : super(key: key);
   final bool mrec;
   final VoidCallback? onFailed;
+
+  /// La pub (Appodeal ou AdMob) est chargée et prête : l'écran peut la montrer et lancer son décompte.
+  final VoidCallback? onLoaded;
 
   /// Emplacement AdMob (repli AdMob seulement) et suivi du revenu estimé.
   final String unitKey;
@@ -63,10 +66,10 @@ class _AdBannerState extends State<AdBanner> {
         valueListenable: AppodealService.ready,
         // Appodeal pas encore prêt : l'emplacement n'occupe rien et n'affiche pas encore AdMob (jamais deux fournisseurs en même temps)
         builder: (context, ready, _) => ready
-            ? AppodealBannerWidget(mrec: widget.mrec, quickFallback: true, onFailed: _toFallback)
+            ? AppodealBannerWidget(mrec: widget.mrec, quickFallback: true, onFailed: _toFallback, onLoaded: widget.onLoaded)
             : const SizedBox.shrink(),
       );
     }
-    return AdmobBannerWidget(mrec: widget.mrec, onFailed: widget.onFailed, unitKey: widget.unitKey, onPaid: widget.onPaid);
+    return AdmobBannerWidget(mrec: widget.mrec, onFailed: widget.onFailed, onLoaded: widget.onLoaded, unitKey: widget.unitKey, onPaid: widget.onPaid);
   }
 }

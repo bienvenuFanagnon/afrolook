@@ -13,8 +13,11 @@ import 'admob_service.dart';
 /// Bannière adaptative (fixe, en bas des pages de détail) ou grand format 300×250.
 /// N'occupe aucune place tant que la pub n'est pas chargée ; [onFailed] permet un repli.
 class AdmobBannerWidget extends StatefulWidget {
-  const AdmobBannerWidget({Key? key, this.mrec = false, this.onFailed, this.unitKey = 'banner', this.onPaid}) : super(key: key);
+  const AdmobBannerWidget({Key? key, this.mrec = false, this.onFailed, this.onLoaded, this.unitKey = 'banner', this.onPaid}) : super(key: key);
   final bool mrec;
+
+  /// Appelé quand la pub est chargée et prête à être montrée (l'écran peut alors lancer son décompte).
+  final VoidCallback? onLoaded;
 
   /// Emplacement AdMob utilisé (`banner`, ou `musicBanner` pour la page Musique) et suivi du revenu estimé.
   final String unitKey;
@@ -62,6 +65,7 @@ class _AdmobBannerWidgetState extends State<AdmobBannerWidget> {
         },
         onAdLoaded: (a) {
           if (mounted) setState(() => _loaded = true);
+          widget.onLoaded?.call();
         },
         onAdFailedToLoad: (a, e) {
           AdmobService.lastErrors['bannière'] = 'code ${e.code} : ${e.message}';

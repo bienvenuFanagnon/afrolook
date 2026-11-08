@@ -1,4 +1,5 @@
-﻿// pages/chronique/chronique_detail_page.dart
+import '../../ads/fullscreen_ad_page.dart';
+// pages/chronique/chronique_detail_page.dart
 
 import '../create/chronique_flow.dart';
 import 'package:afrotok/services/read_meter.dart';
@@ -994,47 +995,35 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
     return it is Advertisement || it is _AdmobSlot || it is _NewsSlot; // _NewsSlot : page entière d'actualité, traitée comme une pause entre chroniques
   }
 
-  /// Slides AdMob dont le chargement a échoué (par ordinal) : elles montrent la pub de repli ou sont sautées.
-  final Set<int> _admobFailed = {};
+  /// Le décompte de la page de pub tourne (la barre de progression de la chronique le suit) : la fin de pub est alors gérée par ce minuteur.
+  bool _gateTimerOn = false;
+  final Set<int> _ownAdInit = {};
 
-  Widget _buildAdmobSlide(_AdmobSlot slot) {
-    if (_admobFailed.contains(slot.ordinal)) {
-      if (slot.fallback != null) return _buildAdSlide(slot.fallback!);
-      return const ColoredBox(color: Colors.black);
-    }
-    return Container(
-      color: Colors.black,
-      child: Stack(fit: StackFit.expand, children: [
-        Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFF14110A), Color(0xFF000000)]),
-          ),
-        ),
-        Center(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-              decoration: BoxDecoration(color: Colors.white12, borderRadius: BorderRadius.circular(99)),
-              child: const Text('Publicité', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: .8)),
-            ),
-            const SizedBox(height: 10),
-            AdBanner(
-              key: ValueKey('chronique_admob_${slot.ordinal}'),
-              mrec: true,
-              onFailed: () {
-                if (!mounted || _admobFailed.contains(slot.ordinal)) return;
-                setState(() => _admobFailed.add(slot.ordinal));
-                // Pas de pub de repli : on passe à la chronique suivante tout de suite ; sinon la pub Afrolook dure comme une pub normale
-                if (slot.fallback == null) {
-                  _goToNextStory();
-                } else {
-                  _startAdTimer(_adImageMs);
-                }
-              },
-            ),
-          ]),
-        ),
-      ]),
+  /// Page de pub entre deux chroniques : la pub du réseau (Appodeal / AdMob) est chargée avant d'être montrée ; si elle n'est pas prête en 3 s, la pub Afrolook Ads
+  /// prend la place ; s'il n'y a rien, on passe tout de suite à la chronique suivante. Jamais de page noire.
+  Widget _buildAdmobSlide(_AdmobSlot slot, int index) {
+    final active = _pageController.hasClients ? (_pageController.page ?? _pageController.initialPage.toDouble()).round() == index : index == _pageController.initialPage;
+    final fb = slot.fallback;
+    final fbPost = fb == null ? null : _adPosts[fb.id ?? ''];
+    final fbVideo = fbPost != null && (fbPost.dataType == PostDataType.VIDEO.name || (fbPost.url_media ?? '').contains('.mp4') || (fbPost.url_media ?? '').contains('.mov'));
+    return FullScreenAdPage(
+      key: ValueKey('chronique_ad_page_${slot.ordinal}'),
+      active: active,
+      showCountdown: false,   // la barre de progression de la chronique montre déjà le temps
+      ownSeconds: fbVideo ? 5 : 3,
+      onShown: (seconds) {
+        _gateTimerOn = true;
+        _startAdTimer(seconds * 1000);
+      },
+      onNext: () {
+        if (!_gateTimerOn) _goToNextStory();   // rien à montrer : on passe ; sinon la barre de progression passe à la suite à la fin du décompte
+      },
+      ownBuilder: fb == null
+          ? null
+          : (done) {
+              if (_ownAdInit.add(slot.ordinal)) WidgetsBinding.instance.addPostFrameCallback((_) => _initializeAdVideo(fb));
+              return _buildAdSlide(fb);
+            },
     );
   }
 
@@ -1533,7 +1522,13 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
                   unawaited(_stopMusic());
                   final item = _displayItems[virtualIndex];
                   // La pub avance toute seule, comme une chronique (5 s ; une vidéo : sa durée, voir _initializeAdVideo)
-                  _startAdTimer(item is _NewsSlot ? 9000 : _adImageMs); // une actualité reste plus longtemps (temps de lire)
+                  _gateTimerOn = false;
+                  if (item is _AdmobSlot) {
+                    _stopStoryTimer();   // le décompte commence quand la pub est prête (voir _buildAdmobSlide)
+                    _storyProgress = 0.0;
+                  } else {
+                    _startAdTimer(item is _NewsSlot ? 9000 : _adImageMs); // une actualité reste plus longtemps (temps de lire)
+                  }
                   if (item is _NewsSlot) {
                     _stopAdVideo();
                     setState(() {
@@ -1593,7 +1588,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
                   );
                 }
                 if (item is _AdmobSlot) {
-                  return _buildAdmobSlide(item);
+                  return _buildAdmobSlide(item, index);
                 }
                 if (item is Advertisement) {
                   return _buildAdSlide(item);

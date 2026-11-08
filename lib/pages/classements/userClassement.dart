@@ -1,28 +1,24 @@
-import 'package:afrotok/services/read_meter.dart';
-import 'package:afrotok/widgets/pseudo_tag.dart';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
-
-import 'package:flutter/material.dart';
 import 'package:afrotok/services/api/jeux_api.dart';
+import 'package:afrotok/services/api/users_api.dart';
 import 'package:afrotok/services/api/users_mapper.dart';
-
+import 'package:afrotok/widgets/pseudo_tag.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import 'package:shimmer/shimmer.dart';
 
-import '../../../constant/constColors.dart';
-
-import '../../../constant/logo.dart';
-
-import '../../../constant/sizeText.dart';
-
-import '../../../providers/authProvider.dart';
-
+import '../../l10n/tr.dart';
+import '../../providers/authProvider.dart';
+import '../../theme/app_colors.dart';
+import '../../widgets/user_badge_widget.dart';
 import '../component/showUserDetails.dart';
-
 import '../pub/native_ad_widget.dart';
 
+/// « Top Afrolook Stars » : les 10 comptes qui ont le plus de points. Les données viennent de l'API (`GET /users/top?by=points`), jamais de Firebase.
+///
+/// Les points de contribution : inscription 5, parrainer quelqu'un 5, aimer la publication d'un autre 1, s'abonner à un compte 4, inviter un ami 1 (une fois par cible).
+/// La popularité est la part des points de toute l'application que détient le compte. Clair et sombre : toutes les couleurs viennent du thème.
 class UserClassement extends StatefulWidget {
   const UserClassement({super.key});
 
@@ -32,530 +28,246 @@ class UserClassement extends StatefulWidget {
 
 class _UserClassementState extends State<UserClassement> {
   late UserAuthProvider authProvider;
-  List<UserData> _topUsers = [];
-  bool _isLoading = true;
-  String? _errorMessage;
+  List<UserData> _top = [];
+  Map<String, dynamic>? _mine;   // mes points et ma popularité, pour « Ma place »
+  final Map<String, int> _rank = {};   // rang de chaque compte (donné par le serveur)
+  final ScrollController _scroll = ScrollController();
+  int? _nextOffset;   // début de la page suivante ; null = fin du classement (500 rangs au plus)
+  bool _loadingMore = false;
+  bool _loading = true;
+  String? _error;
 
+  static const int _pageSize = 20;
 
   @override
   void initState() {
     super.initState();
     authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    _fetchTopUsers();
+    _scroll.addListener(() {
+      // on charge la suite en approchant du bas de la liste
+      if (_scroll.hasClients && _scroll.position.extentAfter < 500) _loadMore();
+    });
+    _load();
   }
 
-  /// Récupère les 10 utilisateurs les plus populaires depuis Firebase
-  Future<void> _fetchTopUsers() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
 
+  Future<({List<UserData> users, int? next})> _fetchPage(int offset) async {
+    final res = await JeuxApi.client.get('/users/top', query: {'by': 'points', 'limit': _pageSize, 'offset': offset});
+    final rows = JeuxApi.list(res);
+    final users = <UserData>[];
+    for (var i = 0; i < rows.length; i++) {
+      final j = rows[i];
+      final u = userSummaryFromApi(j);
+      u.totalPoints = JeuxApi.asInt(j['points']);
+      _rank['${u.id}'] = JeuxApi.asInt(j['rank']) > 0 ? JeuxApi.asInt(j['rank']) : offset + i + 1;
+      users.add(u);
+    }
+    final next = res is Map ? res['next_offset'] : null;
+    return (users: users, next: next is num ? next.toInt() : null);
+  }
+
+  /// Page suivante du classement (jusqu'au rang 500).
+  Future<void> _loadMore() async {
+    final off = _nextOffset;
+    if (off == null || _loadingMore || _loading) return;
+    setState(() => _loadingMore = true);
     try {
-      // Les 10 comptes ayant le plus de points : classement calculé par l'API (route à ajouter, voir lacunes_api_jeux_medias.md)
-      final rows = JeuxApi.list(await JeuxApi.client.get('/users/top', query: {'by': 'points', 'limit': 10}));
-      final List<UserData> fetchedUsers = rows.map((j) {
-        final u = userSummaryFromApi(j);
-        u.totalPoints = JeuxApi.asInt(j['points'] ?? j['total_points']);
-        return u;
-      }).toList();
-
+      final page = await _fetchPage(off);
+      if (!mounted) return;
       setState(() {
-        _topUsers = fetchedUsers;
-        _isLoading = false;
+        _top.addAll(page.users.where((u) => !_top.any((t) => t.id == u.id)));
+        _nextOffset = page.next;
+        _loadingMore = false;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loadingMore = false);   // un nouvel essai part au prochain défilement
+    }
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      _rank.clear();
+      final first = await _fetchPage(0);
+      Map<String, dynamic>? mine;
+      final me = authProvider.loginUserData.id;
+      if (me != null && me.isNotEmpty) {
+        try {
+          mine = await UsersApi.publicProfile(me);
+        } catch (_) {}   // « Ma place » est facultative
+      }
+      if (!mounted) return;
+      setState(() {
+        _top = first.users;
+        _nextOffset = first.next;
+        _mine = mine;
+        _loading = false;
       });
     } catch (e) {
-      printVm('❌ Erreur lors de la récupération du classement: $e');
-      setState(() {
-        _errorMessage = 'Impossible de charger le classement';
-        _isLoading = false;
-      });
+      printVm('Classement : $e');
+      if (mounted) {
+        setState(() {
+          _error = context.tr('Impossible de charger le classement');
+          _loading = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    double height = MediaQuery.of(context).size.height;
-    double width = MediaQuery.of(context).size.width;
-
+    final c = AppColors.of(context);
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: c.background,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: c.background,
+        foregroundColor: c.textPrimary,
         elevation: 0,
-        title: Text(
-          "TOP 10 Afrolook Stars",
-          style: TextStyle(
-            fontSize: SizeText.homeProfileTextSize,
-            color: Colors.yellow[700],
-            fontWeight: FontWeight.bold,
-          ),
-        ),
         centerTitle: true,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: Logo(),
-          )
-        ],
-        iconTheme: IconThemeData(color: Colors.yellow[700]),
+        title: Text(context.tr('Top Afrolook Stars'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
       ),
-      body: _buildBody(height, width),
-    );
-  }
-
-  Widget _buildBody(double height, double width) {
-    if (_isLoading) {
-      return _buildShimmerLoading();
-    }
-
-    if (_errorMessage != null) {
-      return _buildErrorWidget();
-    }
-
-    if (_topUsers.isEmpty) {
-      return _buildEmptyWidget();
-    }
-
-    return RefreshIndicator(
-      onRefresh: _fetchTopUsers,
-      child: SingleChildScrollView(
-        physics: AlwaysScrollableScrollPhysics(),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            // En-tête avec informations
-            _buildHeader(),
-
-            SizedBox(height: 16),
-
-            // Liste des top 10 avec pub en premier élément
-            ListView.builder(
-              itemCount: _topUsers.length + 1, // +1 pour la pub
-              shrinkWrap: true,
-              padding: EdgeInsets.only(top: 8, bottom: 20),
-              physics: NeverScrollableScrollPhysics(),
-              itemBuilder: (context, index) {
-                // Premier élément (index 0) = la pub
-                if (index == 0) {
-                  return Padding(
-                    padding: EdgeInsets.only(bottom: 16),
-                    child: _buildAdBanner(key: 'top10_first_ad'),
-                  );
-                }
-
-                // Ajuster l'index pour les utilisateurs
-                final userIndex = index - 1;
-
-                return GestureDetector(
-                  onTap: () {
-                    showUserDetailsModalDialog(
-                      _topUsers[userIndex],
-                      width,
-                      height,
-                      context,
-                    );
-                  },
-                  child: TopFiveUserItem(
-                    user: _topUsers[userIndex],
-                    rank: userIndex + 1,
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.green[800]?.withOpacity(0.3),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(20),
-          bottomRight: Radius.circular(20),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Classement par popularité",
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[400],
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            "Mis à jour en temps réel",
-            style: TextStyle(
-              fontSize: 18,
-              color: Colors.yellow[700],
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          SizedBox(height: 12),
-          Text(
-            "Les stars sont classées selon leur activité: publications, likes et commentaires",
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[500],
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorWidget() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.error_outline,
-            size: 64,
-            color: Colors.red[400],
-          ),
-          SizedBox(height: 16),
-          Text(
-            _errorMessage!,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-            ),
-          ),
-          SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _fetchTopUsers,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green[700],
-            ),
-            child: Text('Réessayer'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyWidget() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.people_outline,
-            size: 64,
-            color: Colors.grey[600],
-          ),
-          SizedBox(height: 16),
-          Text(
-            'Aucun utilisateur trouvé',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildShimmerLoading() {
-    return ListView.builder(
-      itemCount: 11, // +1 pour la pub
-      padding: EdgeInsets.only(top: 16),
-      itemBuilder: (context, index) {
-        // Premier élément (index 0) = placeholder de pub
-        if (index == 0) {
-          return Padding(
-            padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            child: Shimmer.fromColors(
-              baseColor: Colors.grey[800]!,
-              highlightColor: Colors.grey[700]!,
-              child: Container(
-                height: 80,
-                decoration: BoxDecoration(
-                  color: Colors.grey[900],
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          );
-        }
-
-        return Shimmer.fromColors(
-          baseColor: Colors.grey[800]!,
-          highlightColor: Colors.grey[700]!,
-          child: Container(
-            padding: EdgeInsets.all(16),
-            margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            decoration: BoxDecoration(
-              color: Colors.grey[900],
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+      body: _loading
+          ? _shimmer(c)
+          : _error != null
+              ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.error_outline_rounded, size: 56, color: c.danger),
+                  const SizedBox(height: 12),
+                  Text(_error!, style: TextStyle(color: c.textPrimary, fontSize: 15)),
+                  const SizedBox(height: 12),
+                  FilledButton(onPressed: _load, child: Text(context.tr('Réessayer'))),
+                ]))
+              : RefreshIndicator(
+                  onRefresh: _load,
+                  child: ListView(
+                    controller: _scroll,
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 28),
                     children: [
+                      _intro(c),
+                      if (_mine != null) ...[const SizedBox(height: 12), _myPlace(c)],
+                      const SizedBox(height: 12),
                       Container(
-                        width: 120,
-                        height: 16,
-                        color: Colors.white,
+                        key: const ValueKey('top10_first_ad'),
+                        decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: c.border)),
+                        child: const MrecAdWidget(),
                       ),
-                      SizedBox(height: 8),
-                      Container(
-                        width: 80,
-                        height: 12,
-                        color: Colors.white,
-                      ),
+                      const SizedBox(height: 12),
+                      if (_top.isEmpty) _empty(c) else for (var i = 0; i < _top.length; i++) _row(c, _top[i], _rank['${_top[i].id}'] ?? i + 1),
+                      if (_loadingMore) const Padding(padding: EdgeInsets.symmetric(vertical: 18), child: Center(child: CircularProgressIndicator(strokeWidth: 2.4))),
+                      if (!_loadingMore && _nextOffset != null) Center(child: TextButton(key: const ValueKey('top_more'), onPressed: _loadMore, child: Text(context.tr('Voir la suite')))),
+                      if (_nextOffset == null && _top.length >= _pageSize) Padding(padding: const EdgeInsets.symmetric(vertical: 18), child: Center(child: Text(context.tr('Fin du classement'), style: TextStyle(color: c.textSecondary, fontSize: 12.5)))),
                     ],
                   ),
                 ),
-                Container(
-                  width: 60,
-                  height: 16,
-                  color: Colors.white,
-                ),
-              ],
-            ),
-          ),
-        );
-      },
     );
   }
 
-  Widget _buildAdBanner({required String key}) {
+  Widget _intro(AppColors c) => Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(context.tr('Classement par points'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 15)),
+          const SizedBox(height: 6),
+          Text(
+            context.tr('Tu gagnes des points en participant : inscription 5, parrainer quelqu\'un 5, aimer une publication 1, t\'abonner à un compte 4, inviter un ami 1. La popularité est ta part des points de toute l\'application.'),
+            style: TextStyle(color: c.textSecondary, fontSize: 12.5, height: 1.4),
+          ),
+        ]),
+      );
+
+  Widget _myPlace(AppColors c) {
+    final points = (_mine?['points'] as num?)?.toInt() ?? 0;
+    final pop = (_mine?['popularity'] as num?)?.toDouble() ?? 0;
     return Container(
-      key: ValueKey(key),
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.grey[900],
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[800]!),
-      ),
-      child: MrecAdWidget(
-        // templateType: TemplateType.small,
-        onAdLoaded: () {
-          printVm('✅ Native Ad chargée dans top10: $key');
-        },
-      ),
+      key: const ValueKey('my_place'),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(color: c.primary.withOpacity(.12), borderRadius: BorderRadius.circular(16), border: Border.all(color: c.primary.withOpacity(.5))),
+      child: Row(children: [
+        Icon(Icons.person_pin_rounded, color: c.primary, size: 30),
+        const SizedBox(width: 12),
+        Expanded(child: Text(context.tr('Mes points'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 15))),
+        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          Text('$points pts', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 16)),
+          Text('${pop.toStringAsFixed(2)} %', style: TextStyle(color: c.textSecondary, fontSize: 12)),
+        ]),
+      ]),
     );
   }
-}
 
-// Widget pour afficher un utilisateur du top 10
-class TopFiveUserItem extends StatefulWidget {
-  final UserData user;
-  final int rank;
+  Widget _empty(AppColors c) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 36),
+        child: Column(children: [
+          Icon(Icons.emoji_events_outlined, size: 56, color: c.textSecondary),
+          const SizedBox(height: 12),
+          Text(context.tr('Aucun point pour le moment'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 15)),
+          const SizedBox(height: 4),
+          Text(context.tr('Aime des publications, abonne-toi et invite des amis pour gagner des points.'), textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary, fontSize: 12.5)),
+        ]),
+      );
 
-  const TopFiveUserItem({
-    super.key,
-    required this.user,
-    required this.rank,
-  });
-
-  @override
-  State<TopFiveUserItem> createState() => _TopFiveUserItemState();
-}
-
-class _TopFiveUserItemState extends State<TopFiveUserItem> {
-  late UserAuthProvider authProvider;
-  @override
-  void initState() {
-    // TODO: implement initState
-    authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-    super.initState();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Définir les couleurs en fonction du rang
-    Color rankColor;
-    if (widget.rank == 1) {
-      rankColor = Colors.yellow[700]!;
-    } else if (widget.rank == 2) {
-      rankColor = Colors.grey[400]!;
-    } else if (widget.rank == 3) {
-      rankColor = Colors.orange[800]!;
-    } else {
-      rankColor = Colors.green[600]!;
-    }
-
-    // Trophée pour le top 3
-    IconData? rankIcon;
-    if (widget.rank == 1) {
-      rankIcon = Icons.emoji_events;
-    } else if (widget.rank == 2) {
-      rankIcon = Icons.emoji_events;
-    } else if (widget.rank == 3) {
-      rankIcon = Icons.emoji_events;
-    }
-
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey[900],
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.5),
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // Numéro de classement
+  Widget _row(AppColors c, UserData u, int rank) {
+    final medal = switch (rank) { 1 => const Color(0xFFFFC400), 2 => const Color(0xFF9AA3AA), 3 => const Color(0xFFCD7F32), _ => null };
+    final w = MediaQuery.of(context).size.width;
+    final h = MediaQuery.of(context).size.height;
+    return GestureDetector(
+      key: ValueKey('top_row_$rank'),
+      onTap: () => showUserDetailsModalDialog(u, w, h, context),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: medal ?? c.border, width: medal != null ? 1.6 : 1)),
+        child: Row(children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 36,
+            height: 36,
             alignment: Alignment.center,
-            decoration: BoxDecoration(
-              gradient: widget.rank <= 3
-                  ? LinearGradient(
-                colors: [rankColor, rankColor.withOpacity(0.7)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              )
-                  : null,
-              color: widget.rank > 3 ? rankColor : null,
-              shape: BoxShape.circle,
-            ),
-            child: rankIcon != null && widget.rank <= 3
-                ? Icon(rankIcon, color: Colors.white, size: 24)
-                : Text(
-              "${widget.rank}",
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: widget.rank <= 3 ? Colors.white : Colors.black,
-              ),
-            ),
+            decoration: BoxDecoration(shape: BoxShape.circle, color: medal ?? c.border.withOpacity(.6)),
+            child: medal != null ? const Icon(Icons.emoji_events_rounded, color: Colors.white, size: 20) : Text('$rank', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800)),
           ),
-
-          SizedBox(width: 12),
-
-          // Avatar utilisateur
-          Stack(
-            children: [
-              CircleAvatar(onBackgroundImageError: (widget.user.imageUrl != null && widget.user.imageUrl!.isNotEmpty
-                    ? NetworkImage(widget.user.imageUrl!)
-                    : null) != null ? (Object _, StackTrace? __) {} : null, 
-                backgroundImage: widget.user.imageUrl != null && widget.user.imageUrl!.isNotEmpty
-                    ? NetworkImage(widget.user.imageUrl!)
-                    : null,
-                radius: 24,
-                backgroundColor: Colors.grey[800],
-                child: widget.user.imageUrl == null || widget.user.imageUrl!.isEmpty
-                    ? Icon(Icons.person, size: 28, color: Colors.grey[600])
-                    : null,
-              ),
-              if (widget.user.isVerify ?? false)
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    padding: EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      color: Colors.black,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.verified,
-                      color: Colors.green,
-                      size: 16,
-                    ),
-                  ),
-                ),
-            ],
+          const SizedBox(width: 12),
+          CircleAvatar(
+            radius: 24,
+            backgroundColor: c.border,
+            backgroundImage: (u.imageUrl ?? '').isNotEmpty ? NetworkImage(u.imageUrl!) : null,
+            child: (u.imageUrl ?? '').isEmpty ? Icon(Icons.person_rounded, color: c.textSecondary) : null,
           ),
-
-          SizedBox(width: 12),
-
-          // Informations utilisateur
+          const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                PseudoTag(label: "@${widget.user.pseudo}",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                  overflow: TextOverflow.ellipsis),
-                SizedBox(height: 4),
-                Row(
-                  children: [
-                    Icon(Icons.people, size: 12, color: Colors.green[600]),
-                    SizedBox(width: 4),
-                    Text(
-                      "${widget.user.followersCount} abonnés",
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[400],
-                      ),
-                    ),
-                    SizedBox(width: 12),
-                    Icon(Icons.star, size: 12, color: Colors.yellow[700]),
-                    SizedBox(width: 4),
-                    Text(
-                      "${(widget.user.popularite ?? 0).toStringAsFixed(2)}%",   // part des points de l'application, calculée par le serveur
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.yellow[700],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                Flexible(child: PseudoTag(label: '@${u.pseudo ?? ''}', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 15), overflow: TextOverflow.ellipsis)),
+                const SizedBox(width: 4),
+                UserBadgeWidget(user: u, size: 15),
+              ]),
+              const SizedBox(height: 3),
+              Text('${u.followersCount} ${context.tr('abonnés')} · ${(u.popularite ?? 0).toStringAsFixed(2)} %', style: TextStyle(color: c.textSecondary, fontSize: 12)),
+            ]),
           ),
-
-          // Badge de contribution pour le top 3
-          if (widget.rank <= 3)
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.amber, Colors.orange],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                "${widget.user.totalPoints ?? 0} pts",
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
-            ),
-        ],
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(color: c.accent, borderRadius: BorderRadius.circular(20)),
+            child: Text('${u.totalPoints} pts', style: TextStyle(color: c.onAccent, fontWeight: FontWeight.w800, fontSize: 12.5)),
+          ),
+        ]),
       ),
     );
   }
+
+  Widget _shimmer(AppColors c) => ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: 8,
+        itemBuilder: (_, __) => Shimmer.fromColors(
+          baseColor: c.border,
+          highlightColor: c.surface,
+          child: Container(height: 70, margin: const EdgeInsets.only(bottom: 10), decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(16))),
+        ),
+      );
 }

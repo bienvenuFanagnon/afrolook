@@ -17,9 +17,12 @@ import 'appodeal_service.dart';
 /// - Une erreur de pub ne bloque jamais l'écran ; le rafraîchissement est géré par le SDK (pas de rechargement en boucle ici).
 /// - La vue native est détruite avec le widget : rien ne reste affiché ni en mémoire quand l'écran est quitté.
 class AppodealBannerWidget extends StatefulWidget {
-  const AppodealBannerWidget({Key? key, this.mrec = false, this.onFailed, this.placement = 'default', this.quickFallback = false}) : super(key: key);
+  const AppodealBannerWidget({Key? key, this.mrec = false, this.onFailed, this.onLoaded, this.placement = 'default', this.quickFallback = false}) : super(key: key);
   final bool mrec;
   final VoidCallback? onFailed;
+
+  /// Appelé quand le SDK annonce qu'une pub est chargée.
+  final VoidCallback? onLoaded;
   final String placement;
 
   /// Abandonne dès le premier échec signalé par le SDK (au lieu d'attendre la fin du délai) : l'appelant a un repli prêt (AdMob en direct).
@@ -65,7 +68,10 @@ class _AppodealBannerWidgetState extends State<AppodealBannerWidget> {
     if (_okEvents.value > _okAtStart) {
       _timer?.cancel();
       AppodealService.noteBannerResult(ok: true);
-      if (!_loaded) setState(() => _loaded = true);
+      if (!_loaded) {
+        setState(() => _loaded = true);
+        widget.onLoaded?.call();
+      }
       return;
     }
     if (widget.quickFallback && !_loaded && _koEvents.value > _koAtStart) _giveUp();
