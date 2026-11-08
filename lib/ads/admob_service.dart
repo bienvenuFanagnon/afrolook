@@ -7,6 +7,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/model_data.dart';
+import 'ad_backoff.dart';
 import 'ad_config.dart';
 import 'ad_revenue_tracker.dart';
 import 'rewarded_ads.dart' show RewardedOutcome;
@@ -105,11 +106,14 @@ class AdmobService {
   static int _videosClosed = 0;
   static DateTime? _lastInterstitial;
 
-  static void _loadInterstitial() {
+  /// [force] : une personne attend cette pub maintenant (pas d'attente après un échec) ; sans [force], on respecte l'attente de [AdBackoff].
+  static void _loadInterstitial({bool force = false}) {
     if (_interstitial != null || _loadingInterstitial) return;
+    if (!force && AdBackoff.blocked('interstitial')) return;
     final unit = AdConfig.current.unit('interstitial');
     if (unit.isEmpty) return;
     _loadingInterstitial = true;
+    AdFunnel.count('interstitial', 'request');
     InterstitialAd.load(
       adUnitId: unit,
       request: request(),
@@ -118,9 +122,13 @@ class AdmobService {
           ad.onPaidEvent = (a, micros, precision, currency) => AdRevenueTracker.record('admob_interstitial', micros, currency);
           _interstitial = ad;
           _loadingInterstitial = false;
+          AdBackoff.succeeded('interstitial');
+          AdFunnel.count('interstitial', 'loaded');
         },
         onAdFailedToLoad: (e) {
           _loadingInterstitial = false;
+          AdBackoff.failed('interstitial');
+          AdFunnel.count('interstitial', 'failed');
           _err('plein écran', e);
         },
       ),
@@ -156,6 +164,7 @@ class AdmobService {
     );
     _lastInterstitial = DateTime.now();
     await _countToday('ad_inter');
+    AdFunnel.count('interstitial', 'shown');
     await ad.show();
   }
 
@@ -189,6 +198,7 @@ class AdmobService {
     );
     _lastInterstitial = DateTime.now();
     await _countToday(capKey);
+    AdFunnel.count('interstitial', 'shown');
     await ad.show();
     return done.future;
   }
@@ -197,7 +207,7 @@ class AdmobService {
   static Future<bool> showInterstitialNow({VoidCallback? onDismissed, VoidCallback? onFailed}) async {
     final ad = _interstitial;
     if (ad == null || !ready.value) {
-      _loadInterstitial();
+      _loadInterstitial(force: true);
       // AdMob n'a rien de prêt : Appodeal prend le relais (autre jeu de réseaux, plus de chances de remplissage)
       if (await AppodealService.showInterstitial(onDismissed: onDismissed)) return true;
       onFailed?.call();
@@ -216,15 +226,32 @@ class AdmobService {
         onFailed?.call();
       },
     );
+    AdFunnel.count('interstitial', 'shown');
     await ad.show();
     return true;
   }
 
   static void preloadInterstitial() => _loadInterstitial();
 
-  /// Précharge la pub plein écran (après l'ouverture d'une vidéo, pour qu'elle soit prête à la fermeture).
-  static void warmUpInterstitial(UserData? user) {
-    if (AdConfig.current.interstitialEnabled && AdGate.canShowType(user, 'interstitial')) _loadInterstitial();
+  /// Précharge la pub plein écran. [fromVideo] : appel d'une page vidéo ; on ne la demande alors que si elle peut vraiment passer à la fermeture de la
+  /// prochaine vidéo (bonne vidéo du rang, début de session passé, écart minimal, plafond du jour non atteint : voir [AdPlan]) ; sinon ce serait une demande perdue.
+  static Future<void> warmUpInterstitial(UserData? user, {bool fromVideo = false}) async {
+    final c = AdConfig.current;
+    if (!c.interstitialEnabled || !AdGate.canShowType(user, 'interstitial')) return;
+    if (fromVideo) {
+      final last = _lastInterstitial;
+      final ok = AdPlan.interstitialWorthLoading(
+        videosClosed: _videosClosed,
+        every: c.interstitialEveryVideos,
+        sinceSessionStart: DateTime.now().difference(AdGate.sessionStart),
+        warmupMinutes: c.interstitialWarmupMinutes,
+        sinceLastInterstitial: last == null ? null : DateTime.now().difference(last),
+        minGapMinutes: c.interstitialMinGapMinutes,
+        underDailyCap: await _underDailyCap('ad_inter', c.interstitialMaxPerDay),
+      );
+      if (!ok) return;
+    }
+    _loadInterstitial();
   }
 
   // ── Pub récompensée : 1 jour sans pub ────────────────────────────────────
@@ -232,11 +259,14 @@ class AdmobService {
   static bool _loadingRewarded = false;
   static final ValueNotifier<bool> rewardedReadyNotifier = ValueNotifier(false);
 
-  static void loadRewarded() {
+  /// [force] : une personne veut la voir maintenant (pas d'attente après un échec).
+  static void loadRewarded({bool force = false}) {
     if (_rewarded != null || _loadingRewarded) return;
+    if (!force && AdBackoff.blocked('rewarded')) return;
     final unit = AdConfig.current.unit('rewarded');
     if (unit.isEmpty) return;
     _loadingRewarded = true;
+    AdFunnel.count('rewarded', 'request');
     RewardedAd.load(
       adUnitId: unit,
       request: request(),
@@ -246,9 +276,13 @@ class AdmobService {
           _rewarded = ad;
           _loadingRewarded = false;
           rewardedReadyNotifier.value = true;
+          AdBackoff.succeeded('rewarded');
+          AdFunnel.count('rewarded', 'loaded');
         },
         onAdFailedToLoad: (e) {
           _loadingRewarded = false;
+          AdBackoff.failed('rewarded');
+          AdFunnel.count('rewarded', 'failed');
           _err('récompensée', e);
         },
       ),
@@ -261,7 +295,7 @@ class AdmobService {
   static bool showRewarded({required VoidCallback onEarned, VoidCallback? onDismissed}) {
     final ad = _rewarded;
     if (ad == null) {
-      loadRewarded();
+      loadRewarded(force: true);
       return false;
     }
     _rewarded = null;
@@ -280,6 +314,7 @@ class AdmobService {
         onDismissed?.call();
       },
     );
+    AdFunnel.count('rewarded', 'shown');
     ad.show(onUserEarnedReward: (_, __) => earned = true);
     return true;
   }
@@ -290,7 +325,7 @@ class AdmobService {
 
   /// Comme [watchRewarded], mais distingue le cas « aucune pub disponible » (on peut alors essayer un autre réseau) de « pub fermée avant la fin ».
   static Future<RewardedOutcome> watchRewardedOutcome({String? userId}) async {
-    loadRewarded();
+    loadRewarded(force: true);
     for (var i = 0; i < 20 && _rewarded == null; i++) {
       await Future<void>.delayed(const Duration(milliseconds: 500));
     }
@@ -315,6 +350,7 @@ class AdmobService {
         if (!done.isCompleted) done.complete(RewardedOutcome.noAd);
       },
     );
+    AdFunnel.count('rewarded', 'shown');
     await ad.show(onUserEarnedReward: (_, __) => earned = true);
     return done.future;
   }

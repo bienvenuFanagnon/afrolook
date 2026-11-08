@@ -6,6 +6,7 @@ import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 import '../models/model_data.dart';
 import '../theme/app_colors.dart';
+import 'ad_backoff.dart';
 import 'ad_config.dart';
 import 'ad_gate.dart';
 import 'admob_service.dart';
@@ -18,46 +19,47 @@ import 'admob_service.dart';
 ///
 /// Règles AdMob respectées : une pub n'est montrée que dans un seul emplacement, jamais gardée plus de 50 minutes (elles expirent
 /// au bout d'une heure), et le réservoir reste petit pour ne pas demander des pubs qui ne seront jamais vues.
+///
+/// 08/11/2026 : UNE seule pub d'avance, et seulement au format dont l'écran a besoin (moyen dans le fil, petit dans les commentaires et les listes) ;
+/// après un échec on attend (voir [AdBackoff]) ; au plus [maxPerWindow] demandes en 5 minutes pour tout le réservoir.
 class AdmobNativePool {
   AdmobNativePool._();
 
   /// Pubs gardées d'avance : format moyen (fil) et petit format (commentaires, listes).
-  static const int mediumTarget = 2;
+  static const int mediumTarget = 1;
   static const int smallTarget = 1;
+  static const int maxPerWindow = 4;
   static const Duration maxAge = Duration(minutes: 50);
-  static const Duration _retryAfterFail = Duration(seconds: 45);
 
   static final Map<String, List<_Ready>> _ready = {};
   static final Map<String, int> _loading = {};
-  static final Map<String, DateTime> _failedAt = {};
+  static final List<DateTime> _requests = [];
   static final Map<String, _Spec> _specs = {};
 
   static String _key(bool small, Brightness b) => '${small ? 's' : 'm'}_${b.name}';
 
   /// Prépare les pubs du fil et des commentaires pour ce thème (clair ou sombre). Sans effet si AdMob n'est pas disponible
   /// pour cette personne (Gold, pubs coupées, compte neuf, SDK pas prêt…) : on ne demande rien pour rien.
-  static void warmUp(BuildContext context, UserData? user) {
+  static void warmUp(BuildContext context, UserData? user, {bool small = false}) {
     if (!AdConfig.isMobile || !AdGate.canShowType(user, 'native')) return;
     final colors = AppColors.of(context);
     final brightness = Theme.of(context).brightness;
-    for (final small in const [false, true]) {
-      final key = _key(small, brightness);
-      _specs[key] = _Spec(colors: colors, small: small);
-      _refill(key);
-    }
+    final key = _key(small, brightness);
+    _specs[key] = _Spec(colors: colors, small: small);
+    _refill(key);
   }
 
   /// Le SDK n'est pas toujours prêt au démarrage : on lance le réchauffement dès qu'il l'est.
-  static void warmUpWhenReady(BuildContext context, UserData? user) {
+  static void warmUpWhenReady(BuildContext context, UserData? user, {bool small = false}) {
     if (AdmobService.ready.value) {
-      warmUp(context, user);
+      warmUp(context, user, small: small);
       return;
     }
     AdmobService.ensureInit();
     void once() {
       if (!AdmobService.ready.value) return;
       AdmobService.ready.removeListener(once);
-      if (context.mounted) warmUp(context, user);
+      if (context.mounted) warmUp(context, user, small: small);
     }
 
     AdmobService.ready.addListener(once);
@@ -92,8 +94,10 @@ class AdmobNativePool {
     if (spec == null) return;
     final unit = AdConfig.current.unit('native');
     if (unit.isEmpty) return;
-    final failed = _failedAt[key];
-    if (failed != null && DateTime.now().difference(failed) < _retryAfterFail) return;
+    if (AdBackoff.blocked('native_$key')) return;
+    final cut = DateTime.now().subtract(const Duration(minutes: 5));
+    _requests.removeWhere((t) => t.isBefore(cut));
+    if (_requests.length >= maxPerWindow) return;
     final list = _ready.putIfAbsent(key, () => []);
     list.removeWhere((r) {
       final old = DateTime.now().difference(r.at) > maxAge;
@@ -104,20 +108,25 @@ class AdmobNativePool {
     var missing = target - list.length - (_loading[key] ?? 0);
     while (missing-- > 0) {
       _loading[key] = (_loading[key] ?? 0) + 1;
+      _requests.add(DateTime.now());
+      AdFunnel.count('native', 'request');
       late final NativeAd ad;
       ad = NativeAd(
         adUnitId: unit,
         request: AdmobService.request(),
         listener: NativeAdListener(
           onPaidEvent: (a, micros, precision, currency) => AdRevenueTracker.record('admob_native_pool', micros, currency),
+          onAdImpression: (_) => AdFunnel.count('native', 'shown'),
           onAdLoaded: (_) {
             _loading[key] = (_loading[key] ?? 1) - 1;
-            _failedAt.remove(key);
+            AdBackoff.succeeded('native_$key');
+            AdFunnel.count('native', 'loaded');
             list.add(_Ready(ad, DateTime.now()));
           },
           onAdFailedToLoad: (a, e) {
             _loading[key] = (_loading[key] ?? 1) - 1;
-            _failedAt[key] = DateTime.now();
+            AdBackoff.failed('native_$key');
+            AdFunnel.count('native', 'failed');
             AdmobService.lastErrors['natif'] = 'code ${e.code} : ${e.message}';
             a.dispose();
           },
@@ -159,7 +168,7 @@ class AdmobNativePool {
       }
       l.clear();
     }
-    _failedAt.clear();
+    _requests.clear();
   }
 }
 

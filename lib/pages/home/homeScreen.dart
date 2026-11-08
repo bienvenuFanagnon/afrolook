@@ -142,6 +142,9 @@ import '../widgetGlobal.dart';
 import 'HomePostType.dart';
 import 'homeSportPost.dart';
 import '../defi/defi_discover_page.dart';
+import '../../services/viral_service.dart';
+import '../../widgets/viral_widgets.dart';
+import '../viral/viral_page.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/theme_provider.dart';
@@ -985,6 +988,7 @@ class _MyHomePageState extends State<MyHomePage>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Pubs AdMob du fil chargées d'avance : prêtes avant qu'on arrive à leur emplacement
       AdmobNativePool.warmUpWhenReady(context, authProvider.loginUserData);
+      ViralService.start();   // « +N » de l'onglet 🔥 Viral, relu toutes les 3 minutes
       _handleInitialDestination();
       // Gestion des notifications à chaud (app déjà ouverte)
       // Décalé de 3s pour laisser les posts charger sans concurrence Firestore
@@ -1062,13 +1066,20 @@ class _MyHomePageState extends State<MyHomePage>
 
 
     // _tabController = TabController(length: _tabs.length, vsync: this);
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 6, vsync: this);
     // Écouter le changement d'onglet
     _tabController!.addListener(() {
       if (_tabController!.indexIsChanging) return;
 
-      // index 1 → Sport (push + retour à 0)
+      // index 1 → 🔥 Viral (push + retour à 0 ; le « +N » est relu au retour)
       if (_tabController!.index == 1) {
+        Navigator.push(context, MaterialPageRoute(builder: (context) => const ViralPage())).then((_) {
+          ViralService.refresh(force: true);
+          _tabController!.animateTo(0);
+        });
+      }
+      // index 2 → Sport (push + retour à 0)
+      if (_tabController!.index == 2) {
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -1079,8 +1090,8 @@ class _MyHomePageState extends State<MyHomePage>
           _tabController!.animateTo(0);
         });
       }
-      // index 3 → Actualités (push + retour à 0) ; le fil Découverte reste dans le menu
-      if (_tabController!.index == 3) {
+      // index 4 → Actualités (push + retour à 0) ; le fil Découverte reste dans le menu
+      if (_tabController!.index == 4) {
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -1091,8 +1102,8 @@ class _MyHomePageState extends State<MyHomePage>
           _tabController!.animateTo(0);
         });
       }
-      // index 4 → Défis (push + retour à 0)
-      if (_tabController!.index == 4) {
+      // index 5 → Défis (push + retour à 0)
+      if (_tabController!.index == 5) {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const DefiDiscoverPage()),
@@ -1474,6 +1485,7 @@ class _MyHomePageState extends State<MyHomePage>
 
   @override
   void dispose() {
+    ViralService.stop();
     _newContentSub?.cancel();
     _liveNavSub?.cancel();
     _invitationsKeepAlive?.cancel();
@@ -1501,6 +1513,7 @@ class _MyHomePageState extends State<MyHomePage>
       case AppLifecycleState.resumed:
         printVm('🟢 REPRISE APPLICATION : Relance du Heartbeat');
         _presenceService.startHeartbeat(uid);
+        ViralService.refresh();   // « +N » de l'onglet Viral
         // Réinitialiser le cooldown pour que le toast de notification s'affiche à chaque reprise
         NotificationToast.dismiss();
         _lastToastTime = null;
@@ -1804,6 +1817,7 @@ class _MyHomePageState extends State<MyHomePage>
                       tabAlignment: TabAlignment.start,
                       tabs: [
                         Tab(text: l10n.tabHome),
+                        const Tab(child: ViralTabLabel()),
                         Tab(text: l10n.tabSport),
                         Tab(text: l10n.tabEvents),
                         Tab(text: context.tr('Actualités')),
@@ -2037,7 +2051,7 @@ class _MyHomePageState extends State<MyHomePage>
     switch (_tabController?.index ?? 0) {
       case 0:
         return _looksRecentKey;
-      case 2:
+      case 3:
         return _discoverKey;
       case 6:
         return _looksPopularKey;
@@ -2170,6 +2184,7 @@ class _MyHomePageState extends State<MyHomePage>
   /// Enfants du TabBarView — partagés par le layout mobile et wide.
   List<Widget> get _tabViewChildren => [
     LooksPage(type: TabBarType.LOOKS.name, feedKey: _looksRecentKey),
+    const SizedBox.shrink(), // Viral → push page dédiée
     const SizedBox.shrink(), // Sport → push page dédiée
     HomeConstPostTypePage(key: _discoverKey, type: TabBarType.EVENEMENT.name, sortType: 'recent'),
     const SizedBox.shrink(), // Découverte → push page dédiée
@@ -2659,6 +2674,7 @@ class _MyHomePageState extends State<MyHomePage>
         tabAlignment: TabAlignment.start,
         tabs: [
           Tab(text: l10n.tabHome),
+          const Tab(child: ViralTabLabel()),
           Tab(text: l10n.tabSport),
           Tab(text: l10n.tabEvents),
           Tab(text: context.tr('Actualités')),

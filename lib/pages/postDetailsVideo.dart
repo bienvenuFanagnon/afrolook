@@ -234,7 +234,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) AdmobService.warmUpInterstitial(authProvider.loginUserData);
+      if (mounted) AdmobService.warmUpInterstitial(authProvider.loginUserData, fromVideo: true);
     });
 
     _initSharedPreferences();

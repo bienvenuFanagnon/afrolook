@@ -302,7 +302,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) AdmobService.warmUpInterstitial(authProvider.loginUserData);
+      if (mounted) AdmobService.warmUpInterstitial(authProvider.loginUserData, fromVideo: true);
     });
     MonetizationReminder.due('video').then((v) {
       if (mounted && v) setState(() => _showTutoReminder = true);

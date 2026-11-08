@@ -121,7 +121,7 @@ class _AdSlotState extends State<AdSlot> {
     // Une pub native de plus se prépare dès qu'un emplacement apparaît : le suivant s'affichera sans attente
     if (_type == 'native') {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) AdmobNativePool.warmUpWhenReady(context, context.read<UserAuthProvider>().loginUserData);
+        if (mounted) AdmobNativePool.warmUpWhenReady(context, context.read<UserAuthProvider>().loginUserData, small: widget.kind != AdSlotKind.feed);
       });
     }
   }

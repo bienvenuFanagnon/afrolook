@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../providers/authProvider.dart';
 import '../theme/app_colors.dart';
+import 'ad_backoff.dart';
 import 'ad_config.dart';
 import 'ad_gate.dart';
 import 'ad_revenue_tracker.dart';
@@ -54,20 +55,24 @@ class _AdmobBannerWidgetState extends State<AdmobBannerWidget> {
       widget.onFailed?.call();
       return;
     }
+    AdFunnel.count('banner', 'request');
     final ad = BannerAd(
       adUnitId: unit,
       size: size,
       request: AdmobService.request(),
       listener: BannerAdListener(
+        onAdImpression: (a) => AdFunnel.count('banner', 'shown'),
         onPaidEvent: (a, micros, precision, currency) {
           AdRevenueTracker.record(widget.mrec ? 'admob_mrec' : 'admob_banner_${widget.unitKey}', micros, currency);
           widget.onPaid?.call(micros, currency);
         },
         onAdLoaded: (a) {
+          AdFunnel.count('banner', 'loaded');
           if (mounted) setState(() => _loaded = true);
           widget.onLoaded?.call();
         },
         onAdFailedToLoad: (a, e) {
+          AdFunnel.count('banner', 'failed');
           AdmobService.lastErrors['bannière'] = 'code ${e.code} : ${e.message}';
           a.dispose();
           _ad = null;
@@ -141,22 +146,29 @@ class _AdmobNativeWidgetState extends State<AdmobNativeWidget> {
     if (_started) return;
     _started = true;
     final unit = AdConfig.current.unit(widget.unitKey);
-    if (unit.isEmpty) {
+    // pas de pub native prête : après un échec récent on ne redemande pas tout de suite, la pub Afrolook prend la place (aucune attente à l'écran)
+    if (unit.isEmpty || AdBackoff.blocked('native_direct')) {
       widget.onFailed?.call();
       return;
     }
+    AdFunnel.count('native', 'request');
     final ad = NativeAd(
       adUnitId: unit,
       request: AdmobService.request(),
       listener: NativeAdListener(
+        onAdImpression: (a) => AdFunnel.count('native', 'shown'),
         onPaidEvent: (a, micros, precision, currency) {
           AdRevenueTracker.record('admob_native_${widget.unitKey}', micros, currency);
           widget.onPaid?.call(micros, currency);
         },
         onAdLoaded: (a) {
+          AdBackoff.succeeded('native_direct');
+          AdFunnel.count('native', 'loaded');
           if (mounted) setState(() => _loaded = true);
         },
         onAdFailedToLoad: (a, e) {
+          AdBackoff.failed('native_direct');
+          AdFunnel.count('native', 'failed');
           AdmobService.lastErrors['natif'] = 'code ${e.code} : ${e.message}';
           a.dispose();
           _ad = null;

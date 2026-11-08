@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:stack_appodeal_flutter/stack_appodeal_flutter.dart';
 
+import 'ad_backoff.dart';
 import 'ad_config.dart';
 import 'ad_revenue_tracker.dart';
 
@@ -110,9 +111,12 @@ class AppodealService {
   }
 
   /// Prépare une pub plein écran à l'avance (ouverture de la galerie de tâches) : elle est prête au toucher d'une offre.
-  static void warmUpInterstitial() {
+  static Future<void> warmUpInterstitial() async {
     try {
-      if (supported && ready.value) Appodeal.cache(AppodealAdType.Interstitial);
+      if (!supported || !ready.value || AdBackoff.blocked('appodeal_interstitial')) return;
+      if (await Appodeal.isLoaded(AppodealAdType.Interstitial)) return;   // déjà prête : rien à redemander
+      AdFunnel.count('appodeal_interstitial', 'request');
+      Appodeal.cache(AppodealAdType.Interstitial);
     } catch (_) {}
   }
 
@@ -231,8 +235,14 @@ class AppodealService {
       },
     );
     Appodeal.setInterstitialCallbacks(
-      onInterstitialLoaded: (isPrecache) => _log('plein écran : pub chargée'),
+      onInterstitialLoaded: (isPrecache) {
+        AdBackoff.succeeded('appodeal_interstitial');
+        AdFunnel.count('appodeal_interstitial', 'loaded');
+        _log('plein écran : pub chargée');
+      },
       onInterstitialFailedToLoad: () {
+        AdBackoff.failed('appodeal_interstitial');
+        AdFunnel.count('appodeal_interstitial', 'failed');
         _outcome[AppodealAdType.Interstitial] = 'ko';
         _log('plein écran : aucun réseau n’a rempli la demande');
       },

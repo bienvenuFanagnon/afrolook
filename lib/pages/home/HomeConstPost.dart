@@ -57,6 +57,7 @@ import '../../l10n/app_localizations.dart';
 import '../../l10n/tr.dart';
 import '../../theme/theme_provider.dart';
 import '../../widgets/feed/sections/feed_articles_section.dart';
+import '../../widgets/viral_widgets.dart';
 import '../../widgets/feed/sections/feed_canaux_section.dart';
 import '../../widgets/feed/sections/shop_promo_feed_widget.dart';
 import '../../widgets/feed/sections/feed_profiles_section.dart';
@@ -3551,6 +3552,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
     if (!_hasChroniques) {
       contentWidgets.add(const FeedLiveSection());
     }
+
+    // 🔥 Posts qui décollent : visible seulement s'il y a des posts viraux pas encore vus, mène à la page Viral
+    contentWidgets.add(const ViralBanner());
 
     // Invitation Facebook / TikTok : parfois en 1re position
     contentWidgets.add(const SocialFollowCard(key: ValueKey('social_follow_top'), variant: SocialFollowVariant.top));

@@ -600,6 +600,7 @@ class _MesNotificationState extends State<MesNotification> {
           await _openPage(const MusicPage());
           break;
         case 'REPOST':
+        case 'VIRAL':
         case 'FRIEND_ACTIVITY':
         case 'COMMENT_LIKE':
         case 'MENTION':

@@ -8,7 +8,7 @@ class NotificationText {
 
   /// Nouveaux types : mention, j'aime d'un commentaire, republication, soutien par pub, abonné à un canal,
   /// puis (lot « restes ») boost à valider (équipe), nomination comme administrateur d'un canal, intérêt pour un service.
-  static const newTypes = {'VIDEO_REPLY', 'MENTION', 'COMMENT_LIKE', 'REPOST', 'SUPPORT', 'FOLLOW_CANAL', 'BOOST_SOUMIS', 'CANAL_ADMIN', 'SERVICE', 'STAFF_VERIF', 'STAFF_FRAUD', 'STAFF_DISPUTE', 'STAFF_ADS'};
+  static const newTypes = {'VIDEO_REPLY', 'MENTION', 'COMMENT_LIKE', 'REPOST', 'SUPPORT', 'FOLLOW_CANAL', 'BOOST_SOUMIS', 'CANAL_ADMIN', 'SERVICE', 'STAFF_VERIF', 'STAFF_FRAUD', 'STAFF_DISPUTE', 'STAFF_ADS', 'VIRAL'};
 
   /// Groupes de la page (clé = libellé français, traduit à l'affichage), types rangés dans chacun et filtre « par type » correspondant.
   static const Map<String, List<String>> groupTypes = {
@@ -16,7 +16,7 @@ class NotificationText {
     'Commentaires': ['COMMENT', 'COMMENTAIRE', 'REPLY', 'MENTION', 'VIDEO_REPLY'],
     'Abonnés': ['ABONNER', 'FOLLOW_CANAL', 'CANAL_ADMIN', 'INVITATION', 'ACCEPTINVITATION'],
     'Messages': ['MESSAGE'],
-    'Publications & Lives': ['NEWPOST', 'POST', 'REPOST', 'LIVE', 'CHALLENGE', 'FRIEND_ACTIVITY'],
+    'Publications & Lives': ['NEWPOST', 'POST', 'REPOST', 'LIVE', 'CHALLENGE', 'FRIEND_ACTIVITY', 'VIRAL'],
     'Articles & Contenus': ['ARTICLE', 'CHRONIQUE', 'SERVICE'],
     'Récompenses': ['WEEKLY_REWARD'],
     'Commandes': ['ORDER_NEW', 'ORDER_VALIDATED', 'ORDER_FEE', 'ORDER_SHIPPED', 'ORDER_RECEIVED', 'ORDER_CANCELLED', 'ORDER_DISPUTE', 'ORDER_RESOLVED', 'OFFER_NEW', 'OFFER_REPLY'],
@@ -68,6 +68,8 @@ class NotificationText {
         return tr('a aimé votre commentaire');
       case 'REPOST':
         return tr('a republié votre publication');
+      case 'VIRAL':
+        return tr('Ton post décolle 🔥 Beaucoup de monde réagit en ce moment');
       case 'SUPPORT':
         return tr('vous a soutenu en regardant une pub : +1 pièce');
       case 'FOLLOW_CANAL':
@@ -122,6 +124,7 @@ class NotificationText {
         'MENTION' => (icon: Icons.alternate_email, tone: 1),
         'COMMENT_LIKE' => (icon: Icons.thumb_up_alt_outlined, tone: 0),
         'REPOST' => (icon: Icons.repeat, tone: 2),
+        'VIRAL' => (icon: Icons.local_fire_department, tone: 3),
         'SUPPORT' => (icon: Icons.volunteer_activism, tone: 3),
         'FOLLOW_CANAL' => (icon: Icons.campaign_outlined, tone: 1),
         'BOOST_SOUMIS' => (icon: Icons.rocket_launch_outlined, tone: 3),

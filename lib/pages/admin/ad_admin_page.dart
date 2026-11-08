@@ -290,6 +290,43 @@ class _AdAdminPageState extends State<AdAdminPage> {
     );
   }
 
+  /// Entonnoir des pubs sur la semaine, par sorte de pub : demandées, reçues, échouées, affichées, avec le taux de réception et le taux d'affichage.
+  /// Compteurs anonymes envoyés par l'application (versions récentes seulement) : ils montrent où partent les demandes sans impression.
+  Widget _funnelCard(AppColors colors, Widget Function(String, String) row) {
+    final byType = <String, Map<String, int>>{};
+    for (final d in _revenueDays) {
+      final f = (d['funnel'] as Map?) ?? const {};
+      f.forEach((type, ev) {
+        (ev as Map).forEach((e, n) {
+          final m = byType.putIfAbsent('$type', () => {});
+          m['$e'] = (m['$e'] ?? 0) + ((n as num?)?.toInt() ?? 0);
+        });
+      });
+    }
+    const names = {
+      'native': 'Natives (fil, commentaires, listes)', 'banner': 'Bannières AdMob', 'interstitial': 'Plein écran AdMob', 'rewarded': 'Récompensées AdMob',
+      'appodeal_interstitial': 'Plein écran Appodeal',
+    };
+    String pct(int a, int b) => b <= 0 ? '—' : '${(100 * a / b).toStringAsFixed(0)} %';
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(color: colors.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: colors.border)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Entonnoir des pubs (7 jours)', style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w800, fontSize: 13)),
+        const SizedBox(height: 6),
+        if (byType.isEmpty)
+          Text('Aucun compteur reçu pour le moment (versions récentes de l\'application seulement).', style: TextStyle(color: colors.textSecondary, fontSize: 12))
+        else
+          for (final e in byType.entries) ...[
+            Text(names[e.key] ?? e.key, style: TextStyle(color: colors.textSecondary, fontSize: 11.5)),
+            row('Demandées → reçues → affichées', '${e.value['request'] ?? 0} → ${e.value['loaded'] ?? 0} → ${e.value['shown'] ?? 0}'),
+            row('Reçues sur demandées / affichées sur reçues', '${pct(e.value['loaded'] ?? 0, e.value['request'] ?? 0)} / ${pct(e.value['shown'] ?? 0, e.value['loaded'] ?? 0)}'),
+            const Divider(height: 14),
+          ],
+      ]),
+    );
+  }
+
   Widget _pushAdsCard(AppColors colors) {
     return Container(
       padding: const EdgeInsets.all(14),
@@ -471,6 +508,8 @@ class _AdAdminPageState extends State<AdAdminPage> {
             ),
             const SizedBox(height: 14),
             _revenueCard(colors, row),
+            const SizedBox(height: 12),
+            _funnelCard(colors, row),
             const SizedBox(height: 14),
             _pushAdsCard(colors),
             const SizedBox(height: 14),

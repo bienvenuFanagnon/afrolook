@@ -23,6 +23,14 @@ class AdRevenueTracker {
     _timer ??= Timer.periodic(const Duration(minutes: 5), (_) => flush());
   }
 
+  /// Compteur sans montant (entonnoir des pubs : demandée, reçue, échouée, affichée) : devise « CNT », envoyé avec les revenus.
+  static void count(String placement, [int n = 1]) {
+    if (n <= 0) return;
+    final a = _acc.putIfAbsent('${_clean(placement)}|CNT', () => _Acc());
+    a.n += n;
+    _timer ??= Timer.periodic(const Duration(minutes: 5), (_) => flush());
+  }
+
   static String _clean(String p) => p.toLowerCase().replaceAll(RegExp(r'[^a-z0-9_:\-]'), '_');
 
   /// Envoie les totaux accumulés (appelée par le minuteur ; peut aussi l'être à la mise en arrière-plan).
