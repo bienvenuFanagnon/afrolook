@@ -4,11 +4,12 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 
 import '../models/post_widget.dart';
+import 'studio_project.dart';
 
 /// Brouillon du parcours de création (un seul, gardé sur le téléphone) : le média retouché, son origine, l'effet de voix et les widgets posés.
 /// Enregistré quand la personne quitte l'éditeur en choisissant « Enregistrer en brouillon », repris depuis l'écran « Créer ».
 class CreateDraft {
-  CreateDraft({required this.path, required this.isVideo, required this.source, this.voiceEffect, this.widgets = const [], this.touched = false, this.savedAt});
+  CreateDraft({required this.path, required this.isVideo, required this.source, this.voiceEffect, this.widgets = const [], this.touched = false, this.savedAt, this.project});
 
   final String path;
   final bool isVideo;
@@ -18,6 +19,9 @@ class CreateDraft {
   final bool touched;
   final DateTime? savedAt;
 
+  /// Réglages en attente (découpe, vitesse, voix, sous-titres) du rendu en une passe : restitués à la reprise.
+  final StudioProject? project;
+
   static Future<Directory> _dir() async {
     final base = await getApplicationDocumentsDirectory();
     final d = Directory('${base.path}/create_draft');
@@ -26,7 +30,7 @@ class CreateDraft {
   }
 
   /// Copie le média dans le dossier des brouillons (le fichier d'origine est temporaire) et écrit la description.
-  static Future<void> save({required String path, required bool isVideo, required String source, String? voiceEffect, List<PostWidget> widgets = const [], bool touched = false}) async {
+  static Future<void> save({required String path, required bool isVideo, required String source, String? voiceEffect, List<PostWidget> widgets = const [], bool touched = false, StudioProject? project}) async {
     final d = await _dir();
     final ext = path.contains('.') ? path.substring(path.lastIndexOf('.')) : (isVideo ? '.mp4' : '.jpg');
     final target = File('${d.path}/media$ext');
@@ -43,6 +47,7 @@ class CreateDraft {
       'voice': voiceEffect,
       'touched': touched,
       'widgets': [for (final w in widgets) w.toApi()],
+      if (project != null && project.isNotEmpty) 'project': project.toJson(),
       'saved_at': DateTime.now().toIso8601String(),
     }));
   }
@@ -64,6 +69,7 @@ class CreateDraft {
         touched: j['touched'] == true,
         widgets: PostWidget.listFromApi(j['widgets']),
         savedAt: DateTime.tryParse('${j['saved_at']}'),
+        project: j['project'] == null ? null : StudioProject.fromJson(j['project']),
       );
     } catch (_) {
       return null;

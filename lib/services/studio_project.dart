@@ -32,6 +32,38 @@ class StudioProject {
 
   StudioProject copy() => StudioProject(trimStartMs: trimStartMs, trimEndMs: trimEndMs, speed: speed, voice: voice, subtitles: subtitles);
 
+  /// Écriture brute (temps de la vidéo d'origine) pour le brouillon du téléphone.
+  Map<String, dynamic> toJson() => {
+        if (trimStartMs != null) 'trim_start_ms': trimStartMs,
+        if (trimEndMs != null) 'trim_end_ms': trimEndMs,
+        if (speed != null) 'speed': speed,
+        if (voice != null) 'voice': voice,
+        if (subtitles.isNotEmpty) 'subtitles': [for (final c in subtitles) {'start_ms': c.startMs, 'end_ms': c.endMs, 'text': c.text}],
+      };
+
+  /// Relit un brouillon ; une valeur illisible est ignorée (jamais d'erreur à la reprise).
+  static StudioProject fromJson(Object? raw) {
+    if (raw is! Map) return StudioProject();
+    int? i(Object? v) => v is num ? v.toInt() : null;
+    final cues = <ProjectCue>[];
+    final list = raw['subtitles'];
+    if (list is List) {
+      for (final c in list) {
+        if (c is Map && c['text'] is String && i(c['start_ms']) != null && i(c['end_ms']) != null) cues.add(ProjectCue(i(c['start_ms'])!, i(c['end_ms'])!, c['text'] as String));
+      }
+    }
+    final a = i(raw['trim_start_ms']);
+    final b = i(raw['trim_end_ms']);
+    final sp = raw['speed'];
+    return StudioProject(
+      trimStartMs: a != null && b != null ? a : null,
+      trimEndMs: a != null && b != null ? b : null,
+      speed: sp is String && speeds.contains(sp) ? sp : null,
+      voice: raw['voice'] is String ? raw['voice'] as String : null,
+      subtitles: cues,
+    );
+  }
+
   /// Durée du film final (ms) pour une vidéo d'origine de [sourceMs] : découpe puis vitesse.
   int finalMs(int sourceMs) {
     final s = trimStartMs ?? 0;

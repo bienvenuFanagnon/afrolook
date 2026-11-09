@@ -96,6 +96,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
       _voiceEffect = dr.voiceEffect;
       _touched = dr.touched;
       PostWidgetsLink.drafts.value = [for (final w in dr.widgets) w.copy()];
+      _project = dr.project?.copy() ?? StudioProject();   // réglages en attente retrouvés tels quels
     }
     if (widget.isVideo) {
       _initVideo();
@@ -296,7 +297,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
     );
     if (!mounted) return;
     if (act == 'save') {
-      await CreateDraft.save(path: _path, isVideo: widget.isVideo, source: widget.source, voiceEffect: _voiceEffect, widgets: PostWidgetsLink.drafts.value, touched: _touched);
+      await CreateDraft.save(path: _path, isVideo: widget.isVideo, source: widget.source, voiceEffect: _voiceEffect, widgets: PostWidgetsLink.drafts.value, touched: _touched, project: _project);
       if (!mounted) return;
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(context.tr('Brouillon enregistré. Tu le retrouveras dans « Créer ».'))));
       Navigator.of(context).pop(kCreateBack);
