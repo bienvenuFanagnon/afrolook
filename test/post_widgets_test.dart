@@ -19,14 +19,14 @@ void main() {
     expect(PostWidget.listFromApi([{'type': 'link', 'config': {'label': 'A', 'url': 'https://x'}}, {'type': 'bizarre'}, 'pas une carte']), hasLength(1));
   });
 
-  test('au plus 3 widgets en cours d\'ajout ; la publication les prend une seule fois', () {
-    for (var i = 0; i < 5; i++) {
+  test('au plus 5 widgets en cours d\'ajout ; la publication les prend une seule fois', () {
+    for (var i = 0; i < 7; i++) {
       PostWidgetsLink.add(PostWidget(kind: WidgetKind.question, config: {'question': 'Q$i'}));
     }
-    expect(PostWidgetsLink.drafts.value, hasLength(3));
+    expect(PostWidgetsLink.drafts.value, hasLength(5));
     expect(PostWidgetsLink.isFull, isTrue);
     final taken = PostWidgetsLink.take()!;
-    expect(taken, hasLength(3));
+    expect(taken, hasLength(5));
     expect(PostWidgetsLink.take(), isNull);   // lus une seule fois
     expect(PostWidgetsLink.drafts.value, isEmpty);
   });

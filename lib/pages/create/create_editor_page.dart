@@ -545,7 +545,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
 
   Future<void> _addWidget() async {
     if (PostWidgetsLink.isFull) {
-      ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(context.tr('3 widgets au plus par publication.'))));
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(context.tr('5 widgets au plus par publication.'))));
       return;
     }
     _video?.pause();

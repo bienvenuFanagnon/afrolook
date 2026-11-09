@@ -54,7 +54,7 @@ class StudioWatermarkApi {
     ]);
     // widgets du créateur tels qu'affichés maintenant : un PNG par widget, posé par le serveur dans la vidéo téléchargée
     final widgetBody = <Map<String, Object?>>[];
-    for (final w in widgets.take(3)) {
+    for (final w in widgets.take(5)) {
       final id = await ArgentUpload.bytes(w.png, contentType: 'image/png');
       widgetBody.add({'upload_id': id, 'x': w.x, 'y': w.y, 'w': w.width, if (w.start != null) 'start': w.start, if (w.end != null) 'end': w.end});
     }

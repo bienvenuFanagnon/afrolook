@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-/// Types de widgets posés sur une publication. Décision du 07/11/2026 : aucun n'est réservé à Gold, 3 au plus par publication.
+/// Types de widgets posés sur une publication. Décision du 07/11/2026 : aucun n'est réservé à Gold, 5 au plus par publication (3 jusqu au 09/11/2026).
 enum WidgetKind { poll, quiz, question, reaction, countdown, reminder, link, place, whatsapp, call, sale }
 
 extension WidgetKindX on WidgetKind {
@@ -128,7 +128,7 @@ class PostWidgetsLink {
 
   static final ValueNotifier<List<PostWidget>> drafts = ValueNotifier<List<PostWidget>>(const []);
 
-  static const max = 3;
+  static const max = 5;
 
   static bool get isFull => drafts.value.length >= max;
 

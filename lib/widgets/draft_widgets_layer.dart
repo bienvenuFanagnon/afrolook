@@ -8,7 +8,7 @@ import 'widgets_sheet.dart';
 
 /// Calque des widgets en cours d'ajout (sondage, question, lien…) posé sur le média : UN SEUL composant pour l'éditeur de création ET le Studio de montage,
 /// pour que les widgets restent visibles, déplaçables et supprimables partout, quel que soit le média choisi ou modifié.
-/// On glisse pour déplacer, on pince (ou − / +) pour redimensionner, on touche pour afficher les commandes (durée, modifier, supprimer).
+/// On glisse pour déplacer, on pince pour redimensionner ; toucher le widget ou son bouton « ⋮ » ouvre ses options (taille − / +, durée, modifier, supprimer).
 class DraftWidgetsLayer extends StatefulWidget {
   const DraftWidgetsLayer({super.key, this.mediaAspect, this.videoSeconds, this.onBeforeChange});
 
@@ -87,16 +87,72 @@ class _DraftWidgetsLayerState extends State<DraftWidgetsLayer> {
     _refresh();
   }
 
-  Widget _ctl(Key k, IconData icon, VoidCallback onTap, {Color bg = Colors.black87, Color fg = Colors.white}) => GestureDetector(
-        key: k,
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Container(
-          width: 32,
-          height: 32,
-          margin: const EdgeInsets.symmetric(horizontal: 3),
-          decoration: BoxDecoration(color: bg, shape: BoxShape.circle, border: Border.all(color: Colors.white54)),
-          child: Icon(icon, size: 18, color: fg),
+  /// Options d'un widget (feuille du bas, sûre au toucher) : taille − / +, « Visible de… à… » (vidéo), modifier, supprimer.
+  /// Elles s'ouvrent en touchant le widget ou son bouton « ⋮ ». Ce bouton n'existe que dans ce calque d'édition : il n'est dans aucun rendu (montage, téléchargement, publication).
+  Future<void> _options(PostWidget w) async {
+    final c = AppColors.of(context);
+    final hasVideo = (widget.videoSeconds?.call() ?? 0) >= 1;
+    setState(() => _sel = w);
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: c.surface,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setS) {
+          Widget row(Key k, IconData icon, String label, VoidCallback onTap, {Color? color}) => ListTile(
+                key: k,
+                leading: Icon(icon, color: color ?? c.textPrimary),
+                title: Text(context.tr(label), style: TextStyle(color: color ?? c.textPrimary, fontWeight: FontWeight.w700)),
+                onTap: onTap,
+              );
+          return SafeArea(
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              const SizedBox(height: 8),
+              Container(width: 38, height: 4, decoration: BoxDecoration(color: c.border, borderRadius: BorderRadius.circular(3))),
+              const SizedBox(height: 6),
+              ListTile(
+                leading: Icon(Icons.aspect_ratio_rounded, color: c.textPrimary),
+                title: Text(context.tr('Taille'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700)),
+                trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                  IconButton(key: const ValueKey('wm_smaller'), icon: const Icon(Icons.remove_circle_outline_rounded), color: c.textPrimary, iconSize: 30, onPressed: () => setS(() => _scale(w, -.15))),
+                  IconButton(key: const ValueKey('wm_bigger'), icon: const Icon(Icons.add_circle_outline_rounded), color: c.textPrimary, iconSize: 30, onPressed: () => setS(() => _scale(w, .15))),
+                ]),
+              ),
+              if (hasVideo)
+                row(const ValueKey('wm_range'), Icons.timelapse_rounded, 'Visible de… à…', () {
+                  Navigator.pop(ctx);
+                  _editRange(w);
+                }, color: (w.start != null || w.end != null) ? c.accentText : null),
+              row(const ValueKey('wm_edit'), Icons.edit_rounded, 'Modifier', () {
+                Navigator.pop(ctx);
+                _edit(w);
+              }),
+              row(const ValueKey('wm_delete'), Icons.delete_outline_rounded, 'Supprimer', () {
+                Navigator.pop(ctx);
+                _delete(w);
+              }, color: Colors.redAccent),
+              const SizedBox(height: 8),
+            ]),
+          );
+        },
+      ),
+    );
+  }
+
+  /// Le bouton « ⋮ » posé sur chaque widget (coin haut droit, dans sa zone touchable). Il garde une taille fixe quel que soit l'agrandissement du widget.
+  Widget _dots(PostWidget w, int index) => Transform.scale(
+        scale: 1 / w.scale,
+        alignment: Alignment.topRight,
+        child: GestureDetector(
+          key: ValueKey('wm_dots_$index'),
+          behavior: HitTestBehavior.opaque,
+          onTap: () => _options(w),
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: const BoxDecoration(color: Color(0xCC000000), shape: BoxShape.circle),
+            child: const Icon(Icons.more_vert_rounded, size: 22, color: Colors.white),
+          ),
         ),
       );
 
@@ -107,7 +163,6 @@ class _DraftWidgetsLayerState extends State<DraftWidgetsLayer> {
       builder: (context, list, _) => LayoutBuilder(
         builder: (context, box) {
           final frame = mediaFrame(Size(box.maxWidth, box.maxHeight), widget.mediaAspect);   // les positions se comptent dans le cadre du média
-          final hasVideo = (widget.videoSeconds?.call() ?? 0) >= 1;
           return Stack(clipBehavior: Clip.none, children: [
             // toucher le fond désélectionne (seulement quand un widget est sélectionné : sinon les gestes passent au média)
             if (_sel != null) Positioned.fill(child: GestureDetector(behavior: HitTestBehavior.translucent, onTap: () => setState(() => _sel = null))),
@@ -118,7 +173,7 @@ class _DraftWidgetsLayerState extends State<DraftWidgetsLayer> {
                   child: GestureDetector(
                     key: ValueKey('draft_widget_${list.indexOf(w)}'),
                     behavior: HitTestBehavior.opaque,   // le widget dessous ignore les touchers (aperçu) : sans zone propre, on ne pouvait ni le toucher, ni le déplacer, ni le supprimer
-                    onTap: () => setState(() => _sel = identical(_sel, w) ? null : w),
+                    onTap: () => _options(w),   // toucher le widget ouvre ses options (avant, les commandes en haut du cadre ne réagissaient pas)
                     onScaleStart: (_) {
                       _scaleStart = w.scale;
                       if (!identical(_sel, w)) setState(() => _sel = w);
@@ -131,28 +186,15 @@ class _DraftWidgetsLayerState extends State<DraftWidgetsLayer> {
                     },
                     child: Container(
                       decoration: identical(_sel, w) ? BoxDecoration(borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white, width: 1.5)) : null,
-                      child: Transform.scale(scale: w.scale, child: IgnorePointer(child: PostWidgetView(widget: w, preview: true))),
+                      // le « ⋮ » est dans le calque d'édition seulement (jamais dans le rendu) ; il suit le widget et garde sa taille
+                      child: Transform.scale(
+                        scale: w.scale,
+                        child: Stack(children: [
+                          IgnorePointer(child: PostWidgetView(widget: w, preview: true)),
+                          Positioned(top: 2, right: 2, child: _dots(w, list.indexOf(w))),
+                        ]),
+                      ),
                     ),
-                  ),
-                ),
-              ),
-            // commandes du widget sélectionné : une barre en haut du cadre, DANS la zone touchable (au-dessus du widget elles ne recevaient aucun toucher)
-            if (_sel != null && list.any((e) => identical(e, _sel)))
-              Positioned(
-                top: 6,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                    decoration: BoxDecoration(color: const Color(0x99000000), borderRadius: BorderRadius.circular(24)),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      _ctl(const ValueKey('wm_smaller'), Icons.remove_rounded, () => _scale(_sel!, -.15)),
-                      _ctl(const ValueKey('wm_bigger'), Icons.add_rounded, () => _scale(_sel!, .15)),
-                      if (hasVideo) _ctl(const ValueKey('wm_range'), Icons.timelapse_rounded, () => _editRange(_sel!), bg: (_sel!.start != null || _sel!.end != null) ? const Color(0xFFFFC400) : Colors.black87, fg: (_sel!.start != null || _sel!.end != null) ? Colors.black : Colors.white),
-                      _ctl(const ValueKey('wm_edit'), Icons.edit_rounded, () => _edit(_sel!)),
-                      _ctl(const ValueKey('wm_delete'), Icons.delete_outline_rounded, () => _delete(_sel!), bg: Colors.redAccent),
-                    ]),
                   ),
                 ),
               ),

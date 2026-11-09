@@ -176,7 +176,9 @@ class _PostWidgetViewState extends State<PostWidgetView> {
     final h = d.inHours % 24;
     final m = d.inMinutes % 60;
     final s = d.inSeconds % 60;
-    return days > 0 ? '${days} j ${h} h ${m} min' : '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+    String two(int n) => n.toString().padLeft(2, '0');
+    // les secondes défilent toujours, même à plusieurs jours de l'échéance (demande du 09/11/2026)
+    return days > 0 ? '$days j ${two(h)} h ${two(m)} min ${two(s)} s' : '${two(h)}:${two(m)}:${two(s)}';
   }
 
   /// Feuille des réponses reçues (réservée à l'auteur) : pseudo et texte, les plus récentes d'abord.
@@ -275,7 +277,8 @@ class _PostWidgetViewState extends State<PostWidgetView> {
         final at = DateTime.tryParse('${c['at']}')?.toLocal();
         return _card([
           _title('⏳ ${c['title'] ?? ''}'),
-          Text(at == null ? '' : _countdown(at), style: const TextStyle(color: _ink, fontWeight: FontWeight.w900, fontSize: 20, decoration: TextDecoration.none)),
+          // le texte rétrécit s'il est trop long pour la carte (jours, heures, minutes et secondes)
+          FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text(at == null ? '' : _countdown(at), style: const TextStyle(color: _ink, fontWeight: FontWeight.w900, fontSize: 20, decoration: TextDecoration.none))),
         ]);
       case WidgetKind.reminder:
         final at = DateTime.tryParse('${c['at']}')?.toLocal();

@@ -264,7 +264,7 @@ class PostDownload {
       if (shownWidgets != null) return shownWidgets!;
       final out = <WidgetLayer>[];
       if (context.mounted) {
-        for (final w in post.widgets.take(3)) {
+        for (final w in post.widgets.take(5)) {
           try {
             final l = await WidgetRaster.render(context, w);
             if (l != null) out.add(l);

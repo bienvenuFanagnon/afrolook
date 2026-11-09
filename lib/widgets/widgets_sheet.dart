@@ -50,7 +50,7 @@ class _KindSheet extends StatelessWidget {
             Center(child: Container(width: 38, height: 4, decoration: BoxDecoration(color: c.border, borderRadius: BorderRadius.circular(3)))),
             const SizedBox(height: 12),
             Text(context.tr('Ajouter un widget'), style: TextStyle(color: c.textPrimary, fontSize: 17, fontWeight: FontWeight.w900)),
-            Text(context.tr('3 au plus par publication. Gratuit.'), style: TextStyle(color: c.textSecondary, fontSize: 12)),
+            Text(context.tr('5 au plus par publication. Gratuit.'), style: TextStyle(color: c.textSecondary, fontSize: 12)),
             for (final g in _groups) ...[
               Padding(padding: const EdgeInsets.fromLTRB(2, 14, 0, 8), child: Text(context.tr(g.$1), style: TextStyle(color: c.textSecondary, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: .8))),
               GridView.count(

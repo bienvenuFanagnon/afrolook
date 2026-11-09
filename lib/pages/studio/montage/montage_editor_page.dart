@@ -1635,10 +1635,10 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     ]);
   }
 
-  /// Ajoute un widget (sondage, question, lien…) depuis le Studio : même parcours que l'éditeur de création (3 au plus par publication).
+  /// Ajoute un widget (sondage, question, lien…) depuis le Studio : même parcours que l'éditeur de création (5 au plus par publication).
   Future<void> _addDraftWidget() async {
     if (PostWidgetsLink.isFull) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('3 widgets au plus par publication.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('5 widgets au plus par publication.')));
       return;
     }
     final w = await addWidgetFlow(context);
