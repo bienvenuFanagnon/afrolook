@@ -885,7 +885,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
           Padding(
             padding: const EdgeInsets.fromLTRB(28, 0, 28, 10),
             child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, crossAxisAlignment: CrossAxisAlignment.center, children: [
-              // Galerie : possible, mais limitée à 2 médias par jour ; filmer ou se photographier ici n'a pas de limite
+              // Galerie : sans limite par jour ; chaque média choisi passe par le contrôle d'authenticité
               GestureDetector(
                 onTap: _recording ? null : () => Navigator.pop(context, CreateCaptureResult.gallery(isVideo: !_photoMode)),
                 child: Container(
@@ -1011,7 +1011,7 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
         items.add(_engChip(key: const ValueKey('magic_none'), icon: Icons.block_rounded, label: 'Aucun', selected: _magic < 0, onTap: off ? null : () => _pickMagic(_magic < 0 ? 0 : _magic), c: c));
         for (var m = 0; m < FaceEngine.magic.length; m++) {
           final mg = FaceEngine.magic[m];
-          items.add(_engChip(key: ValueKey('magic_$m'), icon: mg.icon, label: mg.label, selected: _magic == m, onTap: off ? null : () => _pickMagic(m), c: c, gold: mg.kind != 'icon' ? 'money_gestures' : null));
+          items.add(_engChip(key: ValueKey('magic_$m'), icon: mg.icon, label: mg.label, selected: _magic == m, onTap: off ? null : () => _pickMagic(m), c: c, gold: (mg.kind == 'note' || mg.kind == 'coin') ? 'money_gestures' : null));
         }
     }
     final gesture = FaceEngine.gestures.firstWhere((g) => g.key == _gesture);

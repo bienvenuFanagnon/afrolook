@@ -138,4 +138,6 @@ const Map<String, Map<String, String>> kTrCreation = {
   'Objets': {'en': 'Objects', 'es': "Objetos", 'pt': "Objetos", 'de': "Objekte", 'ar': "أشياء", 'zh': "物品", 'sw': "Vitu"},
   'Pastilles': {'en': 'Badges', 'es': "Insignias", 'pt': "Emblemas", 'de': "Abzeichen", 'ar': "شارات", 'zh': "徽章", 'sw': "Beji"},
   'Afrolook': {'en': 'Afrolook', 'es': "Afrolook", 'pt': "Afrolook", 'de': "Afrolook", 'ar': "أفرولوك", 'zh': "Afrolook", 'sw': "Afrolook"},
+  'Feu': {'en': 'Fire', 'es': "Fuego", 'pt': "Fogo", 'de': "Feuer", 'ar': "نار", 'zh': "火焰", 'sw': "Moto"},
+  'Dragon': {'en': 'Dragon', 'es': "Dragón", 'pt': "Dragão", 'de': "Drache", 'ar': "تنين", 'zh': "龙", 'sw': "Joka"},
 };

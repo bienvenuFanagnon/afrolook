@@ -25,6 +25,11 @@
 -keep class com.google.mediapipe.** { *; }
 -keep class com.google.protobuf.** { *; }
 -dontwarn com.google.mediapipe.proto.**
+# Seconde cause trouvée au journal du téléphone (09/11/2026, Pixel 8 Pro, APK release) : Graph.<clinit> échouait avec « IllegalStateException: no caller found on the stack for: e7.d ».
+# e7.d est la classe FluentLogger (Flogger, le journal interne de Google embarqué par MediaPipe) : elle retrouve la classe appelante en lisant la pile par NOM de classe, ce que
+# le renommage de R8 casse. On garde Flogger tel quel (quelques dizaines de Ko).
+-keep class com.google.common.flogger.** { *; }
+-dontwarn com.google.common.flogger.**
 
 # Lecture de texte ML Kit (contrôle des vidéos d autres réseaux) : le plugin mentionne les modèles chinois, japonais, coréen et devanagari, non inclus
 # (l application n utilise que l alphabet latin). Classes absentes seulement mentionnées : sans effet à l exécution.

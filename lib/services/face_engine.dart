@@ -62,7 +62,7 @@ class FaceMagic {
   final IconData icon;
   final int color;
 
-  /// `icon` (une icône colorée), `note` (un billet de banque dessiné) ou `coin` (une pièce avec un symbole).
+  /// `icon` (une icône colorée), `note` (un billet de banque dessiné), `coin` (une pièce avec un symbole) ou `flame` (une flamme dessinée : le moteur la lance en jet de feu).
   final String kind;
 
   /// Symbole écrit sur le billet ou la pièce ($, FCFA, F).
@@ -186,6 +186,8 @@ class FaceEngine {
     FaceMagic('Cœurs', Icons.favorite_rounded, 0xFFFF3B5C),
     FaceMagic('Pièces', Icons.monetization_on_rounded, 0xFFFFC400),
     FaceMagic('Étoiles', Icons.star_rounded, 0xFFFFE066),
+    // flammes qui sortent de la bouche (dessinées par l'application, plus grosses et plus rapides que les autres effets)
+    FaceMagic('Feu', Icons.local_fire_department_rounded, 0xFFFF6A00, kind: 'flame', color2: 0xFFFFD43B),
     FaceMagic('Notes', Icons.music_note_rounded, 0xFF7C4DFF),
     FaceMagic('Dollars', Icons.attach_money_rounded, 0xFF2E9E57, kind: 'note', text: '\$', color2: 0xFFBFE8C9),
     FaceMagic('Billets FCFA', Icons.payments_rounded, 0xFFE07B1F, kind: 'note', text: 'FCFA', color2: 0xFFFFE0B8),
@@ -261,7 +263,7 @@ class FaceEngine {
       return;
     }
     final png = await a.render();
-    await _channel.invokeMethod('setAvatar', {'head': png[0], 'eye': png[1], 'mouth': png[2], 'headSize': a.headSize, 'eyeScale': a.eyeScale, 'mouthScale': a.mouthScale});
+    await _channel.invokeMethod('setAvatar', {'head': png[0], 'eye': png[1], 'mouth': png[2], 'headSize': a.headSize * FaceAvatar.sizeBoost, 'eyeScale': a.eyeScale, 'mouthScale': a.mouthScale});
   }
 
   /// Effet magique [m] déclenché par le geste [gesture] (`null` = rien).
@@ -270,8 +272,8 @@ class FaceEngine {
       await _channel.invokeMethod('setParticles', {'trigger': 'none'});
       return;
     }
-    final png = m.kind == 'icon' ? await iconPng(m.icon, Color(m.color), 96) : await moneyPng(m, 128);
-    await _channel.invokeMethod('setParticles', {'trigger': gesture, 'png': png});
+    final png = m.kind == 'icon' ? await iconPng(m.icon, Color(m.color), 96) : m.kind == 'flame' ? await flamePng(m, 160) : await moneyPng(m, 128);
+    await _channel.invokeMethod('setParticles', {'trigger': gesture, 'png': png, 'style': m.kind == 'flame' ? 'fire' : 'stream'});
   }
 
   /// Dessine une icône de l'application en image (PNG) pour le moteur : plus d'emoji, de vraies icônes colorées.
@@ -283,6 +285,32 @@ class FaceEngine {
       textDirection: TextDirection.ltr,
     )..layout();
     tp.paint(canvas, Offset((size - tp.width) / 2, (size - tp.height) / 2));
+    final img = await rec.endRecording().toImage(size, size);
+    final data = await img.toByteData(format: ui.ImageByteFormat.png);
+    return data!.buffer.asUint8List();
+  }
+
+  /// Dessine une flamme (image carrée, pointe en haut) : trois couches, orange (couleur), jaune (couleur2) puis blanc chaud au cœur.
+  static Future<Uint8List> flamePng(FaceMagic m, int size) async {
+    final rec = ui.PictureRecorder();
+    final canvas = ui.Canvas(rec);
+    final w = size.toDouble();
+    Path flame(double s, double dy) {
+      final cx = w / 2;
+      final top = w * (.06 + dy);
+      final bottom = w * (.94 - (1 - s) * .1);
+      final half = w * .34 * s;
+      return Path()
+        ..moveTo(cx, top)
+        ..cubicTo(cx + half * .2, top + (bottom - top) * .3, cx + half * 1.25, top + (bottom - top) * .5, cx + half, bottom - (bottom - top) * .25)
+        ..cubicTo(cx + half * .8, bottom + (bottom - top) * .02, cx - half * .8, bottom + (bottom - top) * .02, cx - half, bottom - (bottom - top) * .25)
+        ..cubicTo(cx - half * 1.25, top + (bottom - top) * .5, cx - half * .2, top + (bottom - top) * .3, cx, top)
+        ..close();
+    }
+    ui.Paint fill(int c) => ui.Paint()..color = Color(c)..isAntiAlias = true;
+    canvas.drawPath(flame(1.0, 0), fill(m.color));
+    canvas.drawPath(flame(.68, .22), fill(m.color2));
+    canvas.drawPath(flame(.36, .46), fill(0xFFFFF6D6));
     final img = await rec.endRecording().toImage(size, size);
     final data = await img.toByteData(format: ui.ImageByteFormat.png);
     return data!.buffer.asUint8List();

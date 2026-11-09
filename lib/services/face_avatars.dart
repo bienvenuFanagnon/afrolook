@@ -31,7 +31,11 @@ class FaceAvatar {
     FaceAvatar(key: 'panda', label: 'Panda', icon: Icons.emoji_nature_rounded, head: 0xFFF4F4F4, eye: 0xFFFFFFFF, mouth: 0xFF7A1F2B, headSize: 1.6),
     FaceAvatar(key: 'lion', label: 'Lion', icon: Icons.sentiment_very_satisfied_rounded, head: 0xFFE0A33A, eye: 0xFF3B2A12, mouth: 0xFF7A1F2B, headSize: 1.75),
     FaceAvatar(key: 'monkey', label: 'Singe', icon: Icons.mood_rounded, head: 0xFF7A4B2A, eye: 0xFF1B1B1B, mouth: 0xFF5C1B22, headSize: 1.6),
+    FaceAvatar(key: 'dragon', label: 'Dragon', icon: Icons.whatshot_rounded, head: 0xFF3FA34D, eye: 0xFFFFB300, mouth: 0xFF8A1B12, headSize: 1.7, eyeScale: 1.15),
   ];
+
+  /// Agrandissement de toutes les têtes d'avatars (demande du 09/11/2026 : « agrandis encore plus les avatars sur les visages »). Multiplie [headSize] au moment de l'envoi au moteur.
+  static const double sizeBoost = 1.3;
 
   /// Les trois images PNG : [tête, œil, bouche].
   Future<List<Uint8List>> render() async => [await _head(), await _eye(), await _mouth()];
@@ -136,6 +140,24 @@ class FaceAvatar {
             c.drawCircle(mid, 185, base);
             c.drawOval(ui.Rect.fromCenter(center: const ui.Offset(256, 300), width: 260, height: 210), _fill(0xFFE6B890));
             c.drawOval(ui.Rect.fromCenter(center: const ui.Offset(256, 270), width: 280, height: 90), _fill(0xFFE6B890));
+          case 'dragon':
+            // cornes ivoire, ailerons pointus sur les côtés, crête dorsale, museau clair avec narines, arcades sourcilières
+            _ear(c, _fill(0xFFE8D9A8), const ui.Offset(150, 125), const ui.Offset(100, 12), const ui.Offset(212, 92));
+            _ear(c, _fill(0xFFE8D9A8), const ui.Offset(362, 125), const ui.Offset(412, 12), const ui.Offset(300, 92));
+            _ear(c, _fill(0xFF2D7A39), const ui.Offset(78, 235), const ui.Offset(0, 150), const ui.Offset(100, 190));
+            _ear(c, _fill(0xFF2D7A39), const ui.Offset(434, 235), const ui.Offset(512, 150), const ui.Offset(412, 190));
+            for (final x in [226.0, 256.0, 286.0]) {
+              _ear(c, _fill(0xFFE5383B), ui.Offset(x - 16, 98), ui.Offset(x, 30 + (x - 256).abs() * .9), ui.Offset(x + 16, 98));
+            }
+            c.drawOval(ui.Rect.fromCenter(center: mid, width: 380, height: 380), base);
+            for (final p in const [ui.Offset(190, 130), ui.Offset(256, 112), ui.Offset(322, 130), ui.Offset(150, 190), ui.Offset(362, 190)]) {
+              c.drawCircle(p, 12, _fill(0x332D7A39));
+            }
+            c.drawOval(ui.Rect.fromCenter(center: const ui.Offset(256, 350), width: 250, height: 160), _fill(0xFF8FD39A));
+            c.drawOval(ui.Rect.fromCenter(center: const ui.Offset(222, 318), width: 22, height: 30), _fill(0xFF1D5A28));
+            c.drawOval(ui.Rect.fromCenter(center: const ui.Offset(290, 318), width: 22, height: 30), _fill(0xFF1D5A28));
+            c.drawLine(const ui.Offset(118, 178), const ui.Offset(204, 206), _line(0xFF2D7A39, 16));
+            c.drawLine(const ui.Offset(394, 178), const ui.Offset(308, 206), _line(0xFF2D7A39, 16));
           case 'alien_purple':
             // trois antennes
             for (final x in [176.0, 256.0, 336.0]) {
@@ -194,6 +216,13 @@ class FaceAvatar {
         c.restore();
         if (key == 'bunny') {
           c.drawRRect(ui.RRect.fromRectAndRadius(ui.Rect.fromLTWH(78, 8, 36, 40), const ui.Radius.circular(8)), _fill(0xFFFFFFFF));
+        }
+        if (key == 'dragon') {
+          // crocs en haut et en bas
+          for (final x in [44.0, 134.0]) {
+            c.drawPath(ui.Path()..moveTo(x, 22)..lineTo(x + 18, 22)..lineTo(x + 9, 60)..close(), _fill(0xFFFFFFFF));
+            c.drawPath(ui.Path()..moveTo(x + 6, 112)..lineTo(x + 24, 112)..lineTo(x + 15, 76)..close(), _fill(0xFFFFFFFF));
+          }
         }
         if (key == 'robot') {
           c.drawRect(ui.Rect.fromLTWH(30, 40, 132, 44), _fill(0xFFB8C4CE));

@@ -105,6 +105,7 @@ object FaceEngine {
                     // effets d'expression : `trigger` = mouth (bouche ouverte) ou blink (clin d'œil) ; `png` = le petit dessin qui s'envole
                     val bytes = call.argument<ByteArray>("png")
                     v?.renderer?.particleTrigger = call.argument<String>("trigger") ?: "none"
+                    v?.renderer?.particleStyle = call.argument<String>("style") ?: "stream"
                     if (bytes != null) v?.renderer?.particlePending = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
                     result.success(null)
                 }
@@ -259,6 +260,7 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
     @Volatile private var predErr = 0f     // erreur moyenne de prévision quand ça bouge (en % de la largeur)
     @Volatile private var alphaBase = 1.5f // fréquence de coupure minimale (Hz) du filtre One Euro, apprise : plus bas = plus stable, plus haut = plus réactif
     private var learnFrames = 0
+    private val lossGraceMs = 600L      // durée pendant laquelle on garde le masque en place quand le détecteur perd le visage un instant
     @Volatile private var lastError: String? = null
 
     init {
@@ -401,9 +403,10 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
         .setBaseOptions(BaseOptions.builder().setModelAssetPath("face_landmarker.task").setDelegate(delegate).build())
         .setRunningMode(RunningMode.LIVE_STREAM)
         .setNumFaces(1)
-        .setMinFaceDetectionConfidence(0.5f)
-        .setMinFacePresenceConfidence(0.5f)
-        .setMinTrackingConfidence(0.5f)
+        // seuils abaissés (0,5 → 0,3) : une bouche grande ouverte ou un mouvement rapide baisse la confiance du modèle sans que le visage ait disparu
+        .setMinFaceDetectionConfidence(0.3f)
+        .setMinFacePresenceConfidence(0.3f)
+        .setMinTrackingConfidence(0.3f)
         .setResultListener { r: FaceLandmarkerResult, _ -> onResult(r) }
         .setErrorListener { e -> lastError = e.message; FaceEngine.log("MediaPipe : ${e.message}") }
         .build()
@@ -464,6 +467,10 @@ class FaceEngineView(private val activity: Activity, private var front: Boolean)
         val faces = r.faceLandmarks()
         tried++
         if (faces.isEmpty()) {
+            // Perte brève (bouche très ouverte, tête tournée vite, flou de mouvement) : le détecteur ne répond « aucun visage » quelques images de suite alors que le visage
+            // est toujours là. On garde les derniers points (la prévision de mouvement les prolonge au plus 80 ms) : le masque ne clignote plus ni ne disparaît.
+            val last = renderer.landmarks
+            if (last != null && SystemClock.uptimeMillis() - last.t < lossGraceMs) { updateRate(); return }
             renderer.landmarks = null
             // visage perdu : on repart d'un réglage neutre pour le prochain visage
             alphaBase = 1.5f; renderer.predGain = 1.0f; learnFrames = 0; jitter = 0f; predErr = 0f
@@ -568,9 +575,11 @@ class FaceRenderer : GLSurfaceView.Renderer {
     @Volatile var beautyBright = 0f
     @Volatile var beautyWarm = 0f
     @Volatile var particleTrigger = "none"
+    @Volatile var particleStyle = "stream"   // « stream » : petits dessins qui s'envolent ; « fire » : jet de flammes qui sort de la bouche (plus gros, plus rapide, vers le bas)
     @Volatile var particlePending: Bitmap? = null
     private var pTex = 0
     private val pMax = 80
+    private val FIRE_LIFE = 0.8f   // durée de vie d'une flamme (secondes) ; 34 flammes par seconde au plus, donc moins de 30 à l'écran
     private val pxs = FloatArray(80); private val pys = FloatArray(80); private val pvx = FloatArray(80); private val pvy = FloatArray(80)
     private val plife = FloatArray(80); private val psize = FloatArray(80)
     private var pn = 0
@@ -965,10 +974,16 @@ class FaceRenderer : GLSurfaceView.Renderer {
         }
         if (streamAt != null) {
             val m = streamAt
-            pAcc += dt * 14f
+            val fire = particleStyle == "fire"
+            pAcc += dt * (if (fire) 34f else 14f)
             while (pAcc >= 1f) {
                 pAcc -= 1f
-                spawnParticle(m[0] + (rnd.nextFloat() - .5f) * 0.05f, m[1], (rnd.nextFloat() - .5f) * 0.16f, 0.22f + rnd.nextFloat() * 0.22f, 0.05f + rnd.nextFloat() * 0.04f, 1.3f)
+                if (fire) {
+                    // jet de flammes : sort de la bouche vers le bas en s'écartant un peu, grosses flammes, vie courte
+                    spawnParticle(m[0] + (rnd.nextFloat() - .5f) * 0.04f, m[1], (rnd.nextFloat() - .5f) * 0.22f, -(0.30f + rnd.nextFloat() * 0.30f), 0.11f + rnd.nextFloat() * 0.07f, FIRE_LIFE)
+                } else {
+                    spawnParticle(m[0] + (rnd.nextFloat() - .5f) * 0.05f, m[1], (rnd.nextFloat() - .5f) * 0.16f, 0.22f + rnd.nextFloat() * 0.22f, 0.05f + rnd.nextFloat() * 0.04f, 1.3f)
+                }
             }
         } else if (trig == "blink" && blink && !pWasBlink) {
             val e = mid(p(33), p(263))
@@ -1001,15 +1016,17 @@ class FaceRenderer : GLSurfaceView.Renderer {
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, pTex)
         GLES20.glUniform1i(GLES20.glGetUniformLocation(ovProgram, "uOv"), 0)
         val ap = GLES20.glGetAttribLocation(ovProgram, "aP"); val at = GLES20.glGetAttribLocation(ovProgram, "aT")
+        val fire = particleStyle == "fire"
         for (i in 0 until pn) {
-            val s = psize[i]
+            // flammes : petites à la sortie de la bouche puis qui grossissent ; l'image est retournée (pointe vers le bas, dans le sens du jet)
+            val s = if (fire) psize[i] * (1.2f - 0.7f * (plife[i] / FIRE_LIFE).coerceIn(0f, 1f)) else psize[i]
             val cx = pxs[i]; val cy = pys[i]
             GLES20.glUniform1f(GLES20.glGetUniformLocation(ovProgram, "uAlpha"), minOf(1f, plife[i] / 0.4f))
             ovBuf.clear()
             val ks = arrayOf(floatArrayOf(-.5f, -.5f), floatArrayOf(.5f, -.5f), floatArrayOf(-.5f, .5f), floatArrayOf(.5f, .5f))
             for (k in ks) {
                 ovBuf.put((cx + k[0] * s / aspect) * 2f - 1f); ovBuf.put((cy + k[1] * s) * 2f - 1f)
-                ovBuf.put(k[0] + .5f); ovBuf.put(.5f - k[1])
+                ovBuf.put(k[0] + .5f); ovBuf.put(if (fire) k[1] + .5f else .5f - k[1])
             }
             ovBuf.position(0); GLES20.glVertexAttribPointer(ap, 2, GLES20.GL_FLOAT, false, 16, ovBuf); GLES20.glEnableVertexAttribArray(ap)
             ovBuf.position(2); GLES20.glVertexAttribPointer(at, 2, GLES20.GL_FLOAT, false, 16, ovBuf); GLES20.glEnableVertexAttribArray(at)
