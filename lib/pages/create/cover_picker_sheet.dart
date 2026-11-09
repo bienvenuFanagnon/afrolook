@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 
 import '../../l10n/tr.dart';
+import '../../services/authentic_video_check.dart';
 import '../../theme/app_colors.dart';
 
 /// Extrait l'image d'une vidéo à l'instant [ms] (fichier JPEG temporaire) ; null si impossible.
@@ -115,6 +116,8 @@ class _CoverPickerSheetState extends State<CoverPickerSheet> {
       f = await custom();
     } else {
       final x = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1080, imageQuality: 85);
+      // couverture de la galerie : même contrôle d'authenticité que toute image
+      if (x != null && (!mounted || !await AuthenticVideoCheck.gateImage(context, x.path, allowClaim: false) || !mounted)) return;
       f = x == null ? null : File(x.path);
     }
     if (f != null && !_closed) setState(() => _selected = f);

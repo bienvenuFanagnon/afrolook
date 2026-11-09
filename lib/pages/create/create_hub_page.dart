@@ -11,7 +11,6 @@ import '../../l10n/tr.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../../services/account_gate.dart';
-import '../../services/api/posts_api.dart';
 import '../../services/post_source_link.dart';
 import '../../services/authentic_video_check.dart';
 import '../../theme/app_colors.dart';
@@ -36,7 +35,7 @@ import 'create_text_page.dart';
 enum CreateStart { none, video, audio, galleryVideo }
 
 /// Écran « Que créer ? » : l'entrée unique de la création (publication, Studio et cartes réunis). On choisit le type, on prépare le média, on le retouche, puis
-/// un seul formulaire demande le reste. Ce qui est filmé ou enregistré dans l'application passe en premier ; la galerie est limitée à 2 médias par jour.
+/// un seul formulaire demande le reste. Ce qui est filmé ou enregistré dans l'application passe en premier ; la galerie n'a plus de limite par jour (tout média passe par le contrôle d'authenticité).
 class CreateHubPage extends StatefulWidget {
   const CreateHubPage({super.key, this.canal, this.defiPostId, this.start = CreateStart.none, this.replyToPostId, this.presetSound, this.pinSource, this.chronique});
 
@@ -61,7 +60,6 @@ class CreateHubPage extends StatefulWidget {
 }
 
 class _CreateHubPageState extends State<CreateHubPage> {
-  ({int limit, int used, int remaining, bool unlimited})? _quota;
   bool _busy = false;
 
   /// Un travail démarre en arrière-plan (ouverture de la caméra, vérification du compte) : on affiche une roue de chargement au lieu de laisser l'écran figé.
@@ -91,7 +89,6 @@ class _CreateHubPageState extends State<CreateHubPage> {
     }
     if (widget.chronique != null) ChroniqueFlow.active = widget.chronique;
     ReplyLayout.clear();
-    _loadQuota();
     if (widget.chronique == null && widget.canal == null && widget.defiPostId == null) _loadDraft();
     if (widget.start != CreateStart.none) {
       // ouverture directe (icône « répondre en vidéo » d'un post, « Ma vidéo avec ce son »…) : la roue s'affiche tout de suite, sans montrer le menu une seconde
@@ -124,15 +121,8 @@ class _CreateHubPageState extends State<CreateHubPage> {
     super.dispose();
   }
 
-  /// Publier dans un canal : pas de live ; la limite de galerie suit le plan du créateur du canal (Gold : aucune limite, sinon la même réserve de 2 par jour).
+  /// Publier dans un canal : pas de live.
   bool get _isChannel => widget.canal != null;
-
-  Future<void> _loadQuota() async {
-    final q = await PostsApi.importQuota(channelId: widget.canal?.id);
-    if (mounted) setState(() => _quota = q);
-  }
-
-  bool get _galleryOpen => _quota == null || _quota!.unlimited || _quota!.remaining > 0;
 
   /// Compte bloqué pour inactivité : déblocage avant de continuer ; un seul parcours à la fois.
   Future<void> _guard(Future<void> Function() run) async {
@@ -153,7 +143,6 @@ class _CreateHubPageState extends State<CreateHubPage> {
       ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(context.tr('Ta vidéo est en vérification : elle sera publiée dès que notre équipe l\'aura validée.'))));
     }
     if (r == kCreateDone && mounted) Navigator.of(context).pop(kCreateDone);
-    if (mounted) _loadQuota();
   }
 
   // ── Vidéo et photo : caméra d'abord ──────────────────────────────────────
@@ -171,14 +160,8 @@ class _CreateHubPageState extends State<CreateHubPage> {
     await _editor(r.path!, r.isVideo, PostSourceLink.captured);
   }
 
-  /// Galerie : au plus 2 médias par jour ; après, la personne est invitée à se filmer.
+  /// Galerie : sans limite par jour (décision du 09/11/2026) ; tout média choisi passe par le contrôle d'authenticité (vidéo et images) avant d'aller plus loin.
   Future<void> _pickGallery({required bool video}) async {
-    await _loadQuota();
-    if (!mounted) return;
-    if (!_galleryOpen) {
-      await _quotaDialog(video: video);
-      return;
-    }
     final picker = ImagePicker();
     if (video) {
       final x = await picker.pickVideo(source: ImageSource.gallery);
@@ -219,28 +202,12 @@ class _CreateHubPageState extends State<CreateHubPage> {
     await _after(r ?? kCreateBack);
   }
 
-  Future<void> _quotaDialog({required bool video}) async {
-    final c = AppColors.of(context);
-    final film = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: c.surface,
-        title: Text(context.tr('Tes 2 médias de galerie du jour sont utilisés'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 17)),
-        content: Text(context.tr('Pour continuer aujourd\'hui, filme-toi ou enregistre-toi avec l\'application. Demain, tu retrouveras ta galerie.'), style: TextStyle(color: c.textSecondary, height: 1.4)),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(context.tr('Plus tard'))),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), style: FilledButton.styleFrom(backgroundColor: c.accent, foregroundColor: c.onAccent), child: Text(context.tr('Me filmer'), style: const TextStyle(fontWeight: FontWeight.w800))),
-        ],
-      ),
-    );
-    if (film == true && mounted) await _openCamera(photo: !video);
-  }
 
   // ── Audio, texte, carte ──────────────────────────────────────────────────
 
   /// Audio : on s'enregistre (ou on prend un fichier), on choisit éventuellement un effet de voix en écoutant le vrai rendu, puis le formulaire.
   Future<void> _audio() async {
-    final rec = await Navigator.of(context).push<CreateVoiceResult>(MaterialPageRoute(builder: (_) => CreateVoicePage(allowPick: _galleryOpen)));
+    final rec = await Navigator.of(context).push<CreateVoiceResult>(MaterialPageRoute(builder: (_) => const CreateVoicePage(allowPick: true)));
     if (rec == null || !mounted) return;
     final choice = await Navigator.of(context).push<VoiceChoice>(MaterialPageRoute(builder: (_) => VoiceEffectPage(original: rec.file)));
     if (choice == null || !mounted) return;
@@ -267,7 +234,6 @@ class _CreateHubPageState extends State<CreateHubPage> {
 
   Future<void> _card({String text = '', CardStyleHint? hint}) async {
     await CardEntry.openCompose(context, canal: widget.canal, defiPostId: widget.defiPostId, text: text, style: hint?.style, country: hint?.country);
-    if (mounted) _loadQuota();
   }
 
   // ── Écran ────────────────────────────────────────────────────────────────
@@ -314,12 +280,9 @@ class _CreateHubPageState extends State<CreateHubPage> {
           ],
           _VideoHero(
             onFilm: () => _guard(() => _openCamera(photo: false)),
-            onGallery: _galleryOpen ? () => _guard(() => _pickGallery(video: true)) : () => _guard(() => _quotaDialog(video: true)),
-            galleryLeft: (_quota?.unlimited ?? false) ? null : _quota?.remaining,
+            onGallery: () => _guard(() => _pickGallery(video: true)),
           ),
-          const SizedBox(height: 8),
-          _QuotaLine(quota: _quota),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
           GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -407,10 +370,9 @@ class _EventBanner extends StatelessWidget {
 }
 
 class _VideoHero extends StatelessWidget {
-  const _VideoHero({required this.onFilm, required this.onGallery, required this.galleryLeft});
+  const _VideoHero({required this.onFilm, required this.onGallery});
   final VoidCallback onFilm;
   final VoidCallback onGallery;
-  final int? galleryLeft;
 
   @override
   Widget build(BuildContext context) {
@@ -481,44 +443,6 @@ class _VideoHero extends StatelessWidget {
   }
 }
 
-/// « Galerie aujourd'hui : 1 sur 2 » : deux pastilles qui se vident ; à zéro, on invite à se filmer.
-class _QuotaLine extends StatelessWidget {
-  const _QuotaLine({required this.quota});
-  final ({int limit, int used, int remaining, bool unlimited})? quota;
-
-  @override
-  Widget build(BuildContext context) {
-    final c = AppColors.of(context);
-    final q = quota;
-    if (q == null) return const SizedBox(height: 18);
-    if (q.unlimited) {
-      return Row(key: const ValueKey('quota_line'), children: [
-        Icon(Icons.all_inclusive_rounded, size: 16, color: c.accentText),
-        const SizedBox(width: 6),
-        Expanded(child: Text(context.tr('Galerie illimitée avec Gold'), style: TextStyle(color: c.textSecondary, fontSize: 12.5, fontWeight: FontWeight.w600))),
-      ]);
-    }
-    final out = q.remaining <= 0;
-    return Row(key: const ValueKey('quota_line'), children: [
-      for (var i = 0; i < q.limit; i++)
-        Container(
-          width: 9,
-          height: 9,
-          margin: const EdgeInsets.only(right: 5),
-          decoration: BoxDecoration(shape: BoxShape.circle, color: i < q.remaining ? c.primary : c.border),
-        ),
-      const SizedBox(width: 4),
-      Expanded(
-        child: Text(
-          out
-              ? context.tr('Galerie utilisée pour aujourd\'hui : filme-toi pour continuer.')
-              : context.tr('Galerie aujourd\'hui : {a} sur {b}', {'a': '${q.remaining}', 'b': '${q.limit}'}),
-          style: TextStyle(color: out ? c.danger : c.textSecondary, fontSize: 12.5, fontWeight: out ? FontWeight.w700 : FontWeight.w500),
-        ),
-      ),
-    ]);
-  }
-}
 
 class _Tile extends StatelessWidget {
   const _Tile({super.key, required this.icon, required this.color, required this.label, required this.hint, required this.onTap});

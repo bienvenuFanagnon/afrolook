@@ -13,6 +13,7 @@ import 'package:record/record.dart';
 
 import '../../l10n/tr.dart';
 import '../../services/api/studio_trim_api.dart';
+import '../../services/authentic_video_check.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/api_error_dialogs.dart';
 import 'trim_sheet.dart';
@@ -240,7 +241,10 @@ class _CreateVoicePageState extends State<CreateVoicePage> {
 
   Future<void> _pickCover() async {
     final x = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1080, imageQuality: 85);
-    if (x != null && mounted) setState(() => _cover = File(x.path));
+    if (x == null || !mounted) return;
+    // pochette de la galerie : même contrôle d'authenticité que toute image
+    if (!await AuthenticVideoCheck.gateImage(context, x.path, allowClaim: false) || !mounted) return;
+    setState(() => _cover = File(x.path));
   }
 
   String _mmss(int s) => '${s ~/ 60}:${(s % 60).toString().padLeft(2, '0')}';

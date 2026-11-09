@@ -379,6 +379,8 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     if (choice.startsWith('p')) {
       final x = await _picker.pickImage(source: src, maxWidth: 1600, imageQuality: 92);
       if (x == null || !mounted) return;
+      // photo de la galerie : même contrôle d'authenticité que les vidéos (marque d'un autre réseau, contenu explicite) ; la caméra n'en a pas besoin
+      if (src == ImageSource.gallery && (!await AuthenticVideoCheck.gateImage(context, x.path, allowClaim: !widget.forChronique) || !mounted)) return;
       // une photo à la place de la vidéo : la 2e vidéo (ou image) posée ne pourrait plus être montée ; on prévient avant de la retirer
       if (!second && s.pins.isNotEmpty) {
         final ok = await showDialog<bool>(

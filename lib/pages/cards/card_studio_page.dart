@@ -1,3 +1,4 @@
+import '../../services/authentic_video_check.dart';
 import '../../services/follower_milestone.dart';
 import '../../services/template_link.dart';
 import 'dart:typed_data';
@@ -625,7 +626,11 @@ class _CardStudioPageState extends State<CardStudioPage> {
 
   Future<void> _addImages() async {
     final picked = await ImagePicker().pickMultiImage(imageQuality: 88, maxWidth: 1600, maxHeight: 1600, limit: CardSpec.maxImages);
-    if (picked.isEmpty) return;
+    if (picked.isEmpty || !mounted) return;
+    // photos de la galerie : même contrôle d'authenticité que partout (marque d'un autre réseau, contenu explicite)
+    for (final x in picked.take(CardSpec.maxImages)) {
+      if (!await AuthenticVideoCheck.gateImage(context, x.path, allowClaim: false) || !mounted) return;
+    }
     final bytes = <Uint8List>[for (final x in picked.take(CardSpec.maxImages)) await x.readAsBytes()];
     setState(() {
       _source = _source.copyWith(images: [for (final b in bytes) MemoryImage(b)]);
