@@ -364,6 +364,16 @@ const Map<String, Map<String, String>> kTrVideos = {
   "Retirer l'image": {'en': "Remove the image", 'es': "Quitar la imagen", 'de': "Bild entfernen", 'ar': "إزالة الصورة", 'pt': "Remover a imagem", 'zh': "移除图片", 'sw': "Ondoa picha"},
   "L'image n'a pas pu être épinglée. Réessaie.": {'en': "The image couldn't be pinned. Try again.", 'es': "No se pudo fijar la imagen. Inténtalo de nuevo.", 'de': "Das Bild konnte nicht angeheftet werden. Versuch es nochmal.", 'ar': "تعذّر تثبيت الصورة. حاول مرة أخرى.", 'pt': "Não foi possível fixar a imagem. Tente de novo.", 'zh': "无法置顶这张图片，请重试。", 'sw': "Picha haikuweza kubandikwa. Jaribu tena."},
   // ── Vagues de diffusion (08/11/2026) : carte « Diffusion » ──
+  // ── Couverture d'une vidéo (08/11/2026) ──
+  "Couverture": {'en': "Cover", 'es': "Portada", 'de': "Titelbild", 'ar': "الغلاف", 'pt': "Capa", 'zh': "封面", 'sw': "Jalada"},
+  "Automatique": {'en': "Automatic", 'es': "Automática", 'de': "Automatisch", 'ar': "تلقائي", 'pt': "Automática", 'zh': "自动", 'sw': "Otomatiki"},
+  "Choisie": {'en': "Chosen", 'es': "Elegida", 'de': "Gewählt", 'ar': "تم الاختيار", 'pt': "Escolhida", 'zh': "已选择", 'sw': "Imechaguliwa"},
+  "Couverture de ta vidéo": {'en': "Your video cover", 'es': "Portada de tu vídeo", 'de': "Titelbild deines Videos", 'ar': "غلاف الفيديو", 'pt': "Capa do seu vídeo", 'zh': "视频封面", 'sw': "Jalada la video yako"},
+  "C'est l'image qu'on voit avant de lancer la vidéo.": {'en': "This is the image people see before playing the video.", 'es': "Es la imagen que se ve antes de reproducir el vídeo.", 'de': "Das ist das Bild, das man vor dem Abspielen sieht.", 'ar': "هذه هي الصورة التي تظهر قبل تشغيل الفيديو.", 'pt': "É a imagem que aparece antes de reproduzir o vídeo.", 'zh': "这是播放视频之前看到的图片。", 'sw': "Hii ndiyo picha inayoonekana kabla ya kucheza video."},
+  "Une image de la vidéo": {'en': "A frame from the video", 'es': "Un fotograma del vídeo", 'de': "Ein Bild aus dem Video", 'ar': "لقطة من الفيديو", 'pt': "Um quadro do vídeo", 'zh': "视频中的一帧", 'sw': "Picha kutoka kwenye video"},
+  "Choisir l'instant exact": {'en': "Pick the exact moment", 'es': "Elegir el instante exacto", 'de': "Genauen Zeitpunkt wählen", 'ar': "اختيار اللحظة بدقة", 'pt': "Escolher o instante exato", 'zh': "选择精确时刻", 'sw': "Chagua wakati kamili"},
+  "Une image de ma galerie": {'en': "An image from my gallery", 'es': "Una imagen de mi galería", 'de': "Ein Bild aus meiner Galerie", 'ar': "صورة من معرضي", 'pt': "Uma imagem da minha galeria", 'zh': "相册中的一张图片", 'sw': "Picha kutoka kwenye galari yangu"},
+  "Utiliser cette image": {'en': "Use this image", 'es': "Usar esta imagen", 'de': "Dieses Bild verwenden", 'ar': "استخدام هذه الصورة", 'pt': "Usar esta imagem", 'zh': "使用这张图片", 'sw': "Tumia picha hii"},
   // ── Menu unique d'une publication (08/11/2026) ──
   "Booster ce post": {'en': "Boost this post", 'es': "Impulsar esta publicación", 'de': "Diesen Beitrag bewerben", 'ar': "تعزيز هذا المنشور", 'pt': "Impulsionar esta publicação", 'zh': "推广此帖子", 'sw': "Tangaza chapisho hili"},
   "Ajouter aux favoris": {'en': "Add to favorites", 'es': "Añadir a favoritos", 'de': "Zu Favoriten hinzufügen", 'ar': "إضافة إلى المفضلة", 'pt': "Adicionar aos favoritos", 'zh': "添加到收藏", 'sw': "Ongeza kwenye vipendwa"},

@@ -28,6 +28,7 @@ import '../defi/defi_ui.dart';
 import '../studio/studio_sound_link.dart';
 import '../user/userAbonnementPage.dart';
 import 'create_result.dart';
+import 'cover_picker_sheet.dart';
 
 /// Types de publication proposés (le type « Défi » se crée depuis l'espace Défis).
 const Map<String, ({String label, IconData icon})> kCreatePostTypes = {
@@ -66,6 +67,7 @@ class CreatePublishPage extends StatefulWidget {
     this.notes = const [],
     this.publish,
     this.me,
+    this.pickCover,
   });
 
   final CreatePostKind kind;
@@ -90,6 +92,9 @@ class CreatePublishPage extends StatefulWidget {
   /// Profil de la personne (tests) ; par défaut, celui de la session.
   final UserData? me;
 
+  /// Remplace la fenêtre de choix de la couverture (tests) : reçoit la vidéo, sa durée et la couverture actuelle.
+  final Future<File?> Function(File video, Duration duration, File? current)? pickCover;
+
   @override
   State<CreatePublishPage> createState() => _CreatePublishPageState();
 }
@@ -107,6 +112,7 @@ class _CreatePublishPageState extends State<CreatePublishPage> {
   final _progress = ValueNotifier<double>(0);
   VideoPlayerController? _vc;
   Duration? _videoDuration;
+  File? _cover;   // couverture choisie par la personne (null = image prise automatiquement à 1 seconde)
 
   bool get _isDefi => widget.defiPostId != null;
 
@@ -137,6 +143,15 @@ class _CreatePublishPageState extends State<CreatePublishPage> {
     _vc?.dispose();
     _progress.dispose();
     super.dispose();
+  }
+
+  /// Choix de la couverture de la vidéo : une image de la vidéo, un instant précis, ou une image de la galerie.
+  Future<void> _pickCover() async {
+    final v = widget.video;
+    if (v == null) return;
+    final d = _videoDuration ?? _vc?.value.duration ?? const Duration(seconds: 10);
+    final f = widget.pickCover != null ? await widget.pickCover!(v, d, _cover) : await showCoverPicker(context, video: v, duration: d, current: _cover);
+    if (f != null && mounted) setState(() => _cover = f);
   }
 
   void _say(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m, textAlign: TextAlign.center)));
@@ -379,7 +394,9 @@ class _CreatePublishPageState extends State<CreatePublishPage> {
           w = size.width.round();
           h = size.height.round();
         }
-        if (!kIsWeb) {
+        if (_cover != null) {
+          thumb = _cover;   // couverture choisie par la personne
+        } else if (!kIsWeb) {
           try {
             final dir = await getTemporaryDirectory();
             final p = await VideoThumbnail.thumbnailFile(video: widget.video!.path, thumbnailPath: dir.path, imageFormat: ImageFormat.JPEG, maxWidth: 480, quality: 70, timeMs: 1000);
@@ -439,7 +456,9 @@ class _CreatePublishPageState extends State<CreatePublishPage> {
     switch (widget.kind) {
       case CreatePostKind.video:
         final v = _vc;
-        inner = (v != null && v.value.isInitialized)
+        inner = _cover != null
+            ? Image.file(_cover!, key: const ValueKey('publish_cover_preview'), fit: BoxFit.cover, width: 80, height: 104)
+            : (v != null && v.value.isInitialized)
             ? FittedBox(fit: BoxFit.cover, clipBehavior: Clip.hardEdge, child: SizedBox(width: v.value.size.width, height: v.value.size.height, child: VideoPlayer(v)))
             : Icon(Icons.videocam_rounded, color: c.textSecondary, size: 30);
         final d = _videoDuration;
@@ -587,6 +606,8 @@ class _CreatePublishPageState extends State<CreatePublishPage> {
                   ),
                 ),
               ]),
+              if (widget.kind == CreatePostKind.video && widget.video != null)
+                _field(c, key: const ValueKey('field_cover'), label: context.tr('Couverture'), value: _cover == null ? context.tr('Automatique') : context.tr('Choisie'), icon: Icons.image_outlined, onTap: _pickCover),
               if (!_isDefi) _field(c, key: const ValueKey('field_type'), label: context.tr('Type de publication'), value: context.tr(kCreatePostTypes[_type]!.label), icon: kCreatePostTypes[_type]!.icon, onTap: _pickType),
               if (!_isDefi && _type == 'EVENEMENT')
                 _field(c, key: const ValueKey('field_date'), label: context.tr('Date de l\'événement'), value: _eventDate == null ? context.tr('Choisir') : '${_eventDate!.day}/${_eventDate!.month}/${_eventDate!.year}', icon: Icons.calendar_today_rounded, onTap: _pickDate),
