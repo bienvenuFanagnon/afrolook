@@ -4,6 +4,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 
+import 'image_framing.dart';
+
 /// Mises en page du collage (2 à 5 images dans UNE image) : cases en fractions du cadre (0 à 1), avec un espace réglable entre les images (0 = collées).
 class CollageLayouts {
   CollageLayouts._();
@@ -76,7 +78,7 @@ class CollageLayouts {
   }
 
   /// Dessine le collage en une image PNG (largeur [width], format 4:5) et rend le fichier. Fond sombre dans les espaces.
-  static Future<File> render(List<String> paths, String layout, {double gap = 0, int width = 1080}) async {
+  static Future<File> render(List<String> paths, String layout, {double gap = 0, int width = 1080, Map<String, ImageFraming>? framings, Directory? into}) async {
     final n = paths.length;
     final cells = withGap(cells0(layout, n), gap);
     final height = (width / aspect).round();
@@ -89,14 +91,15 @@ class CollageLayouts {
       final bytes = await File(paths[i]).readAsBytes();
       final codec = await ui.instantiateImageCodec(bytes, targetWidth: 1600);
       final img = (await codec.getNextFrame()).image;
-      final src = coverSource(img.width.toDouble(), img.height.toDouble(), dst.width, dst.height);
+      // le cadrage choisi par la personne (zoom, déplacement) ; sans cadrage, l'image est recadrée au centre comme avant
+      final src = FramingMath.sourceRect(img.width.toDouble(), img.height.toDouble(), dst.width / dst.height, framings?[paths[i]] ?? const ImageFraming());
       canvas.drawImageRect(img, src, dst, Paint()..filterQuality = FilterQuality.high);
       img.dispose();
     }
     final out = await recorder.endRecording().toImage(width, height);
     final data = await out.toByteData(format: ui.ImageByteFormat.png);
     out.dispose();
-    final dir = await getTemporaryDirectory();
+    final dir = into ?? await getTemporaryDirectory();
     final f = File('${dir.path}/collage_${DateTime.now().microsecondsSinceEpoch}.png');
     await f.writeAsBytes(data!.buffer.asUint8List());
     return f;

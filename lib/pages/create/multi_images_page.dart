@@ -15,6 +15,7 @@ import '../../services/api/argent_upload.dart';
 import '../../services/api/wallet_api.dart';
 import '../../services/authentic_video_check.dart';
 import '../../services/collage_layouts.dart';
+import '../../services/image_framing.dart';
 import '../../services/post_source_link.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/api_error_dialogs.dart';
@@ -24,6 +25,7 @@ import '../studio/studio_models.dart';
 import 'create_editor_page.dart';
 import 'create_flow.dart';
 import 'create_result.dart';
+import 'image_framing_page.dart';
 
 enum _Mode { carousel, collage, slideshow }
 
@@ -55,6 +57,56 @@ class _MultiImagesPageState extends State<MultiImagesPage> {
   bool _busy = false;
   String _busyLabel = '';
 
+  /// Cadrage choisi pour chaque image (zoom, déplacement), par fichier ; sans entrée, l'image est recadrée au centre. Les images cadrées sont envoyées DÉJÀ cadrées.
+  final Map<String, ImageFraming> _framing = {};
+  final Map<String, double> _aspects = {};   // format réel de chaque image (largeur / hauteur)
+
+  @override
+  void initState() {
+    super.initState();
+    for (final p in _paths) {
+      _loadAspect(p);
+    }
+  }
+
+  Future<void> _loadAspect(String p) async {
+    final s = await FramedSource.load(p);
+    if (s != null && s.h > 0 && mounted) setState(() => _aspects[p] = s.w / s.h);
+  }
+
+  ImageFraming _framingOf(String p) => _framing[p] ?? const ImageFraming();
+
+  /// Rapport largeur / hauteur du cadre de l'image n° [i] dans le mode choisi : sa case (collage), l'écran de la vidéo (diaporama) ou son propre format (carrousel).
+  double _frameAspectFor(int i) {
+    switch (_mode) {
+      case _Mode.collage:
+        final cells = CollageLayouts.withGap(CollageLayouts.cells0(_activeLayout, _paths.length), _gap);
+        final c = i < cells.length ? cells[i] : const Rect.fromLTWH(0, 0, 1, 1);
+        return (c.width / c.height) * CollageLayouts.aspect;
+      case _Mode.slideshow:
+        return const {'story': 9 / 16, 'post': 4 / 5, 'landscape': 16 / 9}[_format] ?? 9 / 16;
+      case _Mode.carousel:
+        return _aspects[_paths[i]] ?? 4 / 5;
+    }
+  }
+
+  /// Ouvre l'écran de cadrage de l'image choisie.
+  Future<void> _frame() async {
+    if (_busy) return;
+    final p = _paths[_sel];
+    final f = await Navigator.of(context).push<ImageFraming>(MaterialPageRoute(builder: (_) => ImageFramingPage(path: p, aspect: _frameAspectFor(_sel), initial: _framingOf(p))));
+    if (f == null || !mounted) return;
+    setState(() => f.isDefault ? _framing.remove(p) : _framing[p] = f);
+  }
+
+  /// L'image n° [i] telle qu'elle sera publiée : cadrée si la personne l'a cadrée, sinon le fichier d'origine.
+  Future<File> _framedFile(int i, {int outW = 1080}) async {
+    final p = _paths[i];
+    final f = _framing[p];
+    if (f == null || f.isDefault) return File(p);
+    return await FramingMath.renderCrop(p, f, _frameAspectFor(i), outW: outW) ?? File(p);
+  }
+
   String get _activeLayout {
     final ok = CollageLayouts.forCount(_paths.length);
     return _layout != null && ok.contains(_layout) ? _layout! : ok.first;
@@ -76,6 +128,7 @@ class _MultiImagesPageState extends State<MultiImagesPage> {
       // comme toute image de la galerie : refusée si elle vient d'un autre réseau ou si elle est explicite
       if (!await AuthenticVideoCheck.gateImage(context, x.path, allowClaim: false) || !mounted) continue;
       setState(() => _paths.add(x.path));
+      _loadAspect(x.path);
     }
   }
 
@@ -86,6 +139,7 @@ class _MultiImagesPageState extends State<MultiImagesPage> {
     }
     setState(() {
       _edited.remove(_paths[i]);
+      _framing.remove(_paths[i]);
       _paths.removeAt(i);
       _sel = _sel.clamp(0, _paths.length - 1);
     });
@@ -98,8 +152,10 @@ class _MultiImagesPageState extends State<MultiImagesPage> {
     if (r == null || f == null || !mounted) return;
     setState(() {
       _edited.remove(path);
+      _framing.remove(path);   // l'image retouchée est un nouveau fichier : on la cadre à nouveau si besoin
       _paths[_sel] = f.path;
       _edited.add(f.path);
+      _loadAspect(f.path);
     });
   }
 
@@ -110,12 +166,12 @@ class _MultiImagesPageState extends State<MultiImagesPage> {
     try {
       switch (_mode) {
         case _Mode.carousel:
-          final bytes = [for (final p in _paths) await File(p).readAsBytes()];
+          final bytes = [for (var i = 0; i < _paths.length; i++) await (await _framedFile(i, outW: 1600)).readAsBytes()];
           final r = await openCreateForm(context, kind: CreatePostKind.image, images: bytes, canal: widget.canal, defiPostId: widget.defiPostId, source: _edited.isNotEmpty ? PostSourceLink.edited : PostSourceLink.imported);
           _finish(r);
         case _Mode.collage:
           _setBusy(context.tr('Assemblage du collage…'));
-          final file = await CollageLayouts.render(_paths, _activeLayout, gap: _gap);
+          final file = await CollageLayouts.render(_paths, _activeLayout, gap: _gap, framings: _framing);
           _setBusy(null);
           if (!mounted) return;
           final r = await openCreateForm(context, studio: StudioResult(type: StudioContentType.image, mediaFile: file), canal: widget.canal, defiPostId: widget.defiPostId, source: PostSourceLink.edited);
@@ -149,9 +205,10 @@ class _MultiImagesPageState extends State<MultiImagesPage> {
   Future<File?> _renderSlideshow() async {
     _setBusy(context.tr('Envoi des images…'));
     final ids = <String>[];
-    for (final p in _paths) {
-      final bytes = await File(p).readAsBytes();
-      ids.add(await ArgentUpload.bytes(bytes, contentType: ArgentUpload.sniffImageType(bytes, path: p)));   // type réel du contenu, pas celui de l'extension
+    for (var i = 0; i < _paths.length; i++) {
+      final f = await _framedFile(i);   // envoyée déjà cadrée : le serveur n'a plus rien à recadrer
+      final bytes = await f.readAsBytes();
+      ids.add(await ArgentUpload.bytes(bytes, contentType: ArgentUpload.sniffImageType(bytes, path: f.path)));   // type réel du contenu, pas celui de l'extension
     }
     _setBusy(context.tr('Montage du diaporama…'));
     final res = await ApiGateway.instance.client.post('/studio/slideshow', body: {'uploads': ids, 'seconds': _seconds, 'transition': _transition, 'format': _format}, idempotencyKey: 'slideshow:${const Uuid().v4()}', longJob: true);
@@ -207,7 +264,12 @@ class _MultiImagesPageState extends State<MultiImagesPage> {
                   const SizedBox(width: 40),
                 ]),
               ),
-              Expanded(child: Padding(padding: const EdgeInsets.fromLTRB(20, 10, 20, 8), child: _preview())),
+              Expanded(
+                child: Stack(children: [
+                  Positioned.fill(child: Padding(padding: const EdgeInsets.fromLTRB(20, 10, 20, 8), child: _preview())),
+                  Positioned(right: 24, top: 14, child: _frameButton()),   // « Cadrer » : sur l'aperçu, la mise en page des options ne change pas
+                ]),
+              ),
               _strip(c),
               const SizedBox(height: 8),
               _modeChips(c),
@@ -271,10 +333,11 @@ class _MultiImagesPageState extends State<MultiImagesPage> {
   Widget _preview() {
     switch (_mode) {
       case _Mode.collage:
-        return Center(child: AspectRatio(aspectRatio: CollageLayouts.aspect, child: CollagePreview(paths: _paths, layout: _activeLayout, gap: _gap)));
+        return Center(child: AspectRatio(aspectRatio: CollageLayouts.aspect, child: CollagePreview(paths: _paths, layout: _activeLayout, gap: _gap, framings: _framing)));
       case _Mode.carousel:
       case _Mode.slideshow:
-        return Center(child: ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.file(File(_paths[_sel]), key: ValueKey('multi_preview_${_paths[_sel]}'), fit: BoxFit.contain)));
+        final aspect = _frameAspectFor(_sel);
+        return Center(child: AspectRatio(aspectRatio: aspect, child: ClipRRect(borderRadius: BorderRadius.circular(12), child: FramedImage(key: ValueKey('multi_preview_${_paths[_sel]}'), path: _paths[_sel], aspect: aspect, framing: _framingOf(_paths[_sel])))));
     }
   }
 
@@ -375,6 +438,24 @@ class _MultiImagesPageState extends State<MultiImagesPage> {
     );
   }
 
+  /// Bouton « Cadrer » de l'image choisie (zoom et déplacement) : un point rouge-vert indique que l'image est déjà cadrée.
+  Widget _frameButton() {
+    final done = !_framingOf(_paths[_sel]).isDefault;
+    return GestureDetector(
+      key: const ValueKey('multi_frame'),
+      onTap: _busy ? null : _frame,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(color: const Color(0xB3000000), borderRadius: BorderRadius.circular(20), border: Border.all(color: done ? const Color(0xFF2ECC71) : Colors.white54)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(done ? Icons.crop_rounded : Icons.crop_free_rounded, size: 17, color: done ? const Color(0xFF2ECC71) : Colors.white),
+          const SizedBox(width: 6),
+          Text(context.tr(done ? 'Cadrée' : 'Cadrer'), style: TextStyle(color: done ? const Color(0xFF2ECC71) : Colors.white, fontWeight: FontWeight.w800, fontSize: 12.5)),
+        ]),
+      ),
+    );
+  }
+
   Widget _options(AppColors c) {
     const white = TextStyle(color: Colors.white, fontSize: 13);
     switch (_mode) {
@@ -414,11 +495,14 @@ class _MultiImagesPageState extends State<MultiImagesPage> {
 
 /// Aperçu du collage : les mêmes cases que le rendu final, chaque image remplit sa case (recadrée au centre).
 class CollagePreview extends StatelessWidget {
-  const CollagePreview({super.key, required this.paths, required this.layout, required this.gap});
+  const CollagePreview({super.key, required this.paths, required this.layout, required this.gap, this.framings = const {}});
 
   final List<String> paths;
   final String layout;
   final double gap;
+
+  /// Cadrage choisi pour chaque image (par fichier) : la case montre la partie qui sera publiée.
+  final Map<String, ImageFraming> framings;
 
   @override
   Widget build(BuildContext context) {
@@ -429,7 +513,7 @@ class CollagePreview extends StatelessWidget {
         for (var i = 0; i < paths.length && i < cells.length; i++)
           Positioned.fromRect(
             rect: Rect.fromLTWH(cells[i].left * box.maxWidth, cells[i].top * box.maxHeight, cells[i].width * box.maxWidth, cells[i].height * box.maxHeight),
-            child: Image.file(File(paths[i]), key: ValueKey('cell_${paths[i]}_$i'), fit: BoxFit.cover, cacheWidth: 600),
+            child: FramedImage(key: ValueKey('cell_${paths[i]}_$i'), path: paths[i], aspect: (cells[i].width / cells[i].height) * CollageLayouts.aspect, framing: framings[paths[i]] ?? const ImageFraming()),
           ),
       ]);
     });
