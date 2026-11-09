@@ -47,9 +47,26 @@ Ressources les plus lourdes :
 6. **Code Dart** : 27 Mo (arm64) ; les noms de symboles ne sont pas réduits (pas de `--obfuscate`).
 7. **iPhone (300 Mo)** : pas mesurable depuis un PC Windows. Les suspects sont les mêmes (Agora et ses extensions, Appodeal et 6 adaptateurs, OCR et TensorFlow Lite, 38 Mo de ressources partagées non compressées une fois installées, `use_frameworks!` qui duplique des bibliothèques Swift). La mesure exacte viendra du prochain build Codemagic (voir 4).
 
+## 2 bis. Ce qui a été mesuré sur iPhone (fichier `afrotok.ipa` de Codemagic, 09/11/2026)
+
+Le fichier fait **168 Mo**, mais 41 Mo (dossier `Symbols`, 196 Mo décompressés) servent seulement à l'envoi à Apple et **ne sont jamais installés** : l'application elle-même pèse **environ 126 Mo compressés, 299 Mo décompressés** (c'est ce chiffre de 299 Mo qui est affiché une fois installée, avant l'allègement d'Apple par modèle d'iPhone). Elle était à 376 Mo sur TestFlight avant l'allègement du 07/11.
+
+| Poste | Mo décompressés | Détail |
+|---|---|---|
+| **Moteur Flutter + code Dart + ressources** (`App.framework`, `Flutter.framework`) | 101 | code Dart 28,6 ; **liste mondiale des villes 25,7** ; **modèle de contrôle de contenu 23,3** ; polices, sons, images, vidéo d'introduction environ 13 ; moteur 10 |
+| **Programme principal** (`Runner`) | 67 | code lié en dur : Firebase, AdMob, Appodeal et ses réseaux, ML Kit (lecture de texte), TensorFlow Lite… (le détail vient de l'analyse Codemagic) |
+| **Agora** (lives) | 56 | SDK 20 + moteur vidéo 6 + **extensions inutilisées 20** (synchronisation labiale 6,4 ; audio spatial 3,9 ; capture de visage 2,1 ; fond virtuel 2,1 ; beauté audio 1,4 ; inspection 1,3 ; AV1 1,0 ; analyse de qualité 0,9) |
+| **Firebase et Google** (gRPC, Firestore, abseil, OpenSSL…) | 31 | gRPC 12,3 ; Firestore 4,7 |
+| **Réseaux publicitaires en bibliothèques** | 19 | Meta (Audience Network) 6,7 ; InMobi 6,2 ; AppLovin 5,9 |
+| Autres (66 bibliothèques) | 19 | dont `rive_common` 3,0 (tiré par le paquet `awesome_dialog`), navigateur intégré 3,2 (deux paquets : `flutter_inappwebview` tiré par `cinetpay`, et `webview_flutter`) |
+| Web, ML Kit (ressources), signatures, icônes | environ 6 | |
+
+Constats : **49 Mo de données** (villes + contrôle de contenu) sont embarqués dans le code Dart des deux plateformes ; les **extensions Agora inutilisées** pèsent 20 Mo sur iPhone comme sur Android ; deux paquets servent seulement à des écrans secondaires et embarquent chacun une bibliothèque (voir 4, lignes 9 et 10).
+
 ## 3. Déjà fait (09/11/2026)
 
 - **Android : 9 extensions Agora inutilisées retirées** (`android/app/build.gradle`, bloc `packagingOptions`). Gain **calculé sur le bundle de production** : **arm64 : 23,7 Mo installés, 14,9 Mo téléchargés** en moins ; **armeabi-v7a (32 bits) : 19,1 Mo installés, 13,7 Mo téléchargés** en moins. La configuration Gradle a été vérifiée (`./gradlew :app:help`) ; la fabrication complète d'un nouveau bundle reste à faire par toi. Elle garde la beauté vidéo de base du live. À essayer sur téléphone : un live avec la beauté activée.
+- **Android : 5 réseaux publicitaires Appodeal retirés** (PubMatic, MobileFuse, Ogury, TaurusX, Verve) pour avoir **les mêmes réseaux que sur iPhone** (AppLovin, BidMachine, DT Exchange, InMobi, Meta, Unity) plus AdMob et son lien Bidon. Gain estimé : 8 à 12 Mo décompressés ; à mesurer au prochain build. À faire dans le tableau de bord Appodeal (facultatif) : désactiver ces réseaux.
 - **Codemagic** : le détail de la taille de l'application iPhone (`--analyze-size`, déjà actif) est maintenant publié avec le build (`*code-size-analysis*.json`). Envoie-le, ou envoie le fichier `.ipa`, et j'en tire la liste exacte.
 - **Garde automatique** (`test/platform_assets_test.dart`) : les modèles du moteur de visage restent dans le dossier d'Android et jamais dans les ressources partagées avec l'iPhone ; le dossier partagé a un budget de 45 Mo.
 
@@ -64,8 +81,10 @@ Ressources les plus lourdes :
 | 5 | Lecture de texte (OCR) : version Google Play (non embarquée) | environ **8 à 10 Mo** par architecture | dépend du paquet utilisé | À étudier |
 | 6 | Build Android avec `--obfuscate --split-debug-info=…` | **3 à 6 Mo** | symboles à garder pour les rapports d'erreur | Changer la commande de build |
 | 7 | iPhone : même retrait des extensions Agora (script de liaison faible dans le Podfile) | **10 à 15 Mo** | script Podfile à tester sur Codemagic | Après la mesure du build |
+| 9 | Remplacer `awesome_dialog` (3 écrans de confirmation par code) par des fenêtres simples : il tire `rive` | **3 Mo** sur iPhone (`rive_common`), moins de code Android | 3 petits écrans, animation perdue | Oui ou non |
+| 10 | `cinetpay` : la page d'abonnement « Premium entreprise » (`Subscription.dart`, appelée depuis l'ajout de produit et « Mon abonnement ») l'utilise ; il tire le navigateur intégré `flutter_inappwebview` | **2 à 4 Mo** | CinetPay est-il encore utilisé pour payer ? (le reste de l'appli est en pièces) | À trancher |
 | 8 | Retirer les téléchargements 32 bits (armeabi-v7a) | 0 Mo pour l'utilisateur (il ne télécharge qu'une architecture), gain seulement sur le fichier envoyé | téléphones 32 bits non pris en charge : à éviter en Afrique | Non recommandé |
 
 ## 5. Gain total attendu
 
-Sur Android, les actions 1, 2, 4 et 5 enlèvent environ **60 à 70 Mo décompressés** et les actions 1 à 6 environ **20 à 30 Mo téléchargés** ; sur iPhone, les actions 1, 2, 3 et 7 pèsent le plus. L'objectif réaliste est de passer l'iPhone sous 250 Mo et l'Android sous 120 Mo ; la mesure exacte de l'iPhone décidera de la suite.
+Sur iPhone, les actions 1 et 2 enlèvent à elles seules **49 Mo décompressés** (sur 299), l'action 7 environ 20 Mo, l'action 3 jusqu'à 19 Mo : on peut viser **moins de 220 Mo installés** (contre 299 aujourd'hui). Sur Android, les actions 1, 2, 4 et 5 enlèvent environ **60 à 70 Mo décompressés** et les actions 1 à 6 environ **20 à 30 Mo téléchargés** ; sur iPhone, les actions 1, 2, 3 et 7 pèsent le plus. L'objectif réaliste est de passer l'iPhone sous 250 Mo et l'Android sous 120 Mo ; la mesure exacte de l'iPhone décidera de la suite.

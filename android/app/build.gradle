@@ -176,11 +176,8 @@ dependencies {
     // Réseaux supplémentaires (plus de réseaux interrogés = plus de chances de remplissage des bannières). Mêmes versions que le README du plugin.
     // À activer aussi dans le tableau de bord Appodeal (onglets Banners / MREC). Toujours exclus : Mintegral, VK/MyTarget (dépôts Maven en plus), Amazon.
     implementation("com.appodeal.ads.sdk.adapters:meta:6.21.0.0")
-    implementation("com.appodeal.ads.sdk.adapters:pubmatic:4.10.0.0")
-    implementation("com.appodeal.ads.sdk.adapters:mobilefuse:1.11.0.0")
-    implementation("com.appodeal.ads.sdk.adapters:ogury:6.2.0.0")
-    implementation("com.appodeal.ads.sdk.adapters:taurusx:1.12.2.0")
-    implementation("com.appodeal.ads.sdk.adapters:verve:3.7.1.0")
+    // Allégé le 09/11/2026 (taille de l'app) : PubMatic, MobileFuse, Ogury, TaurusX et Verve retirés pour avoir sur Android les MÊMES réseaux que sur iPhone
+    // (AppLovin, BidMachine, DT Exchange, InMobi, Meta, Unity) plus AdMob (avec Bidon, qui lui est lié). Pour en remettre un : générateur de dépendances Appodeal.
 
     implementation("androidx.multidex:multidex:2.0.1")
 
