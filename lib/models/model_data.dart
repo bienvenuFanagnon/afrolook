@@ -953,8 +953,6 @@ class UserData {
   int? creatorCoinsBalance = 0;        // Solde des pièces pour créateur dating
 
   // Abonnements et préférences
-  bool? datingSubscription = false;     // Abonnement dating actif
-  bool? isDatingProfileEnabled = false; // Profil dating activé
   bool? isCreatorProfileEnabled = false; // Profil créateur activé
 
   // Gains contenu payant (traces statistiques — ne pas afficher la part app)
@@ -1168,8 +1166,6 @@ class UserData {
     this.creatorCoinsBalance = 0,
     this.totalAdViewsSupported = 0,
     this.totalCoinsEarnedFromAdSupport = 0,
-    this.datingSubscription = false,
-    this.isDatingProfileEnabled = false,
     this.isCreatorProfileEnabled = false,
     this.solde_ventes = 0.0,
     this.solde_affiliation = 0.0,
@@ -1399,8 +1395,6 @@ class UserData {
     totalCoinsEarned = json['totalCoinsEarned'] ?? 0;
     totalCoinsConverted = json['totalCoinsConverted'] ?? 0;
     creatorCoinsBalance = json['creatorCoinsBalance'] ?? 0;
-    datingSubscription = json['datingSubscription'] ?? false;
-    isDatingProfileEnabled = json['isDatingProfileEnabled'] ?? false;
     isCreatorProfileEnabled = json['isCreatorProfileEnabled'] ?? false;
     solde_ventes = (json['solde_ventes'] as num?)?.toDouble() ?? 0.0;
     solde_affiliation = (json['solde_affiliation'] as num?)?.toDouble() ?? 0.0;
@@ -1502,8 +1496,6 @@ class UserData {
     data['totalCoinsEarned'] = totalCoinsEarned;
     data['totalCoinsConverted'] = totalCoinsConverted;
     data['creatorCoinsBalance'] = creatorCoinsBalance;
-    data['datingSubscription'] = datingSubscription;
-    data['isDatingProfileEnabled'] = isDatingProfileEnabled;
     data['isCreatorProfileEnabled'] = isCreatorProfileEnabled;
     data['solde_ventes'] = solde_ventes;
     data['solde_affiliation'] = solde_affiliation;

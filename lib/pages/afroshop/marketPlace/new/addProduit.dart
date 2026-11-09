@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:video_player/video_player.dart';
 
-import 'package:afrotok/pages/entreprise/abonnement/Subscription.dart';
 import 'package:afrotok/pages/user/conponent.dart';
 
 import 'package:afrotok/providers/authProvider.dart';
@@ -346,27 +345,15 @@ class _AddAnnonceState extends State<AddNewProduit> {
                 SizedBox(height: 15),
                 Text(
                   isPremium
-                      ? tr("Votre abonnement premium est expiré. Renouvelez-le pour continuer à publier des produits.")
-                      : tr("Votre abonnement gratuit est expiré. Passez à l'abonnement premium pour continuer à publier."),
+                      ? tr("Votre abonnement est expiré : vous ne pouvez plus publier de produits pour le moment.")
+                      : tr("Votre abonnement est expiré : vous ne pouvez plus publier de produits pour le moment."),
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.grey[700], fontSize: 14),
                 ),
                 SizedBox(height: 20),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _navigateToPremiumSubscription();
-                  },
-                  icon: Icon(Icons.star, color: Colors.white),
-                  label: Text(tr("Voir les abonnements"), style: TextStyle(color: Colors.white)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: CustomConstants.kPrimaryColor,
-                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    textStyle: TextStyle(fontSize: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(tr("Fermer")),
                 ),
                 SizedBox(height: 10),
               ],
@@ -417,27 +404,15 @@ class _AddAnnonceState extends State<AddNewProduit> {
                 SizedBox(height: 15),
                 Text(
                   isPremium
-                      ? tr("Vous avez atteint la limite de produits de votre abonnement premium. Renouvelez ou améliorez votre abonnement pour publier plus de produits.")
-                      : tr("Vous avez atteint la limite de produits gratuits. Passez à l'abonnement premium pour publier plus de produits."),
+                      ? tr("Vous avez atteint la limite de produits de votre boutique pour le moment.")
+                      : tr("Vous avez atteint la limite de produits de votre boutique pour le moment."),
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.grey[700], fontSize: 14),
                 ),
                 SizedBox(height: 20),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _navigateToPremiumSubscription();
-                  },
-                  icon: Icon(Icons.star, color: Colors.white),
-                  label: Text(tr("Améliorer l'abonnement"), style: TextStyle(color: Colors.white)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: CustomConstants.kPrimaryColor,
-                    padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    textStyle: TextStyle(fontSize: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(tr("Fermer")),
                 ),
                 SizedBox(height: 10),
               ],
@@ -448,17 +423,6 @@ class _AddAnnonceState extends State<AddNewProduit> {
     );
   }
 
-  void _navigateToPremiumSubscription() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PremiumSubscriptionPage(
-          entreprise: widget.entrepriseData,
-          user: authProvider.loginUserData,
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -675,36 +639,7 @@ class _AddAnnonceState extends State<AddNewProduit> {
 
                 SizedBox(height: 16),
 
-                // Bouton d'abonnement
-                Card(
-                  elevation: 3,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: ListTile(
-                    onTap: _navigateToPremiumSubscription,
-                    leading: Container(
-                      padding: EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.amber.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(Icons.star, color: Colors.amber),
-                    ),
-                    title: Text(
-                      tr("Améliorer l'abonnement"),
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    subtitle: Text(
-                      tr("Débloquer plus de fonctionnalités"),
-                      style: TextStyle(color: Colors.grey[600]),
-                    ),
-                    trailing: Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-                  ),
-                ),
+
 
                 SizedBox(height: 16),
 

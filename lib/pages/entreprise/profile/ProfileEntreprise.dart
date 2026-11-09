@@ -4,7 +4,6 @@ import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/pages/admin/new_category.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
-import 'package:afrotok/pages/entreprise/abonnement/MySubscription.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../services/api/shop_api.dart';
 
@@ -376,15 +375,6 @@ class _EntrepriseProfilState extends State<EntrepriseProfil> {
             spacing: 8,
             runSpacing: 8,
             children: [
-              _buildActionButton(
-                icon: Icons.star,
-                label: "Abonnement",
-                onTap: () {
-                  if (entrepriseData?.abonnement != null) {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => CurrentSubscriptionPage(abonnement: entrepriseData!.abonnement!, entreprise: entrepriseData!)));
-                  }
-                },
-              ),
               if (_isAdmin)
                 _buildActionButton(
                   icon: Icons.add,

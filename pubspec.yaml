@@ -48,7 +48,6 @@ dependencies:
   animated_icon: ^0.0.9
   record: ^6.1.1
   #  flutter_html: ^2.2.1
-  cinetpay: ^1.0.8
   #  deepseek_client: ^0.0.1
   #  story_view: ^0.16.5
   flutter_image_compress: ^2.4.0
