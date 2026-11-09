@@ -57,15 +57,13 @@ StoryScript? storyScriptFor(String templateId) {
       ]);
     case 'fa_triomphe':
       return StoryScript(acts: [
-        a('Rien ne marchait.', kick: 'Janvier', photo: 0, seconds: 3.0),
-        a('J’ai failli tout arrêter.', kick: 'Mars', photo: 1, seconds: 3.0),
-        a('Le déclic.', kick: 'Juin', tone: StoryTone.light, photo: 2, seconds: 3.0),
-        a('Je me suis relevé(e).', kick: 'Septembre', tone: StoryTone.gold, photo: 3, seconds: 3.2),
-        a('Le triomphe 🏆', kick: 'Décembre', tone: StoryTone.gold, photo: 4, seconds: 4.0),
+        a('Rien ne marchait, j’ai failli abandonner.', kick: 'Janvier · les galères', tone: StoryTone.night, photo: 0, seconds: 3.8),
+        a('J’ai tenu, j’ai appris, j’ai changé.', kick: 'Juin · le déclic', tone: StoryTone.dark, photo: 1, seconds: 3.6),
+        a('Regardez où je suis arrivé(e). 🏆', kick: 'Décembre · le triomphe', tone: StoryTone.gold, photo: 2, seconds: 4.2),
       ]);
     case 'fa_merci':
       return StoryScript(acts: [
-        a('Une belle année, une belle histoire.', kick: 'Merci $end', tone: StoryTone.rose, photo: 0),
+        a('Merci $end', kick: 'Une belle année, une belle histoire', tone: StoryTone.rose, photo: 0, seconds: 3.2),
         a('Merci à ceux qui en ont fait partie ❤️', tone: StoryTone.rose, photo: 1),
         a('Merci pour tout ce que tu m’as appris 🙏', tone: StoryTone.rose, photo: 2),
         a('Santé · famille · réussite', kick: 'Pour $next', tone: StoryTone.gold, photo: 3, seconds: 3.4),
@@ -84,9 +82,50 @@ StoryScript? storyScriptFor(String templateId) {
         a('$next arrive 🎆', tone: StoryTone.gold, photo: 2, seconds: 3.2),
         a('Bonne année $next ! Santé, paix et réussite', tone: StoryTone.gold, photo: 3, seconds: 4.0),
       ]);
+    case 'fa_bilan':
+      return StoryScript(acts: [
+        a('Mon bilan $end', kick: 'Bilan', photo: 0, seconds: 3.0),
+        a('Ce que j’ai gagné', kick: 'Gagné', tone: StoryTone.gold, photo: 1),
+        a('Ce que j’ai perdu', kick: 'Perdu', tone: StoryTone.night, photo: 2),
+        a('Ce que j’ai appris', kick: 'Appris', tone: StoryTone.light, photo: 3),
+        a('Mon plus beau moment de $end', kick: 'Le meilleur', tone: StoryTone.gold, photo: 4, seconds: 4.0),
+      ]);
+    case 'fa_lecons':
+      return StoryScript(acts: [
+        a('Les leçons de $end', kick: 'Ce que l’année m’a appris', photo: 0, seconds: 3.4),
+        a('Les gens passent, les leçons restent', kick: 'Mars', tone: StoryTone.light, photo: 1),
+        a('Ne pas tout dire, ne pas tout donner', kick: 'Juin', tone: StoryTone.dark, photo: 2),
+        a('Choisir mes combats', kick: 'Septembre', tone: StoryTone.night, photo: 3),
+        a('Je ne regrette rien, j’ai appris', kick: 'Décembre', tone: StoryTone.gold, photo: 4),
+      ]);
+    case 'fa_resolutions':
+      return StoryScript(acts: [
+        a('Mes résolutions $next', kick: 'Nouvelle année', tone: StoryTone.gold, photo: 0, seconds: 3.2),
+        a('Plus de sport 💪', kick: 'Objectif 1', photo: 1, seconds: 3.0),
+        a('Plus de sourire 😊', kick: 'Objectif 2', tone: StoryTone.light, photo: 2, seconds: 3.0),
+        a('Moins de stress 🧘', kick: 'Objectif 3', photo: 3, seconds: 3.0),
+        a('Rendez-vous en décembre $next 🎯', kick: 'Le bilan', tone: StoryTone.gold, photo: 4, seconds: 3.6),
+      ]);
+    case 'vie_devenu':
+      return StoryScript(acts: [
+        a('Avant : doute et peur', kick: 'Avant', tone: StoryTone.night, photo: 0, seconds: 3.0),
+        a('Personne n’a vu les nuits où j’ai failli abandonner', kick: 'Les nuits', photo: 1),
+        a('Pas à pas, j’ai continué', kick: 'Pas à pas', tone: StoryTone.light, photo: 2, seconds: 3.0),
+        a('Aujourd’hui : fier(e) et debout 👑', kick: 'Aujourd’hui', tone: StoryTone.gold, photo: 3, seconds: 4.0),
+      ]);
+    case 'vie_objectifs':
+      return StoryScript(acts: [
+        a('Jour 1 : je commence', kick: 'Départ', photo: 0, seconds: 3.0),
+        a('Jour 30 : je tiens', kick: 'Un mois', tone: StoryTone.light, photo: 1, seconds: 3.0),
+        a('Jour 100 : vous verrez 🎯', kick: 'Cent jours', tone: StoryTone.gold, photo: 2, seconds: 3.6),
+        a('Pas de miracle, juste de la discipline', kick: 'Le secret', photo: 3),
+      ]);
   }
   return null;
 }
 
 /// Identifiants des modèles du catalogue qui sont des histoires.
-const kStoryTemplateIds = {'fa_film', 'fa_triomphe', 'fa_merci', 'fa_page', 'fa_change'};
+const kStoryTemplateIds = {'fa_triomphe', 'fa_merci', 'fa_bilan', 'fa_lecons', 'fa_resolutions', 'vie_devenu', 'vie_objectifs'};
+
+/// Modèles « générique de fin de film » : le texte monte lentement sur des photos qui changent (voir `credits_page.dart`).
+const kCreditsTemplateIds = {'fa_film'};

@@ -2409,7 +2409,10 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     final me = authProvider.loginUserData.id;
     final isLiked = _currentPost.users_love_id?.contains(me) ?? false;
     final isOwner = me == _currentPost.user_id;
-    return SingleChildScrollView(
+    // Le menu « ⋯ » (favoris, booster, signaler, supprimer) est FIXE à droite, hors de la rangée qui défile : sinon il se cachait au bout de la rangée sur un petit écran.
+    return Row(children: [
+      Expanded(
+        child: SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(children: [
         VideoActionChip(
@@ -2431,10 +2434,12 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
         ],
         const SizedBox(width: 8),
         VideoActionChip(icon: Icons.ios_share_rounded, label: tr('Partager'), onTap: () => _showShareOptions(_currentPost)),
-        const SizedBox(width: 8),
-        VideoActionChip(icon: Icons.more_horiz_rounded, onTap: _showPostMenu),
       ]),
-    );
+        ),
+      ),
+      const SizedBox(width: 8),
+      VideoActionChip(key: const ValueKey('post_menu_fixed'), icon: Icons.more_horiz_rounded, onTap: _showPostMenu),
+    ]);
   }
 
   DateTime? _lastQuickGiftAt;

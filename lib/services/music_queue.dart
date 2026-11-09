@@ -49,7 +49,7 @@ class MusicTrack {
         id: t.id,
         title: t.title,
         artist: 'Musique Afrolook',
-        genre: t.mood,
+        genre: t.section,
         studio: t,
       );
 

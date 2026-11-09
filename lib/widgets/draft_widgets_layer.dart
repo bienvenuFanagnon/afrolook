@@ -243,3 +243,39 @@ class DraftWidgetsPreview extends StatelessWidget {
     );
   }
 }
+
+/// Les widgets posés d'office par un modèle (compte à rebours, lieu…) tels qu'ils seront sur l'affiche ou dans la vidéo, pour l'aperçu du modèle dans la galerie : à leur place, à leur taille
+/// (dessinés pour un écran de 360 px de large puis réduits à la taille de la carte), sans aucune commande.
+class PresetWidgetsPreview extends StatelessWidget {
+  const PresetWidgetsPreview({super.key, required this.widgets, required this.aspect});
+  final List<PostWidget> widgets;
+
+  /// Format du cadre (largeur / hauteur) : 9/16, 4/5 ou 16/9.
+  final double aspect;
+
+  @override
+  Widget build(BuildContext context) {
+    if (widgets.isEmpty) return const SizedBox.shrink();
+    const w = 360.0;
+    final h = w / aspect;
+    final size = Size(w, h);
+    return IgnorePointer(
+      child: FittedBox(
+        fit: BoxFit.fill,
+        child: SizedBox(
+          width: w,
+          height: h,
+          child: Stack(clipBehavior: Clip.none, children: [
+            for (final p in widgets)
+              Positioned.fill(
+                child: Align(
+                  alignment: widgetAlignment(p, size, mediaFrame(size, null)),
+                  child: Transform.scale(scale: p.scale, child: PostWidgetView(widget: p, preview: true)),
+                ),
+              ),
+          ]),
+        ),
+      ),
+    );
+  }
+}

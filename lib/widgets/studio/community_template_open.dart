@@ -12,6 +12,7 @@ import '../../services/post_source_link.dart';
 import '../../services/template_link.dart';
 import '../../pages/studio/montage/collage_template.dart';
 import '../../pages/studio/montage/collage_template_page.dart';
+import '../../pages/studio/montage/credits_page.dart';
 import '../../pages/studio/montage/story_page.dart';
 import '../../pages/studio/montage/story_script.dart';
 import '../../theme/app_colors.dart';
@@ -59,6 +60,14 @@ class CommunityTemplateOpen {
     }
     PostTemplateLink.begin(fromPostId);
     // modèle « histoire » : la vidéo défile toute seule (diaporama) ; la page gère elle-même l'éditeur et la publication
+    if (tp.isCredits) {
+      try {
+        await Navigator.of(context).push<String>(MaterialPageRoute(builder: (_) => CreditsTemplatePage(template: tp)));
+      } finally {
+        PostTemplateLink.clear();
+      }
+      return;
+    }
     final story = tp.isStory ? storyScriptFor(tp.id) : null;
     if (story != null) {
       try {

@@ -1,5 +1,6 @@
 import '../../services/authentic_video_check.dart';
 import '../../services/branded_save.dart';
+import '../../widgets/save_progress_dialog.dart';
 import '../../services/follower_milestone.dart';
 import '../../services/template_link.dart';
 import 'dart:typed_data';
@@ -178,14 +179,22 @@ class _CardStudioPageState extends State<CardStudioPage> {
     try {
       final png = await _captureImage();
       if (png == null) return;
-      // la carte enregistrée porte la signature Afrolook comme un téléchargement ; sans signature, pas de fichier
-      final signed = await BrandedSave.imageBytes(png, pseudo: context.read<UserAuthProvider>().loginUserData.pseudo);
-      if (signed == null) {
-        _say(tr('La signature Afrolook n\'a pas pu être ajoutée : réessaie dans un instant.'));
-        return;
-      }
-      final ok = await CardExport.saveToGallery(signed);
-      _say(ok ? tr('Carte enregistrée dans ta galerie ✅') : tr('Autorise l\'accès aux photos pour enregistrer la carte.'));
+      if (!mounted) return;
+      final pseudo = context.read<UserAuthProvider>().loginUserData.pseudo;
+      // une fenêtre avec une barre de progression : la personne sait quand c'est enregistré (ou pourquoi ça ne l'est pas)
+      await SaveProgressDialog.run(
+        context,
+        doneText: tr('Ta carte est dans ta galerie (album Afrolook).'),
+        task: (report) async {
+          report(0.2, tr('Ajout de la signature Afrolook…'));
+          // la carte enregistrée porte la signature Afrolook comme un téléchargement ; sans signature, pas de fichier
+          final signed = await BrandedSave.imageBytes(png, pseudo: pseudo);
+          if (signed == null) return tr('La signature Afrolook n\'a pas pu être ajoutée : réessaie dans un instant.');
+          report(0.8, tr('Enregistrement dans ta galerie…'));
+          final ok = await CardExport.saveToGallery(signed);
+          return ok ? null : tr('Autorise l\'accès aux photos pour enregistrer la carte.');
+        },
+      );
     } catch (e, st) {
       _fail('save', e, st);
     } finally {

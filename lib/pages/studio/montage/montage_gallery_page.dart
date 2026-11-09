@@ -10,7 +10,9 @@ import 'montage_face_capture.dart';
 import 'template_thumb.dart';
 import 'collage_template.dart';
 import 'collage_template_page.dart';
+import 'credits_page.dart';
 import 'story_page.dart';
+import '../../../widgets/draft_widgets_layer.dart' show PresetWidgetsPreview;
 import 'story_script.dart';
 import '../../create/create_result.dart';
 import '../../../services/api/community_templates_api.dart';
@@ -36,9 +38,24 @@ AppColors get _c => studioColors;
 /// Sert à l'onglet « Populaires » de la galerie et à la bande « Les plus utilisés » de « Que créer ? ».
 List<MontageTemplate> popularMontageTemplates() {
   final all = kMontageTemplates.where((t) => t.id != kPlainTemplateId && (t.face == null || FaceEngine.enabled)).toList();
-  final ranked = all.where((t) => TemplateStatsApi.rankOf('m:${t.id}') != null).toList()
+  // les nouveautés d'abord (tant qu'elles sont récentes), puis le classement du serveur, puis le reste dans l'ordre du catalogue
+  final fresh = newMontageTemplates();
+  final rest = all.where((t) => !t.isNew).toList();
+  final ranked = rest.where((t) => TemplateStatsApi.rankOf('m:${t.id}') != null).toList()
     ..sort((a, b) => TemplateStatsApi.rankOf('m:${a.id}')!.compareTo(TemplateStatsApi.rankOf('m:${b.id}')!));
-  return [...ranked, ...all.where((t) => TemplateStatsApi.rankOf('m:${t.id}') == null)];
+  return [...fresh, ...ranked, ...rest.where((t) => TemplateStatsApi.rankOf('m:${t.id}') == null)];
+}
+
+/// Les modèles récents (voir `MontageTemplate.isNew`) : d'abord ceux qui se font en vidéo ou en plusieurs médias (histoires, duos, collages), puis la fin d'année, puis les autres dans l'ordre du catalogue.
+List<MontageTemplate> newMontageTemplates() {
+  final l = kMontageTemplates.where((t) => t.id != kPlainTemplateId && t.isNew && (t.face == null || FaceEngine.enabled)).toList();
+  int rank(MontageTemplate t) => (t.isStory || t.isCollage || t.duoLayout != null) ? 0 : (t.cat == MontageCat.finannee ? 1 : 2);
+  final idx = {for (var i = 0; i < l.length; i++) l[i].id: i};
+  l.sort((a, b) {
+    final r = rank(a).compareTo(rank(b));
+    return r != 0 ? r : idx[a.id]!.compareTo(idx[b.id]!);
+  });
+  return l;
 }
 
 class MontageGalleryPage extends StatefulWidget {
@@ -96,6 +113,17 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
 
   Future<void> _open(MontageTemplate t) async {
     _anim.stop();
+    // modèle « générique de fin de film » : le texte monte lentement sur des photos qui changent
+    if (t.isCredits) {
+      final done = await Navigator.push<String>(context, MaterialPageRoute(builder: (_) => CreditsTemplatePage(template: t)));
+      if (!mounted) return;
+      if (done == kCreateDone) {
+        Navigator.pop(context);
+      } else {
+        _anim.repeat();
+      }
+      return;
+    }
     // modèle « histoire » : la vidéo défile toute seule, scène après scène (diaporama) ; la personne règle les photos, les phrases et les durées
     final story = t.isStory ? storyScriptFor(t.id) : null;
     if (story != null) {
@@ -156,8 +184,8 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
     final fete = widget.presetMusic == null ? CardEvents.upcoming(me.countryData?['countryCode'], DateTime.now()) : null;
     final feteTemplate = fete?.studioTemplateId == null ? null : kMontageTemplates.where((t) => t.id == fete!.studioTemplateId).firstOrNull;
     return DefaultTabController(
-      length: MontageCat.values.length + 2,   // « Populaires » et « Communauté » d'abord, puis les catégories
-      initialIndex: feteTemplate == null ? 0 : MontageCat.values.indexOf(MontageCat.fetes) + 2,
+      length: MontageCat.values.length + 3,   // « Nouveautés », « Populaires » et « Communauté » d'abord, puis les catégories
+      initialIndex: feteTemplate == null ? 0 : MontageCat.values.indexOf(MontageCat.fetes) + 3,
       child: Scaffold(
         backgroundColor: _c.background,
         appBar: AppBar(
@@ -185,12 +213,13 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
             unselectedLabelColor: _c.textSecondary,
             indicatorColor: _c.accent,
             labelStyle: const TextStyle(fontWeight: FontWeight.w800),
-            tabs: [Tab(text: tr('Populaires')), Tab(text: tr('Communauté')), for (final cat in MontageCat.values) Tab(text: cat.label)],
+            tabs: [Tab(text: '✨ ${tr('Nouveautés')}'), Tab(text: tr('Populaires')), Tab(text: tr('Communauté')), for (final cat in MontageCat.values) Tab(text: cat.label)],
               ),
             ]),
           ),
         ),
         body: TabBarView(children: [
+          _gridOf(newMontageTemplates(), pseudo),
           _gridOf(_popular(), pseudo),
           _CommunityTab(onOpen: _openCommunity),
           for (final cat in MontageCat.values) _gridOf(kMontageTemplates.where((t) => t.cat == cat && (t.face == null || FaceEngine.enabled)).toList(), pseudo),
@@ -261,7 +290,7 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
               clipBehavior: Clip.antiAlias,
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Stack(alignment: Alignment.center, children: [
-                RepaintBoundary(
+                (TemplatePreview.handles(t) ? AspectRatio(aspectRatio: _states[t.id]!.aspect, child: ClipRect(child: TemplatePreview(t: t))) : RepaintBoundary(
                   child: MontageCanvas(
                     state: _states[t.id]!,
                     animation: t.fx == MontageFx.none ? null : _anim,
@@ -274,8 +303,10 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
                     avatarUrl: _avatar,
                     followers: _followers,
                   ),
-                ),
+                )),
+                if (t.presetWidgets != null && !TemplatePreview.handles(t)) Positioned.fill(child: PresetWidgetsPreview(widgets: t.presetWidgets!(), aspect: _states[t.id]!.aspect)),
                 if (t.showsVideo) const VideoBadge(size: 44),
+                if (t.isNew) const Positioned(top: 8, left: 8, child: NewBadge()),
                 ]),
                 Expanded(
                   child: Padding(
@@ -458,7 +489,7 @@ class _CommunityTabState extends State<_CommunityTab> with AutomaticKeepAliveCli
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Expanded(
             child: Stack(fit: StackFit.expand, children: [
-              if (base != null) TemplateThumb(asset: base.sampleIsVideo ? 'assets/images/intro4.jpg' : base.sample, video: base.showsVideo || t.face != null) else ColoredBox(color: _c.border),
+              if (base != null) TemplateThumb(asset: base.sampleIsVideo ? 'assets/images/intro4.jpg' : base.sample, video: base.showsVideo || t.face != null, template: t.toMontage()) else ColoredBox(color: _c.border),
               Positioned(
                 top: 8,
                 left: 8,

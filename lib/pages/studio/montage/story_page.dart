@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:afrolook_api_client/afrolook_api_client.dart' show ApiException;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
@@ -39,6 +40,8 @@ class _StoryTemplatePageState extends State<StoryTemplatePage> {
   final List<XFile> _photos = [];
   final Map<String, Uint8List> _bytes = {};
   int _sel = 0;
+  bool _playing = false;
+  List<Uint8List> _samples = const [];   // photos d'exemple de l'application : seulement pour l'aperçu, jamais dans la vidéo créée
   bool _busy = false;
   String _busyLabel = '';
   late final List<TextEditingController> _ctrls = [for (final a in _acts) TextEditingController(text: a.text)];
@@ -46,7 +49,36 @@ class _StoryTemplatePageState extends State<StoryTemplatePage> {
   AppColors get _c => AppColors.of(context);
 
   @override
+  void initState() {
+    super.initState();
+    Future(() async {
+      final assets = [widget.template.sample, 'assets/images/intro1.jpg', 'assets/images/intro3.jpg', 'assets/images/intro6.jpg', 'assets/images/intro7.jpg'];
+      final out = [for (final a in assets) (await rootBundle.load(a)).buffer.asUint8List()];
+      if (mounted) setState(() => _samples = out);
+    });
+  }
+
+  /// Joue toute l'histoire dans l'aperçu, scène après scène, avec le vrai temps de chaque scène : ce que la vidéo montrera.
+  Future<void> _play() async {
+    if (_playing) {
+      setState(() => _playing = false);
+      return;
+    }
+    setState(() {
+      _playing = true;
+      _sel = 0;
+    });
+    for (var i = 0; i < _acts.length; i++) {
+      if (!mounted || !_playing) return;
+      setState(() => _sel = i);
+      await Future<void>.delayed(Duration(milliseconds: (_acts[i].seconds * 1000).round()));
+    }
+    if (mounted) setState(() => _playing = false);
+  }
+
+  @override
   void dispose() {
+    _playing = false;
     for (final c in _ctrls) {
       c.dispose();
     }
@@ -68,7 +100,7 @@ class _StoryTemplatePageState extends State<StoryTemplatePage> {
   }
 
   Uint8List? _photoFor(StoryAct a) {
-    if (_photos.isEmpty) return null;
+    if (_photos.isEmpty) return _samples.isEmpty ? null : _samples[a.photo % _samples.length];   // aperçu seulement
     return _bytes[_photos[a.photo % _photos.length].path];
   }
 
@@ -81,7 +113,7 @@ class _StoryTemplatePageState extends State<StoryTemplatePage> {
     });
     final ids = <String>[];
     for (final a in _acts) {
-      final png = await StoryRender.png(a, photo: _photoFor(a));
+      final png = await StoryRender.png(a, photo: _photos.isEmpty ? null : _photoFor(a));
       ids.add(await ArgentUpload.bytes(png, contentType: 'image/png'));
     }
     if (!mounted) return null;
@@ -148,7 +180,15 @@ class _StoryTemplatePageState extends State<StoryTemplatePage> {
                   child: FutureBuilder<Uint8List>(
                     key: ValueKey('story_preview_${_sel}_${act.text}_${act.photo}_${_photos.length}'),
                     future: StoryRender.png(act, photo: _photoFor(act), width: 360),
-                    builder: (_, s) => s.hasData ? Image.memory(s.data!, fit: BoxFit.cover, gaplessPlayback: true) : ColoredBox(color: c.border),
+                    builder: (_, s) => Stack(fit: StackFit.expand, children: [
+                      s.hasData ? Image.memory(s.data!, fit: BoxFit.cover, gaplessPlayback: true) : ColoredBox(color: c.border),
+                      if (_photos.isEmpty)
+                        Positioned(
+                          top: 8,
+                          left: 8,
+                          child: Container(padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3), decoration: BoxDecoration(color: Colors.black.withValues(alpha: .65), borderRadius: BorderRadius.circular(8)), child: Text(context.tr('Photos d\'exemple'), style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w800))),
+                        ),
+                    ]),
                   ),
                 ),
               ),
@@ -170,7 +210,15 @@ class _StoryTemplatePageState extends State<StoryTemplatePage> {
                 ),
             ]),
           ),
-          const SizedBox(height: 10),
+          Center(
+            child: TextButton.icon(
+              key: const ValueKey('story_play'),
+              onPressed: _play,
+              icon: Icon(_playing ? Icons.stop_rounded : Icons.play_arrow_rounded),
+              label: Text(_playing ? context.tr('Arrêter') : context.tr('Voir le film')),
+            ),
+          ),
+          const SizedBox(height: 6),
           TextField(
             key: const ValueKey('story_text'),
             controller: _ctrls[_sel],
@@ -231,7 +279,7 @@ class _StoryTemplatePageState extends State<StoryTemplatePage> {
             ]),
           ),
           const SizedBox(height: 6),
-          Text(context.tr('Sans photo, les scènes sont sur fond uni. Les photos passent à tour de rôle.'), style: TextStyle(color: c.textSecondary, fontSize: 12)),
+          Text(context.tr('Les photos passent à tour de rôle dans les scènes. Ajoute au moins une photo pour créer la vidéo.'), style: TextStyle(color: c.textSecondary, fontSize: 12)),
         ]),
         Positioned(
           left: 16,
@@ -240,9 +288,9 @@ class _StoryTemplatePageState extends State<StoryTemplatePage> {
           child: SafeArea(
             child: FilledButton(
               key: const ValueKey('story_create'),
-              onPressed: _busy ? null : _create,
+              onPressed: _busy || _photos.isEmpty ? null : _create,
               style: FilledButton.styleFrom(backgroundColor: c.primary, foregroundColor: Colors.black, minimumSize: const Size.fromHeight(50)),
-              child: Text(context.tr('Créer la vidéo 🎬'), style: const TextStyle(fontWeight: FontWeight.w800)),
+              child: Text(_photos.isEmpty ? context.tr('Ajoute au moins une photo') : context.tr('Créer la vidéo 🎬'), style: const TextStyle(fontWeight: FontWeight.w800)),
             ),
           ),
         ),

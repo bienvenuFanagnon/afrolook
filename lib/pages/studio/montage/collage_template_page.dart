@@ -1,9 +1,14 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:image_picker/image_picker.dart';
 
 import '../../../l10n/tr.dart';
+import 'package:provider/provider.dart';
+
+import '../../../models/post_widget.dart';
+import '../../../providers/authProvider.dart';
 import '../../../services/authentic_video_check.dart';
 import '../../../services/post_source_link.dart';
 import '../../../services/template_link.dart';
@@ -27,8 +32,12 @@ class _CollageTemplatePageState extends State<CollageTemplatePage> {
   late final List<Uint8List?> _photos = List.filled(widget.script.slots, null);
   late final List<TextEditingController> _labels = [for (final l in widget.script.labels) TextEditingController(text: l)];
   late final TextEditingController _caption = TextEditingController(text: widget.script.caption);
+  late final TextEditingController _center = TextEditingController(text: widget.script.center);
   bool _busy = false;
   Uint8List? _preview;
+  int? _followers;
+  String? _flag;
+  List<Uint8List> _samples = const [];   // photos d'exemple de l'application : seulement pour l'aperçu des cases encore vides
 
   AppColors get _c => AppColors.of(context);
   bool get _ready => _photos.every((p) => p != null);
@@ -36,6 +45,14 @@ class _CollageTemplatePageState extends State<CollageTemplatePage> {
   @override
   void initState() {
     super.initState();
+    final me = context.read<UserAuthProvider>().loginUserData;
+    _followers = me.followersCount;
+    _flag = me.countryData?['countryCode']?.toString();
+    Future(() async {
+      const assets = ['assets/images/intro2.jpg', 'assets/images/intro6.jpg', 'assets/images/intro1.jpg', 'assets/images/intro3.jpg', 'assets/images/intro7.jpg'];
+      _samples = [for (final a in assets) (await rootBundle.load(a)).buffer.asUint8List()];
+      await _refresh();
+    });
     _refresh();
   }
 
@@ -45,13 +62,14 @@ class _CollageTemplatePageState extends State<CollageTemplatePage> {
       c.dispose();
     }
     _caption.dispose();
+    _center.dispose();
     super.dispose();
   }
 
   Future<void> _refresh() async {
-    final got = [for (final p in _photos) p ?? Uint8List(0)];
-    // les cases vides restent sombres (octets vides : illisibles) ; l'aperçu montre déjà les étiquettes et le titre
-    final png = await CollageTemplateRender.png(got, widget.script, labels: [for (final c in _labels) c.text], caption: _caption.text, width: 540);
+    // une case encore vide montre une photo d'exemple (marquée « exemple » plus bas) : l'aperçu est le vrai collage, avec ses étiquettes et son titre
+    final got = [for (var i = 0; i < _photos.length; i++) _photos[i] ?? (_samples.isEmpty ? Uint8List(0) : _samples[i % _samples.length])];
+    final png = await CollageTemplateRender.png(got, widget.script, labels: [for (final c in _labels) c.text], caption: _caption.text, center: _center.text, flagCode: _flag, followers: _followers, width: 540);
     if (mounted) setState(() => _preview = png);
   }
 
@@ -68,10 +86,16 @@ class _CollageTemplatePageState extends State<CollageTemplatePage> {
     if (_busy || !_ready) return;
     setState(() => _busy = true);
     try {
-      final png = await CollageTemplateRender.png([for (final p in _photos) p!], widget.script, labels: [for (final c in _labels) c.text], caption: _caption.text);
+      final png = await CollageTemplateRender.png([for (final p in _photos) p!], widget.script, labels: [for (final c in _labels) c.text], caption: _caption.text, center: _center.text, flagCode: _flag, followers: _followers);
       final f = await CollageTemplateRender.toFile(png);
       if (!mounted) return;
       PostTemplateLink.set(TemplateRef.fromStudioId(widget.template.id)?.code);   // le post comptera une utilisation et affichera « Essayer ce modèle »
+      // « Toi ou lui ? » : le vote est déjà posé (les deux étiquettes sont les deux choix) ; la personne peut le modifier ou le retirer
+      PostWidget? vote;
+      if (widget.template.id == 'multi_toi_lui' && !PostWidgetsLink.isFull) {
+        vote = PostWidget(kind: WidgetKind.poll, config: {'question': _caption.text.trim().isEmpty ? 'Qui gagne ?' : _caption.text.trim(), 'options': [for (final l in _labels.take(2)) l.text.trim().isEmpty ? '…' : l.text.trim()]}, x: .5, y: 0.78);
+        PostWidgetsLink.add(vote);
+      }
       final r = await Navigator.of(context).push<String>(MaterialPageRoute(
         builder: (_) => CreateEditorPage(path: f.path, isVideo: false, source: PostSourceLink.imported, showSignature: true),
       ));
@@ -79,6 +103,7 @@ class _CollageTemplatePageState extends State<CollageTemplatePage> {
         Navigator.of(context).pop(kCreateDone);
       } else {
         PostTemplateLink.clear();
+        if (vote != null) PostWidgetsLink.remove(vote);
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -105,6 +130,11 @@ class _CollageTemplatePageState extends State<CollageTemplatePage> {
               ),
             ),
           ),
+          if (!_ready)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Center(child: Text(context.tr('Aperçu avec des photos d\'exemple : choisis les tiennes'), style: TextStyle(color: c.textSecondary, fontSize: 12))),
+            ),
           const SizedBox(height: 14),
           for (var i = 0; i < n; i++)
             Padding(
@@ -127,7 +157,7 @@ class _CollageTemplatePageState extends State<CollageTemplatePage> {
                   child: TextField(
                     key: ValueKey('collage_label_$i'),
                     controller: _labels[i],
-                    maxLength: 14,
+                    maxLength: 24,
                     style: TextStyle(color: c.textPrimary),
                     decoration: InputDecoration(labelText: context.tr('Étiquette de la photo {n}', {'n': '${i + 1}'}), counterText: '', border: const OutlineInputBorder(), isDense: true),
                     onChanged: (_) => _refresh(),
@@ -135,6 +165,17 @@ class _CollageTemplatePageState extends State<CollageTemplatePage> {
                 ),
               ]),
             ),
+          if (widget.script.center.isNotEmpty) ...[
+            TextField(
+              key: const ValueKey('collage_center'),
+              controller: _center,
+              maxLength: 30,
+              style: TextStyle(color: c.textPrimary),
+              decoration: InputDecoration(labelText: context.tr('Texte du milieu'), counterText: '', border: const OutlineInputBorder(), isDense: true),
+              onChanged: (_) => _refresh(),
+            ),
+            const SizedBox(height: 10),
+          ],
           TextField(
             key: const ValueKey('collage_caption'),
             controller: _caption,

@@ -30,7 +30,7 @@ const String kLibreCredit = 'Kevin MacLeod (incompetech.com)\nLicensed under Cre
 
 /// Ordre des catégories du sélecteur.
 const List<String> kStudioGroups = [
-  'Courage', 'Espoir', 'Amour', 'Famille', 'Joie', 'Humour', 'Danse', 'Noël', 'Nouvel an', 'Soirée', 'Aïd', 'Halloween', 'Tristesse', 'Calme', 'Sombre', 'Spirituel', 'Américain', 'Français',
+  'Courage', 'Fin de film', 'Espoir', 'Amour', 'Famille', 'Joie', 'Humour', 'Danse', 'Noël', 'Nouvel an', 'Soirée', 'Aïd', 'Halloween', 'Tristesse', 'Calme', 'Sombre', 'Spirituel', 'Américain', 'Français',
 ];
 
 const Map<String, String> _anciennes = {
@@ -46,7 +46,7 @@ const List<StudioTrack> kLibreTracks = <StudioTrack>[
   StudioTrack('despair_and_triumph', 'Despair and Triumph', '💪', 'Courage', 240000, group: 'Courage', libre: true),
   StudioTrack('long_road_ahead', 'Long Road Ahead', '💪', 'Courage', 146100, group: 'Courage', libre: true, voice: true),
   StudioTrack('our_story_begins', 'Our Story Begins', '💪', 'Courage', 84600, group: 'Courage', libre: true, voice: true),
-  StudioTrack('eternal_hope', 'Eternal Hope', '🌅', 'Espoir', 240000, group: 'Espoir', libre: true, voice: true),
+  StudioTrack('eternal_hope', 'Eternal Hope', '🎬', 'Fin de film', 240000, group: 'Fin de film', libre: true, voice: true),
   StudioTrack('angel_share', 'Angel Share', '🌅', 'Espoir', 200600, group: 'Espoir', libre: true, voice: true),
   StudioTrack('morning', 'Morning', '🌅', 'Espoir', 153400, group: 'Espoir', libre: true),
   StudioTrack('aretes', 'Aretes', '🌅', 'Espoir', 240000, group: 'Espoir', libre: true, voice: true),
@@ -110,4 +110,33 @@ const List<StudioTrack> kLibreTracks = <StudioTrack>[
   StudioTrack('porch_swing_days_slower', 'Porch Swing Days - slower', '🇺🇸', 'Américain', 216300, group: 'Américain', libre: true, voice: true),
   StudioTrack('valse_gymnopedie', 'Valse Gymnopedie', '🇫🇷', 'Français', 191800, group: 'Français', libre: true),
   StudioTrack('aquarium', 'Aquarium', '🇫🇷', 'Français', 144100, group: 'Français', libre: true),
+  StudioTrack('reign', 'Reign', '🎬', 'Fin de film', 162600, group: 'Fin de film', libre: true, voice: true),
+  StudioTrack('magistar', 'Magistar', '🎬', 'Fin de film', 192100, group: 'Fin de film', libre: true, voice: true),
+  StudioTrack('noble_race', 'Noble Race', '🎬', 'Fin de film', 240000, group: 'Fin de film', libre: true),
+  StudioTrack('egmont_overture_finale', 'Egmont Overture Finale', '🎬', 'Fin de film', 103900, group: 'Fin de film', libre: true),
+  StudioTrack('inspired', 'Inspired', '🎬', 'Fin de film', 240000, group: 'Fin de film', libre: true),
+  StudioTrack('continue_life', 'Continue Life', '🎬', 'Fin de film', 114100, group: 'Fin de film', libre: true),
+  StudioTrack('evening', 'Evening', '🎬', 'Fin de film', 186300, group: 'Fin de film', libre: true),
+  StudioTrack('truth_of_the_legend', 'Truth of the Legend', '🎬', 'Fin de film', 93100, group: 'Fin de film', libre: true, voice: true),
 ];
+
+/// Minuscules et sans accents : « noel » trouve « Noël », « ete » trouve « été ».
+String foldSearch(String s) {
+  const from = 'àâäáãåçéèêëíìîïñóòôöõúùûüýÿœæ';
+  const to = 'aaaaaaceeeeiiiinooooouuuuyyoa';
+  final b = StringBuffer();
+  for (final c in s.toLowerCase().split('')) {
+    final i = from.indexOf(c);
+    b.write(i >= 0 ? to[i] : c);
+  }
+  return b.toString();
+}
+
+/// Les pistes qui correspondent à la recherche [query] (titre, catégorie, ambiance : « courage », « noel », « triste », « eternal ») et à la catégorie [group] (null = toutes).
+List<StudioTrack> filterStudioTracks(Iterable<StudioTrack> tracks, {String query = '', String? group}) {
+  final q = foldSearch(query.trim());
+  return [
+    for (final t in tracks)
+      if ((group == null || t.section == group) && (q.isEmpty || foldSearch('${t.title} ${t.section} ${t.mood}').contains(q))) t,
+];
+}

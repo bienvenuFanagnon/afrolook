@@ -618,7 +618,7 @@ class _TemplatesStripState extends State<_TemplatesStrip> {
                     child: SizedBox(
                       width: 104,
                       height: 120,
-                      child: TemplateThumb(asset: t.sampleIsVideo ? 'assets/images/intro4.jpg' : t.sample, video: t.showsVideo, cacheWidth: 260, badgeSize: 34),
+                      child: TemplateThumb(asset: t.sampleIsVideo ? 'assets/images/intro4.jpg' : t.sample, video: t.showsVideo, cacheWidth: 260, badgeSize: 34, isNew: t.isNew, template: t),
                     ),
                   ),
                   const SizedBox(height: 6),

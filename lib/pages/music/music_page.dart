@@ -52,6 +52,7 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
   late final TabController _tabs = TabController(length: 6, vsync: this);
   final _search = TextEditingController();
   bool _searching = false;
+  String? _freeGroup;   // catégorie choisie dans l'onglet des musiques gratuites (null = toutes)
   String _q = '';
   bool _hidingOverlay = false;
 
@@ -373,13 +374,39 @@ class _MusicPageState extends State<MusicPage> with SingleTickerProviderStateMix
         final favItems = all.where((i) => favs.contains('${i.kind}:${i.id}')).toList();
         return TabBarView(controller: _tabs, children: [
           _forYou(c, sounds, free, loading),
-          _list(c, [...free, ...sounds.where((s) => s.isFree)].where(_match).toList(), 'Aucune musique gratuite trouvée.'),
+          _list(c, [...free.where((t) => _freeGroup == null || t.studio?.section == _freeGroup), if (_freeGroup == null) ...sounds.where((s) => s.isFree)].where(_match).toList(), 'Aucune musique gratuite trouvée.', header: _freeGroupChips(c, free)),
           _list(c, sounds.where(_match).toList(), loading ? '' : 'Aucun son d’artiste pour l’instant.', loading: loading, artistsCta: true),
           PlaylistsTab(preview: widget.previewPlaylists ?? (widget.preview != null ? (mine: const [], discover: const []) : null), query: _q),
           _list(c, library.where(_match).toList(), 'Achète un titre : il reste ici, lisible en entier dans Afrolook.', header: widget.preview == null ? const LibraryPlaylists() : null),
           _list(c, favItems.where(_match).toList(), 'Touche le ♡ d’un titre pour le retrouver ici.'),
         ]);
       },
+    );
+  }
+
+  /// Catégories des musiques gratuites (courage, amour, Noël, fin de film…) : un clic ne montre que celle-là.
+  Widget _freeGroupChips(AppColors c, List<MusicTrack> free) {
+    final groups = <String>[...kStudioGroups.where((g) => free.any((t) => t.studio?.section == g))];
+    if (groups.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(children: [
+          for (final g in [null, ...groups])
+            Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: ChoiceChip(
+                key: ValueKey('free_group_${g ?? "all"}'),
+                label: Text(g == null ? 'Toutes' : g),
+                selected: _freeGroup == g,
+                selectedColor: c.primary,
+                labelStyle: TextStyle(color: _freeGroup == g ? Colors.black : c.textPrimary, fontWeight: FontWeight.w700, fontSize: 12.5),
+                onSelected: (_) => setState(() => _freeGroup = g),
+              ),
+            ),
+        ]),
+      ),
     );
   }
 

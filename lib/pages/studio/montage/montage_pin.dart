@@ -170,8 +170,13 @@ class _MontagePinViewState extends State<MontagePinView> {
       await c.setVolume(widget.volume.clamp(0.0, 1.0));
       // l'extrait commence là où la personne l'a réglé
       if (widget.pin.clipStartSec > 0) await c.seekTo(Duration(milliseconds: (widget.pin.clipStartSec * 1000).round()));
+      if (!mounted || _key != key) {
+        await c.dispose();   // la page est quittée : on ne démarre pas la lecture
+        return;
+      }
       await c.play();
       if (!mounted || _key != key) {
+        await c.pause();
         await c.dispose();
         return;
       }
@@ -184,6 +189,8 @@ class _MontagePinViewState extends State<MontagePinView> {
 
   @override
   void dispose() {
+    _v?.setVolume(0);
+    _v?.pause();
     _v?.dispose();
     super.dispose();
   }
@@ -311,8 +318,13 @@ class _MontageLayoutPreviewState extends State<MontageLayoutPreview> {
             await c.setVolume(_originVol);
             await c.setLooping(false);   // c'est l'horloge de ta vidéo qui le fait recommencer
             await c.seekTo(Duration(milliseconds: (pin.clipStartSec * 1000).round()));
+            if (!mounted || _originKey != originKey) {
+              await c.dispose();   // la page est quittée : on ne démarre pas la lecture
+              return;
+            }
             await c.play();
             if (!mounted || _originKey != originKey) {
+              await c.pause();
               await c.dispose();
               return;
             }
@@ -328,6 +340,8 @@ class _MontageLayoutPreviewState extends State<MontageLayoutPreview> {
   @override
   void dispose() {
     _clock?.removeListener(_follow);
+    _origin?.setVolume(0);
+    _origin?.pause();
     _origin?.dispose();
     super.dispose();
   }

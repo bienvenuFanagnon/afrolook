@@ -46,4 +46,24 @@ void main() {
       expect(studioTrack(e.value), isNotNull, reason: '${e.key} : piste « ${e.value} » introuvable');
     }
   });
+
+  test("la recherche trouve une musique par titre, par catégorie et sans tenir compte des accents ; le filtre de catégorie restreint la liste", () {
+    // par titre
+    expect(filterStudioTracks(kStudioTracks, query: "eternal").map((t) => t.id), contains("eternal_hope"));
+    // par catégorie, avec ou sans accent
+    final noel = filterStudioTracks(kStudioTracks, query: "noel");
+    expect(noel, isNotEmpty);
+    expect([for (final t in noel) if (!(foldSearch(t.section).contains("noel") || foldSearch(t.title).contains("noel") || foldSearch(t.mood).contains("noel"))) t.id], isEmpty);
+    // catégorie « Fin de film » : des musiques qui concluent un film, dont celle d'office du générique
+    final fin = filterStudioTracks(kStudioTracks, group: "Fin de film");
+    expect(fin.length, greaterThanOrEqualTo(6));
+    expect(fin.map((t) => t.id), contains(kMontageTemplates.firstWhere((x) => x.id == "fa_film").music));
+    // catégorie + recherche ensemble
+    expect(filterStudioTracks(kStudioTracks, query: "reign", group: "Fin de film").map((t) => t.id), ["reign"]);
+    expect(filterStudioTracks(kStudioTracks, query: "reign", group: "Noël"), isEmpty);
+    // une recherche vide ne retire rien ; une recherche sans résultat rend une liste vide
+    expect(filterStudioTracks(kStudioTracks).length, kStudioTracks.length);
+    expect(filterStudioTracks(kStudioTracks, query: "zzzzzz"), isEmpty);
+    expect(foldSearch("Noël Été"), "noel ete");
+  });
 }

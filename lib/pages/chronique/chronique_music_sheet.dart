@@ -62,6 +62,7 @@ class _MusicSheetState extends State<_MusicSheet> {
   static const _tabs = ['Gratuites', 'Artistes', 'Ma bibliothèque', 'Ma voix'];
   int _tab = 0;
   final TextEditingController _search = TextEditingController();
+  String? _freeGroup;   // catégorie choisie dans les musiques gratuites (null = toutes)
 
   final AudioPlayer _player = AudioPlayer();
   StreamSubscription<Duration>? _posSub;
@@ -399,11 +400,33 @@ class _MusicSheetState extends State<_MusicSheet> {
   String get _q => _search.text.trim().toLowerCase().replaceFirst(RegExp(r'^@'), '');
   bool _match(_Pick p, [String extra = '']) => _q.isEmpty || '${p.title} ${p.subtitle} $extra'.toLowerCase().contains(_q);
 
+  /// Catégories des musiques gratuites (courage, amour, Noël, fin de film…) : un clic ne montre que celle-là.
+  Widget _freeChips(AppColors c) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(children: [
+            for (final g in [null, ...kStudioGroups.where((g) => kStudioTracks.any((t) => t.section == g))])
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: ChoiceChip(
+                  key: ValueKey('chronique_group_${g ?? "all"}'),
+                  label: Text(g ?? 'Toutes'),
+                  selected: _freeGroup == g,
+                  selectedColor: c.primary,
+                  labelStyle: TextStyle(color: _freeGroup == g ? Colors.black : c.textPrimary, fontWeight: FontWeight.w700, fontSize: 12.5),
+                  onSelected: (_) => setState(() => _freeGroup = g),
+                ),
+              ),
+          ]),
+        ),
+      );
+
   List<Widget> _body(AppColors c) {
     switch (_tab) {
       case 0:
-        final free = [for (final t in kStudioTracks) _Pick(key: 'free:${t.id}', title: t.title, subtitle: '${t.mood} · ${_mmss(t.durationMs)}', durationMs: t.durationMs, source: MontageMusic.free(t))].where(_match).toList();
-        return free.isEmpty ? [_state(c, false, false, 'Aucune musique ne correspond à « ${_search.text.trim()} ».', null)] : [for (final p in free) _row(c, p)];
+        final free = [for (final t in kStudioTracks) if (_freeGroup == null || t.section == _freeGroup) _Pick(key: 'free:${t.id}', title: t.title, subtitle: '${t.section} · ${_mmss(t.durationMs)}', durationMs: t.durationMs, source: MontageMusic.free(t))].where(_match).toList();
+        return [_freeChips(c), ...(free.isEmpty ? [_state(c, false, false, 'Aucune musique ne correspond à « ${_search.text.trim()} ».', null)] : [for (final p in free) _row(c, p)])];
       case 1:
         if (_artists == null) return [_state(c, _loadingArtists, _errorArtists, 'Aucun son d\'artiste pour l\'instant.', _loadArtists)];
         final found = _artists!.where(_match).toList();

@@ -53,6 +53,7 @@ import 'montage_state.dart';
 import 'montage_stickers.dart';
 import '../studio_theme.dart';
 import '../../../widgets/gold_badge.dart';
+import '../../../widgets/save_progress_dialog.dart';
 import '../../../widgets/gold_lock_row.dart';
 
 AppColors get _c => studioColors;
@@ -92,6 +93,11 @@ class MontageEditorPage extends StatefulWidget {
 }
 
 class _MontageEditorPageState extends State<MontageEditorPage> with SingleTickerProviderStateMixin, MusicSuspendMixin {
+  /// Widgets posés d'office par le DERNIER modèle ouvert, et ce modèle : pour les retirer quand on ouvre un autre modèle (voir initState).
+  bool _leaving = false;   // la page est quittée : plus rien ne doit démarrer (vidéo, musique)
+  static List<PostWidget> _presetPosted = [];
+  static String? _presetOwner;
+
   late final MontageState s = MontageState(widget.template)
     ..post = !widget.forChronique
     // Sans habillage : on ne garde que la vidéo (le filigrane « Créé sur Afrolook » reste, comme partout)
@@ -143,9 +149,20 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
       s.useVideo = false;
     }
     // modèle qui pose d'office des widgets de publication (compte à rebours, lieu…) : seulement si la personne n'en a pas déjà posé ; elle les modifie, les déplace ou les retire
+    // Les widgets d'un AUTRE modèle restés en mémoire (la personne est revenue en arrière sans publier) ne doivent pas apparaître sur celui-ci : sinon tous les modèles ressemblent au dernier
+    // modèle d'événement ouvert (même compte à rebours, même lieu). Seuls ceux posés d'office par l'autre modèle sont retirés ; ce que la personne a ajouté elle-même reste.
+    if (widget.template.id != kPlainTemplateId && _presetOwner != null && _presetOwner != widget.template.id) {
+      for (final w in _presetPosted) {
+        PostWidgetsLink.remove(w);
+      }
+      _presetPosted = [];
+      _presetOwner = null;
+    }
     final presetWidgets = widget.template.presetWidgets;
     if (presetWidgets != null && PostWidgetsLink.drafts.value.isEmpty) {
-      for (final w in presetWidgets()) {
+      _presetPosted = presetWidgets();
+      _presetOwner = widget.template.id;
+      for (final w in _presetPosted) {
         PostWidgetsLink.add(w);
       }
     }
@@ -317,8 +334,13 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
 
   @override
   void dispose() {
+    _leaving = true;
     _anim.dispose();
-    _video?.dispose();
+    final v = _video;
+    _video = null;
+    v?.setVolume(0);   // coupé tout de suite, même si la libération du lecteur prend un instant
+    v?.pause();
+    v?.dispose();
     MontageMusicPlayer.stop();
     for (final c in [_kick, _title, _wish, _prenom, _date, _likes, _comments, _followers]) {
       c.dispose();
@@ -352,6 +374,10 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     await old?.dispose();
     try {
       await v.initialize();
+      if (_leaving) {
+        await v.dispose();   // page quittée pendant le chargement : la vidéo ne doit jamais démarrer (son qui continue)
+        return;
+      }
       // la vidéo de la personne garde sa forme : paysage = cadre 16:9, 4:5 ou carré = 4:5, vertical long = 9:16 (une chronique reste verticale)
       if (s.videoPath != null && !widget.forChronique && v.value.size.height > 0) {
         final r = v.value.size.width / v.value.size.height;
@@ -359,6 +385,10 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
       }
       await v.setLooping(true);
       await v.setVolume(s.keepVideoAudio ? s.videoVolume.clamp(0.0, 1.0) : 0);   // la voix de la vidéo s'entend seulement si « Garder le son de ma vidéo » est activé
+      if (_leaving) {
+        await v.dispose();
+        return;
+      }
       await v.play();
       // certains téléphones n'animent l'image qu'après un second « lecture » (la surface vidéo n'est prête qu'après le premier affichage) : on vérifie et on relance
       Future<void>.delayed(const Duration(milliseconds: 900), () async {
@@ -789,17 +819,21 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
         }
         if (!mounted) return;
         // la copie enregistrée porte la marque Afrolook comme un téléchargement (pastille qui change de coin, logo animé, fin Afrolook) ; la version publiée reste sans signature
-        _say('Ajout de la signature Afrolook…');
-        final branded = await BrandedSave.prepare(file, video: video, pseudo: context.read<UserAuthProvider>().loginUserData.pseudo);
+        // une fenêtre avec une barre de progression (impossible à fermer) : la personne patiente, puis voit clairement « Enregistré » ou la raison de l'échec
+        final pseudo = context.read<UserAuthProvider>().loginUserData.pseudo;
+        saved = await SaveProgressDialog.run(
+          context,
+          doneText: video ? tr('Ta vidéo est dans ta galerie (album Afrolook).') : tr('Ton image est dans ta galerie (album Afrolook).'),
+          task: (report) async {
+            report(0.03, tr('Ajout de la signature Afrolook…'));
+            final branded = await BrandedSave.prepare(file, video: video, pseudo: pseudo, onProgress: (p) => report(0.05 + p.clamp(0.0, 1.0) * 0.8, tr('Ajout de la signature Afrolook…')));
+            if (branded == null) return tr('La signature Afrolook n\'a pas pu être ajoutée : réessaie dans un instant.');
+            report(0.92, tr('Enregistrement dans ta galerie…'));
+            final ok = await MontageExport.saveToGallery(branded, video: video);
+            return ok ? null : tr('Impossible d\'enregistrer : autorise l\'accès aux photos dans les réglages du téléphone.');
+          },
+        );
         if (!mounted) return;
-        if (branded == null) {
-          _say('La signature Afrolook n’a pas pu être ajoutée : réessaie dans un instant.');
-          saved = false;
-        } else {
-          saved = await MontageExport.saveToGallery(branded, video: video);
-          if (!mounted) return;
-          if (!saved) _say('Impossible d’enregistrer : autorise l’accès aux photos dans les réglages du téléphone.');
-        }
         if (choice == 'save') continue;
       }
       Navigator.pop(

@@ -110,6 +110,9 @@ class MontageMusicPlayer {
   static final Map<String, ({String url, DateTime at})> _urls = {};   // le lien d'écoute dure une heure : on le garde 50 minutes
   static String? playingKey;
 
+  /// Numéro de la lecture en cours : tout `stop()` (page quittée, autre musique) l'invalide, et une lecture dont le chargement finit APRÈS ne démarre plus (sinon la musique continuait après la sortie du montage).
+  static int _gen = 0;
+
   static Future<String?> urlOf(MontageMusic m) async {
     if (m.url != null) return m.url;
     if (m.isArtist) return null;
@@ -128,15 +131,21 @@ class MontageMusicPlayer {
 
   /// Joue [m] en boucle à partir de [startMs]. Renvoie false si la musique n'a pas pu être chargée.
   static Future<bool> play(MontageMusic m, {int startMs = 0, double volume = 1}) async {
+    final g = ++_gen;
     final url = await urlOf(m);
-    if (url == null) return false;
+    if (url == null || g != _gen) return false;
     try {
       _clipTimer?.cancel();
       _clipMode = false;
       await _player.stop();
+      if (g != _gen) return false;
       await _player.setReleaseMode(ReleaseMode.loop);
       await _player.setVolume(volume.clamp(0.0, 1.0));
       await _player.play(UrlSource(url), position: Duration(milliseconds: startMs));
+      if (g != _gen) {
+        await _player.stop();   // la page a été quittée pendant le chargement
+        return false;
+      }
       playingKey = '${m.type}:${m.id}';
       return true;
     } catch (e) {
@@ -153,16 +162,23 @@ class MontageMusicPlayer {
   /// Joue [m] EXACTEMENT comme le serveur le mettra sur le film : de [MusicClipPlan.startMs], pendant la durée du film, avec le fondu d'entrée et le fondu de sortie, répété
   /// s'il est plus court, coupé s'il est plus long ; puis l'aperçu recommence. Renvoie false si la musique n'a pas pu être chargée.
   static Future<bool> playClip(MontageMusic m, MusicClipPlan plan, {double volume = 1}) async {
+    final g = ++_gen;
     final url = await urlOf(m);
-    if (url == null) return false;
+    if (url == null || g != _gen) return false;
     try {
       _clipTimer?.cancel();
       await _player.stop();
+      if (g != _gen) return false;
       await _player.setReleaseMode(ReleaseMode.stop);
       _clipVolume = volume.clamp(0.0, 1.0);
       _clipMode = true;
       await _player.setVolume(0);
       await _player.play(UrlSource(url), position: Duration(milliseconds: plan.startMs));
+      if (g != _gen) {
+        await _player.stop();   // la page a été quittée pendant le chargement
+        _clipMode = false;
+        return false;
+      }
       playingKey = '${m.type}:${m.id}';
       _clipWatch
         ..reset()
@@ -205,6 +221,7 @@ class MontageMusicPlayer {
   }
 
   static Future<void> stop() async {
+    _gen++;   // une lecture en cours de chargement ne démarrera plus
     playingKey = null;
     _clipTimer?.cancel();
     _clipTimer = null;
@@ -267,6 +284,13 @@ class _MusicSheetState extends State<_MusicSheet> {
   String? _loading;
   bool _keepAudio = false;
   String? _group;   // catégorie choisie (null = toutes)
+  final TextEditingController _search = TextEditingController();
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
 
   Future<void> _toggle(MontageMusic m) async {
     final key = '${m.type}:${m.id}';
@@ -286,6 +310,28 @@ class _MusicSheetState extends State<_MusicSheet> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible de lire ce son. Vérifie ta connexion.')));
     }
   }
+
+  /// Recherche d'une musique gratuite par titre, catégorie ou ambiance.
+  Widget _searchField() => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: TextField(
+          key: const ValueKey('music_search'),
+          controller: _search,
+          textInputAction: TextInputAction.search,
+          style: TextStyle(color: _c.textPrimary, fontSize: 14),
+          onChanged: (_) => setState(() {}),
+          decoration: InputDecoration(
+            hintText: tr('Rechercher une musique'),
+            hintStyle: TextStyle(color: _c.textSecondary),
+            isDense: true,
+            prefixIcon: Icon(Icons.search_rounded, color: _c.textSecondary, size: 20),
+            suffixIcon: _search.text.isEmpty ? null : IconButton(icon: Icon(Icons.close_rounded, size: 18, color: _c.textSecondary), onPressed: () => setState(_search.clear)),
+            filled: true,
+            fillColor: _c.background,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          ),
+        ),
+      );
 
   /// Catégories des musiques gratuites : un clic ne montre que celle-là (courage, amour, Noël…).
   Widget _groupChips() {
@@ -379,8 +425,11 @@ class _MusicSheetState extends State<_MusicSheet> {
           Expanded(
             child: TabBarView(children: [
               ListView(controller: ctrl, padding: const EdgeInsets.fromLTRB(12, 8, 12, 24), children: [
+                _searchField(),
                 _groupChips(),
-                for (final t in kStudioTracks.where((t) => _group == null || t.section == _group))
+                if (filterStudioTracks(kStudioTracks, query: _search.text, group: _group).isEmpty)
+                  Padding(padding: const EdgeInsets.symmetric(vertical: 28), child: Center(child: Text(tr('Aucune musique ne correspond.'), style: TextStyle(color: _c.textSecondary)))),
+                for (final t in filterStudioTracks(kStudioTracks, query: _search.text, group: _group))
                   _row(MontageMusic.free(t), leading: _emojiBox(t.emoji), trailing: Text(t.voice ? '🎤 ${tr(t.section)}' : tr(t.section), style: TextStyle(color: _c.textSecondary, fontSize: 11.5))),
                 if (kStudioTracks.any((t) => t.libre))
                   Center(child: TextButton(key: const ValueKey('music_credits'), onPressed: _showCredits, child: Text(tr('Crédits musique'), style: TextStyle(color: _c.textSecondary, fontSize: 12.5)))),

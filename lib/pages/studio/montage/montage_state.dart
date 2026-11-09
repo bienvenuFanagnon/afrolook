@@ -38,6 +38,9 @@ const Map<MontageFx, String> kMontageFxLabels = {
   MontageFx.baby: '👶 Bébé',
 };
 
+/// Modèles d'affiche dont le titre reste affiché d'office (événements, invitations, annonces).
+const Set<String> kTemplateShownTitle = {'evenement', 'anniv_minuteur', 'fa_change', 'vie_mariage', 'vie_bebe', 'vie_voyage', 'fe_sylvestre', 'we_match', 'we_samedi'};
+
 /// Tout ce que la personne a choisi ou modifié sur un template. Ce qui reste à null garde le contenu pré-rempli.
 class MontageState {
   MontageState(this.template)
@@ -93,8 +96,25 @@ class MontageState {
   String? kick;
   String? title;
   String? wish;
-  /// Calques masqués. L'effet décoratif (argent, cœurs, pluie…) est masqué par défaut : on part d'un rendu sobre, la personne peut le réactiver.
-  final Set<MontageLayer> hidden = {MontageLayer.fx};
+  /// Calques masqués. Un modèle s'ouvre PROPRE (demande du 09/11/2026) : ni sur-titre, ni titre, ni texte, ni badge, ni logo, ni abonnés, ni effet animé ; la personne place elle-même ce qu'elle veut
+  /// (réglages « Calques »). Exceptions : un modèle dont le texte EST le contenu (pensées, ambiances, drôles) garde cet unique texte, et un modèle sur trois montre les j'aime et commentaires.
+  late final Set<MontageLayer> hidden = defaultHidden(template);
+
+  static Set<MontageLayer> defaultHidden(MontageTemplate t) {
+    if (t.id == kPlainTemplateId || t.musicOverridden) return {MontageLayer.fx};   // média seul, ou modèle d'une personne : ce que son créateur a écrit reste affiché
+    final h = <MontageLayer>{MontageLayer.fx, MontageLayer.kick, MontageLayer.title, MontageLayer.wish, MontageLayer.chip, MontageLayer.brand, MontageLayer.followers};
+    if (t.cat == MontageCat.pensees) h.remove(MontageLayer.wish);
+    if (t.cat == MontageCat.ambiances || t.cat == MontageCat.droles) h.remove(MontageLayer.title);
+    // une affiche d'événement ou d'invitation n'a pas de sens sans son titre (« Soirée de lancement », « Le grand jour ») ; le duo réaction garde son sous-titre et son compteur
+    if (t.cat == MontageCat.evenements || kTemplateShownTitle.contains(t.id)) h.remove(MontageLayer.title);
+    if (t.id == 'duo_reaction') h.removeAll({MontageLayer.title, MontageLayer.wish, MontageLayer.stats});
+    var hash = 0;
+    for (final c in t.id.codeUnits) {
+      hash = (hash * 31 + c) & 0x7fffffff;
+    }
+    if (hash % 3 != 0 && t.id != 'duo_reaction') h.add(MontageLayer.stats);   // un modèle sur trois garde les j'aime et commentaires
+    return h;
+  }
 
   /// Calques masqués d'un montage « sans habillage » : tout, sauf (si [signature]) la signature de la personne (@pseudo, ou #titre pour un canal).
   static Set<MontageLayer> plainHidden({bool signature = false}) => {for (final l in MontageLayer.values) if (!(signature && l == MontageLayer.pseudo)) l};

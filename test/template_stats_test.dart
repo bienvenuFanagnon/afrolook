@@ -20,8 +20,12 @@ void main() {
   test('le classement du serveur remonte : les plus utilisés en premier, les autres suivent dans l\'ordre du catalogue, « plain » jamais proposé', () {
     TemplateStatsApi.setForTest(const [TemplateUse('m:noel', 40, 12), TemplateUse('m:amour', 90, 3), TemplateUse('c:neon', 5, 5)]);
     final list = popularMontageTemplates();
-    expect(list.first.id, 'noel');
-    expect(list[1].id, 'amour');
+    // les nouveautés d'abord (tant qu'elles sont récentes), puis le classement du serveur
+    final nouveautes = newMontageTemplates().length;
+    expect(list.take(nouveautes).every((t) => t.isNew), isTrue);
+    final rest = list.skip(nouveautes).toList();
+    expect(rest.first.id, 'noel');
+    expect(rest[1].id, 'amour');
     expect(list.any((t) => t.id == kPlainTemplateId), isFalse);
     expect(list.length, kMontageTemplates.where((t) => t.id != kPlainTemplateId && t.face == null).length);   // sans le moteur de visage (tout sauf Android), les modèles à filtres de visage ne sont pas proposés
     expect(TemplateStatsApi.usesOf('m:amour'), 90);
@@ -33,7 +37,10 @@ void main() {
   test('sans aucune utilisation connue : l\'ordre du catalogue, la bande n\'est jamais vide', () {
     final list = popularMontageTemplates();
     expect(list, isNotEmpty);
-    expect(list.first.id, kMontageTemplates.firstWhere((t) => t.id != kPlainTemplateId).id);
+    // les nouveautés d'abord ; puis les anciens modèles dans l'ordre du catalogue
+    expect(list.first.isNew, isTrue);
+    final anciens = list.where((t) => !t.isNew).toList();
+    expect(anciens.first.id, kMontageTemplates.firstWhere((t) => t.id != kPlainTemplateId && !t.isNew).id);
   });
 
   test('les modèles « Anniversaire — compte à rebours » et « Événement à venir » posent un compte à rebours à venir et un lieu, valides pour l\'API, 5 widgets au plus', () {

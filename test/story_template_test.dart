@@ -5,7 +5,9 @@ import 'package:flutter/painting.dart' show decodeImageFromList;
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afrotok/pages/studio/montage/collage_template.dart';
+import 'package:afrotok/pages/studio/montage/credits_render.dart';
 import 'package:afrotok/pages/studio/montage/montage_catalog.dart';
+import 'package:afrotok/pages/studio/montage/montage_gallery_page.dart' show newMontageTemplates, popularMontageTemplates;
 import 'package:afrotok/pages/studio/montage/montage_state.dart' show montageLayoutFracs;
 import 'package:afrotok/services/collage_layouts.dart';
 import 'package:afrotok/pages/studio/montage/story_render.dart';
@@ -104,6 +106,74 @@ void main() {
       expect(t.showsVideo, isTrue);
       expect(t.canUseVideo, isTrue, reason: "$id : une vidéo doit pouvoir être choisie");
       expect(montageLayoutFracs(layout, false, 9 / 16), isNotNull, reason: "$id : disposition $layout inconnue");
+    });
+  });
+
+  test("les modèles créés le 09/11/2026 sont des nouveautés mises en avant : d'abord les histoires, duos et collages, jamais les anciens", () {
+    final nouveaux = newMontageTemplates();
+    expect(nouveaux, isNotEmpty);
+    expect(nouveaux.every((t) => t.isNew), isTrue);
+    // les histoires, duos et collages passent avant les autres nouveautés
+    final firstOther = nouveaux.indexWhere((t) => !(t.isStory || t.isCollage || t.duoLayout != null));
+    final lastStar = nouveaux.lastIndexWhere((t) => t.isStory || t.isCollage || t.duoLayout != null);
+    expect(lastStar, lessThan(firstOther));
+    for (final id in ["fa_film", "fa_triomphe", "multi_avant_apres", "duo_reaction", "anniv_minuteur"]) {
+      expect(nouveaux.any((t) => t.id == id), isTrue, reason: id);
+    }
+    // un ancien modèle n'est pas une nouveauté
+    expect(kMontageTemplates.firstWhere((t) => t.id == "fauche").isNew, isFalse);
+    // la bande de « Que créer ? » et l'onglet Populaires commencent par les nouveautés
+    final pop = popularMontageTemplates();
+    expect(pop.take(nouveaux.length).map((t) => t.id).toList(), nouveaux.map((t) => t.id).toList());
+  });
+
+  testWidgets('« Le film de mon année » est un vrai générique : un texte transparent très haut qui montera sur les photos', (tester) async {
+    final tp = kMontageTemplates.firstWhere((x) => x.id == 'fa_film');
+    expect(tp.isCredits, isTrue);
+    expect(tp.isStory, isFalse);
+    expect(tp.showsVideo, isTrue);
+    final lines = CreditsRender.defaultLines();
+    expect(lines.first, startsWith('# MON ANNÉE'));
+    expect(lines.where((l) => l.contains('·')), isNotEmpty);
+    await tester.runAsync(() async {
+      final png = await CreditsRender.png(lines, width: 360);
+      final img = await decodeImageFromList(png);
+      expect(img.width, 360);
+      // beaucoup plus haut qu'un cadre 9:16 (640 px) : c'est ce qui monte pendant tout le film
+      expect(img.height, greaterThan(640));
+      // transparent en haut (marge avant le texte) : les photos restent visibles
+      final bytes = (await img.toByteData(format: ui.ImageByteFormat.rawRgba))!;
+      expect(bytes.getUint8(3), 0);
+      expect(CreditsRender.heightFor(lines, width: 360), greaterThan(300));
+    });
+  });
+
+  testWidgets("curseur avant/après, drapeau et abonnés, étiquettes colorées : le collage se dessine et change selon ces options", (tester) async {
+    await tester.runAsync(() async {
+      final rec = ui.PictureRecorder();
+      ui.Canvas(rec).drawRect(const ui.Rect.fromLTWH(0, 0, 100, 100), ui.Paint()..color = const ui.Color(0xFF2266CC));
+      final src = await rec.endRecording().toImage(100, 100);
+      final photo = (await src.toByteData(format: ui.ImageByteFormat.png))!.buffer.asUint8List();
+      final avant = collageScriptFor("multi_avant_apres")!;
+      expect(avant.handle, isTrue);
+      final withHandle = await CollageTemplateRender.png([photo, photo], avant, width: 400);
+      final sansHandle = await CollageTemplateRender.png([photo, photo], CollageScript(layout: avant.layout, labels: avant.labels, tones: avant.tones, caption: avant.caption), width: 400);
+      expect(withHandle, isNot(equals(sansHandle)));
+      final cinq = collageScriptFor("multi_cinq_moments")!;
+      expect(cinq.profile, isTrue);
+      final photos5 = [photo, photo, photo, photo, photo];
+      final avecProfil = await CollageTemplateRender.png(photos5, cinq, flagCode: "TG", followers: 3200, width: 400);
+      final sansProfil = await CollageTemplateRender.png(photos5, cinq, width: 400);
+      expect(avecProfil, isNot(equals(sansProfil)));
+      // les étiquettes rouge / verte de « Avant / après le salaire » changent le dessin par rapport à des étiquettes jaunes
+      final salaire = collageScriptFor("dr_salaire")!;
+      expect(salaire.labels, ["0 FCFA", "150 000 FCFA"]);
+      expect(salaire.tones, ["r", "g"]);
+      for (final id in ["multi_toi_lui", "multi_boutique", "multi_recette"]) {
+        final s = collageScriptFor(id)!;
+        expect(CollageLayouts.cells(s.layout, s.slots), isNotEmpty, reason: id);
+        expect(kMontageTemplates.firstWhere((x) => x.id == id).isCollage, isTrue);
+      }
     });
   });
 }
