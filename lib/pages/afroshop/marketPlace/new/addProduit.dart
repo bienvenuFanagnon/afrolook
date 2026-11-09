@@ -14,7 +14,6 @@ import '../../../../services/api/shop_api.dart';
 
 import 'package:country_code_picker/country_code_picker.dart';
 
-import 'package:csc_picker_plus/csc_picker_plus.dart';
 
 import 'package:dropdown_search/dropdown_search.dart';
 

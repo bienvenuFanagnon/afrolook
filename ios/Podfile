@@ -87,4 +87,49 @@ post_install do |installer|
     end
     File.write(xcfilelist, deduped.join("\n") + "\n") if deduped.size < lines.size
   end
+
+  # Allègement (09/11/2026, taille de l'application : environ 20 Mo en moins) : extensions d'Agora que l'application n'utilise PAS (l'application n'emploie d'Agora que
+  # le live : audio, vidéo, partage d'écran et la beauté vidéo de base, qui vient d'AgoraClearVisionExtension : elle RESTE). Méthode de la documentation d'Agora
+  # « App size optimization » (Flutter) : 1) lien « faible » (-weak_framework) pour que l'application démarre même si l'extension est absente, 2) l'extension n'est plus
+  # copiée dans l'application (retirée des scripts et listes d'intégration générés par CocoaPods, comme la déduplication d'aosl ci-dessus).
+  # PRUDENCE : rien n'est modifié si un seul lien « fort » vers l'une de ces extensions subsiste (l'application ne démarrerait plus) ; une erreur ici est ignorée
+  # et n'arrête jamais le build. Si les lives plantent au lancement après cette modification : supprimer ce bloc. Mesure : taille de l'ipa (docs/TAILLE_APPLICATION.md).
+  begin
+    unused_agora = %w[
+      AgoraLipSyncExtension AgoraSpatialAudioExtension AgoraFaceCaptureExtension AgoraVideoSegmentationExtension AgoraAudioBeautyExtension
+      AgoraContentInspectExtension AgoraVideoAv1EncoderExtension AgoraVideoAv1DecoderExtension AgoraVideoQualityAnalyzerExtension
+    ]
+    xcconfigs = Dir.glob("#{support_files}/**/*.xcconfig")
+    rewritten = {}
+    xcconfigs.each do |path|
+      original = File.read(path)
+      text = original.dup
+      unused_agora.each { |name| text = text.gsub("-framework \"#{name}\"", "-weak_framework \"#{name}\"") }
+      rewritten[path] = text if text != original
+    end
+    strong_left = xcconfigs.any? do |path|
+      text = rewritten[path] || File.read(path)
+      unused_agora.any? { |name| text.include?("-framework \"#{name}\"") }
+    end
+    if strong_left
+      puts "[allègement Agora] lien fort restant vers une extension : aucune modification"
+    elsif rewritten.empty?
+      puts "[allègement Agora] aucun lien trouvé : aucune modification"
+    else
+      rewritten.each { |path, text| File.write(path, text) }
+      removed = 0
+      Dir.glob("#{support_files}/Pods-Runner/*").each do |path|
+        next unless File.file?(path) && (path.end_with?("-frameworks.sh") || path.end_with?(".xcfilelist"))
+        lines = File.readlines(path)
+        kept = lines.reject { |line| unused_agora.any? { |name| line.include?("#{name}.xcframework") || line.include?("#{name}.framework") } }
+        if kept.size < lines.size
+          File.write(path, kept.join)
+          removed += lines.size - kept.size
+        end
+      end
+      puts "[allègement Agora] #{rewritten.size} fichier(s) de liens et #{removed} ligne(s) d'intégration retirés"
+    end
+  rescue => e
+    puts "[allègement Agora] ignoré : #{e.message}"
+  end
 end

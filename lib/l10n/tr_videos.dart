@@ -364,6 +364,10 @@ const Map<String, Map<String, String>> kTrVideos = {
   "Retirer l'image": {'en': "Remove the image", 'es': "Quitar la imagen", 'de': "Bild entfernen", 'ar': "إزالة الصورة", 'pt': "Remover a imagem", 'zh': "移除图片", 'sw': "Ondoa picha"},
   "L'image n'a pas pu être épinglée. Réessaie.": {'en': "The image couldn't be pinned. Try again.", 'es': "No se pudo fijar la imagen. Inténtalo de nuevo.", 'de': "Das Bild konnte nicht angeheftet werden. Versuch es nochmal.", 'ar': "تعذّر تثبيت الصورة. حاول مرة أخرى.", 'pt': "Não foi possível fixar a imagem. Tente de novo.", 'zh': "无法置顶这张图片，请重试。", 'sw': "Picha haikuweza kubandikwa. Jaribu tena."},
   // ── Vagues de diffusion (08/11/2026) : carte « Diffusion » ──
+  // ── Sélecteur de pays léger (09/11/2026) ──
+  "Rechercher un pays": {'en': "Search for a country", 'es': "Buscar un país", 'de': "Land suchen", 'ar': "ابحث عن دولة", 'pt': "Procurar um país", 'zh': "搜索国家", 'sw': "Tafuta nchi"},
+  "Région (facultatif)": {'en': "Region (optional)", 'es': "Región (opcional)", 'de': "Region (optional)", 'ar': "المنطقة (اختياري)", 'pt': "Região (opcional)", 'zh': "地区（可选）", 'sw': "Mkoa (hiari)"},
+  "Aucun pays trouvé.": {'en': "No country found.", 'es': "No se encontró ningún país.", 'de': "Kein Land gefunden.", 'ar': "لم يتم العثور على دولة.", 'pt': "Nenhum país encontrado.", 'zh': "未找到国家。", 'sw': "Hakuna nchi iliyopatikana."},
   // ── Couverture d'une vidéo (08/11/2026) ──
   "Couverture": {'en': "Cover", 'es': "Portada", 'de': "Titelbild", 'ar': "الغلاف", 'pt': "Capa", 'zh': "封面", 'sw': "Jalada"},
   "Automatique": {'en': "Automatic", 'es': "Automática", 'de': "Automatisch", 'ar': "تلقائي", 'pt': "Automática", 'zh': "自动", 'sw': "Otomatiki"},

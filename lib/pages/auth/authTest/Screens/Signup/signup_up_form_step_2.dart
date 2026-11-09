@@ -17,7 +17,7 @@ import 'package:afrolook_api_client/afrolook_api_client.dart' show ApiException;
 import 'package:afrotok/services/api/users_api.dart';
 import 'package:afrotok/services/api/compte_api.dart';
 import 'package:afrotok/services/api/argent_upload.dart';
-import 'package:csc_picker_plus/csc_picker_plus.dart';
+import 'package:afrotok/widgets/location_picker.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
@@ -895,56 +895,15 @@ class _SignUpFormEtap3State extends State<SignUpFormEtap3> {
         color: _colors.surface,
         borderRadius: BorderRadius.circular(15),
       ),
-      child: CSCPickerPlus(
-        showStates: true,
-        showCities: true,
-        flagState: CountryFlag.SHOW_IN_DROP_DOWN_ONLY,
-        defaultCountry: CscCountry.Togo,
-        dropdownDecoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: _colors.surface,
-        ),
-        disabledDropdownDecoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: _colors.surface,
-        ),
-        countrySearchPlaceholder: "Rechercher un pays",
-        stateSearchPlaceholder: "Rechercher une région",
-        citySearchPlaceholder: "Rechercher une ville",
-        countryDropdownLabel: "Sélectionnez un pays",
-        stateDropdownLabel: "Sélectionnez une région",
-        cityDropdownLabel: "Sélectionnez une ville",
-        countryFilter: const [
-          CscCountry.Togo, CscCountry.Algeria, CscCountry.Angola, CscCountry.Benin,
-          CscCountry.Botswana, CscCountry.Burkina_Faso, CscCountry.Burundi,
-          CscCountry.Cameroon, CscCountry.Chad, CscCountry.Comoros, CscCountry.Congo,
-          CscCountry.Djibouti, CscCountry.Egypt, CscCountry.Eritrea, CscCountry.Ethiopia,
-          CscCountry.Gabon, CscCountry.Gambia_The, CscCountry.Ghana, CscCountry.Guinea,
-          CscCountry.Kenya, CscCountry.Lesotho, CscCountry.Liberia, CscCountry.Libya,
-          CscCountry.Madagascar, CscCountry.Malawi, CscCountry.Mali, CscCountry.Mauritania,
-          CscCountry.Mauritius, CscCountry.Morocco, CscCountry.Mozambique, CscCountry.Namibia,
-          CscCountry.Niger, CscCountry.Nigeria, CscCountry.Rwanda, CscCountry.Senegal,
-          CscCountry.Seychelles, CscCountry.Sierra_Leone, CscCountry.Somalia,
-          CscCountry.South_Africa, CscCountry.Sudan, CscCountry.Tanzania, CscCountry.Tunisia,
-          CscCountry.Uganda, CscCountry.Zambia, CscCountry.Zimbabwe,
-          CscCountry.France, CscCountry.Germany, CscCountry.Italy, CscCountry.Spain,
-          CscCountry.Portugal, CscCountry.Netherlands_The, CscCountry.Belgium,
-          CscCountry.Sweden, CscCountry.Switzerland, CscCountry.Norway,
-          CscCountry.United_States, CscCountry.Canada, CscCountry.Brazil,
-          CscCountry.Argentina, CscCountry.Mexico, CscCountry.Chile,
-          CscCountry.Colombia, CscCountry.Peru, CscCountry.Venezuela,
-          CscCountry.China, CscCountry.Japan, CscCountry.India,
-          CscCountry.Thailand, CscCountry.Vietnam, CscCountry.Malaysia,
-          CscCountry.Singapore, CscCountry.Philippines, CscCountry.Indonesia,
-        ],
-        selectedItemStyle: TextStyle(color: _colors.primary, fontSize: 14),
-        dropdownHeadingStyle: TextStyle(color: Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
-        dropdownItemStyle: TextStyle(color: Colors.black, fontSize: 14),
-        dropdownDialogRadius: 14.0,
-        searchBarRadius: 10.0,
+      child: LocationPicker(
+        initialCountry: 'Togo',
+        countryFilter: const ['Togo', 'Algeria', 'Angola', 'Benin', 'Botswana', 'Burkina Faso', 'Burundi', 'Cameroon', 'Chad', 'Comoros', 'Congo', 'Djibouti', 'Egypt', 'Eritrea', 'Ethiopia', 'Gabon', 'Gambia The', 'Ghana', 'Guinea', 'Kenya', 'Lesotho', 'Liberia', 'Libya', 'Madagascar', 'Malawi', 'Mali', 'Mauritania', 'Mauritius', 'Morocco', 'Mozambique', 'Namibia', 'Niger', 'Nigeria', 'Rwanda', 'Senegal', 'Seychelles', 'Sierra Leone', 'Somalia', 'South Africa', 'Sudan', 'Tanzania', 'Tunisia', 'Uganda', 'Zambia', 'Zimbabwe', 'France', 'Germany', 'Italy', 'Spain', 'Portugal', 'Netherlands The', 'Belgium', 'Sweden', 'Switzerland', 'Norway', 'United States', 'Canada', 'Brazil', 'Argentina', 'Mexico', 'Chile', 'Colombia', 'Peru', 'Venezuela', 'China', 'Japan', 'India', 'Thailand', 'Vietnam', 'Malaysia', 'Singapore', 'Philippines', 'Indonesia'],
+        fillColor: _colors.surface,
+        textColor: _colors.textPrimary,
+        hintColor: _colors.textSecondary,
         onCountryChanged: (value) => setState(() => _countryValue = value),
-        onStateChanged: (value) => setState(() => _stateValue = value ?? ''),
-        onCityChanged: (value) => setState(() => _cityValue = value ?? ''),
+        onStateChanged: (value) => setState(() => _stateValue = value),
+        onCityChanged: (value) => setState(() => _cityValue = value),
       ),
     );
   }

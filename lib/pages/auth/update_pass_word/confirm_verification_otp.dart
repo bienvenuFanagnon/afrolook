@@ -2,7 +2,7 @@
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/pages/auth/authTest/Screens/Signup/signup_up_form_step_2.dart';
-import 'package:awesome_dialog/awesome_dialog.dart';
+import 'package:afrotok/widgets/status_dialog.dart';
 
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -55,63 +55,15 @@ class _VerificationOtpState extends State<ConfirmVerificationOtp> {
 // Méthode pour récupérer l'UID de l'utilisateur après vérification SMS et vérifier s'il existe dans Firestore
 
   showSuccessDialog(BuildContext context) {
-    AwesomeDialog(
-      context: context,
-      animType: AnimType.leftSlide,
-      headerAnimationLoop: true,
-      dialogType: DialogType.success,
-      showCloseIcon: true,
-      title: 'Succes',
-      desc:
-      'Vérification réussie',
-      btnOkOnPress: () {
-        debugPrint('OnClcik');
-      },
-      btnOkIcon: Icons.check_circle,
-      onDismissCallback: (type) {
-        debugPrint('Dialog Dissmiss from callback $type');
-      },
-    ).show();
+    showStatusDialog(context, type: StatusDialogType.success, title: 'Succes', desc: 'Vérification réussie');
 
   }
   showErrorDialog(BuildContext context) {
-    AwesomeDialog(
-      context: context,
-      animType: AnimType.leftSlide,
-      headerAnimationLoop: true,
-      dialogType: DialogType.error,
-      showCloseIcon: true,
-      title: 'Error',
-      desc:
-      'Erreur de verification',
-      btnCancelOnPress: () {
-        debugPrint('OnClcik');
-      },
-      btnOkIcon: Icons.error,
-      onDismissCallback: (type) {
-        debugPrint('Dialog Dissmiss from callback $type');
-      },
-    ).show();
+    showStatusDialog(context, type: StatusDialogType.error, title: 'Error', desc: 'Erreur de verification');
 
   }
   showWarningDialog(BuildContext context,String msg) {
-    AwesomeDialog(
-      context: context,
-      animType: AnimType.leftSlide,
-      headerAnimationLoop: true,
-      dialogType: DialogType.warning,
-      showCloseIcon: true,
-      title: 'Warning',
-      desc:
-      msg,
-      btnCancelOnPress: () {
-        debugPrint('OnClcik');
-      },
-      btnOkIcon: Icons.warning,
-      onDismissCallback: (type) {
-        debugPrint('Dialog Dissmiss from callback $type');
-      },
-    ).show();
+    showStatusDialog(context, type: StatusDialogType.warning, title: 'Warning', desc: msg);
 
   }
 

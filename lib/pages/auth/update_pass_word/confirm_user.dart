@@ -2,7 +2,7 @@
 import 'package:afrotok/pages/component/consoleWidget.dart';
 
 import 'package:afrotok/services/auth/auth_email_service.dart';
-import 'package:awesome_dialog/awesome_dialog.dart';
+import 'package:afrotok/widgets/status_dialog.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/material.dart';
@@ -106,22 +106,7 @@ class _ConfirmUserState extends State<ConfirmUser> {
   }
 
   void showErrorDialog(BuildContext context, String text) {
-    AwesomeDialog(
-      context: context,
-      animType: AnimType.leftSlide,
-      headerAnimationLoop: true,
-      dialogType: DialogType.error,
-      showCloseIcon: true,
-      title: "Envoi code SMS",
-      desc: text,
-      btnCancelOnPress: () {
-        debugPrint('OnClcik');
-      },
-      btnOkIcon: Icons.error,
-      onDismissCallback: (type) {
-        debugPrint('Dialog Dissmiss from callback $type');
-      },
-    ).show();
+    showStatusDialog(context, type: StatusDialogType.error, title: "Envoi code SMS", desc: text);
   }
 
   void sendOtpCode() {

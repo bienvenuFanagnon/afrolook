@@ -63,7 +63,6 @@ dependencies:
   cached_network_image: ^3.2.0
   flutter_linkify: ^6.0.0
   url_launcher: ^6.1.7
-  csc_picker_plus: ^0.0.3
   country_flags: ^3.2.0
   jovial_svg: ^1.1.28  # dessin des drapeaux du Studio Cartes (déjà utilisé par country_flags)
   country_code_picker: ^3.1.0
@@ -150,7 +149,6 @@ dependencies:
   random_color: ^1.0.5
   #phone_verification: ^0.0.1
   #  telephony: ^0.2.0
-  awesome_dialog: ^3.2.0
   pinput: ^4.0.0
   insta_image_viewer: ^1.0.2
   cryptography: ^2.7.0

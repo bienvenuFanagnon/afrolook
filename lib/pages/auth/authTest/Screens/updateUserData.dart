@@ -1,4 +1,4 @@
-﻿import 'package:csc_picker_plus/csc_picker_plus.dart';
+﻿import 'package:afrotok/widgets/location_picker.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/splashChargement.dart';
 import 'package:flutter/material.dart';
@@ -204,31 +204,17 @@ class _UpdateUserDataState extends State<UpdateUserData>
 
                 // Affichage conditionnel : Sélecteur manuel ou Détection auto
                 if (showManualPicker) ...[
-                  CSCPickerPlus(
-                    showStates: true,
-                    showCities: true,
-                    flagState: CountryFlag.SHOW_IN_DROP_DOWN_ONLY,
-                    dropdownDecoration: BoxDecoration(
-                      borderRadius: BorderRadius.all(Radius.circular(12)),
-                      color: Colors.grey[900],
-                      border: Border.all(color: Colors.grey.shade800),
-                    ),
-                    disabledDropdownDecoration: BoxDecoration(
-                      borderRadius: BorderRadius.all(Radius.circular(12)),
-                      color: Colors.grey[800],
-                    ),
-                    countrySearchPlaceholder: "Rechercher un pays",
-                    stateSearchPlaceholder: "Rechercher une région",
-                    citySearchPlaceholder: "Rechercher une ville",
-                    countryDropdownLabel: "Sélectionnez un pays",
-                    stateDropdownLabel: "Sélectionnez une région",
-                    cityDropdownLabel: "Sélectionnez une ville",
-                    selectedItemStyle: TextStyle(color: Colors.white, fontSize: 14),
-                    dropdownHeadingStyle: TextStyle(color: primaryYellow, fontSize: 16, fontWeight: FontWeight.bold),
-                    dropdownItemStyle: TextStyle(color: Colors.black, fontSize: 14),
+                  LocationPicker(
+                    initialState: stateValue,
+                    initialCity: cityValue,
+                    fillColor: Colors.grey[900],
+                    textColor: Colors.white,
+                    hintColor: Colors.grey[400],
+                    borderColor: Colors.grey.shade800,
+                    accentColor: primaryYellow,
                     onCountryChanged: (value) => setState(() => countryValue = value),
-                    onStateChanged: (value) => setState(() => stateValue = value ?? ''),
-                    onCityChanged: (value) => setState(() => cityValue = value ?? ''),
+                    onStateChanged: (value) => setState(() => stateValue = value),
+                    onCityChanged: (value) => setState(() => cityValue = value),
                   ),
 
                   // Option pour revenir à la tentative de détection auto si l'utilisateur le souhaite sur mobile

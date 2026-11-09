@@ -3,7 +3,7 @@ import 'package:afrotok/widgets/language_selector.dart';
 import 'dart:async';
 
 import 'package:afrotok/pages/auth/authTest/Screens/Signup/signup_up_form_step_2.dart';
-import 'package:awesome_dialog/awesome_dialog.dart';
+import 'package:afrotok/widgets/status_dialog.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:pinput/pinput.dart';
@@ -58,63 +58,15 @@ class _VerificationOtpState extends State<VerificationOtp> {
   }
 
   showSuccessDialog(BuildContext context) {
-    AwesomeDialog(
-      context: context,
-      animType: AnimType.leftSlide,
-      headerAnimationLoop: true,
-      dialogType: DialogType.success,
-      showCloseIcon: true,
-      title: 'Succes',
-      desc:
-      AppLocalizations.of(context).otpVerificationSuccess,
-      btnOkOnPress: () {
-       printVm('OnClcik');
-      },
-      btnOkIcon: Icons.check_circle,
-      onDismissCallback: (type) {
-       printVm('Dialog Dissmiss from callback $type');
-      },
-    ).show();
+    showStatusDialog(context, type: StatusDialogType.success, title: 'Succes', desc: AppLocalizations.of(context).otpVerificationSuccess);
 
   }
   showErrorDialog(BuildContext context) {
-    AwesomeDialog(
-      context: context,
-      animType: AnimType.leftSlide,
-      headerAnimationLoop: true,
-      dialogType: DialogType.error,
-      showCloseIcon: true,
-      title: 'Error',
-      desc:
-      AppLocalizations.of(context).otpVerificationError,
-      btnCancelOnPress: () {
-       printVm('OnClcik');
-      },
-      btnOkIcon: Icons.error,
-      onDismissCallback: (type) {
-       printVm('Dialog Dissmiss from callback $type');
-      },
-    ).show();
+    showStatusDialog(context, type: StatusDialogType.error, title: 'Error', desc: AppLocalizations.of(context).otpVerificationError);
 
   }
   showWarningDialog(BuildContext context,String msg) {
-    AwesomeDialog(
-      context: context,
-      animType: AnimType.leftSlide,
-      headerAnimationLoop: true,
-      dialogType: DialogType.warning,
-      showCloseIcon: true,
-      title: 'Warning',
-      desc:
-      msg,
-      btnCancelOnPress: () {
-       printVm('OnClcik');
-      },
-      btnOkIcon: Icons.warning,
-      onDismissCallback: (type) {
-       printVm('Dialog Dissmiss from callback $type');
-      },
-    ).show();
+    showStatusDialog(context, type: StatusDialogType.warning, title: 'Warning', desc: msg);
 
   }
 
