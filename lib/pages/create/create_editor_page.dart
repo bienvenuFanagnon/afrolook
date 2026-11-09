@@ -44,7 +44,7 @@ import 'trim_sheet.dart';
 /// Les outils réutilisent le Studio existant : « Modèles » ouvre les modèles prêts à poster sur ce média, « Musique », « Texte » et « Effets » ouvrent l'éditeur sans
 /// habillage (musique gratuite ou d'artiste, texte libre, looks de couleur sobres), « Couper » garde un passage de la vidéo (découpe faite par le serveur).
 class CreateEditorPage extends StatefulWidget {
-  const CreateEditorPage({super.key, required this.path, required this.isVideo, required this.source, this.canal, this.defiPostId, this.sound, this.pin, this.draft});
+  const CreateEditorPage({super.key, required this.path, required this.isVideo, required this.source, this.canal, this.defiPostId, this.sound, this.pin, this.draft, this.showSignature = false});
 
   final String path;
   final bool isVideo;
@@ -59,6 +59,9 @@ class CreateEditorPage extends StatefulWidget {
 
   /// Vidéo d'un autre à épingler : le Studio s'ouvre tout de suite avec elle posée dans le coin.
   final MontagePinSource? pin;
+
+  /// Collage ou diaporama de plusieurs images : la signature (@pseudo, ou #titre du canal) est visible d'office dans le montage.
+  final bool showSignature;
 
   /// Brouillon repris : l'effet de voix et les widgets sont remis comme ils étaient.
   final CreateDraft? draft;
@@ -97,7 +100,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
     }
     if (widget.sound != null || widget.pin != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _openStudio(MontageEditorPage(template: kPlainTemplate, presetMusic: widget.sound, presetKeepAudio: widget.sound == null, presetPin: widget.pin, presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto));
+        if (mounted) _openStudio(MontageEditorPage(template: kPlainTemplate, showSignature: widget.showSignature, presetMusic: widget.sound, presetKeepAudio: widget.sound == null, presetPin: widget.pin, presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto));
       });
     }
   }
@@ -293,7 +296,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
       _video?.play();
       return;
     }
-    await _openStudio(MontageEditorPage(template: kPlainTemplate, presetMusic: pick.music, presetKeepAudio: pick.keepVideoAudio, presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto));
+    await _openStudio(MontageEditorPage(template: kPlainTemplate, showSignature: widget.showSignature, presetMusic: pick.music, presetKeepAudio: pick.keepVideoAudio, presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto));
   }
 
   // ── Voix ─────────────────────────────────────────────────────────────────
@@ -571,7 +574,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(context.tr('Avec musique : vidéo de 15 s'), style: const TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w800)),
+                      Text(context.tr('Avec musique : l\'image devient une vidéo (7, 15, 30 ou 60 s)'), style: const TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w800)),
                       Text(context.tr('Sans musique, l\'image reste fixe'), style: const TextStyle(color: Color(0xFFC9CDD2), fontSize: 12)),
                     ]),
                   ),
@@ -583,11 +586,11 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
               child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
                 _tool('tool_models', Icons.dashboard_customize_rounded, context.tr('Modèles'), () => _openStudio(MontageGalleryPage(presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto), asSheet: true)),
                 _tool('tool_music', Icons.music_note_rounded, context.tr('Musique'), _music),
-                _tool('tool_text', Icons.title_rounded, context.tr('Texte'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, focus: 'text', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
-                _tool('tool_stickers', Icons.emoji_emotions_rounded, context.tr('Autocollants'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, focus: 'stickers', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
+                _tool('tool_text', Icons.title_rounded, context.tr('Texte'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, showSignature: widget.showSignature, focus: 'text', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
+                _tool('tool_stickers', Icons.emoji_emotions_rounded, context.tr('Autocollants'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, showSignature: widget.showSignature, focus: 'stickers', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
                 _tool('tool_widgets', Icons.widgets_rounded, context.tr('Widgets'), _addWidget),
-                _tool('tool_looks', Icons.star_rounded, context.tr('Effets'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, focus: 'looks', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
-                if (widget.isVideo) _tool('tool_two', Icons.splitscreen_rounded, context.tr('2e média'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, focus: 'second', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
+                _tool('tool_looks', Icons.star_rounded, context.tr('Effets'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, showSignature: widget.showSignature, focus: 'looks', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
+                if (widget.isVideo) _tool('tool_two', Icons.splitscreen_rounded, context.tr('2e média'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, showSignature: widget.showSignature, focus: 'second', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
                 if (widget.isVideo) _tool('tool_trim', Icons.content_cut_rounded, context.tr('Couper'), _trim),
               ]),
             ),

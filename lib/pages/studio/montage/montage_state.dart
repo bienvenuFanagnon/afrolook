@@ -96,6 +96,9 @@ class MontageState {
   /// Calques masqués. L'effet décoratif (argent, cœurs, pluie…) est masqué par défaut : on part d'un rendu sobre, la personne peut le réactiver.
   final Set<MontageLayer> hidden = {MontageLayer.fx};
 
+  /// Calques masqués d'un montage « sans habillage » : tout, sauf (si [signature]) la signature de la personne (@pseudo, ou #titre pour un canal).
+  static Set<MontageLayer> plainHidden({bool signature = false}) => {for (final l in MontageLayer.values) if (!(signature && l == MontageLayer.pseudo)) l};
+
   /// Éléments que la personne a DÉPLACÉS (`pseudo`, `stats`, `text`, `brand`, `block`) : identifiant → centre dans le cadre (fraction 0 à 1). Absent = emplacement du modèle.
   /// L'affichage ramène toujours l'élément à l'intérieur du cadre : il ne se perd jamais.
   final Map<String, Offset> moved = {};

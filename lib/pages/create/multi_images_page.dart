@@ -205,7 +205,9 @@ class _MultiImagesPageState extends State<MultiImagesPage> {
           final file = await CollageLayouts.render(_paths, _activeLayout, gap: _gap, framings: _framing);
           _setBusy(null);
           if (!mounted) return;
-          final r = await openCreateForm(context, studio: StudioResult(type: StudioContentType.image, mediaFile: file), canal: widget.canal, defiPostId: widget.defiPostId, source: PostSourceLink.edited);
+          // le collage s'ouvre dans l'éditeur habituel : musique, texte, signature (@pseudo ou #canal), autocollants, effets, puis la publication
+          final r = await Navigator.of(context).push<String>(MaterialPageRoute(builder: (_) => CreateEditorPage(path: file.path, isVideo: false, source: PostSourceLink.edited, canal: widget.canal, defiPostId: widget.defiPostId, showSignature: true)));
+          if (r == kCreateRedo || r == null) return;
           _finish(r);
         case _Mode.slideshow:
           final problem = _durationProblem();
@@ -216,7 +218,7 @@ class _MultiImagesPageState extends State<MultiImagesPage> {
           final video = await _renderSlideshow();
           if (video == null || !mounted) return;
           // la vidéo s'ouvre dans l'éditeur habituel : musique, texte, effets, puis publication
-          final r = await Navigator.of(context).push<String>(MaterialPageRoute(builder: (_) => CreateEditorPage(path: video.path, isVideo: true, source: PostSourceLink.edited, canal: widget.canal, defiPostId: widget.defiPostId)));
+          final r = await Navigator.of(context).push<String>(MaterialPageRoute(builder: (_) => CreateEditorPage(path: video.path, isVideo: true, source: PostSourceLink.edited, canal: widget.canal, defiPostId: widget.defiPostId, showSignature: true)));
           if (r == kCreateRedo || r == null) return;
           _finish(r);
       }

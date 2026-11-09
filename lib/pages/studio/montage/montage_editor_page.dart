@@ -54,12 +54,15 @@ import '../../../widgets/gold_lock_row.dart';
 AppColors get _c => studioColors;
 
 class MontageEditorPage extends StatefulWidget {
-  const MontageEditorPage({super.key, required this.template, this.forChronique = false, this.presetMusic, this.presetKeepAudio = false, this.presetVideoPath, this.presetPhotoPath, this.focus, this.presetPin, this.photoOnly = false});
+  const MontageEditorPage({super.key, required this.template, this.forChronique = false, this.presetMusic, this.presetKeepAudio = false, this.presetVideoPath, this.presetPhotoPath, this.focus, this.presetPin, this.photoOnly = false, this.showSignature = false});
   final MontageTemplate template;
   final bool forChronique;
 
   /// Retouche d'une IMAGE qui doit rester une image (carrousel de plusieurs images) : ni musique, ni effet animé, ni vidéo ; le résultat est toujours une image fixe.
   final bool photoOnly;
+
+  /// Montage « sans habillage » où la signature (@pseudo, ou #titre du canal) reste visible d'office : collage et diaporama de plusieurs images.
+  final bool showSignature;
 
   /// Média déjà préparé (parcours « Créer un post » : la vidéo qu'on vient de filmer, la photo choisie) : l'éditeur s'ouvre dessus, sans demander de média.
   final String? presetVideoPath;
@@ -85,7 +88,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
   late final MontageState s = MontageState(widget.template)
     ..post = !widget.forChronique
     // Sans habillage : on ne garde que la vidéo (le filigrane « Créé sur Afrolook » reste, comme partout)
-    ..hidden.addAll(widget.template.id == kPlainTemplateId ? MontageLayer.values : const []);
+    ..hidden.addAll(widget.template.id == kPlainTemplateId ? MontageState.plainHidden(signature: widget.showSignature) : const <MontageLayer>{});
   late final AnimationController _anim = AnimationController(vsync: this, duration: kMontageLoop);
   final _keys = MontageKeys();
   final _looksKey = GlobalKey();
