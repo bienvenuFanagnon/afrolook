@@ -114,6 +114,7 @@ import 'canaux/detailsCanal.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:afrotok/services/authentic_video_check.dart';
+import 'package:afrotok/services/authenticity_watcher.dart';
 
 import 'coins/coin_gift_dialog.dart';
 
@@ -3571,23 +3572,27 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     } catch (_) {}
   }
 
-  /// 6 secondes après le début d'une vidéo non encore validée ni marquée : le téléphone lit quelques images avec la reconnaissance de texte gratuite de Google
-  /// et envoie « rien » ou « marque vue ». Une fois par vidéo et par personne, jamais pour sa propre vidéo, 6 vidéos par séance au plus, une analyse à la fois.
+  /// 3 secondes après le début d'une vidéo non encore validée ni marquée (une nouvelle tentative 3 s plus tard si elle était en pause) : le téléphone lit 3 images avec la
+  /// reconnaissance de texte gratuite de Google et envoie « rien » ou « marque vue ». Une fois par vidéo et par personne, jamais pour sa propre vidéo, 12 vidéos par séance
+  /// au plus, une analyse à la fois ; l'analyse se termine même si la personne passe à la suite (20 s au plus).
   void _scheduleAuthenticityCheck(Post post) {
     _authTimer?.cancel();
     final me = authProvider.loginUserData.id;
     if (kIsWeb || post.isAdvertisement == true || post.id == null || post.url_media == null || post.user_id == me || post.authenticity != null) return;
     final id = post.id!;
-    _authTimer = Timer(const Duration(seconds: 10), () async {
-      if (!mounted || _authBusy || _authScans >= 6 || _currentPostId() != id) return;
+    Future<void> attempt(bool retried) async {
+      if (!mounted || _authScans >= AuthenticityWatcher.maxScansPerSession || _currentPostId() != id) return;
       if ((await _loadAuthChecked()).contains(id)) return;
       final vc = _currentVideoController;
-      if (vc == null || !vc.value.isInitialized || !vc.value.isPlaying) return;
+      if (_authBusy || vc == null || !vc.value.isInitialized || !vc.value.isPlaying) {
+        if (!retried) _authTimer = Timer(const Duration(seconds: AuthenticityWatcher.startAfterSeconds), () => attempt(true));
+        return;
+      }
       _authBusy = true;
       _authScans++;
       try {
         final url = authProvider.convertToCdnUrl(post.url_media!, authProvider.appDefaultData);
-        final res = await AuthenticVideoCheck.scanUrl(url, vc.value.duration.inMilliseconds, stillWanted: () => mounted && _currentPostId() == id);
+        final res = await AuthenticVideoCheck.scanUrl(url, vc.value.duration.inMilliseconds);
         if (res == null) return;
         await _rememberChecked(id);
         final state = await PostsApi.reportAuthenticity(id, clean: res == 'clean', mark: res == 'clean' ? null : res);
@@ -3600,7 +3605,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       } finally {
         _authBusy = false;
       }
-    });
+    }
+
+    _authTimer = Timer(const Duration(seconds: AuthenticityWatcher.startAfterSeconds), () => attempt(false));
   }
 
   Future<void> _ownClaim(Post post) async {
@@ -3851,7 +3858,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
                   adData: item.adData,
                   active: index == _currentPage,
                   onNext: () {
-                    if (_pageController.hasClients && _pageController.page?.toInt() == index) {
+                    // arrondi (et non troncature) : pendant un défilement la position vaut par exemple 4,98 ; sans page suivante, rien à faire
+                    if (_pageController.hasClients && (_pageController.page ?? index.toDouble()).round() == index && index + 1 < _feedItems.length) {
                       _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeOutCubic);
                     }
                   },
@@ -3927,6 +3935,7 @@ class _VideoAdPage extends StatelessWidget {
     return FullScreenAdPage(
       active: active,
       onNext: onNext,
+      retryNext: true,   // un premier appel peut tomber pendant un défilement : on redemande, jamais de cercle qui tourne sans fin
       ownSeconds: isVideoAd ? 5 : 3,
       ownBuilder: data == null ? null : (done) => AdPostWidget(adData: data, width: size.width, height: size.height, onComplete: done),
     );

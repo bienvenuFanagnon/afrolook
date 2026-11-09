@@ -85,6 +85,23 @@ void main() {
     expect(next, 1);
   });
 
+  testWidgets('sans pub et avec « retryNext » : si le premier passage n\'a pas eu d\'effet, la page redemande (jamais un cercle qui tourne sans fin) puis s\'arrête après 6 essais', (tester) async {
+    var next = 0;
+    await tester.pumpWidget(_host(FullScreenAdPage(
+      active: true,
+      retryNext: true,
+      onNext: () => next++,   // ne fait jamais défiler : la page reste regardée
+      networkBuilder: (l, f) => const SizedBox(width: 300, height: 250),
+    )));
+    await tester.pump(const Duration(milliseconds: 3100));
+    await tester.pump();
+    expect(find.byType(CircularProgressIndicator), findsNothing);   // plus de cercle une fois « sans pub »
+    for (var i = 0; i < 12; i++) {
+      await tester.pump(const Duration(milliseconds: 800));
+    }
+    expect(next, 7);   // 1 appel + 6 réessais
+  });
+
   testWidgets('une page pas encore regardée ne lance aucun décompte ; elle montre la pub déjà prête dès qu\'on y arrive', (tester) async {
     var next = 0;
     late VoidCallback loaded;

@@ -29,13 +29,13 @@ class AuthenticResult {
 }
 
 /// Vidéos authentiques : Afrolook n'accepte pas les vidéos téléchargées d'autres réseaux (TikTok, Instagram…). Solution gratuite, sur le téléphone :
-/// quelques images de la vidéo passent dans la reconnaissance de texte de Google (ML Kit, hors ligne) qui lit les marques et les @pseudos incrustés.
+/// quelques images de la vidéo passent dans la reconnaissance de texte de Google (ML Kit, hors ligne) qui lit le nom des réseaux incrustés (jamais un simple @pseudo).
 /// Les vidéos montées avec un éditeur (CapCut, InShot…) ou filmées dans l'application ne portent pas ces marques et passent.
 /// En cas de doute ou d'erreur, la vidéo passe : on ne bloque jamais à tort sur un échec technique.
 class AuthenticVideoCheck {
   AuthenticVideoCheck._();
 
-  /// Marques cherchées (TikTok, Instagram, Facebook, Snapchat…). `strong` : une seule image suffit (le filigrane de TikTok est très reconnaissable) ; sinon il en faut deux (jamais sur un mot isolé).
+  /// Noms de réseaux cherchés (TikTok, Instagram, Facebook, Snapchat…). `strong` : une seule image suffit (le filigrane de TikTok est très reconnaissable) ; sinon il en faut deux (jamais sur un mot isolé).
   static const _marks = <(String, List<String>, bool)>[
     ('tiktok', ['tiktok', 'douyin'], true),
     ('instagram', ['instagram'], false),
@@ -50,65 +50,23 @@ class AuthenticVideoCheck {
     return words.any(t.contains);
   }
 
-  static final _handleRe = RegExp(r'@\s?([\p{L}\p{N}._]{3,30})', unicode: true);
-
-  /// Les @pseudos incrustés dans une image (filigrane du créateur : TikTok, Instagram, Likee…), sans le « @ ». Une phrase n'est pas un filigrane : seules les lignes
-  /// courtes comptent ([oneWordOnly] : une ligne qui ne contient que le pseudo, pour une photo isolée). Une image qui porte « Afrolook » (fin animée, modèles du Studio)
-  /// n'est jamais comptée : ses @pseudos sont les nôtres.
-  static Set<String> handlesIn(String text, {bool oneWordOnly = false}) {
-    final t = text.toLowerCase();
-    if (t.replaceAll(RegExp(r'\s'), '').contains('afrolook')) return {};
-    final out = <String>{};
-    for (final line in t.split(RegExp(r'[\r\n]+'))) {
-      final words = line.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
-      if (words.isEmpty || words.length > (oneWordOnly ? 1 : 3)) continue;
-      for (final m in _handleRe.allMatches(line)) {
-        final h = m.group(1)!.replaceAll(RegExp(r'[._]+$'), '');
-        if (h.length >= 3) out.add(h);
-      }
-    }
-    return out;
-  }
-
-  static int _distance(String a, String b) {
-    var prev = List<int>.generate(b.length + 1, (i) => i);
-    for (var i = 1; i <= a.length; i++) {
-      final cur = <int>[i, ...List<int>.filled(b.length, 0)];
-      for (var j = 1; j <= b.length; j++) {
-        cur[j] = [prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] == b[j - 1] ? 0 : 1)].reduce((x, y) => x < y ? x : y);
-      }
-      prev = cur;
-    }
-    return prev[b.length];
-  }
-
-  /// Même pseudo d'une image à l'autre (la lecture du texte peut se tromper d'une lettre).
-  static bool _sameHandle(String a, String b) => a == b || (a.length >= 5 && b.length >= 5 && _distance(a, b) <= 1);
-
   /// Marque trouvée à partir du texte lu dans chaque image (null si la vidéo est propre). Séparé de l'examen pour être testé sans téléphone.
-  /// 1) le nom d'un réseau (TikTok : une image suffit ; les autres : deux images) ; 2) le même @pseudo de créateur sur au moins deux images : c'est le filigrane
-  /// d'un autre réseau (Instagram affiche le logo et le pseudo, sans le nom), classé « other ».
+  /// Seul le NOM d'un réseau compte (TikTok : une image suffit ; les autres : deux images). Un @pseudo ne bloque JAMAIS à lui seul : un @nom peut être le pseudo
+  /// de la personne, une boutique, un ami cité, un sous-titre (décision du propriétaire, 09/11/2026 : seuls les noms de plateformes sont bloqués).
   static String? decide(List<String> frameTexts) {
     for (final (mark, words, strong) in _marks) {
       final hits = frameTexts.where((t) => containsMark(t, words)).length;
       if (hits >= (strong ? 1 : 2)) return mark;
     }
-    final perFrame = [for (final t in frameTexts) handlesIn(t)];
-    for (var i = 0; i < perFrame.length; i++) {
-      for (final h in perFrame[i]) {
-        final frames = [for (final s in perFrame) s.any((x) => _sameHandle(h, x))].where((v) => v).length;
-        if (frames >= 2) return 'other';
-      }
-    }
     return null;
   }
 
-  /// Marque trouvée dans UNE image isolée (photo de publication, couverture) : le nom d'un réseau, ou un @pseudo seul sur sa ligne (capture d'écran ou image téléchargée).
+  /// Marque trouvée dans UNE image isolée (photo de publication, couverture) : le nom d'un réseau seulement (un @pseudo ne bloque pas).
   static String? decideImage(String text) {
     for (final (mark, words, _) in _marks) {
       if (containsMark(text, words)) return mark;
     }
-    return handlesIn(text, oneWordOnly: true).isNotEmpty ? 'other' : null;
+    return null;
   }
 
   static Future<AuthenticResult> scan(String path) async {
@@ -155,26 +113,28 @@ class AuthenticVideoCheck {
     }
   }
 
+  /// Temps maximal d'une analyse pendant une lecture : au-delà, rien n'est envoyé.
+  static const scanMaxDuration = Duration(seconds: 20);
+
+  /// Les 3 images lues pendant une lecture : le début, le milieu et la fin (l'écran de fin de TikTok, 1,2 s avant la fin ; 85 % de la durée si la vidéo est très courte).
+  @visibleForTesting
+  static List<int> frameTimes(int durationMs) =>
+      <int>{300, (durationMs * .5).round(), durationMs > 2500 ? durationMs - 1200 : (durationMs * .85).round()}.where((t) => t >= 0 && t < durationMs).toList()..sort();
+
   /// Même examen sur une vidéo qui se lit (adresse du film et durée déjà connues) : sert aux contrôles d'authenticité pendant les lectures.
   /// Rend la marque vue (tiktok, instagram…), « clean » si rien, null si l'examen n'a pas pu se faire (rien n'est envoyé dans ce cas).
-  static Future<String?> scanUrl(String url, int durationMs, {bool Function()? stillWanted}) async {
+  static Future<String?> scanUrl(String url, int durationMs) async {
     if (kIsWeb || durationMs <= 0) return null;
     final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
+    final deadline = DateTime.now().add(scanMaxDuration);
     try {
-      final times = <int>{
-        300,
-        (durationMs * .25).round(),
-        (durationMs * .5).round(),
-        (durationMs * .75).round(),
-        if (durationMs > 2500) durationMs - 1200,
-      }.where((t) => t >= 0 && t < durationMs).toList()
-        ..sort();
+      final times = frameTimes(durationMs);
       final texts = <String>[];
       final nsfw = <List<double>>[];
       for (final t in times) {
-        // invisible : on abandonne dès que la personne passe à une autre vidéo, et on laisse respirer la lecture entre deux images
-        if (stillWanted != null && !stillWanted()) return null;
-        await Future<void>.delayed(const Duration(milliseconds: 400));
+        // l'analyse continue même si la personne passe à la vidéo suivante (le verdict compte), mais pas au-delà de 20 s ; on laisse respirer la lecture entre deux images
+        if (DateTime.now().isAfter(deadline)) return null;
+        await Future<void>.delayed(const Duration(milliseconds: 300));
         final f = await VideoThumbnail.thumbnailFile(video: url, imageFormat: ImageFormat.JPEG, timeMs: t, maxWidth: 480, quality: 60);
         if (f == null) continue;
         final r = await recognizer.processImage(InputImage.fromFilePath(f));
@@ -238,7 +198,7 @@ class AuthenticVideoCheck {
     PostExternalLink.clear();
     final sc = await NsfwCheck.score(path);
     if (sc != null && NsfwCheck.decide([sc]) && context.mounted) return _blocked(context, 'explicit', allowClaim);
-    // image téléchargée d'un autre réseau : nom du réseau ou @pseudo du créateur incrusté (lecture de texte gratuite, sur le téléphone)
+    // image téléchargée d'un autre réseau : nom du réseau incrusté (jamais un simple @pseudo) (lecture de texte gratuite, sur le téléphone)
     if (kIsWeb || !context.mounted) return true;
     String? mark;
     final recognizer = TextRecognizer(script: TextRecognitionScript.latin);

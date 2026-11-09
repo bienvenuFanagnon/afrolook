@@ -25,7 +25,11 @@ class FullScreenAdPage extends StatefulWidget {
     this.ownSeconds = 5,
     this.showCountdown = true,
     this.onShown,
+    this.retryNext = false,
   });
+
+  /// Redemander [onNext] (jusqu'à 6 fois, toutes les 0,7 s) tant que la page est toujours regardée : pour les défilements où un premier appel peut échouer.
+  final bool retryNext;
 
   /// Cette page est celle qu'on regarde (les timers ne tournent que dans ce cas).
   final bool active;
@@ -64,6 +68,7 @@ class _FullScreenAdPageState extends State<FullScreenAdPage> {
   int _left = 0;
   Timer? _wait;
   Timer? _tick;
+  Timer? _retryNext;
 
   @override
   void initState() {
@@ -79,6 +84,7 @@ class _FullScreenAdPageState extends State<FullScreenAdPage> {
     } else if (!widget.active && old.active) {
       _wait?.cancel();
       _tick?.cancel();
+      _retryNext?.cancel();
     }
   }
 
@@ -86,6 +92,7 @@ class _FullScreenAdPageState extends State<FullScreenAdPage> {
   void dispose() {
     _wait?.cancel();
     _tick?.cancel();
+    _retryNext?.cancel();
     super.dispose();
   }
 
@@ -151,9 +158,25 @@ class _FullScreenAdPageState extends State<FullScreenAdPage> {
   void _advance() {
     if (_advanced) return;
     _advanced = true;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) widget.onNext();
-    });
+    _callNext(0);
+  }
+
+  /// Passe à la suite. Avec [FullScreenAdPage.retryNext], si la page est toujours regardée 0,7 s plus tard (défilement en cours, page suivante pas encore prête), on redemande :
+  /// jamais d'attente sans fin devant un écran de chargement (6 essais au plus).
+  void _callNext(int attempt, {bool direct = false}) {
+    void call() {
+      if (!mounted) return;
+      widget.onNext();
+      if (widget.retryNext && attempt < 6) {
+        _retryNext?.cancel();
+        // directement depuis le minuteur (pas d'attente d'une image : une page sans animation n'en demande plus)
+        _retryNext = Timer(const Duration(milliseconds: 700), () {
+          if (mounted && widget.active) _callNext(attempt + 1, direct: true);
+        });
+      }
+    }
+
+    direct ? call() : WidgetsBinding.instance.addPostFrameCallback((_) => call());
   }
 
   @override
@@ -166,7 +189,8 @@ class _FullScreenAdPageState extends State<FullScreenAdPage> {
         // la pub du réseau se charge dès que la page est construite, hors de la vue ; elle n'apparaît qu'une fois prête
         if (_phase == _Phase.loading || showNet) Center(child: Offstage(offstage: !showNet, child: net)),
         if (_phase == _Phase.own && widget.ownBuilder != null) Positioned.fill(child: widget.ownBuilder!(_advance)),
-        if (_phase == _Phase.loading || _phase == _Phase.skipped)
+        // le cercle ne tourne que pendant le chargement (3 s au plus) : une page « sans pub » ne fait plus semblant de charger
+        if (_phase == _Phase.loading)
           Center(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               const SizedBox(width: 26, height: 26, child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white54)),

@@ -19,7 +19,11 @@
 -dontwarn com.tapjoy.**
 
 # Moteur d effets de visage : MediaPipe Tasks (classes appelées par le code natif, protos absents de la bibliothèque)
-# (les règles de conservation viennent de la bibliothèque elle-même ; ici seulement les protos absents)
+# Correctif (09/11/2026) : l'essai sur téléphone (APK release) donnait « initialisation : com.google.mediapipe.framework.Graph ». Le fichier mapping.txt du build montre que R8
+# avait renommé ou supprimé 186 classes de MediaPipe (MediaPipeException, ProtoUtil, Graph$PacketBufferItem, les « Options » de calculateurs…) alors que le code natif
+# (libmediapipe_tasks_vision_jni.so) les cherche PAR LEUR NOM : la bibliothèque ne les protège donc pas assez. On garde tout MediaPipe tel quel (quelques centaines de Ko).
+-keep class com.google.mediapipe.** { *; }
+-keep class com.google.protobuf.** { *; }
 -dontwarn com.google.mediapipe.proto.**
 
 # Lecture de texte ML Kit (contrôle des vidéos d autres réseaux) : le plugin mentionne les modèles chinois, japonais, coréen et devanagari, non inclus

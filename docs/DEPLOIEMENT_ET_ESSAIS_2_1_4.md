@@ -10,7 +10,9 @@
 6. **Avant de soumettre aux stores** : mettre à jour la déclaration de confidentialité (visionnage anonyme des vidéos, activité dans l'app : interactions, non liée à l'identité) sur App Store Connect et Google Play.
 7. **Facultatif** : dans le tableau de bord Appodeal, désactiver PubMatic, MobileFuse, Ogury, TaurusX et Verve (retirés d'Android).
 
-Tout ce qui est nouveau côté montage est **éteint par défaut** : `studio_single_pass` (rendu en une seule passe) n'est actif que si tu le règles. Ne mets pas `"outro": true` dedans (la fin animée en une passe n'est pas fiable).
+Tout ce qui est nouveau côté montage est **éteint par défaut** : `studio_single_pass` (rendu en une seule passe) n'est actif que si tu le règles, d'abord sur le serveur de test. Pour l'allumer sur le serveur de test :
+`sudo -u deploy bash -c 'cd /var/www/afrolook-staging && php artisan tinker --execute="App\Models\Setting::updateOrCreate([\"key\"=>\"studio_single_pass\"],[\"value\"=>[\"enabled\"=>true],\"is_public\"=>true]);"'`
+Pour l'éteindre : même commande avec `false`. Sous-interrupteur `"outro": true` (fin animée jointe sans réencoder, repli automatique) : à essayer seulement sur le serveur de test, après avoir validé `enabled` ; en production, seulement une fois validé sur téléphone.
 
 ## B. À tester, par ordre d'importance
 

@@ -234,12 +234,12 @@ class FaceEngine {
 
   /// Où se pose chaque masque sur le visage : ancre, taille (en largeur de visage) et décalage vertical (en hauteur de visage).
   static ({String anchor, double size, double dy})? placement(FaceFilter f) => switch (f) {
-        FaceFilter.glasses => (anchor: 'eyes', size: 0.95, dy: 0.0),
-        FaceFilter.crown => (anchor: 'top', size: 0.8, dy: 0.0),
-        FaceFilter.nose => (anchor: 'nose', size: 0.26, dy: 0.0),
-        FaceFilter.hearts => (anchor: 'corner', size: 0.4, dy: 0.0),
-        FaceFilter.monkey || FaceFilter.cat || FaceFilter.robot || FaceFilter.clown => (anchor: 'face', size: 1.45, dy: 0.0),
-        FaceFilter.hero || FaceFilter.bar => (anchor: 'eyes', size: 1.3, dy: 0.0),
+        FaceFilter.glasses => (anchor: 'eyes', size: 0.95 * FaceFilters.maskBoost, dy: 0.0),
+        FaceFilter.crown => (anchor: 'top', size: 0.8 * FaceFilters.maskBoost, dy: 0.0),
+        FaceFilter.nose => (anchor: 'nose', size: 0.26 * FaceFilters.maskBoost, dy: 0.0),
+        FaceFilter.hearts => (anchor: 'corner', size: 0.4 * FaceFilters.maskBoost, dy: 0.0),
+        FaceFilter.monkey || FaceFilter.cat || FaceFilter.robot || FaceFilter.clown => (anchor: 'face', size: 1.45 * FaceFilters.maskBoost, dy: 0.0),
+        FaceFilter.hero || FaceFilter.bar => (anchor: 'eyes', size: 1.3 * FaceFilters.maskBoost, dy: 0.0),
         FaceFilter.none || FaceFilter.blur => null,
       };
 

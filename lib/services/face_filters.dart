@@ -168,9 +168,13 @@ class FaceFilters {
     }
   }
 
+  /// Agrandissement commun à tous les masques qui suivent le visage (demande du propriétaire, 09/11/2026 : « un peu plus grands »). 1,0 = ancienne taille.
+  static const double maskBoost = 1.25;
+
   /// Où poser le filtre sur un visage : centre et taille (en pixels de l'image). Un seul emoji par filtre, pour que photo, aperçu en direct et vidéo donnent le même résultat.
   static ({Offset center, double size})? anchor(FaceBox f, FaceFilter filter) {
     final face = f.rect;
+    const k = maskBoost;
     switch (filter) {
       case FaceFilter.none:
         return null;
@@ -178,23 +182,23 @@ class FaceFilters {
         final a = f.leftEye, b = f.rightEye;
         final center = (a != null && b != null) ? Offset((a.dx + b.dx) / 2, (a.dy + b.dy) / 2) : Offset(face.center.dx, face.top + face.height * 0.4);
         final span = (a != null && b != null) ? (a - b).distance : face.width * 0.5;
-        return (center: center, size: math.max(span * 2.3, face.width * 0.7));
+        return (center: center, size: math.max(span * 2.3, face.width * 0.7) * k);
       case FaceFilter.crown:
-        return (center: Offset(face.center.dx, face.top - face.height * 0.02), size: face.width * 0.8);
+        return (center: Offset(face.center.dx, face.top - face.height * 0.02), size: face.width * 0.8 * k);
       case FaceFilter.nose:
-        return (center: f.nose ?? Offset(face.center.dx, face.top + face.height * 0.62), size: face.width * 0.26);
+        return (center: f.nose ?? Offset(face.center.dx, face.top + face.height * 0.62), size: face.width * 0.26 * k);
       case FaceFilter.hearts:
-        return (center: Offset(face.right, face.top), size: face.width * .4);
+        return (center: Offset(face.right, face.top), size: face.width * .4 * k);
       case FaceFilter.monkey:
       case FaceFilter.cat:
       case FaceFilter.robot:
       case FaceFilter.clown:
-        return (center: Offset(face.center.dx, face.center.dy - face.height * .04), size: face.width * 1.45);
+        return (center: Offset(face.center.dx, face.center.dy - face.height * .04), size: face.width * 1.45 * k);
       case FaceFilter.hero:
       case FaceFilter.bar:
         final a = f.leftEye, b = f.rightEye;
         final eyes = (a != null && b != null) ? Offset((a.dx + b.dx) / 2, (a.dy + b.dy) / 2) : Offset(face.center.dx, face.top + face.height * .4);
-        return (center: eyes, size: face.width * 1.3);
+        return (center: eyes, size: face.width * 1.3 * k);
       case FaceFilter.blur:
         return (center: face.center, size: face.width * 1.2);
     }
