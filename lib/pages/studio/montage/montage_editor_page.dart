@@ -40,6 +40,8 @@ import '../../../services/music_likes.dart';
 import '../../../services/music_queue.dart';
 import 'montage_pin.dart';
 import '../../../services/montage_signature.dart';
+import '../../../services/music_clip.dart';
+import '../../../services/slideshow_plan.dart';
 import '../../../widgets/reply_split.dart';
 import 'montage_preview_page.dart';
 import '../../create/chronique_flow.dart' show ChroniqueFlow;
@@ -184,7 +186,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
   Future<void> _playMusic() async {
     final m = s.music;
     if (m == null || !mounted) return;
-    final ok = await MontageMusicPlayer.play(m, startMs: s.musicStartMs, volume: s.musicVolume);
+    final ok = await MontageMusicPlayer.playClip(m, _plan, volume: s.musicVolume);
     if (!mounted) return;
     setState(() => _musicPlaying = ok);
     // la vidéo continue de tourner pendant que la musique joue (elle ne doit jamais se figer à l'arrivée du son)
@@ -193,8 +195,61 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     if (ok) {
       final known = m.isArtist ? null : studioTrack(m.id)?.durationMs;
       final d = known ?? (await MontageMusicPlayer.duration())?.inMilliseconds;
-      if (mounted) setState(() => _musicDurationMs = d);
+      if (mounted) {
+        final firstTime = _musicDurationMs == null && d != null;
+        setState(() => _musicDurationMs = d);
+        // la durée du son vient d'être connue : s'il faut le répéter ou le couper, l'aperçu repart avec ce réglage
+        if (firstTime && (_plan.loops || _plan.cuts)) await MontageMusicPlayer.playClip(m, _plan, volume: s.musicVolume);
+      }
     }
+  }
+
+  /// Durée du FILM sur lequel le son est posé (millisecondes) : la vidéo (30 s au plus pour une chronique, 60 s pour un post), ou la durée choisie pour une photo.
+  int get _clipMs {
+    final maxSec = widget.forChronique ? 30 : 60;
+    final sec = s.useVideo ? math.min(_videoSeconds, maxSec.toDouble()) : s.musicSeconds.clamp(3, maxSec).toDouble();
+    return (sec * 1000).round();
+  }
+
+  MusicClipPlan get _plan => MusicClipPlan(clipMs: _clipMs, startMs: s.musicStartMs, trackMs: _musicDurationMs);
+
+  /// Ce que la personne doit savoir sur son son : durée du film, répété ou coupé, et le bouton pour caler la fin du son sur la fin de la vidéo.
+  List<Widget> _musicClipInfo() {
+    final plan = _plan;
+    final track = plan.trackMs;
+    final film = SlideshowPlan.fmt(plan.clipMs / 1000);
+    String? note;
+    if (track != null) {
+      if (plan.loops) {
+        note = s.musicStartMs > 0
+            ? tr('Depuis ce point, il reste {a} s de son : il sera répété pour remplir tes {b} s.', {'a': SlideshowPlan.fmt(plan.availableMs! / 1000), 'b': film})
+            : tr('Ce son dure {a} s : il sera répété pour remplir tes {b} s.', {'a': SlideshowPlan.fmt(track / 1000), 'b': film});
+      } else if (plan.cuts) {
+        note = tr('Ce son dure {a} : on garde {b} s à partir de {c}.', {'a': MusicClipPlan.mmss(track), 'b': film, 'c': MusicClipPlan.mmss(s.musicStartMs)});
+      } else {
+        note = tr('Le son et la vidéo ont presque la même durée ({b} s).', {'b': film});
+      }
+    }
+    return [
+      const SizedBox(height: 6),
+      Text(tr('La vidéo dure {b} s.', {'b': film}), key: const ValueKey('music_film'), style: TextStyle(color: _c.textSecondary, fontSize: 12.5, fontWeight: FontWeight.w700)),
+      if (note != null) Padding(padding: const EdgeInsets.only(top: 2), child: Text(note, key: const ValueKey('music_note'), style: TextStyle(color: _c.textSecondary, fontSize: 12.5))),
+      if (plan.alignedStartMs != null)
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            key: const ValueKey('music_align'),
+            onPressed: plan.isAligned
+                ? null
+                : () {
+                    setState(() => s.musicStartMs = plan.alignedStartMs!);
+                    _playMusic();
+                  },
+            icon: Icon(plan.isAligned ? Icons.check_circle_rounded : Icons.vertical_align_bottom_rounded, size: 18, color: plan.isAligned ? _c.primary : _c.textSecondary),
+            label: Text(tr(plan.isAligned ? 'La fin du son tombe sur la fin de la vidéo' : 'Caler la fin du son sur la fin de la vidéo'), style: TextStyle(color: plan.isAligned ? _c.primary : _c.textPrimary, fontWeight: FontWeight.w700, fontSize: 12.5)),
+          ),
+        ),
+    ];
   }
 
   Future<void> _toggleMusic() async {
@@ -1024,7 +1079,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     final maxSec = widget.forChronique ? 30 : 60;
     final durs = [7, 15, 30, 60].where((d) => d <= maxSec).toList();   // 7, 15, 30 ou 60 s (30 au plus pour une chronique)
     final dur = _musicDurationMs;
-    final clip = (s.useVideo ? maxSec : s.musicSeconds) * 1000;
+    final clip = _clipMs;
     final slideMax = m != null && dur != null && dur > clip + 1000 ? dur - clip : 0;
     final canSlide = slideMax > 0;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1091,6 +1146,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           ),
         ]),
       ],
+      if (m != null) ..._musicClipInfo(),
       if (m != null && !s.useVideo) ...[
         const SizedBox(height: 6),
         Wrap(spacing: 8, crossAxisAlignment: WrapCrossAlignment.center, children: [
@@ -1099,7 +1155,10 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
             ChoiceChip(
               label: Text('$d s'),
               selected: s.musicSeconds == d,
-              onSelected: (_) => setState(() => s.musicSeconds = d),
+              onSelected: (_) {
+                setState(() => s.musicSeconds = d);
+                _playMusic();   // l'aperçu suit tout de suite la nouvelle durée
+              },
               selectedColor: _c.primary.withValues(alpha: .25),
               backgroundColor: _c.surface,
               labelStyle: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700, fontSize: 12),

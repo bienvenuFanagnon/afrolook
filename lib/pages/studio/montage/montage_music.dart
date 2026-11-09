@@ -4,6 +4,7 @@ import 'package:afrotok/services/api/api_identity.dart';
 
 import 'dart:async';
 import 'package:afrotok/l10n/tr.dart';
+import '../../../services/music_clip.dart';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -135,6 +136,8 @@ class MontageMusicPlayer {
     final url = await urlOf(m);
     if (url == null) return false;
     try {
+      _clipTimer?.cancel();
+      _clipMode = false;
       await _player.stop();
       await _player.setReleaseMode(ReleaseMode.loop);
       await _player.setVolume(volume.clamp(0.0, 1.0));
@@ -147,8 +150,60 @@ class MontageMusicPlayer {
     }
   }
 
+  static Timer? _clipTimer;
+  static final Stopwatch _clipWatch = Stopwatch();
+  static double _clipVolume = 1;
+  static bool _clipMode = false;
+
+  /// Joue [m] EXACTEMENT comme le serveur le mettra sur le film : de [MusicClipPlan.startMs], pendant la durée du film, avec le fondu d'entrée et le fondu de sortie, répété
+  /// s'il est plus court, coupé s'il est plus long ; puis l'aperçu recommence. Renvoie false si la musique n'a pas pu être chargée.
+  static Future<bool> playClip(MontageMusic m, MusicClipPlan plan, {double volume = 1}) async {
+    final url = await urlOf(m);
+    if (url == null) return false;
+    try {
+      _clipTimer?.cancel();
+      await _player.stop();
+      await _player.setReleaseMode(ReleaseMode.stop);
+      _clipVolume = volume.clamp(0.0, 1.0);
+      _clipMode = true;
+      await _player.setVolume(0);
+      await _player.play(UrlSource(url), position: Duration(milliseconds: plan.startMs));
+      playingKey = '${m.type}:${m.id}';
+      _clipWatch
+        ..reset()
+        ..start();
+      _clipTimer = Timer.periodic(const Duration(milliseconds: 100), (_) async {
+        try {
+          final e = _clipWatch.elapsedMilliseconds;
+          if (e >= plan.clipMs) {
+            // fin du film : l'aperçu recommence au début du son
+            _clipWatch
+              ..reset()
+              ..start();
+            await _player.setVolume(0);
+            await _player.seek(Duration(milliseconds: plan.startMs));
+            await _player.resume();
+            return;
+          }
+          await _player.setVolume((plan.volumeAt(e) * _clipVolume).clamp(0.0, 1.0));
+          // son plus court que le film : on revient à son point de départ, comme le serveur répète le son
+          if (plan.loops && plan.trackMs != null) {
+            final pos = await _player.getCurrentPosition();
+            if (pos != null && pos.inMilliseconds >= plan.trackMs! - 120) await _player.seek(Duration(milliseconds: plan.startMs));
+          }
+        } catch (_) {}
+      });
+      return true;
+    } catch (e) {
+      debugPrint('Aperçu de la musique impossible : $e');
+      return false;
+    }
+  }
+
   /// Volume de l'aperçu (0 à 1), appliqué tout de suite si la musique joue.
   static Future<void> setVolume(double v) async {
+    _clipVolume = v.clamp(0.0, 1.0);
+    if (_clipMode) return;   // en lecture « film », le volume est recalculé toutes les 100 ms avec les fondus
     try {
       await _player.setVolume(v.clamp(0.0, 1.0));
     } catch (_) {}
@@ -156,6 +211,9 @@ class MontageMusicPlayer {
 
   static Future<void> stop() async {
     playingKey = null;
+    _clipTimer?.cancel();
+    _clipTimer = null;
+    _clipMode = false;
     try {
       await _player.stop();
     } catch (_) {}
