@@ -868,7 +868,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           KeyedSubtree(key: _stickersKey, child: _stickersSection()),
         ]),
         if (!widget.photoOnly) _group('music', Icons.music_note_rounded, 'Musique et sons', [KeyedSubtree(key: _musicKey, child: _musicSection())]),
-        _group('looks', Icons.auto_awesome_rounded, 'Effets et couleurs', [KeyedSubtree(key: _looksKey, child: _looksSection())]),
+        _group('looks', Icons.auto_awesome_rounded, 'Effets et couleurs', [KeyedSubtree(key: _looksKey, child: _looksSection()), if (!widget.photoOnly) _fxSection()]),
         _group('format', Icons.tune_rounded, 'Format et contenu du modèle', [
         _label('Format'),
         _seg(['Chronique 9:16', 'Post 4:5', 'Paysage 16:9'], s.landscape ? 2 : (s.post ? 1 : 0), (i) => setState(() => s.setFormat(const ['story', 'post', 'landscape'][i]))),
@@ -1686,9 +1686,13 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
   }
 
   Widget _looksSection() {
-    final sel = s.look?.id;
+    final sel = {for (final l in s.looks) l.id};
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       _label('Look'),
+      Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text(tr('Touche plusieurs looks pour les mélanger ({n} au plus).', {'n': MontageState.maxLooks}), style: TextStyle(color: _c.textSecondary, fontSize: 12)),
+      ),
       SizedBox(
         height: 84,
         child: ListView.separated(
@@ -1697,10 +1701,18 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           separatorBuilder: (_, __) => const SizedBox(width: 10),
           itemBuilder: (_, i) {
             final look = i == 0 ? null : kMontageLooks[i - 1];
-            final on = i == 0 ? sel == null : sel == look!.id;
+            final on = i == 0 ? sel.isEmpty : sel.contains(look!.id);
             final colors = look?.swatch ?? const [Color(0xFF3A3A3A), Color(0xFF1A1A1A)];
             return GestureDetector(
-              onTap: () => setState(() => s.look = look),
+              onTap: () {
+                if (look == null) {
+                  setState(() => s.look = null);
+                } else if (!s.toggleLook(look)) {
+                  _say(tr('{n} looks au plus : retires-en un pour en ajouter un autre.', {'n': MontageState.maxLooks}));
+                } else {
+                  setState(() {});
+                }
+              },
               child: SizedBox(
                 width: 62,
                 child: Column(children: [
@@ -1724,6 +1736,36 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           },
         ),
       ),
+    ]);
+  }
+
+  /// Effet animé : disponible SANS modèle, avec n'importe quel look, texte, épingle ou musique (tout est rendu en une seule passe).
+  Widget _fxSection() {
+    final tp = s.template;
+    final cur = s.fxChoice;
+    Widget chip(Key key, String label, bool on, VoidCallback onTap) => ChoiceChip(key: key, label: Text(label), selected: on, onSelected: (_) => onTap());
+    void pick(MontageFx? f) {
+      setState(() {
+        s.fxChoice = f;
+        // un effet qui bouge fait une vidéo ; « Aucun » ou « Du modèle » rendent la main au réglage du modèle
+        if (f != null && f != MontageFx.none) {
+          s.animated = true;
+          s.hidden.remove(MontageLayer.fx);
+        }
+        _syncAnim();
+      });
+    }
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      const SizedBox(height: 16),
+      _label('Effet animé'),
+      Text(s.exportsVideo ? tr('L\'effet bouge dans la vidéo.') : tr('Avec un effet, l\'image devient une courte vidéo.'), style: TextStyle(color: _c.textSecondary, fontSize: 12)),
+      const SizedBox(height: 8),
+      Wrap(spacing: 8, runSpacing: 4, children: [
+        chip(const ValueKey('fx_none'), tr('Aucun'), cur == MontageFx.none || (cur == null && tp.fx == MontageFx.none), () => pick(MontageFx.none)),
+        if (tp.fx != MontageFx.none) chip(const ValueKey('fx_template'), tr('Du modèle'), cur == null, () => pick(null)),
+        for (final e in kMontageFxLabels.entries) chip(ValueKey('fx_${e.key.name}'), e.value, cur == e.key, () => pick(e.key)),
+      ]),
     ]);
   }
 

@@ -95,7 +95,7 @@ class MontageCanvas extends StatelessWidget {
                   _rb(keys?.underlay, _underlay(cq)),
                 ]),
               ),
-              _rb(keys?.fx, s.fxActive ? CustomPaint(painter: MontageFxPainter(tp.fx, anim: animation, fixedT: t), size: Size.infinite) : const SizedBox.expand()),
+              _rb(keys?.fx, s.fxActive ? CustomPaint(painter: MontageFxPainter(s.fx, anim: animation, fixedT: t), size: Size.infinite) : const SizedBox.expand()),
               // Médias épinglés : un aperçu seulement dans l'éditeur (jamais dans le fichier final : le serveur pose les vrais médias). Ils sont SOUS le texte, le pseudo et
               // les autocollants, dans le même ordre que le rendu du serveur (base, teintes, effet, épingles, puis texte).
               if (onMove != null && !s.exportCapture && s.pins.isNotEmpty) _pinsLayer(cq),
@@ -145,10 +145,11 @@ class MontageCanvas extends StatelessWidget {
           ),
         ),
       // Look de couleur : une teinte douce par-dessus, comprise dans les calques exportés (même rendu à l'écran et dans la vidéo)
-      if (s.look?.tint != null)
-        DecoratedBox(
-          decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: s.look!.tint!)),
-        ),
+      for (final l in s.looks)
+        if (l.tint != null)
+          DecoratedBox(
+            decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: l.tint!)),
+          ),
     ]);
   }
 

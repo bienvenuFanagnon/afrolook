@@ -11,6 +11,33 @@ import 'montage_music.dart';
 import 'montage_pin.dart';
 import 'montage_stickers.dart';
 
+/// Noms des effets animés proposés à la personne (sans modèle).
+const Map<MontageFx, String> kMontageFxLabels = {
+  MontageFx.money: '💸 Billets',
+  MontageFx.hearts: '❤️ Cœurs',
+  MontageFx.coins: '🪙 Pièces',
+  MontageFx.rain: '🌧️ Pluie',
+  MontageFx.storm: '⛈️ Orage',
+  MontageFx.cloud: '☁️ Nuages',
+  MontageFx.sparkle: '✨ Étincelles',
+  MontageFx.fire: '🔥 Feu',
+  MontageFx.rays: '🌟 Rayons',
+  MontageFx.speed: '💨 Vitesse',
+  MontageFx.bokeh: '🔆 Lumières',
+  MontageFx.zzz: '😴 Zzz',
+  MontageFx.leaves: '🍃 Feuilles',
+  MontageFx.crown: '👑 Couronnes',
+  MontageFx.waves: '🌊 Vagues',
+  MontageFx.disco: '🪩 Disco',
+  MontageFx.sunset: '🌅 Coucher de soleil',
+  MontageFx.fireworks: '🎆 Feux d\'artifice',
+  MontageFx.moon: '🌙 Lune',
+  MontageFx.snow: '❄️ Neige',
+  MontageFx.confetti: '🎉 Confettis',
+  MontageFx.ring: '💍 Alliances',
+  MontageFx.baby: '👶 Bébé',
+};
+
 /// Tout ce que la personne a choisi ou modifié sur un template. Ce qui reste à null garde le contenu pré-rempli.
 class MontageState {
   MontageState(this.template)
@@ -138,11 +165,40 @@ class MontageState {
   int freeBgColor = 2;
   int freeFrame = 0;
 
-  /// Look de couleur choisi (null = l'ambiance propre au modèle).
-  MontageLook? look;
+  /// Looks de couleur choisis, CUMULABLES (3 au plus) ; vide = l'ambiance propre au modèle. Saturations multipliées, luminosités additionnées (calcul exact : la matrice
+  /// de saturation garde le gris), teintes superposées dans l'ordre. Le serveur applique la MÊME matrice que l'aperçu du téléphone.
+  final List<MontageLook> looks = [];
 
-  double get saturation => look?.saturation ?? template.saturation;
-  double get brightness => look?.brightness ?? template.brightness;
+  /// Nombre de looks cumulables au plus.
+  static const int maxLooks = 3;
+
+  /// Le dernier look choisi (null = aucun) ; l'affecter remplace tous les looks par celui-là (ou les vide avec null).
+  MontageLook? get look => looks.isEmpty ? null : looks.last;
+  set look(MontageLook? l) {
+    looks.clear();
+    if (l != null) looks.add(l);
+  }
+
+  /// Ajoute le look s'il n'y est pas, le retire sinon. Renvoie false si la limite est atteinte (rien n'est changé).
+  bool toggleLook(MontageLook l) {
+    final i = looks.indexWhere((e) => e.id == l.id);
+    if (i >= 0) {
+      looks.removeAt(i);
+      return true;
+    }
+    if (looks.length >= maxLooks) return false;
+    looks.add(l);
+    return true;
+  }
+
+  double get saturation => looks.isEmpty ? template.saturation : looks.fold<double>(1, (a, l) => a * l.saturation);
+  double get brightness => looks.isEmpty ? template.brightness : looks.fold<double>(0, (a, l) => a + l.brightness);
+
+  /// Effet animé choisi par la personne : null = celui du modèle, [MontageFx.none] = aucun. Utilisable SANS modèle (montage « sans habillage »).
+  MontageFx? fxChoice;
+
+  /// L'effet animé en vigueur : le choix de la personne, sinon celui du modèle.
+  MontageFx get fx => fxChoice ?? template.fx;
 
   /// Musique (null = sans musique). Avec une musique, le montage est toujours une vidéo.
   MontageMusic? music;
@@ -174,7 +230,7 @@ class MontageState {
   bool shows(MontageLayer l) => !hidden.contains(l);
 
   bool get hasVideo => useVideo;
-  bool get fxActive => template.fx != MontageFx.none && shows(MontageLayer.fx);
+  bool get fxActive => fxChoice != null ? fxChoice != MontageFx.none : (template.fx != MontageFx.none && shows(MontageLayer.fx));
 
   /// Le résultat sera une vidéo (vidéo de base, ou effet animé gardé) ; sinon une image fixe.
   bool get exportsVideo => hasVideo || (animated && fxActive) || music != null;
