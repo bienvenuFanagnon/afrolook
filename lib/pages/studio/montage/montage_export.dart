@@ -316,7 +316,7 @@ class MontageExport {
       'keep_audio': s.keepVideoAudio,
       if (s.keepVideoAudio) 'video_volume': s.videoVolume,
       if (s.keepVideoAudio && s.duckMusic) 'duck': true,
-      if (!isVideo && m != null) 'seconds': s.musicSeconds.clamp(5, maxSeconds),
+      if (!isVideo && m != null) 'seconds': s.musicSeconds.clamp(3, maxSeconds),
     }, idempotencyKey: 'montage:$jobId:${const Uuid().v4().substring(0, 8)}', longJob: true);   // une clé par essai : un échec n'est jamais rejoué à la place d'un nouvel essai
     final first = WalletApi.map(res);
     // ancien serveur : la vidéo est déjà prête dans la réponse ; sinon on attend la fin du montage en demandant l'avancement toutes les 2 secondes

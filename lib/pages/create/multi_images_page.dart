@@ -16,6 +16,7 @@ import '../../services/api/wallet_api.dart';
 import '../../services/authentic_video_check.dart';
 import '../../services/collage_layouts.dart';
 import '../../services/image_framing.dart';
+import '../../services/slideshow_plan.dart';
 import '../../services/post_source_link.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/api_error_dialogs.dart';
@@ -51,7 +52,9 @@ class _MultiImagesPageState extends State<MultiImagesPage> {
   _Mode _mode = _Mode.carousel;
   String? _layout;
   double _gap = 0;
-  double _seconds = 3;
+  int _total = 15;   // durée TOTALE voulue (7, 15, 30 ou 60 s) : répartie à parts égales entre les images
+  bool _manual = false;   // vrai : une durée par image, réglée à la main
+  final Map<String, double> _durOf = {};   // durée de chaque image en réglage manuel (par fichier)
   String _transition = 'fade';
   String _format = 'story';
   bool _busy = false;
@@ -75,6 +78,34 @@ class _MultiImagesPageState extends State<MultiImagesPage> {
   }
 
   ImageFraming _framingOf(String p) => _framing[p] ?? const ImageFraming();
+
+  /// Durée de chaque image du diaporama : à parts égales selon la durée totale, ou celles réglées à la main.
+  List<double> get _durations => _manual
+      ? [for (final p in _paths) _durOf[p] ?? SlideshowPlan.even(_paths.length, _total.toDouble(), _transition).first]
+      : SlideshowPlan.even(_paths.length, _total.toDouble(), _transition);
+
+  double get _slideTotal => SlideshowPlan.total(_durations, _transition);
+
+  /// Texte toujours visible sous la durée : « 5 images · 3,4 s chacune · total 15 s ».
+  String _summary() {
+    final d = _durations;
+    final n = d.length;
+    final total = SlideshowPlan.fmt(_slideTotal);
+    final lo = d.reduce((a, b) => a < b ? a : b);
+    final hi = d.reduce((a, b) => a > b ? a : b);
+    if (!_manual || (hi - lo).abs() < 0.05) return context.tr('{n} images · {s} s chacune · total {t} s', {'n': n, 's': SlideshowPlan.fmt(lo), 't': total});
+    return context.tr('{n} images · de {a} à {b} s · total {t} s', {'n': n, 'a': SlideshowPlan.fmt(lo), 'b': SlideshowPlan.fmt(hi), 't': total});
+  }
+
+  /// Message si la durée ne convient pas (image trop courte, film trop long), null sinon.
+  String? _durationProblem() {
+    final p = SlideshowPlan.problem(_durations, _transition);
+    if (p == 'short') {
+      return context.tr('{n} images en {t} s, c\'est moins de 1 seconde par image. Choisis au moins {m} s.', {'n': _paths.length, 't': SlideshowPlan.fmt(_slideTotal), 'm': SlideshowPlan.fmt(SlideshowPlan.minTotal(_paths.length, _transition).ceilToDouble())});
+    }
+    if (p == 'long') return context.tr('La vidéo ne peut pas dépasser {m} secondes (elle en ferait {t}).', {'m': SlideshowPlan.maxTotal.round(), 't': SlideshowPlan.fmt(_slideTotal)});
+    return null;
+  }
 
   /// Rapport largeur / hauteur du cadre de l'image n° [i] dans le mode choisi : sa case (collage), l'écran de la vidéo (diaporama) ou son propre format (carrousel).
   double _frameAspectFor(int i) {
@@ -177,6 +208,11 @@ class _MultiImagesPageState extends State<MultiImagesPage> {
           final r = await openCreateForm(context, studio: StudioResult(type: StudioContentType.image, mediaFile: file), canal: widget.canal, defiPostId: widget.defiPostId, source: PostSourceLink.edited);
           _finish(r);
         case _Mode.slideshow:
+          final problem = _durationProblem();
+          if (problem != null) {
+            _say(problem);
+            return;
+          }
           final video = await _renderSlideshow();
           if (video == null || !mounted) return;
           // la vidéo s'ouvre dans l'éditeur habituel : musique, texte, effets, puis publication
@@ -211,7 +247,7 @@ class _MultiImagesPageState extends State<MultiImagesPage> {
       ids.add(await ArgentUpload.bytes(bytes, contentType: ArgentUpload.sniffImageType(bytes, path: f.path)));   // type réel du contenu, pas celui de l'extension
     }
     _setBusy(context.tr('Montage du diaporama…'));
-    final res = await ApiGateway.instance.client.post('/studio/slideshow', body: {'uploads': ids, 'seconds': _seconds, 'transition': _transition, 'format': _format}, idempotencyKey: 'slideshow:${const Uuid().v4()}', longJob: true);
+    final res = await ApiGateway.instance.client.post('/studio/slideshow', body: {'uploads': ids, if (_manual) 'durations': _durations else 'total_seconds': _total, 'max_seconds': SlideshowPlan.maxTotal, 'transition': _transition, 'format': _format}, idempotencyKey: 'slideshow:${const Uuid().v4()}', longJob: true);
     final url = '${WalletApi.map(res)['url']}';
     _setBusy(context.tr('Téléchargement…'));
     final r = await http.get(Uri.parse(url));
@@ -478,10 +514,36 @@ class _MultiImagesPageState extends State<MultiImagesPage> {
         ]);
       case _Mode.slideshow:
         return Column(mainAxisSize: MainAxisSize.min, children: [
-          Row(children: [
-            Text('${context.tr('Durée par image')} : ${_seconds.toStringAsFixed(0)} s', style: white),
-            Expanded(child: Slider(key: const ValueKey('slide_seconds'), value: _seconds, min: 2, max: 5, divisions: 3, onChanged: (v) => setState(() => _seconds = v))),
+          Wrap(spacing: 8, runSpacing: 2, crossAxisAlignment: WrapCrossAlignment.center, children: [
+            Text(context.tr('Durée totale'), style: white),
+            for (final t in SlideshowPlan.totals)
+              ChoiceChip(key: ValueKey('total_$t'), label: Text('$t s'), selected: !_manual && _total == t, onSelected: (_) => setState(() {
+                _total = t;
+                _manual = false;
+              })),
           ]),
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(_summary(), key: const ValueKey('slide_summary'), style: TextStyle(color: _durationProblem() == null ? const Color(0xFF2ECC71) : const Color(0xFFFF6B6B), fontWeight: FontWeight.w800, fontSize: 13)),
+          ),
+          if (_durationProblem() != null) Padding(padding: const EdgeInsets.only(top: 2), child: Text(_durationProblem()!, key: const ValueKey('slide_problem'), style: const TextStyle(color: Color(0xFFFF6B6B), fontSize: 12.5))),
+          Row(children: [
+            Expanded(child: Text(context.tr('Régler image par image'), style: white)),
+            Switch(key: const ValueKey('slide_manual'), value: _manual, onChanged: (v) => setState(() {
+              if (v) {
+                final d = SlideshowPlan.even(_paths.length, _total.toDouble(), _transition).first;
+                for (final p in _paths) {
+                  _durOf.putIfAbsent(p, () => d.clamp(SlideshowPlan.minImage, SlideshowPlan.maxImage).toDouble());
+                }
+              }
+              _manual = v;
+            })),
+          ]),
+          if (_manual)
+            Row(children: [
+              Text('${context.tr('Image')} ${_sel + 1} : ${SlideshowPlan.fmt(_durOf[_paths[_sel]] ?? 3)} s', style: white),
+              Expanded(child: Slider(key: const ValueKey('slide_dur'), value: (_durOf[_paths[_sel]] ?? 3).clamp(SlideshowPlan.minImage, SlideshowPlan.maxImage).toDouble(), min: SlideshowPlan.minImage, max: SlideshowPlan.maxImage, divisions: 18, onChanged: (v) => setState(() => _durOf[_paths[_sel]] = v))),
+            ]),
           Wrap(spacing: 8, runSpacing: 2, children: [
             for (final e in [('fade', 'Fondu'), ('slide', 'Glissé'), ('zoom', 'Zoom'), ('none', 'Coupe')])
               ChoiceChip(key: ValueKey('trans_${e.$1}'), label: Text(context.tr(e.$2)), selected: _transition == e.$1, onSelected: (_) => setState(() => _transition = e.$1)),

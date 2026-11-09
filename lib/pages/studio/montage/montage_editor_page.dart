@@ -1022,7 +1022,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
   Widget _musicSection() {
     final m = s.music;
     final maxSec = widget.forChronique ? 30 : 60;
-    final durs = [10, 15, 30].where((d) => d <= maxSec).toList();
+    final durs = [7, 15, 30, 60].where((d) => d <= maxSec).toList();   // 7, 15, 30 ou 60 s (30 au plus pour une chronique)
     final dur = _musicDurationMs;
     final clip = (s.useVideo ? maxSec : s.musicSeconds) * 1000;
     final slideMax = m != null && dur != null && dur > clip + 1000 ? dur - clip : 0;

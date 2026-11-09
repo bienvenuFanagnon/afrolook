@@ -68,7 +68,7 @@ void main() {
     expect(find.byType(CollagePreview), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('mode_slideshow')));
     await tester.pump();
-    for (final k in ['slide_seconds', 'trans_fade', 'trans_slide', 'trans_zoom', 'trans_none', 'fmt_story', 'fmt_post', 'fmt_landscape']) {
+    for (final k in ['total_7', 'total_15', 'total_30', 'total_60', 'slide_summary', 'slide_manual', 'trans_fade', 'trans_slide', 'trans_zoom', 'trans_none', 'fmt_story', 'fmt_post', 'fmt_landscape']) {
       expect(find.byKey(ValueKey(k), skipOffstage: false), findsOneWidget, reason: k);
     }
     expect(find.byType(CollagePreview), findsNothing);
