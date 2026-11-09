@@ -184,12 +184,13 @@ class MontageExport {
     void Function(String jobId)? onJob,
     String? jobId0,
     String? outroLabel,
+    bool preview = false,   // « Voir le rendu exact » : même montage en 360 p, 6 s au plus, sans fin animée ni paiement de son, jamais publié
   }) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) throw StateError('Connecte-toi pour créer une vidéo.');
     // même identifiant de montage à chaque nouvel essai : un son déjà payé pour ce montage n'est jamais débité une deuxième fois
-    final jobId = jobId0 ?? const Uuid().v4().replaceAll('-', '').substring(0, 20);
-    onJob?.call(jobId);
+    final jobId = (preview ? null : jobId0) ?? const Uuid().v4().replaceAll('-', '').substring(0, 20);
+    if (!preview) onJob?.call(jobId);
     final uploads = <String, Future<String>>{};
     void up(String name, Uint8List bytes, String type) => uploads[name] = ArgentUpload.bytes(bytes, contentType: type);
 
@@ -263,7 +264,8 @@ class MontageExport {
 
     // Son d'un artiste : payé (ou tracé s'il est gratuit) par l'API avant le montage, avec l'identifiant du montage
     var paid = 0;
-    final m = s.music;
+    // aperçu : le son d'un artiste (payant ou tracé) n'est pas joué, rien n'est débité ni compté ; les pistes gratuites sont bien dans l'aperçu
+    final m = (preview && (s.music?.isArtist ?? false)) ? null : s.music;
     if (m != null && m.isArtist) {
       if (m.paid && m.useCoins > 0) {
         // un son déjà acheté (ou déjà réglé) ne se paie pas une deuxième fois : le serveur le trace sans débit ; sinon (402) on le paie maintenant
@@ -298,7 +300,8 @@ class MontageExport {
       'saturation': s.saturation,
       'brightness': s.brightness,
       'has_under': isVideo,
-      if (isVideo) 'outro': s.outro,
+      if (isVideo && !preview) 'outro': s.outro,
+      if (preview) 'preview': true,
       if (timedMeta.isNotEmpty) 'timed': timedMeta,
       if (isVideo && s.pins.isNotEmpty) 'pins': [
         for (var i = 0; i < s.pins.take(kMaxPins).length; i++)

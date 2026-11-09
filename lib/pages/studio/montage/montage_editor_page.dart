@@ -558,6 +558,66 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     return ok == true;
   }
 
+  /// « Voir le rendu exact » : le serveur fabrique le même montage en basse définition (360 p, 6 s au plus), sans fin animée, sans payer ni compter le son d'un artiste.
+  Future<void> _previewExact() async {
+    if (_busy || !s.exportsVideo) return;
+    if (s.pins.isNotEmpty && !s.hasVideo) {
+      _say(tr('Une 2e vidéo ou image demande une vidéo de base : filme-toi ou retire-la.'));
+      return;
+    }
+    await MontageMusicPlayer.stop();
+    setState(() {
+      _busy = true;
+      _musicPlaying = false;
+    });
+    final step = ValueNotifier<String>(tr('Préparation…'));
+    var dialogOpen = true;
+    void closeDialog() {
+      if (dialogOpen && mounted) {
+        dialogOpen = false;
+        Navigator.of(context, rootNavigator: true).pop();
+      }
+    }
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => PopScope(canPop: false, child: Dialog.fullscreen(child: PrepareScreen(step: step, video: true))),
+    );
+    File? made;
+    try {
+      made = await MontageExport.video(
+        keys: _keys,
+        s: s,
+        videoPath: s.videoPath,
+        videoAsset: s.videoPath == null ? kMontageSampleVideo : null,
+        setT: _setT,
+        onStep: (v) => step.value = v,
+        maxSeconds: widget.forChronique ? 30 : 60,
+        preview: true,
+      );
+    } catch (e) {
+      closeDialog();
+      if (mounted) {
+        final busy = e is ApiException && (e.code == 'render_busy' || e.code == 'montage_busy');
+        _say(busy ? tr("Le serveur prépare d'autres vidéos en ce moment : réessaie dans un instant.") : tr("L'aperçu exact n'a pas pu être fabriqué. Tu peux quand même terminer ton montage."));
+      }
+    } finally {
+      step.dispose();
+      closeDialog();
+      if (mounted) {
+        setState(() {
+          s.exportCapture = false;
+          _busy = false;
+          _frozenT = null;
+        });
+      }
+    }
+    if (made != null && mounted) {
+      await Navigator.of(context).push<bool>(MaterialPageRoute(fullscreenDialog: true, builder: (_) => MontagePreviewPage(file: made!, video: true, exact: true)));
+    }
+  }
+
   Future<void> _publish() async {
     if (_busy) return;
     // garde-fou : une 2e vidéo ou image sans vidéo de base ne serait pas montée (le résultat serait une image) ; on ne laisse jamais partir ce montage à moitié
@@ -740,6 +800,13 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
         elevation: 0,
         title: Text(tp.name, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
         actions: [
+          if (s.exportsVideo)
+            IconButton(
+              key: const ValueKey('preview_exact'),
+              tooltip: tr('Voir le rendu exact'),
+              onPressed: _busy ? null : _previewExact,
+              icon: const Icon(Icons.slow_motion_video_rounded),
+            ),
           Padding(
             padding: const EdgeInsets.only(right: 10),
             child: FilledButton(
