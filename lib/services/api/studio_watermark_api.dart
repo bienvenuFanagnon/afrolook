@@ -63,9 +63,9 @@ class StudioWatermarkApi {
     }
     // widgets animés : une bande par widget (le dessin change à chaque téléchargement : jamais de copie gardée)
     final animatedBody = <Map<String, Object?>>[];
-    for (final s in animated.take(3)) {
+    for (final s in animated.take(9)) {
       final id = await ArgentUpload.bytes(s.png, contentType: 'image/png');
-      animatedBody.add({'upload_id': id, 'frames': s.frames, 'x': s.x, 'y': s.y, 'w': s.width});
+      animatedBody.add({'upload_id': id, 'frames': s.frames, 'x': s.x, 'y': s.y, 'w': s.width, if (s.from > 0) 'from': s.from, if (!s.hold) 'hold': false});
     }
     final body = <String, Object?>{
       'wm_upload_id': ids['pill'],

@@ -32,9 +32,15 @@ class WidgetLayer {
 /// Un widget ANIMÉ (compte à rebours) dessiné image par image, une par seconde, et empilé dans UN SEUL PNG : le serveur pose la bonne image seconde après seconde dans la vidéo
 /// téléchargée, pour qu'on y voie exactement ce que voient les gens dans l'application.
 class StripLayer {
-  const StripLayer({required this.png, required this.frames, required this.x, required this.y, required this.width});
+  const StripLayer({required this.png, required this.frames, required this.x, required this.y, required this.width, this.from = 0, this.hold = true});
   final Uint8List png;
   final int frames;
+
+  /// Seconde de la vidéo où cette tranche commence (0 = le début) : un compte à rebours long est découpé en tranches de 60 s.
+  final int from;
+
+  /// Vrai : la dernière image reste affichée jusqu'à la fin de la vidéo (dernière tranche) ; faux : la tranche s'arrête après ses images et la suivante prend le relais.
+  final bool hold;
   final double x;
   final double y;
   final double width;
@@ -128,7 +134,7 @@ class WidgetRaster {
 
   /// Dessine [w] (compte à rebours) pour [frames] secondes consécutives à partir de [start] et empile les images dans un seul PNG. Toutes les images ont la même taille (celle de la
   /// première, la plus large) : le compte à rebours ne saute pas d'un chiffre à l'autre. Null si impossible : le téléchargement continue avec le widget figé.
-  static Future<StripLayer?> renderStrip(BuildContext context, PostWidget w, {required int frames, required DateTime start, double pixelRatio = 2}) async {
+  static Future<StripLayer?> renderStrip(BuildContext context, PostWidget w, {required int frames, required DateTime start, double pixelRatio = 2, int from = 0, bool hold = true}) async {
     final n = frames.clamp(2, 121);
     final first = await render(context, w, pixelRatio: pixelRatio, clock: start);
     if (first == null || first.logicalWidth <= 0) return null;
@@ -156,7 +162,7 @@ class WidgetRaster {
       final data = await out.toByteData(format: ui.ImageByteFormat.png);
       out.dispose();
       if (data == null) return null;
-      return StripLayer(png: data.buffer.asUint8List(), frames: n, x: first.x, y: first.y, width: first.width);
+      return StripLayer(png: data.buffer.asUint8List(), frames: n, x: first.x, y: first.y, width: first.width, from: from, hold: hold);
     } catch (_) {
       return null;
     } finally {

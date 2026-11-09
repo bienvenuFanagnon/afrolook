@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:afrotok/pages/studio/montage/collage_template.dart';
 import 'package:afrotok/pages/studio/montage/montage_catalog.dart';
+import 'package:afrotok/pages/studio/montage/montage_state.dart' show montageLayoutFracs;
 import 'package:afrotok/services/collage_layouts.dart';
 import 'package:afrotok/pages/studio/montage/story_render.dart';
 import 'package:afrotok/pages/studio/montage/story_script.dart';
@@ -92,6 +93,17 @@ void main() {
       expect(b, isNot(equals(a)));
       final broken = await CollageTemplateRender.png([photo, Uint8List(0)], s, width: 400);
       expect((await decodeImageFromList(broken)).height, 500);
+    });
+  });
+
+  test("les modèles duo (2 vidéos) existent au catalogue avec une disposition connue du Studio et se montrent avec l'icône vidéo", () {
+    expect(kDuoLayouts, isNotEmpty);
+    kDuoLayouts.forEach((id, layout) {
+      final t = kMontageTemplates.firstWhere((x) => x.id == id);
+      expect(t.duoLayout, layout);
+      expect(t.showsVideo, isTrue);
+      expect(t.canUseVideo, isTrue, reason: "$id : une vidéo doit pouvoir être choisie");
+      expect(montageLayoutFracs(layout, false, 9 / 16), isNotNull, reason: "$id : disposition $layout inconnue");
     });
   });
 }

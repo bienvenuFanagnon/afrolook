@@ -157,10 +157,13 @@ class MontageTemplate {
       );
 
   /// Le modèle se fait en vidéo (vidéo d'exemple, ou filtres de visage filmés à la caméra) : son aperçu, une image de l'application, porte l'icône vidéo.
-  bool get showsVideo => sampleIsVideo || face != null || isStory;
+  bool get showsVideo => sampleIsVideo || face != null || isStory || duoLayout != null;
 
   /// Modèle « histoire » : une vidéo qui défile toute seule, scène après scène (voir `story_script.dart`).
   bool get isStory => kStoryTemplateIds.contains(id);
+
+  /// Modèle « duo » : DEUX vidéos (ou une vidéo et une image) l'une sur l'autre ou côte à côte ; null = pas un duo. La personne choisit sa vidéo, puis la 2e, dans l'éditeur.
+  String? get duoLayout => kDuoLayouts[id];
 
   /// Modèle « collage » : 2 à 5 photos dans une mise en page, avec étiquettes et titre (voir `collage_template.dart`).
   bool get isCollage => kCollageTemplateIds.contains(id);
@@ -168,7 +171,7 @@ class MontageTemplate {
   bool get usesPrenom => texts.any((t) => t.contains('{prenom}'));
 
   /// Musique gratuite proposée d'office (modifiable ou retirable dans l'éditeur).
-  String? get music => musicOverridden ? musicId : kTemplateMusic[id];
+  String? get music => musicOverridden ? musicId : (kTemplateMusicLibre[id] ?? kTemplateMusic[id]);
 
   /// Chiffres d'exemple affichés tant que la personne n'a pas écrit les siens (j'aime, commentaires).
   (int, int) get sampleStats {
@@ -192,6 +195,9 @@ const kMontageSampleVideo = 'assets/videos/intro_video.mp4';
 
 Color _a(int r, int g, int b, double o) => Color.fromRGBO(r, g, b, o);
 /// « L'année qui arrive » : à partir de septembre c'est l'année suivante (fin d'année : « Bonne année 2027 » dès l'automne 2026) ; de janvier à août, c'est l'année en cours (le 2 janvier 2027, « Bonne année 2027 », pas 2028).
+/// Modèles « duo » du catalogue : identifiant -> disposition des deux vidéos (`tb` = haut / bas, `sbs` = côte à côte).
+const Map<String, String> kDuoLayouts = {'duo_reaction': 'tb', 'duo_cote': 'sbs', 'duo_avant_apres_video': 'sbs'};
+
 final int _nextYear = DateTime.now().month >= 9 ? DateTime.now().year + 1 : DateTime.now().year;
 /// L'année qui finit : à partir de septembre, l'année en cours ; de janvier à août, l'année qui vient de finir (« Merci 2026 » reste vrai en janvier 2027).
 final int _endingYear = _nextYear - 1;
@@ -577,6 +583,18 @@ final List<MontageTemplate> kMontageTemplates = [
       accent: const Color(0xFFD400), chip: '✅ 3 objectifs', sound: 'Motivation',
       texts: ['$_nextYear : plus de sport, plus de sourire, moins de stress 💪', 'Mes 3 objectifs pour $_nextYear : 1) … 2) … 3) …'],
       presetWidgets: () => [PostWidget(kind: WidgetKind.countdown, config: {'title': '{N} dans', 'at': _newYearEve()}, x: .5, y: 0.26)]),
+  MontageTemplate(id: 'duo_reaction', cat: MontageCat.vie, name: 'Duo réaction', sample: _p4,
+      tint: [_a(0, 0, 0, 0.05), _a(0, 0, 0, 0.55)], fx: MontageFx.none, kick: 'Réaction', title: 'Ma réaction', font: MontageFont.anton,
+      accent: const Color(0xFFD400), chip: '🎬 2 vidéos', sound: 'Chill',
+      texts: ['Ma tête quand j’ai vu ça 😂', 'La vidéo en haut, ma réaction en bas']),
+  MontageTemplate(id: 'duo_cote', cat: MontageCat.vie, name: 'Côte à côte', sample: _p6,
+      tint: [_a(0, 0, 0, 0.05), _a(0, 0, 0, 0.55)], fx: MontageFx.none, kick: 'Duo', title: 'Deux vidéos, un seul écran', font: MontageFont.anton,
+      accent: const Color(0xFFD400), chip: '🎞️ 2 vidéos', sound: 'Chill',
+      texts: ['Toi et moi, chacun dans son coin, ensemble 💞']),
+  MontageTemplate(id: 'duo_avant_apres_video', cat: MontageCat.vie, name: 'Avant / Après en vidéo', sample: _p2,
+      tint: [_a(0, 0, 0, 0.05), _a(0, 0, 0, 0.55)], fx: MontageFx.none, kick: 'Transformation', title: 'Avant / Après', font: MontageFont.anton,
+      accent: const Color(0xFFD400), chip: '🔄 2 vidéos', sound: 'Chill',
+      texts: ['Avant à gauche, après à droite : regarde la différence 💪']),
   MontageTemplate(id: 'multi_avant_apres', cat: MontageCat.vie, name: 'Avant / Après', sample: _p2,
       tint: [_a(0, 0, 0, 0.05), _a(0, 0, 0, 0.6)], fx: MontageFx.none, kick: 'Transformation', title: 'Ma transformation', font: MontageFont.bold,
       accent: const Color(0xFFD400), chip: '🔄 2 photos', sound: 'Chill',
@@ -927,6 +945,32 @@ final List<MontageTemplate> kMontageTemplates = [
       accent: const Color(0xFFD400), chip: '🤳 Je n’en ai qu’un', sound: 'Amapiano',
       texts: ['Mon meilleur profil ? Celui que je n’ai pas montré 🤳', 'Trente photos, une seule présentable.']),
 ];
+
+/// Musiques libres de droits (Kevin MacLeod, CC BY 4.0) proposées d'office à la place des pistes d'Afrolook pour les modèles qu'elles illustrent mieux : courage, amour, tristesse, fêtes,
+/// fin d'année, humour… (id de [kStudioTracks]). Un modèle absent d'ici garde la piste de [kTemplateMusic].
+const Map<String, String> kTemplateMusicLibre = {
+  // fêtes
+  'nouvelan': 'celebration', 'noel': 'we_wish_you_a_merry_christmas', 'valentin': 'what_is_love', 'fe_halloween': 'danse_macabre', 'fe_sylvestre': 'beachfront_celebration',
+  'ramadan': 'desert_city', 'tabaski': 'tabuk', 'anniv': 'disco_con_tutti', 'anniv_minuteur': 'celebration', 'meres': 'reawakening',
+  'ev_soiree': 'disco_con_tutti', 'ev_inaug': 'heroic_age', 'ev_bapteme': 'amazing_grace_2011', 'ev_famille': 'fireflies_and_stardust',
+  // fin d'année
+  'fa_film': 'long_road_ahead', 'fa_triomphe': 'despair_and_triumph', 'fa_merci': 'reawakening', 'fa_page': 'danse_morialta', 'fa_change': 'frost_waltz_alternate',
+  'fa_bilan': 'immersed', 'fa_lecons': 'aretes', 'fa_resolutions': 'motivator',
+  // vie, duos et collages
+  'duo_reaction': 'monkeys_spinning_monkeys', 'duo_cote': 'mischief_maker', 'duo_avant_apres_video': 'motivator', 'multi_avant_apres': 'motivator', 'multi_duo': 'what_is_love',
+  'multi_cinq_moments': 'eternal_hope', 'multi_quatre_saisons': 'morning', 'vie_chemin': 'long_road_ahead', 'vie_hommage': 'lost_time', 'vie_mariage': 'canon_in_d_for_two_harps',
+  'vie_bebe': 'dreamer', 'vie_famille': 'fireflies_and_stardust', 'vie_combat': 'undaunted', 'vie_reussite': 'heroic_age', 'vie_devenu': 'our_story_begins',
+  'vie_objectifs': 'motivator', 'vie_reinvente': 'eternal_hope', 'vie_retrouv': 'reawakening',
+  // ambiances
+  'amb_noir': 'colorless_aura', 'amb_solitude': 'heavy_heart', 'amb_pluie': 'shores_of_avalon', 'amb_faux': 'man_down', 'amb_dur': 'dark_fog', 'amb_lumiere': 'eternal_hope',
+  'amb_nuit': 'late_night_radio', 'amb_paix': 'airship_serenity', 'amb_courage': 'undaunted', 'amb_renaissance': 'morning', 'amb_ambition': 'heroic_age',
+  // situations, émotions, pensées, week-end
+  'separation': 'heavy_heart', 'trahi': 'lost_time', 'fiance': 'canon_in_d_for_two_harps', 'amour': 'what_is_love', 'triste': 'heavy_heart', 'nostalgie': 'danse_morialta', 'pardon': 'aretes',
+  'pen_silence': 'immersed', 'pen_sagesse': 'aretes', 'pen_nuit': 'late_night_radio', 'we_dimanche': 'jazz_brunch', 'we_vendredi': 'disco_con_tutti', 'we_samedi': 'allada',
+  // drôles
+  'dr_realite': 'monkeys_spinning_monkeys', 'dr_salaire': 'darxieland', 'dr_note': 'happy_happy_game_show', 'dr_pov': 'mystery_bazaar', 'dr_maman': 'mischief_maker',
+  'dr_wifi': 'sergios_magic_dustbin', 'dr_ne_ris_pas': 'the_entertainer', 'dr_regime': 'mischief_maker',
+};
 
 /// Musique gratuite proposée par défaut pour chaque template (id de [kStudioTracks]).
 const Map<String, String> kTemplateMusic = {

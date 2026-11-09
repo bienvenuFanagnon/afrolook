@@ -21,20 +21,14 @@ import '../../../utils/media_cdn.dart';
 import '../artist_sound_common.dart';
 import '../sound_countries.dart';
 import '../studio_theme.dart';
+import 'studio_track.dart';
+export 'studio_track.dart';
 
 AppColors get _c => studioColors;
 
-class StudioTrack {
-  const StudioTrack(this.id, this.title, this.emoji, this.mood, this.durationMs);
-  final String id;
-  final String title;
-  final String emoji;
-  final String mood;
-  final int durationMs;
-}
 
 /// Pistes gratuites (durées réelles des fichiers envoyés dans Storage).
-const kStudioTracks = <StudioTrack>[
+final List<StudioTrack> kStudioTracks = <StudioTrack>[
   StudioTrack('love_afro', 'Love afro', '💕', 'Amour', 31304),
   StudioTrack('piano_triste', 'Piano triste', '🌧️', 'Triste', 28235),
   StudioTrack('afrobeat', 'Afrobeat énergique', '🔥', 'Énergie', 26667),
@@ -52,6 +46,7 @@ const kStudioTracks = <StudioTrack>[
   StudioTrack('berceuse', 'Berceuse', '👶', 'Douceur', 30000),
   StudioTrack('oud', 'Oud doux', '🕌', 'Spirituel', 36000),
   StudioTrack('tension', 'Suspense', '😱', 'Tension', 32000),
+  ...kLibreTracks,
 ];
 
 StudioTrack? studioTrack(String? id) {
@@ -67,7 +62,7 @@ class MontageMusic {
       : type = 'free',
         id = t.id,
         title = t.title,
-        subtitle = 'Musique Afrolook · gratuite',
+        subtitle = t.credit == null ? 'Musique Afrolook · gratuite' : 'Musique libre · ${t.credit}',
         url = null,
         artistId = null,
         useCoins = 0,
@@ -271,6 +266,7 @@ class _MusicSheetState extends State<_MusicSheet> {
   String? _playing;
   String? _loading;
   bool _keepAudio = false;
+  String? _group;   // catégorie choisie (null = toutes)
 
   Future<void> _toggle(MontageMusic m) async {
     final key = '${m.type}:${m.id}';
@@ -289,6 +285,54 @@ class _MusicSheetState extends State<_MusicSheet> {
     if (!ok) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Impossible de lire ce son. Vérifie ta connexion.')));
     }
+  }
+
+  /// Catégories des musiques gratuites : un clic ne montre que celle-là (courage, amour, Noël…).
+  Widget _groupChips() {
+    final groups = <String>[...kStudioGroups.where((g) => kStudioTracks.any((t) => t.section == g)), ...{for (final t in kStudioTracks) if (!kStudioGroups.contains(t.section)) t.section}];
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(children: [
+          for (final g in [null, ...groups])
+            Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: ChoiceChip(
+                key: ValueKey('music_group_${g ?? "all"}'),
+                label: Text(g == null ? tr('Toutes') : tr(g)),
+                selected: _group == g,
+                selectedColor: _c.accent,
+                labelStyle: TextStyle(color: _group == g ? Colors.black : _c.textPrimary, fontWeight: FontWeight.w700, fontSize: 12.5),
+                onSelected: (_) => setState(() => _group = g),
+              ),
+            ),
+        ]),
+      ),
+    );
+  }
+
+  /// Crédits exigés par la licence des musiques libres de droits (Creative Commons Attribution 4.0).
+  void _showCredits() {
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: _c.surface,
+      isScrollControlled: true,
+      builder: (ctx) => SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * .7),
+          child: ListView(padding: const EdgeInsets.all(16), children: [
+            Text(tr('Crédits musique'), style: TextStyle(color: _c.textPrimary, fontSize: 17, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 10),
+            Text(kLibreCredit, style: TextStyle(color: _c.textSecondary, height: 1.4)),
+            const SizedBox(height: 10),
+            Text(tr('Titres concernés :'), style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Text([for (final t in kStudioTracks) if (t.libre) t.title].join(' · '), style: TextStyle(color: _c.textSecondary, fontSize: 12.5, height: 1.4)),
+          ]),
+        ),
+      ),
+    );
   }
 
   @override
@@ -335,7 +379,11 @@ class _MusicSheetState extends State<_MusicSheet> {
           Expanded(
             child: TabBarView(children: [
               ListView(controller: ctrl, padding: const EdgeInsets.fromLTRB(12, 8, 12, 24), children: [
-                for (final t in kStudioTracks) _row(MontageMusic.free(t), leading: _emojiBox(t.emoji), trailing: Text(t.mood, style: TextStyle(color: _c.textSecondary, fontSize: 11.5))),
+                _groupChips(),
+                for (final t in kStudioTracks.where((t) => _group == null || t.section == _group))
+                  _row(MontageMusic.free(t), leading: _emojiBox(t.emoji), trailing: Text(t.voice ? '🎤 ${tr(t.section)}' : tr(t.section), style: TextStyle(color: _c.textSecondary, fontSize: 11.5))),
+                if (kStudioTracks.any((t) => t.libre))
+                  Center(child: TextButton(key: const ValueKey('music_credits'), onPressed: _showCredits, child: Text(tr('Crédits musique'), style: TextStyle(color: _c.textSecondary, fontSize: 12.5)))),
               ]),
               _artists(ctrl),
             ]),

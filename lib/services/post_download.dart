@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:video_player/video_player.dart';
 
 import '../ads/admob_service.dart';
 import '../ads/gold_gate.dart';
@@ -121,6 +122,26 @@ class PostDownload {
     if (type == PostDataType.AUDIO.name) return [(url: main, kind: 'audio')];
     if (type == PostDataType.VIDEO.name || main.contains('.mp4') || main.contains('.mov')) return [(url: main, kind: 'video')];
     return const [];
+  }
+
+  /// Un compte à rebours est enregistré seconde par seconde, par tranches de 60 s, sur les 3 premières minutes de la vidéo (au-delà, la dernière image reste).
+  static const int stripChunkSeconds = 60;
+  static const int maxStripSeconds = 180;
+
+  /// Durée (secondes) d'une vidéo en ligne, lue dans ses métadonnées seulement ; 60 si elle ne répond pas dans les 8 secondes (une seule tranche).
+  @visibleForTesting
+  static Future<int> videoSeconds(String url) async {
+    VideoPlayerController? c;
+    try {
+      c = VideoPlayerController.networkUrl(Uri.parse(url));
+      await c.initialize().timeout(const Duration(seconds: 8));
+      final s = c.value.duration.inSeconds;
+      return s < 1 ? stripChunkSeconds : s + 1;
+    } catch (_) {
+      return stripChunkSeconds;
+    } finally {
+      await c?.dispose();
+    }
   }
 
   static bool canDownload(Post p) => mediaOf(p).isNotEmpty && p.isAdvertisement != true;
@@ -275,19 +296,28 @@ class PostDownload {
       }
       return shownWidgets = out;
     }
-    // widgets qui défilent (compte à rebours) : le fichier téléchargé doit montrer ce que voient les gens, seconde après seconde. Une vidéo : une image par seconde sur ses 60 premières
-    // secondes (au-delà, la dernière reste) ; une image : elle devient une vidéo de 10 secondes. Chaque image est dessinée à l'instant exact du téléchargement + son décalage.
+    // widgets qui défilent (compte à rebours) : le fichier téléchargé doit montrer ce que voient les gens, seconde après seconde. Une vidéo : une image par seconde sur ses 180 premières
+    // secondes, par tranches de 60 s (au-delà, la dernière reste) ; une image : elle devient une vidéo de 10 secondes. Chaque image est dessinée à l'instant exact du téléchargement + son décalage.
     final animatedWidgets = [for (final w in post.widgets.take(5)) if (w.kind == WidgetKind.countdown) w];
     final startedAt = DateTime.now();
     const imageVideoSeconds = 10;
-    Future<List<StripLayer>> stripLayers(int frames) async {
+    // Une vidéo plus longue qu'une minute : le compte à rebours est dessiné en tranches de 60 s (la tranche suivante prend le relais), jusqu'à 3 minutes ; au-delà, la dernière image reste.
+    Future<List<StripLayer>> stripLayers(int seconds) async {
       final out = <StripLayer>[];
       if (!context.mounted) return out;
+      final chunks = ((seconds.clamp(1, maxStripSeconds)) / stripChunkSeconds).ceil();
       for (final w in animatedWidgets.take(3)) {
-        try {
-          final s = await WidgetRaster.renderStrip(context, w, frames: frames, start: startedAt);
-          if (s != null) out.add(s);
-        } catch (_) {}   // un widget qui ne se dessine pas ne bloque jamais le téléchargement
+        for (var c = 0; c < chunks; c++) {
+          final left = seconds.clamp(1, maxStripSeconds) - c * stripChunkSeconds;
+          try {
+            final s = await WidgetRaster.renderStrip(context, w,
+                frames: left < stripChunkSeconds ? (left < 2 ? 2 : left) : stripChunkSeconds, start: startedAt.add(Duration(seconds: c * stripChunkSeconds)), from: c * stripChunkSeconds, hold: c == chunks - 1);
+            if (s == null) break;   // une tranche qui ne se dessine pas : on s'arrête là, la précédente reste affichée
+            out.add(s);
+          } catch (_) {
+            break;   // un widget qui ne se dessine pas ne bloque jamais le téléchargement
+          }
+        }
       }
       return out;
     }
@@ -329,7 +359,7 @@ class PostDownload {
                 'land_tag': wide.$2,
               },
               widgets: layersOfWidgets,
-              animated: await stripLayers(imageAsVideo ? imageVideoSeconds : 60),
+              animated: await stripLayers(imageAsVideo ? imageVideoSeconds : (animatedWidgets.isEmpty ? stripChunkSeconds : await videoSeconds(url))),
               asVideo: imageAsVideo,
               videoSeconds: imageVideoSeconds,
               onStep: (st) {

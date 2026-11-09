@@ -140,3 +140,39 @@ Fichier source de chaque morceau : le titre suivi de « .mp3 » sur le site (exe
 | Ether Vox | 03:26 | 60 | Calming, Mystical, Relaxed | Calme, rêverie | Paix intérieure, Pensée de nuit | Voix |
 | Future Cha Cha | 04:38 | 140 | Bouncy, Driving | Fête, danse | Anniversaire, Soirée | Voix |
 | Graveyard Shift | 03:17 | 140 | Dark, Grooving, Humorous | Halloween, humour noir | Halloween | Chœur |
+
+## Musiques DE FÊTES (ajout du 09/11/2026 : Noël, hiver, Aïd, Halloween)
+
+> **Constat honnête :** la première version de la liste ne contenait presque aucune musique de fête (un seul morceau de Noël, « Adeste Fideles Waltz »). Voici 24 morceaux de fête du même catalogue
+> (CC BY 4.0, même crédit). **Nouvel an : le catalogue n'a pas de morceau dédié** ; on réutilise « Celebration », « Beachfront Celebration », « Disco con Tutti », « Winner Winner! » et « Bummin on Tremelo »
+> (l'auteur le décrit comme une soirée de Nouvel An). **Aïd, Tabaski, Ramadan : aucun morceau religieux** ; seulement des ambiances orientales (Desert City, Tabuk), à écouter avec prudence.
+> Pas de Pâques, ni de Fête de la musique, ni de fêtes nationales africaines : à chercher ailleurs (ou à commander).
+
+| Morceau | Durée | BPM | Ambiances (site) | Humeur | Modèles | Fête |
+|---|---|---|---|---|---|---|
+| Silent Night | 02:11 | 72 | Relaxed, Calming | Noël, recueillement (piano) | Noël, Famille réunie | Noël |
+| Jingle Bells (version 1) | 02:22 | 90 | Bouncy, Bright | Noël joyeux (piano, flûte) | Noël, Fête de fin d'année | Noël |
+| Jingle Bells (version 2) | 01:42 | 120 | Bouncy, Bright, Uplifting | Noël très rythmé | Noël, Soirée | Noël |
+| Jingle Bells (Calm) | 02:22 | 54 | Relaxed, Eerie | Noël doux (célesta, violon) | Noël, Notre bébé arrive | Noël |
+| We Wish you a Merry Christmas | 02:18 | 118 | Bright, Uplifting | Joyeux Noël | Noël, Mes vœux | Noël |
+| Deck the Halls A | 04:07 | 69 | Relaxed, Calming | Noël calme (piano) | Noël, Famille réunie | Noël |
+| Deck the Halls B | 04:25 | 180 | Bouncy, Bright, Uplifting | Noël entraînant | Noël, Soirée | Noël |
+| Oh, Christmas Tree | 00:49 | 150 | Bouncy, Bright, Uplifting | Noël jazzy, court | Noël | Noël |
+| Up on a Housetop | 01:08 | 180 | Bouncy, Bright, Uplifting | Noël très joyeux, court | Noël | Noël |
+| Angels We Have Heard on High (version 1) | 04:04 | 94 | Relaxed, Uplifting | Noël lumineux (piano) | Noël, Mes vœux | Noël |
+| Angels We Have Heard on High (version 2) | 02:26 | 70 | Calming, Dark | Noël doux, sombre (cor, cordes) | Noël, Hommage | Noël |
+| It Came Upon a Midnight Clear | 04:26 | 78 | Relaxed, Calming | Noël tendre (piano, violon) | Noël, Mon année : film | Noël |
+| Adeste Fideles (Shorter) | 01:25 | 105 | Relaxed, Calming, Grooving | Boîte à musique, Noël | Noël, Notre bébé arrive | Noël |
+| Christmas Rap | 03:07 | 90 | Bright, Uplifting | Noël joyeux (grelots) | Noël, Soirée | Noël |
+| Nouvelle Noel | 03:11 | 135 | Bright, Bouncy, Relaxed | Noël léger, pop (titre français) | Noël, Fête de fin d'année | Noël |
+| Winter Chimes | 02:38 | 83 | Calming, Bright | Hiver, carillons (piano) | Fin d'année, Mon bilan | Noël et hiver |
+| Winter Reflections | 02:22 | — | Calming, Relaxed | Hiver calme | Mon bilan, Je tourne la page | Noël et hiver |
+| Frost Waltz (Alternate) | 02:16 | 99 | Bouncy, Bright, Mystical | Valse de givre | Nouvel an, Mon année : film | Noël et hiver |
+| Dance of the Sugar Plum Fairy | 02:00 | 53 | Bright, Humorous | Casse-Noisette (Tchaïkovski, domaine public) | Noël, Fête de fin d'année | Noël |
+| The Snow Queen | 03:40 | 96 | Mysterious, Mystical | Conte, mystère | Noël, Mon année : film | Noël et hiver |
+| Desert City | 01:29 | 86 | Grooving, Mysterious, Relaxed | Orient, ambiance calme | Aïd, Tabaski, Ramadan | Fêtes musulmanes |
+| Tabuk | 02:39 | 125 | Calming, Epic, Mysterious | Orient, épique | Aïd, Tabaski, Ramadan | Fêtes musulmanes |
+| Spider Eyes | 03:35 | — | Dark, Eerie, Mysterious, Suspenseful, Unnerving | Frisson, cloches | Halloween | Halloween |
+| Ghost Processional | 01:44 | — | Somber, Unnerving, Eerie, Mystical | Cortège de fantômes | Halloween | Halloween |
+
+Poids estimé : environ 137 Mo (24 fichiers, 62 minutes).

@@ -172,6 +172,17 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
     }
     // « Ma vidéo avec ce son » : on propose tout de suite de choisir la vidéo
     if (tp.id == kPlainTemplateId && widget.presetVideoPath == null && widget.presetPhotoPath == null) WidgetsBinding.instance.addPostFrameCallback((_) => mounted ? _pickMedia() : null);
+    // modèle « duo » : on demande ma vidéo, puis la 2e, et les deux se posent dans la disposition du modèle (haut / bas ou côte à côte)
+    if (tp.duoLayout != null) {
+      _openGroups.add('pin');
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted) return;
+        if (widget.presetVideoPath == null && widget.presetPhotoPath == null) await _pickMedia();
+        if (!mounted) return;
+        await _pickSecond();
+        if (mounted && s.pins.isNotEmpty) setState(() => s.layout = tp.duoLayout);
+      });
+    }
     final pinSrc = widget.presetPin;
     if (pinSrc != null) WidgetsBinding.instance.addPostFrameCallback((_) => mounted ? _addPin(pinSrc) : null);
     final preset = widget.presetMusic;
