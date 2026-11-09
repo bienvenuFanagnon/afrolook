@@ -106,6 +106,20 @@ android {
                 "**/librive_text.so",  // ✅ Exclut explicitement
                 "**/librive.so"
         ]
+        // Allègement (09/11/2026) : extensions d'Agora que l'application n'utilise PAS (l'application n'emploie d'Agora que le live : audio, vidéo, partage d'écran,
+        // et la beauté vidéo de base `setBeautyEffectOptions`, qui vient de libagora_clear_vision_extension.so : elle RESTE). Méthode et tableau : documentation d'Agora
+        // « App size optimization » (Flutter). Si une fonction d'Agora est ajoutée plus tard (audio spatial, fond virtuel, voix modifiée…), retirer la ligne correspondante.
+        excludes += [
+                "**/libagora_lip_sync_extension.so",            // synchronisation labiale d'avatars (environ 5,7 Mo par architecture)
+                "**/libagora_spatial_audio_extension.so",       // audio spatial (3,1 Mo)
+                "**/libagora_segmentation_extension.so",        // fond virtuel (1,7 Mo)
+                "**/libagora_face_capture_extension.so",        // capture d'expressions pour avatars (1,4 Mo)
+                "**/libagora_audio_beauty_extension.so",        // voix modifiée / effets de voix (0,8 Mo)
+                "**/libagora_content_inspect_extension.so",     // inspection de captures d'écran (1,1 Mo)
+                "**/libagora_video_av1_encoder_extension.so",   // encodage AV1 (0,7 Mo)
+                "**/libagora_video_av1_decoder_extension.so",   // décodage AV1 (0,5 Mo)
+                "**/libagora_video_quality_analyzer_extension.so" // score de qualité vidéo (0,6 Mo)
+        ]
         if (!project.hasProperty('withX86')) {
             excludes += ["lib/x86/**", "lib/x86_64/**"]
         }

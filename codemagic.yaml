@@ -54,6 +54,8 @@ workflows:
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
+      # Détail de la taille de l'application iPhone (`--analyze-size` ci-dessus l'écrit ici) : sert à trouver ce qui pèse (docs/TAILLE_APPLICATION.md)
+      - /Users/builder/.flutter-devtools/*code-size-analysis*.json
     publishing:
       app_store_connect:
         auth: integration
