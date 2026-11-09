@@ -17,7 +17,13 @@ import '../../theme/app_colors.dart';
 import '../cards/card_entry.dart';
 import '../cards/card_events.dart';
 import '../cards/card_models.dart' show CardStyleId;
+import '../studio/montage/montage_catalog.dart' show MontageTemplate;
+import '../studio/montage/montage_gallery_page.dart';
 import '../studio/montage/montage_music.dart' show MontageMusic;
+import '../studio/studio_models.dart' show StudioResult;
+import '../../services/api/template_stats_api.dart';
+import '../../services/template_link.dart';
+import '../../widgets/studio/post_template_try.dart' show TemplateTry;
 import '../studio/montage/montage_pin.dart';
 import 'create_voice_page.dart';
 import 'voice_effect_page.dart';
@@ -203,6 +209,13 @@ class _CreateHubPageState extends State<CreateHubPage> {
   }
 
 
+  /// « Voir plus » : toute la galerie des modèles prêts à poster ; le modèle choisi mène au formulaire unique, avec son modèle retenu pour le compteur.
+  Future<void> _openTemplates() async {
+    final r = await Navigator.of(context).push<StudioResult>(MaterialPageRoute(builder: (_) => const MontageGalleryPage()));
+    if (r == null || !mounted) return;
+    await _after(await openCreateForm(context, studio: r, source: PostSourceLink.edited));
+  }
+
   // ── Audio, texte, carte ──────────────────────────────────────────────────
 
   /// Audio : on s'enregistre (ou on prend un fichier), on choisit éventuellement un effet de voix en écoutant le vrai rendu, puis le formulaire.
@@ -298,6 +311,11 @@ class _CreateHubPageState extends State<CreateHubPage> {
             ],
           ),
           const SizedBox(height: 22),
+          // « Les plus utilisés » : les modèles prêts à poster que les gens utilisent le plus, et « Voir plus » vers toute la galerie
+          if (widget.chronique == null && widget.canal == null && widget.defiPostId == null && !kIsWeb) ...[
+            _TemplatesStrip(onOpen: (t) => _guard(() => TemplateTry.open(context, TemplateRef.montage(t.id))), onMore: () => _guard(_openTemplates)),
+            const SizedBox(height: 22),
+          ],
           const SizedBox(height: 18),
           Text(
             _isChannel
@@ -541,5 +559,76 @@ class _DraftBanner extends StatelessWidget {
         IconButton(key: const ValueKey('draft_delete'), tooltip: context.tr('Supprimer'), icon: Icon(Icons.delete_outline_rounded, color: c.danger), onPressed: onDelete),
       ]),
     );
+  }
+}
+
+/// Bande « Les plus utilisés » de l'écran « Que créer ? » : les modèles prêts à poster classés par le serveur (la semaine d'abord), avec leur nombre d'utilisations,
+/// puis « Voir plus » qui ouvre toute la galerie. Sans réseau ni utilisation connue, c'est l'ordre du catalogue : la bande n'est jamais vide.
+class _TemplatesStrip extends StatefulWidget {
+  const _TemplatesStrip({required this.onOpen, required this.onMore});
+  final void Function(MontageTemplate t) onOpen;
+  final VoidCallback onMore;
+
+  @override
+  State<_TemplatesStrip> createState() => _TemplatesStripState();
+}
+
+class _TemplatesStripState extends State<_TemplatesStrip> {
+  @override
+  void initState() {
+    super.initState();
+    TemplateStatsApi.load().then((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final list = popularMontageTemplates().take(6).toList();
+    return Column(key: const ValueKey('templates_strip'), crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        Expanded(child: Text(context.tr('Les plus utilisés'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 16))),
+        TextButton(
+          key: const ValueKey('templates_more'),
+          onPressed: widget.onMore,
+          style: TextButton.styleFrom(visualDensity: VisualDensity.compact, padding: const EdgeInsets.symmetric(horizontal: 8)),
+          child: Text(context.tr('Voir plus'), style: TextStyle(color: c.accentText, fontWeight: FontWeight.w800)),
+        ),
+      ]),
+      const SizedBox(height: 8),
+      SizedBox(
+        height: 168,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: list.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 10),
+          itemBuilder: (_, i) {
+            final t = list[i];
+            final uses = TemplateStatsApi.usesOf('m:${t.id}');
+            return GestureDetector(
+              key: ValueKey('template_${t.id}'),
+              onTap: () => widget.onOpen(t),
+              child: SizedBox(
+                width: 104,
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: SizedBox(
+                      width: 104,
+                      height: 120,
+                      child: Image.asset(t.sampleIsVideo ? 'assets/images/intro4.jpg' : t.sample, fit: BoxFit.cover, cacheWidth: 260),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(t.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700, fontSize: 12)),
+                  Text(uses > 0 ? context.tr('{n} utilisations', {'n': TemplateStatsApi.format(uses)}) : context.tr('Gratuit'), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 11)),
+                ]),
+              ),
+            );
+          },
+        ),
+      ),
+    ]);
   }
 }

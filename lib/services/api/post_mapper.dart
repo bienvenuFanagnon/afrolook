@@ -42,6 +42,9 @@ Post postFromApi(Map<String, dynamic> j) {
   post
     ..canal_id = j['channel_id'] as String?
     ..hasCommerce = j['has_commerce'] == true
+    // modèle prêt à poster qui a servi à ce post (« Essayer ce modèle ») et nombre d'essais depuis ce post
+    ..studioTemplate = j['studio_template'] as String?
+    ..templateTries = (j['template_tries'] as num?)?.toInt() ?? 0
     ..studioPins = [for (final p in (j['studio_pins'] as List? ?? const []).whereType<Map>()) Map<String, dynamic>.from(p)]
     ..widgets = PostWidget.listFromApi(j['widgets'])
     ..images = imageUrls

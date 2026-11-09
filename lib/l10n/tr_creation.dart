@@ -139,5 +139,9 @@ const Map<String, Map<String, String>> kTrCreation = {
   'Pastilles': {'en': 'Badges', 'es': "Insignias", 'pt': "Emblemas", 'de': "Abzeichen", 'ar': "شارات", 'zh': "徽章", 'sw': "Beji"},
   'Afrolook': {'en': 'Afrolook', 'es': "Afrolook", 'pt': "Afrolook", 'de': "Afrolook", 'ar': "أفرولوك", 'zh': "Afrolook", 'sw': "Afrolook"},
   'Feu': {'en': 'Fire', 'es': "Fuego", 'pt': "Fogo", 'de': "Feuer", 'ar': "نار", 'zh': "火焰", 'sw': "Moto"},
+  'Populaires': {'en': 'Popular', 'es': "Populares", 'pt': "Populares", 'de': "Beliebt", 'ar': "الأكثر شيوعًا", 'zh': "热门", 'sw': "Maarufu"},
+  '{n} utilisations': {'en': '{n} uses', 'es': "{n} usos", 'pt': "{n} utilizações", 'de': "{n} Nutzungen", 'ar': "{n} استخدام", 'zh': "{n} 次使用", 'sw': "Mara {n}"},
+  'Les plus utilisés': {'en': 'Most used', 'es': "Los más usados", 'pt': "Os mais usados", 'de': "Am häufigsten genutzt", 'ar': "الأكثر استخدامًا", 'zh': "最常使用", 'sw': "Zinazotumika zaidi"},
+  'Voir plus': {'en': 'See more', 'es': "Ver más", 'pt': "Ver mais", 'de': "Mehr anzeigen", 'ar': "عرض المزيد", 'zh': "查看更多", 'sw': "Ona zaidi"},
   'Dragon': {'en': 'Dragon', 'es': "Dragón", 'pt': "Dragão", 'de': "Drache", 'ar': "تنين", 'zh': "龙", 'sw': "Joka"},
 };

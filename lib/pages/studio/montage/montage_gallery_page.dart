@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../providers/authProvider.dart';
+import '../../../services/api/template_stats_api.dart';
 import '../../cards/card_events.dart';
 import '../../../theme/app_colors.dart';
 import '../../../l10n/tr.dart';
@@ -18,6 +19,15 @@ import 'montage_state.dart';
 import '../studio_theme.dart';
 
 AppColors get _c => studioColors;
+
+/// Les modèles du Studio classés par popularité : ceux qui ont des utilisations (la semaine d'abord, puis le total, selon le serveur), puis les autres dans l'ordre du catalogue.
+/// Sert à l'onglet « Populaires » de la galerie et à la bande « Les plus utilisés » de « Que créer ? ».
+List<MontageTemplate> popularMontageTemplates() {
+  final all = kMontageTemplates.where((t) => t.id != kPlainTemplateId).toList();
+  final ranked = all.where((t) => TemplateStatsApi.rankOf('m:${t.id}') != null).toList()
+    ..sort((a, b) => TemplateStatsApi.rankOf('m:${a.id}')!.compareTo(TemplateStatsApi.rankOf('m:${b.id}')!));
+  return [...ranked, ...all.where((t) => TemplateStatsApi.rankOf('m:${t.id}') == null)];
+}
 
 class MontageGalleryPage extends StatefulWidget {
   const MontageGalleryPage({super.key, this.forChronique = false, this.presetMusic, this.presetVideoPath, this.presetPhotoPath});
@@ -46,7 +56,13 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
     MontageCountries.load().then((_) {
       if (mounted) setState(() {});
     });
+    // les plus utilisés (compteur du serveur) : l'onglet « Populaires » et le nombre d'utilisations sur chaque carte
+    TemplateStatsApi.load().then((_) {
+      if (mounted) setState(() {});
+    });
   }
+
+  List<MontageTemplate> _popular() => popularMontageTemplates();
 
   @override
   void dispose() {
@@ -79,8 +95,8 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
     final fete = widget.presetMusic == null ? CardEvents.upcoming(me.countryData?['countryCode'], DateTime.now()) : null;
     final feteTemplate = fete?.studioTemplateId == null ? null : kMontageTemplates.where((t) => t.id == fete!.studioTemplateId).firstOrNull;
     return DefaultTabController(
-      length: MontageCat.values.length,
-      initialIndex: feteTemplate == null ? 0 : MontageCat.values.indexOf(MontageCat.fetes),
+      length: MontageCat.values.length + 1,   // « Populaires » d'abord, puis les catégories
+      initialIndex: feteTemplate == null ? 0 : MontageCat.values.indexOf(MontageCat.fetes) + 1,
       child: Scaffold(
         backgroundColor: _c.background,
         appBar: AppBar(
@@ -100,13 +116,14 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
             unselectedLabelColor: _c.textSecondary,
             indicatorColor: _c.accent,
             labelStyle: const TextStyle(fontWeight: FontWeight.w800),
-            tabs: [for (final cat in MontageCat.values) Tab(text: cat.label)],
+            tabs: [Tab(text: tr('Populaires')), for (final cat in MontageCat.values) Tab(text: cat.label)],
               ),
             ]),
           ),
         ),
         body: TabBarView(children: [
-          for (final cat in MontageCat.values) _grid(cat, pseudo),
+          _gridOf(_popular(), pseudo),
+          for (final cat in MontageCat.values) _gridOf(kMontageTemplates.where((t) => t.cat == cat).toList(), pseudo),
         ]),
       ),
     );
@@ -158,8 +175,7 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
     );
   }
 
-  Widget _grid(MontageCat cat, String pseudo) {
-    final list = kMontageTemplates.where((t) => t.cat == cat).toList();
+  Widget _gridOf(List<MontageTemplate> list, String pseudo) {
     return LayoutBuilder(builder: (context, c) {
       final cols = c.maxWidth > 700 ? 4 : (c.maxWidth > 480 ? 3 : 2);
       return GridView.builder(
@@ -209,6 +225,15 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(color: _c.accent, fontSize: 10.5, fontWeight: FontWeight.w600),
+                        ),
+                      // nombre de publications faites avec ce modèle (compteur du serveur ; rien tant qu'il n'a pas servi)
+                      if (TemplateStatsApi.usesOf('m:${t.id}') > 0)
+                        Text(
+                          tr('{n} utilisations', {'n': TemplateStatsApi.format(TemplateStatsApi.usesOf('m:${t.id}'))}),
+                          key: ValueKey('tpl_uses_${t.id}'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: _c.textSecondary, fontSize: 10.5, fontWeight: FontWeight.w600),
                         ),
                     ]),
                   ),

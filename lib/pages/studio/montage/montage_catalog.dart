@@ -3,6 +3,8 @@
 
 import 'package:flutter/material.dart';
 
+import '../../../models/post_widget.dart';
+
 enum MontageCat { situations, emotions, insta, music, culture, fetes }
 
 extension MontageCatX on MontageCat {
@@ -83,6 +85,10 @@ class MontageTemplate {
   /// Zone ronde pour une 2e photo (Nouveau parent).
   final bool baby;
 
+  /// Widgets de publication posés d'office par le modèle (compte à rebours, lieu, WhatsApp…) : la personne les modifie, les déplace, en ajoute ou les retire (jusqu'à 5 par post).
+  /// Une fonction, pour que les dates (« dans 14 jours ») soient calculées au moment où la personne ouvre le modèle.
+  final List<PostWidget> Function()? presetWidgets;
+
   const MontageTemplate({
     required this.id,
     required this.cat,
@@ -109,6 +115,7 @@ class MontageTemplate {
     this.indep = false,
     this.dualSample,
     this.baby = false,
+    this.presetWidgets,
   });
 
   bool get usesPrenom => texts.any((t) => t.contains('{prenom}'));
@@ -138,6 +145,12 @@ const kMontageSampleVideo = 'assets/videos/intro_video.mp4';
 
 Color _a(int r, int g, int b, double o) => Color.fromRGBO(r, g, b, o);
 final int _nextYear = DateTime.now().year + 1;
+
+/// Date ISO (UTC) dans [days] jours à [hour] h (heure de l'appareil) : l'échéance d'office d'un compte à rebours de modèle.
+String _inDays(int days, int hour) {
+  final d = DateTime.now().add(Duration(days: days));
+  return DateTime(d.year, d.month, d.day, hour).toUtc().toIso8601String();
+}
 
 /// « Ma vidéo avec ce son » : aucun habillage, la vidéo de la personne et la musique seule (son d'origine coupé par défaut).
 /// Volontairement absent de la galerie : on y arrive depuis la page Musique ou la page d'un titre.
@@ -267,6 +280,23 @@ final List<MontageTemplate> kMontageTemplates = [
       tint: [_a(0, 0, 0, 0), _a(60, 0, 80, .62)], fx: MontageFx.confetti, kick: 'Aujourd’hui', title: 'Joyeux anniversaire 🎂', longTitle: true,
       accent: const Color(0xFFFFD400), chip: '🎁 Offre-moi un cadeau', sound: 'Joyeux anniversaire afro',
       texts: ['Joyeux anniversaire {prenom} ! Que Dieu te garde 🎂', 'Un an de plus, une bénédiction de plus 🎉', 'C’est mon anniversaire ! Vos vœux me font plaisir 🥳']),
+  // Compte à rebours jusqu'à une date : anniversaire et événement à venir. Les widgets sont posés d'office et se modifient (date, texte, lieu, numéro).
+  MontageTemplate(id: 'anniv_minuteur', cat: MontageCat.fetes, name: 'Anniversaire — compte à rebours', sample: _p4,
+      tint: [_a(0, 0, 0, 0), _a(60, 0, 80, .62)], fx: MontageFx.confetti, kick: 'Bientôt', title: 'Mon anniversaire 🎂', longTitle: true,
+      accent: const Color(0xFFFFD400), chip: '🎁 Réponds-moi en commentaire', sound: 'Joyeux anniversaire afro',
+      texts: ['Plus que quelques jours avant mon anniversaire, vous êtes prêts ? 🎉', 'Le compte à rebours est lancé, rendez-vous à la fête 🥳'],
+      presetWidgets: () => [
+            PostWidget(kind: WidgetKind.countdown, config: {'title': 'Mon anniversaire', 'at': _inDays(14, 18)}, x: .5, y: .3),
+            PostWidget(kind: WidgetKind.place, config: {'name': 'Chez moi', 'maps_url': ''}, x: .5, y: .72),
+          ]),
+  MontageTemplate(id: 'evenement', cat: MontageCat.fetes, name: 'Événement à venir', sample: _p2,
+      tint: [_a(0, 0, 0, .08), _a(20, 20, 60, .66)], fx: MontageFx.none, kick: 'Save the date', title: 'On vous attend !', font: MontageFont.anton,
+      accent: const Color(0xFFFFD400), chip: '📍 Réservez votre place', sound: 'Afrobeat',
+      texts: ['Notez la date, ça va être grand ! 🔥', 'Venez nombreux, l’entrée est ouverte à tous 🙌'],
+      presetWidgets: () => [
+            PostWidget(kind: WidgetKind.countdown, config: {'title': 'Début de l’événement', 'at': _inDays(12, 19)}, x: .5, y: .26),
+            PostWidget(kind: WidgetKind.place, config: {'name': 'Lieu de l’événement', 'maps_url': ''}, x: .5, y: .56),
+          ]),
   MontageTemplate(id: 'diplome', cat: MontageCat.fetes, name: 'Diplômé(e)', sample: _p2,
       tint: [_a(0, 0, 0, 0), _a(20, 20, 70, .74)], tintStops: const [.35, 1], fx: MontageFx.confetti, frame: MontageFrame.gold, kick: 'Promotion $_nextYear', title: 'Diplômé(e) 🎓', font: MontageFont.anton,
       accent: const Color(0xFFFFD400), chip: '🎓 Mission accomplie',
@@ -467,7 +497,7 @@ const Map<String, String> kTemplateMusic = {
   'ootd': 'amapiano', 'selfie': 'amapiano', 'tbt': 'highlife', 'weekend': 'coupe_decale', 'lundi': 'workout',
   'vibe': 'amapiano', 'miam': 'highlife', 'voyage': 'plage', 'avis': 'afrobeat',
   'pays': 'highlife', 'marche': 'afrobeat', 'plage': 'plage', 'afrobeat': 'afrobeat', 'savane': 'kora_calme',
-  'indep': 'fanfare', 'nouvelan': 'fanfare', 'ramadan': 'oud', 'noel': 'noel', 'valentin': 'love_afro', 'anniv': 'highlife',
+  'indep': 'fanfare', 'nouvelan': 'fanfare', 'ramadan': 'oud', 'noel': 'noel', 'valentin': 'love_afro', 'anniv': 'highlife', 'anniv_minuteur': 'highlife', 'evenement': 'afrobeat',
   'diplome': 'fanfare', 'nouveaujob': 'afrobeat',
   'chanson': 'afrobeat', 'dedicace': 'love_afro', 'soiree': 'amapiano', 'chill': 'nuit', 'louange': 'kora_calme', 'freestyle': 'afro_trap',
   'danse': 'coupe_decale', 'slow': 'love_afro', 'concert': 'afrobeat', 'oldschool': 'highlife', 'studio': 'afro_trap', 'sortie': 'afrobeat', 'focus': 'zen_kalimba',

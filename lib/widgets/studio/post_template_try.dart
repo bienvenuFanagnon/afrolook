@@ -9,7 +9,8 @@ import '../../models/model_data.dart';
 import '../../pages/cards/card_entry.dart';
 import '../../pages/studio/montage/montage_editor_page.dart';
 import '../../pages/studio/studio_models.dart';
-import '../../pages/userPosts/userPostForm.dart';
+import '../../pages/create/create_flow.dart';
+import '../../services/post_source_link.dart';
 import '../../services/template_link.dart';
 import '../../pages/studio/artist_marketplace.dart' show PostSoundCredit;
 import '../../theme/app_colors.dart';
@@ -26,7 +27,8 @@ class TemplateTry {
         if (tp == null) return;
         final r = await Navigator.push<StudioResult>(context, MaterialPageRoute(builder: (_) => MontageEditorPage(template: tp)));
         if (r == null || !context.mounted) return;
-        await Navigator.push(context, MaterialPageRoute(builder: (_) => UserPostForm(initialStudio: r)));
+        // même parcours de création que partout (formulaire unique) : le post retient le modèle et compte l'essai du post d'origine
+        await openCreateForm(context, studio: r, source: PostSourceLink.edited);
       } else {
         await CardEntry.openCompose(context, style: ref.cardStyle, template: ref.cardTemplate);
       }

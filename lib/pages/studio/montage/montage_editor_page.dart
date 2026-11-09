@@ -139,6 +139,13 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
       s.photoPath = widget.presetPhotoPath;
       s.useVideo = false;
     }
+    // modèle qui pose d'office des widgets de publication (compte à rebours, lieu…) : seulement si la personne n'en a pas déjà posé ; elle les modifie, les déplace ou les retire
+    final presetWidgets = widget.template.presetWidgets;
+    if (presetWidgets != null && PostWidgetsLink.drafts.value.isEmpty) {
+      for (final w in presetWidgets()) {
+        PostWidgetsLink.add(w);
+      }
+    }
     _syncAnim();
     _syncFields();
     MontageCountries.load().then((_) {

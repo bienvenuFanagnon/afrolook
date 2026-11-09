@@ -9,6 +9,7 @@ import '../../services/api/posts_api.dart';
 import '../../services/authentic_video_check.dart';
 import '../../services/media_fingerprint.dart';
 import '../../services/post_source_link.dart';
+import '../../services/template_link.dart';
 import '../studio/studio_models.dart';
 import 'chronique_flow.dart';
 import 'create_publish_page.dart';
@@ -76,6 +77,8 @@ Future<String> openCreateForm(
     PostFingerprintLink.set(hashes);
   }
   PostSourceLink.set(source);
+  // modèle prêt à poster utilisé : la publication le retient (compteur d'utilisations, « Essayer ce modèle » sous le post)
+  if (studio != null) PostTemplateLink.set(TemplateRef.fromStudioId(studio.templateId)?.code);
   final r = await Navigator.of(context).push<String>(
     MaterialPageRoute(
       builder: (_) => CreatePublishPage(
@@ -96,5 +99,6 @@ Future<String> openCreateForm(
   PostSourceLink.clear();
   PostVoiceLink.clear();
   PostFingerprintLink.clear();
+  PostTemplateLink.clear();   // un parcours abandonné ne doit pas étiqueter le post suivant
   return r == kCreateBack ? kCreateBack : kCreateDone;
 }
