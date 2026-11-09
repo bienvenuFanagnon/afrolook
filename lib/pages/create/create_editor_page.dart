@@ -3,6 +3,7 @@ import '../../widgets/widgets_sheet.dart';
 import '../../widgets/draft_widgets_layer.dart';
 import '../../models/post_widget.dart';
 import '../../services/create_draft.dart';
+import '../../services/studio_project.dart';
 import '../../widgets/reply_banner.dart';
 import 'package:provider/provider.dart';
 import '../../providers/authProvider.dart';
@@ -85,6 +86,10 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
   @override
   void initState() {
     super.initState();
+    // interrupteur serveur « rendu en une passe » (éteint tant qu'il n'est pas allumé) : lu tout de suite, sans jamais bloquer la retouche
+    SinglePassConfig.load().then((_) {
+      if (mounted) setState(() {});
+    });
     MontageSignature.setCanal(widget.canal);   // post de canal : la signature du montage est « #titre », jamais le pseudo
     final dr = widget.draft;
     if (dr != null) {
@@ -100,7 +105,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
     }
     if (widget.sound != null || widget.pin != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _openStudio(MontageEditorPage(template: kPlainTemplate, showSignature: widget.showSignature, presetMusic: widget.sound, presetKeepAudio: widget.sound == null, presetPin: widget.pin, presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto));
+        if (mounted) _openStudio(MontageEditorPage(template: kPlainTemplate, showSignature: widget.showSignature, project: _projectArg, presetMusic: widget.sound, presetKeepAudio: widget.sound == null, presetPin: widget.pin, presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto));
       });
     }
   }
@@ -161,6 +166,11 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
 
   Future<void> _next() async {
     _video?.pause();
+    // réglages en attente (rendu en une passe) : l'éditeur de montage les envoie au serveur avec le reste, puis la publication
+    if (_projectArg != null) {
+      await _openStudio(MontageEditorPage(template: kPlainTemplate, showSignature: widget.showSignature, project: _projectArg, presetMusic: widget.sound, presetKeepAudio: widget.sound == null, presetPin: widget.pin, presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto));
+      return;
+    }
     final media = File(_path);   // aucune signature dans le média publié : elle n'est posée qu'au téléchargement (comme sur TikTok)
     if (!mounted) return;
     // Aperçu final AVANT « Nouveau post » : on regarde (et on entend) exactement ce qui sera publié ; « Modifier » revient ici, « Poursuivre » continue.
@@ -218,9 +228,22 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
 
   /// Chaque changement (voix, sous-titres, découpe, temps, widgets) garde l'état d'avant : « Annuler » revient en arrière, autant de fois que nécessaire.
   final List<_EditSnapshot> _history = [];
+
+  /// Rendu en UNE passe (interrupteur serveur `studio_single_pass`) : découpe, vitesse, voix et sous-titres restent EN ATTENTE ici (aucune compression tout de suite) et partent avec le montage.
+  StudioProject _project = StudioProject();
+  bool get _single => SinglePassConfig.enabled && widget.isVideo;
+  StudioProject? get _projectArg => _single && _project.isNotEmpty ? _project : null;
+
+  void _kept(String what) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(tr('{x} : gardé, appliqué en une seule fois à la fin. Utilise « Voir le rendu exact » pour le contrôler.', {'x': what}))));
+  }
+
   int? _timeIdx;   // position dans l'historique avant le premier effet de temps : sert à « Vitesse normale »
 
-  _EditSnapshot _snap() => _EditSnapshot(_path, _voiceEffect, _touched, [for (final w in PostWidgetsLink.drafts.value) w.copy()]);
+  _EditSnapshot _snap() => _EditSnapshot(_path, _voiceEffect, _touched, [for (final w in PostWidgetsLink.drafts.value) w.copy()], _project.copy());
 
   void _remember() {
     _history.add(_snap());
@@ -236,6 +259,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
     _voiceEffect = s.voice;
     _touched = s.touched;
     PostWidgetsLink.drafts.value = s.widgets;
+    _project = s.project.copy();
     if (mediaChanged && widget.isVideo) {
       await _initVideo();
     } else if (mounted) {
@@ -296,7 +320,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
       _video?.play();
       return;
     }
-    await _openStudio(MontageEditorPage(template: kPlainTemplate, showSignature: widget.showSignature, presetMusic: pick.music, presetKeepAudio: pick.keepVideoAudio, presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto));
+    await _openStudio(MontageEditorPage(template: kPlainTemplate, showSignature: widget.showSignature, project: _projectArg, presetMusic: pick.music, presetKeepAudio: pick.keepVideoAudio, presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto));
   }
 
   // ── Voix ─────────────────────────────────────────────────────────────────
@@ -313,9 +337,17 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
       return;
     }
     _remember();
-    _path = choice.file.path;
     _voiceEffect = choice.effect;
     _touched = true;
+    if (_single) {
+      // rendu en une passe : on garde seulement l'effet choisi, la vidéo d'origine reste telle quelle (le serveur change la voix dans la même chaîne que le reste)
+      _project.voice = choice.effect;
+      setState(() {});
+      v.play();
+      _kept(tr('Voix'));
+      return;
+    }
+    _path = choice.file.path;
     await _initVideo();
   }
 
@@ -339,6 +371,15 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
       if (!mounted) return;
       if (checked == null || checked.isEmpty) {
         v.play();
+        return;
+      }
+      if (_single) {
+        _remember();
+        _project.subtitles = [for (final c in checked) ProjectCue(c.startMs, c.endMs, c.text)];
+        _touched = true;
+        setState(() {});
+        v.play();
+        _kept(tr('Sous-titres'));
         return;
       }
       setState(() => _busy = true);
@@ -372,6 +413,16 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
     if (!mounted) return;
     if (picked == null || (picked.start <= 0 && picked.end >= total - 50)) {
       v.play();
+      return;
+    }
+    if (_single) {
+      _remember();
+      _project.trimStartMs = picked.start.round();
+      _project.trimEndMs = picked.end.round();
+      _touched = true;
+      setState(() {});
+      v.play();
+      _kept(tr('Découpe'));
       return;
     }
     setState(() => _busy = true);
@@ -438,6 +489,28 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
     if (!mounted) return;
     if (key == null) {
       v.play();
+      return;
+    }
+    if (_single && StudioProject.speeds.contains(key)) {
+      _remember();
+      _project.speed = key;
+      _touched = true;
+      setState(() {});
+      v.play();
+      _kept(tr('Vitesse'));
+      return;
+    }
+    if (_single && key == 'normal' && _project.speed != null) {
+      _remember();
+      _project.speed = null;
+      setState(() {});
+      v.play();
+      return;
+    }
+    if (_single && _project.isNotEmpty) {
+      // rembobinage, boomerang et rampe lisent la vidéo à l'envers : ils gardent leur passe séparée, qui ne se mélange pas avec des réglages en attente
+      v.play();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('Cet effet ne se combine pas avec les réglages gardés : appuie d\'abord sur « Suivant » pour les appliquer.'))));
       return;
     }
     if (key == 'normal' && _timeIdx != null && _timeIdx! < _history.length) {
@@ -586,11 +659,11 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
               child: Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: [
                 _tool('tool_models', Icons.dashboard_customize_rounded, context.tr('Modèles'), () => _openStudio(MontageGalleryPage(presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto), asSheet: true)),
                 _tool('tool_music', Icons.music_note_rounded, context.tr('Musique'), _music),
-                _tool('tool_text', Icons.title_rounded, context.tr('Texte'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, showSignature: widget.showSignature, focus: 'text', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
-                _tool('tool_stickers', Icons.emoji_emotions_rounded, context.tr('Autocollants'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, showSignature: widget.showSignature, focus: 'stickers', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
+                _tool('tool_text', Icons.title_rounded, context.tr('Texte'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, showSignature: widget.showSignature, project: _projectArg, focus: 'text', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
+                _tool('tool_stickers', Icons.emoji_emotions_rounded, context.tr('Autocollants'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, showSignature: widget.showSignature, project: _projectArg, focus: 'stickers', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
                 _tool('tool_widgets', Icons.widgets_rounded, context.tr('Widgets'), _addWidget),
-                _tool('tool_looks', Icons.star_rounded, context.tr('Effets'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, showSignature: widget.showSignature, focus: 'looks', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
-                if (widget.isVideo) _tool('tool_two', Icons.splitscreen_rounded, context.tr('2e média'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, showSignature: widget.showSignature, focus: 'second', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
+                _tool('tool_looks', Icons.star_rounded, context.tr('Effets'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, showSignature: widget.showSignature, project: _projectArg, focus: 'looks', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
+                if (widget.isVideo) _tool('tool_two', Icons.splitscreen_rounded, context.tr('2e média'), () => _openStudio(MontageEditorPage(template: kPlainTemplate, showSignature: widget.showSignature, project: _projectArg, focus: 'second', presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto))),
                 if (widget.isVideo) _tool('tool_trim', Icons.content_cut_rounded, context.tr('Couper'), _trim),
               ]),
             ),
@@ -682,9 +755,10 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
 
 /// État de la retouche à un instant donné (pour « Annuler »).
 class _EditSnapshot {
-  _EditSnapshot(this.path, this.voice, this.touched, this.widgets);
+  _EditSnapshot(this.path, this.voice, this.touched, this.widgets, this.project);
   final String path;
   final String? voice;
   final bool touched;
   final List<PostWidget> widgets;
+  final StudioProject project;
 }

@@ -21,6 +21,7 @@ import '../../../l10n/tr.dart';
 import 'montage_canvas.dart';
 import 'montage_pin.dart' show kMaxPins;
 import 'montage_state.dart';
+import '../../../services/studio_project.dart';
 import 'montage_stickers.dart';
 
 // Calques envoyés au serveur (studio_uploads/{uid}/{jobId}/) :
@@ -184,6 +185,7 @@ class MontageExport {
     void Function(String jobId)? onJob,
     String? jobId0,
     String? outroLabel,
+    StudioProject? project,   // réglages en attente (découpe, vitesse, voix, sous-titres) : envoyés au serveur seulement si l'interrupteur « une passe » est allumé
     bool preview = false,   // « Voir le rendu exact » : même montage en 360 p, 6 s au plus, sans fin animée ni paiement de son, jamais publié
   }) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -302,6 +304,7 @@ class MontageExport {
       'has_under': isVideo,
       if (isVideo && !preview) 'outro': s.outro,
       if (preview) 'preview': true,
+      if (isVideo && project != null && project.isNotEmpty && SinglePassConfig.enabled) 'project': project.toApi(),
       if (timedMeta.isNotEmpty) 'timed': timedMeta,
       if (isVideo && s.pins.isNotEmpty) 'pins': [
         for (var i = 0; i < s.pins.take(kMaxPins).length; i++)

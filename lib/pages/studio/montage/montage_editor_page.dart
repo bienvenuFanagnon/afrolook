@@ -41,6 +41,7 @@ import '../../../services/music_queue.dart';
 import 'montage_pin.dart';
 import '../../../services/montage_signature.dart';
 import '../../../services/music_clip.dart';
+import '../../../services/studio_project.dart';
 import '../../../services/slideshow_plan.dart';
 import '../../../widgets/reply_split.dart';
 import 'montage_preview_page.dart';
@@ -54,7 +55,7 @@ import '../../../widgets/gold_lock_row.dart';
 AppColors get _c => studioColors;
 
 class MontageEditorPage extends StatefulWidget {
-  const MontageEditorPage({super.key, required this.template, this.forChronique = false, this.presetMusic, this.presetKeepAudio = false, this.presetVideoPath, this.presetPhotoPath, this.focus, this.presetPin, this.photoOnly = false, this.showSignature = false});
+  const MontageEditorPage({super.key, required this.template, this.forChronique = false, this.presetMusic, this.presetKeepAudio = false, this.presetVideoPath, this.presetPhotoPath, this.focus, this.presetPin, this.photoOnly = false, this.showSignature = false, this.project});
   final MontageTemplate template;
   final bool forChronique;
 
@@ -63,6 +64,9 @@ class MontageEditorPage extends StatefulWidget {
 
   /// Montage « sans habillage » où la signature (@pseudo, ou #titre du canal) reste visible d'office : collage et diaporama de plusieurs images.
   final bool showSignature;
+
+  /// Réglages en attente de la retouche (découpe, vitesse, voix, sous-titres) : envoyés avec le montage, le serveur les applique dans la même chaîne (interrupteur « une passe »).
+  final StudioProject? project;
 
   /// Média déjà préparé (parcours « Créer un post » : la vidéo qu'on vient de filmer, la photo choisie) : l'éditeur s'ouvre dessus, sans demander de média.
   final String? presetVideoPath;
@@ -594,6 +598,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
         setT: _setT,
         onStep: (v) => step.value = v,
         maxSeconds: widget.forChronique ? 30 : 60,
+        project: widget.project,
         preview: true,
       );
     } catch (e) {
@@ -660,6 +665,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           setT: _setT,
           onStep: (v) => step.value = v,
           maxSeconds: widget.forChronique ? 30 : 60,
+          project: widget.project,
           jobId0: (_payJobId != null && _payJobSoundId == s.music?.id) ? _payJobId : null,
           onJob: (id) {
             _lastJobId = id;
@@ -698,6 +704,13 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
       switch (e.code) {
         case 'montage_busy':
           return 'Un montage précédent se termine encore. Patiente quelques secondes puis réessaie.';
+        case 'single_pass_off':
+          SinglePassConfig.enabled = false;
+          return tr('Le rendu en une passe vient d\'être coupé : reviens en arrière et refais la retouche, elle se fera étape par étape.');
+        case 'trim_invalid':
+          return tr('Le passage gardé est hors de la vidéo ou dure moins de 1 seconde.');
+        case 'render_busy':
+          return tr("Le serveur prépare d'autres vidéos en ce moment : réessaie dans un instant.");
         case 'music_unavailable':
           return e.message.isNotEmpty ? e.message : 'Ce son n’est plus disponible. Choisis une autre musique.';
         case 'payment_required':
@@ -1347,7 +1360,9 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
   /// Durée de la vidéo en secondes (10 s par défaut tant qu'elle n'est pas lue).
   double get _videoSeconds {
     final v = _video;
-    final d = (v != null && v.value.isInitialized) ? v.value.duration.inMilliseconds / 1000 : 10.0;
+    var d = (v != null && v.value.isInitialized) ? v.value.duration.inMilliseconds / 1000 : 10.0;
+    final pr = widget.project;
+    if (pr != null && pr.isNotEmpty && SinglePassConfig.enabled && v != null && v.value.isInitialized) d = pr.finalMs(v.value.duration.inMilliseconds) / 1000;
     return d < 1 ? 10 : d;
   }
 
