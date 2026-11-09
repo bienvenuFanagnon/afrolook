@@ -96,6 +96,9 @@ class MontageCanvas extends StatelessWidget {
                 ]),
               ),
               _rb(keys?.fx, s.fxActive ? CustomPaint(painter: MontageFxPainter(tp.fx, anim: animation, fixedT: t), size: Size.infinite) : const SizedBox.expand()),
+              // Médias épinglés : un aperçu seulement dans l'éditeur (jamais dans le fichier final : le serveur pose les vrais médias). Ils sont SOUS le texte, le pseudo et
+              // les autocollants, dans le même ordre que le rendu du serveur (base, teintes, effet, épingles, puis texte).
+              if (onMove != null && !s.exportCapture && s.pins.isNotEmpty) _pinsLayer(cq),
               _rb(keys?.foreground, s.exportOnlySticker != null ? _stickerOnly(cq) : _foreground(cq, texts)),
             ]),
           ),
@@ -146,6 +149,16 @@ class MontageCanvas extends StatelessWidget {
         DecoratedBox(
           decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: s.look!.tint!)),
         ),
+    ]);
+  }
+
+  /// Calque des médias épinglés (aperçu de l'éditeur) : en disposition, la 1re épingle tient sa place (aperçu à deux vidéos) ; les images ajoutées ensuite sont posées librement.
+  Widget _pinsLayer(double cq) {
+    final s = state;
+    return Stack(fit: StackFit.expand, children: [
+      if (s.layout != null) Positioned.fill(child: MontageLayoutPreview(state: s, meVideo: meVideo)),
+      for (final p in (s.layout == null ? s.pins : s.pins.skip(1)))
+        _slot('pin:${p.id}', cq, dflt: p.center, center: p.center, scalable: true, scale: p.scale, onTap: onTapSticker == null ? null : () => onTapSticker!('pin:${p.id}'), child: MontagePinView(pin: p, cq: cq, selected: selectedSticker == 'pin:${p.id}', volume: s.originAudio ? s.originVolume : 0, loop: s.originLoop)),
     ]);
   }
 
@@ -310,12 +323,6 @@ class MontageCanvas extends StatelessWidget {
       for (final st in s.stickers)
         if (!(s.exportExcludeTimed && st.timed))
         _slot('st:${st.id}', cq, dflt: st.center, center: st.center, scalable: true, scale: st.scale, onTap: onTapSticker == null ? null : () => onTapSticker!(st.id), child: StickerView(sticker: st, cq: cq, selected: onMove != null && selectedSticker == st.id)),
-      // Vidéos épinglées : un aperçu seulement dans l'éditeur (jamais dans le fichier final : le serveur pose la vraie vidéo)
-      if (onMove != null && !s.exportCapture && s.layout != null && s.pins.isNotEmpty) Positioned.fill(child: MontageLayoutPreview(state: s, meVideo: meVideo)),
-      // en disposition, la 1re épingle tient sa place (aperçu ci-dessus) ; les images ajoutées ensuite restent posées librement par-dessus
-      if (onMove != null && !s.exportCapture)
-        for (final p in (s.layout == null ? s.pins : s.pins.skip(1)))
-          _slot('pin:${p.id}', cq, dflt: p.center, center: p.center, scalable: true, scale: p.scale, onTap: onTapSticker == null ? null : () => onTapSticker!('pin:${p.id}'), child: MontagePinView(pin: p, cq: cq, selected: selectedSticker == 'pin:${p.id}', volume: s.originAudio ? s.originVolume : 0, loop: s.originLoop)),
       // Filigrane : toujours présent, même publié dans l'app
       Positioned(
         right: 1.6 * cq,

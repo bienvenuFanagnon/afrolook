@@ -134,4 +134,29 @@ void main() {
     expect(find.textContaining('@awa'), findsOneWidget);
     expect(find.textContaining('#'), findsNothing);
   });
+
+  testWidgets('ordre des calques : les épingles sont SOUS le texte, le pseudo et les autocollants (comme le rendu du serveur)', (tester) async {
+    final s = MontageState(kPlainTemplate)
+      ..hidden.clear()
+      ..freeText = 'Bonjour Lomé'
+      ..pins.addAll([_image('a'), _image('b', center: kPinSpots[1].$2)]);
+    await tester.pumpWidget(_host(_canvas(s)));
+    await tester.pump();
+    // ordre de dessin = ordre du parcours de l'arbre : ce qui vient plus tard est dessiné par-dessus
+    var i = 0;
+    final order = <String, int>{};
+    void visit(Element e) {
+      final w = e.widget;
+      if (w is MontagePinView) order.putIfAbsent('pin', () => i);
+      if (w is Text && (w.data == 'Bonjour Lomé' || (w.textSpan?.toPlainText() ?? '').contains('Bonjour'))) order.putIfAbsent('texte', () => i);
+      if (w is Text && (w.textSpan?.toPlainText() ?? '').contains('awa')) order.putIfAbsent('pseudo', () => i);
+      i++;
+      e.visitChildren(visit);
+    }
+
+    tester.element(find.byType(MontageCanvas)).visitChildren(visit);
+    expect(order.keys, containsAll(['pin', 'texte', 'pseudo']));
+    expect(order['pin']!, lessThan(order['texte']!));
+    expect(order['pin']!, lessThan(order['pseudo']!));
+  });
 }

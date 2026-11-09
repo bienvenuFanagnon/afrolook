@@ -93,7 +93,7 @@ class _MultiImagesPageState extends State<MultiImagesPage> {
 
   Future<void> _retouch() async {
     final path = _paths[_sel];
-    final StudioResult? r = await Navigator.of(context).push<StudioResult>(MaterialPageRoute(builder: (_) => MontageEditorPage(template: kPlainTemplate, presetPhotoPath: path)));
+    final StudioResult? r = await Navigator.of(context).push<StudioResult>(MaterialPageRoute(builder: (_) => MontageEditorPage(template: kPlainTemplate, presetPhotoPath: path, photoOnly: true)));   // une image de carrousel reste une image : pas de musique
     final f = r?.mediaFile;
     if (r == null || f == null || !mounted) return;
     setState(() {

@@ -52,9 +52,12 @@ import '../../../widgets/gold_lock_row.dart';
 AppColors get _c => studioColors;
 
 class MontageEditorPage extends StatefulWidget {
-  const MontageEditorPage({super.key, required this.template, this.forChronique = false, this.presetMusic, this.presetKeepAudio = false, this.presetVideoPath, this.presetPhotoPath, this.focus, this.presetPin});
+  const MontageEditorPage({super.key, required this.template, this.forChronique = false, this.presetMusic, this.presetKeepAudio = false, this.presetVideoPath, this.presetPhotoPath, this.focus, this.presetPin, this.photoOnly = false});
   final MontageTemplate template;
   final bool forChronique;
+
+  /// Retouche d'une IMAGE qui doit rester une image (carrousel de plusieurs images) : ni musique, ni effet animé, ni vidéo ; le résultat est toujours une image fixe.
+  final bool photoOnly;
 
   /// Média déjà préparé (parcours « Créer un post » : la vidéo qu'on vient de filmer, la photo choisie) : l'éditeur s'ouvre dessus, sans demander de média.
   final String? presetVideoPath;
@@ -300,7 +303,8 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           const SizedBox(height: 10),
           _sheetTile(ctx, Icons.photo_library_rounded, 'Photo de la galerie', 'pg'),
           _sheetTile(ctx, Icons.photo_camera_rounded, 'Prendre une photo', 'pc'),
-          if (!second && tp.canUseVideo) ...[
+          if (!second && _videoAllowed) ...[
+
             _sheetTile(ctx, Icons.video_library_rounded, 'Vidéo de la galerie', 'vg'),
             _sheetTile(ctx, Icons.videocam_rounded, 'Filmer une vidéo', 'vc'),
           ],
@@ -821,7 +825,7 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
         // Les réglages sont rangés par sujet, dans l'ordre où on s'en sert : ma vidéo, 2e vidéo ou image, texte et autocollants, musique et sons, effets, format.
         _group('media', Icons.perm_media_rounded, 'Ma vidéo ou ma photo', [
           Wrap(spacing: 8, runSpacing: 8, children: [
-            _btn(Icons.add_a_photo_rounded, tp.canUseVideo ? 'Changer ma photo ou vidéo' : 'Changer ma photo', () => _pickMedia()),
+            _btn(Icons.add_a_photo_rounded, _videoAllowed ? 'Changer ma photo ou vidéo' : 'Changer ma photo', () => _pickMedia()),
             if (tp.dualSample != null || tp.baby) _btn(Icons.add_photo_alternate_rounded, tp.baby ? 'Photo de bébé' : '2e photo', () => _pickMedia(second: true)),
           ]),
           // son de CHAQUE vidéo réglé ici, sans musique nécessaire (la vidéo ajoutée a son propre curseur dans « Deuxième vidéo ou image »)
@@ -863,12 +867,12 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           const SizedBox(height: 14),
           KeyedSubtree(key: _stickersKey, child: _stickersSection()),
         ]),
-        _group('music', Icons.music_note_rounded, 'Musique et sons', [KeyedSubtree(key: _musicKey, child: _musicSection())]),
+        if (!widget.photoOnly) _group('music', Icons.music_note_rounded, 'Musique et sons', [KeyedSubtree(key: _musicKey, child: _musicSection())]),
         _group('looks', Icons.auto_awesome_rounded, 'Effets et couleurs', [KeyedSubtree(key: _looksKey, child: _looksSection())]),
         _group('format', Icons.tune_rounded, 'Format et contenu du modèle', [
         _label('Format'),
         _seg(['Chronique 9:16', 'Post 4:5', 'Paysage 16:9'], s.landscape ? 2 : (s.post ? 1 : 0), (i) => setState(() => s.setFormat(const ['story', 'post', 'landscape'][i]))),
-        if (tp.fx != MontageFx.none) ...[
+        if (tp.fx != MontageFx.none && !widget.photoOnly) ...[
           const SizedBox(height: 10),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
@@ -1510,6 +1514,9 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
       _selSticker = st.id;
     });
   }
+
+  /// Vidéo permise dans cet éditeur : le modèle l'accepte et ce n'est pas la retouche d'une image de carrousel.
+  bool get _videoAllowed => tp.canUseVideo && !widget.photoOnly;
 
   MontageSticker? get _selected => s.stickers.where((e) => e.id == _selSticker).firstOrNull;
 
