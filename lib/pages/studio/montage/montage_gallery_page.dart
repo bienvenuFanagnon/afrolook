@@ -4,7 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../providers/authProvider.dart';
+import '../../../models/community_template.dart';
+import '../../../services/face_engine.dart' show FaceEngine;
+import 'montage_face_capture.dart';
+import 'template_thumb.dart';
+import 'collage_template.dart';
+import 'collage_template_page.dart';
+import 'story_page.dart';
+import 'story_script.dart';
+import '../../create/create_result.dart';
+import '../../../services/api/community_templates_api.dart';
 import '../../../services/api/template_stats_api.dart';
+import '../../../widgets/studio/community_template_open.dart';
+import 'my_templates_page.dart';
 import '../../cards/card_events.dart';
 import '../../../theme/app_colors.dart';
 import '../../../l10n/tr.dart';
@@ -23,7 +35,7 @@ AppColors get _c => studioColors;
 /// Les modèles du Studio classés par popularité : ceux qui ont des utilisations (la semaine d'abord, puis le total, selon le serveur), puis les autres dans l'ordre du catalogue.
 /// Sert à l'onglet « Populaires » de la galerie et à la bande « Les plus utilisés » de « Que créer ? ».
 List<MontageTemplate> popularMontageTemplates() {
-  final all = kMontageTemplates.where((t) => t.id != kPlainTemplateId).toList();
+  final all = kMontageTemplates.where((t) => t.id != kPlainTemplateId && (t.face == null || FaceEngine.enabled)).toList();
   final ranked = all.where((t) => TemplateStatsApi.rankOf('m:${t.id}') != null).toList()
     ..sort((a, b) => TemplateStatsApi.rankOf('m:${a.id}')!.compareTo(TemplateStatsApi.rankOf('m:${b.id}')!));
   return [...ranked, ...all.where((t) => TemplateStatsApi.rankOf('m:${t.id}') == null)];
@@ -64,6 +76,18 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
 
   List<MontageTemplate> _popular() => popularMontageTemplates();
 
+  /// Un modèle créé par une personne : s'il est payant, le prix est annoncé (payé à la publication) ; puis le même éditeur que les autres modèles.
+  Future<void> _openCommunity(CommunityTemplate t) async {
+    final tp = t.toMontage();
+    if (tp == null) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(tr('Ce modèle n\'est pas disponible dans cette version de l\'application.'))));
+      return;
+    }
+    if (!t.isFree && !await CommunityTemplateOpen.confirmPrice(context, t)) return;
+    if (!mounted) return;
+    await _open(tp);
+  }
+
   @override
   void dispose() {
     _anim.dispose();
@@ -72,9 +96,46 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
 
   Future<void> _open(MontageTemplate t) async {
     _anim.stop();
+    // modèle « histoire » : la vidéo défile toute seule, scène après scène (diaporama) ; la personne règle les photos, les phrases et les durées
+    final story = t.isStory ? storyScriptFor(t.id) : null;
+    if (story != null) {
+      final done = await Navigator.push<String>(context, MaterialPageRoute(builder: (_) => StoryTemplatePage(template: t, script: story)));
+      if (!mounted) return;
+      if (done == kCreateDone) {
+        Navigator.pop(context);
+      } else {
+        _anim.repeat();
+      }
+      return;
+    }
+    // modèle « collage » : une photo par case, étiquettes et titre modifiables
+    final collage = t.isCollage ? collageScriptFor(t.id) : null;
+    if (collage != null) {
+      final done = await Navigator.push<String>(context, MaterialPageRoute(builder: (_) => CollageTemplatePage(template: t, script: collage)));
+      if (!mounted) return;
+      if (done == kCreateDone) {
+        Navigator.pop(context);
+      } else {
+        _anim.repeat();
+      }
+      return;
+    }
+    // modèle à filtres de visage : on se filme d'abord, avec l'avatar et l'effet du modèle déjà choisis
+    String? video = widget.presetVideoPath;
+    String? photo = widget.presetPhotoPath;
+    if (t.face != null) {
+      final cap = await captureForFaceTemplate(context, t.face!);
+      if (cap == null || !mounted) {
+        if (mounted) _anim.repeat();
+        return;
+      }
+      video = cap.isVideo ? cap.path : null;
+      photo = cap.isVideo ? null : cap.path;
+    }
+    if (!mounted) return;
     final r = await Navigator.push<StudioResult>(
       context,
-      MaterialPageRoute(builder: (_) => MontageEditorPage(template: t, forChronique: widget.forChronique, presetMusic: widget.presetMusic, presetVideoPath: widget.presetVideoPath, presetPhotoPath: widget.presetPhotoPath)),
+      MaterialPageRoute(builder: (_) => MontageEditorPage(template: t, forChronique: widget.forChronique, presetMusic: widget.presetMusic, presetVideoPath: video, presetPhotoPath: photo)),
     );
     if (!mounted) return;
     if (r != null) {
@@ -95,8 +156,8 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
     final fete = widget.presetMusic == null ? CardEvents.upcoming(me.countryData?['countryCode'], DateTime.now()) : null;
     final feteTemplate = fete?.studioTemplateId == null ? null : kMontageTemplates.where((t) => t.id == fete!.studioTemplateId).firstOrNull;
     return DefaultTabController(
-      length: MontageCat.values.length + 1,   // « Populaires » d'abord, puis les catégories
-      initialIndex: feteTemplate == null ? 0 : MontageCat.values.indexOf(MontageCat.fetes) + 1,
+      length: MontageCat.values.length + 2,   // « Populaires » et « Communauté » d'abord, puis les catégories
+      initialIndex: feteTemplate == null ? 0 : MontageCat.values.indexOf(MontageCat.fetes) + 2,
       child: Scaffold(
         backgroundColor: _c.background,
         appBar: AppBar(
@@ -104,6 +165,14 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
           foregroundColor: _c.textPrimary,
           elevation: 0,
           title: const Text('Templates prêts à poster', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
+          actions: [
+            IconButton(
+              key: const ValueKey('my_templates_btn'),
+              tooltip: tr('Mes modèles'),
+              icon: const Icon(Icons.person_outline_rounded),
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyTemplatesPage())),
+            ),
+          ],
           bottom: PreferredSize(
             preferredSize: Size.fromHeight(widget.presetMusic != null ? 88 : (feteTemplate != null ? 104 : 48)),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -116,14 +185,15 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
             unselectedLabelColor: _c.textSecondary,
             indicatorColor: _c.accent,
             labelStyle: const TextStyle(fontWeight: FontWeight.w800),
-            tabs: [Tab(text: tr('Populaires')), for (final cat in MontageCat.values) Tab(text: cat.label)],
+            tabs: [Tab(text: tr('Populaires')), Tab(text: tr('Communauté')), for (final cat in MontageCat.values) Tab(text: cat.label)],
               ),
             ]),
           ),
         ),
         body: TabBarView(children: [
           _gridOf(_popular(), pseudo),
-          for (final cat in MontageCat.values) _gridOf(kMontageTemplates.where((t) => t.cat == cat).toList(), pseudo),
+          _CommunityTab(onOpen: _openCommunity),
+          for (final cat in MontageCat.values) _gridOf(kMontageTemplates.where((t) => t.cat == cat && (t.face == null || FaceEngine.enabled)).toList(), pseudo),
         ]),
       ),
     );
@@ -190,6 +260,7 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
               decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: _c.border)),
               clipBehavior: Clip.antiAlias,
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Stack(alignment: Alignment.center, children: [
                 RepaintBoundary(
                   child: MontageCanvas(
                     state: _states[t.id]!,
@@ -204,6 +275,8 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
                     followers: _followers,
                   ),
                 ),
+                if (t.showsVideo) const VideoBadge(size: 44),
+                ]),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
@@ -244,5 +317,169 @@ class _MontageGalleryPageState extends State<MontageGalleryPage> with SingleTick
         },
       );
     });
+  }
+}
+
+/// Onglet « Communauté » : les modèles créés par les utilisateurs, les plus utilisés ou les plus récents, gratuits ou payants (prix en pièces, payé à la publication).
+class _CommunityTab extends StatefulWidget {
+  const _CommunityTab({required this.onOpen});
+  final void Function(CommunityTemplate t) onOpen;
+
+  @override
+  State<_CommunityTab> createState() => _CommunityTabState();
+}
+
+class _CommunityTabState extends State<_CommunityTab> with AutomaticKeepAliveClientMixin {
+  final List<CommunityTemplate> _items = [];
+  String _sort = 'popular';
+  String? _pricing;
+  int _page = 1;
+  bool _loading = false;
+  bool _more = false;
+  String? _error;
+
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load(reset: true);
+  }
+
+  Future<void> _load({bool reset = false}) async {
+    if (_loading) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+      if (reset) {
+        _page = 1;
+        _items.clear();
+      }
+    });
+    try {
+      final r = await CommunityTemplatesApi.list(sort: _sort, pricing: _pricing, page: _page);
+      if (!mounted) return;
+      setState(() {
+        _items.addAll(r.items);
+        _more = r.hasMore;
+        _loading = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = '${(e as dynamic).message ?? e}';
+        });
+      }
+    }
+  }
+
+  Widget _chip(String key, String label, bool on, VoidCallback tap) => Padding(
+        padding: const EdgeInsets.only(right: 8),
+        child: ChoiceChip(key: ValueKey(key), label: Text(label), selected: on, onSelected: (_) => tap()),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return Column(children: [
+      SizedBox(
+        height: 48,
+        child: ListView(scrollDirection: Axis.horizontal, padding: const EdgeInsets.fromLTRB(14, 8, 6, 4), children: [
+          _chip('com_popular', tr('Populaires'), _sort == 'popular', () {
+            _sort = 'popular';
+            _load(reset: true);
+          }),
+          _chip('com_new', tr('Nouveaux'), _sort == 'new', () {
+            _sort = 'new';
+            _load(reset: true);
+          }),
+          _chip('com_free', tr('Gratuits'), _pricing == 'free', () {
+            _pricing = _pricing == 'free' ? null : 'free';
+            _load(reset: true);
+          }),
+          _chip('com_paid', tr('Payants'), _pricing == 'paid', () {
+            _pricing = _pricing == 'paid' ? null : 'paid';
+            _load(reset: true);
+          }),
+        ]),
+      ),
+      Expanded(child: _body()),
+    ]);
+  }
+
+  Widget _body() {
+    if (_error != null && _items.isEmpty) return Center(child: Text(_error!, style: TextStyle(color: _c.danger)));
+    if (_items.isEmpty) {
+      return Center(
+        child: _loading
+            ? CircularProgressIndicator(color: _c.primary)
+            : Padding(
+                padding: const EdgeInsets.all(28),
+                child: Text(tr('Pas encore de modèle de la communauté. Crée le tien : dans un modèle, choisis « Enregistrer comme modèle ».'), key: const ValueKey('community_empty'), textAlign: TextAlign.center, style: TextStyle(color: _c.textSecondary, height: 1.4)),
+              ),
+      );
+    }
+    return LayoutBuilder(builder: (context, c) {
+      final cols = c.maxWidth > 700 ? 4 : (c.maxWidth > 480 ? 3 : 2);
+      return GridView.builder(
+        padding: const EdgeInsets.fromLTRB(14, 8, 14, 30),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: cols, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: .62),
+        itemCount: _items.length + (_more ? 1 : 0),
+        itemBuilder: (_, i) {
+          if (i >= _items.length) {
+            return Center(
+              child: TextButton(
+                key: const ValueKey('community_more'),
+                onPressed: () {
+                  _page++;
+                  _load();
+                },
+                child: Text(tr('Voir plus')),
+              ),
+            );
+          }
+          return _card(_items[i]);
+        },
+      );
+    });
+  }
+
+  Widget _card(CommunityTemplate t) {
+    final base = kMontageTemplates.where((m) => m.id == t.baseId).firstOrNull;
+    final price = t.priceCoins == 0 ? tr('Gratuit') : tr('{n} pièces', {'n': '${t.priceCoins}'});
+    return GestureDetector(
+      key: ValueKey('community_${t.id}'),
+      onTap: () => widget.onOpen(t),
+      child: Container(
+        decoration: BoxDecoration(color: _c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: _c.border)),
+        clipBehavior: Clip.antiAlias,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Expanded(
+            child: Stack(fit: StackFit.expand, children: [
+              if (base != null) TemplateThumb(asset: base.sampleIsVideo ? 'assets/images/intro4.jpg' : base.sample, video: base.showsVideo || t.face != null) else ColoredBox(color: _c.border),
+              Positioned(
+                top: 8,
+                left: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(color: t.priceCoins == 0 ? Colors.black54 : _c.accent, borderRadius: BorderRadius.circular(99)),
+                  child: Text(price, style: TextStyle(color: t.priceCoins == 0 ? Colors.white : _c.onAccent, fontSize: 11, fontWeight: FontWeight.w800)),
+                ),
+              ),
+            ]),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(t.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w800, fontSize: 12.5)),
+              Text('@${t.ownerName ?? ''}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: _c.textSecondary, fontSize: 10.5)),
+              if (t.usesCount > 0) Text(tr('{n} utilisations', {'n': TemplateStatsApi.format(t.usesCount)}), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: _c.textSecondary, fontSize: 10.5, fontWeight: FontWeight.w600)),
+            ]),
+          ),
+        ]),
+      ),
+    );
   }
 }

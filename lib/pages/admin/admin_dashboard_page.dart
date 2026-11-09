@@ -40,6 +40,7 @@ import 'quiz_admin_page.dart';
 import 'stickers/admin_stickers_page.dart';
 import '../intro/tutos/tuto_scene_card.dart';
 import '../studio/artist_marketplace.dart';
+import 'community_templates_admin_page.dart';
 
 /// Tableau de bord admin unique (fusion de l'ancien « Tableau de bord » et de l'« ADMIN HUB » / AppData).
 /// Les données se chargent à l'ouverture de la page et via le bouton « Actualiser » uniquement,
@@ -426,6 +427,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       _Module(Icons.groups_rounded, 'Groupes', c.danger, 0, const AdminGroupsPage()),
       _Module(Icons.emoji_emotions_rounded, 'Stickers', c.warning, _stickersPending, const AdminStickersPage()),
       _Module(Icons.library_music_rounded, 'Sons artistes', const Color(0xFF9B59B6), 0, const AdminArtistSoundsPage()),
+      _Module(Icons.dashboard_customize_rounded, 'Modèles utilisateurs', c.accent, 0, const AdminCommunityTemplatesPage()),
     ];
     return GridView.count(
       crossAxisCount: 3,

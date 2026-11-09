@@ -9,6 +9,7 @@ import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:afrotok/services/api/post_mapper.dart';
 import 'package:afrotok/services/api/posts_mapper.dart';
 import 'package:afrotok/services/post_source_link.dart';
+import 'package:afrotok/services/template_link.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
@@ -73,6 +74,9 @@ class PostsApi {
     int? videoHeight,
     String? captureSource,
   }) async {
+    // Modèle payant d'une personne : l'utilisation est payée AVANT la publication (la clé d'achat dépend du montage : un nouvel essai ne repaie pas)
+    await PostTemplateLink.payIfNeeded();
+    final templateJob = PostTemplateLink.jobIdFor(studioTemplate ?? PostTemplateLink.fields()['studioTemplate'] as String?);
     // Origine du média (filmé ou enregistré dans l'application / choisi dans la galerie) : posée par le parcours « Créer un post », consommée ici une seule fois
     final source = captureSource ?? PostSourceLink.take();
     // Effet de voix (audio) et publication à laquelle on répond en vidéo : posés par le parcours, consommés ici une seule fois
@@ -101,6 +105,7 @@ class PostsApi {
       if (freePreview != null) 'free_preview': freePreview,
       if (eventDate != null) 'event_date': eventDate.toUtc().toIso8601String(),
       if (thumbnailUploadId != null && thumbnailUploadId.isNotEmpty) 'thumbnail_upload_id': thumbnailUploadId,
+      if (templateJob != null) 'template_job_id': templateJob,
       if (studioTemplate != null && studioTemplate.isNotEmpty) 'studio_template': studioTemplate.length > 120 ? studioTemplate.substring(0, 120) : studioTemplate,
       if (videoWidth != null && videoHeight != null && videoWidth > 0 && videoHeight > 0) ...{'video_width': videoWidth, 'video_height': videoHeight},
     };

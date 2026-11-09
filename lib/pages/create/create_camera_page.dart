@@ -43,7 +43,12 @@ class CreateCaptureResult {
 /// Caméra d'Afrolook : vidéo (15, 30 ou 60 s) et photo dans le même écran, avec le style de l'application. Un seul toucher pour filmer, un second pour arrêter ;
 /// la barre ronde montre le temps qui reste. Si la caméra n'est pas disponible (autorisation refusée, appareil sans caméra), on propose la caméra du téléphone.
 class CreateCameraPage extends StatefulWidget {
-  const CreateCameraPage({super.key, this.startOnPhoto = false, this.maxSeconds = 60, this.sound});
+  const CreateCameraPage({super.key, this.startOnPhoto = false, this.maxSeconds = 60, this.sound, this.presetAvatar, this.presetMagic, this.presetGesture});
+
+  /// Réglages d'un modèle à filtres de visage (clé d'avatar, libellé de l'effet magique, geste) : appliqués d'office quand le moteur est disponible (Android).
+  final String? presetAvatar;
+  final String? presetMagic;
+  final String? presetGesture;
 
   final bool startOnPhoto;
   final int maxSeconds;
@@ -114,6 +119,14 @@ class _CreateCameraPageState extends State<CreateCameraPage> with WidgetsBinding
   void initState() {
     super.initState();
     _photoMode = widget.startOnPhoto;
+    if (_eng) {
+      // modèle à filtres de visage : l'avatar et l'effet de bouche sont déjà choisis ; la personne n'a plus qu'à se filmer (elle peut tout changer)
+      final av = FaceAvatar.all.where((a) => a.key == widget.presetAvatar).firstOrNull;
+      if (av != null) _avatar = av;
+      final mi = FaceEngine.magic.indexWhere((m) => m.label == widget.presetMagic);
+      if (mi >= 0) _magic = mi;
+      if (widget.presetGesture != null && FaceEngine.gestures.any((g) => g.key == widget.presetGesture)) _gesture = widget.presetGesture!;
+    }
     WidgetsBinding.instance.addObserver(this);
     _init();
   }

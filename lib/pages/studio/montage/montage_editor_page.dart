@@ -2,6 +2,9 @@ import '../../../widgets/draft_widgets_layer.dart';
 import '../../../widgets/widgets_sheet.dart';
 import '../../../models/post_widget.dart';
 import '../../../services/authentic_video_check.dart';
+import '../../../models/community_template.dart';
+import 'save_template_sheet.dart';
+import '../../../services/branded_save.dart';
 import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:async';
@@ -774,9 +777,18 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           continue;
         }
         if (!mounted) return;
-        saved = await MontageExport.saveToGallery(file, video: video);
+        // la copie enregistrée porte la marque Afrolook comme un téléchargement (pastille qui change de coin, logo animé, fin Afrolook) ; la version publiée reste sans signature
+        _say('Ajout de la signature Afrolook…');
+        final branded = await BrandedSave.prepare(file, video: video, pseudo: context.read<UserAuthProvider>().loginUserData.pseudo);
         if (!mounted) return;
-        if (!saved) _say('Impossible d’enregistrer : autorise l’accès aux photos dans les réglages du téléphone.');
+        if (branded == null) {
+          _say('La signature Afrolook n’a pas pu être ajoutée : réessaie dans un instant.');
+          saved = false;
+        } else {
+          saved = await MontageExport.saveToGallery(branded, video: video);
+          if (!mounted) return;
+          if (!saved) _say('Impossible d’enregistrer : autorise l’accès aux photos dans les réglages du téléphone.');
+        }
         if (choice == 'save') continue;
       }
       Navigator.pop(
@@ -897,6 +909,31 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
   }
 
   /// Une section repliable de la liste de réglages : titre, icône, et son contenu quand elle est ouverte.
+  /// « Enregistrer comme modèle » : la recette vient de l'état de l'éditeur (modèle de base, textes, musique de la bibliothèque, widgets sans donnée personnelle).
+  Future<void> _saveAsTemplate() async {
+    final r = resolveMontageTexts(s);
+    final baseId = tp.id.startsWith('u_') ? (CommunityTemplate.known['u:${tp.id.substring(2)}']?.baseId ?? '') : tp.id;
+    if (baseId.isEmpty || baseId == kPlainTemplateId) return;
+    String cut(String x, int n) => x.length > n ? x.substring(0, n) : x;
+    final lines = <String>[
+      for (final l in [r.wish, ...r.options])
+        if (l.trim().isNotEmpty) cut(l.trim(), 160),
+    ].toSet().take(6).toList();
+    final m = s.music;
+    final recipe = CommunityTemplate.buildRecipe(
+      baseId: baseId,
+      kick: cut(r.kick, 80),
+      title: cut(r.title, 80),
+      chip: tp.chip == null ? null : cut(tp.chip!, 80),
+      lines: lines,
+      musicId: (m != null && m.type == 'free') ? m.id : null,
+      widgets: PostWidgetsLink.drafts.value,
+    );
+    final created = await showSaveTemplateSheet(context, recipe: recipe, suggestedName: tp.name);
+    if (created == null || !mounted) return;
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(const SnackBar(content: Text('Modèle publié ! Retrouve-le, ses utilisations et tes gains dans « Mes modèles ».')));
+  }
+
   Widget _group(String id, IconData icon, String title, List<Widget> kids) {
     final open = _openGroups.contains(id);
     return Container(
@@ -1016,6 +1053,13 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
         ]),
         if (!widget.photoOnly) _group('music', Icons.music_note_rounded, 'Musique et sons', [KeyedSubtree(key: _musicKey, child: _musicSection())]),
         _group('looks', Icons.auto_awesome_rounded, 'Effets et couleurs', [KeyedSubtree(key: _looksKey, child: _looksSection()), if (!widget.photoOnly) _fxSection()]),
+        if (!widget.photoOnly && tp.id != kPlainTemplateId)
+          _group('savemodel', Icons.dashboard_customize_rounded, 'Mon modèle', [
+            Text('Enregistre ce montage (textes, musique de la bibliothèque, widgets) pour que les autres le refassent avec leurs médias. Gratuit ou payant en pièces : tu choisis.',
+                style: TextStyle(color: _c.textSecondary, fontSize: 12.5, height: 1.35)),
+            const SizedBox(height: 8),
+            _btn(Icons.bookmark_add_rounded, 'Enregistrer comme modèle', _saveAsTemplate),
+          ]),
         _group('format', Icons.tune_rounded, 'Format et contenu du modèle', [
         _label('Format'),
         _seg(['Chronique 9:16', 'Post 4:5', 'Paysage 16:9'], s.landscape ? 2 : (s.post ? 1 : 0), (i) => setState(() => s.setFormat(const ['story', 'post', 'landscape'][i]))),

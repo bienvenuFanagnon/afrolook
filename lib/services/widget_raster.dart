@@ -9,7 +9,7 @@ import '../widgets/post_widget_view.dart';
 
 /// Un widget (sondage, question, lien…) dessiné en image PNG transparente, tel qu'il est affiché maintenant : sert à l'incruster dans une vidéo téléchargée.
 class WidgetLayer {
-  const WidgetLayer({required this.png, required this.x, required this.y, required this.width, this.start, this.end});
+  const WidgetLayer({required this.png, required this.x, required this.y, required this.width, this.start, this.end, this.logicalWidth = 0, this.logicalHeight = 0});
 
   final Uint8List png;
 
@@ -23,6 +23,21 @@ class WidgetLayer {
   /// Plage de temps (secondes) ; null = toute la vidéo.
   final double? start;
   final double? end;
+
+  /// Taille à l'écran (pixels logiques) : sert à dessiner toutes les images d'une bande dans le même cadre.
+  final double logicalWidth;
+  final double logicalHeight;
+}
+
+/// Un widget ANIMÉ (compte à rebours) dessiné image par image, une par seconde, et empilé dans UN SEUL PNG : le serveur pose la bonne image seconde après seconde dans la vidéo
+/// téléchargée, pour qu'on y voie exactement ce que voient les gens dans l'application.
+class StripLayer {
+  const StripLayer({required this.png, required this.frames, required this.x, required this.y, required this.width});
+  final Uint8List png;
+  final int frames;
+  final double x;
+  final double y;
+  final double width;
 }
 
 class WidgetRaster {
@@ -61,7 +76,7 @@ class WidgetRaster {
   static const referenceWidth = 360.0;
 
   /// Dessine [w] hors écran (dans l'étage de superposition) et en rend l'image et sa place. Null si impossible : le téléchargement continue sans ce widget.
-  static Future<WidgetLayer?> render(BuildContext context, PostWidget w, {double pixelRatio = 3}) async {
+  static Future<WidgetLayer?> render(BuildContext context, PostWidget w, {double pixelRatio = 3, DateTime? clock, double? fixedWidth}) async {
     final overlay = Overlay.maybeOf(context, rootOverlay: true);
     if (overlay == null) return null;
     final key = GlobalKey();
@@ -71,7 +86,12 @@ class WidgetRaster {
         top: 0,
         child: Material(
           type: MaterialType.transparency,
-          child: RepaintBoundary(key: key, child: PostWidgetView(widget: w, preview: true, showResults: true)),
+          child: RepaintBoundary(
+            key: key,
+            child: fixedWidth == null
+                ? PostWidgetView(widget: w, preview: true, showResults: true, clock: clock)
+                : SizedBox(width: fixedWidth, child: PostWidgetView(widget: w, preview: true, showResults: true, clock: clock)),
+          ),
         ),
       ),
     );
@@ -93,6 +113,8 @@ class WidgetRaster {
             width: (ro.size.width * w.scale / referenceWidth).clamp(0.1, 1.0).toDouble(),
             start: w.start,
             end: w.end,
+            logicalWidth: ro.size.width,
+            logicalHeight: ro.size.height,
           );
         } catch (_) {
           // pas encore dessiné : on réessaie à l'image suivante
@@ -101,6 +123,46 @@ class WidgetRaster {
       return null;
     } finally {
       entry.remove();
+    }
+  }
+
+  /// Dessine [w] (compte à rebours) pour [frames] secondes consécutives à partir de [start] et empile les images dans un seul PNG. Toutes les images ont la même taille (celle de la
+  /// première, la plus large) : le compte à rebours ne saute pas d'un chiffre à l'autre. Null si impossible : le téléchargement continue avec le widget figé.
+  static Future<StripLayer?> renderStrip(BuildContext context, PostWidget w, {required int frames, required DateTime start, double pixelRatio = 2}) async {
+    final n = frames.clamp(2, 121);
+    final first = await render(context, w, pixelRatio: pixelRatio, clock: start);
+    if (first == null || first.logicalWidth <= 0) return null;
+    final images = <ui.Image>[];
+    try {
+      images.add((await (await ui.instantiateImageCodec(first.png)).getNextFrame()).image);
+      final fw = images.first.width;
+      final fh = images.first.height;
+      for (var i = 1; i < n; i++) {
+        final l = await render(context, w, pixelRatio: pixelRatio, clock: start.add(Duration(seconds: i)), fixedWidth: first.logicalWidth);
+        if (l == null) return null;
+        final img = (await (await ui.instantiateImageCodec(l.png)).getNextFrame()).image;
+        if (img.width != fw || img.height != fh) {
+          img.dispose();
+          return null;   // une image de taille différente décalerait la bande : on garde le widget figé
+        }
+        images.add(img);
+      }
+      final rec = ui.PictureRecorder();
+      final c = Canvas(rec);
+      for (var i = 0; i < n; i++) {
+        c.drawImage(images[i], Offset(0, (i * fh).toDouble()), Paint());
+      }
+      final out = await rec.endRecording().toImage(fw, fh * n);
+      final data = await out.toByteData(format: ui.ImageByteFormat.png);
+      out.dispose();
+      if (data == null) return null;
+      return StripLayer(png: data.buffer.asUint8List(), frames: n, x: first.x, y: first.y, width: first.width);
+    } catch (_) {
+      return null;
+    } finally {
+      for (final i in images) {
+        i.dispose();
+      }
     }
   }
 }

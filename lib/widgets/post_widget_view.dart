@@ -12,7 +12,7 @@ import '../services/api/widgets_api.dart';
 /// Un widget posé sur une publication : sondage, quiz, question, réaction, rappel (le public répond), compte à rebours, lien, lieu, WhatsApp, appel, carte de vente.
 /// `preview` : aperçu dans l'éditeur (rien ne s'envoie). Fond clair et texte sombre : lisible sur n'importe quelle image ou vidéo, en mode clair comme sombre.
 class PostWidgetView extends StatefulWidget {
-  const PostWidgetView({super.key, required this.widget, this.preview = false, this.onChanged, this.showResults = false});
+  const PostWidgetView({super.key, required this.widget, this.preview = false, this.onChanged, this.showResults = false, this.clock});
 
   final PostWidget widget;
   final bool preview;
@@ -20,6 +20,9 @@ class PostWidgetView extends StatefulWidget {
   /// Dessin hors écran (vidéo téléchargée) : l'auteur voit les résultats comme à l'écran, même en aperçu.
   final bool showResults;
   final VoidCallback? onChanged;
+
+  /// Instant à afficher pour un compte à rebours (null = maintenant). Sert à dessiner, seconde après seconde, les images d'une vidéo téléchargée.
+  final DateTime? clock;
 
   @override
   State<PostWidgetView> createState() => _PostWidgetViewState();
@@ -170,7 +173,7 @@ class _PostWidgetViewState extends State<PostWidgetView> {
   }
 
   String _countdown(DateTime at) {
-    final d = at.difference(DateTime.now());
+    final d = at.difference(widget.clock ?? DateTime.now());
     if (d.isNegative) return context.tr('Terminé');
     final days = d.inDays;
     final h = d.inHours % 24;

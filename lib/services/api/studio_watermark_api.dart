@@ -35,12 +35,15 @@ class StudioWatermarkApi {
     return sha1.convert(utf8.encode(parts.join('|'))).toString();
   }
 
-  static Future<String> signedDownload(String postId, Map<String, Uint8List> layers, {void Function(String step)? onStep, List<WidgetLayer> widgets = const []}) async {
+  /// [animated] : widgets qui défilent (compte à rebours), une bande d'images par widget (une image par seconde). [asVideo] : publication IMAGE avec un widget animé : la copie téléchargée
+  /// est une vidéo de [videoSeconds] secondes (l'image, le compte à rebours qui défile, la signature).
+  static Future<String> signedDownload(String postId, Map<String, Uint8List> layers,
+      {void Function(String step)? onStep, List<WidgetLayer> widgets = const [], List<StripLayer> animated = const [], bool asVideo = false, int videoSeconds = 10}) async {
     // copie déjà gardée pour cette vidéo et ces dessins ? on la prend tout de suite : rien à envoyer ni à fabriquer
     // (avec des widgets affichés, le serveur calcule lui-même l'empreinte, qui compte leur dessin et leur place : pas de sonde ici)
     final hash = layersHash(layers);
     try {
-      if (widgets.isNotEmpty) throw StateError('widgets');
+      if (widgets.isNotEmpty || animated.isNotEmpty || asVideo) throw StateError('widgets');
       final hit = WalletApi.map(await ApiGateway.instance.client.get('/posts/$postId/signed-download/cached', query: {'hash': hash}));
       if (hit['url'] is String && (hit['url'] as String).isNotEmpty) return hit['url'] as String;
     } catch (_) {
@@ -58,9 +61,17 @@ class StudioWatermarkApi {
       final id = await ArgentUpload.bytes(w.png, contentType: 'image/png');
       widgetBody.add({'upload_id': id, 'x': w.x, 'y': w.y, 'w': w.width, if (w.start != null) 'start': w.start, if (w.end != null) 'end': w.end});
     }
+    // widgets animés : une bande par widget (le dessin change à chaque téléchargement : jamais de copie gardée)
+    final animatedBody = <Map<String, Object?>>[];
+    for (final s in animated.take(3)) {
+      final id = await ArgentUpload.bytes(s.png, contentType: 'image/png');
+      animatedBody.add({'upload_id': id, 'frames': s.frames, 'x': s.x, 'y': s.y, 'w': s.width});
+    }
     final body = <String, Object?>{
       'wm_upload_id': ids['pill'],
       if (widgetBody.isNotEmpty) 'widgets': widgetBody,
+      if (animatedBody.isNotEmpty) 'animated': animatedBody,
+      if (asVideo) ...{'as_video': true, 'video_seconds': videoSeconds},
       if (ids['logo'] != null) 'logo_upload_id': ids['logo'],
       if (ids['qr'] != null) 'qr_upload_id': ids['qr'],
       'outro': {
@@ -68,7 +79,7 @@ class StudioWatermarkApi {
           if (ids[k] != null) k: ids[k],
       },
       'async': true,
-      if (widgetBody.isEmpty) 'layers_hash': hash,
+      if (widgetBody.isEmpty && animatedBody.isEmpty && !asVideo) 'layers_hash': hash,
     };
     final res = await ApiGateway.instance.client.post('/posts/$postId/signed-download', body: body, longJob: true);
     final first = WalletApi.map(res);
@@ -106,10 +117,18 @@ class StudioWatermarkApi {
     throw ApiException(status: 504, code: 'watermark_timeout', message: 'La signature prend trop de temps. Réessaie.');
   }
 
-  static Future<File> sign(File video, Uint8List pill, {void Function(double)? onProgress}) async {
+  /// Signe une vidéo de la personne (copie enregistrée dans sa galerie). [logo] et [outro] (mêmes calques que pour un téléchargement : `story_pill`, `story_tag`, `post_pill`, `post_tag`,
+  /// `land_pill`, `land_tag`) ajoutent le logo animé et la fin Afrolook : la copie porte la MÊME marque qu'une vidéo téléchargée.
+  static Future<File> sign(File video, Uint8List pill, {Uint8List? logo, Map<String, Uint8List> outro = const {}, void Function(double)? onProgress}) async {
     final videoId = await UploadsApi.upload(video, contentType: 'video/mp4', onProgress: onProgress);
     final pillId = await ArgentUpload.bytes(pill, contentType: 'image/png');
-    final res = await ApiGateway.instance.client.post('/studio/watermark', body: {'upload_id': videoId, 'wm_upload_id': pillId}, longJob: true);
+    final logoId = logo == null ? null : await ArgentUpload.bytes(logo, contentType: 'image/png');
+    final outroIds = <String, String>{};
+    for (final e in outro.entries) {
+      outroIds[e.key] = await ArgentUpload.bytes(e.value, contentType: 'image/png');
+    }
+    final res = await ApiGateway.instance.client.post('/studio/watermark',
+        body: {'upload_id': videoId, 'wm_upload_id': pillId, if (logoId != null) 'logo_upload_id': logoId, if (outroIds.isNotEmpty) 'outro': outroIds}, longJob: true);
     final url = WalletApi.map(res)['url'] as String;
     final r = await http.get(Uri.parse(url));
     if (r.statusCode != 200) throw StateError('Téléchargement impossible');

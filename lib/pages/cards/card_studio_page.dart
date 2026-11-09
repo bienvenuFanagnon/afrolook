@@ -1,4 +1,5 @@
 import '../../services/authentic_video_check.dart';
+import '../../services/branded_save.dart';
 import '../../services/follower_milestone.dart';
 import '../../services/template_link.dart';
 import 'dart:typed_data';
@@ -177,7 +178,13 @@ class _CardStudioPageState extends State<CardStudioPage> {
     try {
       final png = await _captureImage();
       if (png == null) return;
-      final ok = await CardExport.saveToGallery(png);
+      // la carte enregistrée porte la signature Afrolook comme un téléchargement ; sans signature, pas de fichier
+      final signed = await BrandedSave.imageBytes(png, pseudo: context.read<UserAuthProvider>().loginUserData.pseudo);
+      if (signed == null) {
+        _say(tr('La signature Afrolook n\'a pas pu être ajoutée : réessaie dans un instant.'));
+        return;
+      }
+      final ok = await CardExport.saveToGallery(signed);
       _say(ok ? tr('Carte enregistrée dans ta galerie ✅') : tr('Autorise l\'accès aux photos pour enregistrer la carte.'));
     } catch (e, st) {
       _fail('save', e, st);

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 
 import '../l10n/tr.dart';
 import '../models/post_widget.dart';
@@ -199,6 +200,44 @@ class _DraftWidgetsLayerState extends State<DraftWidgetsLayer> {
                 ),
               ),
           ]);
+        },
+      ),
+    );
+  }
+}
+
+/// Les widgets en cours d'ajout TELS QU'ILS SERONT VUS après la publication, pour l'aperçu final avant de poster : à leur place et à leur taille, sans aucune commande
+/// (pas de « ⋮ »), sans réagir aux touchers. Avec une vidéo ([video]), un widget réglé « Visible de… à… » n'apparaît que dans cette partie, comme après la publication.
+/// [mediaAspect] : format du média affiché en entier (largeur / hauteur) ; null = tout l'espace.
+class DraftWidgetsPreview extends StatelessWidget {
+  const DraftWidgetsPreview({super.key, this.mediaAspect, this.video});
+  final double? mediaAspect;
+  final VideoPlayerController? video;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: ValueListenableBuilder<List<PostWidget>>(
+        valueListenable: PostWidgetsLink.drafts,
+        builder: (context, list, _) {
+          if (list.isEmpty) return const SizedBox.shrink();
+          Widget layer() => LayoutBuilder(builder: (context, box) {
+                final size = Size(box.maxWidth, box.maxHeight);
+                final frame = mediaFrame(size, mediaAspect);
+                final now = video == null ? null : video!.value.position.inMilliseconds / 1000;
+                return Stack(clipBehavior: Clip.none, children: [
+                  for (final w in list)
+                    if (now == null || ((w.start == null || now >= w.start!) && (w.end == null || now <= w.end!)))
+                      Positioned.fill(
+                        child: Align(
+                          alignment: widgetAlignment(w, size, frame),
+                          child: Transform.scale(scale: w.scale, child: PostWidgetView(key: ValueKey('preview_widget_${list.indexOf(w)}'), widget: w, preview: true)),
+                        ),
+                      ),
+                ]);
+              });
+          // vidéo : le calque suit la position de lecture (apparition et disparition des widgets réglés dans le temps)
+          return video == null ? layer() : ValueListenableBuilder<VideoPlayerValue>(valueListenable: video!, builder: (_, __, ___) => layer());
         },
       ),
     );

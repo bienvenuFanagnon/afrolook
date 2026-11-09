@@ -23,7 +23,7 @@ void main() {
     expect(list.first.id, 'noel');
     expect(list[1].id, 'amour');
     expect(list.any((t) => t.id == kPlainTemplateId), isFalse);
-    expect(list.length, kMontageTemplates.where((t) => t.id != kPlainTemplateId).length);
+    expect(list.length, kMontageTemplates.where((t) => t.id != kPlainTemplateId && t.face == null).length);   // sans le moteur de visage (tout sauf Android), les modèles à filtres de visage ne sont pas proposés
     expect(TemplateStatsApi.usesOf('m:amour'), 90);
     expect(TemplateStatsApi.usesOf('m:inconnu'), 0);
     expect(TemplateStatsApi.rankOf('c:neon'), 2);

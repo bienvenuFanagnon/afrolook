@@ -7,10 +7,7 @@ import 'package:flutter/material.dart';
 import '../../l10n/tr.dart';
 import '../../models/model_data.dart';
 import '../../pages/cards/card_entry.dart';
-import '../../pages/studio/montage/montage_editor_page.dart';
-import '../../pages/studio/studio_models.dart';
-import '../../pages/create/create_flow.dart';
-import '../../services/post_source_link.dart';
+import 'community_template_open.dart';
 import '../../services/template_link.dart';
 import '../../pages/studio/artist_marketplace.dart' show PostSoundCredit;
 import '../../theme/app_colors.dart';
@@ -20,18 +17,16 @@ class TemplateTry {
 
   /// Ouvre le template et, à la fin, le formulaire de post. [fromPostId] : le post d'où l'on vient (il compte l'essai).
   static Future<void> open(BuildContext context, TemplateRef ref, {String? fromPostId}) async {
+    if (ref.isCommunity) return CommunityTemplateOpen.byId(context, ref.id, fromPostId: fromPostId);   // modèle d'une personne : chargé du serveur (il peut avoir été retiré)
+    if (ref.isMontage) {
+      final tp = ref.montage;
+      if (tp == null) return;
+      // même parcours de création que partout (filtres de visage d'abord s'il y en a, éditeur, formulaire unique) : le post retient le modèle et compte l'essai du post d'origine
+      return CommunityTemplateOpen.openMontage(context, tp, fromPostId: fromPostId);
+    }
     PostTemplateLink.begin(fromPostId);
     try {
-      if (ref.isMontage) {
-        final tp = ref.montage;
-        if (tp == null) return;
-        final r = await Navigator.push<StudioResult>(context, MaterialPageRoute(builder: (_) => MontageEditorPage(template: tp)));
-        if (r == null || !context.mounted) return;
-        // même parcours de création que partout (formulaire unique) : le post retient le modèle et compte l'essai du post d'origine
-        await openCreateForm(context, studio: r, source: PostSourceLink.edited);
-      } else {
-        await CardEntry.openCompose(context, style: ref.cardStyle, template: ref.cardTemplate);
-      }
+      await CardEntry.openCompose(context, style: ref.cardStyle, template: ref.cardTemplate);
     } finally {
       PostTemplateLink.clear();
     }
@@ -116,8 +111,8 @@ class TemplateTryPill extends StatelessWidget {
                 Flexible(
                   child: Text.rich(
                     TextSpan(children: [
-                      TextSpan(text: context.tr(ref.isCard ? 'Essayer ce modèle' : 'Essayer ce template'), style: TextStyle(color: dark ? Colors.white : c.textPrimary, fontWeight: FontWeight.w900, fontSize: 12.5)),
-                      TextSpan(text: '  ·  ${ref.label}', style: TextStyle(color: dark ? Colors.white70 : c.textSecondary, fontWeight: FontWeight.w700, fontSize: 12)),
+                      TextSpan(text: context.tr(ref.isCard || ref.isCommunity ? 'Essayer ce modèle' : 'Essayer ce template'), style: TextStyle(color: dark ? Colors.white : c.textPrimary, fontWeight: FontWeight.w900, fontSize: 12.5)),
+                      if (ref.label.isNotEmpty) TextSpan(text: '  ·  ${ref.label}', style: TextStyle(color: dark ? Colors.white70 : c.textSecondary, fontWeight: FontWeight.w700, fontSize: 12)),
                       if (tries > 0) TextSpan(text: '  ·  ${context.tr(tries > 1 ? '{n} essais' : '{n} essai', {'n': tries > 999 ? '${(tries / 1000).toStringAsFixed(1).replaceAll('.', ',')} k' : tries})}', style: TextStyle(color: c.textSecondary, fontSize: 11.5)),
                     ]),
                     maxLines: 1,

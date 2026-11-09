@@ -13,6 +13,7 @@ import '../ads/admob_service.dart';
 import '../ads/gold_gate.dart';
 import '../l10n/tr.dart';
 import '../models/model_data.dart';
+import '../models/post_widget.dart' show WidgetKind;
 import '../pages/cards/card_models.dart' show cardPostLink;
 import '../pages/studio/montage/montage_export.dart';
 import '../providers/authProvider.dart';
@@ -265,6 +266,7 @@ class PostDownload {
       final out = <WidgetLayer>[];
       if (context.mounted) {
         for (final w in post.widgets.take(5)) {
+          if (w.kind == WidgetKind.countdown) continue;   // le compte à rebours défile : il est dessiné image par image (bandes), pas figé
           try {
             final l = await WidgetRaster.render(context, w);
             if (l != null) out.add(l);
@@ -272,6 +274,22 @@ class PostDownload {
         }
       }
       return shownWidgets = out;
+    }
+    // widgets qui défilent (compte à rebours) : le fichier téléchargé doit montrer ce que voient les gens, seconde après seconde. Une vidéo : une image par seconde sur ses 60 premières
+    // secondes (au-delà, la dernière reste) ; une image : elle devient une vidéo de 10 secondes. Chaque image est dessinée à l'instant exact du téléchargement + son décalage.
+    final animatedWidgets = [for (final w in post.widgets.take(5)) if (w.kind == WidgetKind.countdown) w];
+    final startedAt = DateTime.now();
+    const imageVideoSeconds = 10;
+    Future<List<StripLayer>> stripLayers(int frames) async {
+      final out = <StripLayer>[];
+      if (!context.mounted) return out;
+      for (final w in animatedWidgets.take(3)) {
+        try {
+          final s = await WidgetRaster.renderStrip(context, w, frames: frames, start: startedAt);
+          if (s != null) out.add(s);
+        } catch (_) {}   // un widget qui ne se dessine pas ne bloque jamais le téléchargement
+      }
+      return out;
     }
     String? audioPath;
     try {
@@ -287,7 +305,9 @@ class PostDownload {
         // Vidéo : le serveur la pose (la vidéo signée change de coin) ; image : sur le téléphone. En cas d'échec, la copie est téléchargée sans signature : jamais de blocage.
         final label = signatureLabel(post);
         final qrLink = post.id == null ? null : cardPostLink(post.id!);
-        if (it.kind == 'video') {
+        // une image avec un compte à rebours devient une vidéo (image + secondes qui défilent + signature) ; sinon une image reste une image
+        final imageAsVideo = it.kind == 'image' && animatedWidgets.isNotEmpty && post.id != null;
+        if (it.kind == 'video' || imageAsVideo) {
           if (post.id == null) continue;
           try {
             // calques dessinés ici (police et textes de l'application) : pastille, logo animé, QR et, pour la fin Afrolook, ses deux formats (story et 4:5)
@@ -309,6 +329,9 @@ class PostDownload {
                 'land_tag': wide.$2,
               },
               widgets: layersOfWidgets,
+              animated: await stripLayers(imageAsVideo ? imageVideoSeconds : 60),
+              asVideo: imageAsVideo,
+              videoSeconds: imageVideoSeconds,
               onStep: (st) {
                 if (!context.mounted) return;
                 step.value = prefix + (st == 'sending' ? context.tr('Préparation de la signature…') : context.tr('Signature et fin Afrolook de la vidéo…'));
@@ -322,9 +345,9 @@ class PostDownload {
         step.value = prefix + context.tr('Téléchargement…');
         final r = await http.get(Uri.parse(url)).timeout(const Duration(minutes: 3));
         if (r.statusCode != 200) continue;
-        final ext = it.kind == 'video' ? 'mp4' : it.kind == 'audio' ? 'm4a' : 'jpg';
+        final ext = (it.kind == 'video' || imageAsVideo) ? 'mp4' : it.kind == 'audio' ? 'm4a' : 'jpg';
         Uint8List bytes = r.bodyBytes;
-        if (it.kind == 'image') {
+        if (it.kind == 'image' && !imageAsVideo) {
           try {
             final withWidgets = await WidgetRaster.compositeOnImage(r.bodyBytes, await widgetLayers());
             bytes = await Watermark.signImageBytes(withWidgets, label, strict: true, qrData: qrLink);
@@ -338,7 +361,7 @@ class PostDownload {
         if (it.kind == 'audio') {
           audioPath = f.path;
           saved++;
-        } else if (await MontageExport.saveToGallery(f, video: it.kind == 'video')) {
+        } else if (await MontageExport.saveToGallery(f, video: it.kind == 'video' || imageAsVideo)) {
           saved++;
         }
       }

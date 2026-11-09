@@ -19,6 +19,7 @@ import '../cards/card_events.dart';
 import '../cards/card_models.dart' show CardStyleId;
 import '../studio/montage/montage_catalog.dart' show MontageTemplate;
 import '../studio/montage/montage_gallery_page.dart';
+import '../studio/montage/template_thumb.dart';
 import '../studio/montage/montage_music.dart' show MontageMusic;
 import '../studio/studio_models.dart' show StudioResult;
 import '../../services/api/template_stats_api.dart';
@@ -617,7 +618,7 @@ class _TemplatesStripState extends State<_TemplatesStrip> {
                     child: SizedBox(
                       width: 104,
                       height: 120,
-                      child: Image.asset(t.sampleIsVideo ? 'assets/images/intro4.jpg' : t.sample, fit: BoxFit.cover, cacheWidth: 260),
+                      child: TemplateThumb(asset: t.sampleIsVideo ? 'assets/images/intro4.jpg' : t.sample, video: t.showsVideo, cacheWidth: 260, badgeSize: 34),
                     ),
                   ),
                   const SizedBox(height: 6),

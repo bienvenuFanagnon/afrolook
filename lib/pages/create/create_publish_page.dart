@@ -26,6 +26,7 @@ import '../../widgets/monetized_post_option.dart';
 import '../../widgets/original_badge.dart';
 import '../defi/defi_ui.dart';
 import '../studio/studio_sound_link.dart';
+import '../studio/montage/montage_preview_page.dart';
 import '../user/userAbonnementPage.dart';
 import 'create_result.dart';
 import 'cover_picker_sheet.dart';
@@ -474,7 +475,15 @@ class _CreatePublishPageState extends State<CreatePublishPage> {
       case CreatePostKind.text:
         return const SizedBox.shrink();
     }
-    return Container(
+    // toucher l'aperçu ouvre le post tel qu'il sera vu, widgets compris (images en mémoire ou fichier) ; pas d'aperçu plein écran pour l'audio
+    final File? file = widget.kind == CreatePostKind.video ? widget.video : (widget.imageFiles.isNotEmpty ? widget.imageFiles.first : null);
+    final Uint8List? mem = widget.kind == CreatePostKind.image && widget.images.isNotEmpty ? widget.images.first : null;
+    final canOpen = widget.kind != CreatePostKind.audio && (file != null || mem != null);
+    return GestureDetector(
+      onTap: !canOpen
+          ? null
+          : () => Navigator.of(context).push(MaterialPageRoute(fullscreenDialog: true, builder: (_) => MontagePreviewPage(file: mem != null ? null : file, bytes: mem, video: widget.kind == CreatePostKind.video, plain: true))),
+      child: Container(
       key: const ValueKey('publish_preview'),
       width: 80,
       height: 104,
@@ -489,6 +498,7 @@ class _CreatePublishPageState extends State<CreatePublishPage> {
             child: Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: const Color(0xB3000000), borderRadius: BorderRadius.circular(6)), child: Text(chip, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700))),
           ),
       ]),
+      ),
     );
   }
 
