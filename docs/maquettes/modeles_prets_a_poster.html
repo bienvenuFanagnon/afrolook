@@ -1,0 +1,573 @@
+<title>Modèles prêts à poster</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Concept : même page de revue que « Parcours de création » : les écrans de l'application sont montrés dans des téléphones sombres, du plus général (la bibliothèque de modèles) au plus précis (un modèle, puis la création d'un modèle par une personne). */
+:root{
+  --bg:#F6F4EE; --card:#FFFFFF; --ink:#15171A; --muted:#5E646C; --line:#E2DED3;
+  --yellow:#FFC400; --on-yellow:#1A1500; --amber:#8A5A00; --red:#E5484D; --green:#1F8A4C;
+  --soft:#EFEBDF; --phone:#0E0F11;
+  --display:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif; --body:'Figtree','Segoe UI',system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#101214; --card:#171A1D; --ink:#F2F0EA; --muted:#A3A9B0; --line:#2A2E33; --amber:#FFC400; --soft:#1E2226; --phone:#050607; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#101214; --card:#171A1D; --ink:#F2F0EA; --muted:#A3A9B0; --line:#2A2E33; --amber:#FFC400; --soft:#1E2226; --phone:#050607; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--body);margin:0;padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px));padding-block:28px 64px}
+.wrap{max-width:1120px;margin-inline:auto;display:grid;gap:56px;grid-template-columns:minmax(0,1fr)}
+.wrap>*{min-width:0}
+h1,h2,h3{font-family:var(--display);line-height:1.1;margin:0;text-wrap:balance}
+h1{font-size:clamp(34px,6vw,58px);font-weight:800;letter-spacing:-.02em}
+h2{font-size:clamp(24px,3.4vw,34px);font-weight:700;letter-spacing:-.01em}
+h3{font-size:18px;font-weight:700}
+p{margin:0}
+.lead{font-size:18px;color:var(--muted);max-width:62ch;margin-top:14px}
+.kicker{font:700 12px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--amber)}
+.sec{display:grid;gap:22px}
+.sec>p{color:var(--muted);max-width:68ch}
+.cmp{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.box{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;display:grid;gap:10px;align-content:start;min-width:0}
+.box ul{margin:0;padding-left:18px;display:grid;gap:6px;color:var(--muted)}
+.box.new{border-color:var(--yellow);border-width:2px}
+.tag{display:inline-block;font:700 12px var(--body);padding:3px 10px;border-radius:99px;background:var(--soft);color:var(--muted);justify-self:start}
+.box.new .tag{background:var(--yellow);color:var(--on-yellow)}
+
+/* recette : les ingrédients d'un modèle */
+.recipe{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.ing{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;display:grid;gap:6px;align-content:start}
+.ing b{font:700 15px var(--display)}
+.ing span{font-size:14px;color:var(--muted)}
+.ing .k{font:700 11px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--amber)}
+
+/* palette de widgets */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;gap:8px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:99px;padding:6px 14px;font-weight:600;font-size:14px}
+.chip i{font-style:normal;font:700 11px var(--body);border-radius:99px;padding:2px 8px;background:var(--soft);color:var(--muted)}
+.chip.n{border-color:var(--yellow)}
+.chip.n i{background:var(--yellow);color:var(--on-yellow)}
+
+/* rangée de téléphones */
+.row{display:flex;gap:26px;overflow-x:auto;padding:8px 4px 20px;scroll-snap-type:x mandatory;scrollbar-width:thin}
+.item{flex:none;width:240px;scroll-snap-align:start;display:grid;gap:10px;align-content:start}
+.item.w{width:272px}
+.item h3{font-size:16px}
+.item p{font-size:13.5px;color:var(--muted)}
+.item .meta{display:flex;flex-wrap:wrap;gap:6px}
+.m{font:600 11.5px var(--body);padding:3px 9px;border-radius:99px;background:var(--soft);color:var(--muted)}
+.m.y{background:var(--yellow);color:var(--on-yellow)}
+.m.g{background:var(--green);color:#fff}
+.ph{width:240px;height:490px;border-radius:34px;background:var(--phone);padding:8px;box-shadow:0 18px 40px -18px rgba(0,0,0,.45);position:relative}
+.item.w .ph{width:272px;height:556px;border-radius:38px;padding:9px}
+.scr{width:100%;height:100%;border-radius:27px;overflow:hidden;position:relative;background:#16181B;color:#F3F1EA;font:12px/1.35 var(--body);display:flex;flex-direction:column}
+.item.w .scr{border-radius:30px;font-size:13px}
+.sb{display:flex;justify-content:space-between;padding:8px 16px 3px;font-size:10px;color:#C9CDD2;flex:none}
+.top{display:flex;align-items:center;justify-content:space-between;padding:4px 12px 8px;flex:none}
+.top b{font:700 14px var(--display)}
+.top small{color:#A9AFB6;font-size:11px}
+.ttl{margin:0;font:700 16px var(--display)}
+.sub{color:#A9AFB6;font-size:12px}
+
+/* scène d'un modèle : emplacements média + widgets posés dessus */
+.stage{position:relative;flex:1;margin:0 8px 8px;border-radius:16px;overflow:hidden;background:#0E0F11}
+.md{position:absolute;display:grid;place-items:center;font:700 9.5px var(--body);letter-spacing:.08em;color:rgba(255,255,255,.78);text-transform:uppercase;text-align:center}
+.md small{display:block;font-weight:500;letter-spacing:0;text-transform:none;font-size:10px;opacity:.85}
+.g1{background:linear-gradient(135deg,#7A4B2A,#C98A55 55%,#3A2F18)}
+.g2{background:linear-gradient(135deg,#2B4A63,#5BB6E8 60%,#14212E)}
+.g3{background:linear-gradient(135deg,#5A3A5E,#C9709A 60%,#2A1830)}
+.g4{background:linear-gradient(135deg,#1F5A3A,#6DDB9B 60%,#10281C)}
+.g5{background:linear-gradient(160deg,#3A2418,#8A5A3A 50%,#1A1008)}
+.g6{background:linear-gradient(135deg,#8A5A00,#FFC400 65%,#4A3000)}
+.wg{position:absolute;display:inline-flex;gap:5px;align-items:center;padding:3px 9px;border-radius:99px;background:rgba(10,11,13,.62);color:#fff;font:700 11px var(--body);white-space:nowrap}
+.wg.y{background:var(--yellow);color:var(--on-yellow)}
+.wg.r{background:var(--red)}
+.wg.gr{background:var(--green)}
+.wg.lg{font-size:13px;padding:5px 12px}
+.big{position:absolute;font:800 44px/1 var(--display);color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.55)}
+.tx{position:absolute;font:700 15px/1.2 var(--display);color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.6);text-align:center}
+.music{position:absolute;left:8px;bottom:8px;display:flex;gap:6px;align-items:center;background:rgba(10,11,13,.62);border-radius:99px;padding:3px 10px;font:600 10.5px var(--body)}
+.stat{position:absolute;right:8px;bottom:8px;font:700 10.5px var(--body);opacity:.9;background:rgba(10,11,13,.55);border-radius:99px;padding:3px 9px}
+.cap{display:flex;justify-content:space-between;align-items:center;padding:0 12px 10px;flex:none;font:600 11px var(--body);color:#C9CDD2}
+.cap b{color:var(--yellow);font-weight:700}
+
+/* dragon dessiné en CSS */
+.dr{position:absolute;left:50%;top:22%;width:96px;height:96px;margin-left:-48px;border-radius:50%;background:#3FA34D}
+.dr:before,.dr:after{content:"";position:absolute;top:-18px;width:0;height:0;border-left:11px solid transparent;border-right:11px solid transparent;border-bottom:34px solid #E8D9A8}
+.dr:before{left:8px;transform:rotate(-18deg)}.dr:after{right:8px;transform:rotate(18deg)}
+.dr .e{position:absolute;top:34px;width:20px;height:24px;border-radius:50%;background:#FFB300}
+.dr .e.a{left:18px}.dr .e.b{right:18px}
+.dr .e:after{content:"";position:absolute;left:8px;top:3px;width:4px;height:18px;border-radius:3px;background:#111}
+.dr .sn{position:absolute;left:50%;bottom:8px;width:56px;height:30px;margin-left:-28px;border-radius:50%;background:#8FD39A}
+.fl{position:absolute;width:26px;height:40px;border-radius:50% 50% 50% 50%/62% 62% 38% 38%;background:linear-gradient(#FF6A00,#FFD43B 70%,#FFF6D6);transform:rotate(180deg)}
+
+/* écrans d'interface */
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#1F2226;border-radius:22px 22px 0 0;padding:10px 14px 16px;display:grid;gap:10px}
+.sheet .h{width:38px;height:4px;border-radius:3px;background:#4A5057;margin:0 auto 4px}
+.dim{position:absolute;inset:0;background:rgba(0,0,0,.6)}
+.btn{display:grid;place-items:center;border-radius:14px;padding:11px;background:var(--yellow);color:var(--on-yellow);font:800 14px var(--body)}
+.btn.o{background:#272B30;color:#F3F1EA;border:1px solid #343A40;font-weight:700}
+.row2{display:flex;gap:8px;align-items:center}
+.fchips{display:flex;gap:6px;padding:0 12px 8px;flex:none;overflow:hidden}
+.fc{flex:none;font:700 11px var(--body);padding:5px 11px;border-radius:99px;background:#272B30;border:1px solid #343A40;color:#E4E6E9}
+.fc.on{background:var(--yellow);color:var(--on-yellow);border-color:var(--yellow)}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 10px;flex:1;min-height:0;overflow:hidden;align-content:start}
+.tl{border-radius:14px;overflow:hidden;background:#1D2024;border:1px solid #2C3036;display:grid;grid-template-rows:96px auto}
+.tl .pv{position:relative}
+.tl .nm{padding:6px 8px;font:700 11.5px var(--body);line-height:1.25}
+.tl .nm small{display:block;font-weight:500;color:#A9AFB6;font-size:10.5px}
+.slot{display:flex;gap:10px;align-items:center;padding:10px;border-radius:14px;background:#272B30;border:1px dashed #4A5057}
+.slot.ok{border-style:solid;border-color:var(--green)}
+.slot .th{width:44px;height:44px;border-radius:10px;flex:none;display:grid;place-items:center;font:700 10px var(--body);color:rgba(255,255,255,.8)}
+.slot b{display:block;font-size:13px}
+.slot small{color:#A9AFB6;font-size:11.5px}
+.post{margin:6px 10px;padding:9px;border-radius:14px;background:#1D2024}
+.av{width:24px;height:24px;border-radius:50%;background:#33383E;display:inline-block;vertical-align:middle;margin-right:7px}
+.ribbon{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;padding:8px 10px;border-radius:12px;background:#272B30;border:1px solid #343A40;font:600 11px var(--body)}
+.ribbon b{color:var(--yellow)}
+.ribbon .go{background:var(--yellow);color:var(--on-yellow);border-radius:99px;padding:5px 10px;font-weight:800;font-size:11px;white-space:nowrap}
+.strip{display:flex;gap:8px;padding:0 12px;overflow:hidden;flex:none}
+.sc{flex:none;width:92px;border-radius:12px;overflow:hidden;background:#1D2024;border:1px solid #2C3036}
+.sc .pv{height:92px;position:relative}
+.sc .nm{padding:4px 6px;font:700 10.5px var(--body)}
+.sc .nm small{display:block;font-weight:500;color:#A9AFB6;font-size:9.5px}
+.more{flex:none;width:70px;display:grid;place-items:center;border-radius:12px;border:1px dashed #4A5057;font:800 11px var(--body);color:var(--yellow);text-align:center;padding:6px}
+.inp{padding:9px 11px;border-radius:12px;background:#272B30;border:1px solid #343A40;font-size:12.5px;display:flex;justify-content:space-between;gap:8px}
+.inp small{color:#A9AFB6}
+.seg{display:flex;gap:6px}
+.seg span{flex:1;text-align:center;padding:8px 4px;border-radius:10px;background:#272B30;border:1px solid #343A40;font:700 11.5px var(--body)}
+.seg span.on{background:var(--yellow);color:var(--on-yellow);border-color:var(--yellow)}
+.gain{display:flex;justify-content:space-between;align-items:center;padding:9px 11px;border-radius:12px;background:#1D2024;border:1px solid #2C3036}
+.gain b{font:800 15px var(--display);color:var(--yellow)}
+.nav{margin-top:auto;display:flex;justify-content:space-around;align-items:center;padding:8px 6px 12px;background:#1D2024;flex:none}
+.nav span{width:20px;height:20px;border-radius:7px;background:#33383E}
+.plus{width:38px;height:38px;border-radius:50%;background:var(--yellow);color:var(--on-yellow);display:grid;place-items:center;font-weight:800;font-size:23px;line-height:1}
+
+/* questions et plan */
+.q{display:grid;gap:12px}
+.q .box b{font:700 16px var(--display)}
+.q .box p{color:var(--muted);font-size:15px}
+.q .box .rec{color:var(--ink);font-weight:600}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.note{font-size:14px;color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.row{scroll-behavior:smooth}}
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="kicker">Proposition à valider · modèles prêts à poster</div>
+  <h1>Je choisis un modèle, j'ajoute mes médias, c'est prêt.</h1>
+  <p class="lead">Un modèle est une recette complète faite d'avance : combien de vidéos ou de photos il demande, les filtres de notre moteur, les widgets, les textes, la musique. La personne dépose ses médias et publie. Les modèles les plus utilisés sont mis en avant, et n'importe qui peut créer le sien, gratuit ou payant en pièces.</p>
+</header>
+
+<section class="sec">
+  <h2>Ce qui change par rapport à aujourd'hui</h2>
+  <div class="cmp">
+    <div class="box"><span class="tag">Aujourd'hui</span>
+      <h3>53 modèles du Studio</h3>
+      <ul><li>Une seule photo ou vidéo par modèle (deux photos pour quelques-uns)</li><li>Fournis seulement par Afrolook</li><li>Pas de filtres de visage, pas de widgets interactifs</li><li>Aucun compteur d'utilisation, aucune mise en avant dans le fil</li></ul>
+    </div>
+    <div class="box new"><span class="tag">Demain</span>
+      <h3>Une bibliothèque vivante de modèles</h3>
+      <ul><li>1 vidéo, 2 vidéos, vidéo + photo, ou 2 à 5 photos : le modèle dit ce qu'il lui faut</li><li>Filtres du moteur (avatar, feu, beauté, fond flou) + widgets + textes + musique ou non</li><li>Chaque utilisation est comptée, les plus utilisés remontent</li><li>Les personnes créent et vendent leurs modèles, gratuits ou payants en pièces</li></ul>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <h2>Un modèle, c'est sept ingrédients</h2>
+  <p>Le créateur du modèle règle tout dans le Studio, puis enregistre le résultat comme modèle. L'utilisateur ne voit que ce qu'il doit fournir.</p>
+  <div class="recipe">
+    <div class="ing"><span class="k">Emplacements</span><b>Ce que la personne apporte</b><span>De 1 à 5 médias : vidéo, photo, ou un mélange. Chaque emplacement a un nom (« ta vidéo », « la photo d'avant »).</span></div>
+    <div class="ing"><span class="k">Moteur</span><b>Filtres appliqués d'office</b><span>Avatar, effet de bouche (feu, pièces), beauté, fond flou, couleurs. Posés sur un emplacement précis.</span></div>
+    <div class="ing"><span class="k">Widgets</span><b>Les éléments posés sur l'image</b><span>Compteur, décompte, prix, vote, drapeau… liste complète plus bas.</span></div>
+    <div class="ing"><span class="k">Textes</span><b>Titres et phrases modifiables</b><span>Préremplis, la personne les change ou les retire.</span></div>
+    <div class="ing"><span class="k">Musique</span><b>Avec ou sans</b><span>Une piste de la bibliothèque, ou aucune. Réglable par la personne.</span></div>
+    <div class="ing"><span class="k">Modifiable</span><b>Rien n'est figé</b><span>La personne change les emplacements, zoome et dézoome ses images, les recadre, réécrit les textes, ajoute ou retire des widgets, change la musique.</span></div>
+    <div class="ing"><span class="k">Prix</span><b>Gratuit ou en pièces</b><span>Fixé par le créateur dans une fourchette. Débité une seule fois, au rendu réussi.</span></div>
+  </div>
+</section>
+
+<section class="sec">
+  <h2>Les widgets : ceux de l'application, jusqu'à trois par post</h2>
+  <p>L'application a déjà onze widgets de publication, et la personne en met jusqu'à trois sur un même post. Un modèle peut en pré-remplir un ou plusieurs ; la personne les modifie, les retire ou en ajoute d'autres. Le compte à rebours sert aux anniversaires et aux événements à venir.</p>
+  <div class="chips">
+    <span class="chip">Compte à rebours <i>existe</i></span><span class="chip">Rappel <i>existe</i></span><span class="chip">Lien <i>existe</i></span><span class="chip">Lieu <i>existe</i></span><span class="chip">WhatsApp <i>existe</i></span><span class="chip">Appeler <i>existe</i></span><span class="chip">Carte vente (prix) <i>existe</i></span><span class="chip">Sondage <i>existe</i></span><span class="chip">Quiz <i>existe</i></span><span class="chip">Question <i>existe</i></span><span class="chip">Réaction <i>existe</i></span>
+  </div>
+  <p>Les éléments du Studio posés sur l'image existent aussi : titre, texte, badge, @pseudo, statistiques, abonnés, drapeau, cadre, teinte, sous-titres automatiques. Ce qui serait à créer, et seulement si tu le veux : score de match, « Jour N », barre d'objectif, durée et ingrédients d'une recette.</p>
+  <div class="chips">
+    <span class="chip n">Score de match <i>à créer</i></span><span class="chip n">Jour N (« Jour 30 ») <i>à créer</i></span><span class="chip n">Barre d'objectif <i>à créer</i></span><span class="chip n">Durée et ingrédients <i>à créer</i></span>
+  </div>
+</section>
+
+<section class="sec">
+  <h2>Neuf combinaisons pour se rendre compte</h2>
+  <p>Chaque téléphone montre un modèle tel que la personne le verra avant d'y mettre ses médias. Les zones colorées sont les emplacements, les pastilles sont les widgets. Faites défiler vers la droite.</p>
+  <div class="row">
+
+    <div class="item"><div class="ph"><div class="scr">
+      <div class="sb"><span>9:41</span><span>Duo réaction</span></div>
+      <div class="stage">
+        <div class="md g1" style="left:0;right:0;top:0;height:49%">Vidéo 1<small>toi</small></div>
+        <div class="md g2" style="left:0;right:0;bottom:0;height:49%">Vidéo 2<small>la vidéo à laquelle tu réponds</small></div>
+        <span class="wg y" style="left:8px;top:8px">RÉACTION</span>
+        <span class="wg" style="right:8px;top:8px">♥ 1,4 k</span>
+        <span class="tx" style="left:10%;right:10%;top:44%">« Attends, quoi ?! »</span>
+        <span class="wg" style="left:8px;bottom:34px">@ton_pseudo</span>
+        <span class="music">♪ Afrobeat léger</span>
+      </div>
+    </div></div>
+    <h3>Duo réaction</h3>
+    <div class="meta"><span class="m">2 vidéos</span><span class="m">Sous-titres auto</span><span class="m">Musique</span></div>
+    <p>Deux vidéos l'une sur l'autre, sous-titres et compteur déjà posés.</p>
+    <div class="meta"><span class="m g">Gratuit</span><span class="m">18,2 k utilisations</span></div></div>
+
+    <div class="item"><div class="ph"><div class="scr">
+      <div class="sb"><span>9:41</span><span>Avant / Après</span></div>
+      <div class="stage">
+        <div class="md g3" style="left:0;width:50%;top:0;bottom:0">Photo<small>avant</small></div>
+        <div class="md g4" style="right:0;width:50%;top:0;bottom:0">Vidéo<small>après</small></div>
+        <div style="position:absolute;left:50%;top:0;bottom:0;width:3px;margin-left:-1px;background:#fff"></div>
+        <div style="position:absolute;left:50%;top:46%;width:26px;height:26px;margin-left:-13px;border-radius:50%;background:#fff;color:#111;display:grid;place-items:center;font-weight:800;font-size:12px">⇆</div>
+        <span class="wg y" style="left:8px;top:8px">Jour 1</span>
+        <span class="wg y" style="right:8px;top:8px">Jour 30</span>
+        <span class="tx" style="left:10%;right:10%;bottom:44px">Ma transformation</span>
+        <span class="wg" style="left:8px;bottom:8px">@ton_pseudo</span>
+      </div>
+    </div></div>
+    <h3>Avant / Après</h3>
+    <div class="meta"><span class="m">1 photo + 1 vidéo</span><span class="m">Beauté</span><span class="m">Sans musique</span></div>
+    <p>Un curseur sépare les deux moments ; la beauté du moteur est appliquée à la vidéo.</p>
+    <div class="meta"><span class="m g">Gratuit</span><span class="m">9,7 k utilisations</span></div></div>
+
+    <div class="item"><div class="ph"><div class="scr">
+      <div class="sb"><span>9:41</span><span>Dragon qui crache le feu</span></div>
+      <div class="stage"><div class="md g5" style="inset:0">Vidéo selfie</div>
+        <div class="dr"><span class="e a"></span><span class="e b"></span><span class="sn"></span></div>
+        <span class="fl" style="left:46%;top:52%"></span><span class="fl" style="left:36%;top:58%;transform:rotate(200deg) scale(.8)"></span><span class="fl" style="left:56%;top:58%;transform:rotate(160deg) scale(.8)"></span><span class="fl" style="left:44%;top:68%;transform:rotate(180deg) scale(1.25)"></span>
+        <span class="wg y" style="left:8px;top:8px">Avatar Dragon</span>
+        <span class="wg r" style="right:8px;top:8px">Effet Feu</span>
+        <span class="tx" style="left:10%;right:10%;bottom:36px">Ouvre la bouche !</span>
+        <span class="music">♪ Épique</span>
+      </div>
+    </div></div>
+    <h3>Dragon qui crache le feu</h3>
+    <div class="meta"><span class="m">1 vidéo selfie</span><span class="m y">Avatar + Feu</span><span class="m">Musique</span></div>
+    <p>Tout vient du moteur de visage : la personne n'a qu'à se filmer en ouvrant la bouche.</p>
+    <div class="meta"><span class="m y">20 pièces</span><span class="m">6,1 k utilisations</span></div></div>
+
+    <div class="item"><div class="ph"><div class="scr">
+      <div class="sb"><span>9:41</span><span>Mon année en 5 photos</span></div>
+      <div class="stage">
+        <div class="md g1" style="left:0;top:0;width:60%;height:38%">Photo 1</div>
+        <div class="md g2" style="right:0;top:0;width:40%;height:38%">Photo 2</div>
+        <div class="md g3" style="left:0;top:38%;width:40%;height:34%">Photo 3</div>
+        <div class="md g4" style="left:40%;top:38%;width:60%;height:34%">Photo 4</div>
+        <div class="md g6" style="left:0;right:0;bottom:0;height:28%">Photo 5</div>
+        <span class="big" style="left:8px;top:8px;font-size:34px">2026</span>
+        <span class="wg lg" style="right:8px;top:38%">Togo · drapeau</span>
+        <span class="wg" style="right:8px;bottom:34px">3,2 k abonnés</span>
+        <span class="music">♪ Souvenirs</span>
+      </div>
+    </div></div>
+    <h3>Mon année en 5 photos</h3>
+    <div class="meta"><span class="m">5 photos</span><span class="m">Musique</span><span class="m">Drapeau</span></div>
+    <p>Un collage de cinq photos, l'année en grand, le vrai nombre d'abonnés.</p>
+    <div class="meta"><span class="m g">Gratuit</span><span class="m">14,8 k utilisations</span></div></div>
+
+    <div class="item"><div class="ph"><div class="scr">
+      <div class="sb"><span>9:41</span><span>Mini-boutique</span></div>
+      <div class="stage">
+        <div class="md g1" style="left:0;right:0;top:0;height:64%">Photo 1<small>le produit</small></div>
+        <div class="md g2" style="left:0;width:33%;bottom:0;height:36%">Photo 2</div>
+        <div class="md g3" style="left:33%;width:34%;bottom:0;height:36%">Photo 3</div>
+        <div class="md g4" style="right:0;width:33%;bottom:0;height:36%">Photo 4</div>
+        <span class="wg lg y" style="left:8px;top:8px">12 500 FCFA</span>
+        <span class="wg r" style="right:8px;top:8px">-20 %</span>
+        <span class="wg" style="left:8px;top:40%">★ 4,8 · 126 avis</span>
+        <span class="wg gr lg" style="left:8px;right:8px;top:50%;justify-content:center">Écrire sur WhatsApp</span>
+      </div>
+    </div></div>
+    <h3>Mini-boutique</h3>
+    <div class="meta"><span class="m">3 à 5 photos</span><span class="m y">Prix + WhatsApp</span><span class="m">Sans musique</span></div>
+    <p>Pour vendre un produit : prix, promotion, avis, bouton de contact.</p>
+    <div class="meta"><span class="m y">15 pièces</span><span class="m">11,3 k utilisations</span></div></div>
+
+    <div class="item"><div class="ph"><div class="scr">
+      <div class="sb"><span>9:41</span><span>Anniversaire</span></div>
+      <div class="stage">
+        <div class="md g6" style="inset:0">Photo<small>la personne fêtée</small></div>
+        <div style="position:absolute;left:50%;top:14%;width:96px;height:96px;margin-left:-48px;border-radius:50%;background:rgba(10,11,13,.7);border:3px solid var(--yellow);display:grid;place-items:center;text-align:center"><div><div style="font:800 32px/1 var(--display)">J-3</div><div style="font-size:10px;opacity:.85">avant la fête</div></div></div>
+        <span class="tx" style="left:6%;right:6%;top:52%;font-size:20px">Aminata<br>25 ans</span>
+        <span class="wg y" style="left:50%;margin-left:-52px;bottom:40px">Samedi 14 · 18 h</span>
+        <span class="music">♪ Fête</span>
+      </div>
+    </div></div>
+    <h3>Anniversaire</h3>
+    <div class="meta"><span class="m">1 photo</span><span class="m y">Décompte + date</span><span class="m">Musique</span></div>
+    <p>Un compte à rebours jusqu'à la date, le prénom, l'âge, le lieu et l'heure ; la personne change la date et les textes.</p>
+    <div class="meta"><span class="m g">Gratuit</span><span class="m">22,5 k utilisations</span></div></div>
+
+    <div class="item"><div class="ph"><div class="scr">
+      <div class="sb"><span>9:41</span><span>Toi ou lui ?</span></div>
+      <div class="stage">
+        <div class="md g3" style="left:0;width:50%;top:0;height:78%">Photo 1</div>
+        <div class="md g2" style="right:0;width:50%;top:0;height:78%">Photo 2</div>
+        <span class="tx" style="left:8%;right:8%;top:8px;font-size:17px">Qui gagne ?</span>
+        <div style="position:absolute;left:8px;right:8px;bottom:10px;display:grid;gap:6px">
+          <div style="display:flex;border-radius:99px;overflow:hidden;font:800 12px var(--body);height:28px"><span style="width:62%;background:var(--yellow);color:var(--on-yellow);display:grid;place-items:center">62 %</span><span style="width:38%;background:#33383E;display:grid;place-items:center">38 %</span></div>
+          <span class="sub" style="text-align:center">1 284 votes · les gens votent dans le fil</span>
+        </div>
+      </div>
+    </div></div>
+    <h3>Toi ou lui ?</h3>
+    <div class="meta"><span class="m">2 photos</span><span class="m y">Vote</span><span class="m">Sans musique</span></div>
+    <p>Deux photos face à face, les spectateurs votent, le score s'affiche en direct.</p>
+    <div class="meta"><span class="m g">Gratuit</span><span class="m">7,9 k utilisations</span></div></div>
+
+    <div class="item"><div class="ph"><div class="scr">
+      <div class="sb"><span>9:41</span><span>Recette express</span></div>
+      <div class="stage">
+        <div class="md g5" style="left:0;right:0;top:0;height:58%">Vidéo<small>la recette</small></div>
+        <div class="md g1" style="left:0;width:33%;top:58%;height:22%">Photo 2</div>
+        <div class="md g4" style="left:33%;width:34%;top:58%;height:22%">Photo 3</div>
+        <div class="md g3" style="right:0;width:33%;top:58%;height:22%">Photo 4</div>
+        <span class="wg y lg" style="left:8px;top:8px">25 min · 4 pers.</span>
+        <div style="position:absolute;left:8px;right:8px;bottom:8px;display:grid;gap:3px;font:700 11.5px var(--body);background:rgba(10,11,13,.66);border-radius:12px;padding:7px 10px"><span>1 · Couper les légumes</span><span>2 · Faire revenir 10 min</span><span>3 · Servir chaud</span></div>
+      </div>
+    </div></div>
+    <h3>Recette express</h3>
+    <div class="meta"><span class="m">1 vidéo + 3 photos</span><span class="m y">Durée + étapes</span><span class="m">Musique</span></div>
+    <p>La vidéo du plat, les trois ingrédients, la durée, les étapes écrites.</p>
+    <div class="meta"><span class="m y">10 pièces</span><span class="m">5,4 k utilisations</span></div></div>
+
+
+    <div class="item"><div class="ph"><div class="scr">
+      <div class="sb"><span>9:41</span><span>Événement à venir</span></div>
+      <div class="stage">
+        <div class="md g6" style="inset:0">Photo<small>l'affiche ou toi</small></div>
+        <span class="tx" style="left:6%;right:6%;top:10%;font-size:19px">Soirée de lancement</span>
+        <div style="position:absolute;left:50%;top:24%;width:150px;margin-left:-75px;padding:8px 10px;border-radius:14px;background:rgba(10,11,13,.72);border:2px solid var(--yellow);text-align:center"><div style="font:800 26px/1 var(--display)">12 j 04 h</div><div style="font-size:10px;opacity:.85">avant le début</div></div>
+        <span class="wg lg" style="left:8px;right:8px;top:52%;justify-content:center">Lieu · Lomé, Hôtel du Lac</span>
+        <span class="wg lg gr" style="left:8px;right:8px;top:62%;justify-content:center">Écrire sur WhatsApp</span>
+        <span class="wg lg y" style="left:8px;right:8px;top:72%;justify-content:center">Lien · Réserver ma place</span>
+        <span class="music">♪ Fête</span>
+      </div>
+    </div></div>
+    <h3>Événement à venir</h3>
+    <div class="meta"><span class="m">1 photo</span><span class="m y">3 widgets</span><span class="m">Musique</span></div>
+    <p>Compte à rebours, lieu, WhatsApp et lien de réservation : les trois widgets du post sont déjà posés, la personne change la date et les textes.</p>
+    <div class="meta"><span class="m g">Gratuit</span><span class="m">8,6 k utilisations</span></div></div>
+  </div>
+  <p class="note">Les chiffres d'utilisation et les prix de ces écrans sont des exemples pour la maquette.</p>
+</section>
+
+<section class="sec">
+  <h2>Choisir un modèle et le remplir</h2>
+  <p>Trois écrans, rien à inventer pour la personne : elle voit ce qu'il lui faut, le donne, vérifie, publie.</p>
+  <div class="row">
+
+    <div class="item w"><div class="ph"><div class="scr">
+      <div class="sb"><span>9:41</span><span>●●●</span></div>
+      <div class="top"><b>Avant / Après</b><small>Fermer</small></div>
+      <div style="position:relative;margin:0 12px;height:230px;border-radius:16px;overflow:hidden">
+        <div class="md g3" style="left:0;width:50%;top:0;bottom:0">Photo<small>avant</small></div><div class="md g4" style="right:0;width:50%;top:0;bottom:0">Vidéo<small>après</small></div>
+        <div style="position:absolute;left:50%;top:0;bottom:0;width:3px;margin-left:-1px;background:#fff"></div>
+        <span class="wg y" style="left:8px;top:8px">Jour 1</span><span class="wg y" style="right:8px;top:8px">Jour 30</span>
+      </div>
+      <div style="padding:12px;display:grid;gap:8px">
+        <div class="row2"><span class="av"></span><div><b>Studio Afrolook</b><div class="sub">9,7 k utilisations</div></div></div>
+        <div class="inp"><span>Il te faut</span><small>1 photo · 1 vidéo</small></div>
+        <div class="inp"><span>Musique</span><small>Sans musique</small></div>
+        <div class="inp"><span>Prix</span><small>Gratuit</small></div>
+      </div>
+      <div style="padding:0 12px 14px;margin-top:auto" class="btn">Utiliser ce modèle</div>
+    </div></div>
+    <h3>1 · L'écran du modèle</h3><p>Aperçu, ce qu'il faut fournir, musique, prix, créateur et nombre d'utilisations.</p></div>
+
+    <div class="item w"><div class="ph"><div class="scr">
+      <div class="sb"><span>9:41</span><span>●●●</span></div>
+      <div class="top"><b>Ajoute tes médias</b><small>1 sur 2</small></div>
+      <div style="padding:0 12px;display:grid;gap:10px">
+        <div class="slot ok"><span class="th g3">Photo</span><div><b>La photo d'avant</b><small>Ajoutée</small></div></div>
+        <div class="slot"><span class="th g4">Vidéo</span><div><b>La vidéo d'après</b><small>Filme-toi ou choisis dans ta galerie</small></div></div>
+        <div class="row2"><div class="btn" style="flex:1">Me filmer</div><div class="btn o" style="flex:1">Galerie</div></div>
+        <p class="sub">Le filtre « Beauté » du modèle s'applique tout seul à ta vidéo. Tu pourras le retirer à l'étape suivante.</p>
+      </div>
+      <div class="nav"><span></span><span></span><div class="plus">+</div><span></span><span></span></div>
+    </div></div>
+    <h3>2 · Remplir les emplacements</h3><p>Un emplacement après l'autre, avec le choix de se filmer ou d'aller chercher dans la galerie.</p></div>
+
+    <div class="item w"><div class="ph"><div class="scr">
+      <div class="sb"><span>9:41</span><span>●●●</span></div>
+      <div class="top"><b>Aperçu</b><small>Retour</small></div>
+      <div style="position:relative;margin:0 12px;height:250px;border-radius:16px;overflow:hidden">
+        <div class="md g3" style="left:0;width:50%;top:0;bottom:0">Ta photo</div><div class="md g4" style="right:0;width:50%;top:0;bottom:0">Ta vidéo</div>
+        <div style="position:absolute;left:50%;top:0;bottom:0;width:3px;margin-left:-1px;background:#fff"></div>
+        <span class="wg y" style="left:8px;top:8px">Jour 1</span><span class="wg y" style="right:8px;top:8px">Jour 30</span>
+        <span class="tx" style="left:8%;right:8%;bottom:34px">Ma transformation</span>
+        <span class="wg" style="left:8px;bottom:8px">@ton_pseudo</span>
+      </div>
+      <div style="padding:12px;display:grid;gap:8px">
+        <div class="inp"><span>Titre</span><small>Ma transformation  ›</small></div>
+        <div class="inp"><span>Textes et widgets</span><small>Modifier  ›</small></div>
+        <div class="inp"><span>Musique</span><small>Aucune  ›</small></div>
+      </div>
+      <div style="padding:0 12px 14px;margin-top:auto" class="btn">Publier</div>
+    </div></div>
+    <h3>3 · Vérifier et publier</h3><p>Tout est déjà posé. Elle change un texte si elle veut, puis publie. La mention « Fait sur Afrolook » reste.</p></div>
+
+  </div>
+</section>
+
+<section class="sec">
+  <h2>Où les modèles sont mis en avant</h2>
+  <p>Trois endroits : dans le fil, sur l'écran « Que créer ? », et une page qui les réunit tous avec un bouton « Voir plus ».</p>
+  <div class="row">
+
+    <div class="item w"><div class="ph"><div class="scr">
+      <div class="sb"><span>9:41</span><span>●●●</span></div>
+      <div class="top"><b style="font-size:17px">Afro<span style="color:var(--yellow)">look</span></b><small>Pour toi</small></div>
+      <div class="post">
+        <div><span class="av"></span><b>Aïcha</b> <span class="sub">· il y a 2 h</span></div>
+        <div style="position:relative;height:210px;border-radius:12px;overflow:hidden;margin-top:8px">
+          <div class="md g3" style="left:0;width:50%;top:0;bottom:0">Avant</div><div class="md g4" style="right:0;width:50%;top:0;bottom:0">Après</div>
+          <div style="position:absolute;left:50%;top:0;bottom:0;width:3px;margin-left:-1px;background:#fff"></div>
+          <span class="wg y" style="left:8px;top:8px">Jour 1</span><span class="wg y" style="right:8px;top:8px">Jour 30</span>
+        </div>
+        <div class="ribbon"><span>Modèle <b>Avant / Après</b> · utilisé 9,7 k fois</span><span class="go">Faire le même</span></div>
+      </div>
+      <div class="post"><b>À toi de poster</b><div class="sub" style="margin-top:2px">Le modèle du moment : « Mon année en 5 photos »</div>
+        <div class="row2" style="margin-top:8px"><div class="btn" style="flex:1;padding:8px">Essayer ce modèle</div></div></div>
+      <div class="nav"><span></span><span></span><div class="plus">+</div><span></span><span></span></div>
+    </div></div>
+    <h3>Dans le fil</h3><p>Un post fait avec un modèle porte une bande « Faire le même ». S'ajoute l'appel à créer déjà prévu, qui propose le modèle du moment.</p></div>
+
+    <div class="item w"><div class="ph"><div class="scr">
+      <div class="sb"><span>9:41</span><span>●●●</span></div>
+      <div class="top"><b>Que créer ?</b><small>Fermer</small></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px 10px">
+        <div class="btn" style="grid-column:span 2;padding:14px">Vidéo</div>
+        <div class="btn o">Photo</div><div class="btn o">Audio</div><div class="btn o">Texte</div><div class="btn o">Carte</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:0 12px 6px"><b style="font:700 14px var(--display)">Les plus utilisés</b><span class="sub" style="color:var(--yellow);font-weight:700">Voir plus ›</span></div>
+      <div class="strip">
+        <div class="sc"><div class="pv md g6" style="position:relative;display:grid">Anniv.</div><div class="nm">Anniversaire<small>22,5 k</small></div></div>
+        <div class="sc"><div class="pv md g1" style="position:relative;display:grid">Année</div><div class="nm">Mon année<small>14,8 k</small></div></div>
+        <div class="sc"><div class="pv md g2" style="position:relative;display:grid">Duo</div><div class="nm">Duo réaction<small>18,2 k</small></div></div>
+        <div class="more">Voir plus</div>
+      </div>
+      <p class="sub" style="padding:10px 12px">Les modèles se classent par nombre d'utilisations sur la semaine.</p>
+    </div></div>
+    <h3>Sur « Que créer ? »</h3><p>Une bande « Les plus utilisés » sous les tuiles de type de post, et un bouton « Voir plus ».</p></div>
+
+    <div class="item w"><div class="ph"><div class="scr">
+      <div class="sb"><span>9:41</span><span>●●●</span></div>
+      <div class="top"><b>Tous les modèles</b><small>Rechercher</small></div>
+      <div class="fchips"><span class="fc on">Populaires</span><span class="fc">Nouveaux</span><span class="fc">Gratuits</span><span class="fc">Duo</span><span class="fc">Photos</span></div>
+      <div class="tiles">
+        <div class="tl"><div class="pv md g6">Anniv.</div><div class="nm">Anniversaire<small>22,5 k · Gratuit</small></div></div>
+        <div class="tl"><div class="pv md g2">Duo</div><div class="nm">Duo réaction<small>18,2 k · Gratuit</small></div></div>
+        <div class="tl"><div class="pv md g1">Année</div><div class="nm">Mon année en 5 photos<small>14,8 k · Gratuit</small></div></div>
+        <div class="tl"><div class="pv md g1">Boutique</div><div class="nm">Mini-boutique<small>11,3 k · 15 pièces</small></div></div>
+        <div class="tl"><div class="pv md g3">Avant/Après</div><div class="nm">Avant / Après<small>9,7 k · Gratuit</small></div></div>
+        <div class="tl"><div class="pv md g5">Dragon</div><div class="nm">Dragon et feu<small>6,1 k · 20 pièces</small></div></div>
+      </div>
+    </div></div>
+    <h3>La page « Tous les modèles »</h3><p>Filtres par type et par prix, tri par popularité ou nouveauté. Chaque carte montre le compteur et le prix.</p></div>
+
+  </div>
+</section>
+
+<section class="sec">
+  <h2>Créer son modèle, gratuit ou payant</h2>
+  <p>Une personne monte son modèle dans le Studio, le nomme, choisit ce que les autres devront apporter et son prix en pièces. Après contrôle de l'équipe, il apparaît dans la bibliothèque. Elle suit ses utilisations et ses gains dans un espace créateur, comme les artistes pour leurs sons.</p>
+  <div class="row">
+
+    <div class="item w"><div class="ph"><div class="scr">
+      <div class="sb"><span>9:41</span><span>●●●</span></div>
+      <div class="top"><b>Ton montage est prêt</b><small>Studio</small></div>
+      <div style="position:relative;margin:0 12px;height:230px;border-radius:16px;overflow:hidden">
+        <div class="md g5" style="inset:0">Ton montage</div>
+        <div class="dr" style="top:18%;transform:scale(.8)"><span class="e a"></span><span class="e b"></span><span class="sn"></span></div>
+        <span class="fl" style="left:46%;top:56%"></span><span class="fl" style="left:40%;top:64%;transform:rotate(190deg) scale(.9)"></span>
+        <span class="wg y" style="left:8px;top:8px">Avatar Dragon</span>
+      </div>
+      <div style="padding:12px;display:grid;gap:8px">
+        <div class="btn">Publier mon post</div>
+        <div class="btn o">Enregistrer comme modèle</div>
+        <p class="sub">Les autres pourront refaire ce montage avec leurs propres médias.</p>
+      </div>
+    </div></div>
+    <h3>1 · Depuis le Studio</h3><p>Un nouveau bouton à côté de « Publier » : le montage devient une recette réutilisable.</p></div>
+
+    <div class="item w"><div class="ph"><div class="scr">
+      <div class="sb"><span>9:41</span><span>●●●</span></div>
+      <div class="top"><b>Ton modèle</b><small>Annuler</small></div>
+      <div style="padding:0 12px;display:grid;gap:9px">
+        <div class="inp"><span>Nom</span><small>Dragon qui crache le feu</small></div>
+        <div class="inp"><span>Catégorie</span><small>Fun  ›</small></div>
+        <div class="inp"><span>Les gens apportent</span><small>1 vidéo selfie  ›</small></div>
+        <div class="inp"><span>Musique</span><small>Épique  ›</small></div>
+        <div><div class="sub" style="margin-bottom:5px">Prix pour les autres</div><div class="seg"><span>Gratuit</span><span>10</span><span class="on">20</span><span>30</span><span>50</span></div></div>
+        <p class="sub">Pièces. Tu reçois une part à chaque utilisation. Ton modèle est vérifié par l'équipe avant d'être publié.</p>
+      </div>
+      <div style="padding:0 12px 14px;margin-top:auto" class="btn">Envoyer pour validation</div>
+    </div></div>
+    <h3>2 · La fiche du modèle</h3><p>Nom, catégorie, ce que les autres doivent fournir, musique, prix choisi dans une liste de montants.</p></div>
+
+    <div class="item w"><div class="ph"><div class="scr">
+      <div class="sb"><span>9:41</span><span>●●●</span></div>
+      <div class="top"><b>Mes modèles</b><small>Espace créateur</small></div>
+      <div style="padding:0 12px;display:grid;gap:8px">
+        <div class="gain"><span>Gains ce mois-ci</span><b>1 260 pièces</b></div>
+        <div class="slot ok"><span class="th g5">Dragon</span><div><b>Dragon qui crache le feu</b><small>Publié · 6,1 k utilisations · 20 pièces</small></div></div>
+        <div class="slot"><span class="th g4">Recette</span><div><b>Recette express</b><small>En validation · envoyé hier</small></div></div>
+        <div class="slot"><span class="th g3">Duo</span><div><b>Duo réaction</b><small>Refusé : musique non autorisée</small></div></div>
+        <p class="sub">Les gains sont des pièces gagnées, convertibles et retirables comme les autres.</p>
+      </div>
+    </div></div>
+    <h3>3 · L'espace créateur</h3><p>Statut de chaque modèle, utilisations, gains. Même logique que l'espace des artistes.</p></div>
+
+  </div>
+</section>
+
+<section class="sec">
+  <h2>Ce que je propose pour les règles</h2>
+  <div class="cmp">
+    <div class="box new"><span class="tag">Comptage</span><h3>Une utilisation = un rendu réussi</h3><p class="note">Ouvrir un modèle ou l'essayer ne compte pas. La personne qui utilise son propre modèle ne paie pas et ne se paie pas.</p></div>
+    <div class="box new"><span class="tag">Paiement</span><h3>Débit au rendu, crédit au créateur</h3><p class="note">Même circuit que les sons d'artistes : calculé côté serveur, une seule fois par montage, rien débité si le rendu échoue. La part d'Afrolook est de 30 %, jamais montrée dans l'application ; le créateur voit seulement ce qu'il reçoit en pièces.</p></div>
+    <div class="box new"><span class="tag">Droits</span><h3>Musique de la bibliothèque seulement</h3><p class="note">Un modèle ne peut contenir que les pistes de notre bibliothèque ou des sons d'artistes validés. Pas de fichier audio personnel. Les photos et vidéos d'exemple de la fiche restent celles du créateur, vérifiées à la validation.</p></div>
+    <div class="box new"><span class="tag">Contrôle</span><h3>Validation avant publication</h3><p class="note">Un modèle créé par une personne reste en attente jusqu'à ce qu'un admin le valide. Mêmes règles que le reste : contenu explicite refusé.</p></div>
+  </div>
+</section>
+
+<section class="sec">
+  <h2>Ce que le moteur permet déjà, et ce qui manque</h2>
+  <div class="cmp">
+    <div class="box"><span class="tag">Déjà en place</span><ul><li>Éléments du Studio : titre, texte, badge, @pseudo, statistiques, drapeau, cadre, teinte, effets</li><li>53 modèles et leurs musiques par défaut</li><li>Rendu final du montage avec musique et débit des sons d'artistes</li><li>Avatars, effet de bouche (feu, pièces, étoiles), beauté et fond flou du moteur de visage</li></ul></div>
+    <div class="box new"><span class="tag">À construire</span><ul><li>Le format « modèle » : emplacements multiples, filtres et widgets enregistrés dans un fichier de recette, stocké dans l'API</li><li>Les widgets à créer seulement si tu les veux (score de match, Jour N, objectif, durée et ingrédients)</li><li>Compteurs, classement, pages et bande dans le fil</li><li>Espace créateur, paiement et validation par l'équipe</li></ul></div>
+    <div class="box"><span class="tag">Limite à connaître</span><p class="note">Les filtres de visage (avatar, feu) ne tournent que sur Android pour le moment : le plan pour l'iPhone est écrit mais pas codé. Sur iPhone, ces modèles seraient proposés sans leurs filtres de visage, ou cachés, tant que ce n'est pas fait.</p></div>
+  </div>
+</section>
+
+<section class="sec">
+  <h2>Plan de construction proposé</h2>
+  <div class="steps">
+    <div class="box new"><span class="tag">Étape 1</span><h3>Les modèles de l'équipe</h3><p class="note">Format de recette, 1 à 5 emplacements, widgets de publication déjà existants pré-remplis par le modèle, bibliothèque, « Voir plus », bande sur « Que créer ? », bande dans le fil, compteur. On reprend les 53 modèles actuels et on en ajoute une dizaine comme ceux de cette page.</p></div>
+    <div class="box"><span class="tag">Étape 2</span><h3>Les modèles des créateurs</h3><p class="note">« Enregistrer comme modèle », fiche, validation par l'équipe, prix en pièces, partage des gains, espace créateur.</p></div>
+    <div class="box"><span class="tag">Étape 3</span><h3>Filtres de visage et iPhone</h3><p class="note">Modèles avec avatar et effets de bouche, puis la même chose sur iPhone quand le moteur y sera.</p></div>
+  </div>
+</section>
+
+<section class="sec q">
+  <h2>Les questions avant de commencer</h2>
+  <div class="box"><b>1. Où se stockent les modèles ?</b><p><span class="rec">Je recommande : dans l'API Laravel</span>, pas dans Firebase, comme le reste de la migration. Les 53 modèles actuels y seraient copiés.</p></div>
+  <div class="box"><b>2. Quels prix pour un modèle payant ?</b><p><span class="rec">Je recommande : gratuit, 10, 20, 30 ou 50 pièces.</span> Dis-moi si tu veux une autre liste ou un prix libre.</p></div>
+  <div class="box"><b>3. La galerie et la règle des médias par jour</b><p><span class="rec">Décidé le 09/11 : plus aucune limite par jour.</span> Tout média de la galerie, image ou vidéo, passe par le contrôle d'authenticité, donc les modèles acceptent la galerie sans plafond.</p></div>
+  <div class="box"><b>4. Faut-il afficher le créateur sur le post ?</b><p><span class="rec">Je recommande : oui,</span> la bande « Modèle X par @pseudo · utilisé N fois · Faire le même » donne de la visibilité au créateur et fait connaître le modèle.</p></div>
+  <div class="box"><b>5. Combien de modèles avant d'ouvrir aux créateurs ?</b><p><span class="rec">Je recommande : étape 1 d'abord</span> (modèles de l'équipe), puis ouvrir la création quand la bibliothèque et le compteur fonctionnent.</p></div>
+  <div class="box"><b>6. Que montrer au créateur de ses gains ?</b><p><span class="rec">Je recommande : seulement des pièces</span> (par utilisation et au total), jamais de pourcentage, comme pour les 25 % du marketing et la part gardée de la régie.</p></div>
+</section>
+
+</div>
