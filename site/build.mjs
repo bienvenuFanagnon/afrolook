@@ -8,6 +8,7 @@ import { T } from './src/i18n.mjs';
 import { musicMocks, appMocks } from './src/mock.mjs';
 import { adsRulesPage, adsDocsPage, RULES_META, DOCS_META } from './src/ads_docs.mjs';
 import { adminDashboardPage, ADMIN_DASH_META } from './src/admin.mjs';
+import { v2Home, v2Ads } from './src/v2.mjs';
 import { adsKitPage, KIT_META, adsLandingEn, ADS_META_EN, adsFaqLdEn, adsHomeBlock, adsBar, adsNav, adsBadge, adsLanding, adsSpace, adsPublisherSpace, adsAdminSpace, adsFaqLd, ADS_META, SPACE_META, PUB_META, ADMIN_META } from './src/ads.mjs';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
@@ -25,7 +26,7 @@ const rules = JSON.parse(fs.readFileSync(path.join(root, 'src/rules.json'), 'utf
 const dist = path.join(root, 'dist');
 const flagsDir = process.env.FLAGS_DIR || path.join(root, 'static/img/flags');
 
-const ASSET_V = '52';
+const ASSET_V = '53';
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const slug = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const write = (p, c) => { const f = path.join(dist, p); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, c); };
@@ -40,7 +41,7 @@ const deFr = (n) => (/^[AEIOUYÉÈÎÂÔ]/i.test(n) ? `l'${n}` : /^(Les |États)
 
 // ───────── chemins ─────────
 const P = {
-  fr: { home: '/', earn: '/gagner/', cards: '/cartes/', music: '/musique/', holidays: '/fetes/', contact: '/contact/', download: '/telecharger/', del: '/supprimer-mon-compte/', rules: '/conditions/', privacy: '/confidentialite/', holiday: (c) => `/fetes/${c.slugFr}/` },
+  fr: { home: '/', earn: '/gagner/', cards: '/cartes/', music: '/musique/', holidays: '/fetes/', contact: '/contact/', download: '/telecharger/', del: '/supprimer-mon-compte/', rules: '/conditions/', privacy: '/confidentialite/', help: '/aide/', holiday: (c) => `/fetes/${c.slugFr}/` },
   en: { home: '/en/', earn: '/en/earn/', cards: '/en/cards/', music: '/en/music/', holidays: '/en/holidays/', contact: '/en/contact/', download: '/en/download/', del: '/en/delete-account/', rules: '/conditions/', privacy: '/confidentialite/', holiday: (c) => `/en/holidays/${c.slugEn}/` },
 };
 const abs = (p) => cfg.domain + p;
@@ -80,7 +81,7 @@ function footer(lang) {
  <div><a class="brand" href="${p.home}" style="color:#fff"><img src="/img/logo.webp" width="36" height="36" alt=""><span>afro<i>look</i></span></a><p class="about">${f.about}</p></div>
  <div><h4>${f.product}</h4><ul><li><a href="${p.earn}">${t.nav.earn}</a></li><li><a href="${p.cards}">${t.nav.cards}</a></li><li><a href="${p.music}">${t.nav.music}</a></li><li><a href="${p.holidays}">${t.nav.holidays}</a></li><li><a href="${p.download}">${t.nav.download}</a></li><li><a href="${cfg.appWebUrl}">${f.web}</a></li></ul></div>
  <div><h4>Afrolook Ads</h4><ul><li><a href="/ads/">${lang === 'fr' ? 'Annoncer' : 'Advertise'}</a></li><li><a href="/ads/diffuseur/">${lang === 'fr' ? 'Devenir diffuseur' : 'Become a publisher'}</a></li><li><a href="/ads/diffuseur/documentation/" hreflang="fr">${lang === 'fr' ? 'Documentation d\'intégration' : 'Integration guide'}</a></li><li><a href="/ads/diffuseur/regles/" hreflang="fr">${lang === 'fr' ? 'Règles des diffuseurs' : 'Publisher rules'}</a></li></ul></div>
- <div><h4>${f.help}</h4><ul><li><a href="${p.home}#faq">${f.faq}</a></li><li><a href="${p.contact}">${t.nav.contact}</a></li><li><a href="https://wa.me/${cfg.supportWhatsapp}?text=${encodeURIComponent(lang === 'fr' ? 'Bonjour, j\'ai besoin d\'aide sur Afrolook.' : 'Hello, I need help with Afrolook.')}" target="_blank" rel="noopener">${lang === 'fr' ? 'Support WhatsApp' : 'WhatsApp support'}</a></li><li><a href="${p.del}">${f.delete}</a></li></ul></div>
+ <div><h4>${f.help}</h4><ul><li><a href="${lang === 'fr' ? p.help : p.home + '#faq'}">${f.faq}</a></li><li><a href="${p.contact}">${t.nav.contact}</a></li><li><a href="https://wa.me/${cfg.supportWhatsapp}?text=${encodeURIComponent(lang === 'fr' ? 'Bonjour, j\'ai besoin d\'aide sur Afrolook.' : 'Hello, I need help with Afrolook.')}" target="_blank" rel="noopener">${lang === 'fr' ? 'Support WhatsApp' : 'WhatsApp support'}</a></li><li><a href="${p.del}">${f.delete}</a></li></ul></div>
  <div><h4>${f.legal}</h4><ul><li><a href="${p.rules}" hreflang="fr">${f.rules}</a></li><li><a href="${p.privacy}" hreflang="fr">${f.privacy}</a></li></ul></div>
 </div>
 <div class="bottom"><span>© ${new Date().getFullYear()} Afrolook. ${f.rights}</span><span>afrolookmedia.com</span></div>
@@ -103,13 +104,13 @@ function layout({ lang, key, path: pth, alt, title, desc, body, ogImage = '/img/
 <meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(desc)}"><meta name="twitter:image" content="${abs(ogImage)}">
 <script>if(location.pathname==='/'&&location.hash.indexOf('#/')===0)location.replace('/app/'+location.hash)</script>
 <link rel="preload" href="/fonts/FONT_PRELOAD" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/css/site.css?v=${ASSET_V}">${extraHead}
+<link rel="stylesheet" href="/css/site.css?v=${ASSET_V}"><link rel="stylesheet" href="/css/v2.css?v=${ASSET_V}">${extraHead}
 <script>document.documentElement.classList.add('js')</script>${ld}
 </head><body>
 ${header(lang, key, alt || { fr: P.fr.home, en: P.en.home })}
 <main id="main">${body.replaceAll("__ASSET_V__", ASSET_V)}</main>
 ${footer(lang)}
-<script src="/js/site.js?v=${ASSET_V}" defer></script>
+<script src="/js/site.js?v=${ASSET_V}" defer></script>${body.includes('class="v2"') ? `<script src="/js/v2.js?v=${ASSET_V}" defer></script>` : ''}
 </body></html>`;
 }
 
@@ -190,6 +191,11 @@ const screens = (lang) => (lang === 'fr' ? { hero: frHero, grid: frGrid } : { he
 const screensHead = '<link rel="stylesheet" href="/css/screens.css?v=${ASSET_V}">';
 const screensScript = '<script>(function(){var s=[].slice.call(document.querySelectorAll("#afxh .afx-sc")),d=[].slice.call(document.querySelectorAll("#afxd i")),i=0,t;function go(n){s[i].classList.remove("on");d[i].classList.remove("on");i=n;s[i].classList.add("on");d[i].classList.add("on")}if(!s.length)return;d.forEach(function(e,n){e.addEventListener("click",function(){go(n)})});if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)return;t=setInterval(function(){go((i+1)%s.length)},4500)})();</script>';
 function homePage(lang) {
+  if (lang === 'fr') {
+    const t = T.fr, h = t.home;
+    emit('fr', 'home', P.fr.home, { alt: { fr: P.fr.home, en: P.en.home }, title: h.title, desc: h.desc, body: v2Home(cfg), jsonld: [mailtoOrg, appLd('fr')] });
+    return;
+  }
   const t = T[lang], h = t.home, [coins, fcfa] = fmt(lang, cfg.example);
   const eur = cfg.example.eur;
   const alt = { fr: P.fr.home, en: P.en.home };
@@ -264,6 +270,19 @@ ${jobsHtml(lang)}
 <section class="contact" id="contact" style="background:var(--soft)"><div class="wrap"><span class="kicker">${t.nav.contact}</span><h2 class="h2">${lang === 'fr' ? 'Une question, une idée, un partenariat ?' : 'A question, an idea, a partnership?'}</h2>
  <div class="grid"><div><p class="sub" style="margin-top:0">${t.contact.lead}</p>${contactBlock(lang)}</div>${contactForm(lang)}</div></div></section>`;
   emit(lang, 'home', P[lang].home, { alt, title: h.title, desc: h.desc, body: body + adsBar(lang) + screensScript, jsonld: [mailtoOrg, appLd(lang), faqLd(lang)], extraHead: adsHead + screensHead.replace('${ASSET_V}', ASSET_V) });
+}
+
+// Page Aide (français) : les questions fréquentes de l'accueil et d'Afrolook Ads, puis le contact.
+function aidePage() {
+  const t = T.fr, adsQ = adsFaqLd.mainEntity.map((q) => [q.name, q.acceptedAnswer.text]);
+  const list = (arr) => `<div class="faq">${arr.map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join('')}</div>`;
+  const body = `<section class="pagehead"><div class="wrap">${crumbs('fr', [[P.fr.home, 'Afrolook'], [P.fr.help, 'Aide']])}<h1>Aide</h1><p>Les réponses aux questions les plus fréquentes, et le moyen de nous écrire.</p></div></section>
+<section style="padding-top:0"><div class="wrap"><span class="kicker">Afrolook</span><h2 class="h2">Questions sur l'application</h2>${list(t.faq)}</div></section>
+<section style="padding-top:0"><div class="wrap"><span class="kicker">Afrolook Ads</span><h2 class="h2">Questions sur les annonces</h2>${list(adsQ)}</div></section>
+<section class="contact" id="contact" style="background:var(--soft)"><div class="wrap"><span class="kicker">${t.nav.contact}</span><h2 class="h2">Une question, une idée, un partenariat ?</h2>
+ <div class="grid"><div><p class="sub" style="margin-top:0">${t.contact.lead}</p>${contactBlock('fr')}</div>${contactForm('fr')}</div></div></section>`;
+  const ld = { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: [...t.faq, ...adsQ].map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) };
+  emit('fr', 'help', P.fr.help, { title: 'Aide et questions fréquentes | Afrolook', desc: 'Réponses aux questions fréquentes sur Afrolook et Afrolook Ads : gains, retrait, annonces, compte. Et le moyen de nous contacter.', body, jsonld: [ld] });
 }
 
 function musicPage(lang) {
@@ -379,7 +398,7 @@ const adminHead = `<link rel="stylesheet" href="/css/admin.css?v=${ASSET_V}">`;
 function adsPages() {
   const altAds = { fr: '/ads/', en: '/en/ads/' };
   emit('fr', 'ads', '/ads/partager/', { title: KIT_META.title, desc: KIT_META.desc, body: adsKitPage(), noindex: true, ogImage: '/img/ads/og-annonceurs.png', extraHead: adsHead });
-  emit('fr', 'ads', '/ads/', { alt: altAds, ogImage: '/img/ads/og-annonceurs.png', title: ADS_META.title, desc: ADS_META.desc, body: adsLanding(cfg.functionsBase), jsonld: [adsFaqLd], extraHead: adsHead });
+  emit('fr', 'ads', '/ads/', { alt: altAds, ogImage: '/img/ads/og-annonceurs.png', title: ADS_META.title, desc: ADS_META.desc, body: v2Ads(cfg), extraHead: adsHead });
   emit('en', 'ads', '/en/ads/', { alt: altAds, ogImage: '/img/ads/og-annonceurs.png', title: ADS_META_EN.title, desc: ADS_META_EN.desc, body: adsLandingEn(cfg.functionsBase), jsonld: [adsFaqLdEn], extraHead: adsHead });
   emit('fr', 'ads', '/ads/espace/', { title: SPACE_META.title, desc: SPACE_META.desc, body: adsSpace(cfg.firebase, cfg.functionsBase), noindex: true, extraHead: adsHead });
   // Tableau de bord de l'administration (consultation seule, équipe) : données de l'API, connexion Google
@@ -404,7 +423,7 @@ for (const lang of ['fr', 'en']) {
   homePage(lang); earnPage(lang); cardsPage(lang); musicPage(lang); holidaysIndex(lang); contactPage(lang); downloadPage(lang); deletePage(lang);
   for (const k of COUNTRIES) holidayPage(lang, k);
 }
-legalPages(); adsPages(); notFound();
+legalPages(); adsPages(); aidePage(); notFound();
 
 // police préchargée : la plus utilisée (titres gras, alphabet latin)
 const fontCss = fs.readFileSync(path.join(root, 'static/css/site.css'), 'utf8');

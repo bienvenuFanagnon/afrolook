@@ -3,6 +3,15 @@
 Site statique (FR + EN) : accueil, rémunération, Studio Cartes, Musique (`/musique/`, `/en/music/` : textes dans `src/i18n.mjs` clé `music`), fêtes nationales par pays (62 pays), contact, téléchargement,
 règles, confidentialité, suppression de compte. Aucune dépendance à l'exécution ; le seul paquet npm (`qrcode`) sert à la génération.
 
+## Refonte 2026 « Verre et lumière » (10/11/2026)
+Accueil français, page `/ads/` et page `/aide/` refaits d'après la maquette validée (`docs/maquettes/site_refonte_design.html`). L'accueil anglais et les pages intérieures gardent l'ancien contenu, avec les nouvelles couleurs (`static/css/v2.css`, chargé partout).
+| Fichier | Rôle |
+|---|---|
+| `src/v2/home.html`, `src/v2/ads.html` | contenu des deux pages (adresses des boutiques : `{{PLAY}}`, `{{APPSTORE}}`, `{{APPWEB}}`, posées par `src/v2.mjs`) |
+| `static/css/v2.css` | variables clair/sombre et composants, tous limités à `.v2` et aux classes `v-…` (rien ne heurte `site.css`) |
+| `static/js/v2.js` | téléphone qui change d'écran, histoire de l'application, Studio (4 modèles), drapeau du pays, lancement de campagne (lien vers `/ads/espace/?aud=…`), filet tricolore |
+La FAQ est passée de l'accueil à `/aide/` (avec la FAQ d'Afrolook Ads). Le pays du drapeau est détecté sur l'appareil (langue, fuseau) ; le Togo s'affiche si inconnu : détection par le serveur à brancher plus tard.
+
 ## Fabriquer et vérifier
 ```bash
 cd site
