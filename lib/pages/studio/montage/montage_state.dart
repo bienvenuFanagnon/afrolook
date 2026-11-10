@@ -96,12 +96,15 @@ class MontageState {
   String? kick;
   String? title;
   String? wish;
-  /// Calques masqués. Un modèle s'ouvre PROPRE (demande du 09/11/2026) : ni sur-titre, ni titre, ni texte, ni badge, ni logo, ni abonnés, ni effet animé ; la personne place elle-même ce qu'elle veut
+  /// Calques masqués. Un NOUVEAU modèle s'ouvre PROPRE (demande du 09/11/2026) : ni sur-titre, ni titre, ni texte, ni badge, ni logo, ni abonnés, ni effet animé ; la personne place elle-même ce qu'elle veut
   /// (réglages « Calques »). Exceptions : un modèle dont le texte EST le contenu (pensées, ambiances, drôles) garde cet unique texte, et un modèle sur trois montre les j'aime et commentaires.
   late final Set<MontageLayer> hidden = defaultHidden(template);
 
   static Set<MontageLayer> defaultHidden(MontageTemplate t) {
-    if (t.id == kPlainTemplateId || t.musicOverridden) return {MontageLayer.fx};   // média seul, ou modèle d'une personne : ce que son créateur a écrit reste affiché
+    // Les ANCIENS modèles (situations, émotions, culture, musique, Insta, fêtes) gardent tous leurs textes : le titre, le sur-titre, le texte et le badge SONT ce qui les distingue (« Fauché », « Motivé », « Weekend »).
+    // Seuls les modèles créés le 09/11/2026 s'ouvrent propres (pas de date : ils le restent après les 30 jours de « Nouveau »).
+    final propre = kNewTemplateCats.contains(t.cat) || kNewTemplateIds.contains(t.id);
+    if (t.id == kPlainTemplateId || t.musicOverridden || !propre) return {MontageLayer.fx};   // média seul, modèle d'une personne, ancien modèle : ce qui est écrit reste affiché
     final h = <MontageLayer>{MontageLayer.fx, MontageLayer.kick, MontageLayer.title, MontageLayer.wish, MontageLayer.chip, MontageLayer.brand, MontageLayer.followers};
     if (t.cat == MontageCat.pensees) h.remove(MontageLayer.wish);
     if (t.cat == MontageCat.ambiances || t.cat == MontageCat.droles) h.remove(MontageLayer.title);

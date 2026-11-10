@@ -1,0 +1,429 @@
+<title>Génériques de film Afrolook</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Courier+Prime:wght@400;700&family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Inter:wght@400;500;600;700&family=Oswald:wght@500;700&display=swap">
+<style>
+/* Mise en page : une grille de téléphones 9:16 qui jouent chacun leur générique en boucle ; sous chaque téléphone : nom, durée, ce que la personne règle, effort technique, case « Je garde ». */
+:root {
+  --bg: #f6f6f3;          /* fond de page */
+  --card: #ffffff;        /* carte d'un style */
+  --fg: #151515;          /* texte */
+  --muted: #5d5d58;       /* texte secondaire */
+  --line: #dcdcd5;        /* filets */
+  --accent: #ffd400;      /* jaune Afrolook : toujours en fond, texte noir dessus */
+  --on-accent: #111111;
+  --ok: #1e7a45;          /* « moteur actuel » */
+  --ext: #8a5a00;         /* « petite extension » */
+  --font-ui: "Inter", system-ui, sans-serif;
+  --font-credit: "Oswald", "Bebas Neue", Impact, sans-serif;
+  --font-title: "Bebas Neue", Impact, sans-serif;
+  --font-type: "Courier Prime", "Courier New", monospace;
+  --font-serif: "Cormorant Garamond", Georgia, serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f0f0e; --card: #1a1a18; --fg: #f1f1ec; --muted: #a9a9a1; --line: #343430; --ok: #5fd08e; --ext: #e6b450; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] { --bg: #0f0f0e; --card: #1a1a18; --fg: #f1f1ec; --muted: #a9a9a1; --line: #343430; --ok: #5fd08e; --ext: #e6b450; color-scheme: dark; }
+
+body { background: var(--bg); color: var(--fg); font-family: var(--font-ui); line-height: 1.5; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 120px; }
+.wrap { max-width: 1180px; margin: 0 auto; }
+h1 { font-family: var(--font-title); font-size: clamp(2.4rem, 7vw, 4rem); letter-spacing: .02em; line-height: 1; margin: 0 0 12px; font-weight: 400; text-wrap: balance; }
+.lead { max-width: 68ch; color: var(--muted); margin: 0 0 20px; font-size: 1rem; }
+.subjects { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 22px; }
+.chip { font: inherit; font-weight: 600; font-size: .9rem; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--fg); cursor: pointer; }
+.chip.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.chip:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+.base { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); margin: 0 0 32px; padding: 0; list-style: none; }
+.base li { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-size: .9rem; min-width: 0; }
+.base b { display: block; margin-bottom: 2px; }
+.grid { display: grid; gap: 28px 22px; grid-template-columns: repeat(auto-fill, minmax(236px, 1fr)); }
+.item { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.item h2 { font-size: 1.05rem; margin: 0; line-height: 1.25; }
+.item p { margin: 0; font-size: .88rem; color: var(--muted); }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 2px 8px; border-radius: 6px; border: 1px solid var(--line); color: var(--muted); }
+.tag.hot { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.tag.ok { color: var(--ok); border-color: var(--ok); }
+.tag.ext { color: var(--ext); border-color: var(--ext); }
+.set { font-size: .82rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 8px; }
+.snd { font: inherit; font-weight: 600; font-size: .85rem; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--fg); cursor: pointer; text-align: left; }
+.snd[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.snd:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+.sfx { font-size: .8rem; color: var(--muted); margin: 0; }
+.keep { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: .92rem; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); cursor: pointer; }
+.keep input { width: 20px; height: 20px; accent-color: #111; }
+.keep:has(input:checked) { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.keep:has(input:focus-visible) { outline: 3px solid var(--fg); outline-offset: 2px; }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px max(16px, env(safe-area-inset-right, 0px)) max(12px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); background: var(--card); border-top: 1px solid var(--line); display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; z-index: 5; }
+.bar span { font-size: .92rem; min-width: 0; }
+.bar button { font: inherit; font-weight: 700; border: 0; border-radius: 10px; padding: 10px 16px; background: var(--accent); color: var(--on-accent); cursor: pointer; }
+.bar button:focus-visible { outline: 3px solid var(--fg); outline-offset: 2px; }
+.note { max-width: 68ch; font-size: .85rem; color: var(--muted); margin: 32px 0 0; }
+
+/* ——— le téléphone ——— */
+.ph { aspect-ratio: 9 / 16; width: 100%; max-width: 100%; border-radius: 22px; background: #000; border: 2px solid var(--line); overflow: hidden; position: relative; isolation: isolate; }
+.scr { position: absolute; inset: 0; overflow: hidden; background: #050505; color: #fff; }
+.badge { position: absolute; top: 8px; left: 8px; z-index: 9; font: 700 10px var(--font-ui); letter-spacing: .06em; text-transform: uppercase; padding: 2px 7px; border-radius: 6px; background: rgba(0,0,0,.65); color: #fff; }
+
+/* photos d'exemple : dégradés + silhouette (à remplacer par les photos de la personne) */
+.pic { position: absolute; inset: 0; opacity: 0; }
+.pic::before { content: ""; position: absolute; left: 50%; top: 30%; width: 26%; aspect-ratio: 1; transform: translateX(-50%); border-radius: 50%; background: rgba(255,255,255,.22); }
+.pic::after { content: ""; position: absolute; left: 50%; top: 52%; width: 56%; height: 60%; transform: translateX(-50%); border-radius: 48% 48% 0 0; background: rgba(255,255,255,.16); }
+.p1 { background: linear-gradient(160deg, #c2741f, #5a2a0a); }
+.p2 { background: linear-gradient(160deg, #1f7a5a, #0a2f26); }
+.p3 { background: linear-gradient(160deg, #b0413e, #3a1112); }
+.p4 { background: linear-gradient(160deg, #3b6aa8, #0f1f3a); }
+.p5 { background: linear-gradient(160deg, #8a6a2a, #2a200c); }
+.veil { position: absolute; inset: 0; background: linear-gradient(rgba(0,0,0,.35), rgba(0,0,0,.78)); }
+.cyc5 .pic { animation: cyc5 var(--cyc, 20s) infinite; }
+.cyc5 .pic:nth-child(2) { animation-delay: calc(var(--cyc, 20s) * .2); }
+.cyc5 .pic:nth-child(3) { animation-delay: calc(var(--cyc, 20s) * .4); }
+.cyc5 .pic:nth-child(4) { animation-delay: calc(var(--cyc, 20s) * .6); }
+.cyc5 .pic:nth-child(5) { animation-delay: calc(var(--cyc, 20s) * .8); }
+@keyframes cyc5 { 0% { opacity: 0 } 4% { opacity: 1 } 20% { opacity: 1 } 24% { opacity: 0 } 100% { opacity: 0 } }
+
+/* texte qui monte */
+.roll { position: absolute; left: 0; right: 0; top: 100%; text-align: center; font-family: var(--font-credit); text-transform: uppercase; animation: roll var(--roll, 16s) linear infinite; padding: 0 12px; }
+@keyframes roll { from { transform: translateY(0) } to { transform: translateY(calc(-100% - 100cqh)) } }
+.ph { container-type: size; }
+.cr-role { display: block; font-size: 9px; letter-spacing: .28em; color: #ffd400; margin-top: 14px; }
+.cr-name { display: block; font-size: 15px; letter-spacing: .06em; font-weight: 700; }
+.cr-big { display: block; font-family: var(--font-title); font-size: 30px; letter-spacing: .04em; line-height: 1; margin: 8px 0 4px; }
+.cr-chap { display: block; font-size: 9px; letter-spacing: .3em; color: #ffd400; margin: 22px 0 4px; border-top: 1px solid rgba(255,255,255,.25); padding-top: 8px; }
+
+/* 3 et 4 : photos d'un côté, texte de l'autre */
+.split { display: grid; grid-template-columns: 54% 46%; height: 100%; }
+.split.rev { grid-template-columns: 46% 54%; }
+.split .side { position: relative; overflow: hidden; }
+.split .txt { background: #0a0a0a; }
+.split .txt .roll { font-size: 90%; }
+.split .txt.l .roll { text-align: left; padding-left: 14px; }
+.split .txt.r .roll { text-align: right; padding-right: 14px; }
+.split .sep { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(255,255,255,.18); z-index: 3; }
+
+/* 5 : pellicule */
+.strip { position: absolute; top: 0; bottom: 0; left: 8%; width: 40%; background: #111; border-left: 6px dotted #333; border-right: 6px dotted #333; overflow: hidden; }
+.strip .reel { position: absolute; left: 0; right: 0; top: 0; animation: reel 12s linear infinite; }
+.strip .fr { aspect-ratio: 4 / 5; margin: 8px 4px; position: relative; overflow: hidden; border-radius: 2px; }
+.strip .fr .pic { opacity: 1; }
+@keyframes reel { from { transform: translateY(0) } to { transform: translateY(-50%) } }
+.stack { position: absolute; right: 6%; width: 38%; top: 0; bottom: 0; display: flex; flex-direction: column; justify-content: center; gap: 18px; text-align: left; font-family: var(--font-credit); text-transform: uppercase; }
+.stack .ln { opacity: 0; animation: lnfade 12s infinite; font-size: 12px; letter-spacing: .08em; }
+.stack .ln:nth-child(2) { animation-delay: 2.4s } .stack .ln:nth-child(3) { animation-delay: 4.8s } .stack .ln:nth-child(4) { animation-delay: 7.2s }
+@keyframes lnfade { 0% { opacity: 0; transform: translateX(8px) } 6% { opacity: 1; transform: none } 40% { opacity: 1 } 46% { opacity: 0 } 100% { opacity: 0 } }
+
+/* 6 : série (bandes noires, lignes qui apparaissent une à une) */
+.bars::before, .bars::after { content: ""; position: absolute; left: 0; right: 0; height: 17%; background: #000; z-index: 4; }
+.bars::before { top: 0 } .bars::after { bottom: 0 }
+.series { position: absolute; inset: 17% 0; display: grid; place-items: center; text-align: center; padding: 0 16px; z-index: 5; }
+.series .ln { grid-area: 1 / 1; opacity: 0; font-family: var(--font-serif); font-style: italic; font-size: 19px; letter-spacing: .06em; line-height: 1.25; animation: serie 14s infinite; text-wrap: balance; }
+.series .ln small { display: block; font-family: var(--font-ui); font-style: normal; font-size: 8px; letter-spacing: .4em; text-transform: uppercase; color: #ffd400; margin-bottom: 8px; }
+.series .ln:nth-child(2) { animation-delay: 3.5s } .series .ln:nth-child(3) { animation-delay: 7s } .series .ln:nth-child(4) { animation-delay: 10.5s }
+@keyframes serie { 0% { opacity: 0; filter: blur(6px) } 6% { opacity: 1; filter: none } 22% { opacity: 1 } 28% { opacity: 0; filter: blur(6px) } 100% { opacity: 0 } }
+
+/* 7 : machine à écrire */
+.paper { position: absolute; inset: 0; padding: 26% 12% 10%; font-family: var(--font-type); display: flex; flex-direction: column; gap: 10px; z-index: 4; }
+.tw { overflow: hidden; white-space: nowrap; width: 0; font-size: 11.5px; border-right: 2px solid #fff; animation: type 15s steps(26, end) infinite; max-width: max-content; }
+.tw:nth-child(2) { animation-delay: 2.6s } .tw:nth-child(3) { animation-delay: 5.2s } .tw:nth-child(4) { animation-delay: 7.8s } .tw:nth-child(5) { animation-delay: 10.4s }
+@keyframes type { 0% { width: 0 } 14% { width: 100%; border-color: transparent } 82% { width: 100%; border-color: transparent } 90% { width: 0 } 100% { width: 0 } }
+.date { position: absolute; top: 9%; left: 12%; z-index: 4; font: 700 9px var(--font-type); letter-spacing: .2em; color: #ffd400; }
+.blur .pic { filter: blur(7px) brightness(.55); transform: scale(1.15); }
+
+/* 8 : paroles */
+.lyr { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 14px; padding: 0 14px; z-index: 4; text-align: left; }
+.lyr .ln { font-family: var(--font-credit); text-transform: uppercase; font-size: 18px; line-height: 1.1; opacity: .3; animation: lyr 15s infinite; letter-spacing: .02em; }
+.lyr .ln:nth-child(2) { animation-delay: 3s } .lyr .ln:nth-child(3) { animation-delay: 6s } .lyr .ln:nth-child(4) { animation-delay: 9s } .lyr .ln:nth-child(5) { animation-delay: 12s }
+@keyframes lyr { 0% { opacity: .3; transform: scale(.97) } 4% { opacity: 1; transform: none } 19% { opacity: 1 } 24% { opacity: .3 } 100% { opacity: .3 } }
+
+/* 9 : cartes récap */
+.cards .cd { position: absolute; inset: 7% 7%; border-radius: 18px; display: flex; flex-direction: column; justify-content: center; padding: 14px; transform: translateY(110%); animation: cd 12s infinite; z-index: 3; }
+.cards .cd b { font-family: var(--font-title); font-size: 74px; line-height: .9; font-weight: 400; }
+.cards .cd span { font-family: var(--font-credit); text-transform: uppercase; letter-spacing: .1em; font-size: 12px; }
+.cards .cd:nth-child(1) { background: #c2741f; animation-delay: 0s }
+.cards .cd:nth-child(2) { background: #1f7a5a; animation-delay: 3s }
+.cards .cd:nth-child(3) { background: #b0413e; animation-delay: 6s }
+.cards .cd:nth-child(4) { background: #111; border: 1px solid #ffd400; animation-delay: 9s }
+@keyframes cd { 0% { transform: translateY(110%) } 5% { transform: none } 22% { transform: none } 27% { transform: translateY(-110%) } 100% { transform: translateY(-110%) } }
+
+/* 10 : bande-annonce */
+.trailer .w { position: absolute; inset: 17% 0; display: grid; place-items: center; z-index: 5; }
+.trailer .w i { grid-area: 1 / 1; font-style: normal; font-family: var(--font-title); font-size: 46px; line-height: .95; text-align: center; opacity: 0; animation: slam 6s infinite; letter-spacing: .03em; text-wrap: balance; padding: 0 8px; }
+.trailer .w i:nth-child(2) { animation-delay: 1.5s } .trailer .w i:nth-child(3) { animation-delay: 3s } .trailer .w i:nth-child(4) { animation-delay: 4.5s }
+@keyframes slam { 0% { opacity: 0; transform: scale(1.7) } 4% { opacity: 1; transform: scale(1) } 22% { opacity: 1 } 24% { opacity: 0 } 100% { opacity: 0 } }
+.flash { position: absolute; inset: 0; background: #fff; opacity: 0; z-index: 6; animation: flash 1.5s infinite; mix-blend-mode: overlay; }
+@keyframes flash { 0% { opacity: .85 } 8% { opacity: 0 } 100% { opacity: 0 } }
+
+@media (prefers-reduced-motion: reduce) {
+  .roll, .strip .reel, .stack .ln, .series .ln, .tw, .lyr .ln, .cards .cd, .trailer .w i, .flash, .cyc5 .pic { animation: none !important; }
+  .roll { top: 14%; } .pic:first-child { opacity: 1; } .stack .ln, .series .ln:first-child, .lyr .ln:first-child { opacity: 1; } .tw { width: 100%; border-color: transparent; }
+  .cards .cd:first-child { transform: none; } .trailer .w i:first-child { opacity: 1; }
+}
+</style>
+
+<div class="wrap">
+  <h1>Génériques de fin de film : 10 styles, pour tous les sujets</h1>
+  <p class="lead">Ce n'est pas seulement « Mon année » : le même style sert pour ma journée, mon week-end, mon histoire, mon anniversaire, mon voyage, ma soirée, mon mariage, mon business, ma famille. Choisissez un sujet : les dix téléphones jouent leur générique avec ses textes. Chaque sujet arrive avec son titre, ses lignes et sa musique de fin de film, et tout reste modifiable. Chaque style a aussi ses <b>sons d'animation</b> (clics de machine à écrire, déclics, bruits de passage, impacts) : touchez « Écouter avec les sons » sous un téléphone. Ces sons sont des approximations faites dans le navigateur ; les vrais seront de vrais enregistrements libres de droits. Cochez les styles que vous gardez, puis copiez votre sélection.</p>
+  <div class="subjects" role="radiogroup" aria-label="Sujet du générique" id="subjects"></div>
+  <ul class="base">
+    <li><b>Tout reste modifiable</b>Le texte, les photos (1 à 5), la durée, la musique de fin de film.</li>
+    <li><b>Un modèle par sujet</b>Chaque sujet est un modèle à part dans la galerie : « Ma journée », « Mon week-end », « Mon histoire »…</li>
+    <li><b>Photos et sons contrôlés</b>Chaque photo de la galerie passe le contrôle d'authenticité, comme partout.</li>
+    <li><b>Aperçu fidèle</b>La page du modèle joue exactement ce que la vidéo montrera, avec les photos d'exemple tant qu'il n'y a pas les vôtres.</li>
+    <li><b>Limites actuelles</b>5 photos et 60 secondes au plus par film. Les styles « longs » demandent de passer à 8 photos.</li>
+  </ul>
+  <div class="grid" id="grid"></div>
+  <p class="note">Les photos de cette maquette sont des silhouettes de remplacement. « Moteur actuel » veut dire que le serveur sait déjà le faire. « Petite extension » veut dire un ajout limité au diaporama du serveur (position du texte, lignes qui apparaissent une à une). Aucun style n'est construit tant que vous n'avez pas validé.</p>
+</div>
+<div class="bar" role="region" aria-label="Ma sélection">
+  <span id="count">Aucun style gardé pour l'instant.</span>
+  <button type="button" id="copy">Copier ma sélection</button>
+</div>
+
+<script>
+const P = (n) => `<div class="pic p${n}"></div>`;
+const PICS = P(1) + P(2) + P(3) + P(4) + P(5);
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+
+/* Les sujets : chaque sujet apporte ses textes, les dix styles restent les mêmes. */
+const SUBJECTS = [
+  { id: 'annee', name: 'Mon année', big: 'MON ANNÉE 2026', credits: [['Un film de', 'Moi'], ['Avec', 'Ma famille'], ['Scénario', 'Mes galères'], ['Musique', 'Mes playlists']],
+    chap: [['Janvier', 'Rien ne marchait'], ['Mars', "J'ai failli tout arrêter"], ['Juin', 'Le déclic'], ['Septembre', 'Je me suis relevé'], ['Décembre', "Regardez où j'en suis"]], bigChap: 'MON ANNÉE EN 12 MOIS',
+    series: [['Saison 2026', 'Un an de combats'], ['Épisode 12', 'Ceux qui sont restés'], ['Générique', "Merci à ceux qui ont cru en moi"], ['À suivre', '2027']],
+    typed: ["Cette année, j'ai perdu", "des gens, des habitudes,", "et pas mal d'illusions.", "Mais j'ai gardé l'essentiel :", "moi."], date: '31 DÉCEMBRE 2026',
+    lyr: ['Je suis tombé', 'Je me suis relevé', "Je n'ai rien lâché", 'Regarde-moi maintenant', "Ça, c'est mon année"],
+    cards: [['365', 'jours à tenir'], ['12', 'mois pour changer'], ['1', 'leçon : ne pas lâcher'], ['2027', "j'arrive"]],
+    trailer: ['UNE<br>ANNÉE.', 'UN<br>COMBAT.', 'UNE<br>VICTOIRE.', 'MOI.'], strip: ['Un film<br>de moi', 'Rôle<br>principal :<br>ma force', "Merci<br>d'avoir<br>regardé", 'Fin'] },
+  { id: 'journee', name: 'Ma journée', big: 'MA JOURNÉE', credits: [['Un film de', 'Moi'], ['Avec', 'Mon café'], ['Scénario', 'Mes imprévus'], ['Musique', 'Ma playlist du matin']],
+    chap: [['Matin', 'Un réveil difficile'], ['Midi', 'Le déjeuner qui sauve'], ['Après-midi', 'Le coup de fatigue'], ['Soir', 'Enfin la maison'], ['Nuit', 'Dodo']], bigChap: 'MA JOURNÉE EN 5 TEMPS',
+    series: [['Épisode du jour', 'Un réveil à 6 h'], ['Scène 2', 'Le trajet interminable'], ['Générique', 'Merci au café'], ['À suivre', 'Demain']],
+    typed: ["Ce matin, j'ai failli rester", 'au lit. Mais je me suis levé', 'et la journée a changé.', "Rien d'extraordinaire,", 'juste une belle journée.'], date: "AUJOURD'HUI",
+    lyr: ['Réveil à six heures', 'Le café avant tout', 'Un sourire malgré tout', 'La journée file vite', 'Ce soir, je souffle'],
+    cards: [['6 h', 'réveil'], ['3', 'cafés'], ['12', 'messages'], ['1', 'belle journée']],
+    trailer: ['UNE<br>JOURNÉE.', 'UN<br>RÉVEIL.', 'UN<br>CAFÉ.', 'MOI.'], strip: ['Ma<br>journée', 'Matin :<br>café', 'Soir :<br>repos', 'Fin'] },
+  { id: 'weekend', name: 'Mon week-end', big: 'MON WEEK-END', credits: [['Un film de', 'Moi'], ['Avec', 'Mes amis'], ['Lieu de tournage', 'Partout'], ['Musique', 'Le son du samedi']],
+    chap: [['Vendredi', 'On sort'], ['Samedi', 'La grande soirée'], ['Dimanche', 'Le repos'], ['Lundi', 'Déjà…']], bigChap: 'MON WEEK-END EN 3 JOURS',
+    series: [['Week-end', 'Vendredi soir'], ['Épisode 2', 'Samedi, on sort'], ['Épisode 3', 'Dimanche, café et silence'], ['À suivre', 'Lundi']],
+    typed: ['Vendredi, la fatigue part.', 'Samedi, on oublie la semaine.', 'Dimanche, on recharge.', 'Lundi, on recommence.', 'Mais quel week-end.'], date: 'VENDREDI → DIMANCHE',
+    lyr: ['Vendredi soir, c\'est parti', 'Samedi, on danse', 'Dimanche, on se repose', 'Lundi peut attendre', 'Ce week-end est à moi'],
+    cards: [['2', 'jours de liberté'], ['5', 'sorties'], ['0', 'réveil'], ['1', 'week-end parfait']],
+    trailer: ['UN<br>WEEK-END.', 'DEUX<br>JOURS.', 'ZÉRO<br>STRESS.', 'MOI.'], strip: ['Mon<br>week-end', 'Samedi :<br>on sort', 'Dimanche :<br>repos', 'Fin'] },
+  { id: 'histoire', name: 'Mon histoire', big: 'MON HISTOIRE', credits: [['Une histoire de', 'Moi'], ['Avec', 'Ceux qui m\'ont porté'], ['Obstacle principal', 'Moi-même'], ['Musique', 'Mon courage']],
+    chap: [['Début', 'Tout recommence'], ['Épreuve', "Rien n'allait"], ['Tournant', 'Le déclic'], ['Aujourd\'hui', 'Debout']], bigChap: 'MON HISTOIRE EN 4 CHAPITRES',
+    series: [['Chapitre 1', 'Au commencement'], ['Chapitre 2', 'La chute'], ['Chapitre 3', 'Le déclic'], ['Aujourd\'hui', 'Debout']],
+    typed: ['Il était une fois quelqu\'un', 'qui ne croyait pas en lui.', 'Puis un jour, tout a changé.', 'Cette personne, c\'est moi.', 'Et l\'histoire continue.'], date: 'MON HISTOIRE',
+    lyr: ['Là où tout a commencé', 'Là où j\'ai failli lâcher', 'Là où je me suis relevé', 'Là où je suis aujourd\'hui', 'L\'histoire continue'],
+    cards: [['1', 'rêve'], ['1000', 'doutes'], ['1', 'déclic'], ['0', 'regret']],
+    trailer: ['UNE<br>HISTOIRE.', 'UN<br>COMBAT.', 'UNE<br>VICTOIRE.', 'MOI.'], strip: ['Mon<br>histoire', 'Chapitre 2 :<br>la chute', 'Chapitre 3 :<br>le déclic', 'Fin'] },
+  { id: 'anniv', name: 'Mon anniversaire', big: 'MON ANNIVERSAIRE', credits: [['Un film de', 'Moi, un an de plus'], ['Avec', 'Ma famille'], ['Cadeau principal', 'Votre amour'], ['Musique', 'La chanson des bougies']],
+    chap: [['Le matin', 'Les premiers messages'], ['Midi', 'Les appels'], ['Le soir', 'Le gâteau'], ['La nuit', 'Les souvenirs']], bigChap: 'MON ANNIVERSAIRE EN 4 TEMPS',
+    series: [['Anniversaire', 'Un an de plus'], ['Épisode 2', 'Les messages'], ['Épisode 3', 'Le gâteau'], ['À suivre', "L'année prochaine"]],
+    typed: ['Un an de plus,', 'moins de bruit, plus de paix.', 'Merci pour vos messages,', 'vos appels, vos pensées.', 'Je suis comblé.'], date: "AUJOURD'HUI, JE GRANDIS",
+    lyr: ['Joyeux anniversaire à moi', 'Un an de plus, un an de mieux', 'Merci pour vos messages', 'Ce gâteau est pour vous aussi', "À l'année prochaine"],
+    cards: [['1', 'an de plus'], ['100', 'messages'], ['1', 'gâteau'], ['0', 'regret']],
+    trailer: ['UN<br>ANNIVERSAIRE.', 'UN AN<br>DE PLUS.', 'UNE BELLE<br>FÊTE.', 'MOI.'], strip: ['Mon<br>anniversaire', 'Un an<br>de plus', 'Merci<br>à tous', 'Fin'] },
+  { id: 'voyage', name: 'Mon voyage', big: 'MON VOYAGE', credits: [['Un film de', 'Moi'], ['Lieu de tournage', 'Le monde'], ['Avec', 'Ma valise'], ['Musique', 'La route']],
+    chap: [['Départ', 'Valises prêtes'], ['Route', 'En chemin'], ['Arrivée', "On y est"], ['Retour', 'Déjà fini ?']], bigChap: 'MON VOYAGE EN 4 ÉTAPES',
+    series: [['Voyage', 'Départ'], ['Épisode 2', 'La route'], ['Épisode 3', 'Arrivée'], ['Retour', 'Merci pour ces souvenirs']],
+    typed: ['On est partis sans plan,', 'on est revenus avec des souvenirs.', 'Merci à la route,', 'aux rencontres,', 'à moi qui ai osé.'], date: 'DU DÉPART AU RETOUR',
+    lyr: ['Valises prêtes', 'La route devant moi', 'Un nouveau pays', 'Des souvenirs plein les yeux', 'Je reviendrai'],
+    cards: [['1', 'valise'], ['3', 'pays'], ['500', 'photos'], ['1', 'rêve réalisé']],
+    trailer: ['UN<br>VOYAGE.', 'UNE<br>ROUTE.', 'MILLE<br>SOUVENIRS.', 'MOI.'], strip: ['Mon<br>voyage', 'Départ :<br>valises prêtes', 'Retour :<br>souvenirs', 'Fin'] },
+  { id: 'soiree', name: 'Ma soirée', big: 'MA SOIRÉE', credits: [['Un film de', 'Moi'], ['Avec', 'Mes amis'], ['Éclairage', 'Les lumières de la piste'], ['Musique', 'Le DJ']],
+    chap: [['Avant', 'La tenue'], ['Arrivée', "L'entrée"], ['Minuit', 'La piste'], ['Après', 'Le retour']], bigChap: 'MA SOIRÉE EN 4 TEMPS',
+    series: [['Soirée', 'Ce soir, on sort'], ['Épisode 2', 'La piste'], ['Épisode 3', 'Minuit'], ['À suivre', 'Demain, la fatigue']],
+    typed: ['Ce soir, on oublie tout.', 'La musique, les rires,', 'les photos floues…', 'Demain, on fera semblant', "d'être fatigués."], date: 'CE SOIR',
+    lyr: ['Ce soir, on sort', 'La musique monte', "Les lumières s'allument", 'Personne ne rentre', "C'était la soirée"],
+    cards: [['22 h', "l'entrée"], ['100', 'photos floues'], ['5', 'danses'], ['1', 'soirée de folie']],
+    trailer: ['UNE<br>SOIRÉE.', 'UNE<br>PISTE.', 'AUCUN<br>REGRET.', 'MOI.'], strip: ['Ma<br>soirée', 'Minuit :<br>la piste', 'Merci<br>à tous', 'Fin'] },
+  { id: 'mariage', name: 'Mon mariage', big: 'NOTRE MARIAGE', credits: [['Un film de', 'Nous deux'], ['Avec', 'Nos familles'], ['Témoins', 'Nos amis'], ['Musique', 'Notre première danse']],
+    chap: [['La mairie', 'Le oui'], ['La cérémonie', 'Les promesses'], ['La fête', 'La première danse'], ['Le soir', 'Pour la vie']], bigChap: 'NOTRE MARIAGE EN 4 TEMPS',
+    series: [['Mariage', 'Le grand jour'], ['Épisode 2', 'Le oui'], ['Épisode 3', 'La fête'], ['Pour la vie', 'Merci']],
+    typed: ["Aujourd'hui, nous avons dit oui.", "À la vie, à l'amour,", "à toutes les galères", "qu'on traversera ensemble.", "Merci d'être venus."], date: 'LE GRAND JOUR',
+    lyr: ['Le grand jour est là', 'Je te dis oui', 'Pour le meilleur', 'Pour toute la vie', "Merci d'être là"],
+    cards: [['1', 'oui'], ['2', 'familles'], ['1', 'première danse'], ['∞', 'amour']],
+    trailer: ['UN<br>JOUR.', 'UN<br>OUI.', 'UNE<br>VIE.', 'NOUS.'], strip: ['Notre<br>mariage', 'Le oui', 'Merci<br>à tous', 'Fin'] },
+  { id: 'business', name: 'Mon business', big: 'MON BUSINESS', credits: [['Un film de', 'Mon équipe'], ['Avec', 'Mes clients'], ['Direction de la persévérance', 'Moi'], ['Musique', 'Le bruit de la caisse']],
+    chap: [['Idée', 'Un rêve'], ['Lancement', 'Le premier client'], ['Croissance', 'On grandit'], ["Aujourd'hui", 'Merci']], bigChap: 'MON BUSINESS EN 4 ÉTAPES',
+    series: [['Entreprise', 'Le début'], ['Épisode 2', 'Le premier client'], ['Épisode 3', 'La croissance'], ["Aujourd'hui", 'Merci à tous']],
+    typed: ["J'ai commencé avec une idée", 'et très peu de moyens.', 'Le premier client a tout changé.', "Aujourd'hui, nous sommes là,", 'grâce à vous.'], date: 'DEPUIS LE PREMIER JOUR',
+    lyr: ['Une idée dans la tête', 'Un premier client', 'Des nuits de travail', 'Un rêve qui grandit', 'Merci de croire en nous'],
+    cards: [['1', 'idée'], ['100', 'clients'], ['365', 'jours de travail'], ['1', 'rêve en marche']],
+    trailer: ['UNE<br>IDÉE.', 'UN PREMIER<br>CLIENT.', 'UNE<br>ENTREPRISE.', 'MOI.'], strip: ['Mon<br>business', 'Le premier<br>client', 'Merci<br>à tous', 'Fin'] },
+  { id: 'famille', name: 'Ma famille', big: 'MA FAMILLE', credits: [['Un film de', 'Ma famille'], ['Avec', 'Mes parents'], ['Mes alliés', 'Mes frères et sœurs'], ['Musique', 'Les rires de la maison']],
+    chap: [['Matin', 'Le petit-déjeuner'], ['Fêtes', 'Tout le monde'], ['Photos', 'Les souvenirs'], ['Soir', 'Ensemble']], bigChap: 'MA FAMILLE EN 4 MOMENTS',
+    series: [['Famille', 'Tous réunis'], ['Épisode 2', 'Les repas'], ['Épisode 3', 'Les rires'], ['Pour toujours', "Merci d'être là"]],
+    typed: ["On n'est pas parfaits,", 'mais on est ensemble.', 'Les repas qui durent,', 'les rires qui résonnent,', 'voilà ma richesse.'], date: 'POUR TOUJOURS',
+    lyr: ['Ma famille, mon refuge', 'Les repas qui durent', 'Les rires dans la maison', 'Les prières du soir', 'Ensemble pour toujours'],
+    cards: [['1', 'famille'], ['365', 'repas'], ['1000', 'rires'], ['1', 'même cœur']],
+    trailer: ['UNE<br>FAMILLE.', 'UN SEUL<br>CŒUR.', 'POUR<br>TOUJOURS.', 'NOUS.'], strip: ['Ma<br>famille', 'Les repas<br>qui durent', 'Merci<br>à tous', 'Fin'] },
+];
+
+const role = (r) => `<span class="cr-role">${esc(r[0])}</span><span class="cr-name">${esc(r[1])}</span>`;
+const creditsHtml = (S) => `<span class="cr-big">${esc(S.big)}</span>${S.credits.map(role).join('')}<span class="cr-big" style="margin-top:34px">FIN</span>`;
+const chapHtml = (S) => `<span class="cr-big">${esc(S.bigChap)}</span>${S.chap.map((c) => `<span class="cr-chap">${esc(c[0])}</span><span class="cr-name">${esc(c[1])}</span>`).join('')}<span class="cr-big" style="margin-top:34px">FIN</span>`;
+const splitText = (S, n) => `<span class="cr-big">${esc(S.big.split(' ')[0] === 'NOTRE' ? S.big : S.big)}</span>${S.credits.slice(0, n).map(role).join('')}<span class="cr-big" style="margin-top:26px">FIN</span>`;
+
+const STYLES = [
+  { id: 'classique', name: 'Classique (déjà construit)', dur: '20 s', tags: ['ok'],
+    desc: 'Le texte monte lentement au centre, les photos changent derrière, puis « FIN ».', set: 'Texte « Rôle · Nom », 1 à 5 photos, durée, musique.',
+    html: (S) => `<div class="scr"><div class="cyc5" style="--cyc:20s">${PICS}</div><div class="veil"></div><div class="roll" style="--roll:15s">${creditsHtml(S)}</div></div>` },
+  { id: 'saison', name: 'Version longue par chapitres', dur: '45 s', tags: ['ok', 'hot'],
+    desc: 'Même défilement, mais découpé en chapitres (mois, moments, étapes) avec une phrase et une photo pour chacun.', set: 'Une phrase par chapitre (modifiable), 5 à 8 photos, musique.',
+    html: (S) => `<div class="scr"><div class="cyc5" style="--cyc:30s">${PICS}</div><div class="veil"></div><div class="roll" style="--roll:30s">${chapHtml(S)}</div></div>` },
+  { id: 'gauche', name: 'Sombre : texte à gauche, photos à droite', dur: '25 s', tags: ['ext', 'hot'],
+    desc: "Un panneau noir porte le texte qui monte ; les photos changent en plein cadre sur l'autre moitié.", set: 'Texte, photos, durée, côté du texte.',
+    html: (S) => `<div class="scr"><div class="split"><div class="side txt l"><div class="roll" style="--roll:18s">${splitText(S, 3)}</div></div><div class="side"><div class="cyc5" style="--cyc:20s">${PICS}</div></div></div><div class="sep" style="left:54%"></div></div>` },
+  { id: 'droite', name: 'Sombre inversé : photos à gauche, texte à droite', dur: '25 s', tags: ['ext', 'hot'],
+    desc: "Le même principe, de l'autre côté : les photos à gauche, le texte aligné à droite.", set: 'Texte, photos, durée, côté du texte.',
+    html: (S) => `<div class="scr"><div class="split rev"><div class="side"><div class="cyc5" style="--cyc:20s">${PICS}</div></div><div class="side txt r"><div class="roll" style="--roll:18s">${splitText(S, 3)}</div></div></div><div class="sep" style="left:46%"></div></div>` },
+  { id: 'pellicule', name: 'Pellicule', dur: '20 s', tags: ['ext'],
+    desc: "Une bande de film avec vos photos défile sur le côté, le texte apparaît ligne par ligne de l'autre.", set: '1 à 5 photos, 4 lignes de texte, durée.',
+    html: (S) => `<div class="scr"><div class="strip"><div class="reel">${[1,2,3,4,5,1,2,3,4,5].map((n) => `<div class="fr"><div class="pic p${n}"></div></div>`).join('')}</div></div><div class="stack">${S.strip.map((l) => `<div class="ln">${l}</div>`).join('')}</div></div>` },
+  { id: 'serie', name: 'Façon série (bandes noires)', dur: '15 s', tags: ['ext', 'hot'],
+    desc: "Format cinéma avec deux bandes noires. Une phrase élégante apparaît, reste, puis s'efface, sur une photo sombre.", set: '4 phrases, 1 à 5 photos, musique.',
+    html: (S) => `<div class="scr bars"><div class="cyc5" style="--cyc:14s">${PICS}</div><div class="veil"></div><div class="series">${S.series.map((l) => `<div class="ln"><small>${esc(l[0])}</small>${esc(l[1])}</div>`).join('')}</div></div>` },
+  { id: 'machine', name: 'Machine à écrire (journal intime)', dur: '18 s', tags: ['ext', 'hot'],
+    desc: "Le texte s'écrit lettre par lettre sur une photo floutée, comme une page de journal.", set: '5 lignes, une date, 1 à 5 photos.',
+    html: (S) => `<div class="scr blur"><div class="cyc5" style="--cyc:18s">${PICS}</div><div class="veil"></div><div class="date">${esc(S.date)}</div><div class="paper">${S.typed.map((l) => `<div class="tw">${esc(l)}</div>`).join('')}</div></div>` },
+  { id: 'paroles', name: 'Paroles (comme un clip)', dur: '20 s', tags: ['ext', 'hot'],
+    desc: 'Les lignes défilent comme des paroles : la ligne du moment est allumée, les autres restent grises.', set: '5 lignes, photos floutées en fond, musique (idéale avec une chanson).',
+    html: (S) => `<div class="scr blur"><div class="cyc5" style="--cyc:20s">${PICS}</div><div class="veil"></div><div class="lyr">${S.lyr.map((l) => `<div class="ln">${esc(l)}</div>`).join('')}</div></div>` },
+  { id: 'recap', name: 'Récap en cartes', dur: '16 s', tags: ['ok', 'hot'],
+    desc: "Des cartes de couleur glissent l'une après l'autre avec un gros chiffre et un mot.", set: 'Les chiffres et les mots de chaque carte, la durée, la musique.',
+    html: (S) => `<div class="scr cards">${S.cards.map((c) => `<div class="cd"><b>${esc(c[0])}</b><span>${esc(c[1])}</span></div>`).join('')}</div>` },
+  { id: 'trailer', name: 'Bande-annonce', dur: '10 s', tags: ['ext', 'hot'],
+    desc: 'Mots géants qui claquent au rythme de la musique, flashs blancs, photos qui changent vite.', set: '3 à 4 mots ou phrases courtes, 3 à 5 photos, musique rythmée.',
+    html: (S) => `<div class="scr bars trailer"><div class="cyc5" style="--cyc:6s">${PICS}</div><div class="veil"></div><div class="flash"></div><div class="w">${S.trailer.map((w) => `<i>${w}</i>`).join('')}</div></div>` },
+];
+
+const SFXTEXT = {
+  classique: 'un souffle au départ et une cloche discrète sur « FIN ».',
+  saison: 'un petit déclic à chaque nouveau chapitre, puis une cloche finale.',
+  gauche: 'un bruit de passage à chaque changement de photo.',
+  droite: 'un bruit de passage à chaque changement de photo.',
+  pellicule: 'le cliquetis d\'un projecteur en continu et un « pop » à chaque ligne.',
+  serie: 'une nappe grave et un impact doux à chaque phrase.',
+  machine: 'un clic de touche par lettre et la clochette de fin de ligne.',
+  paroles: 'un « pop » et un déclic quand la ligne s\'allume.',
+  recap: 'un glissement quand la carte arrive, un « pop » quand elle se pose.',
+  trailer: 'un souffle, un impact grave et un flash à chaque mot.'
+};
+const grid = document.getElementById('grid');
+const subjectBar = document.getElementById('subjects');
+const tagText = { ok: 'Moteur actuel', ext: 'Petite extension du serveur', hot: 'Très tendance' };
+let kept = [];
+let subject = 0;
+try { kept = JSON.parse(localStorage.getItem('generiques_gardes') || '[]'); } catch (e) { kept = []; }
+try { subject = Math.max(0, Math.min(SUBJECTS.length - 1, parseInt(localStorage.getItem('generiques_sujet') || '0', 10) || 0)); } catch (e) { subject = 0; }
+
+function renderSubjects() {
+  subjectBar.innerHTML = SUBJECTS.map((s, i) => `<button type="button" role="radio" aria-checked="${i === subject}" class="chip${i === subject ? ' on' : ''}" data-i="${i}">${esc(s.name)}</button>`).join('');
+}
+function renderGrid() {
+  const S = SUBJECTS[subject];
+  grid.innerHTML = STYLES.map((s, i) => `
+    <article class="item" id="s-${s.id}">
+      <div class="ph" role="img" aria-label="Aperçu animé : ${esc(s.name)} pour ${esc(S.name)}">${s.html(S)}<span class="badge">${s.dur}</span></div>
+      <h2>${i + 1}. ${esc(s.name)}</h2>
+      <div class="tags">${s.tags.map((t) => `<span class="tag ${t}">${tagText[t]}</span>`).join('')}</div>
+      <p>${esc(s.desc)}</p>
+      <div class="set"><b>Ce que la personne règle :</b> ${esc(s.set)}</div>
+      <p class="sfx"><b>Sons d'animation :</b> ${esc(SFXTEXT[s.id] || '')}</p>
+      <button type="button" class="snd" data-id="${s.id}" aria-pressed="false">🔊 Écouter avec les sons</button>
+      <label class="keep" for="k-${s.id}"><input type="checkbox" id="k-${s.id}" data-id="${s.id}"${kept.includes(s.id) ? ' checked' : ''}> Je garde ce style</label>
+    </article>`).join('');
+}
+subjectBar.addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-i]');
+  if (!b) return;
+  subject = parseInt(b.dataset.i, 10);
+  try { localStorage.setItem('generiques_sujet', String(subject)); } catch (err) { /* sans mémoire */ }
+  renderSubjects();
+  renderGrid();
+});
+
+
+/* ——— Sons d'animation (démonstration) : synthèse Web Audio, déclenchée par un geste, calée sur les temps de chaque animation ——— */
+let AC = null, master = null, playing = null, timers = [];
+function ctx() {
+  if (!AC) { AC = new (window.AudioContext || window.webkitAudioContext)(); master = AC.createGain(); master.gain.value = 0.6; master.connect(AC.destination); }
+  if (AC.state === 'suspended') AC.resume();
+  return AC;
+}
+function noiseBuf(sec) {
+  const c = ctx(); const b = c.createBuffer(1, Math.floor(c.sampleRate * sec), c.sampleRate); const d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  return b;
+}
+const SFX = {
+  key(at, vol) { const c = ctx(); const s = c.createBufferSource(); s.buffer = noiseBuf(0.05); const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = 2200 + Math.random() * 900; f.Q.value = 1.4; const g = c.createGain(); g.gain.setValueAtTime((vol || 0.5), at); g.gain.exponentialRampToValueAtTime(0.001, at + 0.04); s.connect(f); f.connect(g); g.connect(master); s.start(at); s.stop(at + 0.06); },
+  ding(at, vol) { const c = ctx(); [1318, 2637].forEach((fr, i) => { const o = c.createOscillator(); o.frequency.value = fr; const g = c.createGain(); g.gain.setValueAtTime((vol || 0.25) / (i + 1), at); g.gain.exponentialRampToValueAtTime(0.001, at + 1.1); o.connect(g); g.connect(master); o.start(at); o.stop(at + 1.2); }); },
+  whoosh(at, vol, dur) { const c = ctx(); const d = dur || 0.5; const s = c.createBufferSource(); s.buffer = noiseBuf(d + 0.1); const f = c.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 0.8; f.frequency.setValueAtTime(300, at); f.frequency.exponentialRampToValueAtTime(3200, at + d * 0.7); f.frequency.exponentialRampToValueAtTime(500, at + d); const g = c.createGain(); g.gain.setValueAtTime(0.001, at); g.gain.exponentialRampToValueAtTime(vol || 0.4, at + d * 0.45); g.gain.exponentialRampToValueAtTime(0.001, at + d); s.connect(f); f.connect(g); g.connect(master); s.start(at); s.stop(at + d + 0.1); },
+  boom(at, vol) { const c = ctx(); const o = c.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(120, at); o.frequency.exponentialRampToValueAtTime(34, at + 0.5); const g = c.createGain(); g.gain.setValueAtTime(vol || 0.9, at); g.gain.exponentialRampToValueAtTime(0.001, at + 0.7); o.connect(g); g.connect(master); o.start(at); o.stop(at + 0.8); const s = c.createBufferSource(); s.buffer = noiseBuf(0.25); const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900; const g2 = c.createGain(); g2.gain.setValueAtTime(0.5, at); g2.gain.exponentialRampToValueAtTime(0.001, at + 0.22); s.connect(f); f.connect(g2); g2.connect(master); s.start(at); s.stop(at + 0.3); },
+  pop(at, vol) { const c = ctx(); const o = c.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(520, at); o.frequency.exponentialRampToValueAtTime(880, at + 0.08); const g = c.createGain(); g.gain.setValueAtTime(vol || 0.35, at); g.gain.exponentialRampToValueAtTime(0.001, at + 0.14); o.connect(g); g.connect(master); o.start(at); o.stop(at + 0.16); },
+  tick(at, vol) { const c = ctx(); const o = c.createOscillator(); o.type = 'square'; o.frequency.value = 1800; const g = c.createGain(); g.gain.setValueAtTime((vol || 0.12), at); g.gain.exponentialRampToValueAtTime(0.001, at + 0.025); o.connect(g); g.connect(master); o.start(at); o.stop(at + 0.03); },
+  swell(at, vol) { const c = ctx(); const o = c.createOscillator(); o.type = 'triangle'; o.frequency.value = 196; const g = c.createGain(); g.gain.setValueAtTime(0.001, at); g.gain.exponentialRampToValueAtTime(vol || 0.22, at + 0.9); g.gain.exponentialRampToValueAtTime(0.001, at + 2.4); o.connect(g); g.connect(master); o.start(at); o.stop(at + 2.5); },
+  shutter(at, vol) { SFX.tick(at, 0.3); SFX.tick(at + 0.06, 0.2); },
+};
+
+/* Le déroulé des sons de chaque style : [temps en secondes depuis le début, son, volume]. Une boucle = la durée de l'animation du téléphone. */
+function timeline(id) {
+  const ev = []; const add = (t, k, v) => ev.push([t, k, v]);
+  switch (id) {
+    case 'classique': add(0, 'whoosh', 0.35); add(13.6, 'ding', 0.25); return { loop: 15, ev };
+    case 'saison': add(0, 'whoosh', 0.35); [5, 10, 15, 20, 25].forEach((t) => add(t, 'tick', 0.2)); add(28, 'ding', 0.25); return { loop: 30, ev };
+    case 'gauche': case 'droite': [0, 4, 8, 12, 16].forEach((t) => add(t, 'whoosh', 0.28)); add(16.5, 'ding', 0.22); return { loop: 20, ev };
+    case 'pellicule': for (let t = 0; t < 12; t += 0.16) add(t, 'tick', 0.07); [0, 2.4, 4.8, 7.2].forEach((t) => add(t + 0.15, 'pop', 0.3)); return { loop: 12, ev };
+    case 'serie': [0, 3.5, 7, 10.5].forEach((t) => { add(t, 'swell', 0.2); add(t + 0.05, 'boom', 0.35); }); return { loop: 14, ev };
+    case 'machine': [0, 2.6, 5.2, 7.8, 10.4].forEach((t) => { for (let i = 0; i < 24; i++) add(t + 0.1 + i * 0.085, 'key', 0.55); add(t + 2.3, 'ding', 0.16); }); return { loop: 15, ev };
+    case 'paroles': [0, 3, 6, 9, 12].forEach((t) => { add(t + 0.1, 'pop', 0.3); add(t + 0.1, 'tick', 0.15); }); return { loop: 15, ev };
+    case 'recap': [0, 3, 6, 9].forEach((t) => { add(t, 'whoosh', 0.32, 0.6); add(t + 0.55, 'pop', 0.4); }); return { loop: 12, ev };
+    case 'trailer': [0, 1.5, 3, 4.5].forEach((t) => { add(t, 'whoosh', 0.3); add(t + 0.2, 'boom', 0.8); add(t + 0.2, 'shutter', 0.6); }); return { loop: 6, ev };
+    default: return { loop: 10, ev };
+  }
+}
+function stopSound() {
+  timers.forEach(clearTimeout); timers = [];
+  if (playing) { const b = document.querySelector('.snd[data-id="' + playing + '"]'); if (b) { b.setAttribute('aria-pressed', 'false'); b.textContent = '🔊 Écouter avec les sons'; } }
+  playing = null;
+}
+function runCycle(id) {
+  const tl = timeline(id); const c = ctx(); const t0 = c.currentTime + 0.12;
+  tl.ev.forEach(([t, k, v]) => SFX[k](t0 + t, v));
+  timers.push(setTimeout(() => { if (playing === id) runCycle(id); }, tl.loop * 1000));
+}
+function playSound(id) {
+  if (playing === id) { stopSound(); return; }
+  stopSound();
+  const art = document.getElementById('s-' + id); const ph = art && art.querySelector('.ph');
+  if (ph) { const html = ph.innerHTML; ph.innerHTML = ''; void ph.offsetWidth; ph.innerHTML = html; }   // relance l'animation pour caler le son
+  playing = id;
+  const b = document.querySelector('.snd[data-id="' + id + '"]');
+  if (b) { b.setAttribute('aria-pressed', 'true'); b.textContent = '⏹ Arrêter les sons'; }
+  runCycle(id);
+}
+grid.addEventListener('click', (e) => { const b = e.target.closest('.snd'); if (b) playSound(b.dataset.id); });
+
+const count = document.getElementById('count');
+function refresh() {
+  const boxes = [...document.querySelectorAll('.keep input')];
+  kept = boxes.filter((b) => b.checked).map((b) => b.dataset.id);
+  try { localStorage.setItem('generiques_gardes', JSON.stringify(kept)); } catch (e) { /* la sélection reste affichée sans mémoire */ }
+  count.textContent = kept.length === 0 ? "Aucun style gardé pour l'instant." : `${kept.length} style${kept.length > 1 ? 's' : ''} gardé${kept.length > 1 ? 's' : ''}.`;
+}
+grid.addEventListener('change', refresh);
+renderSubjects();
+renderGrid();
+refresh();
+
+document.getElementById('copy').addEventListener('click', () => {
+  const names = STYLES.filter((s) => kept.includes(s.id)).map((s) => `${STYLES.indexOf(s) + 1}. ${s.name}`);
+  const text = names.length ? 'Je garde : ' + names.join(' ; ') : "Je ne garde aucun style pour l'instant.";
+  const done = () => { count.textContent = 'Sélection copiée : collez-la dans la conversation.'; };
+  const fallback = () => { count.textContent = text; };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
+});
+</script>

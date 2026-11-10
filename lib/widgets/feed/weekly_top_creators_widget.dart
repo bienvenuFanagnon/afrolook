@@ -23,6 +23,8 @@ class _TopEntry {
   final int uniqueLovers;
   final int uniqueCommenters;
   final int totalViews;
+  final int comments;
+  final int interactions;
 
   _TopEntry({
     required this.isCanal,
@@ -33,6 +35,8 @@ class _TopEntry {
     required this.uniqueLovers,
     required this.uniqueCommenters,
     required this.totalViews,
+    required this.comments,
+    required this.interactions,
   });
 
   String get id => isCanal ? (canal?.id ?? '') : (userData?.id ?? '');
@@ -118,6 +122,8 @@ class WeeklyTopCreatorsWidget extends StatefulWidget {
                 uniqueLovers: r.uniqueLovers,
                 uniqueCommenters: r.uniqueCommenters,
                 totalViews: r.totalViews,
+                comments: r.comments,
+                interactions: r.totalInteractions,
               ))
           .toList();
     } catch (_) {
@@ -471,16 +477,36 @@ class _WeeklyTopCreatorsWidgetState extends State<WeeklyTopCreatorsWidget> {
     );
   }
 
+  /// Ligne forte : le total des interactions de la semaine ; dessous le détail (j'aime, commentaires, vues), tout vient de l'API.
   Widget _buildOverlayStats(_TopEntry entry) {
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        _overlayStatChip(Icons.article_outlined, '${entry.postCount}p'),
-        const SizedBox(width: 5),
-        _overlayStatChip(Icons.favorite_border, entry.uniqueLovers.toString()),
-        const SizedBox(width: 5),
-        _overlayStatChip(Icons.chat_bubble_outline, entry.uniqueCommenters.toString()),
-        const SizedBox(width: 5),
-        _overlayStatChip(Icons.remove_red_eye_outlined, _fmtCount(entry.totalViews)),
+        Row(
+          children: [
+            const Icon(Icons.local_fire_department, size: 12, color: Color(0xFFFFD400)),
+            const SizedBox(width: 3),
+            Flexible(
+              child: Text(
+                '${_fmtCount(entry.interactions)} interaction${entry.interactions > 1 ? 's' : ''}',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 3),
+        Row(
+          children: [
+            _overlayStatChip(Icons.favorite_border, _fmtCount(entry.uniqueLovers)),
+            const SizedBox(width: 6),
+            _overlayStatChip(Icons.chat_bubble_outline, _fmtCount(entry.comments)),
+            const SizedBox(width: 6),
+            _overlayStatChip(Icons.remove_red_eye_outlined, _fmtCount(entry.totalViews)),
+          ],
+        ),
       ],
     );
   }
@@ -489,9 +515,9 @@ class _WeeklyTopCreatorsWidgetState extends State<WeeklyTopCreatorsWidget> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 9, color: Colors.white.withOpacity(0.6)),
+        Icon(icon, size: 10, color: Colors.white.withOpacity(0.75)),
         const SizedBox(width: 2),
-        Text(value, style: TextStyle(fontSize: 9, color: Colors.white.withOpacity(0.6))),
+        Text(value, style: TextStyle(fontSize: 10, color: Colors.white.withOpacity(0.75))),
       ],
     );
   }

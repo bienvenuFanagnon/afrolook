@@ -60,6 +60,9 @@ class WeeklyCreatorRanking {
   final int uniqueLovers;
   final int uniqueCommenters;
   final int totalViews;
+  /// Commentaires reçus dans la semaine (tous), et total des interactions (j'aime + commentaires + partages) : mesurés par le serveur.
+  final int comments;
+  final int interactions;
 
   // Données enrichies (remplies côté Flutter)
   UserData? user;
@@ -74,6 +77,8 @@ class WeeklyCreatorRanking {
     required this.uniqueLovers,
     required this.uniqueCommenters,
     required this.totalViews,
+    this.comments = 0,
+    this.interactions = 0,
   });
 
   factory WeeklyCreatorRanking.fromMap(Map<String, dynamic> m) {
@@ -86,8 +91,13 @@ class WeeklyCreatorRanking {
       uniqueLovers: ((m['unique_lovers'] ?? m['uniqueLovers']) as num?)?.toInt() ?? 0,
       uniqueCommenters: ((m['unique_commenters'] ?? m['uniqueCommenters']) as num?)?.toInt() ?? 0,
       totalViews: ((m['total_views'] ?? m['totalViews']) as num?)?.toInt() ?? 0,
+      comments: ((m['comments'] ?? m['unique_commenters']) as num?)?.toInt() ?? 0,
+      interactions: (m['interactions'] as num?)?.toInt() ?? 0,
     );
   }
+
+  /// Total des interactions : celui du serveur, sinon la somme des compteurs reçus (anciens classements enregistrés).
+  int get totalInteractions => interactions > 0 ? interactions : uniqueLovers + comments;
 
   String get displayName => isCanal ? (canal?.titre ?? '') : (user?.pseudo ?? '');
   String get imageUrl => isCanal ? (canal?.urlImage ?? '') : (user?.imageUrl ?? '');

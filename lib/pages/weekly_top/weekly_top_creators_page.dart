@@ -148,7 +148,7 @@ class _WeeklyTopCreatorsPageState extends State<WeeklyTopCreatorsPage> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
             child: Text(
-              'Score = publications, personnes ayant aimé, commentateurs et vues de la semaine.',
+              'Classement selon les interactions de la semaine : j’aime, commentaires, partages et vues de leurs publications.',
               style: TextStyle(fontSize: 11, color: colors.textSecondary, fontStyle: FontStyle.italic),
             ),
           ),
@@ -197,16 +197,16 @@ class _WeeklyTopCreatorsPageState extends State<WeeklyTopCreatorsPage> {
               ]),
               const SizedBox(height: 4),
               Text(
-                '${r.postCount} post${r.postCount > 1 ? 's' : ''} · ❤ ${formatCompactCount(r.uniqueLovers)} · 💬 ${formatCompactCount(r.uniqueCommenters)} · 👁 ${formatCompactCount(r.totalViews)}',
+                '${r.postCount} post${r.postCount > 1 ? 's' : ''} · ❤ ${formatCompactCount(r.uniqueLovers)} · 💬 ${formatCompactCount(r.comments)} · 👁 ${formatCompactCount(r.totalViews)}',
                 style: TextStyle(color: colors.textSecondary, fontSize: 11),
               ),
             ]),
           ),
           const SizedBox(width: 8),
           Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Text(r.score.toStringAsFixed(r.score >= 100 ? 0 : 1),
+            Text(formatCompactCount(r.totalInteractions),
                 style: TextStyle(color: rc, fontWeight: FontWeight.bold, fontSize: 16)),
-            Text('pts', style: TextStyle(color: colors.textSecondary, fontSize: 10)),
+            Text(r.totalInteractions > 1 ? 'interactions' : 'interaction', style: TextStyle(color: colors.textSecondary, fontSize: 10)),
           ]),
         ]),
       ),
