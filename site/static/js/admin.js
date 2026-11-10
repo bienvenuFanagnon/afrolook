@@ -23,13 +23,15 @@ const avatar = (url, name, sq) => `<span class="adm-av${sq ? ' sq' : ''}" ${url 
 
 /* ——— Connexion Google (Firebase) et appels à l'API ——— */
 const root = $('#adm');
-const API = (root.dataset.api || '').replace(/\/+$/, '') + '/v1/admin/dashboard';
+const API_ADMIN = (root.dataset.api || '').replace(/\/+$/, '') + '/v1/admin';
+const API = API_ADMIN + '/dashboard';
 let auth = null;
 const gateErr = (m) => { const e = $('#adm-gerr'); e.hidden = !m; e.textContent = m || ''; };
 
+/** `path` : relatif au tableau de bord ; avec « @ » devant : un point d'API d'administration déjà utilisé par l'application (travail, quiz, étude, commissions). */
 async function apiGet(path) {
   let r;
-  try { r = await fetch(`${API}/${path}`, { headers: { Accept: 'application/json', Authorization: 'Bearer ' + (await auth.currentUser.getIdToken()) } }); }
+  try { r = await fetch(path.startsWith('@') ? `${API_ADMIN}/${path.slice(1)}` : `${API}/${path}`, { headers: { Accept: 'application/json', Authorization: 'Bearer ' + (await auth.currentUser.getIdToken()) } }); }
   catch { throw Object.assign(new Error('Impossible de joindre le serveur. Vérifie ta connexion puis réessaie.'), { code: 'network' }); }
   const j = await r.json().catch(() => ({}));
   if (r.ok) return j;
@@ -123,8 +125,8 @@ const periodSeg = () => seg('period', [['7', '7 jours'], ['30', '30 jours'], ['9
 const lock = '<span class="adm-lock">🔒 Consultation seule</span>';
 
 /* ——— État et navigation ——— */
-const TABS = [['over', 'Vue d’ensemble'], ['users', 'Utilisateurs'], ['adv', 'Annonceurs'], ['pub', 'Diffuseurs']];
-const st = { tab: 'over', detail: null, period: '30', topBy: 'views', topWin: '30', advBy: 'views', pubBy: 'shows', evoP: '90', evo: 'views', cache: {} };
+const TABS = [['over', 'Vue d’ensemble', 'vue'], ['users', 'Utilisateurs', 'utilisateurs'], ['act', 'Activité', 'activite'], ['money', 'Argent', 'argent'], ['work', 'Travail', 'travail'], ['learn', 'Quiz et Étude', 'apprentissage'], ['rew', 'Récompenses', 'recompenses'], ['adv', 'Annonceurs', 'annonceurs'], ['pub', 'Diffuseurs', 'diffuseurs']];
+const st = { tab: 'over', detail: null, period: '30', topBy: 'views', topWin: '30', advBy: 'views', pubBy: 'shows', evoP: '90', evo: 'views', wdays: '7', cache: {} };
 const main = () => $('#adm-main');
 let started = false;
 let token = 0;   // une réponse tardive d'un écran quitté ne doit pas écraser l'écran courant
@@ -134,10 +136,10 @@ function parseHash() {
   const h = location.hash.replace(/^#\/?/, '');
   const m = h.match(/^(u|a|d)\/([A-Za-z0-9_-]{1,64})$/);
   if (m) { st.detail = { k: m[1], id: m[2] }; return; }
-  const t = { vue: 'over', utilisateurs: 'users', annonceurs: 'adv', diffuseurs: 'pub' }[h];
+  const t = (TABS.find((x) => x[2] === h) || [])[0];
   if (t) { st.tab = t; st.detail = null; }
 }
-function setHash() { const h = st.detail ? `#/${st.detail.k}/${st.detail.id}` : '#' + { over: 'vue', users: 'utilisateurs', adv: 'annonceurs', pub: 'diffuseurs' }[st.tab]; if (location.hash !== h) history.replaceState(null, '', h); }
+function setHash() { const h = st.detail ? `#/${st.detail.k}/${st.detail.id}` : '#' + TABS.find((x) => x[0] === st.tab)[2]; if (location.hash !== h) history.replaceState(null, '', h); }
 addEventListener('hashchange', () => { if (!started) return; const before = JSON.stringify([st.tab, st.detail]); parseHash(); if (JSON.stringify([st.tab, st.detail]) !== before) render(); });
 
 async function render() {
@@ -148,7 +150,7 @@ async function render() {
   try {
     let html;
     if (st.detail) html = await { u: userPage, a: advPage, d: pubPage }[st.detail.k](st.detail.id);
-    else html = await { over: overPage, users: usersPage, adv: advListPage, pub: pubListPage }[st.tab]();
+    else html = await { over: overPage, users: usersPage, act: actPage, money: moneyPage, work: workPage, learn: learnPage, rew: rewPage, adv: advListPage, pub: pubListPage }[st.tab]();
     if (my === token) main().innerHTML = html;
   } catch (e) {
     if (my !== token) return;
@@ -287,15 +289,129 @@ async function pubPage(id) {
   <section class="adm-card"><h3>Dernières demandes de retrait</h3><p class="sub">Historique en lecture seule : les décisions de paiement se prennent dans la file de retraits.</p><div class="adm-list">${f.payouts.length ? f.payouts.map((x) => `<div class="it"><span>Retrait du ${fdate(x.created_at)}<br><small style="color:var(--muted)">${esc(x.operator)}</small></span><span>${F(x.amount_fcfa)} · ${esc((STATUS[x.status] || [x.status])[0])}</span></div>`).join('') : '<p class="adm-empty">Aucune demande.</p>'}</div></section></div>`;
 }
 
+/* ——— 5. Activité : publications et montages ——— */
+const dur = (s) => { s = Math.round(Number(s) || 0); if (s < 60) return s + ' s'; const m = Math.floor(s / 60); if (m < 60) return m + ' min'; return Math.floor(m / 60) + ' h ' + String(m % 60).padStart(2, '0'); };
+const dayIso = (k) => (/^\d{8}$/.test(String(k)) ? `${k.slice(0, 4)}-${k.slice(4, 6)}-${k.slice(6, 8)}` : String(k));
+const hbars = (rows, fmtv) => { const mx = Math.max(1, ...rows.map((r) => r[1])); return `<div class="adm-hb">${rows.map(([l, v]) => `<div class="r"><span>${esc(l)}</span><div class="t"><i style="width:${Math.max(3, v / mx * 100)}%"></i></div><span class="n">${(fmtv || fmt)(v)}</span></div>`).join('') || '<p class="adm-empty">Rien pour le moment.</p>'}</div>`; };
+const windowKpis = (w, what) => `<section class="adm-kpis">${kpi('Aujourd’hui', fmt(w.today), `<div class="s">${what}</div>`)}${kpi('Hier', fmt(w.yesterday))}${kpi('3 jours', fmt(w.d3), '<div class="s">aujourd’hui compris</div>')}${kpi('7 jours', fmt(w.d7))}${kpi('30 jours', fmt(w.d30))}</section>`;
+const KIND = { video: 'Vidéo', image: 'Image', text: 'Texte', audio: 'Audio', link: 'Lien', youtube: 'YouTube' };
+
+async function actPage() {
+  const a = (await apiGet(`activity?period=${st.period}`)).data; const p = a.posts, m = a.montages, u = a.unit, uu = u === 'month' ? 'mois' : 'jour';
+  return `<div class="adm-page">${head('Activité', 'Ce que les gens publient et créent dans l’application.', periodSeg())}
+  <div class="adm-sec"><i></i><h3 style="font-size:20px">Publications</h3></div>${windowKpis(p.windows, 'publications')}
+  <section class="adm-grid2"><div class="adm-card"><h3>Publications par ${uu}</h3><p class="sub">Ligne pointillée : moyenne sur 7 ${uu}s.</p>${barChart(a.labels, u, p.series, avgN(p.series, 7), 'var(--c1)', 'Publications')}</div>
+    <div class="adm-card"><h3>Par type de média</h3><p class="sub">Sur la période choisie : ${fmt(p.total)} publications.</p>${hbars(Object.entries(p.by_kind).map(([k, v]) => [KIND[k] || k, v]))}</div></section>
+  <div class="adm-sec"><i style="background:var(--yellow)"></i><h3 style="font-size:20px">Montages du Studio</h3></div>${windowKpis(m.windows, 'montages publiés')}
+  <section class="adm-grid2"><div class="adm-card"><h3>Montages publiés par ${uu}</h3><p class="sub">Publications faites avec un modèle du Studio.</p>${barChart(a.labels, u, m.series, avgN(m.series, 7), 'var(--c3)', 'Montages')}</div>
+    <div class="adm-card"><h3>Modèles les plus utilisés</h3><p class="sub">Sur la période choisie.</p>${hbars(m.top_templates.map((t) => [t.code, t.posts]))}</div></section>
+  <section class="adm-card"><h3>Autour des modèles</h3><div class="adm-tblw"><table class="adm-tbl"><thead><tr><th></th><th class="num">Aujourd’hui</th><th class="num">Hier</th><th class="num">3 jours</th><th class="num">7 jours</th><th class="num">30 jours</th></tr></thead><tbody>
+    ${[['« Essayer ce modèle » touché', m.template_tries], ['Modèles repris par quelqu’un d’autre', m.template_uses], ['Publications téléchargées', m.downloads]].map(([l, w]) => `<tr><td>${esc(l)}</td><td class="num">${fmt(w.today)}</td><td class="num">${fmt(w.yesterday)}</td><td class="num">${fmt(w.d3)}</td><td class="num">${fmt(w.d7)}</td><td class="num">${fmt(w.d30)}</td></tr>`).join('')}</tbody></table></div>
+    <p class="sub" style="margin:10px 0 0">${esc(m.note)}.</p></section></div>`;
+}
+
+/* ——— 6. Argent : ce qu'on devra payer aux créateurs, et les commissions de la plateforme ——— */
+const SRC = { like: 'J’aime', gift: 'Cadeaux', subscription: 'Abonnements', ads: 'Annonces', etude: 'Étude', contes: 'Contes', quiz: 'Quiz', sticker: 'Stickers', live: 'Lives', coin_sale: 'Ventes de pièces', paid_content: 'Contenus payants', share: 'Partage' };
+async function moneyPage() {
+  const pay = (await apiGet('payables')).data;   // sans le droit « argent », la page l'indique
+  const v = pay.views_to_pay, c = pay.cashed, w = pay.withdrawals_pending, pb = pay.publishers;
+  const labelsFor = await apiGet(`overview?period=${st.period}`).then((r) => r.data.labels).catch(() => []);
+  const from = labelsFor.length ? (labelsFor[0].length === 7 ? labelsFor[0] + '-01' : labelsFor[0]) : '';
+  let com = null; try { com = (await apiGet(`@commissions${from ? `?from=${from}&to=${new Date().toISOString().slice(0, 10)}` : ''}`)).data; } catch (e) { if (e.code === 'network') throw e; }
+  let html = `<div class="adm-page">${head('Argent', 'Ce que la plateforme devra payer, et ce qu’elle gagne. Réservé à l’équipe d’argent.', periodSeg())}
+  <div class="adm-sec"><i></i><h3 style="font-size:20px">À payer aux créateurs</h3></div>
+  <section class="adm-kpis">
+    ${kpi('Vues à encaisser', short(v.views), `<div class="s">chez ${fmt(v.creators)} créateurs</div>`)}
+    ${kpi('Valeur à payer', F(v.xof), `<div class="s">si tous encaissaient (minimum ${F(v.min_cash_xof)} chacun)</div>`)}
+    ${kpi('Peuvent encaisser maintenant', fmt(v.cashable_creators), `<div class="s">au-dessus du minimum</div>`)}
+    ${kpi('Encaissé', F(c.d7_xof), `<div class="s">7 jours · aujourd’hui ${F(c.today_xof)} · 30 jours ${F(c.d30_xof)}</div>`)}
+    ${kpi('Retraits demandés', F(w.xof), `<div class="s">${fmt(w.count)} demande${w.count > 1 ? 's' : ''} en attente</div>`)}
+    ${kpi('Diffuseurs à payer', F(pb.available_fcfa), `<div class="s">${fmt(pb.payouts_requested.count)} demande${pb.payouts_requested.count > 1 ? 's' : ''} · retenue ${F(pb.held_fcfa)}</div>`)}
+  </section>
+  <section class="adm-grid2"><div class="adm-card"><h3>Créateurs qui ont le plus à encaisser</h3><p class="sub">Touchez une ligne pour ouvrir la fiche.</p><div class="adm-tblw"><table class="adm-tbl"><thead><tr><th>Créateur</th><th class="num">Vues</th><th class="num">Valeur</th></tr></thead><tbody>
+    ${pay.top_creators.map((t) => `<tr class="adm-row" tabindex="0" role="link" data-open="u/${esc(t.id)}"><td><div class="adm-who">${avatar(t.avatar_url, t.username)}<b>@${esc(t.username)}</b></div></td><td class="num">${fmt(t.views)}</td><td class="num"><b>${F(t.xof)}</b></td></tr>`).join('')}</tbody></table></div>${pay.top_creators.length ? '' : '<p class="adm-empty">Aucune vue à encaisser.</p>'}</div>
+    <div class="adm-card"><h3>Par palier de créateur</h3><p class="sub">Plus le palier est haut, plus la vue vaut (1 F au maximum).</p><div class="adm-tblw"><table class="adm-tbl"><thead><tr><th>Palier</th><th class="num">Créateurs</th><th class="num">Valeur</th></tr></thead><tbody>
+    ${pay.tiers.map((t) => `<tr><td>${esc(t.tier)}</td><td class="num">${fmt(t.creators)}</td><td class="num">${F(t.xof)}</td></tr>`).join('')}</tbody></table></div></div></section>`;
+  if (com) {
+    const days = com.coins_by_day, labels = days.map((d) => String(d.day).slice(0, 10)); const dep = com.deposits, pc = com.paid_contents;
+    html += `<div class="adm-sec"><i style="background:var(--yellow)"></i><h3 style="font-size:20px">Commissions de la plateforme</h3></div>
+    <div class="adm-note">Ces chiffres ne sont jamais montrés aux utilisateurs. Période : du ${esc(fdate(com.from))} au ${esc(fdate(com.to))}.</div>
+    <section class="adm-kpis">${kpi('Gains en pièces', fmt(com.coins_total), '<div class="s">toutes sources</div>')}${kpi('Dépôts Mobile Money', fmt(dep.count), `<div class="s">payés ${F(dep.paid_xof)}</div>`)}${kpi('Gain sur les dépôts', F(dep.gain_xof), `<div class="s">frais ${F(dep.fee_xof)} · fournisseur ${F(dep.provider_fee_xof)}</div>`)}${kpi('Contenus payants', fmt(pc.count), `<div class="s">vendus ${F(pc.paid_xof)} · plateforme ${F(pc.platform_xof)}</div>`)}</section>
+    <section class="adm-grid2"><div class="adm-card"><h3>Gains en pièces par jour</h3>${labels.length ? lineChart(labels, 'day', [{ name: 'Pièces', color: 'var(--c1)', data: days.map((d) => d.coins), area: true }]) : '<p class="adm-empty">Aucun gain sur la période.</p>'}</div>
+      <div class="adm-card"><h3>Par source</h3><p class="sub">D’où viennent les gains en pièces.</p>${hbars(com.coins_by_source.map((s) => [SRC[s.source] || s.source, s.coins]))}</div></section>
+    <section class="adm-grid2"><div class="adm-card"><h3>Ventes de pièces</h3><div class="adm-tblw"><table class="adm-tbl"><thead><tr><th>Devise</th><th class="num">Ventes</th><th class="num">Pièces</th><th class="num">Payé</th><th class="num">Net estimé</th></tr></thead><tbody>
+      ${com.coin_sales.map((s) => `<tr><td>${esc(s.currency)}</td><td class="num">${fmt(s.sales)}</td><td class="num">${fmt(s.coins)}</td><td class="num">${fmt(s.amount)}</td><td class="num">${fmt(s.net_estimate)}</td></tr>`).join('')}</tbody></table></div>${com.coin_sales.length ? '' : '<p class="adm-empty">Aucune vente.</p>'}</div>
+      <div class="adm-card"><h3>Dépôts par opérateur</h3>${hbars(com.deposits_by_operator.map((o) => [o.operator || '—', o.gain_xof]), F)}</div></section>`;
+  }
+  return html + '</div>';
+}
+
+/* ——— 7. Travail : page Travail et missions ——— */
+async function workPage() {
+  const r = (await apiGet(`@work/stats?days=${st.wdays}`)).data, t = r.totals, ac = r.actions, ad = r.ads, pg = r.pages;
+  const labels = r.daily.map((d) => d.day);
+  const PGN = { work: 'Page Travail', missions: 'Page Missions' };
+  return `<div class="adm-page">${head('Travail', 'Les visites de la page Travail et des missions, et les pubs regardées.', seg('wdays', [['7', '7 jours'], ['30', '30 jours'], ['90', '90 jours']], st.wdays))}
+  <section class="adm-kpis">${kpi('Visiteurs', fmt(t.visitors), `<div class="s">${fmt(t.returningVisitors)} reviennent</div>`)}${kpi('Visites', fmt(t.sessions), `<div class="s">${dur(t.avgSecondsPerSession)} en moyenne</div>`)}${kpi('Temps passé', dur(t.seconds), `<div class="s">${dur(t.avgSecondsPerVisitor)} par visiteur</div>`)}
+    ${kpi('Pubs regardées', fmt(ad.total), `<div class="s">${String(ad.perVisitor).replace('.', ',')} par visiteur${ad.estimatedUsd != null ? ' · ≈ ' + String(ad.estimatedUsd).replace('.', ',') + ' $' : ''}</div>`)}</section>
+  <section class="adm-card"><h3>Visiteurs et visites par jour</h3><div class="adm-legend"><span><i style="background:var(--c1)"></i>Visiteurs</span><span><i style="background:var(--c2)"></i>Visites</span><span><i style="background:var(--c3)"></i>Pubs</span></div>
+    ${lineChart(labels, 'day', [{ name: 'Visiteurs', color: 'var(--c1)', data: r.daily.map((d) => d.visitors), area: true }, { name: 'Visites', color: 'var(--c2)', data: r.daily.map((d) => d.sessions) }, { name: 'Pubs', color: 'var(--c3)', data: r.daily.map((d) => d.ads) }])}</section>
+  <section class="adm-grid2"><div class="adm-card"><h3>Par page</h3><div class="adm-tblw"><table class="adm-tbl"><thead><tr><th>Page</th><th class="num">Visiteurs</th><th class="num">Visites</th><th class="num">Temps moyen</th></tr></thead><tbody>
+    ${Object.entries(pg).map(([k, v]) => `<tr><td>${esc(PGN[k] || k)}</td><td class="num">${fmt(v.visitors)}</td><td class="num">${fmt(v.sessions)}</td><td class="num">${dur(v.avgSeconds)}</td></tr>`).join('')}</tbody></table></div></div>
+    <div class="adm-card"><h3>Ce que les gens touchent</h3><p class="sub">Boutons touchés depuis la page Travail.</p>${hbars([['Missions', ac.missions.taps], ['Tâches', ac.tasks.taps], ['Partenaires', ac.partner.taps]])}
+      <p class="sub" style="margin-top:8px">${fmt(ac.missions.people)} personnes sur les missions · ${fmt(ac.tasks.people)} sur les tâches · ${fmt(ac.partner.people)} sur les partenaires.</p></div></section>
+  <section class="adm-card"><h3>Les plus actifs</h3><div class="adm-tblw"><table class="adm-tbl"><thead><tr><th>Utilisateur</th><th class="num">Visites</th><th class="num">Temps</th><th class="num">Touches</th><th class="num">Pubs</th></tr></thead><tbody>
+    ${r.topUsers.map((u) => `<tr class="adm-row" tabindex="0" role="link" data-open="u/${esc(u.id)}"><td><b>@${esc(u.username)}</b></td><td class="num">${fmt(u.sessions)}</td><td class="num">${dur(u.seconds)}</td><td class="num">${fmt(u.taps)}</td><td class="num">${fmt(u.ads)}</td></tr>`).join('')}</tbody></table></div>${r.topUsers.length ? '' : '<p class="adm-empty">Aucune visite sur la période.</p>'}</section></div>`;
+}
+
+/* ——— 8. Quiz et Étude ——— */
+async function learnPage() {
+  let quiz = null, etude = null, denied = [];
+  try { quiz = (await apiGet('@quiz/stats?days=14')).data; } catch (e) { if (e.code === 'network') throw e; denied.push('le quiz'); }
+  try { etude = (await apiGet('@etude/overview')).data; } catch (e) { if (e.code === 'network') throw e; denied.push('l’étude'); }
+  let html = `<div class="adm-page">${head('Quiz et Étude', 'Ceux qui jouent, ceux qui apprennent, et ce que ça rapporte.')}`;
+  if (denied.length === 2) throw Object.assign(new Error('Cette partie est réservée à l’équipe du quiz et de l’étude. Ton compte n’a pas ce droit.'), { code: 'denied' });
+  if (denied.length) html += `<div class="adm-note">Ton compte n’a pas accès à ${esc(denied.join(' et '))} : cette partie est masquée.</div>`;
+  if (quiz) {
+    const o = quiz.overview, rt = quiz.retention, labels = quiz.days.map((d) => dayIso(d.day)); const REG = { af: 'Afrique', eu: 'Europe', as: 'Asie', am: 'Amériques', mx: 'Autres' };
+    const BK = ['Niveaux 1 à 5', '6 à 20', '21 à 50', '51 à 100', '101 à 200', 'Terminé'];
+    html += `<div class="adm-sec"><i></i><h3 style="font-size:20px">Quiz</h3></div>
+    <section class="adm-kpis">${kpi('Joueurs', fmt(o.total), `<div class="s">${fmt(o.played_today)} aujourd’hui</div>`)}${kpi('Défi du jour fini', fmt(o.daily_done), `<div class="s">${fmt(o.chal_players)} jouent le défi</div>`)}${kpi('Reviennent le lendemain', rt.yesterday ? Math.round(rt.back / rt.yesterday * 100) + ' %' : '—', `<div class="s">${fmt(rt.back)} sur ${fmt(rt.yesterday)} joueurs d’hier</div>`)}${kpi('Séries de 3 jours', fmt(o.streak3), `<div class="s">${fmt(o.chal_wins)} victoires au défi</div>`)}</section>
+    <section class="adm-grid2"><div class="adm-card"><h3>Joueurs et niveaux par jour</h3><div class="adm-legend"><span><i style="background:var(--c1)"></i>Joueurs</span><span><i style="background:var(--c2)"></i>Niveaux joués</span><span><i style="background:var(--c3)"></i>Réussis</span></div>
+      ${lineChart(labels, 'day', [{ name: 'Joueurs', color: 'var(--c1)', data: quiz.days.map((d) => d.players), area: true }, { name: 'Niveaux joués', color: 'var(--c2)', data: quiz.days.map((d) => d.levels) }, { name: 'Réussis', color: 'var(--c3)', data: quiz.days.map((d) => d.passed) }])}</div>
+      <div class="adm-card"><h3>Où ils en sont</h3>${hbars(o.level_buckets.map((n, i) => [BK[i], n]))}<h3 style="margin-top:16px">Par région</h3>${hbars(Object.entries(o.by_region).map(([k, n]) => [REG[k] || k, n]))}</div></section>`;
+  }
+  if (etude) {
+    const e = etude;
+    html += `<div class="adm-sec"><i style="background:var(--yellow)"></i><h3 style="font-size:20px">Étude</h3></div>
+    <section class="adm-kpis">${kpi('Apprenants', fmt(e.learners), `<div class="s">${fmt(e.active_today)} aujourd’hui · ${fmt(e.active7)} sur 7 jours</div>`)}${kpi('Réussite aux questions', e.success_rate + ' %', `<div class="s">XP moyen ${fmt(e.avg_xp)}</div>`)}${kpi('Pièces gagnées (7 jours)', fmt(e.coins7), '<div class="s">par la plateforme</div>')}${kpi('Déblocages', fmt(Object.values(e.unlocks).reduce((x, y) => x + y, 0)), `<div class="s">${fmt(e.unlocks.ch)} chapitres · ${fmt(e.unlocks.exam)} examens · ${fmt(e.unlocks.cert)} certificats</div>`)}</section>
+    <section class="adm-grid2"><div class="adm-card"><h3>Chapitres les plus terminés</h3>${hbars((e.top_chapters || []).slice(0, 10).map((c) => [c.title, c.n]))}</div>
+      <div class="adm-card"><h3>Parcours</h3><div class="adm-list">${(e.tracks || []).map((t) => `<div class="it"><span>${esc(t.title)}<br><small style="color:var(--muted)">${fmt(t.classes)} classes · ${fmt(t.chapters)} chapitres</small></span><span>${fmt((e.started || {})[t.id] || 0)} démarrés</span></div>`).join('') || '<p class="adm-empty">Aucun parcours.</p>'}</div></div></section>
+    ${e.truncated ? '<div class="adm-note">Le total est limité aux 10 000 premiers apprenants.</div>' : ''}`;
+  }
+  return html + '</div>';
+}
+
+/* ——— 9. Récompenses ——— */
+async function rewPage() {
+  const r = (await apiGet(`rewards?period=${st.period}`)).data, u = r.unit, uu = u === 'month' ? 'mois' : 'jour';
+  const OFFER = { premium: 'Premium', adfree: 'Sans pub', photos: 'Photos en plus', coins: 'Pièces' };
+  return `<div class="adm-page">${head('Récompenses', 'Les pubs regardées contre des avantages, et ce qui a été obtenu.', periodSeg())}
+  <section class="adm-kpis">${kpi('Pubs échangées', fmt(r.ads_exchanged.total), '<div class="s">sur la période</div>')}${kpi('Avantages obtenus', fmt(r.claims.total), '<div class="s">sur la période</div>')}${kpi('Joueurs aujourd’hui', fmt(r.today.players), `<div class="s">${fmt(r.today.ads_watched)} pubs regardées</div>`)}${kpi('Premium en cours', fmt(r.active.premium), `<div class="s">${fmt(r.active.ad_free)} sans pub</div>`)}</section>
+  <section class="adm-grid2"><div class="adm-card"><h3>Pubs échangées par ${uu}</h3>${barChart(r.labels, u, r.ads_exchanged.series, avgN(r.ads_exchanged.series, 7), 'var(--c1)', 'Pubs échangées')}</div>
+    <div class="adm-card"><h3>Avantages obtenus</h3><p class="sub">Par offre, sur la période.</p>${hbars(r.claims.by_offer.map((o) => [OFFER[o.offer] || o.offer, o.claims]))}</div></section>
+  <section class="adm-card"><h3>Avantages obtenus par ${uu}</h3>${barChart(r.labels, u, r.claims.series, avgN(r.claims.series, 7), 'var(--c3)', 'Avantages')}</section></div>`;
+}
+
 /* ——— Événements ——— */
 document.addEventListener('click', (ev) => {
-  const t = ev.target.closest('[data-tab],[data-period],[data-topby],[data-topwin],[data-evo],[data-evop],[data-advby],[data-pubby],[data-open],[data-back],[data-retry]'); if (!t || !root.contains(t)) return;
+  const t = ev.target.closest('[data-tab],[data-period],[data-topby],[data-topwin],[data-evo],[data-evop],[data-advby],[data-pubby],[data-wdays],[data-open],[data-back],[data-retry]'); if (!t || !root.contains(t)) return;
   const d = t.dataset; const y = scrollY;
   if (d.tab) { st.tab = d.tab; st.detail = null; render(); scrollTo(0, 0); return; }
   if (d.open) { const [k, id] = d.open.split('/'); st.detail = { k, id }; st.evo = 'views'; st.evoP = '90'; render(); scrollTo(0, 0); return; }
   if ('back' in d) { st.detail = null; render(); return; }
   if ('retry' in d) { render(); return; }
-  if (d.period) st.period = d.period; else if (d.topby) st.topBy = d.topby; else if (d.topwin) st.topWin = d.topwin; else if (d.evo) st.evo = d.evo; else if (d.evop) st.evoP = d.evop; else if (d.advby) st.advBy = d.advby; else if (d.pubby) st.pubBy = d.pubby;
+  if (d.period) st.period = d.period; else if (d.topby) st.topBy = d.topby; else if (d.topwin) st.topWin = d.topwin; else if (d.evo) st.evo = d.evo; else if (d.evop) st.evoP = d.evop; else if (d.advby) st.advBy = d.advby; else if (d.pubby) st.pubBy = d.pubby; else if (d.wdays) st.wdays = d.wdays;
   render().then(() => scrollTo(0, y));
 });
 document.addEventListener('keydown', (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches && ev.target.matches('.adm-row')) { ev.preventDefault(); ev.target.click(); } });
