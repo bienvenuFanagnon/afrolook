@@ -8,6 +8,7 @@ import 'package:flutter/services.dart' show rootBundle;
 import '../../../widgets/draft_widgets_layer.dart' show PresetWidgetsPreview;
 import 'collage_template.dart';
 import 'credits_render.dart';
+import 'credits_subjects.dart';
 import 'montage_canvas.dart';
 import 'montage_catalog.dart';
 import 'montage_state.dart';
@@ -254,7 +255,7 @@ class _CreditsPreviewState extends State<_CreditsPreview> with SingleTickerProvi
   void initState() {
     super.initState();
     Future(() async {
-      final lines = CreditsRender.defaultLines();
+      final lines = creditsDefaultLinesFor(widget.t.id);
       final png = await CreditsRender.png(lines, width: 270);
       final h = CreditsRender.heightFor(lines, width: 270) + 270 * (16 / 9) * .24;
       final bgs = await TemplatePreview._photos(3);

@@ -21,6 +21,7 @@ import '../../../widgets/api_error_dialogs.dart';
 import '../../create/create_editor_page.dart';
 import '../../create/create_result.dart';
 import 'credits_render.dart';
+import 'credits_subjects.dart';
 import 'montage_catalog.dart';
 import 'montage_music.dart';
 import 'story_render.dart';
@@ -40,7 +41,8 @@ class _CreditsTemplatePageState extends State<CreditsTemplatePage> with SingleTi
   final List<XFile> _photos = [];
   final Map<String, Uint8List> _bytes = {};
   List<Uint8List> _samples = const [];   // photos d'exemple de l'application : seulement pour l'aperçu
-  late final TextEditingController _text = TextEditingController(text: CreditsRender.defaultLines().join('\n'));
+  CreditsStyle _style = CreditsStyle.classique;
+  late final TextEditingController _text = TextEditingController(text: creditsDefaultLinesFor(widget.template.id).join('\n'));
   late final AnimationController _anim = AnimationController(vsync: this);
   double _seconds = 24;
   Uint8List? _credits;   // le texte dessiné pour l'aperçu
@@ -84,6 +86,33 @@ class _CreditsTemplatePageState extends State<CreditsTemplatePage> with SingleTi
   }
 
   List<String> get _lines => _text.text.split('\n');
+
+  /// Les musiques proposées d'un geste : celle du sujet d'abord, puis les musiques de fin de film.
+  List<String> get _quickIds => {if (creditsSubjectFor(widget.template.id)?.music case final m?) m, ..._quick}.toList();
+
+  /// Change le style du générique : le texte du sujet est réécrit pour ce style. Si la personne a modifié le texte, on le lui demande d'abord.
+  Future<void> _setStyle(CreditsStyle s) async {
+    if (s == _style) return;
+    final edited = _text.text.trim() != creditsDefaultLinesFor(widget.template.id, style: _style).join('\n').trim();
+    if (edited) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(ctx.tr('Changer de style ?')),
+          content: Text(ctx.tr('Ton texte sera remplacé par celui de ce style.')),
+          actions: [
+            TextButton(key: const ValueKey('credits_style_keep'), onPressed: () => Navigator.pop(ctx, false), child: Text(ctx.tr('Garder mon texte'))),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(ctx.tr('Changer'))),
+          ],
+        ),
+      );
+      if (ok != true || !mounted) return;
+    }
+    _text.text = creditsDefaultLinesFor(widget.template.id, style: s).join('\n');
+    _style = s;
+    _seconds = s.seconds.clamp(12.0, _maxSeconds).toDouble();
+    await _redraw();
+  }
 
   Future<void> _pickMusic(MontageMusic? m) async {
     await MontageMusicPlayer.stop();
@@ -262,6 +291,16 @@ class _CreditsTemplatePageState extends State<CreditsTemplatePage> with SingleTi
             ),
           ),
           const SizedBox(height: 12),
+          Text(context.tr('Style du générique'), style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 6),
+          Wrap(spacing: 8, children: [
+            for (final s in CreditsStyle.values) ChoiceChip(key: ValueKey('credits_style_${s.name}'), label: Text(context.tr(s.label)), selected: _style == s, onSelected: (_) => _setStyle(s)),
+          ]),
+          const SizedBox(height: 4),
+          Text(context.tr(_style.hint), style: TextStyle(color: c.textSecondary, fontSize: 12)),
+          if (_style == CreditsStyle.chapitres && _maxSeconds < _style.seconds)
+            Padding(padding: const EdgeInsets.only(top: 2), child: Text(context.tr('La version longue est plus belle avec 4 photos ou plus.'), style: TextStyle(color: c.accentText, fontSize: 12))),
+          const SizedBox(height: 12),
           TextField(
             key: const ValueKey('credits_text'),
             controller: _text,
@@ -292,7 +331,7 @@ class _CreditsTemplatePageState extends State<CreditsTemplatePage> with SingleTi
           SizedBox(
             height: 36,
             child: ListView(scrollDirection: Axis.horizontal, children: [
-              for (final id in _quick)
+              for (final id in _quickIds)
                 if (studioTrack(id) != null)
                   Padding(
                     padding: const EdgeInsets.only(right: 6),

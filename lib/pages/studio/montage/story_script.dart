@@ -128,4 +128,4 @@ StoryScript? storyScriptFor(String templateId) {
 const kStoryTemplateIds = {'fa_triomphe', 'fa_merci', 'fa_bilan', 'fa_lecons', 'fa_resolutions', 'vie_devenu', 'vie_objectifs'};
 
 /// Modèles « générique de fin de film » : le texte monte lentement sur des photos qui changent (voir `credits_page.dart`).
-const kCreditsTemplateIds = {'fa_film'};
+const kCreditsTemplateIds = {'fa_film', 'gen_journee', 'gen_weekend', 'gen_histoire', 'gen_anniv', 'gen_voyage', 'gen_soiree', 'gen_mariage', 'gen_business', 'gen_famille'};
