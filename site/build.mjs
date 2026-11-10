@@ -42,7 +42,7 @@ const deFr = (n) => (/^[AEIOUYÉÈÎÂÔ]/i.test(n) ? `l'${n}` : /^(Les |États)
 // ───────── chemins ─────────
 const P = {
   fr: { home: '/', earn: '/gagner/', cards: '/cartes/', music: '/musique/', holidays: '/fetes/', contact: '/contact/', download: '/telecharger/', del: '/supprimer-mon-compte/', rules: '/conditions/', privacy: '/confidentialite/', help: '/aide/', holiday: (c) => `/fetes/${c.slugFr}/` },
-  en: { home: '/en/', earn: '/en/earn/', cards: '/en/cards/', music: '/en/music/', holidays: '/en/holidays/', contact: '/en/contact/', download: '/en/download/', del: '/en/delete-account/', rules: '/conditions/', privacy: '/confidentialite/', holiday: (c) => `/en/holidays/${c.slugEn}/` },
+  en: { home: '/en/', earn: '/en/earn/', cards: '/en/cards/', music: '/en/music/', holidays: '/en/holidays/', contact: '/en/contact/', download: '/en/download/', del: '/en/delete-account/', rules: '/conditions/', privacy: '/confidentialite/', help: '/en/help/', holiday: (c) => `/en/holidays/${c.slugEn}/` },
 };
 const abs = (p) => cfg.domain + p;
 const sitemap = []; // { loc, alts: {fr, en} }
@@ -81,7 +81,7 @@ function footer(lang) {
  <div><a class="brand" href="${p.home}" style="color:#fff"><img src="/img/logo.webp" width="36" height="36" alt=""><span>afro<i>look</i></span></a><p class="about">${f.about}</p></div>
  <div><h4>${f.product}</h4><ul><li><a href="${p.earn}">${t.nav.earn}</a></li><li><a href="${p.cards}">${t.nav.cards}</a></li><li><a href="${p.music}">${t.nav.music}</a></li><li><a href="${p.holidays}">${t.nav.holidays}</a></li><li><a href="${p.download}">${t.nav.download}</a></li><li><a href="${cfg.appWebUrl}">${f.web}</a></li></ul></div>
  <div><h4>Afrolook Ads</h4><ul><li><a href="/ads/">${lang === 'fr' ? 'Annoncer' : 'Advertise'}</a></li><li><a href="/ads/diffuseur/">${lang === 'fr' ? 'Devenir diffuseur' : 'Become a publisher'}</a></li><li><a href="/ads/diffuseur/documentation/" hreflang="fr">${lang === 'fr' ? 'Documentation d\'intégration' : 'Integration guide'}</a></li><li><a href="/ads/diffuseur/regles/" hreflang="fr">${lang === 'fr' ? 'Règles des diffuseurs' : 'Publisher rules'}</a></li></ul></div>
- <div><h4>${f.help}</h4><ul><li><a href="${lang === 'fr' ? p.help : p.home + '#faq'}">${f.faq}</a></li><li><a href="${p.contact}">${t.nav.contact}</a></li><li><a href="https://wa.me/${cfg.supportWhatsapp}?text=${encodeURIComponent(lang === 'fr' ? 'Bonjour, j\'ai besoin d\'aide sur Afrolook.' : 'Hello, I need help with Afrolook.')}" target="_blank" rel="noopener">${lang === 'fr' ? 'Support WhatsApp' : 'WhatsApp support'}</a></li><li><a href="${p.del}">${f.delete}</a></li></ul></div>
+ <div><h4>${f.help}</h4><ul><li><a href="${p.help}">${f.faq}</a></li><li><a href="${p.contact}">${t.nav.contact}</a></li><li><a href="https://wa.me/${cfg.supportWhatsapp}?text=${encodeURIComponent(lang === 'fr' ? 'Bonjour, j\'ai besoin d\'aide sur Afrolook.' : 'Hello, I need help with Afrolook.')}" target="_blank" rel="noopener">${lang === 'fr' ? 'Support WhatsApp' : 'WhatsApp support'}</a></li><li><a href="${p.del}">${f.delete}</a></li></ul></div>
  <div><h4>${f.legal}</h4><ul><li><a href="${p.rules}" hreflang="fr">${f.rules}</a></li><li><a href="${p.privacy}" hreflang="fr">${f.privacy}</a></li></ul></div>
 </div>
 <div class="bottom"><span>© ${new Date().getFullYear()} Afrolook. ${f.rights}</span><span>afrolookmedia.com</span></div>
@@ -191,9 +191,9 @@ const screens = (lang) => (lang === 'fr' ? { hero: frHero, grid: frGrid } : { he
 const screensHead = '<link rel="stylesheet" href="/css/screens.css?v=${ASSET_V}">';
 const screensScript = '<script>(function(){var s=[].slice.call(document.querySelectorAll("#afxh .afx-sc")),d=[].slice.call(document.querySelectorAll("#afxd i")),i=0,t;function go(n){s[i].classList.remove("on");d[i].classList.remove("on");i=n;s[i].classList.add("on");d[i].classList.add("on")}if(!s.length)return;d.forEach(function(e,n){e.addEventListener("click",function(){go(n)})});if(window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches)return;t=setInterval(function(){go((i+1)%s.length)},4500)})();</script>';
 function homePage(lang) {
-  if (lang === 'fr') {
-    const t = T.fr, h = t.home;
-    emit('fr', 'home', P.fr.home, { alt: { fr: P.fr.home, en: P.en.home }, title: h.title, desc: h.desc, body: v2Home(cfg), jsonld: [mailtoOrg, appLd('fr')] });
+  {
+    const t = T[lang], h = t.home;
+    emit(lang, 'home', P[lang].home, { alt: { fr: P.fr.home, en: P.en.home }, title: h.title, desc: h.desc, body: v2Home(cfg, lang), jsonld: [mailtoOrg, appLd(lang)] });
     return;
   }
   const t = T[lang], h = t.home, [coins, fcfa] = fmt(lang, cfg.example);
@@ -272,17 +272,19 @@ ${jobsHtml(lang)}
   emit(lang, 'home', P[lang].home, { alt, title: h.title, desc: h.desc, body: body + adsBar(lang) + screensScript, jsonld: [mailtoOrg, appLd(lang), faqLd(lang)], extraHead: adsHead + screensHead.replace('${ASSET_V}', ASSET_V) });
 }
 
-// Page Aide (français) : les questions fréquentes de l'accueil et d'Afrolook Ads, puis le contact.
-function aidePage() {
-  const t = T.fr, adsQ = adsFaqLd.mainEntity.map((q) => [q.name, q.acceptedAnswer.text]);
+// Page Aide : les questions fréquentes de l'accueil et d'Afrolook Ads, puis le contact.
+function aidePage(lang) {
+  const t = T[lang], fr = lang === 'fr';
+  const adsQ = (fr ? adsFaqLd : adsFaqLdEn).mainEntity.map((q) => [q.name, q.acceptedAnswer.text]);
   const list = (arr) => `<div class="faq">${arr.map(([q, a]) => `<details><summary>${q}</summary><p>${a}</p></details>`).join('')}</div>`;
-  const body = `<section class="pagehead"><div class="wrap">${crumbs('fr', [[P.fr.home, 'Afrolook'], [P.fr.help, 'Aide']])}<h1>Aide</h1><p>Les réponses aux questions les plus fréquentes, et le moyen de nous écrire.</p></div></section>
-<section style="padding-top:0"><div class="wrap"><span class="kicker">Afrolook</span><h2 class="h2">Questions sur l'application</h2>${list(t.faq)}</div></section>
-<section style="padding-top:0"><div class="wrap"><span class="kicker">Afrolook Ads</span><h2 class="h2">Questions sur les annonces</h2>${list(adsQ)}</div></section>
-<section class="contact" id="contact" style="background:var(--soft)"><div class="wrap"><span class="kicker">${t.nav.contact}</span><h2 class="h2">Une question, une idée, un partenariat ?</h2>
- <div class="grid"><div><p class="sub" style="margin-top:0">${t.contact.lead}</p>${contactBlock('fr')}</div>${contactForm('fr')}</div></div></section>`;
+  const alt = { fr: P.fr.help, en: P.en.help };
+  const body = `<section class="pagehead"><div class="wrap">${crumbs(lang, [[P[lang].home, 'Afrolook'], [P[lang].help, fr ? 'Aide' : 'Help']])}<h1>${fr ? 'Aide' : 'Help'}</h1><p>${fr ? 'Les réponses aux questions les plus fréquentes, et le moyen de nous écrire.' : 'Answers to the most common questions, and a way to write to us.'}</p></div></section>
+<section style="padding-top:0"><div class="wrap"><span class="kicker">Afrolook</span><h2 class="h2">${fr ? 'Questions sur l\'application' : 'Questions about the app'}</h2>${list(t.faq)}</div></section>
+<section style="padding-top:0"><div class="wrap"><span class="kicker">Afrolook Ads</span><h2 class="h2">${fr ? 'Questions sur les annonces' : 'Questions about ads'}</h2>${list(adsQ)}</div></section>
+<section class="contact" id="contact" style="background:var(--soft)"><div class="wrap"><span class="kicker">${t.nav.contact}</span><h2 class="h2">${fr ? 'Une question, une idée, un partenariat ?' : 'A question, an idea, a partnership?'}</h2>
+ <div class="grid"><div><p class="sub" style="margin-top:0">${t.contact.lead}</p>${contactBlock(lang)}</div>${contactForm(lang)}</div></div></section>`;
   const ld = { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: [...t.faq, ...adsQ].map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) };
-  emit('fr', 'help', P.fr.help, { title: 'Aide et questions fréquentes | Afrolook', desc: 'Réponses aux questions fréquentes sur Afrolook et Afrolook Ads : gains, retrait, annonces, compte. Et le moyen de nous contacter.', body, jsonld: [ld] });
+  emit(lang, 'help', P[lang].help, { alt, title: fr ? 'Aide et questions fréquentes | Afrolook' : 'Help and frequently asked questions | Afrolook', desc: fr ? 'Réponses aux questions fréquentes sur Afrolook et Afrolook Ads : gains, retrait, annonces, compte. Et le moyen de nous contacter.' : 'Answers to frequently asked questions about Afrolook and Afrolook Ads: earnings, withdrawal, ads, account. And how to contact us.', body, jsonld: [ld] });
 }
 
 function musicPage(lang) {
@@ -399,7 +401,7 @@ function adsPages() {
   const altAds = { fr: '/ads/', en: '/en/ads/' };
   emit('fr', 'ads', '/ads/partager/', { title: KIT_META.title, desc: KIT_META.desc, body: adsKitPage(), noindex: true, ogImage: '/img/ads/og-annonceurs.png', extraHead: adsHead });
   emit('fr', 'ads', '/ads/', { alt: altAds, ogImage: '/img/ads/og-annonceurs.png', title: ADS_META.title, desc: ADS_META.desc, body: v2Ads(cfg), extraHead: adsHead });
-  emit('en', 'ads', '/en/ads/', { alt: altAds, ogImage: '/img/ads/og-annonceurs.png', title: ADS_META_EN.title, desc: ADS_META_EN.desc, body: adsLandingEn(cfg.functionsBase), jsonld: [adsFaqLdEn], extraHead: adsHead });
+  emit('en', 'ads', '/en/ads/', { alt: altAds, ogImage: '/img/ads/og-annonceurs.png', title: ADS_META_EN.title, desc: ADS_META_EN.desc, body: v2Ads(cfg, 'en'), extraHead: adsHead });
   emit('fr', 'ads', '/ads/espace/', { title: SPACE_META.title, desc: SPACE_META.desc, body: adsSpace(cfg.firebase, cfg.functionsBase), noindex: true, extraHead: adsHead });
   // Tableau de bord de l'administration (consultation seule, équipe) : données de l'API, connexion Google
   emit('fr', 'ads', '/admin/', { title: ADMIN_DASH_META.title, desc: ADMIN_DASH_META.desc, body: adminDashboardPage(cfg.firebase, cfg.functionsBase), noindex: true, extraHead: adminHead });
@@ -423,7 +425,7 @@ for (const lang of ['fr', 'en']) {
   homePage(lang); earnPage(lang); cardsPage(lang); musicPage(lang); holidaysIndex(lang); contactPage(lang); downloadPage(lang); deletePage(lang);
   for (const k of COUNTRIES) holidayPage(lang, k);
 }
-legalPages(); adsPages(); aidePage(); notFound();
+legalPages(); adsPages(); aidePage('fr'); aidePage('en'); notFound();
 
 // police préchargée : la plus utilisée (titres gras, alphabet latin)
 const fontCss = fs.readFileSync(path.join(root, 'static/css/site.css'), 'utf8');

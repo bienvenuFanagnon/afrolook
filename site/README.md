@@ -4,13 +4,14 @@ Site statique (FR + EN) : accueil, rémunération, Studio Cartes, Musique (`/mus
 règles, confidentialité, suppression de compte. Aucune dépendance à l'exécution ; le seul paquet npm (`qrcode`) sert à la génération.
 
 ## Refonte 2026 « Verre et lumière » (10/11/2026)
-Accueil français, page `/ads/` et page `/aide/` refaits d'après la maquette validée (`docs/maquettes/site_refonte_design.html`). L'accueil anglais et les pages intérieures gardent l'ancien contenu, avec les nouvelles couleurs (`static/css/v2.css`, chargé partout).
+Accueil (FR et EN), page `/ads/` et `/en/ads/`, pages Aide (`/aide/`, `/en/help/`) refaits d'après la maquette validée (`docs/maquettes/site_refonte_design.html`). Les pages intérieures (gagner, cartes, musique, fêtes, contact…) gardent leur contenu avec les nouvelles couleurs, des halos de lumière sur l'en-tête de page et des titres resserrés (`static/css/v2.css`, chargé partout).
 | Fichier | Rôle |
 |---|---|
-| `src/v2/home.html`, `src/v2/ads.html` | contenu des deux pages (adresses des boutiques : `{{PLAY}}`, `{{APPSTORE}}`, `{{APPWEB}}`, posées par `src/v2.mjs`) |
-| `static/css/v2.css` | variables clair/sombre et composants, tous limités à `.v2` et aux classes `v-…` (rien ne heurte `site.css`) |
-| `static/js/v2.js` | téléphone qui change d'écran, histoire de l'application, Studio (4 modèles), drapeau du pays, lancement de campagne (lien vers `/ads/espace/?aud=…`), filet tricolore |
-La FAQ est passée de l'accueil à `/aide/` (avec la FAQ d'Afrolook Ads). Le pays du drapeau est détecté sur l'appareil (langue, fuseau) ; le Togo s'affiche si inconnu : détection par le serveur à brancher plus tard.
+| `src/v2/home.html`, `src/v2/ads.html` | contenu français (adresses des boutiques : `{{PLAY}}`, `{{APPSTORE}}`, `{{APPWEB}}`, posées par `src/v2.mjs`) |
+| `src/v2/home.en.html`, `src/v2/ads.en.html` | traduction anglaise : à modifier EN MÊME TEMPS que le français (copie traduite, pas générée automatiquement) |
+| `static/css/v2.css` | variables clair/sombre et composants, limités à `.v2` et aux classes `v-…` (rien ne heurte `site.css`) ; fin du fichier : pages intérieures |
+| `static/js/v2.js` | téléphone qui change d'écran, histoire de l'application, Studio (4 modèles), drapeau du pays, lancement de campagne (lien vers `/ads/espace/?aud=…`), filet tricolore ; dictionnaire `EN` pour les écrans dessinés en anglais |
+La FAQ est passée de l'accueil à l'Aide (avec la FAQ d'Afrolook Ads). Le pays du drapeau est détecté sur l'appareil (langue, fuseau) ; le Togo s'affiche si inconnu : détection par le serveur à brancher plus tard.
 
 ## Fabriquer et vérifier
 ```bash

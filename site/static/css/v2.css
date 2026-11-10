@@ -473,3 +473,11 @@
 @media(max-width:720px){.v2 .v-qr2{display:none}}
 .v2 .v-hero{overflow:visible}
 .v2 .v-studio{margin-inline:0;padding-inline:0}
+
+/* Pages intérieures : halos de lumière et titres resserrés, comme l'accueil */
+.pagehead{position:relative;overflow:hidden;isolation:isolate}
+.pagehead::before{content:"";position:absolute;inset:-40px -16px -40px;z-index:-1;pointer-events:none;background:radial-gradient(50% 90% at 90% 0%,rgba(21,130,70,.24),transparent 70%),radial-gradient(40% 80% at 0% 100%,rgba(255,210,31,.26),transparent 70%)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .pagehead::before{background:radial-gradient(50% 90% at 90% 0%,rgba(46,204,113,.28),transparent 70%),radial-gradient(40% 80% at 0% 100%,rgba(255,210,31,.12),transparent 70%)}}
+:root[data-theme="dark"] .pagehead::before{background:radial-gradient(50% 90% at 90% 0%,rgba(46,204,113,.28),transparent 70%),radial-gradient(40% 80% at 0% 100%,rgba(255,210,31,.12),transparent 70%)}
+.pagehead h1{font-stretch:88%;letter-spacing:-.03em}
+.h2{font-stretch:92%}

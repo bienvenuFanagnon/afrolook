@@ -4,6 +4,42 @@
 'use strict';
 if(!document.querySelector('.v2'))return;
 
+/* ---- Anglais : les écrans dessinés et les textes composés par le script sont traduits ici ---- */
+const EN_=(document.documentElement.lang||'fr').slice(0,2)==='en';
+const L=(fr,en)=>EN_?en:fr;
+const EN={
+'Messages':'Messages','Vidéos':'Videos','Créer':'Create','✨ Pour toi':'✨ For you','🔥 Viral':'🔥 Viral','🏆 Défis':'🏆 Challenges','Ma chronique':'My chronicle','il y a 2 h':'2 h ago',
+'Abonnés':'Following','Pour toi':'For you','Offrir':'Gift','Partager':'Share','Dakar, ce soir. Ça se passe sur la corniche.':'Dakar tonight. It all happens on the seafront.','Musique libre de droits':'Royalty-free music',
+'Awa en direct':'Awa is live','Soirée musique':'Music night',' a offert':' sent','une rose':'a rose','Quelle ambiance !':'What a vibe!','On est là depuis Abidjan':'Watching from Abidjan','Bravo Awa':'Well done Awa',
+'Écris un commentaire…':'Write a comment…','Mon portefeuille':'My wallet','Pièces gagnées · exemple':'Coins earned · example','pièces':'coins','Cadeaux':'Gifts','Canal privé':'Private channel',
+'Retirer mes gains':'Withdraw my earnings','Virement':'Bank transfer','Annonce':'Ad','Portraits et vidéos pour ta marque':'Portraits and videos for your brand','Visiter le site':'Visit the site',
+'Groupe du quartier':'Neighborhood group','Portraits et vidéos pour ta marque.':'Portraits and videos for your brand.',"Ouvrir l'annonce":'Open the ad','Merci, je regarde tout de suite !':'Thanks, I am looking right now!',
+'Offre du mois chez Kofi Studio.':'Offer of the month at Kofi Studio.','Mes annonces':'My ads','En ligne':'Live','Visiter le site · 14 jours':'Visit the site · 14 days','En validation':'In review',
+'Réserver · 14 jours':'Book · 14 days','Terminée':'Ended','Installer · 14 jours':'Install · 14 days','2 480 vues':'2,480 views','1 946 vues':'1,946 views','+ Nouvelle annonce':'+ New ad',
+'Publier':'Publish','UN FILM DE @AMINATA_K':'A FILM BY @AMINATA_K','MON ANNÉE':'MY YEAR','Avec':'With','mes amis et ma famille':'my friends and family','Musique':'Music','Piste libre de droits':'Royalty-free track',
+'Un grand merci':'Big thanks','à toute ma communauté':'to my whole community','Fin':'The end','Mon anniversaire':'My birthday','Plus que quelques jours':'Only a few days left','Compte à rebours':'Countdown',
+'J-3':'D-3','Samedi 20 h':'Saturday 8 pm','Compte à rebours : 2 j 4 h':'Countdown: 2 d 4 h','Lieu':'Place',"Place de l'Indépendance, Dakar":'Independence Square, Dakar','Répondre sur WhatsApp':'Reply on WhatsApp',
+'UN FILM DE AMINATA ET KOFI':'A FILM BY AMINATA AND KOFI','MON':'MY','MARIAGE':'WEDDING','Médias':'Media','Filtres':'Filters','Texte':'Text',
+'Piste libre de droits · ambiance film':'Royalty-free track · film mood','Piste libre de droits · fête':'Royalty-free track · party','Piste libre de droits · énergie':'Royalty-free track · energy','Piste libre de droits · douce':'Royalty-free track · soft',
+'Le fil':'The feed','Les vidéos':'Videos','Les lives':'Lives','Le Studio':'The Studio','Ton post décolle':'Your post is taking off','Cadeau reçu de Koffi':'Gift received from Koffi',
+'Une vidéo qui plaît va plus loin':'A video people like goes further','Awa est en direct':'Awa is live','Une rose offerte':'A rose sent','Modèle « Mon année »':'“My year” template','Filtre appliqué':'Filter applied',
+'Dans le fil Afrolook':'In the Afrolook feed','Partagée sur WhatsApp':'Shared on WhatsApp','Suivie dans ton espace':'Tracked in your space','Visite valide':'Valid visit','Anti-fraude':'Anti-fraud',
+'Partagé sur WhatsApp':'Shared on WhatsApp','Suivi en direct':'Live tracking','Annonce gratuite : 14 jours':'Free ad: 14 days'
+};
+const tr=s=>EN_?(EN[s]||s):s;
+function trNode(n){
+  if(n.nodeType===3){const raw=n.nodeValue,t=raw.trim();if(t&&EN[t]&&EN[t]!==t){n.nodeValue=raw.replace(t,EN[t]);}return;}
+  if(n.nodeType===1){
+    ['aria-label','alt'].forEach(a=>{const v=n.getAttribute&&n.getAttribute(a);if(v&&EN[v])n.setAttribute(a,EN[v]);});
+    n.childNodes.forEach(trNode);
+  }
+}
+if(EN_){
+  const root=document.querySelector('.v2');
+  new MutationObserver(ms=>ms.forEach(m=>{m.addedNodes.forEach(trNode);if(m.type==='characterData'&&m.target.parentNode)trNode(m.target);})).observe(root,{childList:true,subtree:true,characterData:true});
+}
+const FN_EN={tg:'Togo',ci:"Côte d'Ivoire",bj:'Benin',cm:'Cameroon',bf:'Burkina Faso',sn:'Senegal',ml:'Mali',ne:'Niger',gh:'Ghana',ng:'Nigeria',cd:'DR Congo',ga:'Gabon',gn:'Guinea',cg:'Congo',ma:'Morocco',dz:'Algeria',ke:'Kenya',za:'South Africa'};
+
 const IMGMAP={"logo": "/img/logo.webp", "studio": "/img/studio.webp", "p_slash": "/img/partners/slashatlas.webp", "p_prono": "/img/partners/pronoflash.webp", "p_epargne": "/img/partners/epargneplus.webp", "f_5688730": "/img/people/f_5688730.webp", "h_6774139": "/img/people/h_6774139.webp", "h_2033447": "/img/people/h_2033447.webp", "f_7229044": "/img/people/f_7229044.webp", "f_20169681": "/img/people/f_20169681.webp", "h_31679357": "/img/people/h_31679357.webp", "a_carte": "/img/ads/carte.webp", "a_banniere": "/img/ads/banniere.webp", "a_affiche": "/img/ads/affiche.webp", "a_carrousel": "/img/ads/carrousel.webp", "a_video": "/img/ads/video.webp", "c_neon": "/img/card-neon.webp", "c_film": "/img/card-film.webp", "c_kente": "/img/card-kente.webp", "c_collector": "/img/card-collector.webp", "c_magazine": "/img/card-magazine.webp", "c_glass": "/img/card-glass.webp", "c_passport": "/img/card-passport.webp", "c_tarot": "/img/card-tarot.webp", "c_sport": "/img/card-sport.webp", "c_music": "/img/card-music.webp"};
 const IMG=new Proxy({},{get:(_,k)=>k.indexOf('fl_')===0?'/img/flags/'+k.slice(3)+'.svg':IMGMAP[k]});
 const P={
@@ -105,7 +141,7 @@ function initRot(stage){
   const slides=ROT[stage.dataset.rot],scr=stage.querySelector('.v-scr'),cards=[...stage.querySelectorAll('.v-fcard')],toasts=[...stage.querySelectorAll('.v-toast')],dots=stage.querySelector('.v-dots');
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   scr.innerHTML=slides.map((s,i)=>'<div class="v-fade'+(i?'':' v-on')+'">'+S[s.k]()+'</div>').join('');
-  dots.innerHTML=slides.map(s=>'<button type="button" aria-label="'+s.n+'"></button>').join('');
+  dots.innerHTML=slides.map(s=>'<button type="button" aria-label="'+tr(s.n)+'"></button>').join('');
   const btns=[...dots.querySelectorAll('button')];
   let cur=-1,hold=0,vis=true;
   function go(i,first){
@@ -113,7 +149,7 @@ function initRot(stage){
     [...scr.children].forEach((f,j)=>f.classList.toggle('v-on',j===i));
     btns.forEach((b,j)=>b.setAttribute('aria-current',j===i?'true':'false'));
     cards.forEach((c,j)=>{c.style.opacity=0;setTimeout(()=>{c.src=IMG[s.c[j]]||'';c.style.opacity=1;},first?0:330);});
-    toasts.forEach((t,j)=>{t.classList.add('v-sw');setTimeout(()=>{t.querySelector('i').innerHTML=ic(s.t[j][0]);t.querySelector('span').textContent=s.t[j][1];t.classList.remove('v-sw');},first?0:260);});
+    toasts.forEach((t,j)=>{t.classList.add('v-sw');setTimeout(()=>{t.querySelector('i').innerHTML=ic(s.t[j][0]);t.querySelector('span').textContent=tr(s.t[j][1]);t.classList.remove('v-sw');},first?0:260);});
   }
   btns.forEach((b,i)=>b.addEventListener('click',()=>{hold=Date.now()+12000;go(i);}));
   stage.addEventListener('pointerenter',()=>{hold=Infinity;});
@@ -126,12 +162,14 @@ function initRot(stage){
 
 /* ---- Drapeaux de plusieurs pays ---- */
 const FLAGS=[['tg','Togo',27,4],['ci',"Côte d'Ivoire",7,8],['bj','Bénin',1,8],['cm','Cameroun',20,5],['bf','Burkina Faso',11,12],['sn','Sénégal',4,4],['ml','Mali',22,9],['ne','Niger',3,8],['gh','Ghana',6,3],['ng','Nigéria',1,10],['cd','RD Congo',30,6],['ga','Gabon',17,8],['gn','Guinée',2,10],['cg','Congo',15,8],['ma','Maroc',30,7],['dz','Algérie',5,7],['ke','Kenya',12,12],['za','Afrique du Sud',27,4]];
+if(EN_)FLAGS.forEach(f=>{f[1]=FN_EN[f[0]]||f[1];});
 const MOIS=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
 const TZ={'Africa/Lome':'tg','Africa/Abidjan':'ci','Africa/Porto-Novo':'bj','Africa/Douala':'cm','Africa/Ouagadougou':'bf','Africa/Dakar':'sn','Africa/Bamako':'ml','Africa/Niamey':'ne','Africa/Accra':'gh','Africa/Lagos':'ng','Africa/Kinshasa':'cd','Africa/Libreville':'ga','Africa/Conakry':'gn','Africa/Brazzaville':'cg','Africa/Casablanca':'ma','Africa/Algiers':'dz','Africa/Nairobi':'ke','Africa/Johannesburg':'za'};
 function detectCountry(){let c='';try{const m=(navigator.language||'').match(/-([A-Za-z]{2})$/);if(m)c=m[1].toLowerCase();}catch(e){}
   if(!FLAGS.some(f=>f[0]===c)){try{c=TZ[Intl.DateTimeFormat().resolvedOptions().timeZone]||'';}catch(e){c='';}}
   return FLAGS.findIndex(f=>f[0]===c);}
-const jour=(d,m)=>(d===1?'1er':d)+' '+MOIS[m-1];
+const MOIS_EN=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const jour=(d,m)=>EN_?MOIS_EN[m-1]+' '+d:(d===1?'1er':d)+' '+MOIS[m-1];
 function initFlags(box){
   const big=box.querySelector('.v-bigflag'),nm=box.querySelector('.v-fname'),chips=box.querySelector('.v-fchips');
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -139,17 +177,17 @@ function initFlags(box){
   const bs=[...chips.children];let cur=-1,hold=0,vis=true;
   const dl=box.closest('.v-dl');
   function txt(i){const f=FLAGS[i],k=dl&&dl.querySelector('.v-fkick'),u=dl&&dl.querySelector('.v-fsub');if(!dl)return;
-    if(dl.dataset.fl==='ads'){k.textContent='Afrolook Ads · '+f[1];u.textContent='Choisis les pays à atteindre : '+f[1]+", et d'autres.";}
-    else{k.textContent='Afrolook · '+f[1];u.textContent='Le '+jour(f[2],f[3])+', fête nationale ('+f[1]+'), les styles de cartes drapeau sont offerts.';}}
+    if(dl.dataset.fl==='ads'){k.textContent='Afrolook Ads · '+f[1];u.textContent=L('Choisis les pays à atteindre : '+f[1]+", et d'autres.",'Choose the countries to reach: '+f[1]+', and others.');}
+    else{k.textContent='Afrolook · '+f[1];u.textContent=L('Le '+jour(f[2],f[3])+', fête nationale ('+f[1]+'), les styles de cartes drapeau sont offerts.','On '+jour(f[2],f[3])+', national day ('+f[1]+'), all flag card styles are free.');}}
   function go(i,first){if(i===cur)return;cur=i;bs.forEach((b,j)=>b.setAttribute('aria-pressed',j===i));
-    const set=()=>{big.src=IMG['fl_'+FLAGS[i][0]];nm.textContent=FLAGS[i][1];big.alt='Drapeau : '+FLAGS[i][1];big.classList.remove('v-sw');txt(i);};
+    const set=()=>{big.src=IMG['fl_'+FLAGS[i][0]];nm.textContent=FLAGS[i][1];big.alt=L('Drapeau : ','Flag: ')+FLAGS[i][1];big.classList.remove('v-sw');txt(i);};
     if(first){set();return;}big.classList.add('v-sw');setTimeout(set,250);}
   bs.forEach((b,i)=>b.addEventListener('click',()=>{hold=Date.now()+10000;go(i);}));
   box.addEventListener('pointerenter',()=>{hold=Infinity;});box.addEventListener('pointerleave',()=>{hold=Date.now()+1500;});
   new IntersectionObserver(es=>{vis=es[0].isIntersecting;}).observe(box);
   const det=detectCountry();
-  if(det>=0){go(det,true);box.insertAdjacentHTML('beforeend','<p class="v-fdet">Pays détecté sur ton appareil. Touche un drapeau pour en changer.</p>');}
-  else{go(0,true);box.insertAdjacentHTML('beforeend','<p class="v-fdet">Pays inconnu : le Togo s’affiche par défaut. Touche un drapeau pour voir les autres.</p>');}
+  if(det>=0){go(det,true);box.insertAdjacentHTML('beforeend','<p class="v-fdet">'+L('Pays détecté sur ton appareil. Touche un drapeau pour en changer.','Country detected on your device. Tap a flag to change it.')+'</p>');}
+  else{go(0,true);box.insertAdjacentHTML('beforeend','<p class="v-fdet">'+L('Pays inconnu : le Togo s’affiche par défaut. Touche un drapeau pour voir les autres.','Unknown country: Togo is shown by default. Tap a flag to see the others.')+'</p>');}
 }
 
 /* ---- Lancer une campagne depuis le site ---- */
@@ -157,14 +195,14 @@ function initFlags(box){
   const types=document.getElementById('lType');if(!types)return;
   const btn=document.getElementById('lbtn'),sum=document.getElementById('lsum'),rng=document.getElementById('lrange'),aud=document.getElementById('lAud');
   const free=document.getElementById('lfree'),net=document.getElementById('lnet'),share=document.getElementById('lshare');
-  const fmt=n=>Math.round(n).toLocaleString('fr-FR').replace(/[  ]/g,' ');
+  const fmt=n=>Math.round(n).toLocaleString(EN_?'en-US':'fr-FR').replace(/[  ]/g,' ');
   function upd(){
     aud.hidden=!share.checked;
-    const t=types.querySelector('[aria-pressed="true"]'),n=+rng.value,rows=[['Type d\'annonce',t?t.textContent.trim():'—']];
-    if(free.checked)rows.push(['Gratuit sur 4 plateformes','0 FCFA']);
-    if(net.checked)rows.push(['Afrolook et partenaires','Budget au choix']);
-    if(share.checked){rows.push(['Audience du partage',fmt(n)+' personnes']);rows.push(['Prix du partage',fmt(n/1000*500)+' FCFA']);rows.push(['Visites estimées (environ 2 %)',fmt(n*.02)]);}
-    if(!free.checked&&!net.checked&&!share.checked)rows.push(['Diffusion','Choisis une option']);
+    const t=types.querySelector('[aria-pressed="true"]'),n=+rng.value,rows=[[L("Type d'annonce",'Ad type'),t?t.textContent.trim():'—']];
+    if(free.checked)rows.push([L('Gratuit sur 4 plateformes','Free on 4 platforms'),'0 FCFA']);
+    if(net.checked)rows.push([L('Afrolook et partenaires','Afrolook and partners'),L('Budget au choix','Budget of your choice')]);
+    if(share.checked){rows.push([L('Audience du partage','Sharing audience'),fmt(n)+L(' personnes',' people')]);rows.push([L('Prix du partage','Sharing price'),fmt(n/1000*500)+' FCFA']);rows.push([L('Visites estimées (environ 2 %)','Estimated visits (about 2%)'),fmt(n*.02)]);}
+    if(!free.checked&&!net.checked&&!share.checked)rows.push([L('Diffusion','Delivery'),L('Choisis une option','Choose an option')]);
     const go=document.getElementById('v-lgo');if(go)go.href='/ads/espace/'+(share.checked?'?aud='+n:'');
     sum.innerHTML=rows.map(r=>'<li><span>'+r[0]+'</span><b>'+r[1]+'</b></li>').join('');
   }

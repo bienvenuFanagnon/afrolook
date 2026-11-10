@@ -13,15 +13,15 @@ const fill = (html, cfg) => html
   .replaceAll('{{APPWEB}}', cfg.appWebUrl);
 
 /** Accueil français. */
-export function v2Home(cfg) {
-  let h = fill(read('home.html'), cfg);
+export function v2Home(cfg, lang = 'fr') {
+  let h = fill(read(lang === 'en' ? 'home.en.html' : 'home.html'), cfg);
   // QR code d'installation (même fichier que la page Télécharger), visible sur grand écran
-  const qr = `<div class="v-qr2"><img src="/img/qr-telecharger.svg" width="96" height="96" alt="QR code : ${cfg.domain}/telecharger/" loading="lazy"><span><b>Scanne pour installer</b>Ce QR ouvre la bonne boutique selon ton téléphone.</span></div>`;
+  const qr = `<div class="v-qr2"><img src="/img/qr-telecharger.svg" width="96" height="96" alt="QR code : ${cfg.domain}${lang === 'en' ? '/en/download/' : '/telecharger/'}" loading="lazy"><span>${lang === 'en' ? '<b>Scan to install</b>This QR opens the right store for your phone.' : '<b>Scanne pour installer</b>Ce QR ouvre la bonne boutique selon ton téléphone.'}</span></div>`;
   const i = h.indexOf('Ouvrir sur le web</a>');
   return i < 0 ? h : h.slice(0, h.indexOf('</div>', i) + 6) + qr + h.slice(h.indexOf('</div>', i) + 6);
 }
 
 /** Page Afrolook Ads (français). */
-export function v2Ads(cfg) {
-  return fill(read('ads.html'), cfg);
+export function v2Ads(cfg, lang = 'fr') {
+  return fill(read(lang === 'en' ? 'ads.en.html' : 'ads.html'), cfg);
 }
