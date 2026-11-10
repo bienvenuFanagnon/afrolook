@@ -96,8 +96,8 @@ class _CreateHubPageState extends State<CreateHubPage> {
     }
     if (widget.chronique != null) ChroniqueFlow.active = widget.chronique;
     ReplyLayout.clear();
-    if (widget.chronique == null && widget.canal == null && widget.defiPostId == null) _loadDraft();
-    if (widget.start != CreateStart.none) {
+    if (!kIsWeb && widget.chronique == null && widget.canal == null && widget.defiPostId == null) _loadDraft();   // pas de brouillon sur le web : on n'y publie pas
+    if (widget.start != CreateStart.none && !kIsWeb) {
       // ouverture directe (icône « répondre en vidéo » d'un post, « Ma vidéo avec ce son »…) : la roue s'affiche tout de suite, sans montrer le menu une seconde
       _opening = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -133,6 +133,7 @@ class _CreateHubPageState extends State<CreateHubPage> {
 
   /// Compte bloqué pour inactivité : déblocage avant de continuer ; un seul parcours à la fois.
   Future<void> _guard(Future<void> Function() run) async {
+    if (kIsWeb) return;   // application web : aucune publication (voir _webNotice)
     if (_busy) return;
     _busy = true;
     _setOpening(true, context.tr('Chargement…'));
@@ -252,9 +253,45 @@ class _CreateHubPageState extends State<CreateHubPage> {
 
   // ── Écran ────────────────────────────────────────────────────────────────
 
+  /// Application web : on ne publie pas depuis le navigateur (décision du propriétaire, 10/11/2026 : le contrôle du contenu
+  /// tourne sur le téléphone, pas sur le web). L'écran n'affiche qu'un message, sans aucun bouton de création.
+  Widget _webNotice(BuildContext context, AppColors c) {
+    return Scaffold(
+      backgroundColor: c.background,
+      appBar: AppBar(
+        backgroundColor: c.background,
+        elevation: 0,
+        foregroundColor: c.textPrimary,
+        leading: IconButton(icon: const Icon(Icons.close_rounded), onPressed: () => Navigator.of(context).pop()),
+        title: Text(context.tr('Créer un post'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+        centerTitle: true,
+      ),
+      body: SafeArea(
+        child: Center(
+          key: const ValueKey('hub_web_notice'),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.phone_iphone_rounded, size: 56, color: c.primary),
+              const SizedBox(height: 18),
+              Text(context.tr('Publie depuis l\'application'), textAlign: TextAlign.center, style: TextStyle(color: c.textPrimary, fontSize: 20, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 10),
+              Text(
+                context.tr('La publication se fait dans l\'application Afrolook, sur Android et iPhone. Sur le web, tu peux suivre ton fil.'),
+                textAlign: TextAlign.center,
+                style: TextStyle(color: c.textSecondary, fontSize: 14.5, height: 1.45),
+              ),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
+    if (kIsWeb) return _webNotice(context, c);
     final me = context.read<UserAuthProvider>().loginUserData;
     final soon = widget.chronique != null ? null : CardEvents.upcoming(me.countryData?['countryCode'], DateTime.now());
     return Scaffold(

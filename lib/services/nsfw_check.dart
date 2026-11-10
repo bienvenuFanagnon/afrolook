@@ -1,9 +1,6 @@
-import 'dart:io';
-import 'dart:typed_data';
-
-import 'package:flutter/foundation.dart';
-import 'package:image/image.dart' as img;
-import 'package:tflite_flutter/tflite_flutter.dart';
+// Le modèle tourne dans nsfw_runner_io.dart (téléphone). Sur le web, nsfw_runner_stub.dart le remplace :
+// sans cela, l'import de tflite_flutter (dart:ffi) empêche toute compilation de l'application web.
+import 'nsfw_runner_stub.dart' if (dart.library.io) 'nsfw_runner_io.dart' as runner;
 
 /// Détection de contenu sexuellement EXPLICITE, gratuite et sur le téléphone (modèle libre nsfw_model, MIT, voir assets/models/NSFW_MODEL_LICENSE.txt).
 /// 5 classes : drawings, hentai, neutral, porn, sexy. On ne bloque que « porn » (acte sexuel, nudité explicite) : « sexy » (tenue légère, danse, maillot) passe.
@@ -22,49 +19,8 @@ class NsfwCheck {
   static const strongPorn = 0.85;
   static const mediumPorn = 0.6;
 
-  static Interpreter? _interpreter;
-
-  static Future<Interpreter?> _load() async {
-    if (kIsWeb) return null;
-    try {
-      return _interpreter ??= await Interpreter.fromAsset(_asset, options: InterpreterOptions()..threads = 2);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  /// Prépare les pixels (décodage, 224×224, -1..1) : tourne dans un autre fil pour ne jamais ralentir l'écran.
-  static Float32List? _prepare(Uint8List bytes) {
-    final decoded = img.decodeImage(bytes);
-    if (decoded == null) return null;
-    final r = img.copyResize(decoded, width: 224, height: 224, interpolation: img.Interpolation.average);
-    final input = Float32List(224 * 224 * 3);
-    var i = 0;
-    for (var y = 0; y < 224; y++) {
-      for (var x = 0; x < 224; x++) {
-        final p = r.getPixel(x, y);
-        input[i++] = p.r / 127.5 - 1;
-        input[i++] = p.g / 127.5 - 1;
-        input[i++] = p.b / 127.5 - 1;
-      }
-    }
-    return input;
-  }
-
-  /// Probabilités des 5 classes pour une image (fichier JPEG/PNG), ou null si le modèle n'a pas pu tourner.
-  static Future<List<double>?> score(String imagePath) async {
-    final interpreter = await _load();
-    if (interpreter == null) return null;
-    try {
-      final input = await compute(_prepare, await File(imagePath).readAsBytes());
-      if (input == null) return null;
-      final output = [List<double>.filled(5, 0)];
-      interpreter.run(input.reshape([1, 224, 224, 3]), output);
-      return output[0];
-    } catch (_) {
-      return null;
-    }
-  }
+  /// Probabilités des 5 classes pour une image (fichier JPEG/PNG), ou null si le modèle n'a pas pu tourner (toujours null sur le web).
+  static Future<List<double>?> score(String imagePath) => runner.nsfwScore(imagePath, _asset);
 
   /// Décision sur les images d'une vidéo (séparée du modèle pour être testée sans téléphone) :
   /// explicite si une image est très sûre (≥ 0,85), ou si au moins deux images sont assez sûres (≥ 0,6), ou si la moyenne des images dépasse 0,5.
