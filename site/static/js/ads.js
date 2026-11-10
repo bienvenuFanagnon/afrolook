@@ -385,6 +385,7 @@ function showAdminAccess() {
   if (nav) nav.append(h('a', { id: 'adm-access', class: 'adm', href: '/ads/admin/', ...(location.pathname.startsWith('/ads/admin') ? { 'aria-current': 'page' } : {}) }, 'Espace administration'));
   const box = $('#adsp-user');
   if (box && !location.pathname.startsWith('/ads/admin')) box.append(h('a', { class: 'adlinkbtn', href: '/ads/admin/' }, "Ouvrir l'administration"));
+  if (nav && !$('#adm-dash')) nav.append(h('a', { id: 'adm-dash', class: 'adm', href: '/admin/' }, 'Tableau de bord'));   // statistiques de la plateforme (consultation seule)
 }
 
 /** Bandeau d'état du profil, en haut de l'espace : l'annonceur ou le diffuseur sait toujours où en est la validation de son profil. */

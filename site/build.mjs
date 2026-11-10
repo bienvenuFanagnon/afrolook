@@ -7,6 +7,7 @@ import { CARDS, PACKS, EARN, NATIONAL_DAYS, AFRICA, svgIcon } from './src/data.m
 import { T } from './src/i18n.mjs';
 import { musicMocks, appMocks } from './src/mock.mjs';
 import { adsRulesPage, adsDocsPage, RULES_META, DOCS_META } from './src/ads_docs.mjs';
+import { adminDashboardPage, ADMIN_DASH_META } from './src/admin.mjs';
 import { adsKitPage, KIT_META, adsLandingEn, ADS_META_EN, adsFaqLdEn, adsHomeBlock, adsBar, adsNav, adsBadge, adsLanding, adsSpace, adsPublisherSpace, adsAdminSpace, adsFaqLd, ADS_META, SPACE_META, PUB_META, ADMIN_META } from './src/ads.mjs';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
@@ -374,12 +375,15 @@ function notFound() {
 
 // ───────── Afrolook Ads (page française seulement pour l'instant) ─────────
 const adsHead = `<link rel="stylesheet" href="/css/ads.css?v=${ASSET_V}">`;
+const adminHead = `<link rel="stylesheet" href="/css/admin.css?v=${ASSET_V}">`;
 function adsPages() {
   const altAds = { fr: '/ads/', en: '/en/ads/' };
   emit('fr', 'ads', '/ads/partager/', { title: KIT_META.title, desc: KIT_META.desc, body: adsKitPage(), noindex: true, ogImage: '/img/ads/og-annonceurs.png', extraHead: adsHead });
   emit('fr', 'ads', '/ads/', { alt: altAds, ogImage: '/img/ads/og-annonceurs.png', title: ADS_META.title, desc: ADS_META.desc, body: adsLanding(cfg.functionsBase), jsonld: [adsFaqLd], extraHead: adsHead });
   emit('en', 'ads', '/en/ads/', { alt: altAds, ogImage: '/img/ads/og-annonceurs.png', title: ADS_META_EN.title, desc: ADS_META_EN.desc, body: adsLandingEn(cfg.functionsBase), jsonld: [adsFaqLdEn], extraHead: adsHead });
   emit('fr', 'ads', '/ads/espace/', { title: SPACE_META.title, desc: SPACE_META.desc, body: adsSpace(cfg.firebase, cfg.functionsBase), noindex: true, extraHead: adsHead });
+  // Tableau de bord de l'administration (consultation seule, équipe) : données de l'API, connexion Google
+  emit('fr', 'ads', '/admin/', { title: ADMIN_DASH_META.title, desc: ADMIN_DASH_META.desc, body: adminDashboardPage(cfg.firebase, cfg.functionsBase), noindex: true, extraHead: adminHead });
   emit('fr', 'ads', '/ads/admin/', { title: ADMIN_META.title, desc: ADMIN_META.desc, body: adsAdminSpace(cfg.firebase, cfg.functionsBase), noindex: true, extraHead: adsHead });
   emit('fr', 'ads', '/ads/diffuseur/regles/', { title: RULES_META.title, desc: RULES_META.desc, body: adsRulesPage(), extraHead: adsHead });
   emit('fr', 'ads', '/ads/diffuseur/documentation/', { title: DOCS_META.title, desc: DOCS_META.desc, body: adsDocsPage(cfg.functionsBase), extraHead: adsHead });

@@ -1,0 +1,397 @@
+<title>Administration Afrolook</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Couleurs et polices du site Afrolook : vert de marque, jaune seulement en FOND (texte noir dessus), ambre foncé pour un texte « jaune », filet vert / jaune / rouge. */
+:root {
+  --bg: #f7f9f6; --card: #ffffff; --fg: #0d1511; --muted: #566159; --line: #dde5dc; --bar: #edf2ec; --soft: #f1f5f0;
+  --green: #158246; --on-green: #ffffff; --yellow: #ffd21f; --on-yellow: #0d1511; --amber: #8a6500; --red: #d92d3a;
+  --c1: #158246; --c2: #1f5fd1; --c3: #d9680f; --c4: #d92d3a; --ok: #158246; --head: #eef2ee;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0b110d; --card: #121a14; --fg: #f1f6f0; --muted: #9daaa0; --line: #233028; --bar: #17221a; --soft: #17221a;
+  --green: #2ecc71; --on-green: #06210f; --yellow: #ffe14d; --on-yellow: #0d1511; --amber: #ffe14d; --red: #ff6b6f;
+  --c1: #2ecc71; --c2: #5b9cfa; --c3: #ff9248; --c4: #ff6b6f; --ok: #2ecc71; --head: #0f1712; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0b110d; --card: #121a14; --fg: #f1f6f0; --muted: #9daaa0; --line: #233028; --bar: #17221a; --soft: #17221a;
+  --green: #2ecc71; --on-green: #06210f; --yellow: #ffe14d; --on-yellow: #0d1511; --amber: #ffe14d; --red: #ff6b6f;
+  --c1: #2ecc71; --c2: #5b9cfa; --c3: #ff9248; --c4: #ff6b6f; --ok: #2ecc71; --head: #0f1712; color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 Figtree, system-ui, sans-serif; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 56px; }
+h1, h2, h3, h4 { font-family: 'Bricolage Grotesque', Figtree, sans-serif; margin: 0; text-wrap: balance; letter-spacing: -.015em; line-height: 1.15; }
+.full { margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding-inline: max(16px, env(safe-area-inset-left, 0px)); }
+.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 6; background: var(--head); border-bottom: 1px solid var(--line); }
+.tri { height: 5px; background: linear-gradient(90deg, var(--c1) 0 60%, var(--yellow) 60% 85%, var(--red) 85%); }
+.topin { max-width: 1180px; margin: 0 auto; display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap; padding: 10px 0 0; }
+.topin b { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.1rem; }
+.tag { font-size: .7rem; padding: 2px 8px; border-radius: 99px; background: var(--yellow); color: var(--on-yellow); font-weight: 700; }
+.sp { flex: 1; }
+.ghost { font: inherit; font-size: .8rem; color: var(--muted); background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 4px 10px; cursor: pointer; }
+.tabs { max-width: 1180px; margin: 0 auto; display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding-top: 6px; }
+.tabs button { font: inherit; font-weight: 600; font-size: .9rem; color: var(--muted); background: none; border: 0; border-bottom: 3px solid transparent; padding: 9px 12px; cursor: pointer; white-space: nowrap; }
+.tabs button[aria-current="page"] { color: var(--fg); border-bottom-color: var(--green); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-top: 22px; display: grid; gap: 20px; }
+.lead { color: var(--muted); max-width: 70ch; margin: 6px 0 0; }
+.note { background: var(--soft); border: 1px dashed var(--line); border-radius: 12px; padding: 10px 14px; font-size: .85rem; color: var(--muted); }
+.note b { color: var(--fg); }
+.seg { display: inline-flex; background: var(--bar); border-radius: 10px; padding: 3px; gap: 2px; flex-wrap: wrap; }
+.seg button { font: inherit; font-size: .82rem; font-weight: 600; border: 0; background: transparent; color: var(--muted); padding: 6px 12px; border-radius: 8px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--yellow); color: var(--on-yellow); }
+.seg button:focus-visible, .ghost:focus-visible, .tabs button:focus-visible, .row:focus-visible, .back:focus-visible, .copy:focus-visible, .go:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; }
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; min-width: 0; }
+.kpi .l { font-size: .76rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+.kpi .v { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.9rem; font-weight: 800; line-height: 1.15; margin-top: 4px; font-variant-numeric: tabular-nums; }
+.kpi .d { font-size: .8rem; font-weight: 600; margin-top: 2px; }
+.up { color: var(--ok); } .down { color: var(--c4); }
+.kpi .s { font-size: .76rem; color: var(--muted); }
+.grid2 { display: grid; grid-template-columns: 1.6fr 1fr; gap: 14px; }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+@media (max-width: 820px) { .grid2 { grid-template-columns: 1fr; } }
+.card h3 { font-size: 1.05rem; }
+.card .sub { font-size: .8rem; color: var(--muted); margin: 2px 0 10px; }
+.sechead { display: flex; align-items: center; gap: 10px; }
+.sechead i { width: 6px; height: 22px; border-radius: 3px; background: var(--c1); }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: .8rem; color: var(--muted); margin-bottom: 6px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+svg { display: block; width: 100%; height: auto; }
+.chart { position: relative; }
+.tip { position: absolute; pointer-events: none; background: var(--fg); color: var(--bg); font-size: .76rem; padding: 6px 9px; border-radius: 8px; white-space: nowrap; transform: translate(-50%, 0); display: none; z-index: 2; }
+.axis text { fill: var(--muted); font-size: 10px; font-family: Figtree, sans-serif; }
+.hb { display: grid; gap: 9px; }
+.hb .r { display: grid; grid-template-columns: 96px 1fr 52px; gap: 8px; align-items: center; font-size: .85rem; }
+.hb .t { background: var(--bar); height: 10px; border-radius: 6px; overflow: hidden; }
+.hb .t i { display: block; height: 100%; background: var(--c1); border-radius: 6px; }
+.hb .n { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+.tblw { overflow-x: auto; }
+.tbl { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.tbl th { text-align: left; font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.tbl td { padding: 10px; border-bottom: 1px solid var(--line); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.num { text-align: right !important; }
+.row { cursor: pointer; } .row:hover td { background: var(--soft); }
+.who { display: flex; align-items: center; gap: 10px; }
+.av { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: .85rem; color: #0d1511; flex: none; }
+.av.sq { border-radius: 9px; }
+.rk { width: 26px; text-align: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; color: var(--muted); }
+.rk.t3 { color: var(--amber); }
+.badge { font-size: .7rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: var(--bar); color: var(--muted); }
+.badge.ok { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
+.badge.wait { background: var(--yellow); color: var(--on-yellow); }
+.badge.cert { background: var(--yellow); color: var(--on-yellow); }
+.lock { display: inline-flex; gap: 8px; align-items: center; font-size: .82rem; background: var(--soft); border: 1px solid var(--line); border-radius: 10px; padding: 6px 12px; color: var(--muted); }
+.back { font: inherit; font-weight: 600; background: none; border: 0; color: var(--green); cursor: pointer; padding: 4px 0; text-align: left; }
+.prof { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.prof .av { width: 64px; height: 64px; font-size: 1.4rem; }
+.prof h2 { font-size: 1.5rem; }
+.meta { display: flex; gap: 6px 18px; flex-wrap: wrap; font-size: .84rem; color: var(--muted); margin-top: 4px; }
+.meta b { color: var(--fg); font-weight: 600; }
+.wallet { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.wallet div { background: var(--soft); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.wallet small { display: block; color: var(--muted); font-size: .74rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+.wallet strong { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.3rem; font-variant-numeric: tabular-nums; }
+.wallet em { display: block; font-style: normal; font-size: .74rem; color: var(--muted); }
+.strip { display: grid; grid-template-columns: repeat(45, 1fr); gap: 3px; }
+.strip i { aspect-ratio: 1; border-radius: 3px; background: var(--bar); }
+.strip i.on { background: var(--c1); }
+.list .it { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: .86rem; }
+.list .it:last-child { border-bottom: 0; }
+.list .it span:last-child { font-variant-numeric: tabular-nums; font-weight: 600; text-align: right; }
+.meter { height: 12px; background: var(--bar); border-radius: 8px; position: relative; overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--c1); border-radius: 8px; }
+.go { font: inherit; font-weight: 700; font-size: .86rem; color: var(--green); background: none; border: 0; cursor: pointer; padding: 6px 0; }
+.roles { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.roles .rc { border: 1px solid var(--line); border-radius: 14px; padding: 14px; background: var(--card); display: grid; gap: 6px; align-content: start; }
+.roles .rc h4 { font-size: 1rem; }
+.roles .rc ul { margin: 0; padding-left: 18px; font-size: .86rem; color: var(--muted); }
+.roles .rc.adm { border-color: var(--green); }
+.same { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.same span { font-size: .78rem; font-weight: 600; padding: 4px 10px; border-radius: 99px; background: var(--bar); }
+.q { display: grid; gap: 10px; }
+.q .opt { display: grid; gap: 6px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+.q .opt h4 { font-size: .95rem; }
+.q label.chk { display: flex; gap: 8px; align-items: flex-start; font-size: .86rem; cursor: pointer; }
+.q input { margin-top: 3px; accent-color: var(--green); }
+.copy { font: inherit; font-weight: 700; border: 0; background: var(--yellow); color: var(--on-yellow); border-radius: 10px; padding: 9px 16px; cursor: pointer; justify-self: start; }
+pre#out { white-space: pre-wrap; background: var(--soft); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: .82rem; margin: 0; display: none; user-select: all; }
+[hidden] { display: none !important; }
+</style>
+
+<div class="top full">
+  <div class="topin"><b>Afrolook · Administration</b><span class="tag">MAQUETTE</span><span class="sp"></span><button class="ghost" id="theme" type="button" aria-label="Changer de thème">Thème clair / sombre</button></div>
+  <nav class="tabs" id="tabs" aria-label="Sections"></nav>
+  <div class="tri" style="margin-inline:calc(-1 * max(16px, env(safe-area-inset-left, 0px)))"></div>
+</div>
+
+<main class="wrap" id="app"></main>
+
+<script>
+/* ——— Données d'exemple (fausses) ——— */
+function rng(seed) { let s = seed >>> 0; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+const nf = new Intl.NumberFormat('fr-FR');
+const fmt = (n) => nf.format(Math.round(n));
+const F = (n) => fmt(n) + ' F';
+const short = (n) => n >= 1e6 ? (n / 1e6).toFixed(1).replace('.', ',') + ' M' : n >= 1e4 ? Math.round(n / 1e3) + ' k' : n >= 1e3 ? (n / 1e3).toFixed(1).replace('.', ',') + ' k' : String(Math.round(n));
+const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+const END = new Date(2026, 10, 10);
+const dayLabel = (back, unit) => { const d = new Date(END); if (unit === 'mois') { d.setMonth(d.getMonth() - back); return MONTHS[d.getMonth()] + ' ' + String(d.getFullYear()).slice(2); } d.setDate(d.getDate() - back); return d.getDate() + ' ' + MONTHS[d.getMonth()]; };
+const PERIODS = { '7': { n: 7, unit: 'jour' }, '30': { n: 30, unit: 'jour' }, '90': { n: 90, unit: 'jour' }, '12': { n: 12, unit: 'mois' } };
+function series(key, p, base, amp, growth) {
+  const R = rng(key.split('').reduce((a, c) => a * 31 + c.charCodeAt(0), 7)); const m = p.unit === 'mois' ? 30 : 1;
+  return Array.from({ length: p.n }, (_, i) => { const t = i / (p.n - 1 || 1); const dow = (p.n - 1 - i) % 7; const wk = p.unit === 'jour' ? [1, 1.05, 1.0, 1.08, 1.2, 1.35, 1.15][dow] : 1; const spike = p.unit === 'jour' && p.n >= 30 && i === Math.floor(p.n * .62) ? 1.9 : 1;
+    return Math.max(1, Math.round(m * base * wk * spike * (1 + growth * t) * (1 + (R() - .5) * amp))); });
+}
+const labelsOf = (p) => Array.from({ length: p.n }, (_, i) => dayLabel(p.n - 1 - i, p.unit));
+const sum = (a) => a.reduce((x, y) => x + y, 0);
+const avgN = (a, k) => a.map((_, i) => Math.round(sum(a.slice(Math.max(0, i - k + 1), i + 1)) / Math.min(k, i + 1)));
+const delta = (cur, prev) => { const d = (cur - prev) / prev * 100; return `<span class="${d >= 0 ? 'up' : 'down'}">${d >= 0 ? '▲' : '▼'} ${Math.abs(d).toFixed(1).replace('.', ',')} %</span> <span class="s">vs période précédente</span>`; };
+const COLORS = ['#ffd21f', '#8cc3ff', '#7fe0c9', '#ffa8a0', '#d6b3ff', '#ffc680', '#a5e08a', '#f4a6d7', '#9ad1e8', '#e5d27a'];
+
+const U = [
+  ['kofi_vibes', 'Kofi Mensah', 'Togo', 'Android', 3820000, 1080000, 412, 128000, 54200, 41800, 5200, 18000, 0, true, 'janv. 2025'],
+  ['aminata.d', 'Aminata Diallo', 'Sénégal', 'iPhone', 3140000, 910000, 286, 99400, 41300, 38900, 0, 9000, 0, true, 'mars 2025'],
+  ['tchala_officiel', 'Tchala Bamba', 'Côte d’Ivoire', 'Android', 2760000, 702000, 355, 87100, 36800, 29400, 1500, 12000, 0, false, 'avr. 2025'],
+  ['miss_koumba', 'Koumba Traoré', 'Mali', 'Android', 2210000, 655000, 198, 74300, 30100, 24600, 800, 6000, 1200, false, 'mai 2025'],
+  ['dj_mawuli', 'Mawuli Agbo', 'Togo', 'iPhone', 1930000, 590000, 241, 61200, 27500, 21300, 3600, 15000, 0, true, 'févr. 2025'],
+  ['fatou.tv', 'Fatou Sow', 'Sénégal', 'Android', 1680000, 480000, 167, 58800, 22700, 17100, 0, 0, 0, false, 'juin 2025'],
+  ['ebene_style', 'Ébène Kouassi', 'Côte d’Ivoire', 'iPhone', 1450000, 441000, 312, 49900, 19800, 15200, 2400, 8000, 0, false, 'juil. 2025'],
+  ['le_chef_yao', 'Yao Kpodar', 'Bénin', 'Android', 1210000, 372000, 144, 43500, 16100, 12800, 600, 3000, 0, false, 'août 2025'],
+  ['nadia_beauty', 'Nadia Essomba', 'Cameroun', 'Android', 990000, 301000, 203, 38200, 13900, 10900, 1900, 5500, 300, false, 'sept. 2025'],
+  ['cyrille.comedy', 'Cyrille Ndong', 'Gabon', 'iPhone', 812000, 254000, 129, 31700, 11200, 8700, 0, 2000, 0, false, 'oct. 2025'],
+].map((a, i) => ({ id: i + 1, pseudo: a[0], name: a[1], country: a[2], platform: a[3], viewsTotal: a[4], views30: a[5], posts: a[6], followers: a[7], likes: a[8], earned: a[9], deposit: a[10], xofDeposit: a[11], debt: a[12], cert: a[13], since: a[14], color: COLORS[i] }));
+
+// Vues à encaisser : seul l'ENCAISSEMENT existe (décision du 27/09). Vues payantes − vues déjà encaissées = vues disponibles ; valeur = vues × taux du palier (1 F par vue au maximum) ; minimum 1 000 F, plafond par jour.
+const TIERS = [['Débutant', 20], ['Standard', 40], ['Avancé', 60], ['Expert', 80], ['Élite', 100]];
+U.forEach((u) => { const ti = 4 - Math.floor((u.id - 1) / 2); u.tier = TIERS[ti][0]; u.rate = TIERS[ti][1] / 100; u.paid = Math.round(u.viewsTotal * .72); u.credited = Math.round(u.paid * (.55 + (u.id % 4) * .08)); u.pending = u.paid - u.credited;
+  u.avail = Math.round(u.pending * u.rate); u.cashedTotal = Math.round(u.credited * u.rate * .9); u.cashedToday = u.id % 3 === 0 ? 5000 : 0; u.lastCash = ['6 nov.', '3 nov.', '9 nov.', '28 oct.', '1 nov.'][u.id % 5]; });
+
+// Annonceurs : marque, pays, offre, annonces actives, affichages (30 j), clics (30 j), dépensé (FCFA, offre Réseau seulement), statut
+const A = [
+  ['Orange Money Togo', 'Togo', 'Réseau', 6, 1840000, 41200, 920000, 'Validé'], ['Maison Kente', 'Ghana', 'Réseau', 4, 1210000, 27900, 610000, 'Validé'], ['Studio Baobab', 'Sénégal', 'Gratuite', 3, 640000, 11800, 0, 'Validé'],
+  ['Café Teranga', 'Sénégal', 'Gratuite', 2, 410000, 9400, 0, 'Validé'], ['Auto Bénin Plus', 'Bénin', 'Réseau', 5, 960000, 15100, 480000, 'Validé'], ['Afro Beauty Lab', 'Côte d’Ivoire', 'Partage', 2, 330000, 7600, 120000, 'Validé'],
+  ['Nouvelle Radio FM', 'Cameroun', 'Gratuite', 1, 0, 0, 0, 'En attente'], ['Ecole Horizon', 'Togo', 'Gratuite', 2, 205000, 3300, 0, 'Validé'],
+].map((a, i) => ({ id: i + 1, brand: a[0], country: a[1], offer: a[2], ads: a[3], views: a[4], clicks: a[5], spent: a[6], status: a[7], color: COLORS[(i + 3) % 10] }));
+// Diffuseurs : nom, type, propriétés, affichages valides (30 j), gains du diffuseur (65 %), à payer après retenue, statut
+const P = [
+  ['Togo Actu', 'Site', 3, 2100000, 436000, 182000, 'Validé'], ['PronoFlash', 'Application', 1, 1650000, 342000, 140000, 'Validé'], ['SlashAtlas', 'Application', 1, 1180000, 244000, 98000, 'Validé'],
+  ['Épargne+', 'Application', 1, 830000, 172000, 71000, 'Validé'], ['Blog Mama Afrika', 'Site', 2, 410000, 85000, 33000, 'Validé'], ['Ciné Lomé', 'Site', 1, 0, 0, 0, 'En attente'],
+].map((a, i) => ({ id: i + 1, name: a[0], kind: a[1], props: a[2], shows: a[3], gains: a[4], due: a[5], status: a[6], color: COLORS[(i + 5) % 10] }));
+
+let state = { tab: 'over', detail: null, period: '30', topBy: 'views', topWin: '30', evo: 'views', evoP: '90', advBy: 'views', pubBy: 'shows' };
+
+/* ——— Graphiques SVG ——— */
+const W = 640, H = 230, PL = 42, PR = 10, PT = 12, PB = 26;
+function niceMax(v) { const e = Math.pow(10, Math.floor(Math.log10(v))); const f = v / e; return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * e; }
+function grid(max) { let g = ''; for (let i = 0; i <= 4; i++) { const y = PT + (H - PT - PB) * (1 - i / 4); g += `<line x1="${PL}" x2="${W - PR}" y1="${y}" y2="${y}" stroke="var(--line)"/><text x="${PL - 6}" y="${y + 3}" text-anchor="end">${short(max * i / 4)}</text>`; } return g; }
+function xlabels(labels, X) { const n = labels.length; const step = Math.max(1, Math.ceil(n / 7)); let g = ''; labels.forEach((l, i) => { if (i % step === 0 || i === n - 1) g += `<text x="${X(i)}" y="${H - 8}" text-anchor="middle">${l}</text>`; }); return g; }
+function lineChart(id, labels, S) {
+  const max = niceMax(Math.max(...S.flatMap((s) => s.data)) * 1.02); const n = labels.length;
+  const X = (i) => PL + (W - PL - PR) * (n === 1 ? .5 : i / (n - 1)); const Y = (v) => PT + (H - PT - PB) * (1 - v / max);
+  let body = `<g class="axis">${grid(max)}${xlabels(labels, X)}</g>`;
+  S.forEach((s) => { const pts = s.data.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
+    if (s.area) body += `<polygon points="${X(0)},${Y(0)} ${pts} ${X(n - 1)},${Y(0)}" fill="${s.color}" opacity=".16"/>`;
+    body += `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="${s.w || 2.2}" stroke-linejoin="round" stroke-linecap="round" ${s.dash ? 'stroke-dasharray="5 4"' : ''}/>`; });
+  return mount(id, body, labels, S, X, n);
+}
+function barChart(id, labels, data, avg, color, name) {
+  const max = niceMax(Math.max(...data) * 1.05); const n = data.length; const slot = (W - PL - PR) / n; const bw = Math.max(2, slot * .66);
+  const X = (i) => PL + slot * (i + .5); const Y = (v) => PT + (H - PT - PB) * (1 - v / max);
+  let body = `<g class="axis">${grid(max)}${xlabels(labels, X)}</g>`;
+  data.forEach((v, i) => { const h = (H - PT - PB) * v / max; body += `<rect x="${PL + slot * i + (slot - bw) / 2}" y="${H - PB - h}" width="${bw}" height="${h}" rx="${Math.min(3, bw / 3)}" fill="${color}"/>`; });
+  body += `<polyline points="${avg.map((v, i) => `${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')}" fill="none" stroke="var(--fg)" stroke-width="2" stroke-dasharray="5 4"/>`;
+  return mount(id, body, labels, [{ name, data }, { name: 'Moyenne mobile 7 j', data: avg }], X, n, slot);
+}
+function mount(id, body, labels, S, X, n, slot) {
+  setTimeout(() => { const el = document.getElementById(id); if (!el) return; const svg = el.querySelector('svg'); const tip = el.querySelector('.tip'); const cross = svg.querySelector('.cross');
+    const move = (e) => { const r = svg.getBoundingClientRect(); const px = ((e.clientX - r.left) / r.width) * W; let i = slot ? Math.floor((px - PL) / slot) : Math.round(((px - PL) / (W - PL - PR)) * (n - 1)); i = Math.max(0, Math.min(n - 1, i));
+      cross.setAttribute('x1', X(i)); cross.setAttribute('x2', X(i)); cross.style.display = ''; tip.style.display = 'block'; tip.style.left = Math.min(Math.max(X(i) / W * r.width, 70), r.width - 70) + 'px'; tip.style.top = '4px';
+      tip.innerHTML = `<b>${labels[i]}</b><br>` + S.map((s) => `${s.name} : <b>${fmt(s.data[i])}</b>`).join('<br>'); };
+    svg.addEventListener('pointermove', move); svg.addEventListener('pointerdown', move); svg.addEventListener('pointerleave', () => { tip.style.display = 'none'; cross.style.display = 'none'; }); }, 0);
+  return `<div class="chart" id="${id}"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Graphique : ${S.map((s) => s.name).join(', ')}">${body}<line class="cross" y1="${PT}" y2="${H - PB}" stroke="var(--muted)" stroke-dasharray="3 3" style="display:none"/></svg><div class="tip"></div></div>`;
+}
+function donut(parts, center, sub) {
+  const tot = parts.reduce((a, p) => a + p.v, 0); let a0 = -Math.PI / 2; const R = 54, r = 34;
+  const arcs = parts.map((p) => { const a1 = a0 + (p.v / tot) * Math.PI * 2; const big = a1 - a0 > Math.PI ? 1 : 0; const Pt = (a, rr) => `${(70 + rr * Math.cos(a)).toFixed(2)} ${(70 + rr * Math.sin(a)).toFixed(2)}`;
+    const d = `M ${Pt(a0, R)} A ${R} ${R} 0 ${big} 1 ${Pt(a1, R)} L ${Pt(a1, r)} A ${r} ${r} 0 ${big} 0 ${Pt(a0, r)} Z`; a0 = a1; return `<path d="${d}" fill="${p.c}" stroke="var(--card)" stroke-width="2"/>`; }).join('');
+  return `<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap"><svg viewBox="0 0 140 140" style="width:140px;flex:none" role="img" aria-label="Répartition">${arcs}<text x="70" y="68" text-anchor="middle" style="font:800 15px Bricolage Grotesque;fill:var(--fg)">${center}</text><text x="70" y="82" text-anchor="middle" style="font:500 8px Figtree;fill:var(--muted)">${sub}</text></svg>
+  <div class="legend" style="flex-direction:column;gap:6px;margin:0">${parts.map((p) => `<span><i style="background:${p.c}"></i>${p.n} <b style="color:var(--fg)">${Math.round(p.v / tot * 100)} %</b> · ${fmt(p.v)}</span>`).join('')}</div></div>`;
+}
+const seg = (name, items, cur) => `<div class="seg" role="group" aria-label="${name}">${items.map(([k, l]) => `<button type="button" data-${name}="${k}" aria-pressed="${cur === k}">${l}</button>`).join('')}</div>`;
+const periodSeg = () => seg('period', [['7', '7 jours'], ['30', '30 jours'], ['90', '90 jours'], ['12', '12 mois']], state.period);
+const head = (t, s, right) => `<header class="bar"><div><h1>${t}</h1><p class="lead">${s}</p></div>${right || ''}</header>`;
+const demoNote = '<div class="note"><b>Données d’exemple.</b> Les chiffres sont inventés pour juger la mise en page. Dans la vraie version tout vient de l’API Afrolook (aucun Firebase), en consultation seule.</div>';
+
+/* ——— 1. Vue d'ensemble : les trois mondes sur une page ——— */
+function over() {
+  const p = PERIODS[state.period]; const labels = labelsOf(p); const unit = p.unit === 'mois' ? 'mois' : 'jour';
+  const sg = series('inscr' + state.period, p, 168, .35, .35); const prev = sum(series('prev' + state.period, p, 150, .3, .2));
+  const act = series('actifs' + state.period, p, 2300, .12, .2); const andr = act.map((v) => Math.round(v * .64)); const ios = act.map((v, i) => v - andr[i]);
+  const shows = series('aff' + state.period, p, 41000, .15, .3); const clicks = shows.map((v, i) => Math.round(v * (.021 + (i % 5) * .001)));
+  return `${head('Vue d’ensemble', 'Les personnes, les annonceurs et les diffuseurs de la plateforme, sur une seule page.', periodSeg())}${demoNote}
+  <div class="sechead"><i></i><h2>Utilisateurs</h2></div>
+  <section class="kpis">
+    <div class="card kpi"><div class="l">Inscriptions</div><div class="v">${fmt(sum(sg))}</div><div class="d">${delta(sum(sg), prev)}</div></div>
+    <div class="card kpi"><div class="l">Actifs aujourd’hui</div><div class="v">${fmt(act[act.length - 1])}</div><div class="d">${delta(act[act.length - 1], act[act.length - 2])}</div></div>
+    <div class="card kpi"><div class="l">Actifs sur 30 jours</div><div class="v">38 420</div><div class="d"><span class="up">▲ 6,1 %</span></div></div>
+    <div class="card kpi"><div class="l">Comptes au total</div><div class="v">184 905</div><div class="s">dont 1 126 suspendus</div></div>
+    <div class="card kpi"><div class="l">Reviennent après 7 jours</div><div class="v">41 %</div><div class="d"><span class="up">▲ 2,3 pts</span></div></div>
+    <div class="card kpi"><div class="l">Vues à encaisser</div><div class="v">48,6 M</div><div class="s">≈ ${F(21400000)} que les créateurs peuvent encore encaisser</div></div>
+  </section>
+  <section class="grid2">
+    <div class="card"><h3>Inscriptions par ${unit}</h3><p class="sub">Ligne pointillée : moyenne sur 7 ${unit}s.</p>${barChart('c-inscr', labels, sg, avgN(sg, 7), 'var(--c1)', 'Inscriptions')}</div>
+    <div class="card"><h3>Plateformes</h3><p class="sub">Où les gens se connectent.</p>${donut([{ n: 'Android', v: 24520, c: 'var(--c1)' }, { n: 'iPhone', v: 13180, c: 'var(--c2)' }, { n: 'Site web', v: 720, c: 'var(--c3)' }], '38 k', 'actifs 30 j')}
+      <h3 style="margin-top:18px">Inscriptions par pays</h3><p class="sub">Sur la période choisie.</p><div class="hb">${[['Togo', 31], ['Côte d’Ivoire', 22], ['Sénégal', 14], ['Bénin', 11], ['Cameroun', 8], ['Autres', 14]].map(([n, v]) => `<div class="r"><span>${n}</span><div class="t"><i style="width:${v * 3}%"></i></div><span class="n">${v} %</span></div>`).join('')}</div></div>
+  </section>
+  <section class="card"><h3>Connexions : personnes différentes actives chaque ${unit}</h3><p class="sub">Une personne qui se connecte plusieurs fois le même jour compte une fois. Historique conservé depuis le 02/11/2026.</p>
+    <div class="legend"><span><i style="background:var(--c1)"></i>Android</span><span><i style="background:var(--c2)"></i>iPhone</span><span><i style="background:var(--fg)"></i>Total</span></div>
+    ${lineChart('c-conn', labels, [{ name: 'Android', color: 'var(--c1)', data: andr, area: true }, { name: 'iPhone', color: 'var(--c2)', data: ios, area: true }, { name: 'Total', color: 'var(--fg)', data: act, w: 1.6, dash: true }])}
+    <button class="go" type="button" data-tab="users">Voir les meilleurs utilisateurs →</button></section>
+
+  <div class="sechead"><i style="background:var(--yellow)"></i><h2>Afrolook Ads : annonceurs et diffuseurs</h2></div>
+  <section class="kpis">
+    <div class="card kpi"><div class="l">Annonces actives</div><div class="v">${fmt(23)}</div><div class="s">chez 8 annonceurs</div></div>
+    <div class="card kpi"><div class="l">Affichages valides</div><div class="v">${short(sum(shows))}</div><div class="d">${delta(sum(shows), sum(shows) * .93)}</div></div>
+    <div class="card kpi"><div class="l">Clics valides</div><div class="v">${short(sum(clicks))}</div><div class="s">visibles ici et dans l’espace de l’annonceur seulement</div></div>
+    <div class="card kpi"><div class="l">Gains des diffuseurs</div><div class="v">${F(1279000)}</div><div class="s">part de 65 % reçue</div></div>
+    <div class="card kpi"><div class="l">À valider</div><div class="v">3</div><div class="s">1 annonceur · 1 diffuseur · 1 site</div></div>
+  </section>
+  <section class="grid2">
+    <div class="card"><h3>Affichages valides et clics par ${unit}</h3><p class="sub">Comptage strict : sans doublon, sans fraude.</p><div class="legend"><span><i style="background:var(--c1)"></i>Affichages</span><span><i style="background:var(--c3)"></i>Clics</span></div>
+      ${lineChart('c-ads', labels, [{ name: 'Affichages', color: 'var(--c1)', data: shows, area: true }, { name: 'Clics', color: 'var(--c3)', data: clicks }])}</div>
+    <div class="card"><h3>Annonces par offre</h3><p class="sub">Gratuite, Réseau payante, Campagne Partage.</p>${donut([{ n: 'Gratuite', v: 11, c: 'var(--c1)' }, { n: 'Réseau', v: 10, c: 'var(--c2)' }, { n: 'Partage', v: 2, c: 'var(--c3)' }], '23', 'annonces')}
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px"><button class="go" type="button" data-tab="adv">Annonceurs →</button><button class="go" type="button" data-tab="pub">Diffuseurs →</button></div></div>
+  </section>`;
+}
+
+/* ——— 2. Utilisateurs ——— */
+function users() {
+  const top = [...U].sort((a, b) => state.topBy === 'views' ? (state.topWin === 'all' ? b.viewsTotal - a.viewsTotal : b.views30 - a.views30) : state.topBy === 'likes' ? b.likes - a.likes : state.topBy === 'cash' ? b.avail - a.avail : b.earned - a.earned);
+  const mc = state.topWin === 'all' ? 'viewsTotal' : 'views30';
+  return `${head('Meilleurs utilisateurs', 'Ceux qui cumulent le plus de vues. Touchez une ligne pour ouvrir la fiche complète, en consultation seule.', `<div style="display:flex;gap:8px;flex-wrap:wrap">${seg('topby', [['views', 'Vues'], ['likes', 'J’aime'], ['earned', 'Gains'], ['cash', 'À encaisser']], state.topBy)}${state.topBy === 'views' ? seg('topwin', [['30', '30 jours'], ['all', 'Depuis toujours']], state.topWin) : ''}</div>`)}${demoNote}
+  <section class="card"><div class="tblw"><table class="tbl"><thead><tr><th></th><th>Utilisateur</th><th>Pays</th><th class="num">Vues${state.topBy === 'views' ? (state.topWin === 'all' ? ' (total)' : ' (30 j)') : ''}</th><th class="num">Publications</th><th class="num">J’aime</th><th class="num">Abonnés</th><th class="num">Pièces gagnées</th><th class="num">Vues à encaisser</th></tr></thead><tbody>
+  ${top.map((u, i) => `<tr class="row" tabindex="0" role="link" data-open="user:${u.id}" aria-label="Ouvrir la fiche de @${u.pseudo}"><td class="rk ${i < 3 ? 't3' : ''}">${i + 1}</td><td><div class="who"><span class="av" style="background:${u.color}">${u.name[0]}</span><div><b>@${u.pseudo}</b> ${u.cert ? '<span class="badge cert">Certifié</span>' : ''}<div style="font-size:.76rem;color:var(--muted)">${u.name}</div></div></div></td>
+  <td>${u.country}</td><td class="num"><b>${fmt(u[mc])}</b></td><td class="num">${fmt(u.posts)}</td><td class="num">${fmt(u.likes)}</td><td class="num">${fmt(u.followers)}</td><td class="num">${fmt(u.earned)}</td><td class="num"><b>${fmt(u.pending)}</b> <span style="color:var(--muted)">· ${F(u.avail)}</span></td></tr>`).join('')}</tbody></table></div></section>`;
+}
+function evoBlock(base, g, col, name, cumul) {
+  const p = PERIODS[state.evoP]; const labels = labelsOf(p); const data = series(name + state.evoP + base, p, base, .3, g);
+  return `<div class="bar"><h3>Évolution</h3>${seg('evop', [['30', '30 j'], ['90', '90 j'], ['12', '12 mois']], state.evoP)}</div><p class="sub">${name} par ${p.unit === 'mois' ? 'mois' : 'jour'}.</p>${lineChart('c-evo', labels, [{ name, color: col, data, area: true }])}`;
+}
+function userFiche(u) {
+  const R = rng(u.id * 977); const act = Array.from({ length: 45 }, () => R() > .18);
+  const posts = ['Ma sauce arachide, la vraie recette', 'Défi danse : on refait ensemble ?', 'Réponse à vos questions du mois', 'Coulisses du tournage', 'Mon avis sur le nouveau son'].map((t, i) => [t, Math.round(u.views30 * [.14, .11, .08, .06, .05][i])]);
+  const tx = [['Gain de vues (semaine 44)', '+ ' + fmt(u.earned * .07) + ' pièces', '08 nov.'], ['Abonnement reçu : 3 personnes', '+ 180 pièces', '07 nov.'], ['Cadeau reçu de @fatou.tv', '+ 250 pièces', '05 nov.'], ['Demande de retrait', '− 25 000 F', '02 nov.'], ['Dépôt par Mobile Money', '+ ' + fmt(u.xofDeposit * .3 || 500) + ' F', '28 oct.']];
+  const evoKey = state.evo; const evMap = { views: ['Vues', u.views30 / 30, 'var(--c1)', .5], followers: ['Abonnés', u.followers / 220, 'var(--c2)', .9], earned: ['Pièces gagnées', u.earned / 330, 'var(--c3)', .9] }; const ev = evMap[evoKey];
+  return `<button class="back" type="button" data-back>← Retour aux meilleurs utilisateurs</button>
+  <section class="card"><div class="prof"><span class="av" style="background:${u.color}">${u.name[0]}</span><div style="flex:1;min-width:200px"><h2>@${u.pseudo} ${u.cert ? '<span class="badge cert">Certifié</span>' : ''} <span class="badge ok">Actif</span></h2>
+    <div class="meta"><span>Nom : <b>${u.name}</b></span><span>Pays : <b>${u.country}</b></span><span>Plateforme : <b>${u.platform}</b></span><span>Inscrit depuis : <b>${u.since}</b></span><span>Dernière connexion : <b>aujourd’hui, 08:41</b></span><span>E-mail : <b>k••••@gmail.com</b> <small>(masqué)</small></span></div></div><span class="lock">🔒 Consultation seule</span></div></section>
+  <section class="kpis"><div class="card kpi"><div class="l">Vues (total)</div><div class="v">${short(u.viewsTotal)}</div><div class="d"><span class="up">▲ 8,2 %</span> <span class="s">ce mois</span></div></div><div class="card kpi"><div class="l">Vues (30 jours)</div><div class="v">${short(u.views30)}</div><div class="s">${fmt(u.views30 / 30)} par jour</div></div>
+    <div class="card kpi"><div class="l">Publications</div><div class="v">${fmt(u.posts)}</div><div class="s">dont 18 ce mois</div></div><div class="card kpi"><div class="l">Abonnés</div><div class="v">${fmt(u.followers)}</div><div class="d"><span class="up">▲ 1,4 %</span> <span class="s">ce mois</span></div></div><div class="card kpi"><div class="l">J’aime reçus</div><div class="v">${fmt(u.likes)}</div><div class="s">${fmt(u.likes / u.posts)} par publication</div></div></section>
+  <section class="card"><h3>Vues à encaisser</h3><p class="sub">Les vues de ses publications que la personne n’a pas encore converties en argent. Seul l’encaissement existe : rien ne se paie tout seul.</p>
+    <div class="wallet">
+      <div><small>Vues disponibles</small><strong>${fmt(u.pending)}</strong><em>pas encore encaissées</em></div>
+      <div><small>Valeur en argent</small><strong>${F(u.avail)}</strong><em>${u.avail >= 1000 ? 'encaissable maintenant' : 'sous le minimum de 1 000 F'}</em></div>
+      <div><small>Palier du créateur</small><strong>${u.tier}</strong><em>${String(u.rate).replace('.', ',')} F par vue</em></div>
+      <div><small>Vues déjà encaissées</small><strong>${fmt(u.credited)}</strong><em>sur ${fmt(u.paid)} vues payantes</em></div>
+      <div><small>Total encaissé</small><strong>${F(u.cashedTotal)}</strong><em>dernier : ${u.lastCash}</em></div>
+      <div><small>Encaissé aujourd’hui</small><strong>${F(u.cashedToday)}</strong><em>plafond du jour : 50 000 F</em></div></div>
+    <div class="meter" style="margin-top:12px" role="img" aria-label="${Math.round(u.credited / u.paid * 100)} % des vues déjà encaissées"><i style="width:${u.credited / u.paid * 100}%"></i></div>
+    <p class="sub" style="margin:6px 0 0">${Math.round(u.credited / u.paid * 100)} % de ses vues payantes ont déjà été encaissées.</p></section>
+  <section class="card"><h3>Soldes et argent</h3><p class="sub">Lecture du portefeuille tel qu’il est aujourd’hui. Rien ne peut être modifié ici.</p><div class="wallet">
+    <div><small>Pièces gagnées</small><strong>${fmt(u.earned)}</strong><em>convertibles en argent</em></div><div><small>Pièces de dépôt</small><strong>${fmt(u.deposit)}</strong><em>achats et abonnements</em></div><div><small>Argent déposé</small><strong>${F(u.xofDeposit)}</strong><em>jamais retirable</em></div>
+    <div><small>Argent retirable</small><strong>${F(u.earned * 2.1)}</strong><em>si converti</em></div><div><small>Dette</small><strong style="color:${u.debt ? 'var(--c4)' : 'inherit'}">${fmt(u.debt)}</strong><em>${u.debt ? 'pièces à rembourser' : 'aucune'}</em></div><div><small>Total retiré</small><strong>${F(u.earned * 1.4)}</strong><em>depuis l’inscription</em></div></div></section>
+  <section class="grid2"><div class="card"><div class="seg" style="margin-bottom:10px">${Object.entries(evMap).map(([k, v]) => `<button type="button" data-evo="${k}" aria-pressed="${evoKey === k}">${v[0]}</button>`).join('')}</div>${evoBlock(ev[1], ev[3], ev[2], ev[0])}</div>
+    <div class="card"><h3>Présence</h3><p class="sub">45 derniers jours : jours de connexion.</p><div class="strip">${act.map((a) => `<i class="${a ? 'on' : ''}"></i>`).join('')}</div><p class="sub" style="margin-top:8px">${act.filter(Boolean).length} jours actifs sur 45</p>
+      <h3 style="margin-top:14px">Sécurité du compte</h3><div class="list"><div class="it"><span>Signalements reçus</span><span>${u.id % 3}</span></div><div class="it"><span>Bloqué par</span><span>${u.id * 2} personnes</span></div><div class="it"><span>Abonnement</span><span>Aucun</span></div></div></div></section>
+  <section class="grid2"><div class="card"><h3>Publications les plus vues (30 jours)</h3><div class="list">${posts.map(([t, v]) => `<div class="it"><span>${t}</span><span>${fmt(v)} vues</span></div>`).join('')}</div></div>
+    <div class="card"><h3>Dernières opérations du portefeuille</h3><p class="sub">Historique en lecture seule.</p><div class="list">${tx.map(([a, b, c]) => `<div class="it"><span>${a}<br><small style="color:var(--muted)">${c}</small></span><span>${b}</span></div>`).join('')}</div></div></section>`;
+}
+
+/* ——— 3. Annonceurs ——— */
+const ctr = (a) => a.views ? (a.clicks / a.views * 100).toFixed(2).replace('.', ',') + ' %' : '—';
+const statusBadge = (s) => `<span class="badge ${s === 'Validé' ? 'ok' : 'wait'}">${s}</span>`;
+function advList() {
+  const list = [...A].sort((a, b) => state.advBy === 'views' ? b.views - a.views : state.advBy === 'clicks' ? b.clicks - a.clicks : b.spent - a.spent);
+  return `${head('Annonceurs', 'Les marques qui annoncent sur Afrolook Ads : ce qu’elles diffusent et ce que ça donne.', seg('advby', [['views', 'Affichages'], ['clicks', 'Clics'], ['spent', 'Dépensé']], state.advBy))}${demoNote}
+  <section class="card"><div class="tblw"><table class="tbl"><thead><tr><th>Marque</th><th>Pays</th><th>Offre</th><th class="num">Annonces</th><th class="num">Affichages (30 j)</th><th class="num">Clics (30 j)</th><th class="num">Taux de clic</th><th class="num">Dépensé</th><th>Statut</th></tr></thead><tbody>
+  ${list.map((a) => `<tr class="row" tabindex="0" role="link" data-open="adv:${a.id}" aria-label="Ouvrir la fiche de ${a.brand}"><td><div class="who"><span class="av sq" style="background:${a.color}">${a.brand[0]}</span><b>${a.brand}</b></div></td><td>${a.country}</td><td>${a.offer}</td><td class="num">${a.ads}</td><td class="num"><b>${fmt(a.views)}</b></td><td class="num">${fmt(a.clicks)}</td><td class="num">${ctr(a)}</td><td class="num">${a.spent ? F(a.spent) : '—'}</td><td>${statusBadge(a.status)}</td></tr>`).join('')}</tbody></table></div></section>`;
+}
+function advFiche(a) {
+  const p = PERIODS[state.evoP]; const labels = labelsOf(p); const sh = series(a.brand + state.evoP, p, Math.max(1, a.views / 30), .25, .3); const cl = sh.map((v) => Math.round(v * (a.clicks / Math.max(1, a.views))));
+  const out = 8 + (a.id * 3) % 17; const mine = [['Offre de bienvenue', 'Carte', 'En ligne', 12, 412000, 9100], ['Nouvelle collection', 'Bannière', 'En ligne', 21, 380000, 8300], ['Promo du week-end', 'Vidéo', 'En attente', 0, 0, 0], ['Campagne rentrée', 'Carte', 'Terminée', 0, 290000, 6100]].slice(0, Math.min(4, a.ads + 1));
+  return `<button class="back" type="button" data-back>← Retour aux annonceurs</button>
+  <section class="card"><div class="prof"><span class="av sq" style="background:${a.color}">${a.brand[0]}</span><div style="flex:1;min-width:200px"><h2>${a.brand} ${statusBadge(a.status)}</h2><div class="meta"><span>Pays : <b>${a.country}</b></span><span>Offre : <b>${a.offer}</b></span><span>Contact : <b>c••••@marque.com</b> <small>(masqué)</small></span><span>Membre depuis : <b>sept. 2026</b></span></div></div><span class="lock">🔒 Consultation seule</span></div></section>
+  <section class="kpis"><div class="card kpi"><div class="l">Annonces actives</div><div class="v">${a.ads}</div></div><div class="card kpi"><div class="l">Affichages (30 j)</div><div class="v">${short(a.views)}</div></div><div class="card kpi"><div class="l">Clics (30 j)</div><div class="v">${short(a.clicks)}</div><div class="s">jamais montrés au public</div></div><div class="card kpi"><div class="l">Taux de clic</div><div class="v">${ctr(a)}</div></div>${a.spent ? `<div class="card kpi"><div class="l">Dépensé</div><div class="v">${F(a.spent)}</div><div class="s">frais de paiement à sa charge</div></div>` : ''}</section>
+  <section class="grid2"><div class="card"><div class="bar"><h3>Évolution</h3>${seg('evop', [['30', '30 j'], ['90', '90 j'], ['12', '12 mois']], state.evoP)}</div><div class="legend"><span><i style="background:var(--c1)"></i>Affichages</span><span><i style="background:var(--c3)"></i>Clics</span></div>${lineChart('c-evo', labels, [{ name: 'Affichages', color: 'var(--c1)', data: sh, area: true }, { name: 'Clics', color: 'var(--c3)', data: cl }])}</div>
+    <div class="card"><h3>Respect du ciblage</h3><p class="sub">Part des affichages hors des pays visés. Limite : 40 %.</p><div class="meter" role="img" aria-label="${out} % hors pays visés"><i style="width:${out / 40 * 100}%"></i></div><p class="sub" style="margin-top:6px"><b style="color:var(--fg)">${out} %</b> hors pays visés (maximum 40 %)</p>
+      <h3 style="margin-top:14px">Pays visés</h3><div class="same"><span>${a.country}</span><span>Côte d’Ivoire</span><span>Sénégal</span></div></div></section>
+  <section class="card"><h3>Ses annonces</h3><div class="tblw"><table class="tbl"><thead><tr><th>Titre</th><th>Format</th><th>Statut</th><th class="num">Jours restants</th><th class="num">Affichages</th><th class="num">Clics</th></tr></thead><tbody>${mine.map((m) => `<tr><td><b>${m[0]}</b></td><td>${m[1]}</td><td>${statusBadge(m[2] === 'En ligne' ? 'Validé' : m[2])}</td><td class="num">${m[3] || '—'}</td><td class="num">${fmt(m[4])}</td><td class="num">${fmt(m[5])}</td></tr>`).join('')}</tbody></table></div></section>`;
+}
+
+/* ——— 4. Diffuseurs ——— */
+function pubList() {
+  const list = [...P].sort((a, b) => state.pubBy === 'shows' ? b.shows - a.shows : b.gains - a.gains);
+  return `${head('Diffuseurs', 'Les sites et applications qui affichent des annonces, et ce qu’ils gagnent.', seg('pubby', [['shows', 'Affichages'], ['gains', 'Gains']], state.pubBy))}${demoNote}
+  <section class="card"><div class="tblw"><table class="tbl"><thead><tr><th>Diffuseur</th><th>Type</th><th class="num">Sites / apps</th><th class="num">Affichages valides (30 j)</th><th class="num">Gains (65 %)</th><th class="num">À payer après retenue</th><th>Statut</th></tr></thead><tbody>
+  ${list.map((d) => `<tr class="row" tabindex="0" role="link" data-open="pub:${d.id}" aria-label="Ouvrir la fiche de ${d.name}"><td><div class="who"><span class="av sq" style="background:${d.color}">${d.name[0]}</span><b>${d.name}</b></div></td><td>${d.kind}</td><td class="num">${d.props}</td><td class="num"><b>${fmt(d.shows)}</b></td><td class="num">${F(d.gains)}</td><td class="num">${F(d.due)}</td><td>${statusBadge(d.status)}</td></tr>`).join('')}</tbody></table></div></section>`;
+}
+function pubFiche(d) {
+  const p = PERIODS[state.evoP]; const labels = labelsOf(p); const sh = series(d.name + state.evoP, p, Math.max(1, d.shows / 30), .25, .35); const gn = sh.map((v) => Math.round(v * (d.gains / Math.max(1, d.shows))));
+  const props = d.kind === 'Site' ? ['togo-actu.com', 'togo-actu.com/sport', 'm.togo-actu.com'].slice(0, d.props) : [d.name + ' (Android)', d.name + ' (iPhone)'].slice(0, d.props + 1);
+  return `<button class="back" type="button" data-back>← Retour aux diffuseurs</button>
+  <section class="card"><div class="prof"><span class="av sq" style="background:${d.color}">${d.name[0]}</span><div style="flex:1;min-width:200px"><h2>${d.name} ${statusBadge(d.status)}</h2><div class="meta"><span>Identifiant : <b>ap_${d.id}k9x2m4</b></span><span>Type : <b>${d.kind}</b></span><span>Règles acceptées : <b>version 3</b></span><span>Retrait minimum : <b>10 000 F</b></span></div></div><span class="lock">🔒 Consultation seule</span></div></section>
+  <section class="kpis"><div class="card kpi"><div class="l">Affichages valides (30 j)</div><div class="v">${short(d.shows)}</div></div><div class="card kpi"><div class="l">Gains (65 %)</div><div class="v">${F(d.gains)}</div><div class="s">sur 30 jours</div></div><div class="card kpi"><div class="l">Retenue en cours</div><div class="v">${F(d.gains - d.due)}</div><div class="s">libérée après 30 jours</div></div><div class="card kpi"><div class="l">Disponible au retrait</div><div class="v">${F(d.due)}</div><div class="s">${d.due >= 10000 ? 'au-dessus du minimum' : 'sous le minimum'}</div></div></section>
+  <section class="grid2"><div class="card"><div class="bar"><h3>Évolution</h3>${seg('evop', [['30', '30 j'], ['90', '90 j'], ['12', '12 mois']], state.evoP)}</div><div class="legend"><span><i style="background:var(--c1)"></i>Affichages valides</span><span><i style="background:var(--c3)"></i>Gains (F)</span></div>${lineChart('c-evo', labels, [{ name: 'Affichages valides', color: 'var(--c1)', data: sh, area: true }, { name: 'Gains (F)', color: 'var(--c3)', data: gn }])}</div>
+    <div class="card"><h3>Sites et applications</h3><p class="sub">Preuve de propriété vérifiée.</p><div class="list">${props.map((x) => `<div class="it"><span>${x}</span><span class="up">✓ vérifié</span></div>`).join('')}</div>
+      <h3 style="margin-top:14px">Catégories acceptées</h3><div class="same"><span>Mode</span><span>Banque</span><span>Télécoms</span><span>Éducation</span></div></div></section>
+  <section class="card"><h3>Dernières demandes de retrait</h3><p class="sub">Historique en lecture seule : les décisions de paiement se prennent dans la file de retraits.</p><div class="list"><div class="it"><span>Retrait du 28 oct.<br><small style="color:var(--muted)">Mobile Money</small></span><span>${F(Math.round(d.due * .8))} · payé</span></div><div class="it"><span>Retrait du 12 oct.<br><small style="color:var(--muted)">Mobile Money</small></span><span>${F(Math.round(d.due * .6))} · payé</span></div></div></section>`;
+}
+
+/* ——— 5. Assemblage : comment tout se combine ——— */
+function plan() {
+  const Q = [
+    ['Où l’afficher ?', [['site', 'Sur le site d’administration (écran large, recommandé)'], ['app', 'Aussi dans l’application, à côté du tableau de bord actuel']]],
+    ['Comment combiner les trois', [['one', 'Un seul panneau, un menu en haut : Vue d’ensemble, Utilisateurs, Annonceurs, Diffuseurs (comme cette maquette)'], ['keep', 'Garder les espaces annonceur et diffuseur actuels tels quels, sans les toucher'], ['kit', 'Les rebâtir avec les mêmes briques visuelles, quand on y touchera']]],
+    ['Top utilisateurs', [['both', 'Vues 30 jours ET depuis toujours, avec un bouton (comme la maquette)'], ['v30', 'Seulement les 30 derniers jours']]],
+    ['Ce que l’équipe voit sur une fiche', [['money', 'Soldes en pièces et en argent, et vues à encaisser (permission finance)'], ['mask', 'E-mail et téléphone masqués par défaut'], ['log', 'Chaque ouverture de fiche notée dans un journal']]],
+    ['En plus', [['csv', 'Export CSV des inscriptions (sans données privées)'], ['alert', 'Alerte si les inscriptions chutent ou explosent d’un coup'], ['cohort', 'Courbe de rétention (qui revient après 1, 7, 30 jours)']]],
+  ];
+  return `${head('Comment tout s’assemble', 'Trois espaces existent ou existeront : ils partagent les mêmes briques et les mêmes données, seul ce qu’on y voit change.')}
+  <section class="roles">
+    <div class="rc adm"><h4>👁 Administration (cette maquette)</h4><ul><li>Voit tout : utilisateurs, annonceurs, diffuseurs</li><li>Consultation seule, aucune opération</li><li>Les décisions (valider, payer) restent dans leurs écrans actuels</li></ul></div>
+    <div class="rc"><h4>📣 Espace annonceur</h4><ul><li>Existe déjà sur le site d’Afrolook Ads</li><li>Ne voit que ses propres annonces</li><li>Reprendrait la fiche annonceur ci-dessus</li></ul></div>
+    <div class="rc"><h4>🌐 Espace diffuseur</h4><ul><li>Existe déjà sur le site d’Afrolook Ads</li><li>Ne voit que ses propres sites et gains</li><li>Reprendrait la fiche diffuseur ci-dessus</li></ul></div>
+  </section>
+  <section class="card"><h3>Mêmes briques partout</h3><p class="sub">Un seul jeu de composants, aux couleurs du site : vert de marque pour les actions et les courbes, jaune seulement en fond (boutons, pastilles) avec texte noir, ambre foncé quand un texte doit être « jaune », rouge réservé aux alertes, filet vert-jaune-rouge sous l’en-tête. Thème clair et sombre.</p>
+    <div class="same"><span>Cartes de chiffres</span><span>Courbes et barres</span><span>Anneaux</span><span>Tableaux cliquables</span><span>Fiches en lecture seule</span><span>Périodes 7 j · 30 j · 90 j · 12 mois</span></div>
+    <div class="note" style="margin-top:12px"><b>Règles de la régie respectées :</b> on écrit « Afrolook Ads » ; les clics ne sont jamais montrés au public (ici, seulement à l’équipe et à l’annonceur) ; on montre « 65 % reçus » par le diffuseur, jamais ce que garde Afrolook Ads ; rien sur la commission de l’application.</div></section>
+  <section class="card q"><h3>À valider avant de construire</h3><p class="sub" style="margin:0">Cochez ce que vous voulez, puis copiez votre choix. Rien n’est construit avant votre accord.</p>
+    ${Q.map(([t, o], qi) => `<div class="opt"><h4>${t}</h4>${o.map(([k, l]) => `<label class="chk"><input type="checkbox" data-q="${qi}:${k}" data-label="${l.replace(/"/g, '&quot;')}" ${(qi === 0 && k === 'site') || (qi === 1 && k === 'one') || (qi === 2 && k === 'both') || qi === 3 ? 'checked' : ''}><span>${l}</span></label>`).join('')}</div>`).join('')}
+    <button class="copy" type="button" id="copy">Copier mon choix</button><pre id="out" aria-live="polite"></pre></section>`;
+}
+
+/* ——— Affichage et événements ——— */
+const TABS = [['over', 'Vue d’ensemble', 'vue'], ['users', 'Utilisateurs', 'utilisateurs'], ['adv', 'Annonceurs', 'annonceurs'], ['pub', 'Diffuseurs', 'diffuseurs'], ['plan', 'Assemblage', 'assemblage']];
+function render() {
+  document.getElementById('tabs').innerHTML = TABS.map(([k, l]) => `<button type="button" data-tab="${k}" ${state.tab === k ? 'aria-current="page"' : ''}>${l}</button>`).join('');
+  let html;
+  if (state.detail) { const [k, id] = state.detail.split(':'); html = k === 'user' ? userFiche(U.find((x) => x.id == id)) : k === 'adv' ? advFiche(A.find((x) => x.id == id)) : pubFiche(P.find((x) => x.id == id)); }
+  else html = { over, users, adv: advList, pub: pubList, plan }[state.tab]();
+  document.getElementById('app').innerHTML = html;
+  const h = state.detail ? '#fiche' : '#' + TABS.find((t) => t[0] === state.tab)[2]; if (location.hash !== h) history.replaceState(null, '', h);
+}
+document.addEventListener('click', (e) => {
+  const t = e.target.closest('[data-tab],[data-period],[data-topby],[data-topwin],[data-evo],[data-evop],[data-advby],[data-pubby],[data-open],[data-back],#copy,#theme'); if (!t) return; const y = window.scrollY; const d = t.dataset;
+  if (t.id === 'theme') { const r = document.documentElement; const dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; r.dataset.theme = dark ? 'light' : 'dark'; return; }
+  if (t.id === 'copy') { const lines = []; document.querySelectorAll('[data-q]:checked').forEach((c) => lines.push('• ' + c.dataset.label)); const out = document.getElementById('out'); const txt = 'Administration Afrolook — mes choix :\n' + (lines.join('\n') || '(rien coché)'); out.textContent = txt; out.style.display = 'block';
+    (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => { t.textContent = 'Copié ✓'; }).catch(() => { const r = document.createRange(); r.selectNodeContents(out); const s = getSelection(); s.removeAllRanges(); s.addRange(r); t.textContent = 'Texte sélectionné : copiez-le'; }); return; }
+  if (d.tab) { state.tab = d.tab; state.detail = null; scrollTo(0, 0); render(); return; }
+  if (d.open) { state.detail = d.open; state.evo = 'views'; state.evoP = '90'; scrollTo(0, 0); render(); return; }
+  if ('back' in d) { state.detail = null; render(); return; }
+  if (d.period) state.period = d.period; else if (d.topby) state.topBy = d.topby; else if (d.topwin) state.topWin = d.topwin; else if (d.evo) state.evo = d.evo; else if (d.evop) state.evoP = d.evop; else if (d.advby) state.advBy = d.advby; else if (d.pubby) state.pubBy = d.pubby;
+  const checks = [...document.querySelectorAll('[data-q]')].map((c) => c.checked); render(); document.querySelectorAll('[data-q]').forEach((c, i) => { c.checked = checks[i]; }); scrollTo(0, y);
+});
+document.addEventListener('keydown', (e) => { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.row')) { e.preventDefault(); e.target.click(); } });
+addEventListener('hashchange', () => { const t = TABS.find((x) => '#' + x[2] === location.hash); if (t && (state.tab !== t[0] || state.detail)) { state.tab = t[0]; state.detail = null; render(); } });
+(() => { const t = TABS.find((x) => '#' + x[2] === location.hash); if (t) state.tab = t[0]; })();
+render();
+</script>
