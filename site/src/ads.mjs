@@ -5,6 +5,7 @@
 import { catOptions, catChecks, rulesHtml, RULES } from './ads_data.mjs';
 import { simulatorSection, channelMocks, trustSection, networkSection, stepsSection, waPhone } from './ads_campaign.mjs';
 import { formatsSection } from './ads_formats.mjs';
+import { adminNav } from './adminnav.mjs';
 
 export const AUDIENCE = 'plus de 50 000';
 export const AUDIENCE_EN = 'over 50,000';
@@ -602,7 +603,7 @@ export function adsPublisherSpace(fbConfig, api) {
 
 // ───────── administration de la régie (page réservée aux administrateurs, non indexée) ─────────
 export function adsAdminSpace(fbConfig, api) {
-  return `${adsSubnav('admin')}<section class="adsp"><div class="wrap" id="regieadmin" data-api="${api}">
+  return `${adminNav('regie')}<section class="adsp"><div class="wrap" id="regieadmin" data-api="${api}">
  <script type="application/json" id="fbcfg" data-space="${api}/ads/api/space">${JSON.stringify(fbConfig)}</script>
  <div class="adsp-top"><div><span class="kicker">Afrolook Ads</span><h1 class="h2" style="margin-top:6px">Administration de la régie</h1></div>
   <div class="adsp-user" id="adsp-user" hidden><i class="admk-av" id="u-av">A</i><span><b id="u-name"></b><small id="u-mail"></small></span><button class="adlinkbtn" id="signout" type="button">Déconnexion</button></div></div>

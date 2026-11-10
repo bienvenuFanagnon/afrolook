@@ -62,6 +62,7 @@ async function apiGet(path) {
   ready({ A, auth });
   $('#adm-out').addEventListener('click', () => A.signOut(auth));
   A.onAuthStateChanged(auth, (u) => {
+    try { u ? localStorage.setItem('afl_in', '1') : localStorage.removeItem('afl_in'); } catch { /* stockage indisponible */ }   // état lu par le bouton du haut (site.js)
     $('#adm-gate').hidden = !!u; $('#adm-app').hidden = !u; $('#adm-user').hidden = !u;
     if (u) { $('#adm-mail').textContent = u.email || ''; start(); }
   });

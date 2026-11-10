@@ -54,15 +54,18 @@ Un seul site Firebase Hosting (`afrolooki`, cible `vitrine`, domaine `afrolookme
   `/post/**` et `/feexpay-callback` redirigent vers `/app/` ; `/flutter_service_worker.js` à la racine est un nettoyeur qui retire
   l'ancien service worker chez les visiteurs de retour.
 
-### Mettre à jour le site ET l'application web
-```bash
-flutter build web --release --base-href /app/ --no-tree-shake-icons --no-wasm-dry-run   # à la racine du dépôt
-cd site && node build.mjs && node with-app.mjs && node check.mjs
+### Mettre à jour le site : la vitrine, /ads/ et /app/ partent TOUJOURS ensemble
+Le même site sert les trois. Un déploiement remplace tout le site en ligne : ce qui n'est pas dans `dist/` disparaît (c'est ce qui a mis `/app/` en 404 début novembre 2026, et avec elle les retours de paiement `/feexpay-callback` et les liens `/post/**`, qui redirigent vers `/app/`).
+Dans PowerShell (pas Git Bash, qui transforme `/app/` en chemin Windows ; `&&` n'existe pas dans PowerShell 5.1, utiliser `;`) :
+```powershell
+flutter build web --release --base-href "/app/" --no-tree-shake-icons --no-wasm-dry-run --no-web-resources-cdn   # à la racine du dépôt
+cd site; node build.mjs; node check.mjs
 firebase hosting:channel:deploy apercu --only vitrine --expires 14d --project afrolooki   # aperçu sans risque
 firebase deploy --only hosting:vitrine --project afrolooki                               # mise en ligne
 ```
-Sans changement de l'application, `node build.mjs` seul vide `dist/` : toujours enchaîner `with-app.mjs`, sinon `/app/` disparaît.
-Sans `build/web` : récupérer l'application web actuellement en ligne (API Hosting : liste des fichiers de la version publiée, puis téléchargement des `/app/…`), la remettre dans `dist/app/` (sans `app-ads*.txt`), puis comparer la liste des fichiers avec la version en ligne avant de déployer (c'est ce qui a été fait pour la page Musique, le 16 octobre 2026).
+- `node build.mjs` fabrique la vitrine et `/ads/`, puis copie l'application web (`build/web`) dans `dist/app/` : une seule commande (`with-app.mjs` fait la même copie et reste utilisable).
+- Sans `build/web/main.dart.js`, `build.mjs` l'écrit en toutes lettres, retire les liens vers `/app/`, et **le déploiement est refusé** par `predeploy.mjs` (lancé par Firebase avant tout déploiement du site, voir `firebase.json`, clé `predeploy`). Vérification à la main : `node predeploy.mjs`.
+- Si la compilation web échoue avec des erreurs `dart:ffi` : une bibliothèque réservée au téléphone est importée sans import conditionnel (exemple corrigé : `lib/services/nsfw_check.dart`, `nsfw_runner_io.dart` et `nsfw_runner_stub.dart`).
 Les liens du site vers l'application web pointent vers `/app/` (`appWebUrl` dans `src/config.json`) ; les e-mails de l'app aussi (`APP_WEB_URL_AFRO`).
 Si Cloudflare met des pages en cache, purger le cache après la mise en ligne.
 

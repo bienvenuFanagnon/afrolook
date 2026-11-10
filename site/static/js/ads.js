@@ -367,6 +367,7 @@ async function boot(onUser) {
   ready({ A, auth });
   $('#signout').addEventListener('click', () => A.signOut(auth));
   A.onAuthStateChanged(auth, (u) => {
+    try { u ? localStorage.setItem('afl_in', '1') : localStorage.removeItem('afl_in'); } catch { /* stockage indisponible */ }   // état lu par le bouton du haut (site.js)
     $('#adgate').hidden = !!u; if ($('#adways')) $('#adways').hidden = !!u; $('#adapp').hidden = !u; $('#adsp-user').hidden = !u;
     if (!u) return;
     $('#u-name').textContent = u.displayName || 'Annonceur'; $('#u-mail').textContent = u.email || '';
@@ -381,11 +382,11 @@ async function boot(onUser) {
 /** Ajoute l'accès à l'espace administration (menu du haut + carte du compte) ; appelé seulement pour un administrateur connecté. */
 function showAdminAccess() {
   if ($('#adm-access')) return;
-  const nav = $('.adsnav .wrap');
-  if (nav) nav.append(h('a', { id: 'adm-access', class: 'adm', href: '/ads/admin/', ...(location.pathname.startsWith('/ads/admin') ? { 'aria-current': 'page' } : {}) }, 'Espace administration'));
+  // Un seul lien « Administration » (vers le tableau de bord) : la barre commune des pages d'administration porte ensuite le tableau de bord ET la régie.
+  const nav = $('.adsnav .wrap');   // absent des pages d'administration : elles ont déjà cette barre commune
+  if (nav) nav.append(h('a', { id: 'adm-access', class: 'adm', href: '/admin/' }, 'Administration'));
   const box = $('#adsp-user');
-  if (box && !location.pathname.startsWith('/ads/admin')) box.append(h('a', { class: 'adlinkbtn', href: '/ads/admin/' }, "Ouvrir l'administration"));
-  if (nav && !$('#adm-dash')) nav.append(h('a', { id: 'adm-dash', class: 'adm', href: '/admin/' }, 'Tableau de bord'));   // statistiques de la plateforme (consultation seule)
+  if (box && !location.pathname.startsWith('/ads/admin')) box.append(h('a', { class: 'adlinkbtn', href: '/admin/' }, "Ouvrir l'administration"));
 }
 
 /** Bandeau d'état du profil, en haut de l'espace : l'annonceur ou le diffuseur sait toujours où en est la validation de son profil. */
@@ -1282,7 +1283,7 @@ async function initRegieAdmin() {
     const k = st.k || {}, pick = (x, fallback) => (x ? x.total : fallback);
     const waiting = (key) => !!(k[key] && k[key].wait);
     const count = { adv: pick(k.adv, st.adv.length), ads: pick(k.ads, st.ads.length), pub: pick(k.pub, st.profiles.length), prop: pick(k.prop, st.props.length), share: pick(k.share, st.sharers.length), camp: pick(k.camp, st.camps.length), pay: pick(k.pay, st.pays.length), alert: k.alert ? k.alert.wait : (st.tab === 'alert' && st.afilter === 'open' ? st.alerts.length : st.alertsOpen) };
-    $('#rg-tabs').replaceChildren(...Object.entries(tabs).filter(([tk]) => (tk !== 'pay' || !st.k || st.k.pay) && ((tk !== 'wal' && tk !== 'mail') || IS_OFFERED)).map(([tk, l]) => h('a', { href: '#', class: (st.tab === tk ? 'on ' : '') + (tk === 'alert' && count.alert ? 'rg-alert' : (waiting(tk) ? 'rg-wait' : '')), onclick: (e) => { e.preventDefault(); st.tab = tk; st.page = 1; if (tk === 'pay' && !payFilters.some(([f]) => f === st.filter)) st.filter = 'requested'; if (tk !== 'pay' && tk !== 'alert' && !filters.some(([f]) => f === st.filter)) st.filter = 'pending'; load(); } }, l, tk === 'wal' ? null : h('i', { text: String(count[tk]) }))));
+    $('#rg-tabs').replaceChildren(...Object.entries(tabs).filter(([tk]) => (tk !== 'pay' || !st.k || st.k.pay) && ((tk !== 'wal' && tk !== 'mail') || IS_OFFERED)).map(([tk, l]) => h('a', { href: '#', class: (st.tab === tk ? 'on ' : '') + (tk === 'alert' && count.alert ? 'rg-alert' : (waiting(tk) ? 'rg-wait' : '')), onclick: (e) => { e.preventDefault(); st.tab = tk; st.page = 1; if (tk === 'pay' && !payFilters.some(([f]) => f === st.filter)) st.filter = 'requested'; if (tk !== 'pay' && tk !== 'alert' && !filters.some(([f]) => f === st.filter)) st.filter = 'pending'; load(); } }, l, (tk === 'wal' || tk === 'mail') ? null : h('i', { text: String(count[tk]) }))));
     const fl = (st.tab === 'wal' || st.tab === 'mail') ? [] : st.tab === 'alert' ? alertFilters : st.tab === 'pay' ? payFilters : st.tab === 'share' ? [...filters, ['hold', 'Gains bloqués']] : filters, cur = st.tab === 'alert' ? st.afilter : st.filter;
     $('#rg-filters').replaceChildren(...fl.map(([k, l]) => h('span', { class: cur === k ? 'on' : false, onclick: () => { if (st.tab === 'alert') st.afilter = k; else { st.filter = k; st.shLimit = 24; st.shSel = null; } st.page = 1; load(); } }, l)));
   };

@@ -9,6 +9,7 @@ const src = path.join(here, '..', 'build', 'web');
 const out = path.join(here, 'dist', 'app');
 const index = path.join(src, 'index.html');
 if (!fs.existsSync(index)) { console.error('build/web introuvable : lance d\'abord flutter build web --release --base-href /app/'); process.exit(1); }
+if (!fs.existsSync(path.join(src, 'main.dart.js'))) { console.error('build/web est incomplet (main.dart.js absent) : la compilation flutter build web a échoué, aucun fichier copié'); process.exit(1); }
 if (!fs.readFileSync(index, 'utf8').includes('<base href="/app/">')) { console.error('build/web n\'a pas été compilé avec --base-href /app/'); process.exit(1); }
 if (!fs.existsSync(path.join(here, 'dist', 'index.html'))) { console.error('dist/ vide : lance d\'abord node build.mjs'); process.exit(1); }
 fs.rmSync(out, { recursive: true, force: true });

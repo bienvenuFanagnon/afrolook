@@ -10,6 +10,9 @@
     {
       "target": "vitrine",
       "public": "site/dist",
+      "predeploy": [
+        "node \"$PROJECT_DIR/site/predeploy.mjs\""
+      ],
       "ignore": [
         "firebase.json",
         "**/node_modules/**"

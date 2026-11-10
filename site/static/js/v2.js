@@ -165,29 +165,48 @@ const FLAGS=[['tg','Togo',27,4],['ci',"Côte d'Ivoire",7,8],['bj','Bénin',1,8],
 if(EN_)FLAGS.forEach(f=>{f[1]=FN_EN[f[0]]||f[1];});
 const MOIS=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
 const TZ={'Africa/Lome':'tg','Africa/Abidjan':'ci','Africa/Porto-Novo':'bj','Africa/Douala':'cm','Africa/Ouagadougou':'bf','Africa/Dakar':'sn','Africa/Bamako':'ml','Africa/Niamey':'ne','Africa/Accra':'gh','Africa/Lagos':'ng','Africa/Kinshasa':'cd','Africa/Libreville':'ga','Africa/Conakry':'gn','Africa/Brazzaville':'cg','Africa/Casablanca':'ma','Africa/Algiers':'dz','Africa/Nairobi':'ke','Africa/Johannesburg':'za'};
-function detectCountry(){let c='';try{const m=(navigator.language||'').match(/-([A-Za-z]{2})$/);if(m)c=m[1].toLowerCase();}catch(e){}
-  if(!FLAGS.some(f=>f[0]===c)){try{c=TZ[Intl.DateTimeFormat().resolvedOptions().timeZone]||'';}catch(e){c='';}}
-  return FLAGS.findIndex(f=>f[0]===c);}
+/* Fêtes nationales [mois, jour] : même table que src/data.mjs (NATIONAL_DAYS). Sert quand le pays de la personne n'est pas dans les pastilles. */
+const ND={DZ:[7,5],AO:[11,11],BJ:[8,1],BW:[9,30],BF:[12,11],BI:[7,1],CV:[7,5],CM:[5,20],CF:[12,1],TD:[8,11],KM:[7,6],CG:[8,15],CD:[6,30],CI:[8,7],DJ:[6,27],EG:[7,23],GQ:[10,12],ER:[5,24],SZ:[9,6],GA:[8,17],
+GM:[2,18],GH:[3,6],GN:[10,2],GW:[9,24],KE:[12,12],LS:[10,4],LR:[7,26],LY:[12,24],MG:[6,26],MW:[7,6],ML:[9,22],MR:[11,28],MU:[3,12],MA:[7,30],MZ:[6,25],NA:[3,21],NE:[8,3],NG:[10,1],RW:[7,1],ST:[7,12],
+SN:[4,4],SC:[6,29],SL:[4,27],SO:[7,1],ZA:[4,27],SS:[7,9],TZ:[12,9],TG:[4,27],TN:[3,20],UG:[10,9],ZM:[10,24],ZW:[4,18],FR:[7,14],BE:[7,21],CA:[7,1],US:[7,4],BR:[9,7],DE:[10,3],IT:[6,2],CH:[8,1],HT:[1,1],JM:[8,6]};
+/* Pays vu par le serveur d'après la connexion (réponse du réseau Cloudflare, placé devant le site). Rien n'est enregistré. */
+function serverCountry(){
+  return fetch('/cdn-cgi/trace',{cache:'no-store'}).then(r=>r.ok?r.text():'').then(t=>{const m=t.match(/^loc=([A-Z]{2})$/m);return m?m[1].toLowerCase():'';}).catch(()=>'');
+}
+/* Secours quand le serveur ne répond pas : région de la langue, sinon fuseau horaire de l'appareil. */
+function deviceCountry(){let c='';try{const m=(navigator.language||'').match(/-([A-Za-z]{2})$/);if(m)c=m[1].toLowerCase();}catch(e){}
+  if(!ND[c.toUpperCase()]){try{c=TZ[Intl.DateTimeFormat().resolvedOptions().timeZone]||'';}catch(e){c='';}}
+  return c;}
+/* Place du pays dans les pastilles ; il y est ajouté en premier s'il a un drapeau et une fête connue. -1 : pays sans drapeau. */
+function countryIndex(code){
+  if(!code)return -1;
+  const i=FLAGS.findIndex(f=>f[0]===code);if(i>=0)return i;
+  const nd=ND[code.toUpperCase()];if(!nd)return -1;
+  let name=code.toUpperCase();try{name=new Intl.DisplayNames([EN_?'en':'fr'],{type:'region'}).of(code.toUpperCase())||name;}catch(e){}
+  FLAGS.unshift([code,name,nd[1],nd[0]]);return 0;
+}
 const MOIS_EN=['January','February','March','April','May','June','July','August','September','October','November','December'];
 const jour=(d,m)=>EN_?MOIS_EN[m-1]+' '+d:(d===1?'1er':d)+' '+MOIS[m-1];
 function initFlags(box){
-  const big=box.querySelector('.v-bigflag'),nm=box.querySelector('.v-fname'),chips=box.querySelector('.v-fchips');
-  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  chips.innerHTML=FLAGS.map(f=>'<button type="button" aria-label="'+f[1]+'" aria-pressed="false"><img src="'+IMG['fl_'+f[0]]+'" alt=""></button>').join('');
-  const bs=[...chips.children];let cur=-1,hold=0,vis=true;
-  const dl=box.closest('.v-dl');
+  const big=box.querySelector('.v-bigflag'),nm=box.querySelector('.v-fname'),chips=box.querySelector('.v-fchips'),dl=box.closest('.v-dl');
+  const note=document.createElement('p');note.className='v-fdet';box.appendChild(note);
+  let cur=-1,bs=[],touched=false;
   function txt(i){const f=FLAGS[i],k=dl&&dl.querySelector('.v-fkick'),u=dl&&dl.querySelector('.v-fsub');if(!dl)return;
     if(dl.dataset.fl==='ads'){k.textContent='Afrolook Ads · '+f[1];u.textContent=L('Choisis les pays à atteindre : '+f[1]+", et d'autres.",'Choose the countries to reach: '+f[1]+', and others.');}
     else{k.textContent='Afrolook · '+f[1];u.textContent=L('Le '+jour(f[2],f[3])+', fête nationale ('+f[1]+'), les styles de cartes drapeau sont offerts.','On '+jour(f[2],f[3])+', national day ('+f[1]+'), all flag card styles are free.');}}
   function go(i,first){if(i===cur)return;cur=i;bs.forEach((b,j)=>b.setAttribute('aria-pressed',j===i));
     const set=()=>{big.src=IMG['fl_'+FLAGS[i][0]];nm.textContent=FLAGS[i][1];big.alt=L('Drapeau : ','Flag: ')+FLAGS[i][1];big.classList.remove('v-sw');txt(i);};
     if(first){set();return;}big.classList.add('v-sw');setTimeout(set,250);}
-  bs.forEach((b,i)=>b.addEventListener('click',()=>{hold=Date.now()+10000;go(i);}));
-  box.addEventListener('pointerenter',()=>{hold=Infinity;});box.addEventListener('pointerleave',()=>{hold=Date.now()+1500;});
-  new IntersectionObserver(es=>{vis=es[0].isIntersecting;}).observe(box);
-  const det=detectCountry();
-  if(det>=0){go(det,true);box.insertAdjacentHTML('beforeend','<p class="v-fdet">'+L('Pays détecté sur ton appareil. Touche un drapeau pour en changer.','Country detected on your device. Tap a flag to change it.')+'</p>');}
-  else{go(0,true);box.insertAdjacentHTML('beforeend','<p class="v-fdet">'+L('Pays inconnu : le Togo s’affiche par défaut. Touche un drapeau pour voir les autres.','Unknown country: Togo is shown by default. Tap a flag to see the others.')+'</p>');}
+  function render(){chips.innerHTML=FLAGS.map(f=>'<button type="button" aria-label="'+f[1]+'" aria-pressed="false"><img src="'+IMG['fl_'+f[0]]+'" alt=""></button>').join('');
+    bs=[...chips.children];bs.forEach((b,i)=>b.addEventListener('click',()=>{touched=true;go(i);}));}
+  /* how : 'server' (connexion), 'device' (appareil) ou '' (inconnu : le Togo) */
+  function show(code,how){const i=countryIndex(code);render();cur=-1;go(i>=0?i:0,true);
+    note.textContent=i<0?L('Pays inconnu : le Togo s’affiche par défaut. Touche un drapeau pour voir les autres.','Unknown country: Togo is shown by default. Tap a flag to see the others.')
+      :how==='server'?L('Pays détecté d’après ta connexion. Touche un drapeau pour en changer.','Country detected from your connection. Tap a flag to change it.')
+      :L('Pays détecté sur ton appareil. Touche un drapeau pour en changer.','Country detected on your device. Tap a flag to change it.');}
+  const dev=deviceCountry();show(dev,'device');
+  /* le serveur a le dernier mot, sauf si la personne a déjà choisi un drapeau ou si son pays n'a pas de drapeau ici */
+  serverCountry().then(c=>{if(c&&!touched&&(ND[c.toUpperCase()]||FLAGS.some(f=>f[0]===c)))show(c,'server');});
 }
 
 /* ---- Lancer une campagne depuis le site ---- */
@@ -268,5 +287,16 @@ function onScroll(){const h=document.documentElement.scrollHeight-innerHeight;if
   if(!rm&&scrollY<1400)par.forEach(p=>{const v=parseFloat(p.dataset.p)*scrollY;const base=p.classList.contains('v-fcard')||p.classList.contains('v-toast')?'':'';p.style.translate='0 '+v.toFixed(1)+'px';});}
 addEventListener('scroll',onScroll,{passive:true});onScroll();
 
+
+/* ---- Barre collée en bas sur téléphone : visible après le premier écran, cachée près du bloc final et du pied de page ---- */
+(function(){
+  const bar=document.getElementById('v-stick');if(!bar||!('IntersectionObserver' in window))return;
+  const hero=document.querySelector('.v-hero .v-cta'),until=document.getElementById(bar.dataset.until),foot=document.querySelector('footer');
+  let past=false,atEnd=false,atFoot=false;
+  const upd=()=>bar.classList.toggle('v-show',past&&!atEnd&&!atFoot);
+  if(hero)new IntersectionObserver(es=>{past=!es[0].isIntersecting&&es[0].boundingClientRect.top<0;upd();}).observe(hero);
+  if(until)new IntersectionObserver(es=>{atEnd=es[0].isIntersecting;upd();}).observe(until);
+  if(foot)new IntersectionObserver(es=>{atFoot=es[0].isIntersecting;upd();}).observe(foot);
+})();
 
 })();

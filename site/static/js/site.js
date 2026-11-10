@@ -87,3 +87,15 @@
     if (target) { var r = $('#redir'); if (r) r.style.display = 'block'; setTimeout(function () { location.replace(target); }, 700); }
   }
 })();
+
+// Bouton du haut des pages Afrolook Ads : « Se connecter » ou « Mon espace » selon l'état de connexion gardé par les pages connectées (clé `afl_in`).
+(function () {
+  'use strict';
+  try {
+    var on = !!localStorage.getItem('afl_in');
+    Array.prototype.forEach.call(document.querySelectorAll('[data-hdr-cta]'), function (a) {
+      var t = a.getAttribute(on ? 'data-in' : 'data-out');
+      if (t) a.textContent = t;
+    });
+  } catch (e) { /* stockage indisponible : le bouton reste « Se connecter » */ }
+})();

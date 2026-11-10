@@ -24,9 +24,11 @@ const rules = JSON.parse(fs.readFileSync(path.join(root, 'src/rules.json'), 'utf
   .map((s) => ({ ...s, rules: s.rules.filter(([a, b]) => !MONEY.test(a) && !MONEY.test(b)) }))
   .filter((s) => s.rules.length && !/RPM|Rémunération|Gains|Retrait|monétis|Monétis|Publicité|Récompenses|DÉFI/i.test(s.title));
 const dist = path.join(root, 'dist');
+// L'application web (Flutter) est-elle compilée ? Sinon aucun lien du site ne mène à /app/ (il ouvrirait une page introuvable).
+const HAS_APP = fs.existsSync(path.join(root, '..', 'build', 'web', 'main.dart.js'));
 const flagsDir = process.env.FLAGS_DIR || path.join(root, 'static/img/flags');
 
-const ASSET_V = '53';
+const ASSET_V = '55';
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const slug = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const write = (p, c) => { const f = path.join(dist, p); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, c); };
@@ -65,8 +67,11 @@ function header(lang, key, alt) {
   const nav = links.map(([h, l, k]) => `<a href="${h}"${key === k ? ' aria-current="page"' : ''}>${l}</a>`).join('');
   const other = lang === 'fr' ? 'en' : 'fr';
   // pages Afrolook Ads : rien qui renvoie vers l'application (ni « Version web » ni « Télécharger »)
-  const appBtns = key === 'ads' ? `<a class="btn btn-primary" href="/ads/espace/">${fr ? 'Annoncer' : 'Advertise'}</a>` : `<a class="btn btn-primary" href="${p.download}">${t.nav.download}</a>`;
-  const appLinks = key === 'ads' ? `<a href="/ads/espace/">${fr ? 'Annoncer' : 'Advertise'}</a>` : `<a href="${p.download}">${t.nav.download}</a>`;
+  // Bouton du haut : « Se connecter » tant que la personne ne l'est pas, « Mon espace » une fois connectée (site.js lit l'état gardé dans le navigateur) ; dans les deux cas il ouvre /ads/espace/
+  const ctaOut = fr ? 'Se connecter' : 'Sign in', ctaIn = fr ? 'Mon espace' : 'My space';
+  const ctaAttrs = `href="/ads/espace/" data-hdr-cta data-out="${ctaOut}" data-in="${ctaIn}"`;
+  const appBtns = key === 'ads' ? `<a class="btn btn-primary" ${ctaAttrs}>${ctaOut}</a>` : `<a class="btn btn-primary" href="${p.download}">${t.nav.download}</a>`;
+  const appLinks = key === 'ads' ? `<a ${ctaAttrs}>${ctaOut}</a>` : `<a href="${p.download}">${t.nav.download}</a>`;
   const sw = `<span class="lang-sw" aria-label="Langue"><${lang === 'fr' ? 'span aria-current="true"' : `a href="${alt.fr}" hreflang="fr" lang="fr"`}>FR</${lang === 'fr' ? 'span' : 'a'}><${lang === 'en' ? 'span aria-current="true"' : `a href="${alt.en}" hreflang="en" lang="en"`}>EN</${lang === 'en' ? 'span' : 'a'}></span>`;
   return `<a class="skip" href="#main">${t.nav.skip}</a>
 <header class="top"><div class="wrap in">
@@ -84,7 +89,7 @@ function footer(lang) {
   return `<footer><div class="tri" style="position:absolute;left:0;right:0;top:0"></div><div class="wrap">
 <div class="cols">
  <div><a class="brand" href="${p.home}" style="color:#fff"><img src="/img/logo.webp" width="36" height="36" alt=""><span>afro<i>look</i></span></a><p class="about">${f.about}</p></div>
- <div><h4>${f.product}</h4><ul><li><a href="${p.earn}">${t.nav.earn}</a></li><li><a href="${p.cards}">${t.nav.cards}</a></li><li><a href="${p.music}">${t.nav.music}</a></li><li><a href="${p.holidays}">${t.nav.holidays}</a></li><li><a href="${p.download}">${t.nav.download}</a></li><li><a href="${cfg.appWebUrl}">${f.web}</a></li></ul></div>
+ <div><h4>${f.product}</h4><ul><li><a href="${p.earn}">${t.nav.earn}</a></li><li><a href="${p.cards}">${t.nav.cards}</a></li><li><a href="${p.music}">${t.nav.music}</a></li><li><a href="${p.holidays}">${t.nav.holidays}</a></li><li><a href="${p.download}">${t.nav.download}</a></li>${HAS_APP ? `<li><a href="${cfg.appWebUrl}">${f.web}</a></li>` : ''}</ul></div>
  <div><h4>Afrolook Ads</h4><ul><li><a href="/ads/">${lang === 'fr' ? 'Annoncer' : 'Advertise'}</a></li><li><a href="/ads/diffuseur/">${lang === 'fr' ? 'Devenir diffuseur' : 'Become a publisher'}</a></li><li><a href="/ads/diffuseur/documentation/" hreflang="fr">${lang === 'fr' ? 'Documentation d\'intégration' : 'Integration guide'}</a></li><li><a href="/ads/diffuseur/regles/" hreflang="fr">${lang === 'fr' ? 'Règles des diffuseurs' : 'Publisher rules'}</a></li></ul></div>
  <div><h4>${f.help}</h4><ul><li><a href="${p.help}">${f.faq}</a></li><li><a href="${p.contact}">${t.nav.contact}</a></li><li><a href="https://wa.me/${cfg.supportWhatsapp}?text=${encodeURIComponent(lang === 'fr' ? 'Bonjour, j\'ai besoin d\'aide sur Afrolook.' : 'Hello, I need help with Afrolook.')}" target="_blank" rel="noopener">${lang === 'fr' ? 'Support WhatsApp' : 'WhatsApp support'}</a></li><li><a href="${p.del}">${f.delete}</a></li></ul></div>
  <div><h4>${f.legal}</h4><ul><li><a href="${p.rules}" hreflang="fr">${f.rules}</a></li><li><a href="${p.privacy}" hreflang="fr">${f.privacy}</a></li></ul></div>
@@ -198,7 +203,7 @@ const screensScript = '<script>(function(){var s=[].slice.call(document.querySel
 function homePage(lang) {
   {
     const t = T[lang], h = t.home;
-    emit(lang, 'home', P[lang].home, { alt: { fr: P.fr.home, en: P.en.home }, title: h.title, desc: h.desc, body: v2Home(cfg, lang), jsonld: [mailtoOrg, appLd(lang)] });
+    emit(lang, 'home', P[lang].home, { alt: { fr: P.fr.home, en: P.en.home }, title: h.title, desc: h.desc, body: v2Home(cfg, lang, HAS_APP), jsonld: [mailtoOrg, appLd(lang)] });
     return;
   }
   const t = T[lang], h = t.home, [coins, fcfa] = fmt(lang, cfg.example);
@@ -448,3 +453,19 @@ const seen = new Set();
 write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n${entries.filter((s) => !seen.has(s.loc) && seen.add(s.loc)).map((s) => `<url><loc>${abs(s.loc)}</loc>${s.alt && s.alt.fr !== s.alt.en ? `<xhtml:link rel="alternate" hreflang="fr" href="${abs(s.alt.fr)}"/><xhtml:link rel="alternate" hreflang="en" href="${abs(s.alt.en)}"/>` : ''}</url>`).join('\n')}\n</urlset>\n`);
 write('manifest.webmanifest', JSON.stringify({ name: 'Afrolook', short_name: 'Afrolook', start_url: '/', display: 'browser', background_color: '#0A100C', theme_color: '#0A100C', icons: [{ src: '/img/icon-192.png', sizes: '192x192', type: 'image/png' }, { src: '/img/icon-512.png', sizes: '512x512', type: 'image/png' }] }));
 console.log(`site : ${walk(dist).filter((f) => f.endsWith('.html')).length} pages, ${entries.length} URL dans le sitemap`);
+
+// Un seul site sert la vitrine, /ads/ et /app/ : l'application web est copiée ici, dans la même commande
+// (with-app.mjs fait la même copie et reste utilisable). Sans elle, le déploiement est refusé par predeploy.mjs.
+if (HAS_APP) {
+  const appSrc = path.join(root, '..', 'build', 'web'), appOut = path.join(dist, 'app');
+  if (!fs.readFileSync(path.join(appSrc, 'index.html'), 'utf8').includes('<base href="/app/">')) {
+    console.error('build/web n\'a pas été compilé avec --base-href /app/ : application web NON copiée');
+    process.exitCode = 1;
+  } else {
+    fs.cpSync(appSrc, appOut, { recursive: true });
+    for (const f of ['app-ads.txt', 'app-ads-old.txt']) fs.rmSync(path.join(appOut, f), { force: true }); // n'ont de sens qu'à la racine du domaine
+    console.log('application web copiée dans dist/app/');
+  }
+} else {
+  console.log('ATTENTION : application web absente (build/web/main.dart.js). Le site est fabriqué SANS /app/ et sans lien vers elle : son déploiement sera refusé (predeploy.mjs).');
+}
