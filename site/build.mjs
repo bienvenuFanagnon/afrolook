@@ -55,13 +55,18 @@ const card = (id) => `/img/card-${id}.webp`;
 const cardMeta = (c, lang) => ({ id: c.id, name: c[lang][0], sub: c[lang][1] });
 
 function header(lang, key, alt) {
-  const t = T[lang], p = P[lang];
-  const links = [[p.earn, t.nav.earn, 'earn'], [p.cards, t.nav.cards, 'cards'], [p.music, t.nav.music, 'music'], [p.holidays, t.nav.holidays, 'holidays'], [lang === 'fr' ? '/ads/' : '/en/ads/', adsNav(lang), 'ads'], ['/ads/diffuseur/', lang === 'fr' ? 'Diffuseurs' : 'Publishers', 'adspub'], [p.contact, t.nav.contact, 'contact']];
-  const nav = links.map(([h, l, k]) => `<a href="${h}"${k === 'ads' ? ` class="adlink" data-badge="${adsBadge(lang)}"` : ''}${key === k ? ' aria-current="page"' : ''}>${l}</a>`).join('');
+  const t = T[lang], p = P[lang], fr = lang === 'fr';
+  const adsHome = fr ? '/ads/' : '/en/ads/';
+  // Menu de la refonte 2026 : Application, Studio, Gagner, Afrolook Ads (Musique, Fêtes, Cartes, Contact sont dans le pied de page).
+  // Sur les pages Afrolook Ads : le menu de la régie.
+  const links = key === 'ads'
+    ? [[p.home, 'Afrolook', 'home'], [`${adsHome}#diffuser`, fr ? 'Diffuser' : 'Run ads', 'd'], [`${adsHome}#lancer`, fr ? 'Lancer' : 'Launch', 'l'], [`${adsHome}#formats`, 'Formats', 'f'], [`${adsHome}#securite`, fr ? 'Sécurité' : 'Safety', 's'], ['/ads/diffuseur/', fr ? 'Diffuseurs' : 'Publishers', 'adspub']]
+    : [[`${p.home}#application`, fr ? 'Application' : 'App', 'app'], [`${p.home}#studio`, 'Studio', 'studio'], [p.earn, fr ? 'Gagner' : 'Earn', 'earn'], [adsHome, 'Afrolook Ads', 'ads']];
+  const nav = links.map(([h, l, k]) => `<a href="${h}"${key === k ? ' aria-current="page"' : ''}>${l}</a>`).join('');
   const other = lang === 'fr' ? 'en' : 'fr';
   // pages Afrolook Ads : rien qui renvoie vers l'application (ni « Version web » ni « Télécharger »)
-  const appBtns = key === 'ads' ? '' : `<a class="btn btn-line" href="${cfg.appWebUrl}" rel="noopener">${t.nav.web}</a><a class="btn btn-primary" href="${p.download}">${t.nav.download}</a>`;
-  const appLinks = key === 'ads' ? '' : `<a href="${cfg.appWebUrl}">${t.nav.web}</a><a href="${p.download}">${t.nav.download}</a>`;
+  const appBtns = key === 'ads' ? `<a class="btn btn-primary" href="/ads/espace/">${fr ? 'Annoncer' : 'Advertise'}</a>` : `<a class="btn btn-primary" href="${p.download}">${t.nav.download}</a>`;
+  const appLinks = key === 'ads' ? `<a href="/ads/espace/">${fr ? 'Annoncer' : 'Advertise'}</a>` : `<a href="${p.download}">${t.nav.download}</a>`;
   const sw = `<span class="lang-sw" aria-label="Langue"><${lang === 'fr' ? 'span aria-current="true"' : `a href="${alt.fr}" hreflang="fr" lang="fr"`}>FR</${lang === 'fr' ? 'span' : 'a'}><${lang === 'en' ? 'span aria-current="true"' : `a href="${alt.en}" hreflang="en" lang="en"`}>EN</${lang === 'en' ? 'span' : 'a'}></span>`;
   return `<a class="skip" href="#main">${t.nav.skip}</a>
 <header class="top"><div class="wrap in">
