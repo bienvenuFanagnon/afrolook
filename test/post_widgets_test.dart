@@ -96,4 +96,28 @@ void main() {
     expect((out!.kind, out!.question), (WidgetKind.poll, 'Ton plat préféré ?'));
     expect(out!.options, ['Riz', 'Attiéké']);
   });
+
+  testWidgets("question : le NOMBRE de réponses est visible par tout le monde (l'auteur, celui qui a répondu, celui qui n'a pas répondu) ; seul l'auteur peut lire les textes", (tester) async {
+    PostWidget mk({bool author = false, String? mine, int n = 5}) => PostWidget(id: "q1", kind: WidgetKind.question, config: {"question": "Et vous ?"}, myValue: mine, responsesCount: n, isAuthor: author);
+    // celui qui n'a pas répondu : le champ de réponse ET le nombre
+    await tester.pumpWidget(_app(PostWidgetView(widget: mk())));
+    expect(find.byKey(const ValueKey("widget_answers_count")), findsOneWidget);
+    expect(find.text("5 réponses"), findsOneWidget);
+    expect(find.byType(TextField), findsOneWidget);
+    expect(find.byKey(const ValueKey("widget_see_answers")), findsNothing);
+    // celui qui a répondu : « Envoyé ✓ » ET le nombre
+    await tester.pumpWidget(_app(PostWidgetView(widget: mk(mine: "Moi aussi"))));
+    expect(find.text("Envoyé ✓"), findsOneWidget);
+    expect(find.text("5 réponses"), findsOneWidget);
+    // une seule réponse : le singulier
+    await tester.pumpWidget(_app(PostWidgetView(widget: mk(n: 1))));
+    expect(find.text("1 réponse"), findsOneWidget);
+    // aucune réponse : pas de ligne « 0 réponse »
+    await tester.pumpWidget(_app(PostWidgetView(widget: mk(n: 0))));
+    expect(find.byKey(const ValueKey("widget_answers_count")), findsNothing);
+    // l'auteur : « Voir les réponses (5) » pour lire les textes
+    await tester.pumpWidget(_app(PostWidgetView(widget: mk(author: true))));
+    expect(find.byKey(const ValueKey("widget_see_answers")), findsOneWidget);
+    expect(find.textContaining("(5)"), findsOneWidget);
+  });
 }

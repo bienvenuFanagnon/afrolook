@@ -234,6 +234,11 @@ class _PostWidgetViewState extends State<PostWidgetView> {
         return _card([_title('🧠 ${c['question'] ?? ''}'), _choices(quiz: true)]);
       case WidgetKind.question:
         final answered = w.myValue != null;
+        // le NOMBRE de réponses est visible par tout le monde (l'auteur, celui qui a répondu, les autres) ; seul l'auteur lit les textes
+        final n = w.responsesCount;
+        final countText = !widget.preview && n > 0
+            ? Text(n == 1 ? context.tr('1 réponse') : context.tr('{n} réponses', {'n': n}), key: const ValueKey('widget_answers_count'), style: const TextStyle(color: _sub, fontSize: 11.5, fontWeight: FontWeight.w700, decoration: TextDecoration.none))
+            : null;
         return _card([
           _title('❓ ${c['question'] ?? ''}'),
           if (w.isAuthor && !widget.preview)
@@ -243,7 +248,10 @@ class _PostWidgetViewState extends State<PostWidgetView> {
               child: Text('${context.tr('Voir les réponses')} (${w.responsesCount})', style: const TextStyle(color: _green, fontWeight: FontWeight.w800, fontSize: 13, decoration: TextDecoration.none)),
             )
           else if (answered && !widget.preview)
-            Text('${context.tr('Envoyé')} ✓', style: const TextStyle(color: _green, fontWeight: FontWeight.w800, fontSize: 12.5, decoration: TextDecoration.none))
+            Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 8, children: [
+              Text('${context.tr('Envoyé')} ✓', style: const TextStyle(color: _green, fontWeight: FontWeight.w800, fontSize: 12.5, decoration: TextDecoration.none)),
+              if (countText != null) countText,
+            ])
           else
             Row(children: [
               Expanded(
@@ -256,6 +264,8 @@ class _PostWidgetViewState extends State<PostWidgetView> {
               const SizedBox(width: 6),
               GestureDetector(onTap: () => _answer.text.trim().isEmpty ? null : _respond(_answer.text.trim()), child: const CircleAvatar(radius: 16, backgroundColor: _green, child: Icon(Icons.send_rounded, color: Colors.white, size: 16))),
             ]),
+          // pas encore répondu : le nombre de réponses est visible sous le champ
+          if (countText != null && !w.isAuthor && !answered) Padding(padding: const EdgeInsets.only(top: 6), child: countText),
         ]);
       case WidgetKind.reaction:
         final emojis = [for (final e in (c['emojis'] as List? ?? const ['😍', '😂', '😮', '😢', '🔥', '👏'])) '$e'];
