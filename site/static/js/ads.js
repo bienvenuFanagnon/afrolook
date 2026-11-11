@@ -57,6 +57,9 @@ function friendly(e, fallback) {
   if (c === 'functions/unauthenticated' || /unauthenticated/i.test(m)) return 'Ta connexion a expiré. Recharge la page et reconnecte-toi avec Google.';
   if (c === 'functions/permission-denied') return 'Ce compte n’a pas le droit de faire cette action.';
   if (/trop_vite/.test(m)) return 'Tu vas trop vite : attends quelques secondes, puis réessaie.';
+  if (/profil afrolook introuvable|ouvrez d.abord l.application|profile_missing/i.test(m)) return 'Ce compte Google n’a pas encore de profil Afrolook. Ouvre d’abord l’application Afrolook une première fois avec ce compte Google, puis reviens ici.';
+  if (/compte n.est pas actif/i.test(m)) return 'Ce compte n’est pas actif (suppression demandée ou compte suspendu). Contacte-nous pour le réactiver.';
+  if (/reauth_required|reconnectez-vous/i.test(m)) return 'Pour cette action, reconnecte-toi avec Google (déconnexion puis connexion), puis réessaie.';
   if (/^envoi (refusé|échoué|non confirmé)/.test(m)) return 'L’envoi du fichier a échoué. Vérifie ta connexion et que le fichier est bien une image (PNG, JPG ou WebP), puis réessaie.';
   return fallback;
 }
@@ -811,7 +814,8 @@ async function initSpace() {
       tab('creer');
     } catch (e) {
       const m = String(e && e.message || '');
-      perr(e && e.code === 'functions/invalid-argument' ? (m.replace(/^.*?:\s*/, '') || 'Vérifie les champs.') : friendly(e, 'Impossible d\'enregistrer le profil pour le moment. Réessaie.'));
+      const known = friendly(e, '');
+      perr(e && e.code === 'functions/invalid-argument' ? (m.replace(/^.*?:\s*/, '') || 'Vérifie les champs.') : (known || 'Impossible d\'enregistrer le profil pour le moment. Réessaie.' + (m && m !== 'erreur' ? ` (détail : ${m.slice(0, 120)})` : '')));
     } finally { btn.disabled = false; btn.textContent = label; }
   });
 
