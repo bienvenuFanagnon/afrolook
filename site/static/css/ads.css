@@ -372,6 +372,15 @@ pre.doc-code code{background:none;padding:0;color:inherit;font:inherit;overflow-
 .adsnav .wrap{display:flex;gap:6px;align-items:center;overflow-x:auto;padding-block:10px;scrollbar-width:none}.adsnav .wrap::-webkit-scrollbar{display:none}
 .adsnav a{flex:none;display:inline-flex;gap:6px;align-items:center;padding:8px 14px;border-radius:99px;font-weight:700;font-size:14px;color:var(--muted);text-decoration:none;white-space:nowrap}
 .adsnav a:hover{background:var(--soft);color:var(--green)}.adsnav a[aria-current]{background:var(--green);color:#fff}
+/* détail complet d'une annonce (espace annonceur) */
+.addlg-h{margin:16px 0 4px;font:700 12.5px var(--body);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.addlg-dl{display:grid;grid-template-columns:auto 1fr;gap:7px 16px;margin:6px 0 0;font-size:14px}
+.addlg-dl dt{color:var(--muted)}
+.addlg-dl dd{margin:0;font-weight:600;text-align:right;overflow-wrap:anywhere}
+.addlg-7{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:6px}
+.addlg-7>div{background:var(--soft);border-radius:10px;padding:7px 3px;text-align:center;display:grid;gap:1px;min-width:0}
+.addlg-7 b{font-size:15px;font-variant-numeric:tabular-nums}
+.addlg-7 small{font-size:10.5px;color:var(--muted);white-space:nowrap}
 .adsnav .sp{flex:1;min-width:8px}.adsnav a.adm{border:1px dashed var(--line)}.adsnav a.adm[aria-current]{border-style:solid}
 
 /* bandeau d'état du profil (annonceur et diffuseur) */

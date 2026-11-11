@@ -157,6 +157,41 @@ function slider(imgs) {
 }
 
 /** Ouvre le détail d'une annonce : média, texte, aperçu du lien, bouton d'action, statistiques. opt.mine : actions de l'annonceur (renouveler, arrêter, supprimer, avec confirmation). */
+/** Tout le détail d'une annonce de l'annonceur (fenêtre ouverte au clic) : type, catégorie, ciblage, offre, budgets, dates, performance et les 7 derniers jours. */
+const AD_TYPE = { product: 'Produit', site: 'Boutique ou site', app: 'Application', whatsapp: 'WhatsApp', call: 'Appel', social: 'Page de réseau social', event: 'Événement' };
+const chipText = (sel, v) => { try { const el = document.querySelector(`${sel} [data-v="${CSS.escape(v)}"]`); return el ? el.textContent.trim() : v; } catch { return v; } };
+const catText = (k) => { try { const o = k ? document.querySelector(`#f-cat option[value="${CSS.escape(k)}"]`) : null; return o ? o.textContent.trim() : (k || '—'); } catch { return k || '—'; } };
+const dayText = (ms) => (ms ? new Date(ms).toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '');
+function detailBlock(a, href) {
+  const D = a.details; if (!D) return null;
+  const list = (arr, fn, all) => (arr && arr.length ? arr.map(fn).join(', ') : all);
+  const countries = (a.countries || []).includes('ALL') ? 'Tous les pays' : list(a.countries, countryName, 'Tous les pays');
+  const offer = (D.offer === 'paid' ? 'Payante' : 'Gratuite') + (a.network ? ' · diffusée chez nos partenaires' : a.networkRequested ? ' · partenaires demandés (en validation)' : '');
+  const rows = [
+    ['Type d’annonce', AD_TYPE[a.type] || a.type || '—'], ['Bouton', a.action || '—'], ['Catégorie', catText(D.category)],
+    ['Destination', href ? new URL(href).hostname.replace(/^www\./, '') : (a.url || '—')],
+    a.price ? ['Prix indiqué', `${n(a.price)} F`] : null,
+    ['Pays visés', countries], ['Langues', list(D.languages, (v) => chipText('#f-langs', v), 'Toutes')], ['Appareils', list(D.devices, (v) => chipText('#f-devs', v), 'Tous')],
+    ['Types de sites et d’applications', list(D.siteTypes, (v) => chipText('#f-types', v), 'Tous')],
+    ['Offre', offer],
+    a.budgetApp ? ['Diffusion dans Afrolook', `${n(a.spentApp)} / ${n(a.budgetApp)} F dépensés`] : null,
+    a.budgetNet ? ['Diffusion chez les partenaires', `${n(a.spentNet)} / ${n(a.budgetNet)} F dépensés`] : null,
+    a.refunded ? ['Rendu sur ton solde', `${n(a.refunded)} F`] : null,
+    a.shareId ? ['Partage au clic', 'campagne reliée à cette annonce'] : null,
+    ['Créée le', dayText(a.createdAt) || '—'], D.startsAt ? ['En ligne depuis le', dayText(D.startsAt)] : null, D.endsAt ? ['Fin prévue le', dayText(D.endsAt)] : null,
+    a.renewals ? ['Renouvellements', String(a.renewals)] : null,
+    ['Vues', n(a.views)], ['Clics', n(a.clicks)], D.ctr != null ? ['Taux de clic', `${String(D.ctr).replace('.', ',')} %`] : null,
+  ].filter(Boolean);
+  const days = Array.isArray(D.daily) ? D.daily : [];
+  const dm = (iso) => new Date(iso + 'T12:00:00Z').toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { weekday: 'short', day: 'numeric', timeZone: 'UTC' });
+  return h('div', { class: 'addlg-more' },
+    D.text && D.text.length > (a.text || '').length ? h('p', { class: 'addlg-text', text: D.text }) : null,
+    h('p', { class: 'addlg-h', text: 'Détails de l’annonce' }),
+    h('dl', { class: 'addlg-dl' }, ...rows.flatMap(([k, v]) => [h('dt', { text: k }), h('dd', { text: v })])),
+    days.length ? h('p', { class: 'addlg-h', text: '7 derniers jours' }) : null,
+    days.length ? h('div', { class: 'addlg-7', role: 'table', 'aria-label': 'Vues et clics des 7 derniers jours' }, ...days.map((d) => h('div', { role: 'row', title: `${dm(d.day)} : ${n(d.views)} vues, ${n(d.clicks)} clics` }, h('small', { text: dm(d.day) }), h('b', { text: n(d.views) }), h('small', { text: `${n(d.clicks)} clic${d.clicks > 1 ? 's' : ''}` })))) : null);
+}
+
 function openDetail(a, opt = {}) {
   if (!dlg) return;
   const body = $('#addetail-body'); body.replaceChildren();
@@ -175,6 +210,7 @@ function openDetail(a, opt = {}) {
       h('span', {}, h('small', { text: pv.site || new URL(href).hostname.replace(/^www\./, '') }), h('b', { text: pv.title || '' }), pv.description ? h('em', { text: pv.description }) : null)) : null,
     h('p', { class: 'addlg-stats', text: [a.status === 'validation' ? '' : (opt.mine ? `${n(a.views)} vues · ${n(a.clicks)} clics` : `${n(a.views)} vues`), days ? `${days} jour${days > 1 ? 's' : ''} restant${days > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ') || 'En attente de validation' }),
     a.reason ? h('p', { class: 'aderr', text: `Motif : ${a.reason}` }) : null,
+    opt.mine ? detailBlock(a, href) : null,
     a.action && href ? h('a', { class: 'btn btn-primary adbig', href, target: '_blank', rel: 'nofollow sponsored noopener', text: a.action, onclick: () => opt.onVisit && opt.onVisit() }) : null);
   body.append(info);
   if (opt.mine) {

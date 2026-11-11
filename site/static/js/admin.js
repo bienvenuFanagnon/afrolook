@@ -520,7 +520,14 @@ async function pbLoad() {
     pbKpis(stats.data); pbRows(rows);
   } catch (e) {
     if (my !== pbSeq || !$('#pb-list')) return;
-    $('#pb-list').innerHTML = `<div class="adm-card"><p class="adm-err">${esc(e.message || 'Chargement impossible.')}</p>${e.code === 'denied' ? '' : '<button class="adm-btn" data-retry type="button">Réessayer</button>'}</div>`;
+    let msg = e.message || 'Chargement impossible.', retry = e.code !== 'denied';
+    if (e.code === 'denied') {
+      // le serveur répond « introuvable » aussi bien à un compte sans droit qu'à une route pas encore en ligne : si la vue d'ensemble s'ouvre avec le même droit,
+      // c'est la mise à jour du serveur qui manque, pas le compte
+      try { await apiGet('overview?period=7'); msg = 'Cette partie du tableau de bord n’est pas encore disponible sur le serveur : la mise à jour de l’API doit être déployée. Ton compte a bien le droit.'; retry = true; } catch { /* vraiment sans droit */ }
+      if (my !== pbSeq || !$('#pb-list')) return;
+    }
+    $('#pb-list').innerHTML = `<div class="adm-card"><p class="adm-err">${esc(msg)}</p>${retry ? '<button class="adm-btn" data-retry type="button">Réessayer</button>' : ''}</div>`;
   } finally { const l = $('#pb-list'); if (l) l.removeAttribute('aria-busy'); }
 }
 
