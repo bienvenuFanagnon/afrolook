@@ -39,6 +39,7 @@ class MusicApi {
       genre: m['genre'] as String?,
       description: m['description'] as String?,
       previewUrl: url(m['preview_url'] as String?),
+      hasOriginal: m['has_original'] != false,   // champ absent (ancien serveur) : utilisable comme avant
       pricing: (use > 0 || sale > 0) ? 'paid' : 'free',
       coverImageUrl: url(m['cover_url'] as String?),
       durationMs: (m['duration_ms'] as num?)?.toInt() ?? 0,

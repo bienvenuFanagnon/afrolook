@@ -58,6 +58,8 @@ class ArtistSound {
   final String? description;
   final String? audioPath;
   final String? previewUrl;
+  /// Faux : le titre s'écoute (extrait public) mais ne peut pas encore servir dans un montage, son fichier original n'ayant pas été migré (« bientôt disponible »).
+  final bool hasOriginal;
   final String pricing; // 'free' | 'paid'
   final String? coverImageUrl;
   final int durationMs;
@@ -92,6 +94,7 @@ class ArtistSound {
     this.description,
     this.audioPath,
     this.previewUrl,
+    this.hasOriginal = true,
     this.pricing = 'paid',
     this.coverImageUrl,
     required this.durationMs,

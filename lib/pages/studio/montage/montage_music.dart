@@ -67,6 +67,7 @@ class MontageMusic {
         artistId = null,
         useCoins = 0,
         paid = false,
+        usable = true,
         durationMs = t.durationMs,
         coverUrl = null;
 
@@ -79,6 +80,7 @@ class MontageMusic {
         artistId = s.userId,
         useCoins = s.unitPrice,
         paid = !s.isFree,
+        usable = s.hasOriginal,
         durationMs = s.previewSec * 1000,
         coverUrl = s.coverImageUrl;
 
@@ -95,6 +97,9 @@ class MontageMusic {
 
   /// Son d'artiste payant (la personne paie, l'artiste gagne).
   final bool paid;
+
+  /// Faux : le titre s'écoute mais ne peut pas encore servir dans un montage (son original pas encore migré) : « bientôt disponible », jamais choisi puis refusé par le serveur.
+  final bool usable;
 
   /// Prix d'utilisation dans le Studio (pièces) et part de l'artiste (60 %).
   final int useCoins;
@@ -464,8 +469,16 @@ class _MusicSheetState extends State<_MusicSheet> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 8),
         leading: leading,
         title: Text(m.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700, fontSize: 14)),
-        subtitle: Text(m.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: _c.textSecondary, fontSize: 11.5)),
+        subtitle: Text(m.usable ? m.subtitle : '${m.subtitle} · bientôt disponible', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: _c.textSecondary, fontSize: 11.5)),
         trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+          if (!m.usable)
+            Container(
+              key: const ValueKey('music_soon'),
+              margin: const EdgeInsets.only(right: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(color: _c.textSecondary.withValues(alpha: .18), borderRadius: BorderRadius.circular(99)),
+              child: Text('Bientôt', style: TextStyle(color: _c.textSecondary, fontSize: 11.5, fontWeight: FontWeight.w700)),
+            ),
           if (trailing != null) trailing,
           if (onReport != null)
             IconButton(tooltip: 'Signaler ce son', visualDensity: VisualDensity.compact, onPressed: onReport, icon: Icon(Icons.flag_outlined, size: 19, color: _c.textSecondary)),
@@ -476,7 +489,14 @@ class _MusicSheetState extends State<_MusicSheet> {
                 : Icon(_playing == key ? Icons.pause_circle_filled_rounded : Icons.play_circle_fill_rounded, color: _c.primary, size: 30),
           ),
         ]),
-        onTap: () => Navigator.pop(context, MusicPick(m, keepVideoAudio: _keepAudio)),
+        onTap: () {
+          if (!m.usable) {
+            // écoutable, mais pas encore utilisable dans un montage : on le dit tout de suite, au lieu d'un échec du serveur après l'attente
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Ce titre sera bientôt disponible pour les montages. Tu peux déjà l\u2019écouter ; choisis un autre titre ou une musique gratuite.')));
+            return;
+          }
+          Navigator.pop(context, MusicPick(m, keepVideoAudio: _keepAudio));
+        },
       ),
     );
   }
