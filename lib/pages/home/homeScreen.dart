@@ -145,7 +145,7 @@ import '../defi/defi_discover_page.dart';
 import '../../services/viral_service.dart';
 import '../../widgets/viral_widgets.dart';
 import '../viral/viral_page.dart';
-import '../recent/recent_posts_page.dart';
+import '../recent/recent_posts_view.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/theme_provider.dart';
@@ -1072,12 +1072,7 @@ class _MyHomePageState extends State<MyHomePage>
     _tabController!.addListener(() {
       if (_tabController!.indexIsChanging) return;
 
-      // index 1 → 🕒 Récents : tout ce qui vient d'être publié, toutes catégories (push + retour à 0)
-      if (_tabController!.index == 1) {
-        Navigator.push(context, MaterialPageRoute(builder: (context) => const RecentPostsPage())).then((_) {
-          _tabController!.animateTo(0);
-        });
-      }
+      // index 1 → 🕒 Récents : un VRAI onglet de cet écran (RecentPostsView), il ne s'ouvre pas dans une autre page
       // index 2 → 🔥 Viral (push + retour à 0 ; le « +N » est relu au retour)
       if (_tabController!.index == 2) {
         Navigator.push(context, MaterialPageRoute(builder: (context) => const ViralPage())).then((_) {
@@ -2189,7 +2184,7 @@ class _MyHomePageState extends State<MyHomePage>
   /// Enfants du TabBarView — partagés par le layout mobile et wide.
   List<Widget> get _tabViewChildren => [
     LooksPage(type: TabBarType.LOOKS.name, feedKey: _looksRecentKey),
-    const SizedBox.shrink(), // Récents → push page dédiée
+    const RecentPostsView(), // Récents : s'affiche dans l'onglet, sur cet écran
     const SizedBox.shrink(), // Viral → push page dédiée
     const SizedBox.shrink(), // Sport → push page dédiée
     HomeConstPostTypePage(key: _discoverKey, type: TabBarType.EVENEMENT.name, sortType: 'recent'),

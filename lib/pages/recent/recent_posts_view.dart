@@ -9,16 +9,17 @@ import '../../theme/app_colors.dart';
 import '../../widgets/feed/sections/feed_ad_widgets.dart';
 import '../userPosts/postWidgets/postWidgetPage.dart';
 
-/// Page « 🕒 Récents » : tout ce qui vient d'être publié, toutes catégories confondues, du plus récent au plus ancien (30 jours). Même liste de cartes que « Pour toi ».
-/// Un post qui reste à l'écran est compté comme vu.
-class RecentPostsPage extends StatefulWidget {
-  const RecentPostsPage({super.key});
+/// Onglet « 🕒 Récents » de l'écran d'accueil : tout ce qui vient d'être publié, toutes catégories confondues, du plus récent au plus ancien (30 jours).
+/// C'est un onglet de l'écran d'accueil (la barre d'onglets reste là) : il ne s'ouvre pas dans une autre page. Même carte de post que « Pour toi ».
+/// Un post qui reste à l'écran est compté comme vu. L'ORDRE est décidé par l'API (jamais plus de 2 posts de suite de la même personne) : l'application l'affiche tel quel.
+class RecentPostsView extends StatefulWidget {
+  const RecentPostsView({super.key});
 
   @override
-  State<RecentPostsPage> createState() => _RecentPostsPageState();
+  State<RecentPostsView> createState() => _RecentPostsViewState();
 }
 
-class _RecentPostsPageState extends State<RecentPostsPage> {
+class _RecentPostsViewState extends State<RecentPostsView> with AutomaticKeepAliveClientMixin {
   final _scroll = ScrollController();
   final _posts = <Post>[];
   String? _next;
@@ -28,6 +29,9 @@ class _RecentPostsPageState extends State<RecentPostsPage> {
   int _token = 0;
 
   static const _adEvery = 6;
+
+  @override
+  bool get wantKeepAlive => true;   // changer d'onglet ne vide pas la liste
 
   @override
   void initState() {
@@ -74,21 +78,9 @@ class _RecentPostsPageState extends State<RecentPostsPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final colors = AppColors.of(context);
     final size = MediaQuery.of(context).size;
-    return Scaffold(
-      backgroundColor: colors.background,
-      appBar: AppBar(
-        backgroundColor: colors.surface,
-        elevation: 0,
-        leading: IconButton(icon: Icon(Icons.arrow_back_ios_new, size: 18, color: colors.textPrimary), onPressed: () => Navigator.pop(context)),
-        title: Text(context.tr('🕒 Récents'), style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: colors.textPrimary)),
-      ),
-      body: _body(colors, size),
-    );
-  }
-
-  Widget _body(AppColors colors, Size size) {
     if (_posts.isEmpty && _loading) return const Center(child: CircularProgressIndicator());
     if (_posts.isEmpty && _failed) {
       return Center(
