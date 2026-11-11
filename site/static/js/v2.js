@@ -293,6 +293,10 @@ addEventListener('scroll',onScroll,{passive:true});onScroll();
   const bar=document.getElementById('v-stick');if(!bar||!('IntersectionObserver' in window))return;
   const hero=document.querySelector('.v-hero .v-cta'),until=document.getElementById(bar.dataset.until),foot=document.querySelector('footer');
   let past=false,atEnd=false,atFoot=false;
+  let off=false;try{off=sessionStorage.getItem('v_dock_off')==='1';}catch(e){}
+  if(off)bar.classList.add('v-off');
+  const x=document.getElementById('v-dock-x');
+  if(x)x.addEventListener('click',()=>{bar.classList.add('v-off');try{sessionStorage.setItem('v_dock_off','1');}catch(e){}});   // fermée : elle ne revient pas pendant la visite
   const upd=()=>bar.classList.toggle('v-show',past&&!atEnd&&!atFoot);
   if(hero)new IntersectionObserver(es=>{past=!es[0].isIntersecting&&es[0].boundingClientRect.top<0;upd();}).observe(hero);
   if(until)new IntersectionObserver(es=>{atEnd=es[0].isIntersecting;upd();}).observe(until);

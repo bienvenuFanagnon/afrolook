@@ -126,7 +126,7 @@ const periodSeg = () => seg('period', [['7', '7 jours'], ['30', '30 jours'], ['9
 const lock = '<span class="adm-lock">🔒 Consultation seule</span>';
 
 /* ——— État et navigation ——— */
-const TABS = [['over', 'Vue d’ensemble', 'vue'], ['users', 'Utilisateurs', 'utilisateurs'], ['act', 'Activité', 'activite'], ['money', 'Argent', 'argent'], ['work', 'Travail', 'travail'], ['learn', 'Quiz et Étude', 'apprentissage'], ['rew', 'Récompenses', 'recompenses'], ['adv', 'Annonceurs', 'annonceurs'], ['pub', 'Diffuseurs', 'diffuseurs']];
+const TABS = [['over', 'Vue d’ensemble', 'vue'], ['users', 'Utilisateurs', 'utilisateurs'], ['act', 'Activité', 'activite'], ['posts', 'Publications', 'publications'], ['money', 'Argent', 'argent'], ['work', 'Travail', 'travail'], ['learn', 'Quiz et Étude', 'apprentissage'], ['rew', 'Récompenses', 'recompenses'], ['adv', 'Annonceurs', 'annonceurs'], ['pub', 'Diffuseurs', 'diffuseurs']];
 const st = { tab: 'over', detail: null, period: '30', topBy: 'views', topWin: '30', advBy: 'views', pubBy: 'shows', evoP: '90', evo: 'views', wdays: '7', cache: {} };
 const main = () => $('#adm-main');
 let started = false;
@@ -151,7 +151,7 @@ async function render() {
   try {
     let html;
     if (st.detail) html = await { u: userPage, a: advPage, d: pubPage }[st.detail.k](st.detail.id);
-    else html = await { over: overPage, users: usersPage, act: actPage, money: moneyPage, work: workPage, learn: learnPage, rew: rewPage, adv: advListPage, pub: pubListPage }[st.tab]();
+    else html = await { over: overPage, users: usersPage, act: actPage, posts: postsPage, money: moneyPage, work: workPage, learn: learnPage, rew: rewPage, adv: advListPage, pub: pubListPage }[st.tab]();
     if (my === token) main().innerHTML = html;
   } catch (e) {
     if (my !== token) return;
@@ -405,6 +405,268 @@ async function rewPage() {
 }
 
 /* ——— Événements ——— */
+/* ——— Publications : liste filtrée en pages, chiffres, détail, personnes (commentaires, j'aime, partages, vues) et décisions ———
+   Toutes les heures sont en UTC (heure de Lomé). Les décisions reprennent les points de modération existants (droit « modération ») ; l'argent demande le droit « finance » ; les personnes, le droit « fiches ». */
+const PB_KIND = { video: 'Vidéo', image: 'Image', audio: 'Audio', text: 'Texte', link: 'Lien' };
+const PB_CAT = { LOOKS: 'Looks', ACTUALITES: 'Actualités', SPORT: 'Sport', EVENEMENT: 'Événement', OFFRES: 'Offres', GAMER: 'Games story', DEFI: 'Défi' };
+const PB_STATE = { valid: ['Publié', 'ok'], reported: ['Signalé', 'bad'], hidden: ['Retiré', ''] };
+const PB_WAVE = { testing: ['En test', 'info'], promising: ['Prometteuse', 'wait'], viral: ['Viral', 'ok'], stopped: ['Arrêtée', ''] };
+const PB_AUTH = { ok: 'Contrôlée', review: 'À vérifier', flagged: 'Douteuse' };
+const PB_SRC = { captured: 'Filmé ou enregistré avec Afrolook', edited: 'Retouché dans le Studio', imported: 'Galerie' };
+const PB_REPORT = { standard: 'Signalement', wrong_category: 'Mauvaise catégorie' };
+const PB_IC = {
+  eye: '<svg viewBox="0 0 24 24"><path d="M12 5C7 5 2.7 8.1 1 12c1.7 3.9 6 7 11 7s9.3-3.1 11-7c-1.7-3.9-6-7-11-7zm0 11.5A4.5 4.5 0 1112 7.5a4.5 4.5 0 010 9zm0-7A2.5 2.5 0 1012 14.5 2.5 2.5 0 0012 9.5z"/></svg>',
+  heart: '<svg viewBox="0 0 24 24"><path d="M12 21s-7.5-4.6-9.6-9.2C.8 8.2 3 4.5 6.6 4.5c2 0 3.8 1.1 5.4 3 1.6-1.9 3.4-3 5.4-3 3.6 0 5.8 3.7 4.2 7.3C19.5 16.4 12 21 12 21z"/></svg>',
+  chat: '<svg viewBox="0 0 24 24"><path d="M4 4h16a2 2 0 012 2v10a2 2 0 01-2 2H9l-5 4V6a2 2 0 012-2z"/></svg>',
+  share: '<svg viewBox="0 0 24 24"><path d="M18 16a3 3 0 00-2.4 1.2L8.9 13.7a3 3 0 000-3.4l6.7-3.5A3 3 0 1015 5a3 3 0 00.1.7L8.4 9.2a3 3 0 100 5.6l6.7 3.5A3 3 0 1018 16z"/></svg>',
+  play: '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>',
+  mic: '<svg viewBox="0 0 24 24"><path d="M12 14a3 3 0 003-3V5a3 3 0 00-6 0v6a3 3 0 003 3zm5-3a5 5 0 01-10 0H5a7 7 0 006 6.9V21h2v-3.1A7 7 0 0019 11z"/></svg>',
+  img: '<svg viewBox="0 0 24 24"><path d="M21 19V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2zM8.5 13.5l2.5 3 3.5-4.5 4.5 6H5z"/></svg>',
+  link: '<svg viewBox="0 0 24 24"><path d="M3.9 12a3.1 3.1 0 013.1-3.1h4V7H7a5 5 0 000 10h4v-1.9H7A3.1 3.1 0 013.9 12zM8 13h8v-2H8zm9-6h-4v1.9h4a3.1 3.1 0 010 6.2h-4V17h4a5 5 0 000-10z"/></svg>',
+  txt: '<svg viewBox="0 0 24 24"><path d="M5 4v3h5.5v12h3V7H19V4z"/></svg>',
+};
+const pbp = (n) => String(n).padStart(2, '0');
+const pbUtc = (iso) => { if (!iso) return '—'; const d = new Date(iso); return isNaN(d) ? '—' : `${pbp(d.getUTCDate())}/${pbp(d.getUTCMonth() + 1)} ${pbp(d.getUTCHours())}:${pbp(d.getUTCMinutes())}`; };
+const pbUrl = (u) => (u && /^https:\/\//.test(u) ? u : '');
+const pbDur = (s) => (s == null ? '' : `${Math.floor(s / 60)}:${pbp(s % 60)}`);
+const pbCat = (c) => PB_CAT[c] || c || '—';
+const pbCc = (a) => (a || []).map((c) => (c === 'ALL' ? 'Monde' : c)).join(' ');
+st.px = { range: '0', custom: false, d1: '', t1: '00:00', d2: '', t2: '23:59', author: '', media: '', category: '', status: '', source: '', wave: '', auth: '', sort: 'new', q: '', page: 1, per: 20 };
+let pbCan = { moderate: false, people: false, money: false };
+let pbSeq = 0;
+let pbTimer = null;
+
+const pbSpan = () => { const p = st.px, q = new URLSearchParams(); if (p.custom && (p.d1 || p.d2)) { if (p.d1) q.set('from', `${p.d1}T${p.t1 || '00:00'}`); if (p.d2) q.set('to', `${p.d2}T${p.t2 || '23:59'}`); } else q.set('range', p.range); return q; };
+const pbQuery = () => { const p = st.px, q = pbSpan(); ['author', 'media', 'category', 'status', 'source', 'wave', 'auth', 'q', 'sort'].forEach((k) => { if (p[k]) q.set(k, p[k]); }); q.set('page', p.page); q.set('per_page', p.per); return q.toString(); };
+
+async function apiSend(method, path, body) {
+  let r;
+  try { r = await fetch(`${API_ADMIN}/${path}`, { method, headers: { Accept: 'application/json', 'Content-Type': 'application/json', Authorization: 'Bearer ' + (await auth.currentUser.getIdToken()) }, body: JSON.stringify(body || {}) }); }
+  catch { throw Object.assign(new Error('Impossible de joindre le serveur. Vérifie ta connexion puis réessaie.'), { code: 'network' }); }
+  const j = await r.json().catch(() => ({}));
+  if (r.ok) return j;
+  if (r.status === 404 || r.status === 401 || r.status === 403) throw Object.assign(new Error('Ton compte n’a pas le droit de prendre cette décision.'), { code: 'denied' });
+  throw Object.assign(new Error((j && (j.message || (j.error && j.error.message))) || 'Le serveur a répondu avec une erreur. Réessaie dans un instant.'), { code: 'server' });
+}
+
+async function postsPage() {
+  setTimeout(pbInit, 0);
+  return `<div class="adm-page">${head('Publications', 'Tout ce que les gens publient, avec la diffusion et ce qu’il faut pour modérer. Heures de Lomé (UTC).')}
+  <div class="pb-kpis" id="pb-k1" role="group" aria-label="Période : un clic choisit la période"></div>
+  <div class="pb-kpis k2" id="pb-k2" role="group" aria-label="Ce qui demande une décision : un clic filtre la liste"></div>
+  <div class="adm-card pb-filters" id="pb-f"></div>
+  <div id="pb-creator"></div>
+  <div class="pb-res" id="pb-res"></div>
+  <div class="pb-list" id="pb-list" aria-live="polite"><p class="adm-empty">Chargement…</p></div>
+  <nav class="pb-pager" id="pb-pager" aria-label="Pages"></nav></div>
+  <div class="pb-shade" id="pb-shade" hidden></div><aside class="pb-drawer" id="pb-drawer" hidden aria-label="Détails de la publication"></aside>`;
+}
+
+function pbFilters() {
+  const p = st.px, o = (v, l, cur) => `<option value="${esc(v)}"${cur === v ? ' selected' : ''}>${esc(l)}</option>`;
+  const sel = (id, label, cur, opts) => `<div class="pb-fld"><label for="${id}">${esc(label)}</label><select id="${id}">${opts.map(([v, l]) => o(v, l, cur)).join('')}</select></div>`;
+  $('#pb-f').innerHTML = `<div class="pb-grid">
+    <div class="pb-fld wide"><label for="pb-author">Créateur (pseudo, e-mail ou numéro)</label><input id="pb-author" type="search" value="${esc(p.author)}" placeholder="ex. fatou_abj" autocomplete="off"></div>
+    ${sel('pb-media', 'Média', p.media, [['', 'Tous'], ...Object.entries(PB_KIND)])}
+    ${sel('pb-category', 'Type de publication', p.category, [['', 'Tous'], ...Object.entries(PB_CAT)])}
+    ${sel('pb-auth', 'Authenticité', p.auth, [['', 'Toutes'], ['ok', 'Contrôlée'], ['review', 'À vérifier'], ['flagged', 'Douteuse']])}
+    ${sel('pb-status', 'Statut', p.status, [['', 'Tous'], ['valid', 'Publié'], ['reported', 'Signalé'], ['hidden', 'Retiré']])}
+    ${sel('pb-source', 'Origine du média', p.source, [['', 'Toutes'], ['captured', 'Filmé ou enregistré'], ['edited', 'Retouché dans le Studio'], ['imported', 'Galerie'], ['none', 'Sans origine']])}
+    ${sel('pb-wave', 'Diffusion', p.wave, [['', 'Toutes'], ['testing', 'En test'], ['promising', 'Prometteuse'], ['viral', 'Viral'], ['none', 'Aucune vague']])}
+    ${sel('pb-sort', 'Trier par', p.sort, [['new', 'Plus récentes'], ['views', 'Plus vues'], ['rep', 'Plus signalées'], ['gain', 'Plus de vues payantes']])}
+  </div>
+  <div class="pb-range"${p.custom ? '' : ' hidden'} id="pb-range">
+    <div class="pb-fld"><label for="pb-d1">Du</label><input id="pb-d1" type="date" value="${esc(p.d1)}"></div><div class="pb-fld"><label for="pb-t1">à</label><input id="pb-t1" type="time" value="${esc(p.t1)}"></div>
+    <div class="pb-fld"><label for="pb-d2">Au</label><input id="pb-d2" type="date" value="${esc(p.d2)}"></div><div class="pb-fld"><label for="pb-t2">à</label><input id="pb-t2" type="time" value="${esc(p.t2)}"></div></div>
+  <div class="pb-fbar"><span class="adm-note" style="border:0;background:none;padding:0">Recherche aussi par identifiant ou par mot de la description.</span>
+    <span class="pb-fbtns"><button class="adm-btn" id="pb-custom" type="button" aria-expanded="${p.custom}">Dates et heures…</button><input id="pb-q" type="search" class="pb-q" value="${esc(p.q)}" placeholder="Mot ou identifiant" aria-label="Mot ou identifiant"><button class="adm-btn" id="pb-reset" type="button">Réinitialiser</button></span></div>`;
+}
+
+/** Branche les champs du formulaire de filtres (reconstruit à chaque remise à zéro). */
+function pbBindFields() {
+  const p = st.px, reload = () => { p.page = 1; pbLoad(); };
+  [['pb-media', 'media'], ['pb-category', 'category'], ['pb-auth', 'auth'], ['pb-status', 'status'], ['pb-source', 'source'], ['pb-wave', 'wave'], ['pb-sort', 'sort']].forEach(([id, key]) => { const el = $('#' + id); el.addEventListener('change', () => { p[key] = el.value; reload(); }); });
+  [['pb-author', 'author'], ['pb-q', 'q']].forEach(([id, key]) => { const el = $('#' + id); el.addEventListener('input', () => { clearTimeout(pbTimer); pbTimer = setTimeout(() => { p[key] = el.value.trim(); reload(); }, 350); }); });
+  [['pb-d1', 'd1'], ['pb-t1', 't1'], ['pb-d2', 'd2'], ['pb-t2', 't2']].forEach(([id, key]) => { $('#' + id).addEventListener('change', () => { p[key] = $('#' + id).value; if (p.d1 || p.d2) { p.custom = true; reload(); } }); });
+  $('#pb-custom').addEventListener('click', () => { p.custom = !p.custom; $('#pb-range').hidden = !p.custom; $('#pb-custom').setAttribute('aria-expanded', String(p.custom)); if (!p.custom || p.d1 || p.d2) reload(); });
+  $('#pb-reset').addEventListener('click', () => { Object.assign(p, { range: '0', custom: false, d1: '', t1: '00:00', d2: '', t2: '23:59', author: '', media: '', category: '', status: '', source: '', wave: '', auth: '', sort: 'new', q: '', page: 1 }); pbFilters(); pbBindFields(); pbLoad(); });
+}
+
+function pbInit() {
+  if (!$('#pb-f')) return;
+  const p = st.px, reload = () => { p.page = 1; pbLoad(); };
+  pbFilters(); pbBindFields();
+  $('#pb-k1').addEventListener('click', (e) => { const b = e.target.closest('[data-pb-range]'); if (!b) return; p.range = b.dataset.pbRange; p.custom = false; $('#pb-range').hidden = true; $('#pb-custom').setAttribute('aria-expanded', 'false'); reload(); });
+  $('#pb-k2').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-pb-f]'); if (!b) return; const f = b.dataset.pbF, on = b.getAttribute('aria-pressed') === 'true';
+    if (f === 'sig') p.status = on ? '' : 'reported'; else if (f === 'ret') p.status = on ? '' : 'hidden'; else if (f === 'ver') p.auth = on ? '' : 'review'; else if (f === 'vir') p.wave = on ? '' : 'viral'; else if (f === 'own') p.source = on ? '' : 'captured';
+    pbFilters(); pbBindFields(); reload();
+  });
+  $('#pb-list').addEventListener('click', pbListClick);
+  $('#pb-creator').addEventListener('click', (e) => { if (e.target.closest('[data-pb-clear]')) { p.author = ''; pbFilters(); pbBindFields(); reload(); } });
+  $('#pb-pager').addEventListener('click', (e) => { const b = e.target.closest('[data-pb-page]'); if (!b || b.disabled) return; p.page = Number(b.dataset.pbPage); pbLoad(); $('#pb-res').scrollIntoView({ block: 'start' }); });
+  $('#pb-shade').addEventListener('click', pbClose);
+  pbLoad();
+}
+
+async function pbLoad() {
+  const my = ++pbSeq, p = st.px;
+  const list = $('#pb-list'); if (!list) return;
+  list.setAttribute('aria-busy', 'true');
+  try {
+    const [stats, rows] = await Promise.all([apiGet(`posts/stats?${pbSpan().toString()}`), apiGet(`posts?${pbQuery()}`)]);
+    if (my !== pbSeq || !$('#pb-list')) return;
+    pbCan = stats.data.can || pbCan;
+    pbKpis(stats.data); pbRows(rows);
+  } catch (e) {
+    if (my !== pbSeq || !$('#pb-list')) return;
+    $('#pb-list').innerHTML = `<div class="adm-card"><p class="adm-err">${esc(e.message || 'Chargement impossible.')}</p>${e.code === 'denied' ? '' : '<button class="adm-btn" data-retry type="button">Réessayer</button>'}</div>`;
+  } finally { const l = $('#pb-list'); if (l) l.removeAttribute('aria-busy'); }
+}
+
+function pbKpis(s) {
+  const p = st.px, w = s.windows, pr = s.period;
+  const period = [['0', 'Aujourd’hui', w.today, 'publications'], ['1', 'Hier', w.yesterday, 'publications'], ['3', '3 jours', w.d3, 'aujourd’hui compris'], ['7', '7 jours', w.d7, 'publications'], ['30', '30 jours', w.d30, 'publications']];
+  $('#pb-k1').innerHTML = period.map(([k, l, n, sub]) => `<button class="pb-kpi" type="button" data-pb-range="${k}" aria-pressed="${!p.custom && p.range === k}"><small>${esc(l)}</small><b>${fmt(n)}</b><span>${esc(sub)}</span></button>`).join('');
+  const k2 = [['sig', 'Signalées', fmt(pr.reported_posts), `${fmt(pr.reports)} signalement${pr.reports > 1 ? 's' : ''} à traiter`, p.status === 'reported', 'bad'], ['ret', 'Retirées', fmt(pr.hidden), 'par la modération', p.status === 'hidden', ''], ['ver', 'À vérifier', fmt(pr.to_check), 'authenticité', p.auth === 'review', 'warn'],
+    ['vir', 'Virales', fmt(pr.viral), 'vague 5 atteinte', p.wave === 'viral', 'good'], ['own', 'Fait sur Afrolook', `${fmt(pr.made_on_afrolook_pct)} %`, `${fmt(pr.made_on_afrolook)} sur ${fmt(pr.total)}`, p.source === 'captured', 'good']];
+  $('#pb-k2').innerHTML = k2.map(([k, l, v, sub, on, cls]) => `<button class="pb-kpi ${cls}" type="button" data-pb-f="${k}" aria-pressed="${on}"><small>${esc(l)}</small><b>${v}</b><span>${esc(sub)}</span></button>`).join('');
+}
+
+function pbThumb(r) {
+  const k = r.media_kind || 'text', img = pbUrl(r.thumbnail_url) || (k === 'image' ? pbUrl(r.media_url) : '');
+  const play = k === 'video' || k === 'audio';
+  const inner = img ? '' : (k === 'text' ? `<span>${esc((r.description || '').slice(0, 42))}</span>` : (PB_IC[{ video: 'play', audio: 'mic', image: 'img', link: 'link' }[k]] || ''));
+  return `<div class="pb-thumb${img ? ' has' : ''}${k === 'text' ? ' txt' : ''}${play ? ' play' : ''}" ${img ? `style="background-image:url('${esc(img)}')"` : `data-k="${esc(k)}"`} ${play ? `data-pb-play="${esc(r.id)}" role="button" tabindex="0" aria-label="Lire"` : ''}>${play ? PB_IC.play : inner}${r.duration_sec ? `<span class="dur">${pbDur(r.duration_sec)}</span>` : ''}</div>`;
+}
+function pbRow(r) {
+  const s = PB_STATE[r.status] || [r.status, ''], w = r.wave ? (PB_WAVE[r.wave.state] || [r.wave.state, '']) : null;
+  let side = `<span class="adm-badge ${s[1]}">${esc(s[0])}</span>`;
+  if (r.reports) side += `<span class="adm-badge bad">${fmt(r.reports)} signalement${r.reports > 1 ? 's' : ''}</span>`;
+  else if (w) side += `<span class="adm-badge ${w[1]}">Vague ${r.wave.level}/5 · ${esc(w[0])}</span>`; else side += '<span class="adm-badge">Sans vague</span>';
+  if (r.authenticity !== 'ok' && !r.reports) side += `<span class="adm-badge wait">${esc(PB_AUTH[r.authenticity])}</span>`;
+  const a = r.author || {}, c = r.counts;
+  return `<article class="pb-post st-${esc(r.status)}" data-pb-open="${esc(r.id)}" tabindex="0" role="button" aria-label="Détails de la publication de ${esc(a.username || '')}">${pbThumb(r)}<div class="pb-main">
+    <div class="pb-l1">${avatar(a.avatar_url, a.username)}<b class="pb-who">@${esc(a.username || '—')}</b>${a.is_verified ? '<span class="adm-badge cert">Vérifié</span>' : ''}${r.source === 'captured' || r.source === 'edited' ? '<span class="adm-badge ok">Fait sur Afrolook</span>' : ''}${r.voice_effect ? '<span class="adm-badge wait">Voix modifiée</span>' : ''}${r.reply_to_id ? '<span class="adm-badge cert">Réponse</span>' : ''}<span class="pb-when">${pbUtc(r.created_at)}</span></div>
+    <div class="pb-d">${esc(r.description || '(sans texte)')}</div>
+    <div class="pb-l3"><span>${esc(PB_KIND[r.media_kind] || 'Texte')} · ${esc(pbCat(r.category))}</span><span>${esc(pbCc(r.countries))}</span><span class="m" title="Vues">${PB_IC.eye}${short(c.views)}</span><span class="m" title="J’aime">${PB_IC.heart}${short(c.likes)}</span><span class="m" title="Commentaires">${PB_IC.chat}${short(c.comments)}</span><span class="m" title="Partages">${PB_IC.share}${short(c.shares)}</span></div></div>
+    <div class="pb-side">${side}</div></article>`;
+}
+function pbRows(res) {
+  const p = st.px, m = res.meta, rows = res.data || [];
+  $('#pb-res').innerHTML = `<span><b>${fmt(m.total)} publication${m.total > 1 ? 's' : ''}</b> du ${pbUtc(m.from)} au ${pbUtc(m.to)} (heure de Lomé)</span><span class="pb-per">Par page <select id="pb-per" aria-label="Résultats par page">${[10, 20, 50].map((n) => `<option${p.per === n ? ' selected' : ''}>${n}</option>`).join('')}</select></span>`;
+  $('#pb-per').addEventListener('change', (e) => { p.per = Number(e.target.value); p.page = 1; pbLoad(); });
+  const crt = $('#pb-creator');
+  crt.innerHTML = p.author && rows.length ? `<div class="pb-creator"><div><b>Publications de « ${esc(p.author)} »</b><br><span class="sub">${fmt(m.total)} publication${m.total > 1 ? 's' : ''} sur la période choisie</span></div><button class="adm-btn" type="button" data-pb-clear>Effacer</button></div>` : '';
+  $('#pb-list').innerHTML = rows.length ? rows.map(pbRow).join('') : '<div class="adm-empty"><b>Aucune publication pour ces filtres.</b><br>Élargis la période ou retire un filtre.</div>';
+  const pages = m.pages, cur = m.page; let h = `<button data-pb-page="${cur - 1}" ${cur < 2 ? 'disabled' : ''} aria-label="Page précédente">‹</button>`;
+  const show = new Set([1, pages, cur - 1, cur, cur + 1]); let last = 0;
+  for (let i = 1; i <= pages; i++) { if (!show.has(i)) continue; if (i - last > 1) h += '<span class="gap">…</span>'; h += `<button data-pb-page="${i}"${i === cur ? ' aria-current="page"' : ''}>${i}</button>`; last = i; }
+  h += `<button data-pb-page="${cur + 1}" ${cur >= pages ? 'disabled' : ''} aria-label="Page suivante">›</button>`;
+  $('#pb-pager').innerHTML = pages > 1 ? h : '';
+}
+
+function pbListClick(e) {
+  const th = e.target.closest('[data-pb-play]'); if (th) { pbOpen(th.dataset.pbPlay, true); return; }
+  const row = e.target.closest('[data-pb-open]'); if (row) pbOpen(row.dataset.pbOpen);
+}
+document.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Escape' && $('#pb-drawer') && !$('#pb-drawer').hidden) pbClose();
+  if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches && ev.target.matches('.pb-post')) { ev.preventDefault(); pbOpen(ev.target.dataset.pbOpen); }
+});
+
+/* — panneau de détails — */
+function pbClose() { const d = $('#pb-drawer'); if (!d) return; d.querySelectorAll('video,audio').forEach((m) => { try { m.pause(); } catch { /* sans effet */ } }); d.hidden = true; $('#pb-shade').hidden = true; document.body.style.overflow = ''; }
+function pbMedia(r) {
+  const url = pbUrl(r.media_url), k = r.media_kind;
+  if (k === 'video' && url) return `<video class="pb-video" controls playsinline preload="metadata" src="${esc(url)}" ${pbUrl(r.thumbnail_url) ? `poster="${esc(r.thumbnail_url)}"` : ''}></video>`;
+  if (k === 'audio' && url) return `<div class="pb-audio"><audio controls preload="metadata" src="${esc(url)}"></audio></div>`;
+  if (k === 'image' && url) return `<img class="pb-img" src="${esc(url)}" alt="" loading="lazy">`;
+  if (k === 'link') return `<div class="pb-textbig">${esc(r.description || '')}</div>`;
+  if (k === 'text' || !url) return `<div class="pb-textbig">${esc(r.description || '(sans texte)')}</div>`;
+  return '';
+}
+async function pbOpen(id, autoplay) {
+  const d = $('#pb-drawer'); if (!d) return;
+  d.hidden = false; $('#pb-shade').hidden = false; document.body.style.overflow = 'hidden'; d.scrollTop = 0;
+  d.innerHTML = '<p class="adm-empty">Chargement…</p>';
+  let r;
+  try { r = (await apiGet(`posts/${encodeURIComponent(id)}`)).data; }
+  catch (e) { d.innerHTML = `<div class="pb-top"><b>Publication</b><button class="pb-x" type="button" data-pb-x aria-label="Fermer">×</button></div><p class="adm-err">${esc(e.message)}</p>`; d.querySelector('[data-pb-x]').onclick = pbClose; return; }
+  const s = PB_STATE[r.status] || [r.status, ''], a = r.author || {}, c = r.counts, df = r.diffusion, w = r.wave, reps = r.reports;
+  const tabs = [['d', 'Détails', null], ['c', 'Commentaires', c.comments], ['l', 'J’aime', c.likes], ['s', 'Partages', c.shares + c.reposts], ['v', 'Vues', c.views]].filter(([k]) => k === 'd' || pbCan.people);
+  let dots = ''; if (df) for (let i = 1; i <= df.levels; i++) dots += `<i class="${i <= df.level ? 'on' : ''}"></i>`;
+  const stat = (k, v) => `<dt>${esc(k)}</dt><dd>${v}</dd>`;
+  let tl = `<div><b>Publié</b><small>${pbUtc(r.created_at)} · @${esc(a.username || '')}</small></div>`;
+  if (w) tl += `<div><b>Vague ${w.level} atteinte</b><small>${fmt(w.reach)} personnes hors abonnés</small></div>`;
+  if (r.first_report_at) tl += `<div class="r"><b>Premier signalement</b><small>${pbUtc(r.first_report_at)} · à traiter avant ${pbUtc(r.report_due_at)}</small></div>`;
+  (r.history || []).slice().reverse().forEach((h) => { tl += `<div class="r"><b>${esc({ remove: 'Retiré', restore: 'Rétabli', dismiss: 'Classé sans suite' }[h.action] || h.action)}${h.reason ? ' : ' + esc(h.reason) : ''}</b><small>${pbUtc(h.at)} · ${esc(h.by || 'équipe')}</small></div>`; });
+  const money = r.money ? `<div class="adm-card pb-box"><h4>Argent</h4><dl class="pb-kv">${stat('Monétisé', r.money.monetized ? 'Oui' : 'Non')}${stat('Vues payantes', fmt(r.money.paid_views))}${stat('Vues à encaisser', fmt(r.money.pending_views))}${stat('Boost', r.money.boosted ? 'Oui' : 'Aucun')}</dl></div>` : '';
+  const as = r.author_stats;
+  const decisions = pbCan.moderate ? `<div class="adm-card pb-box"><h4>Décision</h4><div class="pb-acts">${r.status === 'hidden' ? '<button class="adm-btn pri" type="button" data-pb-do="restore">Rétablir</button>' : '<button class="adm-btn bad" type="button" data-pb-do="remove-form">Retirer</button>'}${reps && r.status !== 'hidden' ? '<button class="adm-btn" type="button" data-pb-do="dismiss">Classer sans suite</button>' : ''}${r.viral && !r.viral.hidden ? '<button class="adm-btn" type="button" data-pb-do="viral-off">Retirer de Viral</button>' : ''}${r.viral && r.viral.hidden ? '<button class="adm-btn" type="button" data-pb-do="viral-on">Remettre dans Viral</button>' : ''}</div>
+    <div class="pb-form" id="pb-rm" hidden><label for="pb-why"><b>Motif du retrait</b> (obligatoire, 200 caractères)</label><textarea id="pb-why" maxlength="200" placeholder="ex. contenu copié d’un autre créateur"></textarea>${r.money ? '<label class="chk"><input id="pb-ce" type="checkbox"> Annuler les vues payantes pas encore encaissées (fraude confirmée)</label>' : ''}<div class="pb-acts"><button class="adm-btn bad" type="button" data-pb-do="remove">Confirmer le retrait</button><button class="adm-btn" type="button" data-pb-do="cancel">Annuler</button></div></div>
+    <p class="adm-note" id="pb-msg" role="status" hidden></p></div>` : `<div class="adm-card pb-box"><p class="adm-note" style="margin:0">Les décisions (retirer, rétablir) demandent le droit de modération : ton compte consulte seulement.</p></div>`;
+  d.innerHTML = `<div class="pb-top"><div><span class="pb-kick">Publication ${esc(r.id)}</span><h3>@${esc(a.username || '—')} · ${esc(PB_KIND[r.media_kind] || 'Texte')}</h3></div><button class="pb-x" type="button" data-pb-x aria-label="Fermer">×</button></div>
+  <div class="adm-card pb-box">${pbMedia(r)}${r.media_kind === 'video' || r.media_kind === 'audio' || r.media_kind === 'image' ? `<p>${esc(r.description || '')}</p>` : ''}
+    <div class="pb-counts"><span><b>${fmt(c.likes)}</b> j’aime</span><span><b>${fmt(c.comments)}</b> commentaires</span><span><b>${fmt(c.shares)}</b> partages</span><span><b>${fmt(c.reposts)}</b> republications</span><span><b>${fmt(c.views)}</b> vues</span></div>
+    <div class="pb-tags"><span class="adm-badge ${s[1]}">${esc(s[0])}</span><span class="adm-badge">${esc(pbCat(r.category))}</span>${(r.countries || []).map((x) => `<span class="adm-badge">${esc(x === 'ALL' ? 'Monde' : x)}</span>`).join('')}${r.source === 'captured' || r.source === 'edited' ? '<span class="adm-badge ok">Fait sur Afrolook</span>' : ''}${r.voice_effect ? `<span class="adm-badge wait">Voix modifiée · ${esc(r.voice_effect)}</span>` : ''}${r.reply_to ? `<span class="adm-badge cert">En réponse à @${esc(r.reply_to.username || '')}</span>` : ''}${r.template ? `<span class="adm-badge">${esc(r.template)}</span>` : ''}</div></div>
+  <div class="pb-tabs" role="tablist" aria-label="Contenu du panneau">${tabs.map(([k, l, n]) => `<button type="button" role="tab" data-pb-tab="${k}" aria-selected="${k === 'd'}">${esc(l)}${n == null ? '' : `<i>${short(n)}</i>`}</button>`).join('')}</div>
+  <div id="pb-tab-d">
+    <div class="adm-card pb-box"><h4>Diffusion <em>comme la carte « Diffusion » de l’application</em></h4>${df ? `<div class="pb-waves" aria-label="Vague ${df.level} sur ${df.levels}">${dots}</div><dl class="pb-kv">${stat('État', esc((PB_WAVE[df.state] || [df.state])[0]) + ` · vague ${df.level}/${df.levels}`)}${stat('Vu en tout', fmt(df.shown_total))}${stat('Montré hors abonnés', fmt(df.shown_outside))}${stat('Regardé jusqu’à la fin', df.finished_pct == null ? 'pas assez de données' : df.finished_pct + ' %')}${stat('Revu en boucle', df.loops_pct == null ? 'pas assez de données' : df.loops_pct + ' %')}${stat('Partages', fmt(df.shares))}</dl>` : '<p class="sub" style="margin:0">Pas de vague : ce type de publication (ou son état d’authenticité) ne fait pas partie de la diffusion.</p>'}</div>
+    ${money}
+    <div class="adm-card pb-box"><h4>Signalements <em>${reps ? fmt(reps) + ' en attente' : 'aucun'}</em></h4>${r.reports_by_type.length ? `<dl class="pb-kv">${r.reports_by_type.map((x) => stat(PB_REPORT[x.type] || x.type, fmt(x.count))).join('')}</dl>` : '<p class="sub" style="margin:0">Aucun signalement.</p>'}<dl class="pb-kv">${stat('Authenticité', esc(PB_AUTH[r.authenticity] || '—'))}${stat('Origine du média', esc(PB_SRC[r.source] || 'Non précisée'))}</dl></div>
+    <div class="adm-card pb-box"><h4>Créateur <em>@${esc(a.username || '')}</em></h4>${as ? `<dl class="pb-kv">${stat('Abonnés', fmt(as.followers))}${stat('Publications', fmt(as.posts))}${stat('Retirées', fmt(as.removed))}${stat('Signalées', fmt(as.reported))}</dl>` : ''}<div class="pb-acts"><button class="adm-btn" type="button" data-pb-who="${esc(a.username || '')}">Tous ses posts</button>${pbCan.people && a.id ? `<button class="adm-btn" type="button" data-pb-user="${esc(a.id)}">Fiche du créateur</button>` : ''}</div></div>
+    <div class="adm-card pb-box"><h4>Historique</h4><div class="pb-tl">${tl}</div></div>
+    ${decisions}
+  </div><div id="pb-tab-l" hidden></div>`;
+  const m = d.querySelector('video,audio'); if (autoplay && m) { m.play().catch(() => {}); }
+  d.onclick = (e) => {
+    if (e.target.closest('[data-pb-x]')) { pbClose(); return; }
+    const t = e.target.closest('[data-pb-tab]'); if (t) { d.querySelectorAll('[data-pb-tab]').forEach((x) => x.setAttribute('aria-selected', String(x === t))); const k = t.dataset.pbTab; $('#pb-tab-d').hidden = k !== 'd'; $('#pb-tab-l').hidden = k === 'd'; if (k !== 'd') pbPeople(r.id, k, 1); return; }
+    const w2 = e.target.closest('[data-pb-who]'); if (w2) { st.px.author = w2.dataset.pbWho; st.px.page = 1; const el = $('#pb-author'); if (el) el.value = st.px.author; pbClose(); pbLoad(); return; }
+    const u = e.target.closest('[data-pb-user]'); if (u) { pbClose(); st.detail = { k: 'u', id: u.dataset.pbUser }; render(); scrollTo(0, 0); return; }
+    const pg = e.target.closest('[data-pb-pg]'); if (pg && !pg.disabled) { pbPeople(r.id, pg.dataset.pbKind, Number(pg.dataset.pbPg)); d.scrollTop = 0; return; }
+    const doBtn = e.target.closest('[data-pb-do]'); if (doBtn) pbDo(r, doBtn.dataset.pbDo);
+  };
+}
+
+const PB_PEOPLE = { c: ['comments', 'commentaire', 'commentaires'], l: ['likes', 'personne a aimé', 'personnes ont aimé'], s: ['shares', 'partage ou republication', 'partages et republications'], v: ['views', 'personne a vu', 'personnes ont vu'] };
+async function pbPeople(id, k, page) {
+  const box = $('#pb-tab-l'); if (!box) return; const [kind, one, many] = PB_PEOPLE[k];
+  box.innerHTML = '<p class="adm-empty">Chargement…</p>';
+  let res; try { res = await apiGet(`posts/${encodeURIComponent(id)}/people?kind=${kind}&page=${page}&per_page=6`); } catch (e) { box.innerHTML = `<p class="adm-err">${esc(e.message)}</p>`; return; }
+  const m = res.meta;
+  const row = (x) => {
+    const u = x.user || {}; const who = `<button class="pb-lk" type="button" data-pb-who="${esc(u.username || '')}">@${esc(u.username || '—')}</button>`;
+    let meta = '', body = '';
+    if (kind === 'comments') { meta = `${x.is_reply ? 'réponse · ' : ''}${fmt(x.likes)} j’aime`; body = `<p>${esc(x.text || '')}</p>`; }
+    else if (kind === 'likes') meta = x.kind === 'love' ? 'Adore' : 'J’aime';
+    else if (kind === 'shares') meta = x.how === 'repost' ? 'Republication' : 'Partage';
+    else meta = 'première vue';
+    return `<div class="pb-pp">${avatar(u.avatar_url, u.username)}<div style="min-width:0">${who}<span class="pb-meta"> · ${esc(meta)}</span>${body}</div><span class="pb-t">${pbUtc(x.at)}</span></div>`;
+  };
+  box.innerHTML = `<div class="adm-card pb-box"><h4>${fmt(m.total)} ${m.total > 1 ? many : one} <em>du plus récent au plus ancien</em></h4><div>${res.data.length ? res.data.map(row).join('') : '<p class="sub" style="margin:0">Rien pour l’instant.</p>'}</div>
+    <div class="pb-mini"><span>Page ${m.page} sur ${fmt(m.pages)}</span><span class="pb-acts"><button class="adm-btn" data-pb-pg="${m.page - 1}" data-pb-kind="${k}" ${m.page < 2 ? 'disabled' : ''}>‹ Précédent</button><button class="adm-btn" data-pb-pg="${m.page + 1}" data-pb-kind="${k}" ${m.page >= m.pages ? 'disabled' : ''}>Suivant ›</button></span></div>
+    ${kind === 'views' ? '<p class="adm-note">Seule la date de la première vue est gardée par personne. Le temps regardé reste anonyme : voir les pourcentages dans « Diffusion ».</p>' : ''}</div>`;
+}
+
+async function pbDo(r, act) {
+  const msg = (t, bad) => { const el = $('#pb-msg'); if (el) { el.hidden = !t; el.textContent = t || ''; el.style.color = bad ? 'var(--c4)' : ''; } };
+  if (act === 'remove-form') { $('#pb-rm').hidden = false; $('#pb-why').focus(); return; }
+  if (act === 'cancel') { $('#pb-rm').hidden = true; return; }
+  try {
+    if (act === 'remove') {
+      const why = ($('#pb-why').value || '').trim(); if (why.length < 5) { msg('Écris un motif d’au moins 5 caractères.', true); return; }
+      await apiSend('POST', `moderation/posts/${encodeURIComponent(r.id)}`, { action: 'remove', reason: why, ...(($('#pb-ce') || {}).checked ? { cancel_earnings: true } : {}) });
+    } else if (act === 'restore') await apiSend('POST', `moderation/posts/${encodeURIComponent(r.id)}`, { action: 'restore' });
+    else if (act === 'dismiss') await apiSend('POST', `moderation/posts/${encodeURIComponent(r.id)}`, { action: 'dismiss' });
+    else if (act === 'viral-off') await apiSend('PUT', `viral/${encodeURIComponent(r.id)}`, { hidden: true });
+    else if (act === 'viral-on') await apiSend('PUT', `viral/${encodeURIComponent(r.id)}`, { hidden: false });
+  } catch (e) { msg(e.message, true); return; }
+  await pbLoad(); await pbOpen(r.id);
+  msg('Décision enregistrée dans le journal de modération.');
+}
+
 document.addEventListener('click', (ev) => {
   const t = ev.target.closest('[data-tab],[data-period],[data-topby],[data-topwin],[data-evo],[data-evop],[data-advby],[data-pubby],[data-wdays],[data-open],[data-back],[data-retry]'); if (!t || !root.contains(t)) return;
   const d = t.dataset; const y = scrollY;
