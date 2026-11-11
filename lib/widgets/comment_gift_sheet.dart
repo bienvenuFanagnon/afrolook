@@ -19,12 +19,13 @@ Future<void> showCommentGiftSheet(
   required String commentId,
   String? replyId,
   required String authorPseudo,
+  void Function(int coins)? onSent,
 }) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => _CommentGiftSheet(commentId: commentId, replyId: replyId, authorPseudo: authorPseudo, parent: context),
+    builder: (_) => _CommentGiftSheet(commentId: commentId, replyId: replyId, authorPseudo: authorPseudo, parent: context, onSent: onSent),
   );
 }
 
@@ -33,7 +34,8 @@ class _CommentGiftSheet extends StatefulWidget {
   final String? replyId;
   final String authorPseudo;
   final BuildContext parent;
-  const _CommentGiftSheet({required this.commentId, required this.replyId, required this.authorPseudo, required this.parent});
+  final void Function(int coins)? onSent;
+  const _CommentGiftSheet({required this.commentId, required this.replyId, required this.authorPseudo, required this.parent, this.onSent});
 
   @override
   State<_CommentGiftSheet> createState() => _CommentGiftSheetState();
@@ -64,6 +66,7 @@ class _CommentGiftSheetState extends State<_CommentGiftSheet> {
         'label': pack.label,
       }, idempotencyKey: _giftKey);
       _giftKey = null;
+      widget.onSent?.call(pack.coins);   // le total de pièces du commentaire monte tout de suite
       final uid = auth.loginUserData.id;
       if (uid != null) await coinProvider.refreshBalance(uid);
       if (!mounted) return;

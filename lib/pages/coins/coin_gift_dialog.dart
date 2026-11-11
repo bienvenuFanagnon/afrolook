@@ -499,16 +499,13 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
       nav.pop();
       showGiftSentOverlay(context, pack, widget.receiverName,
           quantity: _quantity);
-      // Naviguer vers les commentaires pour voir le commentaire auto
-      if (widget.post != null) {
-        nav.push(MaterialPageRoute(
-          builder: (_) => PostComments(post: widget.post!),
-        ));
-      }
+      // la page des commentaires s'ouvre plus bas, une fois le cadeau confirmé et son commentaire posté (il y est affiché en tête)
     }
 
     // 2. Enregistrer dans les récents AVANT onGiftSuccess (pour que QuickGiftBar recharge le bon cadeau)
     await QuickGiftService.recordRecentGift(pack);
+    final giftedPost = widget.post;
+    if (giftedPost != null && !widget.isLive) giftedPost.totalGiftCoinsSentOnThisPost = (giftedPost.totalGiftCoinsSentOnThisPost ?? 0) + totalCost;   // total de pièces sous l'icône cadeau
     widget.onGiftSuccess?.call();
 
     // 3. Envoi réel à l'API en arrière-plan (fire-and-forget) : débit, parts et parrainages calculés par le serveur
@@ -527,7 +524,7 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
               _coinProvider.refreshBalance(senderId);
             },
           );
-    unawaited(sent.then((success) {
+    unawaited(sent.then((success) async {
       if (!success) {
         debugPrint('❌ Échec de l\'envoi du cadeau (solde insuffisant côté serveur), resynchronisation du solde');
         _coinProvider.refreshBalance(senderId);
@@ -535,16 +532,18 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
       }
       _coinProvider.refreshBalance(senderId);
       // Commentaire automatique posté seulement une fois le cadeau confirmé par l'API
-      if (widget.post != null) {
+      final giftedPost = widget.post;
+      if (giftedPost != null) {
         final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
-        CoinGiftService.postGiftAutoComment(
+        final giftComment = await CoinGiftService.postGiftAutoComment(
           senderId: senderId,
           senderData: authProvider.loginUserData,
-          postId: widget.post!.id!,
+          postId: giftedPost.id!,
           giftPack: pack,
           coinsAmount: totalCost,
           quantity: _quantity,
         );
+        if (nav.mounted) nav.push(MaterialPageRoute(builder: (_) => PostComments(post: giftedPost, pinnedComment: giftComment)));   // le commentaire du cadeau est en tête
       }
     }).catchError((e) {
       debugPrint('❌ Erreur lors de l\'envoi du cadeau : $e');

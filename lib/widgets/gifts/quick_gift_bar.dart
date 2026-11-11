@@ -107,6 +107,7 @@ class _CadeauBadgeState extends State<CadeauBadge> {
     if (mounted) {
       showGiftSentOverlay(context, _quickGift!, widget.receiverName);
     }
+    widget.post.totalGiftCoinsSentOnThisPost = (widget.post.totalGiftCoinsSentOnThisPost ?? 0) + _quickGift!.coins;   // total de pièces sous l'icône cadeau
     widget.onGiftSuccess?.call();
     unawaited(QuickGiftService.recordRecentGift(_quickGift!));
 
@@ -283,6 +284,7 @@ class _QuickGiftBarState extends State<QuickGiftBar> {
 
     // 1. Feedback immédiat — animation avant tout appel réseau
     if (mounted) showGiftSentOverlay(context, pack, widget.receiverName);
+    widget.post.totalGiftCoinsSentOnThisPost = (widget.post.totalGiftCoinsSentOnThisPost ?? 0) + pack.coins;   // total de pièces sous l'icône cadeau
     widget.onGiftSuccess?.call();
 
     // 2. Historique récent en arrière-plan

@@ -55,6 +55,8 @@ Post postFromApi(Map<String, dynamic> j) {
     ..comments = (counts['comments'] as num?)?.toInt() ?? 0
     ..partage = (counts['shares'] as num?)?.toInt() ?? 0
     ..adSupportCount = (counts['ad_support'] as num?)?.toInt() ?? 0
+    // total des PIÈCES envoyées en cadeau sur la publication (le montant payé, pas le nombre de cadeaux) : affiché sous l'icône cadeau
+    ..totalGiftCoinsSentOnThisPost = (counts['gift_coins'] as num?)?.toInt() ?? 0
     // L'API ne donne que le NOMBRE de republications (`counts.reposts`) : le modèle n'a qu'une liste d'identifiants (`users_republier_id`), dont les
     // écrans affichent la longueur. On la remplit d'autant d'entrées vides ; l'appartenance de la personne connectée y est ajoutée après sa republication.
     ..users_republier_id = List<String>.filled((counts['reposts'] as num?)?.toInt() ?? 0, '', growable: true)

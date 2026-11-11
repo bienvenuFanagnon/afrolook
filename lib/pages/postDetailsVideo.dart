@@ -2430,7 +2430,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
         ],
         if (!isOwner && _currentPost.user_id != null) ...[
           const SizedBox(width: 8),
-          VideoActionChip(icon: Icons.card_giftcard_rounded, label: _formatCount(_currentPost.users_cadeau_id?.length ?? 0), onTap: _openGiftDialog),
+          VideoActionChip(icon: Icons.card_giftcard_rounded, label: _formatCount(_currentPost.totalGiftCoinsSentOnThisPost ?? 0), onTap: _openGiftDialog),
         ],
         const SizedBox(width: 8),
         VideoActionChip(icon: Icons.ios_share_rounded, label: tr('Partager'), onTap: () => _showShareOptions(_currentPost)),
@@ -2462,9 +2462,11 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     setState(() {
       post.users_cadeau_id ??= [];
       if (!post.users_cadeau_id!.contains(senderId)) post.users_cadeau_id!.add(senderId);
+      post.totalGiftCoinsSentOnThisPost = (post.totalGiftCoinsSentOnThisPost ?? 0) + pack.coins;   // le total de pièces sous l'icône monte tout de suite
     });
     unawaited(QuickGiftService.recordRecentGift(pack));
-    CoinGiftService.postGiftAutoComment(senderId: senderId, senderData: authProvider.loginUserData, postId: post.id!, giftPack: pack, coinsAmount: pack.coins, quantity: 1);
+    // Comme le modal « Voir tous les cadeaux » : le cadeau est accompagné d'un commentaire préparé, posté une fois le cadeau confirmé par l'API, puis la page des commentaires
+    // s'ouvre pour qu'on le voie. Si le cadeau échoue, aucun commentaire n'est posté.
     unawaited(coinProvider
         .sendGift(
           senderId: senderId,
@@ -2475,8 +2477,15 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
           giftPack: pack,
           onSuccess: () => coinProvider.refreshBalance(senderId),
         )
-        .then((ok) {
-          if (!ok) coinProvider.refreshBalance(senderId);
+        .then((ok) async {
+          if (!ok) {
+            coinProvider.refreshBalance(senderId);
+            if (mounted) setState(() => post.totalGiftCoinsSentOnThisPost = ((post.totalGiftCoinsSentOnThisPost ?? 0) - pack.coins).clamp(0, 1 << 40));   // envoi refusé : on retire ce qu'on avait ajouté
+            return;
+          }
+          final giftComment = await CoinGiftService.postGiftAutoComment(senderId: senderId, senderData: authProvider.loginUserData, postId: post.id!, giftPack: pack, coinsAmount: pack.coins, quantity: 1);
+          if (!mounted || ModalRoute.of(context)?.isCurrent != true) return;
+          Navigator.of(context).push(MaterialPageRoute(builder: (_) => PostComments(post: post, pinnedComment: giftComment)));   // le commentaire du cadeau est en tête
         })
         .catchError((_) {
           coinProvider.refreshBalance(senderId);

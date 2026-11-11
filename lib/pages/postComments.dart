@@ -52,6 +52,9 @@ class PostComments extends StatefulWidget {
   final List<PostComment> initialComments;
   final String? initialText;
 
+  /// Commentaire à afficher EN TÊTE de la liste (celui qui accompagne le cadeau qui vient d'être envoyé).
+  final PostComment? pinnedComment;
+
   const PostComments({
     super.key,
     required this.post,
@@ -59,6 +62,7 @@ class PostComments extends StatefulWidget {
     this.focusKeyboard = false,
     this.initialComments = const [],
     this.initialText,
+    this.pinnedComment,
   });
 
   @override
@@ -143,6 +147,8 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
       }
       _loadInitialComments();
     }
+    final pinned = widget.pinnedComment;
+    if (pinned != null && !comments.any((c) => c.id == pinned.id)) comments.insert(0, pinned);   // le commentaire du cadeau envoyé est toujours en tête
     _loadUsers();
     _ensureCanalLoaded();
     _loadTopGifters();
@@ -1200,9 +1206,9 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                     _buildActionButton(
                       icon: Icons.card_giftcard_rounded,
                       color: AppColors.of(context).accentText,
-                      label: 'Cadeau',
+                      label: pcm.giftCoins > 0 ? '${context.tr('Cadeau')} · ${pcm.giftCoins} 🪙' : context.tr('Cadeau'),
                       onTap: () => showCommentGiftSheet(context,
-                          commentId: pcm.id!, authorPseudo: pcm.user?.pseudo ?? ''),
+                          commentId: pcm.id!, authorPseudo: pcm.user?.pseudo ?? '', onSent: (coins) => setState(() => pcm.giftCoins += coins)),
                     ),
                     const SizedBox(width: 16),
                     _buildActionButton(
@@ -1211,6 +1217,10 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                       label: context.tr('Offrir un sticker'),
                       onTap: () => _offerSticker(pcm.id!),
                     ),
+                  ] else if (pcm.giftCoins > 0) ...[
+                    // son propre commentaire : pas de bouton Cadeau, mais le total de pièces reçues se voit
+                    const SizedBox(width: 16),
+                    Text('🪙 ${pcm.giftCoins}', style: TextStyle(color: _colors.textSecondary, fontSize: 12)),
                   ],
                 ],
               ),
@@ -1415,10 +1425,10 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                       _buildActionButton(
                         icon: Icons.card_giftcard_rounded,
                         color: AppColors.of(context).accentText,
-                        label: 'Cadeau',
+                        label: rpc.giftCoins > 0 ? '${context.tr('Cadeau')} · ${rpc.giftCoins} 🪙' : context.tr('Cadeau'),
                         small: true,
                         onTap: () => showCommentGiftSheet(context,
-                            commentId: pcm.id!, replyId: rpc.id, authorPseudo: rpc.user_pseudo ?? ''),
+                            commentId: pcm.id!, replyId: rpc.id, authorPseudo: rpc.user_pseudo ?? '', onSent: (coins) => setState(() => rpc.giftCoins += coins)),
                       ),
                       const SizedBox(width: 14),
                       _buildActionButton(
@@ -1428,6 +1438,9 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                         small: true,
                         onTap: () => _offerSticker(pcm.id!, replyId: rpc.id),
                       ),
+                    ] else if (rpc.giftCoins > 0) ...[
+                      const SizedBox(width: 14),
+                      Text('🪙 ${rpc.giftCoins}', style: TextStyle(color: _colors.textSecondary, fontSize: 11)),
                     ],
                   ],
                 ),

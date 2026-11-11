@@ -3926,6 +3926,8 @@ class PostMonetiser {
   }
 }
 class ResponsePostComment {
+  /// Total des pièces envoyées en cadeau à cette réponse (le montant payé), affiché à côté du bouton « Cadeau ».
+  int giftCoins = 0;
   String? id;
   String? post_comment_id;
   String? user_id;
@@ -4270,6 +4272,8 @@ class Annonce {
   }
 }
 class PostComment {
+  /// Total des pièces envoyées en cadeau à ce commentaire (le montant payé), affiché à côté du bouton « Cadeau ».
+  int giftCoins = 0;
   String? id;
   String? user_id;
   String? post_id;

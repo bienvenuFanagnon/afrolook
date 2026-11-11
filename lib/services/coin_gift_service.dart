@@ -7,6 +7,8 @@ import '../models/coin_pack.dart';
 import '../models/model_data.dart';
 import '../providers/authProvider.dart';
 import 'api/api_gateway.dart';
+import 'api/posts_api.dart';
+import 'comments_prefetch.dart';
 import 'api/wallet_api.dart';
 import '../l10n/tr.dart';
 
@@ -122,7 +124,9 @@ class CoinGiftService {
     tr('🎁 Ce post vaut le détour, voilà mon soutien 🌟'),
   ];
 
-  static void postGiftAutoComment({
+  /// Poste le commentaire préparé qui accompagne un cadeau (une phrase tirée au hasard dans la liste + le cadeau et son montant). Le Future donne le commentaire posté
+  /// (null s'il a échoué) : on peut l'attendre pour l'afficher en tête de la page des commentaires, ou l'ignorer.
+  static Future<PostComment?> postGiftAutoComment({
     required String senderId,
     required UserData senderData,
     required String postId,
@@ -130,7 +134,7 @@ class CoinGiftService {
     required int coinsAmount,
     required int quantity,
   }) {
-    Future.microtask(() async {
+    return Future.microtask(() async {
       try {
         final qty = quantity > 1
             ? quantity
@@ -140,9 +144,13 @@ class CoinGiftService {
         final message =
             '$randomLine\n'
             '${giftPack.icon} ${giftPack.label}$qtyText · $coinsAmount 🪙';
-        await ApiGateway.instance.client.post('/posts/$postId/comments', body: {'body': message});
+        final sent = await CommentsApi.send(postId, body: message);
+        final comment = sent.comment..user = senderData;
+        CommentsPrefetch.instance.addLocal(postId, comment);   // la page des commentaires, même déjà préparée, le montre tout de suite
+        return comment;
       } catch (e) {
         printVm('⚠️ _postGiftAutoComment: $e');
+        return null;
       }
     });
   }

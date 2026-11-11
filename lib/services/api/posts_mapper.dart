@@ -31,6 +31,7 @@ PostComment commentFromApi(Map<String, dynamic> j) {
     media: _media(j['media']),
   );
   c.user = _author(author);
+  c.giftCoins = (j['gift_coins'] as num?)?.toInt() ?? 0;
   return c;
 }
 
@@ -53,6 +54,7 @@ ResponsePostComment replyFromApi(Map<String, dynamic> j) {
     media: _media(j['media']),
   );
   r.user = _author(author);
+  r.giftCoins = (j['gift_coins'] as num?)?.toInt() ?? 0;
   return r;
 }
 
