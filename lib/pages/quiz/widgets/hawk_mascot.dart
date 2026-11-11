@@ -2,19 +2,25 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../../services/quiz/quiz_service.dart';
+
 /// Humeur de la mascotte : elle réagit aux réponses du joueur.
 enum HawkMood { idle, cheer, sad, wave, think, hurry }
 
 /// Épervier, mascotte du quiz, dessiné en code (aucune image à charger) et animé :
 /// il respire, cligne des yeux, saute de joie, baisse la tête quand on se trompe, salue de l'aile.
-/// [accessory] : `acc_glasses`, `acc_cap` ou `acc_crown` (objets de la boutique).
+/// [accessory] : `acc_glasses`, `acc_cap` ou `acc_crown` (objets de la boutique). Sans [accessory] explicite, la mascotte porte celui que le joueur a ÉQUIPÉ dans la boutique
+/// ([followEquipped]) : partout (Quiz, Étude, Contes, fil), il retrouve donc sa casquette dès l'achat, sans que chaque écran ait à la lui donner.
 class HawkMascot extends StatefulWidget {
-  const HawkMascot({super.key, this.mood = HawkMood.idle, this.size = 120, this.accessory, this.flip = false});
+  const HawkMascot({super.key, this.mood = HawkMood.idle, this.size = 120, this.accessory, this.flip = false, this.followEquipped = true});
 
   final HawkMood mood;
   final double size;
   final String? accessory;
   final bool flip;
+
+  /// Prendre l'accessoire équipé du joueur quand [accessory] n'est pas donné (vrai par défaut).
+  final bool followEquipped;
 
   @override
   State<HawkMascot> createState() => _HawkMascotState();
@@ -51,17 +57,18 @@ class _HawkMascotState extends State<HawkMascot> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final follows = widget.accessory == null && widget.followEquipped;
     return RepaintBoundary(
       child: SizedBox(
         width: widget.size,
         height: widget.size,
         child: AnimatedBuilder(
-          animation: Listenable.merge([_idle, _react]),
+          animation: Listenable.merge([_idle, _react, if (follows) QuizService.instance.state]),
           builder: (_, __) => Transform(
             alignment: Alignment.center,
             transform: widget.flip ? (Matrix4.identity()..scale(-1.0, 1.0)) : Matrix4.identity(),
             child: CustomPaint(
-              painter: _HawkPainter(_idle.value, _react.value, widget.mood, widget.accessory),
+              painter: _HawkPainter(_idle.value, _react.value, widget.mood, widget.accessory ?? (follows ? QuizService.instance.state.value?.equipped['accessory'] : null)),
             ),
           ),
         ),

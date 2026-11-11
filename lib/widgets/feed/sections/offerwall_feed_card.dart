@@ -51,6 +51,8 @@ class _OfferwallFeedCardState extends State<OfferwallFeedCard> {
         if ((kDebugMode || now >= (sp.getInt(_kHiddenUntil) ?? 0)) && await OfferwallService.isAvailable()) show = true;
         _decided[widget.slot] = show;
       }
+      // chiffres du texte (par clic, plafond du jour) : ceux du serveur, pas la valeur par défaut de l'application
+      if (show && !OfferwallService.isConfigured) await ShareService.refreshConfig();
     } catch (_) {}
     if (mounted) setState(() => _visible = show);
   }

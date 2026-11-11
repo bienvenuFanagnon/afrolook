@@ -13,6 +13,7 @@ import '../quiz/widgets/quiz_widgets.dart';
 import 'etude_class_page.dart';
 import 'etude_diploma_page.dart';
 import 'etude_flow.dart';
+import '../../services/quiz/quiz_service.dart';
 
 /// Afrolook Étude : le parcours de l'école au diplôme, comme un jeu.
 /// Collège (BEPC) → lycée (BAC) → université (licence), plus des attestations par domaine.
@@ -170,6 +171,7 @@ class _EtudeHomePageState extends State<EtudeHomePage> with EtudeAdBypass {
   @override
   void initState() {
     super.initState();
+    QuizService.instance.ensureLoaded();   // la mascotte porte l'accessoire équipé dans la boutique
     _load();
   }
 

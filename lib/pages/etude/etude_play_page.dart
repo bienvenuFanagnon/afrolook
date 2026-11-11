@@ -13,6 +13,7 @@ import '../quiz/widgets/quiz_ads.dart';
 import '../quiz/widgets/quiz_loading.dart';
 import '../quiz/widgets/quiz_widgets.dart';
 import 'etude_diploma_page.dart';
+import '../../services/quiz/quiz_service.dart';
 
 /// Une partie d'Étude : niveau d'un chapitre, composition de classe, examen ou attestation.
 /// Se ferme avec `true` quand la partie a été terminée.
@@ -42,6 +43,7 @@ class _EtudePlayPageState extends State<EtudePlayPage> with EtudeAdBypass {
   @override
   void initState() {
     super.initState();
+    QuizService.instance.ensureLoaded();
     if (_timed) {
       _timer = Timer.periodic(const Duration(seconds: 1), (_) {
         if (!mounted || _finish != null) return;

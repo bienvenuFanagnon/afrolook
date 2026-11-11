@@ -12,7 +12,24 @@ class ShareService {
 
   /// Derniers gains annoncés par le serveur (utilisés dans les cartes d'entrée, avant d'ouvrir la page).
   static double lastPerClickFcfa = 5;
-  static double lastDailyCapFcfa = 500;
+  /// Plafond du jour annoncé : 10 000 F par défaut (décision du propriétaire) tant que le serveur n'a pas répondu ; [refreshConfig] le remplace par la vraie valeur.
+  static double lastDailyCapFcfa = 10000;
+  static bool _cfgFresh = false;
+
+  /// Lit les gains annoncés par le serveur (par clic, plafond du jour) SANS ouvrir la page de partage : la carte « Travaille et gagne » des fils affichait sinon le
+  /// chiffre par défaut tant que la personne n'avait pas ouvert cette page. Une seule lecture réussie par lancement ; ne lève jamais d'erreur.
+  static Future<void> refreshConfig() async {
+    if (_cfgFresh) return;
+    try {
+      final prof = WalletApi.map(await _c.get('/share/profile'));
+      final cfg = prof['config'] is Map ? Map<String, dynamic>.from(prof['config'] as Map) : const <String, dynamic>{};
+      if (cfg['daily_cap_fcfa'] is num) lastDailyCapFcfa = (cfg['daily_cap_fcfa'] as num).toDouble();
+      if (cfg['per_click_fcfa'] is num) lastPerClickFcfa = (cfg['per_click_fcfa'] as num).toDouble();
+      _cfgFresh = true;
+    } catch (_) {
+      // hors ligne ou fonction coupée : on garde les valeurs actuelles
+    }
+  }
   static Future<bool>? _enabled;
   static int _enabledAt = 0;
 

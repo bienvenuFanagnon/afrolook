@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/services/api/regie_api.dart';
+import '../../pub/brand_ad_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:intl/intl.dart';
@@ -315,6 +316,22 @@ class _AdvertisementPostImageWidgetState extends State<AdvertisementPostImageWid
   @override
   Widget build(BuildContext context) {
     _colors = AppColors.of(context);
+    // Annonce d'un annonceur du site (Afrolook Ads) : ce n'est PAS une publication. La marque, jamais un profil ; ni commentaire, ni j'aime, ni cadeau ; la page de détails est celle de l'annonce.
+    if (isBrandPost(widget.post)) {
+      return VisibilityDetector(
+        key: Key('ad-post-${widget.post.id}'),
+        onVisibilityChanged: _handleVisibilityChanged,
+        child: BrandAdCard(
+          ad: widget.ad,
+          post: widget.post,
+          onAction: _handleActionButtonClick,
+          onOpenDetails: () {
+            AdsEngineService.instance.click(widget.ad.id ?? '', format: 'native', slot: 'feed');
+            Navigator.push(context, MaterialPageRoute(builder: (_) => AdDetailPage(ad: widget.ad, post: widget.post, onAction: _handleActionButtonClick)));
+          },
+        ),
+      );
+    }
     final double postHeight = widget.height ?? widget.width * 0.75;
 
     return VisibilityDetector(

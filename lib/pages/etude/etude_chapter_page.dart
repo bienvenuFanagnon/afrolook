@@ -8,6 +8,7 @@ import '../quiz/widgets/hawk_mascot.dart';
 import '../quiz/widgets/quiz_ads.dart';
 import '../quiz/widgets/quiz_loading.dart';
 import 'etude_flow.dart';
+import '../../services/quiz/quiz_service.dart';
 
 /// Un chapitre : fiche de cours courte, puis 3 niveaux d'exercices.
 class EtudeChapterPage extends StatefulWidget {
@@ -26,6 +27,7 @@ class _EtudeChapterPageState extends State<EtudeChapterPage> with EtudeAdBypass 
   @override
   void initState() {
     super.initState();
+    QuizService.instance.ensureLoaded();
     _load();
   }
 

@@ -15,6 +15,7 @@ import '../quiz/widgets/quiz_ads.dart';
 import 'conte_scene.dart';
 import 'conte_style.dart';
 import 'conte_unlock.dart';
+import '../../services/quiz/quiz_service.dart';
 
 /// Lecture d'un conte : pages de livre (parchemin, gravure, lettrine), ouverture gratuite, page du sceau (déblocage),
 /// page de fin (morale, conte suivant). L'ambiance de veillée se coupe d'une touche.
@@ -42,6 +43,7 @@ class _ConteReaderPageState extends State<ConteReaderPage> with EtudeAdBypass, W
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    QuizService.instance.ensureLoaded();
     ConteAmbience.start();
     _load();
   }

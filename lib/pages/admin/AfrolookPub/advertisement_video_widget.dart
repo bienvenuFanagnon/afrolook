@@ -1,4 +1,5 @@
 import '../../pub/ad_actions.dart';
+import '../../pub/brand_ad_widgets.dart';
 import 'package:afrotok/services/ads_engine_service.dart';
 import 'dart:async';
 import 'dart:math';
@@ -512,6 +513,24 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
   @override
   Widget build(BuildContext context) {
     _colors = AppColors.of(context);
+    // Annonce d'un annonceur du site (Afrolook Ads) : la MARQUE, jamais un profil ; ni commentaire, ni j'aime, ni cadeau ; la page de détails est celle de l'annonce.
+    if (isBrandPost(widget.post)) {
+      final ctrl = _videoController;
+      return VisibilityDetector(
+        key: Key('ad-video-${widget.post.id}'),
+        onVisibilityChanged: _handleVisibilityChanged,
+        child: BrandAdCard(
+          ad: widget.ad,
+          post: widget.post,
+          videoController: (ctrl != null && ctrl.value.isInitialized) ? ctrl : null,
+          onAction: _handleActionButtonClick,
+          onOpenDetails: () {
+            AdsEngineService.instance.click(widget.ad.id ?? '', format: 'native', slot: 'feed');
+            Navigator.push(context, MaterialPageRoute(builder: (_) => AdDetailPage(ad: widget.ad, post: widget.post, onAction: _handleActionButtonClick)));
+          },
+        ),
+      );
+    }
     final screenWidth = MediaQuery.of(context).size.width;
     final isPortrait = widget.post.isPortrait ?? false;
     // Pour portrait : card + marge = 72% écran + 2*12 de marge

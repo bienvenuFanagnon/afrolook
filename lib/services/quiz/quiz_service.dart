@@ -359,6 +359,22 @@ class QuizService {
     return s;
   }
 
+  bool _warming = false;
+
+  /// Charge l'état du joueur UNE fois (accessoire équipé, boutique) pour les écrans qui montrent sa mascotte sans qu'il ait ouvert le Quiz dans cette session
+  /// (Étude, Contes). Silencieux : si le module est coupé ou le réseau absent, la mascotte reste simplement sans accessoire.
+  Future<void> ensureLoaded() async {
+    if (state.value != null || _warming) return;
+    _warming = true;
+    try {
+      await refresh();
+    } catch (_) {
+      // sans effet : rien à montrer de plus
+    } finally {
+      _warming = false;
+    }
+  }
+
   Future<QuizState> refresh() async {
     await loadConfig();
     final m = await _call('GET', '/quiz/state');
