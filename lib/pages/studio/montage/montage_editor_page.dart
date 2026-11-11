@@ -59,8 +59,11 @@ import '../../../widgets/gold_lock_row.dart';
 AppColors get _c => studioColors;
 
 class MontageEditorPage extends StatefulWidget {
-  const MontageEditorPage({super.key, required this.template, this.forChronique = false, this.presetMusic, this.presetKeepAudio = false, this.presetVideoPath, this.presetPhotoPath, this.focus, this.presetPin, this.photoOnly = false, this.showSignature = false, this.project});
+  const MontageEditorPage({super.key, required this.template, this.forChronique = false, this.presetMusic, this.presetKeepAudio = false, this.presetVideoPath, this.presetPhotoPath, this.focus, this.presetPin, this.photoOnly = false, this.showSignature = false, this.project, this.autoFinish = false});
   final MontageTemplate template;
+
+  /// Modèle déjà composé (film, générique) avec sa musique : « Terminer » se lance seul après quelques secondes, sauf si la personne touche « Modifier ».
+  final bool autoFinish;
   final bool forChronique;
 
   /// Retouche d'une IMAGE qui doit rester une image (carrousel de plusieurs images) : ni musique, ni effet animé, ni vidéo ; le résultat est toujours une image fixe.
@@ -213,10 +216,27 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
           if (mounted) setState(() => s.music = def == null ? null : MontageMusic.free(def));
         }
         _playMusic();
+        _autoFinishSoon();
       });
     } else {
       WidgetsBinding.instance.addPostFrameCallback((_) => _playMusic());
     }
+  }
+
+  /// Modèles : la vidéo est déjà composée, il ne reste qu'à la préparer. On le fait tout seul après 4 secondes (un clic et une page de moins) ; « Modifier » garde la page ouverte.
+  void _autoFinishSoon() {
+    if (!widget.autoFinish || !mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(
+          key: const ValueKey('auto_finish'),
+          duration: const Duration(seconds: 4),
+          content: const Text('Ta vidéo se prépare dans quelques secondes…'),
+          action: SnackBarAction(label: 'Modifier', onPressed: () {}),
+        ))
+        .closed
+        .then((reason) {
+      if (reason != SnackBarClosedReason.action && mounted && !_busy) _publish();
+    });
   }
 
   // ── Musique ──

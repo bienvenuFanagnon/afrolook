@@ -45,7 +45,7 @@ import 'trim_sheet.dart';
 /// Les outils réutilisent le Studio existant : « Modèles » ouvre les modèles prêts à poster sur ce média, « Musique », « Texte » et « Effets » ouvrent l'éditeur sans
 /// habillage (musique gratuite ou d'artiste, texte libre, looks de couleur sobres), « Couper » garde un passage de la vidéo (découpe faite par le serveur).
 class CreateEditorPage extends StatefulWidget {
-  const CreateEditorPage({super.key, required this.path, required this.isVideo, required this.source, this.canal, this.defiPostId, this.sound, this.pin, this.draft, this.showSignature = false});
+  const CreateEditorPage({super.key, required this.path, required this.isVideo, required this.source, this.canal, this.defiPostId, this.sound, this.pin, this.draft, this.showSignature = false, this.autoFinish = false});
 
   final String path;
   final bool isVideo;
@@ -63,6 +63,9 @@ class CreateEditorPage extends StatefulWidget {
 
   /// Collage ou diaporama de plusieurs images : la signature (@pseudo, ou #titre du canal) est visible d'office dans le montage.
   final bool showSignature;
+
+  /// Modèle déjà composé avec sa musique (générique, film) : le Studio ouvert tout de suite prépare la vidéo tout seul (avec un bouton « Modifier »).
+  final bool autoFinish;
 
   /// Brouillon repris : l'effet de voix et les widgets sont remis comme ils étaient.
   final CreateDraft? draft;
@@ -106,7 +109,7 @@ class _CreateEditorPageState extends State<CreateEditorPage> {
     }
     if (widget.sound != null || widget.pin != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _openStudio(MontageEditorPage(template: kPlainTemplate, showSignature: widget.showSignature, project: _projectArg, presetMusic: widget.sound, presetKeepAudio: widget.sound == null, presetPin: widget.pin, presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto));
+        if (mounted) _openStudio(MontageEditorPage(template: kPlainTemplate, showSignature: widget.showSignature, project: _projectArg, presetMusic: widget.sound, presetKeepAudio: widget.sound == null, presetPin: widget.pin, presetVideoPath: _presetVideo, presetPhotoPath: _presetPhoto, autoFinish: widget.autoFinish && widget.sound != null));
       });
     }
   }

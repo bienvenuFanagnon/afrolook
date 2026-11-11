@@ -226,7 +226,7 @@ class _CreditsTemplatePageState extends State<CreditsTemplatePage> with SingleTi
       await MontageMusicPlayer.stop();
       PostTemplateLink.set(TemplateRef.fromStudioId(widget.template.id)?.code);   // le post comptera une utilisation et affichera « Essayer ce modèle »
       final r = await Navigator.of(context).push<String>(MaterialPageRoute(
-        builder: (_) => CreateEditorPage(path: video.path, isVideo: true, source: PostSourceLink.imported, showSignature: true, sound: _music),
+        builder: (_) => CreateEditorPage(path: video.path, isVideo: true, source: PostSourceLink.imported, showSignature: true, sound: _music, autoFinish: true),
       ));
       if (r == kCreateDone && mounted) {
         Navigator.of(context).pop(kCreateDone);
