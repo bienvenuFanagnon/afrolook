@@ -3522,6 +3522,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           SliverList(
             delegate: SliverChildListDelegate([
               if (widget.type.isEmpty) _buildNoNewPostsBanner(),
+              if (widget.type == TabBarType.EVENEMENT.name || widget.type == TabBarType.SPORT.name) _buildNoMoreOfTypeBanner(),
               _buildDiscoverySection(width, height),
               const OfferwallFeedCard(key: ValueKey('offerwall_card_home_empty'), slot: 7),
               const GiftRewardCard(key: ValueKey('gift_card_home_empty'), slot: 3),
@@ -4111,6 +4112,34 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
             ? _buildPostWidget(post, width, height, 1000 + i)
             : GestureDetector(onTap: () => _navigateToPostDetails(post), child: _buildPostWidget(post, width, height, 1000 + i));
       },
+    );
+  }
+
+  /// Page Sorties ou Sport sans aucune publication de sa catégorie : le dire clairement (plus de complément avec d'autres catégories).
+  Widget _buildNoMoreOfTypeBanner() {
+    final colors = AppColors.of(context);
+    final events = widget.type == TabBarType.EVENEMENT.name;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(color: colors.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: colors.border.withOpacity(0.4))),
+      child: Column(
+        children: [
+          Icon(events ? Icons.event_busy_rounded : Icons.sports_score_rounded, color: colors.textSecondary, size: 44),
+          const SizedBox(height: 12),
+          Text(
+            context.tr(events ? "Pas d'autres sorties pour le moment" : "Pas d'autres posts de sport pour le moment"),
+            textAlign: TextAlign.center,
+            style: TextStyle(color: colors.textPrimary, fontSize: 15, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            context.tr("Reviens plus tard, ou regarde l'onglet Récents pour tout ce qui vient d'être publié."),
+            textAlign: TextAlign.center,
+            style: TextStyle(color: colors.textSecondary, fontSize: 13),
+          ),
+        ],
+      ),
     );
   }
 

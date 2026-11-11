@@ -25,13 +25,15 @@ import '../../widgets/api_error_dialogs.dart';
 import '../../widgets/monetized_post_option.dart';
 import '../../widgets/original_badge.dart';
 import '../defi/defi_ui.dart';
+import '../userPosts/postWidgets/defi_config_section.dart';
+import 'defi_launch_intent.dart';
 import '../studio/studio_sound_link.dart';
 import '../studio/montage/montage_preview_page.dart';
 import '../user/userAbonnementPage.dart';
 import 'create_result.dart';
 import 'cover_picker_sheet.dart';
 
-/// Types de publication proposés (le type « Défi » se crée depuis l'espace Défis).
+/// Types de publication proposés. Le type « Défi » (cagnotte, date de fin) est aussi proposé ici ; il n'est pas offert dans un canal.
 const Map<String, ({String label, IconData icon})> kCreatePostTypes = {
   'LOOKS': (label: 'Looks', icon: Icons.style_rounded),
   'ACTUALITES': (label: 'Actualités', icon: Icons.article_rounded),
@@ -39,6 +41,7 @@ const Map<String, ({String label, IconData icon})> kCreatePostTypes = {
   'EVENEMENT': (label: 'Événement', icon: Icons.event_rounded),
   'OFFRES': (label: 'Offres', icon: Icons.local_offer_rounded),
   'GAMER': (label: 'Games story', icon: Icons.sports_esports_rounded),
+  'DEFI': (label: 'Défi 🏆', icon: Icons.emoji_events_rounded),
 };
 
 /// Limites selon le plan : caractères de la description, poids de la vidéo (Mo), nombre de pays (-1 = tous).
@@ -105,6 +108,7 @@ class _CreatePublishPageState extends State<CreatePublishPage> {
   late final UserData _me;
   late final ({int chars, int videoMb, int countries}) _limits;
   String _type = 'LOOKS';
+  DefiConfig? _defiConfig;   // réglages du défi que la personne LANCE (type « Défi ») : cagnotte, frais, gagnants, date de fin
   DateTime? _eventDate;
   final List<String> _countries = [];
   bool _all = false;
@@ -116,6 +120,8 @@ class _CreatePublishPageState extends State<CreatePublishPage> {
   File? _cover;   // couverture choisie par la personne (null = image prise automatiquement à 1 seconde)
 
   bool get _isDefi => widget.defiPostId != null;
+  /// La personne LANCE un défi (type « Défi »), par opposition à _isDefi : elle répond à un défi existant.
+  bool get _creatingDefi => !_isDefi && _type == 'DEFI';
 
   @override
   void initState() {
@@ -123,6 +129,7 @@ class _CreatePublishPageState extends State<CreatePublishPage> {
     _me = widget.me ?? context.read<UserAuthProvider>().loginUserData;
     _limits = createLimitsFor(_me);
     _desc.text = widget.initialDescription ?? '';
+    if (DefiLaunchIntent.take() && !_isDefi && widget.canal == null) _type = 'DEFI';   // « Lancer un défi » depuis l'espace Défis
     final code = (_me.countryData?['countryCode'])?.toUpperCase();
     if (code != null && code.isNotEmpty) _countries.add(code);
     if (widget.video != null && !kIsWeb) _initVideo();
@@ -171,7 +178,7 @@ class _CreatePublishPageState extends State<CreatePublishPage> {
           const SizedBox(height: 10),
           Container(width: 40, height: 4, decoration: BoxDecoration(color: c.border, borderRadius: BorderRadius.circular(99))),
           Padding(padding: const EdgeInsets.fromLTRB(20, 16, 20, 6), child: Align(alignment: Alignment.centerLeft, child: Text(context.tr('Type de publication'), style: TextStyle(color: c.textPrimary, fontSize: 17, fontWeight: FontWeight.w800)))),
-          for (final e in kCreatePostTypes.entries)
+          for (final e in kCreatePostTypes.entries.where((e) => e.key != 'DEFI' || widget.canal == null))
             ListTile(
               key: ValueKey('type_${e.key}'),
               leading: Icon(e.value.icon, color: _type == e.key ? c.accentText : c.textSecondary),
@@ -343,6 +350,10 @@ class _CreatePublishPageState extends State<CreatePublishPage> {
       return;
     }
     if (!_all && _countries.isEmpty) return _say(context.tr('Choisis au moins un pays.'));
+    if (_creatingDefi) {
+      if (_defiConfig == null) return _say(context.tr('Complète la configuration du défi (date de fin et cagnotte).'));
+      if (widget.canal != null) return _say(context.tr('Un défi ne peut pas être publié dans un canal.'));
+    }
     if (_type == 'EVENEMENT' && !_isDefi) {
       if (_eventDate == null) return _say(context.tr('Choisis la date de l\'événement.'));
     }
@@ -372,8 +383,8 @@ class _CreatePublishPageState extends State<CreatePublishPage> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _busy = false);
-      if (_isDefi) {
-        DefiDialogs.handleError(context, e, isVote: false, isCreation: false, onRetry: _publish);
+      if (_isDefi || _creatingDefi) {
+        DefiDialogs.handleError(context, e, isVote: false, isCreation: _creatingDefi, onRetry: _publish);
       } else {
         handleApiError(context, e, onRetry: _publish, fallback: context.tr('Erreur lors de la publication. Réessaie.'));
       }
@@ -417,7 +428,9 @@ class _CreatePublishPageState extends State<CreatePublishPage> {
     }
     void onProgress(double v) => _progress.value = v;
     final Post post;
-    if (widget.defiPostId != null) {
+    if (_creatingDefi) {
+      post = await PostPublisher.publishDefi(config: _defiConfig!, description: text, files: files, bytes: bytes, bytesContentType: contentType, category: type, countries: countries, thumbnail: thumb, onProgress: onProgress);
+    } else if (widget.defiPostId != null) {
       post = await PostPublisher.participateDefi(widget.defiPostId!, description: text, files: files, bytes: bytes, bytesContentType: contentType, category: type, countries: countries, thumbnail: thumb, onProgress: onProgress);
     } else {
       post = await PostPublisher.publish(
@@ -623,7 +636,11 @@ class _CreatePublishPageState extends State<CreatePublishPage> {
                 _field(c, key: const ValueKey('field_date'), label: context.tr('Date de l\'événement'), value: _eventDate == null ? context.tr('Choisir') : '${_eventDate!.day}/${_eventDate!.month}/${_eventDate!.year}', icon: Icons.calendar_today_rounded, onTap: _pickDate),
               _field(c, key: const ValueKey('field_countries'), label: context.tr('Pays'), value: _countriesLabel, icon: Icons.public_rounded, onTap: _pickCountries),
               // monétisation : choisie ici par l'auteur (désactivée par défaut) ; un Défi n'est jamais monétisé, un post lien d'un autre réseau non plus (décidé par le serveur)
-              if (!_isDefi) ...[
+              if (_creatingDefi) ...[
+                const SizedBox(height: 14),
+                DefiConfigSection(key: const ValueKey('defi_config'), onChanged: (config) => setState(() => _defiConfig = config)),
+              ],
+              if (!_isDefi && !_creatingDefi) ...[
                 const SizedBox(height: 14),
                 MonetizedPostOption(key: const ValueKey('field_monetized'), value: _monetized, onChanged: (v) => setState(() => _monetized = v)),
               ],

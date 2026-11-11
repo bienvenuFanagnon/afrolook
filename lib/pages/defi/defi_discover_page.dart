@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../models/model_data.dart';
 import '../../services/api/defis_api.dart';
+import '../../l10n/tr.dart';
 import '../../theme/app_colors.dart';
+import '../create/create_hub_page.dart';
+import '../create/defi_launch_intent.dart';
 import '../../widgets/feed/post_renderer.dart';
 
 /// Découverte des DÉFIS (API) : du plus récent au plus ancien, par pages. Aucun repli sur Firebase : en cas d'erreur, message clair + « Réessayer ».
@@ -98,6 +101,14 @@ class _DefiDiscoverPageState extends State<DefiDiscoverPage> {
     await _loadPosts();
   }
 
+  /// Ouvre le parcours de création avec le type « Défi 🏆 » déjà choisi, puis relit la liste au retour.
+  Future<void> _launch() async {
+    DefiLaunchIntent.pending = true;
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => const CreateHubPage()));
+    DefiLaunchIntent.pending = false;
+    if (mounted) _refresh();
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
@@ -118,6 +129,14 @@ class _DefiDiscoverPageState extends State<DefiDiscoverPage> {
           ],
         ),
         iconTheme: IconThemeData(color: colors.textPrimary),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        key: const ValueKey('defi_launch'),
+        onPressed: _launch,
+        backgroundColor: colors.accent,
+        foregroundColor: colors.onAccent,
+        icon: const Icon(Icons.emoji_events_rounded),
+        label: Text(context.tr('Lancer un défi'), style: const TextStyle(fontWeight: FontWeight.w800)),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: Color(0xFFFFE14D)))

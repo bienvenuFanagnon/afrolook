@@ -90,4 +90,24 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('field_monetized')), findsNothing);
   });
+
+  testWidgets('le type « Défi 🏆 » est proposé : il affiche les réglages du défi, retire la monétisation et exige la configuration avant de publier', (tester) async {
+    tall(tester);
+    var calls = 0;
+    await tester.pumpWidget(_host(CreatePublishPage(kind: CreatePostKind.audio, audioSeconds: 20, me: _user(), publish: (d, t, c) async => calls++)));
+    expect(find.byKey(const ValueKey('field_monetized')), findsOneWidget);
+    expect(find.byKey(const ValueKey('defi_config')), findsNothing);
+    await tester.tap(find.byKey(const ValueKey('field_type')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('type_DEFI')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('type_DEFI')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('defi_config')), findsOneWidget);
+    expect(find.byKey(const ValueKey('field_monetized')), findsNothing);   // un défi n'est jamais monétisé
+    await tester.tap(find.byKey(const ValueKey('publish_go')));
+    await tester.pumpAndSettle();
+    expect(find.text('Complète la configuration du défi (date de fin et cagnotte).'), findsOneWidget);   // rien n'est publié sans la cagnotte et la date de fin
+    expect(calls, 0);
+    expect(tester.takeException(), isNull);
+  });
 }

@@ -19,11 +19,14 @@ class HomeFeedApi {
     // Page thématique (Sport, Événements, Looks…) : le même fil « pour toi » que l'accueil (non vu, abonnements d'abord, goûts), filtré par thème,
     // et sans fin (quand le récent est épuisé, le serveur élargit à 90 jours, un an, tout l'historique). Le curseur est celui de /feed/for-you.
     final themed = tier == 3 && category != null && category.isNotEmpty;
+    // Sorties et Sport : seulement leur propre catégorie (jamais le complément d'autres thèmes du serveur : des Looks dans « Sorties » troublaient les gens)
+    final strict = themed && (category == 'EVENEMENT' || category == 'SPORT');
     final r = await _c.get(themed ? '/feed/for-you' : '/feed', query: {
       if (!themed) 'tier': tier,
       'limit': themed ? limit.clamp(1, 30) : limit,
       if (cursor != null) 'cursor': cursor,
       if (category != null && category.isNotEmpty) 'category': category,
+      if (strict) 'strict': 1,
       if (cc != null && RegExp(r'^[A-Z]{2}$').hasMatch(cc)) 'country': cc,
     }) as Map;
     final posts = ((r['data'] as List?) ?? const []).whereType<Map>().map((m) => postFromApi(Map<String, dynamic>.from(m))).where((p) => p.id != null).toList();

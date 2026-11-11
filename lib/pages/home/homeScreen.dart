@@ -145,6 +145,7 @@ import '../defi/defi_discover_page.dart';
 import '../../services/viral_service.dart';
 import '../../widgets/viral_widgets.dart';
 import '../viral/viral_page.dart';
+import '../recent/recent_posts_page.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/theme_provider.dart';
@@ -1066,20 +1067,26 @@ class _MyHomePageState extends State<MyHomePage>
 
 
     // _tabController = TabController(length: _tabs.length, vsync: this);
-    _tabController = TabController(length: 6, vsync: this);
+    _tabController = TabController(length: 7, vsync: this);
     // Écouter le changement d'onglet
     _tabController!.addListener(() {
       if (_tabController!.indexIsChanging) return;
 
-      // index 1 → 🔥 Viral (push + retour à 0 ; le « +N » est relu au retour)
+      // index 1 → 🕒 Récents : tout ce qui vient d'être publié, toutes catégories (push + retour à 0)
       if (_tabController!.index == 1) {
+        Navigator.push(context, MaterialPageRoute(builder: (context) => const RecentPostsPage())).then((_) {
+          _tabController!.animateTo(0);
+        });
+      }
+      // index 2 → 🔥 Viral (push + retour à 0 ; le « +N » est relu au retour)
+      if (_tabController!.index == 2) {
         Navigator.push(context, MaterialPageRoute(builder: (context) => const ViralPage())).then((_) {
           ViralService.refresh(force: true);
           _tabController!.animateTo(0);
         });
       }
-      // index 2 → Sport (push + retour à 0)
-      if (_tabController!.index == 2) {
+      // index 3 → Sport (push + retour à 0)
+      if (_tabController!.index == 3) {
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -1090,8 +1097,8 @@ class _MyHomePageState extends State<MyHomePage>
           _tabController!.animateTo(0);
         });
       }
-      // index 4 → Actualités (push + retour à 0) ; le fil Découverte reste dans le menu
-      if (_tabController!.index == 4) {
+      // index 5 → Actualités (push + retour à 0) ; le fil Découverte reste dans le menu
+      if (_tabController!.index == 5) {
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -1102,8 +1109,8 @@ class _MyHomePageState extends State<MyHomePage>
           _tabController!.animateTo(0);
         });
       }
-      // index 5 → Défis (push + retour à 0)
-      if (_tabController!.index == 5) {
+      // index 6 → Défis (push + retour à 0)
+      if (_tabController!.index == 6) {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => const DefiDiscoverPage()),
@@ -1547,7 +1554,6 @@ class _MyHomePageState extends State<MyHomePage>
   // AppBar "Découvrir" (supprimée) depuis la barre supérieure combinée.
   final GlobalKey<State<HomeConstPostPage>> _looksRecentKey = GlobalKey();
   final GlobalKey<State<HomeConstPostPage>> _recentFeedKey = GlobalKey();
-  final GlobalKey<State<HomeConstPostPage>> _looksPopularKey = GlobalKey();
 
   @override
   Widget build(BuildContext context) {
@@ -1817,6 +1823,7 @@ class _MyHomePageState extends State<MyHomePage>
                       tabAlignment: TabAlignment.start,
                       tabs: [
                         Tab(text: l10n.tabHome),
+                        Tab(text: context.tr('🕒 Récents')),
                         const Tab(child: ViralTabLabel()),
                         Tab(text: l10n.tabSport),
                         Tab(text: l10n.tabEvents),
@@ -2051,10 +2058,8 @@ class _MyHomePageState extends State<MyHomePage>
     switch (_tabController?.index ?? 0) {
       case 0:
         return _looksRecentKey;
-      case 3:
+      case 4:
         return _discoverKey;
-      case 6:
-        return _looksPopularKey;
       default:
         return null;
     }
@@ -2184,6 +2189,7 @@ class _MyHomePageState extends State<MyHomePage>
   /// Enfants du TabBarView — partagés par le layout mobile et wide.
   List<Widget> get _tabViewChildren => [
     LooksPage(type: TabBarType.LOOKS.name, feedKey: _looksRecentKey),
+    const SizedBox.shrink(), // Récents → push page dédiée
     const SizedBox.shrink(), // Viral → push page dédiée
     const SizedBox.shrink(), // Sport → push page dédiée
     HomeConstPostTypePage(key: _discoverKey, type: TabBarType.EVENEMENT.name, sortType: 'recent'),
@@ -2674,6 +2680,7 @@ class _MyHomePageState extends State<MyHomePage>
         tabAlignment: TabAlignment.start,
         tabs: [
           Tab(text: l10n.tabHome),
+          Tab(text: context.tr('🕒 Récents')),
           const Tab(child: ViralTabLabel()),
           Tab(text: l10n.tabSport),
           Tab(text: l10n.tabEvents),
