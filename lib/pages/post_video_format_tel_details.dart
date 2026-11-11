@@ -151,6 +151,7 @@ import 'package:afrotok/services/comment_coins.dart';
 import 'package:afrotok/widgets/post_coins_earned.dart';
 import 'intro/monetization_tutorial.dart';
 import '../utils/platform_guard.dart';
+import '../services/ad_rotation_service.dart';
 
 const _afroBlack = Color(0xFF000000);
 const _afroGreen = Color(0xFF2ECC71);
@@ -1052,7 +1053,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
       // Une page de pub toutes les 4 vidéos (gratuit uniquement) : pub du réseau (Appodeal / AdMob) d'abord, pub Afrolook Ads sinon
       if (!skipAds && postCount % 4 == 0 && i != mixedPosts.length - 1) {
-        _feedItems.add(_VideoAdSentinel(ads.isEmpty ? null : ads[adIdx % ads.length]));
+        // ordre inchangé : la pub du réseau d'abord, l'annonce d'Afrolook Ads seulement quand le réseau n'a rien de prêt ; l'annonce de repli tourne d'une page à l'autre (et non toujours la première)
+        _feedItems.add(_VideoAdSentinel(ads.isEmpty ? null : ads[AdRotationService.instance.claimNext(ads.length)]));
         adIdx++;
       }
 
@@ -1097,7 +1099,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
       // Toutes les 4 vidéos (gratuit uniquement)
       if (!skipAds && videoIdx % 4 == 0 && videoIdx < _videoPosts.length) {
-        _feedItems.add(_VideoAdSentinel(ads.isEmpty ? null : ads[adIdx % ads.length]));
+        // ordre inchangé : la pub du réseau d'abord, l'annonce d'Afrolook Ads seulement quand le réseau n'a rien de prêt ; l'annonce de repli tourne d'une page à l'autre (et non toujours la première)
+        _feedItems.add(_VideoAdSentinel(ads.isEmpty ? null : ads[AdRotationService.instance.claimNext(ads.length)]));
         adIdx++;
       }
     }

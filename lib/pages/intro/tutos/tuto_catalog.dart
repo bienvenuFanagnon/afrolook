@@ -139,7 +139,7 @@ final List<TutoScene> kTutoScenes = [
     ],
     target: 3, hint: 'Choisis une tâche et termine-la',
     gainEmoji: '💰', gainTitle: '+3 000 pièces = 1 200 F', gainSub: 'pour une seule tâche, convertis en argent réel',
-    earn: 'Jusqu’à 6 000 F par jour, soit jusqu’à 180 000 F par mois, et tes pièces se convertissent en argent réel',
+    earn: 'Jusqu’à 10 000 F par jour, soit jusqu’à 300 000 F par mois, et tes pièces se convertissent en argent réel',
     actionLabel: 'Voir les tâches', action: (c) => _push(c, const OfferwallTasksPage()), publicScene: false,
   ),
   TutoScene(
