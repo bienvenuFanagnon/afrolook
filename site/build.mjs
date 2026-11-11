@@ -28,7 +28,7 @@ const dist = path.join(root, 'dist');
 const HAS_APP = fs.existsSync(path.join(root, '..', 'build', 'web', 'main.dart.js'));
 const flagsDir = process.env.FLAGS_DIR || path.join(root, 'static/img/flags');
 
-const ASSET_V = '59';
+const ASSET_V = '60';
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const slug = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const write = (p, c) => { const f = path.join(dist, p); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, c); };

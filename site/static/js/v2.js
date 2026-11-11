@@ -215,12 +215,13 @@ function initFlags(box){
   const btn=document.getElementById('lbtn'),sum=document.getElementById('lsum'),rng=document.getElementById('lrange'),aud=document.getElementById('lAud');
   const free=document.getElementById('lfree'),net=document.getElementById('lnet'),share=document.getElementById('lshare');
   const fmt=n=>Math.round(n).toLocaleString(EN_?'en-US':'fr-FR').replace(/[  ]/g,' ');
+  let CTR=.02;   /* taux de visite de départ ; remplacé par le taux réel du moment lu depuis l'API (voir plus bas) */
   function upd(){
     aud.hidden=!share.checked;
     const t=types.querySelector('[aria-pressed="true"]'),n=+rng.value,rows=[[L("Type d'annonce",'Ad type'),t?t.textContent.trim():'—']];
     if(free.checked)rows.push([L('Gratuit sur 4 plateformes','Free on 4 platforms'),'0 FCFA']);
     if(net.checked)rows.push([L('Afrolook et partenaires','Afrolook and partners'),L('Budget au choix','Budget of your choice')]);
-    if(share.checked){rows.push([L('Audience du partage','Sharing audience'),fmt(n)+L(' personnes',' people')]);rows.push([L('Prix du partage','Sharing price'),fmt(n/1000*500)+' FCFA']);rows.push([L('Visites estimées (environ 2 %)','Estimated visits (about 2%)'),fmt(n*.02)]);}
+    if(share.checked){rows.push([L('Audience du partage','Sharing audience'),fmt(n)+L(' personnes',' people')]);rows.push([L('Prix du partage','Sharing price'),fmt(n/1000*500)+' FCFA']);rows.push([L('Visites estimées','Estimated visits'),L(fmt(n*CTR*.5)+' à '+fmt(n*CTR*1.5),fmt(n*CTR*.5)+' to '+fmt(n*CTR*1.5))]);rows.push([L('Tu paies pour être montré à ces personnes ; les visites dépendent de ceux qui cliquent.','You pay to be shown to these people; visits depend on who clicks.'),'']);}
     if(!free.checked&&!net.checked&&!share.checked)rows.push([L('Diffusion','Delivery'),L('Choisis une option','Choose an option')]);
     const go=document.getElementById('v-lgo');if(go)go.href='/ads/espace/'+(share.checked?'?aud='+n:'');
     sum.innerHTML=rows.map(r=>'<li><span>'+r[0]+'</span><b>'+r[1]+'</b></li>').join('');
@@ -230,6 +231,8 @@ function initFlags(box){
   [free,net,share,rng].forEach(c=>c.addEventListener('input',upd));
   document.querySelectorAll('[data-free]').forEach(a=>a.addEventListener('click',()=>{free.checked=true;upd();}));
   upd();
+  const audMeta=document.querySelector('meta[name="afl-audience-api"]');
+  if(audMeta)fetch(audMeta.content).then(r=>r.ok?r.json():null).then(j=>{if(j&&j.ctr>0){CTR=j.ctr/100;upd();}}).catch(()=>{});
 })();
 
 function fillScreens(){

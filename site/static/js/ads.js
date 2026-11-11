@@ -237,14 +237,14 @@ if (simBox) {
   const num = $('#sim-n'), rng = $('#sim-b'), nfmt = (v) => Number(v).toLocaleString(EN ? 'en-US' : 'fr-FR');
   const drawSim = () => {
     const b = Math.max(0, Math.min(2500000, Math.round(Number(num.value) || 0)));
-    const aud = Math.round((b / cfg.per) * 1000), vis = Math.round((aud * cfg.ctr) / 100), cpv = vis > 0 ? Math.round(b / vis) : 0;
-    $('#sim-aud').textContent = b >= 1000 ? nfmt(aud) : '—'; $('#sim-vis').textContent = vis > 0 && b >= 1000 ? '≈ ' + nfmt(vis) : '—'; $('#sim-cpv').textContent = cpv > 0 && b >= 1000 ? '≈ ' + nfmt(cpv) + ' F' : '—';
+    const aud = Math.round((b / cfg.per) * 1000), lo = Math.round((aud * cfg.ctr * 0.5) / 100), hi = Math.round((aud * cfg.ctr * 1.5) / 100), ok = hi > 0 && b >= 1000, between = (x, y, u = '') => `${nfmt(x)}${EN ? ' to ' : ' à '}${nfmt(y)}${u}`;
+    $('#sim-aud').textContent = b >= 1000 ? nfmt(aud) : '—'; $('#sim-vis').textContent = ok ? between(lo, hi) : '—'; $('#sim-cpv').textContent = ok && lo > 0 ? between(Math.round(b / hi), Math.round(b / lo), ' F') : '—';
     $('#sim-go').href = '/ads/espace/' + (aud >= 1000 ? '?aud=' + Math.min(5000000, Math.round(aud / 1000) * 1000) : '');
     if (b >= Number(rng.min) && b <= Number(rng.max)) rng.value = String(b);
     const ctrTxt = String(cfg.ctr).replace('.', EN ? '.' : ','), perTxt = nfmt(cfg.per), note = $('#sim-note');
     note.textContent = EN
-      ? `Indicative estimate: ${ctrTxt}% of the audience visits your link (observed average rate, it varies with your ad). Current rate: ${perTxt} F per 1,000 people. You pay for the audience; only valid visits are counted and you follow everything live in your space.`
-      : `Estimation indicative : ${ctrTxt} % de l'audience visite ton lien (taux moyen constaté, il varie selon ton annonce). Tarif actuel : ${perTxt} F pour 1 000 personnes. Tu paies l'audience ; seules les visites valides sont comptées et tu suis tout en direct dans ton espace.`;
+      ? `Indicative estimate: the number of visits depends on who clicks your link; the range follows the results observed on Afrolook. Current rate: ${perTxt} F per 1,000 people. You pay for the audience; only valid visits are counted and you follow everything live in your space.`
+      : `Estimation indicative : le nombre de visites dépend de ceux qui cliquent sur ton lien ; la fourchette suit les résultats constatés sur Afrolook. Tarif actuel : ${perTxt} F pour 1 000 personnes. Tu paies l'audience ; seules les visites valides sont comptées et tu suis tout en direct dans ton espace.`;
   };
   num.addEventListener('input', drawSim);
   rng.addEventListener('input', () => { num.value = rng.value; drawSim(); });
