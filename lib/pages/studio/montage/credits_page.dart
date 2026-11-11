@@ -10,9 +10,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../l10n/tr.dart';
-import '../../../services/api/api_gateway.dart';
 import '../../../services/api/argent_upload.dart';
-import '../../../services/api/wallet_api.dart';
+import '../../../services/api/studio_slideshow_api.dart';
 import '../../../services/authentic_video_check.dart';
 import '../../../services/post_source_link.dart';
 import '../../../services/template_link.dart';
@@ -206,13 +205,11 @@ class _CreditsTemplatePageState extends State<CreditsTemplatePage> with SingleTi
     final textId = await ArgentUpload.bytes(text, contentType: 'image/png');
     if (!mounted) return null;
     setState(() => _busyLabel = context.tr('Montage du générique…'));
-    final res = await ApiGateway.instance.client.post(
-      '/studio/slideshow',
-      body: {'uploads': ids, 'durations': List.filled(ids.length, _per), 'transition': 'fade', 'format': 'story', 'max_seconds': 60, 'scroll_upload': textId},
+    final res = await StudioSlideshowApi.render(
+      {'uploads': ids, 'durations': List.filled(ids.length, _per), 'transition': 'fade', 'format': 'story', 'max_seconds': 60, 'scroll_upload': textId},
       idempotencyKey: 'credits:${const Uuid().v4()}',
-      longJob: true,
     );
-    final url = '${WalletApi.map(res)['url']}';
+    final url = '${res['url']}';
     final r = await http.get(Uri.parse(url));
     if (r.statusCode != 200) throw ApiException(status: r.statusCode, code: 'download_failed', message: 'Téléchargement impossible');
     final dir = await getTemporaryDirectory();

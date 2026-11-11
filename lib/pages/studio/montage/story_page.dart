@@ -10,9 +10,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../l10n/tr.dart';
-import '../../../services/api/api_gateway.dart';
 import '../../../services/api/argent_upload.dart';
-import '../../../services/api/wallet_api.dart';
+import '../../../services/api/studio_slideshow_api.dart';
 import '../../../services/authentic_video_check.dart';
 import '../../../services/post_source_link.dart';
 import '../../../services/template_link.dart';
@@ -118,13 +117,11 @@ class _StoryTemplatePageState extends State<StoryTemplatePage> {
     }
     if (!mounted) return null;
     setState(() => _busyLabel = context.tr('Montage de l\'histoire…'));
-    final res = await ApiGateway.instance.client.post(
-      '/studio/slideshow',
-      body: {'uploads': ids, 'durations': [for (final a in _acts) a.seconds], 'transition': widget.script.transition, 'format': 'story', 'max_seconds': 60},
+    final res = await StudioSlideshowApi.render(
+      {'uploads': ids, 'durations': [for (final a in _acts) a.seconds], 'transition': widget.script.transition, 'format': 'story', 'max_seconds': 60},
       idempotencyKey: 'story:${const Uuid().v4()}',
-      longJob: true,
     );
-    final url = '${WalletApi.map(res)['url']}';
+    final url = '${res['url']}';
     final r = await http.get(Uri.parse(url));
     if (r.statusCode != 200) throw ApiException(status: r.statusCode, code: 'download_failed', message: 'Téléchargement impossible');
     final dir = await getTemporaryDirectory();

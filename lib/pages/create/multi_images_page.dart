@@ -10,9 +10,8 @@ import 'package:uuid/uuid.dart';
 
 import '../../l10n/tr.dart';
 import '../../models/model_data.dart';
-import '../../services/api/api_gateway.dart';
 import '../../services/api/argent_upload.dart';
-import '../../services/api/wallet_api.dart';
+import '../../services/api/studio_slideshow_api.dart';
 import '../../services/authentic_video_check.dart';
 import '../../services/collage_layouts.dart';
 import '../../services/image_framing.dart';
@@ -249,8 +248,11 @@ class _MultiImagesPageState extends State<MultiImagesPage> {
       ids.add(await ArgentUpload.bytes(bytes, contentType: ArgentUpload.sniffImageType(bytes, path: f.path)));   // type réel du contenu, pas celui de l'extension
     }
     _setBusy(context.tr('Montage du diaporama…'));
-    final res = await ApiGateway.instance.client.post('/studio/slideshow', body: {'uploads': ids, if (_manual) 'durations': _durations else 'total_seconds': _total, 'max_seconds': SlideshowPlan.maxTotal, 'transition': _transition, 'format': _format}, idempotencyKey: 'slideshow:${const Uuid().v4()}', longJob: true);
-    final url = '${WalletApi.map(res)['url']}';
+    final res = await StudioSlideshowApi.render(
+      {'uploads': ids, if (_manual) 'durations': _durations else 'total_seconds': _total, 'max_seconds': SlideshowPlan.maxTotal, 'transition': _transition, 'format': _format},
+      idempotencyKey: 'slideshow:${const Uuid().v4()}',
+    );
+    final url = '${res['url']}';
     _setBusy(context.tr('Téléchargement…'));
     final r = await http.get(Uri.parse(url));
     if (r.statusCode != 200) throw ApiException(status: r.statusCode, code: 'download_failed', message: 'Téléchargement impossible');
