@@ -93,6 +93,7 @@ import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'firebase_options.dart';
+import 'services/crash_reporting.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_provider.dart';
@@ -170,6 +171,7 @@ Future<void> main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
     StartupTrace.mark('  Firebase initialisé');
+    unawaited(CrashReporting.init());   // rapports de plantages + mémoire du téléphone (aucune donnée personnelle)
     unawaited(AppMessaging.init());   // messages dans l'application (campagnes de la console Firebase)
 
     // App Check — active l'attestation pour protéger Firestore/Functions
