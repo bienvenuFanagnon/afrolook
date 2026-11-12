@@ -49,6 +49,7 @@ import '../../../providers/mixed_feed_service_provider.dart';
 import 'dart:typed_data';
 
 import '../userPosts/youTube_video_card.dart';
+import '../../widgets/feed/feed_post_card.dart';
 import '../userPosts/video_preload_manager.dart';
 import 'feed_cache_service.dart';
 import '../../services/postService/post_view_service.dart';
@@ -204,6 +205,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   bool _hasErrorPosts = false;
   bool _isLoadingMorePosts = false;
   bool _hasMorePosts = true;
+
+  /// Le dernier chargement du fil a ÉCHOUÉ (réseau coupé, délai dépassé, erreur du serveur) : la fin de liste affiche « Impossible de charger » et « Réessayer »,
+  /// jamais « Tu as tout vu ! » (une erreur n'est pas une fin de fil).
+  bool _feedLoadFailed = false;
   // true dès que l'utilisateur s'est abonné à au moins un créateur/canal depuis FeedEndDiscoverySection
   bool _hasSubscribedFromEndFeed = false;
   bool _isReloadingAfterSubscribe = false;
@@ -1126,6 +1131,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
 
       // Vérifier s'il reste des posts à charger
       _hasMorePosts = _infiniteFeed ? newPosts.isNotEmpty : newPosts.length >= (_backgroundLoadLimit ~/ 2);
+      _feedLoadFailed = _infiniteFeed && newPosts.isEmpty && FeedRepository().lastError != null;
 
       // Si on atteint la limite de background, désactiver
       if (_backgroundPostsLoaded >= _maxBackgroundPosts) {
@@ -1886,6 +1892,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
         _isFirstLoad = false;
         // File infinie : le fil continue tant que le serveur a des posts non vus ; sinon (anciens écrans) T2+T3 sur demande
         _hasMorePosts = _infiniteFeed;
+        _feedLoadFailed = _infiniteFeed && newPosts.isEmpty && FeedRepository().lastError != null;
       });
       _reapplyOwnNewPost();
       _logBadgeSummary();
@@ -2579,6 +2586,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       }
 
       _hasMorePosts = _infiniteFeed ? newPosts.isNotEmpty : newPosts.length >= (_manualLoadLimit ~/ 2);
+      _feedLoadFailed = _infiniteFeed && newPosts.isEmpty && FeedRepository().lastError != null;
 
     } catch (e) {
       printVm('❌ Erreur chargement manuel: $e');
@@ -3247,37 +3255,14 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
           Container(
             child: Stack(
               children: [
-                post.type == PostType.PRONOSTIC.name
-                    ? SizedBox.shrink()
-                    : (post.type == PostType.POST.name && post.dataType == PostDataType.VIDEO.name)
-                    ? YouTubeVideoCard(
-                  key: ValueKey('ytcard_${post.id}'),
+                // Carte partagée avec l'onglet « Récents » : vidéo = YouTubeVideoCard (lecture automatique), autre type = HomePostUsersWidget
+                FeedPostCard(
                   post: post,
                   index: index,
-                  suppressInlineAd: true,
-                  onNeighborhoodPreload: _preloadVideoNeighborhood,
-                  currentFilterCountry: _currentFilter == 'ALL' || _currentFilter == 'MIXED' ? null : _selectedCountryCode,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => VideoYoutubePageDetails(
-                          initialPost: post,
-                          feedTier: isTier1 ? 'tier1' : isTier2 ? 'tier2' : 'tier3',
-                        ),
-                      ),
-                    );
-                  },
-                )
-                    : HomePostUsersWidget(
-                  key: ValueKey('hwp-${post.id}'),
-                  index: index,
-                  post: post,
-                  color: _getRandomColor(),
-                  height: height * 0.6,
                   width: width,
-                  isDegrade: true,
-                  suppressInlineAd: true,
+                  height: height,
+                  color: _getRandomColor(),
+                  onNeighborhoodPreload: _preloadVideoNeighborhood,
                   currentFilterCountry: _currentFilter == 'ALL' || _currentFilter == 'MIXED' ? null : _selectedCountryCode,
                   feedTier: isTier1 ? 'tier1' : isTier2 ? 'tier2' : 'tier3',
                 ),
@@ -3877,10 +3862,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
       child: Column(
         children: [
-          Icon(Icons.flag, color: colors.primary, size: 32),
+          Icon(_feedLoadFailed ? Icons.cloud_off_rounded : Icons.flag, color: colors.primary, size: 32),
           const SizedBox(height: 8),
           Text(
-            'Tu as tout vu !',
+            _feedLoadFailed ? context.tr('Impossible de charger les posts pour le moment. Vérifie ta connexion puis réessaie.') : 'Tu as tout vu !',
+            key: ValueKey(_feedLoadFailed ? 'feed_load_failed' : 'feed_all_seen'),
             style: TextStyle(color: colors.textSecondary, fontSize: 14),
             textAlign: TextAlign.center,
           ),
@@ -3908,7 +3894,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
                 key: const ValueKey('see_more_posts'),
                 onPressed: _reloadDiscoveryInPlace,
                 icon: Icon(Icons.expand_more_rounded, size: 20, color: colors.primary),
-                label: Text(context.tr('Voir plus de posts'), style: TextStyle(color: colors.primary, fontWeight: FontWeight.w600)),
+                label: Text(context.tr(_feedLoadFailed ? 'Réessayer' : 'Voir plus de posts'), style: TextStyle(color: colors.primary, fontWeight: FontWeight.w600)),
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(color: colors.primary.withOpacity(0.6)),
                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -3928,10 +3914,12 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       _isLoadingMorePosts = true;
     });
     var added = 0;
+    var failed = false;
     try {
       final ids = Set<String>.from(_loadedPostIds);
       final fresh = <Post>[];
       await _loadMorePostsByFilter(ids, fresh, 20, reset: true);
+      failed = _infiniteFeed && fresh.isEmpty && FeedRepository().lastError != null;
       if (fresh.isNotEmpty && mounted) {
         final spread = _spreadCreatorsWithContext(fresh, _posts);
         added = spread.length;
@@ -3943,9 +3931,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       }
     } catch (e) {
       printVm('❌ Erreur rechargement de la découverte: $e');
+      failed = true;
     }
     if (mounted) {
       setState(() {
+        _feedLoadFailed = failed;
         _isLoadingMorePosts = false;
         _hasMorePosts = added > 0;   // rien de nouveau : on garde la fin de fil et le bouton
       });
@@ -4249,27 +4239,7 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   /// elle devient visible. Précharge (initialise sans jouer) les vidéos
   /// voisines (±[VideoPreloadManager.preloadRadius]) et nettoie les
   /// contrôleurs préchargés devenus hors-champ.
-  void _preloadVideoNeighborhood(int index) {
-    if (_renderedFeedPosts.isEmpty) return;
-    final length = _renderedFeedPosts.length;
-
-    String? idAt(int i) {
-      if (i < 0 || i >= length) return null;
-      final p = _renderedFeedPosts[i];
-      if (p.dataType != PostDataType.VIDEO.name) return null;
-      return p.id;
-    }
-
-    String? urlAt(int i) {
-      if (i < 0 || i >= length) return null;
-      final p = _renderedFeedPosts[i];
-      if (p.dataType != PostDataType.VIDEO.name) return null;
-      return p.url_media;
-    }
-
-    VideoPreloadManager.preloadNeighborhood(index, length, idAt, urlAt);
-    VideoPreloadManager.cleanupOutOfRange(index, length, idAt);
-  }
+  void _preloadVideoNeighborhood(int index) => FeedPostCard.preloadNeighborhood(_renderedFeedPosts, index);
 
   void _handleVisibilityChanged(Post post, VisibilityInfo info) {
     final postId = post.id!;
