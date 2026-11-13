@@ -4,6 +4,12 @@ import 'live_voice.dart';
 import 'package:afrotok/services/api/wallet_api.dart';
 import 'package:afrotok/services/api/api_identity.dart';
 import 'package:afrotok/services/api/live_trial.dart';
+import 'package:afrotok/services/api/live_ticket.dart';
+import 'package:afrotok/services/api/live_display.dart';
+import 'package:afrotok/services/api/live_stage.dart';
+import 'live_stage_ui.dart';
+import 'live_report_page.dart';
+import 'live_game_ui.dart';
 import 'package:afrotok/services/api/users_api.dart';
 import 'package:afrotok/services/api/users_mapper.dart';
 import '../../widgets/music/music_overlay.dart';
@@ -142,6 +148,44 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   int _remainingTrialSeconds = 0;
   Timer? _trialTimer;
   bool _showTrialOverlay = false;
+
+  // JEUX : objectif, duel, défi, sondage (lus toutes les 5 secondes)
+  LiveGame? _game;
+  Map<String, dynamic>? _goal;
+  String? _giftTarget;                     // présentateur qui reçoit mes cadeaux pendant un duel ou un défi
+  Timer? _gameTimer;
+
+  // SCÈNE À PLUSIEURS : invités en vidéo ou en audio, demandes et invitations validées par l'hôte
+  LiveStageState _stage = const LiveStageState();
+  Timer? _stageTimer;
+  final Set<int> _remoteUids = {};          // tous les flux distants (hôte et invités)
+  int? _myAgoraUid;
+  String _myStageMedia = 'video';           // ce que je publie sur scène : video ou audio
+  bool _onStageApi = false;                 // l'API dit que je suis sur scène (le document du live ne le sait pas)
+  final Set<String> _seenInvites = {};
+  bool _stageBusy = false;
+  bool get _ticketAudioOnly => _ticket?.audioOnly == true;
+  bool get _canRaiseHand => !widget.isHost && !_onStageApi && _stage.enabled && _stage.maxVideo + _stage.maxAudio > 0 && !_ticketRequired && _isInitialized;
+
+  // AFFICHAGE : ce que l'hôte laisse voir aux spectateurs (l'hôte voit toujours tout)
+  LiveDisplay _display = LiveDisplay.complete;
+  bool get _showReactionCounts => widget.isHost || _display.reactions;
+  bool get _showCoinsInfo => widget.isHost || _display.coins;
+  bool get _showMessages => widget.isHost || _display.messages;
+
+  // BILLET (minutes d'Agora : quand le gratuit du mois est épuisé, le spectateur prend un billet de 15 minutes ; l'hôte paie ses frais de diffusion)
+  LiveTicket? _ticket;                 // ce qui couvre le spectateur (billet, essai, passe) ; null tant que le gratuit dure
+  LiveTicketOffer? _ticketOffer;       // prix du billet, connu dès que le serveur le demande
+  bool _ticketRequired = false;        // écran « billet à payer »
+  bool _hadPaidTicket = false;         // un billet a déjà été payé dans ce live (texte « Billet terminé »)
+  bool _ticketLeftChannel = false;     // le spectateur a quitté le canal Agora à la fin de son billet (rejoint après paiement)
+  bool _ticketBusy = false;
+  int _ticketSecondsLeft = 1 << 30;
+  Timer? _ticketTimer;
+  Timer? _watchTimer;                  // battement du spectateur : le serveur compte ses minutes
+  LiveHostFee? _hostFee;               // hôte : frais de diffusion (mode billet)
+  Timer? _hostFeeTimer;
+  bool _hostFeeBusy = false;
 
   // HEARTBEAT (host uniquement — maintient le live actif)
   Timer? _heartbeatTimer;
@@ -286,6 +330,10 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     _fetchHostData();
     _initializeTrialSystem();
     _setupFreeAccess();
+    _initHostFee();
+    _initDisplay();
+    _startStagePolling();
+    _startGamePolling();
 
     // if (widget.isHost) {
     //   _startPaymentTimer();
@@ -520,6 +568,889 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     });
   }
 
+  // ==================== JEUX DU LIVE ====================
+
+  void _startGamePolling() {
+    _gameTimer?.cancel();
+    _pollGame();
+    _gameTimer = Timer.periodic(const Duration(seconds: 5), (_) => _pollGame());
+  }
+
+  Future<void> _pollGame() async {
+    if (!mounted || _endHandled || _ticketRequired) return;
+    try {
+      final r = await LivesApi.game(widget.liveId);
+      if (!mounted) return;
+      setState(() {
+        _game = r['game'] is Map ? LiveGame(Map<String, dynamic>.from(r['game'] as Map)) : null;
+        _goal = r['goal'] is Map ? Map<String, dynamic>.from(r['goal'] as Map) : null;
+        if (_game?.isMatch == true && (_giftTarget == null || !_game!.players.any((p) => p.id == _giftTarget))) _giftTarget = _game!.players.isNotEmpty ? _game!.players.first.id : null;
+        if (_game == null) _giftTarget = null;
+      });
+    } catch (_) {}
+  }
+
+  /// Barre de l'objectif du live, sous les pièces reçues.
+  Widget _buildGoalBar() {
+    final g = _goal;
+    if (g == null) return const SizedBox.shrink();
+    final from = (g['from'] as num?)?.toInt() ?? 0;
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 130,
+      left: 16,
+      child: LiveGoalBar(title: '${g['title']}', progress: (_giftCoinsTotal - from).clamp(0, 1 << 30), target: (g['target'] as num?)?.toInt() ?? 0),
+    );
+  }
+
+  /// Le jeu en cours (duel, défi, sondage) en haut de l'écran.
+  Widget _buildGameCard() {
+    final g = _game;
+    final t = widget.postLive.typeSession;
+    if (g == null && widget.isHost && (t == 'duel' || t == 'challenge')) {
+      // duel ou défi choisi au lancement : en attendant les présentateurs, une aide courte
+      return Positioned(
+        top: MediaQuery.of(context).padding.top + 180,
+        left: 16,
+        right: 70,
+        child: GestureDetector(
+          onTap: _openGames,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: Colors.black.withOpacity(.62), borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFFF9A825).withOpacity(.6))),
+            child: Text(
+              t == 'duel'
+                  ? context.tr('Invite ton adversaire sur scène (bouton Inviter), puis lance le duel : Menu › Jeux du live.')
+                  : context.tr('Invite tes présentateurs sur scène (bouton Inviter), puis lance le défi : Menu › Jeux du live.'),
+              style: const TextStyle(color: Colors.white, fontSize: 12.5, height: 1.4),
+            ),
+          ),
+        ),
+      );
+    }
+    if (g == null) return const SizedBox.shrink();
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 180,
+      left: 16,
+      right: 70,
+      child: LiveGameCard(
+        game: g,
+        isHost: widget.isHost,
+        target: _giftTarget,
+        onTarget: (id) => setState(() => _giftTarget = id),
+        onVote: _vote,
+      ),
+    );
+  }
+
+  Future<void> _vote(int option) async {
+    try {
+      final r = await LivesApi.gameVote(widget.liveId, option);
+      if (mounted) setState(() => _game = LiveGame(r));
+    } catch (_) {}
+  }
+
+  /// Menu « Jeux du live » de l'hôte.
+  Future<void> _openGames() async {
+    final k = await showGamesMenu(context, hasStageGuests: _stage.videoSpeakers.isNotEmpty, gameActive: _game?.active == true);
+    if (k == null || !mounted) return;
+    try {
+      switch (k) {
+        case 'goal':
+          final v = await askFields(context, title: context.tr('Objectif du live'), fields: [
+            (label: context.tr('Ce que tu fais à l\'objectif'), hint: context.tr('Je chante'), number: false, initial: ''),
+            (label: context.tr('Pièces à atteindre'), hint: '5000', number: true, initial: '5000'),
+          ]);
+          if (v == null || v[0].length < 2) return;
+          await LivesApi.update(widget.liveId, {'goal': {'title': v[0], 'target': int.tryParse(v[1]) ?? 5000}});
+          break;
+        case 'duel':
+          final sp = _stage.videoSpeakers;
+          if (sp.isEmpty) return;
+          final opp = sp.length == 1 ? sp.first : await _pickSpeaker(sp);
+          if (opp == null) return;
+          await LivesApi.gameStart(widget.liveId, {'kind': 'duel', 'opponent_id': opp.user.id});
+          break;
+        case 'challenge':
+          final sp = _stage.videoSpeakers;
+          if (sp.isEmpty) return;
+          final v = await askFields(context, title: context.tr('Défi à plusieurs'), fields: [(label: context.tr('Objectif en pièces'), hint: '2000', number: true, initial: '2000')]);
+          if (v == null) return;
+          await LivesApi.gameStart(widget.liveId, {'kind': 'challenge', 'players': [for (final s in sp) s.user.id], 'goal': int.tryParse(v[0]) ?? 2000});
+          break;
+        case 'poll':
+          final v = await askFields(context, title: context.tr('Sondage'), fields: [
+            (label: context.tr('Question'), hint: context.tr('Quelle chanson ensuite ?'), number: false, initial: ''),
+            (label: context.tr('Choix 1'), hint: '', number: false, initial: ''),
+            (label: context.tr('Choix 2'), hint: '', number: false, initial: ''),
+            (label: context.tr('Choix 3 (facultatif)'), hint: '', number: false, initial: ''),
+          ]);
+          if (v == null) return;
+          await LivesApi.gameStart(widget.liveId, {'kind': 'poll', 'question': v[0], 'options': [for (final o in v.skip(1)) if (o.isNotEmpty) o]});
+          break;
+        case 'draw':
+          final v = await askFields(context, title: context.tr('Tirage au sort'), fields: [(label: context.tr('Pièces mises en jeu'), hint: '100', number: true, initial: '100')], ok: 'Tirer au sort');
+          if (v == null) return;
+          final candidates = _spectators.where((u) => u != widget.postLive.hostId).toList();
+          final r = await LivesApi.gameDraw(widget.liveId, int.tryParse(v[0]) ?? 0, candidates);
+          final w = r['winner'] is Map ? '@${(r['winner'] as Map)['username']}' : '';
+          _sendComment(context.tr('🎉 {w} gagne {n} pièces au tirage au sort !', {'w': w, 'n': '${r['coins']}'}));
+          if (mounted) showDialog(context: context, builder: (ctx) => AlertDialog(title: Text(ctx.tr('Gagnant du tirage')), content: Text('$w · ${r['coins']} ${ctx.tr('pièces')}'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))]));
+          break;
+        case 'questions':
+          await _showQuestions();
+          break;
+        case 'end':
+          await LivesApi.gameEnd(widget.liveId);
+          break;
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        if (e.isInsufficientCoins) {
+          await CoinCheckout.insufficient(context, (e.details['coins'] as num?)?.toInt() ?? 0);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+        }
+      }
+    } catch (_) {}
+    await _pollGame();
+  }
+
+  Future<StageSpeaker?> _pickSpeaker(List<StageSpeaker> sp) => showDialog<StageSpeaker>(
+        context: context,
+        builder: (ctx) => SimpleDialog(title: Text(ctx.tr('Ton adversaire')), children: [
+          for (final s in sp) SimpleDialogOption(onPressed: () => Navigator.pop(ctx, s), child: Text('@${s.user.username}')),
+        ]),
+      );
+
+  /// Questions du public : l'hôte lit et en épingle une (elle s'affiche à tous comme le texte épinglé).
+  Future<void> _showQuestions() async {
+    final qs = await LivesApi.questions(widget.liveId);
+    if (!mounted) return;
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A1A),
+      builder: (ctx) => SafeArea(
+        child: qs.isEmpty
+            ? Padding(padding: const EdgeInsets.all(24), child: Text(ctx.tr('Aucune question pour le moment.'), style: const TextStyle(color: Colors.white70)))
+            : ListView(shrinkWrap: true, children: [
+                for (final q in qs)
+                  ListTile(
+                    title: Text('${q['text']}', style: const TextStyle(color: Colors.white)),
+                    subtitle: Text('@${q['username']}', style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                    trailing: TextButton(
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        await LivesApi.pinQuestion(widget.liveId, '${q['id']}').catchError((_) {});
+                      },
+                      child: Text(ctx.tr('Épingler')),
+                    ),
+                  ),
+              ]),
+      ),
+    );
+  }
+
+  /// Le public pose une question à l'hôte.
+  Future<void> _askQuestion() async {
+    final v = await askFields(context, title: context.tr('Poser une question'), fields: [(label: context.tr('Ta question'), hint: '', number: false, initial: '')], ok: 'Envoyer');
+    if (v == null || v[0].length < 3) return;
+    try {
+      await LivesApi.ask(widget.liveId, v[0]);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Question envoyée à l\'hôte.'))));
+    } on ApiException catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.status == 429 ? context.tr('Une question toutes les 30 secondes.') : e.message)));
+    } catch (_) {}
+  }
+
+  // ==================== SCÈNE À PLUSIEURS ====================
+
+  /// Le flux principal est celui de l'hôte (son numéro Agora est publié par le serveur) ; à défaut, le premier flux qui n'est pas celui d'un invité.
+  void _refreshMainUid() {
+    final host = _stage.hostAgoraUid;
+    if (host != null && _remoteUids.contains(host)) {
+      _remoteUid = host;
+      return;
+    }
+    final guests = _stage.speakers.map((s) => s.agoraUid).whereType<int>().toSet();
+    final others = _remoteUids.where((u) => !guests.contains(u));
+    _remoteUid = others.isNotEmpty ? others.first : null;
+  }
+
+  /// Interroge la scène toutes les 8 secondes (places, demandes, invitations, personnes sur scène).
+  void _startStagePolling() {
+    _stageTimer?.cancel();
+    _gameTimer?.cancel();
+    _pollStage();
+    _stageTimer = Timer.periodic(const Duration(seconds: 8), (_) => _pollStage());
+  }
+
+  Future<void> _pollStage() async {
+    if (!mounted || _endHandled || _ticketRequired) return;
+    try {
+      final st = LiveStageState.fromJson(await LivesApi.stage(widget.liveId));
+      if (!mounted) return;
+      setState(() {
+        _stage = st;
+        _refreshMainUid();
+      });
+      await _reactToStage(st);
+    } on ApiException catch (e) {
+      if (e.status == 410) _stageTimer?.cancel();
+    } catch (_) {}
+  }
+
+  /// Une demande acceptée me met sur scène (je publie), une invitation s'affiche, un retrait me fait descendre.
+  Future<void> _reactToStage(LiveStageState st) async {
+    if (widget.isHost) return;
+    final me = ApiIdentity.myId;
+    if (st.onStage && !_onStageApi) {
+      final mine = st.speakers.where((s) => s.user.id == me);
+      _myStageMedia = mine.isNotEmpty ? mine.first.media : 'video';
+      await _becomeParticipant();
+    } else if (!st.onStage && _onStageApi) {
+      await _stepDown();
+    }
+    final inv = st.mine;
+    if (inv != null && inv.isInvite && _seenInvites.add(inv.id)) _askInvite(inv);
+  }
+
+  Future<void> _becomeParticipant() async {
+    if (_stageBusy) return;
+    _stageBusy = true;
+    try {
+      _ticketTimer?.cancel();
+      _onStageApi = true;
+      if (mounted) {
+        setState(() {
+          _isParticipant = true;
+          _ticketRequired = false;
+          _ticketSecondsLeft = 1 << 30;
+        });
+      }
+      await _reinitializeAgora();
+      await _grantFreeAccess();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Tu es sur scène : tout le monde te voit et t\'entend.'))));
+      }
+    } catch (e) {
+      printVm('❌ Erreur passage sur scène: $e');
+    } finally {
+      _stageBusy = false;
+    }
+  }
+
+  Future<void> _stepDown() async {
+    if (_stageBusy) return;
+    _stageBusy = true;
+    try {
+      _onStageApi = false;
+      if (mounted) setState(() => _isParticipant = _participants.contains(ApiIdentity.myId));
+      await _reinitializeAgora();
+    } catch (e) {
+      printVm('❌ Erreur descente de scène: $e');
+    } finally {
+      _stageBusy = false;
+    }
+  }
+
+  /// Invitation de l'hôte : gratuite, le spectateur accepte ou décline.
+  Future<void> _askInvite(StageRequest inv) async {
+    if (!mounted) return;
+    final host = '@${_hostData.pseudo ?? widget.hostName}';
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(ctx.tr('{h} t\'invite sur scène', {'h': host})),
+        content: Text(inv.media == 'video'
+            ? ctx.tr('Tu seras vu (caméra) et entendu par tous les spectateurs. C\'est gratuit.')
+            : ctx.tr('Tu seras entendu (micro seul) par tous les spectateurs. C\'est gratuit.')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(ctx.tr('Plus tard'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(ctx.tr('Monter'))),
+        ],
+      ),
+    );
+    try {
+      await LivesApi.stageAnswerInvite(widget.liveId, inv.id, accept: ok == true);
+      await _pollStage();
+    } on ApiException catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {}
+  }
+
+  /// « Monter sur scène » : feuille vidéo / audio, puis demande envoyée à l'hôte (rien n'est débité avant son accord).
+  Future<void> _raiseHand() async {
+    final st = _stage;
+    if (st.mine != null) {
+      final cancel = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(ctx.tr('Demande envoyée')),
+          content: Text(ctx.tr('L\'hôte a 2 minutes pour répondre. Veux-tu retirer ta demande ?')),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(ctx.tr('Garder'))),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(ctx.tr('Retirer'))),
+          ],
+        ),
+      );
+      if (cancel == true) {
+        await LivesApi.stageCancel(widget.liveId).catchError((_) {});
+        await _pollStage();
+      }
+      return;
+    }
+    final coins = CoinSplit.of(authProvider.loginUserData);
+    final media = await showRaiseHandSheet(
+      context,
+      hostName: '@${_hostData.pseudo ?? widget.hostName}',
+      placeCoins: st.placeCoins,
+      depot: coins.depot,
+      earned: coins.gagnees,
+      videoFull: st.videoFull,
+      audioFull: st.audioFull,
+    );
+    if (media == null || !mounted) return;
+    try {
+      await LivesApi.stageRequest(widget.liveId, media);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Demande envoyée à l\'hôte.'))));
+      await _pollStage();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      if (e.isInsufficientCoins) {
+        await CoinCheckout.insufficient(context, st.placeCoins);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.code == 'stage_full' ? context.tr('Il n\'y a plus de place sur scène.') : e.message)));
+      }
+    } catch (_) {}
+  }
+
+  /// L'hôte accepte ou refuse une demande.
+  Future<void> _decideRequest(StageRequest r, bool accept) async {
+    try {
+      await LivesApi.stageDecide(widget.liveId, r.id, accept: accept);
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(e.code == 'viewer_insufficient'
+                ? context.tr('Cette personne n\'a plus assez de pièces pour sa place.')
+                : e.code == 'stage_full'
+                    ? context.tr('Il n\'y a plus de place sur scène.')
+                    : e.message)));
+      }
+    } catch (_) {}
+    await _pollStage();
+  }
+
+  Future<void> _inviteToStage(StageUser u, String media) async {
+    try {
+      await LivesApi.stageInvite(widget.liveId, u.id, media);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Invitation envoyée à @{u}.', {'u': u.username}))));
+    } on ApiException catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.code == 'stage_full' ? context.tr('Il n\'y a plus de place sur scène.') : e.message)));
+    } catch (_) {}
+    await _pollStage();
+  }
+
+  Future<void> _removeFromStage(String userId) async {
+    if (userId.isEmpty) return;
+    try {
+      await LivesApi.stageRemove(widget.liveId, userId);
+    } catch (_) {}
+    await _pollStage();
+  }
+
+  /// Vignette d'une personne sur scène : sa propre vidéo reste dans l'aperçu en bas ; celle d'un autre vient du flux Agora de son numéro.
+  Widget? _stageVideoTile(StageSpeaker s) {
+    if (s.user.id == ApiIdentity.myId) return null;
+    final uid = s.agoraUid;
+    if (uid == null || !_remoteUids.contains(uid) || !_isInitialized || _ticketAudioOnly) return null;
+    return AgoraVideoView(
+      controller: VideoViewController.remote(rtcEngine: _engine, canvas: VideoCanvas(uid: uid), connection: RtcConnection(channelId: widget.liveId)),
+    );
+  }
+
+  /// La scène : bande des invités en vidéo, avatars des invités en audio, places (maquette « La scène à plusieurs »).
+  Widget _buildStageStrip() {
+    if (_stage.speakers.isEmpty) return const SizedBox.shrink();
+    return Positioned(
+      left: 16,
+      right: 16,
+      top: MediaQuery.of(context).padding.top + (_game != null ? 360 : 272),
+      child: LiveStageStrip(
+        stage: _stage,
+        isHost: widget.isHost,
+        myUserId: ApiIdentity.myId,
+        videoTile: _stageVideoTile,
+        onRemove: (s) => _removeFromStage(s.user.id),
+        onFreeSlot: () {
+          setState(() => _showUsersPanel = true);
+          _fetchAllUsers();
+        },
+      ),
+    );
+  }
+
+  // ==================== AFFICHAGE DU LIVE ====================
+
+  /// Lit le réglage d'affichage du live (`options.display`) ; le temps réel (document du live) le met ensuite à jour.
+  Future<void> _initDisplay() async {
+    try {
+      final live = await LivesApi.get(widget.liveId);
+      final o = live['options'];
+      if (o is Map && o['display'] != null && mounted) setState(() => _display = LiveDisplay.fromJson(o['display']));
+    } catch (_) {}
+  }
+
+  /// Enregistre l'affichage : API (durable) et document du live (les spectateurs le voient tout de suite).
+  Future<void> _saveDisplay(LiveDisplay d) async {
+    setState(() => _display = d);
+    try {
+      await LivesApi.update(widget.liveId, {'display': d.toJson()});
+    } catch (e) {
+      printVm('⚠️ Affichage non enregistré : $e');
+    }
+    try {
+      await _firestore.collection('lives').doc(widget.liveId).update({'display': d.toJson()});
+    } catch (_) {}
+  }
+
+  /// Feuille « Affichage du live » : préréglages, aperçu et interrupteurs (spectateurs toujours affichés, en petit).
+  void _showDisplaySheet() {
+    var d = _display;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setSheet) {
+        Widget row(String title, String? sub, bool value, ValueChanged<bool>? onChanged) => Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(children: [
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(title, style: const TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w700)),
+                    if (sub != null) Text(sub, style: const TextStyle(color: Color(0xFF9A9A95), fontSize: 10.5)),
+                  ]),
+                ),
+                Switch(
+                  value: value,
+                  onChanged: onChanged,
+                  activeColor: const Color(0xFFF9A825),
+                  inactiveTrackColor: const Color(0xFF4A4A46),
+                ),
+              ]),
+            );
+        Widget preview() {
+          Widget bar(double w, double h, double a, {double? left, double? right, double? top, double? bottom}) => Positioned(
+              left: left, right: right, top: top, bottom: bottom,
+              child: Container(width: w, height: h, decoration: BoxDecoration(color: Colors.white.withOpacity(a), borderRadius: BorderRadius.circular(h / 2))));
+          return Container(
+            width: 96,
+            height: 190,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF3A3A37)),
+              gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF31503A), Color(0xFF0B0B0B)]),
+            ),
+            child: Stack(children: [
+              bar(30, 7, .4, right: 5, top: 6),
+              bar(46, 12, .4, left: 5, top: 18),
+              bar(26, 10, .55, right: 5, top: 18),
+              if (d.coins) bar(40, 9, .45, left: 5, top: 34),
+              if (d.messages) bar(58, 10, .25, left: 5, bottom: 34),
+              bar(86, 14, .3, left: 5, bottom: 8),
+            ]),
+          );
+        }
+
+        final notes = {
+          'essential': context.tr('« Essentiel » replie les compteurs en une seule pastille (spectateurs), garde les pièces reçues et le classement, et laisse le reste à un toucher de distance.'),
+          'complete': context.tr('« Complet » montre aussi les « j\'aime » et les partages sous leurs boutons.'),
+          'shop': context.tr('« Vente » libère l\'image pour tes produits : ni pièces ni compteurs, seulement les messages.'),
+          'duel': context.tr('« Duel » garde les compteurs utiles pour un défi : « j\'aime », partages, pièces reçues et messages.'),
+          'clean': context.tr('« Épuré » ne laisse que la pastille des spectateurs : l\'image est libre.'),
+          'custom': context.tr('Réglage personnalisé.'),
+        };
+        return Container(
+          padding: EdgeInsets.fromLTRB(18, 12, 18, MediaQuery.of(ctx).padding.bottom + 18),
+          decoration: const BoxDecoration(color: Color(0xFF1A1A1A), borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+          child: SingleChildScrollView(
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: const Color(0xFF4A4A46), borderRadius: BorderRadius.circular(2)))),
+              const SizedBox(height: 12),
+              Text(context.tr('Affichage du live'), style: const TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 8),
+              Text(
+                context.tr('Choisis ce que tes spectateurs voient à l\'écran. Plus il y a de compteurs, moins l\'image est libre. Les gains restent toujours visibles pour toi dans « Menu ».'),
+                style: const TextStyle(color: Color(0xFFCFCFCA), fontSize: 13, height: 1.45),
+              ),
+              const SizedBox(height: 11),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(children: [
+                  for (final p in LiveDisplay.presets)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 7),
+                      child: GestureDetector(
+                        onTap: () => setSheet(() => d = LiveDisplay.byName(p)),
+                        child: Container(
+                          height: 34,
+                          padding: const EdgeInsets.symmetric(horizontal: 13),
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: d.preset == p ? const Color(0xFF2A2312) : const Color(0xFF242424),
+                            borderRadius: BorderRadius.circular(17),
+                            border: Border.all(color: d.preset == p ? const Color(0xFFF9A825) : const Color(0xFF3A3A37), width: d.preset == p ? 2 : 1),
+                          ),
+                          child: Text(context.tr(LiveDisplay.label(p)), style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700)),
+                        ),
+                      ),
+                    ),
+                ]),
+              ),
+              const SizedBox(height: 11),
+              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                preview(),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(children: [
+                    row(context.tr('Spectateurs'), context.tr('Toujours affiché, en petit'), true, null),
+                    row(context.tr('J\'aime et partages'), context.tr('Sous les boutons, jamais en double'), d.reactions, (v) => setSheet(() => d = d.copyWith(reactions: v))),
+                    row(context.tr('Pièces reçues et classement'), context.tr('Une seule fois, sous le profil'), d.coins, (v) => setSheet(() => d = d.copyWith(coins: v))),
+                    row(context.tr('Messages'), null, d.messages, (v) => setSheet(() => d = d.copyWith(messages: v))),
+                  ]),
+                ),
+              ]),
+              const SizedBox(height: 11),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(color: const Color(0xFF242424), borderRadius: BorderRadius.circular(12)),
+                child: Text.rich(TextSpan(children: [
+                  TextSpan(text: context.tr('Réglé pour toi : '), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                  TextSpan(text: notes[d.preset] ?? notes['custom']!, style: const TextStyle(color: Color(0xFFCFCFCA))),
+                ]), style: const TextStyle(fontSize: 12, height: 1.45)),
+              ),
+              const SizedBox(height: 11),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _saveDisplay(d);
+                  },
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF9A825), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24))),
+                  child: Text(context.tr('Enregistrer'), style: const TextStyle(color: Colors.black, fontSize: 15, fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ]),
+          ),
+        );
+      }),
+    );
+  }
+
+  // ==================== BILLET : MINUTES D'AGORA ====================
+
+  /// Pièces du solde de la personne (affichées dans le rappel).
+  int get _myCoins => authProvider.loginUserData.giftCoinsBalance ?? 0;
+
+  /// Ce qui couvre le spectateur a changé (réponse du jeton) : lance le minuteur, ou l'arrête quand le gratuit dure encore.
+  void _applyTicket(LiveTicket? t) {
+    if (!mounted || widget.isHost || _shouldSkipTrial()) return;
+    _ticket = t;
+    _ticketTimer?.cancel();
+    if (t?.endsAt == null) {
+      setState(() {
+        _ticketSecondsLeft = 1 << 30;
+        _ticketRequired = false;
+      });
+      return;
+    }
+    if (t!.by == 'ticket' || t.by == 'offered') _hadPaidTicket = true;
+    if (t.audioOnly) {
+      // « son seul » : la vidéo reçue est coupée (Agora facture alors l'audio seul)
+      try {
+        _engine.muteAllRemoteVideoStreams(true);
+      } catch (_) {}
+    }
+    setState(() {
+      _ticketSecondsLeft = t.secondsLeft;
+      _ticketRequired = false;
+    });
+    if (_ticketOffer == null) {
+      // le prix du billet sert au rappel de la dernière minute
+      LivesApi.get(widget.liveId).then((l) {
+        final o = LiveTicketOffer.fromLive(l);
+        if (o != null && mounted) setState(() => _ticketOffer = o);
+      }).catchError((_) {});
+    }
+    _ticketTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      final s = _ticket?.secondsLeft ?? (1 << 30);
+      setState(() => _ticketSecondsLeft = s);
+      if (s <= 0) {
+        timer.cancel();
+        _onTicketExpired();
+      }
+    });
+  }
+
+  /// Le serveur demande un billet (402 `ticket_required`) : prix lus dans la réponse, écran « billet à payer ».
+  void _showTicketRequired(Map<String, dynamic> details) {
+    if (!mounted) return;
+    _ticketTimer?.cancel();
+    setState(() {
+      _ticketOffer = LiveTicketOffer.fromDetails(details) ?? _ticketOffer;
+      _ticketSecondsLeft = 0;
+      _ticketRequired = true;
+    });
+  }
+
+  /// Fin du billet, de l'essai ou du passe : on quitte le canal tout de suite (Afrolook ne paie jamais Agora au-delà du gratuit) et on propose le billet.
+  Future<void> _onTicketExpired() async {
+    if (_ticketRequired || _endHandled || widget.isHost) return;
+    try {
+      await _engine.leaveChannel();
+      _ticketLeftChannel = true;
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() {
+      _remoteUid = null;
+      _ticketRequired = true;
+    });
+    if (_ticketOffer == null) {
+      try {
+        _ticketOffer = LiveTicketOffer.fromLive(await LivesApi.get(widget.liveId));
+        if (mounted) setState(() {});
+      } catch (_) {}
+    }
+  }
+
+  /// Battement du spectateur toutes les 45 s : le serveur compte ses minutes, et répond 402 dès que son billet est fini.
+  void _startWatchTimer() {
+    if (widget.isHost || _shouldSkipTrial() || (_watchTimer?.isActive ?? false)) return;
+    _watchTimer = Timer.periodic(const Duration(seconds: 45), (_) async {
+      if (!mounted || _ticketRequired || _ticketLeftChannel) return;
+      try {
+        final r = await LivesApi.watch(widget.liveId);
+        final t = LiveTicketOffer.fromLive({'me': {'ticket': r['ticket']}});
+        if (t != null && mounted) _ticketOffer = t;
+      } on ApiException catch (e) {
+        if (e.status == 402 && e.code == 'ticket_required') _showTicketRequired(e.details);
+        if (e.status == 410 && !widget.isHost) await _onLiveEndedRemotely();
+      } catch (_) {}
+    });
+  }
+
+  /// Paie un billet (« son seul » : [audio] vrai). Rejoint le canal s'il avait été quitté, sinon renouvelle le jeton pour prolonger.
+  Future<void> _payTicket({bool audio = false}) async {
+    final o = _ticketOffer;
+    if (o == null || _ticketBusy) return;
+    _ticketBusy = true;
+    try {
+      final ok = await CoinCheckout.pay(context,
+          kind: 'live_ticket',
+          refId: widget.liveId,
+          coins: audio ? o.audioCoins : o.coins,
+          label: audio ? context.tr('Billet « son seul »') : context.tr('Billet de live'),
+          audio: audio ? true : null);
+      if (!ok || !mounted) return;
+      _hadPaidTicket = true;
+      if (!_isInitialized || _ticketLeftChannel) {
+        _ticketLeftChannel = false;
+        await _joinAfterPayment();   // redemande le jeton (qui porte la fin du billet) et rejoint
+      } else {
+        final r = await LivesApi.token(widget.liveId, uid: 0, role: 'audience');
+        await _engine.renewToken(r['token'] as String);
+        _applyTicket(LiveTicket.fromToken(r['ticket']));
+      }
+      if (mounted) setState(() => _ticketRequired = false);
+    } catch (e) {
+      printVm("❌ Erreur paiement du billet: $e");
+    } finally {
+      _ticketBusy = false;
+    }
+  }
+
+  // ---- hôte : frais de diffusion (mode billet) ----
+
+  /// Lit les frais de diffusion de l'hôte (live démarré en mode billet) et surveille leur échéance.
+  Future<void> _initHostFee() async {
+    if (!widget.isHost) return;
+    try {
+      final live = await LivesApi.get(widget.liveId);
+      final me = live['me'];
+      _setHostFee(LiveHostFee.fromJson(me is Map ? me['host_fee'] : null));
+    } catch (_) {}
+  }
+
+  void _setHostFee(LiveHostFee? fee) {
+    if (!mounted) return;
+    _hostFeeTimer?.cancel();
+    setState(() => _hostFee = fee);
+    if (fee == null) return;
+    _hostFeeTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted || _hostFee == null) return;
+      if (_hostFee!.secondsLeft <= 61) setState(() {});   // n'actualise l'écran que pour le rappel (dernière minute)
+    });
+  }
+
+  /// L'hôte paie 15 minutes de frais de diffusion de plus.
+  Future<void> _payHostFee() async {
+    final f = _hostFee;
+    if (f == null || _hostFeeBusy) return;
+    _hostFeeBusy = true;
+    try {
+      final ok = await CoinCheckout.pay(context, kind: 'live_host_fee', refId: widget.liveId, coins: f.coins, label: context.tr('Frais de diffusion'));
+      if (!ok || !mounted) return;
+      final live = await LivesApi.get(widget.liveId);
+      final me = live['me'];
+      _setHostFee(LiveHostFee.fromJson(me is Map ? me['host_fee'] : null));
+    } catch (e) {
+      printVm("❌ Erreur paiement des frais de diffusion: $e");
+    } finally {
+      _hostFeeBusy = false;
+    }
+  }
+
+  /// Rappel affiché une minute avant la fin d'un billet, d'un essai ou des frais de diffusion : même style que les boutons du live.
+  Widget _buildTicketReminder() {
+    final host = widget.isHost;
+    final left = host ? (_hostFee?.secondsLeft ?? 1 << 30) : _ticketSecondsLeft;
+    if (left > 60 || left <= 0 || (!host && (_ticketRequired || _ticketOffer == null))) return const SizedBox.shrink();
+    final coins = host ? (_hostFee?.coins ?? 0) : (_ticketOffer?.coins ?? 0);
+    final minutes = _ticketOffer?.minutes ?? 15;
+    final byTrial = !host && _ticket?.by == 'trial';
+    final title = host
+        ? context.tr('Frais de diffusion : il reste {s} secondes', {'s': '$left'})
+        : byTrial
+            ? context.tr('Il reste {s} secondes d\'essai gratuit', {'s': '$left'})
+            : context.tr('Il reste {s} secondes sur ton billet', {'s': '$left'});
+    final body = host
+        ? context.tr('Sans paiement, ton live s\'arrête. Payer {p} pièces ajoute 15 minutes. Ton solde : {b} pièces.', {'p': CoinCheckout.fmt(coins), 'b': CoinCheckout.fmt(_myCoins)})
+        : byTrial
+            ? context.tr('Ensuite, un billet de {p} pièces pour continuer {m} minutes. Ton solde : {b} pièces.', {'p': CoinCheckout.fmt(coins), 'm': '$minutes', 'b': CoinCheckout.fmt(_myCoins)})
+            : context.tr('Prolonge de {m} minutes pour {p} pièces. Ton solde : {b} pièces.', {'p': CoinCheckout.fmt(coins), 'm': '$minutes', 'b': CoinCheckout.fmt(_myCoins)});
+    final payLabel = host
+        ? context.tr('Payer : {p} pièces', {'p': CoinCheckout.fmt(coins)})
+        : byTrial
+            ? context.tr('Payer maintenant : {p} pièces', {'p': CoinCheckout.fmt(coins)})
+            : context.tr('Prolonger : {p} pièces', {'p': CoinCheckout.fmt(coins)});
+    return Positioned(
+      left: 16,
+      right: 16,
+      bottom: 128,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.78),
+          border: Border.all(color: const Color(0xFFF9A825)),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 2),
+            Text(body, style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.4)),
+            const SizedBox(height: 10),
+            Row(children: [
+              Expanded(
+                child: SizedBox(
+                  height: 44,
+                  child: ElevatedButton(
+                    onPressed: host ? _payHostFee : _payTicket,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFF9A825),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                    ),
+                    child: Text(payLabel, style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                height: 44,
+                child: OutlinedButton(
+                  onPressed: host ? _endLive : _leaveLive,
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Colors.white30),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                  ),
+                  child: Text(host ? context.tr('Terminer') : context.tr('Quitter'), style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                ),
+              ),
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Écran « billet à payer » : même fond, même icône et mêmes boutons que l'écran d'essai écoulé ; seuls les textes et le prix changent.
+  Widget _buildTicketOverlay() {
+    final o = _ticketOffer;
+    final coins = o?.coins ?? 0;
+    final minutes = o?.minutes ?? 15;
+    return Container(
+      color: Colors.black.withOpacity(0.8),
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.lock_clock, size: 64, color: Color(0xFFF9A825)),
+            const SizedBox(height: 20),
+            Text(
+              _hadPaidTicket ? context.tr('Billet terminé') : context.tr('Temps d\'essai écoulé'),
+              style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              o == null
+                  ? context.tr('Chargement du prix du billet…')
+                  : context.tr('Les minutes gratuites du mois sont épuisées. Payez {p} pièces pour continuer à regarder pendant {m} minutes.', {'p': CoinCheckout.fmt(coins), 'm': '$minutes'}),
+              style: const TextStyle(color: Colors.white70, fontSize: 16, height: 1.45),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: o == null ? null : () => _payTicket(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFF9A825),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+              ),
+              child: Text(
+                context.tr('Payer le billet : {p} pièces', {'p': CoinCheckout.fmt(coins)}),
+                style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+              ),
+            ),
+            if (o != null && !o.isAudioRoom) ...[
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () => _payTicket(audio: true),
+                child: Text(context.tr('Son seul : {p} pièces', {'p': CoinCheckout.fmt(o.audioCoins)}),
+                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+              ),
+            ],
+            const SizedBox(height: 6),
+            TextButton(
+              onPressed: _leaveLive,
+              child: Text(context.tr('Quitter le live'), style: const TextStyle(color: Colors.white70, fontSize: 14)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ==================== SYSTÈME DE PAIEMENT CORRIGÉ ====================
 
   void _showPaymentModal() {
@@ -633,14 +1564,26 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           onJoinChannelSuccess: (connection, elapsed) {
             printVm("✅ Rejoint le canal avec succès - UID: ${connection.localUid}");
             setState(() => _localUserJoined = true);
+            // l'hôte et les personnes sur scène indiquent leur numéro Agora : les autres savent quelle vignette est la leur
+            final u = connection.localUid;
+            if (u != null && u > 0 && (widget.isHost || _isParticipant)) {
+              _myAgoraUid = u;
+              LivesApi.stageUid(widget.liveId, u).catchError((_) {});
+            }
           },
           onUserJoined: (connection, remoteUid, elapsed) {
             printVm("👤 Utilisateur rejoint: $remoteUid");
-            setState(() => _remoteUid = remoteUid);
+            setState(() {
+              _remoteUids.add(remoteUid);
+              _refreshMainUid();
+            });
           },
           onUserOffline: (connection, remoteUid, reason) {
             printVm("👋 Utilisateur parti: $remoteUid");
-            setState(() => _remoteUid = null);
+            setState(() {
+              _remoteUids.remove(remoteUid);
+              _refreshMainUid();
+            });
           },
           onCameraReady: () {
             printVm("📷 Caméra prête");
@@ -686,7 +1629,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
       await _engine.setClientRole(role: role);
 
-      if (widget.isHost || _isParticipant) {
+      if (widget.isHost || (_isParticipant && _myStageMedia == 'video')) {
         await _engine.startPreview();
         if (_beautyOn) await _applyBeauty();
       }
@@ -709,10 +1652,10 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         options: ChannelMediaOptions(
           channelProfile: ChannelProfileType.channelProfileLiveBroadcasting,
           clientRoleType: role,
-          publishCameraTrack: widget.isHost || _isParticipant,
+          publishCameraTrack: widget.isHost || (_isParticipant && _myStageMedia == 'video'),
           publishMicrophoneTrack: widget.isHost || _isParticipant,
           autoSubscribeAudio: true,
-          autoSubscribeVideo: true,
+          autoSubscribeVideo: !_ticketAudioOnly,   // billet « son seul » : aucune vidéo reçue (Agora facture alors l'audio seul)
           audienceLatencyLevel: latencyConfig, // 🔥 Latence configurée
         ),
       );
@@ -846,10 +1789,17 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       // Pendant l'essai, la réponse porte `trial` : on recale le compte à rebours sur le serveur (le chrono démarre ici).
       final trial = LiveTrial.fromJson(result['trial']);
       if (trial != null && !trial.expired) _applyTrial(trial);
+      if (!isHost) {
+        _applyTicket(LiveTicket.fromToken(result['ticket']));
+        _startWatchTimer();
+      }
       return result['token'] as String;
     } catch (e) {
       printVm("❌ Erreur récupération token Agora: $e");
-      if (e is ApiException && e.status == 402 && mounted) {
+      if (e is ApiException && e.status == 402 && e.code == 'ticket_required' && mounted) {
+        // Gratuit du mois épuisé et pas de billet : écran « billet à payer »
+        _showTicketRequired(e.details);
+      } else if (e is ApiException && e.status == 402 && mounted) {
         // Essai gratuit terminé côté serveur (`details.trial` : seconds_left 0, expired vrai) : entrée à payer
         _applyTrial(LiveTrial.fromJson(e.details['trial']) ??
             const LiveTrial(minutes: 0, secondsLeft: 0, expired: true));
@@ -1075,7 +2025,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
       // Débit, 70 % à l'hôte, parrainages et part de l'app : calculés par le serveur (sendLiveGift)
       try {
-        await LivesApi.gift(widget.liveId, coins: coinsAmount, icon: gift.icon, label: gift.name);
+        await LivesApi.gift(widget.liveId, coins: coinsAmount, icon: gift.icon, label: gift.name, targetId: (_game?.active == true && _game!.isMatch) ? (_giftTarget ?? widget.postLive.hostId) : null);
       } on ApiException catch (e) {
         if (e.isInsufficientCoins) {
           if (mounted) await CoinCheckout.insufficient(context, coinsAmount);
@@ -1143,9 +2093,10 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           _isLivePaused = data['isPaused'] == true;
           _pauseMessage = data['pauseMessage'] as String?;
           _pinnedImageUrl = data['pinnedImageUrl'] as String?;
+          if (data['display'] is Map) _display = LiveDisplay.fromJson(data['display']);
           _topDonors = topDonors;
           final currentUserId = ApiIdentity.myId;
-          _isParticipant = currentUserId != null && _participants.contains(currentUserId);
+          _isParticipant = _onStageApi || (currentUserId != null && _participants.contains(currentUserId));
         });
       }
 
@@ -1471,8 +2422,10 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     try {
       final r = await LivesApi.token(widget.liveId, uid: uid ?? 0, role: _tokenAsHost ? 'host' : 'audience');
       await _engine.renewToken(r['token'] as String);
+      if (!_tokenAsHost) _applyTicket(LiveTicket.fromToken(r['ticket']));
     } on ApiException catch (e) {
       if (e.status == 410 && mounted && !widget.isHost) await _onLiveEndedRemotely();
+      if (e.status == 402 && e.code == 'ticket_required' && mounted && !widget.isHost) _showTicketRequired(e.details);
     } catch (e) {
       printVm('⚠️ Renouvellement du jeton impossible : $e');
     }
@@ -1507,7 +2460,13 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     _firestore.collection('lives').doc(widget.liveId).update({
       'lastHeartbeatAt': FieldValue.serverTimestamp(),
     }).catchError((_) {});
-    if (widget.isHost) LivesApi.heartbeat(widget.liveId, viewers: _viewerCount, likes: _likeCount).catchError((_) {}); // l'API termine un live sans signal
+    if (widget.isHost) {
+      // l'API termine un live sans signal ; en mode billet elle rappelle aussi l'échéance des frais de diffusion
+      LivesApi.heartbeat(widget.liveId, viewers: _viewerCount, likes: _likeCount).then((r) {
+        final fee = LiveHostFee.fromJson(r['host_fee']);
+        if (fee != null) _setHostFee(fee);
+      }).catchError((_) {});
+    }
   }
 
   void _endLive() async {
@@ -1539,93 +2498,12 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     }
   }
 
+  /// Fin du live de l'hôte : bilan complet (gains, chiffres, plus généreux), à la place de l'ancienne fenêtre.
   void _showLiveEndStats() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
-            ),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Color(0xFFF9A825).withOpacity(0.4), width: 1.5),
-          ),
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 60, height: 60,
-                decoration: BoxDecoration(
-                  color: Color(0xFFF9A825).withOpacity(0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.live_tv, color: Color(0xFFF9A825), size: 30),
-              ),
-              const SizedBox(height: 16),
-              Text(tr('Live terminé 🎉'),
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 20)),
-              const SizedBox(height: 4),
-              Text(tr('Merci à tous vos spectateurs !'),
-                  style: TextStyle(color: Colors.white54, fontSize: 13)),
-              const SizedBox(height: 24),
-              _buildStatRow(Icons.stars_rounded, tr('Pièces reçues'), '$_giftCoinsTotal pcs', const Color(0xFFF9A825)),
-              const SizedBox(height: 12),
-              _buildStatRow(Icons.favorite_rounded, 'Likes', '$_likeCount', Colors.pinkAccent),
-              const SizedBox(height: 12),
-              _buildStatRow(Icons.people_rounded, 'Spectateurs au total', '$_totalviewerCount', Colors.blueAccent),
-              const SizedBox(height: 12),
-              _buildStatRow(Icons.share_rounded, 'Partages', '$_shareCount', Colors.greenAccent),
-              if (_topDonors.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                Divider(color: Colors.white12),
-                const SizedBox(height: 8),
-                Text('Top donateurs', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 8),
-                ..._topDonors.asMap().entries.map((e) {
-                  final idx = e.key;
-                  final donor = e.value;
-                  final medals = ['🥇', '🥈', '🥉'];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 3),
-                    child: Row(
-                      children: [
-                        Text(medals[idx], style: TextStyle(fontSize: 16)),
-                        const SizedBox(width: 8),
-                        Text(donor['pseudo'] as String? ?? '', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
-                        const Spacer(),
-                        Text('${donor['totalCoins']} pcs', style: TextStyle(color: Color(0xFFF9A825), fontSize: 13, fontWeight: FontWeight.w700)),
-                      ],
-                    ),
-                  );
-                }),
-              ],
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                    Navigator.of(context).pop();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0xFFF9A825),
-                    padding: EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  ),
-                  child: const Text('Fermer', style: TextStyle(color: Colors.black, fontWeight: FontWeight.w800, fontSize: 16)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(MaterialPageRoute(
+      builder: (_) => LiveReportPage(liveId: widget.liveId, fallbackCoins: _giftCoinsTotal, fallbackTitle: widget.postLive.title),
+    ));
   }
 
   Widget _buildStatRow(IconData icon, String label, String value, Color color) {
@@ -1660,6 +2538,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
   Future<void> _reinitializeAgora() async {
     try {
+      _remoteUids.clear();
+      _remoteUid = null;
       await _engine.leaveChannel();
       await _engine.release();
       await _initAgora();
@@ -2006,6 +2886,9 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
             if (!isLandscape && widget.postLive.isPaidLive && _showTrialOverlay && !_shouldSkipTrial())
               _buildTrialOverlay(),
 
+            // OVERLAY BILLET (gratuit du mois épuisé) : au même endroit que l'écran d'essai, sous les boutons du haut
+            if (!isLandscape && _ticketRequired && !widget.isHost) _buildTicketOverlay(),
+
             // BOUTON TOGGLE UI (portrait uniquement)
             if (!isLandscape)
               Positioned(
@@ -2047,8 +2930,11 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
             ..._buildTikTokLikeEffects(),
             ..._buildGiftEffects(),
 
+            // RAPPEL DE LA DERNIÈRE MINUTE (billet, essai, frais de diffusion de l'hôte)
+            if (!isLandscape && _showUI) _buildTicketReminder(),
+
             // LOADING
-            if (!_isInitialized) _buildLoadingOverlay(),
+            if (!_isInitialized && !_ticketRequired) _buildLoadingOverlay(),
           ],
         ),
       ),
@@ -2173,14 +3059,18 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     return [
       _buildAppName(),
       _buildHostOverlay(),
+      _buildCoinsChip(),
+      _buildGoalBar(),
+      _buildGameCard(),
+      _buildStageStrip(),
       _buildViewerInfo(),
       _buildPinnedTextSection(),
       _buildPinnedImage(),
       LivePinnedProduct(liveId: widget.liveId, isHost: widget.isHost),   // Live Shopping : produit épinglé
       _buildLeaderboard(),
-      _buildCommentsSection(),
+      if (_showMessages) _buildCommentsSection(),
       _buildFooter(),
-      _buildTypingIndicator(),
+      if (_showMessages) _buildTypingIndicator(),
       if (_showGiftPanel)
         GiftPanelWidget(
           gifts: _gifts,
@@ -2188,11 +3078,19 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           onClose: () => setState(() => _showGiftPanel = false),
         ),
       if (_showUsersPanel)
-        UsersPanelWidget(
-          users: _allUsers,
-          hostId: widget.postLive.hostId!,
-          participants: _participants,
+        LiveParticipantsPanel(
+          stage: _stage,
+          isHost: widget.isHost,
+          totalCount: _allUsers.length,
+          viewers: [
+            for (final u in _allUsers)
+              if (u.id != null && u.id != widget.postLive.hostId && !_stage.speakers.any((sp) => sp.user.id == u.id))
+                StageUser(id: u.id!, username: u.pseudo ?? '', avatarUrl: u.imageUrl),
+          ],
           onClose: () => setState(() => _showUsersPanel = false),
+          onDecide: _decideRequest,
+          onInvite: _inviteToStage,
+          onRemove: (sp) => _removeFromStage(sp.user.id),
         ),
       if (_showPinnedTextEditor)
         PinnedTextEditorWidget(
@@ -2203,8 +3101,18 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     ];
   }
 
+  /// Pièces reçues : une seule fois, sous le profil de l'hôte (le classement des donateurs est juste dessous).
+  Widget _buildCoinsChip() {
+    if (!_showCoinsInfo) return const SizedBox.shrink();
+    return Positioned(
+      top: MediaQuery.of(context).padding.top + 102,
+      left: 16,
+      child: _buildInfoChip(icon: Icons.stars_rounded, value: context.tr('{n} pcs reçues', {'n': CoinCheckout.fmt(_giftCoinsTotal)}), color: const Color(0xFFF9A825)),
+    );
+  }
+
   Widget _buildLeaderboard() {
-    if (_topDonors.isEmpty) return const SizedBox.shrink();
+    if (_topDonors.isEmpty || !_showCoinsInfo || _game != null) return const SizedBox.shrink();
     return Positioned(
       top: MediaQuery.of(context).padding.top + 185,
       left: 16,
@@ -2535,16 +3443,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
+          // Un chiffre = un seul endroit : spectateurs ici ; pièces reçues sous le profil ; « j'aime » et partages sous leurs boutons
           _buildInfoChip(icon: Icons.people_rounded, value: '$_viewerCount/$_totalviewerCount'),
-          SizedBox(height: 6),
-          _buildInfoChip(icon: Icons.favorite_rounded, value: '$_likeCount', color: Colors.pinkAccent),
-          SizedBox(height: 6),
-          _buildInfoChip(icon: Icons.stars_rounded, value: '$_giftCoinsTotal pcs', color: Color(0xFFF9A825)),
-          SizedBox(height: 6),
-          GestureDetector(
-            onTap: _shareLive,
-            child: _buildInfoChip(icon: Icons.share_rounded, value: '$_shareCount', color: Colors.blueAccent),
-          ),
           // Timer essai
           if (widget.postLive.isPaidLive && _remainingTrialMinutes < 999 && !_shouldSkipTrial())
             Container(
@@ -2561,6 +3461,27 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                   SizedBox(width: 3),
                   Text(
                     '${_remainingTrialMinutes.toString().padLeft(2, '0')}:${_remainingTrialSeconds.toString().padLeft(2, '0')}',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11),
+                  ),
+                ],
+              ),
+            ),
+          // Minuteur du billet : le MÊME petit minuteur que l'essai gratuit (orange, rouge sous 2 minutes) ; une seule fois si l'essai d'un live payant l'affiche déjà
+          if (!widget.isHost && _ticketSecondsLeft < (1 << 29) && !_ticketRequired && !(widget.postLive.isPaidLive && _remainingTrialMinutes < 999 && !_shouldSkipTrial()))
+            Container(
+              margin: EdgeInsets.only(top: 8),
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: _ticketSecondsLeft < 120 ? Colors.red.withOpacity(0.9) : Colors.orange.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.timer_rounded, color: Colors.white, size: 11),
+                  SizedBox(width: 3),
+                  Text(
+                    '${(_ticketSecondsLeft ~/ 60).toString().padLeft(2, '0')}:${(_ticketSecondsLeft % 60).toString().padLeft(2, '0')}',
                     style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11),
                   ),
                 ],
@@ -2591,6 +3512,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
               onSelected: (v) {
                 if (v == 'end') _confirmEndLive();
                 if (v == 'voice' && widget.isHost) showLiveVoiceInbox(context, widget.liveId);
+                if (v == 'display' && widget.isHost) _showDisplaySheet();
+                if (v == 'games' && widget.isHost) _openGames();
               },
               itemBuilder: (ctx) => [
                 if (widget.isHost)
@@ -2600,6 +3523,24 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                       const Icon(Icons.mic_rounded, color: Colors.white, size: 20),
                       const SizedBox(width: 10),
                       Text(_voiceNew > 0 ? '${context.tr('Vocaux des spectateurs')} ($_voiceNew)' : context.tr('Vocaux des spectateurs'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                    ]),
+                  ),
+                if (widget.isHost)
+                  PopupMenuItem<String>(
+                    value: 'games',
+                    child: Row(children: [
+                      const Icon(Icons.sports_esports_rounded, color: Colors.white, size: 20),
+                      const SizedBox(width: 10),
+                      Text(context.tr('Jeux du live'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                    ]),
+                  ),
+                if (widget.isHost)
+                  PopupMenuItem<String>(
+                    value: 'display',
+                    child: Row(children: [
+                      const Icon(Icons.dashboard_customize_rounded, color: Colors.white, size: 20),
+                      const SizedBox(width: 10),
+                      Text(context.tr('Affichage du live'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
                     ]),
                   ),
                 PopupMenuItem<String>(
@@ -2632,6 +3573,16 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
             LiveVoiceButton(
               liveId: widget.liveId,
               onSent: (id, seconds) => _sendComment(tr("a envoyé un message vocal à l'hôte"), type: 'voice', voiceNoteId: id, voiceSeconds: seconds),
+            ),
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: _askQuestion,
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(color: Colors.black.withOpacity(0.5), shape: BoxShape.circle, border: Border.all(color: Colors.white24)),
+                child: const Icon(Icons.help_outline_rounded, color: Colors.white, size: 18),
+              ),
             ),
           ],
         ],
@@ -2817,7 +3768,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           children: [
             if (widget.isHost || _isParticipant) _buildParticipantControls(),
             // Solde pièces + dernier cadeau envoyé : une seule petite rangée, poussée à droite, pour ne pas cacher les messages
-            if (!widget.isHost && quickGifts.isNotEmpty)
+            if (!widget.isHost && (quickGifts.isNotEmpty || _canRaiseHand))
               Padding(
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Row(
@@ -2860,6 +3811,17 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                         ),
                       ),
                     )),
+                    if (_canRaiseHand) ...[
+                      const SizedBox(width: 6),
+                      GestureDetector(
+                        onTap: _raiseHand,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(color: const Color(0xFFFFE14D), borderRadius: BorderRadius.circular(12)),
+                          child: Text(_stage.mine != null ? tr('Demande envoyée') : tr('Monter sur scène'), style: const TextStyle(color: Color(0xFF121212), fontSize: 11, fontWeight: FontWeight.w700)),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -2867,7 +3829,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Expanded(
+                if (!_showMessages) const Spacer(),
+                if (_showMessages) Expanded(
                   child: Container(
                     height: 42,
                     decoration: BoxDecoration(
@@ -2907,13 +3870,13 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                   ),
                 ),
                 SizedBox(width: 10),
-                _buildFooterAction(icon: Icons.favorite_rounded, color: Colors.pinkAccent, label: '$_likeCount', onTap: _sendLike),
+                _buildFooterAction(icon: Icons.favorite_rounded, color: Colors.pinkAccent, label: _showReactionCounts ? '$_likeCount' : tr('J\'aime'), onTap: _sendLike),
                 SizedBox(width: 6),
                 _buildFooterAction(icon: Icons.stars_rounded, color: Color(0xFFF9A825), label: 'Cadeau', onTap: () => setState(() => _showGiftPanel = true)),
                 SizedBox(width: 6),
-                _buildFooterAction(icon: Icons.people_rounded, color: Colors.white70, label: '$_viewerCount', onTap: _toggleUsersPanel),
+                _buildFooterAction(icon: Icons.people_rounded, color: Colors.white70, label: tr('Public'), onTap: _toggleUsersPanel),
                 SizedBox(width: 6),
-                _buildFooterAction(icon: Icons.share_rounded, color: Colors.blueAccent, label: '$_shareCount', onTap: _shareLive),
+                _buildFooterAction(icon: Icons.share_rounded, color: Colors.blueAccent, label: _showReactionCounts ? '$_shareCount' : tr('Partager'), onTap: _shareLive),
               ],
             ),
           ],
@@ -2990,7 +3953,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
             onTap: _toggleMicrophone,
             active: !_isMicrophoneMuted,
           ),
-          if (!_isScreenSharing) ...[
+          if (!_isScreenSharing && (widget.isHost || _myStageMedia == 'video')) ...[
             const SizedBox(width: 20),
             _buildCtrlBtn(
               icon: Icons.cameraswitch_rounded,
@@ -3014,8 +3977,53 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
               ),
             ],
           ],
+          // Scène à plusieurs : l'hôte invite (pastille = demandes en attente) ; un invité peut descendre
+          if (widget.isHost && _stage.enabled) ...[
+            const SizedBox(width: 20),
+            _buildInviteButton(),
+          ],
+          if (!widget.isHost && _onStageApi) ...[
+            const SizedBox(width: 20),
+            _buildCtrlBtn(icon: Icons.logout_rounded, label: tr('Descendre'), onTap: () => _removeFromStage(ApiIdentity.myId ?? ''), active: true),
+          ],
         ],
       ),
+    );
+  }
+
+  /// Bouton « Inviter » (jaune) : ouvre la liste des participants ; la pastille rouge compte les demandes en attente.
+  Widget _buildInviteButton() {
+    final n = _stage.requests.length;
+    return GestureDetector(
+      onTap: () {
+        setState(() => _showUsersPanel = true);
+        _fetchAllUsers();
+      },
+      child: Stack(clipBehavior: Clip.none, children: [
+        Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(color: const Color(0xFFF9A825), shape: BoxShape.circle, border: Border.all(color: const Color(0xFFF9A825))),
+            child: const Icon(Icons.person_add_alt_1_rounded, color: Color(0xFF121212), size: 20),
+          ),
+          const SizedBox(height: 4),
+          Text(tr('Inviter'), style: const TextStyle(color: Color(0xFFFFE14D), fontSize: 10, fontWeight: FontWeight.w700)),
+        ]),
+        if (n > 0)
+          Positioned(
+            right: -4,
+            top: -4,
+            child: Container(
+              constraints: const BoxConstraints(minWidth: 18),
+              height: 18,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(color: const Color(0xFFD92D3A), borderRadius: BorderRadius.circular(9), border: Border.all(color: const Color(0xFF111111), width: 2)),
+              child: Text('$n', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+            ),
+          ),
+      ]),
     );
   }
 
@@ -3182,6 +4190,10 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     _durationTimer?.cancel();
     _voiceTimer?.cancel();
     _trialTimer?.cancel();
+    _ticketTimer?.cancel();
+    _watchTimer?.cancel();
+    _hostFeeTimer?.cancel();
+    _stageTimer?.cancel();
     _typingTimer?.cancel();
     _liveSubscription?.cancel();
     _commentsSubscription?.cancel();

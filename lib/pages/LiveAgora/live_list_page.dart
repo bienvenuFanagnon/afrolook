@@ -1,4 +1,6 @@
+import 'package:afrotok/services/api/chat_api.dart' show LivesApi;
 import 'package:afrotok/l10n/tr.dart';
+import 'live_sheet_page.dart';
 import 'package:afrotok/pages/liveshop/live_shop_orders_page.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:async';
@@ -36,6 +38,7 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(_handleTab);
     _initLoad();
+    _loadMinutes();
   }
 
   Future<void> _initLoad() async {
@@ -153,17 +156,17 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
     final lp = context.watch<LiveProvider>();
 
     final all = _organizedLives(lp);
-    final actifs = all.where((l) => l.isLive).toList();
-    final termines = all.where((l) => !l.isLive).toList();
+    final actifs = all.where((l) => l.isLive && _matches(l)).toList();
+    final termines = all.where((l) => !l.isLive && _matches(l)).toList();
 
     // Tab 0 = En cours | Tab 1 = Tous | Tab 2 = Mes lives
     List<PostLive> displayed;
     if (_selectedTab == 0) {
       displayed = actifs;
     } else if (_selectedTab == 2) {
-      displayed = all.where((l) => l.hostId == auth.userId).toList();
+      displayed = all.where((l) => l.hostId == auth.userId && _matches(l)).toList();
     } else {
-      displayed = all;
+      displayed = all.where(_matches).toList();
     }
 
     final colors = AppColors.of(context);
@@ -174,6 +177,8 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
           children: [
             _buildHeader(auth, colors),
             _buildTabs(colors),
+            const SizedBox(height: 10),
+            _buildTypeFilters(colors),
             Expanded(
               child: _isLoading
                   ? Center(child: CircularProgressIndicator(color: colors.accent))
@@ -260,6 +265,92 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Filtre par type (maquette « Liste des lives ») : tous, discussion, vente, duel, défi.
+  String _typeFilter = 'all';
+  Map<String, dynamic>? _minutes;
+
+  Future<void> _loadMinutes() async {
+    try {
+      final m = await LivesApi.minutes();
+      if (mounted) setState(() => _minutes = m);
+    } catch (_) {}
+  }
+
+  bool _matches(PostLive l) => switch (_typeFilter) {
+        'talk' => l.typeSession == 'talk',
+        'shopping' => l.typeSession == 'shopping',
+        'duel' => l.typeSession == 'duel',
+        'challenge' => l.typeSession == 'challenge',
+        _ => true,
+      };
+
+  static String _typeLabel(String t) => switch (t) {
+        'shopping' => 'Vente',
+        'duel' => 'Duel',
+        'challenge' => 'Défi',
+        _ => 'Discussion',
+      };
+
+  /// Pastille de prix : Gratuit (vert), Billet · N pcs (ambre), Privé · N pcs (blanc translucide).
+  Widget _priceTag(PostLive l) {
+    String text;
+    Color bg;
+    Color fg;
+    if (l.isPaidLive) {
+      text = tr('Privé · {n} pcs', {'n': '${l.participationFeeCoins}'});
+      bg = Colors.white.withOpacity(.2);
+      fg = Colors.white;
+    } else if (l.ticketMode) {
+      final t = (_minutes?['ticket_coins'] as Map?) ?? const {};
+      final n = l.audioOnly ? t['audio'] : (l.typeSession == 'duel' ? t['stage'] : t['video']);
+      text = tr('Billet · {n} pcs', {'n': '${n ?? 50}'});
+      bg = const Color(0xFFF9A825);
+      fg = Colors.black;
+    } else {
+      text = tr('Gratuit');
+      bg = const Color(0xFF2ECC71);
+      fg = const Color(0xFF0E0E0E);
+    }
+    return Container(
+      margin: const EdgeInsets.only(top: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(7)),
+      child: Text(text, style: TextStyle(color: fg, fontSize: 9.5, fontWeight: FontWeight.w800)),
+    );
+  }
+
+  Widget _buildTypeFilters(AppColors colors) {
+    Widget chip(String key, String label) {
+      final on = _typeFilter == key;
+      return Padding(
+        padding: const EdgeInsets.only(right: 7),
+        child: GestureDetector(
+          onTap: () => setState(() => _typeFilter = key),
+          child: Container(
+            height: 32,
+            padding: const EdgeInsets.symmetric(horizontal: 13),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: on ? colors.accent : colors.surface,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: on ? colors.accent : colors.border),
+            ),
+            child: Text(label, style: TextStyle(color: on ? colors.onAccent : colors.textPrimary, fontSize: 12.5, fontWeight: FontWeight.w700)),
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 32,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: [chip('all', tr('Tous')), chip('talk', tr('Discussion')), chip('shopping', tr('Vente')), chip('duel', tr('Duel')), chip('challenge', tr('Défi'))],
       ),
     );
   }
@@ -404,13 +495,7 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
     final cardImage = (live.coverImage?.isNotEmpty == true) ? live.coverImage! : (live.hostImage ?? '');
 
     return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(
-        builder: (_) => LivePage(
-          liveId: live.liveId!, isHost: isHost,
-          hostName: live.hostName!, hostImage: live.hostImage!,
-          isInvited: isInvited, postLive: live,
-        ),
-      )),
+      onTap: () => openLiveWithSheet(context, live, isHost: isHost, isInvited: isInvited),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: Container(
@@ -433,6 +518,15 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
                 ),
               ),
               Positioned(top: 10, left: 10, child: _liveBadge()),
+              if (live.typeSession != 'talk')
+                Positioned(
+                  top: 34, left: 10,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(color: const Color(0xFFFFD400), borderRadius: BorderRadius.circular(8)),
+                    child: Text(tr(_typeLabel(live.typeSession)), style: const TextStyle(color: Color(0xFF121212), fontSize: 9.5, fontWeight: FontWeight.w800)),
+                  ),
+                ),
               if (live.isPaidLive)
                 Positioned(
                   top: 10, right: 10,
@@ -484,6 +578,7 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
                     ),
                     const SizedBox(height: 5),
                     Text(live.title, style: const TextStyle(color: Color(0xCCFFFFFF), fontSize: 10), maxLines: 2, overflow: TextOverflow.ellipsis),
+                    _priceTag(live),
                     const SizedBox(height: 6),
                     Row(
                       children: [
@@ -513,13 +608,7 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
     final cardImage = (live.coverImage?.isNotEmpty == true) ? live.coverImage! : (live.hostImage ?? '');
 
     return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(
-        builder: (_) => LivePage(
-          liveId: live.liveId!, isHost: isHost,
-          hostName: live.hostName!, hostImage: live.hostImage!,
-          isInvited: isInvited, postLive: live,
-        ),
-      )),
+      onTap: () => openLiveWithSheet(context, live, isHost: isHost, isInvited: isInvited),
       child: Container(
         decoration: BoxDecoration(
           color: colors.surface,

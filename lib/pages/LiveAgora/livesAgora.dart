@@ -75,6 +75,16 @@ class PostLive {
   final int giftCoinsTotal;         // Pièces reçues en cadeaux
   final String? coverImage;         // Image de couverture du live (facultative)
 
+  /// Type de live : `talk` (discussion), `shopping` (vente en direct), `duel` ou `challenge` (défi à plusieurs).
+  final String typeSession;
+
+  /// Le live a démarré alors que les minutes gratuites du mois étaient épuisées : les spectateurs prennent un billet.
+  final bool ticketMode;
+  final bool audioOnly;
+
+  /// L'hôte offre l'entrée : il paie les billets de ses spectateurs.
+  final bool offerEntry;
+
   /// Image à montrer pour ce live : sa couverture si l'hôte en a choisi une, sinon la photo de profil de l'hôte.
   String? get displayImage => (coverImage?.isNotEmpty == true) ? coverImage : hostImage;
 
@@ -135,6 +145,10 @@ class PostLive {
     this.isPaused = false,          // ← NOUVEAU (valeur par défaut)
     this.pauseMessage,              // ← NOUVEAU (peut être null)
     this.giftCoinsTotal = 0,
+    this.typeSession = 'talk',
+    this.ticketMode = false,
+    this.audioOnly = false,
+    this.offerEntry = false,
   });
 
   // Méthode utilitaire pour obtenir la durée (gestion des null)

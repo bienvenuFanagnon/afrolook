@@ -174,9 +174,10 @@ class WalletApi {
   Future<Map<String, dynamic>> cashViews(int amountXof) => pay('cashviews:$amountXof', '/wallet/earnings/views/cash', body: {'amount_xof': amountXof});
 
   // ── Achats en pièces ──
-  Map<String, dynamic> _purchaseBody(String kind, String? refId, {int? months, int? days, int? weeks, bool? combined, String? jobId}) => {
+  Map<String, dynamic> _purchaseBody(String kind, String? refId, {int? months, int? days, int? weeks, bool? combined, String? jobId, bool? audio}) => {
         'kind': kind,
         if (refId != null) 'ref_id': refId,
+        if (audio == true) 'audio': true,
         if (months != null) 'months': months,
         if (days != null) 'days': days,
         if (weeks != null) 'weeks': weeks,
@@ -191,9 +192,9 @@ class WalletApi {
   }
 
   /// Achète avec des pièces (402 `insufficient_coins` si le solde ne suffit pas).
-  Future<Map<String, dynamic>> buy(String kind, {String? refId, int? months, int? days, int? weeks, bool? combined, String? jobId}) =>
-      pay('buy:$kind:${refId ?? ''}:${months ?? ''}:${days ?? ''}:${weeks ?? ''}:${combined ?? ''}:${jobId ?? ''}', '/purchases',
-          body: _purchaseBody(kind, refId, months: months, days: days, weeks: weeks, combined: combined, jobId: jobId));
+  Future<Map<String, dynamic>> buy(String kind, {String? refId, int? months, int? days, int? weeks, bool? combined, String? jobId, bool? audio}) =>
+      pay('buy:$kind:${refId ?? ''}:${months ?? ''}:${days ?? ''}:${weeks ?? ''}:${combined ?? ''}:${jobId ?? ''}:${audio ?? ''}', '/purchases',
+          body: _purchaseBody(kind, refId, months: months, days: days, weeks: weeks, combined: combined, jobId: jobId, audio: audio));
 
   /// Mes abonnements en cours : [{plan, started_at, expires_at}].
   Future<List<Map<String, dynamic>>> subscriptions() async => list(await _c.get('/me/subscriptions'));

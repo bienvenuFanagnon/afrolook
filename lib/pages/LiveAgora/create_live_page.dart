@@ -23,6 +23,8 @@ import '../../providers/authProvider.dart';
 import '../../services/livesServices.dart';
 import '../user/userAbonnementPage.dart';
 import 'livePage.dart';
+import 'package:afrotok/services/api/live_display.dart';
+import 'package:afrotok/services/coin_checkout.dart';
 import 'livesAgora.dart';
 
 class CreateLivePage extends StatefulWidget {
@@ -53,6 +55,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
   // Variables pour les paramètres
   bool _isPaidLive = false;
   late bool _isShoppingLive = widget.initialShopping;   // vente en direct (Live Shopping)
+  String _game = '';                                    // duel ou défi à plusieurs (jeux de live), vide pour une discussion ou une vente
   String _audioBehavior = 'reduce';
   int _audioReductionPercent = 50;
   bool _blurVideoAfterTrial = true;
@@ -88,6 +91,15 @@ class _CreateLivePageState extends State<CreateLivePage> {
   final List<String> _pickedArticles = [];
   bool _showOptions = false;
 
+  // Minutes d'Agora : tant qu'il reste du gratuit, tout est gratuit ; ensuite les spectateurs prennent un billet et l'hôte paie ses frais de diffusion
+  Map<String, dynamic>? _minutes;
+  bool _offerEntry = false;
+  int _ticketExtra = 0;
+  int _ticketTrial = 1;
+  bool _allowStage = true;
+  LiveDisplay _liveDisplay = LiveDisplay.essential;
+  bool get _ticketMode => _minutes?['mode'] == 'ticket';
+
   @override
   void initState() {
     super.initState();
@@ -96,11 +108,21 @@ class _CreateLivePageState extends State<CreateLivePage> {
       if (!await AccountGate.ensureCanPublish(context) && mounted) Navigator.of(context).maybePop();
     });
     _loadLiveRestrictions();
+    _loadMinutes();
     _pickedArticles.addAll(widget.articleIds);
     _initPreview();
     if (_isShoppingLive) _loadArticles();
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkActiveLive());
   }
+
+  Future<void> _loadMinutes() async {
+    try {
+      final m = await LivesApi.minutes();
+      if (mounted) setState(() => _minutes = m);
+    } catch (_) {}
+  }
+
+  int _num(String k, [int d = 0]) => (_minutes?[k] as num?)?.toInt() ?? d;
 
   /// Un seul live actif par hôte : dès l'ouverture de la page, proposer de reprendre
   /// le live en cours ou de le terminer pour en créer un nouveau.
@@ -1137,25 +1159,59 @@ class _CreateLivePageState extends State<CreateLivePage> {
   }
 
   Widget _buildModeCards() {
-    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _modeCard(
-        title: tr('Discussion'),
-        subtitle: tr('Parle, échange, reçois des cadeaux'),
-        icon: Icons.forum_outlined,
-        selected: !_isShoppingLive,
-        onTap: () => setState(() => _isShoppingLive = false),
-      ),
-      const SizedBox(width: 10),
-      _modeCard(
-        title: tr('Vente en direct'),
-        subtitle: tr('Vends les articles de ta boutique'),
-        icon: Icons.shopping_bag_outlined,
-        selected: _isShoppingLive,
-        onTap: () {
-          setState(() => _isShoppingLive = true);
-          _loadArticles();
-        },
-      ),
+    return Column(children: [
+      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _modeCard(
+          title: tr('Discussion'),
+          subtitle: tr('Parle, échange, reçois des cadeaux'),
+          icon: Icons.forum_outlined,
+          selected: !_isShoppingLive && _game.isEmpty,
+          onTap: () => setState(() {
+            _isShoppingLive = false;
+            _game = '';
+          }),
+        ),
+        const SizedBox(width: 10),
+        _modeCard(
+          title: tr('Vente en direct'),
+          subtitle: tr('Vends les articles de ta boutique'),
+          icon: Icons.shopping_bag_outlined,
+          selected: _isShoppingLive,
+          onTap: () {
+            setState(() {
+              _isShoppingLive = true;
+              _game = '';
+            });
+            _loadArticles();
+          },
+        ),
+      ]),
+      const SizedBox(height: 8),
+      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _modeCard(
+          title: '${tr('Duel')} · ${tr('Nouveau')}',
+          subtitle: tr('1 contre 1, les cadeaux décident'),
+          icon: Icons.sports_mma_outlined,
+          selected: _game == 'duel',
+          onTap: () => setState(() {
+            _isShoppingLive = false;
+            _game = 'duel';
+            _allowStage = true;
+          }),
+        ),
+        const SizedBox(width: 10),
+        _modeCard(
+          title: '${tr('Défi à plusieurs')} · ${tr('Nouveau')}',
+          subtitle: tr('Le premier à l\'objectif gagne'),
+          icon: Icons.groups_outlined,
+          selected: _game == 'challenge',
+          onTap: () => setState(() {
+            _isShoppingLive = false;
+            _game = 'challenge';
+            _allowStage = true;
+          }),
+        ),
+      ]),
     ]);
   }
 
@@ -1234,10 +1290,162 @@ class _CreateLivePageState extends State<CreateLivePage> {
     );
   }
 
-  Widget _buildOptionsSection() {
+  /// Carte d'information : vert (live gratuit) ou orange (minutes gratuites du mois épuisées : billets et frais de diffusion).
+  Widget _buildMinutesCard() {
+    if (_minutes == null) return const SizedBox.shrink();
+    if (!_ticketMode) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(color: const Color(0xFFE6F4EB), border: Border.all(color: const Color(0xFFBFE3CB)), borderRadius: BorderRadius.circular(14)),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(width: 28, height: 28, decoration: const BoxDecoration(color: Color(0xFF158246), shape: BoxShape.circle), child: const Icon(Icons.check_rounded, color: Colors.white, size: 18)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(tr('Live gratuit'), style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Color(0xFF0F5E32))),
+              const SizedBox(height: 1),
+              Text(tr('Les minutes gratuites du mois couvrent ce live. Tu ne paies rien, et tes spectateurs non plus.'), style: const TextStyle(fontSize: 12, height: 1.4, color: Color(0xFF2F4A3A))),
+            ]),
+          ),
+        ]),
+      );
+    }
+    final t = (_minutes!['ticket_coins'] as Map?) ?? const {};
+    Widget pr(String a, String b, {bool dashed = false}) => Container(
+          padding: EdgeInsets.only(top: dashed ? 6 : 3, bottom: 3),
+          margin: EdgeInsets.only(top: dashed ? 3 : 0),
+          decoration: dashed ? const BoxDecoration(border: Border(top: BorderSide(color: Color(0xFFFFD2A8)))) : null,
+          child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            Expanded(child: Text(a, style: const TextStyle(fontSize: 12.5, color: Colors.black87))),
+            Text(b, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: Colors.black87)),
+          ]),
+        );
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(color: const Color(0xFFFFF1E3), border: Border.all(color: const Color(0xFFFFD2A8)), borderRadius: BorderRadius.circular(14)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(width: 28, height: 28, decoration: const BoxDecoration(color: Color(0xFFFF7A1A), shape: BoxShape.circle), child: const Icon(Icons.confirmation_number_rounded, color: Color(0xFF121212), size: 16)),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(tr('Les minutes gratuites du mois sont épuisées'), style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Color(0xFF8A4300))),
+              const SizedBox(height: 1),
+              Text(tr('Tes spectateurs prennent un billet de {m} minutes. Toi, tu paies tes frais de diffusion.', {'m': '${_num('ticket_minutes', 15)}'}), style: const TextStyle(fontSize: 12, height: 1.4, color: Color(0xFF5C3A1D))),
+            ]),
+          ),
+        ]),
+        const SizedBox(height: 7),
+        const Divider(height: 1, color: Color(0xFFFFD2A8)),
+        const SizedBox(height: 6),
+        pr(tr('Discussion ou vente, en vidéo'), tr('{n} pièces', {'n': '${t['video'] ?? 50}'})),
+        pr(tr('Avec invités ou duel en vidéo'), tr('{n} pièces', {'n': '${t['stage'] ?? 110}'})),
+        pr(tr('Audio seul'), tr('{n} pièces', {'n': '${t['audio'] ?? 13}'})),
+        pr(tr('Tes frais de diffusion (hôte)'), tr('{n} pièces · {m} min', {'n': '${_num('host_fee_coins', 50)}', 'm': '${_num('ticket_minutes', 15)}'}), dashed: true),
+        pr(tr('Par invité en vidéo, sans place payante'), tr('+{n} pièces · {m} min', {'n': '${_num('stage_guest_fee_coins', 50)}', 'm': '${_num('ticket_minutes', 15)}'})),
+      ]),
+    );
+  }
+
+  Widget _stepper(String minus, String plus, String value, VoidCallback? onMinus, VoidCallback? onPlus) {
+    Widget b(String label, String aria, VoidCallback? tap) => GestureDetector(
+          onTap: tap,
+          child: Container(
+            width: 26,
+            height: 26,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(shape: BoxShape.circle, color: _c.surface, border: Border.all(color: _c.border)),
+            child: Text(label, style: TextStyle(color: tap == null ? _c.textSecondary.withOpacity(.4) : _c.textPrimary, fontSize: 15)),
+          ),
+        );
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      b('−', minus, onMinus),
+      SizedBox(width: 40, child: Text(value, textAlign: TextAlign.center, style: TextStyle(color: _c.textPrimary, fontSize: 13, fontWeight: FontWeight.w800))),
+      b('+', plus, onPlus),
+    ]);
+  }
+
+  Widget _row(String title, String? sub, Widget trailing, {bool last = false}) => Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(border: last ? null : Border(bottom: BorderSide(color: _c.border))),
+        child: Row(children: [
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(title, style: TextStyle(color: _c.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w700)),
+              if (sub != null) Text(sub, style: TextStyle(color: _c.textSecondary, fontSize: 11)),
+            ]),
+          ),
+          const SizedBox(width: 10),
+          trailing,
+        ]),
+      );
+
+  Widget _sw(bool v, ValueChanged<bool>? on) => Switch(value: v, onChanged: on, activeColor: Colors.white, activeTrackColor: const Color(0xFF158246));
+
+  /// Coût par minute d'une entrée offerte à 50 spectateurs (billet vidéo ÷ durée du billet).
+  int _offerCostPerMinute() {
+    final video = (((_minutes?['ticket_coins'] as Map?)?['video']) as num?)?.toInt() ?? 50;
+    return (50 * video / _num('ticket_minutes', 15)).round();
+  }
+
+  /// Lignes d'options de la maquette : essai, entrée offerte, supplément (mode billet), puis qualité HD, faible latence, scène et affichage.
+  Widget _buildLiveRows() {
     final isAdmin = _liveRestrictions['isAdmin'] == true;
     final canHd = _liveRestrictions['canChooseHD'] == true || isAdmin;
     final canLow = _liveRestrictions['canChooseLowLatency'] == true || isAdmin;
+    final ticket = _ticketMode && !isAdmin;
+    final rows = <Widget>[
+      if (ticket) ...[
+        _row(tr('Temps d\'essai gratuit'), tr('Avant le billet. Les minutes d\'essai sont à ta charge (environ {c} pièces par spectateur et par minute)', {'c': '${_num('trial_cost_per_minute', 3)}'}),
+            _stepper('Moins', 'Plus', tr('{n} min', {'n': '$_ticketTrial'}), _ticketTrial > 0 ? () => setState(() => _ticketTrial--) : null, _ticketTrial < _num('trial_max_minutes', 3) ? () => setState(() => _ticketTrial++) : null)),
+        _row(tr('Offrir l\'entrée à mes spectateurs'), tr('Je paie les billets à leur place (environ {n} pièces par minute pour 50 spectateurs)', {'n': '${_offerCostPerMinute()}'}),
+            _sw(_offerEntry, (v) => setState(() {
+                  _offerEntry = v;
+                  if (v) _ticketExtra = 0;
+                }))),
+        if (!_offerEntry)
+          _row(tr('Supplément pour moi'), tr('S\'ajoute au billet, il me revient'),
+              _stepper('Moins', 'Plus', _ticketExtra == 0 ? '0' : '+$_ticketExtra', _ticketExtra > 0 ? () => setState(() => _ticketExtra = (_ticketExtra - 10).clamp(0, 200)) : null, _ticketExtra < 200 ? () => setState(() => _ticketExtra = (_ticketExtra + 10).clamp(0, 200)) : null)),
+      ],
+      _row(tr('Qualité HD (720p)'), canHd ? null : tr('Réservée à Gold'), _sw(_useHDQuality && canHd, canHd ? (v) => setState(() => _useHDQuality = v) : null)),
+      _row(tr('Faible latence'), tr('Réactions plus rapides'), _sw(_useLowLatency && canLow, canLow ? (v) => setState(() => _useLowLatency = v) : null)),
+      _row(tr('Inviter sur scène'), tr('Le prix du billet passe à {n} si tes invités sont en vidéo', {'n': '${((_minutes?['ticket_coins'] as Map?)?['stage'] ?? 110)}'}), _sw(_allowStage, (v) => setState(() => _allowStage = v))),
+      GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: _pickDisplay,
+        child: _row(tr('Affichage des compteurs'), tr('Ce que voient tes spectateurs'),
+            Text('${tr(LiveDisplay.label(_liveDisplay.preset))} ›', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF158246))),
+            last: true),
+      ),
+    ];
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      decoration: BoxDecoration(color: _c.surface, border: Border.all(color: _c.border), borderRadius: BorderRadius.circular(14)),
+      child: Column(children: rows),
+    );
+  }
+
+  /// Choix du préréglage d'affichage (Essentiel par défaut) ; le réglage fin se fait pendant le live, dans « Menu ».
+  Future<void> _pickDisplay() async {
+    final p = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: _c.surface,
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Padding(padding: const EdgeInsets.all(16), child: Text(tr('Affichage des compteurs'), style: TextStyle(color: _c.textPrimary, fontSize: 16, fontWeight: FontWeight.w800))),
+          for (final k in LiveDisplay.presets)
+            ListTile(
+              title: Text(tr(LiveDisplay.label(k)), style: TextStyle(color: _c.textPrimary, fontWeight: FontWeight.w700)),
+              trailing: _liveDisplay.preset == k ? const Icon(Icons.check_rounded, color: Color(0xFF158246)) : null,
+              onTap: () => Navigator.pop(ctx, k),
+            ),
+        ]),
+      ),
+    );
+    if (p != null && mounted) setState(() => _liveDisplay = LiveDisplay.byName(p));
+  }
+
+  Widget _buildOptionsSection() {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -1248,20 +1456,13 @@ class _CreateLivePageState extends State<CreateLivePage> {
           child: Row(children: [
             Text(tr('Options'), style: TextStyle(color: _c.textPrimary, fontSize: 14, fontWeight: FontWeight.w800)),
             const Spacer(),
-            Text(tr('Couverture, qualité'), style: TextStyle(color: _c.textSecondary, fontSize: 12.5)),
+            Text(tr('Couverture'), style: TextStyle(color: _c.textSecondary, fontSize: 12.5)),
             Icon(_showOptions ? Icons.expand_less_rounded : Icons.chevron_right_rounded, color: _c.textSecondary),
           ]),
         ),
       ),
       if (_showOptions) ...[
         _buildCoverImagePicker(),
-        const SizedBox(height: 10),
-        if (canHd)
-          SwitchListTile(contentPadding: EdgeInsets.zero, value: _useHDQuality, activeColor: _c.accent, onChanged: (v) => setState(() => _useHDQuality = v), title: Text(tr('Qualité HD'), style: TextStyle(color: _c.textPrimary)))
-        else
-          Text(tr('La qualité HD est réservée à Gold (abonnement, ou en regardant des pubs).'), style: TextStyle(color: _c.textSecondary, fontSize: 12.5, height: 1.4)),
-        if (canLow)
-          SwitchListTile(contentPadding: EdgeInsets.zero, value: _useLowLatency, activeColor: _c.accent, onChanged: (v) => setState(() => _useLowLatency = v), title: Text(tr('Faible latence'), style: TextStyle(color: _c.textPrimary))),
       ],
     ]);
   }
@@ -1285,7 +1486,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
           style: FilledButton.styleFrom(backgroundColor: _gold, foregroundColor: const Color(0xFF3A2C00), disabledBackgroundColor: _c.border, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25))),
           child: _isCreating
               ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Color(0xFF3A2C00)))
-              : Text(tr('Passer en direct'), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+              : Text(_ticketMode && _liveRestrictions['isAdmin'] != true ? tr('Passer en direct avec billet') : tr('Passer en direct'), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
         ),
       ),
     ]);
@@ -1316,6 +1517,10 @@ class _CreateLivePageState extends State<CreateLivePage> {
               const SizedBox(height: 14),
               _buildFreePaidSegment(),
               if (_isPaidLive) ..._buildPaidLiveOptions(),
+              const SizedBox(height: 12),
+              _buildMinutesCard(),
+              const SizedBox(height: 12),
+              _buildLiveRows(),
               const SizedBox(height: 10),
               _buildOptionsSection(),
             ],
@@ -2131,9 +2336,13 @@ class _CreateLivePageState extends State<CreateLivePage> {
         durationMinutes: isAdmin ? 60 : 30,
         isPaid: _isPaidLive && fee > 0,
         feeCoins: fee,
-        freeTrialMinutes: _isPaidLive ? (int.tryParse(_freeTrialController.text) ?? 0) : 0,
-        typeSession: _isShoppingLive ? 'shopping' : 'talk',
+        freeTrialMinutes: _ticketMode ? _ticketTrial : (_isPaidLive ? (int.tryParse(_freeTrialController.text) ?? 0) : 0),
+        typeSession: _isShoppingLive ? 'shopping' : (_game.isNotEmpty ? _game : 'talk'),
+        offerEntry: _offerEntry,
+        ticketExtraCoins: _offerEntry ? 0 : _ticketExtra,
         options: {
+          'stage': _allowStage,
+          'display': _liveDisplay.toJson(),
           'audioBehaviorAfterTrial': _audioBehavior,
           'audioReductionPercent': _audioReductionPercent,
           'blurVideoAfterTrial': _blurVideoAfterTrial,
@@ -2152,6 +2361,20 @@ class _CreateLivePageState extends State<CreateLivePage> {
         }
       }
       final String liveId = '${apiLive['id']}';
+      // Gratuit du mois épuisé : l'hôte paie d'abord ses frais de diffusion (sinon le live s'arrête tout seul au bout de 2 minutes)
+      if (apiLive['ticket_mode'] == true) {
+        final fee = _num('host_fee_coins', 50);
+        final paid = fee <= 0 || await CoinCheckout.pay(context, kind: 'live_host_fee', refId: liveId, coins: fee, label: context.tr('Frais de diffusion'));
+        if (!paid) {
+          try {
+            await LivesApi.end(liveId);
+          } catch (_) {}
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Live annulé : les frais de diffusion n\'ont pas été payés.'))));
+          }
+          return;
+        }
+      }
       final PostLive newLive = postLiveFromApi(
         apiLive,
         hostName: authProvider.loginUserData.pseudo ?? 'Utilisateur',
@@ -2159,7 +2382,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
       );
 
       // État en direct (spectateurs, pause, texte épinglé, commentaires) : reste sur Firebase, avec le même identifiant que dans l'API
-      await _firestore.collection('lives').doc(liveId).set(newLive.toMap());
+      await _firestore.collection('lives').doc(liveId).set({...newLive.toMap(), 'display': _liveDisplay.toJson()});
 
       // Calculer la qualité selon les choix et restrictions
       final actualQuality = _useHDQuality && (_liveRestrictions['canChooseHD'] == true || _liveRestrictions['isAdmin'] == true) ? 'HD' : 'SD';

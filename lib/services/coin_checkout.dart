@@ -55,6 +55,7 @@ class CoinCheckout {
     int? weeks,
     bool? combined,
     int? days,
+    bool? audio,
   }) async {
     final price = coins ?? coinsFor(priceFcfa ?? 0);
     final user = Provider.of<UserAuthProvider>(context, listen: false).loginUserData;
@@ -94,7 +95,7 @@ class CoinCheckout {
 
     try {
       // E-mail non confirmé (403 `email_unverified`) : fenêtre « Confirme ton e-mail », puis l'achat est rejoué.
-      await EmailVerificationGate.run(context, () => WalletApi.instance.buy(kind, refId: refId, months: dureeMois, weeks: weeks, combined: combined, days: days));
+      await EmailVerificationGate.run(context, () => WalletApi.instance.buy(kind, refId: refId, months: dureeMois, weeks: weeks, combined: combined, days: days, audio: audio));
       if (context.mounted) await refreshBalance(context);
       return true;
     } on ApiException catch (e) {

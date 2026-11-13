@@ -41,5 +41,9 @@ PostLive postLiveFromApi(Map<String, dynamic> j, {String hostName = '', String h
     isPaused: j['is_paused'] == true,
     pauseMessage: j['pause_message'] as String?,
     giftCoinsTotal: JeuxApi.asInt(j['gift_coins_total']),
+    typeSession: '${j['type_session'] ?? 'talk'}',
+    ticketMode: j['ticket_mode'] == true,
+    audioOnly: j['audio_only'] == true,
+    offerEntry: j['offer_entry'] == true,
   );
 }

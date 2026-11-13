@@ -178,9 +178,15 @@ class LivesApi {
     int freeTrialMinutes = 0,
     Map<String, dynamic>? options,
     String typeSession = 'talk',   // talk (discussion) ou shopping (vente en direct)
+    bool audioOnly = false,        // salon audio : billet bien moins cher quand le gratuit du mois est épuisé
+    bool offerEntry = false,       // l'hôte offre l'entrée : il paie les billets de ses spectateurs (mode billet)
+    int ticketExtraCoins = 0,      // supplément ajouté au billet, il revient à l'hôte (mode billet)
   }) async =>
       JeuxApi.map(await _c.post('/lives', body: {
         'type_session': typeSession,
+        if (audioOnly) 'audio_only': true,
+        if (offerEntry) 'offer_entry': true,
+        if (ticketExtraCoins > 0) 'ticket_extra_coins': ticketExtraCoins,
         'title': title,
         if (coverUploadId != null) 'cover_upload_id': coverUploadId,
         if (durationMinutes != null) 'duration_minutes': durationMinutes,
@@ -190,11 +196,12 @@ class LivesApi {
         if (options != null) 'options': options,
       }));
 
-  static Future<void> heartbeat(String id, {int? viewers, int? likes, int? shares}) => _c.post('/lives/$id/heartbeat', body: {
+  /// Signal de l'hôte ; en mode billet la réponse porte `host_fee: { coins, paid_until }` (échéance des frais de diffusion).
+  static Future<Map<String, dynamic>> heartbeat(String id, {int? viewers, int? likes, int? shares}) async => JeuxApi.map(await _c.post('/lives/$id/heartbeat', body: {
         if (viewers != null) 'viewer_count': viewers,
         if (likes != null) 'likes_count': likes,
         if (shares != null) 'shares_count': shares,
-      });
+      }));
 
   static Future<Map<String, dynamic>> update(String id, Map<String, dynamic> fields) async => JeuxApi.map(await _c.patch('/lives/$id', body: fields));
 
@@ -218,9 +225,41 @@ class LivesApi {
   static Future<Map<String, dynamic>> token(String id, {required int uid, String role = 'audience'}) async =>
       JeuxApi.map(await _c.post('/lives/$id/token', body: {'uid': uid, 'role': role}));
 
+  /// Minutes d'Agora : mode (`free` tant qu'il reste du gratuit, `ticket` ensuite) et prix des billets (pièces, jamais la part gardée par Afrolook).
+  static Future<Map<String, dynamic>> minutes() async => JeuxApi.map(await _c.get('/lives/minutes'));
+
+  /// Battement d'un spectateur (toutes les 30 à 60 s) : compte ses minutes ; 402 `ticket_required` quand son billet est fini.
+  static Future<Map<String, dynamic>> watch(String id) async => JeuxApi.map(await _c.post('/lives/$id/watch'));
+
+  /// Bilan du live (hôte et équipe) : gains, chiffres, plus généreux, billets payés.
+  static Future<Map<String, dynamic>> report(String id) async => JeuxApi.map(await _c.get('/lives/$id/report'));
+
+  // ── Scène à plusieurs : demandes, invitations, validation de l'hôte ──
+  static Future<Map<String, dynamic>> stage(String id) async => JeuxApi.map(await _c.get('/lives/$id/stage'));
+  static Future<Map<String, dynamic>> stageRequest(String id, String media) async => JeuxApi.map(await _c.post('/lives/$id/stage/request', body: {'media': media}));
+  static Future<void> stageCancel(String id) => _c.post('/lives/$id/stage/request/cancel');
+  static Future<Map<String, dynamic>> stageInvite(String id, String userId, String media) async =>
+      JeuxApi.map(await _c.post('/lives/$id/stage/invite', body: {'user_id': userId, 'media': media}));
+  static Future<void> stageDecide(String id, String requestId, {required bool accept}) => _c.post('/lives/$id/stage/requests/$requestId/${accept ? 'accept' : 'refuse'}');
+  static Future<void> stageAnswerInvite(String id, String requestId, {required bool accept}) => _c.post('/lives/$id/stage/invites/$requestId/${accept ? 'accept' : 'decline'}');
+  static Future<void> stageRemove(String id, String userId) => _c.delete('/lives/$id/stage/$userId');
+  static Future<void> stageUid(String id, int uid) => _c.post('/lives/$id/stage/uid', body: {'uid': uid});
+
   /// Cadeau en live (argent : clé d'idempotence conservée à chaque tentative).
-  static Future<Map<String, dynamic>> gift(String id, {required int coins, String? icon, String? label}) async =>
-      JeuxApi.map(await _c.pay('/lives/$id/gifts', body: {'coins': coins, if (icon != null) 'icon': icon, if (label != null) 'label': label}));
+  static Future<Map<String, dynamic>> gift(String id, {required int coins, String? icon, String? label, String? targetId}) async =>
+      JeuxApi.map(await _c.pay('/lives/$id/gifts', body: {'coins': coins, if (icon != null) 'icon': icon, if (label != null) 'label': label, if (targetId != null) 'target_id': targetId}));
+
+  // ── Jeux : objectif, duel, défi, sondage, tirage au sort, questions du public ──
+  /// Jeu en cours (ou terminé depuis moins de 45 s) et objectif du live.
+  static Future<Map<String, dynamic>> game(String id) async => JeuxApi.map(await _c.get('/lives/$id/game'));
+  static Future<Map<String, dynamic>> gameStart(String id, Map<String, dynamic> body) async => JeuxApi.map(await _c.post('/lives/$id/game', body: body));
+  static Future<void> gameEnd(String id) => _c.post('/lives/$id/game/end');
+  static Future<Map<String, dynamic>> gameVote(String id, int option) async => JeuxApi.map(await _c.post('/lives/$id/game/vote', body: {'option': option}));
+  static Future<Map<String, dynamic>> gameDraw(String id, int coins, List<String> candidates) async =>
+      JeuxApi.map(await _c.post('/lives/$id/game/draw', body: {'coins': coins, 'candidates': candidates}));
+  static Future<void> ask(String id, String text) => _c.post('/lives/$id/questions', body: {'text': text});
+  static Future<List<Map<String, dynamic>>> questions(String id) async => JeuxApi.list(await _c.get('/lives/$id/questions'));
+  static Future<void> pinQuestion(String id, String questionId) => _c.post('/lives/$id/questions/$questionId/pin');
 
   static Future<List<Map<String, dynamic>>> leaderboard(String id) async => JeuxApi.list(await _c.get('/lives/$id/leaderboard'));
 }
