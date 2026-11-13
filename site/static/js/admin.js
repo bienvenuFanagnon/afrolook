@@ -661,6 +661,8 @@ async function pbDo(r, act) {
   const msg = (t, bad) => { const el = $('#pb-msg'); if (el) { el.hidden = !t; el.textContent = t || ''; el.style.color = bad ? 'var(--c4)' : ''; } };
   if (act === 'remove-form') { $('#pb-rm').hidden = false; $('#pb-why').focus(); return; }
   if (act === 'cancel') { $('#pb-rm').hidden = true; return; }
+  // « Classer sans suite » PUBLIE la vidéo et la rend monétisable, même en attente de vérification ou marquée : on demande confirmation (appui par mégarde constaté le 13/11/2026)
+  if (act === 'dismiss' && !confirm('Classer sans suite ?\n\nLes signalements seront effacés et la publication sera visible et monétisable, même si elle était en attente de vérification ou marquée (par exemple une marque d’un autre réseau).\n\nAs-tu bien regardé la publication ?')) return;
   try {
     if (act === 'remove') {
       const why = ($('#pb-why').value || '').trim(); if (why.length < 5) { msg('Écris un motif d’au moins 5 caractères.', true); return; }
