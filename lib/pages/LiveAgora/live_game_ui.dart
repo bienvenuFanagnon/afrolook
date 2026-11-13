@@ -33,6 +33,51 @@ class LiveGame {
   List<String> get options => [for (final o in (config['options'] as List? ?? const [])) '$o'];
   List<int> get votes => [for (final v in (raw['votes'] as List? ?? const [])) (v as num).toInt()];
   int? get myVote => (raw['my_vote'] as num?)?.toInt();
+
+  // conte interactif : voix en pièces par choix
+  int get myCoins => (raw['my_coins'] as num?)?.toInt() ?? 0;
+  int get voteCoins => (raw['vote_coins'] as num?)?.toInt() ?? 10;
+  int? get winnerOption => (raw['winner_option'] as num?)?.toInt();
+
+  // quiz à cagnotte : question en cours, classement
+  Map get quiz => raw['quiz'] is Map ? raw['quiz'] as Map : const {};
+  List get winners => raw['winners'] is List ? raw['winners'] as List : const [];
+}
+
+/// Une question de quiz saisie par l'hôte : `Question ? | choix A | choix B* | choix C` (l'étoile marque la bonne réponse).
+class QuizDraft {
+  QuizDraft(this.text, this.options, this.correct);
+
+  final String text;
+  final List<String> options;
+  final int correct;
+
+  Map<String, dynamic> toJson() => {'text': text, 'options': options, 'correct': correct};
+
+  /// Lit le texte saisi, une question par ligne ; renvoie `null` si une ligne est incomplète (moins de 2 choix, pas de bonne réponse).
+  static List<QuizDraft>? parse(String input) {
+    final out = <QuizDraft>[];
+    for (final line in input.split('\n')) {
+      if (line.trim().isEmpty) continue;
+      final parts = line.split('|').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+      if (parts.length < 3 || parts.length > 5) return null;
+      final opts = <String>[];
+      var correct = -1;
+      for (final raw in parts.skip(1)) {
+        final star = raw.endsWith('*');
+        final t = star ? raw.substring(0, raw.length - 1).trim() : raw;
+        if (t.isEmpty) return null;
+        if (star) {
+          if (correct != -1) return null;
+          correct = opts.length;
+        }
+        opts.add(t);
+      }
+      if (correct == -1) return null;
+      out.add(QuizDraft(parts.first, opts, correct));
+    }
+    return out.isEmpty || out.length > 10 ? null : out;
+  }
 }
 
 String clock(int seconds) => '${(seconds ~/ 60).toString().padLeft(2, '0')}:${(seconds % 60).toString().padLeft(2, '0')}';
@@ -65,7 +110,7 @@ class LiveGoalBar extends StatelessWidget {
 
 /// Le jeu à l'écran : duel (deux scores, barre, chrono), défi (une barre par présentateur) ou sondage (choix et pourcentages).
 class LiveGameCard extends StatelessWidget {
-  const LiveGameCard({super.key, required this.game, required this.target, required this.onTarget, required this.onVote, required this.isHost});
+  const LiveGameCard({super.key, required this.game, required this.target, required this.onTarget, required this.onVote, required this.isHost, this.onStoryVote, this.onAnswer});
 
   final LiveGame game;
 
@@ -75,9 +120,15 @@ class LiveGameCard extends StatelessWidget {
   final ValueChanged<int> onVote;
   final bool isHost;
 
+  /// Conte : vote payant (10 pièces). Quiz : réponse à la question en cours.
+  final ValueChanged<int>? onStoryVote;
+  final ValueChanged<int>? onAnswer;
+
   @override
   Widget build(BuildContext context) {
     if (game.kind == 'poll') return _poll(context);
+    if (game.kind == 'story') return _story(context);
+    if (game.kind == 'quiz') return _quiz(context);
     return _match(context);
   }
 
@@ -162,6 +213,129 @@ class LiveGameCard extends StatelessWidget {
         Text('@${p.username}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w800)),
         if (lead) Text('EN TÊTE', style: TextStyle(color: const Color(0xFF69F0AE).withOpacity(.9), fontSize: 9.5, fontWeight: FontWeight.w800, letterSpacing: .6)),
       ]);
+
+  /// Conte interactif : le public vote avec des pièces, l'option la plus soutenue décide de la suite.
+  Widget _story(BuildContext context) {
+    final votes = game.votes;
+    final total = votes.fold<int>(0, (a, b) => a + b);
+    final done = !game.active;
+    return _frame([
+      Row(children: [
+        Text(context.tr('La suite de l\'histoire').toUpperCase(), style: const TextStyle(color: _yellow, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: .6)),
+        const Spacer(),
+        if (game.active && game.endsAt != null) _Countdown(game: game),
+      ]),
+      const SizedBox(height: 4),
+      Text(game.question, style: const TextStyle(color: Colors.white, fontSize: 14.5, fontWeight: FontWeight.w800, height: 1.3)),
+      const SizedBox(height: 8),
+      for (var i = 0; i < game.options.length; i++) ...[
+        Container(
+          height: 44,
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: done && game.winnerOption == i ? const Color(0xFF69F0AE) : Colors.white24, width: done && game.winnerOption == i ? 2 : 1)),
+          child: Stack(children: [
+            Positioned.fill(
+              child: FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: total == 0 ? 0.0 : (i < votes.length ? votes[i] / total : 0.0).clamp(0.0, 1.0).toDouble(),
+                child: Container(decoration: BoxDecoration(color: _amber.withOpacity(.3), borderRadius: BorderRadius.circular(11))),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Row(children: [
+                Text(String.fromCharCode(65 + i), style: const TextStyle(color: _yellow, fontWeight: FontWeight.w800)),
+                const SizedBox(width: 8),
+                Expanded(child: Text(game.options[i], maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600))),
+                Text(total == 0 ? '0 %' : '${((i < votes.length ? votes[i] : 0) * 100 / total).round()} %', style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w700)),
+                if (game.active && !isHost) ...[
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: onStoryVote == null ? null : () => onStoryVote!(i),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                      decoration: BoxDecoration(color: _amber, borderRadius: BorderRadius.circular(12)),
+                      child: Text('${context.tr('Voter')} · ${game.voteCoins}', style: const TextStyle(color: Colors.black, fontSize: 11, fontWeight: FontWeight.w800)),
+                    ),
+                  ),
+                ],
+              ]),
+            ),
+          ]),
+        ),
+        const SizedBox(height: 6),
+      ],
+      Text(
+        game.active ? '${CoinCheckout.fmt(total)} pcs · ${context.tr('Chaque vote compte, tu peux voter autant de fois que tu veux.')}' : context.tr('Le public a choisi la suite.'),
+        style: const TextStyle(color: Colors.white54, fontSize: 10.5),
+      ),
+    ]);
+  }
+
+  /// Quiz à cagnotte : une question à la fois, bonne réponse montrée après le temps, classement en direct.
+  Widget _quiz(BuildContext context) {
+    final q = game.quiz;
+    final options = [for (final o in (q['options'] as List? ?? const [])) '$o'];
+    final reveal = q['phase'] == 'reveal';
+    final correct = (q['correct'] as num?)?.toInt();
+    final mine = (q['my_option'] as num?)?.toInt();
+    final ranking = (q['ranking'] as List? ?? const []);
+    final pool = (q['pool'] as num?)?.toInt() ?? 0;
+    final done = !game.active;
+    return _frame([
+      Row(children: [
+        Text('${context.tr('Question')} ${((q['index'] as num?)?.toInt() ?? 0) + 1}/${q['total']}'.toUpperCase(), style: const TextStyle(color: _yellow, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: .6)),
+        const SizedBox(width: 8),
+        if (pool > 0) Text('${CoinCheckout.fmt(pool)} pcs', style: const TextStyle(color: _amber, fontSize: 11, fontWeight: FontWeight.w800)),
+        const Spacer(),
+        if (!done)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(color: (q['left'] as num? ?? 99) < 5 && !reveal ? Colors.red.withOpacity(.85) : Colors.black54, borderRadius: BorderRadius.circular(10)),
+            child: Text(reveal ? context.tr('Réponse') : '00:${((q['left'] as num?)?.toInt() ?? 0).toString().padLeft(2, '0')}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
+          ),
+      ]),
+      const SizedBox(height: 4),
+      if (!done) ...[
+        Text('${q['text']}', style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800, height: 1.3)),
+        const SizedBox(height: 8),
+        for (var i = 0; i < options.length; i++)
+          GestureDetector(
+            onTap: (!isHost && !reveal && mine == null && onAnswer != null) ? () => onAnswer!(i) : null,
+            child: Container(
+              height: 40,
+              margin: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              decoration: BoxDecoration(
+                color: reveal && correct == i ? const Color(0xFF2ECC71).withOpacity(.3) : (reveal && mine == i ? Colors.red.withOpacity(.25) : Colors.black.withOpacity(.3)),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: reveal && correct == i ? const Color(0xFF2ECC71) : (mine == i ? _amber : Colors.white24), width: mine == i || (reveal && correct == i) ? 2 : 1),
+              ),
+              child: Row(children: [
+                Text(String.fromCharCode(65 + i), style: const TextStyle(color: _yellow, fontWeight: FontWeight.w800)),
+                const SizedBox(width: 8),
+                Expanded(child: Text(options[i], maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600))),
+                if (!reveal && mine == i) Text(context.tr('ton choix'), style: const TextStyle(color: _amber, fontSize: 10.5)),
+              ]),
+            ),
+          ),
+      ],
+      if (done)
+        for (final w in game.winners)
+          Padding(padding: const EdgeInsets.symmetric(vertical: 2), child: Text('${['🥇', '🥈', '🥉'][((w as Map)['rank'] as int) - 1]}  ${(w)['coins']} pcs', style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700))),
+      if (ranking.isNotEmpty) ...[
+        const SizedBox(height: 2),
+        Text(context.tr('Classement').toUpperCase(), style: const TextStyle(color: _yellow, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: .6)),
+        for (var i = 0; i < ranking.length && i < 3; i++)
+          Row(children: [
+            Text(['🥇', '🥈', '🥉'][i]),
+            const SizedBox(width: 6),
+            Expanded(child: Text('${(ranking[i] as Map)['username'] ?? ''}', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700))),
+            Text('${(ranking[i] as Map)['points']} pts', style: const TextStyle(color: Colors.white70, fontSize: 11.5)),
+          ]),
+        if (!isHost && q['my_rank'] != null) Text('${context.tr('Toi')} : ${q['my_rank']}e · ${q['my_points']} pts', style: const TextStyle(color: _yellow, fontSize: 11.5, fontWeight: FontWeight.w700)),
+      ],
+    ]);
+  }
 
   Widget _poll(BuildContext context) {
     final votes = game.votes;
@@ -282,6 +456,9 @@ Future<String?> showGamesMenu(BuildContext context, {required bool hasStageGuest
           item(ctx, 'duel', Icons.sports_mma_rounded, ctx.tr('Duel 1 contre 1'), hasStageGuests ? ctx.tr('5 minutes, les cadeaux décident') : ctx.tr('Invite d\'abord quelqu\'un sur scène'), enabled: hasStageGuests),
           item(ctx, 'challenge', Icons.groups_rounded, ctx.tr('Défi à plusieurs'), hasStageGuests ? ctx.tr('Le premier à l\'objectif gagne') : ctx.tr('Invite d\'abord des présentateurs sur scène'), enabled: hasStageGuests),
           item(ctx, 'poll', Icons.poll_rounded, ctx.tr('Sondage'), ctx.tr('Le public vote en direct')),
+          item(ctx, 'story', Icons.auto_stories_rounded, ctx.tr('Conte interactif'), ctx.tr('Le public vote la suite avec des pièces')),
+          item(ctx, 'quiz', Icons.quiz_rounded, ctx.tr('Quiz à cagnotte'), ctx.tr('Gratuit pour jouer, cagnotte offerte par toi')),
+          item(ctx, 'clips', Icons.movie_filter_rounded, ctx.tr('Clips rémunérés'), ctx.tr('Une prime pour les meilleurs moments')),
           item(ctx, 'questions', Icons.help_outline_rounded, ctx.tr('Questions du public'), ctx.tr('Lis et épingle une question')),
           item(ctx, 'draw', Icons.card_giftcard_rounded, ctx.tr('Tirage au sort'), ctx.tr('Mets des pièces en jeu')),
           if (gameActive) item(ctx, 'end', Icons.stop_circle_rounded, ctx.tr('Arrêter le jeu en cours'), ''),
@@ -312,6 +489,50 @@ Future<List<String>?> askFields(BuildContext context, {required String title, re
         TextButton(onPressed: () => Navigator.pop(ctx), child: Text(ctx.tr('Annuler'))),
         FilledButton(onPressed: () => Navigator.pop(ctx, [for (final c in ctrls) c.text.trim()]), child: Text(ctx.tr(ok))),
       ],
+    ),
+  );
+}
+
+
+/// Saisie d'un quiz : une question par ligne, `Question ? | A | B* | C` (étoile = bonne réponse), cagnotte offerte et durée par question.
+Future<({List<QuizDraft> questions, int pool, int seconds})?> askQuiz(BuildContext context) {
+  final text = TextEditingController();
+  final pool = TextEditingController(text: '500');
+  final secs = TextEditingController(text: '15');
+  String? error;
+  return showDialog<({List<QuizDraft> questions, int pool, int seconds})>(
+    context: context,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setD) => AlertDialog(
+        title: Text(ctx.tr('Quiz à cagnotte')),
+        content: SingleChildScrollView(
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(ctx.tr('Une question par ligne : Question ? | choix A | choix B* | choix C. L\'étoile marque la bonne réponse. 10 questions au plus.'), style: const TextStyle(fontSize: 12.5, height: 1.4)),
+            const SizedBox(height: 8),
+            TextField(controller: text, minLines: 4, maxLines: 8, decoration: InputDecoration(border: const OutlineInputBorder(), hintText: ctx.tr('Capitale du Ghana ? | Kumasi | Accra* | Lomé'))),
+            const SizedBox(height: 8),
+            TextField(controller: pool, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: ctx.tr('Cagnotte offerte (pièces, 0 pour jouer sans gain)'))),
+            TextField(controller: secs, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: ctx.tr('Secondes par question'))),
+            const SizedBox(height: 6),
+            Text(ctx.tr('Jouer est gratuit pour le public. La cagnotte est mise de côté maintenant : 50 % / 30 % / 20 % aux trois premiers, le reste te revient.'), style: const TextStyle(fontSize: 11.5, color: Colors.grey)),
+            if (error != null) Padding(padding: const EdgeInsets.only(top: 6), child: Text(error!, style: const TextStyle(color: Colors.red, fontSize: 12))),
+          ]),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(ctx.tr('Annuler'))),
+          FilledButton(
+            onPressed: () {
+              final qs = QuizDraft.parse(text.text);
+              if (qs == null) {
+                setD(() => error = ctx.tr('Chaque ligne : une question, 2 à 4 choix, une seule bonne réponse marquée par une étoile.'));
+                return;
+              }
+              Navigator.pop(ctx, (questions: qs, pool: (int.tryParse(pool.text) ?? 0).clamp(0, 100000), seconds: (int.tryParse(secs.text) ?? 15).clamp(8, 40)));
+            },
+            child: Text(ctx.tr('Lancer')),
+          ),
+        ],
+      ),
     ),
   );
 }

@@ -2,6 +2,7 @@ import 'package:afrotok/l10n/tr.dart';
 import 'package:afrotok/services/api/chat_api.dart';
 import 'package:afrotok/services/coin_checkout.dart';
 import 'package:flutter/material.dart';
+import 'live_clips_page.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// Bilan du live (maquette 15) : ce que l'hôte a gagné, les chiffres, les plus généreux, ce que les spectateurs ont payé.
@@ -156,6 +157,15 @@ class _LiveReportPageState extends State<LiveReportPage> {
                     onPressed: () => Share.share(tr('Mon live « {t} » sur Afrolook : {v} spectateurs, {c} pièces reçues.', {'t': title, 'v': '${_i('viewers')}', 'c': CoinCheckout.fmt(total)})),
                     style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.white30), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25))),
                     child: Text(tr('Partager un résumé'), style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                SizedBox(
+                  height: 46,
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => LiveClipsPage(liveId: widget.liveId))),
+                    style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.white30), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25))),
+                    child: Text(tr('Clips de ce live'), style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
                   ),
                 ),
                 const SizedBox(height: 10),

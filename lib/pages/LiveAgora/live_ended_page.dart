@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import 'livesAgora.dart';
+import 'live_clips_page.dart';
 
 class LiveEndedPage extends StatelessWidget {
   final PostLive live;
@@ -157,6 +158,18 @@ class LiveEndedPage extends StatelessWidget {
                         ],
 
                         if (live.liveId != null) LiveSalesCard(liveId: live.liveId!, onDark: true),
+
+                        // Clips rémunérés : proposer un extrait de ce live (ou, pour l'hôte, retenir les clips)
+                        if (live.liveId != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: OutlinedButton.icon(
+                              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => LiveClipsPage(liveId: live.liveId!))),
+                              icon: const Icon(Icons.movie_filter_rounded, color: Color(0xFFF9A825)),
+                              label: Text(tr('Clips de ce live'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                              style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.white30), minimumSize: const Size.fromHeight(46), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(23))),
+                            ),
+                          ),
 
                         const SizedBox(height: 40),
                       ],

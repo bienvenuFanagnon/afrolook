@@ -205,6 +205,10 @@ class PostLive {
       'isPaused': isPaused,
       'pauseMessage': pauseMessage,
       'giftCoinsTotal': giftCoinsTotal,
+      'typeSession': typeSession,
+      'ticketMode': ticketMode,
+      'audioOnly': audioOnly,
+      'offerEntry': offerEntry,
       'coverImage': coverImage,
     };
   }
@@ -274,6 +278,10 @@ class PostLive {
       pauseMessage: map['pauseMessage'],
       giftCoinsTotal: (map['giftCoinsTotal'] as num?)?.toInt() ?? 0,
       coverImage: map['coverImage'] as String?,
+      typeSession: (map['typeSession'] as String?) ?? 'talk',
+      ticketMode: map['ticketMode'] == true,
+      audioOnly: map['audioOnly'] == true,
+      offerEntry: map['offerEntry'] == true,
     );
   }
 
@@ -336,6 +344,10 @@ class PostLive {
       isPaused: isPaused ?? this.isPaused,
       pauseMessage: pauseMessage ?? this.pauseMessage,
       giftCoinsTotal: giftCoinsTotal,
+      typeSession: typeSession,
+      ticketMode: ticketMode,
+      audioOnly: audioOnly,
+      offerEntry: offerEntry,
     );
   }
 }

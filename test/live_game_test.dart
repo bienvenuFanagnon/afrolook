@@ -41,4 +41,24 @@ void main() {
     expect(p.secondsLeft, inInclusiveRange(85, 90));
     expect(clock(75), '01:15');
   });
+
+  test('quiz : saisie de l\'hôte, une question par ligne, étoile = bonne réponse', () {
+    final qs = QuizDraft.parse('Capitale du Ghana ? | Kumasi | Accra* | Lomé\n\n2 + 2 ? | 3 | 4*')!;
+    expect(qs, hasLength(2));
+    expect(qs[0].options, ['Kumasi', 'Accra', 'Lomé']);
+    expect(qs[0].correct, 1);
+    expect(qs[1].toJson(), {'text': '2 + 2 ?', 'options': ['3', '4'], 'correct': 1});
+    expect(QuizDraft.parse('Sans bonne réponse ? | a | b'), isNull);
+    expect(QuizDraft.parse('Deux bonnes ? | a* | b*'), isNull);
+    expect(QuizDraft.parse('Un seul choix ? | a*'), isNull);
+    expect(QuizDraft.parse(''), isNull);
+  });
+
+  test('conte : voix en pièces et choix gagnant', () {
+    final g = LiveGame({'id': 'g4', 'kind': 'story', 'status': 'ended', 'config': {'question': 'Que fait-il ?', 'options': ['A', 'B']}, 'votes': [30, 10], 'my_coins': 20, 'vote_coins': 10, 'winner_option': 0});
+    expect(g.votes, [30, 10]);
+    expect(g.myCoins, 20);
+    expect(g.voteCoins, 10);
+    expect(g.winnerOption, 0);
+  });
 }

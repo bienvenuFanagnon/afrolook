@@ -255,6 +255,24 @@ class LivesApi {
   static Future<Map<String, dynamic>> gameStart(String id, Map<String, dynamic> body) async => JeuxApi.map(await _c.post('/lives/$id/game', body: body));
   static Future<void> gameEnd(String id) => _c.post('/lives/$id/game/end');
   static Future<Map<String, dynamic>> gameVote(String id, int option) async => JeuxApi.map(await _c.post('/lives/$id/game/vote', body: {'option': option}));
+
+  /// Conte interactif : chaque vote coûte 10 pièces (paiement : clé d'idempotence par vote).
+  static Future<Map<String, dynamic>> storyVote(String id, int option) async => JeuxApi.map(await _c.pay('/lives/$id/game/vote', body: {'option': option}));
+
+  /// Quiz : réponse à la question en cours.
+  static Future<Map<String, dynamic>> quizAnswer(String id, int option) async => JeuxApi.map(await _c.post('/lives/$id/game/answer', body: {'option': option}));
+
+  // ── Marché en direct : étals et tours des vendeurs ──
+  static Future<Map<String, dynamic>> market(String id) async => JeuxApi.map(await _c.get('/lives/$id/market'));
+  static Future<void> marketBook(String id) => _c.post('/lives/$id/market/book');
+  static Future<void> marketCancel(String id) => _c.delete('/lives/$id/market/book');
+  static Future<void> marketReady(String id) => _c.post('/lives/$id/market/ready');
+  static Future<void> marketNext(String id) => _c.post('/lives/$id/market/next');
+
+  // ── Clips rémunérés ──
+  static Future<Map<String, dynamic>> clips(String id) async => JeuxApi.map(await _c.get('/lives/$id/clips'));
+  static Future<void> clipSubmit(String id, String postId) => _c.post('/lives/$id/clips', body: {'post_id': postId});
+  static Future<void> clipDecide(String id, String clipId, {required bool retain}) => _c.post('/lives/$id/clips/$clipId/${retain ? 'retain' : 'reject'}');
   static Future<Map<String, dynamic>> gameDraw(String id, int coins, List<String> candidates) async =>
       JeuxApi.map(await _c.post('/lives/$id/game/draw', body: {'coins': coins, 'candidates': candidates}));
   static Future<void> ask(String id, String text) => _c.post('/lives/$id/questions', body: {'text': text});

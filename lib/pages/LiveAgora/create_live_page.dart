@@ -55,6 +55,10 @@ class _CreateLivePageState extends State<CreateLivePage> {
   // Variables pour les paramètres
   bool _isPaidLive = false;
   late bool _isShoppingLive = widget.initialShopping;   // vente en direct (Live Shopping)
+  bool _audioRoom = false;                              // salon audio : pas de vidéo, billet le moins cher
+  int _marketStalls = 6;
+  int _marketRent = 300;
+  int _marketMinutes = 15;
   String _game = '';                                    // duel ou défi à plusieurs (jeux de live), vide pour une discussion ou une vente
   String _audioBehavior = 'reduce';
   int _audioReductionPercent = 50;
@@ -1165,10 +1169,11 @@ class _CreateLivePageState extends State<CreateLivePage> {
           title: tr('Discussion'),
           subtitle: tr('Parle, échange, reçois des cadeaux'),
           icon: Icons.forum_outlined,
-          selected: !_isShoppingLive && _game.isEmpty,
+          selected: !_isShoppingLive && _game.isEmpty && !_audioRoom,
           onTap: () => setState(() {
             _isShoppingLive = false;
             _game = '';
+            _audioRoom = false;
           }),
         ),
         const SizedBox(width: 10),
@@ -1181,9 +1186,38 @@ class _CreateLivePageState extends State<CreateLivePage> {
             setState(() {
               _isShoppingLive = true;
               _game = '';
+              _audioRoom = false;
             });
             _loadArticles();
           },
+        ),
+      ]),
+      const SizedBox(height: 8),
+      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _modeCard(
+          title: '${tr('Marché en direct')} · ${tr('Nouveau')}',
+          subtitle: tr('Des vendeurs louent un étal chez toi'),
+          icon: Icons.storefront_outlined,
+          selected: _game == 'market',
+          onTap: () => setState(() {
+            _isShoppingLive = false;
+            _game = 'market';
+            _audioRoom = false;
+            _allowStage = true;
+          }),
+        ),
+        const SizedBox(width: 10),
+        _modeCard(
+          title: '${tr('Salon audio')} · ${tr('Nouveau')}',
+          subtitle: tr('Que des voix, billet le moins cher'),
+          icon: Icons.mic_none_rounded,
+          selected: _audioRoom,
+          onTap: () => setState(() {
+            _isShoppingLive = false;
+            _game = '';
+            _audioRoom = true;
+            _allowStage = true;
+          }),
         ),
       ]),
       const SizedBox(height: 8),
@@ -1195,6 +1229,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
           selected: _game == 'duel',
           onTap: () => setState(() {
             _isShoppingLive = false;
+            _audioRoom = false;
             _game = 'duel';
             _allowStage = true;
           }),
@@ -1207,6 +1242,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
           selected: _game == 'challenge',
           onTap: () => setState(() {
             _isShoppingLive = false;
+            _audioRoom = false;
             _game = 'challenge';
             _allowStage = true;
           }),
@@ -1395,6 +1431,11 @@ class _CreateLivePageState extends State<CreateLivePage> {
     final canLow = _liveRestrictions['canChooseLowLatency'] == true || isAdmin;
     final ticket = _ticketMode && !isAdmin;
     final rows = <Widget>[
+      if (_game == 'market') ...[
+        _row(tr('Nombre d\'étals'), tr('Un vendeur passe à la fois, chacun son tour'), _stepper('Moins', 'Plus', '$_marketStalls', _marketStalls > 1 ? () => setState(() => _marketStalls--) : null, _marketStalls < 10 ? () => setState(() => _marketStalls++) : null)),
+        _row(tr('Loyer d\'un étal'), tr('Payé en pièces par le vendeur à son tour, il te revient (partage habituel des cadeaux)'), _stepper('Moins', 'Plus', '$_marketRent', _marketRent > 0 ? () => setState(() => _marketRent = (_marketRent - 50).clamp(0, 5000)) : null, _marketRent < 5000 ? () => setState(() => _marketRent = (_marketRent + 50).clamp(0, 5000)) : null)),
+        _row(tr('Durée d\'un tour'), tr('Commission de vente : 10 % (déjà en place)'), _stepper('Moins', 'Plus', tr('{n} min', {'n': '$_marketMinutes'}), _marketMinutes > 5 ? () => setState(() => _marketMinutes -= 5) : null, _marketMinutes < 30 ? () => setState(() => _marketMinutes += 5) : null)),
+      ],
       if (ticket) ...[
         _row(tr('Temps d\'essai gratuit'), tr('Avant le billet. Les minutes d\'essai sont à ta charge (environ {c} pièces par spectateur et par minute)', {'c': '${_num('trial_cost_per_minute', 3)}'}),
             _stepper('Moins', 'Plus', tr('{n} min', {'n': '$_ticketTrial'}), _ticketTrial > 0 ? () => setState(() => _ticketTrial--) : null, _ticketTrial < _num('trial_max_minutes', 3) ? () => setState(() => _ticketTrial++) : null)),
@@ -2339,10 +2380,12 @@ class _CreateLivePageState extends State<CreateLivePage> {
         freeTrialMinutes: _ticketMode ? _ticketTrial : (_isPaidLive ? (int.tryParse(_freeTrialController.text) ?? 0) : 0),
         typeSession: _isShoppingLive ? 'shopping' : (_game.isNotEmpty ? _game : 'talk'),
         offerEntry: _offerEntry,
+        audioOnly: _audioRoom,
         ticketExtraCoins: _offerEntry ? 0 : _ticketExtra,
         options: {
           'stage': _allowStage,
           'display': _liveDisplay.toJson(),
+          if (_game == 'market') 'market': {'stalls': _marketStalls, 'rent_coins': _marketRent, 'minutes': _marketMinutes},
           'audioBehaviorAfterTrial': _audioBehavior,
           'audioReductionPercent': _audioReductionPercent,
           'blurVideoAfterTrial': _blurVideoAfterTrial,

@@ -1,6 +1,7 @@
 import 'package:afrotok/services/api/chat_api.dart' show LivesApi;
 import 'package:afrotok/l10n/tr.dart';
 import 'live_sheet_page.dart';
+import '../consultation/consultation_pages.dart';
 import 'package:afrotok/pages/liveshop/live_shop_orders_page.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:async';
@@ -248,6 +249,16 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
                 border: Border.all(color: colors.border),
               ),
               child: Icon(Icons.refresh_rounded, color: colors.textSecondary, size: 18),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Consultations 1 à 1 à la minute : experts disponibles, appels
+          InkWell(
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ConsultationExpertsPage())),
+            child: Container(
+              width: 36, height: 36,
+              decoration: BoxDecoration(color: colors.surface, borderRadius: BorderRadius.circular(10), border: Border.all(color: colors.border)),
+              child: Icon(Icons.support_agent_rounded, color: colors.textSecondary, size: 18),
             ),
           ),
           const SizedBox(width: 8),
