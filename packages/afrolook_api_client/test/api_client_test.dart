@@ -60,6 +60,21 @@ void main() {
     expect(a.seen.length, 1);
   });
 
+  test('429 qui annonce une longue attente (délai de 5 minutes entre deux publications) : jamais réessayé, une seule requête', () async {
+    final a = FakeAdapter([
+      (429, {'code': 'post_cooldown', 'message': 'Patientez encore 5 minutes', 'details': {'retry_after': 300, 'remaining_seconds': 299}}),
+      (201, {'data': 1}),
+    ]);
+    await expectLater(make(a).post('/posts', body: {}, idempotencyKey: 'k1'), throwsA(isA<ApiException>().having((e) => e.code, 'code', 'post_cooldown').having((e) => e.details['remaining_seconds'], 'remaining', 299)));
+    expect(a.seen.length, 1);
+  });
+
+  test('429 court (limite de débit sans longue attente) : toujours réessayé avec la même clé', () async {
+    final a = FakeAdapter([(429, {'code': 'rate_limited', 'message': 'trop vite', 'details': {}}), (201, {'data': 1})]);
+    await make(a).post('/x', body: {}, idempotencyKey: 'k2');
+    expect(a.seen.length, 2);
+  });
+
   test('paiement : la même clé d idempotence est renvoyée à chaque tentative', () async {
     final a = FakeAdapter([(503, {}), (201, {'data': 1})]);
     await make(a).pay('/pay', body: {'coins': 5});

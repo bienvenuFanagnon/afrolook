@@ -559,10 +559,27 @@ Future<void> _loadCanalData() async {
     printVm("🌐 [SPLASH] Cache miss — chargement Firestore pour $userId");
     try {
       setState(() => _loadingText = "Chargement des données...");
-      await StartupTrace.time('splash : getAppData', () => authProvider.getAppData());
+      // Une coupure brève (réseau instable, changement Wi-Fi / données) ne doit pas afficher d'erreur tout de suite : chaque étape réseau est réessayée
+      // deux fois (après 2 s, puis 5 s) avant de proposer « Réessayer » (constaté le 12/11/2026 : « Connexion impossible » à l'installation, passé tout seul ensuite).
+      for (var attempt = 0;; attempt++) {
+        try {
+          await StartupTrace.time('splash : getAppData', () => authProvider.getAppData());
+          break;
+        } catch (e) {
+          if (attempt >= 2 || !mounted) rethrow;
+          setState(() => _loadingText = "Nouvelle tentative...");
+          await Future<void>.delayed(Duration(seconds: attempt == 0 ? 2 : 5));
+        }
+      }
 
       setState(() => _loadingText = "Connexion...");
-      final success = await StartupTrace.time('splash : getLoginUser', () => authProvider.getLoginUser(userId));
+      var success = await StartupTrace.time('splash : getLoginUser', () => authProvider.getLoginUser(userId));
+      for (final wait in const [2, 5]) {
+        if (success || authProvider.loginUserNotFound || !mounted) break;   // « profil introuvable » n'est pas une panne : inutile de réessayer
+        setState(() => _loadingText = "Nouvelle tentative...");
+        await Future<void>.delayed(Duration(seconds: wait));
+        success = await StartupTrace.time('splash : getLoginUser (nouvelle tentative)', () => authProvider.getLoginUser(userId));
+      }
       if (!success) {
         if (authProvider.loginUserNotFound) {
           // Le profil n'existe plus : la session enregistrée n'est plus valable.

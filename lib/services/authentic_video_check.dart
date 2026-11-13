@@ -163,7 +163,8 @@ class AuthenticVideoCheck {
         _ => tr('d\'autres réseaux'),
       };
 
-  /// Examine la vidéo choisie. Rend vrai pour continuer (vidéo propre, ou « C'est ma vidéo » : la modération la vérifiera avant publication), faux si la personne renonce.
+  /// Examine la vidéo choisie. Rend vrai pour continuer (vidéo propre), faux si la personne renonce ou si la vidéo porte la marque d'un autre réseau (refusée, sans « C'est ma vidéo » :
+  /// décision du propriétaire, 13/11/2026). Seul le contenu explicite jugé à tort garde « C'est une erreur » (vérifié par la modération).
   static Future<bool> gate(BuildContext context, String path, {bool allowClaim = true}) async {
     PostExternalLink.clear();
     final c = AppColors.of(context);
@@ -252,8 +253,14 @@ class AuthenticVideoCheck {
     return false;
   }
 
-  /// Message de refus (marque d'un autre réseau ou contenu explicite) ; « C'est ma vidéo » / « C'est une erreur » envoie à la modération (si [allowClaim]).
-  static Future<bool> _blocked(BuildContext context, String mark, bool allowClaim, {bool image = false}) async {
+  /// Message de refus (marque d'un autre réseau ou contenu explicite). Une marque d'un autre réseau est refusée TOUT COURT : pas de « C'est ma vidéo », la personne publie une version
+  /// sans le logo ni le pseudo de l'autre réseau. Seul « C'est une erreur » (contenu explicite jugé à tort) envoie à la modération (si [allowClaim]).
+  static Future<bool> _blocked(BuildContext context, String mark, bool allowClaim, {bool image = false}) => blockedDialog(context, mark, allowClaim, image: image);
+
+  /// Dialogue de refus (public pour être testé).
+  @visibleForTesting
+  static Future<bool> blockedDialog(BuildContext context, String mark, bool allowClaim, {bool image = false}) async {
+    allowClaim = allowClaim && mark == 'explicit';
     final c = AppColors.of(context);
     final own = await showDialog<bool>(
       context: context,

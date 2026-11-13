@@ -3,6 +3,8 @@ import '../ads/ad_slot.dart';
 import 'package:afrotok/pages/canaux/detailsCanal.dart';
 import '../l10n/tr.dart';
 import 'package:afrotok/widgets/comment_gift_sheet.dart';
+import 'package:afrotok/widgets/feed/post_mini_preview.dart';
+import '../utils/post_time_ago.dart';
 import 'package:flutter/services.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
@@ -859,6 +861,18 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
 
   // ─── POST HEADER ────────────────────────────────────────────────────────────
 
+  /// Ouvre la page de détails du post (vidéo verticale, vidéo horizontale ou autre) : même destination pour « Voir le post » et pour l'aperçu.
+  void _openPost() {
+    final post = widget.post;
+    final isVideo = post.dataType == 'VIDEO';
+    final isPortrait = PostOrientation.of(post);
+    Navigator.push(context, MaterialPageRoute(
+      builder: (_) => isVideo
+          ? (isPortrait ? PostDetailsVideoFormatTel(initialPost: post) : VideoYoutubePageDetails(initialPost: post))
+          : DetailsPost(post: post),
+    ));
+  }
+
   Widget _buildPostHeader() {
     final post = widget.post;
     final isCanal = post.canal != null;
@@ -913,7 +927,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                             ],
                           ),
                           Text(
-                            formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(post.createdAt!)),
+                            formaterDateTime(epochToDateTime(post.createdAt) ?? DateTime.now()),
                             style: TextStyle(color: _colors.textSecondary, fontSize: 11),
                           ),
                         ],
@@ -921,18 +935,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                     ),
                     if (!widget.isInModal)
                       TextButton(
-                        onPressed: () {
-                          final post = widget.post;
-                          final isVideo = post.dataType == 'VIDEO';
-                          final isPortrait = PostOrientation.of(post);
-                          Navigator.push(context, MaterialPageRoute(
-                            builder: (_) => isVideo
-                                ? (isPortrait
-                                    ? PostDetailsVideoFormatTel(initialPost: post)
-                                    : VideoYoutubePageDetails(initialPost: post))
-                                : DetailsPost(post: post),
-                          ));
-                        },
+                        onPressed: _openPost,
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           shape: RoundedRectangleBorder(
@@ -945,6 +948,9 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                           style: TextStyle(color: _colors.primary, fontSize: 12, fontWeight: FontWeight.w600),
                         ),
                       ),
+                    // aperçu du post, dans l'angle : image, miniature de la vidéo ou début du texte (un appui ouvre le post, sauf dans la fenêtre posée sur le post lui-même)
+                    const SizedBox(width: 8),
+                    PostMiniPreview(post: post, size: 50, onTap: widget.isInModal ? null : _openPost),
                   ],
                 ),
               ],
@@ -1119,7 +1125,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                   ],
                   const Spacer(),
                   Text(
-                    formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(pcm.createdAt!)),
+                    formaterDateTime(epochToDateTime(pcm.createdAt) ?? DateTime.now()),
                     style: TextStyle(color: _colors.textSecondary, fontSize: 11),
                   ),
                   const SizedBox(width: 4),
@@ -1335,7 +1341,7 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                     ],
                     const Spacer(),
                     Text(
-                      formaterDateTime(DateTime.fromMicrosecondsSinceEpoch(rpc.createdAt!)),
+                      formaterDateTime(epochToDateTime(rpc.createdAt) ?? DateTime.now()),
                       style: TextStyle(color: _colors.textSecondary, fontSize: 10),
                     ),
                     const SizedBox(width: 4),

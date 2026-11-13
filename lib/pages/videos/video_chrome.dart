@@ -541,8 +541,9 @@ class NotMonetizedChip extends StatelessWidget {
       );
 }
 
-/// Feuille d'explication d'une vidéo marquée : pourquoi elle n'est plus monétisée, ce qui change, et « C'est ma vidéo ».
-Future<void> showNotMonetizedSheet(BuildContext context, {required String mark, bool isOwner = false, VoidCallback? onOwnClaim}) {
+/// Feuille d'explication d'une vidéo marquée : pourquoi elle n'est plus monétisée et ce qui change. Plus de « C'est ma vidéo » (décision du propriétaire, 13/11/2026) : l'auteur est invité à
+/// publier une version sans le logo ni le pseudo de l'autre réseau.
+Future<void> showNotMonetizedSheet(BuildContext context, {required String mark, bool isOwner = false}) {
   final c = AppColors.of(context);
   final name = switch (mark) {
     'tiktok' => 'TikTok',
@@ -570,20 +571,8 @@ Future<void> showNotMonetizedSheet(BuildContext context, {required String mark, 
             Padding(padding: const EdgeInsets.only(bottom: 4), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('•  ', style: TextStyle(color: c.textSecondary)), Expanded(child: Text(t, style: TextStyle(color: c.textSecondary, fontSize: 13.5, height: 1.4)))])),
           if (isOwner) ...[
             const SizedBox(height: 10),
-            Text(context.tr('C\'est ta vidéo ? Dis-le-nous : notre équipe la vérifie.'), style: TextStyle(color: c.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              height: 46,
-              child: FilledButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  onOwnClaim?.call();
-                },
-                style: FilledButton.styleFrom(backgroundColor: c.accent, foregroundColor: c.onAccent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(23))),
-                child: Text(context.tr('C\'est ma vidéo'), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
-              ),
-            ),
+            Text(context.tr('Pour retrouver les gains, publie ta vidéo sans le logo ni le pseudo de l\'autre réseau (filmée avec l\'application ou montée avec un éditeur).'), style: TextStyle(color: c.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w600, height: 1.35)),
+            const SizedBox(height: 6),
           ],
           TextButton(onPressed: () => Navigator.pop(ctx), child: Text(context.tr('Fermer'), style: TextStyle(color: c.textSecondary))),
         ]),

@@ -100,7 +100,9 @@ class ApiClient {
         final e = _error(status, res.data);
         throw ApiException(status: e.status, code: e.code, message: e.message, details: {...e.details, 'declined': true});
       }
-      if (safeToRetry && attempt < maxRetries && (status == 429 || status == 502 || status == 503 || status == 504)) {
+      // un 429 qui annonce une LONGUE attente (règle métier, ex. délai de 5 minutes entre deux publications) n'est jamais réessayé : trois essais de plus ne changent rien
+      final longWait = status == 429 && res.data is Map && (res.data as Map)['details'] is Map && (num.tryParse('${((res.data as Map)['details'] as Map)['retry_after']}') ?? 0) > 10;
+      if (safeToRetry && attempt < maxRetries && !longWait && (status == 429 || status == 502 || status == 503 || status == 504)) {
         await _wait(attempt++, int.tryParse(res.headers.value('retry-after') ?? ''));
         continue;
       }

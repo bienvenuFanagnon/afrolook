@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:afrolook_api_client/afrolook_api_client.dart' show ApiException;
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:afrotok/services/api/api_identity.dart';
 import 'package:afrotok/services/api/api_gateway.dart';
 import 'package:afrotok/services/api/post_mapper.dart';
@@ -65,15 +67,26 @@ class FeedRepository {
   /// Feed « pour vous » de l'API : un seul fil (abonnements, goûts, découverte, nouveaux créateurs/canaux), toujours des publications NON VUES.
   /// [reset] = nouvelle lecture (ouverture, rafraîchir).
   Future<List<Post>> _apiForYou(Set<String> excluded, int limit, {required bool reset}) async {
-    try {
-      final rows = await ApiGateway.instance.forYou(limit: limit, reset: reset);
-      lastError = null;
-      return rows.map(postFromApi).where((p) => p.id != null && !excluded.contains(p.id)).toList();
-    } catch (e) {
-      _fail('fil « pour vous »', e);
-      return <Post>[];
+    Object? last;
+    // une coupure brève ne doit pas vider le fil : deux nouvelles tentatives (après 2 s, puis 5 s) avant d'abandonner et d'afficher « Réessayer »
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        final rows = await ApiGateway.instance.forYou(limit: limit, reset: reset);
+        lastError = null;
+        return rows.map(postFromApi).where((p) => p.id != null && !excluded.contains(p.id)).toList();
+      } catch (e) {
+        last = e;
+        if (attempt >= 2 || !isRetryable(e)) break;
+        await Future<void>.delayed(Duration(seconds: attempt == 0 ? 2 : 5));
+      }
     }
+    _fail('fil « pour vous »', last!);
+    return <Post>[];
   }
+
+  /// Une erreur vaut un nouvel essai si c'est une panne (réseau, délai dépassé, serveur occupé ou en erreur) ; pas un refus de l'API (connexion, droits, requête).
+  @visibleForTesting
+  static bool isRetryable(Object e) => e is! ApiException || e.isNetwork || e.status >= 500 || e.status == 429 || e.status == 408;
 
   /// Lit des pages du fil de l'API (niveau [tier]) jusqu'à avoir [limit] publications retenues (4 pages au plus).
   Future<List<Post>> _pages(

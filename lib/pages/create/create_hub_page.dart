@@ -174,7 +174,7 @@ class _CreateHubPageState extends State<CreateHubPage> {
     if (video) {
       final x = await picker.pickVideo(source: ImageSource.gallery);
       if (x == null || !mounted) return;
-      // vidéos authentiques : une vidéo téléchargée d'un autre réseau n'est pas acceptée (sauf « C'est ma vidéo » : la modération vérifie)
+      // vidéos authentiques : une vidéo qui porte la marque d'un autre réseau est refusée (plus de « C'est ma vidéo », 13/11/2026)
       if (!await AuthenticVideoCheck.gate(context, x.path, allowClaim: widget.chronique == null) || !mounted) return;
       await _editor(x.path, true, PostSourceLink.imported);
     } else {

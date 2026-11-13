@@ -21,7 +21,8 @@ void showApiError(BuildContext context, Object e, {VoidCallback? onRetry, String
   m.showSnackBar(SnackBar(
     content: Text(apiErrorText(e, fallback: fallback ?? 'Une erreur est survenue. Réessayez.')),
     backgroundColor: Colors.red,
-    action: onRetry == null ? null : SnackBarAction(label: 'Réessayer', textColor: Colors.white, onPressed: onRetry),
+    // le délai entre deux publications n'a pas de « Réessayer » : tant que l'attente n'est pas finie, un nouvel essai est refusé
+    action: onRetry == null || (e is ApiException && e.code == 'post_cooldown') ? null : SnackBarAction(label: 'Réessayer', textColor: Colors.white, onPressed: onRetry),
   ));
 }
 

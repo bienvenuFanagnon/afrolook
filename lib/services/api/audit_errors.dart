@@ -31,6 +31,14 @@ class AuditErrors {
   static String? known(Object e, {ErrorScope scope = ErrorScope.generic}) {
     if (e is! ApiException) return null;
     switch (e.code) {
+      case 'post_cooldown':
+        // délai entre deux publications : le temps RESTANT (ancien serveur : sans `remaining_seconds`, on garde le message de l'API)
+        final left = (e.details['remaining_seconds'] as num?)?.toInt();
+        if (left == null) return null;
+        final min = (left / 60).ceil().clamp(1, 999);
+        return min > 1
+            ? tr('Patientez encore {n} minutes avant de publier à nouveau (les abonnés Premium et les médias filmés avec l\'application publient sans délai).', {'n': min})
+            : tr('Patientez encore 1 minute avant de publier à nouveau (les abonnés Premium et les médias filmés avec l\'application publient sans délai).');
       case 'email_unverified':
         return tr('Confirme ton e-mail pour utiliser cette fonction.');
       case 'coins_not_multiple':

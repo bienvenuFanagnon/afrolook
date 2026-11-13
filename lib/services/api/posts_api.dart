@@ -138,16 +138,6 @@ class PostsApi {
     }
   }
 
-  /// « C'est ma vidéo » sur une vidéo marquée : l'équipe la vérifie. Vrai si la demande est partie.
-  static Future<bool> claimOwnership(String postId) async {
-    try {
-      await _c.post('/posts/$postId/ownership-claim');
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
-
   /// Onglet « Suivis » de la page des vidéos verticales : vidéos des comptes et canaux suivis, du plus récent au plus ancien.
   static Future<({List<Map<String, dynamic>> items, String? next})> followingVideos({String? cursor, int limit = 10}) async {
     final r = await _c.get('/feed/videos/following', query: {'limit': limit, if (cursor != null) 'cursor': cursor});

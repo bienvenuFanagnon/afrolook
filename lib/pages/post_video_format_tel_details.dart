@@ -3268,7 +3268,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
               right: 80,
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: NotMonetizedChip(onTap: () => showNotMonetizedSheet(context, mark: post.authenticityMark ?? 'other', isOwner: post.user_id == authProvider.loginUserData.id, onOwnClaim: () => _ownClaim(post))),
+                child: NotMonetizedChip(onTap: () => showNotMonetizedSheet(context, mark: post.authenticityMark ?? 'other', isOwner: post.user_id == authProvider.loginUserData.id)),
               ),
             ),
           _buildRail(post),
@@ -3620,13 +3620,6 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     }
 
     _authTimer = Timer(const Duration(seconds: AuthenticityWatcher.startAfterSeconds), () => attempt(false));
-  }
-
-  Future<void> _ownClaim(Post post) async {
-    if (post.id == null) return;
-    final ok = await PostsApi.claimOwnership(post.id!);
-    if (!mounted) return;
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(ok ? tr('Merci : notre équipe va vérifier ta vidéo.') : tr('Impossible pour le moment. Réessaie plus tard.'))));
   }
 
   // ── Invitation à offrir un cadeau (modale fluide) ─────────────────────────

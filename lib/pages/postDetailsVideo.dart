@@ -2393,7 +2393,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
           padding: const EdgeInsets.only(top: 6),
           child: Align(
             alignment: Alignment.centerLeft,
-            child: NotMonetizedChip(onTap: () => showNotMonetizedSheet(context, mark: _currentPost.authenticityMark ?? 'other', isOwner: _currentPost.user_id == authProvider.loginUserData.id, onOwnClaim: () => PostsApi.claimOwnership(_currentPost.id ?? ''))),
+            child: NotMonetizedChip(onTap: () => showNotMonetizedSheet(context, mark: _currentPost.authenticityMark ?? 'other', isOwner: _currentPost.user_id == authProvider.loginUserData.id)),
           ),
         ),
       if (rest.isNotEmpty || title.length > 90) ...[

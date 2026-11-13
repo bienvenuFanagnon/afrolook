@@ -315,12 +315,7 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
         child: Align(
           alignment: Alignment.centerLeft,
           child: NotMonetizedChip(
-            onTap: () => showNotMonetizedSheet(context, mark: post.authenticityMark ?? 'other', isOwner: post.user_id == _authProvider.loginUserData.id, onOwnClaim: () async {
-              if (post.id == null) return;
-              final ok = await PostsApi.claimOwnership(post.id!);
-              if (!mounted) return;
-              ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(ok ? tr('Merci : notre équipe va vérifier ta vidéo.') : tr('Impossible pour le moment. Réessaie plus tard.'))));
-            }),
+            onTap: () => showNotMonetizedSheet(context, mark: post.authenticityMark ?? 'other', isOwner: post.user_id == _authProvider.loginUserData.id),
           ),
         ),
       );

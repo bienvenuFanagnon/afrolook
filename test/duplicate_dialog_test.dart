@@ -35,4 +35,30 @@ void main() {
     expect(find.textContaining('@'), findsNothing);
     expect(find.text('C\'est mon image'), findsOneWidget);
   });
+
+  testWidgets("marque d'un autre réseau : refus sans « C'est ma vidéo » (décision du 13/11/2026) ; seul le contenu explicite garde « C'est une erreur »", (tester) async {
+    for (final mark in ['tiktok', 'instagram', 'facebook', 'snapchat', 'other']) {
+      PostExternalLink.clear();
+      bool? result;
+      await tester.pumpWidget(_app(Builder(builder: (ctx) => TextButton(onPressed: () async => result = await AuthenticVideoCheck.blockedDialog(ctx, mark, true), child: const Text('go')))));
+      await tester.tap(find.text('go'));
+      await tester.pumpAndSettle();
+      expect(find.text("C'est ma vidéo"), findsNothing, reason: mark);
+      expect(find.textContaining('est la tienne'), findsNothing, reason: mark);
+      await tester.tap(find.text('Compris'));
+      await tester.pumpAndSettle();
+      expect(result, isFalse, reason: mark);
+      expect(PostExternalLink.take(), isNull, reason: mark);
+    }
+    // contenu explicite : le recours existe toujours
+    PostExternalLink.clear();
+    bool? ok;
+    await tester.pumpWidget(_app(Builder(builder: (ctx) => TextButton(onPressed: () async => ok = await AuthenticVideoCheck.blockedDialog(ctx, 'explicit', true), child: const Text('go')))));
+    await tester.tap(find.text('go'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text("C'est une erreur"));
+    await tester.pumpAndSettle();
+    expect(ok, isTrue);
+    expect(PostExternalLink.take()?.$1, 'explicit');
+  });
 }

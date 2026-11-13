@@ -229,7 +229,7 @@ class _ModerationReportsPageState extends State<ModerationReportsPage> {
                 label: const Text('Profil (suspendre)'),
               ),
             ElevatedButton.icon(
-              onPressed: () => _decide(postId, 'dismiss'),
+              onPressed: () => _confirmDismiss(postId),
               icon: const Icon(Icons.check, size: 16),
               label: const Text('Classer sans suite'),
             ),
@@ -241,6 +241,24 @@ class _ModerationReportsPageState extends State<ModerationReportsPage> {
 
   String _fmt(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')} à ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+
+  /// « Classer sans suite » PUBLIE la vidéo et la rend monétisable (même en attente de vérification ou marquée) : une confirmation évite l'appui par mégarde
+  /// (constaté le 13/11/2026 : une vidéo TikTok a été classée sans suite sans que personne ne s'en rende compte).
+  Future<void> _confirmDismiss(String postId) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        key: const ValueKey('dismiss_confirm'),
+        title: const Text('Classer sans suite ?'),
+        content: const Text('Les signalements seront effacés et la publication sera visible et monétisable, même si elle était en attente de vérification ou marquée (par exemple une marque d\'un autre réseau).\n\nAs-tu bien regardé la publication ?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Annuler')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Classer sans suite')),
+        ],
+      ),
+    );
+    if (ok == true) await _decide(postId, 'dismiss');
+  }
 
   Future<void> _decide(String postId, String action, {String? reason}) async {
     try {

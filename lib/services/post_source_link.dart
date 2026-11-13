@@ -88,7 +88,8 @@ class PostReplyLink {
   }
 }
 
-/// Repère posé par l'examen pour la publication en cours : « C'est ma vidéo » envoie la vidéo à la modération avant publication (une seule fois, comme PostSourceLink).
+/// Repère posé par l'examen pour la publication en cours : « C'est une erreur » (contenu explicite jugé à tort) ou « C'est ma vidéo » sur un DOUBLON envoie la vidéo à la modération avant publication
+/// (une seule fois, comme PostSourceLink). La marque d'un autre réseau n'a plus de recours : la vidéo est refusée.
 class PostExternalLink {
   PostExternalLink._();
 
