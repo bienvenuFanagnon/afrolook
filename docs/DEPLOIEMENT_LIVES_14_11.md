@@ -38,6 +38,7 @@ Sur un téléphone où la version de **débogage** a été installée (celui du 
 1. Se connecter (pièces de test reçues). Ouvrir **Lives → créer un live**.
 2. **Discussion avec caméra** : l'écran du live reste affiché (plus d'écran noir), menu, jeux (sondage), fin du live → bilan.
 3. **Live sans caméra** : type discussion, quiz, conte ou marché → interrupteur « Sans caméra » → choisir une image, puis une vidéo de 15 s. Les spectateurs voient l'aperçu, le chat, les jeux, les cadeaux.
+3 bis. **Salon audio** : même choix d'aperçu (image ou vidéo de 15 s en boucle) ; l'aperçu s'affiche derrière les voix. Le salon audio garde Agora (voix) et ne se coupe pas pour inactivité.
 4. **Coupure sur inactivité** : ne rien faire pendant 8 minutes → bandeau d'avertissement chez l'hôte ; 10 minutes → le live s'arrête et le bilan s'affiche. Une question, un vote, un cadeau ou un commentaire relance le décompte.
 5. **Conte et quiz** (erreur 422 corrigée) : créer, lancer un jeu, voter / répondre avec un second compte.
 6. **Duel / défi** : inviter un second compte sur scène (deux téléphones).
