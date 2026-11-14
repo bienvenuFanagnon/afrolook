@@ -1,4 +1,57 @@
-# Textes de la version (Apple et Google) — 10/11/2026
+# Textes de la version 2.1.6 (build 282) — Apple et Google — 14/11/2026
+
+À coller dans App Store Connect (« Nouveautés de cette version » et « Notes pour la review ») et dans la Play Console (« Notes de version », 500 caractères au plus par langue).
+Rien n'est affiché sur la part gardée par Afrolook, et les gains se disent en pièces.
+
+## Nouveautés — français
+
+**Long (Apple)**
+- Lives à plusieurs : la personne qui parle s'illumine, l'hôte peut couper ou rétablir le micro de ses invités.
+- Jeux du live : historique de tous les jeux, résultat et gains du duel ou du défi, meilleurs donateurs ; l'hôte arrête et retire un jeu quand il veut.
+- Musique du live choisie par l'hôte, avec écoute avant de choisir ; chacun règle son volume.
+- Live sans caméra : une image ou une courte vidéo en boucle remplace la caméra.
+- Vente en direct et marché : commande suivie sans quitter le live, solde visible avant d'acheter, alerte quand le vendeur est dans un autre pays.
+- « Mes commandes » refait : vue d'ensemble, tableaux de bord acheteur et vendeur, notifications et rappels pour ne rien oublier, solde des ventes par période.
+- Codes promo liés à un produit, badge « Vendeur vérifié ».
+- Gold gratuit : regarde quelques publicités pour lancer un live de plus.
+- Corrections : le bouton du son des vidéos portrait fonctionne, l'écran du live ne reste plus bloqué après le paiement du billet.
+
+**Court (Play, moins de 500 caractères)**
+Lives à plusieurs (micro des invités, qui parle), historique des jeux et gains des duels, musique du live, live sans caméra. Vente en direct et marché : commande suivie dans le live, solde visible, alerte pays. « Mes commandes » refait avec tableaux de bord, rappels et solde des ventes. Codes promo par produit, badge vendeur vérifié. Gold gratuit avec des pubs pour un live de plus. Son des vidéos portrait réparé.
+
+## What's new — English
+
+**Long (Apple)**
+- Multi-guest lives: the person speaking lights up, and the host can mute or unmute guests.
+- Live games: history of every game, duel and challenge results with earnings, top donors; the host can stop and remove a game at any time.
+- Live music picked by the host, with a preview before choosing; everyone sets their own volume.
+- Camera-free lives: an image or a short looping video replaces the camera.
+- Live shopping and markets: follow your order without leaving the live, see your balance before buying, and get a warning when the seller is in another country.
+- "My orders" redesigned: overview, buyer and seller dashboards, notifications and reminders so nothing is missed, sales balance by period.
+- Promo codes for a single product, "Verified seller" badge.
+- Free Gold: watch a few ads to start one more live.
+- Fixes: the sound button on portrait videos works, and the live screen no longer stays stuck after paying for a ticket.
+
+**Short (Play, under 500 characters)**
+Multi-guest lives (guest mic control, who is speaking), game history and duel earnings, live music, camera-free lives. Live shopping and markets: follow your order in the live, balance shown, country warning. "My orders" redesigned with dashboards, reminders and sales balance. Per-product promo codes, verified seller badge. Free Gold with ads for one more live. Portrait video sound fixed.
+
+## Notes pour la review (Apple) — à coller en anglais
+
+Lives: tap "+" then "Live". Monthly free lives are limited; when they are used up, "Become Gold for free" opens the Rewards page, where watching rewarded ads grants a short Gold pass that allows one more live (one live per pass).
+Live shopping: in a "Live shopping" or "Market" live, products are pinned at the top; ordering opens a sheet showing the buyer balance. Physical goods are paid with the user's money balance (Mobile Money deposit) and delivered outside the app; the money is held until the buyer confirms delivery.
+Digital items and in-app features are paid in coins bought through In-App Purchase. Live tickets (when the monthly free video minutes are used up) are paid in coins.
+Users can report posts and block other users; the moderation team can suspend content from the administration hub.
+Demo account: (to fill in by the owner — never write a password here).
+
+## Avant d'envoyer — contrôle
+- L'API de production est déployée **avant** l'envoi en review (migrations jusqu'à `2026_11_14_007000`), puis le réglage « lives gratuits par mois » vérifié à 2 dans l'administration.
+- Le numéro de build est supérieur au dernier envoyé (Android : `+282` ; iOS : numéro de build Codemagic).
+- Compte de démonstration valable, avec des pièces.
+- Toujours pas de bouton « Signaler » sur les modèles des utilisateurs (règle Apple 1.2) : risque déjà assumé le 10/11/2026.
+
+---
+
+# Version précédente (2.1.5) — 10/11/2026
 
 À coller dans App Store Connect (« Nouveautés de cette version » et « Notes pour la review ») et dans la Play Console (« Notes de version », 500 caractères au plus par langue).
 Rien n'est affiché sur la part gardée par Afrolook, et les gains se disent en pièces.
