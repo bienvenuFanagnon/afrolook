@@ -69,6 +69,9 @@ class _CreateLivePageState extends State<CreateLivePage> {
   /// Sans caméra : discussion, marché, conte et quiz seulement (le duel, le défi, la vente et le salon audio ont besoin de vidéo ou de voix).
   bool get _noCameraAllowed => !_isShoppingLive && !_audioRoom && const {'', 'market', 'story', 'quiz'}.contains(_game);
   bool get _noCameraOn => _noCamera && _noCameraAllowed;
+
+  /// Un aperçu (image ou vidéo en boucle) se choisit pour un live sans caméra ET pour un salon audio.
+  bool get _previewWanted => _noCameraOn || _audioRoom;
   int _marketStalls = 6;
   int _marketRent = 300;
   int _marketMinutes = 15;
@@ -1106,7 +1109,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
   static const Color _gold = Color(0xFFFFC400);
 
   Widget _buildPreviewCard() {
-    if (_noCameraOn) return _buildNoCameraPreviewCard();
+    if (_previewWanted) return _buildNoCameraPreviewCard();
     final front = _camIndex == 0;
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
@@ -1478,7 +1481,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
       ],
       if (_noCameraAllowed)
         _row(tr('Sans caméra'), tr('Aucune vidéo : ton aperçu reste à l\'écran. Le live s\'arrête après 10 minutes sans interaction.'), _sw(_noCamera, (v) => setState(() => _noCamera = v))),
-      if (_noCameraOn)
+      if (_previewWanted)
         GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: _previewUploading ? null : _pickPreview,
@@ -2382,7 +2385,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(99)),
-                child: Text(tr('Sans caméra'), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+                child: Text(_audioRoom ? tr('Salon audio') : tr('Sans caméra'), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
               ),
             ),
           ]),
@@ -2532,7 +2535,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
         offerEntry: _offerEntry,
         audioOnly: _audioRoom,
         noCamera: _noCameraOn,
-        previewUploadId: _noCameraOn ? _previewUploadId : null,
+        previewUploadId: _previewWanted ? _previewUploadId : null,
         ticketExtraCoins: _offerEntry ? 0 : _ticketExtra,
         options: {
           'stage': _allowStage,

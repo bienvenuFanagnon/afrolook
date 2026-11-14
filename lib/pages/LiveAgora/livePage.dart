@@ -341,6 +341,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       _initNoCamera();
     } else {
       _initAgora();
+      if (widget.postLive.audioOnly) _initPreviewVideo();   // salon audio : l'aperçu (image ou vidéo) s'affiche derrière les voix
     }
 
     _setupFirestoreListeners();
@@ -2985,6 +2986,16 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
   /// Démarre l'aperçu (vidéo en boucle, sans son) et la surveillance de l'API : fin du live (inactivité ou durée) et décompte d'inactivité.
   void _initNoCamera() {
+    _initPreviewVideo();
+    _pollNoCamera();
+    _noCamTimer = Timer.periodic(const Duration(seconds: 15), (_) => _pollNoCamera());
+    _noCamTick = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted && widget.isHost && (_idleSecondsNow ?? 9999) <= 130) setState(() {});
+    });
+  }
+
+  /// Aperçu vidéo en boucle (sans son) : live sans caméra ou salon audio.
+  void _initPreviewVideo() {
     final url = widget.postLive.previewUrl;
     if (widget.postLive.previewKind == 'video' && url != null && url.isNotEmpty) {
       final c = VideoPlayerController.networkUrl(Uri.parse(url), videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
@@ -2996,11 +3007,6 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         if (mounted) setState(() {});
       }).catchError((_) {});
     }
-    _pollNoCamera();
-    _noCamTimer = Timer.periodic(const Duration(seconds: 15), (_) => _pollNoCamera());
-    _noCamTick = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted && widget.isHost && (_idleSecondsNow ?? 9999) <= 130) setState(() {});
-    });
   }
 
   void _setIdle(dynamic v) {
@@ -3586,6 +3592,14 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
   /// Salon audio : pas d'image, seulement les voix. L'hôte et les personnes sur scène en grands ronds, le reste du public en petit.
   Widget _buildSalonView() {
+    final hasPreview = (widget.postLive.previewUrl ?? '').isNotEmpty;
+    return Stack(fit: StackFit.expand, children: [
+      if (hasPreview) _buildNoCameraBackdrop(),
+      _buildSalonContent(hasPreview),
+    ]);
+  }
+
+  Widget _buildSalonContent(bool hasPreview) {
     final speakers = _stage.speakers;
     Widget circle(String? url, String name, String role, {bool host = false}) => SizedBox(
           width: 82,
@@ -3607,7 +3621,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           ]),
         );
     return Container(
-      decoration: const BoxDecoration(gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF3A2F55), Color(0xFF1B1530), Color(0xFF0B0B0B)])),
+      decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: hasPreview ? const [Color(0x883A2F55), Color(0xAA1B1530), Color(0xCC0B0B0B)] : const [Color(0xFF3A2F55), Color(0xFF1B1530), Color(0xFF0B0B0B)])),
       child: Padding(
         padding: EdgeInsets.fromLTRB(16, MediaQuery.of(context).padding.top + 190, 16, 0),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
