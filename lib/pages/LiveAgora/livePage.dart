@@ -44,6 +44,11 @@ import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../services/api/argent_upload.dart';
 import 'package:video_player/video_player.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:audioplayers/audioplayers.dart' as ap;
+import '../../services/api/music_api.dart';
+import '../../utils/media_cdn.dart';
+import '../studio/montage/montage_music.dart' show kStudioTracks, StudioTrack;
 
 
 import '../../models/model_data.dart';
@@ -137,6 +142,24 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   int _totalviewerCount = 0;
   int _giftCount = 0;
   int _likeCount = 0;
+  // ── Musique du live (piste gratuite d'Afrolook jouée chez chaque spectateur, sans passer par Agora ; elle s'arrête quand la personne quitte le live) ──
+  ap.AudioPlayer? _musicPlayer;
+  Map<String, dynamic>? _music;
+  String? _musicKey;
+  int _musicGen = 0;
+  double _musicVolume = .7;
+  bool _musicMuted = false;
+
+  // ── Épingles : texte et image, placement choisi par l'hôte ──
+  String _pinPlace = 'left';    // left | right
+  String _pinLayout = 'side';   // side (image à côté du texte) | below (image en dessous)
+  String? _pinnedTextDoc;
+  bool _pinnedTextFromDoc = false;
+
+  List<String> _recentGiftIds = [];   // cadeaux envoyés récemment par cette personne (affichés en premier dans le panneau), gardés sur le téléphone
+  int _lastLikeCount = -1;                  // dernier compteur lu sur le live : une hausse = des cœurs à montrer
+  int _ownLikesUncounted = 0;               // mes propres « j'aime » pas encore retrouvés dans le compteur (déjà montrés tout de suite)
+  DateTime _lastLikeWrite = DateTime.fromMillisecondsSinceEpoch(0);
   double _giftTotal = 0.0;
   int _giftCoinsTotal = 0;
   List<String> _participants = [];
@@ -346,6 +369,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
     _setupFirestoreListeners();
     _setupLikesListener(); // ← AJOUTEZ CETTE LIGNE
+    _loadRecentGifts();
+    _initLiveOptions();
     _fetchHostData();
     _initializeTrialSystem();
     _setupFreeAccess();
@@ -394,33 +419,62 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }
 // Modifiez la méthode _onTap pour ignorer la position du tap
   void _onTap(TapDownDetails details) {
-    if (widget.isHost) return;
     _sendLike();
     // NE PAS appeler _addLikeEffect ici - les effets viennent maintenant de Firestore
   }
 
 // Méthode pour envoyer le like (visible par tous)
   void _sendLike() async {
+    _spawnHearts(3);   // visible tout de suite, sans attendre le réseau
+    if (DateTime.now().difference(_lastLikeWrite).inMilliseconds < 400) return;
+    _lastLikeWrite = DateTime.now();
     try {
       final user = _auth.currentUser;
-      if (user != null) {
-        // Envoyer le like à Firestore (visible par tous les spectateurs)
-        await _firestore.collection('live_likes').add({
-          'liveId': widget.liveId,
-          'userId': (ApiIdentity.myId ?? user.uid),
-          'username': authProvider.loginUserData.pseudo ?? 'Utilisateur',
-          'userImage': authProvider.loginUserData.imageUrl ?? '',
-          'timestamp': DateTime.now(),
-        });
-
-        // Optionnel: Mettre à jour le compteur de likes
-        await _firestore.collection('lives').doc(widget.liveId).update({
-          'likeCount': FieldValue.increment(1),
-        });
-      }
+      if (user == null) return;
+      // le compteur du live d'abord : il fait monter le chiffre et les cœurs chez tout le monde (même si l'historique ci-dessous échoue)
+      _ownLikesUncounted++;
+      await _firestore.collection('lives').doc(widget.liveId).update({'likeCount': FieldValue.increment(1)});
+      // historique des « j'aime » (sans bloquer ni faire échouer le reste)
+      _firestore.collection('live_likes').add({
+        'liveId': widget.liveId,
+        'userId': (ApiIdentity.myId ?? user.uid),
+        'username': authProvider.loginUserData.pseudo ?? 'Utilisateur',
+        'userImage': authProvider.loginUserData.imageUrl ?? '',
+        'timestamp': DateTime.now(),
+      }).catchError((Object e) {
+        printVm("⚠️ Historique des j'aime non enregistré : $e");
+        return _firestore.collection('live_likes').doc();
+      });
     } catch (e) {
       printVm("❌ Erreur envoi like partagé: $e");
     }
+  }
+
+/// Fait monter [n] cœurs (bas à droite, comme TikTok). Sert aux touchers de cette personne (tout de suite) et à ceux des autres (hausse du compteur du live).
+  void _spawnHearts(int n) {
+    final base = 'h_${DateTime.now().microsecondsSinceEpoch}';
+    for (var i = 0; i < n; i++) {
+      Future.delayed(Duration(milliseconds: i * 110), () {
+        if (!mounted) return;
+        final id = '${base}_$i';
+        setState(() => _likeEffects.add(LikeEffect(id: id, userId: '', username: '', userImage: '', timestamp: DateTime.now())));
+        Future.delayed(const Duration(milliseconds: 1800), () {
+          if (mounted) setState(() => _likeEffects.removeWhere((e) => e.id == id));
+        });
+      });
+    }
+  }
+
+  /// Le compteur du live a monté : les « j'aime » des AUTRES personnes (les miens sont déjà montrés) font monter des cœurs ici aussi.
+  void _onLikeCountChanged(int count) {
+    if (_lastLikeCount >= 0 && count > _lastLikeCount) {
+      final delta = count - _lastLikeCount;
+      final mine = _ownLikesUncounted.clamp(0, delta);
+      _ownLikesUncounted -= mine;
+      final others = delta - mine;
+      if (others > 0) _spawnHearts(others.clamp(1, 6));
+    }
+    _lastLikeCount = count;
   }
 
 // Modifiez la méthode pour construire les effets
@@ -636,18 +690,18 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     final t = widget.postLive.typeSession;
     if (g == null && _isMarket && _market != null) {
       return Positioned(
-        top: MediaQuery.of(context).padding.top + 180,
+        top: _gameTop,
         left: 16,
-        right: 70,
+        right: _gameRight,
         child: LiveMarketPanel(state: _market!, isHost: widget.isHost, onBook: _marketBook, onCancel: () => _marketCall(() => LivesApi.marketCancel(widget.liveId)), onReady: _marketReady, onNext: () => _marketCall(() => LivesApi.marketNext(widget.liveId))),
       );
     }
     if (g == null && widget.isHost && (t == 'duel' || t == 'challenge' || t == 'story' || t == 'quiz')) {
       // duel ou défi choisi au lancement : en attendant les présentateurs, une aide courte
       return Positioned(
-        top: MediaQuery.of(context).padding.top + 180,
+        top: _gameTop,
         left: 16,
-        right: 70,
+        right: _gameRight,
         child: GestureDetector(
           onTap: () => _openGames(t),
           child: Container(
@@ -669,9 +723,9 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     }
     if (g == null) return const SizedBox.shrink();
     return Positioned(
-      top: MediaQuery.of(context).padding.top + 180,
+      top: _gameTop,
       left: 16,
-      right: 70,
+      right: _gameRight,
       child: LiveGameCard(
         game: g,
         isHost: widget.isHost,
@@ -2110,40 +2164,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }
 
 
-  void _setupLikesListener() {
-    _likesSubscription = _firestore
-        .collection('live_likes')
-        .where('liveId', isEqualTo: widget.liveId)
-        .orderBy('timestamp', descending: false)
-        .snapshots()
-        .listen((snapshot) {
-      for (var doc in snapshot.docChanges) {
-        if (doc.type == DocumentChangeType.added) {
-          final data = doc.doc.data()!;
-          final baseId = doc.doc.id;
-          // Affiche 5 à 8 cœurs décalés dans le temps pour chaque like reçu
-          final count = 5 + Random().nextInt(4);
-          for (int i = 0; i < count; i++) {
-            Future.delayed(Duration(milliseconds: i * 110), () {
-              if (!mounted) return;
-              final effectId = '${baseId}_$i';
-              final effect = LikeEffect(
-                id: effectId,
-                userId: data['userId'] as String? ?? '',
-                username: data['username'] as String? ?? '',
-                userImage: data['userImage'] as String? ?? '',
-                timestamp: (data['timestamp'] as Timestamp).toDate(),
-              );
-              setState(() => _likeEffects.add(effect));
-              Future.delayed(const Duration(milliseconds: 1800), () {
-                if (mounted) setState(() => _likeEffects.removeWhere((e) => e.id == effectId));
-              });
-            });
-          }
-        }
-      }
-    });
-  }
+  /// Les cœurs des autres viennent du compteur du live (`_onLikeCountChanged`) : plus fiable que l'écoute de la collection `live_likes`, qui ne répondait pas toujours.
+  void _setupLikesListener() {}
 
 
 
@@ -2179,10 +2201,42 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
   Gift? _lastGift;   // dernier cadeau envoyé : seul raccourci affiché sous le chat (garde la vue des messages dégagée)
 
-  void _sendGift(Gift gift) async {
+  void _toast(String t) {
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t), duration: const Duration(seconds: 3)));
+  }
+
+  Future<void> _loadRecentGifts() async {
+    try {
+      final p = await SharedPreferences.getInstance();
+      if (mounted) setState(() => _recentGiftIds = p.getStringList('live_recent_gifts') ?? []);
+    } catch (_) {}
+  }
+
+  Future<void> _rememberGift(Gift gift) async {
+    _recentGiftIds = [gift.id, ..._recentGiftIds.where((x) => x != gift.id)].take(8).toList();
+    try {
+      final p = await SharedPreferences.getInstance();
+      await p.setStringList('live_recent_gifts', _recentGiftIds);
+    } catch (_) {}
+  }
+
+  void _showGiftEffect(Gift gift) {
+    setState(() {
+      _giftEffects.add(GiftEffect(id: DateTime.now().millisecondsSinceEpoch, gift: gift, x: Random().nextDouble() * 0.6 + 0.2));
+      _showGiftPanel = false;
+    });
+  }
+
+  Future<void> _sendGift(Gift gift) async {
     try {
       final currentUser = _auth.currentUser;
       if (currentUser == null) return;
+      // l'hôte ne peut pas s'offrir un cadeau (règle du serveur) : on lui montre l'animation, et on le lui dit
+      if (widget.isHost) {
+        _showGiftEffect(gift);
+        _toast(tr('Aperçu : tu es l\'hôte, rien n\'est envoyé. Tes spectateurs te l\'offriront.'));
+        return;
+      }
       if (mounted) setState(() => _lastGift = gift);
 
       final coinsAmount = gift.price.toInt();
@@ -2195,26 +2249,23 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           if (mounted) await CoinCheckout.insufficient(context, coinsAmount);
           return;
         }
-        rethrow;
+        // chaque refus est expliqué (live terminé, compte à vérifier, hôte…) : un toucher ne reste jamais sans réponse
+        printVm('❌ Cadeau refusé : ${e.code} ${e.message}');
+        _toast(e.code == 'email_unverified' ? tr('Vérifie ton adresse e-mail pour envoyer des cadeaux.') : e.message);
+        return;
       }
       if (mounted) CoinCheckout.refreshBalance(context);
+      _rememberGift(gift);
 
       _sendComment(
         'a envoyé ${gift.name} ${gift.icon} ($coinsAmount pcs)',
         type: 'gift',
         giftId: gift.id,
       );
-
-      setState(() {
-        _giftEffects.add(GiftEffect(
-          id: DateTime.now().millisecondsSinceEpoch,
-          gift: gift,
-          x: Random().nextDouble() * 0.6 + 0.2,
-        ));
-        _showGiftPanel = false;
-      });
+      _showGiftEffect(gift);
     } catch (e) {
       printVm('❌ Erreur envoi cadeau: $e');
+      _toast(tr('Le cadeau n\'a pas pu être envoyé. Vérifie ta connexion et réessaie.'));
     }
   }
 
@@ -2243,6 +2294,18 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           };
         }).toList();
 
+        _onLikeCountChanged((data['likeCount'] as num?)?.toInt() ?? 0);
+        if (data['pin'] is Map) {
+          final pm = data['pin'] as Map;
+          _pinPlace = '${pm['place'] ?? 'left'}' == 'right' ? 'right' : 'left';
+          _pinLayout = '${pm['layout'] ?? 'side'}' == 'below' ? 'below' : 'side';
+        }
+        _pinnedTextDoc = data['pinnedText'] as String?;
+        _pinnedTextFromDoc = true;
+        if (data.containsKey('music')) {
+          final mm = data['music'];
+          _syncMusic(mm is Map ? Map<String, dynamic>.from(mm) : null);
+        }
         setState(() {
           _viewerCount = List<String>.from(data['spectators'] ?? []).length;
           _giftCount = data['giftCount'] ?? 0;
@@ -3070,6 +3133,416 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     );
   }
 
+  // ==================== ÉPINGLES (texte + image) ====================
+
+  String? get _pinText {
+    final t = _pinnedTextFromDoc ? _pinnedTextDoc : widget.postLive.pinnedText;
+    return (t == null || t.trim().isEmpty) ? null : t;
+  }
+
+  bool get _hasPinImage => (_pinnedImageUrl ?? '').isNotEmpty;
+  bool get _pinRight => _pinPlace == 'right';
+  bool get _isQuizLive => widget.postLive.typeSession == 'quiz' || _game?.kind == 'quiz';
+
+  /// Hauteur des épingles placées à GAUCHE : la carte de jeu descend d'autant, elle ne passe jamais dessous (ni dessus).
+  double get _leftPinHeight {
+    if (_pinRight) return 0;
+    final t = _pinText != null;
+    final i = _hasPinImage;
+    if (!t && !i) return 0;
+    if (t && i) return _pinLayout == 'side' ? 84 : 136;
+    return t ? 58 : 78;
+  }
+
+  double get _gameTop {
+    final base = MediaQuery.of(context).padding.top + 180;
+    final h = _leftPinHeight;
+    if (h <= 0) return base;
+    final extra = 136 + h - 180 + 8;
+    return base + (extra > 0 ? extra : 0);
+  }
+
+  /// Marge droite de la carte de jeu : plus large quand des épingles sont rangées dans la colonne de droite.
+  double get _gameRight => (_pinRight && (_pinText != null || _hasPinImage)) ? 112 : 70;
+
+  Widget _pinnedTextBox() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(color: Colors.black.withOpacity(0.55), borderRadius: BorderRadius.circular(12), border: const Border(left: BorderSide(color: Color(0xFFF9A825), width: 3))),
+      child: Row(children: [
+        Expanded(child: Text(_pinText ?? '', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600), maxLines: _pinRight ? 5 : 3, overflow: TextOverflow.ellipsis)),
+        if (widget.isHost) GestureDetector(onTap: _togglePinnedTextEditor, child: const Padding(padding: EdgeInsets.only(left: 6), child: Icon(Icons.edit_rounded, color: Colors.white38, size: 14))),
+      ]),
+    );
+  }
+
+  Widget _pinnedImageBox() {
+    final url = _pinnedImageUrl ?? '';
+    return GestureDetector(
+      key: const ValueKey('pinned_image'),
+      onTap: _openPinnedImage,
+      child: Container(
+        width: 72,
+        height: 72,
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFF9A825), width: 2), boxShadow: const [BoxShadow(color: Color(0x66000000), blurRadius: 8)]),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Stack(fit: StackFit.expand, children: [
+            Image.network(url, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const ColoredBox(color: Color(0xFF333333))),
+            const Positioned(right: 3, bottom: 3, child: Icon(Icons.zoom_out_map_rounded, color: Colors.white, size: 16, shadows: [Shadow(color: Colors.black87, blurRadius: 4)])),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  /// Épingles placées à gauche (texte et image côte à côte, ou image sous le texte).
+  Widget _buildPinnedLeft() {
+    if (_pinRight) return const SizedBox.shrink();
+    final hasT = _pinText != null;
+    final hasI = _hasPinImage;
+    if (!hasT && !hasI) return const SizedBox.shrink();
+    Widget content;
+    if (hasT && hasI) {
+      content = _pinLayout == 'side'
+          ? Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Expanded(child: _pinnedTextBox()), const SizedBox(width: 8), _pinnedImageBox()])
+          : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [_pinnedTextBox(), const SizedBox(height: 6), _pinnedImageBox()]);
+    } else {
+      content = Align(alignment: Alignment.centerLeft, child: hasT ? _pinnedTextBox() : _pinnedImageBox());
+    }
+    return Positioned(top: MediaQuery.of(context).padding.top + 136, left: 16, right: 64, child: content);
+  }
+
+  /// Bas de la colonne de droite : historique du quiz, épingles placées à droite.
+  List<Widget> _rightColumnExtras() {
+    return [
+      if (_isQuizLive) ...[
+        const SizedBox(height: 10),
+        GestureDetector(
+          onTap: _openQuizHistory,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(color: Colors.black.withOpacity(0.55), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white24)),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.history_rounded, color: Colors.white, size: 16),
+              const SizedBox(width: 4),
+              Text(context.tr('Historique'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 11)),
+            ]),
+          ),
+        ),
+      ],
+      if (_pinRight && (_pinText != null || _hasPinImage)) ...[
+        const SizedBox(height: 10),
+        if (_pinText != null) SizedBox(width: 104, child: _pinnedTextBox()),
+        if (_pinText != null && _hasPinImage) const SizedBox(height: 6),
+        if (_hasPinImage) _pinnedImageBox(),
+      ],
+    ];
+  }
+
+  void _openQuizHistory() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => LiveQuizHistorySheet(future: LivesApi.quizHistory(widget.liveId)),
+    );
+  }
+
+  /// L'hôte choisit où ranger ses épingles (gauche ou droite) et comment (image à côté du texte ou en dessous). Tous les spectateurs le voient tout de suite.
+  Future<void> _showPinPlaceSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A2E),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setSheet) {
+        Widget choice(String label, bool on, VoidCallback tap) => Expanded(
+              child: GestureDetector(
+                onTap: tap,
+                child: Container(
+                  margin: const EdgeInsets.all(4),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(color: on ? const Color(0xFFF9A825) : Colors.white.withOpacity(.08), borderRadius: BorderRadius.circular(14)),
+                  child: Text(label, textAlign: TextAlign.center, style: TextStyle(color: on ? Colors.black : Colors.white70, fontWeight: FontWeight.w700, fontSize: 12.5)),
+                ),
+              ),
+            );
+        void change({String? place, String? layout}) {
+          setSheet(() {
+            _pinPlace = place ?? _pinPlace;
+            _pinLayout = layout ?? _pinLayout;
+          });
+          setState(() {});
+          _savePin();
+        }
+
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(ctx.tr('Placement des épingles'), style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 4),
+              Text(ctx.tr('Ton texte et ton image épinglés : où les ranger sur l\'écran ?'), style: const TextStyle(color: Colors.white54, fontSize: 12)),
+              const SizedBox(height: 14),
+              Text(ctx.tr('Côté'), style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w700)),
+              Row(children: [choice(ctx.tr('À gauche'), _pinPlace == 'left', () => change(place: 'left')), choice(ctx.tr('À droite'), _pinPlace == 'right', () => change(place: 'right'))]),
+              const SizedBox(height: 10),
+              Text(ctx.tr('Image'), style: const TextStyle(color: Colors.white70, fontWeight: FontWeight.w700)),
+              Row(children: [choice(ctx.tr('À côté du texte'), _pinLayout == 'side', () => change(layout: 'side')), choice(ctx.tr('Sous le texte'), _pinLayout == 'below', () => change(layout: 'below'))]),
+              const SizedBox(height: 6),
+              Text(ctx.tr('À droite, le texte et l\'image se rangent l\'un sous l\'autre sous le menu.'), style: const TextStyle(color: Colors.white38, fontSize: 11)),
+            ]),
+          ),
+        );
+      }),
+    );
+  }
+
+  Future<void> _savePin() async {
+    try {
+      await LivesApi.update(widget.liveId, {'pin': {'place': _pinPlace, 'layout': _pinLayout}});
+    } catch (_) {}
+    try {
+      await _firestore.collection('lives').doc(widget.liveId).update({'pin': {'place': _pinPlace, 'layout': _pinLayout}});
+    } catch (_) {}
+  }
+
+  // ==================== MUSIQUE DU LIVE ====================
+
+  /// Au départ : placement des épingles et musique en cours, lus sur l'API (une personne qui arrive en retard prend le live en cours de route).
+  Future<void> _initLiveOptions() async {
+    try {
+      final l = await LivesApi.get(widget.liveId);
+      final o = l['options'];
+      if (o is Map) {
+        final pin = o['pin'];
+        if (pin is Map && mounted) {
+          setState(() {
+            _pinPlace = '${pin['place'] ?? 'left'}' == 'right' ? 'right' : 'left';
+            _pinLayout = '${pin['layout'] ?? 'side'}' == 'below' ? 'below' : 'side';
+          });
+        }
+        final m = o['music'];
+        if (m is Map) _syncMusic(Map<String, dynamic>.from(m));
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _stopMusic() async {
+    _musicGen++;
+    _musicKey = null;
+    try {
+      await _musicPlayer?.stop();
+    } catch (_) {}
+  }
+
+  /// Cale la lecture sur l'état du live : même piste, même instant (heure de départ du serveur), à la maison du volume de CHAQUE personne.
+  Future<void> _syncMusic(Map<String, dynamic>? m) async {
+    if (!mounted) return;
+    if (m == null) {
+      if (_music != null) setState(() => _music = null);
+      await _stopMusic();
+      return;
+    }
+    final id = '${m['id']}';
+    final startedAt = (m['started_at'] as num?)?.toInt() ?? DateTime.now().millisecondsSinceEpoch;
+    final key = '$id@$startedAt';
+    if (key == _musicKey) {
+      if (_music == null) setState(() => _music = m);
+      return;
+    }
+    setState(() => _music = m);
+    _musicKey = key;
+    final gen = ++_musicGen;
+    try {
+      final url = MediaCdn.url(await MusicApi.freeTrackUrl(id));
+      if (!mounted || gen != _musicGen) return;
+      final dur = (m['duration_ms'] as num?)?.toInt() ?? 0;
+      final elapsed = DateTime.now().millisecondsSinceEpoch - startedAt;
+      final offset = dur > 0 && elapsed > 0 ? elapsed % dur : 0;
+      final p = _musicPlayer ??= ap.AudioPlayer();
+      await p.stop();
+      await p.setReleaseMode(ap.ReleaseMode.loop);
+      await p.setVolume(_musicMuted ? 0 : _musicVolume);
+      if (!mounted || gen != _musicGen) return;
+      await p.play(ap.UrlSource(url), position: Duration(milliseconds: offset));
+      if (!mounted || gen != _musicGen) await p.stop();
+    } catch (e) {
+      printVm('⚠️ Musique du live impossible : $e');
+    }
+  }
+
+  Future<void> _setMusicVolume({double? volume, bool? muted}) async {
+    _musicVolume = volume ?? _musicVolume;
+    _musicMuted = muted ?? _musicMuted;
+    try {
+      await _musicPlayer?.setVolume(_musicMuted ? 0 : _musicVolume);
+    } catch (_) {}
+    if (mounted) setState(() {});
+  }
+
+  Widget _buildMusicChip() {
+    return GestureDetector(
+      onTap: _openMusicSheet,
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+        decoration: BoxDecoration(color: Colors.black.withOpacity(0.5), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFF9A825).withOpacity(.5))),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.music_note_rounded, color: Color(0xFFF9A825), size: 13),
+          const SizedBox(width: 4),
+          Flexible(child: Text('${_music?['title'] ?? ''}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 10.5))),
+          const SizedBox(width: 4),
+          Icon(_musicMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded, color: Colors.white70, size: 13),
+        ]),
+      ),
+    );
+  }
+
+  /// Feuille de la musique : volume et sourdine pour chaque personne (son propre téléphone) ; l'hôte choisit, change ou arrête la musique.
+  Future<void> _openMusicSheet() async {
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A2E),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setSheet) {
+        final playing = _music != null;
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(ctx.tr('Musique du live'), style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 4),
+              Text(playing ? '♪ ${_music!['title']}' : ctx.tr('Aucune musique pour le moment.'), style: const TextStyle(color: Color(0xFFFFD27A), fontSize: 13.5, fontWeight: FontWeight.w600)),
+              if (playing) ...[
+                const SizedBox(height: 10),
+                Row(children: [
+                  IconButton(
+                    icon: Icon(_musicMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded, color: Colors.white),
+                    onPressed: () {
+                      _setMusicVolume(muted: !_musicMuted);
+                      setSheet(() {});
+                    },
+                  ),
+                  Expanded(
+                    child: Slider(
+                      value: _musicMuted ? 0 : _musicVolume,
+                      min: 0,
+                      max: 1,
+                      activeColor: const Color(0xFFF9A825),
+                      onChanged: (v) {
+                        _setMusicVolume(volume: v, muted: v == 0);
+                        setSheet(() {});
+                      },
+                    ),
+                  ),
+                ]),
+                Text(ctx.tr('Le volume ne règle que ton téléphone.'), style: const TextStyle(color: Colors.white38, fontSize: 11)),
+              ],
+              if (widget.isHost) ...[
+                const SizedBox(height: 14),
+                Row(children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      style: FilledButton.styleFrom(backgroundColor: const Color(0xFFF9A825), foregroundColor: Colors.black),
+                      icon: const Icon(Icons.library_music_rounded),
+                      label: Text(playing ? ctx.tr('Changer') : ctx.tr('Choisir une musique')),
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        await _pickMusic();
+                      },
+                    ),
+                  ),
+                  if (playing) ...[
+                    const SizedBox(width: 8),
+                    OutlinedButton(
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        await _hostSetMusic(null);
+                      },
+                      child: Text(ctx.tr('Arrêter')),
+                    ),
+                  ],
+                ]),
+                const SizedBox(height: 6),
+                Text(ctx.tr('Musiques gratuites d\'Afrolook, jouées chez tous tes spectateurs.'), style: const TextStyle(color: Colors.white38, fontSize: 11)),
+              ],
+            ]),
+          ),
+        );
+      }),
+    );
+  }
+
+  Future<void> _pickMusic() async {
+    final t = await showModalBottomSheet<StudioTrack>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1A1A2E),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) {
+        var q = '';
+        return StatefulBuilder(builder: (ctx, setSheet) {
+          final list = [for (final x in kStudioTracks) if (q.isEmpty || x.title.toLowerCase().contains(q) || x.section.toLowerCase().contains(q)) x];
+          return SizedBox(
+            height: MediaQuery.of(ctx).size.height * .75,
+            child: Column(children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: TextField(
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(hintText: ctx.tr('Chercher une musique (titre, ambiance)'), hintStyle: const TextStyle(color: Colors.white38), prefixIcon: const Icon(Icons.search_rounded, color: Colors.white54), filled: true, fillColor: Colors.white.withOpacity(.07), border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none)),
+                  onChanged: (v) => setSheet(() => q = v.trim().toLowerCase()),
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: list.length,
+                  itemBuilder: (_, i) {
+                    final x = list[i];
+                    final min = (x.durationMs / 60000).floor();
+                    final sec = ((x.durationMs % 60000) / 1000).round().toString().padLeft(2, '0');
+                    return ListTile(
+                      leading: Text(x.emoji, style: const TextStyle(fontSize: 24)),
+                      title: Text(x.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                      subtitle: Text('${x.section} · $min:$sec', style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                      onTap: () => Navigator.pop(ctx, x),
+                    );
+                  },
+                ),
+              ),
+            ]),
+          );
+        });
+      },
+    );
+    if (t != null) await _hostSetMusic(t);
+  }
+
+  /// L'hôte lance (ou arrête) une musique : l'API garde la référence (heure de départ du serveur), Firestore la diffuse tout de suite à tous.
+  Future<void> _hostSetMusic(StudioTrack? t) async {
+    try {
+      if (t == null) {
+        await LivesApi.update(widget.liveId, {'music': null});
+        await _firestore.collection('lives').doc(widget.liveId).update({'music': null});
+        await _syncMusic(null);
+        return;
+      }
+      final r = await LivesApi.update(widget.liveId, {'music': {'id': t.id, 'title': t.title, 'duration_ms': t.durationMs}});
+      final m = (r['options'] as Map?)?['music'];
+      if (m is Map) {
+        final mm = Map<String, dynamic>.from(m);
+        await _firestore.collection('lives').doc(widget.liveId).update({'music': mm});
+        await _syncMusic(mm);
+      }
+    } on ApiException catch (e) {
+      _toast(e.message);
+    } catch (_) {
+      _toast(tr('La musique n\'a pas pu être changée. Réessaie.'));
+    }
+  }
+
   Widget _buildPinnedImage() {
     final url = _pinnedImageUrl;
     if (url == null || url.isEmpty) return const SizedBox.shrink();
@@ -3175,8 +3648,9 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     return Scaffold(
       backgroundColor: Colors.black,
       body: GestureDetector(
-        // « j'aime » = double toucher (comme TikTok), jamais un simple toucher ; l'hôte ne s'aime pas lui-même
-        onDoubleTapDown: _onTap,
+        // chaque toucher sur l'écran envoie un cœur, hôte compris (les boutons gardent leurs propres touchers)
+        behavior: HitTestBehavior.opaque,   // même une zone vide (sans vidéo derrière) reçoit le toucher : un cœur part
+        onTapDown: _onTap,
         // fit: expand = la pile prend tout l'écran même sans vidéo distante. Sans cela (seul enfant non positionné = SizedBox.shrink), elle s'écrasait à 0×0 :
         // tous les widgets positionnés tombaient hors cadre et l'écran paraissait noir (arbre de rendu lu sur le téléphone, 14/11/2026).
         child: Stack(
@@ -3370,8 +3844,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       _buildGameCard(),
       _buildStageStrip(),
       _buildViewerInfo(),
-      _buildPinnedTextSection(),
-      _buildPinnedImage(),
+      _buildPinnedLeft(),
       LivePinnedProduct(liveId: widget.liveId, isHost: widget.isHost || _isActiveVendor, canOpen: widget.postLive.typeSession == 'shopping' || _isMarket),   // Live Shopping : produit épinglé
       _buildLeaderboard(),
       if (_showMessages) _buildCommentsSection(),
@@ -3380,6 +3853,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       if (_showGiftPanel)
         GiftPanelWidget(
           gifts: _gifts,
+          recentIds: _recentGiftIds,
+          isHost: widget.isHost,
           onGiftSelected: _sendGift,
           onClose: () => setState(() => _showGiftPanel = false),
         ),
@@ -3420,7 +3895,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   Widget _buildLeaderboard() {
     if (_topDonors.isEmpty || !_showCoinsInfo || _game != null) return const SizedBox.shrink();
     return Positioned(
-      top: MediaQuery.of(context).padding.top + 185,
+      top: _gameTop + 5,
       left: 16,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -3806,6 +4281,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         children: [
           // Un chiffre = un seul endroit : spectateurs ici ; pièces reçues sous le profil ; « j'aime » et partages sous leurs boutons
           _buildInfoChip(icon: Icons.people_rounded, value: '$_viewerCount/$_totalviewerCount'),
+          if (_music != null) ...[const SizedBox(height: 8), _buildMusicChip()],
           // Timer essai
           if (widget.postLive.isPaidLive && _remainingTrialMinutes < 999 && !_shouldSkipTrial())
             Container(
@@ -3875,6 +4351,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                 if (v == 'voice' && widget.isHost) showLiveVoiceInbox(context, widget.liveId);
                 if (v == 'display' && widget.isHost) _showDisplaySheet();
                 if (v == 'games' && widget.isHost) _openGames();
+                if (v == 'music' && widget.isHost) _openMusicSheet();
+                if (v == 'pins' && widget.isHost) _showPinPlaceSheet();
               },
               itemBuilder: (ctx) => [
                 if (widget.isHost)
@@ -3893,6 +4371,24 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                       const Icon(Icons.sports_esports_rounded, color: Colors.white, size: 20),
                       const SizedBox(width: 10),
                       Text(context.tr('Jeux du live'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                    ]),
+                  ),
+                if (widget.isHost)
+                  PopupMenuItem<String>(
+                    value: 'music',
+                    child: Row(children: [
+                      const Icon(Icons.music_note_rounded, color: Colors.white, size: 20),
+                      const SizedBox(width: 10),
+                      Text(context.tr('Musique du live'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                    ]),
+                  ),
+                if (widget.isHost)
+                  PopupMenuItem<String>(
+                    value: 'pins',
+                    child: Row(children: [
+                      const Icon(Icons.push_pin_rounded, color: Colors.white, size: 20),
+                      const SizedBox(width: 10),
+                      Text(context.tr('Placement des épingles'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
                     ]),
                   ),
                 if (widget.isHost)
@@ -3946,6 +4442,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
               ),
             ),
           ],
+          ..._rightColumnExtras(),
         ],
       ),
     );
@@ -4579,6 +5076,9 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     _noCamTimer?.cancel();
     _noCamTick?.cancel();
     _previewVideo?.dispose();
+    _musicGen++;
+    _musicPlayer?.stop();
+    _musicPlayer?.dispose();
     if (!_noCam) {
       _engine.leaveChannel();
       _engine.release();

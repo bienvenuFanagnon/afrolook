@@ -258,6 +258,9 @@ class LivesApi {
   // ── Jeux : objectif, duel, défi, sondage, tirage au sort, questions du public ──
   /// Jeu en cours (ou terminé depuis moins de 45 s) et objectif du live.
   static Future<Map<String, dynamic>> game(String id) async => JeuxApi.map(await _c.get('/lives/$id/game'));
+
+  /// Historique des quiz du live : questions déjà révélées (bonne réponse, ma réponse, taux de réussite) et podium.
+  static Future<List<Map<String, dynamic>>> quizHistory(String id) async => JeuxApi.list(await _c.get('/lives/$id/game/history'));
   static Future<Map<String, dynamic>> gameStart(String id, Map<String, dynamic> body) async => JeuxApi.map(await _c.post('/lives/$id/game', body: body));
   static Future<void> gameEnd(String id) => _c.post('/lives/$id/game/end');
   static Future<Map<String, dynamic>> gameVote(String id, int option) async => JeuxApi.map(await _c.post('/lives/$id/game/vote', body: {'option': option}));

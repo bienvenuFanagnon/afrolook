@@ -42,6 +42,18 @@ Sur un téléphone où la version de **débogage** a été installée (celui du 
 8. **Pubs** : 5 secondes, puis bouton « Fermer » (jamais de fermeture automatique) dans le fil, les chroniques et les vidéos verticales.
 9. **Téléchargement d'une image** : le bandeau du bas porte la silhouette blanche du logo (plus de carré blanc).
 
+## 3 bis. À essayer aussi (ajouts du 14/11, soir)
+
+10. **« J'aime »** : toucher l'écran (même sans vidéo derrière) ou le cœur du bas : des cœurs montent tout de suite, le compteur monte, les autres personnes voient les cœurs aussi.
+11. **Cadeaux** : panneau doux avec la ligne « Envoyés récemment » en haut (mémorisée sur le téléphone). L'hôte ne peut pas s'offrir un cadeau : il voit l'animation et un message d'aperçu. Un spectateur sans assez de pièces est mené à la recharge ; tout autre refus est expliqué.
+12. **Quiz** : bouton « Historique » (colonne de droite) : questions déjà révélées avec bonne réponse, ta réponse, taux de réussite, podium. Jouer est gratuit pour le public ; la cagnotte vient de l'hôte (escrow), 50 / 30 / 20 % aux trois premiers.
+13. **Épingles** : texte et image épinglés ; Menu → « Placement des épingles » (à gauche ou à droite, image à côté ou sous le texte). L'image ne passe plus sous la carte du quiz.
+14. **Musique du live** : Menu → « Musique du live » (hôte) : une piste GRATUITE d'Afrolook jouée chez tous les spectateurs, sans Agora ; chacun règle son volume ; elle s'arrête quand on quitte le live.
+15. **Consultation (expert)** : « Mon espace expert » (le bouton ne dit plus « Devenir expert » quand le profil existe) : bouton « Disponible maintenant », appels qui sonnent, file d'attente avec rang, chiffres et gains, rendez-vous (créneaux), historique.
+16. **Consultation (patient)** : expert hors ligne → « Rendez-vous » ; expert occupé → file d'attente avec « Tu es 2e, attente estimée 15 min » ; notification « C'est ton tour ! » ; « Mes rendez-vous » (icône calendrier) ; rappel 15 minutes avant, puis l'appel arrive à l'heure.
+
+Migrations à jouer (le script `deploy-test.sh` le fait) : `2026_11_14_001000_live_no_camera` et `2026_11_14_002000_consultation_queue_and_slots`. Tâche planifiée nouvelle : `consultations:tick` (chaque minute : appels manqués, file, rendez-vous) ; contrôle : `php artisan schedule:list | grep consultations`.
+
 ## 4. Points connus, non traités
 
 - Firestore reste utilisé pour le temps réel du live (chat, cœurs, effets, « écrit… ») ; passage à un WebSocket Laravel (Reverb) prévu plus tard.

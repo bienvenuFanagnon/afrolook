@@ -38,6 +38,8 @@ class _ConsultationExpertsPageState extends State<ConsultationExpertsPage> {
   bool _loading = true;
   Timer? _poll;
   final Set<String> _asked = {};
+  bool _isExpert = false;   // la personne a déjà créé son profil d'expert (sujet renseigné) : le bouton devient « Mon espace expert »
+  bool _expertOn = false;   // et elle est disponible en ce moment
 
   @override
   void initState() {
@@ -56,6 +58,13 @@ class _ConsultationExpertsPageState extends State<ConsultationExpertsPage> {
     try {
       final e = await ConsultationsApi.experts();
       if (mounted) setState(() => _experts = e);
+    } catch (_) {}
+    try {
+      final me = await ConsultationsApi.settings();
+      if (mounted) setState(() {
+        _isExpert = '${me['topic'] ?? ''}'.trim().isNotEmpty;
+        _expertOn = me['enabled'] == true;
+      });
     } catch (_) {}
     if (mounted) setState(() => _loading = false);
   }
@@ -100,10 +109,20 @@ class _ConsultationExpertsPageState extends State<ConsultationExpertsPage> {
     if (media == null || !mounted) return;
     try {
       final c = await ConsultationsApi.call('${(p['user'] as Map)['id']}', media);
-      if (mounted) await Navigator.push(context, MaterialPageRoute(builder: (_) => ConsultationCallPage(consultationId: '${c['id']}', isExpert: false, media: media, expert: p['user'] as Map?)));
+      if (!mounted) return;
+      if (c['status'] == 'waiting') {
+        // l'expert est pris : le patient entre dans la file (rang, attente estimée, notification quand c'est son tour)
+        await Navigator.push(context, MaterialPageRoute(builder: (_) => ConsultationQueuePage(consultationId: '${c['id']}', media: media, expert: p['user'] as Map?, initial: c)));
+      } else {
+        await Navigator.push(context, MaterialPageRoute(builder: (_) => ConsultationCallPage(consultationId: '${c['id']}', isExpert: false, media: media, expert: p['user'] as Map?)));
+      }
+      _load();
     } on ApiException catch (e) {
       if (!mounted) return;
-      if (e.isInsufficientCoins) {
+      if (e.code == 'expert_offline') {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+        await Navigator.push(context, MaterialPageRoute(builder: (_) => ExpertSlotsPage(profile: p)));
+      } else if (e.isInsufficientCoins) {
         await CoinCheckout.insufficient(context, (e.details['coins'] as num?)?.toInt() ?? 0);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
@@ -121,7 +140,8 @@ class _ConsultationExpertsPageState extends State<ConsultationExpertsPage> {
         elevation: 0,
         title: Text(context.tr('Consultations'), style: const TextStyle(fontWeight: FontWeight.w800)),
         actions: [
-          TextButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ConsultationSettingsPage())), child: Text(context.tr('Devenir expert'), style: const TextStyle(color: _amber, fontWeight: FontWeight.w700))),
+          IconButton(tooltip: context.tr('Mes rendez-vous'), icon: const Icon(Icons.event_note_rounded), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyAppointmentsPage()))),
+          TextButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => _isExpert ? const ExpertSpacePage() : const ConsultationSettingsPage())).then((_) => _load()), child: Text(_isExpert ? '${_expertOn ? '● ' : '○ '}${context.tr('Mon espace expert')}' : context.tr('Devenir expert'), style: const TextStyle(color: _amber, fontWeight: FontWeight.w700))),
         ],
       ),
       body: _loading
@@ -135,9 +155,9 @@ class _ConsultationExpertsPageState extends State<ConsultationExpertsPage> {
                       const SizedBox(height: 12),
                       for (final p in _experts)
                         GestureDetector(
-                          onTap: p['busy'] == true ? null : () => _book(p),
+                          onTap: () => p['online'] == true ? _book(p) : Navigator.push(context, MaterialPageRoute(builder: (_) => ExpertSlotsPage(profile: p))),
                           child: Opacity(
-                            opacity: p['busy'] == true ? .5 : 1,
+                            opacity: p['online'] == true ? 1 : .8,
                             child: Container(
                               margin: const EdgeInsets.only(bottom: 10),
                               padding: const EdgeInsets.all(12),
@@ -153,7 +173,18 @@ class _ConsultationExpertsPageState extends State<ConsultationExpertsPage> {
                                     Text('${p['video_coins']} ${context.tr('pièces / min en vidéo')} · ${p['audio_coins']} ${context.tr('en audio')}', style: const TextStyle(color: _amber, fontSize: 11.5, fontWeight: FontWeight.w700)),
                                   ]),
                                 ),
-                                if (p['busy'] == true) Text(context.tr('En consultation'), style: const TextStyle(color: Color(0xFF9A9A95), fontSize: 11)) else const Icon(Icons.chevron_right_rounded, color: Colors.white54),
+                                Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.end, children: [
+                                  Text(
+                                    p['online'] == true ? (p['busy'] == true || ((p['waiting'] as num?) ?? 0) > 0 ? context.tr('Occupé · {n} en attente', {'n': '${p['waiting'] ?? 0}'}) : context.tr('● En ligne')) : context.tr('Hors ligne'),
+                                    style: TextStyle(color: p['online'] == true ? const Color(0xFF69F0AE) : const Color(0xFF9A9A95), fontSize: 11, fontWeight: FontWeight.w700),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  GestureDetector(
+                                    behavior: HitTestBehavior.opaque,
+                                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ExpertSlotsPage(profile: p))),
+                                    child: Text(context.tr('Rendez-vous ›'), style: const TextStyle(color: _amber, fontSize: 11.5, fontWeight: FontWeight.w800)),
+                                  ),
+                                ]),
                               ]),
                             ),
                           ),
@@ -539,4 +570,604 @@ class _ConsultationCallPageState extends State<ConsultationCallPage> {
         decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(12)),
         child: Text(t, style: TextStyle(color: c, fontSize: 12, fontWeight: FontWeight.w800)),
       );
+}
+
+// ───────────────────────── Espace expert, file d'attente, rendez-vous ─────────────────────────
+
+String _two(int n) => n.toString().padLeft(2, '0');
+
+/// « jeu. 20/11 · 14:30 » en heure locale.
+String _when(String? iso) {
+  final d = DateTime.tryParse(iso ?? '')?.toLocal();
+  if (d == null) return '';
+  const days = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
+  return '${days[d.weekday - 1]} ${_two(d.day)}/${_two(d.month)} · ${_two(d.hour)}:${_two(d.minute)}';
+}
+
+String _mediaLabel(BuildContext c, Object? m) => m == 'video' ? c.tr('Vidéo') : c.tr('Audio');
+
+Widget _statCard(String value, String label) => Expanded(
+      child: Container(
+        margin: const EdgeInsets.all(4),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+        decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(14)),
+        child: Column(children: [
+          Text(value, style: const TextStyle(color: _amber, fontSize: 20, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 2),
+          Text(label, textAlign: TextAlign.center, style: const TextStyle(color: Color(0xFF9A9A95), fontSize: 11)),
+        ]),
+      ),
+    );
+
+Widget _sectionTitle(String t, {Widget? trailing}) => Padding(
+      padding: const EdgeInsets.fromLTRB(4, 18, 4, 8),
+      child: Row(children: [
+        Expanded(child: Text(t, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800))),
+        if (trailing != null) trailing,
+      ]),
+    );
+
+/// Espace de l'expert : disponible maintenant, appels qui sonnent, personnes en attente (avec leur rang), gains, rendez-vous publiés, historique.
+class ExpertSpacePage extends StatefulWidget {
+  const ExpertSpacePage({super.key});
+
+  @override
+  State<ExpertSpacePage> createState() => _ExpertSpacePageState();
+}
+
+class _ExpertSpacePageState extends State<ExpertSpacePage> {
+  Map<String, dynamic>? _q;
+  Map<String, dynamic>? _hist;
+  Timer? _poll;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _refresh();
+    _loadHistory();
+    _poll = Timer.periodic(const Duration(seconds: 5), (_) => _refresh());
+  }
+
+  @override
+  void dispose() {
+    _poll?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _refresh() async {
+    try {
+      final q = await ConsultationsApi.queue();
+      if (mounted) setState(() => _q = q);
+    } catch (_) {}
+    if (mounted && _loading) setState(() => _loading = false);
+  }
+
+  Future<void> _loadHistory() async {
+    try {
+      final h = await ConsultationsApi.history('expert');
+      if (mounted) setState(() => _hist = h);
+    } catch (_) {}
+  }
+
+  void _msg(String t) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(t)));
+
+  Future<void> _toggleOnline(bool v) async {
+    if (_q?['enabled'] != true) {
+      _msg(context.tr('Active d\'abord ton profil d\'expert (sujet et tarifs).'));
+      await Navigator.push(context, MaterialPageRoute(builder: (_) => const ConsultationSettingsPage()));
+      return _refresh();
+    }
+    try {
+      await ConsultationsApi.presence(v);
+      await _refresh();
+    } on ApiException catch (e) {
+      _msg(e.message);
+    } catch (_) {}
+  }
+
+  Future<void> _accept(Map c) async {
+    try {
+      await ConsultationsApi.accept('${c['id']}');
+      if (!mounted) return;
+      await Navigator.push(context, MaterialPageRoute(builder: (_) => ConsultationCallPage(consultationId: '${c['id']}', isExpert: true, media: '${c['media']}')));
+    } on ApiException catch (e) {
+      _msg(e.message);
+    } catch (_) {}
+    _refresh();
+    _loadHistory();
+  }
+
+  Future<void> _decline(Map c) async {
+    await ConsultationsApi.decline('${c['id']}').catchError((_) {});
+    _refresh();
+  }
+
+  Future<void> _addSlot() async {
+    final now = DateTime.now();
+    final day = await showDatePicker(context: context, initialDate: now.add(const Duration(days: 1)), firstDate: now, lastDate: now.add(const Duration(days: 30)));
+    if (day == null || !mounted) return;
+    final time = await showTimePicker(context: context, initialTime: const TimeOfDay(hour: 10, minute: 0));
+    if (time == null || !mounted) return;
+    final minutes = await showDialog<int>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text(ctx.tr('Durée du créneau')),
+        children: [for (final m in const [15, 30, 45, 60]) SimpleDialogOption(onPressed: () => Navigator.pop(ctx, m), child: Text(ctx.tr('{n} minutes', {'n': '$m'})))],
+      ),
+    );
+    if (minutes == null) return;
+    try {
+      await ConsultationsApi.createSlot(DateTime(day.year, day.month, day.day, time.hour, time.minute), minutes);
+      _msg(context.tr('Créneau publié.'));
+      _refresh();
+    } on ApiException catch (e) {
+      _msg(e.message);
+    } catch (_) {
+      _msg(context.tr('Publication impossible.'));
+    }
+  }
+
+  Future<void> _deleteSlot(Map s) async {
+    final booked = s['status'] == 'booked';
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(ctx.tr('Retirer ce créneau ?')),
+        content: Text(booked ? ctx.tr('Un patient l\'a réservé : il sera prévenu de l\'annulation.') : ctx.tr('Il ne sera plus proposé aux patients.')),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(ctx.tr('Garder'))), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(ctx.tr('Retirer')))],
+      ),
+    );
+    if (ok != true) return;
+    await ConsultationsApi.deleteSlot('${s['id']}').catchError((_) {});
+    _refresh();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final q = _q;
+    final online = q?['online'] == true;
+    final until = DateTime.tryParse('${q?['online_until'] ?? ''}')?.toLocal();
+    final ringing = (q?['ringing'] as List?)?.cast<Map>() ?? const [];
+    final waiting = (q?['waiting'] as List?)?.cast<Map>() ?? const [];
+    final slots = (q?['slots'] as List?)?.cast<Map>() ?? const [];
+    final active = q?['active'] as Map?;
+    final totals = (_hist?['totals'] as Map?) ?? const {};
+    final items = (_hist?['items'] as List?)?.cast<Map>() ?? const [];
+    return Scaffold(
+      backgroundColor: _bg,
+      appBar: AppBar(
+        backgroundColor: _bg,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        title: Text(context.tr('Mon espace expert'), style: const TextStyle(fontWeight: FontWeight.w800)),
+        actions: [
+          IconButton(
+            tooltip: context.tr('Mon profil et mes tarifs'),
+            icon: const Icon(Icons.tune_rounded),
+            onPressed: () async {
+              await Navigator.push(context, MaterialPageRoute(builder: (_) => const ConsultationSettingsPage()));
+              _refresh();
+            },
+          ),
+        ],
+      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator(color: _amber))
+          : RefreshIndicator(
+              onRefresh: () async {
+                await _refresh();
+                await _loadHistory();
+              },
+              child: ListView(padding: const EdgeInsets.all(16), children: [
+                Container(
+                  decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16), border: Border.all(color: online ? const Color(0xFF2E7D32) : Colors.transparent)),
+                  child: SwitchListTile(
+                    value: online,
+                    onChanged: _toggleOnline,
+                    activeColor: _amber,
+                    title: Text(context.tr('Disponible maintenant'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                    subtitle: Text(
+                      online
+                          ? context.tr('Jusqu\'à {h}. Les patients peuvent t\'appeler ; tu es prévenu par notification, même application fermée.', {'h': until == null ? '' : '${_two(until.hour)}:${_two(until.minute)}'})
+                          : context.tr('Hors ligne : les patients ne peuvent que prendre rendez-vous.'),
+                      style: const TextStyle(color: Color(0xFF9A9A95), fontSize: 12, height: 1.35),
+                    ),
+                  ),
+                ),
+                for (final c in ringing)
+                  Container(
+                    margin: const EdgeInsets.only(top: 12),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(color: const Color(0xFF2B2410), borderRadius: BorderRadius.circular(16), border: Border.all(color: _amber)),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      Row(children: [
+                        _avatar(c['client'] as Map?),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text(context.tr('@{u} t\'attend', {'u': '${(c['client'] as Map?)?['username'] ?? ''}'}), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14.5)),
+                            Text('${_mediaLabel(context, c['media'])} · ${c['price_per_min']} ${context.tr('pièces par minute')} · ${c['ring_seconds_left'] ?? 0} s', style: const TextStyle(color: _amber, fontSize: 12)),
+                          ]),
+                        ),
+                      ]),
+                      const SizedBox(height: 10),
+                      Row(children: [
+                        Expanded(child: OutlinedButton(onPressed: () => _decline(c), child: Text(context.tr('Refuser')))),
+                        const SizedBox(width: 10),
+                        Expanded(child: FilledButton(onPressed: () => _accept(c), style: FilledButton.styleFrom(backgroundColor: _amber, foregroundColor: Colors.black), child: Text(context.tr('Décrocher')))),
+                      ]),
+                    ]),
+                  ),
+                if (active != null)
+                  Container(
+                    margin: const EdgeInsets.only(top: 12),
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(16)),
+                    child: Row(children: [
+                      _avatar(active['client'] as Map?),
+                      const SizedBox(width: 12),
+                      Expanded(child: Text(context.tr('En consultation avec @{u}', {'u': '${(active['client'] as Map?)?['username'] ?? ''}'}), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700))),
+                      TextButton(
+                        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ConsultationCallPage(consultationId: '${active['id']}', isExpert: true, media: '${active['media']}'))).then((_) => _refresh()),
+                        child: Text(context.tr('Reprendre')),
+                      ),
+                    ]),
+                  ),
+                _sectionTitle(waiting.isEmpty ? context.tr('Personne n\'attend') : context.tr('En attente ({n})', {'n': '${waiting.length}'})),
+                for (var i = 0; i < waiting.length; i++)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(14)),
+                    child: Row(children: [
+                      Text('${i + 1}', style: const TextStyle(color: _amber, fontWeight: FontWeight.w900, fontSize: 18)),
+                      const SizedBox(width: 12),
+                      _avatar(waiting[i]['client'] as Map?, r: 18),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text('@${(waiting[i]['client'] as Map?)?['username'] ?? ''}${waiting[i]['priority'] == true ? ' · ${context.tr('rendez-vous')}' : ''}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
+                          Text('${_mediaLabel(context, waiting[i]['media'])} · ${context.tr('attend depuis {n} min', {'n': '${waiting[i]['waited_minutes'] ?? 0}'})}', style: const TextStyle(color: Color(0xFF9A9A95), fontSize: 11.5)),
+                        ]),
+                      ),
+                    ]),
+                  ),
+                if (waiting.isNotEmpty) Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: Text(context.tr('Quand tu raccroches, le suivant sonne tout de suite : tu n\'as rien à faire.'), style: const TextStyle(color: Color(0xFF9A9A95), fontSize: 11.5))),
+                _sectionTitle(context.tr('Mes chiffres')),
+                Row(children: [
+                  _statCard('${totals['consultations'] ?? 0}', context.tr('consultations')),
+                  _statCard('${totals['minutes'] ?? 0}', context.tr('minutes')),
+                  _statCard('${totals['coins'] ?? 0}', context.tr('pièces gagnées')),
+                ]),
+                Row(children: [
+                  _statCard('${totals['week_consultations'] ?? 0}', context.tr('cette semaine')),
+                  _statCard('${totals['week_coins'] ?? 0}', context.tr('pièces cette semaine')),
+                ]),
+                _sectionTitle(context.tr('Mes rendez-vous'), trailing: TextButton.icon(onPressed: _addSlot, icon: const Icon(Icons.add_rounded, size: 18), label: Text(context.tr('Ajouter un créneau')))),
+                if (slots.isEmpty) Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: Text(context.tr('Publie des créneaux : les patients réservent, tu reçois un rappel 15 minutes avant et l\'appel arrive à l\'heure.'), style: const TextStyle(color: Color(0xFF9A9A95), fontSize: 12, height: 1.35))),
+                for (final s in slots)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.fromLTRB(14, 8, 6, 8),
+                    decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(14)),
+                    child: Row(children: [
+                      Expanded(
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text('${_when(s['starts_at'] as String?)} · ${s['minutes']} min', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
+                          Text(
+                            s['status'] == 'booked' ? context.tr('Réservé par @{u} · {m}', {'u': '${(s['client'] as Map?)?['username'] ?? ''}', 'm': _mediaLabel(context, s['media'])}) : context.tr('Libre'),
+                            style: TextStyle(color: s['status'] == 'booked' ? const Color(0xFF69F0AE) : const Color(0xFF9A9A95), fontSize: 12),
+                          ),
+                        ]),
+                      ),
+                      if (s['status'] == 'open' || s['status'] == 'booked') IconButton(icon: const Icon(Icons.delete_outline_rounded, color: Colors.white54), onPressed: () => _deleteSlot(s)),
+                    ]),
+                  ),
+                _sectionTitle(context.tr('Historique')),
+                if (items.isEmpty) Padding(padding: const EdgeInsets.symmetric(horizontal: 4), child: Text(context.tr('Tes consultations terminées apparaîtront ici, avec les pièces reçues.'), style: const TextStyle(color: Color(0xFF9A9A95), fontSize: 12))),
+                for (final c in items)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(14)),
+                    child: Row(children: [
+                      _avatar(c['client'] as Map?, r: 18),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text('@${(c['client'] as Map?)?['username'] ?? ''}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13)),
+                          Text('${_when(c['ended_at'] as String?)} · ${_mediaLabel(context, c['media'])} · ${c['minutes_charged']} min', style: const TextStyle(color: Color(0xFF9A9A95), fontSize: 11.5)),
+                        ]),
+                      ),
+                      Text('+${c['coins_earned']}', style: const TextStyle(color: _amber, fontWeight: FontWeight.w900)),
+                    ]),
+                  ),
+                const SizedBox(height: 24),
+              ]),
+            ),
+    );
+  }
+}
+
+/// Le patient attend son tour : rang, attente estimée, quitter la file ; dès que c'est son tour, il passe à l'appel.
+class ConsultationQueuePage extends StatefulWidget {
+  const ConsultationQueuePage({super.key, required this.consultationId, required this.media, this.expert, this.initial});
+  final String consultationId;
+  final String media;
+  final Map? expert;
+  final Map? initial;
+
+  @override
+  State<ConsultationQueuePage> createState() => _ConsultationQueuePageState();
+}
+
+class _ConsultationQueuePageState extends State<ConsultationQueuePage> {
+  Map? _c;
+  Timer? _poll;
+  bool _left = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = widget.initial;
+    _tick();
+    _poll = Timer.periodic(const Duration(seconds: 4), (_) => _tick());
+  }
+
+  @override
+  void dispose() {
+    _poll?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _tick() async {
+    if (_left || !mounted) return;
+    try {
+      final c = await ConsultationsApi.get(widget.consultationId);
+      if (!mounted) return;
+      setState(() => _c = c);
+      final st = '${c['status']}';
+      if (st == 'ringing' || st == 'active') {
+        _left = true;
+        _poll?.cancel();
+        await Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => ConsultationCallPage(consultationId: widget.consultationId, isExpert: false, media: widget.media, expert: widget.expert ?? c['expert'] as Map?)));
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _quit() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(ctx.tr('Quitter la file ?')),
+        content: Text(ctx.tr('Tu perds ta place. Rien n\'est payé : tu peux revenir quand tu veux.')),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(ctx.tr('Rester'))), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(ctx.tr('Quitter')))],
+      ),
+    );
+    if (ok != true) return;
+    _left = true;
+    await ConsultationsApi.cancel(widget.consultationId).catchError((_) => <String, dynamic>{});
+    if (mounted) Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = _c;
+    final st = '${c?['status'] ?? 'waiting'}';
+    final wait = c?['wait'] as Map?;
+    final expert = widget.expert ?? c?['expert'] as Map?;
+    final closed = const {'missed', 'canceled', 'expired', 'declined', 'ended'}.contains(st);
+    return Scaffold(
+      backgroundColor: _bg,
+      appBar: AppBar(backgroundColor: _bg, foregroundColor: Colors.white, elevation: 0, title: Text(context.tr('File d\'attente'), style: const TextStyle(fontWeight: FontWeight.w800))),
+      body: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          _avatar(expert, r: 40),
+          const SizedBox(height: 12),
+          Text('@${expert?['username'] ?? ''}', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 28),
+          if (closed) ...[
+            Text(
+              st == 'expired'
+                  ? context.tr('Ta place dans la file est terminée.')
+                  : st == 'missed' || st == 'declined'
+                      ? context.tr('L\'expert n\'a pas pu te prendre cette fois.')
+                      : context.tr('Tu as quitté la file.'),
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+            ),
+            const SizedBox(height: 18),
+            FilledButton(onPressed: () => Navigator.pop(context), child: Text(context.tr('Retour'))),
+          ] else ...[
+            Text(context.tr('Tu es {n}e dans la file', {'n': '${wait?['position'] ?? '…'}'}), style: const TextStyle(color: _amber, fontSize: 24, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 8),
+            Text(
+              wait == null ? context.tr('Mise à jour…') : context.tr('Attente estimée : environ {m} minutes', {'m': '${wait['eta_minutes']}'}),
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
+            ),
+            const SizedBox(height: 24),
+            Text(context.tr('Tu peux quitter cet écran : tu seras prévenu par une notification quand ce sera à toi. Rien n\'est payé tant que la consultation n\'a pas commencé.'), textAlign: TextAlign.center, style: const TextStyle(color: Color(0xFF9A9A95), fontSize: 12.5, height: 1.4)),
+            const SizedBox(height: 24),
+            OutlinedButton(onPressed: _quit, child: Text(context.tr('Quitter la file'))),
+          ],
+        ]),
+      ),
+    );
+  }
+}
+
+/// Créneaux libres d'un expert : le patient en réserve un (rien n'est payé ; le solde doit couvrir la durée minimale).
+class ExpertSlotsPage extends StatefulWidget {
+  const ExpertSlotsPage({super.key, required this.profile});
+  final Map<String, dynamic> profile;
+
+  @override
+  State<ExpertSlotsPage> createState() => _ExpertSlotsPageState();
+}
+
+class _ExpertSlotsPageState extends State<ExpertSlotsPage> {
+  List<Map<String, dynamic>> _slots = const [];
+  bool _loading = true;
+
+  Map? get _user => widget.profile['user'] as Map?;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final s = await ConsultationsApi.expertSlots('${_user?['id']}');
+      if (mounted) setState(() => _slots = s);
+    } catch (_) {}
+    if (mounted) setState(() => _loading = false);
+  }
+
+  Future<void> _book(Map<String, dynamic> s) async {
+    final media = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: const Color(0xFF1A1A1A),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('${_when(s['starts_at'] as String?)} · ${s['minutes']} min', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 4),
+            Text(ctx.tr('Rien n\'est payé maintenant : tu paies chaque minute au début de la consultation.'), style: const TextStyle(color: Color(0xFF9A9A95), fontSize: 12.5)),
+            const SizedBox(height: 14),
+            ListTile(leading: const Icon(Icons.videocam_rounded, color: _amber), title: Text(ctx.tr('Vidéo'), style: const TextStyle(color: Colors.white)), subtitle: Text('${widget.profile['video_coins']} ${ctx.tr('pièces par minute')}', style: const TextStyle(color: Color(0xFF9A9A95))), onTap: () => Navigator.pop(ctx, 'video')),
+            ListTile(leading: const Icon(Icons.mic_rounded, color: _amber), title: Text(ctx.tr('Audio'), style: const TextStyle(color: Colors.white)), subtitle: Text('${widget.profile['audio_coins']} ${ctx.tr('pièces par minute')}', style: const TextStyle(color: Color(0xFF9A9A95))), onTap: () => Navigator.pop(ctx, 'audio')),
+          ]),
+        ),
+      ),
+    );
+    if (media == null || !mounted) return;
+    try {
+      await ConsultationsApi.bookSlot('${s['id']}', media);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Rendez-vous réservé. Tu seras prévenu 15 minutes avant et à l\'heure.'))));
+      _load();
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      if (e.isInsufficientCoins) {
+        await CoinCheckout.insufficient(context, (e.details['coins'] as num?)?.toInt() ?? 0);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      }
+      _load();
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _bg,
+      appBar: AppBar(backgroundColor: _bg, foregroundColor: Colors.white, elevation: 0, title: Text(context.tr('Rendez-vous avec @{u}', {'u': '${_user?['username'] ?? ''}'}), style: const TextStyle(fontWeight: FontWeight.w800))),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator(color: _amber))
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView(padding: const EdgeInsets.all(16), children: [
+                Text('${widget.profile['topic']}', style: const TextStyle(color: Color(0xFFCFCFCA), fontSize: 13)),
+                const SizedBox(height: 12),
+                if (_slots.isEmpty) Padding(padding: const EdgeInsets.symmetric(vertical: 40), child: Text(context.tr('Cet expert n\'a pas de créneau libre pour le moment.'), textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70))),
+                for (final s in _slots)
+                  GestureDetector(
+                    onTap: () => _book(s),
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(14)),
+                      child: Row(children: [
+                        const Icon(Icons.event_available_rounded, color: _amber),
+                        const SizedBox(width: 12),
+                        Expanded(child: Text('${_when(s['starts_at'] as String?)} · ${s['minutes']} min', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700))),
+                        Text(context.tr('Réserver'), style: const TextStyle(color: _amber, fontWeight: FontWeight.w800)),
+                      ]),
+                    ),
+                  ),
+              ]),
+            ),
+    );
+  }
+}
+
+/// Mes rendez-vous de patient : à venir, annulation possible.
+class MyAppointmentsPage extends StatefulWidget {
+  const MyAppointmentsPage({super.key});
+
+  @override
+  State<MyAppointmentsPage> createState() => _MyAppointmentsPageState();
+}
+
+class _MyAppointmentsPageState extends State<MyAppointmentsPage> {
+  List<Map> _booked = const [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      final m = await ConsultationsApi.mySlots();
+      if (mounted) setState(() => _booked = (m['booked'] as List?)?.cast<Map>() ?? const []);
+    } catch (_) {}
+    if (mounted) setState(() => _loading = false);
+  }
+
+  Future<void> _cancel(Map s) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(ctx.tr('Annuler ce rendez-vous ?')),
+        content: Text(ctx.tr('Le créneau redevient libre et l\'expert est prévenu.')),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(ctx.tr('Garder'))), FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(ctx.tr('Annuler le rendez-vous')))],
+      ),
+    );
+    if (ok != true) return;
+    await ConsultationsApi.unbookSlot('${s['id']}').catchError((_) {});
+    _load();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: _bg,
+      appBar: AppBar(backgroundColor: _bg, foregroundColor: Colors.white, elevation: 0, title: Text(context.tr('Mes rendez-vous'), style: const TextStyle(fontWeight: FontWeight.w800))),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator(color: _amber))
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView(padding: const EdgeInsets.all(16), children: [
+                if (_booked.isEmpty) Padding(padding: const EdgeInsets.symmetric(vertical: 40), child: Text(context.tr('Aucun rendez-vous à venir. Choisis un expert pour réserver un créneau.'), textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70))),
+                for (final s in _booked)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(color: _card, borderRadius: BorderRadius.circular(14)),
+                    child: Row(children: [
+                      _avatar(s['expert'] as Map?),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text('@${(s['expert'] as Map?)?['username'] ?? ''}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                          Text('${_when(s['starts_at'] as String?)} · ${s['minutes']} min · ${_mediaLabel(context, s['media'])}', style: const TextStyle(color: Color(0xFFCFCFCA), fontSize: 12.5)),
+                          Text(s['status'] == 'done' ? context.tr('Terminé ou en cours') : context.tr('À venir'), style: TextStyle(color: s['status'] == 'done' ? const Color(0xFF9A9A95) : const Color(0xFF69F0AE), fontSize: 12)),
+                        ]),
+                      ),
+                      if (s['status'] == 'booked') TextButton(onPressed: () => _cancel(s), child: Text(context.tr('Annuler'))),
+                    ]),
+                  ),
+              ]),
+            ),
+    );
+  }
 }

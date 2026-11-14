@@ -215,7 +215,12 @@ Future<void> storeNavigationFromPush(Map<String, dynamic> data) async {
     'SERVICE': 'notifications',
     'CERTIFICATION': 'notifications',
   };
-  if (type == 'NEWS' && hasPost) {
+  if (type == 'CONSULTATION') {
+    // file d'attente, appel, rendez-vous : « consultation:<identifiant>:<rôle> » ; sans identifiant, la liste des consultations
+    final cid = data['consultation_id']?.toString() ?? '';
+    final role = data['role']?.toString() ?? '';
+    await nav.storeScreenNavigation(cid.isNotEmpty ? 'consultation:$cid:$role' : 'consultation_home');
+  } else if (type == 'NEWS' && hasPost) {
     // article d'actualité : sa page de détail
     await nav.storeScreenNavigation('news:$postId');
   } else if (screens.containsKey(type)) {

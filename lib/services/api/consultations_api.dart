@@ -25,4 +25,28 @@ class ConsultationsApi {
   /// Signal toutes les 30 secondes : facture les minutes, dit combien il en reste.
   static Future<Map<String, dynamic>> tick(String id) async => JeuxApi.map(await _c.post('/consultations/$id/tick'));
   static Future<Map<String, dynamic>> end(String id) async => JeuxApi.map(await _c.post('/consultations/$id/end'));
+
+  // ── Disponibilité, file d'attente, historique, rendez-vous ──
+
+  /// « Disponible maintenant » (expert) : accepte les appels directs et la file pendant [hours] heures.
+  static Future<Map<String, dynamic>> presence(bool online, {int hours = 3}) async => JeuxApi.map(await _c.post('/consultations/presence', body: {'online': online, 'hours': hours}));
+
+  /// Espace de l'expert : `active`, `ringing`, `waiting` (avec rang), `slots` à venir, `online`.
+  static Future<Map<String, dynamic>> queue() async => JeuxApi.map(await _c.get('/consultations/queue'));
+
+  /// Le patient quitte la file (ou raccroche avant le décrochage) : sans frais.
+  static Future<Map<String, dynamic>> cancel(String id) async => JeuxApi.map(await _c.post('/consultations/$id/cancel'));
+
+  /// `role` : `expert` ou `client`. Réponse : `totals` et `items`.
+  static Future<Map<String, dynamic>> history(String role) async => JeuxApi.map(await _c.get('/consultations/history?role=$role'));
+
+  /// Créneaux libres d'un expert.
+  static Future<List<Map<String, dynamic>>> expertSlots(String userId) async => JeuxApi.list(await _c.get('/consultations/experts/$userId/slots'));
+
+  /// Mes rendez-vous : `booked` (réservés par moi) et `published` (mes créneaux d'expert).
+  static Future<Map<String, dynamic>> mySlots() async => JeuxApi.map(await _c.get('/consultations/slots/mine'));
+  static Future<Map<String, dynamic>> createSlot(DateTime startsAt, int minutes) async => JeuxApi.map(await _c.post('/consultations/slots', body: {'starts_at': startsAt.toUtc().toIso8601String(), 'minutes': minutes}));
+  static Future<void> deleteSlot(String id) => _c.delete('/consultations/slots/$id');
+  static Future<Map<String, dynamic>> bookSlot(String id, String media) async => JeuxApi.map(await _c.post('/consultations/slots/$id/book', body: {'media': media}));
+  static Future<void> unbookSlot(String id) => _c.delete('/consultations/slots/$id/book');
 }

@@ -536,3 +536,116 @@ Future<({List<QuizDraft> questions, int pool, int seconds})?> askQuiz(BuildConte
     ),
   );
 }
+
+/// Historique des quiz du live : pour chaque quiz, le podium puis les questions DÉJÀ révélées avec la bonne réponse, la réponse de la personne et le taux de réussite.
+/// (La question en cours n'y figure jamais : aucune triche possible.)
+class LiveQuizHistorySheet extends StatelessWidget {
+  const LiveQuizHistorySheet({super.key, required this.future});
+  final Future<List<Map<String, dynamic>>> future;
+
+  static String _time(String? iso) {
+    final d = DateTime.tryParse(iso ?? '')?.toLocal();
+    if (d == null) return '';
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(d.hour)}:${two(d.minute)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * .78,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFF26223A), Color(0xFF15121F)]),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: Column(children: [
+        const SizedBox(height: 8),
+        Container(width: 38, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(99))),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 8, 4),
+          child: Row(children: [
+            Expanded(child: Text(context.tr('Historique du quiz'), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800))),
+            IconButton(icon: const Icon(Icons.close_rounded, color: Colors.white54), onPressed: () => Navigator.pop(context)),
+          ]),
+        ),
+        Expanded(
+          child: FutureBuilder<List<Map<String, dynamic>>>(
+            future: future,
+            builder: (ctx, snap) {
+              if (snap.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator(color: _amber));
+              final items = snap.data ?? const [];
+              final shown = items.where((g) => ((g['questions'] as List?) ?? const []).isNotEmpty).toList();
+              if (snap.hasError || shown.isEmpty) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Text(snap.hasError ? ctx.tr('Historique indisponible pour le moment.') : ctx.tr('Aucune question révélée pour l\'instant. Les questions et leurs bonnes réponses apparaissent ici après chaque manche.'), textAlign: TextAlign.center, style: const TextStyle(color: Colors.white60, height: 1.4)),
+                  ),
+                );
+              }
+              return ListView(padding: const EdgeInsets.fromLTRB(16, 4, 16, 24), children: [for (final g in shown) _quiz(ctx, g)]);
+            },
+          ),
+        ),
+      ]),
+    );
+  }
+
+  Widget _quiz(BuildContext ctx, Map<String, dynamic> g) {
+    final qs = ((g['questions'] as List?) ?? const []).cast<Map>();
+    final podium = ((g['podium'] as List?) ?? const []).cast<Map>();
+    final ended = g['status'] == 'ended';
+    const medals = ['🥇', '🥈', '🥉'];
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(color: Colors.white.withOpacity(.06), borderRadius: BorderRadius.circular(20)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('${ctx.tr('Quiz de {h}', {'h': _time(g['started_at'] as String?)})} · ${ended ? ctx.tr('terminé') : ctx.tr('en cours')} · ${qs.length}/${g['total']}', style: const TextStyle(color: _yellow, fontWeight: FontWeight.w800, fontSize: 13)),
+        if (ended && podium.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          for (final p in podium)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Text('${medals[((p['rank'] as num).toInt() - 1).clamp(0, 2)]}  @${p['username'] ?? ''} · ${p['points']} pts${(p['coins'] as num? ?? 0) > 0 ? ' · +${p['coins']} ${ctx.tr('pièces')}' : ''}', style: const TextStyle(color: Colors.white, fontSize: 12.5)),
+            ),
+        ],
+        for (final q in qs) ...[
+          const SizedBox(height: 14),
+          Text('${(q['index'] as num).toInt() + 1}. ${q['text']}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14)),
+          const SizedBox(height: 6),
+          for (var i = 0; i < ((q['options'] as List?) ?? const []).length; i++) _option(ctx, q, i),
+          const SizedBox(height: 2),
+          Text(_rate(ctx, q), style: const TextStyle(color: Colors.white54, fontSize: 11.5)),
+        ],
+      ]),
+    );
+  }
+
+  String _rate(BuildContext ctx, Map q) {
+    final n = (q['answers'] as num?)?.toInt() ?? 0;
+    final ok = (q['correct_count'] as num?)?.toInt() ?? 0;
+    if (n == 0) return ctx.tr('Personne n\'a répondu.');
+    return ctx.tr('{p} % de bonnes réponses ({ok} sur {n})', {'p': '${(ok * 100 / n).round()}', 'ok': '$ok', 'n': '$n'});
+  }
+
+  Widget _option(BuildContext ctx, Map q, int i) {
+    final correct = (q['correct'] as num?)?.toInt();
+    final mine = (q['my_option'] as num?)?.toInt();
+    final isCorrect = i == correct;
+    final isMineWrong = i == mine && !isCorrect;
+    final color = isCorrect ? const Color(0xFF69F0AE) : (isMineWrong ? const Color(0xFFFF8A80) : Colors.white24);
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(color: color.withOpacity(isCorrect || isMineWrong ? .14 : .04), borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withOpacity(isCorrect || isMineWrong ? .8 : .25))),
+      child: Row(children: [
+        Expanded(child: Text('${(q['options'] as List)[i]}', style: TextStyle(color: isCorrect || isMineWrong ? Colors.white : Colors.white70, fontSize: 13))),
+        if (isCorrect) const Icon(Icons.check_circle_rounded, color: Color(0xFF69F0AE), size: 18),
+        if (isMineWrong) const Icon(Icons.cancel_rounded, color: Color(0xFFFF8A80), size: 18),
+        if (i == mine && isCorrect) Padding(padding: const EdgeInsets.only(left: 6), child: Text(ctx.tr('ta réponse'), style: const TextStyle(color: Color(0xFF69F0AE), fontSize: 10.5))),
+        if (isMineWrong) Padding(padding: const EdgeInsets.only(left: 6), child: Text(ctx.tr('ta réponse'), style: const TextStyle(color: Color(0xFFFF8A80), fontSize: 10.5))),
+      ]),
+    );
+  }
+}

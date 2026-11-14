@@ -169,106 +169,153 @@ class JoinLiveDialog extends StatelessWidget {
   }
 }
 
-class GiftPanelWidget extends StatelessWidget {
+/// Panneau d'envoi de cadeau : feuille douce (dégradé sombre, coins très arrondis), les cadeaux ENVOYÉS RÉCEMMENT sur une ligne en haut, puis tous les autres.
+/// Un toucher envoie ; la carte touchée montre un petit sablier pendant l'envoi (jamais un toucher qui ne fait « rien »).
+class GiftPanelWidget extends StatefulWidget {
   final List<Gift> gifts;
-  final Function(Gift) onGiftSelected;
+  final List<String> recentIds;   // identifiants des cadeaux envoyés récemment, le plus récent d'abord
+  final Future<void> Function(Gift) onGiftSelected;
   final VoidCallback onClose;
+  final bool isHost;
 
   const GiftPanelWidget({
     Key? key,
     required this.gifts,
     required this.onGiftSelected,
     required this.onClose,
+    this.recentIds = const [],
+    this.isHost = false,
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final height = MediaQuery.of(context).size.height * 0.6;
+  State<GiftPanelWidget> createState() => _GiftPanelWidgetState();
+}
 
+class _GiftPanelWidgetState extends State<GiftPanelWidget> {
+  String? _busyId;
+
+  Future<void> _tap(Gift g) async {
+    if (_busyId != null) return;
+    setState(() => _busyId = g.id);
+    try {
+      await widget.onGiftSelected(g);
+    } finally {
+      if (mounted) setState(() => _busyId = null);
+    }
+  }
+
+  Widget _card(Gift g, {bool compact = false}) {
+    final busy = _busyId == g.id;
+    final c = g.color;
+    return GestureDetector(
+      onTap: () => _tap(g),
+      child: AnimatedScale(
+        scale: busy ? 0.94 : 1,
+        duration: const Duration(milliseconds: 120),
+        child: Container(
+          width: compact ? 76 : null,
+          padding: EdgeInsets.symmetric(horizontal: 6, vertical: compact ? 8 : 10),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [c.withOpacity(.16), Colors.white.withOpacity(.05)]),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: c.withOpacity(.35)),
+          ),
+          child: Stack(alignment: Alignment.center, children: [
+            Opacity(
+              opacity: busy ? .35 : 1,
+              child: Column(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
+                Text(g.icon, style: TextStyle(fontSize: compact ? 26 : 30)),
+                const SizedBox(height: 4),
+                Text(g.name, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 5),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(color: const Color(0xFFF9A825).withOpacity(.16), borderRadius: BorderRadius.circular(99)),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(Icons.stars_rounded, color: Color(0xFFF9A825), size: 10),
+                    const SizedBox(width: 3),
+                    Text('${g.price.toInt()}', style: const TextStyle(color: Color(0xFFFFD27A), fontSize: 10.5, fontWeight: FontWeight.w800)),
+                  ]),
+                ),
+              ]),
+            ),
+            if (busy) const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70)),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final height = MediaQuery.of(context).size.height * 0.62;
+    final byId = {for (final g in widget.gifts) g.id: g};
+    final recent = [for (final id in widget.recentIds) if (byId.containsKey(id)) byId[id]!].take(8).toList();
+    final recentSet = recent.map((g) => g.id).toSet();
+    final rest = [for (final g in widget.gifts) if (!recentSet.contains(g.id)) g];
     return Stack(
       children: [
-        Positioned.fill(
-          child: GestureDetector(
-            onTap: onClose,
-            child: Container(color: Colors.black54),
-          ),
-        ),
+        Positioned.fill(child: GestureDetector(onTap: widget.onClose, child: Container(color: Colors.black.withOpacity(.55)))),
         Positioned(
           bottom: 0,
           left: 0,
           right: 0,
           child: Container(
             height: height,
-            decoration: BoxDecoration(
-              color: Colors.grey[900],
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFF26223A), Color(0xFF15121F)]),
+              borderRadius: BorderRadius.only(topLeft: Radius.circular(28), topRight: Radius.circular(28)),
+              boxShadow: [BoxShadow(color: Colors.black54, blurRadius: 24)],
+            ),
+            child: Column(children: [
+              const SizedBox(height: 8),
+              Container(width: 38, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(99))),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 8, 4),
+                child: Row(children: [
+                  Expanded(child: Text(tr('Envoyer un cadeau'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18))),
+                  IconButton(icon: const Icon(Icons.close_rounded, color: Colors.white54), onPressed: widget.onClose),
+                ]),
               ),
-            ),
-            child: Column(
-              children: [
-                Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        tr('Envoyer un cadeau'),
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
+              if (widget.isHost)
+                Container(
+                  margin: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(color: Colors.white.withOpacity(.07), borderRadius: BorderRadius.circular(14)),
+                  child: Row(children: [
+                    const Icon(Icons.info_outline_rounded, color: Colors.white54, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(tr('Tu es l\'hôte : tu ne peux pas t\'offrir un cadeau. Toucher un cadeau montre seulement son animation.'), style: const TextStyle(color: Colors.white60, fontSize: 11.5, height: 1.3))),
+                  ]),
+                ),
+              Expanded(
+                child: CustomScrollView(slivers: [
+                  if (recent.isNotEmpty) ...[
+                    SliverToBoxAdapter(child: Padding(padding: const EdgeInsets.fromLTRB(20, 8, 20, 6), child: Text(tr('Envoyés récemment'), style: const TextStyle(color: Colors.white70, fontSize: 12.5, fontWeight: FontWeight.w700)))),
+                    SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: 112,
+                        child: ListView.separated(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          scrollDirection: Axis.horizontal,
+                          itemCount: recent.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 8),
+                          itemBuilder: (_, i) => _card(recent[i], compact: true),
                         ),
                       ),
-                      IconButton(
-                        icon: Icon(Icons.close, color: Colors.white),
-                        onPressed: onClose,
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: GridView.builder(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
-                      childAspectRatio: 0.8,
                     ),
-                    itemCount: gifts.length,
-                    itemBuilder: (context, index) {
-                      final gift = gifts[index];
-                      return GestureDetector(
-                        onTap: () => onGiftSelected(gift),
-                        child: Container(
-                          padding: EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.black,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: gift.color, width: 2),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(gift.icon, style: TextStyle(fontSize: 24)),
-                              SizedBox(height: 4),
-                              Text(gift.name,
-                                  style: TextStyle(color: Colors.white, fontSize: 10),
-                                  textAlign: TextAlign.center),
-                              SizedBox(height: 2),
-                              Text('${gift.price.toInt()} pcs',
-                                  style: TextStyle(color: Color(0xFFF9A825), fontSize: 10)),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
+                  ],
+                  SliverToBoxAdapter(child: Padding(padding: const EdgeInsets.fromLTRB(20, 14, 20, 6), child: Text(recent.isEmpty ? tr('Tous les cadeaux') : tr('Les autres cadeaux'), style: const TextStyle(color: Colors.white70, fontSize: 12.5, fontWeight: FontWeight.w700)))),
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    sliver: SliverGrid(
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4, crossAxisSpacing: 8, mainAxisSpacing: 8, childAspectRatio: .78),
+                      delegate: SliverChildBuilderDelegate((_, i) => _card(rest[i]), childCount: rest.length),
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ]),
+              ),
+            ]),
           ),
         ),
       ],

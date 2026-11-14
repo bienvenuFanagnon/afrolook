@@ -1,3 +1,4 @@
+import 'package:afrotok/pages/consultation/consultation_pages.dart';
 import 'package:afrotok/pages/create/create_menu_sheet.dart';
 import '../share/share_earn_page.dart';
 import '../offerwall/offerwall_tasks_page.dart';
@@ -1239,6 +1240,22 @@ class _MyHomePageState extends State<MyHomePage>
   /// Écran demandé par une notification (rappels programmés, gains, classement, création…). Inconnu ou « home » : on reste sur l'accueil.
   void _openScreen(String? screen) {
     Widget? page;
+    // « consultation:<identifiant>:<rôle> » : file d'attente, appel ou rendez-vous (notification) ; l'expert va à son espace, le patient à sa file ou à l'appel
+    if (screen != null && screen.startsWith('consultation:')) {
+      final parts = screen.split(':');
+      final id = parts.length > 1 ? parts[1] : '';
+      final role = parts.length > 2 ? parts[2] : '';
+      if (role == 'expert') {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const ExpertSpacePage()));
+      } else {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => ConsultationQueuePage(consultationId: id, media: 'audio')));
+      }
+      return;
+    }
+    if (screen == 'consultation_home') {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const ConsultationExpertsPage()));
+      return;
+    }
     // « news:<identifiant> » : un article d'actualité (notification)
     if (screen != null && screen.startsWith('news:')) {
       page = NewsDetailPage(postId: screen.substring(5));
