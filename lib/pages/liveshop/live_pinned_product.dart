@@ -34,6 +34,7 @@ class _LivePinnedProductState extends State<LivePinnedProduct> {
   static const _gold = Color(0xFFF9A825);
 
   List<Map<String, dynamic>> _pins = const [];
+  int _pending = 0;   // commandes qui attendent ma réponse (valider ou refuser) : pastille rouge sur « Commandes »
   Timer? _poll;
   Timer? _tick;
   Timer? _auto;
@@ -83,6 +84,12 @@ class _LivePinnedProductState extends State<LivePinnedProduct> {
       final r = await LiveShopApi.pins(widget.liveId);
       if (mounted) setState(() => _pins = r);
     } catch (_) {}   // jamais bloquant : le live continue sans la vitrine
+    if (widget.isHost) {
+      try {
+        final n = await LiveShopApi.pendingOrders(widget.liveId);
+        if (mounted && n != _pending) setState(() => _pending = n);
+      } catch (_) {}
+    }
   }
 
   String _f(num v) => '${_n.format(v)} F';
@@ -569,10 +576,8 @@ class _LivePinnedProductState extends State<LivePinnedProduct> {
   @override
   Widget build(BuildContext context) {
     if (_pins.isEmpty && (!widget.isHost || !widget.canOpen)) return const SizedBox.shrink();
-    return Positioned(
-      left: 12,
-      right: 76,
-      top: MediaQuery.of(context).padding.top + 190,
+    return Align(
+      alignment: Alignment.topLeft,
       child: _pins.isEmpty
           ? Align(
               alignment: Alignment.centerLeft,
@@ -630,20 +635,36 @@ class _LivePinnedProductState extends State<LivePinnedProduct> {
                   child: Row(children: [
                     _chipButton(Icons.tune_rounded, tr('Gérer ma vitrine'), _manage),
                     const SizedBox(width: 6),
-                    _chipButton(Icons.receipt_long_rounded, tr('Commandes'), () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LiveShopOrdersPage()))),
+                    _chipButton(Icons.receipt_long_rounded, tr('Commandes'), () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LiveShopOrdersPage())).then((_) => _load()), badge: _pending),
                   ]),
                 ),
             ]),
     );
   }
 
-  Widget _chipButton(IconData icon, String label, VoidCallback onTap) => GestureDetector(
+  Widget _chipButton(IconData icon, String label, VoidCallback onTap, {int badge = 0}) => GestureDetector(
         onTap: onTap,
-        child: Container(
+        child: Stack(clipBehavior: Clip.none, children: [
+          Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(color: Colors.black.withOpacity(0.62), borderRadius: BorderRadius.circular(99)),
           child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, color: Colors.white, size: 14), const SizedBox(width: 5), Text(label, style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w700))]),
         ),
+          // pastille rouge : nombre de commandes qui attendent encore ta réponse (valider ou refuser)
+          if (badge > 0)
+            Positioned(
+              top: -6,
+              right: -6,
+              child: Container(
+                key: const ValueKey('orders_pending_badge'),
+                constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                padding: const EdgeInsets.symmetric(horizontal: 5),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(color: const Color(0xFFE53935), shape: BoxShape.rectangle, borderRadius: BorderRadius.circular(99), border: Border.all(color: Colors.white, width: 1.5)),
+                child: Text(badge > 99 ? '99+' : '$badge', style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w800)),
+              ),
+            ),
+        ]),
       );
 
   Widget _card(Map<String, dynamic> p) {

@@ -29,6 +29,20 @@ class LiveGame {
 
   String? get winnerId => (raw['result'] as Map?)?['winner_id'] as String?;
 
+  /// Les meilleurs donateurs d'un présentateur pendant ce jeu (jusqu'à trois), du plus généreux au moins généreux.
+  List<({String username, int coins})> topGiversOf(String userId) {
+    final l = (raw['top_givers'] as Map?)?[userId];
+    if (l is! List) return const [];
+    return [for (final g in l) if (g is Map) (username: '${g['username'] ?? ''}', coins: (g['coins'] as num?)?.toInt() ?? 0)];
+  }
+
+  /// Ce qu'un présentateur a reçu pendant le jeu : nombre de cadeaux, pièces envoyées, et sa part (70 %) versée sur SON compte (pièces gagnées).
+  ({int gifts, int coins, int earned}) earnedOf(String userId) {
+    final e = (raw['earned'] as Map?)?[userId];
+    if (e is! Map) return (gifts: 0, coins: 0, earned: 0);
+    return (gifts: (e['gifts'] as num?)?.toInt() ?? 0, coins: (e['coins'] as num?)?.toInt() ?? 0, earned: (e['earned'] as num?)?.toInt() ?? 0);
+  }
+
   String get question => '${config['question'] ?? ''}';
   List<String> get options => [for (final o in (config['options'] as List? ?? const [])) '$o'];
   List<int> get votes => [for (final v in (raw['votes'] as List? ?? const [])) (v as num).toInt()];
@@ -178,6 +192,14 @@ class LiveGameCard extends StatelessWidget {
           const Spacer(),
           Text('${CoinCheckout.fmt(scores[ps[1].id]!)} pcs', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800)),
         ]),
+        if (ps.any((p) => game.topGiversOf(p.id).isNotEmpty)) ...[
+          const SizedBox(height: 6),
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(child: _givers(context, ps[0].id)),
+            const SizedBox(width: 10),
+            Expanded(child: _givers(context, ps[1].id, right: true)),
+          ]),
+        ],
       ] else
         for (final p in ps) ...[
           Row(children: [
@@ -188,8 +210,19 @@ class LiveGameCard extends StatelessWidget {
           ]),
           const SizedBox(height: 3),
           ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(value: game.goal > 0 ? (scores[p.id]! / game.goal).clamp(0.0, 1.0) : (best == 0 ? 0 : scores[p.id]! / best), minHeight: 7, backgroundColor: Colors.white24, color: scores[p.id] == best && best > 0 ? _amber : const Color(0xFF5B9CFA))),
+          if (game.topGiversOf(p.id).isNotEmpty) Padding(padding: const EdgeInsets.only(top: 3), child: _givers(context, p.id, inline: true)),
           const SizedBox(height: 7),
         ],
+      if (ended) ...[
+        const SizedBox(height: 4),
+        for (final p in ps)
+          Padding(
+            padding: const EdgeInsets.only(top: 3),
+            child: Text('@${p.username} : ${game.earnedOf(p.id).gifts} ${context.tr('cadeaux')} · +${CoinCheckout.fmt(game.earnedOf(p.id).earned)} ${context.tr('pièces sur son compte')}', style: const TextStyle(color: Color(0xFFFFD27A), fontSize: 11, fontWeight: FontWeight.w700)),
+          ),
+        const SizedBox(height: 4),
+        Text(context.tr('Pas de lot en plus pour le gagnant : chacun garde les cadeaux reçus (70 %).'), style: const TextStyle(color: Colors.white38, fontSize: 10)),
+      ],
       if (game.active) ...[
         const SizedBox(height: 4),
         Text(context.tr('Les cadeaux envoyés à un présentateur font avancer sa barre.'), style: const TextStyle(color: Colors.white54, fontSize: 10.5)),
@@ -207,6 +240,17 @@ class LiveGameCard extends StatelessWidget {
         ]),
       ],
     ]);
+  }
+
+  /// Meilleurs donateurs d'un présentateur : 🥇 🥈 🥉, pseudo et pièces données.
+  Widget _givers(BuildContext context, String userId, {bool right = false, bool inline = false}) {
+    const medals = ['🥇', '🥈', '🥉'];
+    final top = game.topGiversOf(userId);
+    if (top.isEmpty) return const SizedBox.shrink();
+    final lines = [for (var i = 0; i < top.length && i < 3; i++) '${medals[i]} @${top[i].username} ${CoinCheckout.fmt(top[i].coins)}'];
+    const st = TextStyle(color: Color(0xFFFFD27A), fontSize: 10.5, fontWeight: FontWeight.w700);
+    if (inline) return Text(lines.join('  '), maxLines: 1, overflow: TextOverflow.ellipsis, style: st);
+    return Column(crossAxisAlignment: right ? CrossAxisAlignment.end : CrossAxisAlignment.start, children: [for (final l in lines) Text(l, maxLines: 1, overflow: TextOverflow.ellipsis, style: st)]);
   }
 
   Widget _name(StageUser p, bool lead, {bool right = false}) => Column(crossAxisAlignment: right ? CrossAxisAlignment.end : CrossAxisAlignment.start, children: [
@@ -432,7 +476,8 @@ class _CountdownState extends State<_Countdown> {
 }
 
 /// Menu « Jeux » de l'hôte : objectif, duel, défi, sondage, tirage au sort, questions du public.
-Future<String?> showGamesMenu(BuildContext context, {required bool hasStageGuests, required bool gameActive}) {
+Future<String?> showGamesMenu(BuildContext context, {required bool hasStageGuests, required bool gameActive, Set<String>? allowed}) {
+  bool ok(String k) => allowed == null || allowed.contains(k);
   Widget item(BuildContext ctx, String key, IconData icon, String title, String sub, {bool enabled = true}) => Opacity(
         opacity: enabled ? 1 : .45,
         child: ListTile(
@@ -452,16 +497,16 @@ Future<String?> showGamesMenu(BuildContext context, {required bool hasStageGuest
           const SizedBox(height: 10),
           Container(width: 40, height: 4, decoration: BoxDecoration(color: const Color(0xFF4A4A46), borderRadius: BorderRadius.circular(2))),
           Padding(padding: const EdgeInsets.all(14), child: Text(ctx.tr('Jeux du live'), style: const TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.w700))),
-          item(ctx, 'goal', Icons.flag_rounded, ctx.tr('Objectif du live'), ctx.tr('Une barre qui monte avec les cadeaux')),
-          item(ctx, 'duel', Icons.sports_mma_rounded, ctx.tr('Duel 1 contre 1'), hasStageGuests ? ctx.tr('5 minutes, les cadeaux décident') : ctx.tr('Invite d\'abord quelqu\'un sur scène'), enabled: hasStageGuests),
-          item(ctx, 'challenge', Icons.groups_rounded, ctx.tr('Défi à plusieurs'), hasStageGuests ? ctx.tr('Le premier à l\'objectif gagne') : ctx.tr('Invite d\'abord des présentateurs sur scène'), enabled: hasStageGuests),
-          item(ctx, 'poll', Icons.poll_rounded, ctx.tr('Sondage'), ctx.tr('Le public vote en direct')),
-          item(ctx, 'story', Icons.auto_stories_rounded, ctx.tr('Conte interactif'), ctx.tr('Le public vote la suite avec des pièces')),
-          item(ctx, 'quiz', Icons.quiz_rounded, ctx.tr('Quiz à cagnotte'), ctx.tr('Gratuit pour jouer, cagnotte offerte par toi')),
-          item(ctx, 'clips', Icons.movie_filter_rounded, ctx.tr('Clips rémunérés'), ctx.tr('Une prime pour les meilleurs moments')),
-          item(ctx, 'questions', Icons.help_outline_rounded, ctx.tr('Questions du public'), ctx.tr('Lis et épingle une question')),
-          item(ctx, 'draw', Icons.card_giftcard_rounded, ctx.tr('Tirage au sort'), ctx.tr('Mets des pièces en jeu')),
-          if (gameActive) item(ctx, 'end', Icons.stop_circle_rounded, ctx.tr('Arrêter le jeu en cours'), ''),
+          if (ok('goal')) item(ctx, 'goal', Icons.flag_rounded, ctx.tr('Objectif du live'), ctx.tr('Une barre qui monte avec les cadeaux')),
+          if (ok('duel')) item(ctx, 'duel', Icons.sports_mma_rounded, ctx.tr('Duel 1 contre 1'), hasStageGuests ? ctx.tr('5 minutes, les cadeaux décident') : ctx.tr('Invite d\'abord quelqu\'un sur scène'), enabled: hasStageGuests),
+          if (ok('challenge')) item(ctx, 'challenge', Icons.groups_rounded, ctx.tr('Défi à plusieurs'), hasStageGuests ? ctx.tr('Le premier à l\'objectif gagne') : ctx.tr('Invite d\'abord des présentateurs sur scène'), enabled: hasStageGuests),
+          if (ok('poll')) item(ctx, 'poll', Icons.poll_rounded, ctx.tr('Sondage'), ctx.tr('Le public vote en direct')),
+          if (ok('story')) item(ctx, 'story', Icons.auto_stories_rounded, ctx.tr('Conte interactif'), ctx.tr('Le public vote la suite avec des pièces')),
+          if (ok('quiz')) item(ctx, 'quiz', Icons.quiz_rounded, ctx.tr('Quiz à cagnotte'), ctx.tr('Gratuit pour jouer, cagnotte offerte par toi')),
+          if (ok('clips')) item(ctx, 'clips', Icons.movie_filter_rounded, ctx.tr('Clips rémunérés'), ctx.tr('Une prime pour les meilleurs moments')),
+          if (ok('questions')) item(ctx, 'questions', Icons.help_outline_rounded, ctx.tr('Questions du public'), ctx.tr('Lis et épingle une question')),
+          if (ok('draw')) item(ctx, 'draw', Icons.card_giftcard_rounded, ctx.tr('Tirage au sort'), ctx.tr('Mets des pièces en jeu')),
+          if (gameActive) item(ctx, 'end', Icons.stop_circle_rounded, ctx.tr('Arrêter et retirer le jeu'), ctx.tr('Il disparaît de l\'écran, il reste dans l\'historique')),
           const SizedBox(height: 12),
         ]),
       ),
@@ -645,6 +690,142 @@ class LiveQuizHistorySheet extends StatelessWidget {
         if (isMineWrong) const Icon(Icons.cancel_rounded, color: Color(0xFFFF8A80), size: 18),
         if (i == mine && isCorrect) Padding(padding: const EdgeInsets.only(left: 6), child: Text(ctx.tr('ta réponse'), style: const TextStyle(color: Color(0xFF69F0AE), fontSize: 10.5))),
         if (isMineWrong) Padding(padding: const EdgeInsets.only(left: 6), child: Text(ctx.tr('ta réponse'), style: const TextStyle(color: Color(0xFFFF8A80), fontSize: 10.5))),
+      ]),
+    );
+  }
+}
+
+/// Historique de TOUS les jeux du live (duel, défi, sondage, conte, quiz), le plus récent d'abord : résultat, gagnant, pièces reçues par chaque présentateur.
+/// Les gains d'un duel ou d'un défi sont les cadeaux reçus (70 %), versés sur le compte « pièces gagnées » de CHAQUE présentateur ; le gagnant n'a pas de lot en plus.
+class LiveGamesHistorySheet extends StatelessWidget {
+  const LiveGamesHistorySheet({super.key, required this.future, this.onQuiz});
+  final Future<List<Map<String, dynamic>>> future;
+
+  /// Ouvre les questions et réponses du quiz (feuille dédiée).
+  final VoidCallback? onQuiz;
+
+  static String _time(String? iso) {
+    final d = DateTime.tryParse(iso ?? '')?.toLocal();
+    if (d == null) return '';
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(d.hour)}:${two(d.minute)}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * .78,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFF26223A), Color(0xFF15121F)]),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      child: Column(children: [
+        const SizedBox(height: 8),
+        Container(width: 38, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(99))),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 8, 4),
+          child: Row(children: [
+            Expanded(child: Text(context.tr('Historique des jeux'), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800))),
+            IconButton(icon: const Icon(Icons.close_rounded, color: Colors.white54), onPressed: () => Navigator.pop(context)),
+          ]),
+        ),
+        Expanded(
+          child: FutureBuilder<List<Map<String, dynamic>>>(
+            future: future,
+            builder: (ctx, snap) {
+              if (snap.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator(color: _amber));
+              final items = snap.data ?? const [];
+              if (snap.hasError || items.isEmpty) {
+                return Center(child: Padding(padding: const EdgeInsets.all(32), child: Text(snap.hasError ? ctx.tr('Historique indisponible pour le moment.') : ctx.tr('Aucun jeu pour l\'instant dans ce live.'), textAlign: TextAlign.center, style: const TextStyle(color: Colors.white60, height: 1.4))));
+              }
+              return ListView(padding: const EdgeInsets.fromLTRB(16, 4, 16, 24), children: [for (final g in items) _card(ctx, LiveGame(g))]);
+            },
+          ),
+        ),
+      ]),
+    );
+  }
+
+  static String _title(BuildContext c, LiveGame g) => switch (g.kind) {
+        'duel' => c.tr('Duel'),
+        'challenge' => c.tr('Défi à plusieurs'),
+        'poll' => c.tr('Sondage'),
+        'story' => c.tr('Conte interactif'),
+        'quiz' => c.tr('Quiz'),
+        'draw' => c.tr('Tirage au sort'),
+        _ => c.tr('Jeu'),
+      };
+
+  Widget _card(BuildContext ctx, LiveGame g) {
+    final started = _time(g.raw['started_at'] as String?);
+    final status = g.active ? ctx.tr('en cours') : ctx.tr('terminé');
+    final lines = <Widget>[];
+    if (g.isMatch) {
+      final ps = g.players;
+      final w = g.winnerId;
+      if (!g.active) {
+        lines.add(Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: Text(w == null ? ctx.tr('Égalité : pas de gagnant') : '🏆 ${ctx.tr('Gagnant')} : @${ps.where((p) => p.id == w).map((p) => p.username).firstOrNull ?? ''}', style: const TextStyle(color: Color(0xFF69F0AE), fontWeight: FontWeight.w800, fontSize: 13.5)),
+        ));
+      }
+      for (final p in ps) {
+        final e = g.earnedOf(p.id);
+        lines.add(Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Row(children: [
+            StageAvatarMini(user: p),
+            const SizedBox(width: 8),
+            Expanded(child: Text('@${p.username}${p.id == w ? ' 🏆' : ''}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13))),
+            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Text('${CoinCheckout.fmt(g.score(p.id))} ${ctx.tr('pcs reçues en cadeaux')}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
+              Text('+${CoinCheckout.fmt(e.earned)} ${ctx.tr('sur son compte')}', style: const TextStyle(color: _amber, fontSize: 11, fontWeight: FontWeight.w800)),
+            ]),
+          ]),
+        ));
+        final tg = g.topGiversOf(p.id);
+        if (tg.isNotEmpty) {
+          lines.add(Padding(
+            padding: const EdgeInsets.only(top: 2, left: 36),
+            child: Text(ctx.tr('Meilleurs donateurs') + ' : ' + [for (var i = 0; i < tg.length && i < 3; i++) '${['🥇', '🥈', '🥉'][i]} @${tg[i].username} ${CoinCheckout.fmt(tg[i].coins)}'].join('  '), style: const TextStyle(color: Color(0xFFFFD27A), fontSize: 10.5)),
+          ));
+        }
+      }
+      lines.add(Padding(padding: const EdgeInsets.only(top: 8), child: Text(ctx.tr('Chaque présentateur reçoit 70 % des cadeaux qui lui sont envoyés, sur son propre compte (pièces gagnées). Le gagnant n\'a pas de lot en plus.'), style: const TextStyle(color: Colors.white38, fontSize: 10.5, height: 1.3))));
+    } else if (g.kind == 'draw') {
+      final res = (g.raw['result'] as Map?) ?? const {};
+      final w = (g.raw['winner'] as Map?)?['username'];
+      lines.add(Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: Text('🎉 @${w ?? ''} ${ctx.tr('gagne')} ${CoinCheckout.fmt((res['coins'] as num?)?.toInt() ?? 0)} ${ctx.tr('pièces')}', style: const TextStyle(color: Color(0xFF69F0AE), fontWeight: FontWeight.w800, fontSize: 13)),
+      ));
+      lines.add(Padding(
+        padding: const EdgeInsets.only(top: 3),
+        child: Text('${ctx.tr('Tiré au sort parmi')} ${(res['candidates'] as num?)?.toInt() ?? 0} ${ctx.tr('personnes')} · ${ctx.tr('lot mis en jeu par l\'hôte')} : ${CoinCheckout.fmt((res['staked'] as num?)?.toInt() ?? 0)} ${ctx.tr('pièces')}', style: const TextStyle(color: Colors.white54, fontSize: 11)),
+      ));
+    } else if (g.kind == 'poll' || g.kind == 'story') {
+      final votes = g.votes;
+      final opts = g.options;
+      final total = votes.fold<int>(0, (a, b) => a + b);
+      for (var i = 0; i < opts.length; i++) {
+        final v = i < votes.length ? votes[i] : 0;
+        final win = !g.active && g.winnerOption == i;
+        lines.add(Padding(padding: const EdgeInsets.only(top: 4), child: Text('${win ? '✅ ' : ''}${opts[i]} · $v ${g.kind == 'story' ? ctx.tr('pièces') : ctx.tr('voix')}${total > 0 ? ' (${(v * 100 / total).round()} %)' : ''}', style: TextStyle(color: win ? const Color(0xFF69F0AE) : Colors.white70, fontSize: 12.5, fontWeight: win ? FontWeight.w800 : FontWeight.w500))));
+      }
+      if (g.question.isNotEmpty) lines.insert(0, Text(g.question, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13.5)));
+    } else if (g.kind == 'quiz') {
+      for (final w in g.winners.cast<Map>()) {
+        lines.add(Padding(padding: const EdgeInsets.only(top: 4), child: Text('${['🥇', '🥈', '🥉'][((w['rank'] as num?)?.toInt() ?? 1).clamp(1, 3) - 1]} @${w['username'] ?? ''} · +${w['coins']} ${ctx.tr('pièces')}', style: const TextStyle(color: Colors.white, fontSize: 12.5))));
+      }
+      if (onQuiz != null) lines.add(Align(alignment: Alignment.centerLeft, child: TextButton(onPressed: onQuiz, child: Text(ctx.tr('Voir les questions et les réponses')))));
+    }
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(color: Colors.white.withOpacity(.06), borderRadius: BorderRadius.circular(20)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('${_title(ctx, g)} · $started · $status', style: const TextStyle(color: _yellow, fontWeight: FontWeight.w800, fontSize: 13)),
+        ...lines,
       ]),
     );
   }

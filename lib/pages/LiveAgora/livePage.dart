@@ -10,6 +10,7 @@ import 'package:afrotok/services/api/live_stage.dart';
 import 'live_stage_ui.dart';
 import 'live_report_page.dart';
 import 'live_game_ui.dart';
+import 'live_caps.dart';
 import 'live_market_ui.dart';
 import 'live_clips_page.dart';
 import 'package:afrotok/services/api/users_api.dart';
@@ -144,6 +145,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   int _likeCount = 0;
   // ── Musique du live (piste gratuite d'Afrolook jouée chez chaque spectateur, sans passer par Agora ; elle s'arrête quand la personne quitte le live) ──
   ap.AudioPlayer? _musicPlayer;
+  ap.AudioPlayer? _previewPlayer;   // écoute d'un extrait par l'hôte avant de choisir (jamais envoyé aux spectateurs)
+  String? _previewId;
   Map<String, dynamic>? _music;
   String? _musicKey;
   int _musicGen = 0;
@@ -155,6 +158,12 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   String _pinLayout = 'side';   // side (image à côté du texte) | below (image en dessous)
   String? _pinnedTextDoc;
   bool _pinnedTextFromDoc = false;
+
+  int _gamesCount = 0;   // jeux déjà faits dans ce live (le bouton « Historique des jeux » reste là même quand l'hôte a retiré le jeu de l'écran)
+  final Set<String> _closedGames = {};   // jeux terminés que cette personne a fermés (le résultat reste à l'écran jusqu'au prochain jeu, sauf si on le ferme)
+  final Set<int> _speakingUids = {};   // numéros Agora dont la voix s'entend (0 = moi) : animation sur les vignettes de la scène
+  bool _hostMutedMe = false;           // l'hôte a coupé mon micro : je ne peux pas le rétablir moi-même
+  final Set<int> _remoteVideoOn = {};   // numéros Agora dont la vidéo arrive vraiment (décodée) : sinon la tuile montre l'avatar, jamais un simple fond noir
 
   List<String> _recentGiftIds = [];   // cadeaux envoyés récemment par cette personne (affichés en premier dans le panneau), gardés sur le téléphone
   int _lastLikeCount = -1;                  // dernier compteur lu sur le live : une hausse = des cœurs à montrer
@@ -659,6 +668,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       setState(() {
         _game = r['game'] is Map ? LiveGame(Map<String, dynamic>.from(r['game'] as Map)) : null;
         _goal = r['goal'] is Map ? Map<String, dynamic>.from(r['goal'] as Map) : null;
+        _gamesCount = (r['games_count'] as num?)?.toInt() ?? _gamesCount;
         if (_game?.isMatch == true && (_giftTarget == null || !_game!.players.any((p) => p.id == _giftTarget))) _giftTarget = _game!.players.isNotEmpty ? _game!.players.first.id : null;
         if (_game == null) _giftTarget = null;
       });
@@ -689,19 +699,13 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     final g = _game;
     final t = widget.postLive.typeSession;
     if (g == null && _isMarket && _market != null) {
-      return Positioned(
-        top: _gameTop,
-        left: 16,
-        right: _gameRight,
+      return _flowed(
         child: LiveMarketPanel(state: _market!, isHost: widget.isHost, onBook: _marketBook, onCancel: () => _marketCall(() => LivesApi.marketCancel(widget.liveId)), onReady: _marketReady, onNext: () => _marketCall(() => LivesApi.marketNext(widget.liveId))),
       );
     }
     if (g == null && widget.isHost && (t == 'duel' || t == 'challenge' || t == 'story' || t == 'quiz')) {
       // duel ou défi choisi au lancement : en attendant les présentateurs, une aide courte
-      return Positioned(
-        top: _gameTop,
-        left: 16,
-        right: _gameRight,
+      return _flowed(
         child: GestureDetector(
           onTap: () => _openGames(t),
           child: Container(
@@ -722,11 +726,9 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       );
     }
     if (g == null) return const SizedBox.shrink();
-    return Positioned(
-      top: _gameTop,
-      left: 16,
-      right: _gameRight,
-      child: LiveGameCard(
+    if (!g.active && _closedGames.contains(g.id)) return const SizedBox.shrink();
+    return _flowed(
+      child: Stack(clipBehavior: Clip.none, children: [LiveGameCard(
         game: g,
         isHost: widget.isHost,
         target: _giftTarget,
@@ -735,6 +737,17 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         onStoryVote: _storyVote,
         onAnswer: _quizAnswer,
       ),
+        // croix : l'hôte arrête le jeu et le retire de l'écran de tout le monde ; chaque spectateur peut fermer un jeu terminé chez lui (il reste dans l'historique)
+        if (!g.active || widget.isHost)
+          Positioned(
+            top: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: () => widget.isHost ? _dismissGame(g) : setState(() => _closedGames.add(g.id)),
+              child: Container(width: 24, height: 24, decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle), child: const Icon(Icons.close_rounded, color: Colors.white70, size: 15)),
+            ),
+          ),
+      ]),
     );
   }
 
@@ -847,7 +860,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   /// Menu « Jeux du live » de l'hôte.
   Future<void> _openGames([String? only]) async {
     final direct = {'duel', 'challenge', 'story', 'quiz'}.contains(only) ? only : null;   // type choisi à la création : on va droit au jeu
-    final k = direct ?? await showGamesMenu(context, hasStageGuests: _stage.videoSpeakers.isNotEmpty, gameActive: _game?.active == true);
+    final k = direct ?? await showGamesMenu(context, hasStageGuests: _stage.videoSpeakers.isNotEmpty, gameActive: _game?.active == true, allowed: _caps.games);
     if (k == null || !mounted) return;
     try {
       switch (k) {
@@ -914,7 +927,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           await _showQuestions();
           break;
         case 'end':
-          await LivesApi.gameEnd(widget.liveId);
+          await LivesApi.gameDismiss(widget.liveId);   // arrête le jeu et le retire de l'écran de tous (reste dans l'historique)
+          if (_game != null) _closedGames.add(_game!.id);
           break;
       }
     } on ApiException catch (e) {
@@ -926,6 +940,32 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         }
       }
     } catch (_) {}
+    await _pollGame();
+  }
+
+  /// L'hôte arrête le jeu (s'il tourne encore) et le retire de l'écran de tout le monde ; il reste dans l'historique des jeux.
+  Future<void> _dismissGame(LiveGame g) async {
+    if (g.active) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(ctx.tr('Arrêter ce jeu ?')),
+          content: Text(ctx.tr('Le jeu s\'arrête et disparaît de l\'écran de tout le monde. Tu le retrouves dans l\'historique des jeux.')),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(ctx.tr('Garder'))),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(ctx.tr('Arrêter et retirer'))),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
+    try {
+      await LivesApi.gameDismiss(widget.liveId);
+    } on ApiException catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      return;
+    } catch (_) {}
+    if (mounted) setState(() => _closedGames.add(g.id));
     await _pollGame();
   }
 
@@ -945,7 +985,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       backgroundColor: const Color(0xFF1A1A1A),
       builder: (ctx) => SafeArea(
         child: qs.isEmpty
-            ? Padding(padding: const EdgeInsets.all(24), child: Text(ctx.tr('Aucune question pour le moment.'), style: const TextStyle(color: Colors.white70)))
+            ? Padding(padding: const EdgeInsets.all(24), child: Text(ctx.tr('Aucune question pour le moment. Les spectateurs posent leur question avec le bouton « ? » à droite de leur écran ; elle apparaît ici et tu peux l\'épingler.'), style: const TextStyle(color: Colors.white70, height: 1.4)))
             : ListView(shrinkWrap: true, children: [
                 for (final q in qs)
                   ListTile(
@@ -1024,6 +1064,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     } else if (!st.onStage && _onStageApi) {
       await _stepDown();
     }
+    final mineNow = st.speakers.where((s) => s.user.id == me);
+    if (mineNow.isNotEmpty && _onStageApi) await _applyHostMute(mineNow.first.hostMuted);
     final inv = st.mine;
     if (inv != null && inv.isInvite && _seenInvites.add(inv.id)) _askInvite(inv);
   }
@@ -1058,6 +1100,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     _stageBusy = true;
     try {
       _onStageApi = false;
+      _hostMutedMe = false;
+      _isMicrophoneMuted = false;
       if (mounted) setState(() => _isParticipant = _participants.contains(ApiIdentity.myId));
       await _reinitializeAgora();
     } catch (e) {
@@ -1173,28 +1217,74 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     await _pollStage();
   }
 
+  /// Personnes de la scène dont la voix s'entend maintenant (mon propre micro compte seulement s'il n'est pas coupé).
+  Set<String> _speakingUserIds() {
+    final me = ApiIdentity.myId;
+    return {
+      for (final s in _stage.speakers)
+        if ((s.user.id == me && _speakingUids.contains(0) && !_isMicrophoneMuted) || (s.agoraUid != null && _speakingUids.contains(s.agoraUid))) s.user.id,
+    };
+  }
+
+  /// L'hôte coupe ou rétablit le micro d'une personne sur scène : son application coupe son micro, plus personne ne l'entend.
+  Future<void> _muteOnStage(StageSpeaker s) async {
+    final mute = !s.hostMuted;
+    try {
+      await LivesApi.stageMute(widget.liveId, s.user.id, mute);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(mute ? context.tr('Micro de @{u} coupé.', {'u': s.user.username}) : context.tr('Micro de @{u} rétabli.', {'u': s.user.username}))));
+    } on ApiException catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (_) {}
+    await _pollStage();
+  }
+
+  /// L'hôte a coupé (ou rétabli) mon micro : je le coupe ici, et je ne peux le rétablir moi-même que lorsqu'il l'autorise.
+  Future<void> _applyHostMute(bool muted) async {
+    if (muted == _hostMutedMe) return;
+    _hostMutedMe = muted;
+    try {
+      if (_isInitialized) await _engine.muteLocalAudioStream(muted);
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() => _isMicrophoneMuted = muted);
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(muted ? context.tr('L\'hôte a coupé ton micro.') : context.tr('L\'hôte a rétabli ton micro.'))));
+  }
+
   /// Vignette d'une personne sur scène : sa propre vidéo reste dans l'aperçu en bas ; celle d'un autre vient du flux Agora de son numéro.
   Widget? _stageVideoTile(StageSpeaker s) {
-    if (s.user.id == ApiIdentity.myId) return null;
+    // avatar derrière la vidéo : visible tant que les images n'arrivent pas (caméra coupée, connexion en cours), à la place d'un fond noir
+    Widget avatar() => Center(child: StageAvatar(user: s.user, size: 46));
+    if (s.user.id == ApiIdentity.myId) {
+      // ma propre vignette : mon aperçu local (le même flux que la petite fenêtre du bas)
+      if (!_isInitialized || _noCam || (!widget.isHost && _myStageMedia != 'video')) return avatar();
+      return Stack(fit: StackFit.expand, children: [
+        avatar(),
+        AgoraVideoView(controller: VideoViewController(rtcEngine: _engine, canvas: const VideoCanvas(uid: 0), useFlutterTexture: true, useAndroidSurfaceView: false)),
+      ]);
+    }
     final uid = s.agoraUid;
-    if (uid == null || !_remoteUids.contains(uid) || !_isInitialized || _ticketAudioOnly) return null;
-    return AgoraVideoView(
-      controller: VideoViewController.remote(rtcEngine: _engine, canvas: VideoCanvas(uid: uid), connection: RtcConnection(channelId: widget.liveId), useFlutterTexture: true, useAndroidSurfaceView: false),
-    );
+    if (uid == null || !_remoteUids.contains(uid) || !_isInitialized || _ticketAudioOnly) return avatar();
+    return Stack(fit: StackFit.expand, children: [
+      avatar(),
+      AgoraVideoView(
+        key: ValueKey('stage_$uid'),
+        controller: VideoViewController.remote(rtcEngine: _engine, canvas: VideoCanvas(uid: uid), connection: RtcConnection(channelId: widget.liveId), useFlutterTexture: true, useAndroidSurfaceView: false),
+      ),
+      if (!_remoteVideoOn.contains(uid)) const Positioned(top: 4, left: 4, child: Icon(Icons.videocam_off_rounded, color: Colors.white54, size: 15)),
+    ]);
   }
 
   /// La scène : bande des invités en vidéo, avatars des invités en audio, places (maquette « La scène à plusieurs »).
   Widget _buildStageStrip() {
     if (_stage.speakers.isEmpty || widget.postLive.audioOnly) return const SizedBox.shrink();
-    return Positioned(
-      left: 16,
-      right: 16,
-      top: MediaQuery.of(context).padding.top + (_game != null ? 360 : (_isMarket ? 380 : 272)),
+    return _flowed(
       child: LiveStageStrip(
         stage: _stage,
         isHost: widget.isHost,
         myUserId: ApiIdentity.myId,
         videoTile: _stageVideoTile,
+        speaking: _speakingUserIds(),
+        onMute: widget.isHost ? _muteOnStage : null,
         onRemove: (s) => _removeFromStage(s.user.id),
         onFreeSlot: () {
           setState(() => _showUsersPanel = true);
@@ -1802,8 +1892,24 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           onCameraReady: () {
             printVm("📷 Caméra prête");
           },
+          onAudioVolumeIndication: (connection, speakers, speakerNumber, totalVolume) {
+            if (!mounted) return;
+            final now = <int>{for (final s in speakers) if ((s.volume ?? 0) > 25) (s.uid ?? 0)};
+            if (now.length == _speakingUids.length && now.containsAll(_speakingUids)) return;
+            setState(() => _speakingUids
+              ..clear()
+              ..addAll(now));
+          },
           onRemoteVideoStateChanged: (connection, remoteUid, state, reason, elapsed) {
-            printVm("📹 État vidéo UID $remoteUid: $state");
+            printVm("📹 État vidéo UID $remoteUid: $state ($reason)");
+            if (!mounted) return;
+            setState(() {
+              if (state == RemoteVideoState.remoteVideoStateDecoding) {
+                _remoteVideoOn.add(remoteUid);
+              } else if (state == RemoteVideoState.remoteVideoStateStopped || state == RemoteVideoState.remoteVideoStateFailed) {
+                _remoteVideoOn.remove(remoteUid);
+              }
+            });
           },
         ),
       );
@@ -1813,6 +1919,10 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       } else {
         await _engine.enableVideo();
       }
+      // qui parle : le moteur signale le volume de chaque voix (animation sur les vignettes, pour l'hôte comme pour tous)
+      try {
+        await _engine.enableAudioVolumeIndication(interval: 400, smooth: 3, reportVad: true);
+      } catch (_) {}
       printVm("Live premium : ${widget.postLive.toMap()}");
       printVm("Live premium : ${_isLivePremium}");
 
@@ -1930,7 +2040,15 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           //   printVm("🔍 Zone de focus caméra changée");
           // },
           onRemoteVideoStateChanged: (connection, remoteUid, state, reason, elapsed) {
-            printVm("📹 État vidéo UID $remoteUid: $state");
+            printVm("📹 État vidéo UID $remoteUid: $state ($reason)");
+            if (!mounted) return;
+            setState(() {
+              if (state == RemoteVideoState.remoteVideoStateDecoding) {
+                _remoteVideoOn.add(remoteUid);
+              } else if (state == RemoteVideoState.remoteVideoStateStopped || state == RemoteVideoState.remoteVideoStateFailed) {
+                _remoteVideoOn.remove(remoteUid);
+              }
+            });
           },
         ),
       );
@@ -2131,6 +2249,10 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       _isMicrophoneMuted ? tr("activer le micro") : tr("désactiver le micro"),
           () async {
         if (!(widget.isHost || _isParticipant)) return;
+        if (!widget.isHost && _hostMutedMe && _isMicrophoneMuted) {
+          if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('L\'hôte a coupé ton micro : demande-lui de le rétablir.'))));
+          return;
+        }
 
         try {
           await _engine.muteLocalAudioStream(!_isMicrophoneMuted);
@@ -2813,11 +2935,22 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
   Future<void> _reinitializeAgora() async {
     try {
+      // les vues vidéo (aperçu de l'invité, vignettes) sont retirées AVANT de libérer le moteur, puis recréées sur le nouveau : sinon elles restent liées à l'ancien et l'aperçu reste vide
+      if (mounted) {
+        setState(() {
+          _isInitialized = false;
+          _remoteVideoOn.clear();
+          _speakingUids.clear();
+        });
+      }
       _remoteUids.clear();
       _remoteUid = null;
       if (!_noCam) await _engine.leaveChannel();
       if (!_noCam) await _engine.release();
       await _initAgora();
+      // mon micro reste coupé si l'hôte l'a coupé
+      _isMicrophoneMuted = _hostMutedMe;
+      if (_hostMutedMe && _isInitialized) await _engine.muteLocalAudioStream(true);
     } catch (e) {
       printVm("❌ Erreur réinitialisation Agora: $e");
     }
@@ -3143,6 +3276,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   bool get _hasPinImage => (_pinnedImageUrl ?? '').isNotEmpty;
   bool get _pinRight => _pinPlace == 'right';
   bool get _isQuizLive => widget.postLive.typeSession == 'quiz' || _game?.kind == 'quiz';
+  bool get _hasGames => const {'duel', 'challenge', 'quiz', 'story'}.contains(widget.postLive.typeSession) || _game != null || _gamesCount > 0;
 
   /// Hauteur des épingles placées à GAUCHE : la carte de jeu descend d'autant, elle ne passe jamais dessous (ni dessus).
   double get _leftPinHeight {
@@ -3154,12 +3288,94 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     return t ? 58 : 78;
   }
 
-  double get _gameTop {
-    final base = MediaQuery.of(context).padding.top + 180;
-    final h = _leftPinHeight;
-    if (h <= 0) return base;
-    final extra = 136 + h - 180 + 8;
-    return base + (extra > 0 ? extra : 0);
+  /// Ce que chaque type de live peut montrer et utiliser (vitrine, étals, jeux autorisés) : une seule règle, jamais de bloc en trop.
+  LiveCaps get _caps => LiveCaps.of(widget.postLive.typeSession, audioOnly: widget.postLive.audioOnly, noCamera: _noCam);
+
+  /// Les blocs du haut de l'écran sont rangés dans UNE colonne (`_buildTopStack`) : chacun prend la place sous le précédent, sans jamais se superposer.
+  /// Cette fonction rend le bloc tel quel (les anciens positionnements sont ignorés).
+  Widget _flowed({double? top, double? left, double? right, required Widget child}) => child;
+
+  /// Haut de la colonne : sous les pièces reçues, et sous la barre d'objectif quand il y en a une.
+  double get _stackTop => MediaQuery.of(context).padding.top + (_goal != null ? 188 : 136);
+
+  double _topStackH = 0;
+  final GlobalKey _topStackKey = GlobalKey();
+  final ValueNotifier<bool> _topScrolled = ValueNotifier<bool>(false);
+  late final ScrollController _topScroll = ScrollController()
+    ..addListener(() {
+      final on = _topScroll.hasClients && _topScroll.offset > 12;
+      if (on != _topScrolled.value) _topScrolled.value = on;
+    });
+
+  /// Petit résumé collé en haut de la colonne dès qu'on a défilé : une ligne, juste le nécessaire (jeu en cours, étals, scène) ; un toucher remonte en haut.
+  Widget _stickySummary() {
+    final parts = <String>[];
+    final g = _game;
+    if (g != null && g.active) {
+      parts.add(switch (g.kind) { 'duel' => tr('Duel'), 'challenge' => tr('Défi'), 'quiz' => tr('Quiz'), 'poll' => tr('Sondage'), 'story' => tr('Conte'), _ => tr('Jeu') } + ' ' + tr('en cours'));
+    }
+    if (_isMarket && _market != null) {
+      final stalls = ((_market!['stalls'] as List?) ?? const []).whereType<Map>().toList();
+      final live = stalls.where((s) => s['status'] == 'active').toList();
+      final who = live.isEmpty ? '' : '@${(live.first['vendor'] as Map?)?['username'] ?? ''}';
+      parts.add(live.isEmpty ? tr('Étals : {n} vendeur(s)', {'n': stalls.length}) : tr('En vente : {w}', {'w': who}));
+    }
+    if (_stage.speakers.isNotEmpty) parts.add(tr('{n} sur scène', {'n': _stage.speakers.length}));
+    return GestureDetector(
+      key: const ValueKey('top_sticky_summary'),
+      onTap: () => _topScroll.animateTo(0, duration: const Duration(milliseconds: 260), curve: Curves.easeOut),
+      child: Container(
+        height: 28,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(color: Colors.black.withOpacity(0.78), borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFFF9A825).withOpacity(0.5))),
+        child: Row(children: [
+          const Icon(Icons.keyboard_arrow_up_rounded, color: Color(0xFFF9A825), size: 18),
+          const SizedBox(width: 4),
+          Expanded(child: Text(parts.isEmpty ? tr('Revenir en haut') : parts.join('  ·  '), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w700))),
+        ]),
+      ),
+    );
+  }
+
+  Widget _buildTopStack() {
+    final size = MediaQuery.of(context).size;
+    final footerH = MediaQuery.of(context).padding.bottom + 62 + (widget.isHost || _isParticipant ? 92 : 0) + (!widget.isHost && _gifts.isNotEmpty ? 30 : 0);
+    final maxH = size.height - _stackTop - footerH - 34 - 110;   // on garde toujours 110 px pour la discussion
+    final blocks = <Widget>[
+      _buildPinnedLeft(),
+      _buildGameCard(),
+      _buildLeaderboard(),
+      // vitrine : vente en direct (l'hôte vend) ou marché (seul le vendeur dont c'est le tour gère ses articles : l'hôte d'un marché n'est pas obligé d'être vendeur, il voit seulement ce qui est épinglé)
+      if (_caps.showcase) LivePinnedProduct(liveId: widget.liveId, isHost: _isMarket ? _isActiveVendor : (widget.isHost || _isActiveVendor), canOpen: _isMarket ? _isActiveVendor : true),
+      _buildStageStrip(),
+    ].where((w) => !(w is SizedBox && w.width == 0 && w.height == 0)).toList();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final h = _topStackKey.currentContext?.size?.height ?? 0;
+      if (mounted && (h - _topStackH).abs() > 2) setState(() => _topStackH = h);
+    });
+    if (blocks.isEmpty) {
+      if (_topStackH != 0) _topStackH = 0;
+      return const SizedBox.shrink();
+    }
+    return Positioned(
+      top: _stackTop,
+      left: 16,
+      right: _gameRight,
+      child: ConstrainedBox(
+        key: _topStackKey,
+        constraints: BoxConstraints(maxHeight: maxH < 120 ? 120 : maxH),
+        child: Stack(children: [
+          SingleChildScrollView(
+            controller: _topScroll,
+            physics: const ClampingScrollPhysics(),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+              for (final b in blocks) Padding(padding: const EdgeInsets.only(bottom: 8), child: b),
+            ]),
+          ),
+          Positioned(top: 0, left: 0, right: 0, child: ValueListenableBuilder<bool>(valueListenable: _topScrolled, builder: (_, on, __) => on ? _stickySummary() : const SizedBox.shrink())),
+        ]),
+      ),
+    );
   }
 
   /// Marge droite de la carte de jeu : plus large quand des épingles sont rangées dans la colonne de droite.
@@ -3210,16 +3426,16 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     } else {
       content = Align(alignment: Alignment.centerLeft, child: hasT ? _pinnedTextBox() : _pinnedImageBox());
     }
-    return Positioned(top: MediaQuery.of(context).padding.top + 136, left: 16, right: 64, child: content);
+    return _flowed(child: content);
   }
 
   /// Bas de la colonne de droite : historique du quiz, épingles placées à droite.
   List<Widget> _rightColumnExtras() {
     return [
-      if (_isQuizLive) ...[
+      if (_hasGames) ...[
         const SizedBox(height: 10),
         GestureDetector(
-          onTap: _openQuizHistory,
+          onTap: _openGamesHistory,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(color: Colors.black.withOpacity(0.55), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white24)),
@@ -3238,6 +3454,19 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         if (_hasPinImage) _pinnedImageBox(),
       ],
     ];
+  }
+
+  /// Historique de tous les jeux du live (résultat, gagnant, gains) ; pour un quiz, un bouton ouvre les questions et les réponses.
+  void _openGamesHistory() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => LiveGamesHistorySheet(future: LivesApi.gameResults(widget.liveId), onQuiz: () {
+        Navigator.pop(ctx);
+        _openQuizHistory();
+      }),
+    );
   }
 
   void _openQuizHistory() {
@@ -3329,6 +3558,44 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     } catch (_) {}
   }
 
+  /// Contexte audio de la musique : aucun focus audio demandé (Agora le garde pour les voix) et haut-parleur ; sans cela la lecture pouvait rester muette pendant un live.
+  static ap.AudioContext get _musicContext => ap.AudioContext(
+        android: const ap.AudioContextAndroid(contentType: ap.AndroidContentType.music, usageType: ap.AndroidUsageType.media, audioFocus: ap.AndroidAudioFocus.none),
+        iOS: ap.AudioContextIOS(category: ap.AVAudioSessionCategory.playAndRecord, options: const [ap.AVAudioSessionOptions.mixWithOthers, ap.AVAudioSessionOptions.defaultToSpeaker]),
+      );
+
+  /// Écoute d'un extrait (hôte) : un toucher lance, un second arrête ; une piste introuvable est dite clairement.
+  Future<bool> _previewTrack(String id) async {
+    try {
+      if (_previewId == id) {
+        await _previewPlayer?.stop();
+        _previewId = null;
+        return true;
+      }
+      final url = MediaCdn.url(await MusicApi.freeTrackUrl(id));
+      final p = _previewPlayer ??= ap.AudioPlayer();
+      await p.stop();
+      await p.setAudioContext(_musicContext);
+      await p.setReleaseMode(ap.ReleaseMode.stop);
+      await p.setVolume(.9);
+      await p.play(ap.UrlSource(url));
+      _previewId = id;
+      return true;
+    } catch (e) {
+      printVm('⚠️ Écoute de la musique impossible : $e');
+      _previewId = null;
+      _toast(tr('Cette musique n\'est pas disponible pour le moment.'));
+      return false;
+    }
+  }
+
+  Future<void> _stopPreview() async {
+    _previewId = null;
+    try {
+      await _previewPlayer?.stop();
+    } catch (_) {}
+  }
+
   Future<void> _stopMusic() async {
     _musicGen++;
     _musicKey = null;
@@ -3363,13 +3630,20 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       final offset = dur > 0 && elapsed > 0 ? elapsed % dur : 0;
       final p = _musicPlayer ??= ap.AudioPlayer();
       await p.stop();
+      await p.setAudioContext(_musicContext);
       await p.setReleaseMode(ap.ReleaseMode.loop);
       await p.setVolume(_musicMuted ? 0 : _musicVolume);
       if (!mounted || gen != _musicGen) return;
       await p.play(ap.UrlSource(url), position: Duration(milliseconds: offset));
-      if (!mounted || gen != _musicGen) await p.stop();
+      if (!mounted || gen != _musicGen) {
+        await p.stop();
+        return;
+      }
+      if (!widget.isHost) LivesApi.musicAck(widget.liveId, key, true).catchError((_) {});   // « j'entends la musique » : l'hôte le voit
     } catch (e) {
       printVm('⚠️ Musique du live impossible : $e');
+      if (!widget.isHost) LivesApi.musicAck(widget.liveId, key, false).catchError((_) {});
+      if (widget.isHost) _toast(tr('La musique ne peut pas être lue sur ton téléphone pour le moment.'));
     }
   }
 
@@ -3402,6 +3676,16 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
   /// Feuille de la musique : volume et sourdine pour chaque personne (son propre téléphone) ; l'hôte choisit, change ou arrête la musique.
   Future<void> _openMusicSheet() async {
+    final acks = ValueNotifier<Map<String, dynamic>?>(null);
+    Future<void> loadAcks() async {
+      if (!widget.isHost || _music == null) return;
+      try {
+        acks.value = await LivesApi.musicAcks(widget.liveId);
+      } catch (_) {}
+    }
+
+    loadAcks();
+    final poll = Timer.periodic(const Duration(seconds: 4), (_) => loadAcks());
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: const Color(0xFF1A1A2E),
@@ -3439,6 +3723,27 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                   ),
                 ]),
                 Text(ctx.tr('Le volume ne règle que ton téléphone.'), style: const TextStyle(color: Colors.white38, fontSize: 11)),
+                if (widget.isHost)
+                  ValueListenableBuilder<Map<String, dynamic>?>(
+                    valueListenable: acks,
+                    builder: (_, a, __) {
+                      final l = (a?['listening'] as num?)?.toInt() ?? 0;
+                      final f = (a?['failed'] as num?)?.toInt() ?? 0;
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Row(children: [
+                          Icon(f > 0 ? Icons.warning_amber_rounded : Icons.headphones_rounded, color: f > 0 ? const Color(0xFFFFB74D) : const Color(0xFF69F0AE), size: 16),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              a == null ? ctx.tr('Vérification de ce que les spectateurs entendent…') : '${ctx.tr('Entendue par')} $l ${ctx.tr('spectateur(s)')}${f > 0 ? ' · $f ${ctx.tr('n\'arrivent pas à la lire')}' : ''}',
+                              style: const TextStyle(color: Colors.white70, fontSize: 12),
+                            ),
+                          ),
+                        ]),
+                      );
+                    },
+                  ),
               ],
               if (widget.isHost) ...[
                 const SizedBox(height: 14),
@@ -3473,6 +3778,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         );
       }),
     );
+    poll.cancel();
+    acks.dispose();
   }
 
   Future<void> _pickMusic() async {
@@ -3483,6 +3790,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       builder: (ctx) {
         var q = '';
+        String? playingId;
         return StatefulBuilder(builder: (ctx, setSheet) {
           final list = [for (final x in kStudioTracks) if (q.isEmpty || x.title.toLowerCase().contains(q) || x.section.toLowerCase().contains(q)) x];
           return SizedBox(
@@ -3496,6 +3804,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                   onChanged: (v) => setSheet(() => q = v.trim().toLowerCase()),
                 ),
               ),
+              Padding(padding: const EdgeInsets.fromLTRB(18, 0, 18, 6), child: Align(alignment: Alignment.centerLeft, child: Text(ctx.tr('Touche ▶ pour écouter (toi seul), puis touche la ligne pour la choisir.'), style: const TextStyle(color: Colors.white38, fontSize: 11)))),
               Expanded(
                 child: ListView.builder(
                   itemCount: list.length,
@@ -3507,7 +3816,18 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                       leading: Text(x.emoji, style: const TextStyle(fontSize: 24)),
                       title: Text(x.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
                       subtitle: Text('${x.section} · $min:$sec', style: const TextStyle(color: Colors.white54, fontSize: 12)),
-                      onTap: () => Navigator.pop(ctx, x),
+                      trailing: IconButton(
+                        key: ValueKey('music_preview_${x.id}'),
+                        icon: Icon(playingId == x.id ? Icons.stop_circle_rounded : Icons.play_circle_fill_rounded, color: const Color(0xFFF9A825), size: 30),
+                        onPressed: () async {
+                          final ok = await _previewTrack(x.id);
+                          setSheet(() => playingId = ok && _previewId == x.id ? x.id : null);
+                        },
+                      ),
+                      onTap: () async {
+                        await _stopPreview();
+                        if (ctx.mounted) Navigator.pop(ctx, x);
+                      },
                     );
                   },
                 ),
@@ -3517,6 +3837,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         });
       },
     );
+    await _stopPreview();
     if (t != null) await _hostSetMusic(t);
   }
 
@@ -3527,6 +3848,12 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         await LivesApi.update(widget.liveId, {'music': null});
         await _firestore.collection('lives').doc(widget.liveId).update({'music': null});
         await _syncMusic(null);
+        return;
+      }
+      try {
+        await MusicApi.freeTrackUrl(t.id);   // on ne diffuse jamais une piste introuvable sur le stockage
+      } catch (_) {
+        _toast(tr('Cette musique n\'est pas disponible pour le moment.'));
         return;
       }
       final r = await LivesApi.update(widget.liveId, {'music': {'id': t.id, 'title': t.title, 'duration_ms': t.durationMs}});
@@ -3841,12 +4168,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       _buildHostOverlay(),
       _buildCoinsChip(),
       _buildGoalBar(),
-      _buildGameCard(),
-      _buildStageStrip(),
+      _buildTopStack(),
       _buildViewerInfo(),
-      _buildPinnedLeft(),
-      LivePinnedProduct(liveId: widget.liveId, isHost: widget.isHost || _isActiveVendor, canOpen: widget.postLive.typeSession == 'shopping' || _isMarket),   // Live Shopping : produit épinglé
-      _buildLeaderboard(),
       if (_showMessages) _buildCommentsSection(),
       _buildFooter(),
       if (_showMessages) _buildTypingIndicator(),
@@ -3893,10 +4216,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }
 
   Widget _buildLeaderboard() {
-    if (_topDonors.isEmpty || !_showCoinsInfo || _game != null) return const SizedBox.shrink();
-    return Positioned(
-      top: _gameTop + 5,
-      left: 16,
+    if (_topDonors.isEmpty || !_showCoinsInfo || _game != null || _caps.showcase) return const SizedBox.shrink();
+    return _flowed(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: _topDonors.asMap().entries.map((e) {
@@ -4030,7 +4351,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
         if ((widget.isHost || _isParticipant) && !_isScreenSharing && !widget.postLive.audioOnly && (widget.isHost || _myStageMedia == 'video'))
           Positioned(
-            bottom: 100,
+            bottom: MediaQuery.of(context).padding.bottom + 166,
             right: 16,
             child: Container(
               width: 120,
@@ -4508,8 +4829,13 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   bool _showComments = true;
 
   Widget _buildCommentsSection() {
-    final listHeight = MediaQuery.of(context).size.height * 0.30;
     final footerH = MediaQuery.of(context).padding.bottom + 62 + (widget.isHost || _isParticipant ? 92 : 0) + (!widget.isHost && _gifts.isNotEmpty ? 30 : 0);
+    var listHeight = MediaQuery.of(context).size.height * 0.30;
+    if (_topStackH > 0) {
+      // la liste des messages s'arrête sous la colonne du haut (jeu, vitrine, étals, scène) au lieu de la recouvrir
+      final room = MediaQuery.of(context).size.height - footerH - 34 - (_stackTop + _topStackH + 8);
+      listHeight = room < 70 ? 70 : (room < listHeight ? room : listHeight);
+    }
     return Positioned(
       bottom: footerH,
       left: 10,
@@ -5077,8 +5403,12 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     _noCamTick?.cancel();
     _previewVideo?.dispose();
     _musicGen++;
+    _topScroll.dispose();
+    _topScrolled.dispose();
     _musicPlayer?.stop();
     _musicPlayer?.dispose();
+    _previewPlayer?.stop();
+    _previewPlayer?.dispose();
     if (!_noCam) {
       _engine.leaveChannel();
       _engine.release();

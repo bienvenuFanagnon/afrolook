@@ -21,6 +21,8 @@ class _LiveShopAdminPageState extends State<LiveShopAdminPage> {
   bool _loading = true;
   String? _error;
   Map<String, dynamic> _stats = const {};
+  Map<String, dynamic> _overview = const {};
+  String _period = 'today';   // today | 7d | 30d
   List<Map<String, dynamic>> _disputes = const [];
   List<Map<String, dynamic>> _orders = const [];
   String _status = '';
@@ -45,9 +47,10 @@ class _LiveShopAdminPageState extends State<LiveShopAdminPage> {
         LiveShopApi.adminStats(),
         LiveShopApi.adminDisputes(),
         LiveShopApi.adminOrders(status: _status.isEmpty ? null : _status, q: _search.text.trim().isEmpty ? null : _search.text.trim()),
+        LiveShopApi.adminOverview(period: _period),
       ]);
       if (!mounted) return;
-      setState(() { _stats = r[0] as Map<String, dynamic>; _disputes = r[1] as List<Map<String, dynamic>>; _orders = r[2] as List<Map<String, dynamic>>; _loading = false; });
+      setState(() { _stats = r[0] as Map<String, dynamic>; _disputes = r[1] as List<Map<String, dynamic>>; _orders = r[2] as List<Map<String, dynamic>>; _overview = r[3] as Map<String, dynamic>; _loading = false; });
     } catch (e) {
       if (mounted) setState(() { _error = LiveShopApi.message(e); _loading = false; });
     }
@@ -89,6 +92,79 @@ class _LiveShopAdminPageState extends State<LiveShopAdminPage> {
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(LiveShopApi.message(e))));
     }
+  }
+
+  /// Vue d'ensemble unique : ventes par type, marchés et étals, gains des lives, minutes Agora.
+  Widget _overviewView(AppColors c) {
+    final o = _overview;
+    final sales = (o['sales'] as Map?)?.cast<String, dynamic>() ?? const <String, dynamic>{};
+    final market = (o['market'] as Map?)?.cast<String, dynamic>() ?? const <String, dynamic>{};
+    final agora = (o['agora'] as Map?)?.cast<String, dynamic>() ?? const <String, dynamic>{};
+    final kinds = ((sales['by_kind'] as List?) ?? const []).whereType<Map>().toList();
+    final liveCoins = ((o['live_coins'] as List?) ?? const []).whereType<Map>().toList();
+    final stalls = (market['stalls_now'] as Map?)?.cast<String, dynamic>() ?? const <String, dynamic>{};
+    int i(Object? v) => (v as num?)?.toInt() ?? 0;
+    String kindName(String k) => switch (k) { 'live' => tr('Vente en direct'), 'market' => tr('Marché (étals)'), _ => tr('Boutique (hors live)') };
+    String srcName(String k) => switch (k) {
+          'cadeaux_live' => tr('Cadeaux en live'),
+          'participation_live' => tr('Billets, frais de diffusion, places'),
+          'etals_marche' => tr('Loyers des étals'),
+          'contes_live' => tr('Contes (votes)'),
+          'tirage_live' => tr('Tirages au sort'),
+          _ => tr('Lives privés'),
+        };
+    Widget title(String t) => Padding(padding: const EdgeInsets.fromLTRB(2, 18, 2, 8), child: Text(t.toUpperCase(), style: TextStyle(color: c.textSecondary, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1)));
+    Widget box(List<Widget> kids) => Container(padding: const EdgeInsets.fromLTRB(14, 10, 14, 10), decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: c.border)), child: Column(children: kids));
+    Widget line(String k, String v, {String? sub, bool alert = false}) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 5),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(child: Text(k, style: TextStyle(color: c.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w600))),
+            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              Text(v, style: TextStyle(color: alert ? c.danger : c.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w800)),
+              if (sub != null) Text(sub, style: TextStyle(color: c.textSecondary, fontSize: 11)),
+            ]),
+          ]),
+        );
+    final used = i(agora['used_minutes']);
+    final pool = i(agora['pool_minutes']);
+    final ticket = '${agora['mode']}' == 'ticket';
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView(key: const ValueKey('hub_overview'), padding: const EdgeInsets.fromLTRB(16, 12, 16, 32), children: [
+        Wrap(spacing: 8, children: [
+          for (final p in const [('today', 'Aujourd\'hui'), ('7d', '7 jours'), ('30d', '30 jours')])
+            ChoiceChip(label: Text(tr(p.$2)), selected: _period == p.$1, onSelected: (_) { setState(() => _period = p.$1); _load(); }),
+        ]),
+        const SizedBox(height: 12),
+        Row(children: [
+          _stat(c, tr('Commission sur les ventes'), _f(i(sales['commission_xof']))),
+          const SizedBox(width: 10),
+          _stat(c, tr('Ventes passées'), _f(i(sales['sales_xof']))),
+        ]),
+        const SizedBox(height: 10),
+        Row(children: [
+          _stat(c, tr('En séquestre'), _f(i(sales['in_escrow_xof']))),
+          const SizedBox(width: 10),
+          _stat(c, tr('À valider / litiges'), '${i(sales['to_validate'])} / ${i(sales['disputes_open'])}'),
+        ]),
+        title(tr('Ventes par type')),
+        box([for (final k in kinds) line(kindName('${k['kind']}'), tr('{c} de commission', {'c': _f(i(k['commission_xof']))}), sub: tr('{n} commande(s) · {s} · {d} terminée(s)', {'n': i(k['orders']), 's': _f(i(k['sales_xof'])), 'd': i(k['completed'])}))]),
+        title(tr('Marchés et étals')),
+        box([
+          line(tr('Marchés en cours'), '${i(market['markets_live'])}'),
+          line(tr('Étals maintenant'), tr('{a} en vente · {c} appelé(s) · {b} réservé(s)', {'a': i(stalls['active']), 'c': i(stalls['calling']), 'b': i(stalls['booked'])})),
+          line(tr('Étals lancés'), '${i(market['stalls_started'])}', sub: tr('{n} vendeur(s) différent(s)', {'n': i(market['vendors'])})),
+          line(tr('Loyers payés'), tr('{n} pièces', {'n': _n.format(i(market['rent_coins']))}), sub: tr('part de l\'app : {n} pièces', {'n': _n.format(i(market['app_rent_coins']))})),
+        ]),
+        title(tr('Gains des lives (pièces)')),
+        box([for (final x in liveCoins) line(srcName('${x['source']}'), tr('{n} pièces', {'n': _n.format(i(x['coins']))}))]),
+        title(tr('Minutes Agora du mois')),
+        box([
+          line(ticket ? tr('Gratuit épuisé : billets payants') : tr('Gratuit en cours'), '${_n.format(used)} / ${_n.format(pool)} min', alert: ticket, sub: tr('Afrolook ne paie jamais au-delà du gratuit du mois')),
+          Padding(padding: const EdgeInsets.only(top: 6), child: ClipRRect(borderRadius: BorderRadius.circular(6), child: LinearProgressIndicator(minHeight: 8, value: pool == 0 ? 0 : (used / pool).clamp(0.0, 1.0), backgroundColor: c.border, color: ticket ? c.danger : c.primary))),
+        ]),
+      ]),
+    );
   }
 
   Widget _stat(AppColors c, String label, String value) => Expanded(
@@ -135,7 +211,7 @@ class _LiveShopAdminPageState extends State<LiveShopAdminPage> {
     final c = AppColors.of(context);
     final by = (_stats['orders'] is Map) ? Map<String, dynamic>.from(_stats['orders'] as Map) : const <String, dynamic>{};
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         backgroundColor: c.background,
         appBar: AppBar(
@@ -153,7 +229,7 @@ class _LiveShopAdminPageState extends State<LiveShopAdminPage> {
             labelColor: c.primary,
             unselectedLabelColor: c.textSecondary,
             indicatorColor: c.primary,
-            tabs: [Tab(text: '${tr('Litiges')} (${_disputes.length})'), Tab(text: tr('Commandes'))],
+            tabs: [Tab(text: tr('Vue d\'ensemble')), Tab(text: '${tr('Litiges')} (${_disputes.length})'), Tab(text: tr('Commandes'))],
           ),
         ),
         body: _loading
@@ -161,6 +237,7 @@ class _LiveShopAdminPageState extends State<LiveShopAdminPage> {
             : _error != null
                 ? Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(mainAxisSize: MainAxisSize.min, children: [Text(_error!, textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary)), TextButton(onPressed: _load, child: Text(tr('Réessayer')))])))
                 : TabBarView(children: [
+                    _overviewView(c),
                     RefreshIndicator(
                       onRefresh: _load,
                       child: ListView(padding: const EdgeInsets.fromLTRB(16, 12, 16, 32), children: [

@@ -6,6 +6,7 @@ import 'package:afrotok/pages/liveshop/live_shop_orders_page.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:afrotok/pages/liveshop/orders_todo.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -264,7 +265,7 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
           const SizedBox(width: 8),
           // Live Shopping : achats, ventes et négociations
           InkWell(
-            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LiveShopOrdersPage())),
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LiveShopOrdersPage())).then((_) => OrdersTodo.refresh(force: true)),
             child: Container(
               width: 36, height: 36,
               decoration: BoxDecoration(
@@ -272,7 +273,7 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: colors.border),
               ),
-              child: Icon(Icons.shopping_bag_outlined, color: colors.textSecondary, size: 18),
+              child: OrdersTodoBadge(child: Icon(Icons.shopping_bag_outlined, color: colors.textSecondary, size: 18)),
             ),
           ),
         ],

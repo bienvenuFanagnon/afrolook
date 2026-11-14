@@ -45,6 +45,12 @@ class _PromoCodesPageState extends State<PromoCodesPage> {
     bool first = false;
     String? error;
     bool busy = false;
+    String? articleId;   // null = tous mes produits
+    var articles = <Map<String, dynamic>>[];
+    try {
+      articles = await LiveShopApi.myArticles();
+    } catch (_) {}
+    if (!mounted) return;
     final ok = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -64,6 +70,17 @@ class _PromoCodesPageState extends State<PromoCodesPage> {
               TextField(controller: value, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: kind == 'percent' ? tr('Réduction (1 à 90 %)') : tr('Réduction en F'))),
               TextField(controller: max, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: tr('Nombre d\'utilisations maximal (facultatif)'))),
               TextField(controller: min, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: tr('Achat minimal en F (facultatif)'))),
+              DropdownButtonFormField<String?>(
+                key: const ValueKey('promo_article'),
+                value: articleId,
+                isExpanded: true,
+                decoration: InputDecoration(labelText: tr('S\'applique à')),
+                items: [
+                  DropdownMenuItem<String?>(value: null, child: Text(tr('Tous mes produits'))),
+                  for (final a in articles) DropdownMenuItem<String?>(value: '${a['id']}', child: Text('${a['title'] ?? a['name'] ?? ''}', overflow: TextOverflow.ellipsis)),
+                ],
+                onChanged: (v) => set(() => articleId = v),
+              ),
               SwitchListTile(contentPadding: EdgeInsets.zero, value: first, onChanged: (v) => set(() => first = v), title: Text(tr('Première commande seulement'))),
               if (error != null) Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(error!, style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w700))),
               SizedBox(
@@ -83,7 +100,7 @@ class _PromoCodesPageState extends State<PromoCodesPage> {
                           }
                           set(() { busy = true; error = null; });
                           try {
-                            await LiveShopApi.createPromo(code: code.text.trim().toUpperCase(), kind: kind, value: v, maxUses: int.tryParse(max.text.trim()), minPrice: int.tryParse(min.text.trim()), firstOrderOnly: first);
+                            await LiveShopApi.createPromo(code: code.text.trim().toUpperCase(), kind: kind, value: v, maxUses: int.tryParse(max.text.trim()), minPrice: int.tryParse(min.text.trim()), articleId: articleId, firstOrderOnly: first);
                             if (ctx.mounted) Navigator.pop(ctx, true);
                           } catch (e) {
                             set(() { busy = false; error = LiveShopApi.message(e); });
@@ -137,6 +154,7 @@ class _PromoCodesPageState extends State<PromoCodesPage> {
                             Expanded(
                               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                                 Text('${p['code']}  ·  ${_label(p)}', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 15)),
+                                Text(p['article_title'] != null ? '${tr('Produit')} : ${p['article_title']}' : tr('Tous mes produits'), style: TextStyle(color: c.primary, fontSize: 12, fontWeight: FontWeight.w700)),
                                 const SizedBox(height: 2),
                                 Text('${tr('Utilisations')} : $uses${p['first_order_only'] == true ? ' · ${tr('1re commande')}' : ''}${(p['min_price_xof'] as num? ?? 0) > 0 ? ' · ${tr('dès')} ${_n.format(p['min_price_xof'] as num)} F' : ''}', style: TextStyle(color: c.textSecondary, fontSize: 12)),
                               ]),

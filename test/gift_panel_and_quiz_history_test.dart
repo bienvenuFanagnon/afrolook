@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  jeuxTests();
   final gifts = [
     Gift(id: 'a', name: 'Rose', price: 10, icon: '🌹', color: Colors.red),
     Gift(id: 'b', name: 'Couronne', price: 50, icon: '👑', color: Colors.amber),
@@ -91,5 +92,51 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: Scaffold(body: LiveQuizHistorySheet(future: Future.value([{'status': 'active', 'questions': [], 'podium': [], 'total': 3}])))));
     await tester.pumpAndSettle();
     expect(find.textContaining('Aucune question révélée'), findsOneWidget);
+  });
+}
+
+Map<String, dynamic> _duel({required String status}) => {
+      'id': 'g1', 'kind': 'duel', 'status': status, 'config': {'players': ['u1', 'u2']}, 'started_at': '2026-11-14T12:00:00Z',
+      'players': [
+        {'id': 'u1', 'username': 'ama', 'display_name': 'Ama'},
+        {'id': 'u2', 'username': 'kofi', 'display_name': 'Kofi'},
+      ],
+      'scores': {'u1': 300, 'u2': 100},
+      'result': status == 'ended' ? {'scores': {'u1': 300, 'u2': 100}, 'winner_id': 'u1'} : null,
+      'earned': {
+        'u1': {'gifts': 2, 'coins': 300, 'earned': 210},
+        'u2': {'gifts': 1, 'coins': 100, 'earned': 70},
+      },
+    };
+
+void jeuxTests() {
+  testWidgets('duel terminé : le gagnant et les pièces reçues par chaque présentateur restent à l\'écran', (tester) async {
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: LiveGameCard(game: LiveGame(_duel(status: 'ended')), isHost: false, target: null, onTarget: (_) {}, onVote: (_) {}),
+      ),
+    ));
+    expect(find.textContaining('🏆 @ama'), findsOneWidget);
+    expect(find.textContaining('@ama : 2 cadeaux · +210'), findsOneWidget);
+    expect(find.textContaining('@kofi : 1 cadeaux · +70'), findsOneWidget);
+    expect(find.textContaining('Pas de lot en plus pour le gagnant'), findsOneWidget);
+  });
+
+  testWidgets('historique des jeux : gagnant, cadeaux reçus et part versée sur le compte de chaque présentateur', (tester) async {
+    tester.view.physicalSize = const Size(1000, 2400);
+    tester.view.devicePixelRatio = 2.5;
+    addTearDown(tester.view.reset);
+    final poll = {
+      'id': 'g2', 'kind': 'poll', 'status': 'ended', 'started_at': '2026-11-14T12:30:00Z', 'config': {'question': 'Quelle musique ?', 'options': ['Afro', 'Rumba']},
+      'votes': [3, 1], 'result': {'votes': [3, 1]},
+    };
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body: LiveGamesHistorySheet(future: Future.value([poll, _duel(status: 'ended')])))));
+    await tester.pumpAndSettle();
+    expect(find.text('Historique des jeux'), findsOneWidget);
+    expect(find.textContaining('Gagnant : @ama'), findsOneWidget);
+    expect(find.textContaining('+210'), findsOneWidget);
+    expect(find.textContaining('+70'), findsOneWidget);
+    expect(find.textContaining('Afro · 3 voix (75 %)'), findsOneWidget);
+    expect(find.textContaining('Le gagnant n\'a pas de lot en plus'), findsOneWidget);
   });
 }

@@ -80,9 +80,10 @@ class LiveShopApi {
 
   static Future<List<Map<String, dynamic>>> promos() async => _list(await _c.get('/live-shop/promos'));
 
-  static Future<Map<String, dynamic>> createPromo({required String code, required String kind, required int value, int? maxUses, int? minPrice, bool firstOrderOnly = false, DateTime? expiresAt}) async =>
+  static Future<Map<String, dynamic>> createPromo({required String code, required String kind, required int value, int? maxUses, int? minPrice, bool firstOrderOnly = false, DateTime? expiresAt, String? articleId}) async =>
       _map(await _c.post('/live-shop/promos', body: {
         'code': code, 'kind': kind, 'value': value,
+        if (articleId != null) 'article_id': articleId,
         if (maxUses != null) 'max_uses': maxUses,
         if (minPrice != null && minPrice > 0) 'min_price_xof': minPrice,
         if (firstOrderOnly) 'first_order_only': true,
@@ -98,10 +99,19 @@ class LiveShopApi {
   // ── Statistiques de vente ──
 
   /// Bilan d'un live : chiffres publics pour tout le monde, détails pour l'hôte (la réponse porte alors `received_xof`).
+  /// Commandes de ce live qui attendent encore la réponse du vendeur (pastille rouge « Commandes »).
+  static Future<int> pendingOrders(String liveId) async {
+    final m = _map(await _c.get('/live-shop/lives/$liveId/pending-orders'));
+    return ((m['pending'] as num?)?.toInt() ?? 0) + ((m['offers'] as num?)?.toInt() ?? 0);   // commandes à valider + offres à répondre
+  }
+
   static Future<Map<String, dynamic>> liveSummary(String liveId) async => _map(await _c.get('/live-shop/lives/$liveId/summary'));
 
   /// Tableau de bord du vendeur : tout ce qu'il a vendu en ligne.
   static Future<Map<String, dynamic>> sellerStats() async => _map(await _c.get('/live-shop/seller/stats'));
+
+  /// Tableau de bord de l'acheteur : argent protégé, dépenses, ce qu'il doit faire maintenant, vendeurs habituels.
+  static Future<Map<String, dynamic>> buyerStats() async => _map(await _c.get('/live-shop/buyer/stats'));
 
   // ── Administration (équipe, droit shop.manage) ──
 
@@ -111,6 +121,9 @@ class LiveShopApi {
   static Future<Map<String, dynamic>> setAdminSettings(Map<String, dynamic> body) async => _map(await _c.put('/admin/live-shop/settings', body: body));
 
   static Future<Map<String, dynamic>> adminStats() async => _map(await _c.get('/admin/live-shop/stats'));
+
+  /// Vue d'ensemble du hub admin : ventes par type, marchés et étals, gains des lives, minutes Agora. `period` : today | 7d | 30d.
+  static Future<Map<String, dynamic>> adminOverview({String period = 'today'}) async => _map(await _c.get('/admin/live-shop/overview', query: {'period': period}));
 
   static Future<List<Map<String, dynamic>>> adminDisputes() async => _list(await _c.get('/admin/live-shop/disputes'));
 
@@ -167,7 +180,12 @@ class LiveShopApi {
         if (promoCode != null && promoCode.isNotEmpty) 'promo_code': promoCode,
       }));
 
-  static Future<List<Map<String, dynamic>>> orders({String role = 'buyer'}) async => _list(await _c.get('/live-shop/orders', query: {'role': role}));
+  /// Mes commandes, une page à la fois : `group` = todo (à moi d'agir) | progress | done ; `q` = pseudo de l'autre personne.
+  static Future<List<Map<String, dynamic>>> orders({String role = 'buyer', String? group, String? status, String? q, int offset = 0, int limit = 30}) async =>
+      _list(await _c.get('/live-shop/orders', query: {'role': role, 'limit': limit, 'offset': offset, if (group != null) 'group': group, if (status != null) 'status': status, if (q != null && q.trim().isNotEmpty) 'q': q.trim()}));
+
+  /// Compteurs des pastilles rouges : {seller: {todo, progress, done}, buyer: {todo, progress, done, to_rate}}.
+  static Future<Map<String, dynamic>> orderCounts() async => _map(await _c.get('/live-shop/orders/counts'));
 
   static Future<Map<String, dynamic>> sellerValidate(String id, {int? deliveryFee}) async =>
       _map(await _c.post('/live-shop/orders/$id/seller-validate', body: {if (deliveryFee != null) 'delivery_fee_xof': deliveryFee}));

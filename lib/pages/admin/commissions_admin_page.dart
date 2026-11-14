@@ -28,6 +28,9 @@ class _CommissionsAdminPageState extends State<CommissionsAdminPage> {
     'commentaires': ('Commentaires', Icons.chat_bubble_rounded),
     'cadeaux': ('Cadeaux sur les posts', Icons.card_giftcard_rounded),
     'cadeaux_live': ('Cadeaux en live', Icons.live_tv_rounded),
+    'etals_marche': ('Loyers des étals (marché)', Icons.storefront_outlined),
+    'contes_live': ('Contes en live (votes)', Icons.auto_stories_rounded),
+    'tirage_live': ('Tirages au sort en live', Icons.card_giftcard_rounded),
     'stickers': ('Stickers', Icons.emoji_emotions_rounded),
     'quiz': ('Quiz (cœurs)', Icons.quiz_rounded),
     'defi': ('DÉFI (votes, participations)', Icons.emoji_events_rounded),
@@ -95,6 +98,7 @@ class _CommissionsAdminPageState extends State<CommissionsAdminPage> {
       final daysCount = (r['coins_by_day'] as List? ?? const []).length;
       if (!mounted) return;
       setState(() {
+        _shop = r['live_shop'] is Map ? Map<String, dynamic>.from(r['live_shop'] as Map) : null;
         _totals = totals;
         _days = daysCount;
         _salesCoins = salesCoins;
@@ -197,6 +201,13 @@ class _CommissionsAdminPageState extends State<CommissionsAdminPage> {
                 const SizedBox(height: 22),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(2, 0, 2, 8),
+                  child: Text('COMMISSIONS SUR LES VENTES EN LIGNE (FCFA)',
+                      style: TextStyle(color: c.textSecondary, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1)),
+                ),
+                _shopCard(c),
+                const SizedBox(height: 22),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(2, 0, 2, 8),
                   child: Text('VENTES DE PIÈCES',
                       style: TextStyle(color: c.textSecondary, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1)),
                 ),
@@ -206,6 +217,51 @@ class _CommissionsAdminPageState extends State<CommissionsAdminPage> {
           ),
         ),
       ),
+    );
+  }
+
+  Map<String, dynamic>? _shop;
+
+  /// Commission de l'app sur les ventes (commandes terminées des deux côtés : vente en direct, marché, boutique), pénalités gardées, argent encore en séquestre.
+  Widget _shopCard(AppColors c) {
+    final s = _shop ?? const <String, dynamic>{};
+    int i(String k) => (s[k] as num?)?.toInt() ?? 0;
+    String f(int v) => '${_n.format(v)} F';
+    final kinds = ((s['by_kind'] as List?) ?? const []).whereType<Map>().toList();
+    String name(String k) => switch (k) { 'live' => 'Vente en direct', 'market' => 'Marché (étals)', _ => 'Boutique (hors live)' };
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: _box(c),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Commission gagnée', style: TextStyle(color: c.textSecondary, fontSize: 12.5)),
+        Text(f(i('commission_xof')), key: const ValueKey('shop_commission_total'), style: TextStyle(color: c.textPrimary, fontSize: 24, fontWeight: FontWeight.w800)),
+        Text('sur ${i('orders')} commande(s) terminée(s) · ${f(i('sales_xof'))} de ventes', style: TextStyle(color: c.textSecondary, fontSize: 12)),
+        const SizedBox(height: 8),
+        for (final k in kinds)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 5),
+            child: Row(children: [
+              Expanded(child: Text(name('${k['kind']}'), style: TextStyle(color: c.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w600))),
+              Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                Text(f((k['commission_xof'] as num?)?.toInt() ?? 0), style: TextStyle(color: c.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w700)),
+                Text('${k['orders']} commande(s) · ${f((k['sales_xof'] as num?)?.toInt() ?? 0)}', style: TextStyle(color: c.textSecondary, fontSize: 11)),
+              ]),
+            ]),
+          ),
+        Divider(height: 16, color: c.border),
+        Row(children: [
+          Expanded(child: Text('Pénalités d\'annulation gardées', style: TextStyle(color: c.textSecondary, fontSize: 12.5))),
+          Text(f(i('penalties_xof')), style: TextStyle(color: c.textPrimary, fontSize: 12.5, fontWeight: FontWeight.w700)),
+        ]),
+        const SizedBox(height: 4),
+        Row(children: [
+          Expanded(child: Text('Encore en séquestre (commission pas encore acquise)', style: TextStyle(color: c.textSecondary, fontSize: 12.5))),
+          Text(f(i('in_escrow_xof')), style: TextStyle(color: c.textPrimary, fontSize: 12.5, fontWeight: FontWeight.w700)),
+        ]),
+        const SizedBox(height: 8),
+        Text('La commission est acquise quand la commande est validée des deux côtés (réception confirmée, code de livraison ou versement automatique à 7 jours). Elle est prise sur le prix payé après réduction, jamais sur la livraison.',
+            style: TextStyle(color: c.textSecondary, fontSize: 11.5, height: 1.35)),
+      ]),
     );
   }
 

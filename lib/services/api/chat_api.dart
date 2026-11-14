@@ -249,6 +249,8 @@ class LivesApi {
   static Future<void> stageDecide(String id, String requestId, {required bool accept}) => _c.post('/lives/$id/stage/requests/$requestId/${accept ? 'accept' : 'refuse'}');
   static Future<void> stageAnswerInvite(String id, String requestId, {required bool accept}) => _c.post('/lives/$id/stage/invites/$requestId/${accept ? 'accept' : 'decline'}');
   static Future<void> stageRemove(String id, String userId) => _c.delete('/lives/$id/stage/$userId');
+  /// L'hôte coupe (ou rétablit) le micro d'une personne sur scène.
+  static Future<void> stageMute(String id, String userId, bool muted) => _c.post('/lives/$id/stage/$userId/mute', body: {'muted': muted});
   static Future<void> stageUid(String id, int uid) => _c.post('/lives/$id/stage/uid', body: {'uid': uid});
 
   /// Cadeau en live (argent : clé d'idempotence conservée à chaque tentative).
@@ -260,9 +262,21 @@ class LivesApi {
   static Future<Map<String, dynamic>> game(String id) async => JeuxApi.map(await _c.get('/lives/$id/game'));
 
   /// Historique des quiz du live : questions déjà révélées (bonne réponse, ma réponse, taux de réussite) et podium.
+  /// Historique de TOUS les jeux du live (duel, défi, sondage, conte, quiz) : résultat, gagnant, pièces reçues par chaque présentateur.
+  static Future<List<Map<String, dynamic>>> gameResults(String id) async => JeuxApi.list(await _c.get('/lives/$id/game/results'));
+
   static Future<List<Map<String, dynamic>>> quizHistory(String id) async => JeuxApi.list(await _c.get('/lives/$id/game/history'));
   static Future<Map<String, dynamic>> gameStart(String id, Map<String, dynamic> body) async => JeuxApi.map(await _c.post('/lives/$id/game', body: body));
   static Future<void> gameEnd(String id) => _c.post('/lives/$id/game/end');
+
+  /// Je dis si j'entends la musique du live (`key` = `id@started_at`).
+  static Future<void> musicAck(String id, String key, bool ok) => _c.post('/lives/$id/music/ack', body: {'key': key, 'ok': ok});
+
+  /// Hôte : combien de spectateurs entendent la musique, combien n'y arrivent pas.
+  static Future<Map<String, dynamic>> musicAcks(String id) async => JeuxApi.map(await _c.get('/lives/$id/music/acks'));
+
+  /// Arrête le jeu en cours s'il y en a un et le retire de l'écran de tout le monde (il reste dans l'historique des jeux).
+  static Future<void> gameDismiss(String id) => _c.post('/lives/$id/game/dismiss');
   static Future<Map<String, dynamic>> gameVote(String id, int option) async => JeuxApi.map(await _c.post('/lives/$id/game/vote', body: {'option': option}));
 
   /// Conte interactif : chaque vote coûte 10 pièces (paiement : clé d'idempotence par vote).

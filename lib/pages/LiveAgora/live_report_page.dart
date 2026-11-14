@@ -3,6 +3,7 @@ import 'package:afrotok/services/api/chat_api.dart';
 import 'package:afrotok/services/coin_checkout.dart';
 import 'package:flutter/material.dart';
 import 'live_clips_page.dart';
+import 'live_game_ui.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// Bilan du live (maquette 15) : ce que l'hôte a gagné, les chiffres, les plus généreux, ce que les spectateurs ont payé.
@@ -37,6 +38,22 @@ class _LiveReportPageState extends State<LiveReportPage> {
     } catch (_) {
       if (mounted) setState(() => _failed = true);
     }
+  }
+
+  /// Tous les jeux faits pendant ce live (duel, défi, sondage, conte, quiz, tirage) avec leurs détails ; lisible après la fin du live.
+  void _openGamesHistory() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => LiveGamesHistorySheet(
+        future: LivesApi.gameResults(widget.liveId),
+        onQuiz: () {
+          Navigator.pop(ctx);
+          showModalBottomSheet<void>(context: context, isScrollControlled: true, backgroundColor: Colors.transparent, builder: (_) => LiveQuizHistorySheet(future: LivesApi.quizHistory(widget.liveId)));
+        },
+      ),
+    );
   }
 
   int _i(String k) => (_r?[k] as num?)?.toInt() ?? 0;
@@ -124,6 +141,14 @@ class _LiveReportPageState extends State<LiveReportPage> {
                   Row(children: [stat(tr('Durée'), _duration()), const SizedBox(width: 10), stat(tr('J\'aime'), CoinCheckout.fmt(_i('likes')))]),
                   const SizedBox(height: 10),
                   Row(children: [stat(tr('Partages'), CoinCheckout.fmt(_i('shares'))), const SizedBox(width: 10), stat(tr('Invités sur scène'), CoinCheckout.fmt(_i('stage_guests')))]),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    key: const ValueKey('report_games_history'),
+                    onPressed: _openGamesHistory,
+                    icon: const Icon(Icons.history_rounded, size: 18),
+                    label: Text(tr('Historique des jeux')),
+                    style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: const BorderSide(color: Colors.white24), minimumSize: const Size.fromHeight(46)),
+                  ),
                 ],
                 if (donors.isNotEmpty) ...[
                   const SizedBox(height: 18),

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:afrotok/l10n/tr.dart';
 import 'package:afrotok/services/api/live_stage.dart';
 import 'package:afrotok/services/coin_checkout.dart';
@@ -45,6 +47,8 @@ class LiveStageStrip extends StatelessWidget {
     required this.onRemove,
     required this.onFreeSlot,
     this.myUserId,
+    this.speaking = const {},
+    this.onMute,
   });
 
   final LiveStageState stage;
@@ -55,6 +59,12 @@ class LiveStageStrip extends StatelessWidget {
   final Widget? Function(StageSpeaker s) videoTile;
   final void Function(StageSpeaker s) onRemove;
   final VoidCallback onFreeSlot;
+
+  /// Personnes dont la voix s'entend en ce moment (animation sur leur vignette).
+  final Set<String> speaking;
+
+  /// Couper ou rétablir le micro d'une personne (l'hôte seulement ; sinon `null`).
+  final void Function(StageSpeaker s)? onMute;
 
   @override
   Widget build(BuildContext context) {
@@ -76,6 +86,9 @@ class LiveStageStrip extends StatelessWidget {
                 label: '@${s.user.username}',
                 video: videoTile(s),
                 onRemove: isHost || s.user.id == myUserId ? () => onRemove(s) : null,
+                speaking: speaking.contains(s.user.id) && !s.hostMuted,
+                muted: s.hostMuted,
+                onMute: isHost && onMute != null ? () => onMute!(s) : null,
                 color: Color(0xFF4A5D7A + (s.user.id.hashCode.abs() % 0x303030)).withOpacity(1),
               ),
               const SizedBox(width: 10),
@@ -103,9 +116,11 @@ class LiveStageStrip extends StatelessWidget {
             Text(context.tr('En audio'), style: const TextStyle(fontSize: 11, color: Colors.white70)),
             const SizedBox(width: 8),
             for (final s in audio) ...[
-              GestureDetector(
+              _AudioBubble(
+                speaker: s,
+                speaking: speaking.contains(s.user.id) && !s.hostMuted,
+                onMute: isHost && onMute != null ? () => onMute!(s) : null,
                 onLongPress: isHost || s.user.id == myUserId ? () => onRemove(s) : null,
-                child: StageAvatar(user: s.user, ring: true),
               ),
               const SizedBox(width: 8),
             ],
@@ -118,8 +133,11 @@ class LiveStageStrip extends StatelessWidget {
 }
 
 class _Tile extends StatelessWidget {
-  const _Tile({required this.label, required this.video, required this.color, this.onRemove});
+  const _Tile({required this.label, required this.video, required this.color, this.onRemove, this.speaking = false, this.muted = false, this.onMute});
 
+  final bool speaking;
+  final bool muted;
+  final VoidCallback? onMute;
   final String label;
   final Widget? video;
   final Color color;
@@ -133,7 +151,7 @@ class _Tile extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white24),
+        border: speaking ? Border.all(color: const Color(0xFF69F0AE), width: 2.5) : Border.all(color: Colors.white24),
         gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [color, const Color(0xFF1A1A1A)]),
       ),
       child: Stack(children: [
@@ -148,6 +166,28 @@ class _Tile extends StatelessWidget {
             child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
           ),
         ),
+        // micro : l'hôte peut le couper ou le rétablir (rouge = coupé) ; les autres voient seulement qu'il est coupé ; l'animation montre qui parle
+        if (onMute != null || muted || speaking)
+          Positioned(
+            left: 4,
+            top: 4,
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              if (onMute != null || muted)
+                GestureDetector(
+                  onTap: onMute,
+                  child: Container(
+                    width: 22,
+                    height: 22,
+                    decoration: BoxDecoration(color: muted ? const Color(0xFFE53935) : Colors.black54, shape: BoxShape.circle),
+                    child: Icon(muted ? Icons.mic_off_rounded : Icons.mic_rounded, color: Colors.white, size: 14),
+                  ),
+                ),
+              if (speaking) ...[
+                const SizedBox(width: 4),
+                const _SpeakingBars(),
+              ],
+            ]),
+          ),
         if (onRemove != null)
           Positioned(
             right: 4,
@@ -398,6 +438,92 @@ class LiveParticipantsPanel extends StatelessWidget {
               decoration: const BoxDecoration(border: Border(top: BorderSide(color: Colors.white12))),
               child: Text(context.tr('Un spectateur qui lève la main apparaît dans « Demandes ». « Inviter » lui envoie une invitation qu\'il accepte ou refuse.'),
                   style: const TextStyle(fontSize: 10.5, height: 1.4, color: Color(0xFF9A9A95))),
+            ),
+        ]),
+      ),
+    );
+  }
+}
+
+/// Trois barres qui bougent : la personne est en train de parler.
+class _SpeakingBars extends StatefulWidget {
+  const _SpeakingBars();
+
+  @override
+  State<_SpeakingBars> createState() => _SpeakingBarsState();
+}
+
+class _SpeakingBarsState extends State<_SpeakingBars> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 700))..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      key: const ValueKey('speaking_bars'),
+      height: 22,
+      padding: const EdgeInsets.symmetric(horizontal: 5),
+      decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(11)),
+      child: AnimatedBuilder(
+        animation: _c,
+        builder: (_, __) => Row(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.center, children: [
+          for (var i = 0; i < 3; i++) ...[
+            if (i > 0) const SizedBox(width: 2),
+            Container(width: 3, height: 5 + 10 * (0.5 + 0.5 * math.sin((_c.value * 2 * math.pi) + i * 1.7)), decoration: BoxDecoration(color: const Color(0xFF69F0AE), borderRadius: BorderRadius.circular(2))),
+          ],
+        ]),
+      ),
+    );
+  }
+}
+
+/// Invité en audio : pastille ronde, anneau vert qui bat quand il parle, bouton micro pour l'hôte (rouge = coupé).
+class _AudioBubble extends StatelessWidget {
+  const _AudioBubble({required this.speaker, required this.speaking, this.onMute, this.onLongPress});
+
+  final StageSpeaker speaker;
+  final bool speaking;
+  final VoidCallback? onMute;
+  final VoidCallback? onLongPress;
+
+  @override
+  Widget build(BuildContext context) {
+    final muted = speaker.hostMuted;
+    return GestureDetector(
+      onLongPress: onLongPress,
+      child: SizedBox(
+        width: 40,
+        height: 36,
+        child: Stack(clipBehavior: Clip.none, children: [
+          Positioned(
+            left: 3,
+            top: 2,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: speaking ? const Color(0xFF69F0AE) : Colors.transparent, width: 2.5)),
+              child: StageAvatar(user: speaker.user, ring: !speaking),
+            ),
+          ),
+          if (speaking) const Positioned(right: -6, top: 0, child: _SpeakingBars()),
+          if (onMute != null || muted)
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: GestureDetector(
+                onTap: onMute,
+                child: Container(
+                  width: 17,
+                  height: 17,
+                  decoration: BoxDecoration(color: muted ? const Color(0xFFE53935) : Colors.black87, shape: BoxShape.circle, border: Border.all(color: Colors.white24)),
+                  child: Icon(muted ? Icons.mic_off_rounded : Icons.mic_rounded, color: Colors.white, size: 11),
+                ),
+              ),
             ),
         ]),
       ),

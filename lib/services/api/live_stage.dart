@@ -20,13 +20,16 @@ class StageUser {
 }
 
 class StageSpeaker {
-  const StageSpeaker({required this.user, required this.media, this.agoraUid});
+  const StageSpeaker({required this.user, required this.media, this.agoraUid, this.hostMuted = false});
 
   final StageUser user;
 
   /// `video` (caméra et micro) ou `audio` (micro seul).
   final String media;
   final int? agoraUid;
+
+  /// L'hôte a coupé le micro de cette personne (son application le coupe, plus personne ne l'entend).
+  final bool hostMuted;
 
   bool get isVideo => media == 'video';
 }
@@ -124,7 +127,7 @@ class LiveStageState {
       speakers: [
         for (final s in (j['speakers'] as List? ?? const []))
           if (s is Map && StageUser.fromJson(s['user']) != null)
-            StageSpeaker(user: StageUser.fromJson(s['user'])!, media: '${s['media']}', agoraUid: s['agora_uid'] is num ? (s['agora_uid'] as num).toInt() : null),
+            StageSpeaker(user: StageUser.fromJson(s['user'])!, media: '${s['media']}', agoraUid: s['agora_uid'] is num ? (s['agora_uid'] as num).toInt() : null, hostMuted: s['host_muted'] == true),
       ],
       requests: [for (final r in (j['requests'] as List? ?? const [])) if (StageRequest.fromJson(r) != null) StageRequest.fromJson(r)!],
       invited: [for (final u in (j['invited'] as List? ?? const [])) '$u'],

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:afrotok/l10n/tr.dart';
 import 'package:afrotok/pages/LiveAgora/live_game_ui.dart' show clock;
+import 'package:afrotok/pages/liveshop/seller_badge.dart';
 import 'package:afrotok/services/api/live_stage.dart';
 import 'package:afrotok/services/coin_checkout.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +20,7 @@ class MarketStall {
   String get status => '${raw['status']}';
   int get rent => (raw['rent_coins'] as num?)?.toInt() ?? 0;
   StageUser? get vendor => StageUser.fromJson(raw['vendor']);
+  bool get vendorVerified => raw['vendor'] is Map && (raw['vendor'] as Map)['verified'] == true;
   DateTime? get endsAt => raw['ends_at'] is String ? DateTime.tryParse(raw['ends_at'] as String)?.toLocal() : null;
   DateTime? get callingUntil => raw['calling_until'] is String ? DateTime.tryParse(raw['calling_until'] as String)?.toLocal() : null;
   int get secondsToEnd => (endsAt?.difference(DateTime.now()).inSeconds ?? 0).clamp(0, 86400);
@@ -109,7 +111,10 @@ class _LiveMarketPanelState extends State<LiveMarketPanel> {
               const SizedBox(width: 8),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('@${s.vendor?.username ?? ''}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700)),
+                  Row(children: [
+                    Flexible(child: Text('@${s.vendor?.username ?? ''}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700))),
+                    if (s.vendorVerified) const Padding(padding: EdgeInsets.only(left: 5), child: SellerVerifiedBadge(compact: true, onDark: true)),
+                  ]),
                   Text(
                     s.status == 'active'
                         ? context.tr('{t} restantes', {'t': clock(s.secondsToEnd)})

@@ -52,6 +52,7 @@ import 'package:afrotok/pages/home/listTopModal.dart';
 
 import 'package:flutter/foundation.dart';
 
+import 'package:afrotok/pages/liveshop/orders_todo.dart';
 import 'package:flutter/material.dart';
 import 'package:afrotok/providers/postProvider.dart';
 import 'package:afrotok/services/api/canaux_api.dart';
@@ -632,7 +633,8 @@ class _MyHomePageState extends State<MyHomePage>
                       icon: Icons.shopping_bag_outlined,
                       iconColor: const Color(0xFFF9A825),
                       label: context.tr('Mes commandes'),
-                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LiveShopOrdersPage()))),
+                      trailing: const OrdersTodoPill(),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LiveShopOrdersPage())).then((_) => OrdersTodo.refresh(force: true))),
                   // Vente en direct : choisir ses articles puis passer en live (l'administration de la vente en direct est dans le hub d'administration)
                   _dItem(context, colors,
                       icon: Icons.live_tv_rounded,
@@ -2458,15 +2460,16 @@ class _MyHomePageState extends State<MyHomePage>
                       colors: colors,
                       iconColor: colors.primary,
                     ),
-                  _sidebarItem(
+                  OrdersTodoScope(builder: (_, todoOrders) => _sidebarItem(
                     context: context,
                     icon: Icons.shopping_bag_outlined,
                     label: context.tr('Mes commandes'),
-                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LiveShopOrdersPage())),
+                    onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LiveShopOrdersPage())).then((_) => OrdersTodo.refresh(force: true)),
+                    badge: todoOrders,
                     wide: wide,
                     colors: colors,
                     iconColor: colors.primary,
-                  ),
+                  )),
                   // Musique
                   _sidebarItem(
                     context: context,
