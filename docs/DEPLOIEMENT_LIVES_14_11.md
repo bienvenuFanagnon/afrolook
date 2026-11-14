@@ -2,22 +2,18 @@
 
 Ce qui est livré dans cette version (API `main` + application `main`) : correction de l'écran noir des lives, live « sans caméra » (aperçu image ou vidéo en boucle, coupure sur inactivité), live « fantôme » réparé, « j'aime » au double toucher, pubs avec bouton « Fermer », logo du filigrane. Rien n'a été déployé en production : **serveur de test seulement**.
 
-## 1. Déployer l'API sur le serveur de test
+## 1. Déployer l'API sur le serveur de test — UNE SEULE COMMANDE
 
 ```bash
 ssh root@185.170.12.250
-cd /var/www/afrolook-staging
-sudo -u deploy git fetch --all && sudo -u deploy git checkout main && sudo -u deploy git pull --ff-only origin main
-sudo -u deploy composer install --no-dev --optimize-autoloader --no-interaction
-sudo -u deploy php artisan migrate --force        # joue 2026_11_14_001000_live_no_camera (colonnes du live sans caméra)
-sudo -u deploy php artisan config:cache && sudo -u deploy php artisan route:cache && sudo -u deploy php artisan event:cache
-systemctl reload php8.3-fpm
-curl -fsSk https://api-staging.afrolookmedia.com/up && echo "API de test OK"
+cd /var/www/afrolook-staging && sudo -u deploy git pull --ff-only origin main && sudo bash deploy/deploy-test.sh
 ```
 
-Les migrations 2026_11_13_001000 à 007000 (minutes, billets, scène, jeux, marché, clips…) doivent aussi être jouées si elles ne l'ont pas encore été : `php artisan migrate --force` les prend toutes dans l'ordre.
+Les fois suivantes (le script se met à jour tout seul), une seule ligne suffit : `sudo bash /var/www/afrolook-staging/deploy/deploy-test.sh`.
 
-Pièces de test (serveur de test seulement, refuse la production) :
+Le script `deploy/deploy-test.sh` fait tout, dans l'ordre : code (branche `main`), dépendances, migrations (dont `2026_11_14_001000_live_no_camera` et les `2026_11_13_…` qui manqueraient), caches et droits, rechargement de PHP, pièces de test, puis des contrôles affichés un par un ([OK] / [ECHEC]) : l'API répond, la colonne `lives.no_camera` existe, l'arrêt automatique des lives est programmé, le cron du planificateur est en place. Il refuse de tourner sur la production. Autre branche : `sudo bash deploy/deploy-test.sh develop`.
+
+Pièces de test en plus (déjà lancées par le script, mode billet à la demande) :
 
 ```bash
 sudo bash /var/www/afrolook-staging/deploy/test-preparer.sh           # pièces de test à tous les comptes qui se connectent
