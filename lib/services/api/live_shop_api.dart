@@ -45,6 +45,10 @@ class LiveShopApi {
   static Future<List<Map<String, dynamic>>> deleteRate(int id) async => _list(await _c.delete('/live-shop/delivery-rates/$id'));
 
   /// Estimation des frais de livraison (null = « à convenir »). Elle n'est jamais ajoutée au prix : payée à la livraison.
+  /// Estimation complète : `estimate_xof`, `seller_country`, `delivery_countries`, `delivers` (true, false, ou null quand le vendeur n'a indiqué aucun tarif).
+  static Future<Map<String, dynamic>> estimateFull(String articleId, {String? country, String? city}) async =>
+      _map(await _c.get('/live-shop/articles/$articleId/delivery-estimate', query: {if (country != null) 'country': country, if (city != null && city.isNotEmpty) 'city': city}));
+
   static Future<int?> estimate(String articleId, {String? country, String? city}) async {
     final r = _map(await _c.get('/live-shop/articles/$articleId/delivery-estimate', query: {if (country != null) 'country': country, if (city != null && city.isNotEmpty) 'city': city}));
     return (r['estimate_xof'] as num?)?.toInt();

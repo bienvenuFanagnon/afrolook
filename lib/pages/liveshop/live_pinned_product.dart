@@ -425,6 +425,56 @@ class _LivePinnedProductState extends State<LivePinnedProduct> {
     }
   }
 
+  /// Drapeau d'un pays à partir de son code à 2 lettres (TG → 🇹🇬).
+  static String _flag(String code) {
+    final c = code.toUpperCase();
+    if (c.length != 2 || !RegExp(r'^[A-Z]{2}$').hasMatch(c)) return c;
+    return String.fromCharCodes(c.codeUnits.map((u) => 0x1F1E6 + u - 65));
+  }
+
+  /// Alerte à montrer : le vendeur est dans un autre pays que celui de livraison, ou il a des tarifs mais aucun vers ce pays.
+  static bool _crossBorder(String buyerCountry, String? sellerCountry, bool? delivers) {
+    final b = buyerCountry.trim().toUpperCase();
+    if (b.length != 2) return false;
+    return (sellerCountry != null && sellerCountry.length == 2 && sellerCountry != b) || delivers == false;
+  }
+
+  /// Encadré d'alerte « vendeur dans un autre pays » : ce qui peut arriver, et une case « J'ai compris » obligatoire pour commander.
+  Widget _crossBorderBox(String buyer, String? seller, bool? delivers, List<String> countries, bool ok, ValueChanged<bool> onOk) {
+    final noDelivery = delivers == false;
+    final color = noDelivery ? Colors.redAccent : Colors.orange;
+    final lines = <String>[
+      if (seller != null && seller != buyer) tr('Ce vendeur est au {s} et tu fais livrer au {b} : la livraison peut être longue, coûteuse (douane, transport) ou impossible.', {'s': '${_flag(seller)} $seller', 'b': '${_flag(buyer)} $buyer'}),
+      if (noDelivery) tr('Il n\'a indiqué aucune livraison vers {b}. Il peut refuser ta commande : tu es alors remboursé en entier.', {'b': '${_flag(buyer)} $buyer'}),
+      if (noDelivery && countries.isNotEmpty) tr('Il livre vers : {l}.', {'l': countries.map((c) => '${_flag(c)} $c').join(', ')}),
+      tr('Conseil : écris-lui avant de commander pour vérifier la livraison et son prix.'),
+    ];
+    return Container(
+      key: const ValueKey('cross_border_alert'),
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+      decoration: BoxDecoration(color: color.withOpacity(0.10), borderRadius: BorderRadius.circular(12), border: Border.all(color: color.withOpacity(0.7))),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(Icons.public_rounded, color: color, size: 18),
+          const SizedBox(width: 6),
+          Expanded(child: Text(noDelivery ? tr('Attention : livraison vers ton pays non prévue') : tr('Attention : vendeur dans un autre pays'), style: TextStyle(color: color, fontWeight: FontWeight.w800, fontSize: 13.5))),
+        ]),
+        const SizedBox(height: 4),
+        for (final l in lines) Padding(padding: const EdgeInsets.only(bottom: 4), child: Text('• $l', style: const TextStyle(fontSize: 12.5, height: 1.3))),
+        CheckboxListTile(
+          key: const ValueKey('cross_border_ok'),
+          value: ok,
+          onChanged: (v) => onOk(v ?? false),
+          dense: true,
+          contentPadding: EdgeInsets.zero,
+          controlAffinity: ListTileControlAffinity.leading,
+          title: Text(tr('J\'ai compris, je commande quand même'), style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+        ),
+      ]),
+    );
+  }
+
   Future<void> _buy(Map<String, dynamic> p) async {
     final user = Provider.of<UserAuthProvider>(context, listen: false).loginUserData;
     final country = TextEditingController(text: '${user.countryData?['countryCode'] ?? ''}'.toUpperCase());
@@ -433,6 +483,10 @@ class _LivePinnedProductState extends State<LivePinnedProduct> {
     final phone = TextEditingController(text: user.numeroDeTelephone ?? '');
     int? estimate;
     bool estimated = false;
+    String? sellerCountry;          // pays du vendeur (code à 2 lettres)
+    bool? delivers;                 // le vendeur livre vers le pays choisi ? (null : il n'a indiqué aucun tarif)
+    List<String> deliveryCountries = const [];
+    bool crossBorderOk = false;     // l'acheteur a lu et accepté l'alerte « autre pays »
     String? error;
     int? missing;   // montant manquant (FCFA) quand le solde ne suffit pas : bouton « Recharger »
     bool busy = false;
@@ -447,8 +501,14 @@ class _LivePinnedProductState extends State<LivePinnedProduct> {
 
     Future<void> refreshEstimate(StateSetter set) async {
       try {
-        final e = await LiveShopApi.estimate(articleId, country: country.text.trim(), city: city.text.trim());
-        set(() { estimate = e; estimated = true; });
+        final r = await LiveShopApi.estimateFull(articleId, country: country.text.trim(), city: city.text.trim());
+        set(() {
+          estimate = (r['estimate_xof'] as num?)?.toInt();
+          estimated = true;
+          sellerCountry = (r['seller_country'] as String?)?.toUpperCase();
+          delivers = r['delivers'] as bool?;
+          deliveryCountries = [for (final c in (r['delivery_countries'] as List? ?? const [])) '$c'.toUpperCase()];
+        });
       } catch (_) {}
     }
 
@@ -467,6 +527,11 @@ class _LivePinnedProductState extends State<LivePinnedProduct> {
         set(() => error = problem);
         return;
       }
+      // vendeur dans un autre pays, ou qui ne livre pas vers ce pays : l'acheteur doit l'avoir lu et accepté
+      if (_crossBorder(country.text, sellerCountry, delivers) && !crossBorderOk) {
+        set(() => error = tr('Lis l\'alerte sur le pays du vendeur et coche « J\'ai compris » avant de commander.'));
+        return;
+      }
       set(() { busy = true; error = null; missing = null; });
       try {
         await LiveShopApi.placeOrder(articleId: articleId, quantity: qty, country: country.text.trim().toUpperCase(), city: city.text.trim(), address: address.text.trim(), phone: phone.text.trim(), liveId: widget.liveId, promoCode: discount > 0 ? promo.text.trim() : null);
@@ -482,11 +547,17 @@ class _LivePinnedProductState extends State<LivePinnedProduct> {
 
     }
 
+    var firstLoad = true;
     final done = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, set) => Padding(
+        builder: (ctx, set) {
+          if (firstLoad) {
+            firstLoad = false;
+            WidgetsBinding.instance.addPostFrameCallback((_) => refreshEstimate(set));
+          }
+          return Padding(
           padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + MediaQuery.of(ctx).viewInsets.bottom),
           child: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -530,6 +601,7 @@ class _LivePinnedProductState extends State<LivePinnedProduct> {
                 estimated && estimate != null ? tr('Livraison estimée : {f}, payée à la livraison (le vendeur peut la modifier).', {'f': _f(estimate!)}) : tr('Livraison : à convenir, payée à la livraison.'),
                 style: const TextStyle(fontSize: 12.5),
               ),
+              if (_crossBorder(country.text, sellerCountry, delivers)) _crossBorderBox(country.text.trim().toUpperCase(), sellerCountry, delivers, deliveryCountries, crossBorderOk, (v) => set(() { crossBorderOk = v; if (v) error = null; })),
               const SizedBox(height: 4),
               Text(tr("Ton argent est protégé : le vendeur n'est payé que lorsque tu confirmes la réception. Un problème ? Tu es remboursé."), style: const TextStyle(fontSize: 12.5)),
               if (error != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(error!, style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w700))),
@@ -561,7 +633,8 @@ class _LivePinnedProductState extends State<LivePinnedProduct> {
               ),
             ]),
           ),
-        ),
+        );
+        },
       ),
     );
     if (done == true && mounted) {
