@@ -82,6 +82,11 @@ class PostLive {
   final bool ticketMode;
   final bool audioOnly;
 
+  /// Live sans caméra : aucun flux vidéo (donc pas d'Agora) ; un aperçu (image ou courte vidéo en boucle) reste à l'écran, le reste du live (commentaires, jeux, marché, cadeaux) fonctionne.
+  final bool noCamera;
+  final String? previewKind;   // 'image' ou 'video'
+  final String? previewUrl;
+
   /// L'hôte offre l'entrée : il paie les billets de ses spectateurs.
   final bool offerEntry;
 
@@ -148,6 +153,9 @@ class PostLive {
     this.typeSession = 'talk',
     this.ticketMode = false,
     this.audioOnly = false,
+    this.noCamera = false,
+    this.previewKind,
+    this.previewUrl,
     this.offerEntry = false,
   });
 
@@ -208,6 +216,9 @@ class PostLive {
       'typeSession': typeSession,
       'ticketMode': ticketMode,
       'audioOnly': audioOnly,
+      'noCamera': noCamera,
+      'previewKind': previewKind,
+      'previewUrl': previewUrl,
       'offerEntry': offerEntry,
       'coverImage': coverImage,
     };
@@ -281,6 +292,9 @@ class PostLive {
       typeSession: (map['typeSession'] as String?) ?? 'talk',
       ticketMode: map['ticketMode'] == true,
       audioOnly: map['audioOnly'] == true,
+      noCamera: map['noCamera'] == true,
+      previewKind: map['previewKind'] as String?,
+      previewUrl: map['previewUrl'] as String?,
       offerEntry: map['offerEntry'] == true,
     );
   }
@@ -347,6 +361,9 @@ class PostLive {
       typeSession: typeSession,
       ticketMode: ticketMode,
       audioOnly: audioOnly,
+      noCamera: noCamera,
+      previewKind: previewKind,
+      previewUrl: previewUrl,
       offerEntry: offerEntry,
     );
   }

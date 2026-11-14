@@ -9,6 +9,9 @@ import 'dart:io';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; // uniquement l'état en direct du live (spectateurs, commentaires), qui reste sur Firebase
 import 'package:afrotok/services/api/chat_api.dart';
+import 'package:afrotok/services/api/posts_api.dart' show UploadsApi;
+import 'package:video_compress/video_compress.dart';
+import 'package:flutter/foundation.dart' show Uint8List;
 import 'package:afrotok/services/api/lives_mapper.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:afrotok/services/api/live_shop_api.dart';
@@ -56,6 +59,16 @@ class _CreateLivePageState extends State<CreateLivePage> {
   bool _isPaidLive = false;
   late bool _isShoppingLive = widget.initialShopping;   // vente en direct (Live Shopping)
   bool _audioRoom = false;                              // salon audio : pas de vidéo, billet le moins cher
+  bool _noCamera = false;                               // live sans caméra : aucun flux vidéo, un aperçu (image ou courte vidéo en boucle) à la place
+  String? _previewKind;                                 // 'image' ou 'video'
+  String? _previewUploadId;
+  Uint8List? _previewThumb;
+  bool _previewUploading = false;
+  String? _previewError;
+
+  /// Sans caméra : discussion, marché, conte et quiz seulement (le duel, le défi, la vente et le salon audio ont besoin de vidéo ou de voix).
+  bool get _noCameraAllowed => !_isShoppingLive && !_audioRoom && const {'', 'market', 'story', 'quiz'}.contains(_game);
+  bool get _noCameraOn => _noCamera && _noCameraAllowed;
   int _marketStalls = 6;
   int _marketRent = 300;
   int _marketMinutes = 15;
@@ -1093,6 +1106,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
   static const Color _gold = Color(0xFFFFC400);
 
   Widget _buildPreviewCard() {
+    if (_noCameraOn) return _buildNoCameraPreviewCard();
     final front = _camIndex == 0;
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
@@ -1462,7 +1476,16 @@ class _CreateLivePageState extends State<CreateLivePage> {
         _row(tr('Loyer d\'un étal'), tr('Payé en pièces par le vendeur à son tour, il te revient (partage habituel des cadeaux)'), _stepper('Moins', 'Plus', '$_marketRent', _marketRent > 0 ? () => setState(() => _marketRent = (_marketRent - 50).clamp(0, 5000)) : null, _marketRent < 5000 ? () => setState(() => _marketRent = (_marketRent + 50).clamp(0, 5000)) : null)),
         _row(tr('Durée d\'un tour'), tr('Commission de vente : 10 % (déjà en place)'), _stepper('Moins', 'Plus', tr('{n} min', {'n': '$_marketMinutes'}), _marketMinutes > 5 ? () => setState(() => _marketMinutes -= 5) : null, _marketMinutes < 30 ? () => setState(() => _marketMinutes += 5) : null)),
       ],
-      if (ticket) ...[
+      if (_noCameraAllowed)
+        _row(tr('Sans caméra'), tr('Aucune vidéo : ton aperçu reste à l\'écran. Le live s\'arrête après 10 minutes sans interaction.'), _sw(_noCamera, (v) => setState(() => _noCamera = v))),
+      if (_noCameraOn)
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _previewUploading ? null : _pickPreview,
+          child: _row(tr('Aperçu'), _previewError ?? (_previewKind == null ? tr('Une image, ou une vidéo de 15 secondes en boucle') : (_previewKind == 'video' ? tr('Vidéo prête') : tr('Image prête'))),
+              _previewUploading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : Text('${_previewKind == null ? tr('Choisir') : tr('Changer')} ›', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF158246)))),
+        ),
+      if (ticket && !_noCameraOn) ...[
         _row(tr('Temps d\'essai gratuit'), tr('Avant le billet. Les minutes d\'essai sont à ta charge (environ {c} pièces par spectateur et par minute)', {'c': '${_num('trial_cost_per_minute', 3)}'}),
             _stepper('Moins', 'Plus', tr('{n} min', {'n': '$_ticketTrial'}), _ticketTrial > 0 ? () => setState(() => _ticketTrial--) : null, _ticketTrial < _num('trial_max_minutes', 3) ? () => setState(() => _ticketTrial++) : null)),
         _row(tr('Offrir l\'entrée à mes spectateurs'), tr('Je paie les billets à leur place (environ {n} pièces par minute pour 50 spectateurs)', {'n': '${_offerCostPerMinute()}'}),
@@ -1474,9 +1497,11 @@ class _CreateLivePageState extends State<CreateLivePage> {
           _row(tr('Supplément pour moi'), tr('S\'ajoute au billet, il me revient'),
               _stepper('Moins', 'Plus', _ticketExtra == 0 ? '0' : '+$_ticketExtra', _ticketExtra > 0 ? () => setState(() => _ticketExtra = (_ticketExtra - 10).clamp(0, 200)) : null, _ticketExtra < 200 ? () => setState(() => _ticketExtra = (_ticketExtra + 10).clamp(0, 200)) : null)),
       ],
+      if (!_noCameraOn) ...[
       _row(tr('Qualité HD (720p)'), canHd ? null : tr('Réservée à Gold'), _sw(_useHDQuality && canHd, canHd ? (v) => setState(() => _useHDQuality = v) : null)),
       _row(tr('Faible latence'), tr('Réactions plus rapides'), _sw(_useLowLatency && canLow, canLow ? (v) => setState(() => _useLowLatency = v) : null)),
       _row(tr('Inviter sur scène'), tr('Le prix du billet passe à {n} si tes invités sont en vidéo', {'n': '${((_minutes?['ticket_coins'] as Map?)?['stage'] ?? 110)}'}), _sw(_allowStage, (v) => setState(() => _allowStage = v))),
+      ],
       GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: _pickDisplay,
@@ -2267,6 +2292,105 @@ class _CreateLivePageState extends State<CreateLivePage> {
     );
   }
 
+  /// Choix de l'aperçu d'un live sans caméra : une image, ou une courte vidéo (15 s, compressée) qui tourne en boucle.
+  Future<void> _pickPreview() async {
+    final c = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: _c.surface,
+      builder: (ctx) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(leading: Icon(Icons.image_rounded, color: _c.textPrimary), title: Text(tr('Une image'), style: TextStyle(color: _c.textPrimary)), onTap: () => Navigator.pop(ctx, 'image')),
+          ListTile(leading: Icon(Icons.videocam_rounded, color: _c.textPrimary), title: Text(tr('Une vidéo (15 secondes, en boucle)'), style: TextStyle(color: _c.textPrimary)), onTap: () => Navigator.pop(ctx, 'video')),
+        ]),
+      ),
+    );
+    if (c == 'image') return _pickPreviewImage();
+    if (c == 'video') return _pickPreviewVideo();
+  }
+
+  Future<void> _pickPreviewImage() async {
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 80);
+    if (picked == null) return;
+    setState(() { _previewUploading = true; _previewError = null; });
+    try {
+      final shrunk = await MediaShrink.file(File(picked.path));
+      final bytes = await shrunk.readAsBytes();
+      if (bytes.length > 5 * 1024 * 1024) throw 'trop lourde';
+      final id = await ChatApi.uploadImage(bytes);
+      if (!mounted) return;
+      setState(() { _previewUploadId = id; _previewKind = 'image'; _previewThumb = bytes; });
+    } catch (_) {
+      if (mounted) setState(() { _previewError = tr('Image trop lourde ou envoi impossible, choisis-en une autre'); _previewKind = null; _previewUploadId = null; });
+    } finally {
+      if (mounted) setState(() => _previewUploading = false);
+    }
+  }
+
+  Future<void> _pickPreviewVideo() async {
+    final picked = await ImagePicker().pickVideo(source: ImageSource.gallery, maxDuration: const Duration(seconds: 15));
+    if (picked == null) return;
+    setState(() { _previewUploading = true; _previewError = null; });
+    try {
+      final src = File(picked.path);
+      // la durée est plafonnée à 15 s ; le poids à 10 Mo (le serveur refuse au-delà) : on compresse fort, sans son
+      final info = await VideoCompress.getMediaInfo(src.path);
+      if ((info.duration ?? 0) > 16000) {
+        throw tr('La vidéo dure plus de 15 secondes');
+      }
+      final small = await MediaShrink.previewVideo(src);
+      if (await small.length() > MediaShrink.previewVideoMaxBytes) throw tr('La vidéo reste trop lourde (10 Mo au plus) : choisis-en une plus courte');
+      final id = await UploadsApi.upload(small, contentType: 'video/mp4');
+      final thumb = await VideoCompress.getByteThumbnail(small.path, quality: 60);
+      // image fixe pour la liste des lives
+      if (_coverUploadId == null && thumb != null) {
+        try {
+          _coverUploadId = await ChatApi.uploadImage(thumb);
+        } catch (_) {}
+      }
+      if (!mounted) return;
+      setState(() { _previewUploadId = id; _previewKind = 'video'; _previewThumb = thumb; });
+    } catch (e) {
+      if (mounted) setState(() { _previewError = e is String ? e : tr('Vidéo impossible à envoyer, choisis-en une autre'); _previewKind = null; _previewUploadId = null; });
+    } finally {
+      if (mounted) setState(() => _previewUploading = false);
+    }
+  }
+
+  /// À la place de la caméra : l'aperçu choisi (ou une invitation à en choisir un).
+  Widget _buildNoCameraPreviewCard() {
+    return GestureDetector(
+      onTap: _previewUploading ? null : _pickPreview,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: SizedBox(
+          height: 220,
+          child: Stack(fit: StackFit.expand, children: [
+            Container(color: const Color(0xFF111111)),
+            if (_previewThumb != null) Image.memory(_previewThumb!, fit: BoxFit.cover),
+            if (_previewKind == 'video') const Center(child: Icon(Icons.play_circle_fill_rounded, color: Colors.white70, size: 54)),
+            if (_previewKind == null && !_previewUploading)
+              Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.add_photo_alternate_rounded, color: Colors.white70, size: 40),
+                const SizedBox(height: 8),
+                Text(tr('Choisir l\'aperçu du live'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 2),
+                Text(tr('Image ou vidéo de 15 secondes'), style: const TextStyle(color: Colors.white54, fontSize: 11.5)),
+              ])),
+            if (_previewUploading) const Center(child: CircularProgressIndicator(color: Colors.white70)),
+            Positioned(
+              left: 10, top: 10,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(99)),
+                child: Text(tr('Sans caméra'), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
   Future<void> _pickCoverImage() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
@@ -2407,6 +2531,8 @@ class _CreateLivePageState extends State<CreateLivePage> {
         typeSession: _isShoppingLive ? 'shopping' : (_game.isNotEmpty ? _game : 'talk'),
         offerEntry: _offerEntry,
         audioOnly: _audioRoom,
+        noCamera: _noCameraOn,
+        previewUploadId: _noCameraOn ? _previewUploadId : null,
         ticketExtraCoins: _offerEntry ? 0 : _ticketExtra,
         options: {
           'stage': _allowStage,

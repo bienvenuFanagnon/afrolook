@@ -44,6 +44,9 @@ PostLive postLiveFromApi(Map<String, dynamic> j, {String hostName = '', String h
     typeSession: '${j['type_session'] ?? 'talk'}',
     ticketMode: j['ticket_mode'] == true,
     audioOnly: j['audio_only'] == true,
+    noCamera: j['no_camera'] == true,
+    previewKind: j['preview_kind'] as String?,
+    previewUrl: j['preview_url'] as String?,
     offerEntry: j['offer_entry'] == true,
   );
 }

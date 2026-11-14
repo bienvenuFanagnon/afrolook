@@ -116,6 +116,18 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   int? _remoteUid;
   bool _localUserJoined = false;
   late RtcEngine _engine;
+
+  /// Live sans caméra : aucun moteur Agora (donc aucune minute décomptée) ; un aperçu (image ou courte vidéo en boucle) reste à l'écran,
+  /// le reste du live (commentaires, jeux, marché, cadeaux) fonctionne comme d'habitude. Coupure sur inactivité côté serveur.
+  bool get _noCam => widget.postLive.noCamera;
+  VideoPlayerController? _previewVideo;
+  Timer? _noCamTimer;
+  Timer? _noCamTick;
+  int? _idleLeft;            // secondes avant l'arrêt pour inactivité, lues sur l'API
+  DateTime? _idleAt;         // instant de cette lecture
+  int _commentsTotal = 0;    // commentaires reçus depuis l'ouverture (l'hôte les rapporte avec son signal : ils comptent comme une interaction)
+  bool _commentsFirst = true;
+  DateTime _lastCommentBeat = DateTime.fromMillisecondsSinceEpoch(0);
   bool _isInitialized = false;
   bool _isFrontCamera = true;
   int _numberOfCameras = 0;
@@ -323,7 +335,13 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     // inexistante en plein écran (écran noir sans aucun widget, constaté sur téléphone : setupRemoteVideoEx uid 1).
     // L'identifiant de l'hôte vient de l'arrivée dans le salon (onUserJoined) et de la scène (_refreshMainUid).
     _setupCamera();
-    _initAgora();
+    if (_noCam) {
+      _joinAsSpectator();
+      _isInitialized = true;
+      _initNoCamera();
+    } else {
+      _initAgora();
+    }
 
     _setupFirestoreListeners();
     _setupLikesListener(); // ← AJOUTEZ CETTE LIGNE
@@ -375,6 +393,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }
 // Modifiez la méthode _onTap pour ignorer la position du tap
   void _onTap(TapDownDetails details) {
+    if (widget.isHost) return;
     _sendLike();
     // NE PAS appeler _addLikeEffect ici - les effets viennent maintenant de Firestore
   }
@@ -542,11 +561,11 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     if (!_isInitialized) return;
     switch (widget.postLive.audioBehaviorAfterTrial) {
       case 'mute':
-        _engine.muteAllRemoteAudioStreams(true);
+        if (!_noCam) _engine.muteAllRemoteAudioStreams(true);
         setState(() => _isAudioRestricted = true);
         break;
       case 'reduce':
-        _engine.adjustPlaybackSignalVolume(widget.postLive.audioReductionPercent);
+        if (!_noCam) _engine.adjustPlaybackSignalVolume(widget.postLive.audioReductionPercent);
         setState(() => _isAudioRestricted = true);
         break;
       case 'keep':
@@ -560,8 +579,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
   void _removeRestrictions() {
     if (!_isInitialized) return;
-    _engine.muteAllRemoteAudioStreams(false);
-    _engine.adjustPlaybackSignalVolume(100);
+    if (!_noCam) _engine.muteAllRemoteAudioStreams(false);
+    if (!_noCam) _engine.adjustPlaybackSignalVolume(100);
     setState(() {
       _isAudioRestricted = false;
       _isVideoBlurred = false;
@@ -1311,7 +1330,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     if (t.audioOnly) {
       // « son seul » : la vidéo reçue est coupée (Agora facture alors l'audio seul)
       try {
-        _engine.muteAllRemoteVideoStreams(true);
+        if (!_noCam) _engine.muteAllRemoteVideoStreams(true);
       } catch (_) {}
     }
     setState(() {
@@ -1354,7 +1373,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   Future<void> _onTicketExpired() async {
     if (_ticketRequired || _endHandled || widget.isHost) return;
     try {
-      await _engine.leaveChannel();
+      if (!_noCam) await _engine.leaveChannel();
       _ticketLeftChannel = true;
     } catch (_) {}
     if (!mounted) return;
@@ -2205,7 +2224,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       if (snapshot.exists) {
         final data = snapshot.data()!;
         if (data['isLive'] == false && !_endHandled) {
-          _onLiveEndedRemotely();
+          _confirmEndedBeforeLeaving();
           return;
         }
         // Leaderboard donateurs
@@ -2246,9 +2265,9 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
       // Muter les flux audio si le live est en pause
       if (_isLivePaused && !widget.isHost) {
-        _engine.muteAllRemoteAudioStreams(true);
+        if (!_noCam) _engine.muteAllRemoteAudioStreams(true);
       } else if (!_isLivePaused && !widget.isHost) {
-        _engine.muteAllRemoteAudioStreams(false);
+        if (!_noCam) _engine.muteAllRemoteAudioStreams(false);
       }
 
     });
@@ -2263,6 +2282,21 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       setState(() {
         _comments = snapshot.docs.map((doc) => LiveComment.fromMap(doc.data())).toList();
       });
+      // live sans caméra : les commentaires NOUVEAUX sont une interaction ; l'hôte les signale tout de suite (au plus toutes les 20 s) pour relancer le décompte d'inactivité
+      if (_noCam) {
+        if (_commentsFirst) {
+          _commentsFirst = false;
+        } else {
+          final added = snapshot.docChanges.where((c) => c.type == DocumentChangeType.added).length;
+          if (added > 0) {
+            _commentsTotal += added;
+            if (widget.isHost && DateTime.now().difference(_lastCommentBeat).inSeconds >= 20) {
+              _lastCommentBeat = DateTime.now();
+              _sendHeartbeat();
+            }
+          }
+        }
+      }
     });
 
     _usersSubscription = _firestore
@@ -2575,6 +2609,35 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     }
   }
 
+  bool _checkingEnd = false;
+  DateTime? _apiSaysLiveUntil;
+
+  /// Firestore dit « terminé » : on demande à l'API, qui fait foi (elle termine seule un live sans signal). Si elle dit « en direct », l'état Firestore est faux
+  /// (reste d'un ancien arrêt, application fermée…) : l'hôte le répare au lieu d'être renvoyé sur le bilan (live « fantôme » qui bloquait la création d'un nouveau live).
+  Future<void> _confirmEndedBeforeLeaving() async {
+    if (_endHandled || _checkingEnd) return;
+    final until = _apiSaysLiveUntil;
+    if (until != null && DateTime.now().isBefore(until)) return;   // vérifié il y a moins d'une minute : on ne redemande pas
+    _checkingEnd = true;
+    try {
+      final l = await LivesApi.get(widget.liveId);
+      if (l['is_live'] == true) {
+        _apiSaysLiveUntil = DateTime.now().add(const Duration(minutes: 1));
+        if (widget.isHost) {
+          try {
+            await _firestore.collection('lives').doc(widget.liveId).update({'isLive': true, 'endTime': FieldValue.delete()});
+          } catch (_) {}
+        }
+        return;
+      }
+    } catch (_) {
+      // API injoignable : on garde l'ancien comportement (fin du live)
+    } finally {
+      _checkingEnd = false;
+    }
+    if (mounted && !_endHandled) await _onLiveEndedRemotely();
+  }
+
   /// Le live a été terminé ailleurs (durée maximale, inactivité, nouveau live de l'hôte).
   Future<void> _onLiveEndedRemotely() async {
     if (_endHandled) return;
@@ -2585,7 +2648,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     _durationTimer?.cancel();
     _heartbeatTimer?.cancel();
     try {
-      await _engine.leaveChannel();
+      if (!_noCam) await _engine.leaveChannel();
     } catch (_) {}
     if (!mounted) return;
     if (widget.isHost) {
@@ -2609,7 +2672,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     }).catchError((_) {});
     if (widget.isHost) {
       // l'API termine un live sans signal ; en mode billet elle rappelle aussi l'échéance des frais de diffusion
-      LivesApi.heartbeat(widget.liveId, viewers: _viewerCount, likes: _likeCount).then((r) {
+      LivesApi.heartbeat(widget.liveId, viewers: _viewerCount, likes: _likeCount, comments: _noCam ? _commentsTotal : null).then((r) {
+        if (_noCam) _setIdle(r['idle_seconds_left']);
         final fee = LiveHostFee.fromJson(r['host_fee']);
         if (fee != null) _setHostFee(fee);
       }).catchError((_) {});
@@ -2631,8 +2695,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         'endTime': DateTime.now(),
       });
 
-      await _engine.leaveChannel();
-      await _engine.release();
+      if (!_noCam) await _engine.leaveChannel();
+      if (!_noCam) await _engine.release();
 
       if (widget.isHost && mounted) {
         _showLiveEndStats();
@@ -2687,8 +2751,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     try {
       _remoteUids.clear();
       _remoteUid = null;
-      await _engine.leaveChannel();
-      await _engine.release();
+      if (!_noCam) await _engine.leaveChannel();
+      if (!_noCam) await _engine.release();
       await _initAgora();
     } catch (e) {
       printVm("❌ Erreur réinitialisation Agora: $e");
@@ -2917,6 +2981,89 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     );
   }
 
+  // ==================== LIVE SANS CAMÉRA ====================
+
+  /// Démarre l'aperçu (vidéo en boucle, sans son) et la surveillance de l'API : fin du live (inactivité ou durée) et décompte d'inactivité.
+  void _initNoCamera() {
+    final url = widget.postLive.previewUrl;
+    if (widget.postLive.previewKind == 'video' && url != null && url.isNotEmpty) {
+      final c = VideoPlayerController.networkUrl(Uri.parse(url), videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true));
+      _previewVideo = c;
+      c.initialize().then((_) {
+        c.setLooping(true);
+        c.setVolume(0);
+        c.play();
+        if (mounted) setState(() {});
+      }).catchError((_) {});
+    }
+    _pollNoCamera();
+    _noCamTimer = Timer.periodic(const Duration(seconds: 15), (_) => _pollNoCamera());
+    _noCamTick = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted && widget.isHost && (_idleSecondsNow ?? 9999) <= 130) setState(() {});
+    });
+  }
+
+  void _setIdle(dynamic v) {
+    _idleLeft = (v as num?)?.toInt();
+    _idleAt = DateTime.now();
+  }
+
+  int? get _idleSecondsNow {
+    final left = _idleLeft;
+    final at = _idleAt;
+    if (left == null || at == null) return null;
+    return (left - DateTime.now().difference(at).inSeconds).clamp(0, 1 << 30);
+  }
+
+  Future<void> _pollNoCamera() async {
+    if (!mounted || _endHandled) return;
+    try {
+      final l = await LivesApi.get(widget.liveId);
+      if (l['is_live'] == false) {
+        await _onLiveEndedRemotely();
+        return;
+      }
+      _setIdle(l['idle_seconds_left']);
+      if (mounted) setState(() {});
+    } catch (_) {}
+  }
+
+  Widget _buildNoCameraBackdrop() {
+    final v = _previewVideo;
+    final img = widget.postLive.previewKind == 'image' && (widget.postLive.previewUrl ?? '').isNotEmpty ? widget.postLive.previewUrl! : (widget.postLive.displayImage ?? '');
+    return Stack(fit: StackFit.expand, children: [
+      Container(color: const Color(0xFF0B0B0B)),
+      if (v != null && v.value.isInitialized)
+        FittedBox(fit: BoxFit.cover, clipBehavior: Clip.hardEdge, child: SizedBox(width: v.value.size.width, height: v.value.size.height, child: VideoPlayer(v)))
+      else if (img.isNotEmpty)
+        Image.network(img, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+      // voile sombre : les widgets du live restent lisibles sur n'importe quel aperçu
+      Container(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.black.withOpacity(.35), Colors.black.withOpacity(.15), Colors.black.withOpacity(.55)]))),
+    ]);
+  }
+
+  /// « Sans interaction, ton live s'arrête dans M:SS » : visible pour l'hôte dans les 2 dernières minutes avant l'arrêt.
+  Widget _buildIdleBanner() {
+    final left = _idleSecondsNow;
+    if (left == null || left > 120) return const SizedBox.shrink();
+    final m = left ~/ 60;
+    final sec = (left % 60).toString().padLeft(2, '0');
+    return Positioned(
+      left: 16,
+      right: 16,
+      top: MediaQuery.of(context).padding.top + 120,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(color: Colors.black.withOpacity(0.78), border: Border.all(color: const Color(0xFFF9A825)), borderRadius: BorderRadius.circular(16)),
+        child: Row(children: [
+          const Icon(Icons.timer_outlined, color: Color(0xFFF9A825)),
+          const SizedBox(width: 10),
+          Expanded(child: Text(context.tr('Personne n\'interagit : ton live s\'arrête dans {t}. Lance un jeu, écris un message ou pose une question pour le garder ouvert.', {'t': '$m:$sec'}), style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.35))),
+        ]),
+      ),
+    );
+  }
+
   Widget _buildPinnedImage() {
     final url = _pinnedImageUrl;
     if (url == null || url.isEmpty) return const SizedBox.shrink();
@@ -3022,7 +3169,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     return Scaffold(
       backgroundColor: Colors.black,
       body: GestureDetector(
-        onTapDown: _onTap,
+        // « j'aime » = double toucher (comme TikTok), jamais un simple toucher ; l'hôte ne s'aime pas lui-même
         onDoubleTapDown: _onTap,
         // fit: expand = la pile prend tout l'écran même sans vidéo distante. Sans cela (seul enfant non positionné = SizedBox.shrink), elle s'écrasait à 0×0 :
         // tous les widgets positionnés tombaient hors cadre et l'écran paraissait noir (arbre de rendu lu sur le téléphone, 14/11/2026).
@@ -3079,6 +3226,9 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
             // EFFETS ANIMÉS (toujours visibles)
             ..._buildTikTokLikeEffects(),
             ..._buildGiftEffects(),
+
+            // live sans caméra : avertissement avant l'arrêt pour inactivité (hôte)
+            if (!isLandscape && _noCam && widget.isHost) _buildIdleBanner(),
 
             // RAPPEL DE LA DERNIÈRE MINUTE (billet, essai, frais de diffusion de l'hôte)
             if (!isLandscape && _showUI) _buildTicketReminder(),
@@ -3373,6 +3523,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       return _buildPausedOverlay();
     }
     if (widget.postLive.audioOnly) return _buildSalonView();
+    if (_noCam) return _buildNoCameraBackdrop();
     return Stack(
       children: [
         if (_remoteUid != null)
@@ -4125,6 +4276,15 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }
 
   Widget _buildParticipantControls() {
+    if (_noCam) {
+      if (!widget.isHost) return const SizedBox.shrink();
+      return Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        decoration: BoxDecoration(color: Colors.black.withOpacity(0.5), borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.white.withOpacity(0.08))),
+        child: _buildCtrlBtn(icon: Icons.push_pin_rounded, label: tr('Image'), onTap: _pinImage, active: _pinnedImageUrl == null),
+      );
+    }
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -4402,8 +4562,13 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       _stopScreenSharing();
     }
 
-    _engine.leaveChannel();
-    _engine.release();
+    _noCamTimer?.cancel();
+    _noCamTick?.cancel();
+    _previewVideo?.dispose();
+    if (!_noCam) {
+      _engine.leaveChannel();
+      _engine.release();
+    }
     _commentController.dispose();
     _pinnedTextController.dispose();
     // Restaurer portrait au départ du live

@@ -181,10 +181,14 @@ class LivesApi {
     bool audioOnly = false,        // salon audio : billet bien moins cher quand le gratuit du mois est épuisé
     bool offerEntry = false,       // l'hôte offre l'entrée : il paie les billets de ses spectateurs (mode billet)
     int ticketExtraCoins = 0,      // supplément ajouté au billet, il revient à l'hôte (mode billet)
+    bool noCamera = false,         // live sans caméra : aucun flux Agora, un aperçu (image ou courte vidéo en boucle) à la place
+    String? previewUploadId,       // aperçu : image (5 Mo au plus) ou vidéo (10 Mo au plus, 15 secondes)
   }) async =>
       JeuxApi.map(await _c.post('/lives', body: {
         'type_session': typeSession,
         if (audioOnly) 'audio_only': true,
+        if (noCamera) 'no_camera': true,
+        if (previewUploadId != null) 'preview_upload_id': previewUploadId,
         if (offerEntry) 'offer_entry': true,
         if (ticketExtraCoins > 0) 'ticket_extra_coins': ticketExtraCoins,
         'title': title,
@@ -197,7 +201,9 @@ class LivesApi {
       }));
 
   /// Signal de l'hôte ; en mode billet la réponse porte `host_fee: { coins, paid_until }` (échéance des frais de diffusion).
-  static Future<Map<String, dynamic>> heartbeat(String id, {int? viewers, int? likes, int? shares}) async => JeuxApi.map(await _c.post('/lives/$id/heartbeat', body: {
+  /// `comments` : nombre de commentaires reçus depuis l'ouverture ; pour un live sans caméra, des commentaires nouveaux comptent comme une interaction. La réponse porte `idle_seconds_left`.
+  static Future<Map<String, dynamic>> heartbeat(String id, {int? viewers, int? likes, int? shares, int? comments}) async => JeuxApi.map(await _c.post('/lives/$id/heartbeat', body: {
+        if (comments != null) 'comments_count': comments,
         if (viewers != null) 'viewer_count': viewers,
         if (likes != null) 'likes_count': likes,
         if (shares != null) 'shares_count': shares,

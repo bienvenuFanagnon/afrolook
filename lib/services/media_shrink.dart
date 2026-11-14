@@ -69,6 +69,22 @@ class MediaShrink {
     }
   }
 
+  /// Vidéo d'aperçu d'un live sans caméra : elle tourne en boucle chez tous les spectateurs, donc très légère (480 p, sans son). Le serveur refuse plus de 10 Mo.
+  static const previewVideoMaxBytes = 10 * 1024 * 1024;
+
+  static Future<File> previewVideo(File src) async {
+    if (kIsWeb) return src;
+    try {
+      final info = await VideoCompress.compressVideo(src.path, quality: VideoQuality.Res640x480Quality, frameRate: 24, includeAudio: false, deleteOrigin: false);
+      final out = info?.file;
+      if (out == null) return src;
+      return await out.length() < await src.length() ? out : src;
+    } catch (e) {
+      debugPrint('MediaShrink.previewVideo: $e');
+      return src;
+    }
+  }
+
   static const _imageExt = {'.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'};
   static const _videoExt = {'.mp4', '.mov', '.m4v', '.avi', '.mkv', '.3gp'};
 
