@@ -296,6 +296,9 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
         'shopping' => l.typeSession == 'shopping',
         'duel' => l.typeSession == 'duel',
         'challenge' => l.typeSession == 'challenge',
+        'market' => l.typeSession == 'market',
+        'story' => l.typeSession == 'story',
+        'quiz' => l.typeSession == 'quiz',
         _ => true,
       };
 
@@ -303,6 +306,9 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
         'shopping' => 'Vente',
         'duel' => 'Duel',
         'challenge' => 'Défi',
+        'market' => 'Marché',
+        'story' => 'Conte',
+        'quiz' => 'Quiz',
         _ => 'Discussion',
       };
 
@@ -361,7 +367,7 @@ class _LiveListPageState extends State<LiveListPage> with SingleTickerProviderSt
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        children: [chip('all', tr('Tous')), chip('talk', tr('Discussion')), chip('shopping', tr('Vente')), chip('duel', tr('Duel')), chip('challenge', tr('Défi'))],
+        children: [chip('all', tr('Tous')), chip('talk', tr('Discussion')), chip('shopping', tr('Vente')), chip('duel', tr('Duel')), chip('challenge', tr('Défi')), chip('market', tr('Marché')), chip('story', tr('Conte')), chip('quiz', tr('Quiz'))],
       ),
     );
   }

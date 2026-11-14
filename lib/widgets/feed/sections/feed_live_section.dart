@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../../pages/LiveAgora/live_list_page.dart';
 import '../../../pages/LiveAgora/livePage.dart';
 import '../../../pages/LiveAgora/livesAgora.dart';
+import '../../../pages/LiveAgora/live_sheet_page.dart';
 import '../../../providers/authProvider.dart';
 import '../../../theme/app_colors.dart';
 
@@ -20,6 +21,7 @@ class FeedLiveSection extends StatefulWidget {
 
 class _FeedLiveSectionState extends State<FeedLiveSection> {
   Timer? _pulseTimer;
+  Timer? _refreshTimer;
   bool _pulseOn = true;
 
   @override
@@ -29,11 +31,14 @@ class _FeedLiveSectionState extends State<FeedLiveSection> {
     _pulseTimer = Timer.periodic(const Duration(milliseconds: 800), (_) {
       if (mounted) setState(() => _pulseOn = !_pulseOn);
     });
+    // un live terminé ne doit pas rester « en direct » dans le fil : la liste est relue toutes les 45 secondes
+    _refreshTimer = Timer.periodic(const Duration(seconds: 45), (_) => _load());
   }
 
   @override
   void dispose() {
     _pulseTimer?.cancel();
+    _refreshTimer?.cancel();
     super.dispose();
   }
 
@@ -46,6 +51,9 @@ class _FeedLiveSectionState extends State<FeedLiveSection> {
     if (live.liveId == null) return;
     final auth = context.read<UserAuthProvider>();
     final myId = auth.loginUserData.id ?? '';
+    openLiveWithSheet(context, live, isHost: live.hostId == myId, isInvited: live.invitedUsers.contains(myId));
+    return;
+    // ignore: dead_code
     Navigator.push(
       context,
       MaterialPageRoute(

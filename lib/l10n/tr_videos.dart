@@ -333,6 +333,7 @@ const Map<String, Map<String, String>> kTrVideos = {
   "Voir la suite": {'en': "See more", 'es': "Ver más", 'de': "Mehr anzeigen", 'ar': "عرض المزيد", 'pt': "Ver mais", 'zh': "查看更多", 'sw': "Ona zaidi"},
   "Fin du classement": {'en': "End of the ranking", 'es': "Fin de la clasificación", 'de': "Ende der Rangliste", 'ar': "نهاية الترتيب", 'pt': "Fim do ranking", 'zh': "排行榜到底了", 'sw': "Mwisho wa orodha"},
   "Publicité": {'en': "Advertisement", 'es': "Publicidad", 'de': "Werbung", 'ar': "إعلان", 'pt': "Publicidade", 'zh': "广告", 'sw': "Tangazo"},
+  "Fermer dans": {'en': "Close in", 'es': "Cerrar en", 'de': "Schließen in", 'ar': "إغلاق خلال", 'pt': "Fechar em", 'zh': "关闭倒计时", 'sw': "Funga baada ya"},
   "Suivant dans": {'en': "Next in", 'es': "Siguiente en", 'de': "Weiter in", 'ar': "التالي خلال", 'pt': "Próximo em", 'zh': "下一个将在", 'sw': "Inayofuata baada ya"},
   "Suivre": {'en': "Follow", 'es': "Seguir", 'de': "Folgen", 'ar': "متابعة", 'pt': "Seguir", 'zh': "关注", 'sw': "Fuata"},
   "S'abonner": {'en': "Subscribe", 'es': "Suscribirse", 'de': "Abonnieren", 'ar': "اشتراك", 'pt': "Inscrever-se", 'zh': "订阅", 'sw': "Jiunge"},

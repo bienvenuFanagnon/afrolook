@@ -11,8 +11,8 @@ import 'ad_banner.dart';
 ///  1. la pub du RÉSEAU (Appodeal puis AdMob) est chargée en coulisses, avant d'être montrée ; dès qu'elle est prête, elle s'affiche avec son décompte ;
 ///  2. si elle n'est pas prête au bout de [waitMs] (ou si le réseau échoue), la pub d'Afrolook Ads prend la place ([ownBuilder]) ;
 ///  3. s'il n'y a ni l'une ni l'autre, la page se passe toute seule ([onNext]) : on ne montre jamais une page vide.
-/// Une pub affichée dure [networkSeconds] (réseau) ou [ownSeconds] (Afrolook Ads : 3 s pour une image, 5 s pour une vidéo), puis [onNext] est appelé ; on peut aussi
-/// passer en glissant. Rien ne démarre tant que la page n'est pas celle qu'on regarde ([active]) ; le chargement, lui, commence dès que la page est construite.
+/// Règle unique (décision du 14/11/2026) : une pub affichée, du réseau comme d'Afrolook Ads, attend [waitSeconds] (5 s), puis un bouton « Fermer » apparaît. La pub
+/// ne se ferme JAMAIS toute seule : c'est la personne qui touche le bouton (ou qui glisse) ; alors [onNext] est appelé. Rien ne démarre tant que la page n'est pas celle qu'on regarde ([active]) ; le chargement, lui, commence dès que la page est construite.
 class FullScreenAdPage extends StatefulWidget {
   const FullScreenAdPage({
     super.key,
@@ -21,8 +21,7 @@ class FullScreenAdPage extends StatefulWidget {
     this.ownBuilder,
     this.networkBuilder,
     this.waitMs = 3000,
-    this.networkSeconds = 5,
-    this.ownSeconds = 5,
+    this.waitSeconds = 5,
     this.showCountdown = true,
     this.onShown,
     this.retryNext = false,
@@ -45,8 +44,9 @@ class FullScreenAdPage extends StatefulWidget {
 
   /// Temps laissé à la pub du réseau pour être prête une fois la page regardée.
   final int waitMs;
-  final int networkSeconds;
-  final int ownSeconds;
+
+  /// Secondes d'attente avant que le bouton « Fermer » apparaisse (5 partout).
+  final int waitSeconds;
 
   /// Montrer la pastille « Suivant dans N s » (faux quand l'écran a déjà sa propre barre de progression).
   final bool showCountdown;
@@ -65,6 +65,7 @@ class _FullScreenAdPageState extends State<FullScreenAdPage> {
   bool _netLoaded = false;
   bool _netFailed = false;
   bool _advanced = false;
+  bool _canClose = false;   // l'attente est finie : le bouton « Fermer » est là
   int _left = 0;
   Timer? _wait;
   Timer? _tick;
@@ -99,7 +100,7 @@ class _FullScreenAdPageState extends State<FullScreenAdPage> {
   /// La page vient d'être regardée : on montre ce qui est prêt, sinon on laisse un court délai au réseau.
   void _onActive() {
     if (_phase == _Phase.network || _phase == _Phase.own) {
-      _startCountdown(_phase == _Phase.network ? widget.networkSeconds : widget.ownSeconds, restart: false);
+      _startCountdown(widget.waitSeconds, restart: false);
       return;
     }
     if (_phase != _Phase.loading) return;
@@ -136,13 +137,19 @@ class _FullScreenAdPageState extends State<FullScreenAdPage> {
 
   void _show(_Phase p) {
     setState(() => _phase = p);
-    _startCountdown(p == _Phase.network ? widget.networkSeconds : widget.ownSeconds);
+    _startCountdown(widget.waitSeconds);
   }
 
   void _startCountdown(int seconds, {bool restart = true}) {
-    if (restart || _left <= 0) {
+    if (restart) {
       _left = seconds;
+      _canClose = false;
       widget.onShown?.call(seconds);
+    }
+    if (_left <= 0) {
+      // l'attente était déjà finie (on revient sur cette page) : le bouton reste là
+      if (!_canClose) setState(() => _canClose = true);
+      return;
     }
     _tick?.cancel();
     _tick = Timer.periodic(const Duration(seconds: 1), (t) {
@@ -150,9 +157,15 @@ class _FullScreenAdPageState extends State<FullScreenAdPage> {
       setState(() => _left--);
       if (_left <= 0) {
         t.cancel();
-        _advance();
+        setState(() => _canClose = true);   // pas de fermeture automatique : on attend le toucher de la personne
       }
     });
+  }
+
+  /// La personne touche « Fermer » : on passe à la suite (même si on y était déjà passé une fois).
+  void _closeByUser() {
+    _advanced = false;
+    _advance();
   }
 
   void _advance() {
@@ -176,7 +189,13 @@ class _FullScreenAdPageState extends State<FullScreenAdPage> {
       }
     }
 
-    direct ? call() : WidgetsBinding.instance.addPostFrameCallback((_) => call());
+    if (direct) {
+      call();
+    } else {
+      WidgetsBinding.instance
+        ..addPostFrameCallback((_) => call())
+        ..scheduleFrame();   // le toucher du bouton « Fermer » ne redessine rien : on demande un tour pour que l'appel parte tout de suite
+    }
   }
 
   @override
@@ -188,7 +207,8 @@ class _FullScreenAdPageState extends State<FullScreenAdPage> {
       child: Stack(fit: StackFit.expand, children: [
         // la pub du réseau se charge dès que la page est construite, hors de la vue ; elle n'apparaît qu'une fois prête
         if (_phase == _Phase.loading || showNet) Center(child: Offstage(offstage: !showNet, child: net)),
-        if (_phase == _Phase.own && widget.ownBuilder != null) Positioned.fill(child: widget.ownBuilder!(_advance)),
+        // la fin d'une vidéo d'Afrolook Ads ne ferme plus la page : seul le bouton « Fermer » le fait
+        if (_phase == _Phase.own && widget.ownBuilder != null) Positioned.fill(child: widget.ownBuilder!(() {})),
         // le cercle ne tourne que pendant le chargement (3 s au plus) : une page « sans pub » ne fait plus semblant de charger
         if (_phase == _Phase.loading)
           Center(
@@ -207,16 +227,34 @@ class _FullScreenAdPageState extends State<FullScreenAdPage> {
             child: Text(context.tr('Annonce'), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
           ),
         ),
-        if (widget.showCountdown && (_phase == _Phase.network || _phase == _Phase.own) && _left > 0)
+        // attente de 5 secondes (« Fermer dans N s »), puis le bouton « Fermer » : jamais de fermeture automatique
+        if ((_phase == _Phase.network || _phase == _Phase.own) && (_canClose || (widget.showCountdown && _left > 0)))
           Positioned(
             top: MediaQuery.of(context).padding.top + 56,
             right: 12,
-            child: Container(
-              key: const ValueKey('ad_countdown'),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-              decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(99), border: Border.all(color: Colors.white24)),
-              child: Text('${context.tr('Suivant dans')} $_left s', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
-            ),
+            child: _canClose
+                ? GestureDetector(
+                    key: const ValueKey('ad_close'),
+                    behavior: HitTestBehavior.opaque,
+                    onTap: _closeByUser,
+                    child: Container(
+                      height: 40,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(color: Colors.black.withOpacity(.72), borderRadius: BorderRadius.circular(99), border: Border.all(color: Colors.white54)),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        Text(context.tr('Fermer'), style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800)),
+                        const SizedBox(width: 6),
+                        const Icon(Icons.close_rounded, color: Colors.white, size: 18),
+                      ]),
+                    ),
+                  )
+                : Container(
+                    key: const ValueKey('ad_countdown'),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(99), border: Border.all(color: Colors.white24)),
+                    child: Text('${context.tr('Fermer dans')} $_left s', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
+                  ),
           ),
       ]),
     );

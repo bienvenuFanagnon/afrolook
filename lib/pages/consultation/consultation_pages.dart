@@ -472,7 +472,7 @@ class _ConsultationCallPageState extends State<ConsultationCallPage> {
       backgroundColor: Colors.black,
       body: Stack(children: [
         if (active && _video && _remote != null && _engine != null)
-          Positioned.fill(child: AgoraVideoView(controller: VideoViewController.remote(rtcEngine: _engine!, canvas: VideoCanvas(uid: _remote), connection: RtcConnection(channelId: 'consult-${widget.consultationId}'))))
+          Positioned.fill(child: AgoraVideoView(controller: VideoViewController.remote(rtcEngine: _engine!, canvas: VideoCanvas(uid: _remote), connection: RtcConnection(channelId: 'consult-${widget.consultationId}'), useFlutterTexture: true, useAndroidSurfaceView: false)))
         else
           Positioned.fill(
             child: Container(
@@ -487,7 +487,7 @@ class _ConsultationCallPageState extends State<ConsultationCallPage> {
             ),
           ),
         if (active && _video && _engine != null)
-          Positioned(right: 16, top: 70, width: 84, height: 140, child: ClipRRect(borderRadius: BorderRadius.circular(12), child: AgoraVideoView(controller: VideoViewController(rtcEngine: _engine!, canvas: const VideoCanvas(uid: 0))))),
+          Positioned(right: 16, top: 70, width: 84, height: 140, child: ClipRRect(borderRadius: BorderRadius.circular(12), child: AgoraVideoView(controller: VideoViewController(rtcEngine: _engine!, canvas: const VideoCanvas(uid: 0), useFlutterTexture: true, useAndroidSurfaceView: false)))),
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16),

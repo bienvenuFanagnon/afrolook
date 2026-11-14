@@ -644,6 +644,14 @@ class LiveProvider extends ChangeNotifier {
 
   // Getters
   List<PostLive> get endedLives => _endedLives;
+
+  /// Un live vient d'être reconnu terminé (fiche, jeton refusé, fin vue en direct) : il disparaît tout de suite des listes « en direct » au lieu d'attendre le prochain rechargement.
+  void removeLive(String liveId) {
+    final before = _activeLives.length + _allLives.length;
+    _activeLives.removeWhere((l) => l.liveId == liveId);
+    _allLives.removeWhere((l) => l.liveId == liveId && l.isLive);
+    if (_activeLives.length + _allLives.length != before) notifyListeners();
+  }
   List<PostLive> get allLives => _allLives;
   List<PostLive> get activeLives => _activeLives;
 

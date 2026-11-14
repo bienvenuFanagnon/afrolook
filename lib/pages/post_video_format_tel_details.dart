@@ -3941,7 +3941,6 @@ class _VideoAdPage extends StatelessWidget {
       active: active,
       onNext: onNext,
       retryNext: true,   // un premier appel peut tomber pendant un défilement : on redemande, jamais de cercle qui tourne sans fin
-      ownSeconds: isVideoAd ? 5 : 3,
       ownBuilder: data == null ? null : (done) => AdPostWidget(adData: data, width: size.width, height: size.height, onComplete: done),
     );
   }

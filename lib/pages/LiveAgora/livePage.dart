@@ -319,15 +319,9 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     //   _isPassiveSpectator = true;
     //   _initPassiveStreaming(); // Utilisateur PASSIF (Spectateur) -> Utilise CDN/HLS
     // }
-    // Après 3 secondes, si remoteUid est toujours null, essayez avec uid=1
-    Future.delayed(Duration(seconds: 3), () {
-      if (_remoteUid == null && mounted) {
-        printVm("⚠️ remoteUid toujours null, tentative avec uid=1");
-        setState(() {
-          _remoteUid = 1; // Essayez avec l'UID probable de l'hôte
-        });
-      }
-    });
+    // 14/11/2026 : l'ancien « essai avec uid=1 » au bout de 3 s est supprimé. Pour l'hôte, il posait une vidéo distante
+    // inexistante en plein écran (écran noir sans aucun widget, constaté sur téléphone : setupRemoteVideoEx uid 1).
+    // L'identifiant de l'hôte vient de l'arrivée dans le salon (onUserJoined) et de la scène (_refreshMainUid).
     _setupCamera();
     _initAgora();
 
@@ -628,21 +622,25 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         child: LiveMarketPanel(state: _market!, isHost: widget.isHost, onBook: _marketBook, onCancel: () => _marketCall(() => LivesApi.marketCancel(widget.liveId)), onReady: _marketReady, onNext: () => _marketCall(() => LivesApi.marketNext(widget.liveId))),
       );
     }
-    if (g == null && widget.isHost && (t == 'duel' || t == 'challenge')) {
+    if (g == null && widget.isHost && (t == 'duel' || t == 'challenge' || t == 'story' || t == 'quiz')) {
       // duel ou défi choisi au lancement : en attendant les présentateurs, une aide courte
       return Positioned(
         top: MediaQuery.of(context).padding.top + 180,
         left: 16,
         right: 70,
         child: GestureDetector(
-          onTap: _openGames,
+          onTap: () => _openGames(t),
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(color: Colors.black.withOpacity(.62), borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFFF9A825).withOpacity(.6))),
             child: Text(
               t == 'duel'
-                  ? context.tr('Invite ton adversaire sur scène (bouton Inviter), puis lance le duel : Menu › Jeux du live.')
-                  : context.tr('Invite tes présentateurs sur scène (bouton Inviter), puis lance le défi : Menu › Jeux du live.'),
+                  ? context.tr('Invite ton adversaire sur scène (bouton Inviter), puis touche ici pour lancer le duel.')
+                  : t == 'challenge'
+                      ? context.tr('Invite tes présentateurs sur scène (bouton Inviter), puis touche ici pour lancer le défi.')
+                      : t == 'story'
+                          ? context.tr('Touche ici pour lancer ton conte : tu poses la question, le public vote la suite avec des pièces.')
+                          : context.tr('Touche ici pour lancer ton quiz : tes questions, ta cagnotte, jouer est gratuit pour le public.'),
               style: const TextStyle(color: Colors.white, fontSize: 12.5, height: 1.4),
             ),
           ),
@@ -773,8 +771,9 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }
 
   /// Menu « Jeux du live » de l'hôte.
-  Future<void> _openGames() async {
-    final k = await showGamesMenu(context, hasStageGuests: _stage.videoSpeakers.isNotEmpty, gameActive: _game?.active == true);
+  Future<void> _openGames([String? only]) async {
+    final direct = {'duel', 'challenge', 'story', 'quiz'}.contains(only) ? only : null;   // type choisi à la création : on va droit au jeu
+    final k = direct ?? await showGamesMenu(context, hasStageGuests: _stage.videoSpeakers.isNotEmpty, gameActive: _game?.active == true);
     if (k == null || !mounted) return;
     try {
       switch (k) {
@@ -1106,7 +1105,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     final uid = s.agoraUid;
     if (uid == null || !_remoteUids.contains(uid) || !_isInitialized || _ticketAudioOnly) return null;
     return AgoraVideoView(
-      controller: VideoViewController.remote(rtcEngine: _engine, canvas: VideoCanvas(uid: uid), connection: RtcConnection(channelId: widget.liveId)),
+      controller: VideoViewController.remote(rtcEngine: _engine, canvas: VideoCanvas(uid: uid), connection: RtcConnection(channelId: widget.liveId), useFlutterTexture: true, useAndroidSurfaceView: false),
     );
   }
 
@@ -2580,6 +2579,9 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   Future<void> _onLiveEndedRemotely() async {
     if (_endHandled) return;
     _endHandled = true;
+    try {
+      context.read<LiveProvider>().removeLive(widget.liveId);   // il ne doit plus apparaître « en direct » dans les listes ni dans le fil
+    } catch (_) {}
     _durationTimer?.cancel();
     _heartbeatTimer?.cancel();
     try {
@@ -3022,7 +3024,10 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       body: GestureDetector(
         onTapDown: _onTap,
         onDoubleTapDown: _onTap,
+        // fit: expand = la pile prend tout l'écran même sans vidéo distante. Sans cela (seul enfant non positionné = SizedBox.shrink), elle s'écrasait à 0×0 :
+        // tous les widgets positionnés tombaient hors cadre et l'écran paraissait noir (arbre de rendu lu sur le téléphone, 14/11/2026).
         child: Stack(
+          fit: StackFit.expand,
           children: [
             // VIDÉO PRINCIPALE
             _buildVideoSection(),
@@ -3211,7 +3216,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       _buildViewerInfo(),
       _buildPinnedTextSection(),
       _buildPinnedImage(),
-      LivePinnedProduct(liveId: widget.liveId, isHost: widget.isHost || _isActiveVendor),   // Live Shopping : produit épinglé
+      LivePinnedProduct(liveId: widget.liveId, isHost: widget.isHost || _isActiveVendor, canOpen: widget.postLive.typeSession == 'shopping' || _isMarket),   // Live Shopping : produit épinglé
       _buildLeaderboard(),
       if (_showMessages) _buildCommentsSection(),
       _buildFooter(),
@@ -3376,6 +3381,9 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
               rtcEngine: _engine,
               canvas: VideoCanvas(uid: _remoteUid),
               connection: RtcConnection(channelId: widget.liveId),
+              // rendu par texture Flutter (pas de vue native) : une vue native Agora faisait noircir tout l'écran de Flutter sur certains téléphones
+              useFlutterTexture: true,
+              useAndroidSurfaceView: false,
             ),
           ),
         if (_remoteUid == null)
@@ -3403,6 +3411,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
                 controller: VideoViewController(
                   rtcEngine: _engine,
                   canvas: const VideoCanvas(uid: 0),
+                  useFlutterTexture: true,
+                  useAndroidSurfaceView: false,
                 ),
               ),
             ),

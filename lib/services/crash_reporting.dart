@@ -38,11 +38,18 @@ class CrashReporting {
       // Erreurs de l'interface et erreurs asynchrones non rattrapées : enregistrées sans faire croire à un plantage (l'application a continué).
       // Les vrais plantages (natifs, fermeture brutale) sont rapportés tout seuls par Crashlytics, comme « fatals ».
       final previous = FlutterError.onError;
+      // APK de test : les erreurs sont aussi écrites dans le journal du téléphone (`adb logcat -s flutter`), sinon une page qui plante en silence reste invisible
+      const testBuild = bool.fromEnvironment('TEST_BUILD');
       FlutterError.onError = (FlutterErrorDetails details) {
         previous?.call(details);
+        if (testBuild) FlutterError.dumpErrorToConsole(details, forceReport: true);
         unawaited(crashlytics.recordFlutterError(details));
       };
       PlatformDispatcher.instance.onError = (Object error, StackTrace stack) {
+        if (testBuild) {
+          // ignore: avoid_print
+          print('❌ [ERREUR NON RATTRAPÉE] $error\n$stack');
+        }
         unawaited(crashlytics.recordError(error, stack));
         return true;
       };

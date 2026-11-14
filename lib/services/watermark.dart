@@ -54,10 +54,13 @@ class Watermark {
       for (var i = 0; i < px.length; i += 4) {
         final lum = (px[i] + px[i + 1] + px[i + 2]) / 3;
         final dark = px[i + 3] > 100 && lum < 70;
-        out[i] = 255;
-        out[i + 1] = 255;
-        out[i + 2] = 255;
-        out[i + 3] = dark ? 255 : 0;
+        // Pixels « prémultipliés » (valeur attendue par decodeImageFromPixels) : dessin = blanc opaque, reste = (0,0,0,0).
+        // Un pixel « blanc transparent » (255,255,255,0) est invalide en prémultiplié et s'affichait en carré blanc opaque (signalé le 14/11/2026).
+        final v = dark ? 255 : 0;
+        out[i] = v;
+        out[i + 1] = v;
+        out[i + 2] = v;
+        out[i + 3] = v;
       }
       src.dispose();
       final done = Completer<ui.Image>();

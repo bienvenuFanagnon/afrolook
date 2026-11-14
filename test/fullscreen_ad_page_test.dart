@@ -11,7 +11,7 @@ Widget _host(Widget child) => MaterialApp(
     );
 
 void main() {
-  testWidgets('la pub du réseau prête s\'affiche avec son décompte, puis la page passe toute seule après 5 s', (tester) async {
+  testWidgets('la pub du réseau prête s\'affiche avec « Fermer dans 5 s », puis un bouton « Fermer » : la page ne passe JAMAIS toute seule', (tester) async {
     var next = 0;
     late VoidCallback loaded;
     await tester.pumpWidget(_host(FullScreenAdPage(
@@ -25,33 +25,48 @@ void main() {
     expect(find.byKey(const ValueKey('ad_countdown')), findsNothing);   // pas encore prête : un chargement, pas de page noire vide
     loaded();
     await tester.pump();
-    expect(find.byKey(const ValueKey('ad_countdown')), findsOneWidget);
-    expect(find.text('Suivant dans 5 s'), findsOneWidget);
+    expect(find.text('Fermer dans 5 s'), findsOneWidget);
     await tester.pump(const Duration(seconds: 2));
-    expect(find.text('Suivant dans 3 s'), findsOneWidget);
-    expect(next, 0);
+    expect(find.text('Fermer dans 3 s'), findsOneWidget);
+    expect(find.byKey(const ValueKey('ad_close')), findsNothing);
     await tester.pump(const Duration(seconds: 3));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('ad_close')), findsOneWidget);   // le bouton est là
+    expect(next, 0);
+    await tester.pump(const Duration(minutes: 5));   // même longtemps après : aucune fermeture automatique
+    expect(next, 0);
+    await tester.tap(find.byKey(const ValueKey('ad_close')));
+    await tester.pump();
     await tester.pump();
     expect(next, 1);
   });
 
-  testWidgets('réseau pas prêt au bout de 3 s : la pub Afrolook Ads prend la place et dure 3 s ; fin de pub : on passe', (tester) async {
+  testWidgets('réseau pas prêt au bout de 3 s : la pub Afrolook Ads prend la place, même attente de 5 s, la fin de sa vidéo ne ferme rien, seul le bouton ferme', (tester) async {
     var next = 0;
     var shown = 0;
+    VoidCallback? adDone;
     await tester.pumpWidget(_host(FullScreenAdPage(
       active: true,
-      ownSeconds: 3,
       onShown: (s) => shown = s,
       onNext: () => next++,
       networkBuilder: (l, f) => const SizedBox(key: ValueKey('net'), width: 300, height: 250),
-      ownBuilder: (done) => const ColoredBox(key: ValueKey('own'), color: Colors.green),
+      ownBuilder: (done) {
+        adDone = done;
+        return const ColoredBox(key: ValueKey('own'), color: Colors.green);
+      },
     )));
     expect(find.byKey(const ValueKey('own')), findsNothing);
     await tester.pump(const Duration(milliseconds: 3100));
     expect(find.byKey(const ValueKey('own')), findsOneWidget);
-    expect(shown, 3);
-    expect(find.text('Suivant dans 3 s'), findsOneWidget);
-    await tester.pump(const Duration(seconds: 3));
+    expect(shown, 5);
+    expect(find.text('Fermer dans 5 s'), findsOneWidget);
+    adDone!();   // la vidéo de la pub se termine : rien ne se ferme
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pump();
+    expect(next, 0);
+    expect(find.byKey(const ValueKey('ad_close')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('ad_close')));
+    await tester.pump();
     await tester.pump();
     expect(next, 1);
   });

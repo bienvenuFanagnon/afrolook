@@ -7,6 +7,7 @@ import 'package:afrotok/services/api/live_stage.dart';
 import 'package:afrotok/services/api/live_ticket.dart';
 import 'package:afrotok/services/coin_checkout.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 /// Ouvre un live en passant d'abord par sa fiche (type, spectateurs, personnes sur scène, essai gratuit et billet), puis l'écran du live.
 /// L'hôte n'a pas de fiche : il retrouve directement son live.
@@ -37,6 +38,7 @@ class _LiveSheetPageState extends State<LiveSheetPage> {
   LiveStageState _stage = const LiveStageState();
   LiveTicketOffer? _offer;
   bool _ticketMode = false;
+  bool _ended = false;   // le serveur dit que ce live est terminé
 
   @override
   void initState() {
@@ -49,6 +51,12 @@ class _LiveSheetPageState extends State<LiveSheetPage> {
       final id = widget.live.liveId!;
       final results = await Future.wait([LivesApi.stage(id), LivesApi.get(id)]);
       if (!mounted) return;
+      if (results[1]['is_live'] == false) {
+        // la liste ou le fil le montrait encore « en direct » : on le retire tout de suite des listes
+        context.read<LiveProvider>().removeLive(id);
+        setState(() => _ended = true);
+        return;
+      }
       setState(() {
         _stage = LiveStageState.fromJson(results[0]);
         _offer = LiveTicketOffer.fromLive(results[1]);
@@ -135,7 +143,18 @@ class _LiveSheetPageState extends State<LiveSheetPage> {
                   Text(tr('{n} personnes sur scène', {'n': '${speakers.length}'}), style: const TextStyle(color: Colors.white70, fontSize: 13)),
                 ]),
               ],
-              if (_ticketMode && !offered) ...[
+              if (_ended)
+                Container(
+                  margin: const EdgeInsets.only(top: 16),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: Colors.black.withOpacity(.55), borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.white24)),
+                  child: Row(children: [
+                    const Icon(Icons.stop_circle_outlined, color: Colors.white70),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(tr('Ce live est terminé.'), style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700))),
+                  ]),
+                ),
+              if (_ticketMode && !offered && !_ended) ...[
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -164,9 +183,9 @@ class _LiveSheetPageState extends State<LiveSheetPage> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: () => _enter(context, l, isHost: false, isInvited: widget.isInvited, replace: true),
+                  onPressed: _ended ? () => Navigator.maybePop(context) : () => _enter(context, l, isHost: false, isInvited: widget.isInvited, replace: true),
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF9A825), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25))),
-                  child: Text(label, style: const TextStyle(color: Colors.black, fontSize: 15, fontWeight: FontWeight.w700)),
+                  child: Text(_ended ? tr('Retour') : label, style: const TextStyle(color: Colors.black, fontSize: 15, fontWeight: FontWeight.w700)),
                 ),
               ),
               const SizedBox(height: 10),

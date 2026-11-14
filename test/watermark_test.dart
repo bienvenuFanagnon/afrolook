@@ -73,6 +73,34 @@ void main() {
     expect(white + clear, greaterThan(0));
   });
 
+  test('la silhouette posée sur un fond coloré laisse le fond visible autour du dessin (jamais de carré blanc) et dessine le A en blanc', () async {
+    final sil = await Watermark.silhouette(140);
+    expect(sil, isNotNull, reason: 'le logo de l’application (assets/logo/afrolook_logo.png) doit se charger');
+    // pixels de la silhouette : hors dessin = (0,0,0,0), dessin = blanc opaque (valeurs valides en prémultiplié)
+    final raw = (await sil!.toByteData(format: ui.ImageByteFormat.rawRgba))!;
+    final px = raw.buffer.asUint8List(raw.offsetInBytes, raw.lengthInBytes);
+    var drawn = 0;
+    for (var i = 0; i < px.length; i += 4) {
+      if (px[i + 3] == 0) {
+        expect([px[i], px[i + 1], px[i + 2]], [0, 0, 0], reason: 'un pixel transparent doit avoir des couleurs nulles');
+      } else {
+        drawn++;
+        expect([px[i], px[i + 1], px[i + 2], px[i + 3]], [255, 255, 255, 255]);
+      }
+    }
+    expect(drawn, greaterThan(500));
+    expect(drawn, lessThan(140 * 140 ~/ 2), reason: 'le dessin (A et bulles) ne remplit pas le carré');
+    // posée sur un fond bleu : le coin reste bleu
+    final rec = ui.PictureRecorder();
+    final c = Canvas(rec);
+    c.drawRect(const Rect.fromLTWH(0, 0, 140, 140), Paint()..color = const Color(0xFF1565C0));
+    c.drawImage(sil, Offset.zero, Paint());
+    final out = await rec.endRecording().toImage(140, 140);
+    final d = (await out.toByteData(format: ui.ImageByteFormat.rawRgba))!;
+    final o = d.buffer.asUint8List(d.offsetInBytes, d.lengthInBytes);
+    expect([o[0], o[1], o[2]], [0x15, 0x65, 0xC0], reason: 'le coin (hors dessin) doit rester bleu');
+  });
+
   test('le QR est une tuile carrée claire avec des modules sombres', () async {
     final d = img.decodePng(await Watermark.qrPng('https://afrolookmedia.com/share/post/abc', size: 240))!;
     expect((d.width, d.height), (240, 240));

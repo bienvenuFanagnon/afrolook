@@ -17,10 +17,13 @@ import 'live_shop_orders_page.dart';
 /// Toucher une carte ouvre la fiche complète (photos, description, livraison). Le vendeur change ses produits et ses stocks PENDANT le live
 /// (« Gérer ») ; le stock est visible par tout le monde et se met à jour toutes les 10 secondes. À placer dans le `Stack` de la page du live.
 class LivePinnedProduct extends StatefulWidget {
-  const LivePinnedProduct({super.key, required this.liveId, required this.isHost});
+  const LivePinnedProduct({super.key, required this.liveId, required this.isHost, this.canOpen = true});
 
   final String liveId;
   final bool isHost;
+
+  /// Montrer le bouton « Ouvrir ma vitrine » quand rien n'est épinglé : seulement dans une vente en direct ou un marché (les autres lives gardent l'écran libre).
+  final bool canOpen;
 
   @override
   State<LivePinnedProduct> createState() => _LivePinnedProductState();
@@ -565,7 +568,7 @@ class _LivePinnedProductState extends State<LivePinnedProduct> {
 
   @override
   Widget build(BuildContext context) {
-    if (_pins.isEmpty && !widget.isHost) return const SizedBox.shrink();
+    if (_pins.isEmpty && (!widget.isHost || !widget.canOpen)) return const SizedBox.shrink();
     return Positioned(
       left: 12,
       right: 76,

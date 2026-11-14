@@ -1,3 +1,4 @@
+import 'package:afrotok/l10n/tr.dart';
 import '../../ads/fullscreen_ad_page.dart';
 // pages/chronique/chronique_detail_page.dart
 
@@ -532,10 +533,15 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
   /// Durée d'une pub = celle d'une chronique : 5 s pour une image / un bloc AdMob, durée de la vidéo (3 à 60 s) pour une vidéo.
   static const int _adImageMs = 5000;
 
-  void _startAdTimer(int durationMs) {
+  /// La barre de la pub se remplit en 5 s ; ensuite le bouton « Fermer » apparaît et la page ATTEND la personne (jamais de passage automatique).
+  /// Une actualité (`manual: false`) garde son temps de lecture et passe toute seule.
+  bool _adCanClose = false;
+
+  void _startAdTimer(int durationMs, {bool manual = true}) {
     _stopStoryTimer();
     _storyProgress = 0.0;
-    _runTimer(durationMs.clamp(3000, 60000));
+    _adCanClose = false;
+    _runTimer(manual ? _adImageMs : durationMs.clamp(3000, 60000), autoNext: !manual);
   }
 
   void _startStoryTimer(Chronique chronique) {
@@ -564,7 +570,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
     _runTimer(durationMs);
   }
 
-  void _runTimer(int durationMs) {
+  void _runTimer(int durationMs, {bool autoNext = true}) {
     final steps = durationMs ~/ _timerIntervalMs;
     final increment = 1.0 / steps;
 
@@ -574,7 +580,11 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
       setState(() => _storyProgress = (_storyProgress + increment).clamp(0.0, 1.0));
       if (_storyProgress >= 1.0) {
         t.cancel();
-        _goToNextStory();
+        if (autoNext) {
+          _goToNextStory();
+        } else if (mounted) {
+          setState(() => _adCanClose = true);   // pub : on attend que la personne la ferme
+        }
       }
     });
   }
@@ -934,9 +944,8 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
   /// Une pub vidéo dure comme sa vidéo (3 à 60 s, comme une chronique vidéo).
   void _syncAdTimerWithVideo(Advertisement ad) {
     final c = _adVideoController;
+    // 14/11/2026 : 5 s d'attente pour toutes les pubs, quelle que soit la durée de la vidéo (elle tourne en boucle) : le minuteur n'est plus relancé ici
     if (!mounted || c == null || _currentAdId != ad.id || !_isShowingAd) return;
-    final ms = c.value.duration.inMilliseconds;
-    if (ms > 0) _startAdTimer(ms);
   }
 
   void _stopAdVideo() {
@@ -1025,15 +1034,11 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
     return FullScreenAdPage(
       key: ValueKey('chronique_ad_page_${slot.ordinal}'),
       active: active,
-      showCountdown: false,   // la barre de progression de la chronique montre déjà le temps
-      ownSeconds: fbVideo ? 5 : 3,
       onShown: (seconds) {
         _gateTimerOn = true;
-        _startAdTimer(seconds * 1000);
+        _startAdTimer(seconds * 1000);   // 5 s ; le bouton « Fermer » de la page prend ensuite le relais
       },
-      onNext: () {
-        if (!_gateTimerOn) _goToNextStory();   // rien à montrer : on passe ; sinon la barre de progression passe à la suite à la fin du décompte
-      },
+      onNext: _goToNextStory,   // bouton « Fermer » touché, ou rien à montrer
       ownBuilder: fb == null
           ? null
           : (done) {
@@ -1165,6 +1170,34 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
           ),
         ),
       ],
+    );
+  }
+
+  /// « Fermer dans N s » pendant l'attente, puis le bouton « Fermer » (touché par la personne).
+  Widget _adCloseControl() {
+    if (_adCanClose) {
+      return GestureDetector(
+        key: const ValueKey('chronique_ad_close'),
+        behavior: HitTestBehavior.opaque,
+        onTap: _goToNextStory,
+        child: Container(
+          height: 40,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(color: Colors.black.withOpacity(.72), borderRadius: BorderRadius.circular(99), border: Border.all(color: Colors.white54)),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Text(context.tr('Fermer'), style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800)),
+            const SizedBox(width: 6),
+            const Icon(Icons.close_rounded, color: Colors.white, size: 18),
+          ]),
+        ),
+      );
+    }
+    final left = ((1.0 - _storyProgress) * _adImageMs / 1000).ceil().clamp(1, 5);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+      decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(99), border: Border.all(color: Colors.white24)),
+      child: Text('${context.tr('Fermer dans')} $left s', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
     );
   }
 
@@ -1543,7 +1576,8 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
                     _stopStoryTimer();   // le décompte commence quand la pub est prête (voir _buildAdmobSlide)
                     _storyProgress = 0.0;
                   } else {
-                    _startAdTimer(item is _NewsSlot ? 9000 : _adImageMs); // une actualité reste plus longtemps (temps de lire)
+                    // pub : 5 s puis bouton « Fermer » ; une actualité reste plus longtemps (temps de lire) et passe toute seule
+                    item is _NewsSlot ? _startAdTimer(9000, manual: false) : _startAdTimer(_adImageMs);
                   }
                   if (item is _NewsSlot) {
                     _stopAdVideo();
@@ -1607,7 +1641,11 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
                   return _buildAdmobSlide(item, index);
                 }
                 if (item is Advertisement) {
-                  return _buildAdSlide(item);
+                  // pub d'Afrolook Ads : la barre se remplit en 5 s, puis le bouton « Fermer » (la page n'avance jamais seule)
+                  return Stack(fit: StackFit.expand, children: [
+                    _buildAdSlide(item),
+                    Positioned(top: MediaQuery.of(context).padding.top + 56, right: 12, child: _adCloseControl()),
+                  ]);
                 }
                 final chronique = item as Chronique;
                 return GestureDetector(

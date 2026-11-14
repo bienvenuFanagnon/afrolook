@@ -1223,6 +1223,32 @@ class _CreateLivePageState extends State<CreateLivePage> {
       const SizedBox(height: 8),
       Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         _modeCard(
+          title: '${tr('Conte interactif')} · ${tr('Nouveau')}',
+          subtitle: tr('Le public vote la suite avec des pièces'),
+          icon: Icons.auto_stories_outlined,
+          selected: _game == 'story',
+          onTap: () => setState(() {
+            _isShoppingLive = false;
+            _audioRoom = false;
+            _game = 'story';
+          }),
+        ),
+        const SizedBox(width: 10),
+        _modeCard(
+          title: '${tr('Quiz à cagnotte')} · ${tr('Nouveau')}',
+          subtitle: tr('Gratuit pour jouer, cagnotte offerte par toi'),
+          icon: Icons.quiz_outlined,
+          selected: _game == 'quiz',
+          onTap: () => setState(() {
+            _isShoppingLive = false;
+            _audioRoom = false;
+            _game = 'quiz';
+          }),
+        ),
+      ]),
+      const SizedBox(height: 8),
+      Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _modeCard(
           title: '${tr('Duel')} · ${tr('Nouveau')}',
           subtitle: tr('1 contre 1, les cadeaux décident'),
           icon: Icons.sports_mma_outlined,
