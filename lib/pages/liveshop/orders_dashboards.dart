@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../l10n/tr.dart';
 import '../../theme/app_colors.dart';
 import 'live_sales_card.dart';
+import 'sales_ledger_page.dart';
 
 final NumberFormat _n = NumberFormat.decimalPattern('fr');
 String _f(num v) => '${_n.format(v)} F';
@@ -106,6 +107,31 @@ Widget _bars(AppColors c, List<Map> days, String key) {
   );
 }
 
+/// Bouton pleine largeur vers la comptabilité (solde des ventes ou dépenses).
+Widget _ledgerButton(BuildContext context, AppColors c, {required bool seller}) => Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        key: ValueKey(seller ? 'open_sales_ledger' : 'open_buyer_ledger'),
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => SalesLedgerPage(seller: seller))),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: c.border)),
+          child: Row(children: [
+            Icon(seller ? Icons.account_balance_rounded : Icons.receipt_long_rounded, color: c.primary, size: 20),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(seller ? tr('Solde et transactions des ventes') : tr('Mes dépenses et remboursements'), style: TextStyle(color: c.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w800)),
+                Text(seller ? tr('Aujourd\'hui, hier, 3 jours, ou les dates de ton choix') : tr('Ce que tu as payé et ce qui t\'a été remboursé'), style: TextStyle(color: c.textSecondary, fontSize: 11.5)),
+              ]),
+            ),
+            Icon(Icons.chevron_right_rounded, color: c.textSecondary),
+          ]),
+        ),
+      ),
+    );
+
 /// Tableau de bord du VENDEUR : ce qui attend ma réponse, les étapes de mes ventes, mes offres et mes codes promo, puis mes chiffres (argent, 14 jours, meilleurs produits).
 class SellerDashboard extends StatelessWidget {
   const SellerDashboard({super.key, required this.counts, required this.onStatus, required this.onOffers, required this.onPromos});
@@ -128,6 +154,7 @@ class SellerDashboard extends StatelessWidget {
         if (offers > 0) _todoRow(c, c.danger, tr('{n} offre(s) à répondre', {'n': offers}), onTap: onOffers),
         if (disputes > 0) _todoRow(c, c.danger, tr('{n} litige(s) à suivre', {'n': disputes}), onTap: () => onStatus('disputed')),
       ]),
+      _ledgerButton(context, c, seller: true),
       _grid2([
         _tile(c, tr('À valider'), pending, () => onStatus('pending_seller'), alert: true, icon: Icons.hourglass_top_rounded),
         _tile(c, tr('En préparation'), _st(counts, 'seller', 'accepted'), () => onStatus('accepted'), icon: Icons.inventory_2_outlined),
@@ -184,6 +211,7 @@ class BuyerDashboard extends StatelessWidget {
         for (final a in actions)
           _todoRow(c, c.warning, what('${a['status']}'), sub: '${a['title']} · @${(a['seller'] as Map?)?['username'] ?? ''}', onTap: onTodo, action: act('${a['status']}')),
       ]),
+      _ledgerButton(context, c, seller: false),
       _grid2([
         _tile(c, tr('Envoyées'), _st(counts, 'buyer', 'pending_seller'), () => onStatus('pending_seller'), icon: Icons.send_outlined),
         _tile(c, tr('Validées'), _st(counts, 'buyer', 'accepted'), () => onStatus('accepted'), icon: Icons.inventory_2_outlined),

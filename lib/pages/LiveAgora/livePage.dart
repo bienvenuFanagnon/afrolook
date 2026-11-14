@@ -227,6 +227,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   LiveTicket? _ticket;                 // ce qui couvre le spectateur (billet, essai, passe) ; null tant que le gratuit dure
   LiveTicketOffer? _ticketOffer;       // prix du billet, connu dès que le serveur le demande
   bool _ticketRequired = false;        // écran « billet à payer »
+  String? _joinError;                  // la connexion au live a échoué (autre raison que le billet) : on le dit, au lieu de tourner sans fin
+  Timer? _joinWatchdog;
   bool _hadPaidTicket = false;         // un billet a déjà été payé dans ce live (texte « Billet terminé »)
   bool _ticketLeftChannel = false;     // le spectateur a quitté le canal Agora à la fin de son billet (rejoint après paiement)
   bool _ticketBusy = false;
@@ -372,6 +374,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       _isInitialized = true;
       _initNoCamera();
     } else {
+      _armJoinWatchdog();
       _initAgora();
       if (widget.postLive.audioOnly) _initPreviewVideo();   // salon audio : l'aperçu (image ou vidéo) s'affiche derrière les voix
     }
@@ -608,6 +611,12 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
   void _onTrialTimeExpired() {
     if (_shouldSkipTrial() || _showTrialOverlay) return;
+    if (!widget.postLive.isPaidLive) {
+      // live gratuit en mode billet : l'essai offert par l'hôte est fini → on quitte le canal et on propose le billet de 15 minutes (une seule fenêtre)
+      _trialTimer?.cancel();
+      _onTicketExpired();
+      return;
+    }
 
     _applyPostTrialRestrictions();
     setState(() {
@@ -1471,7 +1480,13 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       });
       return;
     }
-    if (t!.by == 'ticket' || t.by == 'offered') _hadPaidTicket = true;
+    if (t!.by == 'ticket' || t.by == 'offered') {
+      _hadPaidTicket = true;
+      if (_showTrialOverlay) {
+        _trialTimer?.cancel();
+        _removeRestrictions();
+      }
+    }
     if (t.audioOnly) {
       // « son seul » : la vidéo reçue est coupée (Agora facture alors l'audio seul)
       try {
@@ -1564,6 +1579,8 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           audio: audio ? true : null);
       if (!ok || !mounted) return;
       _hadPaidTicket = true;
+      _trialTimer?.cancel();
+      _removeRestrictions();   // ferme « Temps d'essai écoulé » s'il était resté ouvert, rend le son et l'image
       if (!_isInitialized || _ticketLeftChannel) {
         _ticketLeftChannel = false;
         await _joinAfterPayment();   // redemande le jeton (qui porte la fin du billet) et rejoint
@@ -1572,7 +1589,13 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         await _engine.renewToken(r['token'] as String);
         _applyTicket(LiveTicket.fromToken(r['ticket']));
       }
-      if (mounted) setState(() => _ticketRequired = false);
+      if (mounted) {
+        setState(() {
+          _ticketRequired = false;
+          _showTrialOverlay = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Billet payé : bon live !'))));
+      }
     } catch (e) {
       printVm("❌ Erreur paiement du billet: $e");
     } finally {
@@ -2139,6 +2162,10 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         // Essai gratuit terminé côté serveur (`details.trial` : seconds_left 0, expired vrai) : entrée à payer
         _applyTrial(LiveTrial.fromJson(e.details['trial']) ??
             const LiveTrial(minutes: 0, secondsLeft: 0, expired: true));
+      } else if (e is ApiException && e.status == 410 && mounted && !isHost) {
+        _onLiveEndedRemotely();
+      } else if (mounted && !_ticketRequired) {
+        setState(() => _joinError = e is ApiException && e.message.isNotEmpty ? e.message : tr('Connexion au live impossible pour le moment. Vérifie ta connexion et réessaie.'));
       }
       return null;
     }
@@ -4041,7 +4068,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
             if (!isLandscape && _showUI) _buildTicketReminder(),
 
             // LOADING
-            if (!_isInitialized && !_ticketRequired) _buildLoadingOverlay(),
+            if (!_isInitialized && !_ticketRequired) (_joinError != null ? _buildJoinErrorOverlay() : _buildLoadingOverlay()),
           ],
         ),
       ),
@@ -5343,6 +5370,48 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   //   );
   // }
 
+  /// La connexion au live a échoué : la raison, « Réessayer » et « Quitter le live » (jamais une roue qui tourne sans fin).
+  Widget _buildJoinErrorOverlay() {
+    return Container(
+      key: const ValueKey('live_join_error'),
+      color: Colors.black.withOpacity(0.85),
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: Center(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.wifi_off_rounded, size: 56, color: Color(0xFFF9A825)),
+          const SizedBox(height: 16),
+          Text(tr('Impossible de rejoindre le live'), style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+          const SizedBox(height: 10),
+          Text(_joinError ?? '', style: const TextStyle(color: Colors.white70, fontSize: 14.5, height: 1.4), textAlign: TextAlign.center),
+          const SizedBox(height: 22),
+          ElevatedButton(
+            onPressed: _retryJoin,
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFF9A825), padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14)),
+            child: Text(tr('Réessayer'), style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          ),
+          TextButton(onPressed: _leaveLive, child: Text(tr('Quitter le live'), style: const TextStyle(color: Colors.white70))),
+        ]),
+      ),
+    );
+  }
+
+  /// Nouvelle tentative de connexion (le moteur vidéo est recréé, le jeton redemandé).
+  Future<void> _retryJoin() async {
+    setState(() => _joinError = null);
+    _armJoinWatchdog();
+    await _reinitializeAgora();
+  }
+
+  /// Sans connexion au bout de 25 secondes (et sans billet à payer) : on l'explique au lieu de laisser tourner.
+  void _armJoinWatchdog() {
+    _joinWatchdog?.cancel();
+    _joinWatchdog = Timer(const Duration(seconds: 25), () {
+      if (mounted && !_isInitialized && !_ticketRequired && _joinError == null && !_endHandled) {
+        setState(() => _joinError = tr('La connexion au live prend trop de temps. Vérifie ta connexion et réessaie.'));
+      }
+    });
+  }
+
   Widget _buildLoadingOverlay() {
     return Container(
       color: Colors.black.withOpacity(0.7),
@@ -5403,6 +5472,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     _noCamTick?.cancel();
     _previewVideo?.dispose();
     _musicGen++;
+    _joinWatchdog?.cancel();
     _topScroll.dispose();
     _topScrolled.dispose();
     _musicPlayer?.stop();

@@ -104,6 +104,9 @@ class LiveShopApi {
 
   /// Bilan d'un live : chiffres publics pour tout le monde, détails pour l'hôte (la réponse porte alors `received_xof`).
   /// Commandes de ce live qui attendent encore la réponse du vendeur (pastille rouge « Commandes »).
+  /// Compteurs du vendeur dans ce live : à traiter (`pending`, `offers`) et ventes cumulées depuis le début (`sold` : orders, items, gross_xof, received_xof, escrow_xof).
+  static Future<Map<String, dynamic>> liveSellerSummary(String liveId) async => _map(await _c.get('/live-shop/lives/$liveId/pending-orders'));
+
   static Future<int> pendingOrders(String liveId) async {
     final m = _map(await _c.get('/live-shop/lives/$liveId/pending-orders'));
     return ((m['pending'] as num?)?.toInt() ?? 0) + ((m['offers'] as num?)?.toInt() ?? 0);   // commandes à valider + offres à répondre
@@ -113,6 +116,10 @@ class LiveShopApi {
 
   /// Tableau de bord du vendeur : tout ce qu'il a vendu en ligne.
   static Future<Map<String, dynamic>> sellerStats() async => _map(await _c.get('/live-shop/seller/stats'));
+
+  /// Comptabilité des ventes (consultation) : vendeur ([seller] vrai) ou acheteur, jours `from` / `to` (AAAA-MM-JJ).
+  static Future<Map<String, dynamic>> ledger({required bool seller, String? from, String? to}) async =>
+      _map(await _c.get('/live-shop/ledger', query: {'role': seller ? 'seller' : 'buyer', if (from != null) 'from': from, if (to != null) 'to': to}));
 
   /// Tableau de bord de l'acheteur : argent protégé, dépenses, ce qu'il doit faire maintenant, vendeurs habituels.
   static Future<Map<String, dynamic>> buyerStats() async => _map(await _c.get('/live-shop/buyer/stats'));

@@ -582,6 +582,7 @@ class _MesNotificationState extends State<MesNotification> {
         case 'ORDER_RESOLVED':
         case 'OFFER_NEW':
         case 'OFFER_REPLY':
+        case 'SALE_PAID':
           // vente en direct : commandes, ventes et offres
           await _openPage(const LiveShopOrdersPage());
           break;

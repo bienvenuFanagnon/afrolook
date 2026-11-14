@@ -8,10 +8,13 @@ import 'package:provider/provider.dart';
 import '../../l10n/tr.dart';
 import '../../providers/authProvider.dart';
 import '../../services/api/live_shop_api.dart';
+import '../../services/api/wallet_api.dart';
 import 'package:afrolook_api_client/afrolook_api_client.dart' show ApiException;
 import '../paiement/newDepot.dart';
 import 'delivery_rates_page.dart';
 import 'live_shop_orders_page.dart';
+import 'live_orders_sheet.dart';
+import 'sales_ledger_page.dart';
 
 /// Vitrine d'un live de vente : les produits épinglés par le vendeur défilent en cartes (prix, ancien prix, stock, ventes, minuteur de vente flash).
 /// Toucher une carte ouvre la fiche complète (photos, description, livraison). Le vendeur change ses produits et ses stocks PENDANT le live
@@ -34,7 +37,12 @@ class _LivePinnedProductState extends State<LivePinnedProduct> {
   static const _gold = Color(0xFFF9A825);
 
   List<Map<String, dynamic>> _pins = const [];
-  int _pending = 0;   // commandes qui attendent ma réponse (valider ou refuser) : pastille rouge sur « Commandes »
+  int _myTodo = 0;   // spectateur : mes commandes qui attendent MA réponse (frais à accepter, réception à confirmer) : pastille rouge
+  int _myOpen = 0;   // spectateur : mes commandes en cours (le bouton « Mes commandes » reste visible)
+  int _pending = 0;
+  Map<String, dynamic> _sold = const {};   // mes ventes dans CE live depuis le début (vendeur : hôte d'une vente, ou vendeur d'un étal)
+  int? _balanceXof;   // spectateur : mon solde en FCFA (argent déposé + gains), pour savoir si je peux commander
+  int _loadCount = 0;   // nombre de lectures (certaines données sont relues une fois sur deux ou sur trois)   // commandes qui attendent ma réponse (valider ou refuser) : pastille rouge sur « Commandes »
   Timer? _poll;
   Timer? _tick;
   Timer? _auto;
@@ -84,12 +92,109 @@ class _LivePinnedProductState extends State<LivePinnedProduct> {
       final r = await LiveShopApi.pins(widget.liveId);
       if (mounted) setState(() => _pins = r);
     } catch (_) {}   // jamais bloquant : le live continue sans la vitrine
-    if (widget.isHost) {
+    _loadCount++;
+    if (widget.isHost || _loadCount % 2 == 1) {
+      // vendeur : à traiter et ventes cumulées ; un spectateur qui a vendu à son étal (marché) garde aussi son total
       try {
-        final n = await LiveShopApi.pendingOrders(widget.liveId);
-        if (mounted && n != _pending) setState(() => _pending = n);
+        final m = await LiveShopApi.liveSellerSummary(widget.liveId);
+        final n = ((m['pending'] as num?)?.toInt() ?? 0) + ((m['offers'] as num?)?.toInt() ?? 0);
+        final sold = (m['sold'] is Map) ? Map<String, dynamic>.from(m['sold'] as Map) : const <String, dynamic>{};
+        if (mounted) setState(() { if (widget.isHost) _pending = n; _sold = sold; });
       } catch (_) {}
     }
+    if (!widget.isHost && (_balanceXof == null || _loadCount % 3 == 0)) _loadBalance();
+    if (widget.isHost) {
+      // (déjà lu ci-dessus)
+    } else {
+      try {
+        final c = await LiveShopApi.orderCounts();
+        final b = (c['buyer'] as Map?) ?? const {};
+        final todo = (b['todo'] as num?)?.toInt() ?? 0;
+        final open = todo + ((b['progress'] as num?)?.toInt() ?? 0);
+        if (!mounted) return;
+        if (todo > _myTodo) {
+          // le vendeur a répondu (frais fixés, commande expédiée) : un mot et « Voir », sans quitter le live
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(tr('Ta commande a changé : le vendeur attend ta réponse.')),
+            action: SnackBarAction(label: tr('Voir'), onPressed: () => showLiveOrdersSheet(context, liveId: widget.liveId).then((_) => _load())),
+            duration: const Duration(seconds: 6),
+          ));
+        }
+        if (todo != _myTodo || open != _myOpen) setState(() { _myTodo = todo; _myOpen = open; });
+      } catch (_) {}
+    }
+  }
+
+  Future<void> _loadBalance() async {
+    try {
+      final user = Provider.of<UserAuthProvider>(context, listen: false).loginUserData;
+      final w = await WalletApi.instance.syncInto(user);
+      if (mounted) setState(() => _balanceXof = w.depositXof + w.payoutXof);
+    } catch (_) {}
+  }
+
+  /// Spectateur : recharge de son solde de dépôt (argent réel) sans perdre le live, puis solde relu.
+  Future<void> _deposit() async {
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const DepositScreen()));
+    _loadBalance();
+  }
+
+  /// Vendeur : ses ventes dans ce live depuis le début (consultation ; l'argent reçu est déjà sur son solde de gains).
+  Future<void> _openSold() async {
+    int i(String k) => (_sold[k] as num?)?.toInt() ?? 0;
+    Widget line(String k, String v, {Color? color}) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Row(children: [
+            Expanded(child: Text(k, style: const TextStyle(color: Colors.white70, fontSize: 13.5))),
+            Text(v, style: TextStyle(color: color ?? Colors.white, fontSize: 14, fontWeight: FontWeight.w800)),
+          ]),
+        );
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        key: const ValueKey('live_sold_sheet'),
+        padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFF26223A), Color(0xFF15121F)]),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: SafeArea(
+          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Center(child: Container(width: 38, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(99)))),
+            const SizedBox(height: 12),
+            Text(tr('Mes ventes dans ce live'), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
+            Text(tr('Depuis le début du live'), style: const TextStyle(color: Colors.white54, fontSize: 12)),
+            const SizedBox(height: 10),
+            Text(_f(i('gross_xof')), style: const TextStyle(color: _gold, fontSize: 28, fontWeight: FontWeight.w900)),
+            line(tr('Commandes'), tr('{n} · {a} article(s)', {'n': i('orders'), 'a': i('items')})),
+            line(tr('Déjà reçu sur ton solde de gains'), _f(i('received_xof')), color: const Color(0xFF69F0AE)),
+            line(tr('En attente de réception (séquestre)'), _f(i('escrow_xof')), color: _gold),
+            const SizedBox(height: 6),
+            Text(tr('Consultation seulement : chaque vente terminée est versée sur ton solde de gains, et tu reçois une notification.'), style: const TextStyle(color: Colors.white38, fontSize: 11.5, height: 1.35)),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: const BorderSide(color: Colors.white38)),
+                icon: const Icon(Icons.account_balance_rounded, size: 18),
+                label: Text(tr('Solde et transactions des ventes')),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SalesLedgerPage(seller: true)));
+                },
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  /// Spectateur : ses commandes, dans une fenêtre du live (il ne sort jamais du live).
+  Future<void> _openMyOrders() async {
+    await showLiveOrdersSheet(context, liveId: widget.liveId);
+    _load();
   }
 
   String _f(num v) => '${_n.format(v)} F';
@@ -425,6 +530,47 @@ class _LivePinnedProductState extends State<LivePinnedProduct> {
     }
   }
 
+  /// Solde du client au moment de commander : argent déposé (payé en premier) et gains en FCFA ; en rouge s'il ne suffit pas.
+  /// « Déposer de l'argent » ouvre directement la recharge du solde de dépôt (argent réel).
+  Widget _balanceBox(BuildContext ctx, int? deposit, int? payout, int total, VoidCallback onDeposit) {
+    final have = (deposit ?? 0) + (payout ?? 0);
+    final short = deposit != null && have < total;
+    return Container(
+      key: const ValueKey('order_balance'),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
+      decoration: BoxDecoration(
+        color: (short ? Colors.redAccent : Colors.green).withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: (short ? Colors.redAccent : Colors.green).withOpacity(0.5)),
+      ),
+      child: Row(children: [
+        Icon(Icons.account_balance_wallet_rounded, size: 20, color: short ? Colors.redAccent : Colors.green),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(deposit == null ? tr('Lecture de ton solde…') : tr('Ton solde : {f}', {'f': _f(have)}), style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800)),
+            if (deposit != null)
+              Text(
+                short
+                    ? tr('Il te manque {m} pour cette commande.', {'m': _f(total - have)})
+                    : (payout ?? 0) > 0
+                        ? tr('Argent déposé {d} · gains {g}', {'d': _f(deposit), 'g': _f(payout ?? 0)})
+                        : tr('Argent déposé'),
+                style: TextStyle(fontSize: 11.5, color: short ? Colors.redAccent : null, fontWeight: short ? FontWeight.w700 : FontWeight.w500),
+              ),
+          ]),
+        ),
+        TextButton.icon(
+          key: const ValueKey('order_deposit'),
+          onPressed: onDeposit,
+          icon: const Icon(Icons.add_circle_outline_rounded, size: 18),
+          label: Text(tr('Déposer de l\'argent'), style: const TextStyle(fontWeight: FontWeight.w800)),
+        ),
+      ]),
+    );
+  }
+
   /// Drapeau d'un pays à partir de son code à 2 lettres (TG → 🇹🇬).
   static String _flag(String code) {
     final c = code.toUpperCase();
@@ -487,6 +633,15 @@ class _LivePinnedProductState extends State<LivePinnedProduct> {
     bool? delivers;                 // le vendeur livre vers le pays choisi ? (null : il n'a indiqué aucun tarif)
     List<String> deliveryCountries = const [];
     bool crossBorderOk = false;     // l'acheteur a lu et accepté l'alerte « autre pays »
+    int? depositXof;                // solde d'argent déposé (FCFA), payé en premier
+    int? payoutXof;                 // gains en FCFA, utilisés ensuite
+
+    Future<void> refreshBalance(StateSetter set) async {
+      try {
+        final w = await WalletApi.instance.syncInto(user);
+        set(() { depositXof = w.depositXof; payoutXof = w.payoutXof; });
+      } catch (_) {}
+    }
     String? error;
     int? missing;   // montant manquant (FCFA) quand le solde ne suffit pas : bouton « Recharger »
     bool busy = false;
@@ -555,7 +710,7 @@ class _LivePinnedProductState extends State<LivePinnedProduct> {
         builder: (ctx, set) {
           if (firstLoad) {
             firstLoad = false;
-            WidgetsBinding.instance.addPostFrameCallback((_) => refreshEstimate(set));
+            WidgetsBinding.instance.addPostFrameCallback((_) { refreshEstimate(set); refreshBalance(set); });
           }
           return Padding(
           padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + MediaQuery.of(ctx).viewInsets.bottom),
@@ -571,6 +726,12 @@ class _LivePinnedProductState extends State<LivePinnedProduct> {
                 IconButton(icon: const Icon(Icons.add_circle_outline), onPressed: qty >= maxQty ? null : () => set(() { qty++; discount = 0; promoInfo = null; })),
               ]),
               if (stock != null) Padding(padding: const EdgeInsets.only(bottom: 6), child: Align(alignment: Alignment.centerLeft, child: _stockBadge(p, size: 12))),
+              _balanceBox(ctx, depositXof, payoutXof, price * qty - discount, () async {
+                final total = price * qty - discount;
+                final have = (depositXof ?? 0) + (payoutXof ?? 0);
+                await Navigator.push(ctx, MaterialPageRoute(builder: (_) => DepositScreen(defaultAmount: have < total ? (total - have).toDouble() : null)));
+                await refreshBalance(set);
+              }),
               Row(children: [
                 SizedBox(width: 90, child: TextField(controller: country, maxLength: 2, textCapitalization: TextCapitalization.characters, onChanged: (_) => refreshEstimate(set), decoration: InputDecoration(labelText: tr('Pays'), counterText: ''))),
                 const SizedBox(width: 12),
@@ -618,6 +779,7 @@ class _LivePinnedProductState extends State<LivePinnedProduct> {
                           : () async {
                               // recharge directe du montant manquant, puis la commande repart toute seule (rien à ressaisir)
                               await Navigator.push(ctx, MaterialPageRoute(builder: (_) => DepositScreen(defaultAmount: missing!.toDouble())));
+                              await refreshBalance(set);
                               if (ctx.mounted) await submit(ctx, set);
                             },
                     ),
@@ -638,9 +800,9 @@ class _LivePinnedProductState extends State<LivePinnedProduct> {
       ),
     );
     if (done == true && mounted) {
-      _say(tr('Commande envoyée. Suis-la dans « Mes commandes ».'));
+      _say(tr('Commande envoyée : suis-la ici, sans quitter le live.'));
       _load();
-      Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LiveShopOrdersPage()));
+      await _openMyOrders();
     }
   }
 
@@ -648,6 +810,18 @@ class _LivePinnedProductState extends State<LivePinnedProduct> {
 
   @override
   Widget build(BuildContext context) {
+    final soldChip = (widget.isHost || ((_sold['orders'] as num?)?.toInt() ?? 0) > 0)
+        ? _chipButton(Icons.payments_outlined, tr('Mes ventes : {f}', {'f': _f((_sold['gross_xof'] as num?) ?? 0)}), _openSold)
+        : null;
+    final buyerRow = !widget.isHost && (_myOpen > 0 || _pins.isNotEmpty);
+    final Widget? myOrders = buyerRow || soldChip != null
+        ? Wrap(spacing: 6, runSpacing: 6, children: [
+            if (buyerRow) _chipButton(Icons.receipt_long_rounded, tr('Mes commandes'), _openMyOrders, badge: _myTodo),
+            if (buyerRow) _chipButton(Icons.account_balance_wallet_rounded, _balanceXof == null ? tr('Mon solde') : tr('Solde : {f}', {'f': _f(_balanceXof!)}), _deposit),
+            if (!widget.isHost && soldChip != null) soldChip,
+          ])
+        : null;
+    if (_pins.isEmpty && !widget.isHost && myOrders != null) return Align(alignment: Alignment.topLeft, child: myOrders);
     if (_pins.isEmpty && (!widget.isHost || !widget.canOpen)) return const SizedBox.shrink();
     return Align(
       alignment: Alignment.topLeft,
@@ -702,6 +876,7 @@ class _LivePinnedProductState extends State<LivePinnedProduct> {
                       ),
                   ]),
                 ),
+              if (myOrders != null) Padding(padding: const EdgeInsets.only(top: 6), child: myOrders),
               if (widget.isHost)
                 Padding(
                   padding: const EdgeInsets.only(top: 6),
@@ -709,6 +884,7 @@ class _LivePinnedProductState extends State<LivePinnedProduct> {
                     _chipButton(Icons.tune_rounded, tr('Gérer ma vitrine'), _manage),
                     const SizedBox(width: 6),
                     _chipButton(Icons.receipt_long_rounded, tr('Commandes'), () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LiveShopOrdersPage())).then((_) => _load()), badge: _pending),
+                    if (soldChip != null) ...[const SizedBox(width: 6), soldChip],
                   ]),
                 ),
             ]),

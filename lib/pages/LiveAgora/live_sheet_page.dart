@@ -5,6 +5,7 @@ import 'package:afrotok/pages/LiveAgora/livesAgora.dart';
 import 'package:afrotok/services/api/chat_api.dart';
 import 'package:afrotok/services/api/live_stage.dart';
 import 'package:afrotok/services/api/live_ticket.dart';
+import 'package:afrotok/services/api/live_trial.dart';
 import 'package:afrotok/services/coin_checkout.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -13,6 +14,9 @@ import 'package:provider/provider.dart';
 /// L'hôte n'a pas de fiche : il retrouve directement son live.
 Future<void> openLiveWithSheet(BuildContext context, PostLive live, {required bool isHost, required bool isInvited}) {
   if (isHost) return _enter(context, live, isHost: true, isInvited: isInvited, replace: false);
+  // vente en direct et marché : le spectateur vient acheter, il entre tout de suite (l'essai court sans qu'on le bloque) ;
+  // le billet en pièces n'est demandé qu'à la fin de l'essai, dans le live
+  if (const {'shopping', 'market'}.contains(live.typeSession)) return _enter(context, live, isHost: false, isInvited: isInvited, replace: false);
   return Navigator.push(context, MaterialPageRoute(builder: (_) => LiveSheetPage(live: live, isInvited: isInvited)));
 }
 
@@ -39,6 +43,8 @@ class _LiveSheetPageState extends State<LiveSheetPage> {
   LiveTicketOffer? _offer;
   bool _ticketMode = false;
   bool _ended = false;   // le serveur dit que ce live est terminé
+  bool _trialUsed = false;   // l'essai gratuit de ce live a déjà été utilisé par cette personne
+  bool _covered = false;     // un billet (payé ou offert) ou un passe la couvre encore
 
   @override
   void initState() {
@@ -61,6 +67,12 @@ class _LiveSheetPageState extends State<LiveSheetPage> {
         _stage = LiveStageState.fromJson(results[0]);
         _offer = LiveTicketOffer.fromLive(results[1]);
         _ticketMode = _offer != null;
+        final trial = LiveTrial.fromLive(results[1]);
+        _trialUsed = trial != null && trial.startedAt != null && trial.expired;
+        final me = results[1]['me'];
+        final t = me is Map ? me['ticket'] : null;
+        final ends = t is Map ? DateTime.tryParse('${t['ends_at'] ?? ''}') : null;
+        _covered = t is Map && t['covered_by'] != null && t['covered_by'] != 'trial' && ends != null && ends.isAfter(DateTime.now());
       });
     } catch (_) {}
   }
@@ -85,11 +97,16 @@ class _LiveSheetPageState extends State<LiveSheetPage> {
     final offered = l.offerEntry && _ticketMode;
     final cover = (l.coverImage?.isNotEmpty == true) ? l.coverImage! : (l.hostImage ?? '');
     final speakers = [for (final s in _stage.speakers) s.user];
+    final freeTrial = _ticketMode && trial > 0 && !_trialUsed;
     final label = offered
         ? tr('Regarder, offert par l\'hôte')
-        : _ticketMode && trial > 0
-            ? tr('Regarder gratuitement ({m} min)', {'m': '$trial'})
-            : tr('Regarder');
+        : _covered
+            ? tr('Reprendre (billet en cours)')
+            : freeTrial
+                ? tr('Regarder gratuitement ({m} min)', {'m': '$trial'})
+                : _ticketMode
+                    ? tr('Regarder · billet de {p} pièces', {'p': CoinCheckout.fmt(coins)})
+                    : tr('Regarder');
     return Scaffold(
       backgroundColor: const Color(0xFF1A1A1A),
       body: Stack(children: [
@@ -154,7 +171,7 @@ class _LiveSheetPageState extends State<LiveSheetPage> {
                     Expanded(child: Text(tr('Ce live est terminé.'), style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700))),
                   ]),
                 ),
-              if (_ticketMode && !offered && !_ended) ...[
+              if (_ticketMode && !offered && !_ended && !_covered) ...[
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -164,11 +181,11 @@ class _LiveSheetPageState extends State<LiveSheetPage> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(trial > 0 ? tr('Essai gratuit de {m} minute, puis billet', {'m': '$trial'}) : tr('Billet de {m} minutes', {'m': '${_offer?.minutes ?? 15}'}),
+                        Text(freeTrial ? tr('Essai gratuit de {m} minute, puis billet', {'m': '$trial'}) : _trialUsed ? tr('Essai gratuit déjà utilisé') : tr('Billet de {m} minutes', {'m': '${_offer?.minutes ?? 15}'}),
                             style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
                         const SizedBox(height: 2),
                         Text(
-                          trial > 0
+                          freeTrial
                               ? tr('Les minutes gratuites du mois sont épuisées. Après l\'essai : {p} pièces pour {m} minutes.', {'p': CoinCheckout.fmt(coins), 'm': '${_offer?.minutes ?? 15}'})
                               : tr('Les minutes gratuites du mois sont épuisées : {p} pièces pour {m} minutes.', {'p': CoinCheckout.fmt(coins), 'm': '${_offer?.minutes ?? 15}'}),
                           style: const TextStyle(color: Color(0xFFCFCFCA), fontSize: 11.5, height: 1.4),

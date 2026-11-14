@@ -7,12 +7,12 @@ import '../../theme/app_colors.dart';
 /// Types de notification qui concernent les commandes, les ventes et les offres.
 const List<String> kOrderNotifTypes = [
   'ORDER_NEW', 'ORDER_VALIDATED', 'ORDER_FEE', 'ORDER_SHIPPED', 'ORDER_RECEIVED', 'ORDER_CANCELLED', 'ORDER_DISPUTE', 'ORDER_RESOLVED',
-  'ORDER_DELIVERED', 'ORDER_REVIEW', 'ORDER_REMIND', 'ORDER_REMIND_BUYER', 'OFFER_NEW', 'OFFER_REPLY', 'STOCK_LOW', 'STOCK_OUT',
+  'ORDER_DELIVERED', 'ORDER_REVIEW', 'ORDER_REMIND', 'ORDER_REMIND_BUYER', 'OFFER_NEW', 'OFFER_REPLY', 'STOCK_LOW', 'STOCK_OUT', 'SALE_PAID',
 ];
 
 /// Où ouvrir « Mes commandes » pour une notification : `sell` (ventes à traiter), `buy` (achats), `offers` (négociations).
 String orderNotifTarget(String type) => switch (type) {
-      'ORDER_NEW' || 'ORDER_REMIND' || 'ORDER_DISPUTE' || 'ORDER_DELIVERED' || 'ORDER_REVIEW' || 'STOCK_LOW' || 'STOCK_OUT' => 'sell',
+      'ORDER_NEW' || 'ORDER_REMIND' || 'ORDER_DISPUTE' || 'ORDER_DELIVERED' || 'ORDER_REVIEW' || 'STOCK_LOW' || 'STOCK_OUT' || 'SALE_PAID' => 'sell',
       'OFFER_NEW' || 'OFFER_REPLY' => 'offers',
       _ => 'buy',
     };
@@ -24,6 +24,7 @@ String orderNotifText(String type) => switch (type) {
       'ORDER_FEE' => tr('{a} a fixé les frais de livraison : accepte-les ou refuse'),
       'ORDER_SHIPPED' => tr('{a} a expédié ta commande'),
       'ORDER_RECEIVED' => tr('{a} a confirmé la réception : l\'argent t\'est versé'),
+      'SALE_PAID' => tr('Vente payée : l\'argent de {a} est versé sur ton solde de gains'),
       'ORDER_CANCELLED' => tr('{a} a annulé la commande'),
       'ORDER_DISPUTE' => tr('{a} a signalé un problème sur une commande'),
       'ORDER_RESOLVED' => tr('L\'équipe a tranché le litige d\'une commande'),
@@ -43,7 +44,7 @@ IconData orderNotifIcon(String type) => switch (type) {
       'ORDER_VALIDATED' => Icons.check_circle_outline_rounded,
       'ORDER_FEE' => Icons.payments_outlined,
       'ORDER_SHIPPED' || 'ORDER_DELIVERED' => Icons.local_shipping_outlined,
-      'ORDER_RECEIVED' => Icons.savings_outlined,
+      'ORDER_RECEIVED' || 'SALE_PAID' => Icons.savings_outlined,
       'ORDER_CANCELLED' => Icons.cancel_outlined,
       'ORDER_DISPUTE' || 'ORDER_RESOLVED' => Icons.report_gmailerrorred_rounded,
       'ORDER_REVIEW' => Icons.star_outline_rounded,
