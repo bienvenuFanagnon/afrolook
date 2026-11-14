@@ -199,6 +199,23 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
   final Set<String> _loadingRelations = {};
   final Set<String> _relationsResolved = {};
   int _currentPage = 0;
+  SoundProvider? _sound;
+
+  /// Applique le réglage du son (bouton du haut) à la vidéo en cours : coupé = volume 0, sinon volume plein.
+  void _applySound() {
+    final muted = (_sound ?? Provider.of<SoundProvider>(context, listen: false)).isMuted;
+    final c = _currentVideoController;
+    if (c != null && c.value.isInitialized) c.setVolume(muted ? 0 : 1).ignore();
+  }
+
+  /// Total des interactions de la vidéo affichée (j'aime, commentaires, partages, republications), affiché à côté du bouton du son.
+  int? get _currentInteractions {
+    if (_currentPage < 0 || _currentPage >= _feedItems.length) return null;
+    final it = _feedItems[_currentPage];
+    return it is Post ? it.interactionsCount : null;
+  }
+
+  static String _compact(int n) => n >= 1000000 ? '${(n / 1000000).toStringAsFixed(n % 1000000 >= 100000 ? 1 : 0)} M' : n >= 1000 ? '${(n / 1000).toStringAsFixed(n % 1000 >= 100 ? 1 : 0)} k' : '$n';
   bool _isLoadingFeed = true;
   bool _isLoadingMore = false;
   final int _batchSize = 10;
@@ -308,6 +325,11 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) AdmobService.warmUpInterstitial(authProvider.loginUserData, fromVideo: true);
+      // le bouton du haut coupe ou rallume le son de la vidéo en cours (et des suivantes)
+      if (mounted) {
+        _sound = Provider.of<SoundProvider>(context, listen: false)..addListener(_applySound);
+        _applySound();
+      }
     });
     MonetizationReminder.due('video').then((v) {
       if (mounted && v) setState(() => _showTutoReminder = true);
@@ -466,6 +488,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
 
   @override
   void dispose() {
+    _sound?.removeListener(_applySound);
     // Plus de pub plein écran déclenchée par la fermeture de la page (décision du 01/11/2026) : elle pouvait s'afficher par-dessus la
     // page suivante, avant même que la vidéo soit regardée.
     WidgetsBinding.instance.removeObserver(this);
@@ -504,6 +527,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       // Reprend seulement si la vidéo était en lecture avant
       if (_currentVideoController != null &&
           _currentVideoController!.value.isInitialized) {
+        _applySound();
         _currentVideoController!.play();
       }
     }
@@ -641,6 +665,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       _midrollVideoInitialized = false;
     });
     _midrollAdData = null;
+    _applySound();
     _currentVideoController?.play();
   }
 
@@ -789,6 +814,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         autoInitialize: true,
       );
 
+      _applySound();
       setState(() {
         _isVideoInitialized = true;
         _playerPostId = post.id;
@@ -835,6 +861,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         autoInitialize: true,
       );
 
+      _applySound();
       setState(() {
         _isVideoInitialized = true;
         _playerPostId = post.id;
@@ -3895,10 +3922,37 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
             onChanged: _switchTab,
             onBack: (widget.isIn || Navigator.of(context).canPop()) ? () => Navigator.maybePop(context) : null,
             trailing: Consumer<SoundProvider>(
-              builder: (context, sound, _) => GestureDetector(
-                onTap: sound.toggleSound,
-                child: VideoPill(size: 34, child: Icon(sound.isMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded, size: 18, color: Colors.white)),
-              ),
+              builder: (context, sound, _) {
+                final n = _currentInteractions;
+                return Row(mainAxisSize: MainAxisSize.min, children: [
+                  if (n != null)
+                    Container(
+                      key: const ValueKey('portrait_interactions'),
+                      height: 34,
+                      margin: const EdgeInsets.only(right: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.42),
+                        borderRadius: BorderRadius.circular(17),
+                        border: Border.all(color: Colors.white.withOpacity(0.22), width: 1),
+                      ),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        const Icon(Icons.bar_chart_rounded, size: 16, color: Colors.white),   // même icône que le total des interactions des publications du fil
+                        const SizedBox(width: 3),
+                        Text(_compact(n), style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w800)),
+                      ]),
+                    ),
+                  GestureDetector(
+                    key: const ValueKey('portrait_sound_toggle'),
+                    onTap: () async {
+                      await sound.toggleSound();
+                      _applySound();   // tout de suite, sans attendre la prochaine vidéo
+                    },
+                    child: VideoPill(size: 34, child: Icon(sound.isMuted ? Icons.volume_off_rounded : Icons.volume_up_rounded, size: 18, color: Colors.white)),
+                  ),
+                ]);
+              },
             ),
           ),
         ),
