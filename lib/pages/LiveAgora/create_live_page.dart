@@ -1,3 +1,5 @@
+import 'package:afrotok/ads/rewards_service.dart';
+import 'package:afrotok/pages/rewards/rewards_page.dart';
 import 'package:afrotok/l10n/tr.dart';
 import 'package:afrolook_api_client/afrolook_api_client.dart' show ApiException;
 import 'package:afrotok/services/api/api_identity.dart';
@@ -217,11 +219,23 @@ class _CreateLivePageState extends State<CreateLivePage> {
 
   Future<void> _loadLiveRestrictions() async {
     try {
-      final restrictions = await _liveService.getLiveRestrictions();
+      var restrictions = await _liveService.getLiveRestrictions();
+      // le serveur fait foi : lives restants ce mois, illimité (Gold, équipe, Gold gratuit gagné avec des pubs)
+      try {
+        final l = await LivesApi.limits();
+        final unlimited = l['unlimited'] == true;
+        restrictions = {
+          ...restrictions,
+          'serverUnlimited': unlimited,
+          if (!unlimited && l['monthly_remaining'] is num) 'remainingLives': (l['monthly_remaining'] as num).toInt(),
+          if (!unlimited && l['monthly_limit'] is num) 'maxLives': (l['monthly_limit'] as num).toInt(),
+          if (!unlimited && l['monthly_limit'] is num) 'maxMonthlyLives': (l['monthly_limit'] as num).toInt(),
+        };
+      } catch (_) {}
       setState(() {
         _liveRestrictions = restrictions;
         _canCreateLive = restrictions['canCreate'] ?? true;
-        _remainingLives = restrictions['remainingLives'] ?? 5;
+        _remainingLives = restrictions['remainingLives'] ?? 2;
 
         // Message d'information
         if (restrictions['isAdmin'] == true) {
@@ -240,7 +254,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
   Widget _buildRestrictionsHeader() {
     final isPremium = _liveRestrictions['isPremium'] == true;
     final isAdmin = _liveRestrictions['isAdmin'] == true;
-    final remainingLives = _liveRestrictions['remainingLives'] ?? 5;
+    final remainingLives = _liveRestrictions['remainingLives'] ?? 2;
     final totalLives = _liveRestrictions['totalLivesThisMonth'] ?? 0;
     final maxLives = _liveRestrictions['maxLives'] ?? 5;
 
@@ -407,7 +421,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                 }
               },
               features: [
-                '✅ 5 lives par mois',
+                '✅ 2 lives par mois',
                 tr('✅ Qualité SD (480p)'),
                 '✅ Latence 2 secondes',
                 tr('❌ Pas de HD'),
@@ -770,7 +784,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                 title: 'Gratuit',
                 color: _c.textSecondary,
                 features: [
-                  '5 lives par mois',
+                  '2 lives par mois',
                   tr('Qualité SD (480p)'),
                   'Latence 2 secondes',
                   tr('Interactions limitées'),
@@ -1103,7 +1117,8 @@ class _CreateLivePageState extends State<CreateLivePage> {
     final isAdmin = _liveRestrictions['isAdmin'] == true;
     final isPremium = _liveRestrictions['isPremium'] == true;
     final remaining = _liveRestrictions['remainingLives'] ?? 0;
-    return isAdmin || isPremium || remaining > 0;
+    // le serveur compte les lives restants, y compris le live offert par une passe Gold gratuite (un live par passe)
+    return isAdmin || isPremium || remaining > 0 || _liveRestrictions['serverUnlimited'] == true;
   }
 
   static const Color _gold = Color(0xFFFFC400);
@@ -1566,12 +1581,40 @@ class _CreateLivePageState extends State<CreateLivePage> {
     final disabled = _isCreating || !_canCreate;
     return Column(mainAxisSize: MainAxisSize.min, children: [
       if (!_canCreate)
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: GestureDetector(
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AbonnementScreen())),
-            child: Text(tr('Tu as utilisé tes lives gratuits de ce mois. Passe à Gold pour des lives illimités.'), textAlign: TextAlign.center, style: TextStyle(color: _c.accentText, fontSize: 12.5, fontWeight: FontWeight.w700)),
-          ),
+        Container(
+          key: const ValueKey('free_gold_offer'),
+          margin: const EdgeInsets.only(bottom: 10),
+          padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+          decoration: BoxDecoration(color: _gold.withOpacity(0.12), borderRadius: BorderRadius.circular(16), border: Border.all(color: _gold.withOpacity(0.6))),
+          child: Column(children: [
+            Row(children: [
+              const Icon(Icons.workspace_premium_rounded, color: _gold, size: 22),
+              const SizedBox(width: 8),
+              Expanded(child: Text(tr('Tu as utilisé tes lives gratuits de ce mois.'), style: TextStyle(color: _c.textPrimary, fontSize: 13.5, fontWeight: FontWeight.w800))),
+            ]),
+            const SizedBox(height: 6),
+            Text(tr('Deviens Gold gratuitement : regarde quelques publicités dans la page Récompenses, puis lance ton live.'), style: TextStyle(color: _c.textSecondary, fontSize: 12.5, height: 1.35)),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                key: const ValueKey('free_gold_button'),
+                style: FilledButton.styleFrom(backgroundColor: _gold, foregroundColor: const Color(0xFF3A2C00), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22))),
+                icon: const Icon(Icons.play_circle_outline_rounded),
+                label: Text(tr('Devenir Gold gratuitement'), style: const TextStyle(fontWeight: FontWeight.w800)),
+                onPressed: () async {
+                  // page Récompenses : la passe « Gold gratuit » se lance tout de suite ; au retour on relit les droits (le bouton se débloque)
+                  await Navigator.push(context, MaterialPageRoute(builder: (_) => const RewardsPage(autoOffer: 'gold_pass')));
+                  await RewardsService.loadConfig(force: true);
+                  if (mounted) await _loadLiveRestrictions();
+                },
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AbonnementScreen())),
+              child: Text(tr('Ou passe à Gold pour des lives illimités'), textAlign: TextAlign.center, style: TextStyle(color: _c.accentText, fontSize: 12.5, fontWeight: FontWeight.w700)),
+            ),
+          ]),
         ),
       SizedBox(
         width: double.infinity,
@@ -2222,7 +2265,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  tr('Vous avez utilisé vos 5 lives gratuits ce mois.\nPassez à Premium pour des lives illimités.'),
+                  tr('Vous avez utilisé vos 2 lives gratuits ce mois.\nPassez à Premium pour des lives illimités.'),
                   style: TextStyle(color: _c.textSecondary),
                 ),
                 SizedBox(height: 12),

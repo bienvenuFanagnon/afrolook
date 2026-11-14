@@ -829,7 +829,7 @@ class AfrolookAbonnement {
       };
     }
     return {
-      'maxMonthlyLives': 5,
+      'maxMonthlyLives': 2,
       'latency': 2000,
       'quality': 'SD',
       'bitrate': 1000,

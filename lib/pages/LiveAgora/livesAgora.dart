@@ -391,7 +391,7 @@ class LiveStats {
     this.qualityPreferences = const {},
     this.isPremium = false,
     this.premiumUntil,
-    this.maxMonthlyLives = 5,
+    this.maxMonthlyLives = 2,
     this.defaultQuality = 'standard',
   }){
     lastLiveDate ??=  DateTime.now();
@@ -417,7 +417,7 @@ class LiveStats {
       },
       isPremium: false,
       premiumUntil: now,
-      maxMonthlyLives: 5,
+      maxMonthlyLives: 2,
       defaultQuality: 'standard',
     );
   }
@@ -432,7 +432,7 @@ class LiveStats {
       qualityPreferences: Map<String, dynamic>.from(json['qualityPreferences'] ?? {}),
       isPremium: json['isPremium'] ?? false,
       premiumUntil: DateTime.parse(json['premiumUntil']),
-      maxMonthlyLives: json['maxMonthlyLives'] ?? 5,
+      maxMonthlyLives: json['maxMonthlyLives'] ?? 2,
       defaultQuality: json['defaultQuality'] ?? 'standard',
     );
   }

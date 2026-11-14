@@ -123,7 +123,7 @@ class LiveService {
         };
       } else {
         return {
-          'maxMonthlyLives': 5,
+          'maxMonthlyLives': 2,
           'latency': 2000,
           'quality': 'SD',
           'bitrate': 1000,
@@ -134,7 +134,7 @@ class LiveService {
           'isAdmin': false,
           'remainingLives': liveStats.remainingLives,
           'totalLivesThisMonth': liveStats.monthlyLiveCount,
-          'maxLives': 5,
+          'maxLives': 2,
         };
       }
 
