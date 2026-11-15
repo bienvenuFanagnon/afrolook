@@ -169,6 +169,8 @@ NotificationData notificationFromApi(Map<String, dynamic> j) {
       ..imageUrl = '${actor['avatar_url'] ?? ''}';
     n.user_id = n.userData!.id;
   }
+  final commentId = '${j['comment_id'] ?? ''}';
+  if (commentId.isNotEmpty) n.comment_id = commentId;
   if (subjectType == 'channel' || subjectType == 'canal') {
     n.canal_id = subjectId;
   } else if (subjectType != 'conversation' && subjectType != 'group') {

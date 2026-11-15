@@ -884,6 +884,13 @@ class _MesNotificationState extends State<MesNotification> {
       }
 
       _hideLoadingOverlay();
+      // mention, réponse, commentaire, j'aime d'un commentaire : les commentaires, ouverts sur le commentaire concerné et mis en évidence
+      final commentId = notification.comment_id;
+      if (commentId != null && commentId.isNotEmpty) {
+        await openCommentThread(context, post, commentId);
+        if (mounted) setState(() => _isHandlingNotification = false);
+        return;
+      }
       final isVideo = post.dataType == PostDataType.VIDEO.name ||
           notification.post_data_type == 'VIDEO' ||
           (post.url_media?.contains('.mp4') == true) ||

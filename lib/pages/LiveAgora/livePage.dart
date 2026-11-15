@@ -10,6 +10,8 @@ import 'package:afrotok/services/api/live_stage.dart';
 import 'live_stage_ui.dart';
 import 'live_report_page.dart';
 import 'live_game_ui.dart';
+import 'live_quiz_ui.dart';
+import 'package:afrotok/pages/user/userAbonnementPage.dart' show AbonnementScreen;
 import 'live_caps.dart';
 import 'live_market_ui.dart';
 import 'live_clips_page.dart';
@@ -736,8 +738,23 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     }
     if (g == null) return const SizedBox.shrink();
     if (!g.active && _closedGames.contains(g.id)) return const SizedBox.shrink();
+    final quiz2 = g.kind == 'quiz' && (g.quiz['v'] as num?)?.toInt() == 2;
     return _flowed(
-      child: Stack(clipBehavior: Clip.none, children: [LiveGameCard(
+      child: Stack(clipBehavior: Clip.none, children: [quiz2
+          ? LiveQuizPanel(
+              game: g,
+              isHost: widget.isHost,
+              onAnswer: _quizAnswer,
+              onSendQuestion: widget.isHost ? _sendQuizQuestion : null,
+              // image épinglée par l'hôte : montrée dans le quiz (questions sur l'image), touchée = agrandie
+              imageUrl: _hasPinImage ? _pinnedImageUrl : null,
+              onOpenImage: _openPinnedImage,
+              // croix dans l'en-tête du quiz (posée par-dessus, elle cachait les boutons du son et de réduction)
+              onClose: (!g.active || widget.isHost) ? () => widget.isHost ? _dismissGame(g) : setState(() => _closedGames.add(g.id)) : null,
+              // classement sur toutes les questions (les 20 premiers) : remise de prix lors des événements
+              onShowRanking: () => showQuizRankingSheet(context, LivesApi.quizRanking(widget.liveId, gameId: g.id), isHost: widget.isHost),
+            )
+          : LiveGameCard(
         game: g,
         isHost: widget.isHost,
         target: _giftTarget,
@@ -747,7 +764,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         onAnswer: _quizAnswer,
       ),
         // croix : l'hôte arrête le jeu et le retire de l'écran de tout le monde ; chaque spectateur peut fermer un jeu terminé chez lui (il reste dans l'historique)
-        if (!g.active || widget.isHost)
+        if (!quiz2 && (!g.active || widget.isHost))
           Positioned(
             top: 4,
             right: 4,
@@ -776,11 +793,39 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     } catch (_) {}
   }
 
-  /// Quiz : réponse à la question en cours.
-  Future<void> _quizAnswer(int option) async {
+  /// Quiz : réponse à la question en cours. Renvoie `false` si elle n'a pas été prise (le joueur peut retoucher) ; la raison s'affiche.
+  Future<bool> _quizAnswer(int option) async {
     try {
       final r = await LivesApi.quizAnswer(widget.liveId, option);
       if (mounted) setState(() => _game = LiveGame(r));
+      return true;
+    } on ApiException catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.code == 'question_closed' ? context.tr('Trop tard : le temps de cette question est fini.') : e.message)));
+      return false;
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Ta réponse n\'est pas partie. Vérifie ta connexion et retouche.'))));
+      return false;
+    }
+  }
+
+  /// Réglages du quiz de ce live (choisis à la création), gardés pour les questions envoyées en direct.
+  QuizSettings? _quizSettings;
+
+  /// Quiz en direct : l'hôte écrit et envoie la question suivante (temps et somme à gagner modifiables à chaque fois).
+  Future<void> _sendQuizQuestion() async {
+    final s = _quizSettings ?? QuizSettings();
+    final q = await showQuizQuestionEditor(context, defSeconds: s.seconds, defPot: s.pot, okLabel: 'Envoyer la question', showPot: !s.physical);
+    if (q == null || !mounted) return;
+    try {
+      final r = await LivesApi.gameQuestion(widget.liveId, q.toJson());
+      if (mounted) setState(() => _game = LiveGame(r));
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      if (e.isInsufficientCoins) {
+        await CoinCheckout.insufficient(context, (e.details['coins'] as num?)?.toInt() ?? 0);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      }
     } catch (_) {}
   }
 
@@ -926,9 +971,33 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           await LivesApi.gameStart(widget.liveId, {'kind': 'story', 'question': st[0], 'options': [for (final o in st.skip(1)) if (o.isNotEmpty) o], 'minutes': 1});
           break;
         case 'quiz':
-          final qz = await askQuiz(context);
-          if (qz == null) return;
-          await LivesApi.gameStart(widget.liveId, {'kind': 'quiz', 'questions': [for (final q in qz.questions) q.toJson()], 'pool': qz.pool, 'seconds': qz.seconds});
+          // réglages choisis à la création du live, et plan de l'hôte lu sur le serveur (la liste préparée est réservée au Gold)
+          Map<String, dynamic> live = const {};
+          Map<String, dynamic> lim = const {};
+          Map<String, dynamic>? packs;
+          try {
+            final both = await Future.wait([LivesApi.get(widget.liveId), LivesApi.limits()]);
+            live = both[0];
+            lim = both[1];
+          } catch (_) {}
+          try {
+            packs = await LivesApi.quizPacks();   // questions d'Afrolook : section masquée si le serveur ne répond pas
+          } catch (_) {}
+          if (!mounted) return;
+          final settings = QuizSettings.fromOptions(live['options']);
+          final picked = await showQuizLaunchSheet(context, settings: settings, isGold: lim['plan'] == 'gold', packs: packs,
+              onUpgrade: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AbonnementScreen())));
+          if (picked == null || !mounted) return;
+          _quizSettings = picked.settings;
+          final s = picked.settings;
+          await LivesApi.gameStart(widget.liveId, {
+            'kind': 'quiz', 'mode': picked.mode, 'winners': s.winners, 'seconds': s.seconds, 'pot': s.pot, 'theme': s.theme,
+            if (picked.pack != null) 'pack': {'theme': picked.pack!.theme, 'count': picked.pack!.count}
+            else if (picked.mode == 'planned') 'questions': [for (final q in s.questions) q.toJson()],
+          });
+          await _pollGame();
+          // en direct : on écrit tout de suite la première question
+          if (picked.mode == 'live' && mounted) await _sendQuizQuestion();
           break;
         case 'clips':
           await _openClips();
@@ -3266,7 +3335,10 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       if (v != null && v.value.isInitialized)
         FittedBox(fit: BoxFit.cover, clipBehavior: Clip.hardEdge, child: SizedBox(width: v.value.size.width, height: v.value.size.height, child: VideoPlayer(v)))
       else if (img.isNotEmpty)
-        Image.network(img, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+        Image.network(img, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const SizedBox.shrink())
+      else
+        // aucune image ni vidéo choisie par l'hôte : l'application illustre la page elle-même (scène animée, au thème du quiz s'il y en a un)
+        QuizStageBackground(theme: '${_game?.kind == 'quiz' ? (_game!.quiz['theme'] ?? 'scene') : 'scene'}'),
       // voile sombre : les widgets du live restent lisibles sur n'importe quel aperçu
       Container(decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Colors.black.withOpacity(.35), Colors.black.withOpacity(.15), Colors.black.withOpacity(.55)]))),
     ]);
@@ -3303,6 +3375,12 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
   bool get _hasPinImage => (_pinnedImageUrl ?? '').isNotEmpty;
   bool get _pinRight => _pinPlace == 'right';
+
+  /// Le panneau du nouveau quiz est à l'écran (il montre lui-même l'image épinglée).
+  bool get _quiz2Shown {
+    final g = _game;
+    return g != null && g.kind == 'quiz' && (g.quiz['v'] as num?)?.toInt() == 2 && !(!g.active && _closedGames.contains(g.id));
+  }
   bool get _isQuizLive => widget.postLive.typeSession == 'quiz' || _game?.kind == 'quiz';
   bool get _hasGames => const {'duel', 'challenge', 'quiz', 'story'}.contains(widget.postLive.typeSession) || _game != null || _gamesCount > 0;
 
@@ -3444,7 +3522,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   Widget _buildPinnedLeft() {
     if (_pinRight) return const SizedBox.shrink();
     final hasT = _pinText != null;
-    final hasI = _hasPinImage;
+    final hasI = _hasPinImage && !_quiz2Shown;   // pendant un quiz, l'image est dans le panneau du quiz
     if (!hasT && !hasI) return const SizedBox.shrink();
     Widget content;
     if (hasT && hasI) {
@@ -3479,7 +3557,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         const SizedBox(height: 10),
         if (_pinText != null) SizedBox(width: 104, child: _pinnedTextBox()),
         if (_pinText != null && _hasPinImage) const SizedBox(height: 6),
-        if (_hasPinImage) _pinnedImageBox(),
+        if (_hasPinImage && !_quiz2Shown) _pinnedImageBox(),
       ],
     ];
   }
@@ -3502,7 +3580,10 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => LiveQuizHistorySheet(future: LivesApi.quizHistory(widget.liveId)),
+      builder: (ctx) => LiveQuizHistorySheet(
+        future: LivesApi.quizHistory(widget.liveId),
+        onRanking: (gameId) => showQuizRankingSheet(context, LivesApi.quizRanking(widget.liveId, gameId: gameId), isHost: widget.isHost),
+      ),
     );
   }
 

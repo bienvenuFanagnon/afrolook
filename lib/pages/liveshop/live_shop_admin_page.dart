@@ -111,6 +111,7 @@ class _LiveShopAdminPageState extends State<LiveShopAdminPage> {
           'etals_marche' => tr('Loyers des étals'),
           'contes_live' => tr('Contes (votes)'),
           'tirage_live' => tr('Tirages au sort'),
+          'quiz_live' => tr('Quiz à cagnotte'),
           _ => tr('Lives privés'),
         };
     Widget title(String t) => Padding(padding: const EdgeInsets.fromLTRB(2, 18, 2, 8), child: Text(t.toUpperCase(), style: TextStyle(color: c.textSecondary, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1)));

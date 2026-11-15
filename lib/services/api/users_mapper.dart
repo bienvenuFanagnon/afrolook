@@ -317,6 +317,13 @@ String _transactionDescription(String key, Map<String, dynamic> params) {
       return tr('Cartes : achat');
     case 'wallet.ad_support':
       return tr("Soutien d'une publicité regardée");
+    // quiz à cagnotte des lives (libellés manquants : l'historique affichait « Live.quiz pool »)
+    case 'live.quiz_pool':
+      return tr('Quiz du live : cagnotte mise en jeu');
+    case 'live.quiz_win':
+      return tr('Quiz du live : gain');
+    case 'live.quiz_refund':
+      return tr('Quiz du live : cagnotte non gagnée rendue');
   }
   // clé inconnue : jamais le code brut à l'écran, une phrase lisible tirée du code (« wallet.some_thing » → « Some thing »)
   final plain = key.replaceFirst(RegExp(r'^wallet\.'), '').replaceAll('_', ' ').trim();

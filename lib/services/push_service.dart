@@ -253,6 +253,6 @@ Future<void> storeNavigationFromPush(Map<String, dynamic> data) async {
     }
   } else if (hasPost) {
     // j'aime, commentaire, republication, nouveau post, favori, défi… : le post concerné
-    await nav.storePostNavigation(postId, postType);
+    await nav.storePostNavigation(postId, postType, commentId: data['comment_id']?.toString());   // mention, réponse… : le commentaire concerné
   }
 }

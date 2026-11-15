@@ -1,3 +1,4 @@
+import 'live_quiz_ui.dart';
 import 'package:afrotok/ads/rewards_service.dart';
 import 'package:afrotok/pages/rewards/rewards_page.dart';
 import 'package:afrotok/l10n/tr.dart';
@@ -77,6 +78,9 @@ class _CreateLivePageState extends State<CreateLivePage> {
   int _marketStalls = 6;
   int _marketRent = 300;
   int _marketMinutes = 15;
+  /// Réglages du quiz à cagnotte (pour tous) ; la liste préparée n'est envoyée que pour un Gold (le serveur le vérifie aussi).
+  final QuizSettings _quizSettings = QuizSettings();
+  bool _isGold = false;
   String _game = '';                                    // duel ou défi à plusieurs (jeux de live), vide pour une discussion ou une vente
   String _audioBehavior = 'reduce';
   int _audioReductionPercent = 50;
@@ -223,6 +227,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
       // le serveur fait foi : lives restants ce mois, illimité (Gold, équipe, Gold gratuit gagné avec des pubs)
       try {
         final l = await LivesApi.limits();
+        _isGold = l['plan'] == 'gold';
         final unlimited = l['unlimited'] == true;
         restrictions = {
           ...restrictions,
@@ -1494,6 +1499,17 @@ class _CreateLivePageState extends State<CreateLivePage> {
         _row(tr('Loyer d\'un étal'), tr('Payé en pièces par le vendeur à son tour, il te revient (partage habituel des cadeaux)'), _stepper('Moins', 'Plus', '$_marketRent', _marketRent > 0 ? () => setState(() => _marketRent = (_marketRent - 50).clamp(0, 5000)) : null, _marketRent < 5000 ? () => setState(() => _marketRent = (_marketRent + 50).clamp(0, 5000)) : null)),
         _row(tr('Durée d\'un tour'), tr('Commission de vente : 10 % (déjà en place)'), _stepper('Moins', 'Plus', tr('{n} min', {'n': '$_marketMinutes'}), _marketMinutes > 5 ? () => setState(() => _marketMinutes -= 5) : null, _marketMinutes < 30 ? () => setState(() => _marketMinutes += 5) : null)),
       ],
+      if (_game == 'quiz')
+        Padding(
+          key: const ValueKey('quiz_settings'),
+          padding: const EdgeInsets.only(bottom: 6),
+          child: QuizSettingsEditor(
+            settings: _quizSettings,
+            isGold: _isGold,
+            onChanged: () => setState(() {}),
+            onUpgrade: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AbonnementScreen())),
+          ),
+        ),
       if (_noCameraAllowed)
         _row(tr('Sans caméra'), tr('Aucune vidéo : ton aperçu reste à l\'écran. Le live s\'arrête après 10 minutes sans interaction.'), _sw(_noCamera, (v) => setState(() => _noCamera = v))),
       if (_previewWanted)
@@ -2584,6 +2600,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
           'stage': _allowStage,
           'display': _liveDisplay.toJson(),
           if (_game == 'market') 'market': {'stalls': _marketStalls, 'rent_coins': _marketRent, 'minutes': _marketMinutes},
+          if (_game == 'quiz') 'quiz': {..._quizSettings.toJson(), if (!_isGold) 'questions': const []},
           'audioBehaviorAfterTrial': _audioBehavior,
           'audioReductionPercent': _audioReductionPercent,
           'blurVideoAfterTrial': _blurVideoAfterTrial,

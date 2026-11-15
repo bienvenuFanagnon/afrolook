@@ -243,6 +243,15 @@ class CommentsApi {
     return ApiCommentPage(comments, r['next_cursor'] as String?);
   }
 
+  /// Commentaire ouvert depuis une notification : le commentaire principal (avec ses réponses) et l'identifiant à mettre en évidence
+  /// (la réponse elle-même quand la notification porte sur une réponse).
+  static Future<({PostComment comment, String target})> thread(String commentId) async {
+    final r = Map<String, dynamic>.from(await _c.get('/comments/$commentId') as Map);
+    final c = commentFromApi(Map<String, dynamic>.from(r['data'] as Map));
+    if ((c.comments ?? 0) > 0) c.responseComments = await replies(c.id!);
+    return (comment: c, target: '${r['target_id'] ?? c.id}');
+  }
+
   static Future<List<ResponsePostComment>> replies(String commentId, {int limit = 50}) async {
     final r = await _c.get('/comments/$commentId/replies', query: {'limit': limit});
     final rows = ((r as Map)['data'] as List? ?? const []).whereType<Map>();

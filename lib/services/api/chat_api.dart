@@ -268,6 +268,12 @@ class LivesApi {
   static Future<List<Map<String, dynamic>>> quizHistory(String id) async => JeuxApi.list(await _c.get('/lives/$id/game/history'));
   static Future<Map<String, dynamic>> gameStart(String id, Map<String, dynamic> body) async => JeuxApi.map(await _c.post('/lives/$id/game', body: body));
   static Future<void> gameEnd(String id) => _c.post('/lives/$id/game/end');
+  /// Quiz en direct : l'hôte envoie la question suivante (texte, choix, bonnes réponses, temps, somme à gagner).
+  static Future<Map<String, dynamic>> gameQuestion(String id, Map<String, dynamic> question) async => JeuxApi.map(await _c.post('/lives/$id/game/question', body: question));
+  /// Questions d'Afrolook pour le quiz : thèmes, nombres de questions, quiz gratuits restants ce mois-ci (`free_left` null = illimité avec Gold).
+  static Future<Map<String, dynamic>> quizPacks() async => JeuxApi.map(await _c.get('/lives/quiz-packs'));
+  /// Classement du quiz sur toutes les questions : les 20 premiers (`rows`) et ma place (`me`, même au-delà) ; sans [gameId] : le dernier quiz du live.
+  static Future<Map<String, dynamic>> quizRanking(String id, {String? gameId}) async => JeuxApi.map(await _c.get('/lives/$id/game/ranking', query: {if (gameId != null) 'game_id': gameId}));
 
   /// Je dis si j'entends la musique du live (`key` = `id@started_at`).
   static Future<void> musicAck(String id, String key, bool ok) => _c.post('/lives/$id/music/ack', body: {'key': key, 'ok': ok});

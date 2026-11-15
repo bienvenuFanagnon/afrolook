@@ -109,7 +109,8 @@ class VideoTopBar extends StatelessWidget {
               ),
           ]),
           if (onBack != null) Align(alignment: Alignment.centerLeft, child: GestureDetector(onTap: onBack, child: const VideoPill(size: 34, child: Icon(Icons.arrow_back_ios_new_rounded, size: 17, color: Colors.white)))),
-          if (trailing != null) Align(alignment: Alignment.centerRight, child: trailing),
+          // Material transparent : sans lui, un texte placé ici (le total des interactions) s'affiche avec le double trait jaune de Flutter
+          if (trailing != null) Align(alignment: Alignment.centerRight, child: Material(type: MaterialType.transparency, child: trailing)),
         ]),
       ),
     );

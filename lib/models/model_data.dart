@@ -4140,6 +4140,7 @@ class NotificationData {
   List<String>? users_id_view = [];
   String? canal_id;
   String? post_thumbnail; // URL media du post (image/vidéo preview)
+  String? comment_id; // commentaire concerné (mention, réponse, commentaire, j'aime d'un commentaire) : ouvert et mis en évidence
 
   int? createdAt;
   int? updatedAt;

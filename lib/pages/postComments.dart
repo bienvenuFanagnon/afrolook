@@ -33,6 +33,8 @@ import '../widgets/user_badge_widget.dart';
 import '../theme/app_colors.dart';
 import '../l10n/app_localizations.dart';
 import 'dart:async';
+
+import 'package:afrotok/widgets/mention_suggestions.dart';
 import 'dart:ui' as ui;
 
 import '../services/comment_coins.dart';
@@ -54,8 +56,11 @@ class PostComments extends StatefulWidget {
   final List<PostComment> initialComments;
   final String? initialText;
 
-  /// Commentaire à afficher EN TÊTE de la liste (celui qui accompagne le cadeau qui vient d'être envoyé).
+  /// Commentaire à afficher EN TÊTE de la liste (celui qui accompagne le cadeau qui vient d'être envoyé, ou celui d'une notification).
   final PostComment? pinnedComment;
+
+  /// Commentaire ou réponse à mettre en évidence quelques secondes (ouvert depuis une notification : mention, réponse…).
+  final String? highlightCommentId;
 
   const PostComments({
     super.key,
@@ -65,6 +70,7 @@ class PostComments extends StatefulWidget {
     this.initialComments = const [],
     this.initialText,
     this.pinnedComment,
+    this.highlightCommentId,
   });
 
   @override
@@ -102,15 +108,9 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
 
   final TextEditingController _textController = TextEditingController();
   final FocusNode _focusNode = FocusNode();
-  List<UserData> users = [];
   List<PostComment> comments = [];
-  List<UserData> suggestedUsers = [];
-  bool showUserSuggestions = false;
-  String currentSearchQuery = '';
-
-  int _userSuggestionsPage = 0;
-  final int _userSuggestionsPageSize = 10;
-  bool _hasMoreUsers = true;
+  /// Commentaire mis en évidence (notification) ; effacé après quelques secondes.
+  String? _highlightId;
 
   bool _showEmojiPicker = false;
 
@@ -151,12 +151,12 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     }
     final pinned = widget.pinnedComment;
     if (pinned != null && !comments.any((c) => c.id == pinned.id)) comments.insert(0, pinned);   // le commentaire du cadeau envoyé est toujours en tête
-    _loadUsers();
+    _highlightId = widget.highlightCommentId;
+    if (_highlightId != null) Future.delayed(const Duration(seconds: 4), () => mounted ? setState(() => _highlightId = null) : null);
     _ensureCanalLoaded();
     _loadTopGifters();
     _loadStickerGifts();
     StickerService.instance.prefetchGiftStickers();
-    _textController.addListener(_onTextChanged);
     if (_canUseStickers) _refreshStickerData();
 
     if (widget.initialText != null && widget.initialText!.isNotEmpty) {
@@ -176,7 +176,6 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
 
   @override
   void dispose() {
-    _textController.removeListener(_onTextChanged);
     _textController.dispose();
     _focusNode.dispose();
     super.dispose();
@@ -314,59 +313,6 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     );
   }
 
-  void _onTextChanged() {
-    final text = _textController.text;
-    final lastAtPos = text.lastIndexOf('@');
-
-    if (lastAtPos != -1) {
-      final query = text.substring(lastAtPos + 1).split(' ')[0];
-      if (query.isNotEmpty) {
-        setState(() {
-          currentSearchQuery = query;
-          showUserSuggestions = true;
-          _userSuggestionsPage = 0;
-          _hasMoreUsers = true;
-          _filterUsers(query);
-        });
-      } else {
-        setState(() => showUserSuggestions = false);
-      }
-    } else {
-      setState(() => showUserSuggestions = false);
-    }
-  }
-
-  void _filterUsers(String query) {
-    final filtered = users.where((user) {
-      return user.pseudo!.toLowerCase().contains(query.toLowerCase());
-    }).toList();
-
-    setState(() {
-      suggestedUsers = filtered.take((_userSuggestionsPage + 1) * _userSuggestionsPageSize).toList();
-      _hasMoreUsers = filtered.length > suggestedUsers.length;
-    });
-  }
-
-  void _loadMoreUserSuggestions() {
-    if (_hasMoreUsers) {
-      setState(() {
-        _userSuggestionsPage++;
-        _filterUsers(currentSearchQuery);
-      });
-    }
-  }
-
-  void _selectUser(UserData user) {
-    final text = _textController.text;
-    final lastAtPos = text.lastIndexOf('@');
-    if (lastAtPos != -1) {
-      final newText = text.substring(0, lastAtPos) + '@${user.pseudo!} ';
-      _textController.text = newText;
-      _textController.selection = TextSelection.fromPosition(TextPosition(offset: newText.length));
-    }
-    setState(() => showUserSuggestions = false);
-  }
-
   void _ensureCanalLoaded() {
     final canalId = widget.post.canal_id;
     if (canalId == null || canalId.isEmpty || widget.post.canal != null) return;
@@ -374,11 +320,6 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
       final d = (r as Map)['data'];
       if (d is Map && mounted) setState(() => widget.post.canal = canalFromApi(Map<String, dynamic>.from(d)));
     }).catchError((_) {});
-  }
-
-  Future<void> _loadUsers() async {
-    final usersList = await userProvider.getUserAbonnes(authProvider.loginUserData.id!);
-    setState(() => users = usersList);
   }
 
   Future<void> _loadInitialComments({bool refresh = false}) async {
@@ -569,45 +510,14 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     }
   }
 
-  List<String> _extractMentionedUsers(String message) {
-    final RegExp mentionRegex = RegExp(r'@(\w+)');
-    final matches = mentionRegex.allMatches(message);
-    return matches.map((match) => match.group(1)!).toList();
-  }
-
-  Widget _buildMentionText(String text, {bool isExpanded = false, int maxLinesReduced = 2}) {
-    final List<TextSpan> spans = [];
-    final RegExp mentionRegex = RegExp(r'@(\w+)');
-    final matches = mentionRegex.allMatches(text);
-    int lastEnd = 0;
-
-    for (final match in matches) {
-      if (match.start > lastEnd) {
-        spans.add(TextSpan(
-          text: text.substring(lastEnd, match.start),
-          style: TextStyle(color: _colors.textPrimary, fontSize: 13.5, height: 1.4),
-        ));
-      }
-      spans.add(TextSpan(
-        text: match.group(0),
-        style: TextStyle(color: _colors.primary, fontSize: 13.5, fontWeight: FontWeight.w600, height: 1.4),
-      ));
-      lastEnd = match.end;
-    }
-
-    if (lastEnd < text.length) {
-      spans.add(TextSpan(
-        text: text.substring(lastEnd),
+  /// Texte d'un commentaire : les @pseudos en couleur, toucher un pseudo ouvre son profil.
+  Widget _buildMentionText(String text, {bool isExpanded = false, int maxLinesReduced = 2}) => MentionText(
+        text,
         style: TextStyle(color: _colors.textPrimary, fontSize: 13.5, height: 1.4),
-      ));
-    }
-
-    return RichText(
-      text: TextSpan(children: spans),
-      maxLines: isExpanded ? null : maxLinesReduced,
-      overflow: isExpanded ? TextOverflow.visible : TextOverflow.ellipsis,
-    );
-  }
+        mentionColor: _colors.primary,
+        onMention: (name) => openMentionedProfile(name, (id) => _openUserModal(id, null)),
+        maxLines: isExpanded ? null : maxLinesReduced,
+      );
 
   // ─── TOP GIFTERS ─────────────────────────────────────────────────────────────
 
@@ -963,12 +873,17 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
   Widget _buildCommentItem(PostComment comment) {
     final hasReplies = comment.responseComments != null && comment.responseComments!.isNotEmpty;
     final repliesCount = comment.responseComments?.length ?? 0;
-    final showAll = _showAllReplies[comment.id!] ?? false;
+    final replyHit = _highlightId != null && (comment.responseComments?.any((r) => r.id == _highlightId) ?? false);
+    final hit = _highlightId != null && (comment.id == _highlightId || replyHit);
+    final showAll = (_showAllReplies[comment.id!] ?? false) || replyHit;   // la réponse visée est toujours dépliée
     final displayedReplies = showAll
         ? comment.responseComments!
         : (hasReplies ? [comment.responseComments!.first] : []);
 
-    return Padding(
+    return AnimatedContainer(
+      key: ValueKey('comment_${comment.id}'),
+      duration: const Duration(milliseconds: 600),
+      color: hit ? _colors.primary.withOpacity(0.10) : Colors.transparent,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1588,58 +1503,6 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
     );
   }
 
-  // ─── USER SUGGESTIONS ───────────────────────────────────────────────────────
-
-  Widget _buildUserSuggestions() {
-    if (!showUserSuggestions || suggestedUsers.isEmpty) return const SizedBox.shrink();
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 6),
-      constraints: const BoxConstraints(maxHeight: 220),
-      decoration: BoxDecoration(
-        color: _colors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _colors.border.withOpacity(0.3)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 12, offset: const Offset(0, -4))],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
-        child: ListView.separated(
-          shrinkWrap: true,
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          itemCount: suggestedUsers.length + (_hasMoreUsers ? 1 : 0),
-          separatorBuilder: (_, __) => Divider(height: 1, color: _colors.divider.withOpacity(0.3)),
-          itemBuilder: (_, index) {
-            if (index == suggestedUsers.length) {
-              return ListTile(
-                dense: true,
-                title: Center(
-                  child: Text('Charger plus...', style: TextStyle(color: _colors.primary, fontSize: 12)),
-                ),
-                onTap: _loadMoreUserSuggestions,
-              );
-            }
-            final user = suggestedUsers[index];
-            return ListTile(
-              dense: true,
-              leading: CircleAvatar(onBackgroundImageError: ((user.imageUrl != null && user.imageUrl!.isNotEmpty)
-                    ? NetworkImage(user.imageUrl!)
-                    : null) != null ? (Object _, StackTrace? __) {} : null, 
-                radius: 16,
-                backgroundColor: _colors.surfaceVariant,
-                backgroundImage: (user.imageUrl != null && user.imageUrl!.isNotEmpty)
-                    ? NetworkImage(user.imageUrl!)
-                    : null,
-              ),
-              title: PseudoTag(label: "@${user.pseudo!}", style: TextStyle(fontSize: 13, color: _colors.textPrimary)),
-              onTap: () => _selectUser(user),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
   // ─── INPUT BAR ───────────────────────────────────────────────────────────────
 
   Widget _buildCommentInput() {
@@ -1672,11 +1535,10 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
             ),
 
           // Suggestions @mention
-          if (showUserSuggestions && suggestedUsers.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: _buildUserSuggestions(),
-            ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: MentionSuggestions(controller: _textController),
+          ),
 
           // Stickers récents (abonnés)
           if (_canUseStickers && _recentStickers.isNotEmpty)
@@ -2179,4 +2041,18 @@ class _GifterEntry {
   List<({String icon, String label, int qty, int coins})> giftBreakdown = [];
 
   _GifterEntry({required this.senderId});
+}
+
+/// Ouvre les commentaires d'une publication sur un commentaire précis (notification de mention, de réponse, de j'aime) :
+/// le commentaire (ou le parent de la réponse) est placé en tête et mis en évidence. Sans réseau ou si le commentaire a disparu : les commentaires simplement.
+Future<void> openCommentThread(BuildContext context, Post post, String commentId) async {
+  PostComment? pinned;
+  String? target;
+  try {
+    final t = await CommentsApi.thread(commentId);
+    pinned = t.comment;
+    target = t.target;
+  } catch (_) {}
+  if (!context.mounted) return;
+  await Navigator.push(context, MaterialPageRoute(builder: (_) => PostComments(post: post, pinnedComment: pinned, highlightCommentId: target)));
 }

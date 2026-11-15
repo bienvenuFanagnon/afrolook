@@ -135,6 +135,9 @@ class UsersApi {
   /// Recherche de personnes par pseudo. Route souhaitée : GET /users/search?q=
   static Future<List<Map<String, dynamic>>> searchUsers(String q, {int limit = 30}) async => _list(await _c.get('/users/search', query: {'q': q, 'limit': limit}));
 
+  /// Personnes à taguer (@) : tout Afrolook dès 1 caractère, les personnes suivies et les abonnés d'abord, jamais un compte bloqué.
+  static Future<List<Map<String, dynamic>>> mentionSuggestions(String q, {int limit = 8}) async => _list(await _c.get('/users/search', query: {'q': q, 'limit': limit, 'mention': 1}));
+
   /// État de la règle d'inactivité (20 jours) : {blocked, cost, days_inactive}. Route souhaitée : GET /me/publish-status
   static Future<Map<String, dynamic>> publishStatus() async => _map(await _c.get('/me/publish-status'));
 

@@ -31,6 +31,7 @@ class _CommissionsAdminPageState extends State<CommissionsAdminPage> {
     'etals_marche': ('Loyers des étals (marché)', Icons.storefront_outlined),
     'contes_live': ('Contes en live (votes)', Icons.auto_stories_rounded),
     'tirage_live': ('Tirages au sort en live', Icons.card_giftcard_rounded),
+    'quiz_live': ('Quiz à cagnotte en live', Icons.emoji_events_outlined),
     'stickers': ('Stickers', Icons.emoji_emotions_rounded),
     'quiz': ('Quiz (cœurs)', Icons.quiz_rounded),
     'defi': ('DÉFI (votes, participations)', Icons.emoji_events_rounded),

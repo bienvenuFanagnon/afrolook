@@ -79,7 +79,9 @@ class DestinationData {
   final String? creatorId;
   final Canal? canal;
   final String? screen;
-  DestinationData({required this.type, this.screen, this.post, this.chat, this.chroniqueId, this.liveId, this.chatId, this.sendUserId, this.joinCode, this.content, this.affiliateId, this.creatorId, this.canal});
+  /// Commentaire à ouvrir et mettre en évidence (notification de mention, de réponse…).
+  final String? commentId;
+  DestinationData({required this.type, this.screen, this.commentId, this.post, this.chat, this.chroniqueId, this.liveId, this.chatId, this.sendUserId, this.joinCode, this.content, this.affiliateId, this.creatorId, this.canal});
 }
 
 class SplashChargement extends StatefulWidget {
@@ -122,6 +124,7 @@ class _SplashChargementState extends State<SplashChargement> {
   String? _pendingLiveId;
   String? _pendingJoinCode;
   String? _pendingNavigationType;
+  String? _pendingCommentId;
 
   Post? _loadedPost;
   Chat? _loadedChat;
@@ -691,6 +694,7 @@ Future<void> _updateUserLastActive(String userId) async {
         case 'post':
           _pendingPostId = _cachedNavigation!['postId'];
           _pendingPostType = _cachedNavigation!['postType'] ?? '';
+          _pendingCommentId = _cachedNavigation!['commentId'] as String?;
           break;
         case 'message':
           _pendingChatId = _cachedNavigation!['chatId'];
@@ -734,7 +738,7 @@ Future<void> _updateUserLastActive(String userId) async {
     switch (_pendingNavigationType) {
       case 'post':
         await _loadPostData();
-        _destinationToSend = (_loadedPost != null) ? DestinationData(type: 'post', post: _loadedPost) : DestinationData(type: 'home');
+        _destinationToSend = (_loadedPost != null) ? DestinationData(type: 'post', post: _loadedPost, commentId: _pendingCommentId) : DestinationData(type: 'home');
         break;
       case 'message':
         await _loadChatData();

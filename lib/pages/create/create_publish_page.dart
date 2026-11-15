@@ -1,3 +1,4 @@
+import 'package:afrotok/widgets/mention_suggestions.dart';
 import 'dart:io';
 import '../../models/post_widget.dart';
 import '../../widgets/reply_banner.dart';
@@ -629,6 +630,16 @@ class _CreatePublishPageState extends State<CreatePublishPage> {
                   ),
                 ),
               ]),
+              // taguer quelqu'un : « @ » propose des personnes (tout Afrolook, les personnes suivies et les abonnés d'abord) ; les personnes citées sont prévenues
+              Padding(padding: const EdgeInsets.only(top: 6), child: MentionSuggestions(controller: _desc)),
+              Padding(
+                padding: const EdgeInsets.only(top: 2, bottom: 4),
+                child: Row(children: [
+                  Icon(Icons.alternate_email_rounded, size: 14, color: c.textSecondary),
+                  const SizedBox(width: 4),
+                  Expanded(child: Text(context.tr("Tape @ pour citer quelqu'un : la personne sera prévenue."), style: TextStyle(color: c.textSecondary, fontSize: 11.5))),
+                ]),
+              ),
               if (widget.kind == CreatePostKind.video && widget.video != null)
                 _field(c, key: const ValueKey('field_cover'), label: context.tr('Couverture'), value: _cover == null ? context.tr('Automatique') : context.tr('Choisie'), icon: Icons.image_outlined, onTap: _pickCover),
               if (!_isDefi) _field(c, key: const ValueKey('field_type'), label: context.tr('Type de publication'), value: context.tr(kCreatePostTypes[_type]!.label), icon: kCreatePostTypes[_type]!.icon, onTap: _pickType),

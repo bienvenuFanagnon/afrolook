@@ -50,11 +50,13 @@ class NavigationCacheService {
   }
 
   // Stockage simplifié pour les différents types
-  Future<void> storePostNavigation(String postId, String postType) async {
+  /// [commentId] : commentaire concerné (mention, réponse…) : les commentaires s'ouvrent sur lui.
+  Future<void> storePostNavigation(String postId, String postType, {String? commentId}) async {
     await storePendingNavigation({
       'type': 'post',
       'postId': postId,
       'postType': postType,
+      if (commentId != null && commentId.isNotEmpty) 'commentId': commentId,
     });
   }
 

@@ -242,15 +242,23 @@ class LiveGameCard extends StatelessWidget {
     ]);
   }
 
-  /// Meilleurs donateurs d'un présentateur : 🥇 🥈 🥉, pseudo et pièces données.
+  /// Meilleurs donateurs d'un présentateur : coupe or, argent, bronze (icônes, pas d'emoji), pseudo et pièces données.
   Widget _givers(BuildContext context, String userId, {bool right = false, bool inline = false}) {
-    const medals = ['🥇', '🥈', '🥉'];
+    const medals = [Color(0xFFFFC83D), Color(0xFFC9D1DB), Color(0xFFD08A4E)];
     final top = game.topGiversOf(userId);
     if (top.isEmpty) return const SizedBox.shrink();
-    final lines = [for (var i = 0; i < top.length && i < 3; i++) '${medals[i]} @${top[i].username} ${CoinCheckout.fmt(top[i].coins)}'];
     const st = TextStyle(color: Color(0xFFFFD27A), fontSize: 10.5, fontWeight: FontWeight.w700);
-    if (inline) return Text(lines.join('  '), maxLines: 1, overflow: TextOverflow.ellipsis, style: st);
-    return Column(crossAxisAlignment: right ? CrossAxisAlignment.end : CrossAxisAlignment.start, children: [for (final l in lines) Text(l, maxLines: 1, overflow: TextOverflow.ellipsis, style: st)]);
+    List<InlineSpan> line(int i) => [
+          WidgetSpan(alignment: PlaceholderAlignment.middle, child: Icon(Icons.emoji_events_rounded, size: 12, color: medals[i])),
+          TextSpan(text: ' @${top[i].username} ${CoinCheckout.fmt(top[i].coins)}'),
+        ];
+    final n = top.length < 3 ? top.length : 3;
+    if (inline) {
+      return Text.rich(TextSpan(style: st, children: [for (var i = 0; i < n; i++) ...[if (i > 0) const TextSpan(text: '  '), ...line(i)]]), maxLines: 1, overflow: TextOverflow.ellipsis);
+    }
+    return Column(crossAxisAlignment: right ? CrossAxisAlignment.end : CrossAxisAlignment.start, children: [
+      for (var i = 0; i < n; i++) Text.rich(TextSpan(style: st, children: line(i)), maxLines: 1, overflow: TextOverflow.ellipsis),
+    ]);
   }
 
   Widget _name(StageUser p, bool lead, {bool right = false}) => Column(crossAxisAlignment: right ? CrossAxisAlignment.end : CrossAxisAlignment.start, children: [
@@ -632,8 +640,11 @@ Future<({List<QuizDraft> questions, int pool, int seconds})?> askQuiz(BuildConte
 /// Historique des quiz du live : pour chaque quiz, le podium puis les questions DÉJÀ révélées avec la bonne réponse, la réponse de la personne et le taux de réussite.
 /// (La question en cours n'y figure jamais : aucune triche possible.)
 class LiveQuizHistorySheet extends StatelessWidget {
-  const LiveQuizHistorySheet({super.key, required this.future});
+  const LiveQuizHistorySheet({super.key, required this.future, this.onRanking});
   final Future<List<Map<String, dynamic>>> future;
+
+  /// Classement complet d'un quiz de la nouvelle version (identifiant du quiz).
+  final void Function(String gameId)? onRanking;
 
   static String _time(String? iso) {
     final d = DateTime.tryParse(iso ?? '')?.toLocal();
@@ -687,7 +698,7 @@ class LiveQuizHistorySheet extends StatelessWidget {
     final qs = ((g['questions'] as List?) ?? const []).cast<Map>();
     final podium = ((g['podium'] as List?) ?? const []).cast<Map>();
     final ended = g['status'] == 'ended';
-    const medals = ['🥇', '🥈', '🥉'];
+    const medals = [Color(0xFFFFC83D), Color(0xFFC9D1DB), Color(0xFFD08A4E)];
     return Container(
       margin: const EdgeInsets.only(top: 12),
       padding: const EdgeInsets.all(14),
@@ -699,8 +710,22 @@ class LiveQuizHistorySheet extends StatelessWidget {
           for (final p in podium)
             Padding(
               padding: const EdgeInsets.only(bottom: 2),
-              child: Text('${medals[((p['rank'] as num).toInt() - 1).clamp(0, 2)]}  @${p['username'] ?? ''} · ${p['points']} pts${(p['coins'] as num? ?? 0) > 0 ? ' · +${p['coins']} ${ctx.tr('pièces')}' : ''}', style: const TextStyle(color: Colors.white, fontSize: 12.5)),
+              child: Row(children: [
+                Icon(Icons.emoji_events_rounded, size: 15, color: medals[((p['rank'] as num).toInt() - 1).clamp(0, 2)]),
+                const SizedBox(width: 6),
+                Expanded(child: Text('@${p['username'] ?? ''} · ${p['points']} pts${(p['coins'] as num? ?? 0) > 0 ? ' · +${p['coins']} ${ctx.tr('pièces')}' : ''}', style: const TextStyle(color: Colors.white, fontSize: 12.5))),
+              ]),
             ),
+        ],
+        if (onRanking != null && g['v'] == 2 && g['id'] != null) ...[
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            key: ValueKey('quiz_history_ranking_${g['id']}'),
+            style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: const BorderSide(color: Colors.white24), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18))),
+            onPressed: () => onRanking!('${g['id']}'),
+            icon: const Icon(Icons.leaderboard_rounded, size: 17),
+            label: Text(ended ? ctx.tr('Voir le classement final') : ctx.tr('Classement provisoire'), style: const TextStyle(fontWeight: FontWeight.w800)),
+          ),
         ],
         for (final q in qs) ...[
           const SizedBox(height: 14),
@@ -722,9 +747,10 @@ class LiveQuizHistorySheet extends StatelessWidget {
   }
 
   Widget _option(BuildContext ctx, Map q, int i) {
-    final correct = (q['correct'] as num?)?.toInt();
+    // nouveau quiz : plusieurs bonnes réponses possibles (`correct_list`) ; ancien quiz : une seule (`correct`)
+    final correct = <int>{for (final c in (q['correct_list'] as List? ?? [q['correct']])) if (c is num) c.toInt()};
     final mine = (q['my_option'] as num?)?.toInt();
-    final isCorrect = i == correct;
+    final isCorrect = correct.contains(i);
     final isMineWrong = i == mine && !isCorrect;
     final color = isCorrect ? const Color(0xFF69F0AE) : (isMineWrong ? const Color(0xFFFF8A80) : Colors.white24);
     return Container(

@@ -4,7 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-enum QuizSfx { tap, ok, bad, win, hi, up }
+/// `tick` … `go` : quiz à cagnotte des lives (tic-tac, réponse enregistrée, pluie de pièces, préparation, départ).
+enum QuizSfx { tap, ok, bad, win, hi, up, tick, saved, coins, roll, go }
 
 class _Note {
   const _Note(this.freq, this.start, this.len, {this.wave = 'tri', this.gain = 0.5});
@@ -34,6 +35,14 @@ class QuizSound {
     ],
     QuizSfx.hi: [_Note(698.46, 0, 0.09, wave: 'sin'), _Note(932.33, 0.07, 0.14, wave: 'sin')],
     QuizSfx.up: [_Note(440, 0, 0.1), _Note(554.37, 0.08, 0.1), _Note(659.25, 0.16, 0.18)],
+    QuizSfx.tick: [_Note(1200, 0, 0.05, wave: 'sq', gain: 0.18)],
+    QuizSfx.saved: [_Note(783.99, 0, 0.16, wave: 'sin'), _Note(1046.5, 0.09, 0.24, wave: 'sin')],
+    QuizSfx.coins: [
+      _Note(2093, 0, 0.08, wave: 'sin', gain: 0.3), _Note(2349, 0.06, 0.08, wave: 'sin', gain: 0.3), _Note(2637, 0.12, 0.08, wave: 'sin', gain: 0.3), _Note(2217, 0.18, 0.08, wave: 'sin', gain: 0.3),
+      _Note(2489, 0.24, 0.08, wave: 'sin', gain: 0.3), _Note(2794, 0.3, 0.08, wave: 'sin', gain: 0.3), _Note(2349, 0.36, 0.08, wave: 'sin', gain: 0.3), _Note(3136, 0.42, 0.12, wave: 'sin', gain: 0.3),
+    ],
+    QuizSfx.roll: [_Note(110, 0, 0.06), _Note(122, 0.05, 0.06), _Note(134, 0.1, 0.06), _Note(146, 0.15, 0.06), _Note(158, 0.2, 0.06), _Note(170, 0.25, 0.08)],
+    QuizSfx.go: [_Note(659.25, 0, 0.12, wave: 'sq', gain: 0.25), _Note(987.77, 0.08, 0.2, wave: 'sq', gain: 0.25)],
   };
 
   static const Map<QuizSfx, String> _fallback = {
@@ -43,6 +52,11 @@ class QuizSound {
     QuizSfx.win: 'sounds/tuto_success.wav',
     QuizSfx.hi: 'sounds/tuto_pop.wav',
     QuizSfx.up: 'sounds/tuto_rise.wav',
+    QuizSfx.tick: 'sounds/tuto_tick.wav',
+    QuizSfx.saved: 'sounds/tuto_pop.wav',
+    QuizSfx.coins: 'sounds/tuto_coin.wav',
+    QuizSfx.roll: 'sounds/tuto_whoosh.wav',
+    QuizSfx.go: 'sounds/tuto_rise.wav',
   };
 
   static Future<void> _load() async {

@@ -1,3 +1,4 @@
+import 'package:afrotok/pages/postComments.dart' show openCommentThread;
 import 'package:afrotok/pages/consultation/consultation_pages.dart';
 import 'package:afrotok/pages/create/create_menu_sheet.dart';
 import '../share/share_earn_page.dart';
@@ -1168,8 +1169,9 @@ class _MyHomePageState extends State<MyHomePage>
     switch (dest.type) {
       case 'post':
         if (dest.post != null) {
-          // Stack : home → notifications → post (retour = liste des notifs)
-          _navigateViaNotifications(() => _navigateToPostWidget(dest.post!));
+          // Stack : home → notifications → post (retour = liste des notifs) ; mention, réponse… : les commentaires, ouverts sur le commentaire concerné
+          final cid = dest.commentId;
+          _navigateViaNotifications(() => cid != null && cid.isNotEmpty ? openCommentThread(context, dest.post!, cid) : _navigateToPostWidget(dest.post!));
         }
         break;
       case 'chat':
