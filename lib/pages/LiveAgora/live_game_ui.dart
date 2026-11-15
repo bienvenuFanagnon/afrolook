@@ -335,7 +335,7 @@ class LiveGameCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(color: (q['left'] as num? ?? 99) < 5 && !reveal ? Colors.red.withOpacity(.85) : Colors.black54, borderRadius: BorderRadius.circular(10)),
-            child: Text(reveal ? context.tr('Réponse') : '00:${((q['left'] as num?)?.toInt() ?? 0).toString().padLeft(2, '0')}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
+            child: Text(reveal ? context.tr('Réponse') : clock((q['left'] as num?)?.toInt() ?? 0), style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
           ),
       ]),
       const SizedBox(height: 4),
@@ -540,10 +540,23 @@ Future<List<String>?> askFields(BuildContext context, {required String title, re
 
 
 /// Saisie d'un quiz : une question par ligne, `Question ? | A | B* | C` (étoile = bonne réponse), cagnotte offerte et durée par question.
+/// Temps maximal pour répondre à une question de quiz : 30 minutes (décision du 15/11/2026), comme sur le serveur.
+const int kQuizMaxSeconds = 1800;
+
+/// Durées proposées à l'hôte pour chaque question.
+const List<int> kQuizSecondsChoices = [15, 30, 60, 120, 300, 600, 900, 1800];
+
+/// « 15 s », « 2 min », « 1 min 30 s ».
+String quizDurationLabel(BuildContext context, int seconds) {
+  if (seconds < 60) return context.tr('{n} s', {'n': seconds});
+  final m = seconds ~/ 60, r = seconds % 60;
+  return r == 0 ? context.tr('{n} min', {'n': m}) : context.tr('{m} min {s} s', {'m': m, 's': r});
+}
+
 Future<({List<QuizDraft> questions, int pool, int seconds})?> askQuiz(BuildContext context) {
   final text = TextEditingController();
   final pool = TextEditingController(text: '500');
-  final secs = TextEditingController(text: '15');
+  var seconds = 15;   // temps pour répondre à chaque question (15 s à 30 min)
   String? error;
   return showDialog<({List<QuizDraft> questions, int pool, int seconds})>(
     context: context,
@@ -554,10 +567,24 @@ Future<({List<QuizDraft> questions, int pool, int seconds})?> askQuiz(BuildConte
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(ctx.tr('Une question par ligne : Question ? | choix A | choix B* | choix C. L\'étoile marque la bonne réponse. 10 questions au plus.'), style: const TextStyle(fontSize: 12.5, height: 1.4)),
             const SizedBox(height: 8),
-            TextField(controller: text, minLines: 4, maxLines: 8, decoration: InputDecoration(border: const OutlineInputBorder(), hintText: ctx.tr('Capitale du Ghana ? | Kumasi | Accra* | Lomé'))),
+            TextField(controller: text, minLines: 4, maxLines: 8, onChanged: (_) => setD(() {}), decoration: InputDecoration(border: const OutlineInputBorder(), hintText: ctx.tr('Capitale du Ghana ? | Kumasi | Accra* | Lomé'))),
             const SizedBox(height: 8),
             TextField(controller: pool, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: ctx.tr('Cagnotte offerte (pièces, 0 pour jouer sans gain)'))),
-            TextField(controller: secs, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: ctx.tr('Secondes par question'))),
+            const SizedBox(height: 10),
+            Text(ctx.tr('Temps par question'), style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Wrap(spacing: 6, runSpacing: 4, children: [
+              for (final s in kQuizSecondsChoices)
+                ChoiceChip(key: ValueKey('quiz_secs_$s'), label: Text(quizDurationLabel(ctx, s)), selected: seconds == s, onSelected: (_) => setD(() => seconds = s)),
+            ]),
+            Builder(builder: (_) {
+              final n = QuizDraft.parse(text.text)?.length ?? 0;
+              if (n == 0) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(ctx.tr('Durée totale du quiz : environ {d} ({n} questions)', {'d': quizDurationLabel(ctx, n * (seconds + 4)), 'n': n}), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              );
+            }),
             const SizedBox(height: 6),
             Text(ctx.tr('Jouer est gratuit pour le public. La cagnotte est mise de côté maintenant : 50 % / 30 % / 20 % aux trois premiers, le reste te revient.'), style: const TextStyle(fontSize: 11.5, color: Colors.grey)),
             if (error != null) Padding(padding: const EdgeInsets.only(top: 6), child: Text(error!, style: const TextStyle(color: Colors.red, fontSize: 12))),
@@ -572,7 +599,7 @@ Future<({List<QuizDraft> questions, int pool, int seconds})?> askQuiz(BuildConte
                 setD(() => error = ctx.tr('Chaque ligne : une question, 2 à 4 choix, une seule bonne réponse marquée par une étoile.'));
                 return;
               }
-              Navigator.pop(ctx, (questions: qs, pool: (int.tryParse(pool.text) ?? 0).clamp(0, 100000), seconds: (int.tryParse(secs.text) ?? 15).clamp(8, 40)));
+              Navigator.pop(ctx, (questions: qs, pool: (int.tryParse(pool.text) ?? 0).clamp(0, 100000), seconds: seconds.clamp(8, kQuizMaxSeconds)));
             },
             child: Text(ctx.tr('Lancer')),
           ),

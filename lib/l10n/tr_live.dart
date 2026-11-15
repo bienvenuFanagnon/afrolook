@@ -1,6 +1,11 @@
 // Traductions des écrans de lives, de vente en direct, des tâches et du partage (02/11/2026).
 // Anglais : écrit à la main quand il existe, sinon traduction automatique. Autres langues : traduction automatique (Google), à relire par un locuteur.
 const Map<String, Map<String, String>> kTrLive = {
+  "Temps par question": {'en': "Time per question", 'es': "Tiempo por pregunta", 'de': "Zeit pro Frage", 'ar': "الوقت لكل سؤال", 'pt': "Tempo por pergunta", 'zh': "每题时间", 'sw': "Muda kwa kila swali"},
+  "Durée totale du quiz : environ {d} ({n} questions)": {'en': "Total quiz time: about {d} ({n} questions)", 'es': "Duración total del quiz: unos {d} ({n} preguntas)", 'de': "Gesamtdauer des Quiz: etwa {d} ({n} Fragen)", 'ar': "المدة الإجمالية للمسابقة: حوالي {d} ({n} أسئلة)", 'pt': "Duração total do quiz: cerca de {d} ({n} perguntas)", 'zh': "测验总时长：约 {d}（{n} 道题）", 'sw': "Muda wote wa jaribio: takriban {d} (maswali {n})"},
+  "{n} s": {'en': "{n} s", 'es': "{n} s", 'de': "{n} s", 'ar': "{n} ث", 'pt': "{n} s", 'zh': "{n} 秒", 'sw': "sek {n}"},
+  "{n} min": {'en': "{n} min", 'es': "{n} min", 'de': "{n} Min.", 'ar': "{n} د", 'pt': "{n} min", 'zh': "{n} 分钟", 'sw': "dak {n}"},
+  "{m} min {s} s": {'en': "{m} min {s} s", 'es': "{m} min {s} s", 'de': "{m} Min. {s} s", 'ar': "{m} د {s} ث", 'pt': "{m} min {s} s", 'zh': "{m} 分 {s} 秒", 'sw': "dak {m} sek {s}"},
   "Nouveau tarif de livraison": {'en': "New delivery rate", 'es': "Nueva tasa de entrega", 'de': "Neue Lieferrate", 'ar': "معدل توصيل جديد", 'pt': "Nova taxa de entrega", 'zh': "新配送率", 'sw': "Kiwango kipya cha uwasilishaji"},
   "Pays (2 lettres, ex. TG)": {'en': "Country (2 letters, e.g., TG)", 'es': "País (2 letras, por ejemplo, TG)", 'de': "Land (2 Buchstaben, z. B. TG)", 'ar': "اسم الدولة (حرفان، على سبيل المثال TG)", 'pt': "País (2 letras, por exemplo, TG)", 'zh': "国家（2 个字母，例如 TG）", 'sw': "Nchi (herufi 2, k.m. TG)"},
   "Ville (facultatif)": {'en': "City (optional)", 'es': "Ciudad (opcional)", 'de': "Stadt (optional)", 'ar': "المدينة (اختياري)", 'pt': "Cidade (opcional)", 'zh': "城市（可选）", 'sw': "Jiji (hiari)"},
