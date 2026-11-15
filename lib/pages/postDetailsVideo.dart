@@ -2380,7 +2380,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     final nl = text.indexOf('\n');
     final title = nl > 0 ? text.substring(0, nl).trim() : text;
     final rest = nl > 0 ? text.substring(nl + 1).trim() : '';
-    final interactions = _currentPost.interactionsCount;   // total des interactions (j'aime, commentaires, partages, republications), plus le nombre de vues
+    final interactions = _currentPost.interactionsCount;   // total des interactions : j'aime, commentaires, partages, republications et vues uniques
     final ago = postTimeAgo(_currentPost.createdAt);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       if (title.isNotEmpty)

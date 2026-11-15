@@ -1647,9 +1647,10 @@ class Post {
 
   int? totalInteractions;  // Ancien compteur du serveur (j'aime + commentaires + vues) : l'API ne l'envoie pas, il reste à 0 ; pour l'affichage utiliser [interactionsCount]
 
-  /// Interactions affichées sur un post (08/11/2026) : j'aime + commentaires + partages + republications. Calculé à partir des compteurs reçus de l'API :
-  /// il suit aussitôt un j'aime ou un commentaire fait sur le téléphone. Les vues et les favoris n'en font pas partie.
-  int get interactionsCount => (loves ?? 0) + (likes ?? 0) + (comments ?? 0) + (partage ?? 0) + (users_republier_id?.length ?? 0);
+  /// Interactions affichées sur un post : j'aime + commentaires + partages + republications + vues uniques (ajoutées le 15/11/2026).
+  /// Calculé à partir des compteurs reçus de l'API : il suit aussitôt un j'aime ou un commentaire fait sur le téléphone.
+  /// Les vues comptées sont les vues uniques du serveur (une par personne, l'auteur exclu), pas [vues] qui augmente à chaque visionnage sur le téléphone. Les favoris n'en font pas partie.
+  int get interactionsCount => (loves ?? 0) + (likes ?? 0) + (comments ?? 0) + (partage ?? 0) + (users_republier_id?.length ?? 0) + (uniqueViewsCount ?? 0);
 
   int? adSupportCount = 0; // nombre de fois que la pub de soutien a été vue pour ce post
   bool? isPortrait;

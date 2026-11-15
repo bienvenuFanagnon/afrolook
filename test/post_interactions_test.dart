@@ -1,14 +1,14 @@
 import 'package:afrotok/services/api/post_mapper.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// Interactions affichées sur un post (08/11/2026) : j'aime + commentaires + partages + republications, calculées depuis les compteurs de l'API
+/// Interactions affichées sur un post : j'aime + commentaires + partages + republications + vues uniques (15/11/2026), calculées depuis les compteurs de l'API
 /// (l'ancien compteur du serveur n'était pas envoyé : tous les posts affichaient 0).
 void main() {
   Map<String, dynamic> row(Map<String, dynamic> counts) => {'id': 'p1', 'author': {'id': 'a1', 'username': 'ama'}, 'description': 'x', 'counts': counts};
 
   test('un post avec des j\'aime et des commentaires n\'affiche plus 0', () {
     final p = postFromApi(row({'likes': 12, 'comments': 5, 'shares': 3, 'views': 400, 'reposts': 2}));
-    expect(p.interactionsCount, 22);   // 12 + 5 + 3 + 2, sans les 400 vues
+    expect(p.interactionsCount, 422);   // 12 + 5 + 3 + 2 + 400 vues uniques
   });
 
   test('un post sans rien affiche 0', () {
@@ -21,5 +21,12 @@ void main() {
     p.loves = (p.loves ?? 0) + 1;
     p.comments = (p.comments ?? 0) + 1;
     expect(p.interactionsCount, 3);
+  });
+
+  test('les vues comptées sont les vues uniques du serveur, pas les visionnages répétés sur le téléphone', () {
+    final p = postFromApi(row({'likes': 1, 'views': 10}));
+    expect(p.interactionsCount, 11);
+    p.vues = (p.vues ?? 0) + 3;   // revoir la vidéo sur le téléphone n'ajoute pas d'interaction
+    expect(p.interactionsCount, 11);
   });
 }
