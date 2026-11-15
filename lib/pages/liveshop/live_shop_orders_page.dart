@@ -52,7 +52,9 @@ class _LiveShopOrdersPageState extends State<LiveShopOrdersPage> with TickerProv
   List<Map<String, dynamic>> _offersBuy = const [];
   List<Map<String, dynamic>> _offersSell = const [];
 
-  int _count(String role, String k) => ((_counts[role] as Map?)?[k] as num?)?.toInt() ?? 0;
+  // lectures tolérantes : un objet vide reçu sous forme de liste `[]` ne fait plus planter les onglets Achats et Ventes (15/11/2026)
+  int _count(String role, String k) => _num((_counts[role] is Map ? _counts[role] as Map : const {})[k]);
+  static int _num(Object? v) => v is num ? v.toInt() : int.tryParse('${v ?? ''}') ?? 0;
 
   /// Négociations qui attendent MA réponse (vendeur : offre ouverte ; acheteur : contre-proposition reçue).
   int get _offersTodo => _offersSell.where((o) => '${o['status']}' == 'open').length + _offersBuy.where((o) => '${o['status']}' == 'countered').length;
@@ -382,7 +384,7 @@ class _LiveShopOrdersPageState extends State<LiveShopOrdersPage> with TickerProv
 
   // ── Tableau de bord : tout d'un coup d'œil, chaque tuile ouvre la bonne liste ──
 
-  int _status(String role, String st) => ((_counts['${role}_status'] as Map?)?[st] as num?)?.toInt() ?? 0;
+  int _status(String role, String st) => _num((_counts['${role}_status'] is Map ? _counts['${role}_status'] as Map : const {})[st]);
 
   void _openSell({String? group, String? status}) {
     _sellFeed.group = status != null ? null : group;

@@ -9,8 +9,10 @@ import 'sales_ledger_page.dart';
 final NumberFormat _n = NumberFormat.decimalPattern('fr');
 String _f(num v) => '${_n.format(v)} F';
 
-int _i(Object? v) => (v as num?)?.toInt() ?? 0;
-int _st(Map<String, dynamic> counts, String role, String status) => _i((counts['${role}_status'] as Map?)?[status]);
+/// Lectures tolérantes (15/11/2026) : un objet vide envoyé par le serveur sous forme de liste `[]`, ou un nombre en texte, ne doit jamais faire planter l'écran.
+int _i(Object? v) => v is num ? v.toInt() : int.tryParse('${v ?? ''}') ?? 0;
+Map _m(Object? v) => v is Map ? v : const {};
+int _st(Map<String, dynamic> counts, String role, String status) => _i(_m(counts['${role}_status'])[status]);
 
 /// Tuile chiffrée (une étape, un total) : touche = ouvre la liste correspondante.
 Widget _tile(AppColors c, String label, int n, VoidCallback? onTap, {Color? color, bool alert = false, String? sub, IconData? icon}) {
@@ -146,8 +148,8 @@ class SellerDashboard extends StatelessWidget {
     final c = AppColors.of(context);
     final pending = _st(counts, 'seller', 'pending_seller');
     final disputes = _st(counts, 'seller', 'disputed');
-    final offers = _i((counts['offers'] as Map?)?['seller']);
-    final promos = (counts['promos'] as Map?) ?? const {};
+    final offers = _i(_m(counts['offers'])['seller']);
+    final promos = _m(counts['promos']);
     return Column(key: const ValueKey('seller_dashboard'), crossAxisAlignment: CrossAxisAlignment.start, children: [
       _todoBox(c, color: c.danger, allDone: tr('Tout est à jour : rien n\'attend ta réponse.'), rows: [
         if (pending > 0) _todoRow(c, c.danger, tr('{n} commande(s) à valider', {'n': pending}), sub: tr('Valide ou annule chacune : l\'acheteur attend.'), onTap: () => onStatus('pending_seller')),
@@ -183,8 +185,8 @@ class BuyerDashboard extends StatelessWidget {
     final c = AppColors.of(context);
     final s = stats ?? const <String, dynamic>{};
     final actions = ((s['next_actions'] as List?) ?? const []).whereType<Map>().toList();
-    final offers = _i((counts['offers'] as Map?)?['buyer']);
-    final toRate = _i((counts['buyer'] as Map?)?['to_rate']);
+    final offers = _i(_m(counts['offers'])['buyer']);
+    final toRate = _i(_m(counts['buyer'])['to_rate']);
     final days = ((s['by_day'] as List?) ?? const []).whereType<Map>().toList();
     final sellers = ((s['top_sellers'] as List?) ?? const []).whereType<Map>().toList();
     String what(String st) => switch (st) {
@@ -209,7 +211,7 @@ class BuyerDashboard extends StatelessWidget {
       ),
       _todoBox(c, color: c.warning, allDone: tr('Rien à faire pour le moment : tes commandes avancent.'), rows: [
         for (final a in actions)
-          _todoRow(c, c.warning, what('${a['status']}'), sub: '${a['title']} · @${(a['seller'] as Map?)?['username'] ?? ''}', onTap: onTodo, action: act('${a['status']}')),
+          _todoRow(c, c.warning, what('${a['status']}'), sub: '${a['title']} · @${_m(a['seller'])['username'] ?? ''}', onTap: onTodo, action: act('${a['status']}')),
       ]),
       _ledgerButton(context, c, seller: false),
       _grid2([
@@ -259,11 +261,11 @@ class OrdersOverview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    final buyTodo = _i((counts['buyer'] as Map?)?['todo']);
-    final buyProg = _i((counts['buyer'] as Map?)?['progress']);
-    final sellTodo = _i((counts['seller'] as Map?)?['todo']);
-    final sellProg = _i((counts['seller'] as Map?)?['progress']);
-    final offers = _i((counts['offers'] as Map?)?['seller']) + _i((counts['offers'] as Map?)?['buyer']);
+    final buyTodo = _i(_m(counts['buyer'])['todo']);
+    final buyProg = _i(_m(counts['buyer'])['progress']);
+    final sellTodo = _i(_m(counts['seller'])['todo']);
+    final sellProg = _i(_m(counts['seller'])['progress']);
+    final offers = _i(_m(counts['offers'])['seller']) + _i(_m(counts['offers'])['buyer']);
     final total = _i(counts['total']);
     Widget col(IconData icon, String title, int todo, String second, String money, int tab, {bool last = false}) => Expanded(
           child: InkWell(

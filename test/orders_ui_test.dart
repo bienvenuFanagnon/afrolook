@@ -87,4 +87,21 @@ void main() {
     expect(orderNotifNeedsAction('ORDER_NEW'), isTrue);
     expect(orderNotifNeedsAction('ORDER_RECEIVED'), isFalse);
   });
+
+  testWidgets("compte sans aucune commande : la réponse du serveur avec des listes vides [] et des nombres en texte ne fait plus planter Achats ni Ventes", (tester) async {
+    // réponse réelle d'avant la correction de l'API : les statuts vides arrivaient en liste JSON
+    final empty = <String, dynamic>{
+      'seller_status': <dynamic>[], 'buyer_status': <dynamic>[], 'promos': {'active': 0, 'uses': '0', 'linked': 0},
+      'seller': {'todo': 0, 'progress': 0, 'done': 0}, 'buyer': {'todo': 0, 'progress': 0, 'done': 0, 'to_rate': 0}, 'offers': {'seller': 0, 'buyer': 0}, 'total': 0,
+    };
+    await tester.pumpWidget(host(BuyerDashboard(counts: empty, stats: const {'next_actions': <dynamic>[], 'in_escrow_xof': '0'}, onStatus: (_) {}, onTodo: () {}, onOffers: () {})));
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const ValueKey('buyer_dashboard')), findsOneWidget);
+    await tester.pumpWidget(host(SellerDashboard(counts: empty, onStatus: (_) {}, onOffers: () {}, onPromos: () {})));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+    expect(find.byKey(const ValueKey('seller_dashboard')), findsOneWidget);
+    await tester.pumpWidget(host(OrdersOverview(counts: {...empty, 'buyer': <dynamic>[], 'seller': <dynamic>[], 'offers': <dynamic>[]}, buyerStats: null, sellerStats: null, onTab: (_) {})));
+    expect(tester.takeException(), isNull);
+  });
 }
