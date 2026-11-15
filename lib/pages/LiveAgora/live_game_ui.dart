@@ -515,11 +515,13 @@ Future<String?> showGamesMenu(BuildContext context, {required bool hasStageGuest
 }
 
 /// Petit formulaire de texte et de nombre en fenêtre (objectif, tirage, sondage).
-Future<List<String>?> askFields(BuildContext context, {required String title, required List<({String label, String hint, bool number, String initial})> fields, String ok = 'Valider'}) {
+/// Avec [minuteChoices] : une ligne « Durée » à choisir ; les minutes choisies sont ajoutées en dernier élément du résultat.
+Future<List<String>?> askFields(BuildContext context, {required String title, required List<({String label, String hint, bool number, String initial})> fields, String ok = 'Valider', List<int>? minuteChoices, int? initialMinutes}) {
   final ctrls = [for (final f in fields) TextEditingController(text: f.initial)];
+  var minutes = initialMinutes ?? minuteChoices?.first ?? 0;
   return showDialog<List<String>>(
     context: context,
-    builder: (ctx) => AlertDialog(
+    builder: (ctx) => StatefulBuilder(builder: (ctx, setD) => AlertDialog(
       title: Text(title),
       content: SingleChildScrollView(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -528,18 +530,35 @@ Future<List<String>?> askFields(BuildContext context, {required String title, re
               padding: const EdgeInsets.only(bottom: 8),
               child: TextField(controller: ctrls[i], keyboardType: fields[i].number ? TextInputType.number : TextInputType.text, decoration: InputDecoration(labelText: fields[i].label, hintText: fields[i].hint)),
             ),
+          if (minuteChoices != null) ...[
+            Align(alignment: Alignment.centerLeft, child: Text(ctx.tr('Durée'), style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700))),
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Wrap(spacing: 6, runSpacing: 4, children: [
+                for (final m in minuteChoices)
+                  ChoiceChip(key: ValueKey('minutes_$m'), label: Text(ctx.tr('{n} min', {'n': m})), selected: minutes == m, onSelected: (_) => setD(() => minutes = m)),
+              ]),
+            ),
+          ],
         ]),
       ),
       actions: [
         TextButton(onPressed: () => Navigator.pop(ctx), child: Text(ctx.tr('Annuler'))),
-        FilledButton(onPressed: () => Navigator.pop(ctx, [for (final c in ctrls) c.text.trim()]), child: Text(ctx.tr(ok))),
+        FilledButton(onPressed: () => Navigator.pop(ctx, [for (final c in ctrls) c.text.trim(), if (minuteChoices != null) '$minutes']), child: Text(ctx.tr(ok))),
       ],
-    ),
+    )),
   );
 }
 
+/// Durées proposées à l'hôte pour un sondage (décision du 15/11/2026) ; le serveur accepte de 1 à 30 minutes.
+const List<int> kPollMinuteChoices = [1, 2, 5, 10, 30];
 
-/// Saisie d'un quiz : une question par ligne, `Question ? | A | B* | C` (étoile = bonne réponse), cagnotte offerte et durée par question.
+/// Un sondage saisi : la question, ses choix remplis et sa durée.
+({String question, List<String> options, int minutes}) pollFromFields(List<String> v) =>
+    (question: v[0], options: [for (final o in v.sublist(1, v.length - 1)) if (o.isNotEmpty) o], minutes: int.tryParse(v.last) ?? 2);
+
+
 /// Temps maximal pour répondre à une question de quiz : 30 minutes (décision du 15/11/2026), comme sur le serveur.
 const int kQuizMaxSeconds = 1800;
 
@@ -553,6 +572,7 @@ String quizDurationLabel(BuildContext context, int seconds) {
   return r == 0 ? context.tr('{n} min', {'n': m}) : context.tr('{m} min {s} s', {'m': m, 's': r});
 }
 
+/// Saisie d'un quiz : une question par ligne, `Question ? | A | B* | C` (étoile = bonne réponse), cagnotte offerte et durée par question.
 Future<({List<QuizDraft> questions, int pool, int seconds})?> askQuiz(BuildContext context) {
   final text = TextEditingController();
   final pool = TextEditingController(text: '500');

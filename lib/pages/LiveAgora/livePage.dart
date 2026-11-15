@@ -901,9 +901,10 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
             (label: context.tr('Choix 1'), hint: '', number: false, initial: ''),
             (label: context.tr('Choix 2'), hint: '', number: false, initial: ''),
             (label: context.tr('Choix 3 (facultatif)'), hint: '', number: false, initial: ''),
-          ]);
+          ], minuteChoices: kPollMinuteChoices, initialMinutes: 2);
           if (v == null) return;
-          await LivesApi.gameStart(widget.liveId, {'kind': 'poll', 'question': v[0], 'options': [for (final o in v.skip(1)) if (o.isNotEmpty) o]});
+          final poll = pollFromFields(v);   // durée choisie par l'hôte : 1, 2, 5, 10 ou 30 minutes
+          await LivesApi.gameStart(widget.liveId, {'kind': 'poll', 'question': poll.question, 'options': poll.options, 'minutes': poll.minutes});
           break;
         case 'draw':
           final v = await askFields(context, title: context.tr('Tirage au sort'), fields: [(label: context.tr('Pièces mises en jeu'), hint: '100', number: true, initial: '100')], ok: 'Tirer au sort');
