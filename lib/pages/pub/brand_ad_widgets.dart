@@ -127,11 +127,14 @@ class SponsoredTag extends StatelessWidget {
 enum AdBtnSize { mini, normal, big }
 
 class AdYellowButton extends StatelessWidget {
-  const AdYellowButton({super.key, required this.label, required this.onTap, this.size = AdBtnSize.normal, this.green = false});
+  const AdYellowButton({super.key, required this.label, required this.onTap, this.size = AdBtnSize.normal, this.green = false, this.icon});
   final String label;
   final VoidCallback onTap;
   final AdBtnSize size;
   final bool green;
+
+  /// Logo de la boutique d'applications qui va s'ouvrir (Google Play ou App Store), à gauche du texte.
+  final IconData? icon;
 
   @override
   Widget build(BuildContext context) {
@@ -146,6 +149,7 @@ class AdYellowButton extends StatelessWidget {
         child: Padding(
           padding: big ? const EdgeInsets.symmetric(vertical: 14, horizontal: 16) : (mini ? const EdgeInsets.symmetric(horizontal: 10, vertical: 5) : const EdgeInsets.symmetric(horizontal: 14, vertical: 9)),
           child: Row(mainAxisSize: big ? MainAxisSize.max : MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: [
+            if (icon != null) Padding(padding: EdgeInsets.only(right: mini ? 4 : 6), child: Icon(icon, size: big ? 20 : (mini ? 14 : 17), color: green ? Colors.white : _texteSurJaune)),
             Flexible(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: green ? Colors.white : _texteSurJaune, fontWeight: FontWeight.w800, fontSize: big ? 17 : (mini ? 12 : 14), decoration: TextDecoration.none))),
           ]),
         ),
@@ -261,7 +265,8 @@ class _Header extends StatelessWidget {
 
 /// Barre d'action sous le visuel : domaine (petit) au-dessus du titre (gras), bouton jaune à droite.
 class _ActionBar extends StatelessWidget {
-  const _ActionBar({required this.domain, required this.title, required this.label, required this.onTap, this.price});
+  const _ActionBar({required this.domain, required this.title, required this.label, required this.onTap, this.price, this.icon});
+  final IconData? icon;
   final String domain;
   final String? price;
   final String title;
@@ -283,7 +288,7 @@ class _ActionBar extends StatelessWidget {
           ]),
         ),
         const SizedBox(width: 10),
-        AdYellowButton(label: label, onTap: onTap),
+        AdYellowButton(label: label, onTap: onTap, icon: icon),
       ]),
     );
   }
@@ -357,7 +362,7 @@ class _BrandAdCardState extends State<BrandAdCard> {
         ),
         if (carousel)
           Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Center(child: Row(mainAxisSize: MainAxisSize.min, children: [for (var i = 0; i < images.length; i++) Padding(padding: const EdgeInsets.symmetric(horizontal: 3), child: Container(width: 9, height: 9, decoration: BoxDecoration(shape: BoxShape.circle, color: i == _page ? _vert : Colors.transparent, border: Border.all(color: _vert, width: 1.6))))]))),
-        if ((ad.actionUrl ?? '').isNotEmpty) _ActionBar(domain: brandDomainOf(ad), price: adPriceLabel(ad), title: (ad.adTitle ?? '').trim(), label: adButtonLabel(ad), onTap: widget.onAction),
+        if ((ad.actionUrl ?? '').isNotEmpty) _ActionBar(domain: brandDomainOf(ad), price: adPriceLabel(ad), title: (ad.adTitle ?? '').trim(), label: adButtonLabel(ad), onTap: widget.onAction, icon: AdActions.storeIcon(ad)),
         if (caption.isNotEmpty)
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
@@ -435,7 +440,7 @@ class BrandAdCompact extends StatelessWidget {
               Text(name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, height: 1.2, color: p.text, decoration: TextDecoration.none)),
               const SizedBox(height: 2),
               Row(children: [const SponsoredTag(), if (sector.isNotEmpty) ...[const SizedBox(width: 6), Flexible(child: Text(sector, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: p.sub, decoration: TextDecoration.none)))]]),
-              if (hasAction) Padding(padding: const EdgeInsets.only(top: 6), child: AdYellowButton(label: adButtonLabel(ad), onTap: onAction, size: AdBtnSize.mini)),
+              if (hasAction) Padding(padding: const EdgeInsets.only(top: 6), child: AdYellowButton(label: adButtonLabel(ad), onTap: onAction, size: AdBtnSize.mini, icon: AdActions.storeIcon(ad))),
             ]),
           ),
         ]),
@@ -475,7 +480,7 @@ class BrandBanner extends StatelessWidget {
             ]),
           ),
         ),
-        if ((ad.actionUrl ?? '').isNotEmpty) _ActionBar(domain: '', title: title, label: adButtonLabel(ad), onTap: onAction),
+        if ((ad.actionUrl ?? '').isNotEmpty) _ActionBar(domain: '', title: title, label: adButtonLabel(ad), onTap: onAction, icon: AdActions.storeIcon(ad)),
       ]),
     );
   }
@@ -638,7 +643,7 @@ class _AdDetailPageState extends State<AdDetailPage> {
       bottomNavigationBar: hasAction
           ? Container(
               decoration: BoxDecoration(color: p.card, border: Border(top: BorderSide(color: p.line))),
-              child: SafeArea(child: Padding(padding: const EdgeInsets.fromLTRB(12, 10, 12, 14), child: AdYellowButton(label: adButtonLabel(ad), onTap: _open, size: AdBtnSize.big))),
+              child: SafeArea(child: Padding(padding: const EdgeInsets.fromLTRB(12, 10, 12, 14), child: AdYellowButton(label: adButtonLabel(ad), onTap: _open, size: AdBtnSize.big, icon: AdActions.storeIcon(ad)))),
             )
           : null,
     );

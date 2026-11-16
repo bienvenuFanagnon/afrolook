@@ -172,7 +172,7 @@ function detailBlock(a, href) {
   const offer = (D.offer === 'paid' ? 'Payante' : 'Gratuite') + (a.network ? ' · diffusée chez nos partenaires' : a.networkRequested ? ' · partenaires demandés (en validation)' : '');
   const rows = [
     ['Type d’annonce', AD_TYPE[a.type] || a.type || '—'], ['Bouton', a.action || '—'], ['Catégorie', catText(D.category)],
-    ['Destination', href ? new URL(href).hostname.replace(/^www\./, '') : (a.url || '—')],
+    ['Destination', (href ? new URL(href).hostname.replace(/^www\./, '') : (a.url || '—')) + (a.urlIos ? ' + App Store' : '')],
     a.price ? ['Prix indiqué', `${n(a.price)} F`] : null,
     ['Pays visés', countries], ['Langues', list(D.languages, (v) => chipText('#f-langs', v), 'Toutes')], ['Appareils', list(D.devices, (v) => chipText('#f-devs', v), 'Tous')],
     ['Types de sites et d’applications', list(D.siteTypes, (v) => chipText('#f-types', v), 'Tous')],
@@ -470,7 +470,7 @@ async function initSpace() {
   const TYPES = {
     product: { action: 'buy', label: 'Acheter', dest: 'link', kind: 'projet', price: true, ph: 'https://tonsite.com/produit', hint: 'Colle le lien de la page du produit (pas la page d\u2019accueil). Le prix indiqué doit être celui de cette page.' },
     site: { action: 'visit', label: 'Visiter le site', dest: 'link', kind: 'site', ph: 'https://tonsite.com', hint: 'Lien complet de ta boutique ou de ton site, en https://. Les liens raccourcis (bit.ly…) et les téléchargements directs ne sont pas acceptés.' },
-    app: { action: 'download', label: 'Installer', dest: 'link', kind: 'app', ph: 'https://play.google.com/store/apps/details?id=…', hint: 'Lien de ton application sur Google Play ou l\u2019App Store.' },
+    app: { action: 'download', label: 'Installer', dest: 'link', kind: 'app', ph: 'https://play.google.com/store/apps/details?id=…', hint: 'Mets le lien Google Play, le lien App Store, ou les deux : chaque téléphone ouvrira sa boutique (App Store sur iPhone, Google Play sur Android).' },
     whatsapp: { action: 'whatsapp', label: 'Écrire sur WhatsApp', dest: 'phone', kind: 'entreprise', ph: '+228 90 00 00 00', hint: 'Le numéro WhatsApp avec l\u2019indicatif du pays : la discussion s\u2019ouvre en un geste.' },
     call: { action: 'call', label: 'Appeler', dest: 'phone', kind: 'entreprise', ph: '+228 90 00 00 00', hint: 'Le numéro à appeler, avec l\u2019indicatif du pays.' },
     social: { action: 'follow', label: 'Suivre la page', dest: 'link', kind: 'projet', ph: 'https://www.facebook.com/tapage', hint: 'Le lien de ta page Facebook, Instagram, TikTok, YouTube ou Telegram.' },
@@ -480,7 +480,8 @@ async function initSpace() {
   const tel = () => TYPES[st.type].dest === 'phone';
   const refresh = () => {
     const T = TYPES[st.type], l = $('#f-link'); l.placeholder = T.ph; l.inputMode = tel() ? 'tel' : 'url';
-    $('#f-link-l').firstChild.textContent = tel() ? 'Numéro de téléphone, avec l\'indicatif ' : (st.type === 'social' ? 'Lien de ta page ' : st.type === 'app' ? 'Lien de l\u2019application ' : 'Lien du bouton');
+    $('#f-link-l').firstChild.textContent = tel() ? 'Numéro de téléphone, avec l\'indicatif ' : (st.type === 'social' ? 'Lien de ta page ' : st.type === 'app' ? 'Lien Google Play (Android) ' : 'Lien du bouton');
+    $('#f-link-ios-l').hidden = st.type !== 'app';   // application : deux liens possibles (16/11/2026)
     $('#f-price-l').hidden = !T.price; $('#f-link-hint').textContent = T.hint;
     $('#f-btn-note').innerHTML = 'Le bouton de ton annonce sera <b>' + T.label + '</b>.';
     $('#pv-btn').textContent = T.label;
@@ -488,11 +489,11 @@ async function initSpace() {
     $('#pv-av').textContent = ($('#f-title').value.trim() || 'A').charAt(0).toUpperCase();
     $('#pv-text').textContent = $('#f-text').value.trim() || 'Ton texte apparaîtra ici.';
     const pr = TYPES[st.type].price && Number($('#f-price').value) >= 1 ? nf(Number($('#f-price').value)) + ' F · ' : '';
-    $('#pv-link').textContent = pr + ($('#f-link').value.trim() || '').replace(/^https?:\/\//, '').slice(0, 28);
+    $('#pv-link').textContent = pr + ($('#f-link').value.trim() || (st.type === 'app' ? $('#f-link-ios').value.trim() : '') || '').replace(/^https?:\/\//, '').slice(0, 28);
   };
   $$('#f-type label').forEach((el) => el.addEventListener('click', () => {
     st.type = el.dataset.v; st.action = TYPES[st.type].action; st.kind = TYPES[st.type].kind;
-    $$('#f-type label').forEach((x) => x.classList.toggle('on', x === el)); $('#f-link').value = ''; refresh();
+    $$('#f-type label').forEach((x) => x.classList.toggle('on', x === el)); $('#f-link').value = ''; $('#f-link-ios').value = ''; refresh();
   }));
   const pickCountry = (v) => {
     if (v === 'ALL') st.countries = new Set(['ALL']); else { st.countries.delete('ALL'); st.countries.has(v) ? st.countries.delete(v) : st.countries.add(v); if (!st.countries.size) st.countries.add('ALL'); }
@@ -507,7 +508,7 @@ async function initSpace() {
     $('#f-countries').append(h('span', { 'data-v': c, text: countryName(c), onclick: () => pickCountry(c) }));
     const o = moreC.querySelector(`option[value="${c}"]`); if (o) o.remove(); moreC.value = ''; pickCountry(c);
   });
-  ['#f-title', '#f-text', '#f-link', '#f-price'].forEach((s) => $(s).addEventListener('input', refresh));
+  ['#f-title', '#f-text', '#f-link', '#f-link-ios', '#f-price'].forEach((s) => $(s).addEventListener('input', refresh));
   // ciblage facultatif (langues, appareils, types de sites) et note sur les catégories sensibles
   const chips = (box, set) => $$(box + ' span').forEach((c) => c.addEventListener('click', () => { const v = c.dataset.v; set.has(v) ? set.delete(v) : set.add(v); c.classList.toggle('on', set.has(v)); }));
   chips('#f-langs', st.langs); chips('#f-devs', st.devs); chips('#f-types', st.types);
@@ -624,6 +625,14 @@ async function initSpace() {
     if (n === 3) {
       const link = $('#f-link').value.trim();
       if (TYPES[st.type].price && !(Number($('#f-price').value) >= 1)) return 'Indique le prix du produit, en francs CFA.';
+      if (st.type === 'app') {
+        const ios = $('#f-link-ios').value.trim(), host = (u) => { try { return new URL(u).hostname.toLowerCase(); } catch { return ''; } };
+        if (!link && !ios) return 'Ajoute le lien Google Play, le lien App Store, ou les deux.';
+        for (const u of [link, ios]) if (u && !/^https:\/\//i.test(u)) return 'Le lien doit commencer par https://';
+        if (ios && !/(^|\.)(apps|itunes)\.apple\.com$/.test(host(ios))) return 'Le lien App Store doit commencer par https://apps.apple.com/';
+        if (link && ios && !/(^|\.)play\.google\.com$/.test(host(link))) return 'Le lien Google Play doit commencer par https://play.google.com/';
+        return '';
+      }
       if (!link) return tel() ? 'Ajoute ton numéro de téléphone.' : 'Ajoute le lien du bouton (https://…).';
       if (!tel() && !/^https:\/\//i.test(link)) return 'Le lien doit commencer par https://';
     }
@@ -740,6 +749,7 @@ async function initSpace() {
       btn.textContent = 'Envoi des fichiers…';
       const regions = st.countries.has('AFRICA') ? ['AFRICA'] : [];
       const payload = { type: st.type, title, text, category: $('#f-cat').value, countries: [...st.countries].filter((c) => c !== 'AFRICA'), regions, languages: [...st.langs], devices: [...st.devs], categories: [...st.types], [tel() ? 'phone' : 'link']: link };
+      if (st.type === 'app' && $('#f-link-ios').value.trim()) payload.link_ios = $('#f-link-ios').value.trim();   // lien App Store (16/11/2026)
       if (st.isVideo) {
         const f = st.files[0]; payload.mediaType = 'video'; payload.videoDuration = st.duration;
         payload.videoUrl = await put('ad_videos', f, f.type === 'video/quicktime' ? 'mov' : 'mp4', f.type);
@@ -1392,6 +1402,7 @@ async function initRegieAdmin() {
       row('Résultats', `${n(a.views)} vues · ${n(a.clicks)} clics`), row('Déposée le', date(a.createdAt)), row('Fin prévue', a.endsAt ? date(a.endsAt) : '—'));
     if (a.reason) c.append(row('Motif', a.reason));
     const l = lnk('Ouvrir le lien de l\u2019annonce', a.actionUrl); if (l) c.append(l);
+    const li = a.actionUrlIos ? lnk('Ouvrir le lien App Store', a.actionUrlIos) : null; if (li) c.append(li);   // application à deux liens (16/11/2026)
     const d = (decision, more = {}) => ({ target: 'ad', id: a.id, decision, ...more }), specs = [];
     if (a.status === 'pending' || a.status === 'refused') specs.push({ label: 'Valider', primary: true, networkChoice: true, networkDefault: !!a.networkRequested, fn: 'adsPubAdminReview', data: d('approve') });
     if (a.status === 'pending') specs.push({ label: 'Refuser', ask: 'Motif du refus (envoyé par e-mail)', fn: 'adsPubAdminReview', data: d('refuse') });

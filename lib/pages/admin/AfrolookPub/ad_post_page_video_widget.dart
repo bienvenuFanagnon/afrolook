@@ -323,6 +323,7 @@ class _AdPostWidgetState extends State<AdPostWidget> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            if (AdActions.storeIcon(ad) != null) Padding(padding: const EdgeInsets.only(right: 6), child: Icon(AdActions.storeIcon(ad), size: 18, color: const Color(0xFF20260F))),
             Flexible(child: Text(adButtonLabel(ad), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFF20260F), fontWeight: FontWeight.w800, fontSize: 16))),
             const SizedBox(width: 6),
             const Icon(Icons.arrow_forward, color: Color(0xFF20260F), size: 18),

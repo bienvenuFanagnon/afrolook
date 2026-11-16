@@ -418,6 +418,7 @@ export function adsSpace(fbConfig, api) {
       <p class="adcallout" id="f-btn-note"></p>
       <label class="fl" for="f-price" id="f-price-l" hidden>Prix du produit, en francs CFA <small>(affiché dans l'annonce ; il doit être celui de la page)</small><input id="f-price" type="number" min="1" max="99999999" inputmode="numeric" placeholder="12500"></label>
       <label class="fl" for="f-link" id="f-link-l">Lien du bouton<input id="f-link" inputmode="url" autocomplete="off" placeholder="https://tonsite.com"></label>
+      <label class="fl" for="f-link-ios" id="f-link-ios-l" hidden>Lien App Store (iPhone)<input id="f-link-ios" inputmode="url" autocomplete="off" placeholder="https://apps.apple.com/app/…"></label>
       <p class="adnote" id="f-link-hint"></p></div>
      <div class="adfs adstep" data-step="4" hidden><h3><i>4</i> Diffusion</h3>
       <h4 class="adsub-h">À qui s'adresse ton annonce ?</h4>

@@ -1369,6 +1369,7 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    if (AdActions.storeIcon(ad) != null) Padding(padding: const EdgeInsets.only(right: 6), child: Icon(AdActions.storeIcon(ad), size: 17, color: const Color(0xFF20260F))),
                     Flexible(
                       child: Text(
                         adButtonLabel(ad),

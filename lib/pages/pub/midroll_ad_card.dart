@@ -591,6 +591,8 @@ class _MidrollAdCardState extends State<MidrollAdCard> {
                                             : Row(
                                                 mainAxisAlignment: MainAxisAlignment.center,
                                                 children: [
+                                                  if (ad != null && AdActions.storeIcon(ad!) != null)
+                                                    Padding(padding: const EdgeInsets.only(right: 6), child: Icon(AdActions.storeIcon(ad!), size: 17, color: const Color(0xFF20260F))),
                                                   Flexible(
                                                     child: Text(
                                                       isBrand && ad != null ? adButtonLabel(ad!) : btnText,

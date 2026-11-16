@@ -171,6 +171,7 @@ class AfrolookAdsPool {
       description: text.isNotEmpty ? text : title,
       actionType: url.isEmpty ? null : (const {'product': 'buy', 'app': 'download', 'whatsapp': 'whatsapp', 'call': 'call', 'social': 'follow', 'event': 'book'}['${it['ad_type'] ?? ''}'] ?? 'visit'),
       actionUrl: url.isEmpty ? null : url,
+      actionUrlIos: '${it['action_url_ios'] ?? ''}'.trim().isEmpty ? null : '${it['action_url_ios']}'.trim(),
       actionButtonText: cta.isNotEmpty ? cta : (url.isEmpty ? null : 'En savoir plus'),
       status: 'active',
       startDate: now,

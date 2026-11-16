@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:afrotok/services/api/posts_api.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -64,12 +65,29 @@ class AdActions {
       if (route.isNotEmpty) _navigateToRoute(route);
       return;
     }
-    final raw = (ad.actionUrl ?? '').trim();
+    final raw = urlFor(ad);
     if (raw.isEmpty) return;
     final url = Uri.tryParse(raw);
     if (url != null && await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     }
+  }
+
+  /// Lien à ouvrir sur CE téléphone (16/11/2026) : une application avec deux liens ouvre l'App Store sur iPhone et iPad, Google Play ailleurs ;
+  /// une application avec un seul lien l'ouvre partout.
+  static String urlFor(Advertisement ad, {TargetPlatform? platform}) {
+    final main = (ad.actionUrl ?? '').trim();
+    final ios = (ad.actionUrlIos ?? '').trim();
+    final p = platform ?? (kIsWeb ? TargetPlatform.android : defaultTargetPlatform);
+    return ios.isNotEmpty && (p == TargetPlatform.iOS || p == TargetPlatform.macOS) ? ios : main;
+  }
+
+  /// Logo de la boutique qui va s'ouvrir, pour le bouton « Installer » : Google Play ou App Store ; null pour un autre lien.
+  static IconData? storeIcon(Advertisement ad, {TargetPlatform? platform}) {
+    final host = (Uri.tryParse(urlFor(ad, platform: platform))?.host ?? '').toLowerCase();
+    if (host == 'play.google.com') return Icons.shop_rounded;
+    if (host == 'apps.apple.com' || host == 'itunes.apple.com') return Icons.apple_rounded;
+    return null;
   }
 
   static Future<void> _openDefi(String postId) async {

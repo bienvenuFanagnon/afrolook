@@ -2150,6 +2150,8 @@ class Advertisement {
   String? postId; // Référence au post original
   String? actionType; // 'download', 'visit', 'learn_more'
   String? actionUrl; // Lien cliquable
+  /// Application à deux liens (16/11/2026) : lien App Store quand [actionUrl] est le lien Google Play ; vide sinon.
+  String? actionUrlIos;
   String? actionButtonText; // Texte du bouton (Télécharger, Visiter, En savoir plus)
   int? durationDays; // Nombre de jours (7 à 365)
   int? startDate; // Timestamp début
@@ -2205,6 +2207,7 @@ class Advertisement {
     this.description,
     this.actionType,
     this.actionUrl,
+    this.actionUrlIos,
     this.actionButtonText,
     this.durationDays,
     this.startDate,
@@ -2248,6 +2251,7 @@ class Advertisement {
       'description': description,
       'actionType': actionType,
       'actionUrl': actionUrl,
+      'actionUrlIos': actionUrlIos,
       'actionButtonText': actionButtonText,
       'durationDays': durationDays,
       'startDate': startDate,
@@ -2292,6 +2296,7 @@ class Advertisement {
       description: json['description'] as String?,
       actionType: json['actionType'],
       actionUrl: json['actionUrl'],
+      actionUrlIos: json['actionUrlIos'] as String?,
       actionButtonText: json['actionButtonText'],
       durationDays: json['durationDays'],
       startDate: json['startDate'],
