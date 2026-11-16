@@ -8,6 +8,7 @@ import 'dart:ui' show PlatformDispatcher;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'nav_cache_service.dart';
@@ -143,11 +144,22 @@ class PushService {
     final n = m.notification;
     if (n == null || defaultTargetPlatform != TargetPlatform.android) return;
     try {
+      // aperçu (16/11/2026) : miniature de la vidéo ou première photo envoyée par le serveur, affichée en grand sous le texte
+      final url = '${m.data['image'] ?? n.android?.imageUrl ?? ''}';
+      Uint8List? picture;
+      if (url.startsWith('https://')) {
+        try {
+          final r = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 6));
+          if (r.statusCode == 200 && r.bodyBytes.isNotEmpty) picture = r.bodyBytes;
+        } catch (_) {
+          // sans image : la notification part quand même
+        }
+      }
       await flutterLocalNotificationsPlugin.show(
         m.hashCode & 0x7fffffff,
         n.title,
         n.body,
-        const NotificationDetails(
+        NotificationDetails(
           android: AndroidNotificationDetails(
             channelId,
             'Notifications Afrolook',
@@ -155,6 +167,9 @@ class PushService {
             priority: Priority.high,
             icon: 'ic_stat_afrolook',
             sound: _sound,
+            styleInformation: picture == null
+                ? null
+                : BigPictureStyleInformation(ByteArrayAndroidBitmap(picture), largeIcon: ByteArrayAndroidBitmap(picture), hideExpandedLargeIcon: true, contentTitle: n.title, summaryText: n.body),
           ),
         ),
         payload: jsonEncode({'push': m.data}),
@@ -209,6 +224,7 @@ Future<void> storeNavigationFromPush(Map<String, dynamic> data) async {
     'RAPPEL_NOUVEAUTE_ETUDE': 'etude',
     'RAPPEL_NOUVEAUTE_CONTES': 'contes',
     'RAPPEL_JOURNAL': 'news_journal', // résumé du jour, de la semaine : Mon journal
+    'RAPPEL_ACTIVITE': 'notifications', // 16/11/2026 : notifications pas encore lues
     'MUSIC': 'music',
     'WEEKLY_REWARD': 'monetisation',
     'GAIN': 'monetisation',
@@ -229,7 +245,7 @@ Future<void> storeNavigationFromPush(Map<String, dynamic> data) async {
     await nav.storeScreenNavigation(screens[type]!);
   } else if (type == 'RAPPEL_PARRAINAGE' || type == NotificationType.PARRAINAGE.name) {
     await nav.storeParrainageNavigation();
-  } else if (type == 'RAPPEL_FEED' || type == 'RAPPEL_RETOUR' || type == 'RAPPEL_ABOUT' || type == 'RAPPEL_BOUTIQUE') {
+  } else if (type == 'RAPPEL_FEED' || type == 'RAPPEL_RETOUR' || type == 'RAPPEL_ABOUT' || type == 'RAPPEL_BOUTIQUE' || type == 'NEWPOST_GROUP') {
     // l'accueil est la bonne page : rien à mémoriser
   } else if (postType == 'CHRONIQUE' || type == 'CHRONIQUE' || type == 'COMMENT_LIKE') {
     if (hasPost) {

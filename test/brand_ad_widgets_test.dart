@@ -1,4 +1,5 @@
 import 'package:afrotok/models/model_data.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:afrotok/pages/pub/brand_ad_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -160,5 +161,25 @@ void main() {
     expect(isBrandPost(_post(id: '01j9realpost')), isFalse);
     expect(isBrandPost(null), isFalse);
     expect(brandNameOf(_ad(name: '')), 'Afrolook Ads');
+  });
+
+  testWidgets("image d'annonce montrée en entier (jamais recadrée) dans la carte, la bannière et la petite annonce", (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    final post = Post(id: 'ad_a1', user_id: '', type: 'POST', status: 'VALIDE', dataType: 'IMAGE', images: ['https://exemple.test/affiche.jpg']);
+    for (final w in <Widget>[
+      BrandAdCard(ad: _ad(), post: post, onAction: () {}, onOpenDetails: () {}),
+      BrandBanner(ad: _ad(), post: post, onAction: () {}, onOpenDetails: () {}),
+    ]) {
+      await tester.pumpWidget(_host(w));
+      expect(find.byType(AdFitImage), findsWidgets);
+      final whole = tester.widget<CachedNetworkImage>(find.byKey(const ValueKey('ad_fit_whole')).first);
+      expect(whole.fit, BoxFit.contain);
+      expect(tester.takeException(), isNull);
+    }
+    // bannière : le visuel est à gauche, le nom et le titre restent lisibles à droite
+    expect(find.byKey(const ValueKey('brand_banner_visual')), findsOneWidget);
+    expect(find.text('Boutique Awa'), findsOneWidget);
   });
 }

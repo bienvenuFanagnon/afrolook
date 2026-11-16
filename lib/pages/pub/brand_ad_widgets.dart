@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:afrotok/models/model_data.dart';
 import 'package:afrotok/services/api/regie_api.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -125,6 +127,32 @@ class SponsoredTag extends StatelessWidget {
 
 /// Bouton jaune (fond jaune, texte sombre). `size` : normal (barre d'action), mini (petites annonces), big (pleine largeur).
 enum AdBtnSize { mini, normal, big }
+
+/// Visuel d'annonce montré EN ENTIER (16/11/2026) : jamais recadré, quelle que soit sa forme (carré, paysage, portrait) ; la place qui reste dans le
+/// cadre est remplie par la même image floutée. C'est ce que le formulaire d'Afrolook Ads promet à l'annonceur.
+class AdFitImage extends StatelessWidget {
+  const AdFitImage(this.url, {super.key, this.blur = 18});
+  final String url;
+  final double blur;
+
+  @override
+  Widget build(BuildContext context) {
+    Widget err(BuildContext _, String __, Object ___) => const SizedBox.shrink();
+    return ClipRect(
+      child: Stack(fit: StackFit.expand, children: [
+        ImageFiltered(imageFilter: ImageFilter.blur(sigmaX: blur, sigmaY: blur), child: CachedNetworkImage(imageUrl: url, fit: BoxFit.cover, errorWidget: err)),
+        const ColoredBox(color: Color(0x33000000)),
+        CachedNetworkImage(key: const ValueKey('ad_fit_whole'), imageUrl: url, fit: BoxFit.contain, errorWidget: err),
+      ]),
+    );
+  }
+}
+
+/// Vidéo d'annonce montrée en entier (jamais recadrée), sur fond noir.
+Widget adWholeVideo(VideoPlayerController vc) => ColoredBox(
+      color: Colors.black,
+      child: FittedBox(fit: BoxFit.contain, child: SizedBox(width: vc.value.size.width, height: vc.value.size.height, child: VideoPlayer(vc))),
+    );
 
 class AdYellowButton extends StatelessWidget {
   const AdYellowButton({super.key, required this.label, required this.onTap, this.size = AdBtnSize.normal, this.green = false, this.icon});
@@ -330,11 +358,11 @@ class _BrandAdCardState extends State<BrandAdCard> {
 
     Widget media;
     if (ready) {
-      media = FittedBox(fit: BoxFit.cover, clipBehavior: Clip.hardEdge, child: SizedBox(width: vc.value.size.width, height: vc.value.size.height, child: VideoPlayer(vc)));
+      media = adWholeVideo(vc);
     } else if (carousel) {
-      media = PageView(onPageChanged: (i) => setState(() => _page = i), children: [for (final u in images) CachedNetworkImage(imageUrl: u, fit: BoxFit.cover, errorWidget: (_, __, ___) => Container(color: p.media))]);
+      media = PageView(onPageChanged: (i) => setState(() => _page = i), children: [for (final u in images) AdFitImage(u)]);
     } else if (visual != null) {
-      media = CachedNetworkImage(imageUrl: visual, fit: BoxFit.cover, placeholder: (_, __) => const SizedBox.shrink(), errorWidget: (_, __, ___) => Icon(Icons.image, color: p.sub, size: 48));
+      media = AdFitImage(visual);
     } else {
       media = Center(child: Icon(Icons.campaign_rounded, color: p.sub, size: 56));
     }
@@ -400,8 +428,8 @@ class MemberBoostCard extends StatelessWidget {
             aspectRatio: 1,
             child: Stack(fit: StackFit.expand, children: [
               Container(color: p.media),
-              if (ready) FittedBox(fit: BoxFit.cover, clipBehavior: Clip.hardEdge, child: SizedBox(width: vc.value.size.width, height: vc.value.size.height, child: VideoPlayer(vc)))
-              else if (visual != null) CachedNetworkImage(imageUrl: visual, fit: BoxFit.cover, errorWidget: (_, __, ___) => Icon(Icons.image, color: p.sub, size: 48))
+              if (ready) adWholeVideo(vc)
+              else if (visual != null) AdFitImage(visual)
               else Center(child: Icon(Icons.image, color: p.sub, size: 48)),
               if (_isVideo(post) && !ready) Center(child: Container(width: 58, height: 58, decoration: const BoxDecoration(color: Color(0x80000000), shape: BoxShape.circle), child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 32))),
             ]),
@@ -433,7 +461,7 @@ class BrandAdCompact extends StatelessWidget {
         padding: const EdgeInsets.all(10),
         decoration: _cardDeco(p),
         child: Row(children: [
-          ClipRRect(borderRadius: BorderRadius.circular(10), child: SizedBox(width: 64, height: 64, child: visual != null ? CachedNetworkImage(imageUrl: visual, fit: BoxFit.cover, errorWidget: (_, __, ___) => Container(color: p.media)) : Container(color: p.media, child: Icon(Icons.campaign_rounded, color: p.sub)))),
+          ClipRRect(borderRadius: BorderRadius.circular(10), child: SizedBox(width: 64, height: 64, child: visual != null ? AdFitImage(visual, blur: 8) : Container(color: p.media, child: Icon(Icons.campaign_rounded, color: p.sub)))),
           const SizedBox(width: 10),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
@@ -469,14 +497,25 @@ class BrandBanner extends StatelessWidget {
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         GestureDetector(
           onTap: onOpenDetails,
-          child: SizedBox(
+          child: Container(
+            key: const ValueKey('brand_banner_visual'),
             height: 120,
-            child: Stack(fit: StackFit.expand, children: [
-              Container(color: _vert),
-              if (visual != null) CachedNetworkImage(imageUrl: visual, fit: BoxFit.cover, errorWidget: (_, __, ___) => const SizedBox.shrink()),
-              Container(decoration: const BoxDecoration(gradient: LinearGradient(begin: Alignment.centerLeft, end: Alignment.centerRight, colors: [Color(0xCC0B5A33), Color(0x330B5A33)]))),
-              Positioned(left: 16, right: 80, top: 0, bottom: 0, child: Align(alignment: Alignment.centerLeft, child: Text(name, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800, height: 1.15, shadows: [Shadow(color: Colors.black38, blurRadius: 6)], decoration: TextDecoration.none)))),
-              const Positioned(right: 8, top: 8, child: SponsoredTag(label: 'Annonce')),
+            color: _vert,
+            child: Row(children: [
+              if (visual != null) SizedBox(width: 120, height: 120, child: AdFitImage(visual, blur: 10)),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 10, 12, 10),
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
+                    const SponsoredTag(label: 'Annonce'),
+                    const SizedBox(height: 6),
+                    Text(name, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800, height: 1.15, decoration: TextDecoration.none)),
+                    // titre ici seulement s'il n'y a pas de barre d'action en dessous (qui le montre déjà) ; une ligne pour tenir dans 120 px
+                    if (title.isNotEmpty && title != name && (ad.actionUrl ?? '').isEmpty)
+                      Padding(padding: const EdgeInsets.only(top: 3), child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.25, decoration: TextDecoration.none))),
+                  ]),
+                ),
+              ),
             ]),
           ),
         ),
@@ -602,11 +641,11 @@ class _AdDetailPageState extends State<AdDetailPage> {
       ]);
     } else if (images.length > 1) {
       media = AspectRatio(aspectRatio: 1, child: Stack(children: [
-        PageView(onPageChanged: (i) => setState(() => _page = i), children: [for (final u in images) CachedNetworkImage(imageUrl: u, fit: BoxFit.cover, width: double.infinity)]),
+        PageView(onPageChanged: (i) => setState(() => _page = i), children: [for (final u in images) AdFitImage(u)]),
         Positioned(right: 10, top: 10, child: Container(padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3), decoration: BoxDecoration(color: const Color(0x8C000000), borderRadius: BorderRadius.circular(12)), child: Text('${_page + 1}/${images.length}', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)))),
       ]));
     } else if (visual != null) {
-      media = AspectRatio(aspectRatio: 1, child: CachedNetworkImage(imageUrl: visual, fit: BoxFit.cover, width: double.infinity, errorWidget: (_, __, ___) => Container(color: p.media)));
+      media = AspectRatio(aspectRatio: 1, child: AdFitImage(visual));
     } else {
       media = Container(height: 200, color: p.media, child: Center(child: Icon(Icons.campaign_rounded, color: p.sub, size: 56)));
     }

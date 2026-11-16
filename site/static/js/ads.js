@@ -529,6 +529,9 @@ async function initSpace() {
       probe.onerror = () => { st.files = []; $('#f-file').value = ''; err('Vidéo illisible : essaie un fichier MP4.'); };
     }
     if (!vids.length && files.length > 5) return err('5 images au maximum.');
+    // GIF animé = petite vidéo muette : envoyé tel quel (jamais recompressé, sinon il devient une image fixe), 4 Mo au plus (16/11/2026)
+    const gif = files.find((f) => f.type === 'image/gif' && f.size > 4 * 1024 * 1024);
+    if (gif) return err('Le GIF dépasse 4 Mo : raccourcis-le ou choisis une vidéo MP4.');
     st.files = files; st.isVideo = vids.length === 1;
     $('#f-file-name').textContent = files.length ? files.map((f) => f.name).join(', ').slice(0, 80) : 'Choisis une image ou une vidéo';
     imageTip(files[0], st.isVideo);
@@ -756,10 +759,10 @@ async function initSpace() {
         try { payload.thumbnailUrl = await put('ad_thumbnails', await frame(f), 'jpg', 'image/jpeg'); } catch { /* la miniature est facultative */ }
       } else {
         payload.mediaType = 'image'; payload.images = [];
-        for (const f of st.files) payload.images.push(await put('ad_images', await shrink(f), 'jpg', 'image/jpeg'));
+        for (const f of st.files) payload.images.push(f.type === 'image/gif' ? await put('ad_images', f, 'gif', 'image/gif') : await put('ad_images', await shrink(f), 'jpg', 'image/jpeg'));
       }
       const bk = Object.keys(st.banners);
-      if (bk.length) { payload.banners = {}; for (const k of bk) { const f = st.banners[k]; payload.banners[k] = await put('ad_images', f, f.type === 'image/png' ? 'png' : f.type === 'image/webp' ? 'webp' : 'jpg', f.type); } }
+      if (bk.length) { payload.banners = {}; for (const k of bk) { const f = st.banners[k]; payload.banners[k] = await put('ad_images', f, f.type === 'image/png' ? 'png' : f.type === 'image/webp' ? 'webp' : f.type === 'image/gif' ? 'gif' : 'jpg', f.type); } }
       btn.textContent = 'Envoi de l\'annonce…';
       if (TYPES[st.type].price) payload.price = Number($('#f-price').value);
       if (dif.app.on) payload.budgetApp = dif.app.v;

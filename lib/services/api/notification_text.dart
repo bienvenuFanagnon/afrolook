@@ -16,14 +16,24 @@ class NotificationText {
     'Commentaires': ['COMMENT', 'COMMENTAIRE', 'REPLY', 'MENTION', 'VIDEO_REPLY'],
     'Abonnés': ['ABONNER', 'FOLLOW_CANAL', 'CANAL_ADMIN', 'INVITATION', 'ACCEPTINVITATION'],
     'Messages': ['MESSAGE'],
-    'Publications & Lives': ['NEWPOST', 'POST', 'REPOST', 'LIVE', 'CHALLENGE', 'FRIEND_ACTIVITY', 'VIRAL'],
+    'Publications & Lives': ['NEWPOST', 'POST', 'REPOST', 'REPOST_FEED', 'NEWPOST_GROUP', 'RAPPEL_TRENDING', 'LIVE', 'CHALLENGE', 'FRIEND_ACTIVITY', 'VIRAL'],
     'Articles & Contenus': ['ARTICLE', 'CHRONIQUE', 'SERVICE'],
     'Récompenses': ['WEEKLY_REWARD'],
     'Commandes': ['ORDER_NEW', 'ORDER_VALIDATED', 'ORDER_FEE', 'ORDER_SHIPPED', 'ORDER_RECEIVED', 'ORDER_CANCELLED', 'ORDER_DISPUTE', 'ORDER_RESOLVED', 'OFFER_NEW', 'OFFER_REPLY'],
     'Gains & Parrainages': ['GAIN', 'PARRAINAGE', 'SUPPORT'],
     'Afrolook': ['MARKETING', 'COMPTE_OFFICIEL', 'USER', 'BOOST_SOUMIS'],
     'À traiter (équipe)': ['STAFF_VERIF', 'STAFF_FRAUD', 'STAFF_DISPUTE', 'STAFF_ADS'],
+    // 16/11/2026 : les rappels entrent aussi dans la liste
+    'Rappels': ['RAPPEL_ACTIVITE', 'RAPPEL_QUIZ', 'RAPPEL_ETUDE', 'RAPPEL_CONTE', 'RAPPEL_FEED', 'RAPPEL_STREAK', 'RAPPEL_RETOUR', 'RAPPEL_ABOUT', 'RAPPEL_PUB',
+      'RAPPEL_CREATEUR', 'RAPPEL_JOURNAL', 'RAPPEL_PARTAGE', 'RAPPEL_TACHES', 'RAPPEL_WIDGET', 'NEWS'],
   };
+
+  /// Notifications dont le serveur compose déjà la phrase complète (« @ana a publié une vidéo », « Le post du moment », rappels) : la liste affiche
+  /// ce titre puis le texte, au lieu de « pseudo + phrase » (16/11/2026).
+  static bool composedByServer(String? type) {
+    final t = (type ?? '').toUpperCase();
+    return const {'NEWPOST', 'REPOST_FEED', 'NEWPOST_GROUP', 'LIVE', 'NEWS'}.contains(t) || t.startsWith('RAPPEL_');
+  }
 
   /// Phrase affichée après le pseudo de l'auteur, ou null pour garder le texte envoyé par le serveur.
   /// [body] : extrait public (mention) ou titre du canal (nouvel abonné).
@@ -125,6 +135,14 @@ class NotificationText {
         'MENTION' => (icon: Icons.alternate_email, tone: 1),
         'COMMENT_LIKE' => (icon: Icons.thumb_up_alt_outlined, tone: 0),
         'REPOST' => (icon: Icons.repeat, tone: 2),
+        'REPOST_FEED' => (icon: Icons.repeat, tone: 1),
+        'NEWPOST_GROUP' => (icon: Icons.dynamic_feed_outlined, tone: 1),
+        'RAPPEL_TRENDING' => (icon: Icons.trending_up_rounded, tone: 3),
+        'RAPPEL_ACTIVITE' => (icon: Icons.notifications_active_outlined, tone: 0),
+        'RAPPEL_PARTAGE' => (icon: Icons.share_outlined, tone: 2),
+        'RAPPEL_TACHES' => (icon: Icons.task_alt_rounded, tone: 2),
+        'RAPPEL_STREAK' => (icon: Icons.local_fire_department_outlined, tone: 3),
+        'LIVE' => (icon: Icons.live_tv_rounded, tone: 0),
         'VIRAL' => (icon: Icons.local_fire_department, tone: 3),
         'SUPPORT' => (icon: Icons.volunteer_activism, tone: 3),
         'FOLLOW_CANAL' => (icon: Icons.campaign_outlined, tone: 1),

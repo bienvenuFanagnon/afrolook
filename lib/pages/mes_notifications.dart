@@ -23,6 +23,7 @@ import 'package:afrotok/pages/music/music_page.dart';
 import 'package:afrotok/services/api/chat_api.dart';
 import 'package:afrotok/services/api/chat_mapper.dart';
 import 'package:afrotok/services/api/notification_text.dart';
+import 'package:afrotok/services/push_service.dart' show storeNavigationFromPush;
 import 'package:afrotok/services/api/jeux_api.dart';
 import 'package:afrotok/services/api/users_api.dart';
 import 'package:afrotok/services/api/users_mapper.dart';
@@ -259,6 +260,7 @@ class _MesNotificationState extends State<MesNotification> {
     'Récompenses':                Icons.emoji_events_outlined,
     'Gains & Parrainages':        Icons.monetization_on_outlined,
     'Afrolook':                   Icons.verified_outlined,
+    'Rappels':                    Icons.notifications_active_outlined,
   };
 
   final Map<String, bool> _groupExpanded = {
@@ -271,6 +273,7 @@ class _MesNotificationState extends State<MesNotification> {
     'Récompenses':                false,
     'Gains & Parrainages':        false,
     'Afrolook':                   false,
+    'Rappels':                    false,
   };
 
   // Nombre de notifications visibles par groupe (2 au départ, +5 à chaque "Voir plus")
@@ -619,7 +622,18 @@ class _MesNotificationState extends State<MesNotification> {
           await _handlePostNotification(notification);
           break;
         case 'NEWPOST':
+        case 'REPOST_FEED':
+        case 'RAPPEL_TRENDING':
           await _handlePostNotification(notification);
+          break;
+        case 'NEWPOST_GROUP':
+        case 'RAPPEL_FEED':
+        case 'RAPPEL_RETOUR':
+        case 'RAPPEL_ACTIVITE':
+          // nouveautés du fil, retour, activité : la liste ou le fil sont la bonne page
+          _hideLoadingOverlay();
+          setState(() => _isHandlingNotification = false);
+          if (notification.type != 'RAPPEL_ACTIVITE' && mounted) Navigator.of(context).maybePop();
           break;
         case 'INVITATION':
           _hideLoadingOverlay();
@@ -789,6 +803,13 @@ class _MesNotificationState extends State<MesNotification> {
           });
           break;
         default:
+          // rappels (quiz, étude, conte, gains, journal…) : même page qu'au toucher du push (16/11/2026)
+          if ((notification.type ?? '').startsWith('RAPPEL_') || notification.type == 'NEWS') {
+            _hideLoadingOverlay();
+            setState(() => _isHandlingNotification = false);
+            await storeNavigationFromPush({'type_notif': notification.type, 'post_id': notification.post_id ?? ''});
+            break;
+          }
           // SUPPORT, CERTIFICATION, MARKETING… : pas de page de détails d'un post, on montre le texte de la notification
           await _showInfoDialog(notification);
           break;
@@ -1214,7 +1235,14 @@ class _MesNotificationState extends State<MesNotification> {
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
-                    children: [
+                    children: NotificationText.composedByServer(notification.type) && (notification.titre ?? '').isNotEmpty
+                        ? [
+                            // 16/11/2026 : « @ana a publié une vidéo », « Le post du moment »… puis le début du texte
+                            TextSpan(text: notification.titre, style: TextStyle(fontWeight: FontWeight.bold, color: isUnread ? _colors.danger : _colors.textPrimary)),
+                            if ((notification.description ?? '').isNotEmpty)
+                              TextSpan(text: '\n${notification.description}', style: TextStyle(color: isUnread ? _colors.textPrimary : _colors.textSecondary)),
+                          ]
+                        : [
                       TextSpan(
                         text: senderName,
                         style: TextStyle(

@@ -216,12 +216,14 @@ function initFlags(box){
   const free=document.getElementById('lfree'),net=document.getElementById('lnet'),share=document.getElementById('lshare');
   const fmt=n=>Math.round(n).toLocaleString(EN_?'en-US':'fr-FR').replace(/[  ]/g,' ');
   let CTR=.02;   /* taux de visite de départ ; remplacé par le taux réel du moment lu depuis l'API (voir plus bas) */
+  /* « Visites estimées » du récapitulatif : 20 % à 60 % de l'audience du partage (décision du propriétaire du 16/11/2026, « 20 000 à 60 000 » pour 100 000 personnes), affichées comme une estimation jamais garantie */
+  const VIS_LO=.2,VIS_HI=.6;
   function upd(){
     aud.hidden=!share.checked;
     const t=types.querySelector('[aria-pressed="true"]'),n=+rng.value,rows=[[L("Type d'annonce",'Ad type'),t?t.textContent.trim():'—']];
     if(free.checked)rows.push([L('Gratuit sur 4 plateformes','Free on 4 platforms'),'0 FCFA']);
     if(net.checked)rows.push([L('Afrolook et partenaires','Afrolook and partners'),L('Budget au choix','Budget of your choice')]);
-    if(share.checked){rows.push([L('Audience du partage','Sharing audience'),fmt(n)+L(' personnes',' people')]);rows.push([L('Prix du partage','Sharing price'),fmt(n/1000*500)+' FCFA']);rows.push([L('Visites estimées','Estimated visits'),L(fmt(n*CTR*.5)+' à '+fmt(n*CTR*1.5),fmt(n*CTR*.5)+' to '+fmt(n*CTR*1.5))]);rows.push([L('Tu paies pour être montré à ces personnes ; les visites dépendent de ceux qui cliquent.','You pay to be shown to these people; visits depend on who clicks.'),'']);}
+    if(share.checked){rows.push([L('Audience du partage','Sharing audience'),fmt(n)+L(' personnes',' people')]);rows.push([L('Prix du partage','Sharing price'),fmt(n/1000*500)+' FCFA']);rows.push([L('Visites estimées','Estimated visits'),L(fmt(n*VIS_LO)+' à '+fmt(n*VIS_HI),fmt(n*VIS_LO)+' to '+fmt(n*VIS_HI))]);rows.push([L('Estimation, jamais garantie : tu paies pour être montré à ces personnes ; les visites dépendent de ceux qui cliquent.','Estimate, never guaranteed: you pay to be shown to these people; visits depend on who clicks.'),'']);}
     if(!free.checked&&!net.checked&&!share.checked)rows.push([L('Diffusion','Delivery'),L('Choisis une option','Choose an option')]);
     const go=document.getElementById('v-lgo');if(go)go.href='/ads/espace/'+(share.checked?'?aud='+n:'');
     sum.innerHTML=rows.map(r=>'<li><span>'+r[0]+'</span><b>'+r[1]+'</b></li>').join('');

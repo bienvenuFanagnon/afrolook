@@ -13,6 +13,7 @@
   var API = window.AFL_ADS_API || '__API_BASE__/ads/api'; // remplacé à la construction du site (build.mjs, variable API_BASE)
   var MAX_SLOTS = 3;
   var FORMATS = { banner: 1, native: 1, poster: 1, sticky: 1, carousel: 1, video: 1, interstitial: 1, rewarded: 1 };
+  var SIZES = { '728x90': 1, '320x100': 1, '320x50': 1, '300x250': 1 };   // bannières prêtes (data-size="300x250" pour un rectangle dans le contenu)
   var DNT = navigator.doNotTrack === '1' || navigator.globalPrivacyControl === true;
 
   // identifiant anonyme du navigateur (propre à ce site) : sert aux plafonds d'affichage ; avec « Ne pas suivre », il ne dure que le temps de la visite
@@ -29,19 +30,24 @@
   function css() {
     if (document.getElementById('afl-ads-css')) return;
     var s = document.createElement('style'); s.id = 'afl-ads-css';
-    s.textContent = '.afl-ad{display:block;max-width:100%}.afl-c{position:relative;display:block;text-decoration:none;color:#14201a;background:#fff;border:1px solid #dbe3dc;border-radius:14px;overflow:hidden;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}' +
+    s.textContent = '.afl-ad{display:block;max-width:100%;text-decoration:none}.afl-c{position:relative;display:block;text-decoration:none;color:#14201a;background:#fff;border:1px solid #dbe3dc;border-radius:14px;overflow:hidden;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}' +
       '.afl-c:hover{border-color:#2ecc71}.afl-tag{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.65);color:#fff;font:700 11px/1 system-ui,sans-serif;padding:4px 8px;border-radius:99px;z-index:1}' +
-      '.afl-i{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;background:#eef3ee}.afl-poster .afl-i{aspect-ratio:4/5}.afl-b{padding:12px 14px;display:grid;gap:6px}.afl-t{font-weight:800;font-size:15px}.afl-x{color:#56645b;font-size:13px}' +
-      '.afl-go{justify-self:start;background:#12804a;color:#fff;font-weight:800;border-radius:99px;padding:8px 16px;font-size:13px}' +
-      '.afl-banner .afl-c{display:flex;align-items:center;gap:12px;padding:8px 12px 8px 8px;min-height:64px}.afl-banner .afl-i{width:72px;height:48px;aspect-ratio:auto;border-radius:10px;flex:none}.afl-banner .afl-b{padding:0;flex:1;min-width:0}.afl-banner .afl-t,.afl-banner .afl-x{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.afl-banner .afl-x{display:none}.afl-banner .afl-tag{position:static;align-self:flex-start;background:#eef3ee;color:#56645b}' +
-      '.afl-sticky{position:fixed;left:0;right:0;bottom:0;z-index:2147483000;padding:8px;background:rgba(255,255,255,.96);box-shadow:0 -4px 20px rgba(0,0,0,.15)}.afl-sticky .afl-c{max-width:728px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:8px 40px 8px 8px}.afl-sticky .afl-i{width:72px;height:48px;aspect-ratio:auto;border-radius:10px;flex:none}.afl-sticky .afl-b{padding:0;flex:1;min-width:0}.afl-sticky .afl-x{display:none}.afl-sticky .afl-tag{position:static}.afl-sticky .afl-t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+      '.afl-m{position:relative;display:block;width:100%;aspect-ratio:16/9;overflow:hidden;background:#eef3ee}.afl-m::before{content:"";position:absolute;inset:-24px;background:var(--u) center/cover no-repeat;filter:blur(18px) brightness(.85)}' +
+      '.afl-i{position:relative;display:block;width:100%;height:100%;object-fit:contain}.afl-poster .afl-m{aspect-ratio:4/5}' +
+      '.afl-bn{display:block;position:relative;line-height:0;width:fit-content;max-width:100%;margin:0 auto}.afl-bn img{display:inline-block;width:100%;height:auto}.afl-ad .afl-bn .afl-tag{position:absolute;left:auto;right:4px;top:4px;line-height:1;text-decoration:none;color:#fff;background:rgba(0,0,0,.65);font-size:10px;padding:3px 6px}' +
+      '.afl-h{display:flex;align-items:center;gap:8px;min-width:0}.afl-h img{width:24px;height:24px;border-radius:50%;object-fit:cover;flex:none;background:#eef3ee}.afl-h span{min-width:0;display:grid}.afl-h b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.afl-h small{color:#56645b;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+      '.afl-banner .afl-h img,.afl-sticky .afl-h img{display:none}.afl-banner .afl-h small,.afl-sticky .afl-h small{display:none}' +
+      '.afl-b{padding:12px 14px;display:grid;gap:6px}.afl-t{font-weight:800;font-size:15px}.afl-x{color:#56645b;font-size:13px}' +
+      '.afl-go{justify-self:start;background:#FFD21F;color:#111;font-weight:800;border-radius:99px;padding:8px 16px;font-size:13px}' +
+      '.afl-banner .afl-c{display:flex;align-items:center;gap:12px;padding:8px 12px 8px 8px;min-height:64px}.afl-banner .afl-m{width:72px;height:48px;aspect-ratio:auto;border-radius:10px;flex:none}.afl-banner .afl-b{padding:0;flex:1;min-width:0}.afl-banner .afl-t,.afl-banner .afl-x{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.afl-banner .afl-x{display:none}.afl-banner .afl-c .afl-tag,.afl-sticky .afl-c .afl-tag{position:absolute;left:12px;top:12px;font-size:9px;padding:2px 5px}' +
+      '.afl-sticky{position:fixed;left:0;right:0;bottom:0;z-index:2147483000;padding:8px;background:rgba(255,255,255,.96);box-shadow:0 -4px 20px rgba(0,0,0,.15)}.afl-sticky .afl-c{max-width:728px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:8px 40px 8px 8px}.afl-sticky .afl-m{width:72px;height:48px;aspect-ratio:auto;border-radius:10px;flex:none}.afl-sticky .afl-bn{max-width:min(728px,calc(100% - 40px));margin:0 auto}.afl-ad.afl-sticky .afl-bn .afl-tag{right:auto;left:4px}.afl-sticky .afl-b{padding:0;flex:1;min-width:0}.afl-sticky .afl-x{display:none}.afl-sticky .afl-t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
       '.afl-close{position:absolute;right:12px;top:12px;width:28px;height:28px;border:0;border-radius:50%;background:#eef3ee;color:#14201a;font:700 16px/1 system-ui;cursor:pointer;z-index:2}' +
-      '.afl-car .afl-trk{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}.afl-car .afl-trk::-webkit-scrollbar{display:none}.afl-car .afl-i{flex:0 0 100%;scroll-snap-align:center;aspect-ratio:4/5;object-fit:contain;background:#eef3ee}' +
+      '.afl-car .afl-trk{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}.afl-car .afl-trk::-webkit-scrollbar{display:none}.afl-car .afl-m{flex:0 0 100%;scroll-snap-align:center;aspect-ratio:4/5}' +
       '.afl-video video{display:block;width:100%;aspect-ratio:9/16;max-height:70vh;object-fit:contain;background:#000}' +
       '.afl-ov{position:fixed;inset:0;z-index:2147483200;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.82)}.afl-ov .afl-c{width:min(92vw,380px);max-height:92vh;overflow:auto}' +
       '.afl-ov .afl-close{position:fixed;right:14px;top:14px;width:36px;height:36px;background:rgba(255,255,255,.22);color:#fff}.afl-ov .afl-close:disabled{opacity:.7;cursor:default}' +
       '.afl-prg{height:4px;background:rgba(255,255,255,.25)}.afl-prg i{display:block;height:100%;width:0;background:#2ecc71}.afl-rw{background:#12804a;color:#fff;font:800 14px system-ui,sans-serif;border:0;border-radius:99px;padding:12px 20px;cursor:pointer}' +
-      '@media (prefers-color-scheme:dark){.afl-c{background:#16241b;color:#eaf3ec;border-color:#22352a}.afl-x{color:#9bb0a2}.afl-sticky{background:rgba(10,18,14,.96)}.afl-close{background:#22352a;color:#eaf3ec}}';
+      '@media (prefers-color-scheme:dark){.afl-c{background:#16241b;color:#eaf3ec;border-color:#22352a}.afl-x,.afl-h small{color:#9bb0a2}.afl-sticky{background:rgba(10,18,14,.96)}.afl-close{background:#22352a;color:#eaf3ec}}';
     document.head.appendChild(s);
   }
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; }
@@ -67,7 +73,31 @@
     document.addEventListener('visibilitychange', function () { if (document.visibilityState !== 'visible') clearTimeout(timer); });
   }
 
+  // image montrée EN ENTIER (jamais recadrée) ; la place qui reste est remplie par la même image floutée (16/11/2026)
+  function media(u) {
+    var m = el('div', 'afl-m'); m.style.setProperty('--u', 'url("' + u + '")');
+    var i = el('img', 'afl-i'); i.src = u; i.alt = ''; i.loading = 'lazy'; m.appendChild(i); return m;
+  }
+
+  // bannière prête déposée par l'annonceur, à la taille exacte de l'emplacement : affichée telle quelle, cliquable, sans texte ajouté
+  function renderBanner(host, ad, fmt, bn) {
+    var url = ad.click ? httpsOnly(ad.click) : '';
+    var wrap = el(url ? 'a' : 'div', 'afl-bn');
+    if (url) { wrap.href = url; wrap.target = '_blank'; wrap.rel = 'sponsored nofollow noopener'; }
+    var i = el('img'); i.src = bn; i.alt = ad.title || ''; i.width = ad.banner.w; i.height = ad.banner.h; i.style.maxWidth = ad.banner.w + 'px'; wrap.appendChild(i);
+    wrap.appendChild(el('span', 'afl-tag', ad.label || 'Annonce'));
+    host.textContent = ''; host.className = 'afl-ad afl-' + fmt; host.appendChild(wrap);
+    if (fmt === 'sticky') {
+      var x = el('button', 'afl-close', '×'); x.type = 'button'; x.setAttribute('aria-label', 'Fermer');
+      x.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); host.remove(); try { sessionStorage.setItem('afl_sticky_closed', '1'); } catch (er) { /* tant pis */ } });
+      host.appendChild(x);
+    }
+    watch(wrap, ad);
+  }
+
   function render(host, ad, fmt) {
+    var bn = (fmt === 'banner' || fmt === 'sticky') && ad.banner ? httpsOnly(ad.banner.url) : '';
+    if (bn) return renderBanner(host, ad, fmt, bn);
     var url = ad.click ? httpsOnly(ad.click) : '';
     var wrap = el(url ? 'a' : 'div', 'afl-c');
     if (url) { wrap.href = url; wrap.target = '_blank'; wrap.rel = 'sponsored nofollow noopener'; }
@@ -79,9 +109,17 @@
     if (vid) {
       var v = el('video'); v.muted = true; v.playsInline = true; v.preload = 'metadata'; v.src = vid; if (img) v.poster = img; if (fmt === 'rewarded') v.controls = false; wrap.appendChild(v);
     } else if (pics.length > 1) {
-      var trk = el('div', 'afl-trk'); pics.forEach(function (u3) { var im = el('img', 'afl-i'); im.src = u3; im.alt = ''; im.loading = 'lazy'; trk.appendChild(im); }); wrap.appendChild(trk);
-    } else if (img) { var i = el('img', 'afl-i'); i.src = img; i.alt = ''; i.loading = 'lazy'; wrap.appendChild(i); }
+      var trk = el('div', 'afl-trk'); pics.forEach(function (u3) { trk.appendChild(media(u3)); }); wrap.appendChild(trk);
+    } else if (img) { wrap.appendChild(media(img)); }
     var b = el('div', 'afl-b');
+    // qui parle : logo, marque, « Sponsorisé · domaine » (16/11/2026)
+    var br = ad.brand || {};
+    if (br.name) {
+      var h = el('div', 'afl-h'), lg = httpsOnly(br.logo || '');
+      if (lg) { var li = el('img'); li.src = lg; li.alt = ''; li.loading = 'lazy'; h.appendChild(li); }
+      var nm = el('span'); nm.appendChild(el('b', '', br.name)); nm.appendChild(el('small', '', 'Sponsorisé' + (br.domain ? ' · ' + br.domain : ''))); h.appendChild(nm);
+      b.appendChild(h);
+    }
     b.appendChild(el('div', 'afl-t', ad.title));
     if (ad.text) b.appendChild(el('div', 'afl-x', ad.text));
     if (ad.cta && url) b.appendChild(el('span', 'afl-go', ad.cta));
@@ -153,6 +191,11 @@
     if (!FORMATS[fmt]) { host.hidden = true; return; }
     if (fmt === 'sticky') { try { if (sessionStorage.getItem('afl_sticky_closed')) { host.hidden = true; return; } } catch (e) { /* tant pis */ } }
     var q = 'pub=' + encodeURIComponent(pub) + '&fmt=' + encodeURIComponent(fmt) + '&slot=' + encodeURIComponent(slot) + '&vid=' + encodeURIComponent(VID) + '&lang=' + encodeURIComponent((navigator.language || '').slice(0, 2));
+    if (fmt === 'banner' || fmt === 'sticky') {
+      var size = host.getAttribute('data-size') || '';
+      if (!SIZES[size]) { var w = fmt === 'sticky' ? (window.innerWidth || 0) : (host.getBoundingClientRect().width || host.parentNode && host.parentNode.clientWidth || 0); size = w >= 728 ? '728x90' : (fmt === 'sticky' ? '320x50' : '320x100'); }
+      q += '&size=' + size;   // une bannière prête de cette taille est préférée par le serveur
+    }
     fetch(API + '/serve?' + q, { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
       if (!j || !j.ok || !j.ad) { host.hidden = true; return; } // aucune annonce pour ce visiteur : l'emplacement reste vide
       css(); render(host, j.ad, fmt);
