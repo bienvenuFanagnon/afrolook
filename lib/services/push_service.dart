@@ -177,7 +177,9 @@ class PushService {
 Future<void> storeNavigationFromPush(Map<String, dynamic> data) async {
   final type = (data['type_notif']?.toString() ?? '').toUpperCase();
   final postType = data['post_type']?.toString() ?? '';
-  final postId = data['post_id']?.toString();
+  // `post_id` ; à défaut `subject_id` d'une notification liée à un post (anciennes annonces « nouveau post », « republication », « nouveau défi » de l'API)
+  final rawPostId = data['post_id']?.toString() ?? '';
+  final postId = rawPostId.isNotEmpty ? rawPostId : (data['subject_type']?.toString() == 'post' ? data['subject_id']?.toString() : null);
   final chatId = data['chat_id']?.toString();
   final sendUserId = data['send_user_id']?.toString();
   final nav = NavigationCacheService();
