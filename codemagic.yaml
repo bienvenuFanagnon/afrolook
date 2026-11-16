@@ -164,3 +164,146 @@ workflows:
         notify:
           success: true
           failure: true
+
+  # Version iPhone construite par Shorebird (16/11/2026) : seul un build fait ici peut recevoir des patches Shorebird.
+  # Soumettre à Apple CE build-là, sans recompiler entre la release et l'envoi.
+  # Prérequis : groupe de variables « shorebird » avec la variable sécurisée SHOREBIRD_TOKEN (obtenue par `shorebird login:ci`).
+  ios-shorebird-release:
+    name: iOS Shorebird Release (TestFlight)
+    max_build_duration: 90
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      groups:
+        - offerwall_keys
+        - shorebird
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.afrotok.afrotok
+    integrations:
+      app_store_connect: Afrolook
+    scripts:
+      - name: Installer Shorebird
+        script: |
+          curl --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/shorebirdtech/install/main/install.sh -sSf | bash
+          echo PATH="$HOME/.shorebird/bin:$PATH" >> $CM_ENV
+      - name: Disable Flutter Swift Package Manager
+        script: flutter config --no-enable-swift-package-manager
+      - name: Get Flutter packages
+        script: flutter pub get
+      - name: Pod install
+        script: |
+          cd ios
+          for attempt in 1 2 3 4 5; do
+            if [ "$attempt" = "1" ]; then
+              pod install --repo-update && break
+            else
+              pod install && break
+            fi
+            if [ "$attempt" = "5" ]; then
+              echo "pod install a échoué 5 fois de suite"
+              exit 1
+            fi
+            echo "Téléchargement impossible (essai $attempt sur 5) : nouvelle tentative dans 60 s…"
+            sleep 60
+          done
+      - name: Set up Xcode signing
+        script: xcode-project use-profiles
+      - name: Set build number
+        # Numéro gardé dans BUILD_NUMBER pour le donner à Shorebird : la version enregistrée (ex. 2.1.8+41) est celle à saisir pour les patches
+        script: |
+          BUILD_NUMBER=$(($(app-store-connect get-latest-testflight-build-number "6811423047") + 1))
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> $CM_ENV
+          cd ios
+          agvtool new-version -all $BUILD_NUMBER
+      - name: Créer le fichier de clé des tâches (Tapjoy iPhone)
+        script: |
+          mkdir -p assets/env
+          echo "TAPJOY_SDK_KEY_IOS=$TAPJOY_SDK_KEY_IOS" > assets/env/tapjoy.env
+      - name: Shorebird release iOS
+        script: |
+          VERSION_NAME=$(grep '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')
+          echo "Version enregistrée chez Shorebird : $VERSION_NAME+$BUILD_NUMBER (à saisir dans RELEASE_VERSION pour les patches)"
+          shorebird release ios \
+            --export-options-plist=/Users/builder/export_options.plist \
+            -- --build-number=$BUILD_NUMBER
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: false
+      email:
+        recipients:
+          - techbienos@gmail.com
+        notify:
+          success: true
+          failure: true
+
+  # Patch Shorebird pour iPhone (16/11/2026) : rien n'est envoyé à Apple.
+  # Au lancement, ajouter la variable RELEASE_VERSION = version exacte de la release (ex. 2.1.8+41, affichée dans la console Shorebird).
+  # Un patch ne change que le code Dart : pas de nouveau plugin, de code natif, de pod ni de permission.
+  ios-shorebird-patch:
+    name: iOS Shorebird Patch
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      groups:
+        - offerwall_keys
+        - shorebird
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.afrotok.afrotok
+    scripts:
+      - name: Vérifier RELEASE_VERSION
+        script: |
+          if [ -z "$RELEASE_VERSION" ]; then
+            echo "Ajoute la variable RELEASE_VERSION (ex. 2.1.8+41) au lancement du build."
+            exit 1
+          fi
+      - name: Installer Shorebird
+        script: |
+          curl --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/shorebirdtech/install/main/install.sh -sSf | bash
+          echo PATH="$HOME/.shorebird/bin:$PATH" >> $CM_ENV
+      - name: Disable Flutter Swift Package Manager
+        script: flutter config --no-enable-swift-package-manager
+      - name: Get Flutter packages
+        script: flutter pub get
+      - name: Pod install
+        script: |
+          cd ios
+          for attempt in 1 2 3 4 5; do
+            if [ "$attempt" = "1" ]; then
+              pod install --repo-update && break
+            else
+              pod install && break
+            fi
+            if [ "$attempt" = "5" ]; then
+              echo "pod install a échoué 5 fois de suite"
+              exit 1
+            fi
+            echo "Téléchargement impossible (essai $attempt sur 5) : nouvelle tentative dans 60 s…"
+            sleep 60
+          done
+      - name: Set up Xcode signing
+        script: xcode-project use-profiles
+      - name: Créer le fichier de clé des tâches (Tapjoy iPhone)
+        script: |
+          mkdir -p assets/env
+          echo "TAPJOY_SDK_KEY_IOS=$TAPJOY_SDK_KEY_IOS" > assets/env/tapjoy.env
+      - name: Shorebird patch iOS
+        script: |
+          shorebird patch ios \
+            --release-version=$RELEASE_VERSION \
+            --export-options-plist=/Users/builder/export_options.plist
+    publishing:
+      email:
+        recipients:
+          - techbienos@gmail.com
+        notify:
+          success: true
+          failure: true
