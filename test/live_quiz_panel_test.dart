@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:afrotok/pages/LiveAgora/live_game_ui.dart';
 import 'package:afrotok/pages/LiveAgora/live_quiz_ui.dart';
@@ -304,4 +305,37 @@ void main() {
     expect(find.byKey(const ValueKey('quiz_duration_ok')), findsOneWidget);
     expect(find.textContaining('il ne reste que 20 min'), findsOneWidget);
   });
+
+  // 16/11/2026 : en mode clair, les cases de choix étaient blanches avec un texte blanc (couleur du thème de l'application) et les cadres restaient sombres
+  for (final dark in [false, true]) {
+    testWidgets('réglages du quiz en mode ${dark ? 'sombre' : 'clair'} : cases et cadres suivent le thème, texte lisible', (t) async {
+      t.view.physicalSize = const Size(900, 2200);
+      t.view.devicePixelRatio = 1;
+      addTearDown(t.view.reset);
+      final base = dark ? ThemeData.dark() : ThemeData.light();
+      // thème de l'application qui impose une couleur aux cases (cas de la capture)
+      final theme = base.copyWith(chipTheme: base.chipTheme.copyWith(color: const WidgetStatePropertyAll(Colors.white)));
+      final s = QuizSettings()..pot = 100;
+      await t.pumpWidget(MaterialApp(
+        theme: theme,
+        locale: const Locale('fr'),
+        supportedLocales: const [Locale('fr')],
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        home: Scaffold(body: SingleChildScrollView(child: QuizSettingsEditor(settings: s, isGold: true, onChanged: () {}))),
+      ));
+      final chip = t.widget<ChoiceChip>(find.byKey(const ValueKey('chip_30')));
+      final bg = chip.color!.resolve(<WidgetState>{})!;
+      final fg = chip.labelStyle!.color!;
+      expect(bg, isNot(Colors.white), reason: 'la couleur de la case ne vient plus du thème');
+      // contraste suffisant entre le texte et la case posée sur le cadre
+      final box = t.widget<Container>(find.ancestor(of: find.byKey(const ValueKey('chip_30')), matching: find.byType(Container)).first);
+      final frame = (box.decoration as BoxDecoration?)?.color ?? (dark ? const Color(0xFF221A3A) : const Color(0xFFF6F3FB));
+      final cell = Color.alphaBlend(bg, frame);
+      double lum(Color c) => c.computeLuminance();
+      final ratio = (math.max(lum(fg), lum(cell)) + .05) / (math.min(lum(fg), lum(cell)) + .05);
+      expect(ratio, greaterThan(4.5), reason: 'contraste texte / case');
+      final title = t.widget<Text>(find.text('Temps par question (par défaut)'));
+      expect(title.style!.color!.computeLuminance() > .5, dark, reason: 'titre clair sur fond sombre, foncé sur fond clair');
+    });
+  }
 }

@@ -20,6 +20,34 @@ const _onGreen = Color(0xFF062B15);
 const _red = Color(0xFFFF6B6F);
 const _ink = Color(0xFF120D1D);
 
+/// Couleurs des fenêtres et réglages du quiz (création du live, question, lancement, questions Afrolook, classement) : elles suivent le mode clair
+/// ou sombre de l'application (16/11/2026). Le panneau posé sur la vidéo du live, lui, reste sombre.
+class _QP {
+  const _QP._(this.isDark);
+  factory _QP.of(BuildContext context) => _QP._(Theme.of(context).brightness == Brightness.dark);
+
+  final bool isDark;
+  Color get sheet => isDark ? const Color(0xFF1B1430) : Colors.white;
+  Color get sheetTop => isDark ? const Color(0xFF26223A) : const Color(0xFFF6F3FB);
+  Color get sheetBottom => isDark ? const Color(0xFF15121F) : Colors.white;
+  Color get box => isDark ? const Color(0xFF221A3A) : const Color(0xFFF6F3FB);
+  Color get boxBorder => isDark ? const Color(0xFF3A2F5C) : const Color(0xFFE4DDF0);
+  Color get text => isDark ? Colors.white : const Color(0xFF121212);
+  Color get text2 => isDark ? Colors.white70 : const Color(0xFF3D3D38);
+  Color get text3 => isDark ? Colors.white60 : const Color(0xFF63635E);
+  Color get icon => isDark ? Colors.white54 : const Color(0xFF6B6B66);
+  Color get faint => isDark ? Colors.white38 : const Color(0xFF8C8C87);
+  Color get line => isDark ? Colors.white24 : const Color(0xFFCFCAD9);
+  Color get line2 => isDark ? Colors.white12 : const Color(0xFFE5E5E0);
+  Color get fill => isDark ? Colors.white.withOpacity(.06) : Colors.black.withOpacity(.04);
+  /// Texte ou icône « jaune » : ambre foncé en mode clair (règle de lisibilité du 02/11/2026).
+  Color get amber => isDark ? _amber : const Color(0xFF8A6500);
+  Color get goldText => isDark ? _gold : const Color(0xFF8A6500);
+  Color get red => isDark ? _red : const Color(0xFFD92D3A);
+  Color get dangerText => isDark ? const Color(0xFFFFD3D4) : const Color(0xFFB3261E);
+  Color get greenText => isDark ? _green : const Color(0xFF158246);
+}
+
 /// Coût payé par l'hôte pour faire gagner `pot` pièces (commission comprise, jamais affichée : on montre seulement ce coût). Même calcul que le serveur.
 int quizCost(int pot) => pot <= 0 ? 0 : (pot * 10 + 8) ~/ 9;
 
@@ -42,6 +70,7 @@ String quizDurationLabel(BuildContext context, int s) => s < 60 ? context.tr('{n
 /// Durée du quiz face au temps qui reste au live : avertissement si le live s'arrêterait avant la fin du quiz.
 Widget quizDurationNote(BuildContext context, int quizSeconds, int? liveSecondsLeft) {
   if (quizSeconds <= 0) return const SizedBox.shrink();
+  final p = _QP.of(context);
   final over = liveSecondsLeft != null && quizSeconds > liveSecondsLeft;
   final text = liveSecondsLeft == null
       ? context.tr('Durée du quiz : environ {d}.', {'d': quizDurationLabel(context, quizSeconds)})
@@ -53,11 +82,11 @@ Widget quizDurationNote(BuildContext context, int quizSeconds, int? liveSecondsL
     key: ValueKey(over ? 'quiz_duration_over' : 'quiz_duration_ok'),
     margin: const EdgeInsets.only(top: 6, bottom: 4),
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-    decoration: BoxDecoration(color: (over ? _red : Colors.white).withOpacity(over ? .16 : .05), borderRadius: BorderRadius.circular(12), border: Border.all(color: over ? _red.withOpacity(.6) : Colors.white12)),
+    decoration: BoxDecoration(color: over ? _red.withOpacity(.16) : p.fill, borderRadius: BorderRadius.circular(12), border: Border.all(color: over ? _red.withOpacity(.6) : p.line2)),
     child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Icon(over ? Icons.warning_amber_rounded : Icons.schedule_rounded, size: 17, color: over ? _red : Colors.white60),
+      Icon(over ? Icons.warning_amber_rounded : Icons.schedule_rounded, size: 17, color: over ? p.red : p.text3),
       const SizedBox(width: 8),
-      Expanded(child: Text(text, style: TextStyle(color: over ? const Color(0xFFFFD3D4) : Colors.white70, fontSize: 12, height: 1.35, fontWeight: over ? FontWeight.w700 : FontWeight.w500))),
+      Expanded(child: Text(text, style: TextStyle(color: over ? p.dangerText : p.text2, fontSize: 12, height: 1.35, fontWeight: over ? FontWeight.w700 : FontWeight.w500))),
     ]),
   );
 }
@@ -937,7 +966,7 @@ Future<QuizQ?> showQuizQuestionEditor(BuildContext context, {QuizQ? initial, int
   return showModalBottomSheet<QuizQ>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: const Color(0xFF1B1430),
+    backgroundColor: _QP.of(context).sheet,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
     builder: (_) => _QuestionEditor(initial: initial, defSeconds: defSeconds, defPot: defPot, okLabel: okLabel, showPot: showPot),
   );
@@ -977,19 +1006,20 @@ class _QuestionEditorState extends State<_QuestionEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final p = _QP.of(context);
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: [
-            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: p.line, borderRadius: BorderRadius.circular(2)))),
             const SizedBox(height: 12),
-            Text(context.tr('Question du quiz'), style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w900)),
+            Text(context.tr('Question du quiz'), style: TextStyle(color: p.text, fontSize: 17, fontWeight: FontWeight.w900)),
             const SizedBox(height: 10),
             _field(_text, context.tr('Ta question'), context.tr('Quel fleuve traverse Niamey ?'), key: const ValueKey('quiz_q_text')),
             const SizedBox(height: 10),
-            Text(context.tr('Choix (coche les bonnes réponses, une ou plusieurs)'), style: const TextStyle(color: Colors.white70, fontSize: 12.5, fontWeight: FontWeight.w700)),
+            Text(context.tr('Choix (coche les bonnes réponses, une ou plusieurs)'), style: TextStyle(color: p.text2, fontSize: 12.5, fontWeight: FontWeight.w700)),
             const SizedBox(height: 6),
             for (var i = 0; i < _opts.length; i++)
               Padding(
@@ -1003,8 +1033,8 @@ class _QuestionEditorState extends State<_QuestionEditor> {
                       width: 34,
                       height: 34,
                       alignment: Alignment.center,
-                      decoration: BoxDecoration(color: _correct.contains(i) ? _green : Colors.white.withOpacity(.06), borderRadius: BorderRadius.circular(8), border: Border.all(color: _correct.contains(i) ? _green : Colors.white24)),
-                      child: Icon(_correct.contains(i) ? Icons.check_rounded : Icons.close_rounded, color: _correct.contains(i) ? _onGreen : Colors.white38, size: 18, semanticLabel: _correct.contains(i) ? context.tr('Bonne réponse') : context.tr('Mauvaise réponse')),
+                      decoration: BoxDecoration(color: _correct.contains(i) ? _green : p.fill, borderRadius: BorderRadius.circular(8), border: Border.all(color: _correct.contains(i) ? _green : p.line)),
+                      child: Icon(_correct.contains(i) ? Icons.check_rounded : Icons.close_rounded, color: _correct.contains(i) ? _onGreen : p.faint, size: 18, semanticLabel: _correct.contains(i) ? context.tr('Bonne réponse') : context.tr('Mauvaise réponse')),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -1020,7 +1050,7 @@ class _QuestionEditorState extends State<_QuestionEditor> {
                           ..clear()
                           ..addAll(kept);
                       }),
-                      icon: const Icon(Icons.remove_circle_outline_rounded, color: Colors.white54),
+                      icon: Icon(Icons.remove_circle_outline_rounded, color: p.icon),
                     ),
                 ]),
               ),
@@ -1030,26 +1060,26 @@ class _QuestionEditorState extends State<_QuestionEditor> {
                 child: TextButton.icon(
                   key: const ValueKey('quiz_q_add_option'),
                   onPressed: () => setState(() => _opts.add(TextEditingController())),
-                  icon: const Icon(Icons.add_rounded, color: _amber),
-                  label: Text(context.tr('Ajouter un choix ({n} sur 10)', {'n': _opts.length}), style: const TextStyle(color: _amber, fontWeight: FontWeight.w800)),
+                  icon: Icon(Icons.add_rounded, color: p.amber),
+                  label: Text(context.tr('Ajouter un choix ({n} sur 10)', {'n': _opts.length}), style: TextStyle(color: p.amber, fontWeight: FontWeight.w800)),
                 ),
               ),
             const SizedBox(height: 6),
-            Text(context.tr('Temps pour répondre'), style: const TextStyle(color: Colors.white70, fontSize: 12.5, fontWeight: FontWeight.w700)),
+            Text(context.tr('Temps pour répondre'), style: TextStyle(color: p.text2, fontSize: 12.5, fontWeight: FontWeight.w700)),
             const SizedBox(height: 6),
             _chips(kQuizTimeChoices, _seconds, (v) => setState(() => _seconds = v), (v) => quizTimeLabel(context, v)),
             if (widget.showPot) ...[
               const SizedBox(height: 10),
-              Text(context.tr('À gagner sur cette question'), style: const TextStyle(color: Colors.white70, fontSize: 12.5, fontWeight: FontWeight.w700)),
+              Text(context.tr('À gagner sur cette question'), style: TextStyle(color: p.text2, fontSize: 12.5, fontWeight: FontWeight.w700)),
               const SizedBox(height: 6),
               _chips(kQuizPotChoices, _pot, (v) => setState(() => _pot = v), (v) => v == 0 ? context.tr('Sans cagnotte') : CoinCheckout.fmt(v)),
               const SizedBox(height: 6),
               Row(children: [
-                Expanded(child: Text(context.tr('Coût pour toi'), style: const TextStyle(color: Colors.white70, fontSize: 13))),
-                Text(context.tr('{n} pièces', {'n': CoinCheckout.fmt(quizCost(_pot))}), style: const TextStyle(color: _amber, fontSize: 14, fontWeight: FontWeight.w900)),
+                Expanded(child: Text(context.tr('Coût pour toi'), style: TextStyle(color: p.text2, fontSize: 13))),
+                Text(context.tr('{n} pièces', {'n': CoinCheckout.fmt(quizCost(_pot))}), style: TextStyle(color: p.amber, fontSize: 14, fontWeight: FontWeight.w900)),
               ]),
             ],
-            if (_error != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(_error!, style: const TextStyle(color: _red, fontSize: 12.5, fontWeight: FontWeight.w700))),
+            if (_error != null) Padding(padding: const EdgeInsets.only(top: 8), child: Text(_error!, style: TextStyle(color: p.red, fontSize: 12.5, fontWeight: FontWeight.w700))),
             const SizedBox(height: 12),
             FilledButton(
               key: const ValueKey('quiz_q_ok'),
@@ -1071,39 +1101,43 @@ class _QuestionEditorState extends State<_QuestionEditor> {
     );
   }
 
-  Widget _field(TextEditingController c, String label, String hint, {Key? key}) => TextField(
+  Widget _field(TextEditingController c, String label, String hint, {Key? key}) => _fieldP(_QP.of(context), c, label, hint, key: key);
+
+  Widget _fieldP(_QP p, TextEditingController c, String label, String hint, {Key? key}) => TextField(
         key: key,
         controller: c,
         onChanged: (_) => _error == null ? null : setState(() => _error = null),
-        style: const TextStyle(color: Colors.white),
+        style: TextStyle(color: p.text),
         decoration: InputDecoration(
           isDense: true,
           labelText: label,
           hintText: hint.isEmpty ? null : hint,
-          labelStyle: const TextStyle(color: Colors.white60),
-          hintStyle: const TextStyle(color: Colors.white30),
+          labelStyle: TextStyle(color: p.text3),
+          hintStyle: TextStyle(color: p.faint),
           filled: true,
-          fillColor: Colors.white.withOpacity(.06),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
-          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white24)),
+          fillColor: p.fill,
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: p.line)),
+          enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: p.line)),
         ),
       );
 }
 
-Widget _chips(List<int> values, int selected, ValueChanged<int> onPick, String Function(int) label) => Wrap(spacing: 6, runSpacing: 6, children: [
-      for (final v in values)
-        ChoiceChip(
-          key: ValueKey('chip_$v'),
-          label: Text(label(v)),
-          selected: selected == v,
-          onSelected: (_) => onPick(v),
-          labelStyle: TextStyle(color: selected == v ? _onGreen : Colors.white, fontWeight: FontWeight.w700, fontSize: 12.5),
-          selectedColor: _green,
-          backgroundColor: Colors.white.withOpacity(.06),
-          side: BorderSide(color: selected == v ? _green : Colors.white24),
-          showCheckmark: false,
-        ),
-    ]);
+Widget _chips(List<int> values, int selected, ValueChanged<int> onPick, String Function(int) label) => Builder(builder: (context) {
+      final p = _QP.of(context);
+      return Wrap(spacing: 6, runSpacing: 6, children: [
+        for (final v in values)
+          ChoiceChip(
+            key: ValueKey('chip_$v'),
+            label: Text(label(v)),
+            selected: selected == v,
+            onSelected: (_) => onPick(v),
+            labelStyle: TextStyle(color: selected == v ? _onGreen : p.text, fontWeight: FontWeight.w700, fontSize: 12.5),
+            color: WidgetStatePropertyAll(selected == v ? _green : p.fill),
+            side: BorderSide(color: selected == v ? _green : p.line),
+            showCheckmark: false,
+          ),
+      ]);
+    });
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Réglages du quiz (création du live et lancement)
@@ -1130,42 +1164,47 @@ class _QuizSettingsEditorState extends State<QuizSettingsEditor> {
     widget.onChanged();
   }
 
-  Widget _box(List<Widget> children) => Container(
+  Widget _box(List<Widget> children) => _boxP(_QP.of(context), children);
+
+  Widget _boxP(_QP p, List<Widget> children) => Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: const Color(0xFF221A3A), borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFF3A2F5C))),
+        decoration: BoxDecoration(color: p.box, borderRadius: BorderRadius.circular(14), border: Border.all(color: p.boxBorder)),
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
       );
 
-  Text _label(String t) => Text(t, style: const TextStyle(color: Colors.white70, fontSize: 12.5, fontWeight: FontWeight.w700));
+  Text _label(String t) => Text(t, style: TextStyle(color: _QP.of(context).text2, fontSize: 12.5, fontWeight: FontWeight.w700));
 
-  Widget _reward(String key, IconData icon, String title, String text, bool on, VoidCallback onTap) => GestureDetector(
+  Widget _reward(String key, IconData icon, String title, String text, bool on, VoidCallback onTap) => _rewardP(_QP.of(context), key, icon, title, text, on, onTap);
+
+  Widget _rewardP(_QP p, String key, IconData icon, String title, String text, bool on, VoidCallback onTap) => GestureDetector(
         key: ValueKey(key),
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: on ? _gold.withOpacity(.14) : Colors.white.withOpacity(.04),
+            color: on ? _gold.withOpacity(.14) : p.fill,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: on ? _gold : Colors.white12, width: on ? 1.6 : 1),
+            border: Border.all(color: on ? _gold : p.line2, width: on ? 1.6 : 1),
           ),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              Icon(icon, color: on ? _gold : Colors.white60, size: 20),
+              Icon(icon, color: on ? p.goldText : p.text3, size: 20),
               const Spacer(),
-              Icon(on ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded, color: on ? _gold : Colors.white38, size: 18),
+              Icon(on ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded, color: on ? p.goldText : p.faint, size: 18),
             ]),
             const SizedBox(height: 6),
-            Text(title, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w900)),
+            Text(title, style: TextStyle(color: p.text, fontSize: 13, fontWeight: FontWeight.w900)),
             const SizedBox(height: 2),
-            Text(text, style: const TextStyle(color: Colors.white60, fontSize: 11, height: 1.3)),
+            Text(text, style: TextStyle(color: p.text3, fontSize: 11, height: 1.3)),
           ]),
         ),
       );
 
   @override
   Widget build(BuildContext context) {
+    final p = _QP.of(context);
     final split = quizSplit(s.pot, s.winners);
     final maxPart = split.isEmpty || split.first == 0 ? 1 : split.first;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -1179,7 +1218,7 @@ class _QuizSettingsEditorState extends State<QuizSettingsEditor> {
         ]),
       ]),
       if (!s.physical) _box([
-        Row(children: [Expanded(child: _label(context.tr('Nombre de gagnants par question'))), Text('${s.winners}', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900))]),
+        Row(children: [Expanded(child: _label(context.tr('Nombre de gagnants par question'))), Text('${s.winners}', style: TextStyle(color: p.text, fontSize: 18, fontWeight: FontWeight.w900))]),
         Slider(key: const ValueKey('quiz_winners'), value: s.winners.toDouble(), min: 3, max: 20, divisions: 17, activeColor: _green, label: '${s.winners}', onChanged: (v) => _set(() => s.winners = v.round())),
         SizedBox(
           height: 34,
@@ -1192,7 +1231,7 @@ class _QuizSettingsEditorState extends State<QuizSettingsEditor> {
           s.pot > 0
               ? context.tr('Pour {p} pièces : le 1er gagne {a}, le dernier {z}. Égalité de points : parts partagées.', {'p': CoinCheckout.fmt(s.pot), 'a': CoinCheckout.fmt(split.first), 'z': CoinCheckout.fmt(split.last)})
               : context.tr('Le 1er gagne le plus, puis de moins en moins.'),
-          style: const TextStyle(color: Colors.white60, fontSize: 11.5),
+          style: TextStyle(color: p.text3, fontSize: 11.5),
         ),
       ]),
       _box([
@@ -1206,8 +1245,8 @@ class _QuizSettingsEditorState extends State<QuizSettingsEditor> {
         _chips(kQuizPotChoices, s.pot, (v) => _set(() => s.pot = v), (v) => v == 0 ? context.tr('Sans cagnotte') : CoinCheckout.fmt(v)),
         const SizedBox(height: 6),
         Row(children: [
-          Expanded(child: Text(context.tr('Coût pour toi par question'), style: const TextStyle(color: Colors.white70, fontSize: 13))),
-          Text(context.tr('{n} pièces', {'n': CoinCheckout.fmt(quizCost(s.pot))}), style: const TextStyle(color: _amber, fontSize: 14, fontWeight: FontWeight.w900)),
+          Expanded(child: Text(context.tr('Coût pour toi par question'), style: TextStyle(color: p.text2, fontSize: 13))),
+          Text(context.tr('{n} pièces', {'n': CoinCheckout.fmt(quizCost(s.pot))}), style: TextStyle(color: p.amber, fontSize: 14, fontWeight: FontWeight.w900)),
         ]),
       ]),
       _box([
@@ -1243,28 +1282,28 @@ class _QuizSettingsEditorState extends State<QuizSettingsEditor> {
         const SizedBox(height: 6),
         if (!widget.isGold) ...[
           Text(context.tr('Avec Gold, prépare jusqu\'à 50 questions avec leur temps et leur cagnotte : elles s\'enchaînent toutes seules pendant le live. Sans Gold, tu envoies tes questions une par une en direct.'),
-              style: const TextStyle(color: Colors.white60, fontSize: 12, height: 1.35)),
-          if (widget.onUpgrade != null) Align(alignment: Alignment.centerLeft, child: TextButton(onPressed: widget.onUpgrade, child: Text(context.tr('Passer à Gold'), style: const TextStyle(color: _amber, fontWeight: FontWeight.w900)))),
+              style: TextStyle(color: p.text3, fontSize: 12, height: 1.35)),
+          if (widget.onUpgrade != null) Align(alignment: Alignment.centerLeft, child: TextButton(onPressed: widget.onUpgrade, child: Text(context.tr('Passer à Gold'), style: TextStyle(color: p.amber, fontWeight: FontWeight.w900)))),
         ] else ...[
           for (var i = 0; i < s.questions.length; i++)
             Container(
               margin: const EdgeInsets.only(bottom: 5),
               padding: const EdgeInsets.fromLTRB(8, 4, 2, 4),
-              decoration: BoxDecoration(color: Colors.white.withOpacity(.05), borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(color: p.fill, borderRadius: BorderRadius.circular(10)),
               child: Row(children: [
-                SizedBox(width: 20, child: Text('${i + 1}', style: const TextStyle(color: _amber, fontWeight: FontWeight.w900))),
-                Expanded(child: Text(s.questions[i].text, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700))),
-                Text(s.physical ? quizTimeLabel(context, s.questions[i].seconds) : '${quizTimeLabel(context, s.questions[i].seconds)} · ${CoinCheckout.fmt(s.questions[i].pot)}', style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                SizedBox(width: 20, child: Text('${i + 1}', style: TextStyle(color: p.amber, fontWeight: FontWeight.w900))),
+                Expanded(child: Text(s.questions[i].text, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontSize: 12.5, fontWeight: FontWeight.w700))),
+                Text(s.physical ? quizTimeLabel(context, s.questions[i].seconds) : '${quizTimeLabel(context, s.questions[i].seconds)} · ${CoinCheckout.fmt(s.questions[i].pot)}', style: TextStyle(color: p.icon, fontSize: 11)),
                 IconButton(
                   visualDensity: VisualDensity.compact,
                   tooltip: context.tr('Modifier'),
-                  icon: const Icon(Icons.edit_rounded, color: Colors.white54, size: 18),
+                  icon: Icon(Icons.edit_rounded, color: p.icon, size: 18),
                   onPressed: () async {
                     final v = await showQuizQuestionEditor(context, initial: s.questions[i], showPot: !s.physical);
                     if (v != null) _set(() => s.questions[i] = v);
                   },
                 ),
-                IconButton(visualDensity: VisualDensity.compact, tooltip: context.tr('Supprimer'), icon: const Icon(Icons.delete_outline_rounded, color: Colors.white54, size: 18), onPressed: () => _set(() => s.questions.removeAt(i))),
+                IconButton(visualDensity: VisualDensity.compact, tooltip: context.tr('Supprimer'), icon: Icon(Icons.delete_outline_rounded, color: p.icon, size: 18), onPressed: () => _set(() => s.questions.removeAt(i))),
               ]),
             ),
           if (s.questions.length < 50)
@@ -1274,11 +1313,11 @@ class _QuizSettingsEditorState extends State<QuizSettingsEditor> {
                 final v = await showQuizQuestionEditor(context, defSeconds: s.seconds, defPot: s.pot, okLabel: 'Ajouter', showPot: !s.physical);
                 if (v != null) _set(() => s.questions.add(v));
               },
-              icon: const Icon(Icons.add_rounded, color: _amber),
-              label: Text(context.tr('Ajouter une question ({n} sur 50)', {'n': s.questions.length}), style: const TextStyle(color: _amber, fontWeight: FontWeight.w800)),
+              icon: Icon(Icons.add_rounded, color: p.amber),
+              label: Text(context.tr('Ajouter une question ({n} sur 50)', {'n': s.questions.length}), style: TextStyle(color: p.amber, fontWeight: FontWeight.w800)),
             ),
           if (s.questions.isNotEmpty && s.listCost > 0)
-            Text(context.tr('Coût de la liste : {n} pièces, prélevées au lancement du quiz.', {'n': CoinCheckout.fmt(s.listCost)}), style: const TextStyle(color: Colors.white60, fontSize: 11.5)),
+            Text(context.tr('Coût de la liste : {n} pièces, prélevées au lancement du quiz.', {'n': CoinCheckout.fmt(s.listCost)}), style: TextStyle(color: p.text3, fontSize: 11.5)),
         ],
       ]),
     ]);
@@ -1298,19 +1337,21 @@ Future<({String mode, QuizSettings settings, QuizPackPick? pack})?> showQuizLaun
   return showModalBottomSheet<({String mode, QuizSettings settings, QuizPackPick? pack})>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: const Color(0xFF1B1430),
+    backgroundColor: _QP.of(context).sheet,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setS) => DraggableScrollableSheet(
         expand: false,
         initialChildSize: .88,
         maxChildSize: .95,
-        builder: (_, scroll) => ListView(controller: scroll, padding: const EdgeInsets.fromLTRB(16, 12, 16, 24), children: [
-          Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)))),
+        builder: (_, scroll) => Builder(builder: (ctx) {
+          final p = _QP.of(ctx);
+          return ListView(controller: scroll, padding: const EdgeInsets.fromLTRB(16, 12, 16, 24), children: [
+          Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: p.line, borderRadius: BorderRadius.circular(2)))),
           const SizedBox(height: 12),
-          Text(ctx.tr('Quiz à cagnotte'), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
+          Text(ctx.tr('Quiz à cagnotte'), style: TextStyle(color: p.text, fontSize: 18, fontWeight: FontWeight.w900)),
           const SizedBox(height: 4),
-          Text(ctx.tr('Jouer est gratuit pour le public. Chaque bonne réponse rapporte des points (plus on répond vite, plus on en gagne) : le classement final désigne les gagnants.'), style: const TextStyle(color: Colors.white60, fontSize: 12.5, height: 1.35)),
+          Text(ctx.tr('Jouer est gratuit pour le public. Chaque bonne réponse rapporte des points (plus on répond vite, plus on en gagne) : le classement final désigne les gagnants.'), style: TextStyle(color: p.text3, fontSize: 12.5, height: 1.35)),
           const SizedBox(height: 12),
           QuizSettingsEditor(settings: settings, isGold: isGold, onUpgrade: onUpgrade, onChanged: () => setS(() {})),
           if (isGold && settings.questions.isNotEmpty)
@@ -1346,7 +1387,8 @@ Future<({String mode, QuizSettings settings, QuizPackPick? pack})?> showQuizLaun
             icon: const Icon(Icons.bolt_rounded),
             label: Text(ctx.tr('Ouvrir le quiz en direct (questions une par une)'), style: const TextStyle(fontWeight: FontWeight.w900)),
           ),
-        ]),
+        ]);
+        }),
       ),
     ),
   );
@@ -1368,14 +1410,13 @@ class QuizPacksBox extends StatelessWidget {
   final VoidCallback onLaunch;
   final VoidCallback? onUpgrade;
 
-  Widget _chip(String key, String label, bool on, VoidCallback onTap) => ChoiceChip(
+  Widget _chip(_QP p, String key, String label, bool on, VoidCallback onTap) => ChoiceChip(
         key: ValueKey(key),
         label: Text(label),
         selected: on,
         onSelected: (_) => onTap(),
-        selectedColor: _gold,
-        backgroundColor: Colors.white.withOpacity(.06),
-        labelStyle: TextStyle(color: on ? _onGold : Colors.white, fontWeight: FontWeight.w700, fontSize: 12.5),
+        color: WidgetStatePropertyAll(on ? _gold : p.fill),
+        labelStyle: TextStyle(color: on ? _onGold : p.text, fontWeight: FontWeight.w700, fontSize: 12.5),
         side: BorderSide.none,
         showCheckmark: false,
       );
@@ -1388,44 +1429,45 @@ class QuizPacksBox extends StatelessWidget {
     final perMonth = (packs['free_per_month'] as num?)?.toInt() ?? 2;
     final blocked = freeLeft != null && freeLeft <= 0;
     final cost = count * quizCost(pot);
+    final p = _QP.of(context);
     return Container(
       key: const ValueKey('quiz_packs_box'),
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: Colors.white.withOpacity(.05), borderRadius: BorderRadius.circular(16), border: Border.all(color: _gold.withOpacity(.35))),
+      decoration: BoxDecoration(color: p.fill, borderRadius: BorderRadius.circular(16), border: Border.all(color: _gold.withOpacity(.35))),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Row(children: [
-          const Icon(Icons.auto_stories_rounded, color: _amber, size: 20),
+          Icon(Icons.auto_stories_rounded, color: p.amber, size: 20),
           const SizedBox(width: 8),
-          Expanded(child: Text(context.tr('Questions Afrolook'), style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w900))),
+          Expanded(child: Text(context.tr('Questions Afrolook'), style: TextStyle(color: p.text, fontSize: 15, fontWeight: FontWeight.w900))),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
             decoration: BoxDecoration(color: freeLeft == null ? _gold : blocked ? _red.withOpacity(.25) : _green.withOpacity(.2), borderRadius: BorderRadius.circular(999)),
             child: Text(
               freeLeft == null ? context.tr('Illimité avec Gold') : context.tr('{n} sur {m} gratuits ce mois-ci', {'n': freeLeft, 'm': perMonth}),
-              style: TextStyle(color: freeLeft == null ? _onGold : blocked ? const Color(0xFFFFD3D4) : _green, fontSize: 11, fontWeight: FontWeight.w900),
+              style: TextStyle(color: freeLeft == null ? _onGold : blocked ? p.dangerText : p.greenText, fontSize: 11, fontWeight: FontWeight.w900),
             ),
           ),
         ]),
         const SizedBox(height: 6),
         Text(context.tr("Des questions prêtes, tirées de nos quiz. Elles s'enchaînent toutes seules et tu découvres les réponses en même temps que les joueurs."),
-            style: const TextStyle(color: Colors.white60, fontSize: 12, height: 1.35)),
+            style: TextStyle(color: p.text3, fontSize: 12, height: 1.35)),
         const SizedBox(height: 12),
-        Text(context.tr('Thème'), style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w800)),
+        Text(context.tr('Thème'), style: TextStyle(color: p.text2, fontSize: 12, fontWeight: FontWeight.w800)),
         const SizedBox(height: 6),
         Wrap(spacing: 6, runSpacing: 6, children: [
-          for (final t in themes) _chip('quiz_pack_theme_${t['id']}', context.tr('${t['label']}'), theme == t['id'], () => onTheme('${t['id']}')),
+          for (final t in themes) _chip(p, 'quiz_pack_theme_${t['id']}', context.tr('${t['label']}'), theme == t['id'], () => onTheme('${t['id']}')),
         ]),
         const SizedBox(height: 12),
-        Text(context.tr('Nombre de questions'), style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w800)),
+        Text(context.tr('Nombre de questions'), style: TextStyle(color: p.text2, fontSize: 12, fontWeight: FontWeight.w800)),
         const SizedBox(height: 6),
         Wrap(spacing: 6, runSpacing: 6, children: [
-          for (final c in counts) _chip('quiz_pack_count_$c', '$c', count == c, () => onCount(c)),
+          for (final c in counts) _chip(p, 'quiz_pack_count_$c', '$c', count == c, () => onCount(c)),
         ]),
         if (footer != null) footer!,
         const SizedBox(height: 10),
         FilledButton.icon(
           key: const ValueKey('quiz_launch_pack'),
-          style: FilledButton.styleFrom(backgroundColor: blocked ? Colors.white : _gold, foregroundColor: _onGold, padding: const EdgeInsets.symmetric(vertical: 13), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24))),
+          style: FilledButton.styleFrom(backgroundColor: blocked ? p.text : _gold, foregroundColor: blocked ? p.sheet : _onGold, padding: const EdgeInsets.symmetric(vertical: 13), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24))),
           onPressed: blocked ? onUpgrade : onLaunch,
           icon: Icon(blocked ? Icons.workspace_premium_rounded : Icons.play_arrow_rounded),
           label: Text(
@@ -1439,7 +1481,7 @@ class QuizPacksBox extends StatelessWidget {
         ),
         if (blocked) ...[
           const SizedBox(height: 6),
-          Text(context.tr('Tu as utilisé tes quiz Afrolook gratuits de ce mois-ci. Ils reviennent le 1er du mois.'), textAlign: TextAlign.center, style: const TextStyle(color: Colors.white60, fontSize: 11.5)),
+          Text(context.tr('Tu as utilisé tes quiz Afrolook gratuits de ce mois-ci. Ils reviennent le 1er du mois.'), textAlign: TextAlign.center, style: TextStyle(color: p.text3, fontSize: 11.5)),
         ],
       ]),
     );
@@ -1475,12 +1517,13 @@ class QuizRankingSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final p = _QP.of(context);
     return Container(
       key: const ValueKey('quiz_ranking_sheet'),
       height: MediaQuery.of(context).size.height * .82,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFF26223A), Color(0xFF15121F)]),
-        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [p.sheetTop, p.sheetBottom]),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
       ),
       child: FutureBuilder<Map<String, dynamic>>(
         future: future,
@@ -1492,32 +1535,32 @@ class QuizRankingSheet extends StatelessWidget {
           final meInTop = me != null && rows.any((r) => r['user_id'] == me['user_id']);
           return Column(children: [
             const SizedBox(height: 8),
-            Container(width: 38, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(99))),
+            Container(width: 38, height: 4, decoration: BoxDecoration(color: p.line, borderRadius: BorderRadius.circular(99))),
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 14, 8, 4),
               child: Row(children: [
-                const Icon(Icons.leaderboard_rounded, color: _amber, size: 22),
+                Icon(Icons.leaderboard_rounded, color: p.amber, size: 22),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(d?['final'] == false ? ctx.tr('Classement provisoire') : ctx.tr('Classement final'), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
+                    Text(d?['final'] == false ? ctx.tr('Classement provisoire') : ctx.tr('Classement final'), style: TextStyle(color: p.text, fontSize: 18, fontWeight: FontWeight.w900)),
                     if (d != null)
                       Text(ctx.tr('{p} joueurs · {q} questions · les {t} premiers', {'p': d['players'] ?? rows.length, 'q': q, 't': d['top'] ?? 20}),
-                          style: const TextStyle(color: Colors.white60, fontSize: 12)),
+                          style: TextStyle(color: p.text3, fontSize: 12)),
                   ]),
                 ),
-                IconButton(tooltip: ctx.tr('Fermer'), icon: const Icon(Icons.close_rounded, color: Colors.white54), onPressed: () => Navigator.pop(ctx)),
+                IconButton(tooltip: ctx.tr('Fermer'), icon: Icon(Icons.close_rounded, color: p.icon), onPressed: () => Navigator.pop(ctx)),
               ]),
             ),
             Expanded(
               child: snap.connectionState != ConnectionState.done
-                  ? const Center(child: CircularProgressIndicator(color: _amber))
+                  ? Center(child: CircularProgressIndicator(color: p.amber))
                   : snap.hasError || rows.isEmpty
                       ? Center(
                           child: Padding(
                             padding: const EdgeInsets.all(32),
                             child: Text(snap.hasError ? ctx.tr('Classement indisponible pour le moment.') : ctx.tr('Personne n\'a encore répondu.'),
-                                textAlign: TextAlign.center, style: const TextStyle(color: Colors.white60, height: 1.4)),
+                                textAlign: TextAlign.center, style: TextStyle(color: p.text3, height: 1.4)),
                           ),
                         )
                       : ListView.separated(
@@ -1561,11 +1604,12 @@ class QuizRankingSheet extends StatelessWidget {
     final avatar = '${r['avatar_url'] ?? ''}';
     final display = '${r['display_name'] ?? ''}'.trim();
     final coins = (r['coins'] as num?)?.toInt() ?? 0;
+    final p = _QP.of(ctx);
     return Container(
       key: ValueKey('quiz_rank_$rank'),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: mine ? _green.withOpacity(.16) : Colors.white.withOpacity(.06),
+        color: mine ? _green.withOpacity(.16) : p.fill,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: mine ? _green.withOpacity(.6) : rank <= 3 ? _medals[(rank - 1).clamp(0, 2)].withOpacity(.45) : Colors.transparent),
       ),
@@ -1574,30 +1618,30 @@ class QuizRankingSheet extends StatelessWidget {
           width: 34,
           child: rank >= 1 && rank <= 3
               ? Icon(Icons.emoji_events_rounded, color: _medals[rank - 1], size: 24)
-              : Text('$rank', textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 15, fontWeight: FontWeight.w900)),
+              : Text('$rank', textAlign: TextAlign.center, style: TextStyle(color: p.text2, fontSize: 15, fontWeight: FontWeight.w900)),
         ),
         const SizedBox(width: 8),
         CircleAvatar(
           radius: 18,
-          backgroundColor: Colors.white12,
+          backgroundColor: p.line2,
           backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
           onBackgroundImageError: avatar.isNotEmpty ? (_, __) {} : null,
-          child: avatar.isEmpty ? const Icon(Icons.person_rounded, color: Colors.white54, size: 20) : null,
+          child: avatar.isEmpty ? Icon(Icons.person_rounded, color: p.icon, size: 20) : null,
         ),
         const SizedBox(width: 10),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(plainName ? '${r['username']}' : '@${r['username'] ?? ''}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800)),
+            Text(plainName ? '${r['username']}' : '@${r['username'] ?? ''}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontSize: 14, fontWeight: FontWeight.w800)),
             Text(display.isNotEmpty && !plainName ? display : ctx.tr('{c} sur {q} bonnes réponses', {'c': r['correct'] ?? 0, 'q': q}),
-                maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white60, fontSize: 11.5)),
+                maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text3, fontSize: 11.5)),
           ]),
         ),
         const SizedBox(width: 8),
         Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-          Text(ctx.tr('{n} pts', {'n': CoinCheckout.fmt((r['points'] as num?)?.toInt() ?? 0)}), style: const TextStyle(color: _gold, fontSize: 14, fontWeight: FontWeight.w900)),
+          Text(ctx.tr('{n} pts', {'n': CoinCheckout.fmt((r['points'] as num?)?.toInt() ?? 0)}), style: TextStyle(color: p.goldText, fontSize: 14, fontWeight: FontWeight.w900)),
           Text(
             display.isNotEmpty && !plainName ? ctx.tr('{c}/{q} justes', {'c': r['correct'] ?? 0, 'q': q}) : coins > 0 ? '+${CoinCheckout.fmt(coins)}' : '',
-            style: const TextStyle(color: Colors.white60, fontSize: 11),
+            style: TextStyle(color: p.text3, fontSize: 11),
           ),
         ]),
       ]),
