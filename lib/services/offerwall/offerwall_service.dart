@@ -5,29 +5,24 @@ import 'package:ayet_sdk_v2/ayet_sdk_v2.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:tapjoy_offerwall/tapjoy_offerwall.dart';
 import 'package:afrolook_api_client/afrolook_api_client.dart';
 
 import '../api/api_gateway.dart';
 import '../share/share_service.dart';
 
-/// Mur de tâches (Tapjoy, puis ayeT-Studios en relais) — voir docs/OFFERWALL_TACHES.md.
+/// Mur de tâches (ayeT-Studios ; Tapjoy retiré de l'application le 16/11/2026) — voir docs/OFFERWALL_TACHES.md.
 ///
 ///  - L'utilisateur est identifié auprès de la régie par son identifiant Firebase : c'est ce qui permet au serveur de créditer le bon compte.
-///  - Les clés du SDK sont dans assets/env/tapjoy.env (fichier local ignoré par Git, comme functions/.env) : rien à fournir au lancement.
+///  - Le numéro de placement est dans assets/env/ayet.env (fichier local ignoré par Git, comme functions/.env) : rien à fournir au lancement.
 ///    Sans ce fichier, la fonction est invisible dans l'application.
 ///  - Les pièces ne sont créditées que par le serveur (retour signé de la régie) ; l'application ne fait qu'ouvrir le mur et afficher.
 class OfferwallService {
   OfferwallService._();
 
-  // Clés du SDK (une par plateforme), lues dans assets/env/tapjoy.env : fichier LOCAL ignoré par Git, comme functions/.env (voir assets/env/README.md).
-  // On peut aussi les donner au lancement : --dart-define=TAPJOY_SDK_KEY_ANDROID=… (prioritaire). Sans clé, la fonction est cachée.
-  // La clé de REPORTING Tapjoy est un secret du serveur : elle n'a rien à faire dans l'application.
-  static String _androidKey = const String.fromEnvironment('TAPJOY_SDK_KEY_ANDROID');
-  static String _iosKey = const String.fromEnvironment('TAPJOY_SDK_KEY_IOS');
   static bool _keysLoaded = false;
 
-  // ayeT-Studios : numéro du placement (un par plateforme) et nom de l'emplacement « mur d'offres », lus dans assets/env/ayet.env (même principe).
+  // ayeT-Studios : numéro du placement (un par plateforme) et nom de l'emplacement « mur d'offres », lus dans assets/env/ayet.env
+  // (fichier LOCAL ignoré par Git, voir assets/env/README.md) ; on peut aussi les donner au lancement avec --dart-define (prioritaire).
   static int _ayetAndroidPlacement = int.tryParse(const String.fromEnvironment('AYET_PLACEMENT_ID_ANDROID')) ?? 0;
   static int _ayetIosPlacement = int.tryParse(const String.fromEnvironment('AYET_PLACEMENT_ID_IOS')) ?? 0;
   static String _ayetAdslot = const String.fromEnvironment('AYET_ADSLOT');
@@ -35,7 +30,7 @@ class OfferwallService {
   static Future<void> _loadKeys() async {
     if (_keysLoaded) return;
     _keysLoaded = true;
-    for (final name in const ['tapjoy', 'ayet']) {
+    for (final name in const ['ayet']) {
       try {
         final text = await rootBundle.loadString('assets/env/$name.env');
         for (final raw in text.split('\n')) {
@@ -45,8 +40,6 @@ class OfferwallService {
           if (i <= 0) continue;
           final k = line.substring(0, i).trim();
           final v = line.substring(i + 1).trim();
-          if (k == 'TAPJOY_SDK_KEY_ANDROID' && _androidKey.isEmpty) _androidKey = v;
-          if (k == 'TAPJOY_SDK_KEY_IOS' && _iosKey.isEmpty) _iosKey = v;
           if (k == 'AYET_PLACEMENT_ID_ANDROID' && _ayetAndroidPlacement == 0) _ayetAndroidPlacement = int.tryParse(v) ?? 0;
           if (k == 'AYET_PLACEMENT_ID_IOS' && _ayetIosPlacement == 0) _ayetIosPlacement = int.tryParse(v) ?? 0;
           if (k == 'AYET_ADSLOT' && _ayetAdslot.isEmpty) _ayetAdslot = v;
@@ -57,22 +50,17 @@ class OfferwallService {
     }
   }
 
-  static const String placementName = 'offerwall';
   static const String _kAgeOk = 'offerwall_age_ok_v1';
 
   static bool get _isIOS => defaultTargetPlatform == TargetPlatform.iOS;
   static bool get _isMobile => !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || _isIOS);
-  static String get _sdkKey => _isIOS ? _iosKey : _androidKey;
 
-  /// Les plateformes de tâches (Tapjoy, ayeT) sont en pause : décision du propriétaire du 29/10/2026, « on ne va pas appeler les plateformes en attendant ».
+  /// Les plateformes de tâches (ayeT) sont en pause : décision du propriétaire du 29/10/2026, « on ne va pas appeler les plateformes en attendant ».
   /// Seule la tâche « Regarder une pub » est proposée. Passer à true quand une plateforme est approuvée (le code des plateformes est intact).
   static const bool partnersActive = false;
 
   /// La tâche « Regarder une pub » (vidéo récompensée Appodeal) existe seulement sur téléphone.
   static bool get adTaskSupported => _isMobile;
-
-  /// Tapjoy : la clé du SDK de cette plateforme est-elle présente dans cette version de l'application ?
-  static bool get tapjoyConfigured => partnersActive && _isMobile && _sdkKey.isNotEmpty;
 
   static int get _ayetPlacement => _isIOS ? _ayetIosPlacement : _ayetAndroidPlacement;
   static String get _adslotName => _ayetAdslot.isEmpty ? 'offerwall' : _ayetAdslot;
@@ -81,7 +69,7 @@ class OfferwallService {
   static bool get ayetConfigured => partnersActive && _isMobile && _ayetPlacement > 0;
 
   /// Au moins une régie est utilisable sur cette plateforme.
-  static bool get isConfigured => tapjoyConfigured || ayetConfigured;
+  static bool get isConfigured => ayetConfigured;
 
   // ── Informations du serveur (historique, totaux, réglages) ─────────────────────────────────
 
@@ -166,120 +154,8 @@ class OfferwallService {
     } catch (_) {}
   }
 
-  // ── SDK Tapjoy ────────────────────────────────────────────────────────────────────────
-
-  static String? _connectedUid;
-  static Future<bool>? _connecting;
-
-  /// Connecte le SDK pour cet utilisateur (une seule fois par compte). Retourne false si la connexion échoue.
-  static Future<bool> _ensureConnected(String uid) {
-    if (_connectedUid == uid) return Future.value(true);
-    return _connecting ??= _connect(uid).whenComplete(() => _connecting = null);
-  }
-
-  static Future<bool> _connect(String uid) async {
-    if (!tapjoyConfigured) return false;
-    try {
-      // iPhone : consentement de suivi (ATT) demandé avant la connexion, comme pour les pubs
-      if (_isIOS && await AppTrackingTransparency.trackingAuthorizationStatus == TrackingStatus.notDetermined) {
-        await AppTrackingTransparency.requestTrackingAuthorization();
-      }
-      // en développement : journal détaillé du SDK (identifiant publicitaire reconnu ?, offres reçues ?) ; jamais en production
-      if (kDebugMode) await Tapjoy.setDebugEnabled(true);
-      final done = Completer<bool>();
-      await Tapjoy.connect(
-        sdkKey: _sdkKey,
-        options: {TapjoyConnectFlags.user_id: uid},
-        onConnectSuccess: () { if (!done.isCompleted) done.complete(true); },
-        onConnectFailure: (int code, String? error) { debugPrint('Tapjoy connexion refusée ($code) : $error'); if (!done.isCompleted) done.complete(false); },
-        onConnectWarning: (int code, String? warning) { debugPrint('Tapjoy avertissement ($code) : $warning'); },
-      );
-      final ok = await done.future.timeout(const Duration(seconds: 20), onTimeout: () => false);
-      if (!ok) return false;
-      // la personne a confirmé avoir 18 ans ou plus avant d'arriver ici
-      await Tapjoy.getPrivacyPolicy().setBelowConsentAge(TJStatus.falseStatus);
-      // le plugin appelle ces deux rappels sans vérifier qu'ils existent : sans eux, erreur « Null check » dans le journal
-      await Tapjoy.setUserID(
-        userId: uid,
-        onSetUserIDSuccess: () {},
-        onSetUserIDFailure: (String? e) => debugPrint('Tapjoy : identifiant refusé $e'),
-      );
-      _connectedUid = uid;
-      return true;
-    } catch (e) {
-      debugPrint('Tapjoy : erreur de connexion $e');
-      return false;
-    }
-  }
-
-  /// Lance TOUT DE SUITE la vérification de Tapjoy (connexion, demande de contenu) sans rien afficher : la page l'appelle au toucher de « Voir les tâches »,
-  /// pendant que la pub plein écran s'affiche ; à la fermeture de la pub, [open] n'a plus qu'à ouvrir la bonne page.
-  /// (ayeT ne permet pas de vérifier ses offres à l'avance : son SDK affiche directement son propre écran.)
-  static TapjoyPrefetch? prefetchTapjoy(String uid) {
-    if (uid.isEmpty) return null;
-    final p = TapjoyPrefetch();
-    () async {
-      try {
-        await _loadKeys();
-        if (!tapjoyConfigured || !await _ensureConnected(uid)) {
-          p._finish(false, failed: true);
-          return;
-        }
-        final placement = await Tapjoy.getPlacement(
-          placementName: placementName,
-          onRequestSuccess: (_) => debugPrint('Tapjoy : demande de contenu reçue (le contenu est prêt s\'il y en a)'),
-          onRequestFailure: (_, error) {
-            debugPrint('Tapjoy placement refusé : $error');
-            p._finish(false, failed: true);
-          },
-          onContentReady: (pl) {
-            p.placement = pl;
-            p._finish(true);
-          },
-          onContentDismiss: (_) { _cacheAt = null; }, // au retour, les totaux sont relus
-        );
-        if (placement == null) {
-          p._finish(false, failed: true);
-          return;
-        }
-        await placement.requestContent();
-      } catch (e) {
-        debugPrint('Tapjoy : erreur de vérification $e');
-        p._finish(false, failed: true);
-      }
-    }();
-    return p;
-  }
-
-  /// Ouvre le mur de tâches : Tapjoy d'abord ; s'il n'a aucune offre (ou échoue), ayeT-Studios prend le relais pour ne jamais manquer de tâches.
-  /// [prefetched] : vérification de Tapjoy déjà lancée par [prefetchTapjoy] (sinon elle est lancée ici).
-  /// Résultat : ouvert, indisponible (aucune offre nulle part), ou erreur.
-  static Future<OfferwallOpenResult> open(String uid, {TapjoyPrefetch? prefetched}) async {
-    await _loadKeys();
-    if (uid.isEmpty || !isConfigured) return OfferwallOpenResult.unavailable;
-    var r = OfferwallOpenResult.unavailable;
-    if (tapjoyConfigured) r = await _showTapjoy(prefetched ?? prefetchTapjoy(uid));
-    if (r != OfferwallOpenResult.opened && ayetConfigured) {
-      final a = await openAyet(uid);
-      if (a == OfferwallOpenResult.opened) r = a;
-    }
-    return r;
-  }
-
-  /// Attend (20 s au plus) le résultat de la vérification de Tapjoy, puis affiche son mur s'il a du contenu.
-  static Future<OfferwallOpenResult> _showTapjoy(TapjoyPrefetch? p) async {
-    if (p == null) return OfferwallOpenResult.unavailable;
-    final ready = await p.ready.timeout(const Duration(seconds: 20), onTimeout: () => false);
-    final placement = p.placement;
-    if (!ready || placement == null) return p.failed ? OfferwallOpenResult.error : OfferwallOpenResult.unavailable;
-    try {
-      await placement.showContent();
-      return OfferwallOpenResult.opened;
-    } catch (e) {
-      debugPrint('Tapjoy : erreur à l\'ouverture $e');
-      return OfferwallOpenResult.error;
-    }
-  }
+  /// Ouvre le mur de tâches d'ayeT-Studios (Tapjoy retiré le 16/11/2026). Résultat : ouvert, indisponible, ou erreur.
+  static Future<OfferwallOpenResult> open(String uid) => openAyet(uid);
 
   // ── ayeT-Studios ─────────────────────────────────────────────────────────────────────────
 
@@ -305,21 +181,6 @@ class OfferwallService {
       debugPrint('ayeT : erreur à l\'ouverture $e');
       return OfferwallOpenResult.error;
     }
-  }
-}
-
-/// Vérification de Tapjoy en cours (voir [OfferwallService.prefetchTapjoy]).
-class TapjoyPrefetch {
-  final Completer<bool> _ready = Completer<bool>();
-  TJPlacement? placement;
-  bool failed = false;
-
-  /// true quand Tapjoy a du contenu prêt à afficher ; false s'il n'en a pas ou en cas d'échec.
-  Future<bool> get ready => _ready.future;
-
-  void _finish(bool ok, {bool failed = false}) {
-    if (failed) this.failed = true;
-    if (!_ready.isCompleted) _ready.complete(ok);
   }
 }
 

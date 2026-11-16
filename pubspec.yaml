@@ -111,6 +111,9 @@ dependencies:
 
   #  tflite: ^1.1.2
   camera: ^0.11.0+2
+  # Android : version imposée (16/11/2026) — la 0.6.23+1 plantait (Crashlytics « CameraXLibraryPigeonProxyApiBaseCodec.writeValue », Unsupported value)
+  # quand une image du flux d'analyse (effets de visage) arrivait après l'arrêt du flux ; corrigé dans la 0.6.26+2. Pas au-delà : la 0.6.26+3 demande Kotlin 2.3.
+  camera_android_camerax: 0.6.26+2
   #  tflite_flutter: ^0.11.0
   #  tflite_v2: ^1.0.0
   video_thumbnail: ^0.5.6
@@ -198,8 +201,6 @@ dependencies:
   firebase_messaging: ^15.2.10
   ayet_sdk_v2:
     path: third_party/ayet_sdk_v2  # copie Android seulement (iPhone : Swift Package Manager désactivé sur Codemagic) : voir third_party/ayet_sdk_v2/PATCH_AFROLOOK.md
-  tapjoy_offerwall:
-    path: third_party/tapjoy_offerwall  # copie corrigée (activité de type FlutterFragmentActivity) : voir third_party/tapjoy_offerwall/PATCH_AFROLOOK.md
   firebase_analytics: ^11.6.0
   firebase_in_app_messaging: ^0.8.1+10
   google_mlkit_text_recognition: ^0.15.0

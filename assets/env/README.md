@@ -1,11 +1,12 @@
 # Clés locales de l'application (non versionnées)
 
-Le fichier `tapjoy.env` de ce dossier (ignoré par Git, comme `functions/.env`) contient les clés du SDK Tapjoy, une par plateforme :
+Le fichier `ayet.env` de ce dossier (ignoré par Git, comme `functions/.env`) contient les réglages du SDK ayeT-Studios :
 
 ```
-TAPJOY_SDK_KEY_ANDROID=...
-TAPJOY_SDK_KEY_IOS=...
+AYET_PLACEMENT_ID_ANDROID=...
+AYET_PLACEMENT_ID_IOS=...
+AYET_ADSLOT=...
 ```
 
-L'application le lit toute seule au lancement. Sans ce fichier, la fonction « Gagne des pièces » est simplement cachée.
-La clé de REPORTING Tapjoy n'a rien à faire ici : c'est un secret du serveur.
+L'application le lit toute seule au lancement. Sans ce fichier, la fonction est simplement cachée.
+Tapjoy a été retiré de l'application le 16/11/2026 : un ancien `tapjoy.env` local peut être supprimé.

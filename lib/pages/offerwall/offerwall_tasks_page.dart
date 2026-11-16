@@ -21,7 +21,7 @@ import '../../widgets/partner_tasks_section.dart';
 import '../../services/work_tracking.dart';
 import 'offerwall_tutorial_page.dart';
 
-/// Page « Gagne des pièces » : introduction dans la langue de la personne, accès au mur de tâches (Tapjoy), total gagné,
+/// Page « Gagne des pièces » : introduction dans la langue de la personne, accès au mur de tâches (ayeT-Studios), total gagné,
 /// explications sur le déroulement (attente de 48 h), parrainage et historique. Voir docs/OFFERWALL_TACHES.md §4 et §15.
 /// Tout le texte de cette page est à nous (traduit dans les 8 langues) ; seules les offres viennent des régies et sont souvent en anglais.
 class OfferwallTasksPage extends StatefulWidget {
@@ -87,7 +87,7 @@ class _OfferwallTasksPageState extends State<OfferwallTasksPage> {
     }
   }
 
-  Future<void> _open({bool ayet = false}) async {
+  Future<void> _open() async {
     if (!_ageOk) {
       if (!_ageChecked) return;
       await OfferwallService.confirmAge();
@@ -95,11 +95,9 @@ class _OfferwallTasksPageState extends State<OfferwallTasksPage> {
     }
     _track.tap('partner');
     setState(() => _opening = true);
-    // la vérification des tâches (Tapjoy) démarre tout de suite, EN MÊME TEMPS que la pub plein écran (si elle passe) : à sa fermeture, la bonne page s'ouvre
-    final prefetch = ayet ? null : OfferwallService.prefetchTapjoy(_uid);
     await TaskAds.beforeTasks(_auth.loginUserData);
     if (!mounted) return;
-    final r = ayet ? await OfferwallService.openAyet(_uid) : await OfferwallService.open(_uid, prefetched: prefetch);
+    final r = await OfferwallService.open(_uid);
     if (!mounted) return;
     setState(() => _opening = false);
     if (r == OfferwallOpenResult.unavailable) {
@@ -353,15 +351,6 @@ class _OfferwallTasksPageState extends State<OfferwallTasksPage> {
             label: Text(context.tr('Ouvrir la liste')),
           ),
         ),
-        // seconde source de tâches (ayeT) : quand Tapjoy est vide, l'ouverture normale bascule déjà ; ce bouton permet d'en voir plus
-        if (OfferwallService.tapjoyConfigured && OfferwallService.ayetConfigured)
-          Align(
-            alignment: Alignment.center,
-            child: TextButton(
-              onPressed: (_opening || (!_ageOk && !_ageChecked)) ? null : () => _open(ayet: true),
-              child: Text(context.tr('Voir plus de tâches')),
-            ),
-          ),
       ],
       const SizedBox(height: 4),
       InkWell(

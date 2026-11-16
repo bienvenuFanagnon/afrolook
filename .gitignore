@@ -60,7 +60,7 @@ functions/.env
 tool/offerwall/dart_defines.local.json
 *.local.json
 
-# Clés du SDK Tapjoy (fichier local, comme functions/.env)
+# Clés locales de l'application (ex. ayet.env), comme functions/.env
 assets/env/*.env
 
 # Fichiers locaux et temporaires : jamais dans Git

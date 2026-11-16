@@ -11,12 +11,9 @@
 # ce ne sont que des annotations, sans effet à l'exécution. Liste produite par Gradle (missing_rules.txt).
 -dontwarn com.facebook.infer.annotation.**
 
-# Mur de tâches (Tapjoy) : règles usuelles du SDK (à confirmer avec la page « Proguard » de la documentation Tapjoy)
--keep class com.tapjoy.** { *; }
--keep class com.moat.** { *; }
+# Attributs gardés (ajoutés à l'époque de Tapjoy, retiré le 16/11/2026) : conservés car d'autres bibliothèques (pubs, WebView) peuvent en dépendre
 -keepattributes JavascriptInterface
 -keepattributes *Annotation*
--dontwarn com.tapjoy.**
 
 # Moteur d effets de visage : MediaPipe Tasks (classes appelées par le code natif, protos absents de la bibliothèque)
 # Correctif (09/11/2026) : l'essai sur téléphone (APK release) donnait « initialisation : com.google.mediapipe.framework.Graph ». Le fichier mapping.txt du build montre que R8
