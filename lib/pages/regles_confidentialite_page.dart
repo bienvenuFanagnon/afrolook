@@ -90,10 +90,8 @@ class ReglesConfidentialitePage extends StatelessWidget {
             items: [
               _rule('Gratuit',
                   'Accès aux fonctionnalités de base : feed, posts, canaux publics, groupes publics, commentaires. Publicités affichées dans l\'application.'),
-              _rule('Premium',
-                  'Toutes les fonctionnalités gratuites + suppression des publicités dans le feed, accès aux fonctionnalités exclusives premium, badge Premium visible sur le profil.'),
               _rule('Gold',
-                  'Toutes les fonctionnalités Premium + avantages Gold exclusifs, badge Gold visible sur le profil.'),
+                  'Toutes les fonctionnalités gratuites + suppression des publicités dans le feed, accès aux fonctionnalités exclusives Gold, badge Gold visible sur le profil.'),
               _rule('Changement de niveau',
                   'Le changement de niveau prend effet immédiatement après validation du paiement. Le niveau est lié au compte Afrolook et non à l\'appareil.'),
             ],

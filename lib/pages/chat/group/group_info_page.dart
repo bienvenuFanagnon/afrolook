@@ -699,12 +699,12 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Fonctionnalité Premium 👑',
+              'Fonctionnalité Gold',
               style: TextStyle(color: _colors.textPrimary, fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 8),
             Text(
-              'Le mode lecture seule est réservé aux membres Premium.\nPassez à Premium pour débloquer cette fonctionnalité et bien plus.',
+              'Le mode lecture seule est réservé aux membres Gold.\nPassez à Gold pour débloquer cette fonctionnalité et bien plus.',
               textAlign: TextAlign.center,
               style: TextStyle(color: _colors.textSecondary, fontSize: 13, height: 1.5),
             ),
@@ -722,7 +722,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                   Navigator.pop(context);
                   Navigator.pushNamed(context, '/abonnement');
                 },
-                child: const Text('Devenir Premium', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
+                child: const Text('Devenir Gold', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15)),
               ),
             ),
             const SizedBox(height: 8),
@@ -907,12 +907,12 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
                           Text('Mode lecture seule', style: TextStyle(color: _colors.textPrimary, fontWeight: FontWeight.w600)),
                           if (!hasPremium) ...[
                             const SizedBox(width: 6),
-                            _planBadge('Premium', const Color(0xFFFDB813)),
+                            _planBadge('Gold', const Color(0xFFFDB813)),
                           ],
                         ],
                       ),
                       subtitle: Text(
-                        hasPremium ? 'Seuls les admins peuvent écrire' : 'Passez Premium pour activer',
+                        hasPremium ? 'Seuls les admins peuvent écrire' : 'Passez à Gold pour activer',
                         style: TextStyle(color: _colors.textSecondary, fontSize: 12),
                       ),
                       onChanged: _toggleReadOnly,
@@ -1922,7 +1922,7 @@ class _GroupInfoPageState extends State<GroupInfoPage> {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Groupe gelé — le propriétaire n\'est plus Premium ou Gold. Les messages sont en lecture seule.',
+              'Groupe gelé : le propriétaire n\'est plus Gold. Les messages sont en lecture seule.',
               style: const TextStyle(color: Colors.orange, fontSize: 12),
             ),
           ),

@@ -1,0 +1,24 @@
+import 'package:afrotok/providers/sound_provider.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+/// Son des vidéos (16/11/2026) : activé par défaut ; le choix de la personne (coupé) est retenu.
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  test('jamais touché : son activé', () async {
+    SharedPreferences.setMockInitialValues({});
+    final p = SoundProvider();
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+    expect(p.isMuted, isFalse);
+  });
+
+  test('son coupé par la personne : reste coupé', () async {
+    SharedPreferences.setMockInitialValues({'global_sound_muted': true});
+    final p = SoundProvider();
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+    expect(p.isMuted, isTrue);
+  });
+}

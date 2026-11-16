@@ -258,7 +258,7 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
             ),
             const SizedBox(height: 16),
             Text(
-              'Passez à Premium',
+              'Passez à Gold',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textPrimary, decoration: TextDecoration.none),
             ),
             const SizedBox(height: 8),
@@ -271,7 +271,7 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
             // Avantages
             _premiumBenefit(Icons.block, 'Aucune pub dans le feed', textPrimary, textSecondary),
             _premiumBenefit(Icons.video_library, 'Vidéos sans interruption', textPrimary, textSecondary),
-            _premiumBenefit(Icons.star, 'Badge Premium exclusif', textPrimary, textSecondary),
+            _premiumBenefit(Icons.star, 'Badge Gold exclusif', textPrimary, textSecondary),
             _premiumBenefit(Icons.support_agent, 'Support prioritaire', textPrimary, textSecondary),
             const SizedBox(height: 24),
             // Prix
@@ -286,7 +286,7 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    '${AfrolookAbonnement.prixPremiumBase.toInt()} F',
+                    '${AfrolookAbonnement.prixGoldBase.toInt()} F',   // il n'y a plus que Gratuit et Gold
                     style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: const Color(0xFFFF8C00), decoration: TextDecoration.none),
                   ),
                   const SizedBox(width: 6),

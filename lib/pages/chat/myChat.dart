@@ -1,3 +1,4 @@
+import 'package:afrotok/l10n/tr.dart';
 import 'package:afrotok/services/api/chat_api.dart';
 import 'package:afrotok/services/api/jeux_api.dart';
 import 'package:afrotok/services/api/lives_mapper.dart';
@@ -1015,7 +1016,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
   Future<void> _getMultipleImages() async {
     final isPremium = _authProvider.loginUserData.abonnement?.estPremium == true;
     if (!isPremium) {
-      _showPremiumGate('Envoyer plusieurs images est réservé aux membres Premium 👑');
+      _showPremiumGate(context.tr('Envoyer plusieurs images est réservé aux membres Gold.'));
       return;
     }
     try {
@@ -1053,7 +1054,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
           children: [
             const Text('👑', style: TextStyle(fontSize: 40)),
             const SizedBox(height: 12),
-            const Text('Fonctionnalité Premium',
+            Text(context.tr('Fonctionnalité Gold'),
                 style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
             Text(message,
@@ -1071,7 +1072,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                 Navigator.pop(context);
                 Navigator.pushNamed(context, '/abonnement');
               },
-              child: const Text('Passer à Premium', style: TextStyle(fontWeight: FontWeight.w800)),
+              child: Text(context.tr('Passer à Gold'), style: const TextStyle(fontWeight: FontWeight.w800)),
             ),
           ],
         ),
@@ -2501,7 +2502,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                       style: TextStyle(color: _colors.textPrimary, fontSize: 15, fontWeight: FontWeight.w500),
                     ),
                     subtitle: Text(
-                      isPremium ? currentLabel : '👑 Premium',
+                      isPremium ? currentLabel : 'Gold',
                       style: TextStyle(color: isPremium ? _colors.textSecondary : Colors.amber, fontSize: 12),
                     ),
                     onTap: isPremium ? () {

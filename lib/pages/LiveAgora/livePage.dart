@@ -127,7 +127,9 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
 
   /// Live sans caméra : aucun moteur Agora (donc aucune minute décomptée) ; un aperçu (image ou courte vidéo en boucle) reste à l'écran,
   /// le reste du live (commentaires, jeux, marché, cadeaux) fonctionne comme d'habitude. Coupure sur inactivité côté serveur.
-  bool get _noCam => widget.postLive.noCamera;
+  /// Live sans caméra : choisi à la création, ou vidéo coupée pendant le live (l'hôte n'a plus assez de pièces une fois les minutes gratuites d'Afrolook épuisées).
+  bool get _noCam => widget.postLive.noCamera || _videoCut;
+  bool _videoCut = false;
   VideoPlayerController? _previewVideo;
   Timer? _noCamTimer;
   Timer? _noCamTick;
@@ -985,7 +987,9 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           } catch (_) {}
           if (!mounted) return;
           final settings = QuizSettings.fromOptions(live['options']);
+          final endsAt = DateTime.tryParse('${live['ends_at'] ?? ''}')?.toLocal();
           final picked = await showQuizLaunchSheet(context, settings: settings, isGold: lim['plan'] == 'gold', packs: packs,
+              liveSecondsLeft: endsAt == null ? null : endsAt.difference(DateTime.now()).inSeconds.clamp(0, 1 << 30),
               onUpgrade: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AbonnementScreen())));
           if (picked == null || !mounted) return;
           _quizSettings = picked.settings;
@@ -1619,13 +1623,40 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     }
   }
 
-  /// Battement du spectateur toutes les 45 s : le serveur compte ses minutes, et répond 402 dès que son billet est fini.
+  /// Vidéo coupée par le serveur (l'hôte n'a plus assez de pièces pour la vidéo) : on quitte Agora tout de suite et le live continue sans caméra
+  /// (fond illustré ou aperçu, discussion, cadeaux, jeux et quiz restent).
+  Future<void> _onVideoCut() async {
+    if (_videoCut || widget.postLive.noCamera || _endHandled) return;
+    _videoCut = true;
+    _hostFeeTimer?.cancel();
+    try {
+      await _engine.leaveChannel();
+      await _engine.release();
+    } catch (_) {}
+    if (!mounted) return;
+    setState(() {
+      _remoteUid = null;
+      _hostFee = null;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      duration: const Duration(seconds: 6),
+      content: Text(widget.isHost
+          ? context.tr('Tes pièces ne suffisent plus pour la vidéo : ton live continue sans caméra.')
+          : context.tr('La vidéo de ce live est coupée : il continue sans caméra.')),
+    ));
+  }
+
+  /// Battement du spectateur toutes les 45 s : le serveur compte ses minutes et dit si la vidéo a été coupée (les spectateurs ne paient jamais).
   void _startWatchTimer() {
     if (widget.isHost || _shouldSkipTrial() || (_watchTimer?.isActive ?? false)) return;
     _watchTimer = Timer.periodic(const Duration(seconds: 45), (_) async {
       if (!mounted || _ticketRequired || _ticketLeftChannel) return;
       try {
         final r = await LivesApi.watch(widget.liveId);
+        if (r['no_camera'] == true && !widget.postLive.noCamera) {
+          await _onVideoCut();
+          return;
+        }
         final t = LiveTicketOffer.fromLive({'me': {'ticket': r['ticket']}});
         if (t != null && mounted) _ticketOffer = t;
       } on ApiException catch (e) {
@@ -1723,17 +1754,18 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     final minutes = _ticketOffer?.minutes ?? 15;
     final byTrial = !host && _ticket?.by == 'trial';
     final title = host
-        ? context.tr('Frais de diffusion : il reste {s} secondes', {'s': '$left'})
+        ? context.tr('Vidéo : prochain quart d\'heure dans {s} secondes', {'s': '$left'})
         : byTrial
             ? context.tr('Il reste {s} secondes d\'essai gratuit', {'s': '$left'})
             : context.tr('Il reste {s} secondes sur ton billet', {'s': '$left'});
     final body = host
-        ? context.tr('Sans paiement, ton live s\'arrête. Payer {p} pièces ajoute 15 minutes. Ton solde : {b} pièces.', {'p': CoinCheckout.fmt(coins), 'b': CoinCheckout.fmt(_myCoins)})
+        ? context.tr('Le prochain quart d\'heure ({v} spectateurs) coûte {p} pièces, prélevées automatiquement. S\'il te manque des pièces, la vidéo se coupe et ton live continue sans caméra. Ton solde : {b} pièces.',
+            {'v': '${_hostFee?.viewers ?? 0}', 'p': CoinCheckout.fmt(coins), 'b': CoinCheckout.fmt(_myCoins)})
         : byTrial
             ? context.tr('Ensuite, un billet de {p} pièces pour continuer {m} minutes. Ton solde : {b} pièces.', {'p': CoinCheckout.fmt(coins), 'm': '$minutes', 'b': CoinCheckout.fmt(_myCoins)})
             : context.tr('Prolonge de {m} minutes pour {p} pièces. Ton solde : {b} pièces.', {'p': CoinCheckout.fmt(coins), 'm': '$minutes', 'b': CoinCheckout.fmt(_myCoins)});
     final payLabel = host
-        ? context.tr('Payer : {p} pièces', {'p': CoinCheckout.fmt(coins)})
+        ? context.tr('Payer maintenant : {p} pièces', {'p': CoinCheckout.fmt(coins)})
         : byTrial
             ? context.tr('Payer maintenant : {p} pièces', {'p': CoinCheckout.fmt(coins)})
             : context.tr('Prolonger : {p} pièces', {'p': CoinCheckout.fmt(coins)});
@@ -2956,6 +2988,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
     if (widget.isHost) {
       // l'API termine un live sans signal ; en mode billet elle rappelle aussi l'échéance des frais de diffusion
       LivesApi.heartbeat(widget.liveId, viewers: _viewerCount, likes: _likeCount, comments: _noCam ? _commentsTotal : null).then((r) {
+        if (r['no_camera'] == true && !widget.postLive.noCamera) _onVideoCut();
         if (_noCam) _setIdle(r['idle_seconds_left']);
         final fee = LiveHostFee.fromJson(r['host_fee']);
         if (fee != null) _setHostFee(fee);

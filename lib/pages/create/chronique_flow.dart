@@ -211,7 +211,7 @@ class ChroniquePublisher {
           builder: (ctx) => AlertDialog(
             backgroundColor: c.surface,
             title: Text(context.tr('Chronique supplémentaire')),
-            content: Text(context.tr('Tu as déjà 2 chroniques actives (limite gratuite).\n\nPublier cette chronique coûte {a} pièces. Les abonnés Premium et Gold publient sans limite.', {'a': '$coins'})),
+            content: Text(context.tr('Tu as déjà 2 chroniques actives (limite gratuite).\n\nPublier cette chronique coûte {a} pièces. Les abonnés Gold publient sans limite.', {'a': '$coins'})),
             actions: [
               TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(context.tr('Annuler'))),
               FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(context.tr('Payer {a} pièces', {'a': '$coins'}))),

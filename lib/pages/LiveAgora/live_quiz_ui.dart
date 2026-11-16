@@ -34,6 +34,34 @@ List<int> quizSplit(int pot, int winners) {
 const List<int> kQuizTimeChoices = [15, 30, 60, 120, 300, 600, 900, 1800];
 const List<int> kQuizPotChoices = [0, 50, 100, 250, 500, 1000];
 
+/// Durée d'un quiz enchaîné : chaque question dure son temps + 6 s de résultat + 5 s de préparation (comme le serveur).
+int quizListSeconds(Iterable<int> questionSeconds) => questionSeconds.fold<int>(0, (a, s) => a + s + 11);
+
+String quizDurationLabel(BuildContext context, int s) => s < 60 ? context.tr('{n} s', {'n': s}) : context.tr('{n} min', {'n': (s + 59) ~/ 60});
+
+/// Durée du quiz face au temps qui reste au live : avertissement si le live s'arrêterait avant la fin du quiz.
+Widget quizDurationNote(BuildContext context, int quizSeconds, int? liveSecondsLeft) {
+  if (quizSeconds <= 0) return const SizedBox.shrink();
+  final over = liveSecondsLeft != null && quizSeconds > liveSecondsLeft;
+  final text = liveSecondsLeft == null
+      ? context.tr('Durée du quiz : environ {d}.', {'d': quizDurationLabel(context, quizSeconds)})
+      : over
+          ? context.tr('Ce quiz dure environ {d}, mais il ne reste que {r} au live : le live s\'arrêterait avant la fin. Mets moins de questions, des temps plus courts, ou prolonge le live.',
+              {'d': quizDurationLabel(context, quizSeconds), 'r': quizDurationLabel(context, liveSecondsLeft)})
+          : context.tr('Durée du quiz : environ {d} (il reste {r} au live).', {'d': quizDurationLabel(context, quizSeconds), 'r': quizDurationLabel(context, liveSecondsLeft)});
+  return Container(
+    key: ValueKey(over ? 'quiz_duration_over' : 'quiz_duration_ok'),
+    margin: const EdgeInsets.only(top: 6, bottom: 4),
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+    decoration: BoxDecoration(color: (over ? _red : Colors.white).withOpacity(over ? .16 : .05), borderRadius: BorderRadius.circular(12), border: Border.all(color: over ? _red.withOpacity(.6) : Colors.white12)),
+    child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Icon(over ? Icons.warning_amber_rounded : Icons.schedule_rounded, size: 17, color: over ? _red : Colors.white60),
+      const SizedBox(width: 8),
+      Expanded(child: Text(text, style: TextStyle(color: over ? const Color(0xFFFFD3D4) : Colors.white70, fontSize: 12, height: 1.35, fontWeight: over ? FontWeight.w700 : FontWeight.w500))),
+    ]),
+  );
+}
+
 String quizTimeLabel(BuildContext context, int s) => s < 60 ? context.tr('{n} s', {'n': s}) : context.tr('{n} min', {'n': s ~/ 60});
 
 /// Une question du quiz : texte, 2 à 10 choix, une ou plusieurs bonnes réponses, temps et somme à gagner.
@@ -1263,7 +1291,8 @@ typedef QuizPackPick = ({String theme, int count});
 
 /// Fenêtre de lancement : réglages, puis liste préparée (Gold), questions Afrolook (2 par mois sans Gold, illimité en Gold) ou questions en direct.
 /// [packs] : catalogue renvoyé par le serveur (`GET /lives/quiz-packs`) ; absent = section masquée.
-Future<({String mode, QuizSettings settings, QuizPackPick? pack})?> showQuizLaunchSheet(BuildContext context, {required QuizSettings settings, required bool isGold, VoidCallback? onUpgrade, Map<String, dynamic>? packs}) {
+/// [liveSecondsLeft] : temps qui reste au live (avertissement si le quiz est plus long).
+Future<({String mode, QuizSettings settings, QuizPackPick? pack})?> showQuizLaunchSheet(BuildContext context, {required QuizSettings settings, required bool isGold, VoidCallback? onUpgrade, Map<String, dynamic>? packs, int? liveSecondsLeft}) {
   var packTheme = 'mix';
   var packCount = 10;
   return showModalBottomSheet<({String mode, QuizSettings settings, QuizPackPick? pack})>(
@@ -1295,8 +1324,10 @@ Future<({String mode, QuizSettings settings, QuizPackPick? pack})?> showQuizLaun
                 label: Text(settings.listCost > 0 ? ctx.tr('Lancer la liste ({n} questions) · {c} pièces', {'n': settings.questions.length, 'c': CoinCheckout.fmt(settings.listCost)}) : ctx.tr('Lancer la liste ({n} questions)', {'n': settings.questions.length}), style: const TextStyle(fontWeight: FontWeight.w900)),
               ),
             ),
+          if (isGold && settings.questions.isNotEmpty) Padding(padding: const EdgeInsets.only(bottom: 8), child: quizDurationNote(ctx, quizListSeconds(settings.questions.map((q) => q.seconds)), liveSecondsLeft)),
           if (packs != null) ...[
             QuizPacksBox(
+              footer: quizDurationNote(ctx, quizListSeconds(List.filled(packCount, settings.seconds)), liveSecondsLeft),
               packs: packs,
               theme: packTheme,
               count: packCount,
@@ -1323,7 +1354,10 @@ Future<({String mode, QuizSettings settings, QuizPackPick? pack})?> showQuizLaun
 
 /// Questions Afrolook (tirées des quiz de l'application) : thème, nombre de questions, utilisations gratuites restantes, lancement.
 class QuizPacksBox extends StatelessWidget {
-  const QuizPacksBox({required this.packs, required this.theme, required this.count, required this.pot, required this.onTheme, required this.onCount, required this.onLaunch, this.onUpgrade});
+  const QuizPacksBox({super.key, required this.packs, required this.theme, required this.count, required this.pot, required this.onTheme, required this.onCount, required this.onLaunch, this.onUpgrade, this.footer});
+
+  /// Durée estimée du paquet face au temps qui reste au live.
+  final Widget? footer;
 
   final Map<String, dynamic> packs;
   final String theme;
@@ -1387,7 +1421,8 @@ class QuizPacksBox extends StatelessWidget {
         Wrap(spacing: 6, runSpacing: 6, children: [
           for (final c in counts) _chip('quiz_pack_count_$c', '$c', count == c, () => onCount(c)),
         ]),
-        const SizedBox(height: 14),
+        if (footer != null) footer!,
+        const SizedBox(height: 10),
         FilledButton.icon(
           key: const ValueKey('quiz_launch_pack'),
           style: FilledButton.styleFrom(backgroundColor: blocked ? Colors.white : _gold, foregroundColor: _onGold, padding: const EdgeInsets.symmetric(vertical: 13), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24))),

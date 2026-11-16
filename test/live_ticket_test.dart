@@ -42,4 +42,13 @@ void main() {
     expect(LiveHostFee.fromJson({'coins': 50, 'paid_until': null})!.secondsLeft, 0);
     expect(LiveHostFee.fromJson(null), isNull);
   });
+
+  test("frais de l'hôte (les spectateurs ne paient jamais) : montant, spectateurs présents, tarif par spectateur", () {
+    final f = LiveHostFee.fromJson({'coins': 150, 'viewers': 2, 'per_viewer': 50, 'paid_until': DateTime.now().add(const Duration(minutes: 10)).toIso8601String(), 'auto': true});
+    expect(f!.coins, 150);
+    expect(f.viewers, 2);
+    expect(f.perViewer, 50);
+    expect(f.secondsLeft, greaterThan(500));
+    expect(LiveHostFee.fromJson(null), isNull);
+  });
 }

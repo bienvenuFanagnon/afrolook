@@ -254,7 +254,7 @@ class _CreatePublishPageState extends State<CreatePublishPage> {
               else if (limit == 1)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 6),
-                  child: Align(alignment: Alignment.centerLeft, child: Text(context.tr('1 pays en version gratuite. Premium : jusqu\'à 20 pays. Gold : tous les pays.'), style: TextStyle(color: c.textSecondary, fontSize: 12.5))),
+                  child: Align(alignment: Alignment.centerLeft, child: Text(context.tr('1 pays en version gratuite. Gold : tous les pays.'), style: TextStyle(color: c.textSecondary, fontSize: 12.5))),
                 ),
               Expanded(
                 child: ListView.builder(
@@ -364,7 +364,7 @@ class _CreatePublishPageState extends State<CreatePublishPage> {
       final mb = await widget.video!.length() / (1024 * 1024);
       if (mb > _limits.videoMb) {
         if (!mounted) return;
-        _say(context.tr('Cette vidéo dépasse la limite de ton plan ({n} Mo). Passe à Premium ou Gold.', {'n': '${_limits.videoMb}'}));
+        _say(context.tr('Cette vidéo dépasse la limite de ton plan ({n} Mo). Passe à Gold.', {'n': '${_limits.videoMb}'}));
         _goPremium();
         return;
       }

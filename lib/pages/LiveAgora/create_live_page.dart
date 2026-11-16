@@ -119,9 +119,6 @@ class _CreateLivePageState extends State<CreateLivePage> {
 
   // Minutes d'Agora : tant qu'il reste du gratuit, tout est gratuit ; ensuite les spectateurs prennent un billet et l'hôte paie ses frais de diffusion
   Map<String, dynamic>? _minutes;
-  bool _offerEntry = false;
-  int _ticketExtra = 0;
-  int _ticketTrial = 1;
   bool _allowStage = true;
   LiveDisplay _liveDisplay = LiveDisplay.essential;
   bool get _ticketMode => _minutes?['mode'] == 'ticket';
@@ -1409,7 +1406,6 @@ class _CreateLivePageState extends State<CreateLivePage> {
         ]),
       );
     }
-    final t = (_minutes!['ticket_coins'] as Map?) ?? const {};
     Widget pr(String a, String b, {bool dashed = false}) => Container(
           padding: EdgeInsets.only(top: dashed ? 6 : 3, bottom: 3),
           margin: EdgeInsets.only(top: dashed ? 3 : 0),
@@ -1424,24 +1420,25 @@ class _CreateLivePageState extends State<CreateLivePage> {
       decoration: BoxDecoration(color: const Color(0xFFFFF1E3), border: Border.all(color: const Color(0xFFFFD2A8)), borderRadius: BorderRadius.circular(14)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Container(width: 28, height: 28, decoration: const BoxDecoration(color: Color(0xFFFF7A1A), shape: BoxShape.circle), child: const Icon(Icons.confirmation_number_rounded, color: Color(0xFF121212), size: 16)),
+          Container(width: 28, height: 28, decoration: const BoxDecoration(color: Color(0xFFFF7A1A), shape: BoxShape.circle), child: const Icon(Icons.videocam_rounded, color: Color(0xFF121212), size: 16)),
           const SizedBox(width: 9),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(tr('Les minutes gratuites du mois sont épuisées'), style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Color(0xFF8A4300))),
+              Text(tr('Les minutes vidéo gratuites du mois sont épuisées'), style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800, color: Color(0xFF8A4300))),
               const SizedBox(height: 1),
-              Text(tr('Tes spectateurs prennent un billet de {m} minutes. Toi, tu paies tes frais de diffusion.', {'m': '${_num('ticket_minutes', 15)}'}), style: const TextStyle(fontSize: 12, height: 1.4, color: Color(0xFF5C3A1D))),
+              Text(tr('Tes spectateurs ne paient rien. Pour la vidéo, c\'est toi qui paies, chaque quart d\'heure, selon le nombre de spectateurs (prélevé automatiquement ; s\'il te manque des pièces, la vidéo se coupe et le live continue sans caméra). Sans caméra, c\'est gratuit.'),
+                  style: const TextStyle(fontSize: 12, height: 1.4, color: Color(0xFF5C3A1D))),
             ]),
           ),
         ]),
         const SizedBox(height: 7),
         const Divider(height: 1, color: Color(0xFFFFD2A8)),
         const SizedBox(height: 6),
-        pr(tr('Discussion ou vente, en vidéo'), tr('{n} pièces', {'n': '${t['video'] ?? 50}'})),
-        pr(tr('Avec invités ou duel en vidéo'), tr('{n} pièces', {'n': '${t['stage'] ?? 110}'})),
-        pr(tr('Audio seul'), tr('{n} pièces', {'n': '${t['audio'] ?? 13}'})),
-        pr(tr('Tes frais de diffusion (hôte)'), tr('{n} pièces · {m} min', {'n': '${_num('host_fee_coins', 50)}', 'm': '${_num('ticket_minutes', 15)}'}), dashed: true),
-        pr(tr('Par invité en vidéo, sans place payante'), tr('+{n} pièces · {m} min', {'n': '${_num('stage_guest_fee_coins', 50)}', 'm': '${_num('ticket_minutes', 15)}'})),
+        pr(tr('Toi, par quart d\'heure'), tr('{n} pièces', {'n': '${_num('host_fee_coins', 50)}'})),
+        pr(tr('Par spectateur présent'), tr('+{n} pièces', {'n': '${_num('viewer_fee_coins', 50)}'})),
+        pr(tr('Par spectateur, salon audio'), tr('+{n} pièces', {'n': '${_num('viewer_fee_audio_coins', 13)}'})),
+        pr(tr('Par invité en vidéo, sans place payante'), tr('+{n} pièces', {'n': '${_num('stage_guest_fee_coins', 50)}'})),
+        pr(tr('Live sans caméra'), tr('Gratuit'), dashed: true),
       ]),
     );
   }
@@ -1481,13 +1478,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
 
   Widget _sw(bool v, ValueChanged<bool>? on) => Switch(value: v, onChanged: on, activeColor: Colors.white, activeTrackColor: const Color(0xFF158246));
 
-  /// Coût par minute d'une entrée offerte à 50 spectateurs (billet vidéo ÷ durée du billet).
-  int _offerCostPerMinute() {
-    final video = (((_minutes?['ticket_coins'] as Map?)?['video']) as num?)?.toInt() ?? 50;
-    return (50 * video / _num('ticket_minutes', 15)).round();
-  }
-
-  /// Lignes d'options de la maquette : essai, entrée offerte, supplément (mode billet), puis qualité HD, faible latence, scène et affichage.
+  /// Lignes d'options de la maquette : qualité HD, faible latence, scène et affichage (les spectateurs ne paient jamais les minutes : plus de billet).
   Widget _buildLiveRows() {
     final isAdmin = _liveRestrictions['isAdmin'] == true;
     final canHd = _liveRestrictions['canChooseHD'] == true || isAdmin;
@@ -1519,22 +1510,10 @@ class _CreateLivePageState extends State<CreateLivePage> {
           child: _row(tr('Aperçu'), _previewError ?? (_previewKind == null ? tr('Une image, ou une vidéo de 15 secondes en boucle') : (_previewKind == 'video' ? tr('Vidéo prête') : tr('Image prête'))),
               _previewUploading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : Text('${_previewKind == null ? tr('Choisir') : tr('Changer')} ›', style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Color(0xFF158246)))),
         ),
-      if (ticket && !_noCameraOn) ...[
-        _row(tr('Temps d\'essai gratuit'), tr('Avant le billet. Les minutes d\'essai sont à ta charge (environ {c} pièces par spectateur et par minute)', {'c': '${_num('trial_cost_per_minute', 3)}'}),
-            _stepper('Moins', 'Plus', tr('{n} min', {'n': '$_ticketTrial'}), _ticketTrial > 0 ? () => setState(() => _ticketTrial--) : null, _ticketTrial < _num('trial_max_minutes', 3) ? () => setState(() => _ticketTrial++) : null)),
-        _row(tr('Offrir l\'entrée à mes spectateurs'), tr('Je paie les billets à leur place (environ {n} pièces par minute pour 50 spectateurs)', {'n': '${_offerCostPerMinute()}'}),
-            _sw(_offerEntry, (v) => setState(() {
-                  _offerEntry = v;
-                  if (v) _ticketExtra = 0;
-                }))),
-        if (!_offerEntry)
-          _row(tr('Supplément pour moi'), tr('S\'ajoute au billet, il me revient'),
-              _stepper('Moins', 'Plus', _ticketExtra == 0 ? '0' : '+$_ticketExtra', _ticketExtra > 0 ? () => setState(() => _ticketExtra = (_ticketExtra - 10).clamp(0, 200)) : null, _ticketExtra < 200 ? () => setState(() => _ticketExtra = (_ticketExtra + 10).clamp(0, 200)) : null)),
-      ],
       if (!_noCameraOn) ...[
       _row(tr('Qualité HD (720p)'), canHd ? null : tr('Réservée à Gold'), _sw(_useHDQuality && canHd, canHd ? (v) => setState(() => _useHDQuality = v) : null)),
       _row(tr('Faible latence'), tr('Réactions plus rapides'), _sw(_useLowLatency && canLow, canLow ? (v) => setState(() => _useLowLatency = v) : null)),
-      _row(tr('Inviter sur scène'), tr('Le prix du billet passe à {n} si tes invités sont en vidéo', {'n': '${((_minutes?['ticket_coins'] as Map?)?['stage'] ?? 110)}'}), _sw(_allowStage, (v) => setState(() => _allowStage = v))),
+      _row(tr('Inviter sur scène'), ticket ? tr('+{n} pièces par quart d\'heure pour toi par invité en vidéo sans place payante', {'n': '${_num('stage_guest_fee_coins', 50)}'}) : null, _sw(_allowStage, (v) => setState(() => _allowStage = v))),
       ],
       GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -1640,7 +1619,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
           style: FilledButton.styleFrom(backgroundColor: _gold, foregroundColor: const Color(0xFF3A2C00), disabledBackgroundColor: _c.border, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25))),
           child: _isCreating
               ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5, color: Color(0xFF3A2C00)))
-              : Text(_ticketMode && _liveRestrictions['isAdmin'] != true ? tr('Passer en direct avec billet') : tr('Passer en direct'), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+              : Text(tr('Passer en direct'), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
         ),
       ),
     ]);
@@ -2240,7 +2219,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          tr('Passez à Premium pour améliorer la qualité'),
+                          tr('Passez à Gold pour améliorer la qualité'),
                           style: TextStyle(
                             color: Color(0xFFFDB813),
                             fontSize: 12,
@@ -2281,7 +2260,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  tr('Vous avez utilisé vos 2 lives gratuits ce mois.\nPassez à Premium pour des lives illimités.'),
+                  tr('Vous avez utilisé vos 2 lives gratuits ce mois.\nPassez à Gold pour des lives illimités.'),
                   style: TextStyle(color: _c.textSecondary),
                 ),
                 SizedBox(height: 12),
@@ -2586,16 +2565,16 @@ class _CreateLivePageState extends State<CreateLivePage> {
       final apiLive = await LivesApi.start(
         title: _titleController.text.trim(),
         coverUploadId: _coverUploadId,
-        durationMinutes: isAdmin ? 60 : 30,
+        durationMinutes: isAdmin || _game == 'quiz' ? 60 : 30,   // live de quiz : 1 heure (décision du 16/11/2026)
         isPaid: _isPaidLive && fee > 0,
         feeCoins: fee,
-        freeTrialMinutes: _ticketMode ? _ticketTrial : (_isPaidLive ? (int.tryParse(_freeTrialController.text) ?? 0) : 0),
+        freeTrialMinutes: _isPaidLive ? (int.tryParse(_freeTrialController.text) ?? 0) : 0,   // essai : seulement pour un live à entrée payante
         typeSession: _isShoppingLive ? 'shopping' : (_game.isNotEmpty ? _game : 'talk'),
-        offerEntry: _offerEntry,
+        offerEntry: false,
         audioOnly: _audioRoom,
         noCamera: _noCameraOn,
         previewUploadId: _previewWanted ? _previewUploadId : null,
-        ticketExtraCoins: _offerEntry ? 0 : _ticketExtra,
+        ticketExtraCoins: 0,
         options: {
           'stage': _allowStage,
           'display': _liveDisplay.toJson(),
@@ -2619,20 +2598,6 @@ class _CreateLivePageState extends State<CreateLivePage> {
         }
       }
       final String liveId = '${apiLive['id']}';
-      // Gratuit du mois épuisé : l'hôte paie d'abord ses frais de diffusion (sinon le live s'arrête tout seul au bout de 2 minutes)
-      if (apiLive['ticket_mode'] == true) {
-        final fee = _num('host_fee_coins', 50);
-        final paid = fee <= 0 || await CoinCheckout.pay(context, kind: 'live_host_fee', refId: liveId, coins: fee, label: context.tr('Frais de diffusion'));
-        if (!paid) {
-          try {
-            await LivesApi.end(liveId);
-          } catch (_) {}
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Live annulé : les frais de diffusion n\'ont pas été payés.'))));
-          }
-          return;
-        }
-      }
       final PostLive newLive = postLiveFromApi(
         apiLive,
         hostName: authProvider.loginUserData.pseudo ?? 'Utilisateur',
@@ -2676,6 +2641,29 @@ class _CreateLivePageState extends State<CreateLivePage> {
     } catch (e) {
       printVm("❌ Erreur création live: $e");
       // Quota mensuel gratuit atteint (appliqué par le serveur) : message clair, pas d'erreur technique
+      if (e is ApiException && e.code == 'insufficient_coins' && e.details['no_camera_possible'] == true && mounted) {
+        final choice = await showDialog<String>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(ctx.tr('Minutes vidéo gratuites épuisées')),
+            content: Text(_noCameraAllowed
+                ? ctx.tr('Ce mois-ci, la vidéo est à ta charge et il te manque des pièces. Tu peux lancer ton live sans caméra : c\'est gratuit, tes spectateurs gardent la discussion, les cadeaux et les jeux.')
+                : ctx.tr('Ce mois-ci, la vidéo est à ta charge et il te manque des pièces. Recharge tes pièces pour lancer ton live.')),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, 'recharge'), child: Text(ctx.tr('Recharger'))),
+              if (_noCameraAllowed) FilledButton(onPressed: () => Navigator.pop(ctx, 'no_camera'), child: Text(ctx.tr('Lancer sans caméra'))),
+            ],
+          ),
+        );
+        if (!mounted) return;
+        if (choice == 'no_camera') {
+          setState(() => _noCamera = true);   // l'hôte relance : ligne « Sans caméra » cochée
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('« Sans caméra » est activé : touche « Passer en direct ».'))));
+        } else if (choice == 'recharge') {
+          await CoinCheckout.insufficient(context, (e.details['coins'] as num?)?.toInt() ?? 50);
+        }
+        return;
+      }
       if (e is ApiException && e.code == 'monthly_limit') {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(context.tr('Tu as utilisé tes lives gratuits de ce mois. Passe à Gold pour des lives illimités.')), backgroundColor: Colors.orange, duration: const Duration(seconds: 5)),

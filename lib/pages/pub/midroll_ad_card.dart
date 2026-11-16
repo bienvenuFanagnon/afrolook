@@ -672,7 +672,7 @@ class _MidrollAdCardState extends State<MidrollAdCard> {
                         nav.push(MaterialPageRoute(builder: (_) => AbonnementScreen(initialTab: 1)));
                       },
                       child: const Text(
-                        'Ne plus voir de pubs → Premium',
+                        'Ne plus voir de pubs : Gold',
                         style: TextStyle(
                           color: Colors.white38,
                           fontSize: 11,

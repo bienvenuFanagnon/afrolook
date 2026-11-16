@@ -289,4 +289,19 @@ void main() {
     expect(find.byKey(const ValueKey('quiz_ranking_copy')), findsOneWidget);
     expect(QuizRankingSheet.asText(t.element(find.byType(QuizRankingSheet)), data).split('\n').length, 21);
   });
+
+  test('durée d\'un quiz enchaîné : temps de chaque question + 11 s (résultat et préparation)', () {
+    expect(quizListSeconds([15, 30]), 67);
+    expect(quizListSeconds(List.filled(10, 15)), 260);
+  });
+
+  testWidgets('avertissement : le quiz dépasse le temps qui reste au live', (t) async {
+    await pump(t, Builder(builder: (ctx) => Column(children: [
+          quizDurationNote(ctx, 50 * 60, 20 * 60),
+          quizDurationNote(ctx, 5 * 60, 20 * 60),
+        ])));
+    expect(find.byKey(const ValueKey('quiz_duration_over')), findsOneWidget);
+    expect(find.byKey(const ValueKey('quiz_duration_ok')), findsOneWidget);
+    expect(find.textContaining('il ne reste que 20 min'), findsOneWidget);
+  });
 }

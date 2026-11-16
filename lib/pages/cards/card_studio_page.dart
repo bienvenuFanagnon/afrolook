@@ -430,7 +430,7 @@ class _CardStudioPageState extends State<CardStudioPage> {
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(ctx.tr('Mes cartes'), style: TextStyle(color: c.textPrimary, fontSize: 17, fontWeight: FontWeight.w800)),
             const SizedBox(height: 10),
-            _line(c, ctx.tr('Plan'), q.plan == 'gold' ? 'Gold 👑' : (q.plan == 'premium' ? 'Premium ⭐' : ctx.tr('Gratuit'))),
+            _line(c, ctx.tr('Plan'), q.plan == 'free' ? ctx.tr('Gratuit') : 'Gold'),
             if (q.plan != 'free') ...[
               _line(c, ctx.tr('Captures ce mois-ci'), '${q.captures} / ${q.capturesMax}'),
               _line(c, ctx.tr('Publications ce mois-ci'), '${q.publishes} / ${q.publishesMax}'),

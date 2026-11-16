@@ -20,7 +20,6 @@ class _LiveSettingsAdminPageState extends State<LiveSettingsAdminPage> {
     'commission_percent': ['Commission sur les ventes (%)', "Part gardée par l'application quand la vente est terminée (0 à 30)."],
     'trusted_commission_percent': ['Commission « vendeur fiable » (%)', 'Taux réduit pour les vendeurs fiables. Vide = même taux pour tous.'],
     'free_monthly_lives': ['Lives par mois sans abonnement', 'Quota gratuit.'],
-    'premium_monthly_lives': ['Lives par mois avec Premium', 'Gold et l\'équipe sont illimités.'],
     'extension_minutes': ['Durée d\'une prolongation (minutes)', '5 à 180.'],
     'extension_min_xof': ['Prix minimum d\'une prolongation (F)', 'Prix sans spectateur.'],
     'extension_per_viewer_xof': ['Ajout par spectateur (F)', 'Coût vidéo : environ 134 F par spectateur et par heure.'],

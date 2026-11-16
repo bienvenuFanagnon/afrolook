@@ -201,8 +201,7 @@ class _CardTutorialPageState extends State<CardTutorialPage> {
       decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: c.border)),
       child: Column(children: [
         line(context.tr('Gratuit'), context.tr('1 carte offerte par mois, puis pièces ou 1 pub')),
-        line('Premium ⭐', context.tr('2 captures + 3 publications par mois')),
-        line('Gold 👑', context.tr('5 captures + 20 publications par mois')),
+        line('Gold', context.tr('5 captures + 20 publications par mois')),
         line(context.tr('Pass Studio'), context.tr('tout à volonté pendant 30 jours')),
       ]),
     );

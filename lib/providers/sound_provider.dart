@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/music_queue.dart';
 
 class SoundProvider extends ChangeNotifier {
-  bool _isMuted = true; // Par défaut : son coupé (comme Instagram)
+  bool _isMuted = false; // Par défaut : son activé (décision du 16/11/2026) ; le choix de la personne est retenu dès qu'elle touche le bouton
   late SharedPreferences _prefs;
 
   SoundProvider() {
@@ -16,7 +16,7 @@ class SoundProvider extends ChangeNotifier {
 
   Future<void> _loadSoundPreference() async {
     _prefs = await SharedPreferences.getInstance();
-    _isMuted = _prefs.getBool('global_sound_muted') ?? true;
+    _isMuted = _prefs.getBool('global_sound_muted') ?? false;
     notifyListeners();
   }
 

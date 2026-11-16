@@ -80,16 +80,17 @@ void main() {
 
   testWidgets('défi à plusieurs : les meilleurs donateurs de chaque présentateur s\'affichent sous sa barre', (tester) async {
     await tester.pumpWidget(MaterialApp(home: Scaffold(body: LiveGameCard(game: LiveGame(challenge()), isHost: false, target: null, onTarget: (_) {}, onVote: (_) {}))));
-    expect(find.textContaining('🥇 @zoe 200'), findsOneWidget);
-    expect(find.textContaining('🥈 @yao 100'), findsOneWidget);
-    expect(find.textContaining('🥇 @max 100'), findsOneWidget);
+    expect(find.textContaining('@zoe 200', findRichText: true), findsOneWidget);
+    expect(find.textContaining('@yao 100', findRichText: true), findsOneWidget);
+    expect(find.textContaining('@max 100', findRichText: true), findsOneWidget);
+    expect(find.byIcon(Icons.emoji_events_rounded), findsWidgets);   // médailles en icônes, jamais d'emoji
   });
 
   testWidgets('duel : les meilleurs donateurs s\'affichent en deux colonnes sous les totaux', (tester) async {
     final duel = challenge()..['kind'] = 'duel';
     await tester.pumpWidget(MaterialApp(home: Scaffold(body: LiveGameCard(game: LiveGame(duel), isHost: false, target: null, onTarget: (_) {}, onVote: (_) {}))));
-    expect(find.text('🥇 @zoe 200'), findsOneWidget);
-    expect(find.text('🥇 @max 100'), findsOneWidget);
+    expect(find.textContaining('@zoe 200', findRichText: true), findsOneWidget);
+    expect(find.textContaining('@max 100', findRichText: true), findsOneWidget);
   });
 
   testWidgets('historique des jeux : un tirage au sort montre le gagnant, le lot et le nombre de personnes', (tester) async {

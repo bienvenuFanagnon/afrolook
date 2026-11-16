@@ -71,11 +71,15 @@ class LiveTicketOffer {
 }
 
 /// Frais de diffusion de l'hôte (mode billet) : payés par tranches de 15 minutes, le live s'arrête sinon.
+/// Frais de l'hôte pour la vidéo, une fois les minutes gratuites d'Afrolook épuisées (les spectateurs ne paient jamais) :
+/// 50 pièces par quart d'heure + 50 par spectateur présent, prélevées automatiquement.
 class LiveHostFee {
-  const LiveHostFee({required this.coins, this.paidUntil});
+  const LiveHostFee({required this.coins, this.paidUntil, this.viewers = 0, this.perViewer = 0});
 
   final int coins;
   final DateTime? paidUntil;
+  final int viewers;
+  final int perViewer;
 
   int get secondsLeft {
     final e = paidUntil;
@@ -89,7 +93,10 @@ class LiveHostFee {
     if (json is! Map) return null;
     final until = json['paid_until'];
     final coins = json['coins'];
+    int n(Object? v) => v is num ? v.toInt() : int.tryParse('$v') ?? 0;
     return LiveHostFee(
+      viewers: n(json['viewers']),
+      perViewer: n(json['per_viewer']),
       coins: coins is num ? coins.toInt() : int.tryParse('$coins') ?? 0,
       paidUntil: until is String && until.isNotEmpty ? DateTime.tryParse(until)?.toLocal() : null,
     );
