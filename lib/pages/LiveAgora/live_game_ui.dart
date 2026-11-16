@@ -165,7 +165,11 @@ class LiveGameCard extends StatelessWidget {
         Text(isDuel ? context.tr('Duel') : context.tr('Défi à plusieurs'), style: const TextStyle(color: _yellow, fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: .6)),
         const Spacer(),
         if (game.active && game.endsAt != null) _Countdown(game: game),
-        if (ended) Text(w == null ? context.tr('Égalité') : '🏆 @${ps.where((p) => p.id == w).map((p) => p.username).firstOrNull ?? ''}', style: const TextStyle(color: Color(0xFF69F0AE), fontSize: 12, fontWeight: FontWeight.w800)),
+        if (ended)
+          Text.rich(TextSpan(children: [
+            if (w != null) LiveGamesHistorySheet._medalSpan(1),
+            TextSpan(text: w == null ? context.tr('Égalité') : '@${ps.where((p) => p.id == w).map((p) => p.username).firstOrNull ?? ''}'),
+          ]), style: const TextStyle(color: Color(0xFF69F0AE), fontSize: 12, fontWeight: FontWeight.w800)),
       ]),
       if (!isDuel && game.goal > 0) Padding(padding: const EdgeInsets.only(top: 2), child: Text(context.tr('Le premier à {n} pièces gagne', {'n': CoinCheckout.fmt(game.goal)}), style: const TextStyle(color: Colors.white70, fontSize: 11.5))),
       const SizedBox(height: 8),
@@ -373,13 +377,13 @@ class LiveGameCard extends StatelessWidget {
       ],
       if (done)
         for (final w in game.winners)
-          Padding(padding: const EdgeInsets.symmetric(vertical: 2), child: Text('${['🥇', '🥈', '🥉'][((w as Map)['rank'] as int) - 1]}  ${(w)['coins']} pcs', style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700))),
+          Padding(padding: const EdgeInsets.symmetric(vertical: 2), child: Text.rich(TextSpan(children: [LiveGamesHistorySheet._medalSpan(((w as Map)['rank'] as int).clamp(1, 3)), TextSpan(text: ' ${(w)['coins']} pcs')]), style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700))),
       if (ranking.isNotEmpty) ...[
         const SizedBox(height: 2),
         Text(context.tr('Classement').toUpperCase(), style: const TextStyle(color: _yellow, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: .6)),
         for (var i = 0; i < ranking.length && i < 3; i++)
           Row(children: [
-            Text(['🥇', '🥈', '🥉'][i]),
+            LiveGamesHistorySheet._medal(i + 1),
             const SizedBox(width: 6),
             Expanded(child: Text('${(ranking[i] as Map)['username'] ?? ''}', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700))),
             Text('${(ranking[i] as Map)['points']} pts', style: const TextStyle(color: Colors.white70, fontSize: 11.5)),
@@ -771,11 +775,88 @@ class LiveQuizHistorySheet extends StatelessWidget {
 /// Historique de TOUS les jeux du live (duel, défi, sondage, conte, quiz), le plus récent d'abord : résultat, gagnant, pièces reçues par chaque présentateur.
 /// Les gains d'un duel ou d'un défi sont les cadeaux reçus (70 %), versés sur le compte « pièces gagnées » de CHAQUE présentateur ; le gagnant n'a pas de lot en plus.
 class LiveGamesHistorySheet extends StatelessWidget {
-  const LiveGamesHistorySheet({super.key, required this.future, this.onQuiz});
+  const LiveGamesHistorySheet({super.key, required this.future, this.onQuiz, this.onQuizRanking});
   final Future<List<Map<String, dynamic>>> future;
 
   /// Ouvre les questions et réponses du quiz (feuille dédiée).
   final VoidCallback? onQuiz;
+
+  /// Ouvre le classement complet d'un quiz (les 20 premiers, ma place) : historique du 16/11/2026.
+  final void Function(String gameId)? onQuizRanking;
+
+  static const _medals = [Color(0xFFFFC83D), Color(0xFFC9D1DB), Color(0xFFD08A4E)];
+
+  /// Médaille du rang 1 à 3 (icône dédiée, jamais d'emoji).
+  static Widget _medal(int rank, {double size = 16}) => Icon(Icons.emoji_events_rounded, size: size, color: _medals[(rank - 1).clamp(0, 2)]);
+
+  static InlineSpan _medalSpan(int rank) => WidgetSpan(alignment: PlaceholderAlignment.middle, child: Padding(padding: const EdgeInsets.only(right: 2), child: _medal(rank, size: 13)));
+
+  /// Classement d'un conte : les personnes qui l'ont le plus soutenu (pièces envoyées pour voter).
+  static void _showStoryRanking(BuildContext context, LiveGame g) {
+    final rows = [for (final r in (g.raw['ranking'] as List? ?? const [])) if (r is Map) r];
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        key: const ValueKey('story_ranking_sheet'),
+        height: MediaQuery.of(ctx).size.height * .7,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFF26223A), Color(0xFF15121F)]),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
+        ),
+        child: Column(children: [
+          const SizedBox(height: 8),
+          Container(width: 38, height: 4, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(99))),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 8, 4),
+            child: Row(children: [
+              const Icon(Icons.leaderboard_rounded, color: _amber, size: 22),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(ctx.tr('Classement du conte'), style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
+                  if (g.question.isNotEmpty) Text(g.question, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white60, fontSize: 12)),
+                ]),
+              ),
+              IconButton(tooltip: ctx.tr('Fermer'), icon: const Icon(Icons.close_rounded, color: Colors.white54), onPressed: () => Navigator.pop(ctx)),
+            ]),
+          ),
+          Expanded(
+            child: ListView.separated(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              itemCount: rows.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (_, i) {
+                final r = rows[i];
+                final rank = (r['rank'] as num?)?.toInt() ?? i + 1;
+                final avatar = '${r['avatar_url'] ?? ''}';
+                return Container(
+                  key: ValueKey('story_rank_$rank'),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(color: Colors.white.withOpacity(.06), borderRadius: BorderRadius.circular(16)),
+                  child: Row(children: [
+                    SizedBox(width: 32, child: rank <= 3 ? _medal(rank, size: 22) : Text('$rank', textAlign: TextAlign.center, style: const TextStyle(color: Colors.white70, fontSize: 15, fontWeight: FontWeight.w900))),
+                    const SizedBox(width: 8),
+                    CircleAvatar(
+                      radius: 17,
+                      backgroundColor: Colors.white12,
+                      backgroundImage: avatar.isNotEmpty ? NetworkImage(avatar) : null,
+                      onBackgroundImageError: avatar.isNotEmpty ? (_, __) {} : null,
+                      child: avatar.isEmpty ? const Icon(Icons.person_rounded, color: Colors.white54, size: 19) : null,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text('@${r['username'] ?? ''}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800))),
+                    Text(ctx.tr('{n} pièces', {'n': CoinCheckout.fmt((r['coins'] as num?)?.toInt() ?? 0)}), style: const TextStyle(color: _yellow, fontSize: 13, fontWeight: FontWeight.w900)),
+                  ]),
+                );
+              },
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
 
   static String _time(String? iso) {
     final d = DateTime.tryParse(iso ?? '')?.toLocal();
@@ -839,7 +920,10 @@ class LiveGamesHistorySheet extends StatelessWidget {
       if (!g.active) {
         lines.add(Padding(
           padding: const EdgeInsets.only(bottom: 4),
-          child: Text(w == null ? ctx.tr('Égalité : pas de gagnant') : '🏆 ${ctx.tr('Gagnant')} : @${ps.where((p) => p.id == w).map((p) => p.username).firstOrNull ?? ''}', style: const TextStyle(color: Color(0xFF69F0AE), fontWeight: FontWeight.w800, fontSize: 13.5)),
+          child: Text.rich(TextSpan(children: [
+            if (w != null) _medalSpan(1),
+            TextSpan(text: w == null ? ctx.tr('Égalité : pas de gagnant') : '${ctx.tr('Gagnant')} : @${ps.where((p) => p.id == w).map((p) => p.username).firstOrNull ?? ''}'),
+          ]), style: const TextStyle(color: Color(0xFF69F0AE), fontWeight: FontWeight.w800, fontSize: 13.5)),
         ));
       }
       for (final p in ps) {
@@ -849,7 +933,7 @@ class LiveGamesHistorySheet extends StatelessWidget {
           child: Row(children: [
             StageAvatarMini(user: p),
             const SizedBox(width: 8),
-            Expanded(child: Text('@${p.username}${p.id == w ? ' 🏆' : ''}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13))),
+            Expanded(child: Text.rich(TextSpan(children: [TextSpan(text: '@${p.username} '), if (p.id == w) _medalSpan(1)]), maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13))),
             Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
               Text('${CoinCheckout.fmt(g.score(p.id))} ${ctx.tr('pcs reçues en cadeaux')}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
               Text('+${CoinCheckout.fmt(e.earned)} ${ctx.tr('sur son compte')}', style: const TextStyle(color: _amber, fontSize: 11, fontWeight: FontWeight.w800)),
@@ -860,7 +944,10 @@ class LiveGamesHistorySheet extends StatelessWidget {
         if (tg.isNotEmpty) {
           lines.add(Padding(
             padding: const EdgeInsets.only(top: 2, left: 36),
-            child: Text(ctx.tr('Meilleurs donateurs') + ' : ' + [for (var i = 0; i < tg.length && i < 3; i++) '${['🥇', '🥈', '🥉'][i]} @${tg[i].username} ${CoinCheckout.fmt(tg[i].coins)}'].join('  '), style: const TextStyle(color: Color(0xFFFFD27A), fontSize: 10.5)),
+            child: Text.rich(TextSpan(children: [
+              TextSpan(text: '${ctx.tr('Meilleurs donateurs')} : '),
+              for (var i = 0; i < tg.length && i < 3; i++) ...[_medalSpan(i + 1), TextSpan(text: '@${tg[i].username} ${CoinCheckout.fmt(tg[i].coins)}  ')],
+            ]), style: const TextStyle(color: Color(0xFFFFD27A), fontSize: 10.5)),
           ));
         }
       }
@@ -870,7 +957,10 @@ class LiveGamesHistorySheet extends StatelessWidget {
       final w = (g.raw['winner'] as Map?)?['username'];
       lines.add(Padding(
         padding: const EdgeInsets.only(top: 4),
-        child: Text('🎉 @${w ?? ''} ${ctx.tr('gagne')} ${CoinCheckout.fmt((res['coins'] as num?)?.toInt() ?? 0)} ${ctx.tr('pièces')}', style: const TextStyle(color: Color(0xFF69F0AE), fontWeight: FontWeight.w800, fontSize: 13)),
+        child: Text.rich(TextSpan(children: [
+          const WidgetSpan(alignment: PlaceholderAlignment.middle, child: Padding(padding: EdgeInsets.only(right: 4), child: Icon(Icons.celebration_rounded, size: 15, color: Color(0xFF69F0AE)))),
+          TextSpan(text: '@${w ?? ''} ${ctx.tr('gagne')} ${CoinCheckout.fmt((res['coins'] as num?)?.toInt() ?? 0)} ${ctx.tr('pièces')}'),
+        ]), style: const TextStyle(color: Color(0xFF69F0AE), fontWeight: FontWeight.w800, fontSize: 13)),
       ));
       lines.add(Padding(
         padding: const EdgeInsets.only(top: 3),
@@ -883,14 +973,72 @@ class LiveGamesHistorySheet extends StatelessWidget {
       for (var i = 0; i < opts.length; i++) {
         final v = i < votes.length ? votes[i] : 0;
         final win = !g.active && g.winnerOption == i;
-        lines.add(Padding(padding: const EdgeInsets.only(top: 4), child: Text('${win ? '✅ ' : ''}${opts[i]} · $v ${g.kind == 'story' ? ctx.tr('pièces') : ctx.tr('voix')}${total > 0 ? ' (${(v * 100 / total).round()} %)' : ''}', style: TextStyle(color: win ? const Color(0xFF69F0AE) : Colors.white70, fontSize: 12.5, fontWeight: win ? FontWeight.w800 : FontWeight.w500))));
+        lines.add(Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text.rich(TextSpan(children: [
+            if (win) const WidgetSpan(alignment: PlaceholderAlignment.middle, child: Padding(padding: EdgeInsets.only(right: 4), child: Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF69F0AE)))),
+            TextSpan(text: '${opts[i]} · $v ${g.kind == 'story' ? ctx.tr('pièces') : ctx.tr('voix')}${total > 0 ? ' (${(v * 100 / total).round()} %)' : ''}'),
+          ]), style: TextStyle(color: win ? const Color(0xFF69F0AE) : Colors.white70, fontSize: 12.5, fontWeight: win ? FontWeight.w800 : FontWeight.w500)),
+        ));
       }
       if (g.question.isNotEmpty) lines.insert(0, Text(g.question, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13.5)));
-    } else if (g.kind == 'quiz') {
-      for (final w in g.winners.cast<Map>()) {
-        lines.add(Padding(padding: const EdgeInsets.only(top: 4), child: Text('${['🥇', '🥈', '🥉'][((w['rank'] as num?)?.toInt() ?? 1).clamp(1, 3) - 1]} @${w['username'] ?? ''} · +${w['coins']} ${ctx.tr('pièces')}', style: const TextStyle(color: Colors.white, fontSize: 12.5))));
+      final ranking = [for (final r in (g.raw['ranking'] as List? ?? const [])) if (r is Map) r];
+      if (g.kind == 'story' && ranking.isNotEmpty) {
+        lines.add(Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Text.rich(TextSpan(children: [
+            TextSpan(text: '${ctx.tr('Meilleurs soutiens')} : '),
+            for (var i = 0; i < ranking.length && i < 3; i++) ...[_medalSpan(i + 1), TextSpan(text: '@${ranking[i]['username'] ?? ''} ${CoinCheckout.fmt((ranking[i]['coins'] as num?)?.toInt() ?? 0)}  ')],
+          ]), style: const TextStyle(color: Color(0xFFFFD27A), fontSize: 11.5)),
+        ));
+        lines.add(Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            key: ValueKey('story_ranking_${g.id}'),
+            onPressed: () => _showStoryRanking(ctx, g),
+            icon: const Icon(Icons.leaderboard_rounded, size: 17, color: _amber),
+            label: Text(ctx.tr('Voir le classement'), style: const TextStyle(color: _amber, fontWeight: FontWeight.w800)),
+          ),
+        ));
       }
-      if (onQuiz != null) lines.add(Align(alignment: Alignment.centerLeft, child: TextButton(onPressed: onQuiz, child: Text(ctx.tr('Voir les questions et les réponses')))));
+    } else if (g.kind == 'quiz') {
+      final podium = [for (final r in (g.raw['podium'] as List? ?? const [])) if (r is Map) r];
+      final players = (g.raw['players'] as num?)?.toInt();
+      if (podium.isNotEmpty) {
+        if (players != null) lines.add(Padding(padding: const EdgeInsets.only(top: 2), child: Text(ctx.tr('{n} joueurs', {'n': players}), style: const TextStyle(color: Colors.white54, fontSize: 11.5))));
+        for (final r in podium) {
+          final rank = (r['rank'] as num?)?.toInt() ?? 1;
+          final coins = (r['coins'] as num?)?.toInt() ?? 0;
+          lines.add(Padding(
+            key: ValueKey('quiz_podium_${g.id}_$rank'),
+            padding: const EdgeInsets.only(top: 4),
+            child: Row(children: [
+              _medal(rank),
+              const SizedBox(width: 6),
+              Expanded(child: Text('@${r['username'] ?? ''}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700))),
+              Text('${ctx.tr('{n} pts', {'n': CoinCheckout.fmt((r['points'] as num?)?.toInt() ?? 0)})}${coins > 0 ? ' · +${CoinCheckout.fmt(coins)} ${ctx.tr('pièces')}' : ''}', style: const TextStyle(color: _yellow, fontSize: 12, fontWeight: FontWeight.w800)),
+            ]),
+          ));
+        }
+      } else {
+        // anciens quiz (avant le classement par points) : gagnants de la cagnotte
+        for (final w in g.winners.cast<Map>()) {
+          lines.add(Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text.rich(TextSpan(children: [_medalSpan(((w['rank'] as num?)?.toInt() ?? 1).clamp(1, 3)), TextSpan(text: '@${w['username'] ?? ''} · +${w['coins']} ${ctx.tr('pièces')}')]), style: const TextStyle(color: Colors.white, fontSize: 12.5)),
+          ));
+        }
+      }
+      lines.add(Wrap(spacing: 4, children: [
+        if (onQuizRanking != null && podium.isNotEmpty)
+          TextButton.icon(
+            key: ValueKey('quiz_ranking_${g.id}'),
+            onPressed: () => onQuizRanking!(g.id),
+            icon: const Icon(Icons.leaderboard_rounded, size: 17, color: _amber),
+            label: Text(ctx.tr('Voir le classement'), style: const TextStyle(color: _amber, fontWeight: FontWeight.w800)),
+          ),
+        if (onQuiz != null) TextButton(onPressed: onQuiz, child: Text(ctx.tr('Voir les questions et les réponses'))),
+      ]));
     }
     return Container(
       margin: const EdgeInsets.only(top: 12),

@@ -1,4 +1,5 @@
 import 'live_quiz_ui.dart';
+import 'quiz_series_api.dart';
 import 'package:afrotok/ads/rewards_service.dart';
 import 'package:afrotok/pages/rewards/rewards_page.dart';
 import 'package:afrotok/l10n/tr.dart';
@@ -81,6 +82,9 @@ class _CreateLivePageState extends State<CreateLivePage> {
   /// Réglages du quiz à cagnotte (pour tous) ; la liste préparée n'est envoyée que pour un Gold (le serveur le vérifie aussi).
   final QuizSettings _quizSettings = QuizSettings();
   bool _isGold = false;
+  /// Questions Afrolook (thèmes, quiz gratuits restants ce mois-ci) : choix possible dès la création ; null tant que le serveur n'a pas répondu.
+  Map<String, dynamic>? _quizPacks;
+  final QuizSeriesStore _quizSeries = quizSeriesApiStore();
   String _game = '';                                    // duel ou défi à plusieurs (jeux de live), vide pour une discussion ou une vente
   String _audioBehavior = 'reduce';
   int _audioReductionPercent = 50;
@@ -132,6 +136,7 @@ class _CreateLivePageState extends State<CreateLivePage> {
     });
     _loadLiveRestrictions();
     _loadMinutes();
+    LivesApi.quizPacks().then((v) { if (mounted) setState(() => _quizPacks = v); }).catchError((_) {});
     _pickedArticles.addAll(widget.articleIds);
     _initPreview();
     if (_isShoppingLive) _loadArticles();
@@ -1498,6 +1503,24 @@ class _CreateLivePageState extends State<CreateLivePage> {
             settings: _quizSettings,
             isGold: _isGold,
             onChanged: () => setState(() {}),
+            onUpgrade: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AbonnementScreen())),
+            series: _quizSeries,
+          ),
+        ),
+      // questions Afrolook choisies dès la création (16/11/2026) : dans le live, elles sont prêtes à lancer
+      if (_game == 'quiz' && _quizPacks != null)
+        Padding(
+          key: const ValueKey('quiz_packs_create'),
+          padding: const EdgeInsets.only(bottom: 10),
+          child: QuizPacksBox(
+            packs: _quizPacks!,
+            theme: _quizSettings.pack?.theme ?? 'mix',
+            count: _quizSettings.pack?.count ?? 10,
+            pot: _quizSettings.pot,
+            enabled: _quizSettings.pack != null,
+            onToggle: (v) => setState(() => _quizSettings.pack = v ? (theme: 'mix', count: 10) : null),
+            onTheme: (v) => setState(() => _quizSettings.pack = (theme: v, count: _quizSettings.pack?.count ?? 10)),
+            onCount: (v) => setState(() => _quizSettings.pack = (theme: _quizSettings.pack?.theme ?? 'mix', count: v)),
             onUpgrade: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AbonnementScreen())),
           ),
         ),

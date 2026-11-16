@@ -171,7 +171,8 @@ void main() {
     addTearDown(t.view.reset);
     await t.pumpWidget(MaterialApp(locale: const Locale('fr'), supportedLocales: const [Locale('fr')], localizationsDelegates: GlobalMaterialLocalizations.delegates, home: Scaffold(body: panel(0))));
     final full = t.getSize(find.byType(LiveQuizPanel)).height;
-    expect(full, lessThan(310));   // environ un tiers de l'écran : la vidéo, la discussion et les cadeaux restent visibles
+    // 320 : la police des tests est plus large que celle d'un téléphone, « Tanzanie » y passe sur 2 lignes (une réponse n'est plus coupée par « … » depuis le 16/11/2026)
+    expect(full, lessThan(320));   // environ un tiers de l'écran : la vidéo, la discussion et les cadeaux restent visibles
     // ignore: avoid_print
     print('hauteur du quiz avec 10 choix : $full');
     await t.tap(find.byKey(const ValueKey('quiz_reduce')));
@@ -304,6 +305,28 @@ void main() {
     expect(find.byKey(const ValueKey('quiz_duration_over')), findsOneWidget);
     expect(find.byKey(const ValueKey('quiz_duration_ok')), findsOneWidget);
     expect(find.textContaining('il ne reste que 20 min'), findsOneWidget);
+  });
+
+  // 16/11/2026 : une réponse longue s'affichait coupée par « … » ; elle s'affiche maintenant en entier, sur plusieurs lignes
+  testWidgets('réponse longue : affichée en entier sur plusieurs lignes, sans « … », cases de la même rangée à la même hauteur', (t) async {
+    t.view.physicalSize = const Size(400, 1600);
+    t.view.devicePixelRatio = 1;
+    addTearDown(t.view.reset);
+    const long = "La République démocratique du Congo, deuxième plus grand pays d'Afrique";
+    await t.pumpWidget(MaterialApp(locale: const Locale('fr'), supportedLocales: const [Locale('fr')], localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        home: Scaffold(body: SingleChildScrollView(child: LiveQuizPanel(game: game({'stage': 'answer', 'left': 18, 'seconds': 20, 'pot': 0, 'text': 'Quel pays ?', 'options': [long, 'Togo', 'Ghana', 'Bénin']}), isHost: false, onAnswer: (_) async => true)))));
+    await t.pump();
+    final txt = t.widget<Text>(find.descendant(of: find.byKey(const ValueKey('quiz_opt_0')), matching: find.text(long)));
+    expect(txt.overflow, isNot(TextOverflow.ellipsis));
+    expect(txt.maxLines, isNull);
+    final h0 = t.getSize(find.byKey(const ValueKey('quiz_opt_0'))).height;
+    final h1 = t.getSize(find.byKey(const ValueKey('quiz_opt_1'))).height;
+    final h2 = t.getSize(find.byKey(const ValueKey('quiz_opt_2'))).height;
+    expect(h0, greaterThan(40), reason: 'plusieurs lignes');
+    expect(h1, h0, reason: 'même rangée, même hauteur');
+    expect(h2, lessThan(h0), reason: 'rangée suivante, réponses courtes');
+    expect(t.takeException(), isNull);
+    await close(t);
   });
 
   // 16/11/2026 : en mode clair, les cases de choix étaient blanches avec un texte blanc (couleur du thème de l'application) et les cadres restaient sombres

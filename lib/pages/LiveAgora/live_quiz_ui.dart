@@ -141,9 +141,15 @@ class QuizSettings {
   String theme;
   final List<QuizQ> questions;
 
+  /// Questions Afrolook choisies dès la création du live (16/11/2026) : thème et nombre ; null = aucune.
+  QuizPackPick? pack;
+
   int get listCost => questions.fold<int>(0, (a, q) => a + q.cost);
 
-  Map<String, dynamic> toJson() => {'winners': winners, 'seconds': seconds, 'pot': pot, 'theme': theme, 'questions': [for (final q in questions) q.toJson()]};
+  Map<String, dynamic> toJson() => {
+        'winners': winners, 'seconds': seconds, 'pot': pot, 'theme': theme, 'questions': [for (final q in questions) q.toJson()],
+        if (pack != null) 'pack': {'theme': pack!.theme, 'count': pack!.count},
+      };
 
   static QuizSettings fromOptions(Object? options) {
     final q = options is Map ? options['quiz'] : null;
@@ -154,8 +160,45 @@ class QuizSettings {
       pot: (q['pot'] as num?)?.toInt() ?? 0,
       theme: '${q['theme'] ?? 'scene'}',
       questions: [for (final x in (q['questions'] as List? ?? const [])) if (QuizQ.fromJson(x) != null) QuizQ.fromJson(x)!],
+    )..pack = q['pack'] is Map && (q['pack'] as Map)['theme'] is String && (q['pack'] as Map)['count'] is num
+        ? (theme: (q['pack'] as Map)['theme'] as String, count: ((q['pack'] as Map)['count'] as num).toInt())
+        : null;
+  }
+}
+
+/// Série de questions enregistrée par l'hôte (Gold) pour la réutiliser dans d'autres quiz (16/11/2026).
+class QuizSeriesItem {
+  QuizSeriesItem({required this.id, required this.name, required this.questions});
+
+  final String id;
+  final String name;
+  final List<QuizQ> questions;
+
+  static QuizSeriesItem? fromJson(Object? j) {
+    if (j is! Map || j['id'] == null) return null;
+    return QuizSeriesItem(
+      id: '${j['id']}',
+      name: '${j['name'] ?? ''}',
+      questions: [for (final x in (j['questions'] as List? ?? const [])) if (QuizQ.fromJson(x) != null) QuizQ.fromJson(x)!],
     );
   }
+}
+
+/// Refus lisible du serveur (limite de 20 séries, Gold nécessaire…).
+class QuizSeriesError implements Exception {
+  QuizSeriesError(this.message);
+  final String message;
+  @override
+  String toString() => message;
+}
+
+/// Accès aux séries enregistrées (API) ; injecté pour pouvoir tester sans serveur. [save] avec un identifiant = mise à jour.
+class QuizSeriesStore {
+  const QuizSeriesStore({required this.list, required this.save, required this.delete});
+
+  final Future<List<QuizSeriesItem>> Function() list;
+  final Future<QuizSeriesItem> Function(String? id, String name, List<QuizQ> questions) save;
+  final Future<void> Function(String id) delete;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -612,13 +655,28 @@ class _LiveQuizPanelState extends State<LiveQuizPanel> {
       ]),
       const SizedBox(height: 8),
       LayoutBuilder(builder: (_, box) {
-        // 2 colonnes ; 3 quand les réponses sont toutes courtes (6 lettres ou moins) ; cases plus basses au-delà de 6 choix
+        // 2 colonnes ; 3 quand les réponses sont toutes courtes (6 lettres ou moins) ; cases plus basses au-delà de 6 choix.
+        // Une réponse longue s'affiche EN ENTIER sur plusieurs lignes (16/11/2026 : plus de « … ») ; les cases d'une même rangée gardent la même hauteur.
         final cols = options.length > 4 && options.every((o) => o.characters.length <= 6) ? 3 : 2;
         const gap = 6.0;
-        final w = (box.maxWidth - gap * (cols - 1)) / cols;
         final dense = options.length > 6;
-        return Wrap(spacing: gap, runSpacing: dense ? 5 : gap, children: [
-          for (var i = 0; i < options.length; i++) SizedBox(width: w, child: _option(i, options[i], reveal, correct, mine, dense: dense, hostOk: hostCorrect.contains(i))),
+        return Column(children: [
+          for (var r = 0; r * cols < options.length; r++)
+            Padding(
+              padding: EdgeInsets.only(top: r == 0 ? 0 : (dense ? 5 : gap)),
+              child: IntrinsicHeight(
+                child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  for (var c = 0; c < cols; c++) ...[
+                    if (c > 0) const SizedBox(width: gap),
+                    Expanded(
+                      child: r * cols + c < options.length
+                          ? _option(r * cols + c, options[r * cols + c], reveal, correct, mine, dense: dense, hostOk: hostCorrect.contains(r * cols + c))
+                          : const SizedBox.shrink(),
+                    ),
+                  ],
+                ]),
+              ),
+            ),
         ]);
       }),
       const SizedBox(height: 8),
@@ -649,8 +707,8 @@ class _LiveQuizPanelState extends State<LiveQuizPanel> {
             opacity: dim ? .42 : 1,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 220),
-              height: dense ? 30 : 36,
-              padding: const EdgeInsets.symmetric(horizontal: 7),
+              constraints: BoxConstraints(minHeight: dense ? 30 : 36),
+              padding: EdgeInsets.symmetric(horizontal: 7, vertical: dense ? 2 : 4),
               decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10), border: Border.all(color: border, width: ok || ko || chosen || sending ? 1.8 : 1.1)),
               child: Row(children: [
                 Container(
@@ -661,7 +719,7 @@ class _LiveQuizPanelState extends State<LiveQuizPanel> {
                   child: Text(String.fromCharCode(65 + i), style: const TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w800)),
                 ),
                 const SizedBox(width: 6),
-                Expanded(child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700))),
+                Expanded(child: Text(text, softWrap: true, style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700, height: 1.2))),
                 if (sending)
                   const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: _amber))
                 else if (ok)
@@ -1145,12 +1203,15 @@ Widget _chips(List<int> values, int selected, ValueChanged<int> onPick, String F
 
 /// Réglages de base pour tous, liste préparée pour le Gold. Utilisé à la création du live et au lancement du quiz.
 class QuizSettingsEditor extends StatefulWidget {
-  const QuizSettingsEditor({super.key, required this.settings, required this.isGold, required this.onChanged, this.onUpgrade});
+  const QuizSettingsEditor({super.key, required this.settings, required this.isGold, required this.onChanged, this.onUpgrade, this.series});
 
   final QuizSettings settings;
   final bool isGold;
   final VoidCallback onChanged;
   final VoidCallback? onUpgrade;
+
+  /// Séries enregistrées (Gold) ; absent = boutons « Mes séries » et « Enregistrer la série » cachés.
+  final QuizSeriesStore? series;
 
   @override
   State<QuizSettingsEditor> createState() => _QuizSettingsEditorState();
@@ -1159,9 +1220,105 @@ class QuizSettingsEditor extends StatefulWidget {
 class _QuizSettingsEditorState extends State<QuizSettingsEditor> {
   QuizSettings get s => widget.settings;
 
+  /// Série chargée ou enregistrée en dernier : « Enregistrer » propose alors de la mettre à jour.
+  String? _seriesId;
+  String? _seriesName;
+
   void _set(VoidCallback f) {
     setState(f);
     widget.onChanged();
+  }
+
+  void _snack(String m) => ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(m)));
+
+  Future<void> _saveSeries() async {
+    final store = widget.series;
+    if (store == null || s.questions.isEmpty) return;
+    final ctrl = TextEditingController(text: _seriesName ?? '');
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (d) => AlertDialog(
+        title: Text(d.tr('Enregistrer la série')),
+        content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(d.tr('Tu retrouveras ces {n} questions dans « Mes séries » pour tes prochains quiz.', {'n': s.questions.length})),
+          const SizedBox(height: 10),
+          TextField(
+            key: const ValueKey('quiz_series_name'),
+            controller: ctrl,
+            autofocus: true,
+            maxLength: 60,
+            decoration: InputDecoration(labelText: d.tr('Nom de la série'), hintText: d.tr('Culture générale')),
+          ),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(d), child: Text(d.tr('Annuler'))),
+          if (_seriesId != null) TextButton(key: const ValueKey('quiz_series_save_new'), onPressed: () => Navigator.pop(d, 'new'), child: Text(d.tr('Nouvelle série'))),
+          FilledButton(
+            key: const ValueKey('quiz_series_save_ok'),
+            onPressed: () => Navigator.pop(d, _seriesId != null ? 'update' : 'new'),
+            child: Text(_seriesId != null ? d.tr('Mettre à jour') : d.tr('Enregistrer')),
+          ),
+        ],
+      ),
+    );
+    final name = ctrl.text.trim();
+    if (choice == null || !mounted) return;
+    if (name.isEmpty) {
+      _snack(context.tr('Donne un nom à ta série.'));
+      return;
+    }
+    try {
+      final saved = await store.save(choice == 'update' ? _seriesId : null, name, [for (final q in s.questions) QuizQ.fromJson(q.toJson())!]);
+      if (!mounted) return;
+      setState(() {
+        _seriesId = saved.id;
+        _seriesName = saved.name;
+      });
+      _snack(context.tr('Série « {n} » enregistrée : tu la retrouveras dans « Mes séries ».', {'n': saved.name}));
+    } on QuizSeriesError catch (e) {
+      if (mounted) _snack(e.message);
+    } catch (_) {
+      if (mounted) _snack(context.tr('Enregistrement impossible pour le moment. Réessaie plus tard.'));
+    }
+  }
+
+  Future<void> _openSeries() async {
+    final store = widget.series;
+    if (store == null) return;
+    final picked = await showModalBottomSheet<QuizSeriesItem>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: _QP.of(context).sheet,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+      builder: (_) => QuizSeriesSheet(store: store),
+    );
+    if (picked == null || !mounted) return;
+    var replace = true;
+    if (s.questions.isNotEmpty) {
+      final c = await showDialog<String>(
+        context: context,
+        builder: (d) => AlertDialog(
+          title: Text(d.tr('Charger « {n} »', {'n': picked.name})),
+          content: Text(d.tr('Ta liste a déjà {n} questions.', {'n': s.questions.length})),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(d), child: Text(d.tr('Annuler'))),
+            TextButton(key: const ValueKey('quiz_series_append'), onPressed: () => Navigator.pop(d, 'add'), child: Text(d.tr('Ajouter à la suite'))),
+            FilledButton(key: const ValueKey('quiz_series_replace'), onPressed: () => Navigator.pop(d, 'replace'), child: Text(d.tr('Remplacer'))),
+          ],
+        ),
+      );
+      if (c == null || !mounted) return;
+      replace = c == 'replace';
+    }
+    _set(() {
+      if (replace) s.questions.clear();
+      for (final q in picked.questions) {
+        if (s.questions.length >= 50) break;
+        s.questions.add(QuizQ.fromJson(q.toJson())!);
+      }
+      _seriesId = replace ? picked.id : null;
+      _seriesName = replace ? picked.name : null;
+    });
   }
 
   Widget _box(List<Widget> children) => _boxP(_QP.of(context), children);
@@ -1316,11 +1473,148 @@ class _QuizSettingsEditorState extends State<QuizSettingsEditor> {
               icon: Icon(Icons.add_rounded, color: p.amber),
               label: Text(context.tr('Ajouter une question ({n} sur 50)', {'n': s.questions.length}), style: TextStyle(color: p.amber, fontWeight: FontWeight.w800)),
             ),
+          if (widget.series != null)
+            Wrap(alignment: WrapAlignment.center, spacing: 4, children: [
+              TextButton.icon(
+                key: const ValueKey('quiz_series_open'),
+                onPressed: _openSeries,
+                icon: Icon(Icons.folder_open_rounded, color: p.amber, size: 18),
+                label: Text(context.tr('Mes séries'), style: TextStyle(color: p.amber, fontWeight: FontWeight.w800)),
+              ),
+              if (s.questions.isNotEmpty)
+                TextButton.icon(
+                  key: const ValueKey('quiz_series_save'),
+                  onPressed: _saveSeries,
+                  icon: Icon(Icons.bookmark_add_rounded, color: p.amber, size: 18),
+                  label: Text(context.tr('Enregistrer la série'), style: TextStyle(color: p.amber, fontWeight: FontWeight.w800)),
+                ),
+            ]),
+          if (widget.series != null && _seriesName != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(context.tr('Série : {n}', {'n': _seriesName}), key: const ValueKey('quiz_series_current'), textAlign: TextAlign.center, style: TextStyle(color: p.text3, fontSize: 11.5)),
+            ),
           if (s.questions.isNotEmpty && s.listCost > 0)
             Text(context.tr('Coût de la liste : {n} pièces, prélevées au lancement du quiz.', {'n': CoinCheckout.fmt(s.listCost)}), style: TextStyle(color: p.text3, fontSize: 11.5)),
         ],
       ]),
     ]);
+  }
+}
+
+/// « Mes séries » : séries de questions enregistrées ; toucher une série la charge, la corbeille la supprime (après confirmation).
+class QuizSeriesSheet extends StatefulWidget {
+  const QuizSeriesSheet({super.key, required this.store});
+
+  final QuizSeriesStore store;
+
+  @override
+  State<QuizSeriesSheet> createState() => _QuizSeriesSheetState();
+}
+
+class _QuizSeriesSheetState extends State<QuizSeriesSheet> {
+  late Future<List<QuizSeriesItem>> _future = widget.store.list();
+
+  Future<void> _delete(QuizSeriesItem it) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (d) => AlertDialog(
+        title: Text(d.tr('Supprimer « {n} » ?', {'n': it.name})),
+        content: Text(d.tr('Ses {n} questions seront effacées.', {'n': it.questions.length})),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(d, false), child: Text(d.tr('Annuler'))),
+          FilledButton(key: const ValueKey('quiz_series_delete_ok'), onPressed: () => Navigator.pop(d, true), child: Text(d.tr('Supprimer'))),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      await widget.store.delete(it.id);
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(context.tr('Suppression impossible pour le moment. Réessaie plus tard.'))));
+    }
+    if (mounted) {
+      setState(() {
+        _future = widget.store.list();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = _QP.of(context);
+    return SafeArea(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * .7),
+        child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          const SizedBox(height: 10),
+          Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: p.line, borderRadius: BorderRadius.circular(2)))),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+            child: Row(children: [
+              Icon(Icons.folder_open_rounded, color: p.amber, size: 20),
+              const SizedBox(width: 8),
+              Expanded(child: Text(context.tr('Mes séries'), style: TextStyle(color: p.text, fontSize: 17, fontWeight: FontWeight.w900))),
+            ]),
+          ),
+          Flexible(
+            child: FutureBuilder<List<QuizSeriesItem>>(
+              future: _future,
+              builder: (ctx, snap) {
+                if (snap.connectionState != ConnectionState.done) return Padding(padding: const EdgeInsets.all(28), child: Center(child: CircularProgressIndicator(color: p.amber)));
+                final items = snap.data ?? const <QuizSeriesItem>[];
+                if (snap.hasError || items.isEmpty) {
+                  return Padding(
+                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 28),
+                    child: Text(
+                      snap.hasError ? context.tr('Séries indisponibles pour le moment.') : context.tr('Aucune série enregistrée. Prépare tes questions, puis touche « Enregistrer la série ».'),
+                      key: const ValueKey('quiz_series_empty'),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: p.text3, height: 1.4),
+                    ),
+                  );
+                }
+                return ListView.separated(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                  itemCount: items.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 6),
+                  itemBuilder: (_, i) {
+                    final it = items[i];
+                    return Material(
+                      color: p.fill,
+                      borderRadius: BorderRadius.circular(12),
+                      child: InkWell(
+                        key: ValueKey('quiz_series_${it.id}'),
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () => Navigator.pop(context, it),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
+                          child: Row(children: [
+                            Expanded(
+                              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                Text(it.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: p.text, fontSize: 14, fontWeight: FontWeight.w800)),
+                                Text(context.tr('{n} questions', {'n': it.questions.length}), style: TextStyle(color: p.text3, fontSize: 11.5)),
+                              ]),
+                            ),
+                            IconButton(
+                              key: ValueKey('quiz_series_delete_${it.id}'),
+                              tooltip: context.tr('Supprimer'),
+                              icon: Icon(Icons.delete_outline_rounded, color: p.icon, size: 20),
+                              onPressed: () => _delete(it),
+                            ),
+                          ]),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ]),
+      ),
+    );
   }
 }
 
@@ -1331,9 +1625,11 @@ typedef QuizPackPick = ({String theme, int count});
 /// Fenêtre de lancement : réglages, puis liste préparée (Gold), questions Afrolook (2 par mois sans Gold, illimité en Gold) ou questions en direct.
 /// [packs] : catalogue renvoyé par le serveur (`GET /lives/quiz-packs`) ; absent = section masquée.
 /// [liveSecondsLeft] : temps qui reste au live (avertissement si le quiz est plus long).
-Future<({String mode, QuizSettings settings, QuizPackPick? pack})?> showQuizLaunchSheet(BuildContext context, {required QuizSettings settings, required bool isGold, VoidCallback? onUpgrade, Map<String, dynamic>? packs, int? liveSecondsLeft}) {
-  var packTheme = 'mix';
-  var packCount = 10;
+Future<({String mode, QuizSettings settings, QuizPackPick? pack})?> showQuizLaunchSheet(BuildContext context, {required QuizSettings settings, required bool isGold, VoidCallback? onUpgrade, Map<String, dynamic>? packs, int? liveSecondsLeft, QuizSeriesStore? series}) {
+  // questions Afrolook choisies à la création : déjà sélectionnées, et le cadre passe en premier
+  var packTheme = settings.pack?.theme ?? 'mix';
+  var packCount = settings.pack?.count ?? 10;
+  final packFirst = settings.pack != null;
   return showModalBottomSheet<({String mode, QuizSettings settings, QuizPackPick? pack})>(
     context: context,
     isScrollControlled: true,
@@ -1346,6 +1642,20 @@ Future<({String mode, QuizSettings settings, QuizPackPick? pack})?> showQuizLaun
         maxChildSize: .95,
         builder: (_, scroll) => Builder(builder: (ctx) {
           final p = _QP.of(ctx);
+          List<Widget> packBox() => [
+                QuizPacksBox(
+                  footer: quizDurationNote(ctx, quizListSeconds(List.filled(packCount, settings.seconds)), liveSecondsLeft),
+                  packs: packs!,
+                  theme: packTheme,
+                  count: packCount,
+                  pot: settings.pot,
+                  onTheme: (v) => setS(() => packTheme = v),
+                  onCount: (v) => setS(() => packCount = v),
+                  onLaunch: () => Navigator.pop(ctx, (mode: 'planned', settings: settings, pack: (theme: packTheme, count: packCount))),
+                  onUpgrade: onUpgrade,
+                ),
+                const SizedBox(height: 12),
+              ];
           return ListView(controller: scroll, padding: const EdgeInsets.fromLTRB(16, 12, 16, 24), children: [
           Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: p.line, borderRadius: BorderRadius.circular(2)))),
           const SizedBox(height: 12),
@@ -1353,7 +1663,8 @@ Future<({String mode, QuizSettings settings, QuizPackPick? pack})?> showQuizLaun
           const SizedBox(height: 4),
           Text(ctx.tr('Jouer est gratuit pour le public. Chaque bonne réponse rapporte des points (plus on répond vite, plus on en gagne) : le classement final désigne les gagnants.'), style: TextStyle(color: p.text3, fontSize: 12.5, height: 1.35)),
           const SizedBox(height: 12),
-          QuizSettingsEditor(settings: settings, isGold: isGold, onUpgrade: onUpgrade, onChanged: () => setS(() {})),
+          if (packs != null && packFirst) ...packBox(),
+          QuizSettingsEditor(settings: settings, isGold: isGold, onUpgrade: onUpgrade, onChanged: () => setS(() {}), series: series),
           if (isGold && settings.questions.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
@@ -1366,20 +1677,7 @@ Future<({String mode, QuizSettings settings, QuizPackPick? pack})?> showQuizLaun
               ),
             ),
           if (isGold && settings.questions.isNotEmpty) Padding(padding: const EdgeInsets.only(bottom: 8), child: quizDurationNote(ctx, quizListSeconds(settings.questions.map((q) => q.seconds)), liveSecondsLeft)),
-          if (packs != null) ...[
-            QuizPacksBox(
-              footer: quizDurationNote(ctx, quizListSeconds(List.filled(packCount, settings.seconds)), liveSecondsLeft),
-              packs: packs,
-              theme: packTheme,
-              count: packCount,
-              pot: settings.pot,
-              onTheme: (v) => setS(() => packTheme = v),
-              onCount: (v) => setS(() => packCount = v),
-              onLaunch: () => Navigator.pop(ctx, (mode: 'planned', settings: settings, pack: (theme: packTheme, count: packCount))),
-              onUpgrade: onUpgrade,
-            ),
-            const SizedBox(height: 12),
-          ],
+          if (packs != null && !packFirst) ...packBox(),
           FilledButton.icon(
             key: const ValueKey('quiz_launch_live'),
             style: FilledButton.styleFrom(backgroundColor: _green, foregroundColor: _onGreen, padding: const EdgeInsets.symmetric(vertical: 13), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24))),
@@ -1396,7 +1694,11 @@ Future<({String mode, QuizSettings settings, QuizPackPick? pack})?> showQuizLaun
 
 /// Questions Afrolook (tirées des quiz de l'application) : thème, nombre de questions, utilisations gratuites restantes, lancement.
 class QuizPacksBox extends StatelessWidget {
-  const QuizPacksBox({super.key, required this.packs, required this.theme, required this.count, required this.pot, required this.onTheme, required this.onCount, required this.onLaunch, this.onUpgrade, this.footer});
+  const QuizPacksBox({super.key, required this.packs, required this.theme, required this.count, required this.pot, required this.onTheme, required this.onCount, this.onLaunch, this.onUpgrade, this.footer, this.onToggle, this.enabled = true});
+
+  /// Création du live : interrupteur « utiliser les questions Afrolook » ; [enabled] = interrupteur ouvert (thème et nombre visibles).
+  final ValueChanged<bool>? onToggle;
+  final bool enabled;
 
   /// Durée estimée du paquet face au temps qui reste au live.
   final Widget? footer;
@@ -1407,7 +1709,8 @@ class QuizPacksBox extends StatelessWidget {
   final int pot;
   final ValueChanged<String> onTheme;
   final ValueChanged<int> onCount;
-  final VoidCallback onLaunch;
+  /// Lancement dans le live ; absent à la création (le choix est seulement gardé).
+  final VoidCallback? onLaunch;
   final VoidCallback? onUpgrade;
 
   Widget _chip(_QP p, String key, String label, bool on, VoidCallback onTap) => ChoiceChip(
@@ -1447,10 +1750,12 @@ class QuizPacksBox extends StatelessWidget {
               style: TextStyle(color: freeLeft == null ? _onGold : blocked ? p.dangerText : p.greenText, fontSize: 11, fontWeight: FontWeight.w900),
             ),
           ),
+          if (onToggle != null) Switch(key: const ValueKey('quiz_pack_toggle'), value: enabled, activeColor: _green, onChanged: onToggle),
         ]),
         const SizedBox(height: 6),
         Text(context.tr("Des questions prêtes, tirées de nos quiz. Elles s'enchaînent toutes seules et tu découvres les réponses en même temps que les joueurs."),
             style: TextStyle(color: p.text3, fontSize: 12, height: 1.35)),
+        if (enabled) ...[
         const SizedBox(height: 12),
         Text(context.tr('Thème'), style: TextStyle(color: p.text2, fontSize: 12, fontWeight: FontWeight.w800)),
         const SizedBox(height: 6),
@@ -1464,6 +1769,16 @@ class QuizPacksBox extends StatelessWidget {
           for (final c in counts) _chip(p, 'quiz_pack_count_$c', '$c', count == c, () => onCount(c)),
         ]),
         if (footer != null) footer!,
+        if (onLaunch == null && !blocked)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(key: const ValueKey('quiz_pack_ready'), children: [
+              Icon(Icons.check_circle_rounded, color: p.greenText, size: 17),
+              const SizedBox(width: 6),
+              Expanded(child: Text(context.tr('Prêt : dans le live, tu lanceras ces questions d\'un seul geste.'), style: TextStyle(color: p.text2, fontSize: 12, fontWeight: FontWeight.w600))),
+            ]),
+          ),
+        if (onLaunch != null || blocked) ...[
         const SizedBox(height: 10),
         FilledButton.icon(
           key: const ValueKey('quiz_launch_pack'),
@@ -1482,6 +1797,8 @@ class QuizPacksBox extends StatelessWidget {
         if (blocked) ...[
           const SizedBox(height: 6),
           Text(context.tr('Tu as utilisé tes quiz Afrolook gratuits de ce mois-ci. Ils reviennent le 1er du mois.'), textAlign: TextAlign.center, style: TextStyle(color: p.text3, fontSize: 11.5)),
+        ],
+        ],
         ],
       ]),
     );

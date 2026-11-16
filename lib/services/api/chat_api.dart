@@ -272,6 +272,14 @@ class LivesApi {
   static Future<Map<String, dynamic>> gameQuestion(String id, Map<String, dynamic> question) async => JeuxApi.map(await _c.post('/lives/$id/game/question', body: question));
   /// Questions d'Afrolook pour le quiz : thèmes, nombres de questions, quiz gratuits restants ce mois-ci (`free_left` null = illimité avec Gold).
   static Future<Map<String, dynamic>> quizPacks() async => JeuxApi.map(await _c.get('/lives/quiz-packs'));
+  /// Mes séries de questions enregistrées (Gold) : `series` (id, name, count, questions), `gold`, `max_series`.
+  static Future<Map<String, dynamic>> quizSeries() async => JeuxApi.map(await _c.get('/lives/quiz-series'));
+  /// Enregistre une série (sans [id]) ou remplace une de mes séries (avec [id]).
+  static Future<Map<String, dynamic>> saveQuizSeries({String? id, required String name, required List<Map<String, dynamic>> questions}) async {
+    final body = {'name': name, 'questions': questions};
+    return JeuxApi.map(id == null ? await _c.post('/lives/quiz-series', body: body) : await _c.put('/lives/quiz-series/$id', body: body));
+  }
+  static Future<void> deleteQuizSeries(String id) => _c.delete('/lives/quiz-series/$id');
   /// Classement du quiz sur toutes les questions : les 20 premiers (`rows`) et ma place (`me`, même au-delà) ; sans [gameId] : le dernier quiz du live.
   static Future<Map<String, dynamic>> quizRanking(String id, {String? gameId}) async => JeuxApi.map(await _c.get('/lives/$id/game/ranking', query: {if (gameId != null) 'game_id': gameId}));
 

@@ -7,6 +7,9 @@ import 'package:intl/intl.dart';
 
 import 'livesAgora.dart';
 import 'live_clips_page.dart';
+import 'live_games_history.dart';
+import 'package:provider/provider.dart';
+import '../../providers/authProvider.dart';
 
 class LiveEndedPage extends StatelessWidget {
   final PostLive live;
@@ -158,6 +161,19 @@ class LiveEndedPage extends StatelessWidget {
                         ],
 
                         if (live.liveId != null) LiveSalesCard(liveId: live.liveId!, onDark: true),
+
+                        // Jeux de ce live (16/11/2026) : historique des quiz et contes avec leurs classements, même après la fin
+                        if (live.liveId != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 12),
+                            child: OutlinedButton.icon(
+                              key: const ValueKey('live_ended_games'),
+                              onPressed: () => openLiveGamesHistory(context, live.liveId!, isHost: live.hostId != null && live.hostId == context.read<UserAuthProvider>().userId),
+                              icon: const Icon(Icons.leaderboard_rounded, color: Color(0xFFF9A825)),
+                              label: Text(tr('Jeux et classements'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                              style: OutlinedButton.styleFrom(side: const BorderSide(color: Colors.white30), minimumSize: const Size.fromHeight(46), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(23))),
+                            ),
+                          ),
 
                         // Clips rémunérés : proposer un extrait de ce live (ou, pour l'hôte, retenir les clips)
                         if (live.liveId != null)

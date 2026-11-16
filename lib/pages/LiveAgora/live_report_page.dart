@@ -104,7 +104,7 @@ class _LiveReportPageState extends State<LiveReportPage> {
           ]),
         );
     final donors = (r?['top_donors'] as List?) ?? const [];
-    final medals = ['🥇', '🥈', '🥉'];
+    const medals = [Color(0xFFFFC83D), Color(0xFFC9D1DB), Color(0xFFD08A4E)];   // or, argent, bronze (icône dédiée, pas d'emoji)
     final tickets = _i('paid_tickets');
     return Scaffold(
       backgroundColor: bg,
@@ -158,7 +158,7 @@ class _LiveReportPageState extends State<LiveReportPage> {
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       child: Row(children: [
-                        Text(medals[i], style: const TextStyle(fontSize: 18)),
+                        Icon(Icons.emoji_events_rounded, size: 20, color: medals[i.clamp(0, 2)]),
                         const SizedBox(width: 10),
                         Expanded(child: Text('${(donors[i] as Map)['username']}', style: const TextStyle(color: Colors.white, fontSize: 13.5, fontWeight: FontWeight.w600))),
                         Text('${(donors[i] as Map)['coins']} pcs', style: const TextStyle(color: Color(0xFFF9A825), fontSize: 13, fontWeight: FontWeight.w700)),

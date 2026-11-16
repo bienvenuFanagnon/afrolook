@@ -1,3 +1,4 @@
+import 'live_games_history.dart';
 import 'package:afrotok/l10n/tr.dart';
 import '../liveshop/live_sales_card.dart';
 import 'package:flutter/material.dart';
@@ -523,6 +524,20 @@ class _UserLivesPageState extends State<UserLivesPage> {
                 ),
               ],
               if (live.liveId != null) LiveSalesCard(liveId: live.liveId!),
+              // jeux de ce live (16/11/2026) : quiz et contes avec leurs classements (copie du classement pour la remise des prix)
+              if (live.liveId != null) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    key: const ValueKey('my_live_games'),
+                    onPressed: () => openLiveGamesHistory(context, live.liveId!, isHost: true),
+                    icon: Icon(Icons.leaderboard_rounded, color: colors.accentText),
+                    label: Text(tr('Jeux et classements'), style: TextStyle(color: colors.textPrimary, fontWeight: FontWeight.w700)),
+                    style: OutlinedButton.styleFrom(side: BorderSide(color: colors.border), padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                  ),
+                ),
+              ],
               const SizedBox(height: 20),
               Center(
                 child: ElevatedButton(

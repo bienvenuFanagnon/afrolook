@@ -104,7 +104,8 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: Scaffold(body: LiveGamesHistorySheet(future: Future.value([draw])))));
     await tester.pumpAndSettle();
     expect(find.textContaining('Tirage au sort'), findsWidgets);
-    expect(find.textContaining('🎉 @kofi gagne 90'), findsOneWidget);
+    expect(find.textContaining('@kofi gagne 90', findRichText: true), findsOneWidget);
+    expect(find.byIcon(Icons.celebration_rounded), findsOneWidget);   // icône dédiée, plus d'emoji (16/11/2026)
     expect(find.textContaining('parmi 7'), findsOneWidget);
   });
 }

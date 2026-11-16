@@ -11,6 +11,8 @@ import 'live_stage_ui.dart';
 import 'live_report_page.dart';
 import 'live_game_ui.dart';
 import 'live_quiz_ui.dart';
+import 'quiz_series_api.dart';
+import 'live_games_history.dart';
 import 'package:afrotok/pages/user/userAbonnementPage.dart' show AbonnementScreen;
 import 'live_caps.dart';
 import 'live_market_ui.dart';
@@ -959,7 +961,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           final candidates = _spectators.where((u) => u != widget.postLive.hostId).toList();
           final r = await LivesApi.gameDraw(widget.liveId, int.tryParse(v[0]) ?? 0, candidates);
           final w = r['winner'] is Map ? '@${(r['winner'] as Map)['username']}' : '';
-          _sendComment(context.tr('🎉 {w} gagne {n} pièces au tirage au sort !', {'w': w, 'n': '${r['coins']}'}));
+          _sendComment(context.tr('Tirage au sort : {w} gagne {n} pièces !', {'w': w, 'n': '${r['coins']}'}));   // message de la discussion : texte seul, sans emoji
           if (mounted) showDialog(context: context, builder: (ctx) => AlertDialog(title: Text(ctx.tr('Gagnant du tirage')), content: Text('$w · ${r['coins']} ${ctx.tr('pièces')}'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))]));
           break;
         case 'story':
@@ -988,7 +990,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
           if (!mounted) return;
           final settings = QuizSettings.fromOptions(live['options']);
           final endsAt = DateTime.tryParse('${live['ends_at'] ?? ''}')?.toLocal();
-          final picked = await showQuizLaunchSheet(context, settings: settings, isGold: lim['plan'] == 'gold', packs: packs,
+          final picked = await showQuizLaunchSheet(context, settings: settings, isGold: lim['plan'] == 'gold', packs: packs, series: quizSeriesApiStore(),
               liveSecondsLeft: endsAt == null ? null : endsAt.difference(DateTime.now()).inSeconds.clamp(0, 1 << 30),
               onUpgrade: () => Navigator.push(context, MaterialPageRoute(builder: (_) => AbonnementScreen())));
           if (picked == null || !mounted) return;
@@ -3596,29 +3598,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
   }
 
   /// Historique de tous les jeux du live (résultat, gagnant, gains) ; pour un quiz, un bouton ouvre les questions et les réponses.
-  void _openGamesHistory() {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => LiveGamesHistorySheet(future: LivesApi.gameResults(widget.liveId), onQuiz: () {
-        Navigator.pop(ctx);
-        _openQuizHistory();
-      }),
-    );
-  }
-
-  void _openQuizHistory() {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => LiveQuizHistorySheet(
-        future: LivesApi.quizHistory(widget.liveId),
-        onRanking: (gameId) => showQuizRankingSheet(context, LivesApi.quizRanking(widget.liveId, gameId: gameId), isHost: widget.isHost),
-      ),
-    );
-  }
+  void _openGamesHistory() => openLiveGamesHistory(context, widget.liveId, isHost: widget.isHost);
 
   /// L'hôte choisit où ranger ses épingles (gauche ou droite) et comment (image à côté du texte ou en dessous). Tous les spectateurs le voient tout de suite.
   Future<void> _showPinPlaceSheet() async {
@@ -4365,7 +4345,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
         children: _topDonors.asMap().entries.map((e) {
           final idx = e.key;
           final donor = e.value;
-          final medals = ['🥇', '🥈', '🥉'];
+          const medals = [Color(0xFFFFC83D), Color(0xFFC9D1DB), Color(0xFFD08A4E)];   // or, argent, bronze (icône dédiée, pas d'emoji)
           final imageUrl = donor['imageUrl'] as String? ?? '';
           return Container(
             margin: EdgeInsets.only(bottom: 5),
@@ -4378,7 +4358,7 @@ class _LivePageState extends State<LivePage> with SingleTickerProviderStateMixin
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(medals[idx], style: TextStyle(fontSize: 12)),
+                Icon(Icons.emoji_events_rounded, size: 14, color: medals[idx.clamp(0, 2)]),
                 SizedBox(width: 4),
                 if (imageUrl.isNotEmpty) ...[
                   CircleAvatar(onBackgroundImageError: (_, __) {}, backgroundImage: NetworkImage(imageUrl), radius: 9, backgroundColor: Colors.white24),
