@@ -1,10 +1,10 @@
 // Afrolook Ads : documentation d'intégration pour les diffuseurs (sites et applications) et page publique des règles des diffuseurs.
-// Les chiffres (durées de vue, intervalles, prix) sont ceux du serveur : functions/src/ads/adsEngine_logic.ts (FORMATS). À mettre à jour ensemble.
+// Les chiffres (durées de vue, intervalles, prix) sont ceux du serveur : afrolook-api app/Ads/Engine.php (FORMATS). À mettre à jour ensemble.
 import { ico, G, adsSubnav } from './ads.mjs';
 import { RULES, CATS, esc, rulesHtml } from './ads_data.mjs';
 
 export const RULES_META = { title: 'Règles des diffuseurs | Afrolook Ads', desc: 'Les règles à accepter pour afficher les annonces Afrolook Ads sur ton site ou ton application : audience, comptage, rémunération, catégories, données.' };
-export const DOCS_META = { title: 'Documentation d\'intégration | Afrolook Ads', desc: 'Afficher les annonces Afrolook Ads sur un site ou une application : balise web, exemple Flutter, API, formats, comptage, catégories et ciblage.' };
+export const DOCS_META = { title: 'Documentation d\'intégration | Afrolook Ads', desc: 'Afficher les annonces Afrolook Ads sur un site ou une application : balise web, WordPress, React, composant Flutter, API, les 8 formats en images, comptage et paiement.' };
 
 const code = (lang, text) => `<pre class="doc-code" data-lang="${lang}"><code>${esc(text.replace(/^\n/, ''))}</code></pre>`;
 
@@ -31,244 +31,228 @@ const share = (p) => {
   return txt + ' F' + (/complète/.test(p) ? ' (vue complète)' : '');
 };
 
+// ─── Documentation d'intégration (refonte du 17/11/2026, maquette validée) : menu fixe, code dans des cadres sombres à onglets avec « Copier »,
+// seulement ce dont l'intégrateur a besoin (le comptage des vues est fait par nos composants), vraies captures des formats sur nos plateformes.
+const hl = (text) => esc(text.replace(/^\n/, ''))
+  .replace(/&lt;!--[\s\S]*?--&gt;/g, (m) => `<span class="c">${m}</span>`)
+  .replace(/(^|[ \t])(\/\/[^\n]*)/gm, '$1<span class="c">$2</span>');   // un commentaire commence en début de ligne ou après un espace (pas les « // » d'une adresse)
+const lines = (t) => hl(t).split('\n').map((l, i) => `<span class="ln">${i + 1}</span>${l}`).join('\n');
+/** Cadre de code : onglets (libellé, texte), langue, fichier et pied facultatifs. */
+const box = (tabs, { lang = '', file = '', foot = '', num = true } = {}) => `<div class="dcode"${tabs.length > 1 ? ' data-tabs' : ''}><div class="dcode-h">` +
+  (tabs.length > 1 ? tabs.map(([l], i) => `<button class="tab${i ? '' : ' on'}" type="button">${esc(l)}</button>`).join('') : `<span class="file">${esc(file || tabs[0][0])}</span>`) +
+  (lang ? `<span class="lang">${esc(lang)}</span>` : '') + '<button class="copy" type="button">Copier</button></div>' +
+  tabs.map(([, t], i) => `<pre${i ? ' hidden' : ''}><code>${num ? lines(t) : hl(t)}</code></pre>`).join('') + (foot ? `<div class="dcode-f">${foot}</div>` : '') + '</div>';
+const call = (kind, html) => `<div class="dcall ${kind}"><i>${kind === 'ok' ? '✓' : kind === 'info' ? 'i' : '!'}</i><p>${html}</p></div>`;
+const params = (rows) => `<div class="dparams">${rows.map(([k, req, type, d]) => `<div><span><code>${k}</code>${req ? '<em>obligatoire</em>' : ''}${type ? `<small>${type}</small>` : ''}</span><span>${d}</span></div>`).join('')}</div>`;
+
+const SHOTS = [
+  ['banniere_320x100', 'Bannière 320 × 100', 'banner', 'PronoFlash IA · téléphone', 'Vue après 1 s · 650 F pour 1 000 vues'],
+  ['rectangle_300x250', 'Rectangle 300 × 250', 'banner', 'SlashAtlas · téléphone', '1 s · 650 F pour 1 000'],
+  ['bandeau_collant_320x50', 'Bandeau collant 320 × 50', 'sticky', 'SlashAtlas · bas de l’écran, fermable', '1 s · 812,50 F pour 1 000'],
+  ['carte_native', 'Carte native', 'native', 'PronoFlash IA · dans le contenu', '1 s · 975 F pour 1 000'],
+  ['carrousel', 'Carrousel', 'carousel', 'SlashAtlas · 2 à 5 images', '1 s · 1 170 F pour 1 000'],
+  ['affiche', 'Affiche', 'poster', 'PronoFlash IA · pleine largeur', '1 s · 1 300 F pour 1 000'],
+  ['video', 'Vidéo', 'video', 'SlashAtlas · sans son, 15 s au plus', '2 s · 1 625 F pour 1 000'],
+  ['interstitiel', 'Interstitiel', 'interstitial', 'PronoFlash IA · plein écran, ✕ après 3 s', '1 s · 1 950 F pour 1 000'],
+  ['recompensee', 'Récompensée', 'rewarded', 'SlashAtlas · regardée contre un avantage', 'Lecture complète · 2 275 F pour 1 000'],
+];
+
 export function adsDocsPage(api) {
-  const A = (api || 'https://afrolookmedia.com') + '/ads/api'; // adresse publique stable de la régie (réécrite vers l'API)
-  const HOST = new URL(A).host;
-  return `${adsSubnav('docs')}<section class="adsp"><div class="wrap doc">
- <span class="kicker">Afrolook Ads · Diffuseurs</span><h1 class="h2" style="margin-top:6px">Documentation d'intégration</h1>
- <p class="sub">Afficher les annonces Afrolook Ads sur ton site ou dans ton application. Les annonces sont choisies, signées et comptées par les serveurs d'Afrolook Ads : ton code se contente de les afficher.</p>
- <nav class="doc-toc" aria-label="Sommaire"><a href="#demarrer">1. Démarrer</a><a href="#balise">2. Balise web</a><a href="#flutter">3. Application (Flutter)</a><a href="#api">4. API</a><a href="#formats">5. Formats</a><a href="#categories">6. Catégories et ciblage</a><a href="#comptage">7. Comptage et fraude</a><a href="#mesure">8. Mesures et paiement</a><a href="#faq">9. Questions fréquentes</a></nav>
+  const A = (api || 'https://afrolookmedia.com') + '/ads/api';   // adresse publique stable de la régie (réécrite vers l'API)
+  const ORIGIN = new URL(A).origin;
+  const MEDIA = process.env.MEDIA_BASE || 'https://files.afrolookmedia.com';
+  const TAG = '<script async src="https://afrolookmedia.com/ads/tag.js"></script>';
+  const ins = (slot, fmt, extra = '') => `<ins class="afl-ad" data-pub="ap_xxxxxxxxxx" data-slot="${slot}" data-format="${fmt}"${extra}></ins>`;
+  const nav = [
+    ['Commencer', [['intro', 'Vue d’ensemble'], ['demarrer', 'Démarrage en 4 étapes'], ['choisir', 'Quelle intégration choisir ?']]],
+    ['Intégrer', [['balise', 'Balise web'], ['wordpress', 'WordPress et sites sans code'], ['spa', 'React, Vue, Next.js'], ['flutter', 'Application Flutter'], ['natif', 'Android et iOS (API)']]],
+    ['Référence de l’API', [['serve', 'Obtenir une annonce', 'GET'], ['erreurs', 'Codes d’erreur']]],
+    ['Formats', [['formats', 'Les 8 formats'], ['matrice', 'Formats par intégration'], ['tailles', 'Tailles et bannières prêtes'], ['media', 'Vidéo + images']]],
+    ['Règles et paiement', [['comptage', 'Comptage et fraude'], ['paiement', 'Gains et retraits'], ['categories', 'Catégories et ciblage'], ['faq', 'Questions fréquentes']]],
+  ];
+  return `${adsSubnav('docs')}<section class="adsp dx"><div class="dx-in">
+<nav class="dx-side" aria-label="Documentation">${nav.map(([h, items]) => `<h4>${h}</h4>` + items.map(([id, l, m]) => `<a href="#${id}">${l}${m ? `<span class="m ${m.toLowerCase()}">${m}</span>` : ''}</a>`).join('')).join('')}</nav>
+<div class="dx-main">
 
- <section class="doc-s" id="demarrer"><h2>1. Démarrer</h2>
-  <ol class="doc-steps">
-   <li><b>Crée ton profil de diffuseur</b> et accepte les <a href="/ads/diffuseur/regles/">règles</a> dans <a href="/ads/diffuseur/">ton espace diffuseur</a> (connexion Google). Notre équipe le valide.</li>
-   <li><b>Ajoute ton site ou ton application</b> (en ligne obligatoirement) : adresse du site, ou lien Google Play ou App Store ; audience mensuelle ; pays ; <b>catégories d'annonces que tu acceptes</b>.</li>
-   <li><b>Prouve que le site est à toi</b> : ajoute la balise de vérification affichée dans ton espace dans la page d'accueil, ou le code seul dans le fichier <code>/afrolook-ads.txt</code>. Elle doit rester en place : retirée 3 jours de suite, la diffusion est suspendue.</li>
-   <li><b>Après validation</b>, ton site ou ton application reçoit son <b>identifiant publicitaire</b> <code>ap_xxxxxxxxxx</code>. C'est lui qu'on met dans la balise ou dans l'appel à l'API.</li>
-  </ol>
-  <div class="ok">L'identifiant ne marche que sur le site ou l'application déclaré. Utilisé depuis un autre domaine, il est refusé et l'essai est enregistré. Ne le publie pas ailleurs et ne le partage pas.</div>
- </section>
+<section id="intro">
+ <span class="kicker">Afrolook Ads · Diffuseurs</span>
+ <h1 class="dx-h1">Affiche des annonces sur ton site ou ton application, et gagne à chaque vue</h1>
+ <p class="dx-lead">Les annonces sont choisies, signées et comptées par les serveurs d’Afrolook Ads. Ton code se contente de les afficher : une balise de deux lignes sur un site, un composant prêt à l’emploi dans une application.</p>
+ <div class="dx-cards">
+  <a class="dx-card" href="#balise"><span class="ic">&lt;/&gt;</span><b>Balise web</b><span>Deux lignes à coller. Tous les formats, comptage automatique.</span><em>Le plus simple · 2 min</em></a>
+  <a class="dx-card" href="#flutter"><span class="ic">F</span><b>Application Flutter</b><span>Un fichier à copier, une ligne pour afficher une bannière.</span><em>Prêt à l’emploi · 5 min</em></a>
+  <a class="dx-card" href="#serve"><span class="ic">{ }</span><b>API</b><span>Pour une application vérifiée qui dessine l’annonce elle-même.</span><em>Sur demande</em></a>
+ </div>
+</section>
 
- <section class="doc-s" id="balise"><h2>2. Balise web (le plus simple)</h2>
-  <p>Colle ces deux lignes là où l'annonce doit apparaître. La balise s'occupe de tout : demande, affichage, mesure de la vue, clic.</p>
-  ${code('html', `
-<ins class="afl-ad" data-pub="ap_xxxxxxxxxx" data-slot="fil-principal" data-format="native"></ins>
-<script async src="https://afrolookmedia.com/ads/tag.js"></script>`)}
-  <ul class="list">
-   <li><code>data-pub</code> : ton identifiant publicitaire. <code>data-slot</code> : le nom de l'emplacement (lettres, chiffres, - et _), pour tes statistiques. <code>data-format</code> : <code>banner</code>, <code>native</code>, <code>poster</code>, <code>carousel</code>, <code>video</code>, <code>sticky</code> (bandeau collant en bas de l'écran, fermable), <code>interstitial</code> (plein écran, fermable après 3 secondes ; <code>data-delay</code> = délai en millisecondes, 2 500 par défaut) ou <code>rewarded</code> (un bouton ; quand la vidéo est regardée en entier, l'événement <code>afl:reward</code> part de l'emplacement et c'est à toi de donner la récompense à ton visiteur ; <code>data-label</code> = texte du bouton). Chaque format a son prix, donc ta rémunération diffère d'un format à l'autre (section 5). Tu choisis les formats que tu acceptes dans ton espace diffuseur.</li>
-   <li>Une seule annonce par emplacement et par chargement de page, <b>3 emplacements au plus par page</b>. Pas de rafraîchissement automatique.</li>
-   <li>Si aucune annonce ne convient au visiteur (pays, langue, catégories que tu acceptes…), l'emplacement reste vide : rien n'est compté, rien n'est payé.</li>
-   <li>Si ton site a une politique de sécurité de contenu (CSP) : autorise <code>script-src https://afrolookmedia.com</code>, <code>connect-src ${esc(new URL(A).origin)}</code> et <code>img-src ${esc(process.env.MEDIA_BASE || "https://cdn.afrolookmedia.com")}</code>.</li>
-   <li>Visiteurs avec « Ne pas suivre » : l'annonce s'affiche, mais ni la vue ni le clic ne sont enregistrés.</li>
-  </ul>
-  <p>Pour afficher plusieurs emplacements, ajoute plusieurs balises <code>&lt;ins class="afl-ad"&gt;</code> (un seul <code>&lt;script&gt;</code> suffit). Tous les formats passent par la balise ; l'API (section 4) sert aux applications.</p>
- </section>
+<section id="demarrer">
+ <h2>Démarrage en 4 étapes</h2>
+ <ol class="dx-steps">
+  <li><b>Crée ton profil de diffuseur</b>Dans <a href="/ads/diffuseur/">ton espace diffuseur</a> (connexion Google), en acceptant les <a href="/ads/diffuseur/regles/">règles</a>. Notre équipe le valide.</li>
+  <li><b>Ajoute ton site ou ton application</b>Adresse du site, ou lien Google Play / App Store ; audience mensuelle ; pays ; catégories d’annonces que tu acceptes.</li>
+  <li><b>Prouve que le site est à toi</b>Ajoute la balise de vérification de ton espace dans la page d’accueil, ou le code seul dans <code>/afrolook-ads.txt</code>.</li>
+  <li><b>Reçois ton identifiant</b>Après validation : <code>ap_xxxxxxxxxx</code>. C’est lui qu’on met dans la balise.</li>
+ </ol>
+ ${box([['index.html · dans <head>', '<meta name="afrolook-ads-verify" content="afl-xxxxxxxxxxxxxxxxxxxxxxxx">']], { lang: 'HTML', num: false, foot: 'ou, seul dans le fichier <b>/afrolook-ads.txt</b> à la racine du site : <b>afl-xxxxxxxxxxxxxxxxxxxxxxxx</b> (ton code est dans ton espace)' })}
+ ${call('warn', 'La balise de vérification doit <b>rester en place</b> : retirée 3 jours de suite, la diffusion est suspendue. L’identifiant ne marche que sur le site déclaré.')}
+</section>
 
- <section class="doc-s" id="flutter"><h2>3. Application (composant Flutter prêt à l'emploi)</h2>
-  <p>Un composant prêt à l'emploi gère tout : demande de l'annonce à la bonne taille, bannière prête ou mise en page automatique (image entière sur fond flouté), mention « Annonce », vue envoyée au bon moment, clic par le lien d'Afrolook Ads, actualisation, fermeture. <b><a href="/ads/afrolook_ads_banner.dart" download>Télécharge afrolook_ads_banner.dart</a></b>, copie-le dans ton projet et ajoute les paquets <code>http</code>, <code>url_launcher</code> et <code>visibility_detector</code>.</p>
-  ${code('dart', `
-// Mini bannière fixe en bas d'un écran (320 × 50, fermable) : l'emplacement des mini bannières d'AdMob
-Scaffold(
-  body: …,
-  bottomNavigationBar: const AfrolookAdsBanner.bottom(pubId: 'ap_xxxxxxxxxx', visitorId: monIdentifiantDeVisiteur),
-);
+<section id="choisir">
+ <h2>Quelle intégration choisir ?</h2>
+ <div class="dx-tw"><table><thead><tr><th></th><th>Balise web</th><th>Composant Flutter</th><th>API</th></tr></thead><tbody>
+  <tr><td>Pour</td><td>Sites (WordPress, HTML, React…)</td><td>Applications Flutter</td><td>Applications vérifiées, sur demande</td></tr>
+  <tr><td>Code à écrire</td><td>Aucun : 2 lignes</td><td>1 ligne par emplacement</td><td>Dessin de l’annonce</td></tr>
+  <tr><td>Comptage des vues</td><td class="y">Automatique</td><td class="y">Automatique</td><td>Avec notre équipe</td></tr>
+  <tr><td>Formats</td><td class="y">Les 8</td><td>Bannières (4 tailles)</td><td>Les 8</td></tr>
+ </tbody></table></div>
+ ${call('info', 'Sur un site, utilise <b>toujours la balise</b> : c’est elle qui mesure que l’annonce a vraiment été vue par une personne, et c’est ce qui te fait payer.')}
+</section>
 
-// Rectangle moyen dans le contenu (300 × 250), grande bannière (large) ou leaderboard (tablette)
-const AfrolookAdsBanner(pubId: 'ap_xxxxxxxxxx', visitorId: monIdentifiantDeVisiteur, size: AdsBannerSize.medium, slot: 'liste');`)}
-  <ul class="list">
-   <li><code>visitorId</code> : une chaîne de 12 à 64 caractères (lettres, chiffres, tirets), <b>stable</b> d'une session à l'autre (garde-la dans les préférences). Pas de données personnelles.</li>
-   <li>Tailles : <code>AdsBannerSize.mini</code> (320×50), <code>large</code> (320×100), <code>medium</code> (300×250), <code>leaderboard</code> (728×90). Chaque taille demande au moteur une bannière prête à cette taille ; sans bannière, l'annonce est mise en page automatiquement.</li>
-   <li><code>slot</code> : un nom différent par emplacement de l'écran ; <code>refresh</code> : au moins 30 secondes ; <code>headers</code> : en-têtes ajoutés aux appels (attestation de l'application).</li>
-   <li>S'il n'y a pas d'annonce ou en cas d'erreur réseau, le composant ne prend aucune place et ne lève aucune exception.</li>
-  </ul>
-  <p>Tu préfères dessiner toi-même l'annonce ? Voici le principe, en quelques lignes :</p>
-  ${code('dart', `
-class AfrolookAd extends StatefulWidget {
-  const AfrolookAd({super.key, required this.pub, this.slot = 'main', this.format = 'native'});
-  final String pub, slot, format; // pub : ton identifiant publicitaire (ap_...)
-  @override
-  State<AfrolookAd> createState() => _AfrolookAdState();
+<section id="balise">
+ <h2>Balise web</h2>
+ <p>Colle ces lignes là où l’annonce doit apparaître. La balise fait tout : demande, affichage, mesure de la vue, clic.</p>
+ ${box([['Carte native', `${ins('article', 'native')}\n${TAG}`], ['Bannière 728 × 90', `${ins('haut', 'banner', ' data-size="728x90"')}\n${TAG}`], ['Bandeau collant', `<!-- fixé en bas de l'écran, fermable -->\n${ins('bas', 'sticky', ' data-size="320x50"')}\n${TAG}`],
+   ['Plusieurs emplacements', `<!-- 3 emplacements au plus par page, un seul script -->\n${ins('haut', 'banner', ' data-size="728x90"')}\n${ins('article', 'native')}\n${ins('colonne', 'banner', ' data-size="300x250"')}\n${TAG}`]], { lang: 'HTML' })}
+ <h3>Attributs</h3>
+ ${params([['data-pub', true, '', 'Ton identifiant publicitaire <code>ap_xxxxxxxxxx</code>.'], ['data-format', true, '', '<code>banner</code>, <code>sticky</code>, <code>native</code>, <code>carousel</code>, <code>poster</code>, <code>video</code>, <code>interstitial</code>, <code>rewarded</code>.'],
+   ['data-slot', false, 'texte', 'Nom de l’emplacement (lettres, chiffres, - et _), pour tes statistiques.'], ['data-size', false, 'facultatif', '<code>728x90</code>, <code>320x100</code>, <code>320x50</code>, <code>300x250</code> : demande une bannière prête à cette taille.']])}
+ ${call('ok', 'Aucune annonce pour ce visiteur (pays, langue, catégories) ? L’emplacement reste vide : rien n’est compté, rien n’est payé, ta page n’est jamais bloquée.')}
+ <h3>Politique de sécurité (CSP)</h3>
+ ${box([['en-tête HTTP', `script-src https://afrolookmedia.com; connect-src ${ORIGIN}; img-src ${MEDIA}; media-src ${MEDIA};`]], { lang: 'CSP', num: false })}
+</section>
+
+<section id="wordpress">
+ <h2>WordPress et sites sans code</h2>
+ <ol class="dx-steps">
+  <li><b>Ouvre l’éditeur de la page</b>Ajoute un bloc <b>« HTML personnalisé »</b> à l’endroit voulu.</li>
+  <li><b>Colle la balise</b>Les lignes de la balise web ci-dessus, avec ton identifiant.</li>
+  <li><b>Publie</b>L’annonce apparaît dès que ton site est validé.</li>
+ </ol>
+</section>
+
+<section id="spa">
+ <h2>React, Vue, Next.js</h2>
+ <p>Charge la balise une fois (dans la page principale), puis après chaque changement de page sans rechargement, demande-lui de remplir les nouveaux emplacements.</p>
+ ${box([['React', `export function AfrolookAd({ format = 'native', slot }) {\n  useEffect(() => { window.AflAds?.fill(); }, [slot]);\n  return <ins className="afl-ad" data-pub="ap_xxxxxxxxxx" data-slot={slot} data-format={format} />;\n}`],
+   ['Vue', `<template>\n  <ins class="afl-ad" data-pub="ap_xxxxxxxxxx" :data-slot="slot" data-format="native" />\n</template>\n<script setup>\nonMounted(() => window.AflAds?.fill());\n</script>`]], { lang: 'JS' })}
+</section>
+
+<section id="flutter">
+ <h2>Application Flutter</h2>
+ <ol class="dx-steps">
+  <li><b>Télécharge le composant</b><span class="dx-dl"><a class="btn btn-primary adsm" href="/ads/afrolook_ads_banner.dart" download>Télécharger afrolook_ads_banner.dart</a><small>Fichier Dart, 11 Ko</small></span></li>
+  <li><b>Copie-le dans ton projet</b>Par exemple <code>lib/ads/afrolook_ads_banner.dart</code>, et ajoute ses 4 dépendances (onglet <code>pubspec.yaml</code>).</li>
+  <li><b>Une ligne par emplacement</b>Avec ton identifiant <code>ap_xxxxxxxxxx</code>.</li>
+ </ol>
+ ${box([['Bas de l’écran', `// mini bannière fixe en bas d'un écran (320 × 50, fermable)\nScaffold(\n  body: …,\n  bottomNavigationBar: const AfrolookAdsBanner.bottom(pubId: 'ap_xxxxxxxxxx', visitorId: monIdentifiant),\n);`],
+   ['Dans une liste', `const AfrolookAdsBanner(\n  pubId: 'ap_xxxxxxxxxx',\n  visitorId: monIdentifiant, // 12 à 64 caractères, stable, sans donnée personnelle\n  size: AdsBannerSize.medium, // 300 × 250\n  slot: 'liste',\n);`],
+   ['pubspec.yaml', 'dependencies:\n  http: ^1.2.0\n  url_launcher: ^6.3.0\n  visibility_detector: ^0.4.0\n  shared_preferences: ^2.3.0']], { lang: 'Dart', foot: 'Tailles : <b>mini</b> 320×50, <b>large</b> 320×100, <b>medium</b> 300×250, <b>leaderboard</b> 728×90' })}
+ ${call('warn', 'Une application est rémunérée après la vérification de son authenticité par notre équipe. Le composant affiche les bannières ; pour les autres formats dans une application, écris-nous.')}
+</section>
+
+<section id="natif">
+ <h2>Android et iOS (API)</h2>
+ <p>Pour une application vérifiée qui dessine elle-même l’annonce : demande une annonce, affiche-la avec la mention « Annonce », et ouvre le lien <code>click</code> au toucher. Notre équipe te donne la façon de compter les vues avec ton accès.</p>
+ ${box([['Kotlin', `val url = "${A}/serve?pub=ap_xxxxxxxxxx&fmt=native&slot=liste&vid=$visitorId"\nval ad = JSONObject(http.get(url)).optJSONObject("ad") ?: return // pas d'annonce : rien à afficher\n// afficher titre, image, bouton et la mention « Annonce »\n// au toucher : ouvrir ad.click (jamais l'adresse de l'annonceur)`],
+   ['Swift', `let url = URL(string: "${A}/serve?pub=ap_xxxxxxxxxx&fmt=native&slot=liste&vid=\\(visitorId)")!\nlet (data, _) = try await URLSession.shared.data(from: url)\n// afficher l'annonce et la mention « Annonce », ouvrir ad.click au toucher`]], { lang: 'Mobile' })}
+</section>
+
+<section id="serve">
+ <h2>API : obtenir une annonce</h2>
+ ${call('warn', 'L’API brute sert aux applications <b>vérifiées</b>, sur demande à notre équipe. Pour un site ou une application Flutter, la balise ou le composant suffit.')}
+ <div class="dx-ep"><span class="m get">GET</span><span>${A}/serve</span></div>
+ <div class="dx-api">
+  <div>${params([['pub', true, 'texte', 'Ton identifiant publicitaire.'], ['fmt', true, 'texte', 'Un des 8 formats.'], ['vid', true, '12 à 64 caractères', 'Identifiant du visiteur, stable, sans donnée personnelle.'], ['slot', false, 'texte', 'Nom de l’emplacement.'], ['size', false, 'texte', '<code>728x90</code>, <code>320x100</code>, <code>320x50</code>, <code>300x250</code>.'], ['lang', false, 'fr, en…', 'Langue de la page.']])}
+   ${call('info', 'Le pays du visiteur est déterminé par nos serveurs : n’envoie pas de pays. Le bouton de l’annonce pointe vers <code>click</code>.')}</div>
+  ${box([['Réponse', `{\n  "ok": true,\n  "ad": {\n    "format": "native", "label": "Annonce",\n    "title": "Boutique Kofi", "text": "Mode africaine…", "cta": "Visiter le site",\n    "brand": { "name": "Kofi", "logo": "https://…", "domain": "kofi.tg" },\n    "media": { "type": "image", "url": "https://…", "images": ["https://…"] },\n    "banner": { "url": "https://…", "w": 728, "h": 90 },\n    "click": "${A}/go?t=…"\n  }\n}`], ['Exemple d’appel', `curl "${A}/serve?pub=ap_xxxxxxxxxx&fmt=native&slot=article&vid=visiteur-0001&lang=fr"`]], { lang: 'JSON' })}
+ </div>
+</section>
+
+<section id="erreurs">
+ <h2>Codes d’erreur</h2>
+ <div class="dx-tw"><table><thead><tr><th>Réponse</th><th>Signification</th><th>Que faire</th></tr></thead><tbody>
+  <tr><td><code>"ad": null</code></td><td>Aucune annonce pour ce visiteur</td><td>Normal : l’emplacement reste vide</td></tr>
+  <tr><td><code>403 diffuseur</code></td><td>Identifiant inconnu ou site pas encore validé</td><td>Vérifie l’identifiant, attends la validation</td></tr>
+  <tr><td><code>403 origine</code></td><td>Appel depuis un domaine non déclaré</td><td>Ajoute le domaine dans ton espace</td></tr>
+  <tr><td><code>429</code></td><td>Trop de demandes</td><td>Pas de rafraîchissement automatique</td></tr>
+ </tbody></table></div>
+</section>
+
+<section id="formats">
+ <h2>Les 8 formats</h2>
+ <p>Chaque vue ci-dessous est une <b>vraie capture</b> : une vraie annonce de la régie, dessinée par la balise, dans une vraie page de nos plateformes. Montants : ta part (65 %) du prix payé par l’annonceur pour 1 000 vues valides.</p>
+ <div class="dx-fmts">${SHOTS.map(([f, n, c, w, p]) => `<figure><div class="shot"><img src="/img/ads/formats/${f}.jpg" alt="${n} sur ${w}" loading="lazy" width="520" height="1126"></div><figcaption><b>${n}</b><code>${c}</code><small>${w}</small><small>${p}</small></figcaption></figure>`).join('')}</div>
+ <figure class="wide"><div class="shot"><img src="/img/ads/formats/leaderboard_728x90.jpg" alt="Leaderboard 728 × 90 sur PronoFlash IA, ordinateur" loading="lazy" width="1100" height="653"></div><figcaption><b>Leaderboard 728 × 90</b><code>banner</code><small>PronoFlash IA · ordinateur, haut de page</small><small>1 s · 650 F pour 1 000</small></figcaption></figure>
+ <div class="dx-tw"><table><thead><tr><th>Format</th><th>Code</th><th>Vue comptée après</th><th>Intervalle minimum</th><th>Prix payé par l’annonceur (pour 1 000)</th><th>Tu reçois (65 %)</th></tr></thead><tbody>
+  ${FMT.map(([n, c, v, i, p]) => `<tr><td>${n}</td><td><code>${c}</code></td><td>${v}</td><td>${i}</td><td>${p}</td><td><b>${share(p)}</b></td></tr>`).join('')}
+ </tbody></table></div>
+ <p class="adnote">Mention « Annonce » toujours visible, fermeture possible pour le bandeau collant et l’interstitiel, pas de son qui démarre seul, jamais plus de 3 emplacements par page.</p>
+</section>
+
+<section id="matrice">
+ <h2>Formats par intégration</h2>
+ <div class="dx-tw"><table><thead><tr><th>Format</th><th>Balise web</th><th>Composant Flutter</th><th>API</th></tr></thead><tbody>
+  ${[['Bannière (4 tailles)', 1, 1], ['Bandeau collant', 1, 1], ['Carte native', 1, 0], ['Carrousel', 1, 0], ['Affiche', 1, 0], ['Vidéo', 1, 0], ['Interstitiel', 1, 0], ['Récompensée', 1, 0]]
+    .map(([n, t, f]) => `<tr><td>${n}</td><td class="y">${t ? '✓' : ''}</td><td>${f ? '<span class="y">✓</span>' : '<span class="soon">sur demande</span>'}</td><td class="y">✓</td></tr>`).join('')}
+ </tbody></table></div>
+</section>
+
+<section id="tailles">
+ <h2>Tailles et bannières prêtes</h2>
+ <div class="dx-tw"><table><thead><tr><th>Taille</th><th>Nom</th><th>Où</th></tr></thead><tbody>
+  <tr><td><code>728x90</code></td><td>Leaderboard</td><td>Haut ou bas de page sur ordinateur</td></tr>
+  <tr><td><code>320x100</code></td><td>Grande bannière</td><td>Dans une page sur téléphone</td></tr>
+  <tr><td><code>320x50</code></td><td>Mini bannière</td><td>Bandeau fixe en bas d’une application</td></tr>
+  <tr><td><code>300x250</code></td><td>Rectangle moyen</td><td>Dans le contenu</td></tr>
+ </tbody></table></div>
+ ${call('info', 'L’image de l’annonceur est <b>toujours affichée entière</b>, jamais rognée : le reste de l’emplacement se remplit d’une copie floutée de la même image. Si l’annonceur a déposé une bannière prête à la taille demandée, c’est elle qui s’affiche.')}
+</section>
+
+<section id="media">
+ <h2>Vidéo + images dans une même annonce</h2>
+ <p>Un annonceur peut déposer une vidéo <b>et</b> jusqu’à 5 images. Tu n’as rien à faire : le serveur envoie le bon média selon ton format.</p>
+ <div class="dx-tw"><table><thead><tr><th>Ton emplacement</th><th>Média reçu</th></tr></thead><tbody>
+  <tr><td><code>video</code>, <code>rewarded</code>, <code>native</code>, <code>interstitial</code></td><td>La vidéo</td></tr>
+  <tr><td><code>banner</code>, <code>sticky</code>, <code>poster</code>, <code>carousel</code></td><td>Les images</td></tr>
+ </tbody></table></div>
+</section>
+
+<section id="comptage">
+ <h2>Comptage et fraude</h2>
+ ${call('ok', '<b>Vue valide</b> : annonce visible à moitié pendant la durée du format, par une vraie personne, sur le site déclaré, dans les limites de fréquence.')}
+ ${call('danger', '<b>Interdit</b> : cliquer sur tes annonces ou inciter à cliquer, acheter du trafic, robots, rafraîchissement automatique, cadres cachés, masquer ou modifier l’annonce ou la mention « Annonce ». Fraude constatée : gains retirés et compte fermé.')}
+ <p>Trafic invalide : moins de 10 % normal, 10 à 25 % alerte, plus de 25 % emplacement suspendu. Les vues payées d’un jour suivent l’audience retenue pour ton site.</p>
+</section>
+
+<section id="paiement">
+ <h2>Gains et retraits</h2>
+ <div class="dx-tw"><table><thead><tr><th>Étape</th><th>Délai</th></tr></thead><tbody>
+  <tr><td>Gain du jour calculé</td><td>Chaque nuit</td></tr>
+  <tr><td>Gain disponible</td><td>30 jours après (10 % gardés 90 jours)</td></tr>
+  <tr><td>Retrait Mobile Money</td><td>À partir de 10 000 F</td></tr>
+ </tbody></table></div>
+ <p class="adnote">Prix de lancement : pendant le premier mois de l’offre Réseau, les annonceurs paient 30 % de moins ; ta part de 65 % est calculée sur le prix réellement payé.</p>
+</section>
+
+<section id="categories">
+ <h2>Catégories et ciblage</h2>
+ <ul class="list">
+  <li>Chaque annonce a une catégorie vérifiée par notre équipe. <b>Tu choisis les catégories que tu acceptes</b> pour chaque site ; les catégories sensibles ne s’affichent jamais sans ton accord.</li>
+  <li>Le ciblage (pays, langues, appareils, types de sites) est défini par l’annonceur : un visiteur n’est pas toujours éligible à toutes les annonces.</li>
+  <li>Aucun cookie, aucun suivi d’un site à l’autre. Ta politique de confidentialité doit mentionner l’affichage d’annonces par Afrolook Ads.</li>
+ </ul>
+</section>
+
+<section id="faq">
+ <h2>Questions fréquentes</h2>
+ <div class="faq">
+  <details><summary>Aucune annonce ne s’affiche.</summary><p>Pas d’annonce pour ce visiteur (pays, langue, appareil), aucune catégorie acceptée, intervalle non écoulé, ou site pas encore validé.</p></details>
+  <details><summary>Puis-je mettre la balise sur plusieurs sites ?</summary><p>Non : un identifiant par site ou application. Ajoute chaque site dans ton espace (jusqu’à 10).</p></details>
+  <details><summary>Pourquoi mon audience mesurée est plus basse que la déclarée ?</summary><p>Nous comptons les personnes différentes pour qui la balise a été chargée. Un écart important et durable fait ajuster l’audience retenue.</p></details>
+  <details><summary>Où trouver de l’aide ?</summary><p><a href="/contact/">Écris-nous</a> avec ton identifiant publicitaire.</p></details>
+ </div>
+</section>
+<div class="cta"><a class="btn btn-primary adbig" href="/ads/diffuseur/">${G} Ouvrir mon espace diffuseur</a><a class="btn btn-line adbig" href="/ads/diffuseur/regles/">${ico('shield', 18)} Règles des diffuseurs</a></div>
+</div></div></section>
+<script src="/js/docs.js?v=__ASSET_V__" defer></script>`;
 }
-
-class _AfrolookAdState extends State<AfrolookAd> {
-  static const _host = '${HOST}';
-  Map<String, dynamic>? _ad;
-  String _vid = '';
-  Timer? _timer;
-  bool _sent = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
-    _vid = prefs.getString('aflv') ?? List.generate(24, (_) => Random.secure().nextInt(16).toRadixString(16)).join();
-    await prefs.setString('aflv', _vid);
-    final r = await http.get(Uri.https(_host, '/ads/api/serve', {'pub': widget.pub, 'fmt': widget.format, 'slot': widget.slot, 'vid': _vid}));
-    final ad = (jsonDecode(r.body) as Map<String, dynamic>)['ad'];
-    if (mounted && ad != null) setState(() => _ad = ad as Map<String, dynamic>);
-  }
-
-  // Une vue = au moins la moitié de l'annonce visible, sans interruption, pendant ad['viewMs'] millisecondes.
-  void _visibility(VisibilityInfo info) {
-    final ad = _ad;
-    if (ad == null || _sent) return;
-    _timer?.cancel();
-    if (info.visibleFraction >= 0.5) {
-      _timer = Timer(Duration(milliseconds: (ad['viewMs'] as int) + 50), () {
-        _sent = true;
-        http.post(Uri.parse(ad['event'] as String),
-            body: {'t': ad['token'], 'e': 'view', 'ms': ((ad['viewMs'] as int) + 50).toString(), 'vid': _vid});
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final ad = _ad;
-    if (ad == null) return const SizedBox.shrink(); // aucune annonce : emplacement vide
-    final media = ad['media'] as Map<String, dynamic>;
-    return VisibilityDetector(
-      key: Key(ad['id'] as String),
-      onVisibilityChanged: _visibility,
-      child: InkWell(
-        // Le clic passe TOUJOURS par le lien d'Afrolook Ads : c'est lui qui compte le clic puis ouvre l'annonceur.
-        onTap: () => launchUrl(Uri.parse(ad['click'] as String), mode: LaunchMode.externalApplication),
-        child: Card(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Padding(padding: EdgeInsets.all(8), child: Text('Annonce', style: TextStyle(fontSize: 11))), // mention obligatoire
-          // image TOUJOURS entière (jamais rognée) : posée sur une copie floutée d'elle-même, quel que soit son format
-          SizedBox(height: 176, width: double.infinity, child: Stack(fit: StackFit.expand, children: [
-            ImageFiltered(imageFilter: ImageFilter.blur(sigmaX: 14, sigmaY: 14), child: Image.network((media['thumb'] ?? media['url']) as String, fit: BoxFit.cover, color: Colors.black45, colorBlendMode: BlendMode.darken)),
-            Image.network((media['thumb'] ?? media['url']) as String, fit: BoxFit.contain),
-          ])),
-          ListTile(title: Text(ad['title'] as String, maxLines: 2, overflow: TextOverflow.ellipsis), subtitle: Text((ad['text'] ?? '') as String, maxLines: 2, overflow: TextOverflow.ellipsis)),
-          Padding(padding: const EdgeInsets.fromLTRB(12, 0, 12, 12), child: SizedBox(width: double.infinity, height: 44, // bouton d'au moins 44 px
-            child: FilledButton(onPressed: () => launchUrl(Uri.parse(ad['click'] as String), mode: LaunchMode.externalApplication), child: Text((ad['cta'] ?? 'En savoir plus') as String)))),
-        ])),
-      ),
-    );
-  }
-}`)}
-  <p class="adnote">Applications : les annonces s'affichent et sont comptées, mais une application n'est rémunérée qu'après la vérification de son authenticité (attestation de l'application, étape prévue). Les applications du réseau Afrolook Ads envoient en plus le jeton de vérification de l'application (Firebase App Check) dans l'en-tête <code>X-Firebase-AppCheck</code>.</p>
- </section>
-
- <section class="doc-s" id="api"><h2>4. API</h2>
-  <h3>Obtenir une annonce</h3>
-  ${code('http', `
-GET ${A}/serve?pub=ap_xxxxxxxxxx&fmt=native&slot=fil-principal&vid=<identifiant-visiteur>&lang=fr`)}
-  <ul class="list">
-   <li><code>pub</code> (obligatoire) : ton identifiant publicitaire. <code>fmt</code> (obligatoire) : <code>banner</code>, <code>sticky</code>, <code>native</code>, <code>carousel</code>, <code>poster</code>, <code>video</code>, <code>interstitial</code> ou <code>rewarded</code>. <code>size</code> (facultatif) : taille de l'emplacement, <code>728x90</code>, <code>320x50</code>, <code>320x100</code> ou <code>300x250</code> ; si l'annonce a une bannière prête à cette taille, elle est renvoyée dans <code>banner</code>. <code>slot</code> : nom de l'emplacement (1 à 32 caractères : lettres minuscules, chiffres, - et _). <code>vid</code> (obligatoire) : un identifiant anonyme du visiteur, 12 à 64 caractères (lettres, chiffres, -), généré une fois et gardé sur l'appareil. <code>lang</code> : langue du visiteur (2 lettres), facultatif.</li>
-   <li>Le <b>pays du visiteur</b> est déterminé par nos serveurs d'après son adresse IP : n'envoie pas de pays.</li>
-  </ul>
-  <p>Réponse (200) : <code>{"ok":true,"ad":null}</code> s'il n'y a rien à afficher, sinon :</p>
-  ${code('json', `
-{
-  "ok": true,
-  "ad": {
-    "id": "AbC123…", "format": "native", "label": "Annonce",
-    "title": "Boutique Kofi : mode africaine", "text": "Vêtements modernes, livraison à Lomé.", "cta": "Visiter",
-    "media": { "type": "image", "url": "https://…", "thumb": "https://…", "images": ["https://…"] },
-    "banner": { "url": "https://…", "w": 728, "h": 90 },
-    "click": "${A}/go?t=<jeton>&v=<vid>",
-    "token": "<jeton signé à usage unique>",
-    "event": "${A}/event",
-    "viewMs": 1000, "ttlMs": 1800000
-  }
-}`)}
-  <p>Erreurs : <code>400</code> paramètres invalides ; <code>403</code> identifiant inconnu ou non validé (<code>diffuseur</code>), appel depuis un autre domaine (<code>origine</code>) ; <code>429</code> trop de demandes. Les erreurs ne bloquent jamais ta page : affiche simplement un emplacement vide.</p>
-
-  <h3>Signaler une vue</h3>
-  ${code('http', `
-POST ${A}/event        (Content-Type: text/plain)
-{"t":"<jeton>", "e":"view", "ms":1050, "vid":"<identifiant-visiteur>"}`)}
-  <ul class="list">
-   <li><code>e</code> : <code>view</code> (vue) ou <code>complete</code> (lecture complète d'une vidéo, pour les formats vidéo et récompensée, après une vue valide). <code>ms</code> : durée pendant laquelle l'annonce est restée visible (à moitié au moins) ; elle ne peut pas dépasser le temps écoulé depuis la demande.</li>
-   <li>Réponse : <code>{"ok":true,"counted":true}</code> ou <code>{"ok":true,"counted":false,"reason":"…"}</code> avec le motif : <code>not_visible</code>, <code>too_fast</code>, <code>expired</code>, <code>replay</code>, <code>interval</code>, <code>ad_cap</code>, <code>device_cap</code>, <code>ip_cap</code>, <code>bot</code>, <code>origine</code>, <code>ad_inactive</code>.</li>
-  </ul>
-
-  <h3>Le clic</h3>
-  <p>Le bouton de l'annonce pointe <b>toujours</b> vers le lien <code>click</code> reçu (<code>/go</code>) : Afrolook Ads y compte le clic puis redirige vers l'annonceur. N'appelle jamais ce lien toi-même et ne le remplace pas par l'adresse de l'annonceur : un clic qui ne passe pas par Afrolook Ads n'existe pas.</p>
-
-  <h3>Limites et durées</h3>
-  <ul class="list"><li>Le jeton ne vaut que pour <b>une seule vue</b> et expire au bout de 30 minutes (2 heures pour le clic).</li><li>Au plus <b>3 vues de la même annonce par visiteur et par jour</b>, 300 affichages par visiteur et par jour, un intervalle minimum entre deux annonces d'un même emplacement (tableau ci-dessous).</li><li>Les demandes en rafale sont limitées (par adresse et par visiteur).</li></ul>
- </section>
-
- <section class="doc-s" id="formats"><h2>5. Formats</h2>
-  <div class="tablewrap"><table class="doc-table"><thead><tr><th>Format</th><th>Code</th><th>Vue comptée après</th><th>Intervalle minimum</th><th>Prix payé par l'annonceur (pour 1 000)</th><th>Tu reçois (65 %)</th><th>Balise web</th></tr></thead><tbody>
-   ${FMT.map(([n, c, v, i, p, t]) => `<tr><td>${n}</td><td><code>${c}</code></td><td>${v}</td><td>${i}</td><td>${p}</td><td><b>${share(p)}</b></td><td>${t}</td></tr>`).join('')}
-  </tbody></table></div>
-  <p class="adnote">Prix de lancement : pendant le <b>premier mois</b> de l'offre Réseau, les annonceurs paient <b>30 % de moins</b> ; ta part de 65 % est alors calculée sur le prix réellement payé. Les prix du tableau sont ceux que paient les annonceurs : tu en reçois 65 % (colonne « Tu reçois »). Tu reçois 65 % du budget des annonces de l'offre Réseau réellement affichées chez toi, sur les seuls affichages valides. Les annonces gratuites ne rémunèrent pas les diffuseurs. L'offre Réseau n'est pas encore ouverte : tes affichages sont comptés dès maintenant, la rémunération démarre à son ouverture.</p>
-  <p>Mention <b>« Annonce »</b> toujours visible, fermeture possible pour le bandeau collant et l'interstitiel, pas de son qui démarre seul, jamais plus de 3 emplacements par page.</p>
-  <h3 id="tailles">Tailles d'affichage et images (sites et applications)</h3>
-  <p>Un annonceur dépose <b>une seule annonce</b> (jusqu'à 5 images ou une vidéo de 15 s au plus) : le moteur la sert dans le format de ton emplacement. <b>L'image est toujours affichée entière</b>, jamais rognée : si son format diffère de celui de l'emplacement, le reste se remplit d'une copie floutée de la même image (comme AdMob). Les annonceurs sont invités à fournir une <b>image carrée de 1080 × 1080 px</b>, sujet et texte au centre.</p>
-  <div class="tablewrap"><table class="doc-table"><thead><tr><th>Emplacement</th><th>Taille de l'emplacement</th><th>Image conseillée</th><th>Texte affiché</th></tr></thead><tbody>
-   <tr><td>Grande bannière (<code>banner</code>)</td><td>320 × 100 (téléphone) · 728 × 90 (ordinateur)</td><td>Carré 1:1, au moins 600 × 600 px (affiché en 76 à 84 px)</td><td>Titre sur 2 lignes + description sur 2 lignes + bouton</td></tr>
-   <tr><td>Bandeau collant (<code>sticky</code>)</td><td>320 × 50, fermable</td><td>Carré 1:1, au moins 300 × 300 px</td><td>Titre court (40 caractères) + bouton</td></tr>
-   <tr><td>Rectangle moyen (<code>native</code> / <code>banner</code>)</td><td>300 × 250 (jusqu'à 336 de large)</td><td>Paysage 1,91:1 : 1200 × 628 px</td><td>Titre, description, bouton pleine largeur</td></tr>
-   <tr><td>Carte native (<code>native</code>)</td><td>Dans une liste, largeur de la colonne</td><td>Portrait 4:5 : 1080 × 1350 px</td><td>Titre, description, bouton</td></tr>
-   <tr><td>Affiche (<code>poster</code>)</td><td>Pleine largeur</td><td>Portrait 4:5 : 1080 × 1350 px</td><td>Titre + bouton</td></tr>
-   <tr><td>Interstitiel (<code>interstitial</code>)</td><td>Plein écran de l'application</td><td>Vertical 9:16 : 1080 × 1920 px (ou 4:5 centré)</td><td>Titre + bouton, croix de fermeture</td></tr>
-   <tr><td>Vidéo (<code>video</code>)</td><td>Largeur de la colonne, 15 s au plus</td><td>MP4 16:9, 1:1 ou 9:16, 25 Mo au plus</td><td>Titre + bouton</td></tr>
-  </tbody></table></div>
-  <h3 id="bannieres">Bannières prêtes à l'emploi (image seule)</h3>
-  <p>Comme sur AdMob ou Adsterra, un annonceur peut déposer des <b>bannières déjà dessinées</b> aux tailles standard. Demande-les avec <code>size</code> : si l'annonce servie en a une, la réponse contient <code>banner</code> (<code>url</code>, <code>w</code>, <code>h</code>) : affiche cette image <b>en entier, sans rien ajouter</b> (juste la mention « Annonce »), cliquable vers le lien <code>click</code>. Sinon, utilise le titre, le texte et l'image comme ci-dessus.</p>
-  <div class="tablewrap"><table class="doc-table"><thead><tr><th>Taille (<code>size</code>)</th><th>Nom</th><th>Où l'utiliser</th></tr></thead><tbody>
-   <tr><td><code>728x90</code></td><td>Leaderboard</td><td>Haut ou bas d'une page sur ordinateur</td></tr>
-   <tr><td><code>320x100</code></td><td>Grande bannière</td><td>Dans une page sur téléphone</td></tr>
-   <tr><td><code>320x50</code></td><td>Mini bannière</td><td>Bandeau fixe en bas d'une application (comme les mini bannières d'AdMob)</td></tr>
-   <tr><td><code>300x250</code></td><td>Rectangle moyen</td><td>Dans le contenu, sur ordinateur et téléphone</td></tr>
-  </tbody></table></div>
-  <p class="adnote">Dans une application, dimensionne l'emplacement comme dans ce tableau, laisse le contenu s'adapter (image <code>BoxFit.contain</code> sur sa copie floutée) et ne rogne jamais l'image de l'annonceur. Taille minimale du texte : 12 px ; bouton d'action de 44 px de haut au moins sur téléphone. L'exemple ci-dessus utilise <code>ImageFilter</code> : ajoute <code>import 'dart:ui' show ImageFilter;</code>.</p>
- </section>
-
- <section class="doc-s" id="categories"><h2>6. Catégories et ciblage</h2>
-  <ul class="list">
-   <li><b>Chaque annonce a une catégorie</b> choisie par l'annonceur et vérifiée par notre équipe : commerce, restauration, mode et beauté, technologie, finance, paris et jeux d'argent, alcool et tabac, médicaments, rencontres, <b>contenu sensuel</b> (corps dénudé ou suggestif), politique, religion, loteries…</li>
-   <li><b>Tu choisis les catégories que tu acceptes</b> pour chaque site ou application, dans ton espace. Seules celles-là s'affichent chez toi. Les catégories courantes sont acceptées par défaut ; <b>les catégories sensibles ne s'affichent jamais sans ton accord explicite</b>. Une annonce sans catégorie n'est jamais diffusée chez un diffuseur externe.</li>
-   <li>Le contenu sexuellement explicite, les armes, les drogues et les arnaques sont interdits pour tous.</li>
-   <li><b>Le ciblage est défini par l'annonceur</b> et nous le respectons : pays ou toute l'Afrique ou le monde entier, langues, appareils (téléphone, ordinateur), types de sites. Quand une annonce vise des pays précis, <b>au plus 40 % de ses vues peuvent venir d'autres pays</b> ; le pays du visiteur est déterminé par nos serveurs.</li>
-   <li>Conséquence pour toi : un visiteur n'est pas toujours éligible à toutes les annonces. C'est normal, et c'est ce qui rend les annonces pertinentes pour tes visiteurs.</li>
-  </ul>
- </section>
-
- <section class="doc-s" id="comptage"><h2>7. Comptage et fraude</h2>
-  <ul class="list">
-   <li>Une <b>vue valide</b> : jeton signé, récent et jamais utilisé ; annonce visible à moitié pendant la durée du format ; intervalles et plafonds respectés ; visiteur réel (pas un robot) ; site déclaré.</li>
-   <li>Tout le reste est du <b>trafic invalide</b> : il n'est ni facturé à l'annonceur ni payé au diffuseur. Tu vois ton taux de trafic invalide dans ton espace : moins de 10 % normal, de 10 à 25 % alerte, plus de 25 % emplacement suspendu.</li>
-   <li><b>Interdit</b> : cliquer sur tes propres annonces ou inciter à cliquer, acheter du trafic, robots et rafraîchissements automatiques, cadres cachés ou empilés, modifier ou masquer une annonce ou la mention « Annonce », faire appeler le serveur par d'autres sites ou applications que ceux déclarés.</li>
-   <li>Les appels faits avec ton identifiant depuis un autre domaine sont refusés et comptés : tu les vois dans tes mesures.</li>
-   <li>Aucun cookie, aucun suivi d'un site à l'autre : le visiteur est reconnu par un identifiant propre à ton site. Ta politique de confidentialité doit mentionner l'affichage d'annonces par Afrolook Ads.</li>
-  </ul>
- </section>
-
- <section class="doc-s" id="mesure"><h2>8. Mesures et paiement</h2>
-  <ul class="list">
-   <li>Pour chaque site, ton espace montre <b>l'audience réelle mesurée par Afrolook Ads sur 30 et 60 jours</b> (personnes différentes pour lesquelles la balise a été chargée), comparée à l'audience que tu as déclarée, jour par jour, avec la répartition par pays et les affichages valides.</li>
-   <li>L'<b>audience retenue</b> est fixée par Afrolook Ads et ne dépasse jamais la déclarée. En cas d'écart important et durable, elle est ajustée.</li>
-   <li>Gains bloqués 30 jours avant retrait, avec une réserve de 10 % pendant 90 jours ; retrait minimum 10 000 F par Mobile Money ; les frais de retrait sont payés par l'annonceur.</li>
-  </ul>
- </section>
-
- <section class="doc-s" id="faq"><h2>9. Questions fréquentes</h2>
-  <div class="faq">
-   <details><summary>Aucune annonce ne s'affiche.</summary><p>Plusieurs raisons normales : pas d'annonce disponible pour ce visiteur (pays, langue, appareil), aucune annonce d'une catégorie que tu acceptes, intervalle minimum non écoulé, ou site pas encore validé. Une erreur <code>403 diffuseur</code> signifie que l'identifiant est inconnu ou que le site n'est pas encore validé ; <code>403 origine</code>, que l'appel ne vient pas du domaine déclaré.</p></details>
-   <details><summary>Puis-je mettre la balise sur plusieurs sites ?</summary><p>Non : chaque site ou application déclaré a son propre identifiant. Ajoute chaque site dans ton espace (jusqu'à 10) pour recevoir un identifiant par site.</p></details>
-   <details><summary>Puis-je choisir les annonces affichées ?</summary><p>Tu choisis les catégories acceptées et tes formats. Le choix de l'annonce dans ces limites est fait par Afrolook Ads, selon le ciblage de chaque annonceur.</p></details>
-   <details><summary>Que se passe-t-il si mon audience est plus petite que celle déclarée ?</summary><p>Tu le vois dans ton espace. Un écart important est signalé ; l'audience retenue peut être ajustée, et la diffusion suspendue en cas d'écart durable ou de déclaration manifestement fausse.</p></details>
-   <details><summary>Où trouver de l'aide ?</summary><p><a href="/contact/">Écris-nous</a> avec ton identifiant publicitaire.</p></details>
-  </div>
- </section>
- <div class="cta"><a class="btn btn-primary adbig" href="/ads/diffuseur/">${G} Ouvrir mon espace diffuseur</a><a class="btn btn-line adbig" href="/ads/diffuseur/regles/">${ico('shield', 18)} Règles des diffuseurs</a></div>
-</div></section>`;
-}
-
-

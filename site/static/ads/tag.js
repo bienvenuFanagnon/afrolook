@@ -210,10 +210,13 @@
   // aperçu exact d'une annonce (formulaire d'Afrolook Ads) : même rendu que chez les partenaires, sans requête ni comptage
   window.AflAdsPreview = { render: function (host, ad, fmt) { css(); PV = true; try { render(host, ad, fmt); } finally { PV = false; } } };
 
+  // remplit les emplacements pas encore traités (un emplacement n'est jamais rempli deux fois) ; 3 emplacements au plus par page.
+  // Sites qui changent de page sans rechargement (React, Vue, Next.js) : appeler window.AflAds.fill() après chaque changement de page (17/11/2026).
   function init() {
-    var hosts = Array.prototype.slice.call(document.querySelectorAll('ins.afl-ad'));
-    hosts.slice(0, MAX_SLOTS).forEach(load);
-    hosts.slice(MAX_SLOTS).forEach(function (h) { h.hidden = true; }); // règle : 3 emplacements au plus par page
+    var hosts = Array.prototype.slice.call(document.querySelectorAll('ins.afl-ad')), done = 0, fresh = [];
+    hosts.forEach(function (h) { if (h.getAttribute('data-afl')) done++; else fresh.push(h); });
+    fresh.forEach(function (h) { h.setAttribute('data-afl', '1'); if (done < MAX_SLOTS) { done++; load(h); } else h.hidden = true; }); // règle : 3 emplacements au plus par page
   }
+  window.AflAds = { fill: init };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();

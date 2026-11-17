@@ -730,7 +730,7 @@ async function initSpace() {
     $('#o-share-e').textContent = d.sh.on ? (IS_OFFERED ? 'Offert par l’équipe : aucun paiement' : nf(d.sharePrice) + ' F pour ' + nf(d.sh.v) + ' personnes à atteindre')
       + (est && clicks > 0 ? ' · jusqu’à ≈ ' + nf(clicks) + ' clics valides, soit entre ' + nf(Math.round(clicks / est.ctrMax)) + ' et ' + nf(Math.round(clicks / est.ctrMin)) + ' personnes touchées (estimation)' : '') : '';
     $$('[data-shareonly]').forEach((e) => { e.hidden = !d.sh.on; });
-    $('#f-sbrand-l').hidden = !(IS_OFFERED && d.sh.on);
+    $('#f-sbrand-l').hidden = !IS_OFFERED;   // l'équipe peut afficher la marque de la plateforme annoncée (SlashAtlas, PronoFlash…) sur toute annonce (17/11/2026)
     $('#f-days-l').hidden = !(d.app.on || d.net.on);
     $('#pv-note').innerHTML = !d.paid ? 'Ton annonce sera diffusée sur <b>Afrolook</b>, <b>SlashAtlas</b>, <b>Pronoflash</b> et <b>Épargne+</b> après validation.'
       : 'Ton annonce sera diffusée ' + [d.app.on ? 'dans <b>Afrolook</b>' : '', d.net.on ? 'chez nos <b>sites et applications partenaires</b>' : '', d.sh.on ? 'par le <b>partage au clic</b>' : ''].filter(Boolean).join(', ').replace(/, ([^,]*)$/, ' et $1') + ' après validation.';
@@ -917,7 +917,8 @@ async function initSpace() {
       if (TYPES[st.type].price) payload.price = Number($('#f-price').value);
       if (dif.app.on) payload.budgetApp = dif.app.v;
       if (dif.net.on) payload.budgetNetwork = dif.net.v;
-      if (dif.sh.on) { payload.shareAudience = dif.sh.v; if (IS_OFFERED && $('#f-sbrand').value.trim()) payload.brand = $('#f-sbrand').value.trim(); }
+      if (dif.sh.on) payload.shareAudience = dif.sh.v;
+      if (IS_OFFERED && $('#f-sbrand').value.trim()) payload.brand = $('#f-sbrand').value.trim();   // marque affichée de l'annonce et de la campagne de partage
       const done = await call('adsWebCreate', payload);
       loadWallet();
       $('#adform').reset(); st.banners = {}; st.bannerAuto.clear(); Object.keys(BANNERS).forEach((k) => rowShow(k, null)); if ($('#bn-auto')) $('#bn-auto').hidden = true; bnCount(); $$('.bnrow .bt').forEach((t) => { t.textContent = ''; t.className = 'bt'; }); st.langs.clear(); st.devs.clear(); st.types.clear(); $$('#f-langs span, #f-devs span, #f-types span').forEach((x) => x.classList.remove('on')); st.countries = new Set(['ALL']); $$('#f-countries span').forEach((x) => x.classList.toggle('on', x.dataset.v === 'ALL')); $('#f-cat-note').hidden = true; st.files = []; setVideo(null); showFiles(); refresh();
