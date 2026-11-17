@@ -71,7 +71,7 @@
   .steps li{counter-increment:s;position:relative;padding:4px 0 18px 46px;border-left:2px solid var(--line);margin-left:15px}
   .steps li:last-child{border-color:transparent}
   .steps li::before{content:counter(s);position:absolute;left:-16px;top:0;width:30px;height:30px;border-radius:50%;background:var(--surface);border:2px solid var(--green-b);display:grid;place-items:center;font-weight:800;font-size:13.5px;color:var(--green)}
-  .steps b{display:block;font-size:15.5px}
+  .steps b{display:block;font-size:15.5px} .dl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:8px} .dl small{color:var(--muted);font-size:12.5px}
 
   /* BLOC DE CODE : cadre sombre séparé du texte, onglets, nom du fichier, bouton Copier */
   .code{background:var(--code-bg);border:1px solid var(--code-line);border-radius:14px;margin:16px 0 22px;overflow:hidden;box-shadow:0 10px 30px -18px rgba(0,0,0,.6)}
@@ -116,11 +116,12 @@
   .y{color:var(--green);font-weight:800} .x{color:var(--muted)} .soon{font-size:11px;font-weight:700;background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:var(--muted)}
 
   /* formats en vignettes */
-  .fmts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0}
+  .fmts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin:16px 0}
   .fmt{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;display:grid;gap:8px}
-  .fmt .pv{height:92px;border-radius:10px;background:var(--soft);position:relative;overflow:hidden;display:grid;place-items:center}
-  .pv .a{background:linear-gradient(135deg,#2ECC71,#158246);border-radius:6px} .pv .l{height:6px;border-radius:3px;background:var(--line)}
-  .fmt b{font-size:14.5px} .fmt code{justify-self:start;font-size:11.5px} .fmt small{color:var(--muted);font-size:12.5px}
+  .fmt{margin:0}
+  .fmt .shot{border-radius:12px;overflow:hidden;background:#000;aspect-ratio:390/560;border:1px solid var(--line)} .fmt .shot img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
+  .fmt.wide{margin-top:14px} .fmt.wide .shot{aspect-ratio:1280/520}
+  .fmt figcaption{display:grid;gap:3px;padding:8px 2px 0} .fmt b{font-size:14.5px} .fmt code{justify-self:start;font-size:11.5px} .fmt small{color:var(--muted);font-size:12.5px}
 
   /* testeur */
   .tester{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--surface)}
@@ -163,8 +164,6 @@
   <a href="#natif">Android et iOS (API)</a>
   <h4>Référence de l'API</h4>
   <a href="#serve">Obtenir une annonce <span class="m get">GET</span></a>
-  <a href="#event">Signaler une vue <span class="m post">POST</span></a>
-  <a href="#click">Le clic <span class="m get">GET</span></a>
   <a href="#erreurs">Codes d'erreur</a>
   <h4>Formats</h4>
   <a href="#formats">Les 8 formats</a>
@@ -279,7 +278,11 @@
 
   <section id="flutter">
     <h2>Application Flutter</h2>
-    <p>Télécharge <code>afrolook_ads_banner.dart</code>, copie-le dans ton projet, puis une ligne par emplacement.</p>
+    <ol class="steps">
+      <li><b>Télécharge le composant</b><span class="dl"><a class="btn p" href="https://afrolookmedia.com/ads/afrolook_ads_banner.dart">Télécharger afrolook_ads_banner.dart</a><small>11 Ko · aussi dans ton espace diffuseur, onglet « Intégration »</small></span></li>
+      <li><b>Copie-le dans ton projet</b>Par exemple <code>lib/ads/afrolook_ads_banner.dart</code>, et ajoute les 4 dépendances (onglet <code>pubspec.yaml</code> ci-dessous).</li>
+      <li><b>Une ligne par emplacement</b>Avec ton identifiant <code>ap_xxxxxxxxxx</code>.</li>
+    </ol>
     <div class="code" data-tabs>
       <div class="code-h"><button class="tab on" type="button">Bas de l'écran</button><button class="tab" type="button">Dans une liste</button><button class="tab" type="button">pubspec.yaml</button><span class="lang">Dart</span><button class="copy" type="button">Copier</button></div>
 <pre><span class="ln">1</span><span class="c">// mini bannière fixe en bas d'un écran (320 × 50, fermable)</span>
@@ -298,7 +301,7 @@
 <span class="ln">3</span>  <span class="k">url_launcher:</span> <span class="n">^6.3.0</span>
 <span class="ln">4</span>  <span class="k">visibility_detector:</span> <span class="n">^0.4.0</span>
 <span class="ln">5</span>  <span class="k">shared_preferences:</span> <span class="n">^2.3.0</span></pre>
-      <div class="code-f">Fichier à télécharger : <b>afrolook_ads_banner.dart</b> · Tailles : mini 320×50, large 320×100, medium 300×250, leaderboard 728×90</div>
+      <div class="code-f">Tailles : <b>mini</b> 320×50, <b>large</b> 320×100, <b>medium</b> 300×250, <b>leaderboard</b> 728×90</div>
     </div>
     <div class="call warn"><i>!</i><p>Le composant Flutter affiche aujourd'hui les <b>bannières</b>. Carte native, carrousel, vidéo, interstitiel et récompensée passent par l'API (voir la matrice des formats) — ou par un composant complet à ajouter (proposition).</p></div>
   </section>
@@ -310,18 +313,18 @@
 <pre><span class="ln">1</span><span class="k">val</span> url = <span class="s">"https://afrolookmedia.com/ads/api/serve?pub=ap_xxxxxxxxxx&amp;fmt=native&amp;slot=liste&amp;vid=$visitorId"</span>
 <span class="ln">2</span><span class="k">val</span> ad = JSONObject(http.get(url)).optJSONObject(<span class="s">"ad"</span>) ?: <span class="k">return</span> <span class="c">// pas d'annonce : rien à afficher</span>
 <span class="ln">3</span><span class="c">// 1) afficher titre, image, bouton et la mention « Annonce »</span>
-<span class="ln">4</span><span class="c">// 2) annonce visible à moitié pendant ad.viewMs → POST ad.event {t, e:"view", ms, vid}</span>
-<span class="ln">5</span><span class="c">// 3) au toucher : ouvrir ad.click (jamais l'adresse de l'annonceur)</span></pre>
+<span class="ln">4</span><span class="c">// 2) au toucher : ouvrir ad.click (jamais l'adresse de l'annonceur)</span></pre>
 <pre hidden><span class="ln">1</span><span class="k">let</span> url = <span class="t">URL</span>(string: <span class="s">"https://afrolookmedia.com/ads/api/serve?pub=ap_xxxxxxxxxx&amp;fmt=native&amp;slot=liste&amp;vid=\(visitorId)"</span>)!
 <span class="ln">2</span><span class="k">let</span> (data, _) = <span class="k">try await</span> <span class="t">URLSession</span>.shared.data(from: url)
-<span class="ln">3</span><span class="c">// même principe : afficher, signaler la vue après ad.viewMs, ouvrir ad.click</span></pre>
+<span class="ln">3</span><span class="c">// même principe : afficher l'annonce et la mention « Annonce », ouvrir ad.click au toucher</span></pre>
     </div>
   </section>
 
   <hr>
 
   <section id="serve">
-    <h2>Obtenir une annonce</h2>
+    <h2>API : obtenir une annonce</h2>
+    <div class="call warn"><i>!</i><p>L'API brute sert aux applications <b>vérifiées</b> qui dessinent elles-mêmes l'annonce, sur demande à notre équipe. Pour un site ou une application Flutter, utilise la balise ou le composant : rien d'autre à coder.</p></div>
     <div class="ep"><span class="m get">GET</span><span>https://afrolookmedia.com/ads/api/serve</span></div>
     <div class="api">
       <div>
@@ -334,9 +337,10 @@
           <div><span><code>lang</code><small>fr, en…</small></span><span>Langue de la page.</span></div>
         </div>
         <div class="call"><i>i</i><p>Le pays du visiteur est déterminé par nos serveurs : n'envoie pas de pays.</p></div>
+        <div class="call ok"><i>✓</i><p><b>Afficher l'annonce, c'est tout.</b> Le bouton de l'annonce pointe vers <code>click</code>. Le comptage des vues est fait par nos composants (balise, composant Flutter) : tu n'as rien à envoyer.</p></div>
       </div>
       <div class="code" data-tabs>
-        <div class="code-h"><button class="tab on" type="button">Réponse 200</button><button class="tab" type="button">cURL</button><span class="lang">JSON</span><button class="copy" type="button">Copier</button></div>
+        <div class="code-h"><button class="tab on" type="button">Réponse</button><button class="tab" type="button">Exemple d'appel</button><span class="lang">JSON</span><button class="copy" type="button">Copier</button></div>
 <pre>{
   <span class="k">"ok"</span>: <span class="n">true</span>,
   <span class="k">"ad"</span>: {
@@ -346,9 +350,7 @@
     <span class="k">"brand"</span>: { <span class="k">"name"</span>: <span class="s">"Kofi"</span>, <span class="k">"logo"</span>: <span class="s">"https://…"</span>, <span class="k">"domain"</span>: <span class="s">"kofi.tg"</span> },
     <span class="k">"media"</span>: { <span class="k">"type"</span>: <span class="s">"image"</span>, <span class="k">"url"</span>: <span class="s">"https://…"</span>, <span class="k">"images"</span>: [<span class="s">"…"</span>] },
     <span class="k">"banner"</span>: { <span class="k">"url"</span>: <span class="s">"https://…"</span>, <span class="k">"w"</span>: <span class="n">728</span>, <span class="k">"h"</span>: <span class="n">90</span> },
-    <span class="k">"click"</span>: <span class="s">"https://afrolookmedia.com/ads/api/go?t=…"</span>,
-    <span class="k">"token"</span>: <span class="s">"…"</span>, <span class="k">"event"</span>: <span class="s">"https://afrolookmedia.com/ads/api/event"</span>,
-    <span class="k">"viewMs"</span>: <span class="n">1000</span>, <span class="k">"ttlMs"</span>: <span class="n">1800000</span>
+    <span class="k">"click"</span>: <span class="s">"https://afrolookmedia.com/ads/api/go?t=…"</span>
   }
 }</pre>
 <pre hidden>curl <span class="s">"https://afrolookmedia.com/ads/api/serve?pub=ap_xxxxxxxxxx&amp;fmt=native&amp;slot=article&amp;vid=visiteur-0001&amp;lang=fr"</span></pre>
@@ -356,48 +358,15 @@
     </div>
   </section>
 
-  <section id="event">
-    <h2>Signaler une vue</h2>
-    <div class="ep"><span class="m post">POST</span><span>https://afrolookmedia.com/ads/api/event</span></div>
-    <div class="api">
-      <div>
-        <div class="params">
-          <div><span><code>t</code><span class="req">obligatoire</span></span><span>Le <code>token</code> reçu (une seule vue, 30 minutes).</span></div>
-          <div><span><code>e</code><span class="req">obligatoire</span></span><span><code>view</code>, ou <code>complete</code> (vidéo et récompensée lues jusqu'au bout).</span></div>
-          <div><span><code>ms</code><span class="req">obligatoire</span></span><span>Temps pendant lequel l'annonce était visible à moitié.</span></div>
-          <div><span><code>vid</code><span class="req">obligatoire</span></span><span>Le même identifiant de visiteur que pour <code>serve</code>.</span></div>
-        </div>
-        <div class="call danger"><i>!</i><p>Une vue n'est comptée que si l'annonce a <b>vraiment été affichée</b> à une personne. Envoyer des vues sans afficher l'annonce est de la fraude : gains retirés et compte fermé.</p></div>
-      </div>
-      <div class="code" data-tabs>
-        <div class="code-h"><button class="tab on" type="button">Requête</button><button class="tab" type="button">Réponses</button><span class="lang">JSON</span><button class="copy" type="button">Copier</button></div>
-<pre>{ <span class="k">"t"</span>: <span class="s">"&lt;token&gt;"</span>, <span class="k">"e"</span>: <span class="s">"view"</span>, <span class="k">"ms"</span>: <span class="n">1050</span>, <span class="k">"vid"</span>: <span class="s">"visiteur-0001"</span> }</pre>
-<pre hidden><span class="c">// comptée</span>
-{ <span class="k">"ok"</span>: <span class="n">true</span>, <span class="k">"counted"</span>: <span class="n">true</span> }
-<span class="c">// refusée, avec le motif</span>
-{ <span class="k">"ok"</span>: <span class="n">true</span>, <span class="k">"counted"</span>: <span class="n">false</span>, <span class="k">"reason"</span>: <span class="s">"not_visible"</span> }</pre>
-      </div>
-    </div>
-  </section>
-
-  <section id="click">
-    <h2>Le clic</h2>
-    <div class="ep"><span class="m get">GET</span><span>ad.click → https://afrolookmedia.com/ads/api/go?t=…</span></div>
-    <p>Le bouton de l'annonce ouvre <b>toujours</b> le lien <code>click</code> : Afrolook Ads compte le clic puis ouvre l'annonceur (le bon magasin selon le téléphone pour une application). N'appelle jamais ce lien toi-même.</p>
-  </section>
-
   <section id="erreurs">
-    <h2>Codes d'erreur et motifs de refus</h2>
+    <h2>Codes d'erreur</h2>
     <div class="tw"><table>
       <thead><tr><th>Code / motif</th><th>Signification</th><th>Que faire</th></tr></thead>
       <tbody>
         <tr><td><code>403 diffuseur</code></td><td>Identifiant inconnu ou site pas encore validé</td><td>Vérifie l'identifiant, attends la validation</td></tr>
         <tr><td><code>403 origine</code></td><td>Appel depuis un domaine non déclaré</td><td>Ajoute le domaine dans ton espace</td></tr>
         <tr><td><code>429</code></td><td>Trop de demandes</td><td>Pas de rafraîchissement automatique</td></tr>
-        <tr><td><code>not_visible</code> · <code>too_fast</code></td><td>Pas assez longtemps visible, ou durée impossible</td><td>Mesure la visibilité réelle</td></tr>
-        <tr><td><code>interval</code> · <code>ad_cap</code> · <code>device_cap</code> · <code>ip_cap</code></td><td>Limites de fréquence atteintes</td><td>Normal : rien à faire</td></tr>
-        <tr><td><code>replay</code> · <code>expired</code></td><td>Jeton déjà utilisé ou trop vieux</td><td>Un jeton = une vue, dans les 30 minutes</td></tr>
-        <tr><td><code>bot</code></td><td>Visiteur automatique</td><td>Ne compte pas, n'est pas payé</td></tr>
+        <tr><td><code>"ad": null</code></td><td>Aucune annonce pour ce visiteur</td><td>Normal : l'emplacement reste vide</td></tr>
       </tbody>
     </table></div>
   </section>
@@ -406,16 +375,9 @@
 
   <section id="formats">
     <h2>Les 8 formats</h2>
-    <div class="fmts">
-      <div class="fmt"><div class="pv"><div class="a" style="width:86%;height:26px"></div></div><b>Bannière</b><code>banner</code><small>Vue après 1 s · tu reçois 650 F / 1 000</small></div>
-      <div class="fmt"><div class="pv"><div class="a" style="position:absolute;bottom:6px;width:86%;height:16px"></div></div><b>Bandeau collant</b><code>sticky</code><small>1 s · 812,50 F / 1 000 · fermable</small></div>
-      <div class="fmt"><div class="pv" style="place-items:start;padding:10px;gap:5px"><div class="a" style="width:100%;height:40px"></div><div class="l" style="width:70%"></div><div class="l" style="width:45%"></div></div><b>Carte native</b><code>native</code><small>1 s · 975 F / 1 000</small></div>
-      <div class="fmt"><div class="pv" style="display:flex;gap:6px;padding:10px"><div class="a" style="flex:none;width:60%;height:70px"></div><div class="a" style="flex:none;width:60%;height:70px;opacity:.5"></div></div><b>Carrousel</b><code>carousel</code><small>1 s · 1 170 F / 1 000 · 2 à 5 images</small></div>
-      <div class="fmt"><div class="pv"><div class="a" style="width:52%;height:80px"></div></div><b>Affiche</b><code>poster</code><small>1 s · 1 300 F / 1 000</small></div>
-      <div class="fmt"><div class="pv"><div class="a" style="width:80%;height:60px;display:grid;place-items:center;color:#fff;font-weight:900">▶</div></div><b>Vidéo</b><code>video</code><small>2 s · 1 625 F / 1 000</small></div>
-      <div class="fmt"><div class="pv"><div class="a" style="width:100%;height:100%;border-radius:0"></div></div><b>Interstitiel</b><code>interstitial</code><small>1 s · 1 950 F / 1 000 · toutes les 10 min</small></div>
-      <div class="fmt"><div class="pv"><div class="a" style="width:100%;height:100%;border-radius:0;display:grid;place-items:center;color:#fff;font-weight:800;font-size:12px">+ récompense</div></div><b>Récompensée</b><code>rewarded</code><small>Lecture complète · 2 275 F / 1 000</small></div>
-    </div>
+    <p>Chaque vue ci-dessous est une <b>vraie capture</b> : une vraie annonce de la régie, dessinée par la balise <code>tag.js</code>, dans une vraie page de nos plateformes.</p>
+    <div class="fmts"><figure class="fmt"><div class="shot"><img src="formats/banniere_320x100.jpg" alt="Bannière 320 × 100 sur PronoFlash IA · téléphone" loading="lazy"></div><figcaption><b>Bannière 320 × 100</b><code>banner</code><small>PronoFlash IA · téléphone</small><small>Vue après 1 s · tu reçois 650 F pour 1 000 vues</small></figcaption></figure><figure class="fmt"><div class="shot"><img src="formats/rectangle_300x250.jpg" alt="Rectangle 300 × 250 sur SlashAtlas · téléphone" loading="lazy"></div><figcaption><b>Rectangle 300 × 250</b><code>banner</code><small>SlashAtlas · téléphone</small><small>1 s · 650 F pour 1 000</small></figcaption></figure><figure class="fmt"><div class="shot"><img src="formats/bandeau_collant_320x50.jpg" alt="Bandeau collant 320 × 50 sur SlashAtlas · bas de l’écran, fermable" loading="lazy"></div><figcaption><b>Bandeau collant 320 × 50</b><code>sticky</code><small>SlashAtlas · bas de l’écran, fermable</small><small>1 s · 812,50 F pour 1 000</small></figcaption></figure><figure class="fmt"><div class="shot"><img src="formats/carte_native.jpg" alt="Carte native sur PronoFlash IA · dans le contenu" loading="lazy"></div><figcaption><b>Carte native</b><code>native</code><small>PronoFlash IA · dans le contenu</small><small>1 s · 975 F pour 1 000</small></figcaption></figure><figure class="fmt"><div class="shot"><img src="formats/carrousel.jpg" alt="Carrousel sur SlashAtlas · 2 à 5 images" loading="lazy"></div><figcaption><b>Carrousel</b><code>carousel</code><small>SlashAtlas · 2 à 5 images</small><small>1 s · 1 170 F pour 1 000</small></figcaption></figure><figure class="fmt"><div class="shot"><img src="formats/affiche.jpg" alt="Affiche sur PronoFlash IA · pleine largeur" loading="lazy"></div><figcaption><b>Affiche</b><code>poster</code><small>PronoFlash IA · pleine largeur</small><small>1 s · 1 300 F pour 1 000</small></figcaption></figure><figure class="fmt"><div class="shot"><img src="formats/video.jpg" alt="Vidéo sur SlashAtlas · sans son, 15 s au plus" loading="lazy"></div><figcaption><b>Vidéo</b><code>video</code><small>SlashAtlas · sans son, 15 s au plus</small><small>2 s · 1 625 F pour 1 000</small></figcaption></figure><figure class="fmt"><div class="shot"><img src="formats/interstitiel.jpg" alt="Interstitiel sur PronoFlash IA · plein écran, ✕ après 3 s" loading="lazy"></div><figcaption><b>Interstitiel</b><code>interstitial</code><small>PronoFlash IA · plein écran, ✕ après 3 s</small><small>1 s · 1 950 F pour 1 000, toutes les 10 min</small></figcaption></figure><figure class="fmt"><div class="shot"><img src="formats/recompensee.jpg" alt="Récompensée sur SlashAtlas · regardée contre un avantage" loading="lazy"></div><figcaption><b>Récompensée</b><code>rewarded</code><small>SlashAtlas · regardée contre un avantage</small><small>Lecture complète · 2 275 F pour 1 000</small></figcaption></figure></div>
+    <figure class="fmt wide"><div class="shot"><img src="formats/leaderboard_728x90.jpg" alt="Leaderboard 728 × 90 sur PronoFlash IA, ordinateur" loading="lazy"></div><figcaption><b>Leaderboard 728 × 90</b><code>banner</code><small>PronoFlash IA · ordinateur, haut de page</small><small>1 s · 650 F pour 1 000</small></figcaption></figure>
     <p style="font-size:13.5px;color:var(--muted)">Montants : ta part (65 %) du prix payé par l'annonceur pour 1 000 vues valides.</p>
   </section>
 
@@ -467,7 +429,7 @@
   <section id="comptage">
     <h2>Comptage et fraude</h2>
     <div class="call ok"><i>✓</i><p><b>Vue valide</b> : jeton signé et jamais utilisé, annonce visible à moitié pendant la durée du format, visiteur réel, site déclaré, limites de fréquence respectées.</p></div>
-    <div class="call danger"><i>!</i><p><b>Interdit</b> : cliquer sur tes annonces ou inciter à cliquer, acheter du trafic, robots, rafraîchissement automatique, cadres cachés, appeler l'API depuis un serveur, signaler des vues sans afficher l'annonce.</p></div>
+    <div class="call danger"><i>!</i><p><b>Interdit</b> : cliquer sur tes annonces ou inciter à cliquer, acheter du trafic, robots, rafraîchissement automatique, cadres cachés, masquer ou modifier l'annonce.</p></div>
     <p>Trafic invalide : moins de 10 % normal, 10 à 25 % alerte, plus de 25 % emplacement suspendu.</p>
   </section>
 
