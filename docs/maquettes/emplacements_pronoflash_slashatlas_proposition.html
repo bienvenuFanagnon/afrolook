@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emplacements PronoFlash et SlashAtlas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#F6F8F5;--surface:#fff;--soft:#EDF2EC;--ink:#0D1511;--muted:#5A665D;--line:#DCE4DB;--green:#158246;--gb:#2ECC71;
+    --f-banner:#2563EB;--f-sticky:#0EA5E9;--f-native:#16A34A;--f-carousel:#9333EA;--f-poster:#DB2777;--f-video:#EA580C;--f-inter:#DC2626;--f-reward:#CA8A04;
+    --pf:#080D18;--pf-y:#FFD60A;--sa:#000}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0A0F0C;--surface:#111914;--soft:#16211A;--ink:#EEF4EF;--muted:#9AA79E;--line:#223028;--green:#2ECC71;color-scheme:dark}}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 'Figtree',system-ui,sans-serif;padding:28px 16px 70px}
+  .wrap{max-width:1240px;margin:0 auto}
+  h1{font-size:32px;margin:6px 0 8px;letter-spacing:-.02em} h2{font-size:23px;margin:46px 0 6px} h3{font-size:16px;margin:0 0 8px}
+  .kicker{color:var(--green);font-weight:800;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase} .lead{color:var(--muted);max-width:78ch}
+  code{font-family:'JetBrains Mono',monospace;font-size:.85em;background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+  .now{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:18px 0}
+  .box{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 18px}
+  .bad{border-left:4px solid #DC2626} .mid{border-left:4px solid #E5A100}
+  .box ul{margin:6px 0 0;padding-left:20px} .box li{margin:3px 0}
+  .legend{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+  .lg{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:4px 10px 4px 6px}
+  .lg i{width:14px;height:14px;border-radius:4px}
+  .pages{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:18px;margin-top:14px}
+  .pg{display:grid;gap:8px}
+  .pg>b{font-size:14.5px} .pg>small{color:var(--muted);font-size:12.5px;min-height:34px}
+  /* téléphone */
+  .ph{width:100%;max-width:270px;border-radius:30px;border:8px solid #1d2420;background:#1d2420;position:relative;overflow:hidden}
+  .scr{border-radius:22px;overflow:hidden;height:520px;display:flex;flex-direction:column;gap:6px;padding:8px;position:relative}
+  .pf .scr{background:var(--pf);color:#fff} .sa .scr{background:var(--sa);color:#fff}
+  .bar{height:24px;border-radius:6px;background:rgba(255,255,255,.08);display:flex;align-items:center;padding:0 8px;font-size:10px;font-weight:800;flex:none}
+  .pf .bar b{color:var(--pf-y)} .sa .bar b{color:#1E90FF}
+  .ct{border-radius:8px;background:rgba(255,255,255,.07);flex:none} .ct.l{height:8px;width:70%;border-radius:4px}
+  .ad{border-radius:8px;color:#fff;font:800 10px 'Figtree',sans-serif;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.2;flex:none;padding:4px;position:relative;outline:2px dashed rgba(255,255,255,.55);outline-offset:-3px}
+  .ad small{display:block;font-weight:600;opacity:.85;font-size:9px}
+  .ad.new::after{content:"NOUVEAU";position:absolute;top:-1px;right:-1px;background:#fff;color:#111;font-size:7.5px;padding:1px 4px;border-radius:0 7px 0 6px}
+  .banner{background:var(--f-banner)} .sticky{background:var(--f-sticky)} .native{background:var(--f-native)} .carousel{background:var(--f-carousel)}
+  .poster{background:var(--f-poster)} .video{background:var(--f-video)} .inter{background:var(--f-inter)} .reward{background:var(--f-reward)}
+  .stk{position:absolute;left:8px;right:8px;bottom:8px;height:30px}
+  .over{position:absolute;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:center;padding:30px}
+  .over .ad{width:100%;height:70%}
+  /* ordinateur */
+  .desk{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface)}
+  .desk .chrome{height:26px;background:var(--soft);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:5px;padding:0 10px}
+  .desk .chrome i{width:9px;height:9px;border-radius:50%;background:var(--line)}
+  .desk .scr{height:auto;border-radius:0;display:grid;grid-template-columns:1fr 150px;gap:8px;padding:10px}
+  .desk .col{display:flex;flex-direction:column;gap:6px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .t{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface);margin-top:14px}
+  .t table{border-collapse:collapse;width:100%;font-size:13.5px} .t th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--soft);padding:9px 12px} .t td{padding:9px 12px;border-top:1px solid var(--line);vertical-align:top}
+  .tw{overflow-x:auto} .t table{min-width:760px}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+  .q{background:#FFF7D6;color:#3A2C00;border:1px solid #EAD27A;border-radius:14px;padding:14px 18px;margin-top:18px}
+  .q ol{margin:6px 0 0;padding-left:20px} .q li{margin:4px 0}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .q{background:#2A2306;color:#FFE9A3;border-color:#4A3D0B}}
+  @media (max-width:760px){.now{grid-template-columns:1fr}.desk .scr{grid-template-columns:1fr}}
+</style>
+</head>
+<body><div class="wrap">
+  <span class="kicker">Afrolook Ads · Proposition à valider</span>
+  <h1>Une place pour chaque format, sur PronoFlash et SlashAtlas</h1>
+  <p class="lead">Aujourd'hui, les deux sites n'utilisent presque pas les formats de la régie. Voici où chaque format trouverait sa place, sans gêner la lecture : <b>3 annonces au plus par page</b>, plein écran et récompensée jamais imposés.</p>
+
+  <div class="now">
+    <div class="box bad"><h3>PronoFlash IA aujourd'hui</h3><ul>
+      <li>Interroge l'<b>ancien système</b> d'annonces (anciennes fonctions Firebase) : il répond toujours « aucune annonce ». <b>Aucune annonce d'annonceur ne s'affiche</b> : seul l'encart maison de l'application Afrolook reste.</li>
+      <li>Ne demande qu'<b>un seul format</b> : carte native, même pour la colonne 300 × 250 et le haut de page.</li>
+      <li>Emplacements déjà prévus : haut de page, entre les matchs, fiche match, colonne (ordinateur), fin de page, bandeau collant.</li>
+    </ul></div>
+    <div class="box mid"><h3>SlashAtlas aujourd'hui</h3><ul>
+      <li>Utilise bien la nouvelle régie et sait demander les 8 formats.</li>
+      <li>Mais <b>une seule annonce par page</b>, seulement sur 3 pages (accueil, fiche commande, Générer), 6 par visite au plus. La grande bannière passe en premier : c'est pour ça qu'on ne voit qu'elle.</li>
+      <li>Carrousel et vidéo : une fois par visite ; affiche et carte native : sur 2 pages seulement.</li>
+    </ul></div>
+  </div>
+
+  <div class="legend">
+    <span class="lg"><i style="background:var(--f-banner)"></i>Bannière 728×90 / 320×100 / 300×250</span>
+    <span class="lg"><i style="background:var(--f-sticky)"></i>Bandeau collant 320×50</span>
+    <span class="lg"><i style="background:var(--f-native)"></i>Carte native</span>
+    <span class="lg"><i style="background:var(--f-carousel)"></i>Carrousel</span>
+    <span class="lg"><i style="background:var(--f-poster)"></i>Affiche</span>
+    <span class="lg"><i style="background:var(--f-video)"></i>Vidéo</span>
+    <span class="lg"><i style="background:var(--f-inter)"></i>Interstitiel</span>
+    <span class="lg"><i style="background:var(--f-reward)"></i>Récompensée</span>
+  </div>
+
+  <h2>PronoFlash IA</h2>
+  <p class="lead">Brancher le site sur la nouvelle régie (<code>/ads/api/serve</code>), puis demander le bon format pour chaque emplacement.</p>
+  <div class="pages pf">
+    <div class="pg"><b>Accueil · matchs du jour</b><small>Grande bannière en haut, carte native toutes les 6 rencontres, bandeau collant.</small>
+      <div class="ph"><div class="scr">
+        <div class="bar"><b>Prono</b>Flash IA</div>
+        <div class="ad banner" style="height:44px">Grande bannière<small>320 × 100 · haut</small></div>
+        <div class="ct" style="height:62px"></div><div class="ct" style="height:62px"></div><div class="ct" style="height:62px"></div>
+        <div class="ad native" style="height:92px">Carte native<small>entre les matchs</small></div>
+        <div class="ct" style="height:62px"></div><div class="ct" style="height:40px"></div>
+        <div class="ad sticky stk">Bandeau collant 320 × 50<small>fermable</small></div>
+      </div></div></div>
+    <div class="pg"><b>Fiche d'un match</b><small>Rectangle après l'analyse, vidéo après les confrontations, affiche en fin de page.</small>
+      <div class="ph"><div class="scr">
+        <div class="bar"><b>Prono</b>Flash IA</div>
+        <div class="ct" style="height:70px"></div><div class="ct l"></div><div class="ct l" style="width:50%"></div>
+        <div class="ad banner new" style="height:96px;width:86%;align-self:center">Rectangle moyen<small>300 × 250 · après l'analyse</small></div>
+        <div class="ct" style="height:46px"></div>
+        <div class="ad video new" style="height:96px">Vidéo<small>après les confrontations</small></div>
+        <div class="ct" style="height:40px"></div>
+        <div class="ad poster new" style="height:84px">Affiche<small>fin de la fiche</small></div>
+      </div></div></div>
+    <div class="pg"><b>Coupon du jour · paris avancés</b><small>La récompensée ouvre les paris avancés : la personne choisit de regarder une annonce.</small>
+      <div class="ph"><div class="scr">
+        <div class="bar"><b>Prono</b>Flash IA</div>
+        <div class="ct" style="height:110px"></div>
+        <div class="ad reward new" style="height:74px">Récompensée<small>« Regarder une annonce pour voir les paris avancés »</small></div>
+        <div class="ct" style="height:60px"></div>
+        <div class="ad native" style="height:86px">Carte native<small>sous le coupon</small></div>
+        <div class="ct" style="height:40px"></div>
+      </div></div></div>
+    <div class="pg"><b>Actualités · changement de page</b><small>Carrousel entre les articles ; interstitiel à la 3e page, une fois par visite, fermable après 3 s.</small>
+      <div class="ph"><div class="scr">
+        <div class="bar"><b>Prono</b>Flash IA</div>
+        <div class="ct" style="height:70px"></div><div class="ct" style="height:70px"></div>
+        <div class="ad carousel new" style="height:96px">Carrousel<small>2 à 5 images · entre les articles</small></div>
+        <div class="ct" style="height:70px"></div><div class="ct" style="height:60px"></div>
+        <div class="over"><div class="ad inter new">Interstitiel<small>3e page de la visite · ✕ après 3 s</small></div></div>
+      </div></div></div>
+  </div>
+  <h3 style="margin-top:22px">PronoFlash sur ordinateur · fiche d'un match</h3>
+  <div class="desk pf"><div class="chrome"><i></i><i></i><i></i></div><div class="scr" style="background:var(--pf)">
+    <div class="col">
+      <div class="ad banner new" style="height:34px">Leaderboard 728 × 90 · haut de page</div>
+      <div class="ct" style="height:90px"></div><div class="grid2"><div class="ct" style="height:60px"></div><div class="ct" style="height:60px"></div></div>
+      <div class="ad video new" style="height:80px">Vidéo · après les confrontations</div>
+      <div class="ct" style="height:50px"></div>
+      <div class="ad poster new" style="height:60px">Affiche · fin de la fiche</div>
+    </div>
+    <div class="col">
+      <div class="ct" style="height:60px"></div>
+      <div class="ad banner" style="height:125px">Rectangle 300 × 250<small>colonne, reste visible</small></div>
+      <div class="ct" style="height:50px"></div>
+    </div>
+  </div></div>
+
+  <h2>SlashAtlas</h2>
+  <p class="lead">Passer de « une annonce par page sur 3 pages » à « jusqu'à 3 par page sur toutes les pages », chaque format à sa place.</p>
+  <div class="pages sa">
+    <div class="pg"><b>Accueil et catégories</b><small>Grande bannière en haut, une carte native « commande sponsorisée » toutes les 12 commandes.</small>
+      <div class="ph"><div class="scr">
+        <div class="bar"><b>/</b>SlashAtlas</div>
+        <div class="ad banner" style="height:44px">Grande bannière<small>320 × 100 · haut</small></div>
+        <div class="grid2"><div class="ct" style="height:80px"></div><div class="ct" style="height:80px"></div><div class="ct" style="height:80px"></div><div class="ct" style="height:80px"></div></div>
+        <div class="grid2"><div class="ad native new" style="height:80px">Carte native<small>dans la grille</small></div><div class="ct" style="height:80px"></div></div>
+        <div class="grid2"><div class="ct" style="height:80px"></div><div class="ct" style="height:80px"></div></div>
+      </div></div></div>
+    <div class="pg"><b>Fiche d'une commande</b><small>Rectangle sous le bouton Copier, carrousel sous les commandes liées, bandeau collant.</small>
+      <div class="ph"><div class="scr">
+        <div class="bar"><b>/</b>SlashAtlas</div>
+        <div class="ct" style="height:120px"></div>
+        <div class="ct" style="height:30px;background:#30D158;opacity:.8"></div>
+        <div class="ad banner new" style="height:96px;width:86%;align-self:center">Rectangle moyen<small>300 × 250 · sous « Copier »</small></div>
+        <div class="ct" style="height:50px"></div>
+        <div class="ad carousel" style="height:84px">Carrousel<small>sous les commandes liées</small></div>
+        <div class="ad sticky stk">Bandeau collant 320 × 50</div>
+      </div></div></div>
+    <div class="pg"><b>Générer · pendant l'attente</b><small>La génération prend quelques secondes : une vidéo occupe l'attente, sans retarder le résultat.</small>
+      <div class="ph"><div class="scr">
+        <div class="bar"><b>/</b>SlashAtlas</div>
+        <div class="ct" style="height:90px"></div>
+        <div class="ct l" style="width:60%"></div>
+        <div class="ad video new" style="height:150px">Vidéo<small>pendant que l'affiche se crée</small></div>
+        <div class="ct" style="height:40px"></div>
+        <div class="ad reward new" style="height:62px">Récompensée ?<small>à décider (voir question 3)</small></div>
+      </div></div></div>
+    <div class="pg"><b>Guides · après 2 copies</b><small>Affiche en fin de guide ; interstitiel déjà en place à la 2e copie.</small>
+      <div class="ph"><div class="scr">
+        <div class="bar"><b>/</b>SlashAtlas</div>
+        <div class="ad banner" style="height:44px">Grande bannière<small>haut du guide</small></div>
+        <div class="ct l"></div><div class="ct l" style="width:80%"></div><div class="ct" style="height:80px"></div><div class="ct l"></div>
+        <div class="ad poster new" style="height:120px">Affiche<small>fin du guide</small></div>
+        <div class="over"><div class="ad inter">Interstitiel<small>2e copie · ✕ après 3 s</small></div></div>
+      </div></div></div>
+  </div>
+
+  <h2>Récapitulatif</h2>
+  <div class="t"><div class="tw"><table>
+    <thead><tr><th>Format</th><th>PronoFlash IA</th><th>SlashAtlas</th></tr></thead>
+    <tbody>
+      <tr><td><span class="dot" style="background:var(--f-banner)"></span>Leaderboard 728 × 90</td><td>Haut des pages (ordinateur)</td><td>Haut des pages (ordinateur)</td></tr>
+      <tr><td><span class="dot" style="background:var(--f-banner)"></span>Grande bannière 320 × 100</td><td>Haut des pages (téléphone)</td><td>Haut accueil, catégories, guides</td></tr>
+      <tr><td><span class="dot" style="background:var(--f-banner)"></span>Rectangle 300 × 250</td><td>Colonne (ordinateur), après l'analyse (téléphone)</td><td>Sous le bouton « Copier »</td></tr>
+      <tr><td><span class="dot" style="background:var(--f-sticky)"></span>Bandeau collant 320 × 50</td><td>Bas de l'écran (déjà prévu)</td><td>Fiche commande (déjà)</td></tr>
+      <tr><td><span class="dot" style="background:var(--f-native)"></span>Carte native</td><td>Toutes les 6 rencontres, sous le coupon</td><td>Toutes les 12 commandes de la grille</td></tr>
+      <tr><td><span class="dot" style="background:var(--f-carousel)"></span>Carrousel</td><td>Entre les articles d'actualité</td><td>Sous les commandes liées (déjà)</td></tr>
+      <tr><td><span class="dot" style="background:var(--f-poster)"></span>Affiche</td><td>Fin de la fiche d'un match</td><td>Fin des guides</td></tr>
+      <tr><td><span class="dot" style="background:var(--f-video)"></span>Vidéo</td><td>Fiche match, après les confrontations</td><td>Page Générer, pendant l'attente</td></tr>
+      <tr><td><span class="dot" style="background:var(--f-inter)"></span>Interstitiel</td><td>3e page de la visite, une fois</td><td>2e copie (déjà)</td></tr>
+      <tr><td><span class="dot" style="background:var(--f-reward)"></span>Récompensée</td><td>Ouvrir les paris avancés</td><td>À décider</td></tr>
+    </tbody>
+  </table></div></div>
+
+  <div class="q"><b>Questions avant de coder</b><ol>
+    <li><b>Densité</b> : 3 annonces au plus par page (règle de la documentation) et le plein écran une fois par visite, ça te va ?</li>
+    <li><b>PronoFlash · récompensée</b> : les paris avancés seraient visibles après une annonce regardée (aujourd'hui ils sont ouverts à tous). On le fait, ou on les laisse libres et la récompensée n'a pas de place ?</li>
+    <li><b>SlashAtlas · récompensée</b> : offrir quelque chose (par exemple une génération ou un crédit) contre une annonce regardée touche aux crédits payants. Oui, non, ou plus tard ?</li>
+    <li><b>Encart maison</b> (pub de l'application Afrolook) : on le garde quand aucune annonce d'annonceur n'est disponible ?</li>
+  </ol></div>
+</div></body>
+</html>

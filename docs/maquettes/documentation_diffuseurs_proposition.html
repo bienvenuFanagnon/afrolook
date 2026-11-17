@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Documentation diffuseurs · proposition</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F7F9F6; --surface:#FFFFFF; --soft:#EEF3ED; --ink:#0D1511; --muted:#5A665D; --line:#DCE4DB;
+    --green:#158246; --green-b:#2ECC71; --on-green:#06210F; --yellow:#FFD21F; --red:#D93F45; --blue:#2563EB;
+    --code-bg:#0E1512; --code-head:#151F1A; --code-line:#25322B; --code-ink:#E6EEE8; --code-mut:#86968B;
+    --t-key:#7DD3A8; --t-str:#F5C46B; --t-tag:#7FB4FF; --t-com:#6E7F74; --t-num:#F0937B;
+    --sans:'Figtree',system-ui,-apple-system,'Segoe UI',sans-serif; --mono:'JetBrains Mono',ui-monospace,'Cascadia Code',Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#0A0F0C; --surface:#111914; --soft:#16211A; --ink:#EEF4EF; --muted:#9AA79E; --line:#223028; --green:#2ECC71; --red:#FF6B6F; --blue:#7FB4FF;
+    --code-bg:#070B09; --code-head:#0F1612; --code-line:#1C2721; color-scheme:dark}}
+  :root[data-theme="dark"]{--bg:#0A0F0C; --surface:#111914; --soft:#16211A; --ink:#EEF4EF; --muted:#9AA79E; --line:#223028; --green:#2ECC71; --red:#FF6B6F; --blue:#7FB4FF;
+    --code-bg:#070B09; --code-head:#0F1612; --code-line:#1C2721; color-scheme:dark}
+  *{box-sizing:border-box} html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15.5px/1.6 var(--sans)}
+  a{color:var(--green)} code{font-family:var(--mono);font-size:.88em;background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
+  .note{background:#FFF7D6;color:#3A2C00;border-bottom:1px solid #EAD27A;padding:10px 16px;font-size:13.5px;text-align:center}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .note{background:#2A2306;color:#FFE9A3;border-color:#4A3D0B}}
+  :root[data-theme="dark"] .note{background:#2A2306;color:#FFE9A3;border-color:#4A3D0B}
+
+  /* barre du haut */
+  .top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--surface) 92%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .top-in{display:flex;align-items:center;gap:16px;padding:10px 20px;max-width:1400px;margin:0 auto}
+  .brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:17px;text-decoration:none;color:var(--ink)}
+  .brand i{width:28px;height:28px;border-radius:50%;background:var(--green-b);display:grid;place-items:center;color:var(--on-green);font-style:normal;font-weight:900}
+  .pill{background:var(--yellow);color:#111;font-size:11px;font-weight:800;padding:2px 7px;border-radius:5px;letter-spacing:.04em}
+  .crumb{color:var(--muted);font-size:13.5px}
+  .search{margin-left:auto;display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--soft);border-radius:10px;padding:7px 12px;color:var(--muted);font-size:13.5px;min-width:220px}
+  .search kbd{margin-left:auto;font-family:var(--mono);font-size:11px;border:1px solid var(--line);border-radius:5px;padding:0 5px;background:var(--surface)}
+  .themebtn{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:7px 10px;cursor:pointer;font:inherit;font-size:13px}
+  .btn{display:inline-flex;align-items:center;gap:8px;border-radius:10px;padding:9px 16px;font-weight:700;font-size:14px;text-decoration:none;border:1px solid var(--line);color:var(--ink);background:var(--surface)}
+  .btn.p{background:var(--green-b);border-color:var(--green-b);color:var(--on-green)}
+
+  /* trois colonnes : menu, contenu, « sur cette page » */
+  .layout{display:grid;grid-template-columns:260px minmax(0,1fr) 210px;gap:36px;max-width:1400px;margin:0 auto;padding:0 20px}
+  .side{position:sticky;top:58px;height:calc(100vh - 58px);overflow:auto;padding:24px 0 40px;border-right:1px solid var(--line)}
+  .side h4{margin:18px 0 6px;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .side a{display:flex;align-items:center;gap:8px;padding:6px 12px;margin-right:14px;border-radius:8px;color:var(--ink);text-decoration:none;font-size:14px}
+  .side a:hover{background:var(--soft)} .side a.on{background:color-mix(in srgb,var(--green-b) 16%,transparent);color:var(--green);font-weight:700}
+  .side .m{margin-left:auto;font-family:var(--mono);font-size:10px;font-weight:600;padding:1px 6px;border-radius:5px}
+  .m.get{background:color-mix(in srgb,var(--blue) 15%,transparent);color:var(--blue)} .m.post{background:color-mix(in srgb,var(--green-b) 18%,transparent);color:var(--green)}
+  .toc{position:sticky;top:58px;padding:28px 0;font-size:13px}
+  .toc b{display:block;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .toc a{display:block;color:var(--muted);text-decoration:none;padding:4px 0 4px 12px;border-left:2px solid var(--line)} .toc a:hover{color:var(--ink);border-color:var(--green-b)}
+  main{padding:28px 0 80px;min-width:0}
+
+  /* texte */
+  .kicker{color:var(--green);font-weight:800;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase}
+  h1{font-size:38px;line-height:1.15;margin:8px 0 10px;letter-spacing:-.02em;text-wrap:balance}
+  h2{font-size:25px;margin:56px 0 10px;letter-spacing:-.01em;scroll-margin-top:80px;padding-top:6px}
+  h3{font-size:18px;margin:30px 0 8px;scroll-margin-top:80px}
+  p{max-width:72ch} .lead{font-size:17.5px;color:var(--muted);max-width:64ch}
+  hr{border:0;border-top:1px solid var(--line);margin:40px 0}
+
+  /* cartes de démarrage */
+  .cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:22px 0}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;text-decoration:none;color:var(--ink);display:grid;gap:8px;transition:border-color .15s,transform .15s}
+  .card:hover{border-color:var(--green-b);transform:translateY(-2px)} .card .ic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:var(--soft);font-weight:800;color:var(--green)}
+  .card b{font-size:16px} .card span{color:var(--muted);font-size:13.5px} .card em{font-style:normal;font-size:12px;font-weight:700;color:var(--green)}
+
+  /* étapes */
+  .steps{counter-reset:s;display:grid;gap:4px;margin:16px 0;padding:0;list-style:none}
+  .steps li{counter-increment:s;position:relative;padding:4px 0 18px 46px;border-left:2px solid var(--line);margin-left:15px}
+  .steps li:last-child{border-color:transparent}
+  .steps li::before{content:counter(s);position:absolute;left:-16px;top:0;width:30px;height:30px;border-radius:50%;background:var(--surface);border:2px solid var(--green-b);display:grid;place-items:center;font-weight:800;font-size:13.5px;color:var(--green)}
+  .steps b{display:block;font-size:15.5px}
+
+  /* BLOC DE CODE : cadre sombre séparé du texte, onglets, nom du fichier, bouton Copier */
+  .code{background:var(--code-bg);border:1px solid var(--code-line);border-radius:14px;margin:16px 0 22px;overflow:hidden;box-shadow:0 10px 30px -18px rgba(0,0,0,.6)}
+  .code-h{display:flex;align-items:center;gap:4px;background:var(--code-head);border-bottom:1px solid var(--code-line);padding:0 8px 0 4px;min-height:42px}
+  .code-h .tab{background:none;border:0;color:var(--code-mut);font:600 12.5px var(--sans);padding:12px 12px 10px;cursor:pointer;border-bottom:2px solid transparent}
+  .code-h .tab.on{color:var(--code-ink);border-color:var(--green-b)}
+  .code-h .file{color:var(--code-mut);font:12px var(--mono);padding:0 10px;display:flex;align-items:center;gap:8px}
+  .code-h .file::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--green-b)}
+  .code-h .copy{margin-left:auto;background:#1E2A24;color:var(--code-ink);border:1px solid var(--code-line);border-radius:8px;font:600 12px var(--sans);padding:5px 10px;cursor:pointer}
+  .code-h .copy.ok{background:var(--green-b);color:var(--on-green);border-color:var(--green-b)}
+  .code-h .lang{font:600 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--code-mut);border:1px solid var(--code-line);border-radius:5px;padding:2px 6px;margin-left:6px}
+  .code pre{margin:0;padding:16px 18px;overflow:auto;font:13px/1.65 var(--mono);color:var(--code-ink);tab-size:2}
+  .code pre[hidden]{display:none}
+  .code .ln{display:inline-block;width:2.2em;color:#3F4E45;user-select:none}
+  .k{color:var(--t-key)} .s{color:var(--t-str)} .t{color:var(--t-tag)} .c{color:var(--t-com);font-style:italic} .n{color:var(--t-num)} .hl{background:rgba(46,204,113,.12);display:inline-block;width:100%}
+  .code-f{border-top:1px solid var(--code-line);padding:9px 18px;color:var(--code-mut);font-size:12.5px;display:flex;gap:8px;align-items:center}
+  .code-f b{color:var(--code-ink)}
+
+  /* encadrés */
+  .call{display:flex;gap:12px;border:1px solid var(--line);border-left:4px solid var(--blue);background:var(--surface);border-radius:12px;padding:12px 16px;margin:16px 0;font-size:14.5px}
+  .call.ok{border-left-color:var(--green-b)} .call.warn{border-left-color:#E5A100} .call.danger{border-left-color:var(--red)}
+  .call i{font-style:normal;font-weight:900;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;color:#fff;background:var(--blue);flex:none;margin-top:2px}
+  .call.ok i{background:var(--green-b);color:var(--on-green)} .call.warn i{background:#E5A100} .call.danger i{background:var(--red)}
+  .call p{margin:0}
+
+  /* référence d'API */
+  .ep{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font:13.5px var(--mono);margin:12px 0}
+  .ep .m{font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:6px} .ep span{overflow-wrap:anywhere}
+  .api{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px;align-items:start}
+  .api .code{position:sticky;top:76px;margin-top:0}
+  .params{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface)}
+  .params div{display:grid;grid-template-columns:150px minmax(0,1fr);gap:10px;padding:11px 14px;border-top:1px solid var(--line);font-size:14px}
+  .params div:first-child{border-top:0}
+  .params code{background:none;border:0;padding:0;font-weight:600;color:var(--ink)} .params small{display:block;color:var(--muted);font-family:var(--mono);font-size:11.5px}
+  .req{color:var(--red);font-size:11px;font-weight:700;margin-left:4px}
+
+  /* tableaux */
+  .tw{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface);margin:14px 0}
+  table{border-collapse:collapse;width:100%;font-size:14px;min-width:620px}
+  th{text-align:left;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--soft);padding:10px 12px}
+  td{padding:10px 12px;border-top:1px solid var(--line);vertical-align:top} td.n{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+  .y{color:var(--green);font-weight:800} .x{color:var(--muted)} .soon{font-size:11px;font-weight:700;background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:1px 6px;color:var(--muted)}
+
+  /* formats en vignettes */
+  .fmts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0}
+  .fmt{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;display:grid;gap:8px}
+  .fmt .pv{height:92px;border-radius:10px;background:var(--soft);position:relative;overflow:hidden;display:grid;place-items:center}
+  .pv .a{background:linear-gradient(135deg,#2ECC71,#158246);border-radius:6px} .pv .l{height:6px;border-radius:3px;background:var(--line)}
+  .fmt b{font-size:14.5px} .fmt code{justify-self:start;font-size:11.5px} .fmt small{color:var(--muted);font-size:12.5px}
+
+  /* testeur */
+  .tester{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--surface)}
+  .tester>div{padding:18px} .tester>div+div{border-left:1px solid var(--line);background:var(--soft)}
+  .tester input{width:100%;font:14px var(--mono);border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg);color:var(--ink)}
+  .chk{display:grid;gap:8px;margin:0;padding:0;list-style:none;font-size:14px}
+  .chk li{display:flex;gap:10px;align-items:flex-start} .chk i{font-style:normal;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:900;flex:none;margin-top:1px}
+  .chk .o i{background:var(--green-b);color:var(--on-green)} .chk .w i{background:#E5A100;color:#fff} .chk .f i{background:var(--red);color:#fff}
+
+  .faq details{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:12px 16px;margin:8px 0}
+  .faq summary{font-weight:700;cursor:pointer}
+
+  @media (max-width:1180px){.layout{grid-template-columns:240px minmax(0,1fr)}.toc{display:none}.api{grid-template-columns:1fr}.api .code{position:static}}
+  @media (max-width:820px){.layout{grid-template-columns:1fr;padding:0 16px}.side{display:none}.cards,.fmts{grid-template-columns:1fr 1fr}.tester{grid-template-columns:1fr}.tester>div+div{border-left:0;border-top:1px solid var(--line)}.search{display:none}h1{font-size:30px}}
+  @media (max-width:520px){.cards,.fmts{grid-template-columns:1fr}.params div{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="note"><b>Proposition à valider</b> : nouvelle page de documentation des diffuseurs (afrolookmedia.com/ads/diffuseur/documentation/). Contenu repris de la page actuelle, réorganisé ; textes et chiffres définitifs à relire.</div>
+
+<header class="top"><div class="top-in">
+  <a class="brand" href="#"><i>A</i>afrolook <span class="pill">ADS</span></a>
+  <span class="crumb">Diffuseurs / Documentation</span>
+  <div class="search">Rechercher dans la documentation <kbd>Ctrl K</kbd></div>
+  <button class="themebtn" type="button" id="theme">Clair / sombre</button>
+  <a class="btn p" href="#">Mon espace diffuseur</a>
+</div></header>
+
+<div class="layout">
+<nav class="side" aria-label="Documentation">
+  <h4>Commencer</h4>
+  <a class="on" href="#intro">Vue d'ensemble</a>
+  <a href="#demarrer">Démarrage en 4 étapes</a>
+  <a href="#choisir">Quelle intégration choisir ?</a>
+  <h4>Intégrer</h4>
+  <a href="#balise">Balise web</a>
+  <a href="#wordpress">WordPress et sites sans code</a>
+  <a href="#spa">React, Vue, Next.js</a>
+  <a href="#flutter">Application Flutter</a>
+  <a href="#natif">Android et iOS (API)</a>
+  <h4>Référence de l'API</h4>
+  <a href="#serve">Obtenir une annonce <span class="m get">GET</span></a>
+  <a href="#event">Signaler une vue <span class="m post">POST</span></a>
+  <a href="#click">Le clic <span class="m get">GET</span></a>
+  <a href="#erreurs">Codes d'erreur</a>
+  <h4>Formats</h4>
+  <a href="#formats">Les 8 formats</a>
+  <a href="#matrice">Formats par intégration</a>
+  <a href="#tailles">Tailles et bannières prêtes</a>
+  <a href="#media">Vidéo + images</a>
+  <h4>Règles et paiement</h4>
+  <a href="#comptage">Comptage et fraude</a>
+  <a href="#paiement">Gains et retraits</a>
+  <a href="#verifier">Tester mon intégration</a>
+  <a href="#faq">Questions fréquentes</a>
+</nav>
+
+<main>
+  <section id="intro">
+    <span class="kicker">Afrolook Ads · Diffuseurs</span>
+    <h1>Affiche des annonces sur ton site ou ton application, et gagne à chaque vue</h1>
+    <p class="lead">Les annonces sont choisies, signées et comptées par les serveurs d'Afrolook Ads. Ton code se contente de les afficher : une balise de deux lignes sur un site, un composant prêt à l'emploi dans une application.</p>
+    <div class="cards">
+      <a class="card" href="#balise"><span class="ic">&lt;/&gt;</span><b>Balise web</b><span>Deux lignes à coller. Tous les formats, comptage automatique.</span><em>Le plus simple · 2 min</em></a>
+      <a class="card" href="#flutter"><span class="ic">F</span><b>Application Flutter</b><span>Un fichier à copier, une ligne pour afficher une bannière.</span><em>Prêt à l'emploi · 5 min</em></a>
+      <a class="card" href="#serve"><span class="ic">{ }</span><b>API</b><span>Pour dessiner l'annonce toi-même (Android, iOS, autre).</span><em>Avancé · 30 min</em></a>
+    </div>
+  </section>
+
+  <section id="demarrer">
+    <h2>Démarrage en 4 étapes</h2>
+    <ol class="steps">
+      <li><b>Crée ton profil de diffuseur</b>Dans ton espace diffuseur (connexion Google), en acceptant les règles. Notre équipe le valide.</li>
+      <li><b>Ajoute ton site ou ton application</b>Adresse du site, ou lien Google Play / App Store ; audience mensuelle ; pays ; catégories d'annonces que tu acceptes.</li>
+      <li><b>Prouve que le site est à toi</b>Ajoute la balise de vérification dans ta page d'accueil, ou le code dans <code>/afrolook-ads.txt</code>.</li>
+      <li><b>Reçois ton identifiant</b>Après validation : <code>ap_xxxxxxxxxx</code>. C'est lui qu'on met dans la balise ou dans l'appel à l'API.</li>
+    </ol>
+    <div class="code">
+      <div class="code-h"><span class="file">index.html · dans &lt;head&gt;</span><span class="lang">HTML</span><button class="copy" type="button">Copier</button></div>
+<pre><span class="t">&lt;meta</span> <span class="k">name</span>=<span class="s">"afrolook-ads-verification"</span> <span class="k">content</span>=<span class="s">"afv_3k9x…"</span><span class="t">&gt;</span></pre>
+      <div class="code-f">ou, dans le fichier <b>/afrolook-ads.txt</b> à la racine du site : <b>afv_3k9x…</b></div>
+    </div>
+    <div class="call warn"><i>!</i><p>La balise de vérification doit <b>rester en place</b> : retirée 3 jours de suite, la diffusion est suspendue.</p></div>
+  </section>
+
+  <section id="choisir">
+    <h2>Quelle intégration choisir ?</h2>
+    <div class="tw"><table>
+      <thead><tr><th></th><th>Balise web</th><th>Composant Flutter</th><th>API</th></tr></thead>
+      <tbody>
+        <tr><td>Pour</td><td>Sites (WordPress, HTML, React…)</td><td>Applications Flutter</td><td>Android / iOS natifs, autres</td></tr>
+        <tr><td>Code à écrire</td><td>Aucun : 2 lignes</td><td>1 ligne par emplacement</td><td>Affichage, mesure de la vue, clic</td></tr>
+        <tr><td>Vue comptée</td><td class="y">Automatique</td><td class="y">Automatique</td><td>À envoyer toi-même</td></tr>
+        <tr><td>Rémunérée</td><td class="y">Oui, après validation du site</td><td>Après vérification de l'application</td><td>Après vérification de l'application</td></tr>
+      </tbody>
+    </table></div>
+    <div class="call"><i>i</i><p>Sur un site, utilise <b>toujours la balise</b> : c'est elle qui prouve que l'annonce a vraiment été affichée à une vraie personne. L'API seule est réservée aux applications.</p></div>
+  </section>
+
+  <section id="balise">
+    <h2>Balise web</h2>
+    <p>Colle ces deux lignes là où l'annonce doit apparaître. La balise s'occupe de tout : demande, affichage, mesure de la vue, clic.</p>
+    <div class="code" data-tabs>
+      <div class="code-h"><button class="tab on" type="button">Carte native</button><button class="tab" type="button">Bannière 728 × 90</button><button class="tab" type="button">Bandeau collant</button><button class="tab" type="button">Plusieurs emplacements</button><span class="lang">HTML</span><button class="copy" type="button">Copier</button></div>
+<pre><span class="ln">1</span><span class="t">&lt;ins</span> <span class="k">class</span>=<span class="s">"afl-ad"</span> <span class="k">data-pub</span>=<span class="s">"ap_xxxxxxxxxx"</span> <span class="k">data-slot</span>=<span class="s">"article"</span> <span class="k">data-format</span>=<span class="s">"native"</span><span class="t">&gt;&lt;/ins&gt;</span>
+<span class="ln">2</span><span class="t">&lt;script</span> <span class="k">async</span> <span class="k">src</span>=<span class="s">"https://afrolookmedia.com/ads/tag.js"</span><span class="t">&gt;&lt;/script&gt;</span></pre>
+<pre hidden><span class="ln">1</span><span class="t">&lt;ins</span> <span class="k">class</span>=<span class="s">"afl-ad"</span> <span class="k">data-pub</span>=<span class="s">"ap_xxxxxxxxxx"</span> <span class="k">data-slot</span>=<span class="s">"haut"</span> <span class="k">data-format</span>=<span class="s">"banner"</span> <span class="hl"><span class="k">data-size</span>=<span class="s">"728x90"</span></span><span class="t">&gt;&lt;/ins&gt;</span>
+<span class="ln">2</span><span class="t">&lt;script</span> <span class="k">async</span> <span class="k">src</span>=<span class="s">"https://afrolookmedia.com/ads/tag.js"</span><span class="t">&gt;&lt;/script&gt;</span></pre>
+<pre hidden><span class="ln">1</span><span class="c">&lt;!-- bandeau fixé en bas de l'écran, fermable --&gt;</span>
+<span class="ln">2</span><span class="t">&lt;ins</span> <span class="k">class</span>=<span class="s">"afl-ad"</span> <span class="k">data-pub</span>=<span class="s">"ap_xxxxxxxxxx"</span> <span class="k">data-slot</span>=<span class="s">"bas"</span> <span class="k">data-format</span>=<span class="s">"sticky"</span> <span class="k">data-size</span>=<span class="s">"320x50"</span><span class="t">&gt;&lt;/ins&gt;</span>
+<span class="ln">3</span><span class="t">&lt;script</span> <span class="k">async</span> <span class="k">src</span>=<span class="s">"https://afrolookmedia.com/ads/tag.js"</span><span class="t">&gt;&lt;/script&gt;</span></pre>
+<pre hidden><span class="ln">1</span><span class="c">&lt;!-- 3 emplacements au plus par page, un seul script --&gt;</span>
+<span class="ln">2</span><span class="t">&lt;ins</span> <span class="k">class</span>=<span class="s">"afl-ad"</span> <span class="k">data-pub</span>=<span class="s">"ap_xxxxxxxxxx"</span> <span class="k">data-slot</span>=<span class="s">"haut"</span> <span class="k">data-format</span>=<span class="s">"banner"</span> <span class="k">data-size</span>=<span class="s">"728x90"</span><span class="t">&gt;&lt;/ins&gt;</span>
+<span class="ln">3</span><span class="t">&lt;ins</span> <span class="k">class</span>=<span class="s">"afl-ad"</span> <span class="k">data-pub</span>=<span class="s">"ap_xxxxxxxxxx"</span> <span class="k">data-slot</span>=<span class="s">"article"</span> <span class="k">data-format</span>=<span class="s">"native"</span><span class="t">&gt;&lt;/ins&gt;</span>
+<span class="ln">4</span><span class="t">&lt;ins</span> <span class="k">class</span>=<span class="s">"afl-ad"</span> <span class="k">data-pub</span>=<span class="s">"ap_xxxxxxxxxx"</span> <span class="k">data-slot</span>=<span class="s">"colonne"</span> <span class="k">data-format</span>=<span class="s">"banner"</span> <span class="k">data-size</span>=<span class="s">"300x250"</span><span class="t">&gt;&lt;/ins&gt;</span>
+<span class="ln">5</span><span class="t">&lt;script</span> <span class="k">async</span> <span class="k">src</span>=<span class="s">"https://afrolookmedia.com/ads/tag.js"</span><span class="t">&gt;&lt;/script&gt;</span></pre>
+    </div>
+    <h3>Attributs</h3>
+    <div class="params">
+      <div><span><code>data-pub</code><span class="req">obligatoire</span></span><span>Ton identifiant publicitaire <code>ap_xxxxxxxxxx</code>.</span></div>
+      <div><span><code>data-format</code><span class="req">obligatoire</span></span><span><code>banner</code>, <code>sticky</code>, <code>native</code>, <code>carousel</code>, <code>poster</code>, <code>video</code>, <code>interstitial</code>, <code>rewarded</code>.</span></div>
+      <div><span><code>data-slot</code><small>texte</small></span><span>Nom de l'emplacement (lettres, chiffres, - et _), pour tes statistiques.</span></div>
+      <div><span><code>data-size</code><small>facultatif</small></span><span><code>728x90</code>, <code>320x100</code>, <code>320x50</code>, <code>300x250</code> : demande une bannière prête à cette taille.</span></div>
+    </div>
+    <div class="call ok"><i>✓</i><p>Aucune annonce pour ce visiteur (pays, langue, catégories) ? L'emplacement reste vide : rien n'est compté, rien n'est payé, ta page n'est jamais bloquée.</p></div>
+    <h3>Politique de sécurité (CSP)</h3>
+    <div class="code"><div class="code-h"><span class="file">en-tête HTTP</span><span class="lang">CSP</span><button class="copy" type="button">Copier</button></div>
+<pre><span class="k">script-src</span> https://afrolookmedia.com; <span class="k">connect-src</span> https://afrolookmedia.com; <span class="k">img-src</span> https://cdn.afrolookmedia.com; <span class="k">media-src</span> https://cdn.afrolookmedia.com;</pre></div>
+  </section>
+
+  <section id="wordpress">
+    <h2>WordPress et sites sans code</h2>
+    <ol class="steps">
+      <li><b>Ouvre l'éditeur de la page</b>Ajoute un bloc <b>« HTML personnalisé »</b> à l'endroit voulu.</li>
+      <li><b>Colle la balise</b>Les deux lignes de la balise web ci-dessus.</li>
+      <li><b>Publie</b>L'annonce apparaît dès que ton site est validé.</li>
+    </ol>
+  </section>
+
+  <section id="spa">
+    <h2>React, Vue, Next.js</h2>
+    <p>Après un changement de page sans rechargement, demande à la balise de remplir les nouveaux emplacements.</p>
+    <div class="code" data-tabs>
+      <div class="code-h"><button class="tab on" type="button">React</button><button class="tab" type="button">Vue</button><span class="lang">JSX</span><button class="copy" type="button">Copier</button></div>
+<pre><span class="ln">1</span><span class="k">export function</span> <span class="t">AfrolookAd</span>({ format = <span class="s">'native'</span>, slot }) {
+<span class="ln">2</span>  useEffect(() =&gt; { window.AflAds?.fill(); }, [slot]);
+<span class="ln">3</span>  <span class="k">return</span> <span class="t">&lt;ins</span> className=<span class="s">"afl-ad"</span> data-pub=<span class="s">"ap_xxxxxxxxxx"</span> data-slot={slot} data-format={format} <span class="t">/&gt;</span>;
+<span class="ln">4</span>}</pre>
+<pre hidden><span class="ln">1</span><span class="t">&lt;template&gt;</span>
+<span class="ln">2</span>  <span class="t">&lt;ins</span> class=<span class="s">"afl-ad"</span> data-pub=<span class="s">"ap_xxxxxxxxxx"</span> :data-slot=<span class="s">"slot"</span> data-format=<span class="s">"native"</span> <span class="t">/&gt;</span>
+<span class="ln">3</span><span class="t">&lt;/template&gt;</span>
+<span class="ln">4</span><span class="t">&lt;script setup&gt;</span> onMounted(() =&gt; window.AflAds?.fill()) <span class="t">&lt;/script&gt;</span></pre>
+      <div class="code-f">La fonction <b>AflAds.fill()</b> est à ajouter à la balise (proposition) : aujourd'hui elle ne remplit que les emplacements présents au chargement.</div>
+    </div>
+  </section>
+
+  <section id="flutter">
+    <h2>Application Flutter</h2>
+    <p>Télécharge <code>afrolook_ads_banner.dart</code>, copie-le dans ton projet, puis une ligne par emplacement.</p>
+    <div class="code" data-tabs>
+      <div class="code-h"><button class="tab on" type="button">Bas de l'écran</button><button class="tab" type="button">Dans une liste</button><button class="tab" type="button">pubspec.yaml</button><span class="lang">Dart</span><button class="copy" type="button">Copier</button></div>
+<pre><span class="ln">1</span><span class="c">// mini bannière fixe en bas d'un écran (320 × 50, fermable)</span>
+<span class="ln">2</span><span class="t">Scaffold</span>(
+<span class="ln">3</span>  body: …,
+<span class="ln">4</span>  bottomNavigationBar: <span class="k">const</span> <span class="t">AfrolookAdsBanner</span>.bottom(pubId: <span class="s">'ap_xxxxxxxxxx'</span>, visitorId: monIdentifiant),
+<span class="ln">5</span>);</pre>
+<pre hidden><span class="ln">1</span><span class="k">const</span> <span class="t">AfrolookAdsBanner</span>(
+<span class="ln">2</span>  pubId: <span class="s">'ap_xxxxxxxxxx'</span>,
+<span class="ln">3</span>  visitorId: monIdentifiant,
+<span class="ln">4</span>  size: <span class="t">AdsBannerSize</span>.medium, <span class="c">// 300 × 250</span>
+<span class="ln">5</span>  slot: <span class="s">'liste'</span>,
+<span class="ln">6</span>);</pre>
+<pre hidden><span class="ln">1</span><span class="k">dependencies:</span>
+<span class="ln">2</span>  <span class="k">http:</span> <span class="n">^1.2.0</span>
+<span class="ln">3</span>  <span class="k">url_launcher:</span> <span class="n">^6.3.0</span>
+<span class="ln">4</span>  <span class="k">visibility_detector:</span> <span class="n">^0.4.0</span>
+<span class="ln">5</span>  <span class="k">shared_preferences:</span> <span class="n">^2.3.0</span></pre>
+      <div class="code-f">Fichier à télécharger : <b>afrolook_ads_banner.dart</b> · Tailles : mini 320×50, large 320×100, medium 300×250, leaderboard 728×90</div>
+    </div>
+    <div class="call warn"><i>!</i><p>Le composant Flutter affiche aujourd'hui les <b>bannières</b>. Carte native, carrousel, vidéo, interstitiel et récompensée passent par l'API (voir la matrice des formats) — ou par un composant complet à ajouter (proposition).</p></div>
+  </section>
+
+  <section id="natif">
+    <h2>Android et iOS (API)</h2>
+    <div class="code" data-tabs>
+      <div class="code-h"><button class="tab on" type="button">Kotlin</button><button class="tab" type="button">Swift</button><span class="lang">Mobile</span><button class="copy" type="button">Copier</button></div>
+<pre><span class="ln">1</span><span class="k">val</span> url = <span class="s">"https://afrolookmedia.com/ads/api/serve?pub=ap_xxxxxxxxxx&amp;fmt=native&amp;slot=liste&amp;vid=$visitorId"</span>
+<span class="ln">2</span><span class="k">val</span> ad = JSONObject(http.get(url)).optJSONObject(<span class="s">"ad"</span>) ?: <span class="k">return</span> <span class="c">// pas d'annonce : rien à afficher</span>
+<span class="ln">3</span><span class="c">// 1) afficher titre, image, bouton et la mention « Annonce »</span>
+<span class="ln">4</span><span class="c">// 2) annonce visible à moitié pendant ad.viewMs → POST ad.event {t, e:"view", ms, vid}</span>
+<span class="ln">5</span><span class="c">// 3) au toucher : ouvrir ad.click (jamais l'adresse de l'annonceur)</span></pre>
+<pre hidden><span class="ln">1</span><span class="k">let</span> url = <span class="t">URL</span>(string: <span class="s">"https://afrolookmedia.com/ads/api/serve?pub=ap_xxxxxxxxxx&amp;fmt=native&amp;slot=liste&amp;vid=\(visitorId)"</span>)!
+<span class="ln">2</span><span class="k">let</span> (data, _) = <span class="k">try await</span> <span class="t">URLSession</span>.shared.data(from: url)
+<span class="ln">3</span><span class="c">// même principe : afficher, signaler la vue après ad.viewMs, ouvrir ad.click</span></pre>
+    </div>
+  </section>
+
+  <hr>
+
+  <section id="serve">
+    <h2>Obtenir une annonce</h2>
+    <div class="ep"><span class="m get">GET</span><span>https://afrolookmedia.com/ads/api/serve</span></div>
+    <div class="api">
+      <div>
+        <div class="params">
+          <div><span><code>pub</code><span class="req">obligatoire</span><small>texte</small></span><span>Ton identifiant publicitaire.</span></div>
+          <div><span><code>fmt</code><span class="req">obligatoire</span><small>texte</small></span><span>Un des 8 formats.</span></div>
+          <div><span><code>vid</code><span class="req">obligatoire</span><small>12 à 64 caractères</small></span><span>Identifiant du visiteur, stable, sans donnée personnelle.</span></div>
+          <div><span><code>slot</code><small>texte</small></span><span>Nom de l'emplacement.</span></div>
+          <div><span><code>size</code><small>texte</small></span><span><code>728x90</code>, <code>320x100</code>, <code>320x50</code>, <code>300x250</code>.</span></div>
+          <div><span><code>lang</code><small>fr, en…</small></span><span>Langue de la page.</span></div>
+        </div>
+        <div class="call"><i>i</i><p>Le pays du visiteur est déterminé par nos serveurs : n'envoie pas de pays.</p></div>
+      </div>
+      <div class="code" data-tabs>
+        <div class="code-h"><button class="tab on" type="button">Réponse 200</button><button class="tab" type="button">cURL</button><span class="lang">JSON</span><button class="copy" type="button">Copier</button></div>
+<pre>{
+  <span class="k">"ok"</span>: <span class="n">true</span>,
+  <span class="k">"ad"</span>: {
+    <span class="k">"id"</span>: <span class="s">"01m7…"</span>, <span class="k">"format"</span>: <span class="s">"native"</span>, <span class="k">"label"</span>: <span class="s">"Annonce"</span>,
+    <span class="k">"title"</span>: <span class="s">"Boutique Kofi"</span>, <span class="k">"text"</span>: <span class="s">"Mode africaine…"</span>,
+    <span class="k">"cta"</span>: <span class="s">"Visiter le site"</span>,
+    <span class="k">"brand"</span>: { <span class="k">"name"</span>: <span class="s">"Kofi"</span>, <span class="k">"logo"</span>: <span class="s">"https://…"</span>, <span class="k">"domain"</span>: <span class="s">"kofi.tg"</span> },
+    <span class="k">"media"</span>: { <span class="k">"type"</span>: <span class="s">"image"</span>, <span class="k">"url"</span>: <span class="s">"https://…"</span>, <span class="k">"images"</span>: [<span class="s">"…"</span>] },
+    <span class="k">"banner"</span>: { <span class="k">"url"</span>: <span class="s">"https://…"</span>, <span class="k">"w"</span>: <span class="n">728</span>, <span class="k">"h"</span>: <span class="n">90</span> },
+    <span class="k">"click"</span>: <span class="s">"https://afrolookmedia.com/ads/api/go?t=…"</span>,
+    <span class="k">"token"</span>: <span class="s">"…"</span>, <span class="k">"event"</span>: <span class="s">"https://afrolookmedia.com/ads/api/event"</span>,
+    <span class="k">"viewMs"</span>: <span class="n">1000</span>, <span class="k">"ttlMs"</span>: <span class="n">1800000</span>
+  }
+}</pre>
+<pre hidden>curl <span class="s">"https://afrolookmedia.com/ads/api/serve?pub=ap_xxxxxxxxxx&amp;fmt=native&amp;slot=article&amp;vid=visiteur-0001&amp;lang=fr"</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <section id="event">
+    <h2>Signaler une vue</h2>
+    <div class="ep"><span class="m post">POST</span><span>https://afrolookmedia.com/ads/api/event</span></div>
+    <div class="api">
+      <div>
+        <div class="params">
+          <div><span><code>t</code><span class="req">obligatoire</span></span><span>Le <code>token</code> reçu (une seule vue, 30 minutes).</span></div>
+          <div><span><code>e</code><span class="req">obligatoire</span></span><span><code>view</code>, ou <code>complete</code> (vidéo et récompensée lues jusqu'au bout).</span></div>
+          <div><span><code>ms</code><span class="req">obligatoire</span></span><span>Temps pendant lequel l'annonce était visible à moitié.</span></div>
+          <div><span><code>vid</code><span class="req">obligatoire</span></span><span>Le même identifiant de visiteur que pour <code>serve</code>.</span></div>
+        </div>
+        <div class="call danger"><i>!</i><p>Une vue n'est comptée que si l'annonce a <b>vraiment été affichée</b> à une personne. Envoyer des vues sans afficher l'annonce est de la fraude : gains retirés et compte fermé.</p></div>
+      </div>
+      <div class="code" data-tabs>
+        <div class="code-h"><button class="tab on" type="button">Requête</button><button class="tab" type="button">Réponses</button><span class="lang">JSON</span><button class="copy" type="button">Copier</button></div>
+<pre>{ <span class="k">"t"</span>: <span class="s">"&lt;token&gt;"</span>, <span class="k">"e"</span>: <span class="s">"view"</span>, <span class="k">"ms"</span>: <span class="n">1050</span>, <span class="k">"vid"</span>: <span class="s">"visiteur-0001"</span> }</pre>
+<pre hidden><span class="c">// comptée</span>
+{ <span class="k">"ok"</span>: <span class="n">true</span>, <span class="k">"counted"</span>: <span class="n">true</span> }
+<span class="c">// refusée, avec le motif</span>
+{ <span class="k">"ok"</span>: <span class="n">true</span>, <span class="k">"counted"</span>: <span class="n">false</span>, <span class="k">"reason"</span>: <span class="s">"not_visible"</span> }</pre>
+      </div>
+    </div>
+  </section>
+
+  <section id="click">
+    <h2>Le clic</h2>
+    <div class="ep"><span class="m get">GET</span><span>ad.click → https://afrolookmedia.com/ads/api/go?t=…</span></div>
+    <p>Le bouton de l'annonce ouvre <b>toujours</b> le lien <code>click</code> : Afrolook Ads compte le clic puis ouvre l'annonceur (le bon magasin selon le téléphone pour une application). N'appelle jamais ce lien toi-même.</p>
+  </section>
+
+  <section id="erreurs">
+    <h2>Codes d'erreur et motifs de refus</h2>
+    <div class="tw"><table>
+      <thead><tr><th>Code / motif</th><th>Signification</th><th>Que faire</th></tr></thead>
+      <tbody>
+        <tr><td><code>403 diffuseur</code></td><td>Identifiant inconnu ou site pas encore validé</td><td>Vérifie l'identifiant, attends la validation</td></tr>
+        <tr><td><code>403 origine</code></td><td>Appel depuis un domaine non déclaré</td><td>Ajoute le domaine dans ton espace</td></tr>
+        <tr><td><code>429</code></td><td>Trop de demandes</td><td>Pas de rafraîchissement automatique</td></tr>
+        <tr><td><code>not_visible</code> · <code>too_fast</code></td><td>Pas assez longtemps visible, ou durée impossible</td><td>Mesure la visibilité réelle</td></tr>
+        <tr><td><code>interval</code> · <code>ad_cap</code> · <code>device_cap</code> · <code>ip_cap</code></td><td>Limites de fréquence atteintes</td><td>Normal : rien à faire</td></tr>
+        <tr><td><code>replay</code> · <code>expired</code></td><td>Jeton déjà utilisé ou trop vieux</td><td>Un jeton = une vue, dans les 30 minutes</td></tr>
+        <tr><td><code>bot</code></td><td>Visiteur automatique</td><td>Ne compte pas, n'est pas payé</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <hr>
+
+  <section id="formats">
+    <h2>Les 8 formats</h2>
+    <div class="fmts">
+      <div class="fmt"><div class="pv"><div class="a" style="width:86%;height:26px"></div></div><b>Bannière</b><code>banner</code><small>Vue après 1 s · tu reçois 650 F / 1 000</small></div>
+      <div class="fmt"><div class="pv"><div class="a" style="position:absolute;bottom:6px;width:86%;height:16px"></div></div><b>Bandeau collant</b><code>sticky</code><small>1 s · 812,50 F / 1 000 · fermable</small></div>
+      <div class="fmt"><div class="pv" style="place-items:start;padding:10px;gap:5px"><div class="a" style="width:100%;height:40px"></div><div class="l" style="width:70%"></div><div class="l" style="width:45%"></div></div><b>Carte native</b><code>native</code><small>1 s · 975 F / 1 000</small></div>
+      <div class="fmt"><div class="pv" style="display:flex;gap:6px;padding:10px"><div class="a" style="flex:none;width:60%;height:70px"></div><div class="a" style="flex:none;width:60%;height:70px;opacity:.5"></div></div><b>Carrousel</b><code>carousel</code><small>1 s · 1 170 F / 1 000 · 2 à 5 images</small></div>
+      <div class="fmt"><div class="pv"><div class="a" style="width:52%;height:80px"></div></div><b>Affiche</b><code>poster</code><small>1 s · 1 300 F / 1 000</small></div>
+      <div class="fmt"><div class="pv"><div class="a" style="width:80%;height:60px;display:grid;place-items:center;color:#fff;font-weight:900">▶</div></div><b>Vidéo</b><code>video</code><small>2 s · 1 625 F / 1 000</small></div>
+      <div class="fmt"><div class="pv"><div class="a" style="width:100%;height:100%;border-radius:0"></div></div><b>Interstitiel</b><code>interstitial</code><small>1 s · 1 950 F / 1 000 · toutes les 10 min</small></div>
+      <div class="fmt"><div class="pv"><div class="a" style="width:100%;height:100%;border-radius:0;display:grid;place-items:center;color:#fff;font-weight:800;font-size:12px">+ récompense</div></div><b>Récompensée</b><code>rewarded</code><small>Lecture complète · 2 275 F / 1 000</small></div>
+    </div>
+    <p style="font-size:13.5px;color:var(--muted)">Montants : ta part (65 %) du prix payé par l'annonceur pour 1 000 vues valides.</p>
+  </section>
+
+  <section id="matrice">
+    <h2>Formats par intégration</h2>
+    <div class="tw"><table>
+      <thead><tr><th>Format</th><th>Balise web</th><th>Composant Flutter</th><th>API</th></tr></thead>
+      <tbody>
+        <tr><td>Bannière (4 tailles)</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td></tr>
+        <tr><td>Bandeau collant</td><td class="y">✓</td><td class="y">✓ (bas d'écran)</td><td class="y">✓</td></tr>
+        <tr><td>Carte native</td><td class="y">✓</td><td><span class="soon">à ajouter</span></td><td class="y">✓</td></tr>
+        <tr><td>Carrousel</td><td class="y">✓</td><td><span class="soon">à ajouter</span></td><td class="y">✓</td></tr>
+        <tr><td>Affiche</td><td class="y">✓</td><td><span class="soon">à ajouter</span></td><td class="y">✓</td></tr>
+        <tr><td>Vidéo</td><td class="y">✓</td><td><span class="soon">à ajouter</span></td><td class="y">✓</td></tr>
+        <tr><td>Interstitiel</td><td class="y">✓</td><td><span class="soon">à ajouter</span></td><td class="y">✓</td></tr>
+        <tr><td>Récompensée</td><td class="y">✓</td><td><span class="soon">à ajouter</span></td><td class="y">✓</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="tailles">
+    <h2>Tailles et bannières prêtes</h2>
+    <div class="tw"><table>
+      <thead><tr><th>Taille</th><th>Nom</th><th>Où</th></tr></thead>
+      <tbody>
+        <tr><td><code>728x90</code></td><td>Leaderboard</td><td>Haut ou bas de page sur ordinateur</td></tr>
+        <tr><td><code>320x100</code></td><td>Grande bannière</td><td>Dans une page sur téléphone</td></tr>
+        <tr><td><code>320x50</code></td><td>Mini bannière</td><td>Bandeau fixe en bas d'une application</td></tr>
+        <tr><td><code>300x250</code></td><td>Rectangle moyen</td><td>Dans le contenu</td></tr>
+      </tbody>
+    </table></div>
+    <div class="call"><i>i</i><p>L'image de l'annonceur est <b>toujours affichée entière</b>, jamais rognée : le reste de l'emplacement se remplit d'une copie floutée de la même image.</p></div>
+  </section>
+
+  <section id="media">
+    <h2>Vidéo + images dans une même annonce</h2>
+    <p>Un annonceur peut déposer une vidéo <b>et</b> jusqu'à 5 images. Tu n'as rien à faire : le serveur envoie le bon média selon ton format.</p>
+    <div class="tw"><table>
+      <thead><tr><th>Ton emplacement</th><th>Média reçu dans <code>media</code></th></tr></thead>
+      <tbody>
+        <tr><td><code>video</code>, <code>rewarded</code>, <code>native</code>, <code>interstitial</code></td><td>La vidéo (<code>type: "video"</code>)</td></tr>
+        <tr><td><code>banner</code>, <code>sticky</code>, <code>poster</code>, <code>carousel</code></td><td>Les images (<code>type: "image"</code>, <code>images</code>)</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <hr>
+
+  <section id="comptage">
+    <h2>Comptage et fraude</h2>
+    <div class="call ok"><i>✓</i><p><b>Vue valide</b> : jeton signé et jamais utilisé, annonce visible à moitié pendant la durée du format, visiteur réel, site déclaré, limites de fréquence respectées.</p></div>
+    <div class="call danger"><i>!</i><p><b>Interdit</b> : cliquer sur tes annonces ou inciter à cliquer, acheter du trafic, robots, rafraîchissement automatique, cadres cachés, appeler l'API depuis un serveur, signaler des vues sans afficher l'annonce.</p></div>
+    <p>Trafic invalide : moins de 10 % normal, 10 à 25 % alerte, plus de 25 % emplacement suspendu.</p>
+  </section>
+
+  <section id="paiement">
+    <h2>Gains et retraits</h2>
+    <div class="tw"><table>
+      <thead><tr><th>Étape</th><th>Délai</th></tr></thead>
+      <tbody>
+        <tr><td>Gain du jour calculé</td><td>Chaque nuit</td></tr>
+        <tr><td>Gain disponible</td><td>30 jours après (10 % gardés 90 jours)</td></tr>
+        <tr><td>Retrait Mobile Money</td><td>À partir de 10 000 F</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section id="verifier">
+    <h2>Tester mon intégration</h2>
+    <p>Un outil dans la documentation qui contrôle ton site et dit ce qui manque (proposition).</p>
+    <div class="tester">
+      <div>
+        <label style="font-weight:700;font-size:14px">Adresse de ta page<br><input value="https://monsite.tg/article-1" readonly></label>
+        <p style="margin:12px 0 0"><span class="btn p">Tester</span></p>
+      </div>
+      <div>
+        <ul class="chk">
+          <li class="o"><i>✓</i><span>Balise de vérification trouvée</span></li>
+          <li class="o"><i>✓</i><span>Script <code>tag.js</code> chargé</span></li>
+          <li class="o"><i>✓</i><span>2 emplacements : <code>native</code>, <code>banner 728x90</code></span></li>
+          <li class="w"><i>!</i><span>Politique de sécurité : <code>img-src</code> ne permet pas le CDN</span></li>
+          <li class="f"><i>×</i><span>4 emplacements sur la page : 3 au plus</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq" class="faq">
+    <h2>Questions fréquentes</h2>
+    <details><summary>Aucune annonce ne s'affiche.</summary><p>Pas d'annonce pour ce visiteur (pays, langue, appareil), aucune catégorie acceptée, intervalle non écoulé, ou site pas encore validé.</p></details>
+    <details><summary>Puis-je mettre la balise sur plusieurs sites ?</summary><p>Non : un identifiant par site ou application (jusqu'à 10 dans ton espace).</p></details>
+    <details><summary>Pourquoi mon audience mesurée est plus basse que la déclarée ?</summary><p>Nous comptons les personnes différentes pour qui la balise a été chargée. Un écart important et durable fait ajuster l'audience retenue.</p></details>
+  </section>
+</main>
+
+<aside class="toc" aria-label="Sur cette page">
+  <b>Sur cette page</b>
+  <a href="#intro">Vue d'ensemble</a><a href="#demarrer">Démarrage</a><a href="#balise">Balise web</a><a href="#flutter">Flutter</a><a href="#serve">API</a><a href="#formats">Formats</a><a href="#comptage">Fraude</a><a href="#verifier">Tester</a>
+</aside>
+</div>
+
+<script>
+  // onglets de chaque bloc de code
+  document.querySelectorAll('.code[data-tabs]').forEach((box) => {
+    const tabs = [...box.querySelectorAll('.tab')], pres = [...box.querySelectorAll('pre')];
+    tabs.forEach((t, i) => t.addEventListener('click', () => { tabs.forEach((x, j) => x.classList.toggle('on', j === i)); pres.forEach((p, j) => { p.hidden = j !== i; }); }));
+  });
+  // bouton Copier : copie le code visible, sans les numéros de ligne
+  document.querySelectorAll('.copy').forEach((b) => b.addEventListener('click', async () => {
+    const pre = [...b.closest('.code').querySelectorAll('pre')].find((p) => !p.hidden);
+    const c = pre.cloneNode(true); c.querySelectorAll('.ln').forEach((n) => n.remove());
+    try { await navigator.clipboard.writeText(c.textContent); } catch { /* copie impossible ici */ }
+    b.textContent = 'Copié'; b.classList.add('ok'); setTimeout(() => { b.textContent = 'Copier'; b.classList.remove('ok'); }, 1400);
+  }));
+  // clair / sombre
+  document.getElementById('theme').addEventListener('click', () => {
+    const r = document.documentElement, dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    r.dataset.theme = dark ? 'light' : 'dark';
+  });
+  // menu : section en cours
+  const links = [...document.querySelectorAll('.side a')];
+  const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) links.forEach((a) => a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id)); }), { rootMargin: '-30% 0px -60% 0px' });
+  document.querySelectorAll('main section[id]').forEach((s) => io.observe(s));
+</script>
+</body>
+</html>
