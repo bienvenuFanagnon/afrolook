@@ -1295,7 +1295,8 @@ async function initPub() {
         h('div', { class: 'pubprop-im' }, p.imageUrl ? h('img', { class: 'pubprop-img', src: p.imageUrl, alt: '', loading: 'lazy' }) : h('span', { class: 'pubprop-img ph', text: '?' }),
           h('div', {}, p.imageUrl ? null : h('small', { class: 'aderr', text: 'Ajoute une image de ce site ou de cette application.' }), h('button', { class: 'adlinkbtn', type: 'button', text: p.imageUrl ? 'Changer l\u2019image' : 'Ajouter une image', onclick: () => imgFile.click() }), imgFile)),
         h('small', { class: 'pubprop-w', text: (p.kind === 'site' ? 'Site web · ' : 'Application · ') + where }),
-        h('div', { class: 'pubid' }, h('span', {}, h('small', { text: 'Identifiant publicitaire' }), h('code', { text: p.id })), h('button', { class: 'btn btn-line adsm', type: 'button', text: 'Copier', onclick: (e) => copy(p.id, e.currentTarget) })),
+        h('div', { class: 'pubid' }, h('span', {}, h('small', { text: p.platform ? 'Clé de la plateforme (data-pub)' : 'Identifiant publicitaire' }), h('code', { text: p.pubKey || p.id })), h('button', { class: 'btn btn-line adsm', type: 'button', text: 'Copier', onclick: (e) => copy(p.pubKey || p.id, e.currentTarget) })),
+        p.platform ? h('p', { class: 'adnote', text: 'Plateforme d\u2019Afrolook : annonces du budget « dans Afrolook ». Ses gains sont calculés comme pour tout diffuseur, mais restent des gains d\u2019essai (non retirables).' }) : null,
         h('p', { class: 'pubprop-a', text: `Audience déclarée : ${n(p.audienceMonthly)} par mois` + (p.status === 'active' ? ` · retenue : ${n(p.audienceCounted)}` : '') }));
       if (p.status === 'pending') card.append(h('p', { class: 'adnote', text: 'Notre équipe examine ta demande. Tu recevras un e-mail avec la décision.' }));
       if (p.status === 'refused' || p.status === 'suspended') card.append(h('p', { class: 'aderr', text: 'Motif : ' + (p.reason || 'non précisé') }));
@@ -1327,7 +1328,7 @@ async function initPub() {
   const FC = (v) => n(v) + ' F';
   const OPERATORS = ['T-Money (Togocel)', 'Flooz (Moov)', 'MTN MoMo', 'Orange Money', 'Wave', 'Autre'];
   const FMT_LAB = { banner: 'Bannière', sticky: 'Bandeau collant', native: 'Carte native', carousel: 'Carrousel', poster: 'Affiche', video: 'Vidéo dans le fil', interstitial: 'Interstitiel', rewarded: 'Récompensée' };
-  const EARN_LAB = { held: 'En attente', available: 'Disponible', requested: 'Retrait demandé', paid: 'Payé' };
+  const EARN_LAB = { held: 'En attente', available: 'Disponible', requested: 'Retrait demandé', paid: 'Payé', test: 'Essai (non retirable)' };
   const PAY_LAB = { requested: ['wait', 'Demandé'], paid: ['ok', 'Payé'], refused: ['rej', 'Refusé'] };
   $('#g-op').replaceChildren(...OPERATORS.map((o) => h('option', { value: o, text: o })));
   const gainErr = (e) => {
@@ -1345,7 +1346,8 @@ async function initPub() {
       kpiCard('Disponible', FC(g.availableFcfa), g.canRequest ? 'prêt à retirer' : `minimum ${FC(g.minPayoutFcfa)}`, g.canRequest ? 'ok' : ''),
       kpiCard('Retrait demandé', FC(g.requestedFcfa), 'en cours de paiement', g.requestedFcfa ? 'wait' : ''),
       kpiCard('Payé', FC(g.paidFcfa), 'déjà versé', g.paidFcfa ? 'ok' : ''),
-      kpiCard('Réserve', FC(g.reserveFcfa), `${g.reservePct} % gardés ${g.reserveDays} jours`));
+      kpiCard('Réserve', FC(g.reserveFcfa), `${g.reservePct} % gardés ${g.reserveDays} jours`),
+      ...(g.testFcfa ? [kpiCard('Gains d\u2019essai', FC(g.testFcfa), 'plateformes d\u2019Afrolook, non retirables', 'ok')] : []));
     $('#g-amount').textContent = FC(g.availableFcfa);
     const ok = st.profile && (st.profile.status === 'active');
     $('#g-sub').textContent = !ok ? 'Ton profil doit être validé pour retirer tes gains.' : g.canRequest ? 'Montant retiré : tous tes gains disponibles (net de la réserve).' : `Il faut au moins ${FC(g.minPayoutFcfa)} : il te manque ${FC(Math.max(0, g.minPayoutFcfa - g.availableFcfa))}.`;

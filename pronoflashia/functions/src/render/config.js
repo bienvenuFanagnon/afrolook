@@ -34,6 +34,12 @@ const SLOTS = {
   colonne_rect: { actif: false, dk: [300, 250] },
   colonne_tall: { actif: false, dk: [300, 600] },
   collante: { actif: false, mo: [320, 50] },
+  // Formats de la régie Afrolook Ads dessinés par sa balise tag.js (17/11/2026) : vidéo et affiche sur la fiche d'un match, carrousel dans les actus,
+  // plein écran (interstitiel) à la 3e page d'une visite, une seule fois. La récompensée n'a pas de place pour l'instant (décision du propriétaire).
+  video: { actif: false },
+  affiche: { actif: false },
+  carrousel: { actif: false },
+  interstitiel: { actif: false, page: 3 },
   socialbar: { actif: false, delaiSec: 20 },
   popunder: { actif: false, parJours: 1 },
 };

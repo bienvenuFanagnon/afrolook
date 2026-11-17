@@ -148,7 +148,8 @@
   /* Annonces des annonceurs (moteur Afrolook Ads) : elles passent avant l'encart maison. Le moteur d'Afrolook CHOISIT l'annonce (catégories acceptées par PronoFlash,
      ciblage de l'annonceur), la SIGNE et COMPTE les vues et les clics ; ce script l'affiche. La vue part avec le jeton une fois l'encart visible à moitié pendant
      la durée du format ; le clic passe par le lien d'Afrolook (adsGo). L'annonceur retrouve ses chiffres dans son espace sur afrolookmedia.com. */
-  var ADS_API = 'https://us-central1-afrolooki.cloudfunctions.net', webN = 0;
+  // régie Afrolook Ads (API) : clé « pronoflash », acceptée seulement depuis les domaines de PronoFlash (17/11/2026 ; l'ancien système ne servait plus rien)
+  var ADS_API = 'https://afrolookmedia.com/ads/api', webN = 0;
   var VID = (function () {
     try {
       var v = localStorage.getItem('adsvid');
@@ -156,13 +157,13 @@
       return v;
     } catch (e) { return 'anon-' + Math.random().toString(36).slice(2, 12) + Date.now().toString(36); }
   })();
-  function serveAd(slot, size) {
+  function serveAd(slot, size, fmt) {
     return new Promise(function (res) {
       var done = false;
       function end(ad) { if (done) return; done = true; res(ad); }
       setTimeout(function () { end(null); }, 6000);
       var s = 'pf-' + String(slot).toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 18) + '-' + (webN++); // un nom d'emplacement par encart de la page
-      fetch(ADS_API + '/adsServe?pub=pronoflash&fmt=native&slot=' + encodeURIComponent(s) + '&vid=' + encodeURIComponent(VID) + '&lang=' + LANG + (size ? '&size=' + size : ''), { cache: 'no-store' })
+      fetch(ADS_API + '/serve?pub=pronoflash&fmt=' + (fmt || (size ? 'banner' : 'native')) + '&slot=' + encodeURIComponent(s) + '&vid=' + encodeURIComponent(VID) + '&lang=' + LANG + (size ? '&size=' + size : ''), { cache: 'no-store' })
         .then(function (r) { return r.json(); }).then(function (j) { end(j && j.ok && j.ad && j.ad.id && j.ad.title && j.ad.token ? j.ad : null); }).catch(function () { end(null); });
     });
   }
@@ -219,7 +220,8 @@
     var host = a.parentNode && a.parentNode.classList && a.parentNode.classList.contains('ad') ? a.parentNode : null;
     var size = host ? host.getAttribute('data-w') + 'x' + host.getAttribute('data-h') : '';
     if (!/^(728x90|320x50|320x100|300x250)$/.test(size)) size = '';
-    serveAd(slot, size).then(function (x) {
+    // bandeau collant en bas de l'écran : format « sticky » ; un emplacement d'une taille standard : bannière ; sinon carte native
+    serveAd(slot, size, a.closest && a.closest('#pf-stk') ? 'sticky' : (size ? 'banner' : 'native')).then(function (x) {
       if (x) {
         ad = x;
         if (x.banner && x.banner.url && httpsUrl(x.banner.url) && host && a.parentNode === host) { var b = bannerNode(x); host.replaceChild(b, a); a = b; host.style.minHeight = '0'; }
@@ -265,6 +267,18 @@
   if (stk) { if (store.sget('pf_stk_x')) stk.remove(); else $('button', stk).addEventListener('click', function () { store.sset('pf_stk_x', '1'); stk.remove(); d.body.classList.remove('hasstk'); }); }
   if (w.PF && w.PF.ads) {
     loadAds(false);
+    loadTag();
+  }
+  /* formats dessinés par la balise de la régie (vidéo, affiche, carrousel) et plein écran à la Ne page d'une visite, une seule fois (17/11/2026) */
+  function loadTag() {
+    var n = 0; try { n = (parseInt(sessionStorage.getItem('pf_pages') || '0', 10) || 0) + 1; sessionStorage.setItem('pf_pages', String(n)); } catch (e) { /* stockage indisponible */ }
+    var inter = +(w.PF && w.PF.inter) || 0, done = false; try { done = sessionStorage.getItem('pf_inter') === '1'; } catch (e) { /* tant pis */ }
+    if (inter && n === inter && !done) {
+      var x = d.createElement('ins'); x.className = 'afl-ad'; x.setAttribute('data-pub', 'pronoflash'); x.setAttribute('data-slot', 'pf-inter'); x.setAttribute('data-format', 'interstitial');
+      d.body.appendChild(x); try { sessionStorage.setItem('pf_inter', '1'); } catch (e) { /* tant pis */ }
+    }
+    if (!$('ins.afl-ad')) return;
+    var s = d.createElement('script'); s.async = true; s.src = 'https://afrolookmedia.com/ads/tag.js'; d.head.appendChild(s);
   }
 
   /* ---------- paris avancés : l'annonce du haut du bloc ne se charge qu'à l'ouverture ---------- */

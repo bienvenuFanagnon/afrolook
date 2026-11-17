@@ -262,6 +262,9 @@ function sideColumn(rc, { bilan, afl = 'colonne', extra = '' } = {}) {
   return `<aside class="side"><div class="sticky">${bil}${extra}${adSlot(rc, 'colonne_rect', { cls: 'ad-rect', variant: 'dk' })}${aflCard(rc, afl, 1)}${adSlot(rc, 'colonne_tall', { cls: 'ad-tall', variant: 'dk' })}</div></aside>`;
 }
 
+/** Emplacement de la régie Afrolook Ads dessiné par sa balise (tag.js, chargée par pf.js) : clé « pronoflash », format du moteur. Rien si l'emplacement est coupé. */
+const tagSlot = (rc, id, fmt) => (slotOn(rc.ads, id) ? `<ins class="afl-ad" data-pub="pronoflash" data-slot="pf-${esc(id)}" data-format="${esc(fmt)}" aria-label="${esc(rc.t.adLabel)}"></ins>` : '');
+
 const stickyBar = (rc) => (slotOn(rc.ads, 'collante') ? `<div class="stk" id="pf-stk"><button type="button" aria-label="${esc(rc.t.closeBanner)}">✕</button>${adSlot(rc, 'collante', { variant: 'mo' })}</div>` : '');
 
 /** Page HTML complète, avec les liens hreflang vers l'autre langue. */
@@ -282,10 +285,10 @@ function html(rc, { title, description, path, body, ld, noindex, active, bodyCla
     `<style>${rc.css}</style>${head}${ld ? `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>` : ''}</head>` +
     `<body class="${hasStk ? 'hasstk ' : ''}${bodyClass}"><a class="skip" href="#main">${t.skip}</a>${header(rc, active, alternates)}<main id="main">${body}</main><div class="wrap">${channelBanner(rc, 'pied')}</div>${footer(rc)}${stickyBar(rc)}` +
     `<div class="cbar" id="pf-cbar" hidden></div><div class="cmp-b" id="pf-cmp" role="dialog" aria-label="${esc(t.adPrefs)}" hidden></div><div class="sbar" id="pf-sbar" hidden><button type="button" aria-label="${esc(t.close)}">✕</button></div>` +
-    `<script>window.PF={lang:"${rc.lang}",ads:${rc.ads.actif ? 1 : 0},coupon:"${rc.u('coupon')}"};</script><script src="/js/goalmarkets.js?v=${rc.version}" defer></script><script src="/js/coupon.js?v=${rc.version}" defer></script><script src="/js/pf.js?v=${rc.version}" defer></script></body></html>`;
+    `<script>window.PF={lang:"${rc.lang}",ads:${rc.ads.actif ? 1 : 0},inter:${slotOn(rc.ads, 'interstitiel') ? Number(rc.ads.emplacements.interstitiel.page) || 3 : 0},coupon:"${rc.u('coupon')}"};</script><script src="/js/goalmarkets.js?v=${rc.version}" defer></script><script src="/js/coupon.js?v=${rc.version}" defer></script><script src="/js/pf.js?v=${rc.version}" defer></script></body></html>`;
 }
 
 module.exports = {
   AFL_MSGS, STORE_ANDROID, STORE_IOS, url, matchPath, pct, colon, leagueName, leagueLabel, pickLabel, betLabel, famLabel, crest, timeEl, formBadges, matchCard,
-  adSlot, adResponsive, aflCard, partnerCard, channelBanner, shareBox, mailBox, contactBox, advBox, sponsorBox, CHANNEL_RE, listWithAds, listEnd, header, sportTabs, dayRail, leagueRail, footer, sideColumn, stickyBar, html, esc, fr, dateLongue, heure, dateCourte,
+  adSlot, tagSlot, adResponsive, aflCard, partnerCard, channelBanner, shareBox, mailBox, contactBox, advBox, sponsorBox, CHANNEL_RE, listWithAds, listEnd, header, sportTabs, dayRail, leagueRail, footer, sideColumn, stickyBar, html, esc, fr, dateLongue, heure, dateCourte,
 };

@@ -14,7 +14,7 @@ const buzz = require('../push/buzz');
 const CL_MIN = require('../engine/couponLearn').MIN_N;
 const { unpack: unpackMatrix } = require('../engine/matrixStore');
 
-const { matchCard, crest, adSlot, adResponsive, aflCard, partnerCard, channelBanner, listWithAds, listEnd, sideColumn, timeEl, pct, colon, leagueName, pickLabel, betLabel, famLabel } = C;
+const { matchCard, crest, adSlot, tagSlot, adResponsive, aflCard, partnerCard, channelBanner, listWithAds, listEnd, sideColumn, timeEl, pct, colon, leagueName, pickLabel, betLabel, famLabel } = C;
 
 const FAMILLES_ORDRE = ['Résultat', 'Buts', 'Mi-temps', 'Handicap', 'Score', 'Corners', 'Tirs', 'Cartons & fautes', 'Joueurs', 'Spéciaux'];
 const lvlClass = (p) => (p >= 75 ? 's' : p >= 60 ? 'e' : 'r');
@@ -382,7 +382,7 @@ function match(rc, { m, same, h2h, news }) {
     `${adResponsive(rc, 'verdict', 'ad-verdict')}` +
     (p ? `<a class="det" href="${rc.u('analysis', m)}"><div><b>${t.seeAnalysis}</b><span>${esc(t.seeAnalysisSub(p.marches.length))}</span></div><i>→</i></a>` : '') +
     (p && p.visible !== false ? `<div class="box"><div class="lbl">${t.probsTitle}</div><div class="pb">${probRows(rc, p)}</div><p class="note" style="margin-top:12px">${t.likelyScore}${colon(rc)} <b style="color:var(--tx)">${esc(p.scoreProbable)}</b></p></div>` : '') +
-    `${analyse}${adSlot(rc, 'fiche_native', { cls: 'ad-nat' })}${h2hHtml}${aflCard(rc, 'fiche', 0)}${addBox}${matchNews(rc, news, m)}${partnerCard(rc, 'fiche')}` +
+    `${analyse}${adSlot(rc, 'fiche_native', { cls: 'ad-nat' })}${h2hHtml}${tagSlot(rc, 'video', 'video')}${aflCard(rc, 'fiche', 0)}${addBox}${tagSlot(rc, 'affiche', 'poster')}${matchNews(rc, news, m)}${partnerCard(rc, 'fiche')}` +
     `<div class="sh"><a class="wa" href="${wa}" target="_blank" rel="noopener">${t.shareWa}</a><button type="button" data-copy="${esc(C.url(rc, path))}">${t.copyLink}</button></div>` +
     `<p class="note">${t.matchDisclaimer}</p></div>${side}</div></div>` +
     (p ? jsonScript('pf-match', matchJson(rc, m)) : '');
@@ -442,7 +442,7 @@ function recapCard(rc, a) {
 function newsIndex(rc, { articles }) {
   const t = rc.t;
   const list = articles.length
-    ? articles.map((a, i) => recapCard(rc, a) + (i === 1 && articles.length > 3 ? adSlot(rc, 'native', { cls: 'ad-nat', variant: '' }) : '')).join('')
+    ? articles.map((a, i) => recapCard(rc, a) + (i === 1 && articles.length > 3 ? adSlot(rc, 'native', { cls: 'ad-nat', variant: '' }) : '') + (i === 4 && articles.length > 6 ? tagSlot(rc, 'carrousel', 'carousel') : '')).join('')
     : `<div class="box"><p>${t.pfEmpty}</p></div>`;
   const body = `<div class="wrap"><div class="layout"><div class="col"><div class="hero"><h1>${t.pfIndexH1}</h1><p>${t.pfIndexP}</p>${newsAllBtn(rc)}</div>${adResponsive(rc, 'haut', 'ad-top')}<div class="rcl">${list}</div>${listEnd(rc, 'actus-fin')}</div>${sideColumn(rc, {})}</div></div>`;
   return { title: t.pfIndexTitle, description: t.pfIndexDesc, path: rc.u('news'), alternates: alts(rc, 'news'), body, active: 'actus' };
