@@ -15,6 +15,19 @@
       if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, function () { /* copie refusée */ });
     });
   });
+  // testeur d'intégration : lit une page du diffuseur par l'API (rien n'est compté ni enregistré)
+  var tf = document.getElementById('dx-test'), out = document.getElementById('dx-test-out');
+  if (tf && out) tf.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var b = tf.querySelector('button'), url = tf.url.value.trim(); if (!url) return;
+    var line = function (lv, t) { var li = document.createElement('li'); li.className = lv; var i = document.createElement('i'); i.textContent = lv === 'ok' ? '✓' : (lv === 'warn' ? '!' : '×'); li.appendChild(i); var s = document.createElement('span'); s.textContent = t; li.appendChild(s); out.appendChild(li); };
+    out.textContent = ''; b.disabled = true; b.textContent = 'Lecture…';
+    fetch(tf.getAttribute('data-api') + '/check?url=' + encodeURIComponent(url)).then(function (r) { return r.json().then(function (j) { return [r.status, j]; }); })
+      .then(function (x) { var j = x[1]; if (x[0] === 429) return line('warn', 'Trop d’essais : réessaie dans une minute.'); if (!j || !j.checks) return line('error', 'Adresse invalide : écris l’adresse complète d’une page de ton site.'); j.checks.forEach(function (c) { line(c.level, c.text); }); })
+      .catch(function () { line('error', 'Test impossible pour le moment : vérifie ta connexion.'); })
+      .then(function () { b.disabled = false; b.textContent = 'Tester'; });
+  });
+
   var links = document.querySelectorAll('.dx-side a');
   if (!links.length || !('IntersectionObserver' in window)) return;
   var io = new IntersectionObserver(function (es) {

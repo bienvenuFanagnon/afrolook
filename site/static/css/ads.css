@@ -785,6 +785,10 @@ div.adsteps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;m
 .dx-main figure .shot img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}
 .dx-main figure.wide{margin:6px 0 18px}.dx-main figure.wide .shot{aspect-ratio:1280/560}
 .dx-main figcaption{display:grid;gap:3px;padding:8px 2px 0}.dx-main figcaption b{font-size:14.5px}.dx-main figcaption code{justify-self:start;font-size:11.5px}.dx-main figcaption small{color:var(--muted);font-size:12.5px}
+.dx-test{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}.dx-test input{flex:1;min-width:220px;border:1px solid var(--line);border-radius:12px;padding:11px 14px;background:var(--surface);color:var(--ink);font:inherit}
+.dx-chk{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:8px}.dx-chk li{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+.dx-chk i{font-style:normal;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:900;flex:none;margin-top:1px;color:#fff;background:#E5484D}
+.dx-chk .ok i{background:var(--green-bright);color:#06210F}.dx-chk .warn i{background:#E5A100}
 @media (max-width:1100px){.dx-api{grid-template-columns:1fr}}
 @media (max-width:860px){.dx-in{grid-template-columns:1fr;padding:0 16px}.dx-side{display:none}.dx-cards,.dx-fmts{grid-template-columns:1fr 1fr}}
 @media (max-width:540px){.dx-cards,.dx-fmts{grid-template-columns:1fr}.dparams>div{grid-template-columns:1fr}.dcode-h{flex-wrap:wrap;overflow:visible}.dcode-h .copy{margin:6px 0 6px auto}}

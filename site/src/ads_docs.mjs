@@ -68,7 +68,7 @@ export function adsDocsPage(api) {
     ['Intégrer', [['balise', 'Balise web'], ['wordpress', 'WordPress et sites sans code'], ['spa', 'React, Vue, Next.js'], ['flutter', 'Application Flutter'], ['natif', 'Android et iOS (API)']]],
     ['Référence de l’API', [['serve', 'Obtenir une annonce', 'GET'], ['erreurs', 'Codes d’erreur']]],
     ['Formats', [['formats', 'Les 8 formats'], ['matrice', 'Formats par intégration'], ['tailles', 'Tailles et bannières prêtes'], ['media', 'Vidéo + images']]],
-    ['Règles et paiement', [['comptage', 'Comptage et fraude'], ['paiement', 'Gains et retraits'], ['categories', 'Catégories et ciblage'], ['faq', 'Questions fréquentes']]],
+    ['Règles et paiement', [['comptage', 'Comptage et fraude'], ['paiement', 'Gains et retraits'], ['categories', 'Catégories et ciblage'], ['verifier', 'Tester mon intégration'], ['faq', 'Questions fréquentes']]],
   ];
   return `${adsSubnav('docs')}<section class="adsp dx"><div class="dx-in">
 <nav class="dx-side" aria-label="Documentation">${nav.map(([h, items]) => `<h4>${h}</h4>` + items.map(([id, l, m]) => `<a href="#${id}">${l}${m ? `<span class="m ${m.toLowerCase()}">${m}</span>` : ''}</a>`).join('')).join('')}</nav>
@@ -241,6 +241,13 @@ export function adsDocsPage(api) {
   <li>Le ciblage (pays, langues, appareils, types de sites) est défini par l’annonceur : un visiteur n’est pas toujours éligible à toutes les annonces.</li>
   <li>Aucun cookie, aucun suivi d’un site à l’autre. Ta politique de confidentialité doit mentionner l’affichage d’annonces par Afrolook Ads.</li>
  </ul>
+</section>
+
+<section id="verifier">
+ <h2>Tester mon intégration</h2>
+ <p>Donne l’adresse d’une page de ton site : nous la lisons et te disons ce qui va et ce qui manque (balise de vérification, script, emplacements, identifiant, politique de sécurité). Rien n’est compté ni enregistré.</p>
+ <form class="dx-test" id="dx-test" data-api="${A}"><input type="url" name="url" placeholder="https://monsite.com/une-page" required aria-label="Adresse de la page à tester"><button class="btn btn-primary adsm" type="submit">Tester</button></form>
+ <ul class="dx-chk" id="dx-test-out" aria-live="polite"></ul>
 </section>
 
 <section id="faq">

@@ -28,10 +28,10 @@
   })();
   // format du moteur selon l'emplacement : carte dans une liste = native ; rectangle, bandeau et chargement = bannière
   // affiche = poster, carrousel, vidéo, bandeau collant (sticky) et plein écran (inter = interstitiel) : tous les formats du moteur, chacun avec son prix et donc sa rémunération
-  var ENGINE_FMT = { native: 'native', rect: 'banner', lb: 'banner', load: 'banner', poster: 'poster', carousel: 'carousel', video: 'video', sticky: 'sticky', inter: 'interstitial' };
+  var ENGINE_FMT = { native: 'native', rect: 'banner', lb: 'banner', load: 'video', poster: 'poster', carousel: 'carousel', video: 'video', sticky: 'sticky', inter: 'interstitial' };
   var _slotN = 0;
   // taille standard de l'emplacement (comme AdMob) : si l'annonce a une bannière prête à cette taille, le moteur la renvoie
-  function sizeOf(fmt) { return fmt === 'lb' ? (window.innerWidth >= 760 ? '728x90' : '320x100') : fmt === 'rect' ? '300x250' : fmt === 'load' ? '320x100' : ''; }
+  function sizeOf(fmt) { return fmt === 'lb' ? (window.innerWidth >= 760 ? '728x90' : '320x100') : fmt === 'rect' ? '300x250' : ''; }
   function serveAd(fmt) {
     return new Promise(function (res) {
       var done = false;
@@ -137,58 +137,51 @@
     for (var i = 0; i < links.length; i++) links[i].addEventListener('click', function () { track('web_' + fmt, 'click'); }); // le clic d'annonceur est compté par le lien d'Afrolook lui-même
     watchView(el, a);
   }
-  // Annonces d'annonceurs : jusqu'à 6 encarts par session, à chaque visite, sur les pages clés (1 par page)
-  var MAX_WEB = 6;
-  function nWeb() { try { return parseInt(sessionStorage.getItem('sa_web_n') || '0', 10); } catch (e) { return 0; } }
-  // plein écran et bandeau collant : chacun une fois par session ; encart tardif (sous « Copié ») : un seul aussi ; le reste : un par page clé
+  // Annonces d'annonceurs (17/11/2026) : dessinées par la balise de la régie (tag.js : marque, image entière sur fond flouté, bannières prêtes, vidéo,
+  // bandeau collant, plein écran), jusqu'à 3 par page sur toutes les pages (règle de la balise). Plein écran, bandeau collant et encart tardif : une fois par session.
   function allowedWeb(fmt, el) {
-    if (fmt === 'sticky' || fmt === 'inter') { try { if (sessionStorage.getItem('sa_' + fmt) === '1') return false; } catch (e) {} return nWeb() < MAX_WEB; }
-    if (el && el.hasAttribute('data-adlate')) { try { return sessionStorage.getItem('sa_late') !== '1' && nWeb() < MAX_WEB; } catch (e) { return true; } }
-    if (!KEY_PAGE || pageShown) return false;
-    try { return parseInt(sessionStorage.getItem('sa_web_n') || '0', 10) < MAX_WEB; } catch (e) { return true; }
+    var key = fmt === 'sticky' || fmt === 'inter' ? 'sa_' + fmt : (el && el.hasAttribute('data-adlate') ? 'sa_late' : '');
+    if (!key) return true;
+    try { return sessionStorage.getItem(key) !== '1'; } catch (e) { return true; }
   }
   function countedWeb(fmt, el) {
-    if (fmt === 'sticky' || fmt === 'inter') { try { sessionStorage.setItem('sa_' + fmt, '1'); } catch (e) {} } else if (el && el.hasAttribute('data-adlate')) { try { sessionStorage.setItem('sa_late', '1'); } catch (e) {} } else pageShown = true; try { sessionStorage.setItem('sa_web_n', String(parseInt(sessionStorage.getItem('sa_web_n') || '0', 10) + 1)); } catch (e) {} }
-
-  var pageShown = false;
-  var KEY_PAGE = /^\/(en\/)?(c\/[^\/]+\/|generer\/|generate\/)?$/.test(location.pathname);   // pages clés : accueil, fiche commande, page Générer
-
-  // les emplacements d'une page passent l'un après l'autre : un seul encart par page, donc inutile de demander une annonce (et un jeton) pour les suivants
-  var _queue = Promise.resolve();
+    var key = fmt === 'sticky' || fmt === 'inter' ? 'sa_' + fmt : (el && el.hasAttribute('data-adlate') ? 'sa_late' : '');
+    if (key) { try { sessionStorage.setItem(key, '1'); } catch (e) {} }
+  }
+  var tagAsked = false;
+  function tagLoad() {
+    if (window.AflAds) { window.AflAds.fill(); return; }
+    if (tagAsked) return; tagAsked = true;
+    var s = document.createElement('script'); s.async = true; s.src = 'https://afrolookmedia.com/ads/tag.js'; document.head.appendChild(s);
+  }
+  // un emplacement = une balise <ins> de la régie ; vrai si une annonce s'affiche, faux sinon (l'emplacement reste caché)
   function show(el, fmt) {
-    var p = _queue.then(function () {
-      if (!allowedWeb(fmt, el)) return false;   // aucune pub écrite ici : seulement ce que la régie Afrolook Ads envoie
-      return serveAd(fmt).then(function (ad) {
-        if (ad && allowedWeb(fmt, el)) { countedWeb(fmt, el); renderWeb(el, fmt, ad); return true; }
-        return false;
-      });
+    return new Promise(function (res) {
+      if (!allowedWeb(fmt, el)) return res(false);
+      var ins = document.createElement('ins'); ins.className = 'afl-ad'; ins.setAttribute('data-pub', PUB_ID);
+      ins.setAttribute('data-slot', 'sa-' + fmt + (_slotN++)); ins.setAttribute('data-format', ENGINE_FMT[fmt] || 'banner');
+      var sz = sizeOf(fmt); if (sz) ins.setAttribute('data-size', sz);
+      el.innerHTML = ''; el.appendChild(ins); el.hidden = false;
+      var done = false;
+      ins.addEventListener('afl:filled', function () { if (done) return; done = true; countedWeb(fmt, el); track('web_' + fmt, 'imp'); if (fmt === 'native') el.removeAttribute('aria-hidden'); res(true); });
+      ins.addEventListener('afl:empty', function () { if (done) return; done = true; res(false); });
+      setTimeout(function () { if (!done) { done = true; res(false); } }, 12000);
+      tagLoad();
     });
-    _queue = p.catch(function () {});
-    return p;
   }
 
-  // bandeau collant : en bas de l'écran sur les fiches de commande, fermable, une fois par session
+  // bandeau collant : en bas de l'écran sur les fiches de commande, fermable (par la balise), une fois par session
   function mountSticky() {
-    var host = document.createElement('div'); host.className = 'afa-stk-host'; host.hidden = true; document.body.appendChild(host);
-    show(host, 'sticky').then(function (ok) {
-      if (!ok) { host.remove(); return; }
-      var x = document.createElement('button'); x.type = 'button'; x.className = 'afa-x'; x.setAttribute('aria-label', fr ? 'Fermer' : 'Close'); x.textContent = '✕';
-      x.addEventListener('click', function () { host.remove(); }); host.appendChild(x);
-    });
+    var host = document.createElement('div'); host.className = 'afa-stk-host'; document.body.appendChild(host);
+    show(host, 'sticky').then(function (ok) { if (!ok) host.remove(); });
   }
   if (/^\/(en\/)?c\/[^\/]+\/$/.test(location.pathname)) setTimeout(mountSticky, 4000);
-  // plein écran : au premier « Copié » de la session, fermable au bout de 3 secondes (le moteur limite à une fois toutes les 10 minutes par personne)
+  // plein écran : à la 2e copie depuis une liste ; fermable au bout de 3 secondes (par la balise) ; le moteur limite à une fois toutes les 10 minutes
   var interDone = false, copies = 0;
   function showInter() {
     if (interDone) return; interDone = true;
-    var host = document.createElement('div'); host.className = 'afa-inter-host'; host.hidden = true; document.body.appendChild(host);
-    show(host, 'inter').then(function (ok) {
-      if (!ok) { host.remove(); return; }
-      var x = document.createElement('button'); x.type = 'button'; x.className = 'afa-x afa-x-inter'; x.disabled = true; host.appendChild(x);
-      var n = 3; x.textContent = String(n);
-      var t = setInterval(function () { n--; if (n > 0) { x.textContent = String(n); return; } clearInterval(t); x.disabled = false; x.textContent = '✕'; x.setAttribute('aria-label', fr ? 'Fermer' : 'Close'); }, 1000);
-      x.addEventListener('click', function () { if (!x.disabled) host.remove(); });
-    });
+    var host = document.createElement('div'); host.className = 'afa-inter-host'; document.body.appendChild(host);
+    show(host, 'inter').then(function (ok) { if (!ok) host.remove(); });
   }
 
   window.saAfrolookAds = {
