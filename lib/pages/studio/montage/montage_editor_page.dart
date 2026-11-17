@@ -1849,8 +1849,8 @@ class _MontageEditorPageState extends State<MontageEditorPage> with SingleTicker
       TextField(
         key: const ValueKey('free_text_field'),
         controller: _freeText,
-        maxLength: 120,
-        maxLines: 3,
+        maxLength: 250,   // 250 caractères (demande du propriétaire, 16/11/2026)
+        maxLines: 5,
         minLines: 1,
         textCapitalization: TextCapitalization.sentences,
         style: TextStyle(color: _c.textPrimary),

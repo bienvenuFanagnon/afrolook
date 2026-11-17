@@ -1,14 +1,14 @@
 // Afrolook Ads : pages de la régie publicitaire (annonceurs) : bloc de l'accueil, page /ads/ et espace annonceur /ads/espace/.
 // Les annonces sont déposées sur le même système de pub que l'application (voir functions/src/ads/adsWeb.ts). Page FR seulement pour l'instant.
-// L'audience affichée est un seul chiffre, ici : AUDIENCE (cumulée sur toutes nos plateformes, confirmée par le propriétaire le 29/10/2026).
+// L'audience affichée est un seul chiffre, ici : AUDIENCE (nos plateformes + partenaires + groupes et canaux des partageurs ; texte fixe, plus aucun calcul : décision du propriétaire le 17/11/2026).
 
 import { catOptions, catChecks, rulesHtml, RULES } from './ads_data.mjs';
 import { simulatorSection, channelMocks, trustSection, networkSection, stepsSection, waPhone } from './ads_campaign.mjs';
 import { formatsSection } from './ads_formats.mjs';
 import { adminNav } from './adminnav.mjs';
 
-export const AUDIENCE = 'plus de 50 000';
-export const AUDIENCE_EN = 'over 50,000';
+export const AUDIENCE = 'plus de 3 millions';
+export const AUDIENCE_EN = 'over 3 million';
 
 const IC = {
   chat: 'M20 2H4a2 2 0 00-2 2v18l4-4h14a2 2 0 002-2V4a2 2 0 00-2-2z',
@@ -54,7 +54,7 @@ export const phone = (cap = '') => `<figure class="mkw"><div class="mkp"><div cl
 const HOME = {
   fr: {
     kick: 'Afrolook Ads · Campagne WhatsApp', h: 'Fais partager ton annonce sur <em>WhatsApp, Telegram, Facebook…</em> partout en Afrique.',
-    p: `Des partageurs validés publient ton annonce sur leurs statuts, groupes et canaux. Tu choisis l'audience, tu simules ton budget, et seules les visites valides sont comptées, avec un système anti-fraude. Pas de budget ? Une annonce gratuite est aussi diffusée sur <b>Afrolook</b>, <b>SlashAtlas</b>, <b>Pronoflash</b> et <b>Épargne+</b> (<b><span data-aud>${AUDIENCE}</span> personnes</b>).`,
+    p: `Des partageurs validés publient ton annonce sur leurs statuts, groupes et canaux. Tu choisis l'audience, tu simules ton budget, et seules les visites valides sont comptées, avec un système anti-fraude. Pas de budget ? Une annonce gratuite est aussi diffusée sur <b>Afrolook</b>, <b>SlashAtlas</b>, <b>Pronoflash</b> et <b>Épargne+</b> (<b><span data-aud>${AUDIENCE}</span> de personnes</b>).`,
     pub: ['Tu as un site ou une application ?', 'Affiche les annonces Afrolook Ads chez toi : audience mesurée et comparée à ta déclaration, catégories d\'annonces choisies par toi, et 65 % du budget des annonces de l\'offre Réseau pour toi.', 'Devenir diffuseur', 'Documentation d\'intégration'],
     sh: ['Simule ton audience en 10 secondes', 'Entre ton budget : tu vois combien de personnes tu touches et combien de visites attendre sur ton lien.', 'Ouvrir le simulateur'],
     cta: 'Lancer une campagne', ghost: 'Annonce gratuite', s1: ['d\'audience', 'sur nos 4 plateformes'], s2: ['anti-fraude', 'seules les visites valides sont comptées'], bar: 'Fais partager ton annonce sur WhatsApp, Telegram, Facebook', barBtn: 'Annoncer',
@@ -280,7 +280,7 @@ ${networkSection('fr', ico)}
 <div class="adwall" id="adpartners">${PARTNERS.map((p) => `<div class="adpart" title="${p.n}">${p.img ? `<img src="${p.img}" alt="${p.n}" width="56" height="56" loading="lazy">` : `<i class="adp-logo plus">${p.mark}</i>`}<span>${p.n}</span></div>`).join('')}<span id="adpartners-dyn" data-api="${api}/ads/api/partners" data-audience="${api}/ads/api/audience" style="display:contents"></span></div></div></section>
 
 <section class="adsec" id="annonces-gratuites"><div class="wrap"><span class="kicker">Offre de lancement · annonces 100 % gratuites</span><h2 class="h2">Pas de budget ? Publie une annonce gratuite sur nos plateformes.</h2>
-<p class="sub">Avec ton compte Google : 1 annonce gratuite de 14 jours (non renouvelable), validée par notre équipe, diffusée automatiquement sur Afrolook, SlashAtlas, Pronoflash et Épargne+, auprès de <span data-aud>${AUDIENCE}</span> personnes.</p>
+<p class="sub">Avec ton compte Google : 1 annonce gratuite de 14 jours (non renouvelable), validée par notre équipe, diffusée automatiquement sur Afrolook, SlashAtlas, Pronoflash et Épargne+, auprès de <span data-aud>${AUDIENCE}</span> de personnes.</p>
 <div class="cta" style="margin:0 0 22px"><a class="btn btn-primary adbig" href="/ads/espace/">${G} Publier mon annonce gratuite</a></div>
 <div class="adp3">
  <article class="adp"><div class="adp-top"><img src="/img/logo.webp" width="46" height="46" alt=""><div><h3>Afrolook</h3><small>Réseau social des créateurs africains</small></div></div><p>Ton annonce apparaît dans le fil, entre les publications des créateurs. Un bouton d'action mène vers ton site ou ton application.</p><span class="adp-tag">Dans l'application et sur le web</span></article>
@@ -400,7 +400,12 @@ export function adsSpace(fbConfig, api) {
      <label class="fl" for="f-cat">Catégorie de l'annonce <small>(obligatoire)</small><select id="f-cat"><option value="">Choisir…</option>${catOptions()}</select></label>
      <p class="adnote" id="f-cat-note" hidden>Catégorie sensible : ton annonce n'est diffusée que chez les diffuseurs qui l'acceptent explicitement, et jamais dans la galerie publique. Le contenu sexuellement explicite est interdit.</p>
      <div class="fl"><span>Image ou vidéo</span>
-      <label class="adup" for="f-file"><div class="adup-i">${ico('poster', 30)}</div><div><b id="f-file-name">Choisis une image ou une vidéo</b><small>Images JPG ou PNG (jusqu'à 5), ou une vidéo MP4 de <b>15 secondes maximum</b> (25 Mo)</small></div></label>
+      <label class="adup" for="f-file"><div class="adup-i">${ico('poster', 30)}</div><div><b id="f-file-name">Choisis une image ou une vidéo</b><small>Images JPG, PNG ou GIF animé (jusqu'à 5) <b>et</b> une vidéo MP4 de <b>15 secondes maximum</b> (25 Mo), ensemble ou séparément : chaque choix s'ajoute. Tu peux aussi cliquer sur l'image d'un aperçu pour la remplacer.</small></div></label>
+      <div class="adkinds" role="group" aria-label="Ajouter un visuel (les trois peuvent se combiner)">
+       <button type="button" data-acc="image/jpeg,image/png,image/webp" data-multi="1"><b>Image</b><small>1 image, ou 2 à 5 pour un carrousel</small></button>
+       <button type="button" data-acc="image/gif" data-multi="1"><b>GIF animé</b><small>petite vidéo muette, 4 Mo au plus</small></button>
+       <button type="button" data-acc="video/mp4,video/quicktime"><b>Vidéo</b><small>MP4, 15 secondes au plus</small></button>
+      </div>
       <div class="imgtips" data-adsonly><b>Image idéale : carrée, 1080 × 1080 px</b><small>Sujet et texte au centre, gros et lisibles. Ton image s'affiche toujours entière : dans une petite bannière (carré), un rectangle (paysage) ou une carte (portrait), le reste se remplit d'un fond flouté. Évite les images très allongées et le texte minuscule.</small><b id="f-file-tip" class="imgtip" hidden></b>
       <div class="imgex" aria-hidden="true">
         <figure><div class="ex ex-ok"><b>-30 %</b><span>Boutique Kofi</span><u>Commande</u></div><figcaption><i class="y">✓</i> Bon : carré, texte gros au centre</figcaption></figure>
@@ -409,10 +414,26 @@ export function adsSpace(fbConfig, api) {
       </div>
       <div class="imgtips" data-shareonly hidden><b>Ton image est publiée telle quelle sur WhatsApp, Telegram, Facebook…</b><small>Choisis un visuel <b>carré (1080 × 1080)</b> ou <b>vertical (1080 × 1920)</b> comme un statut : un texte court et gros, un appel clair (« Commande ton affiche »), des couleurs vives. Une vidéo de 15 secondes maximum marche très bien aussi.</small>
        <div class="imgex" aria-hidden="true"><figure><div class="ex ex-ok"><b>-30 %</b><span>Boutique Kofi</span><u>Commande</u></div><figcaption><i class="y">✓</i> Carré</figcaption></figure><figure><div class="ex ex-v"><b>-30 %</b><span>Boutique Kofi</span><u>Commande</u></div><figcaption><i class="y">✓</i> Vertical, comme un statut</figcaption></figure><figure><div class="ex ex-no"><span>texte minuscule illisible</span></div><figcaption><i class="n">✗</i> À éviter</figcaption></figure></div></div>
-      <details class="bnbox" data-adsonly><summary><b>Bannières prêtes à l'emploi</b> (facultatif) : comme sur Google AdMob</summary>
-       <p>Si tu as déjà dessiné tes bannières, dépose-les : elles s'affichent <b>en entier, cliquables, sans texte ajouté</b>, sur les emplacements de la même taille (haut et bas des pages, bas des applications). JPG, PNG, WebP ou GIF animé, 500 Ko au plus, à la taille exacte ou au double pour les écrans nets (ex. 1456 × 180). Sans bannière à la bonne taille, ton image et ton texte sont mis en page automatiquement.</p>
-       <div class="bnrow"><label for="bn-b728x90"><b>Leaderboard</b> <i>728 × 90</i><small>haut ou bas des pages sur ordinateur</small></label><input id="bn-b728x90" data-k="b728x90" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><span class="bt" id="bt-b728x90"></span></div><div class="bnrow"><label for="bn-b320x100"><b>Grande bannière</b> <i>320 × 100</i><small>téléphone, dans les pages</small></label><input id="bn-b320x100" data-k="b320x100" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><span class="bt" id="bt-b320x100"></span></div><div class="bnrow"><label for="bn-b320x50"><b>Mini bannière</b> <i>320 × 50</i><small>bas des applications</small></label><input id="bn-b320x50" data-k="b320x50" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><span class="bt" id="bt-b320x50"></span></div><div class="bnrow"><label for="bn-b300x250"><b>Rectangle moyen</b> <i>300 × 250</i><small>dans le contenu</small></label><input id="bn-b300x250" data-k="b300x250" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><span class="bt" id="bt-b300x250"></span></div>
-      </details>
+      <div class="exg">
+       <div class="exg-h"><b>Exemples d'annonces réussies</b><small>Une photo vivante, un message court écrit en gros, ton logo et un bouton clair. Choisis le format qui te ressemble : ton visuel s'affiche toujours en entier.</small></div>
+       <div class="exg-row">
+        <figure><img src="/img/ads/exemples/carree.webp" width="540" height="540" loading="lazy" alt="Exemple d'annonce carrée"><figcaption><b>Carrée</b> 1080 × 1080<small>la plus polyvalente</small></figcaption></figure>
+        <figure><img src="/img/ads/exemples/portrait.webp" width="432" height="540" loading="lazy" alt="Exemple d'annonce portrait"><figcaption><b>Portrait</b> 1080 × 1350<small>cartes du fil</small></figcaption></figure>
+        <figure><img src="/img/ads/exemples/verticale.webp" width="360" height="640" loading="lazy" alt="Exemple d'affiche verticale"><figcaption><b>Verticale</b> 1080 × 1920<small>affiche plein écran, statuts</small></figcaption></figure>
+        <figure class="w"><img src="/img/ads/exemples/paysage.webp" width="600" height="314" loading="lazy" alt="Exemple d'annonce paysage"><figcaption><b>Paysage</b> 1200 × 628<small>rectangles, ordinateur</small></figcaption></figure>
+        <figure class="car"><div><img src="/img/ads/exemples/carrousel1.webp" width="300" height="300" loading="lazy" alt="Carrousel, image 1"><img src="/img/ads/exemples/carrousel2.webp" width="300" height="300" loading="lazy" alt="Carrousel, image 2"><img src="/img/ads/exemples/carrousel3.webp" width="300" height="300" loading="lazy" alt="Carrousel, image 3"></div><figcaption><b>Carrousel</b> 2 à 5 images<small>un message par image</small></figcaption></figure>
+        <figure><img src="/img/ads/exemples/gif-anime.gif" width="300" height="300" loading="lazy" alt="Exemple de GIF animé"><figcaption><b>GIF animé</b> 4 Mo au plus<small>une petite vidéo muette</small></figcaption></figure>
+        <figure><video src="/img/ads/exemples/video.mp4" poster="/img/ads/exemples/video-affiche.webp" width="360" height="640" muted loop playsinline autoplay preload="none" aria-label="Exemple de vidéo verticale"></video><figcaption><b>Vidéo</b> verticale, 15 s au plus<small>le message dès la 1re seconde</small></figcaption></figure>
+       </div>
+      </div>
+      <div class="bnbox" data-adsonly>
+       <div class="bnhd"><b>Bannières prêtes à l'emploi</b><span class="bnbadge">Plus de vues et de clics</span></div>
+       <p class="bnwhy"><b>Une annonce complète est montrée plus souvent.</b> Sur un emplacement d'une taille donnée, les annonces qui ont une bannière prête à cette taille <b>passent en premier</b>, et elle s'affiche nette, en entier, telle que tu l'as dessinée. Chaque format fourni, c'est un emplacement de plus où ton annonce est prioritaire. <b>Nous les créons pour toi à partir de ton image</b> dès que tu la choisis ; tu peux remplacer chacune par la tienne.</p>
+       <div class="bnprog" aria-live="polite"><span id="bn-count">0 format sur 4</span><i><b id="bn-bar"></b></i></div>
+       <p class="bnauto" id="bn-auto" role="status" hidden></p>
+       <p>Tes propres bannières, comme sur Google AdMob : JPG, PNG, WebP ou GIF animé, 500 Ko au plus, à la taille exacte ou au double pour les écrans nets (ex. 1456 × 180). Sans bannière à la bonne taille, ton image et ton texte sont mis en page automatiquement.</p>
+       <div class="bnrow"><label for="bn-b728x90"><b>Leaderboard</b> <i>728 × 90</i><small>haut ou bas des pages sur ordinateur</small><img class="bnex" src="/img/ads/exemples/b728x90.webp" width="728" height="90" loading="lazy" alt="Exemple de bannière 728 × 90"></label><input id="bn-b728x90" data-k="b728x90" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><span class="bt" id="bt-b728x90"></span></div><div class="bnrow"><label for="bn-b320x100"><b>Grande bannière</b> <i>320 × 100</i><small>téléphone, dans les pages</small><img class="bnex" src="/img/ads/exemples/b320x100.webp" width="320" height="100" loading="lazy" alt="Exemple de bannière 320 × 100"></label><input id="bn-b320x100" data-k="b320x100" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><span class="bt" id="bt-b320x100"></span></div><div class="bnrow"><label for="bn-b320x50"><b>Mini bannière</b> <i>320 × 50</i><small>bas des applications</small><img class="bnex" src="/img/ads/exemples/b320x50.webp" width="320" height="50" loading="lazy" alt="Exemple de bannière 320 × 50"></label><input id="bn-b320x50" data-k="b320x50" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><span class="bt" id="bt-b320x50"></span></div><div class="bnrow"><label for="bn-b300x250"><b>Rectangle moyen</b> <i>300 × 250</i><small>dans le contenu</small><img class="bnex" src="/img/ads/exemples/b300x250.webp" width="300" height="250" loading="lazy" alt="Exemple de bannière 300 × 250"></label><input id="bn-b300x250" data-k="b300x250" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><span class="bt" id="bt-b300x250"></span></div>
+      </div>
       <input id="f-file" type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/quicktime" multiple hidden></div></div>
      <div class="adfs adstep" data-step="3" hidden><h3><i>3</i> Destination</h3>
       <p class="adcallout" id="f-btn-note"></p>
@@ -437,14 +458,14 @@ export function adsSpace(fbConfig, api) {
       <label class="dfopt" for="o-share-on"><input type="checkbox" id="o-share-on"><span class="dfmain"><b>Partage au clic</b><small>Des personnes partagent ton annonce sur WhatsApp, Telegram et Facebook et gagnent à chaque clic valide. Tu paies l'audience à atteindre. Elle apparaît dans l'onglet Tâches de l'application.</small></span>
        <span class="dfbud"><input id="o-share-v" type="number" min="1000" max="5000000" step="1000" value="10000" aria-label="Personnes à atteindre"> pers.</span><small class="dfest" id="o-share-e"></small></label>
       <label class="fl" id="f-sbrand-l" for="f-sbrand" hidden>Marque affichée <small>(équipe : ex. SlashAtlas)</small><input id="f-sbrand" maxlength="60" autocomplete="off" placeholder="SlashAtlas"></label>
-      <label class="fl" id="f-days-l" for="f-days">Durée des options payantes<select id="f-days"><option value="7">7 jours</option><option value="14">14 jours</option><option value="30" selected>30 jours</option><option value="60">60 jours</option><option value="90">90 jours</option></select></label>
+      <p class="fl-note" id="f-days-l">Pas de durée à choisir : <b>tout repose sur ton budget</b>. Ton annonce est diffusée jusqu'à ce que le budget de chaque option soit dépensé, que ce soit dans Afrolook, chez nos sites et applications partenaires ou par le partage au clic.</p>
       <div class="sharebox"><b id="f-sum-t">Gratuit</b><small id="f-sum-n"></small></div></div>
      <div class="adneed" id="f-need" role="alert" hidden><p id="f-need-t"></p><button class="btn btn-primary adbig" type="button" id="f-need-go">Recharger maintenant</button>${supportLine("Bonjour, j'ai un problème pour recharger mon solde annonceur sur Afrolook Ads.", "Un souci de paiement ?")}</div>
      <p class="aderr" id="aderr" role="alert" hidden></p>
      <div class="adnav"><button class="btn btn-line adbig" type="button" id="f-prev" hidden>← Retour</button><button class="btn btn-primary adbig" type="button" id="f-next">Continuer</button></div>
     <div class="adsub" id="f-subrow" hidden><div><b id="f-sub-t">Gratuit</b><small id="f-quota">Validation par notre équipe avant diffusion</small></div><button class="btn btn-primary adbig" id="f-send" type="submit">Envoyer pour validation</button></div>
    </form>
-   <aside class="adprev"><span class="kicker">Aperçu en direct</span>${phone('Tel que ton annonce apparaîtra')}
+   <aside class="adprev"><span class="kicker">Aperçu en direct</span><div id="pvx" class="pvx" aria-live="polite"></div>
     <div class="adprev-n">${ico('shield', 18)}<span id="pv-note">Ton annonce sera diffusée sur <b>Afrolook</b>, <b>SlashAtlas</b>, <b>Pronoflash</b> et <b>Épargne+</b> après validation.</span></div>
     <div class="adprev-n" data-shareonly hidden>${ico('shield', 18)}<span>Ton annonce sera partagée par des personnes <b>validées par notre équipe</b> sur WhatsApp, Telegram, Facebook… Seuls les clics valides sont comptés.</span></div></aside>
   </div></div>
@@ -507,6 +528,7 @@ export function adsSpace(fbConfig, api) {
   ${supportLine("Bonjour, j'ai un souci avec la recharge de mon solde annonceur sur Afrolook Ads.", "Un souci avec ta recharge ?")}
  </form></div></dialog>
 <dialog class="addlg" id="addetail" aria-label="Détail de l'annonce"><div class="addlg-in"><button class="addlg-x" type="button" id="addetail-x" aria-label="Fermer">×</button><div id="addetail-body"></div></div></dialog>
+<script src="/ads/tag.js?v=__ASSET_V__" defer></script>
 <script src="/js/ads.js?v=__ASSET_V__" type="module"></script>`;
 }
 
@@ -527,7 +549,7 @@ export function adsPublisherSpace(fbConfig, api) {
   <button class="btn btn-primary adbig" id="signin" type="button">${G} Continuer avec Google</button><small>Quand l'offre Réseau sera ouverte, tu recevras 65 % du budget des annonces affichées chez toi.</small><p class="adnote"><a href="/ads/diffuseur/documentation/">Documentation d'intégration</a> · <a href="/ads/diffuseur/regles/">Règles des diffuseurs</a></p></div></div>
 
  <div id="adapp" hidden>
-  <div class="pubaud"><div><small>Audience du réseau Afrolook Ads</small><b id="aud-total">plus de 50 000</b></div><p>Elle augmente à chaque site ou application validé : <b>50 000</b> sur nos plateformes <b>+ l'audience retenue de chaque diffuseur</b>.</p></div>
+  <div class="pubaud"><div><small>Audience du réseau Afrolook Ads</small><b id="aud-total">plus de 3 millions de personnes</b></div><p>Nos plateformes, les sites et applications de nos partenaires, et les groupes et canaux très suivis de nos partageurs.</p></div>
   <div class="profban" id="profban" role="status" hidden></div>
   <div class="adkpis" id="pubkpis" aria-live="polite"><div class="adk adk-load"><small>&nbsp;</small><b>&nbsp;</b><span>&nbsp;</span></div><div class="adk adk-load"><small>&nbsp;</small><b>&nbsp;</b><span>&nbsp;</span></div><div class="adk adk-load"><small>&nbsp;</small><b>&nbsp;</b><span>&nbsp;</span></div><div class="adk adk-load"><small>&nbsp;</small><b>&nbsp;</b><span>&nbsp;</span></div></div>
   <div class="adtabs"><a class="on" href="#tab-profil" data-tab="profil">Mon profil <i id="pbadge">!</i></a><a href="#tab-sites" data-tab="sites">Mes sites et applications <i id="pcount">0</i></a><a href="#tab-gains" data-tab="gains">Mes gains <i id="gcount">0 F</i></a></div>

@@ -3,6 +3,7 @@ import 'package:afrotok/pages/studio/montage/montage_state.dart';
 import 'package:afrotok/pages/studio/montage/montage_catalog.dart';
 import 'package:afrotok/pages/studio/montage/montage_text_style.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -29,5 +30,23 @@ void main() {
     expect(kFreeBgModes.length, 4);
     expect(kFreeTextColors.length, 6);
     expect(kFreeTextFonts.map((f) => f.id).toSet().length, 8);
+  });
+
+  testWidgets('texte long (250 caractères) : affiché en entier sur la photo, police réduite, jamais coupé', (tester) async {
+    final long = List.filled(25, 'Promo wax ').join().trim();   // 249 caractères
+    final short = 'Bonne année !';
+    double sizeOf(String t) {
+      final w = tester.widget<Text>(find.text(t).first);
+      return w.style!.fontSize!;
+    }
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body: Center(child: SizedBox(width: 360, child: FreeTextView(text: short, cq: 3.6))))));
+    final big = sizeOf(short);
+    await tester.pumpWidget(MaterialApp(home: Scaffold(body: Center(child: SizedBox(width: 360, child: FreeTextView(text: long, cq: 3.6))))));
+    final small = sizeOf(long);
+    expect(small, lessThan(big));
+    expect(small, greaterThanOrEqualTo(big * .6 - .001));
+    final para = tester.renderObject<RenderParagraph>(find.text(long).first);
+    expect(para.didExceedMaxLines, isFalse);
+    expect(tester.takeException(), isNull);
   });
 }

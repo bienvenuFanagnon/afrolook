@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import 'montage_look.dart' show kFreeTextColors;
@@ -56,7 +58,9 @@ class FreeTextView extends StatelessWidget {
     final fg = kFreeTextColors[color.clamp(0, kFreeTextColors.length - 1)];
     final back = kFreeTextColors[bgColor.clamp(0, kFreeTextColors.length - 1)];
     final shown = f.upper ? text.toUpperCase() : text;
-    final base = TextStyle(fontFamily: f.family, fontSize: 6.4 * cq * f.size, height: 1.15, letterSpacing: f.spacing * cq * .25, color: fg);
+    // texte long (jusqu'à 250 caractères, 16/11/2026) : la police diminue au-delà de 120 caractères pour que tout reste lisible sur l'image
+    final shrink = shown.length <= 120 ? 1.0 : math.max(.6, math.sqrt(120 / shown.length));
+    final base = TextStyle(fontFamily: f.family, fontSize: 6.4 * cq * f.size * shrink, height: 1.15, letterSpacing: f.spacing * cq * .25, color: fg);
 
     List<Shadow>? shadows;
     if (f.glow) {
@@ -65,11 +69,11 @@ class FreeTextView extends StatelessWidget {
       shadows = [Shadow(color: const Color(0xCC000000), blurRadius: .9 * cq, offset: Offset(0, .25 * cq))];
     }
 
-    Widget label = Text(shown, textAlign: TextAlign.center, maxLines: 5, overflow: TextOverflow.ellipsis, style: base.copyWith(shadows: shadows));
+    Widget label = Text(shown, textAlign: TextAlign.center, maxLines: 16, overflow: TextOverflow.ellipsis, style: base.copyWith(shadows: shadows));
     if (bg == 3) {
       // contour épais de la couleur d'arrière-plan derrière le texte
       label = Stack(children: [
-        Text(shown, textAlign: TextAlign.center, maxLines: 5, overflow: TextOverflow.ellipsis, style: base.copyWith(foreground: Paint()..style = PaintingStyle.stroke..strokeWidth = 1.3 * cq..strokeJoin = StrokeJoin.round..color = back)),
+        Text(shown, textAlign: TextAlign.center, maxLines: 16, overflow: TextOverflow.ellipsis, style: base.copyWith(foreground: Paint()..style = PaintingStyle.stroke..strokeWidth = 1.3 * cq..strokeJoin = StrokeJoin.round..color = back)),
         label,
       ]);
     }

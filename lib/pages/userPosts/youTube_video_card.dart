@@ -448,9 +448,8 @@ class _YouTubeVideoCardState extends State<YouTubeVideoCard>
     _localDefiVotes = widget.post.defiVotes ?? 0;
     _hasVotedLocally = widget.post.defiVoterIds?.contains(_authProvider.loginUserData.id) ?? false;
 
-    if (!_soundProvider.isMuted) {
-      _soundProvider.setMuted(true);
-    }
+    // Plus de son coupé d'office (16/11/2026) : les vidéos du fil suivent le réglage général (son activé par défaut).
+    // Avant, chaque carte coupait et enregistrait le son de toute l'application : la page des vidéos portrait s'ouvrait toujours muette.
     // 🔥 S'abonner aux changements du provider de son (un seul abonnement, retiré dans dispose)
     _soundProvider.addListener(_updateVolume);
     _initSharedPreferences();

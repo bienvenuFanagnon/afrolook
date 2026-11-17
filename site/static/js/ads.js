@@ -9,6 +9,8 @@ function h(tag, attrs = {}, ...kids) {
   return e;
 }
 const EN = document.documentElement.lang === 'en'; // page anglaise : vues et boutons traduits
+// image d'exemple tant que l'annonceur n'a rien choisi : un emplacement clair « Ton image », jamais une vraie photo qui pourrait être prise pour la sienne
+const SAMPLE_IMG = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#dff3e6"/><stop offset="1" stop-color="#fff4c2"/></linearGradient></defs><rect width="1080" height="1080" fill="url(#g)"/><rect x="60" y="60" width="960" height="960" rx="48" fill="none" stroke="#0F7B43" stroke-width="8" stroke-dasharray="36 26" opacity=".55"/><g fill="none" stroke="#0F7B43" stroke-width="22" stroke-linejoin="round" opacity=".8"><rect x="380" y="330" width="320" height="250" rx="28"/><path d="M400 560l100-110 80 80 50-50 70 80"/></g><circle cx="625" cy="400" r="26" fill="#0F7B43" opacity=".8"/><text x="540" y="700" text-anchor="middle" font-family="system-ui,Segoe UI,Roboto,sans-serif" font-size="64" font-weight="800" fill="#14201a">Ton image principale</text><text x="540" y="775" text-anchor="middle" font-family="system-ui,Segoe UI,Roboto,sans-serif" font-size="38" fill="#3d4a42">clique pour la choisir (1080 × 1080)</text></svg>');
 const n = (v) => Number(v || 0).toLocaleString(EN ? 'en-US' : 'fr-FR');
 /** Carte de chiffre clé : libellé, valeur, précision, ton (ok, wait, alert), clic facultatif. */
 const kpiCard = (label, value, sub, tone, onclick) => h(onclick ? 'button' : 'div', { class: 'adk' + (tone ? ' ' + tone : '') + (onclick ? ' clk' : ''), type: onclick ? 'button' : false, onclick: onclick || false },
@@ -476,20 +478,17 @@ async function initSpace() {
     social: { action: 'follow', label: 'Suivre la page', dest: 'link', kind: 'projet', ph: 'https://www.facebook.com/tapage', hint: 'Le lien de ta page Facebook, Instagram, TikTok, YouTube ou Telegram.' },
     event: { action: 'book', label: 'Réserver', dest: 'link', kind: 'projet', ph: 'https://tonsite.com/evenement', hint: 'Le lien de la page où l\u2019on réserve ou s\u2019inscrit à ton événement.' },
   };
-  const st = { type: 'site', kind: 'site', action: 'visit', countries: new Set(['ALL']), langs: new Set(), devs: new Set(), types: new Set(), files: [], isVideo: false, open: true, left: 3 };
+  const st = { type: 'site', kind: 'site', action: 'visit', countries: new Set(['ALL']), langs: new Set(), devs: new Set(), types: new Set(), files: [], video: null, isVideo: false, open: true, left: 3 };
   const tel = () => TYPES[st.type].dest === 'phone';
+  let pvUpdate = () => {};   // aperçus en direct (branchés plus bas)
+  let autoHook = () => {};   // bannières créées automatiquement (branchées plus bas)
   const refresh = () => {
     const T = TYPES[st.type], l = $('#f-link'); l.placeholder = T.ph; l.inputMode = tel() ? 'tel' : 'url';
     $('#f-link-l').firstChild.textContent = tel() ? 'Numéro de téléphone, avec l\'indicatif ' : (st.type === 'social' ? 'Lien de ta page ' : st.type === 'app' ? 'Lien Google Play (Android) ' : 'Lien du bouton');
     $('#f-link-ios-l').hidden = st.type !== 'app';   // application : deux liens possibles (16/11/2026)
     $('#f-price-l').hidden = !T.price; $('#f-link-hint').textContent = T.hint;
     $('#f-btn-note').innerHTML = 'Le bouton de ton annonce sera <b>' + T.label + '</b>.';
-    $('#pv-btn').textContent = T.label;
-    $('#pv-name').textContent = $('#f-title').value.trim() || 'Ton entreprise';
-    $('#pv-av').textContent = ($('#f-title').value.trim() || 'A').charAt(0).toUpperCase();
-    $('#pv-text').textContent = $('#f-text').value.trim() || 'Ton texte apparaîtra ici.';
-    const pr = TYPES[st.type].price && Number($('#f-price').value) >= 1 ? nf(Number($('#f-price').value)) + ' F · ' : '';
-    $('#pv-link').textContent = pr + ($('#f-link').value.trim() || (st.type === 'app' ? $('#f-link-ios').value.trim() : '') || '').replace(/^https?:\/\//, '').slice(0, 28);
+    pvUpdate(); autoHook();
   };
   $$('#f-type label').forEach((el) => el.addEventListener('click', () => {
     st.type = el.dataset.v; st.action = TYPES[st.type].action; st.kind = TYPES[st.type].kind;
@@ -513,29 +512,67 @@ async function initSpace() {
   const chips = (box, set) => $$(box + ' span').forEach((c) => c.addEventListener('click', () => { const v = c.dataset.v; set.has(v) ? set.delete(v) : set.add(v); c.classList.toggle('on', set.has(v)); }));
   chips('#f-langs', st.langs); chips('#f-devs', st.devs); chips('#f-types', st.types);
   $('#f-cat').addEventListener('change', () => { const o = $('#f-cat').selectedOptions[0]; $('#f-cat-note').hidden = !(o && o.dataset.s); });
+  // trois boutons explicites (image, GIF animé, vidéo) : même champ, sélecteur filtré sur le bon type ; le filtre revient à « tout » ensuite (16/11/2026)
+  const ACCEPT_ALL = $('#f-file').accept;
+  $$('.adkinds button').forEach((b) => b.addEventListener('click', () => {
+    const f = $('#f-file'); f.accept = b.dataset.acc; f.multiple = !!b.dataset.multi; f.click();
+    setTimeout(() => { f.accept = ACCEPT_ALL; f.multiple = true; }, 1000);
+  }));
+  // vidéo ET images dans la même annonce (17/11/2026) : chaque choix S'AJOUTE (images jusqu'à 5, GIF compris, et une vidéo) ;
+  // la vidéo passe dans les emplacements vidéo, les images dans les cartes, affiches, carrousels et bannières. Un clic sur l'aperçu REMPLACE les images.
+  const fileBox = () => {
+    let x = $('#f-file-x');
+    if (!x) { x = h('div', { class: 'adfx', id: 'f-file-x' }); $('label.adup').after(x); }
+    return x;
+  };
+  function showFiles() {
+    const parts = [];
+    if (st.video) parts.push('1 vidéo (' + st.video.name.slice(0, 30) + ')');
+    if (st.files.length) parts.push(st.files.length + (st.files.length > 1 ? ' images' : ' image') + (st.files.some((f) => f.type === 'image/gif') ? ' (GIF compris)' : ''));
+    $('#f-file-name').textContent = parts.length ? parts.join(' + ') : 'Choisis une image ou une vidéo';
+    const x = fileBox();
+    x.replaceChildren(...[
+      st.video ? h('button', { type: 'button', class: 'adlinkbtn', text: 'Retirer la vidéo', onclick: () => { setVideo(null); showFiles(); pvUpdate(); autoHook(); } }) : null,
+      st.files.length ? h('button', { type: 'button', class: 'adlinkbtn', text: st.files.length > 1 ? 'Retirer les images' : 'Retirer l\u2019image', onclick: () => { st.files = []; showFiles(); pvUpdate(); autoHook(); } }) : null,
+      st.video && st.files.length ? h('small', { text: 'La vidéo passe dans les emplacements vidéo, les images dans les cartes et les bannières.' }) : null,
+    ].filter(Boolean));
+    x.hidden = !x.childNodes.length;
+  }
+  function setVideo(v) {
+    st.video = v || null; st.isVideo = !!st.video; st.thumbUrl = ''; st.duration = 0;
+    if (!st.video) return;
+    // durée de la vidéo : 15 secondes maximum, pour qu'elle soit vue vite
+    const probe = h('video', { preload: 'metadata' }); probe.src = URL.createObjectURL(v);
+    probe.onloadedmetadata = () => {
+      if (st.video !== v) return;
+      st.duration = probe.duration || 0;
+      if (st.duration > 15.5) { setVideo(null); showFiles(); pvUpdate(); err(`La vidéo doit durer 15 secondes maximum (la tienne : ${Math.round(st.duration)} s).`); }
+    };
+    probe.onerror = () => { if (st.video === v) { setVideo(null); showFiles(); pvUpdate(); err('Vidéo illisible : essaie un fichier MP4.'); } };
+    frame(v).then((bl) => { if (st.video === v) { st.thumbUrl = URL.createObjectURL(bl); pvUpdate(); autoHook(); } }).catch(() => {});
+  }
   $('#f-file').addEventListener('change', (e) => {
-    const files = [...e.target.files]; err('');
-    const vids = files.filter((f) => f.type.startsWith('video/'));
-    if (vids.length && files.length > 1) return err('Choisis soit des images (jusqu\'à 5), soit une seule vidéo.');
+    const inp = e.target, files = [...inp.files], replace = inp.dataset.replace === '1'; delete inp.dataset.replace; inp.value = ''; err('');
+    if (!files.length) return;
+    const vids = files.filter((f) => f.type.startsWith('video/')), imgs = files.filter((f) => !f.type.startsWith('video/'));
+    if (vids.length > 1) return err('Une seule vidéo par annonce (tu peux y ajouter jusqu\'à 5 images).');
     if (vids[0] && vids[0].size > 25 * 1024 * 1024) return err('La vidéo dépasse 25 Mo.');
-    st.duration = 0;
-    if (vids[0]) {
-      // durée de la vidéo : 15 secondes maximum, pour qu'elle soit vue vite
-      const probe = h('video', { preload: 'metadata' }); probe.src = URL.createObjectURL(vids[0]);
-      probe.onloadedmetadata = () => {
-        st.duration = probe.duration || 0;
-        if (st.duration > 15.5) { st.files = []; $('#f-file').value = ''; $('#f-file-name').textContent = 'Choisis une image ou une vidéo'; err(`La vidéo doit durer 15 secondes maximum (la tienne : ${Math.round(st.duration)} s).`); }
-      };
-      probe.onerror = () => { st.files = []; $('#f-file').value = ''; err('Vidéo illisible : essaie un fichier MP4.'); };
-    }
-    if (!vids.length && files.length > 5) return err('5 images au maximum.');
     // GIF animé = petite vidéo muette : envoyé tel quel (jamais recompressé, sinon il devient une image fixe), 4 Mo au plus (16/11/2026)
-    const gif = files.find((f) => f.type === 'image/gif' && f.size > 4 * 1024 * 1024);
-    if (gif) return err('Le GIF dépasse 4 Mo : raccourcis-le ou choisis une vidéo MP4.');
-    st.files = files; st.isVideo = vids.length === 1;
-    $('#f-file-name').textContent = files.length ? files.map((f) => f.name).join(', ').slice(0, 80) : 'Choisis une image ou une vidéo';
-    imageTip(files[0], st.isVideo);
-    if (files[0]) { const box = $('#pv-img'); box.replaceChildren(st.isVideo ? h('video', { src: URL.createObjectURL(files[0]), muted: true, playsinline: true }) : h('img', { src: URL.createObjectURL(files[0]), alt: '' })); }
+    if (imgs.find((f) => f.type === 'image/gif' && f.size > 4 * 1024 * 1024)) return err('Le GIF dépasse 4 Mo : raccourcis-le ou choisis une vidéo MP4.');
+    const base = replace ? [] : st.files.filter((f) => !imgs.some((g) => g.name === f.name && g.size === f.size));
+    if (base.length + imgs.length > 5) return err('5 images au maximum (' + base.length + ' déjà choisie' + (base.length > 1 ? 's' : '') + ').');
+    const accept = () => {
+      if (vids[0]) setVideo(vids[0]);
+      if (imgs.length || replace) st.files = [...base, ...imgs];
+      showFiles(); imageTip(st.files[0] || null, !st.files.length && st.isVideo); pvUpdate(); autoHook();
+    };
+    if (!imgs.length) return accept();
+    // chaque image est contrôlée tout de suite (16/11/2026) : illisible ou trop petite (moins de 400 px) = refusée, l'aperçu garde l'image d'avant
+    Promise.all(imgs.map((f) => createImageBitmap(f).then((bm) => [f, bm.width, bm.height], () => [f, 0, 0]))).then((rs) => {
+      const bad = rs.find(([, w, hh]) => !w || Math.min(w, hh) < 400);
+      if (bad) { const [f, w, hh] = bad; return err(!w ? `« ${f.name} » est illisible : choisis une image JPG, PNG, WebP ou GIF.` : `« ${f.name} » est trop petite (${w} × ${hh}) : elle serait floue. Choisis une image d'au moins 600 × 600 px.`); }
+      accept();
+    });
   });
 
   /** Conseil immédiat sur l'image choisie : trop petite (floue en bannière), trop allongée (illisible) ou parfaite. */
@@ -556,17 +593,123 @@ async function initSpace() {
   // bannières prêtes à l'emploi (facultatives) : taille exacte vérifiée tout de suite
   const BANNERS = { b728x90: [728, 90], b320x50: [320, 50], b320x100: [320, 100], b300x250: [300, 250] };
   st.banners = {};
+  // compteur « X formats sur 4 » : plus l'annonce a de formats prêts, plus elle est prioritaire sur les emplacements (16/11/2026)
+  const bnCount = () => {
+    const n = Object.keys(st.banners).length, t = Object.keys(BANNERS).length, c = $('#bn-count'), b = $('#bn-bar');
+    if (c) c.textContent = n === t ? 'Les 4 formats sont fournis : ton annonce est prioritaire sur tous les emplacements' : n + ' format' + (n > 1 ? 's' : '') + ' sur ' + t + ' fourni' + (n > 1 ? 's' : '');
+    if (b) b.style.width = Math.round((n / t) * 100) + '%';
+  };
+  // vignette de chaque case : l'exemple d'Afrolook Ads tant que rien n'est prêt, puis la bannière de l'annonceur (créée automatiquement ou déposée)
+  const rowShow = (k, file, auto) => {
+    const im = $('#bn-' + k)?.closest('.bnrow')?.querySelector('.bnex'), tip = $('#bt-' + k); if (!im) return;
+    if (!im.dataset.ex) im.dataset.ex = im.src;
+    im.src = file ? urlOf(file) : im.dataset.ex; im.classList.toggle('mine', !!file);
+    if (file && tip) { tip.className = 'bt ok'; tip.textContent = auto ? '✓ Créée automatiquement à partir de ton image · « Choisir un fichier » pour la remplacer' : '✓ Ta bannière'; }
+  };
   $$('.bnrow input[type=file]').forEach((inp) => inp.addEventListener('change', async () => {
-    const k = inp.dataset.k, tip = $('#bt-' + k), f = inp.files[0]; delete st.banners[k]; tip.textContent = ''; tip.className = 'bt';
-    if (!f) return;
-    const bad = (m) => { inp.value = ''; tip.className = 'bt bad'; tip.textContent = m; };
+    const k = inp.dataset.k, tip = $('#bt-' + k), f = inp.files[0];
+    if (!f) return;   // choix annulé : la bannière en place reste
+    delete st.banners[k]; st.bannerAuto.delete(k); tip.textContent = ''; tip.className = 'bt';
+    const bad = (m) => { inp.value = ''; tip.className = 'bt bad'; tip.textContent = m + ' Une bannière est recréée à partir de ton image.'; rowShow(k, null); pvUpdate(); bnCount(); scheduleAuto(); };
     if (f.size > 500 * 1024) return bad('Trop lourde (' + Math.round(f.size / 1024) + ' Ko) : 500 Ko au plus.');
     try {
       const bmp = await createImageBitmap(f), [w, hh] = BANNERS[k];
       if (Math.abs((bmp.width / bmp.height) / (w / hh) - 1) > 0.03 || bmp.width < w) return bad('Taille attendue : ' + w + ' × ' + hh + ' (ou le double). La tienne : ' + bmp.width + ' × ' + bmp.height + '.');
-      st.banners[k] = f; tip.className = 'bt ok'; tip.textContent = '✓ ' + bmp.width + ' × ' + bmp.height;
+      st.banners[k] = f; rowShow(k, f, false); tip.textContent = '✓ Ta bannière · ' + bmp.width + ' × ' + bmp.height; pvUpdate(); bnCount();
     } catch { bad('Image illisible.'); }
   }));
+
+  // ── bannières créées automatiquement (16/11/2026) : dès que l'image est choisie, les 4 tailles sont dessinées ici, dans le navigateur, à partir
+  // de l'image (plusieurs images : réparties entre les bannières), du logo et du nom de la marque, du titre et du bouton ; couleur tirée de l'image.
+  // Elles comptent comme des bannières prêtes (envoyées avec l'annonce) ; une bannière déposée par l'annonceur n'est jamais écrasée.
+  st.bannerAuto = new Set();
+  let autoTimer = 0, autoRun = 0;
+  const scheduleAuto = () => { clearTimeout(autoTimer); autoTimer = setTimeout(() => { makeAutoBanners().catch(() => { const e = $('#bn-auto'); if (e) e.hidden = true; }); }, 450); };
+  autoHook = scheduleAuto;
+  const FONT = 'system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif';
+  const loadImg = (src, cors) => new Promise((res, rej) => { const i = new Image(); if (cors) i.crossOrigin = 'anonymous'; i.onload = () => res(i); i.onerror = rej; i.src = src; });
+  const dominant = (img) => {   // couleur moyenne pondérée par la saturation, assombrie pour que le texte blanc reste lisible
+    const c = h('canvas'); c.width = c.height = 24; const g = c.getContext('2d'); g.drawImage(img, 0, 0, 24, 24);
+    const d = g.getImageData(0, 0, 24, 24).data; let r = 0, gr = 0, b = 0, wt = 0;
+    for (let i = 0; i < d.length; i += 4) { const mx = Math.max(d[i], d[i + 1], d[i + 2]), mn = Math.min(d[i], d[i + 1], d[i + 2]), w = 0.15 + (mx ? (mx - mn) / mx : 0); r += d[i] * w; gr += d[i + 1] * w; b += d[i + 2] * w; wt += w; }
+    r /= wt; gr /= wt; b /= wt; const lum = (0.2126 * r + 0.7152 * gr + 0.0722 * b) / 255, k = lum > 0.2 ? 0.2 / lum : 1;
+    return [Math.round(r * k), Math.round(gr * k), Math.round(b * k)];
+  };
+  const cover = (g, img, x, y, w, hh, fy = 0.3) => { const s = Math.max(w / img.width, hh / img.height), sw = w / s, sh = hh / s; g.drawImage(img, (img.width - sw) / 2, (img.height - sh) * fy, sw, sh, x, y, w, hh); };
+  const font = (g, px, wt) => { g.font = `${wt} ${Math.round(px)}px ${FONT}`; };
+  const fitLine = (g, text, max, px, wt) => {   // réduit jusqu'à 65 %, puis coupe avec « … »
+    let s = px; font(g, s, wt);
+    while (s > px * 0.65 && g.measureText(text).width > max) { s -= 1; font(g, s, wt); }
+    let t = text; if (g.measureText(t).width > max) { while (t.length > 1 && g.measureText(t + '…').width > max) t = t.slice(0, -1); t = t.trimEnd() + '…'; }
+    return t;
+  };
+  const wrap2 = (g, text, max, px, wt) => {   // deux lignes au plus
+    font(g, px, wt); const words = text.split(/\s+/), lines = [''];
+    for (const w of words) { const t = (lines[lines.length - 1] + ' ' + w).trim(); if (g.measureText(t).width <= max || !lines[lines.length - 1]) lines[lines.length - 1] = t; else if (lines.length < 2) lines.push(w); else { lines[1] = fitLine(g, lines[1] + ' ' + w + ' …', max, px, wt); break; } }
+    if (g.measureText(lines[lines.length - 1]).width > max) lines[lines.length - 1] = fitLine(g, lines[lines.length - 1], max, px, wt);
+    font(g, px, wt); return lines;
+  };
+  const rrect = (g, x, y, w, hh, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + hh, r); g.arcTo(x + w, y + hh, x, y + hh, r); g.arcTo(x, y + hh, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+  const pill = (g, x, y, w, hh, label) => {
+    g.fillStyle = '#FFD21F'; rrect(g, x, y, w, hh, hh / 2); g.fill();
+    g.fillStyle = '#111'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(fitLine(g, label, w - hh * 0.5, hh * 0.42, 800), x + w / 2, y + hh / 2 + 1); g.textAlign = 'left'; g.textBaseline = 'alphabetic';
+  };
+  const drawLogoBadge = (g, logo, brand, x, y, d, col) => {   // logo rond (ou l'initiale de la marque)
+    g.save(); g.beginPath(); g.arc(x + d / 2, y + d / 2, d / 2, 0, Math.PI * 2); g.closePath(); g.fillStyle = '#fff'; g.fill(); g.clip();
+    if (logo) cover(g, logo, x, y, d, d, 0.5); else { g.fillStyle = `rgb(${col})`; font(g, d * 0.5, 800); g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText((brand || 'A').charAt(0).toUpperCase(), x + d / 2, y + d / 2 + 1); g.textAlign = 'left'; g.textBaseline = 'alphabetic'; }
+    g.restore(); g.strokeStyle = 'rgba(255,255,255,.9)'; g.lineWidth = Math.max(2, d * 0.05); g.beginPath(); g.arc(x + d / 2, y + d / 2, d / 2, 0, Math.PI * 2); g.stroke();
+  };
+  function drawBanner(k, img, logo, brand, title, cta, col) {
+    const [bw0, bh0] = BANNERS[k], W = bw0 * 2, H = bh0 * 2, c = h('canvas'); c.width = W; c.height = H;
+    const g = c.getContext('2d'), rgb = col.join(','); g.fillStyle = `rgb(${rgb})`; g.fillRect(0, 0, W, H);
+    if (k === 'b300x250') {   // rectangle : photo pleine, dégradé de la couleur de la marque en bas, marque, titre, bouton
+      cover(g, img, 0, 0, W, H, 0.25);
+      const gr = g.createLinearGradient(0, H * 0.3, 0, H); gr.addColorStop(0, `rgba(${rgb},0)`); gr.addColorStop(0.55, `rgba(${rgb},.88)`); gr.addColorStop(1, `rgba(${rgb},.97)`); g.fillStyle = gr; g.fillRect(0, 0, W, H);
+      drawLogoBadge(g, logo, brand, 28, 28, 76, rgb);
+      g.fillStyle = '#fff'; g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = 8; g.fillText(fitLine(g, brand, W - 150, 34, 800), 120, 78);
+      const lines = title ? wrap2(g, title, W - 56, 40, 800) : [];
+      lines.forEach((l, i) => g.fillText(l, 28, H - 150 - (lines.length - 1 - i) * 48));
+      g.shadowBlur = 0; pill(g, 28, H - 110, 250, 80, cta);
+    } else {   // bandeaux : photo à gauche, couleur de la marque, nom, titre, bouton
+      const wide = W / H >= 6, pw = Math.round(H * (wide ? 1.3 : 1.0)); cover(g, img, 0, 0, pw, H);
+      const fade = g.createLinearGradient(pw - H * 0.35, 0, pw, 0); fade.addColorStop(0, `rgba(${rgb},0)`); fade.addColorStop(1, `rgba(${rgb},1)`); g.fillStyle = fade; g.fillRect(pw - H * 0.35, 0, H * 0.35, H);
+      const d = Math.round(H * (k === 'b320x100' ? 0.3 : 0.36)); drawLogoBadge(g, logo, brand, Math.round(H * 0.08), H - d - Math.round(H * 0.08), d, rgb);
+      const bw = Math.round(W * (k === 'b728x90' ? 0.17 : 0.27)), bh = Math.round(H * (k === 'b320x100' ? 0.36 : 0.56)), m = Math.round(H * 0.12);
+      const x0 = pw + m, maxw = W - bw - m * 2 - x0;
+      pill(g, W - bw - m, Math.round((H - bh) / 2), bw, bh, cta);
+      g.fillStyle = '#fff';
+      if (k === 'b320x100') {
+        g.fillText(fitLine(g, brand, maxw, H * 0.2, 800), x0, H * 0.36);
+        g.fillStyle = 'rgba(255,255,255,.92)'; (title ? wrap2(g, title, maxw, H * 0.13, 500) : []).forEach((l, i) => g.fillText(l, x0, H * 0.58 + i * H * 0.16));
+      } else {
+        g.fillText(fitLine(g, brand, maxw, H * 0.3, 800), x0, H * (title ? 0.45 : 0.6));
+        if (title) { g.fillStyle = 'rgba(255,255,255,.92)'; g.fillText(fitLine(g, title, maxw, H * (wide && k === 'b728x90' ? 0.2 : 0.22), 500), x0, H * 0.8); }
+      }
+    }
+    return new Promise((res) => c.toBlob((b) => (b && b.type === 'image/webp' ? res(b) : c.toBlob(res, 'image/jpeg', 0.9)), 'image/webp', 0.9));
+  }
+  async function makeAutoBanners() {
+    const run = ++autoRun, stat = $('#bn-auto');
+    const srcs = st.files.length ? st.files.map(urlOf) : (st.thumbUrl ? [st.thumbUrl] : []);   // les images d'abord, sinon l'image de la vidéo
+    const keys = Object.keys(BANNERS).filter((k) => !st.banners[k] || st.bannerAuto.has(k));
+    if (!srcs.length || !keys.length) return;
+    if (stat) { stat.hidden = false; stat.className = 'bnauto wait'; stat.textContent = 'Préparation de tes bannières…'; }
+    const imgs = await Promise.all(srcs.map((s) => loadImg(s)));
+    let logo = null; const lu = (pst.profile && pst.profile.logoUrl) || pst.preview;
+    if (lu) { try { logo = await loadImg(lu, true); } catch { logo = null; } }   // logo sans autorisation de dessin : l'initiale de la marque
+    const brand = (pst.profile && pst.profile.brandName) || ($('#f-brand') && $('#f-brand').value.trim()) || 'Ta marque';
+    const title = $('#f-title').value.trim(), cta = TYPES[st.type].label;
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    for (const [i, k] of keys.entries()) {
+      const img = imgs[i % imgs.length], col = dominant(img);
+      let blob; try { blob = await drawBanner(k, img, logo, brand, title, cta, col); } catch { blob = await drawBanner(k, img, null, brand, title, cta, col); }   // logo qui bloque le dessin : sans logo
+      if (run !== autoRun || (st.banners[k] && !st.bannerAuto.has(k))) return;
+      st.banners[k] = new File([blob], `auto-${k.slice(1)}.${blob.type === 'image/webp' ? 'webp' : 'jpg'}`, { type: blob.type });
+      st.bannerAuto.add(k); rowShow(k, st.banners[k], true);
+    }
+    if (stat) { stat.className = 'bnauto ok'; stat.textContent = '✓ Tes 4 bannières sont prêtes, créées à partir de ton image. Tu peux remplacer chacune par la tienne.'; }
+    pvUpdate(); bnCount();
+  }
 
   // diffusion : trois options cumulables (dans Afrolook, chez les partenaires, partage au clic), chacune avec son budget payé depuis le solde annonceur ; sans option, l'annonce est gratuite
   const NATIVE_CPM = 1500;   // prix pour 1 000 vues d'une carte native : sert seulement à l'estimation affichée
@@ -590,7 +733,7 @@ async function initSpace() {
       : 'Ton annonce sera diffusée ' + [d.app.on ? 'dans <b>Afrolook</b>' : '', d.net.on ? 'chez nos <b>sites et applications partenaires</b>' : '', d.sh.on ? 'par le <b>partage au clic</b>' : ''].filter(Boolean).join(', ').replace(/, ([^,]*)$/, ' et $1') + ' après validation.';
     $('#f-sum-t').textContent = !d.paid ? 'Gratuit' : IS_OFFERED ? 'Offert par l’équipe' : nf(d.total) + ' F';
     $('#f-sum-n').textContent = !d.paid ? 'Une seule annonce gratuite, 14 jours, sur Afrolook, SlashAtlas, Pronoflash et Épargne+. Elle devient payante dès qu\u2019une option est cochée.'
-      : IS_OFFERED ? 'Offert par l’équipe : rien n’est débité de ton solde.' : 'Débité de ton solde annonceur' + (wal.data ? ' (solde actuel : ' + nf(bal) + ' F)' : '') + '. Le budget non dépensé te revient à la fin de l\u2019annonce ; si notre équipe la refuse, tu es remboursé en entier.';
+      : IS_OFFERED ? 'Offert par l’équipe : rien n’est débité de ton solde.' : 'Débité de ton solde annonceur' + (wal.data ? ' (solde actuel : ' + nf(bal) + ' F)' : '') + '. Ton annonce est diffusée jusqu\u2019à ce que ce budget soit dépensé ; si notre équipe la refuse, tu es remboursé en entier.';
     $('#f-send').textContent = !d.paid ? 'Envoyer pour validation' : IS_OFFERED ? 'Lancer l’annonce' : 'Payer et envoyer';
     $('#f-quota').textContent = !d.paid ? (!st.mine ? 'Validation par notre équipe avant diffusion' : !st.open ? 'L\u2019offre gratuite est terminée.' : st.left ? `${st.left} annonce${st.left > 1 ? 's' : ''} gratuite${st.left > 1 ? 's' : ''} restante${st.left > 1 ? 's' : ''} · validation par notre équipe avant diffusion` : 'Tu as utilisé ton annonce gratuite : coche au moins une option de diffusion.')
       : 'Démarre après validation par notre équipe';
@@ -622,7 +765,7 @@ async function initSpace() {
       if ($('#f-title').value.trim().length < 2) return 'Ajoute un titre.';
       if ($('#f-text').value.trim().length < 10) return 'Écris un texte d\'au moins 10 caractères.';
       if (!$('#f-cat').value) return 'Choisis la catégorie de ton annonce.';
-      if (!st.files.length) return 'Ajoute une image ou une vidéo.';
+      if (!st.files.length && !st.video) return 'Ajoute une image ou une vidéo.';
       if (st.isVideo && !(st.duration > 0)) return 'Patiente un instant : la durée de la vidéo est en cours de lecture.';
     }
     if (n === 3) {
@@ -753,12 +896,15 @@ async function initSpace() {
       const regions = st.countries.has('AFRICA') ? ['AFRICA'] : [];
       const payload = { type: st.type, title, text, category: $('#f-cat').value, countries: [...st.countries].filter((c) => c !== 'AFRICA'), regions, languages: [...st.langs], devices: [...st.devs], categories: [...st.types], [tel() ? 'phone' : 'link']: link };
       if (st.type === 'app' && $('#f-link-ios').value.trim()) payload.link_ios = $('#f-link-ios').value.trim();   // lien App Store (16/11/2026)
-      if (st.isVideo) {
-        const f = st.files[0]; payload.mediaType = 'video'; payload.videoDuration = st.duration;
+      // vidéo seule, images seules, ou les deux (« mixed ») : la vidéo pour les emplacements vidéo, les images pour les autres (17/11/2026)
+      payload.mediaType = st.video ? (st.files.length ? 'mixed' : 'video') : 'image';
+      if (st.video) {
+        const f = st.video; payload.videoDuration = st.duration;
         payload.videoUrl = await put('ad_videos', f, f.type === 'video/quicktime' ? 'mov' : 'mp4', f.type);
         try { payload.thumbnailUrl = await put('ad_thumbnails', await frame(f), 'jpg', 'image/jpeg'); } catch { /* la miniature est facultative */ }
-      } else {
-        payload.mediaType = 'image'; payload.images = [];
+      }
+      if (st.files.length) {
+        payload.images = [];
         for (const f of st.files) payload.images.push(f.type === 'image/gif' ? await put('ad_images', f, 'gif', 'image/gif') : await put('ad_images', await shrink(f), 'jpg', 'image/jpeg'));
       }
       const bk = Object.keys(st.banners);
@@ -768,10 +914,9 @@ async function initSpace() {
       if (dif.app.on) payload.budgetApp = dif.app.v;
       if (dif.net.on) payload.budgetNetwork = dif.net.v;
       if (dif.sh.on) { payload.shareAudience = dif.sh.v; if (IS_OFFERED && $('#f-sbrand').value.trim()) payload.brand = $('#f-sbrand').value.trim(); }
-      if (dif.app.on || dif.net.on) payload.days = Number($('#f-days').value);
       const done = await call('adsWebCreate', payload);
       loadWallet();
-      $('#adform').reset(); st.banners = {}; $$('.bnrow .bt').forEach((t) => { t.textContent = ''; t.className = 'bt'; }); st.langs.clear(); st.devs.clear(); st.types.clear(); $$('#f-langs span, #f-devs span, #f-types span').forEach((x) => x.classList.remove('on')); st.countries = new Set(['ALL']); $$('#f-countries span').forEach((x) => x.classList.toggle('on', x.dataset.v === 'ALL')); $('#f-cat-note').hidden = true; st.files = []; $('#f-file-name').textContent = 'Choisis une image ou une vidéo'; refresh();
+      $('#adform').reset(); st.banners = {}; st.bannerAuto.clear(); Object.keys(BANNERS).forEach((k) => rowShow(k, null)); if ($('#bn-auto')) $('#bn-auto').hidden = true; bnCount(); $$('.bnrow .bt').forEach((t) => { t.textContent = ''; t.className = 'bt'; }); st.langs.clear(); st.devs.clear(); st.types.clear(); $$('#f-langs span, #f-devs span, #f-types span').forEach((x) => x.classList.remove('on')); st.countries = new Set(['ALL']); $$('#f-countries span').forEach((x) => x.classList.toggle('on', x.dataset.v === 'ALL')); $('#f-cat-note').hidden = true; st.files = []; setVideo(null); showFiles(); refresh();
       status(dif.paid && IS_OFFERED ? 'Annonce envoyée, offerte par l’équipe : aucun débit. Elle démarre dès sa validation.' : (dif.paid ? 'Annonce envoyée et payée avec ton solde (' + nf(dif.total) + ' F). Elle démarre dès sa validation par notre équipe ; si elle est refusée, tu es remboursé en entier, et le budget non dépensé te revient à la fin.' : 'Annonce envoyée ! Notre équipe la valide, tu recevras un e-mail dès qu\'elle est en ligne.'));
       showStep(1); refreshMode();
       tab('mes');
@@ -784,7 +929,7 @@ async function initSpace() {
   const logoShow = (src) => $('#logo-pv').replaceChildren(src ? h('img', { src, alt: 'Logo de ta marque' }) : h('span', { text: 'Logo' }));
   const logoBadge = { pending: ['wait', 'Profil en validation'], approved: ['ok', 'Profil validé'], rejected: ['rej', 'Profil refusé'] };
   function showProfile(p) {
-    pst.profile = p;
+    pst.profile = p; pvUpdate(); autoHook();   // la marque et le logo du profil passent dans les aperçus
     $('#profbadge').textContent = p ? (p.logoStatus === 'approved' ? '✓' : '…') : '!';
     profBanner('adv', p ? ({ pending: 'pending', approved: 'ok', rejected: 'rej' })[p.logoStatus] || 'pending' : 'none', p && p.logoReason);
     if (!p) return;
@@ -965,7 +1110,7 @@ async function initSpace() {
       for (const a of d.items) {
         const [cls, lab] = badge[a.status] || ['end', a.status];
         const thumb = a.thumb || a.media ? h('img', { class: 'addash-th', src: a.thumb || a.media, alt: '', loading: 'lazy' }) : h('i', { class: 'addash-th ph', text: initial(a) });
-        const meta = `${a.action} · ${a.days} jours${a.budgetApp ? ` · Afrolook ${n(a.spentApp)} / ${n(a.budgetApp)} F` : ''}${a.budgetNet ? ` · Partenaires ${n(a.spentNet)} / ${n(a.budgetNet)} F` : ''}${a.shareId ? ' · Partage au clic' : ''}${a.refunded ? ` · ${n(a.refunded)} F remboursés` : ''}${a.networkRequested && !a.budgetNet ? (a.network ? ' · Offre Réseau' : ' · Offre Réseau demandée (payante)') : ''}${a.status === 'ligne' ? ` · ${a.daysLeft} jour${a.daysLeft > 1 ? 's' : ''} restant${a.daysLeft > 1 ? 's' : ''}` : ''}${a.renewals ? ` · renouvelée ${a.renewals} fois` : ''}`;
+        const meta = `${a.action} · ${a.days ? a.days + ' jours' : 'jusqu’à épuisement du budget'}${a.budgetApp ? ` · Afrolook ${n(a.spentApp)} / ${n(a.budgetApp)} F` : ''}${a.budgetNet ? ` · Partenaires ${n(a.spentNet)} / ${n(a.budgetNet)} F` : ''}${a.shareId ? ' · Partage au clic' : ''}${a.refunded ? ` · ${n(a.refunded)} F remboursés` : ''}${a.networkRequested && !a.budgetNet ? (a.network ? ' · Offre Réseau' : ' · Offre Réseau demandée (payante)') : ''}${a.status === 'ligne' ? ` · ${a.daysLeft} jour${a.daysLeft > 1 ? 's' : ''} restant${a.daysLeft > 1 ? 's' : ''}` : ''}${a.renewals ? ` · renouvelée ${a.renewals} fois` : ''}`;
         const row = h('div', { class: 'addash-r', 'data-id': a.id, tabindex: '0', role: 'button', 'aria-label': `Voir le détail : ${a.title}` },
           h('div', { class: 'addash-main' }, thumb, h('div', {}, h('b', { text: a.title }), imgCount(a) > 1 ? h('span', { class: 'adc-tag-s adsl-mine', text: `${imgCount(a)} photos` }) : null, h('small', { text: meta }), h('small', { class: 'st-m', text: a.status === 'validation' ? 'Pas encore de statistiques' : `${n(a.views)} vues · ${n(a.clicks)} clics` }))),
           h('span', { class: `st ${cls}`, text: lab }),
@@ -980,6 +1125,20 @@ async function initSpace() {
       $('#mylist').replaceChildren(h('p', { class: 'adempty', text: 'Impossible de charger tes annonces pour le moment.' }));
     }
   }
+  // aperçus en direct : marque et logo du profil, textes, image (exemple tant que rien n'est choisi), bannières prêtes
+  const blobs = new WeakMap(), urlOf = (f) => { let u = blobs.get(f); if (!u) { u = URL.createObjectURL(f); blobs.set(f, u); } return u; };
+  const preview = adPreview(() => {
+    const T = TYPES[st.type], prof = pst.profile || {}, urls = st.files.map(urlOf);
+    const link = $('#f-link').value.trim() || (st.type === 'app' ? $('#f-link-ios').value.trim() : '');
+    const domain = tel() ? '' : (link.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split(/[/?#]/)[0] || 'tonsite.com');
+    const price = T.price && Number($('#f-price').value) >= 1 ? nf(Number($('#f-price').value)) + ' F CFA' : '';
+    const banners = {}; for (const [k, f] of Object.entries(st.banners || {})) banners[k] = urlOf(f);
+    return { brand: prof.brandName || ($('#f-brand') && $('#f-brand').value.trim()) || 'Ta marque', logo: prof.logoUrl || pst.preview || '', city: prof.city || '', sector: '',
+      title: $('#f-title').value.trim() || 'Le titre de ton annonce', text: $('#f-text').value.trim() || 'Ton texte apparaîtra ici : ce que tu proposes, en une ou deux phrases.',
+      cta: T.label, domain, price, isVideo: st.isVideo, video: st.video ? urlOf(st.video) : '', thumb: st.thumbUrl || '',
+      images: urls.length ? urls : (st.isVideo ? [] : [SAMPLE_IMG]), sample: !urls.length && !st.isVideo, banners };
+  });
+  if ($('#pvx')) { preview.mount($('#pvx')); pvUpdate = preview.update; }
   refresh();
 }
 
@@ -1221,7 +1380,6 @@ async function initPub() {
   async function load() {
     try {
       const d = await call('adsPubMe'); st.profile = d.profile; st.props = d.properties;
-      const t = Math.floor(Number(d.audience.total) / 1000) * 1000; $('#aud-total').textContent = 'plus de ' + n(Math.max(50000, t));
       st.cats = d.adCategories || {}; $('#p-rules-new').hidden = !(d.profile && d.rules && !d.rules.accepted);
       fillProfile(); renderProps(); pubKpis(d); loadGains(true);
       if (!d.profile) { tab('profil'); status('Bienvenue ! Commence par ton profil de diffuseur.', false, true); } else if (!$('#tab-profil').hidden && d.properties.length) tab('sites');
@@ -1351,7 +1509,7 @@ async function initRegieAdmin() {
       const ta = h('textarea', { rows: 2, maxlength: 300, placeholder: s.ask });
       const num = s.audience != null ? h('input', { type: 'number', min: 0, value: s.audience, 'aria-label': 'Audience retenue' }) : null;
       const net = s.networkChoice ? h('label', { class: 'adcheck rg-net' }, h('input', { type: 'checkbox', checked: s.networkDefault ? true : false }), h('span', {}, h('b', { text: 'Offre Réseau' }), ' : diffuser aussi cette annonce chez les diffuseurs externes (leurs sites et applications). Sans cette case, elle reste sur les plateformes Afrolook.')) : null;
-      zone.replaceChildren(h('div', { class: 'rg-ask' }, num ? h('label', { class: 'fl' }, 'Audience retenue (ajoutée aux 50 000) ', num) : null, net, s.ask ? ta : null,
+      zone.replaceChildren(h('div', { class: 'rg-ask' }, num ? h('label', { class: 'fl' }, 'Audience retenue du diffuseur ', num) : null, net, s.ask ? ta : null,
         h('div', { class: 'logo-r' }, h('button', { class: 'btn btn-primary adsm', type: 'button', text: 'Confirmer', onclick: () => {
           const extra = {};
           if (s.ask) { const min = s.askKey ? 3 : 5; if (ta.value.trim().length < min) return status(s.askKey ? 'La référence du paiement doit faire 3 caractères au moins.' : 'Le motif doit faire 5 caractères au moins.', true); extra[s.askKey || 'reason'] = ta.value.trim(); }
@@ -1657,3 +1815,154 @@ async function initRegieAdmin() {
 const fmts = $('.fmts');
 if (fmts) $$('.fmt-tabs button', fmts).forEach((b) => b.addEventListener('click', () => { fmts.dataset.dev = b.dataset.dev; $$('.fmt-tabs button', fmts).forEach((x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b ? 'true' : 'false'); }); }));
 
+
+// ───────── aperçus en direct de l'annonce (16/11/2026) ─────────
+// Visibles dès l'ouverture du formulaire (exemple), mis à jour à chaque saisie ; un clic sur l'image d'un aperçu ouvre le choix du fichier.
+// Trois onglets toujours visibles : dans Afrolook, sites partenaires (téléphone / ordinateur, rendu exact par tag.js), partage (message et page ouverte au clic).
+function adPreview(getModel) {
+  const insts = [];
+  const TABS = [['app', 'Dans Afrolook'], ['net', 'Sites partenaires'], ['share', 'Partage']];
+  const pick = (k, el) => { el.dataset.pick = k; el.classList.add('pvx-pickable'); return el; };
+  const fitImg = (u, cls = '') => h('div', { class: 'pva-fit ' + cls, style: `--u:url("${u}")` }, h('img', { src: u, alt: '' }));
+  const media = (m, cls = '') => pick('media', m.isVideo
+    ? h('div', { class: 'pva-fit pva-vid ' + cls }, h('video', { src: m.video, muted: true, autoplay: true, loop: true, playsinline: true }))
+    : fitImg(m.images[0], cls));
+  const sampleTag = (m) => m.sample ? h('span', { class: 'pvx-sample', text: 'Image principale à choisir · clique ici' }) : null;
+  const cap = (t, sub) => h('p', { class: 'pvx-cap' }, h('b', { text: t }), sub ? h('small', { text: sub }) : null);
+  const logo = (m, cls) => m.logo ? h('img', { class: cls, src: m.logo, alt: '' }) : h('i', { class: cls, text: (m.brand || 'A').charAt(0).toUpperCase() });
+  const bnSub = (m, k, where) => (m.banners[k] ? 'ta bannière prête' : 'mise en page automatique · clique pour déposer une bannière prête') + (where ? ', ' + where : '');
+
+  // ── dans Afrolook : copies fidèles des cartes de l'application (lib/pages/pub/brand_ad_widgets.dart)
+  function appFrame(m) {
+    const bar = () => h('div', { class: 'pva-bar' }, h('div', {}, m.domain ? h('small', { text: m.domain }) : null, h('b', { text: m.title }), m.price ? h('strong', { text: m.price }) : null), h('span', { class: 'pva-go', text: m.cta }));
+    const card = h('div', { class: 'pva-card' },
+      h('div', { class: 'pva-hd' }, logo(m, 'pva-lg'), h('div', {}, h('b', { text: m.brand }), h('span', {}, h('em', { text: 'Sponsorisé' }), m.city ? ' · ' + m.city : ''))),
+      h('div', { class: 'pva-media' + (m.isVideo ? ' v' : '') }, media(m), sampleTag(m), m.images.length > 1 ? h('span', { class: 'pva-n', text: '1/' + m.images.length }) : null),
+      bar(), h('p', { class: 'pva-txt' }, h('b', { text: m.brand + ' ' }), m.text));
+    const banner = h('div', { class: 'pva-card' }, h('div', { class: 'pva-bn' }, h('div', { class: 'pva-bn-i' }, media(m)), h('div', {}, h('em', { text: 'Annonce' }), h('b', { text: m.brand }))), bar());
+    const small = h('div', { class: 'pva-card pva-sm' }, h('div', { class: 'pva-sm-i' }, media(m)), h('div', {}, h('b', { text: m.brand }), h('span', {}, h('em', { text: 'Sponsorisé' }), m.sector ? ' ' + m.sector : '')), h('span', { class: 'pva-go s', text: m.cta }));
+    const full = h('div', { class: 'pva-full' }, h('span', { class: 'pva-x', text: '✕' }), h('div', { class: 'pva-full-m' }, media(m)), h('b', { text: m.brand }), h('p', { text: m.title }), h('span', { class: 'pva-go', text: m.cta }));
+    const bottom = h('div', { class: 'pvx-slot', style: 'width:320px;max-width:100%' }); renderTag(bottom, m, 'banner', '320x50');
+    return h('div', { class: 'pva' },
+      h('div', { class: 'pva-top' }, h('b', { text: 'Afrolook' })),
+      cap('Carte dans le fil', 'entre deux publications'), card,
+      cap('Bannière', 'en haut et entre les rubriques'), banner,
+      cap('Petite annonce', 'dans les listes'), small,
+      cap('Plein écran', 'entre deux vidéos'), full,
+      cap('Bas de l’application · 320 × 50', bnSub(m, 'b320x50')), pick('b320x50', bottom));
+  }
+
+  // ── sites partenaires : rendu exact par le tag (window.AflAdsPreview), sans requête ni comptage
+  const VIDEO_FMTS = ['video', 'rewarded', 'native', 'interstitial'];
+  function tagAd(m, size, fmt) {
+    const [w, hh] = size ? size.split('x').map(Number) : [0, 0], bn = size && m.banners['b' + size];
+    const vid = m.isVideo && (!m.images.length || VIDEO_FMTS.includes(fmt));
+    return { title: m.title, text: m.text, cta: m.cta, click: 'https://' + (m.domain || 'afrolookmedia.com') + '/', label: 'Annonce',
+      brand: { name: m.brand, logo: m.logo, domain: m.domain },
+      media: vid ? { type: 'video', url: m.video, thumb: m.thumb } : { type: 'image', url: m.images[0], thumb: m.images[0], images: m.images },
+      banner: bn ? { url: bn, w, h: hh } : null };
+  }
+  function renderTag(host, m, fmt, size) {
+    if (!window.AflAdsPreview) { host.append(h('p', { class: 'pvx-cap', text: 'Chargement de l’aperçu…' })); return; }
+    window.AflAdsPreview.render(host, tagAd(m, size, fmt), fmt);
+    host.querySelectorAll('.afl-m, video').forEach((e) => pick('media', e));
+    if (size) host.querySelectorAll('.afl-bn img').forEach((e) => pick('b' + size, e));
+  }
+  const skel = (n) => h('div', { class: 'pvs-sk' }, ...Array.from({ length: n }, (_, i) => h('i', { style: `width:${[96, 88, 92, 70, 84][i % 5]}%` })));
+  function slot(m, fmt, size, label, width) {
+    const host = h('div', { class: 'pvx-slot', style: width ? `width:${width}px;max-width:100%` : '' }); renderTag(host, m, fmt, size);
+    return h('div', { class: 'pvs-slot' }, cap(label, size ? bnSub(m, 'b' + size) : ''), size ? pick('b' + size, host) : host);
+  }
+  function netFrame(m, dev) {
+    const site = (body) => h('div', { class: 'pvs pvs-' + dev }, h('div', { class: 'pvs-top' }, h('i'), h('span', { text: 'un-site-partenaire.com' })), body);
+    if (dev === 'phone') {
+      const sh = h('div'), stick = h('div', { class: 'pvs-stick' }, sh); renderTag(sh, m, 'sticky', '320x50'); pick('b320x50', stick);   // le tag remplace la classe de son hôte : l'hôte est dans un bloc à part
+      return site(h('div', { class: 'pvs-b' },
+        slot(m, 'banner', '320x100', 'Bannière · 320 × 100', 320), skel(4),
+        slot(m, 'native', '', 'Carte native'), skel(3),
+        slot(m, 'poster', '', 'Affiche'),
+        m.images.length > 1 ? slot(m, 'carousel', '', 'Carrousel (fais glisser)') : null,
+        m.isVideo ? slot(m, 'video', '', 'Vidéo') : null, skel(3),
+        slot(m, 'banner', '300x250', 'Rectangle · 300 × 250', 300),
+        slot(m, 'interstitial', '', 'Plein écran (entre deux pages)'),
+        h('div', { class: 'pvs-slot' }, cap('Bandeau collant · 320 × 50', bnSub(m, 'b320x50', 'en bas de l’écran'))), stick));
+    }
+    const sh = h('div'), stick = h('div', { class: 'pvs-stick' }, sh); renderTag(sh, m, 'sticky', '728x90'); pick('b728x90', stick);   // le tag remplace la classe de son hôte : l'hôte est dans un bloc à part
+    return site(h('div', { class: 'pvs-b' },
+      h('div', { class: 'pvs-lead' }, slot(m, 'banner', '728x90', 'Leaderboard · 728 × 90', 728)),
+      h('div', { class: 'pvs-cols' },
+        h('div', {}, h('div', { class: 'pvs-h1' }), skel(5), slot(m, 'native', '', 'Carte native dans l’article', 560), skel(4),
+          m.isVideo ? slot(m, 'video', '', 'Vidéo', 360) : null, !m.isVideo || m.images.length ? slot(m, 'poster', '', 'Affiche', 360) : null,
+          m.images.length > 1 ? slot(m, 'carousel', '', 'Carrousel', 360) : null, skel(3)),
+        h('div', {}, slot(m, 'banner', '300x250', 'Rectangle · 300 × 250', 300), slot(m, 'native', '', 'Carte native (colonne)', 300))),
+      h('div', { class: 'pvs-slot' }, cap('Bandeau collant · 728 × 90', bnSub(m, 'b728x90', 'en bas de l’écran'))), stick));
+  }
+
+  // ── partage : message publié par les partageurs (aperçu du lien) puis page ouverte au clic
+  function shareFrame(m) {
+    const img = m.isVideo ? m.thumb : m.images[0];
+    const chat = h('div', { class: 'pvw' }, h('div', { class: 'pvw-b' },
+      h('div', { class: 'pvw-lk' }, img ? pick('media', h('div', { class: 'pvw-im', style: `background-image:url("${img}")` })) : null, h('div', {}, h('b', { text: m.title }), h('small', { text: m.text }), h('em', { text: 'afrolookmedia.com' }))),
+      h('p', {}, h('b', { text: m.title }), h('br'), m.text, h('br'), h('u', { text: 'https://afrolookmedia.com/p/K7X2M9QA' })), h('span', { class: 'pvw-t', text: '10:42' })));
+    const page = h('div', { class: 'pvl' }, h('div', { class: 'pvl-hd' }, logo(m, 'pvl-lg'), h('div', {}, h('b', { text: m.brand }), h('small', { text: 'Sponsorisé · Afrolook Ads' }))),
+      h('div', { class: 'pvl-m' + (m.isVideo ? ' v' : '') }, media(m)),
+      h('div', { class: 'pvl-bd' }, h('b', { text: m.title }), h('p', { text: m.text }), m.price ? h('span', { class: 'pvl-pr', text: m.price }) : null),
+      h('span', { class: 'pvl-go', text: m.cta }));
+    return h('div', { class: 'pvsh' }, cap('Message sur WhatsApp, Telegram…', 'publié par les partageurs avec leur lien'), chat, cap('Page ouverte au clic', 'avant d’aller vers ton lien'), page);
+  }
+
+  function fit(s) {
+    const f = s.stage.firstChild; if (!f) return;
+    const fr = f.firstChild, w = Number(fr.dataset.w), sc = Math.min(1, (s.stage.clientWidth || w) / w);
+    fr.style.transform = sc < 1 ? `scale(${sc})` : ''; f.style.height = Math.ceil(fr.offsetHeight * sc) + 'px'; f.style.width = Math.floor(w * sc) + 'px';   // centré dans la grande vue
+  }
+  function draw(s) {
+    const m = getModel();
+    s.bar.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.k === s.tab));
+    s.devs.hidden = s.tab !== 'net'; s.devs.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.d === s.dev));
+    s.need.hidden = !m.sample;
+    s.hint.textContent = s.tab === 'app' ? 'Ton annonce dans l’application Afrolook (et nos autres applications).' : s.tab === 'net' ? 'Rendu exact chez nos sites et applications partenaires.' : 'Ce que voient les personnes qui reçoivent le lien.';
+    const w = s.tab === 'net' && s.dev === 'desktop' ? 1024 : 375;
+    const content = s.tab === 'app' ? appFrame(m) : s.tab === 'net' ? netFrame(m, s.dev) : shareFrame(m);
+    const fr = h('div', { class: 'pvx-frame', 'data-w': String(w), style: `width:${w}px` }, content);
+    s.stage.replaceChildren(h('div', { class: 'pvx-fit' }, fr));
+    fit(s); requestAnimationFrame(() => fit(s));
+  }
+  function mount(root, big = false) {
+    const s = { tab: 'app', dev: big ? 'desktop' : 'phone' };
+    s.bar = h('div', { class: 'pvx-tabs', role: 'tablist' }, ...TABS.map(([k, l]) => h('button', { type: 'button', 'data-k': k, text: l, onclick: () => { s.tab = k; draw(s); } })));
+    s.devs = h('div', { class: 'pvx-dev' }, ...[['phone', 'Téléphone'], ['desktop', 'Ordinateur']].map(([k, l]) => h('button', { type: 'button', 'data-d': k, text: l, onclick: () => { s.dev = k; draw(s); } })));
+    s.hint = h('p', { class: 'pvx-hint' });
+    s.need = h('div', { class: 'pvx-need', role: 'note' }, h('span', { text: 'Les cartes, affiches, petites annonces et plein écran utilisent ton image principale. Les bannières prêtes servent seulement aux emplacements de leur taille.' }),
+      h('button', { type: 'button', class: 'btn btn-primary', text: 'Choisir mon image principale', onclick: () => $('#f-file').click() }));
+    s.stage = h('div', { class: 'pvx-stage' });
+    // un clic sur une image de l'aperçu choisit le fichier ; aucun lien de l'aperçu ne s'ouvre
+    s.stage.addEventListener('click', (e) => {
+      const a = e.target.closest('a, button'); if (a) e.preventDefault();
+      const p = e.target.closest('[data-pick]'); if (!p) return;
+      e.stopPropagation(); const k = p.dataset.pick;
+      const inp = k === 'media' ? $('#f-file') : $('#bn-' + k);
+      if (inp) { if (k !== 'media') { const d = inp.closest('details'); if (d) d.open = true; } else inp.dataset.replace = '1'; inp.click(); }
+    }, true);
+    s.stage.addEventListener('load', () => fit(s), true);
+    s.stage.addEventListener('loadedmetadata', () => fit(s), true);
+    root.replaceChildren(s.bar, s.devs, s.hint, s.need, s.stage);
+    root.classList.add('pvx'); if (big) root.classList.add('pvx-big');
+    if (!big) root.append(h('button', { type: 'button', class: 'btn btn-line pvx-more', text: 'Voir en grand', onclick: openBig }));
+    if ('ResizeObserver' in window) new ResizeObserver(() => fit(s)).observe(s.stage);
+    insts.push(s); draw(s); return s;
+  }
+  function openBig() {
+    const panel = h('div', { class: 'pvx-panel' });
+    let s = null;
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    const close = () => { ov.remove(); const i = insts.indexOf(s); if (i >= 0) insts.splice(i, 1); document.removeEventListener('keydown', onKey); };
+    const ov = h('div', { class: 'pvx-modal', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Aperçus de ton annonce' },
+      h('div', { class: 'pvx-box' }, h('div', { class: 'pvx-mh' }, h('b', { text: 'Aperçus de ton annonce' }), h('button', { type: 'button', class: 'pvx-close', 'aria-label': 'Fermer', text: '✕', onclick: () => close() })), panel));
+    document.addEventListener('keydown', onKey);
+    ov.addEventListener('click', (e) => { if (e.target === ov) close(); });
+    document.body.append(ov);
+    s = mount(panel, true);
+  }
+  return { mount, update: () => insts.forEach(draw) };
+}

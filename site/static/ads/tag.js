@@ -41,6 +41,7 @@
       '.afl-go{justify-self:start;background:#FFD21F;color:#111;font-weight:800;border-radius:99px;padding:8px 16px;font-size:13px}' +
       '.afl-banner .afl-c{display:flex;align-items:center;gap:12px;padding:8px 12px 8px 8px;min-height:64px}.afl-banner .afl-m{width:72px;height:48px;aspect-ratio:auto;border-radius:10px;flex:none}.afl-banner .afl-b{padding:0;flex:1;min-width:0}.afl-banner .afl-t,.afl-banner .afl-x{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.afl-banner .afl-x{display:none}.afl-banner .afl-c .afl-tag,.afl-sticky .afl-c .afl-tag{position:absolute;left:12px;top:12px;font-size:9px;padding:2px 5px}' +
       '.afl-sticky{position:fixed;left:0;right:0;bottom:0;z-index:2147483000;padding:8px;background:rgba(255,255,255,.96);box-shadow:0 -4px 20px rgba(0,0,0,.15)}.afl-sticky .afl-c{max-width:728px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:8px 40px 8px 8px}.afl-sticky .afl-m{width:72px;height:48px;aspect-ratio:auto;border-radius:10px;flex:none}.afl-sticky .afl-bn{max-width:min(728px,calc(100% - 40px));margin:0 auto}.afl-ad.afl-sticky .afl-bn .afl-tag{right:auto;left:4px}.afl-sticky .afl-b{padding:0;flex:1;min-width:0}.afl-sticky .afl-x{display:none}.afl-sticky .afl-t{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+      '.afl-pvfs{display:flex;justify-content:center;padding:24px 16px;background:rgba(0,0,0,.82);border-radius:12px}.afl-pvfs .afl-c{width:min(100%,380px)}' +
       '.afl-close{position:absolute;right:12px;top:12px;width:28px;height:28px;border:0;border-radius:50%;background:#eef3ee;color:#14201a;font:700 16px/1 system-ui;cursor:pointer;z-index:2}' +
       '.afl-car .afl-trk{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}.afl-car .afl-trk::-webkit-scrollbar{display:none}.afl-car .afl-m{flex:0 0 100%;scroll-snap-align:center;aspect-ratio:4/5}' +
       '.afl-video video{display:block;width:100%;aspect-ratio:9/16;max-height:70vh;object-fit:contain;background:#000}' +
@@ -51,7 +52,9 @@
     document.head.appendChild(s);
   }
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; }
-  function httpsOnly(u) { try { var x = new URL(u); return x.protocol === 'https:' ? x.href : ''; } catch (e) { return ''; } }
+  // PV = aperçu dans le formulaire d'Afrolook Ads (16/11/2026) : fichiers encore sur l'appareil (blob:) acceptés, rien n'est compté, le plein écran reste dans son cadre
+  var PV = false;
+  function httpsOnly(u) { if (!u) return ''; try { var x = new URL(u, location.href); return x.protocol === 'https:' || (PV && (x.protocol === 'blob:' || x.protocol === 'data:' || x.origin === location.origin)) ? x.href : ''; } catch (e) { return ''; } }
 
   function post(url, body) {
     if (DNT) return; // « Ne pas suivre » : ni vue ni clic ne sont enregistrés pour ce visiteur
@@ -60,6 +63,7 @@
 
   // une vue = l'annonce est visible à moitié au moins, sans interruption, pendant la durée du format (mesurée ici ; le serveur la recoupe)
   function watch(node, ad) {
+    if (PV) return;   // aperçu : aucune vue envoyée
     var timer = 0, sent = false;
     function fire() { if (sent) return; sent = true; post(ad.event, { t: ad.token, e: 'view', ms: ad.viewMs + 50, vid: VID }); if (io) io.disconnect(); }
     if (!('IntersectionObserver' in window)) { timer = setTimeout(fire, ad.viewMs + 100); return; }
@@ -127,6 +131,7 @@
     host.textContent = '';
     host.className = 'afl-ad afl-' + fmt;
     if (fmt === 'carousel' && pics.length > 1) host.className += ' afl-car';
+    if ((fmt === 'interstitial' || fmt === 'rewarded') && PV) { host.className += ' afl-pvfs'; host.appendChild(wrap); return; }
     if (fmt === 'interstitial' || fmt === 'rewarded') return overlay(host, wrap, ad, fmt);
     host.appendChild(wrap);
     if (vid) videoPlay(wrap.querySelector('video'), ad, false);
@@ -201,6 +206,9 @@
       css(); render(host, j.ad, fmt);
     }).catch(function () { host.hidden = true; });
   }
+
+  // aperçu exact d'une annonce (formulaire d'Afrolook Ads) : même rendu que chez les partenaires, sans requête ni comptage
+  window.AflAdsPreview = { render: function (host, ad, fmt) { css(); PV = true; try { render(host, ad, fmt); } finally { PV = false; } } };
 
   function init() {
     var hosts = Array.prototype.slice.call(document.querySelectorAll('ins.afl-ad'));
