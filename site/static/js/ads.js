@@ -394,7 +394,10 @@ async function boot(onUser) {
     const j = await r.json().catch(() => ({}));
     if (r.ok) return j;
     if (j.code === 'profile_missing') { status(j.message, true); throw Object.assign(new Error(j.message), { code: 'functions/failed-precondition' }); }   // pas encore de profil Afrolook : ouvrir l'application une première fois
-    throw Object.assign(new Error((j.error && j.error.message) || j.message || 'erreur'), { code: 'functions/' + String((j.error && j.error.status) || 'unknown').toLowerCase().replace(/_/g, '-') });
+    // le code HTTP et le texte reçu sont gardés : une erreur inconnue les affiche, pour qu'on sache d'où elle vient (17/11/2026)
+    const msg = (j.error && j.error.message) || j.message || (typeof j.error === 'string' ? j.error : '') || 'erreur';
+    console.error('[Afrolook Ads]', name, r.status, j);
+    throw Object.assign(new Error(msg), { code: 'functions/' + String((j.error && j.error.status) || 'unknown').toLowerCase().replace(/_/g, '-'), httpStatus: r.status });
   };
   // Dépôt d'un fichier (logo, image, vidéo, bannière) : l'API donne une adresse d'envoi directe, puis confirme ; on récupère l'adresse publique du fichier.
   const upload = async (blob, contentType) => {
@@ -877,7 +880,8 @@ async function initSpace() {
     if (/limite_du_jour/.test(m)) return 'Trop d\'annonces envoyées aujourd\'hui. Réessaie demain.';
     if (/gratuite_terminee/.test(m)) return 'L\'offre gratuite est terminée. Contacte-nous pour annoncer.';
     if (e?.code === 'functions/invalid-argument') return m.replace(/^.*?:\s*/, '') || 'Vérifie les champs de ton annonce.';
-    return friendly(e, 'Impossible d\'envoyer l\'annonce pour le moment. Réessaie.');
+    const why = e && (e.httpStatus || e.message) ? ' (détail : ' + [e.httpStatus, e.message].filter(Boolean).join(' · ') + ')' : '';
+    return friendly(e, 'Impossible d\'envoyer l\'annonce pour le moment. Réessaie.' + why);
   };
   $('#adform').addEventListener('submit', async (ev) => {
     ev.preventDefault(); err(''); status('');
@@ -920,7 +924,7 @@ async function initSpace() {
       status(dif.paid && IS_OFFERED ? 'Annonce envoyée, offerte par l’équipe : aucun débit. Elle démarre dès sa validation.' : (dif.paid ? 'Annonce envoyée et payée avec ton solde (' + nf(dif.total) + ' F). Elle démarre dès sa validation par notre équipe ; si elle est refusée, tu es remboursé en entier, et le budget non dépensé te revient à la fin.' : 'Annonce envoyée ! Notre équipe la valide, tu recevras un e-mail dès qu\'elle est en ligne.'));
       showStep(1); refreshMode();
       tab('mes');
-    } catch (e) { err(explain(e)); } finally { btn.disabled = false; btn.textContent = label; }
+    } catch (e) { console.error('[Afrolook Ads] envoi de l\'annonce', e); err(explain(e)); } finally { btn.disabled = false; btn.textContent = label; }
   });
 
   // ─── profil de marque : nom, secteur, pays, contact et LOGO (obligatoire pour publier ; le logo validé est affiché comme partenaire) ───
