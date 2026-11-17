@@ -190,11 +190,14 @@
     }
   }
 
+  // l'emplacement prévient la page : rempli (afl:filled) ou vide (afl:empty), par exemple pour remettre un encart maison (17/11/2026)
+  function tell(host, ev) { try { host.dispatchEvent(new CustomEvent(ev, { bubbles: true })); } catch (e) { /* ancien navigateur */ } }
+  function empty(host) { host.hidden = true; tell(host, 'afl:empty'); }
   function load(host) {
     var pub = host.getAttribute('data-pub') || '', fmt = host.getAttribute('data-format') || 'native', slot = host.getAttribute('data-slot') || 'main';
-    if (!/^ap_[a-z0-9]{10}$/.test(pub) && !/^[a-z0-9_]{2,24}$/.test(pub)) { host.hidden = true; return; }
-    if (!FORMATS[fmt]) { host.hidden = true; return; }
-    if (fmt === 'sticky') { try { if (sessionStorage.getItem('afl_sticky_closed')) { host.hidden = true; return; } } catch (e) { /* tant pis */ } }
+    if (!/^ap_[a-z0-9]{10}$/.test(pub) && !/^[a-z0-9_]{2,24}$/.test(pub)) { empty(host); return; }
+    if (!FORMATS[fmt]) { empty(host); return; }
+    if (fmt === 'sticky') { try { if (sessionStorage.getItem('afl_sticky_closed')) { empty(host); return; } } catch (e) { /* tant pis */ } }
     var q = 'pub=' + encodeURIComponent(pub) + '&fmt=' + encodeURIComponent(fmt) + '&slot=' + encodeURIComponent(slot) + '&vid=' + encodeURIComponent(VID) + '&lang=' + encodeURIComponent((navigator.language || '').slice(0, 2));
     if (fmt === 'banner' || fmt === 'sticky') {
       var size = host.getAttribute('data-size') || '';
@@ -202,9 +205,9 @@
       q += '&size=' + size;   // une bannière prête de cette taille est préférée par le serveur
     }
     fetch(API + '/serve?' + q, { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (j) {
-      if (!j || !j.ok || !j.ad) { host.hidden = true; return; } // aucune annonce pour ce visiteur : l'emplacement reste vide
-      css(); render(host, j.ad, fmt);
-    }).catch(function () { host.hidden = true; });
+      if (!j || !j.ok || !j.ad) { empty(host); return; } // aucune annonce pour ce visiteur : l'emplacement reste vide
+      css(); render(host, j.ad, fmt); tell(host, 'afl:filled');
+    }).catch(function () { empty(host); });
   }
 
   // aperçu exact d'une annonce (formulaire d'Afrolook Ads) : même rendu que chez les partenaires, sans requête ni comptage
@@ -215,7 +218,7 @@
   function init() {
     var hosts = Array.prototype.slice.call(document.querySelectorAll('ins.afl-ad')), done = 0, fresh = [];
     hosts.forEach(function (h) { if (h.getAttribute('data-afl')) done++; else fresh.push(h); });
-    fresh.forEach(function (h) { h.setAttribute('data-afl', '1'); if (done < MAX_SLOTS) { done++; load(h); } else h.hidden = true; }); // règle : 3 emplacements au plus par page
+    fresh.forEach(function (h) { h.setAttribute('data-afl', '1'); if (done < MAX_SLOTS) { done++; load(h); } else empty(h); }); // règle : 3 emplacements au plus par page
   }
   window.AflAds = { fill: init };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();

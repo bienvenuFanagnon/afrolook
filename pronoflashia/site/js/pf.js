@@ -221,14 +221,16 @@
     var size = host ? host.getAttribute('data-w') + 'x' + host.getAttribute('data-h') : '';
     if (!/^(728x90|320x50|320x100|300x250)$/.test(size)) size = '';
     // bandeau collant en bas de l'écran : format « sticky » ; un emplacement d'une taille standard : bannière ; sinon carte native
-    serveAd(slot, size, a.closest && a.closest('#pf-stk') ? 'sticky' : (size ? 'banner' : 'native')).then(function (x) {
-      if (x) {
-        ad = x;
-        if (x.banner && x.banner.url && httpsUrl(x.banner.url) && host && a.parentNode === host) { var b = bannerNode(x); host.replaceChild(b, a); a = b; host.style.minHeight = '0'; }
-        else applyWeb(a, ad);
-      }
-      watch();
-    });
+    if (!(w.PF && w.PF.ads) || !a.parentNode) { watch(); return; }
+    // l'annonce est dessinée par la balise de la régie (mêmes formats que partout : marque, image entière, bannière prête à la taille) ;
+    // l'encart maison reste caché pendant ce temps et ne revient que si l'emplacement reste vide (17/11/2026)
+    var ins = d.createElement('ins'); ins.className = 'afl-ad'; ins.setAttribute('data-pub', 'pronoflash');
+    ins.setAttribute('data-slot', 'pf-' + String(slot).toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 18) + '-' + (webN++));
+    ins.setAttribute('data-format', a.closest && a.closest('#pf-stk') ? 'sticky' : (size ? 'banner' : 'native')); if (size) ins.setAttribute('data-size', size);
+    a.style.display = 'none'; a.parentNode.insertBefore(ins, a);
+    ins.addEventListener('afl:filled', function () { a.remove(); if (host) host.style.minHeight = '0'; });
+    ins.addEventListener('afl:empty', function () { ins.remove(); a.style.display = ''; watch(); });
+    if (w.AflAds) w.AflAds.fill();
   }
   $$('a.afl').forEach(aflInit);
   /* canal WhatsApp : clics comptés */
@@ -243,7 +245,7 @@
     var a = d.createElement('a'); a.className = 'afl'; a.target = '_blank'; a.rel = 'noopener sponsored'; a.setAttribute('data-afl', slot); a.setAttribute('data-i', String(i || 0));
     a.href = 'https://play.google.com/store/apps/details?id=com.afrotok.afrotok&utm_source=pronoflashia&utm_campaign=' + encodeURIComponent(slot);
     a.innerHTML = '<span class="sp2">' + L.sponsored + '</span><div class="im" style="background-image:url(/img/afl1.jpg)"></div><div class="bd"><span class="bg"><img src="/img/afrolook.png" alt="" width="12" height="12">AFROLOOK</span><p></p><span class="cta">' + L.aflCta + '</span></div>';
-    aflInit(a); return a;
+    return a;   // aflInit une fois l'encart posé dans la page (fill)
   }
 
   /* ---------- publicités : uniquement Afrolook Ads (aucun réseau publicitaire tiers) ----------
@@ -252,7 +254,7 @@
     var id = el.getAttribute('data-ad');
     if (el.getAttribute('data-done')) return; el.setAttribute('data-done', '1');
     el.innerHTML = ''; el.style.minHeight = '0';
-    el.appendChild(aflNode('pub-' + id, parseInt(el.getAttribute('data-k'), 10) || 0));
+    var nd = aflNode('pub-' + id, parseInt(el.getAttribute('data-k'), 10) || 0); el.appendChild(nd); aflInit(nd);
     el.style.width = '100%';
   }
   function loadAds(retry) {
@@ -277,7 +279,7 @@
       var x = d.createElement('ins'); x.className = 'afl-ad'; x.setAttribute('data-pub', 'pronoflash'); x.setAttribute('data-slot', 'pf-inter'); x.setAttribute('data-format', 'interstitial');
       d.body.appendChild(x); try { sessionStorage.setItem('pf_inter', '1'); } catch (e) { /* tant pis */ }
     }
-    if (!$('ins.afl-ad')) return;
+    // toujours : les encarts arrivent aussi plus tard, au défilement (AflAds.fill)
     var s = d.createElement('script'); s.async = true; s.src = 'https://afrolookmedia.com/ads/tag.js'; d.head.appendChild(s);
   }
 
