@@ -80,7 +80,7 @@ export function adsDocsPage(api) {
  <p class="dx-lead">Les annonces sont choisies, signées et comptées par les serveurs d’Afrolook Ads. Ton code se contente de les afficher : une balise de deux lignes sur un site, un composant prêt à l’emploi dans une application.</p>
  <div class="dx-cards">
   <a class="dx-card" href="#balise"><span class="ic">&lt;/&gt;</span><b>Balise web</b><span>Deux lignes à coller. Tous les formats, comptage automatique.</span><em>Le plus simple · 2 min</em></a>
-  <a class="dx-card" href="#flutter"><span class="ic">F</span><b>Application Flutter</b><span>Un fichier à copier, une ligne pour afficher une bannière.</span><em>Prêt à l’emploi · 5 min</em></a>
+  <a class="dx-card" href="#flutter"><span class="ic">F</span><b>Application Flutter</b><span>Un fichier à copier, une ligne par emplacement, les 8 formats.</span><em>Prêt à l’emploi · 5 min</em></a>
   <a class="dx-card" href="#serve"><span class="ic">{ }</span><b>API</b><span>Pour une application vérifiée qui dessine l’annonce elle-même.</span><em>Sur demande</em></a>
  </div>
 </section>
@@ -103,7 +103,7 @@ export function adsDocsPage(api) {
   <tr><td>Pour</td><td>Sites (WordPress, HTML, React…)</td><td>Applications Flutter</td><td>Applications vérifiées, sur demande</td></tr>
   <tr><td>Code à écrire</td><td>Aucun : 2 lignes</td><td>1 ligne par emplacement</td><td>Dessin de l’annonce</td></tr>
   <tr><td>Comptage des vues</td><td class="y">Automatique</td><td class="y">Automatique</td><td>Avec notre équipe</td></tr>
-  <tr><td>Formats</td><td class="y">Les 8</td><td>Bannières (4 tailles)</td><td>Les 8</td></tr>
+  <tr><td>Formats</td><td class="y">Les 8</td><td class="y">Les 8</td><td>Les 8</td></tr>
  </tbody></table></div>
  ${call('info', 'Sur un site, utilise <b>toujours la balise</b> : c’est elle qui mesure que l’annonce a vraiment été vue par une personne, et c’est ce qui te fait payer.')}
 </section>
@@ -140,14 +140,17 @@ export function adsDocsPage(api) {
 <section id="flutter">
  <h2>Application Flutter</h2>
  <ol class="dx-steps">
-  <li><b>Télécharge le composant</b><span class="dx-dl"><a class="btn btn-primary adsm" href="/ads/afrolook_ads_banner.dart" download>Télécharger afrolook_ads_banner.dart</a><small>Fichier Dart, 11 Ko</small></span></li>
-  <li><b>Copie-le dans ton projet</b>Par exemple <code>lib/ads/afrolook_ads_banner.dart</code>, et ajoute ses 4 dépendances (onglet <code>pubspec.yaml</code>).</li>
+  <li><b>Télécharge le composant</b><span class="dx-dl"><a class="btn btn-primary adsm" href="/ads/afrolook_ads_banner.dart" download>Télécharger afrolook_ads_banner.dart</a><small>Fichier Dart, 30 Ko</small></span></li>
+  <li><b>Copie-le dans ton projet</b>Par exemple <code>lib/ads/afrolook_ads_banner.dart</code>, et ajoute ses 5 dépendances (onglet <code>pubspec.yaml</code>).</li>
   <li><b>Une ligne par emplacement</b>Avec ton identifiant <code>ap_xxxxxxxxxx</code>.</li>
  </ol>
  ${box([['Bas de l’écran', `// mini bannière fixe en bas d'un écran (320 × 50, fermable)\nScaffold(\n  body: …,\n  bottomNavigationBar: const AfrolookAdsBanner.bottom(pubId: 'ap_xxxxxxxxxx', visitorId: monIdentifiant),\n);`],
    ['Dans une liste', `const AfrolookAdsBanner(\n  pubId: 'ap_xxxxxxxxxx',\n  visitorId: monIdentifiant, // 12 à 64 caractères, stable, sans donnée personnelle\n  size: AdsBannerSize.medium, // 300 × 250\n  slot: 'liste',\n);`],
-   ['pubspec.yaml', 'dependencies:\n  http: ^1.2.0\n  url_launcher: ^6.3.0\n  visibility_detector: ^0.4.0\n  shared_preferences: ^2.3.0']], { lang: 'Dart', foot: 'Tailles : <b>mini</b> 320×50, <b>large</b> 320×100, <b>medium</b> 300×250, <b>leaderboard</b> 728×90' })}
- ${call('warn', 'Une application est rémunérée après la vérification de son authenticité par notre équipe. Le composant affiche les bannières ; pour les autres formats dans une application, écris-nous.')}
+   ['Carte, affiche, carrousel, vidéo', `// dans une liste ou une page : AdsFormat.native, .poster, .carousel ou .video\nconst AfrolookAd(\n  pubId: 'ap_xxxxxxxxxx',\n  visitorId: monIdentifiant,\n  format: AdsFormat.native,\n  slot: 'liste',\n);`],
+   ['Plein écran', `// entre deux écrans ; la croix s'active au bout de 3 secondes\nawait AfrolookAds.showInterstitial(context, pubId: 'ap_xxxxxxxxxx', visitorId: monIdentifiant);`],
+   ['Récompensée', `// la personne choisit de regarder ; la récompense n'est donnée qu'après la lecture COMPLÈTE\nawait AfrolookAds.showRewarded(\n  context,\n  pubId: 'ap_xxxxxxxxxx',\n  visitorId: monIdentifiant,\n  onReward: () { /* donner la récompense */ },\n);`],
+   ['pubspec.yaml', 'dependencies:\n  http: ^1.2.0\n  url_launcher: ^6.3.0\n  visibility_detector: ^0.4.0\n  video_player: ^2.8.2\n  shared_preferences: ^2.3.0']], { lang: 'Dart', foot: 'Bannières : <b>mini</b> 320×50, <b>large</b> 320×100, <b>medium</b> 300×250, <b>leaderboard</b> 728×90 · <b>AfrolookAd</b> : carte native, affiche, carrousel, vidéo' })}
+ ${call('warn', 'Une application est rémunérée après la vérification de son authenticité par notre équipe. Le composant gère les 8 formats : bannières, carte native, affiche, carrousel, vidéo, plein écran et récompensée.')}
 </section>
 
 <section id="natif">
@@ -193,7 +196,7 @@ export function adsDocsPage(api) {
  <h2>Formats par intégration</h2>
  <div class="dx-tw"><table><thead><tr><th>Format</th><th>Balise web</th><th>Composant Flutter</th><th>API</th></tr></thead><tbody>
   ${[['Bannière (4 tailles)', 1, 1], ['Bandeau collant', 1, 1], ['Carte native', 1, 0], ['Carrousel', 1, 0], ['Affiche', 1, 0], ['Vidéo', 1, 0], ['Interstitiel', 1, 0], ['Récompensée', 1, 0]]
-    .map(([n, t, f]) => `<tr><td>${n}</td><td class="y">${t ? '✓' : ''}</td><td>${f ? '<span class="y">✓</span>' : '<span class="soon">sur demande</span>'}</td><td class="y">✓</td></tr>`).join('')}
+    .map(([n]) => `<tr><td>${n}</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td></tr>`).join('')}
  </tbody></table></div>
 </section>
 
