@@ -252,6 +252,15 @@ class _AdsRegieAdminPageState extends State<AdsRegieAdminPage> {
 
   Widget _empty(AppColors c, String text) => Padding(padding: const EdgeInsets.all(32), child: Center(child: Text(text, style: TextStyle(color: c.textSecondary), textAlign: TextAlign.center)));
 
+  /// Gains d'un site ou d'une application (18/11/2026) : réels (en attente, disponible, en retrait, payé, réserve) ou d'essai pour nos plateformes.
+  String _gains(Map p) {
+    final e = Map<String, dynamic>.from(p['earnings'] as Map);
+    String f(String k) => '${(e[k] as num?)?.toInt() ?? 0} F';
+    final views = (e['views'] as num?)?.toInt() ?? 0;
+    if (p['platform'] == true) return '${f('testFcfa')} d’essai · $views vues payées';
+    return '${f('pendingFcfa')} en attente · ${f('availableFcfa')} disponibles · ${f('requestedFcfa')} en retrait · ${f('paidFcfa')} payés · réserve ${f('reserveFcfa')} · $views vues payées';
+  }
+
   Widget _kv(AppColors c, String k, String v) => k == 'Statut'
       ? Align(alignment: Alignment.centerLeft, child: _pill(c, v))
       : Padding(
@@ -398,7 +407,8 @@ class _AdsRegieAdminPageState extends State<AdsRegieAdminPage> {
           if (p['status'] == 'active') _kv(c, 'Audience retenue', '${p['audienceCounted']}'),
           _kv(c, 'En ligne (vérifié)', p['online'] == true ? 'Oui${p['protectedSite'] == true ? ' (site protégé contre les robots)' : ''}' : 'Non'),
           _kv(c, 'Propriété du site', p['verified'] == true ? 'Vérifiée ✓' : 'Non vérifiée'),
-          _kv(c, 'Rémunérable', p['payable'] == true ? 'Oui' : 'Non (site non vérifié ou application non attestée)'),
+          _kv(c, 'Rémunérable', p['payable'] == true ? 'Oui' : (p['platform'] == true ? 'Gains d’essai : plateforme d’Afrolook, non retirables' : (p['kind'] == 'app' ? 'Non : application pas encore attestée' : 'Non : site pas encore vérifié'))),
+          if (p['earnings'] is Map) _kv(c, 'Gains', _gains(p)),
           _kv(c, 'Catégories acceptées', (p['acceptedCategories'] as List? ?? const []).isEmpty ? 'courantes par défaut' : (p['acceptedCategories'] as List).join(', ')),
           _kv(c, 'Audience mesurée', _measured(p['measured'])),
           _kv(c, 'Description', '${p['description']}'),
