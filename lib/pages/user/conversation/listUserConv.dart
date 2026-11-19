@@ -503,7 +503,12 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
       );
       if (mounted) {
         if (authenticated) {
-          setState(() => _isLocked = false);
+          // Nouveau flux au déverrouillage (19/11/2026) : la liste était déjà construite avant l'écran de verrouillage et le flux ne s'écoute qu'une fois ;
+          // le réécouter faisait une erreur (« Stream has already been listened to ») et la liste des discussions disparaissait
+          setState(() {
+            _isLocked = false;
+            _chatsStream = _chatsFromApi();
+          });
         } else {
           Navigator.pop(context);
         }

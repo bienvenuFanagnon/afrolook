@@ -207,6 +207,8 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
 
   // Dernier count connu — pour détecter les nouveaux messages et jouer un son
   int _lastMessageCount = 0;
+  /// Identifiant du dernier message déjà affiché (son et défilement à l'arrivée d'un nouveau dernier message).
+  String? _lastShownMessageId;
 
   // IDs des messages déjà rendus (pour n'animer que les nouveaux)
   final Set<String> _renderedMessageIds = {};
@@ -700,14 +702,24 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
 
   void _scrollToBottom({bool animated = true}) {
     if (_scrollController.hasClients) {
+      // La hauteur totale d'une liste paresseuse n'est qu'une estimation tant que les derniers messages ne sont pas construits :
+      // on recolle tout en bas à l'image suivante, sinon le dernier message peut rester juste sous le bord de l'écran (19/11/2026)
+      void settle() => WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted || !_scrollController.hasClients) return;
+            final max = _scrollController.position.maxScrollExtent;
+            if (_scrollController.position.pixels < max) _scrollController.jumpTo(max);
+          });
       if (animated) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
+        _scrollController
+            .animateTo(
+              _scrollController.position.maxScrollExtent,
+              duration: Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            )
+            .then((_) => settle());
       } else {
         _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+        settle();
       }
     }
   }
@@ -3635,25 +3647,30 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                         );
                       }
 
-                      // Son à la réception d'un nouveau message de l'autre
-                      if (messages.length > _lastMessageCount && _lastMessageCount > 0) {
-                        final myId = _authProvider.loginUserData.id!;
-                        final hasNewFromOther = messages
-                            .skip(_lastMessageCount)
-                            .any((m) => m.sendBy != myId);
-                        if (hasNewFromOther) {
+                      // Nouveau dernier message (19/11/2026) : repéré par son identifiant et non par le nombre de messages. Le flux ne garde que
+                      // les 30 derniers : à l'arrivée d'un message, le plus ancien sort et le nombre reste le même, donc ni son ni défilement,
+                      // et le dernier message restait caché sous le bas de l'écran.
+                      final myId = _authProvider.loginUserData.id!;
+                      final lastId = messages.last.id;
+                      if (lastId != _lastShownMessageId) {
+                        final firstShow = _lastShownMessageId == null;
+                        final fromMe = messages.last.sendBy == myId;
+                        // Son à la réception d'un nouveau message de l'autre
+                        if (!firstShow && !fromMe) {
                           WidgetsBinding.instance.addPostFrameCallback((_) {
                             ChatSoundService.playInChat();
                           });
                         }
+                        // Défilement vers le bas : à l'ouverture, pour ses propres messages, ou si la personne était déjà en bas
+                        // (pas quand elle relit des messages plus anciens)
+                        if (firstShow || fromMe || !_showScrollBtn) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            _scrollToBottom(animated: !firstShow);
+                          });
+                        }
+                        _lastShownMessageId = lastId;
                       }
                       _lastMessageCount = messages.length;
-
-                      if (messages.length > _messages.length) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          _scrollToBottom();
-                        });
-                      }
 
                       _messages = messages;
 
