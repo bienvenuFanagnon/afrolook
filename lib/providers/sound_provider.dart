@@ -1,6 +1,10 @@
 // lib/providers/sound_provider.dart
+import 'dart:async';
+import 'dart:io' show Platform;
+
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:volume_controller/volume_controller.dart';
 
 import '../services/music_queue.dart';
 
@@ -21,10 +25,34 @@ class SoundProvider extends ChangeNotifier {
     // tout le monde repart avec le son activé, puis son propre choix est retenu.
     _isMuted = _prefs.getBool(_key) ?? false;
     notifyListeners();
+    _listenVolumeButtons();
   }
 
-  // Boutons de volume du téléphone : retirés le 19/11/2026 pour livrer par patch Shorebird (module natif volume_controller) ;
-  // à remettre avec la prochaine version complète.
+  StreamSubscription<double>? _volumeSub;
+  double? _lastVolume;
+
+  /// Boutons de volume du téléphone (2.1.9, 16/11/2026) : monter le volume quand le son des vidéos est coupé le réactive aussitôt.
+  void _listenVolumeButtons() {
+    if (kIsWeb || !(Platform.isAndroid || Platform.isIOS) || Platform.environment.containsKey('FLUTTER_TEST')) return;
+    try {
+      _volumeSub = VolumeController.instance.addListener(onVolume, fetchInitialVolume: true);
+      _volumeSub!.onError((_) {});   // module absent ou indisponible : le bouton du son reste le seul réglage
+    } catch (_) {}
+  }
+
+  /// Nouveau volume du téléphone (0 à 1). Le premier sert de référence ; une hausse réactive le son s'il était coupé.
+  @visibleForTesting
+  void onVolume(double v) {
+    final before = _lastVolume;
+    _lastVolume = v;
+    if (before != null && v > before + 0.001 && _isMuted) setMuted(false);
+  }
+
+  @override
+  void dispose() {
+    _volumeSub?.cancel();
+    super.dispose();
+  }
 
   Future<void> toggleSound() async {
     _isMuted = !_isMuted;

@@ -30,4 +30,17 @@ void main() {
     expect(p.isMuted, isTrue);
   });
 
+  test('son coupé : monter le volume du téléphone le réactive ; baisser ne change rien', () async {
+    SharedPreferences.setMockInitialValues({'global_sound_muted_v2': true});
+    final p = SoundProvider();
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+    expect(p.isMuted, isTrue);
+    p.onVolume(.5);            // volume actuel : simple référence
+    expect(p.isMuted, isTrue);
+    p.onVolume(.4);            // baisse
+    expect(p.isMuted, isTrue);
+    p.onVolume(.47);           // hausse
+    expect(p.isMuted, isFalse);
+  });
 }
