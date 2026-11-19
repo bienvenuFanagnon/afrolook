@@ -16,6 +16,7 @@ import 'package:visibility_detector/visibility_detector.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../providers/authProvider.dart';
+import '../../../providers/sound_provider.dart';
 import '../../../services/ad_preload_service.dart';
 import '../../../services/media_cache_service.dart';
 import '../../../theme/app_colors.dart';
@@ -57,7 +58,9 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
   VideoPlayerController? _videoController;
   bool _isVideoInitialized = false;
   bool _isVideoLoading = false;
-  bool _adVideoMuted = true;
+  /// Son de la pub vidéo : TOUJOURS activé au départ, même si le son des autres vidéos est coupé (décision du propriétaire, 19/11/2026 ; avant : toujours sans son).
+  /// Le bouton ne change que cette pub.
+  bool _adVideoMuted = false;
 
   bool _isLiked = false;
   int _likesCount = 0;
@@ -100,14 +103,17 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
 
       _videoController = ctrl;
       _videoController!.setLooping(true);
-      await _videoController!.setVolume(0);
+      await _videoController!.setVolume(_adVideoMuted ? 0 : 1);   // avec le son au départ
 
       if (mounted) {
         setState(() {
           _isVideoInitialized = true;
           _isVideoLoading = false;
         });
-        if (_isWidgetVisible) _videoController!.play();
+        if (_isWidgetVisible) {
+          _videoController!.play();
+          _syncAdSound();
+        }
       }
     } catch (e) {
       if (mounted) setState(() => _isVideoLoading = false);
@@ -150,8 +156,27 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
     );
   }
 
+  /// Pub visible, lancée et avec le son : les autres vidéos et la musique se taisent ; sinon elles reprennent.
+  void _syncAdSound() {
+    final c = _videoController;
+    if (c == null) return;
+    AdSoundFocus.set(c, _isWidgetVisible && _isVideoInitialized && c.value.volume > 0);
+  }
+
+  void _releaseAdSound() {
+    final c = _videoController;
+    if (c != null) AdSoundFocus.release(c);
+  }
+
+  @override
+  void deactivate() {
+    _releaseAdSound();
+    super.deactivate();
+  }
+
   @override
   void dispose() {
+    _releaseAdSound();
     _visibilityTimer?.cancel();
     _videoController?.dispose();
     super.dispose();
@@ -171,6 +196,7 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
       if (_isVideoInitialized && _videoController != null && !_videoController!.value.isPlaying) {
         _videoController!.play();
       }
+      _syncAdSound();
       _visibilityTimer?.cancel();
       _visibilityTimer = Timer(const Duration(milliseconds: 500), () {
         if (mounted && _isWidgetVisible) _recordAdView();
@@ -178,6 +204,7 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
     } else {
       _videoController?.pause();
       _visibilityTimer?.cancel();
+      _releaseAdSound();
     }
   }
 
@@ -441,6 +468,7 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
                 onTap: () {
                   setState(() => _adVideoMuted = !_adVideoMuted);
                   _videoController?.setVolume(_adVideoMuted ? 0 : 1);
+                  _syncAdSound();
                 },
                 child: Container(
                   decoration: BoxDecoration(
@@ -524,9 +552,15 @@ class _AdvertisementVideoWidgetState extends State<AdvertisementVideoWidget> {
           post: widget.post,
           videoController: (ctrl != null && ctrl.value.isInitialized) ? ctrl : null,
           onAction: _handleActionButtonClick,
-          onOpenDetails: () {
+          onOpenDetails: () async {
             AdsEngineService.instance.click(widget.ad.id ?? '', format: 'native', slot: 'feed');
-            Navigator.push(context, MaterialPageRoute(builder: (_) => AdDetailPage(ad: widget.ad, post: widget.post, onAction: _handleActionButtonClick)));
+            // une seule pub à la fois : celle du fil se met en pause pendant le détail, puis reprend au retour
+            _videoController?.pause();
+            _releaseAdSound();
+            await Navigator.push(context, MaterialPageRoute(builder: (_) => AdDetailPage(ad: widget.ad, post: widget.post, onAction: _handleActionButtonClick)));
+            if (!mounted) return;
+            if (_isWidgetVisible && _isVideoInitialized) _videoController?.play();
+            _syncAdSound();
           },
         ),
       );

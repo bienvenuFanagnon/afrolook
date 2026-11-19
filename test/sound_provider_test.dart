@@ -43,4 +43,26 @@ void main() {
     p.onVolume(.47);           // hausse
     expect(p.isMuted, isFalse);
   });
+
+  test('pub vidéo avec le son (19/11/2026) : les autres vidéos se taisent pendant la pub, puis le réglage de la personne revient', () async {
+    AdSoundFocus.reset();
+    SharedPreferences.setMockInitialValues({});
+    final p = SoundProvider();
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+    var notified = 0;
+    p.addListener(() => notified++);
+    expect(p.isMuted, isFalse);
+    final pub1 = Object(), pub2 = Object();
+    AdSoundFocus.hold(pub1);
+    expect(p.isMuted, isTrue);
+    expect(notified, 1);
+    AdSoundFocus.hold(pub2);
+    AdSoundFocus.release(pub1);
+    expect(p.isMuted, isTrue);   // une autre pub joue encore avec le son
+    AdSoundFocus.set(pub2, false);
+    expect(p.isMuted, isFalse);
+    expect(notified, 2);
+    AdSoundFocus.reset();
+  });
 }

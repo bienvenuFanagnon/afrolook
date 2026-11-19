@@ -17,6 +17,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
+import '../../providers/sound_provider.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 import '../../services/ad_preload_service.dart';
 import '../../services/ad_rotation_service.dart';
 import '../../services/media_cache_service.dart';
@@ -53,7 +55,11 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
   bool _viewRecorded = false;
   Timer? _rotationTimer;
   VideoPlayerController? _adVideoController;
+  /// Son des pubs vidéo : TOUJOURS activé au départ, même si le son des autres vidéos est coupé (décision du propriétaire, 19/11/2026).
+  double get _adVolume => 1;
   bool _adVideoInitialized = false;
+  /// Pub visible à plus de moitié : la vidéo ne joue (avec le son) que dans ce cas (19/11/2026 ; avant, elle tournait aussi hors de l'écran, sans son).
+  bool _adVisible = false;
   bool _isCtaLoading = false;
   int? _liveFollowers;
   late final String _slot;   // un emplacement par position : voir AdsEngineService.nextSlot
@@ -99,8 +105,7 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
   void dispose() {
     _bounceCtrl.dispose();
     _rotationTimer?.cancel();
-    _adVideoController?.dispose();
-    _adVideoController = null;
+    _releaseAdController();
     super.dispose();
   }
 
@@ -145,9 +150,36 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
     } catch (_) {}
   }
 
-  Future<void> _initAdVideo(Map<String, dynamic> picked, UserAuthProvider auth) async {
-    _adVideoController?.dispose();
+  /// La pub joue avec le son seulement quand elle est visible : pendant ce temps les autres vidéos et la musique se taisent ([AdSoundFocus]).
+  void _syncAdSound() {
+    final c = _adVideoController;
+    if (c == null) return;
+    if (_adVisible && c.value.isInitialized && c.value.volume > 0) {
+      AdSoundFocus.hold(c);
+    } else {
+      AdSoundFocus.release(c);
+    }
+  }
+
+  void _onAdVisibility(VisibilityInfo info) {
+    if (!mounted) return;
+    final visible = info.visibleFraction > 0.5;
+    if (visible == _adVisible) return;
+    _adVisible = visible;
+    final c = _adVideoController;
+    if (c != null && c.value.isInitialized) visible ? c.play() : c.pause();
+    _syncAdSound();
+  }
+
+  void _releaseAdController() {
+    final c = _adVideoController;
+    if (c != null) AdSoundFocus.release(c);
+    c?.dispose();
     _adVideoController = null;
+  }
+
+  Future<void> _initAdVideo(Map<String, dynamic> picked, UserAuthProvider auth) async {
+    _releaseAdController();
     // Boost entité sans post → pas de vidéo à lire
     if (picked['isEntityBoost'] == true || picked['post'] == null) return;
     try {
@@ -164,9 +196,10 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
         final preloaded = AdPreloadService.instance.claimController(adId);
         if (preloaded != null && preloaded.value.isInitialized) {
           _adVideoController = preloaded;
-          preloaded.setVolume(0);
+          preloaded.setVolume(_adVolume);   // avec le son (19/11/2026 : la pub démarrait toujours sans son)
           preloaded.setLooping(true);
-          preloaded.play();
+          if (_adVisible) preloaded.play();
+          _syncAdSound();
           if (mounted) setState(() => _adVideoInitialized = true);
           return;
         }
@@ -177,13 +210,13 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
       final ctrl = await MediaCacheService.adVideoController(post.url_media!, networkUrl: cdnUrl);
       _adVideoController = ctrl;
       await ctrl.initialize();
-      await ctrl.setVolume(0);
+      await ctrl.setVolume(_adVolume);
       ctrl.setLooping(true);
-      ctrl.play();
+      if (_adVisible) ctrl.play();
+      _syncAdSound();
       if (mounted) setState(() => _adVideoInitialized = true);
     } catch (_) {
-      _adVideoController?.dispose();
-      _adVideoController = null;
+      _releaseAdController();
     }
   }
 
@@ -1332,6 +1365,10 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
 
   @override
   Widget build(BuildContext context) {
+    return VisibilityDetector(key: ValueKey('afrolook_inline_ad_${identityHashCode(this)}'), onVisibilityChanged: _onAdVisibility, child: _buildAd(context));
+  }
+
+  Widget _buildAd(BuildContext context) {
     final auth = Provider.of<UserAuthProvider>(context);
     final abonnement = auth.loginUserData.abonnement;
     final role = auth.loginUserData.role;
@@ -1367,9 +1404,16 @@ class _AfrolookInlineAdState extends State<AfrolookInlineAd> with TickerProvider
         await _recordClick(ad);
         await AdActions.open(ad);
       }
-      void details() {
+      Future<void> details() async {
         _recordClick(ad);
-        Navigator.push(context, MaterialPageRoute(builder: (_) => AdDetailPage(ad: ad, post: post)));
+        // une seule pub à la fois : celle-ci se met en pause pendant le détail, puis reprend au retour
+        final c = _adVideoController;
+        c?.pause();
+        if (c != null) AdSoundFocus.release(c);
+        await Navigator.push(context, MaterialPageRoute(builder: (_) => AdDetailPage(ad: ad, post: post)));
+        if (!mounted) return;
+        if (_adVisible && c != null && identical(c, _adVideoController) && c.value.isInitialized) c.play();
+        _syncAdSound();
       }
       if (widget.banner) return BrandBanner(ad: ad, post: post, onOpenDetails: details, onAction: act);
       if (widget.compact) return BrandAdCompact(ad: ad, post: post, onOpenDetails: details, onAction: act);

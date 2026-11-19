@@ -8,15 +8,57 @@ import 'package:volume_controller/volume_controller.dart';
 
 import '../services/music_queue.dart';
 
+/// Pubs vidéo Afrolook Ads qui jouent AVEC le son (décision du propriétaire, 19/11/2026) : la pub démarre toujours avec le son,
+/// et tant qu'elle le joue, les autres vidéos (via [SoundProvider.isMuted]) et la musique se taisent ; elles reprennent quand la pub
+/// est coupée, mise en pause, quittée ou fermée. Chaque pub s'enregistre avec un propriétaire (son contrôleur ou son écran).
+class AdSoundFocus {
+  AdSoundFocus._();
+  static final Set<Object> _owners = <Object>{};
+  static final ValueNotifier<int> holders = ValueNotifier<int>(0);
+
+  static bool get active => _owners.isNotEmpty;
+
+  static void hold(Object owner) {
+    if (_owners.add(owner)) holders.value = _owners.length;
+  }
+
+  static void release(Object owner) {
+    if (_owners.remove(owner)) holders.value = _owners.length;
+  }
+
+  /// [hold] si [on], sinon [release].
+  static void set(Object owner, bool on) => on ? hold(owner) : release(owner);
+
+  /// Pour les tests.
+  @visibleForTesting
+  static void reset() {
+    _owners.clear();
+    holders.value = 0;
+  }
+}
+
 class SoundProvider extends ChangeNotifier {
   bool _isMuted = false; // Par défaut : son activé (décision du 16/11/2026) ; le choix de la personne est retenu dès qu'elle touche le bouton
   late SharedPreferences _prefs;
 
   SoundProvider() {
     _loadSoundPreference();
+    AdSoundFocus.holders.addListener(_onAdSound);
   }
 
-  bool get isMuted => _isMuted;
+  /// Coupé par la personne, ou pendant qu'une pub vidéo joue avec le son ([AdSoundFocus]).
+  bool get isMuted => _isMuted || AdSoundFocus.active;
+
+  final Object _adMusicToken = Object();
+  bool _adHeld = false;
+
+  void _onAdSound() {
+    final active = AdSoundFocus.active;
+    if (active == _adHeld) return;
+    _adHeld = active;
+    active ? MusicQueue.suspend(_adMusicToken) : MusicQueue.release(_adMusicToken);   // la musique se tait pendant la pub
+    notifyListeners();   // les vidéos du fil appliquent le nouveau volume
+  }
   static const _key = 'global_sound_muted_v2';
 
   Future<void> _loadSoundPreference() async {
@@ -50,6 +92,7 @@ class SoundProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    AdSoundFocus.holders.removeListener(_onAdSound);
     _volumeSub?.cancel();
     super.dispose();
   }

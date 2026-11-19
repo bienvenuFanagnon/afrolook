@@ -507,6 +507,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     _suggestionModalTimer?.cancel();
     _scrollHintTimer?.cancel();
     _midrollTimer?.cancel();
+    _releaseMidrollSound();
     _midrollVideoController?.dispose();
     _midrollVideoController = null;
     _removeMidrollListener();
@@ -596,6 +597,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     _videoPositionListener = null;
     // Libérer la pub pré-chargée si elle n'est pas en cours d'affichage
     if (!_showMidrollAd) {
+      _releaseMidrollSound();
       _midrollVideoController?.dispose();
       _midrollVideoController = null;
       _midrollVideoInitialized = false;
@@ -626,16 +628,18 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
             (post.url_media?.contains('.mov') ?? false);
         if (isVideo && post.url_media?.isNotEmpty == true) {
           final cdnUrl = authProvider.convertToCdnUrl(post.url_media!, authProvider.appDefaultData);
+          _releaseMidrollSound();
           _midrollVideoController?.dispose();
           final ctrl = VideoPlayerController.networkUrl(Uri.parse(cdnUrl));
           _midrollVideoController = ctrl;
           await ctrl.initialize();
-          await ctrl.setVolume(0);
+          await ctrl.setVolume(1);   // avec le son (19/11/2026)
           ctrl.setLooping(true);
           // Pas de play() ici — on attend le moment du trigger
           if (mounted) setState(() => _midrollVideoInitialized = true);
         }
       } catch (_) {
+        _releaseMidrollSound();
         _midrollVideoController?.dispose();
         _midrollVideoController = null;
         _midrollVideoInitialized = false;
@@ -651,13 +655,22 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     _currentVideoController?.pause();
     // Lancer la lecture de la pub vidéo pré-chargée
     _midrollVideoController?.play();
+    final mc = _midrollVideoController;
+    if (mc != null) AdSoundFocus.hold(mc);
     // Compte à rebours et bouton « Fermer » gérés par MidrollAdCard
     setState(() { _showMidrollAd = true; });
+  }
+
+  /// Pub au milieu des vidéos : avec le son (19/11/2026) ; son retrait rend le son aux autres vidéos et à la musique.
+  void _releaseMidrollSound() {
+    final c = _midrollVideoController;
+    if (c != null) AdSoundFocus.release(c);
   }
 
   void _closeMidrollOverlay() {
     if (!mounted) return;
     _midrollTimer?.cancel();
+    _releaseMidrollSound();
     _midrollVideoController?.dispose();
     _midrollVideoController = null;
     setState(() {

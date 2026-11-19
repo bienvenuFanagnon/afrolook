@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 
 import 'ad_actions.dart';
+import '../../providers/sound_provider.dart';
 
 /// Composants d'annonce d'Afrolook : reproduction EXACTE de la maquette validée le 05/11 (`docs/maquette_pub_app/`) :
 ///  A image · B vidéo · G plusieurs images (BrandAdCard) · C page de détails (AdDetailPage) · D boost d'un membre (MemberBoostCard)
@@ -341,7 +342,8 @@ class BrandAdCard extends StatefulWidget {
 
 class _BrandAdCardState extends State<BrandAdCard> {
   int _page = 0;
-  bool _muted = true;
+  // son TOUJOURS activé au départ, même si le son des autres vidéos est coupé (décision du propriétaire, 19/11/2026)
+  bool _muted = false;
 
   @override
   Widget build(BuildContext context) {
@@ -382,7 +384,7 @@ class _BrandAdCardState extends State<BrandAdCard> {
               media,
               if (video && !ready) Center(child: Container(width: 58, height: 58, decoration: const BoxDecoration(color: Color(0x80000000), shape: BoxShape.circle), child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 32))),
               if (video && secs > 0) Positioned(left: 10, bottom: 14, child: Container(padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3), decoration: BoxDecoration(color: const Color(0x8C000000), borderRadius: BorderRadius.circular(12)), child: Text(_mmss(secs), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700, decoration: TextDecoration.none)))),
-              if (video) Positioned(right: 10, bottom: 14, child: GestureDetector(onTap: () { if (ready) { setState(() { _muted = !_muted; vc.setVolume(_muted ? 0 : 1); }); } else { widget.onOpenDetails(); } }, child: Container(width: 30, height: 30, decoration: const BoxDecoration(color: Color(0x8C000000), shape: BoxShape.circle), child: Icon(_muted ? Icons.volume_off : Icons.volume_up, color: Colors.white, size: 16)))),
+              if (video) Positioned(right: 10, bottom: 14, child: GestureDetector(onTap: () { if (ready) { setState(() { _muted = !_muted; vc.setVolume(_muted ? 0 : 1); }); AdSoundFocus.set(vc, !_muted && vc.value.isPlaying); } else { widget.onOpenDetails(); } }, child: Container(width: 30, height: 30, decoration: const BoxDecoration(color: Color(0x8C000000), shape: BoxShape.circle), child: Icon(_muted ? Icons.volume_off : Icons.volume_up, color: Colors.white, size: 16)))),
               if (video) Positioned(left: 0, right: 0, bottom: 0, child: ready ? VideoProgressIndicator(vc, allowScrubbing: false, padding: EdgeInsets.zero, colors: const VideoProgressColors(playedColor: _jaune, bufferedColor: Colors.white30, backgroundColor: Colors.white24)) : const SizedBox(height: 4, child: LinearProgressIndicator(value: 0, backgroundColor: Colors.white24, color: _jaune))),
               if (carousel) Positioned(right: 10, top: 10, child: Container(padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3), decoration: BoxDecoration(color: const Color(0x8C000000), borderRadius: BorderRadius.circular(12)), child: Text('${_page + 1}/${images.length}', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700, decoration: TextDecoration.none)))),
             ]),
@@ -593,7 +595,8 @@ class AdDetailPage extends StatefulWidget {
 
 class _AdDetailPageState extends State<AdDetailPage> {
   VideoPlayerController? _video;
-  bool _muted = true;
+  // son TOUJOURS activé au départ, même si le son des autres vidéos est coupé (décision du propriétaire, 19/11/2026)
+  bool _muted = false;
   int _page = 0;
 
   @override
@@ -605,9 +608,10 @@ class _AdDetailPageState extends State<AdDetailPage> {
       _video = c;
       c.initialize().then((_) {
         if (!mounted) return;
-        c.setVolume(0);
+        c.setVolume(_muted ? 0 : 1);
         c.setLooping(true);
         c.play();
+        AdSoundFocus.set(c, !_muted);   // les autres vidéos et la musique se taisent pendant la pub
         setState(() {});
       }).catchError((_) {});
     }
@@ -615,6 +619,8 @@ class _AdDetailPageState extends State<AdDetailPage> {
 
   @override
   void dispose() {
+    final v = _video;
+    if (v != null) AdSoundFocus.release(v);
     _video?.dispose();
     super.dispose();
   }
@@ -637,7 +643,7 @@ class _AdDetailPageState extends State<AdDetailPage> {
     if (_video != null && _video!.value.isInitialized) {
       media = Stack(alignment: Alignment.bottomRight, children: [
         AspectRatio(aspectRatio: _video!.value.aspectRatio, child: VideoPlayer(_video!)),
-        Padding(padding: const EdgeInsets.all(10), child: GestureDetector(onTap: () => setState(() { _muted = !_muted; _video!.setVolume(_muted ? 0 : 1); }), child: Container(width: 34, height: 34, decoration: const BoxDecoration(color: Color(0x8C000000), shape: BoxShape.circle), child: Icon(_muted ? Icons.volume_off : Icons.volume_up, color: Colors.white, size: 18)))),
+        Padding(padding: const EdgeInsets.all(10), child: GestureDetector(onTap: () { setState(() { _muted = !_muted; _video!.setVolume(_muted ? 0 : 1); }); AdSoundFocus.set(_video!, !_muted); }, child: Container(width: 34, height: 34, decoration: const BoxDecoration(color: Color(0x8C000000), shape: BoxShape.circle), child: Icon(_muted ? Icons.volume_off : Icons.volume_up, color: Colors.white, size: 18)))),
       ]);
     } else if (images.length > 1) {
       media = AspectRatio(aspectRatio: 1, child: Stack(children: [

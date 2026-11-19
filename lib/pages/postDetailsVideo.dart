@@ -1,4 +1,5 @@
 import 'package:afrotok/widgets/post_menu_sheet.dart';
+import 'package:afrotok/providers/sound_provider.dart';
 import '../widgets/post_media_overlays.dart';
 import '../widgets/post_widget_view.dart';
 import 'package:afrotok/services/post_orientation.dart';
@@ -719,6 +720,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     // Plus de pub plein écran déclenchée par la fermeture de la page (décision du 01/11/2026) : elle pouvait s'afficher avant la vidéo suivante.
     _giftNudgeTimer?.cancel();
     _midrollTimer?.cancel();
+    _releaseMidrollSound();
     _midrollVideoController?.dispose();
     _midrollVideoController = null;
     _removeMidrollListener();
@@ -956,25 +958,35 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
             (post.url_media?.contains('.mov') ?? false);
         if (isVideo && post.url_media?.isNotEmpty == true) {
           final cdnUrl = authProvider.convertToCdnUrl(post.url_media!, authProvider.appDefaultData);
+          _releaseMidrollSound();
           _midrollVideoController?.dispose();
           final ctrl = VideoPlayerController.networkUrl(Uri.parse(cdnUrl));
           _midrollVideoController = ctrl;
           await ctrl.initialize();
-          await ctrl.setVolume(0);
+          await ctrl.setVolume(1);   // avec le son (19/11/2026)
           ctrl.setLooping(true);
           ctrl.play();
+          AdSoundFocus.hold(ctrl);
           if (mounted) setState(() => _midrollVideoInitialized = true);
         }
       } catch (_) {
+        _releaseMidrollSound();
         _midrollVideoController?.dispose();
         _midrollVideoController = null;
       }
     }
   }
 
+  /// Pub au milieu des vidéos : avec le son (19/11/2026) ; son retrait rend le son aux autres vidéos et à la musique.
+  void _releaseMidrollSound() {
+    final c = _midrollVideoController;
+    if (c != null) AdSoundFocus.release(c);
+  }
+
   void _closeMidrollOverlay() {
     if (!mounted) return;
     _midrollTimer?.cancel();
+    _releaseMidrollSound();
     _midrollVideoController?.dispose();
     _midrollVideoController = null;
     setState(() { _showMidrollAd = false; _midrollVideoInitialized = false; });

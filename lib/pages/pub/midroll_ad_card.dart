@@ -278,14 +278,14 @@ class _MidrollAdCardState extends State<MidrollAdCard> {
                                               ),
                                             ),
                                           ),
-                                        // Icône son coupé
+                                        // Icône du son : coupé ou activé selon la vidéo (19/11/2026 : la pub a le son des vidéos du fil)
                                         if (widget.videoInitialized)
                                           Positioned(
                                             top: 8, left: 8,
                                             child: Container(
                                               padding: const EdgeInsets.all(5),
                                               decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
-                                              child: const Icon(Icons.volume_off, color: Colors.white, size: 14),
+                                              child: Icon((widget.videoController?.value.volume ?? 0) == 0 ? Icons.volume_off : Icons.volume_up, color: Colors.white, size: 14),
                                             ),
                                           ),
                                       ],
