@@ -52,7 +52,7 @@ const SHOTS = [
   ['carte_native', 'Carte native', 'native', 'PronoFlash IA · dans le contenu', '1 s · 975 F pour 1 000'],
   ['carrousel', 'Carrousel', 'carousel', 'SlashAtlas · 2 à 5 images', '1 s · 1 170 F pour 1 000'],
   ['affiche', 'Affiche', 'poster', 'PronoFlash IA · pleine largeur', '1 s · 1 300 F pour 1 000'],
-  ['video', 'Vidéo', 'video', 'SlashAtlas · sans son, 15 s au plus', '2 s · 1 625 F pour 1 000'],
+  ['video', 'Vidéo', 'video', 'SlashAtlas · sans son, 50 s au plus', '2 s · 1 625 F pour 1 000'],
   ['interstitiel', 'Interstitiel', 'interstitial', 'PronoFlash IA · plein écran, ✕ après 3 s', '1 s · 1 950 F pour 1 000'],
   ['recompensee', 'Récompensée', 'rewarded', 'SlashAtlas · regardée contre un avantage', 'Lecture complète · 2 275 F pour 1 000'],
 ];

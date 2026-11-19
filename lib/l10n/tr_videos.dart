@@ -233,6 +233,8 @@ const Map<String, Map<String, String>> kTrVideos = {
   "Retirer des favoris": {'en': "Remove from favorites", 'es': "Quitar de favoritos", 'de': "Aus Favoriten entfernen", 'ar': "إزالة من المفضلة", 'pt': "Remover dos favoritos", 'zh': "取消收藏", 'sw': "Ondoa kwenye vipendwa"},
   "Enregistrer dans mes favoris": {'en': "Save to my favorites", 'es': "Guardar en mis favoritos", 'de': "In meinen Favoriten speichern", 'ar': "حفظ في المفضلة", 'pt': "Salvar nos meus favoritos", 'zh': "收藏", 'sw': "Hifadhi kwenye vipendwa vyangu"},
   "Vidéo": {'en': "Video", 'es': "Vídeo", 'de': "Video", 'ar': "فيديو", 'pt': "Vídeo", 'zh': "视频", 'sw': "Video"},
+  "enregistre un vocal...": {'en': "recording a voice note...", 'es': "grabando un audio...", 'de': "nimmt eine Sprachnachricht auf...", 'ar': "يسجّل رسالة صوتية...", 'pt': "gravando um áudio...", 'zh': "正在录制语音...", 'sw': "anarekodi sauti..."},
+  "envoie une photo...": {'en': "sending a photo...", 'es': "enviando una foto...", 'de': "sendet ein Foto...", 'ar': "يرسل صورة...", 'pt': "enviando uma foto...", 'zh': "正在发送照片...", 'sw': "anatuma picha..."},
   "vue": {'en': "view", 'es': "visualización", 'de': "Aufruf", 'ar': "مشاهدة", 'pt': "visualização", 'zh': "次观看", 'sw': "mara iliyotazamwa"},
   "vues": {'en': "views", 'es': "visualizaciones", 'de': "Aufrufe", 'ar': "مشاهدات", 'pt': "visualizações", 'zh': "次观看", 'sw': "mara zilizotazamwa"},
   "Lancer": {'en': "Start", 'es': "Iniciar", 'de': "Starten", 'ar': "ابدأ", 'pt': "Iniciar", 'zh': "开始", 'sw': "Anza"},

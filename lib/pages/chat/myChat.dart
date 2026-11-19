@@ -247,7 +247,8 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     _receiverStream = _userProvider.getStreamUser(_otherId).asBroadcastStream();
     _chatStream = _userProvider.getStreamChat(widget.chat.id!).asBroadcastStream();
 
-    _markActiveInChat(true);
+    // Le document de la discussion reçoit d'abord ses deux participants (exigés par les règles Firestore), puis on écoute l'état de l'autre personne
+    _markActiveInChat(true).then((_) => _listenOtherTyping());
 
     _audioRecorder = AudioRecorder();
     _initializeChat();
@@ -262,17 +263,10 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
 
     _confettiController = ConfettiController(duration: const Duration(seconds: 2));
 
-    // Écoute l'état de frappe + streak de l'autre utilisateur (sans setState → pas de rebuild global)
+    // Streak de l'autre utilisateur (sans setState → pas de rebuild global) ; l'état « écrit / enregistre » est écouté à part ([_listenOtherTyping])
     _chatSubscription = _chatStream.listen((chat) {
       final myId = _authProvider.loginUserData.id;
       if (myId == null) return;
-      final rawState = (myId == chat.senderId)
-          ? (chat.receiver_sending ?? '')
-          : (chat.send_sending ?? '');
-      final newState = rawState.startsWith('SENDING') && rawState != 'NOTSENDING' ? rawState : '';
-      if (newState != _otherTypingNotifier.value) {
-        _otherTypingNotifier.value = newState;
-      }
       // Streak 🔥
       final streakVal = chat.streak ?? 0;
       if (streakVal != _streak && mounted) {
@@ -557,6 +551,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                       _ephemeralTimer?.cancel();
                     }
                     await _firestore.collection('Chats').doc(widget.chat.id).set({
+                      ..._chatDocParticipants,   // exigés par les règles Firestore (19/11/2026)
                       'ephemeral_duration': newDuration,
                     }, SetOptions(merge: true));
                   },
@@ -768,14 +763,42 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     }
   }
 
+  // ── État « écrit / enregistre un vocal / envoie une photo » (19/11/2026) ──
+  // Avant : écrit dans `send_sending` ou `receiver_sending` selon `senderId`, qui vaut soi-même pour les deux personnes depuis l'API (chacun écrivait
+  // le même champ), sur un document sans participants (refusé par les règles Firestore) et lu par une requête qui ne le trouvait pas.
+  // Maintenant : un champ par personne (`typing_<id>`) sur `Chats/<id de la conversation>`, document qui porte toujours ses deux participants.
+  DocumentReference<Map<String, dynamic>>? get _chatDoc {
+    final id = widget.chat.id;
+    return (id == null || id.isEmpty || id.startsWith('search_')) ? null : _firestore.collection('Chats').doc(id);
+  }
+
+  /// Les deux participants, exigés par les règles Firestore pour créer, lire et modifier le document de la discussion.
+  Map<String, dynamic> get _chatDocParticipants => {'sender_id': _authProvider.loginUserData.id, 'receiver_id': _otherId};
+
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _typingSub;
+
+  void _listenOtherTyping() {
+    final doc = _chatDoc;
+    if (doc == null || !mounted) return;
+    _typingSub?.cancel();
+    _typingSub = doc.snapshots().listen((snap) {
+      final d = snap.data();
+      var state = (d?['typing_$_otherId'] as String?) ?? '';
+      final at = d?['typing_at_$_otherId'];
+      // état resté affiché (application fermée en pleine frappe) : ignoré au bout de 2 minutes
+      if (at is Timestamp && DateTime.now().difference(at.toDate()).inMinutes >= 2) state = '';
+      if (!state.startsWith('SENDING')) state = '';
+      if (state != _otherTypingNotifier.value) _otherTypingNotifier.value = state;
+    }, onError: (_) {});
+  }
+
   Future<void> _setTypingState([String type = _kTypingText]) async {
     if (_currentTypingType == type) return;
     _currentTypingType = type;
     _isSendingTyping = true;
     try {
       final myId = _authProvider.loginUserData.id!;
-      final field = widget.chat.senderId == myId ? 'send_sending' : 'receiver_sending';
-      await _firestore.collection('Chats').doc(widget.chat.id).set({field: type}, SetOptions(merge: true));
+      await _chatDoc?.set({..._chatDocParticipants, 'typing_$myId': type, 'typing_at_$myId': FieldValue.serverTimestamp()}, SetOptions(merge: true));
     } catch (_) {}
   }
 
@@ -791,8 +814,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     _currentTypingType = '';
     try {
       final myId = _authProvider.loginUserData.id!;
-      final field = widget.chat.senderId == myId ? 'send_sending' : 'receiver_sending';
-      await _firestore.collection('Chats').doc(widget.chat.id).set({field: 'NOTSENDING'}, SetOptions(merge: true));
+      await _chatDoc?.set({..._chatDocParticipants, 'typing_$myId': ''}, SetOptions(merge: true));
     } catch (_) {}
   }
 
@@ -830,6 +852,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
     if (myId == null) return;
     try {
       await _firestore.collection('Chats').doc(widget.chat.id).set({
+        ..._chatDocParticipants,   // exigés par les règles Firestore (19/11/2026)
         'activeViewers': active
             ? FieldValue.arrayUnion([myId])
             : FieldValue.arrayRemove([myId]),
@@ -839,6 +862,7 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _typingSub?.cancel();
     _markActiveInChat(false);
     WidgetsBinding.instance.removeObserver(this);
     _audioPlayer.dispose();

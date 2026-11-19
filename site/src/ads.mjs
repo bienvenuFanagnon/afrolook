@@ -400,11 +400,11 @@ export function adsSpace(fbConfig, api) {
      <label class="fl" for="f-cat">Catégorie de l'annonce <small>(obligatoire)</small><select id="f-cat"><option value="">Choisir…</option>${catOptions()}</select></label>
      <p class="adnote" id="f-cat-note" hidden>Catégorie sensible : ton annonce n'est diffusée que chez les diffuseurs qui l'acceptent explicitement, et jamais dans la galerie publique. Le contenu sexuellement explicite est interdit.</p>
      <div class="fl"><span>Image ou vidéo</span>
-      <label class="adup" for="f-file"><div class="adup-i">${ico('poster', 30)}</div><div><b id="f-file-name">Choisis une image ou une vidéo</b><small>Images JPG, PNG ou GIF animé (jusqu'à 5) <b>et</b> une vidéo MP4 de <b>15 secondes maximum</b> (25 Mo), ensemble ou séparément : chaque choix s'ajoute. Tu peux aussi cliquer sur l'image d'un aperçu pour la remplacer.</small></div></label>
+      <label class="adup" for="f-file"><div class="adup-i">${ico('poster', 30)}</div><div><b id="f-file-name">Choisis une image ou une vidéo</b><small>Images JPG, PNG ou GIF animé (jusqu'à 5) <b>et</b> une vidéo MP4 de <b>50 secondes maximum</b> (100 Mo), ensemble ou séparément : chaque choix s'ajoute. Tu peux aussi cliquer sur l'image d'un aperçu pour la remplacer.</small></div></label>
       <div class="adkinds" role="group" aria-label="Ajouter un visuel (les trois peuvent se combiner)">
        <button type="button" data-acc="image/jpeg,image/png,image/webp" data-multi="1"><b>Image</b><small>1 image, ou 2 à 5 pour un carrousel</small></button>
        <button type="button" data-acc="image/gif" data-multi="1"><b>GIF animé</b><small>petite vidéo muette, 4 Mo au plus</small></button>
-       <button type="button" data-acc="video/mp4,video/quicktime"><b>Vidéo</b><small>MP4, 15 secondes au plus</small></button>
+       <button type="button" data-acc="video/mp4,video/quicktime"><b>Vidéo</b><small>MP4, 50 secondes au plus</small></button>
       </div>
       <div class="imgtips" data-adsonly><b>Image idéale : carrée, 1080 × 1080 px</b><small>Sujet et texte au centre, gros et lisibles. Ton image s'affiche toujours entière : dans une petite bannière (carré), un rectangle (paysage) ou une carte (portrait), le reste se remplit d'un fond flouté. Évite les images très allongées et le texte minuscule.</small><b id="f-file-tip" class="imgtip" hidden></b>
       <div class="imgex" aria-hidden="true">
@@ -412,7 +412,7 @@ export function adsSpace(fbConfig, api) {
         <figure><div class="ex ex-no"><span>texte minuscule illisible sur le côté</span></div><figcaption><i class="n">✗</i> À éviter : très allongé, texte minuscule</figcaption></figure>
       </div>
       </div>
-      <div class="imgtips" data-shareonly hidden><b>Ton image est publiée telle quelle sur WhatsApp, Telegram, Facebook…</b><small>Choisis un visuel <b>carré (1080 × 1080)</b> ou <b>vertical (1080 × 1920)</b> comme un statut : un texte court et gros, un appel clair (« Commande ton affiche »), des couleurs vives. Une vidéo de 15 secondes maximum marche très bien aussi.</small>
+      <div class="imgtips" data-shareonly hidden><b>Ton image est publiée telle quelle sur WhatsApp, Telegram, Facebook…</b><small>Choisis un visuel <b>carré (1080 × 1080)</b> ou <b>vertical (1080 × 1920)</b> comme un statut : un texte court et gros, un appel clair (« Commande ton affiche »), des couleurs vives. Une vidéo de 50 secondes maximum marche très bien aussi.</small>
        <div class="imgex" aria-hidden="true"><figure><div class="ex ex-ok"><b>-30 %</b><span>Boutique Kofi</span><u>Commande</u></div><figcaption><i class="y">✓</i> Carré</figcaption></figure><figure><div class="ex ex-v"><b>-30 %</b><span>Boutique Kofi</span><u>Commande</u></div><figcaption><i class="y">✓</i> Vertical, comme un statut</figcaption></figure><figure><div class="ex ex-no"><span>texte minuscule illisible</span></div><figcaption><i class="n">✗</i> À éviter</figcaption></figure></div></div>
       <div class="exg">
        <div class="exg-h"><b>Exemples d'annonces réussies</b><small>Une photo vivante, un message court écrit en gros, ton logo et un bouton clair. Choisis le format qui te ressemble : ton visuel s'affiche toujours en entier.</small></div>
@@ -423,7 +423,7 @@ export function adsSpace(fbConfig, api) {
         <figure class="w"><img src="/img/ads/exemples/paysage.webp" width="600" height="314" loading="lazy" alt="Exemple d'annonce paysage"><figcaption><b>Paysage</b> 1200 × 628<small>rectangles, ordinateur</small></figcaption></figure>
         <figure class="car"><div><img src="/img/ads/exemples/carrousel1.webp" width="300" height="300" loading="lazy" alt="Carrousel, image 1"><img src="/img/ads/exemples/carrousel2.webp" width="300" height="300" loading="lazy" alt="Carrousel, image 2"><img src="/img/ads/exemples/carrousel3.webp" width="300" height="300" loading="lazy" alt="Carrousel, image 3"></div><figcaption><b>Carrousel</b> 2 à 5 images<small>un message par image</small></figcaption></figure>
         <figure><img src="/img/ads/exemples/gif-anime.gif" width="300" height="300" loading="lazy" alt="Exemple de GIF animé"><figcaption><b>GIF animé</b> 4 Mo au plus<small>une petite vidéo muette</small></figcaption></figure>
-        <figure><video src="/img/ads/exemples/video.mp4" poster="/img/ads/exemples/video-affiche.webp" width="360" height="640" muted loop playsinline autoplay preload="none" aria-label="Exemple de vidéo verticale"></video><figcaption><b>Vidéo</b> verticale, 15 s au plus<small>le message dès la 1re seconde</small></figcaption></figure>
+        <figure><video src="/img/ads/exemples/video.mp4" poster="/img/ads/exemples/video-affiche.webp" width="360" height="640" muted loop playsinline autoplay preload="none" aria-label="Exemple de vidéo verticale"></video><figcaption><b>Vidéo</b> verticale, 50 s au plus<small>le message dès la 1re seconde</small></figcaption></figure>
        </div>
       </div>
       <div class="bnbox" data-adsonly>

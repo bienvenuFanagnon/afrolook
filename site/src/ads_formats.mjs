@@ -17,7 +17,7 @@ const FORMATS = [
   { n: 'Carte native', free: true, where: 'Application et sites', p: 'Image, titre, texte et bouton, au milieu du fil ou d\'un article, étiquetée « Annonce ».',
     ph: phone(`<div class="hd"><b>Afrolook</b></div>${post()}${card('carte', 'Kofi Studio', 'Visiter le site')}${post()}`),
     dk: desk(cols(`${sk(3)}${hcard('carte', 'Kofi Studio', 'Visiter')}${sk(3)}`, sideSk)) },
-  { n: 'Vidéo dans le fil', free: true, where: 'Application et sites', p: 'Une vidéo de 15 secondes au maximum, qui se lance sans son quand elle est à l\'écran.',
+  { n: 'Vidéo dans le fil', free: true, where: 'Application et sites', p: 'Une vidéo de 50 secondes au maximum, qui se lance sans son quand elle est à l\'écran.',
     ph: phone(`<div class="hd"><b>Afrolook</b></div>${post()}<div class="adc">${tag}<div class="vd"><img src="${IM('video')}" alt=""><span class="pl">▶</span><span class="tm">0:12</span></div><div class="b"><b class="t">Atelier Kofi</b>${go('Télécharger')}</div></div>${sk(3)}`),
     dk: desk(cols(`${sk(2)}<div class="adc"><div class="vd w"><img src="${IM('video')}" alt=""><span class="pl">▶</span><span class="tm">0:12</span></div>${tag}</div>${sk(3)}`, sideSk)) },
   { n: 'Carrousel', free: true, where: 'Application et sites', p: 'De 2 à 5 images que le visiteur fait glisser.',

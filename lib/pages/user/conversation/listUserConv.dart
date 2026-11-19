@@ -45,6 +45,7 @@ import '../../../providers/gold_groups_provider.dart';
 import '../../../theme/app_colors.dart';
 
 import '../../../l10n/app_localizations.dart';
+import '../../../l10n/tr.dart';
 
 import '../../../services/chat_service.dart';
 import 'package:afrolook_api_client/afrolook_api_client.dart' show ApiException;
@@ -592,6 +593,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         });
       }
       _saveConvCache(result);
+      _syncTypingListeners(result);
       return result;
     } catch (e) {
       if (mounted) setState(() { _isLoading = false; _isRefreshing = false; });
@@ -880,6 +882,9 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
 
   @override
   void dispose() {
+    for (final sub in _typingSubs.values) {
+      sub.cancel();
+    }
     _groupsStreamSub?.cancel();
     _convPoll?.cancel();
     _ownedGroupsStreamSub?.cancel();
@@ -1333,10 +1338,12 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
               letterSpacing: 1.2,
             ),
           ),
+          // Couleur du texte (19/11/2026) : la couleur des bordures le rendait presque invisible, comme grisé
           PseudoTag(label: "@${authProvider.loginUserData.pseudo}",
             style: TextStyle(
-              color: _colors.border,
+              color: _colors.textPrimary,
               fontSize: 12,
+              fontWeight: FontWeight.w600,
             )),
         ],
       ),
@@ -2188,6 +2195,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
           isOnline: isOnline,
           unreadCount: unreadCount,
           isTyping: _isOtherUserTyping(chat),
+          typingText: _typingText(chat),
           isLastMessageFromMe: isLastMessageFromMe,
           messageStatus: _getMessageStatus(lastMessage),
           id_user: chat.chatFriend!.id!,
@@ -2404,6 +2412,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
               isOnline: isOnline,
               unreadCount: unreadCount,
               isTyping: _isOtherUserTyping(chat),
+          typingText: _typingText(chat),
               isLastMessageFromMe: isLastMessageFromMe,
               messageStatus: _getMessageStatus(lastMessage),
               id_user: chat.chatFriend!.id!,
@@ -2471,6 +2480,7 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
             isOnline: isOnline,
             unreadCount: unreadCount,
             isTyping: _isOtherUserTyping(chat),
+          typingText: _typingText(chat),
             isSearchResult: isSearchResult,
             id_user: chat.chatFriend!.id!,
             isPro: chat.chatFriend?.hasEntreprise == true,
@@ -2508,12 +2518,50 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     return lastMessage.sendBy == authProvider.loginUserData.id;
   }
 
-  bool _isOtherUserTyping(Chat chat) {
+  // ── « écrit… / enregistre un vocal… » dans la liste (19/11/2026) ──
+  // L'API ne donne pas cet état : il est lu sur le document Firestore de chaque conversation (`Chats/<id>`, champ `typing_<id de l'autre>`),
+  // écrit par la page de discussion. Seules les 20 premières conversations sont écoutées (une écoute par conversation).
+  static const int _typingWatchMax = 20;
+  final Map<String, StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>> _typingSubs = {};
+  final Map<String, String> _typingStates = {};
+
+  void _syncTypingListeners(List<ChatWithLastMessage> chats) {
     final myId = authProvider.loginUserData.id;
-    if (chat.senderId == myId) {
-      return chat.receiver_sending == 'SENDING';
-    } else {
-      return chat.send_sending == 'SENDING';
+    if (myId == null) return;
+    final wanted = <String, String>{};   // id de la conversation -> id de l'autre personne
+    for (final c in chats.take(_typingWatchMax)) {
+      final id = c.chat.id;
+      final other = c.chat.senderId == myId ? c.chat.receiverId : c.chat.senderId;
+      if (id != null && id.isNotEmpty && other != null && other.isNotEmpty) wanted[id] = other;
+    }
+    for (final id in _typingSubs.keys.where((k) => !wanted.containsKey(k)).toList()) {
+      _typingSubs.remove(id)?.cancel();
+      _typingStates.remove(id);
+    }
+    wanted.forEach((id, other) {
+      if (_typingSubs.containsKey(id)) return;
+      _typingSubs[id] = FirebaseFirestore.instance.collection('Chats').doc(id).snapshots().listen((snap) {
+        final d = snap.data();
+        var state = (d?['typing_$other'] as String?) ?? '';
+        final at = d?['typing_at_$other'];
+        if (at is Timestamp && DateTime.now().difference(at.toDate()).inMinutes >= 2) state = '';   // resté affiché : ignoré
+        if (!state.startsWith('SENDING')) state = '';
+        if ((_typingStates[id] ?? '') != state && mounted) setState(() => _typingStates[id] = state);
+      }, onError: (_) {});   // document pas encore créé (aucune discussion ouverte depuis) : rien à afficher
+    });
+  }
+
+  bool _isOtherUserTyping(Chat chat) => (_typingStates[chat.id] ?? '').isNotEmpty;
+
+  /// Texte affiché à la place du dernier message pendant que l'autre personne écrit, enregistre un vocal ou envoie une photo.
+  String _typingText(Chat chat) {
+    switch (_typingStates[chat.id]) {
+      case 'SENDING_AUDIO':
+        return tr('enregistre un vocal...');
+      case 'SENDING_IMAGE':
+        return tr('envoie une photo...');
+      default:
+        return _l10n.convTyping;
     }
   }
 
@@ -2740,6 +2788,8 @@ class ConversationList extends StatefulWidget {
   final bool isOnline;
   final int unreadCount;
   final bool isTyping;
+  /// Texte pendant que l'autre personne écrit, enregistre un vocal ou envoie une photo.
+  final String? typingText;
   final bool isLoading;
   final bool isSearchResult;
   final bool isLastMessageFromMe;
@@ -2762,6 +2812,7 @@ class ConversationList extends StatefulWidget {
     this.isOnline = false,
     this.unreadCount = 0,
     this.isTyping = false,
+    this.typingText,
     this.isLoading = false,
     this.isSearchResult = false,
     this.isLastMessageFromMe = false,
@@ -2922,7 +2973,7 @@ class _ConversationListState extends State<ConversationList> {
               Expanded(
                 child: Text(
                   widget.isTyping
-                      ? '${_l10n.convTyping}...'
+                      ? (widget.typingText ?? _l10n.convTyping)
                       : widget.messageText,
                   style: TextStyle(
                     fontSize: 13,

@@ -544,12 +544,12 @@ async function initSpace() {
   function setVideo(v) {
     st.video = v || null; st.isVideo = !!st.video; st.thumbUrl = ''; st.duration = 0;
     if (!st.video) return;
-    // durée de la vidéo : 15 secondes maximum, pour qu'elle soit vue vite
+    // durée de la vidéo : 50 secondes maximum (19/11/2026 ; 15 auparavant)
     const probe = h('video', { preload: 'metadata' }); probe.src = URL.createObjectURL(v);
     probe.onloadedmetadata = () => {
       if (st.video !== v) return;
       st.duration = probe.duration || 0;
-      if (st.duration > 15.5) { setVideo(null); showFiles(); pvUpdate(); err(`La vidéo doit durer 15 secondes maximum (la tienne : ${Math.round(st.duration)} s).`); }
+      if (st.duration > 50.5) { setVideo(null); showFiles(); pvUpdate(); err(`La vidéo doit durer 50 secondes maximum (la tienne : ${Math.round(st.duration)} s).`); }
     };
     probe.onerror = () => { if (st.video === v) { setVideo(null); showFiles(); pvUpdate(); err('Vidéo illisible : essaie un fichier MP4.'); } };
     frame(v).then((bl) => { if (st.video === v) { st.thumbUrl = URL.createObjectURL(bl); pvUpdate(); autoHook(); } }).catch(() => {});
@@ -559,7 +559,7 @@ async function initSpace() {
     if (!files.length) return;
     const vids = files.filter((f) => f.type.startsWith('video/')), imgs = files.filter((f) => !f.type.startsWith('video/'));
     if (vids.length > 1) return err('Une seule vidéo par annonce (tu peux y ajouter jusqu\'à 5 images).');
-    if (vids[0] && vids[0].size > 25 * 1024 * 1024) return err('La vidéo dépasse 25 Mo.');
+    if (vids[0] && vids[0].size > 100 * 1024 * 1024) return err('La vidéo dépasse 100 Mo.');   // 50 s filmées au téléphone : jusqu'à ~100 Mo, recompressée ensuite par le serveur (150 Mo acceptés par l'API)
     // GIF animé = petite vidéo muette : envoyé tel quel (jamais recompressé, sinon il devient une image fixe), 4 Mo au plus (16/11/2026)
     if (imgs.find((f) => f.type === 'image/gif' && f.size > 4 * 1024 * 1024)) return err('Le GIF dépasse 4 Mo : raccourcis-le ou choisis une vidéo MP4.');
     const base = replace ? [] : st.files.filter((f) => !imgs.some((g) => g.name === f.name && g.size === f.size));
@@ -874,7 +874,7 @@ async function initSpace() {
     if (/catégorie/.test(m)) return 'Choisis la catégorie de ton annonce.';
     if (/profil_en_validation/.test(m)) return 'Ton profil est en cours de validation : tu pourras publier ta première annonce dès qu’il est validé (tu recevras un e-mail).';
     if (/logo_refuse/.test(m)) return "Ton profil annonceur a été refusé : corrige-le dans l'onglet Profil puis renvoie-le.";
-    if (/15 secondes/.test(m)) return 'La vidéo doit durer 15 secondes maximum.';
+    if (/50 secondes/.test(m)) return 'La vidéo doit durer 50 secondes maximum.';
     if (/solde_insuffisant/.test(m)) { loadWallet(); return 'Ton solde est insuffisant : recharge-le avec le bouton « Recharger maintenant », puis renvoie ton annonce.'; }
     if (/limite_atteinte/.test(m)) return 'Tu as déjà utilisé ton annonce gratuite : elle est unique et non renouvelable. Pour en publier une autre, coche au moins une option de diffusion (payante).';
     if (/limite_du_jour/.test(m)) return 'Trop d\'annonces envoyées aujourd\'hui. Réessaie demain.';
