@@ -602,7 +602,9 @@ class _AbonnementScreenState extends State<AbonnementScreen>
           Align(
             alignment: Alignment.centerRight,
             child: Text(
-                context.tr('soit {a} F/mois', {'a': (prixFinal / selected).round()}),
+                kPayInCoins   // en pièces quand on paie en pièces (19/11/2026) : « F » faisait croire à de l'argent réel
+                    ? context.tr('soit {a} pièces/mois', {'a': (CoinCheckout.coinsFor(prixFinal) / selected).round()})
+                    : context.tr('soit {a} F/mois', {'a': (prixFinal / selected).round()}),
                 style: TextStyle(color: colors.textSecondary, fontSize: 12)),
           ),
         ],
@@ -695,7 +697,7 @@ class _AbonnementScreenState extends State<AbonnementScreen>
                     children: [
                       Text(context.tr('Solde insuffisant'),
                           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      Text(context.tr('Il vous manque {a} F', {'a': manquant.toInt()}),
+                      Text(kPayInCoins ? context.tr('Il vous manque {a} pièces', {'a': manquant.toInt()}) : context.tr('Il vous manque {a} F', {'a': manquant.toInt()}),
                           style: TextStyle(color: colors.textSecondary, fontSize: 12)),
                     ],
                   ),
