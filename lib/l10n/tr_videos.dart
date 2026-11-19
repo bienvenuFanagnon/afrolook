@@ -233,6 +233,7 @@ const Map<String, Map<String, String>> kTrVideos = {
   "Retirer des favoris": {'en': "Remove from favorites", 'es': "Quitar de favoritos", 'de': "Aus Favoriten entfernen", 'ar': "إزالة من المفضلة", 'pt': "Remover dos favoritos", 'zh': "取消收藏", 'sw': "Ondoa kwenye vipendwa"},
   "Enregistrer dans mes favoris": {'en': "Save to my favorites", 'es': "Guardar en mis favoritos", 'de': "In meinen Favoriten speichern", 'ar': "حفظ في المفضلة", 'pt': "Salvar nos meus favoritos", 'zh': "收藏", 'sw': "Hifadhi kwenye vipendwa vyangu"},
   "Vidéo": {'en': "Video", 'es': "Vídeo", 'de': "Video", 'ar': "فيديو", 'pt': "Vídeo", 'zh': "视频", 'sw': "Video"},
+  "vue": {'en': "view", 'es': "visualización", 'de': "Aufruf", 'ar': "مشاهدة", 'pt': "visualização", 'zh': "次观看", 'sw': "mara iliyotazamwa"},
   "vues": {'en': "views", 'es': "visualizaciones", 'de': "Aufrufe", 'ar': "مشاهدات", 'pt': "visualizações", 'zh': "次观看", 'sw': "mara zilizotazamwa"},
   "Lancer": {'en': "Start", 'es': "Iniciar", 'de': "Starten", 'ar': "ابدأ", 'pt': "Iniciar", 'zh': "开始", 'sw': "Anza"},
   "EN DIRECT": {'en': "LIVE", 'es': "EN DIRECTO", 'de': "LIVE", 'ar': "مباشر", 'pt': "AO VIVO", 'zh': "直播中", 'sw': "MOJA KWA MOJA"},

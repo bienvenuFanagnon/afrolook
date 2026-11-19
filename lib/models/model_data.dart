@@ -1652,6 +1652,12 @@ class Post {
   /// Les vues comptées sont les vues uniques du serveur (une par personne, l'auteur exclu), pas [vues] qui augmente à chaque visionnage sur le téléphone. Les favoris n'en font pas partie.
   int get interactionsCount => (loves ?? 0) + (likes ?? 0) + (comments ?? 0) + (partage ?? 0) + (users_republier_id?.length ?? 0) + (uniqueViewsCount ?? 0);
 
+  /// Vues de la publication (personnes qui l'ont vue, une par personne : le même chiffre que « Montré à »). Affichées à part sur les vidéos (19/11/2026).
+  int get viewsCount => uniqueViewsCount ?? 0;
+
+  /// Interactions SANS les vues, là où les vues sont affichées à côté (pages vidéo portrait et paysage) : j'aime, commentaires, partages, republications.
+  int get reactionsCount => interactionsCount - viewsCount;
+
   int? adSupportCount = 0; // nombre de fois que la pub de soutien a été vue pour ce post
   bool? isPortrait;
   /// Origine du média : « captured » = filmé ou enregistré avec l'application (badge « Fait sur Afrolook »), « imported » = choisi dans la galerie, null = autre.

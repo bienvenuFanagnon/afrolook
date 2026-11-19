@@ -208,11 +208,11 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
     if (c != null && c.value.isInitialized) c.setVolume(muted ? 0 : 1).ignore();
   }
 
-  /// Total des interactions de la vidéo affichée (j'aime, commentaires, partages, republications), affiché à côté du bouton du son.
-  int? get _currentInteractions {
+  /// Vidéo affichée : ses vues et ses interactions (sans les vues) sont montrées à côté du bouton du son (19/11/2026 : vues à part).
+  Post? get _currentPostShown {
     if (_currentPage < 0 || _currentPage >= _feedItems.length) return null;
     final it = _feedItems[_currentPage];
-    return it is Post ? it.interactionsCount : null;
+    return it is Post ? it : null;
   }
 
   static String _compact(int n) => n >= 1000000 ? '${(n / 1000000).toStringAsFixed(n % 1000000 >= 100000 ? 1 : 0)} M' : n >= 1000 ? '${(n / 1000).toStringAsFixed(n % 1000 >= 100 ? 1 : 0)} k' : '$n';
@@ -2845,7 +2845,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
             onTap: () {},
             child: Column(children: [
               const Icon(Icons.bar_chart, color: Colors.blue, size: 35),
-              Text('${post.interactionsCount}', style: const TextStyle(color: Colors.white)),
+              Text('${post.reactionsCount}', style: const TextStyle(color: Colors.white)),   // sans les vues, affichées à part (19/11/2026)
             ]),
           ),
           GestureDetector(
@@ -3923,9 +3923,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
             onBack: (widget.isIn || Navigator.of(context).canPop()) ? () => Navigator.maybePop(context) : null,
             trailing: Consumer<SoundProvider>(
               builder: (context, sound, _) {
-                final n = _currentInteractions;
+                final shown = _currentPostShown;
                 return Row(mainAxisSize: MainAxisSize.min, children: [
-                  if (n != null)
+                  if (shown != null)
                     Container(
                       key: const ValueKey('portrait_interactions'),
                       height: 34,
@@ -3938,9 +3938,14 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
                         border: Border.all(color: Colors.white.withOpacity(0.22), width: 1),
                       ),
                       child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        // vues à part (19/11/2026), puis les interactions sans les vues
+                        const Icon(Icons.visibility_rounded, size: 15, color: Colors.white),
+                        const SizedBox(width: 3),
+                        Text(_compact(shown.viewsCount), style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w800)),
+                        const SizedBox(width: 8),
                         const Icon(Icons.bar_chart_rounded, size: 16, color: Colors.white),   // même icône que le total des interactions des publications du fil
                         const SizedBox(width: 3),
-                        Text(_compact(n), style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w800)),
+                        Text(_compact(shown.reactionsCount), style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w800)),
                       ]),
                     ),
                   GestureDetector(

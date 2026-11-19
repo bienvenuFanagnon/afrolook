@@ -29,4 +29,11 @@ void main() {
     p.vues = (p.vues ?? 0) + 3;   // revoir la vidéo sur le téléphone n'ajoute pas d'interaction
     expect(p.interactionsCount, 11);
   });
+
+  test('pages vidéo (19/11/2026) : les vues à part, et les interactions sans les vues', () {
+    final p = postFromApi(row({'likes': 12, 'comments': 5, 'shares': 3, 'views': 400, 'reposts': 2}));
+    expect(p.viewsCount, 400);
+    expect(p.reactionsCount, 22);   // 12 + 5 + 3 + 2
+    expect(p.viewsCount + p.reactionsCount, p.interactionsCount);
+  });
 }

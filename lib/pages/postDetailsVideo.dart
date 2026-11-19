@@ -1634,7 +1634,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
   }
 
 
-  Widget _buildInteractionsBadge(int total, AppColors colors) {
+  Widget _buildInteractionsBadge(int total, AppColors colors, {IconData icon = Icons.bar_chart_rounded}) {
     final isDark = colors.isDark;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
@@ -1649,7 +1649,7 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.bar_chart_rounded, size: 13, color: colors.textSecondary),
+          Icon(icon, size: 13, color: colors.textSecondary),
           const SizedBox(width: 3),
           Text(
             _formatCount(total),
@@ -1987,8 +1987,11 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
 
         // ── Stat passive (loin, discrète) ────────────────────────────────
         const Spacer(),
-        if (_currentPost.interactionsCount > 0)
-          _buildInteractionsBadge(_currentPost.interactionsCount, colors),
+        // vues à part (19/11/2026), puis les interactions sans les vues
+        if (_currentPost.viewsCount > 0) _buildInteractionsBadge(_currentPost.viewsCount, colors, icon: Icons.visibility_rounded),
+        if (_currentPost.viewsCount > 0 && _currentPost.reactionsCount > 0) const SizedBox(width: 6),
+        if (_currentPost.reactionsCount > 0)
+          _buildInteractionsBadge(_currentPost.reactionsCount, colors),
       ],
         ),
       ],
@@ -2380,13 +2383,14 @@ class _VideoYoutubePageDetailsState extends State<VideoYoutubePageDetails> with 
     final nl = text.indexOf('\n');
     final title = nl > 0 ? text.substring(0, nl).trim() : text;
     final rest = nl > 0 ? text.substring(nl + 1).trim() : '';
-    final interactions = _currentPost.interactionsCount;   // total des interactions : j'aime, commentaires, partages, republications et vues uniques
+    final views = _currentPost.viewsCount;   // vues à part (19/11/2026)
+    final interactions = _currentPost.reactionsCount;   // interactions sans les vues : j'aime, commentaires, partages, republications
     final ago = postTimeAgo(_currentPost.createdAt);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       if (title.isNotEmpty)
         Text(title, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: colors.textPrimary, fontSize: 18, fontWeight: FontWeight.w800, height: 1.25)),
       const SizedBox(height: 3),
-      Text('${_formatCount(interactions)} ${tr(interactions == 1 ? 'interaction' : 'interactions')}${ago.isNotEmpty ? ' · $ago' : ''}', style: TextStyle(color: colors.textSecondary, fontSize: 13)),
+      Text('${_formatCount(views)} ${tr(views == 1 ? 'vue' : 'vues')} · ${_formatCount(interactions)} ${tr(interactions == 1 ? 'interaction' : 'interactions')}${ago.isNotEmpty ? ' · $ago' : ''}', style: TextStyle(color: colors.textSecondary, fontSize: 13)),
       if (_currentPost.authenticity == 'validated') const Padding(padding: EdgeInsets.only(top: 6), child: Align(alignment: Alignment.centerLeft, child: AuthenticBadge())),
       if (_currentPost.authenticity == 'flagged')
         Padding(

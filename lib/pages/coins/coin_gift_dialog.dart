@@ -495,6 +495,8 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
     setState(() => _currentBalance -= totalCost);
 
     final nav = Navigator.of(context);
+    // Lu AVANT de fermer la fenêtre (19/11/2026) : après la fermeture, son contexte ne trouve plus le compte et le commentaire du cadeau n'était jamais posté
+    final sender = Provider.of<UserAuthProvider>(context, listen: false).loginUserData;
     if (mounted) {
       nav.pop();
       showGiftSentOverlay(context, pack, widget.receiverName,
@@ -534,10 +536,9 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
       // Commentaire automatique posté seulement une fois le cadeau confirmé par l'API
       final giftedPost = widget.post;
       if (giftedPost != null) {
-        final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
         final giftComment = await CoinGiftService.postGiftAutoComment(
           senderId: senderId,
-          senderData: authProvider.loginUserData,
+          senderData: sender,
           postId: giftedPost.id!,
           giftPack: pack,
           coinsAmount: totalCost,

@@ -122,7 +122,8 @@ class CoinGiftUserProvider with ChangeNotifier {
     VoidCallback? onSuccess,
   }) async {
     try {
-      final authProvider = Provider.of<UserAuthProvider>(context, listen: false);
+      // Le compte connu du fournisseur d'abord (19/11/2026) : le contexte peut être celui d'une fenêtre déjà fermée (fenêtre des cadeaux), qui ne trouve plus rien
+      final authProvider = _authProvider ?? Provider.of<UserAuthProvider>(context, listen: false);
 
       await CoinGiftService.sendGift(
         senderId: senderId,
