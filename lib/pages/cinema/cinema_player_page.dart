@@ -46,6 +46,7 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
   int? _midLeft;               // décompte « Une pub dans N s »
   Timer? _midTimer;
   bool _inAd = false;          // une pub est à l'écran : la lecture reste en pause
+  bool _full = false;          // vidéo verticale en plein écran (sans les détails dessous)
   bool _voiceHintShown = false;
   List<VideoAudioTrack> _tracks = const [];
   Map<String, int> _reactions = {};
@@ -481,11 +482,25 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
-    final landscape = MediaQuery.of(context).orientation == Orientation.landscape;
-    final player = _buildPlayer(c, landscape);
+    final mq = MediaQuery.of(context);
+    final landscape = mq.orientation == Orientation.landscape;
+    final v = _video;
+    // épisodes verticaux (format téléphone) : grand cadre en haut, ou plein écran en restant en portrait
+    final vertical = v != null && v.value.isInitialized && v.value.aspectRatio > 0 && v.value.aspectRatio < 1;
     if (landscape) {
-      return Scaffold(backgroundColor: Colors.black, body: Center(child: player));
+      return Scaffold(backgroundColor: Colors.black, body: Center(child: _buildPlayer(c, landscape)));
     }
+    if (vertical && _full) {
+      // le retour du téléphone sort du plein écran avant de quitter le lecteur
+      return PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, _) => setState(() => _full = false),
+        child: Scaffold(backgroundColor: Colors.black, body: SafeArea(child: _buildPlayer(c, false, height: mq.size.height - mq.padding.vertical))),
+      );
+    }
+    final player = vertical
+        ? _buildPlayer(c, false, height: (mq.size.width / v.value.aspectRatio).clamp(0.0, (mq.size.height - mq.padding.vertical) * 0.62))
+        : _buildPlayer(c, false);
     return Scaffold(
       backgroundColor: c.background,
       body: SafeArea(
@@ -508,7 +523,8 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
         ]),
       ));
 
-  Widget _buildPlayer(AppColors c, bool landscape) {
+  /// [height] : hauteur imposée du cadre (vidéo verticale) ; sinon 16:9 en portrait, le format de la vidéo en paysage.
+  Widget _buildPlayer(AppColors c, bool landscape, {double? height}) {
     final v = _video;
     final ready = v != null && v.value.isInitialized;
     final ratio = ready && v.value.aspectRatio > 0 ? v.value.aspectRatio : 16 / 9;
@@ -524,7 +540,8 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
       },
       child: Container(
         color: Colors.black,
-        child: AspectRatio(
+        child: _frame(
+          height: height,
           aspectRatio: landscape ? ratio : 16 / 9,
           child: Stack(fit: StackFit.expand, children: [
             if (ready) Center(child: AspectRatio(aspectRatio: ratio, child: VideoPlayer(v))) else const Center(child: CircularProgressIndicator(color: Color(0xFFFFD400))),
@@ -566,7 +583,7 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
                 padding: const EdgeInsets.fromLTRB(4, 4, 10, 6),
                 child: Column(children: [
                   Row(children: [
-                    IconButton(icon: const Icon(Icons.arrow_back_rounded, color: Colors.white), onPressed: () => Navigator.pop(context)),
+                    IconButton(icon: const Icon(Icons.arrow_back_rounded, color: Colors.white), onPressed: () => _full ? setState(() => _full = false) : Navigator.pop(context)),
                     Expanded(child: Text(_ep == null ? '' : context.tr('Ép. {a} · {b}', {'a': _ep!['number'], 'b': _ep!['name']}),
                         maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13))),
                     if (voiceLabel != null) _pill(Icons.record_voice_over_rounded, '$voiceLabel', _openSettings),
@@ -603,8 +620,12 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
                       Text('-${cinemaClock(dur - pos)}', style: const TextStyle(color: Colors.white, fontSize: 11)),
                       IconButton(
                         visualDensity: VisualDensity.compact,
-                        icon: Icon(landscape ? Icons.fullscreen_exit_rounded : Icons.fullscreen_rounded, color: Colors.white, size: 20),
+                        icon: Icon(landscape || _full ? Icons.fullscreen_exit_rounded : Icons.fullscreen_rounded, color: Colors.white, size: 20),
                         onPressed: () {
+                          if (ratio < 1 && !landscape) {
+                            setState(() => _full = !_full);   // vidéo verticale : plein écran sans tourner le téléphone
+                            return;
+                          }
                           if (landscape) {
                             SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
                             SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -623,6 +644,9 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
       ),
     );
   }
+
+  Widget _frame({double? height, required double aspectRatio, required Widget child}) =>
+      height != null ? SizedBox(width: double.infinity, height: height, child: child) : AspectRatio(aspectRatio: aspectRatio, child: child);
 
   Widget _pill(IconData icon, String text, VoidCallback onTap) => GestureDetector(
         onTap: onTap,
