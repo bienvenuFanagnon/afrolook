@@ -59,4 +59,5 @@ const Map<String, Map<String, String>> kTrCinema = {
   '{a} sur {b}': {'en': '{a} of {b}', 'es': '{a} de {b}', 'de': '{a} von {b}', 'ar': '{a} من {b}', 'pt': '{a} de {b}'},
   'Débloqué': {'en': 'Unlocked', 'es': 'Desbloqueado', 'de': 'Freigeschaltet', 'ar': 'مفتوح', 'pt': 'Desbloqueado'},
   '{a} s gratuites': {'en': '{a} s free', 'es': '{a} s gratis', 'de': '{a} s gratis', 'ar': '{a} ث مجانًا', 'pt': '{a} s grátis'},
+  'Découvrir la formation': {'en': 'Discover the course', 'es': 'Descubrir la formación', 'de': 'Kurs entdecken', 'ar': 'اكتشف التكوين', 'pt': 'Conhecer a formação'},
 };

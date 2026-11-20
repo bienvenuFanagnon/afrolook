@@ -10,6 +10,7 @@ import '../../services/api/cinema_api.dart';
 import '../../theme/app_colors.dart';
 import '../user/userAbonnementPage.dart';
 import 'cinema_ads.dart';
+import 'cinema_end_promo.dart';
 import 'cinema_widgets.dart';
 
 /// Lecture d'un épisode de Cartoon Cinéma (21/11/2026).
@@ -19,6 +20,7 @@ import 'cinema_widgets.dart';
 ///  - Sans Gold, un épisode à débloquer s'arrête à 15 secondes (le serveur ne donne pas la suite) : fenêtre « Débloquez l'épisode » avec
 ///    2 pubs (réglable), ou Gold. Débloqué, l'épisode reprend là où il s'était arrêté et le reste 24 h.
 ///  - Au milieu de l'épisode (gratuit compris), sans Gold : « Une pub dans 5 s », puis la pub (réseau, sinon Afrolook Ads), puis la suite.
+///  - À la fin de chaque épisode, pour tout le monde : la promo de notre formation (vidéo jouée en entier + bouton vers le lien).
 ///  - Seules les pubs du réseau rapportent ; sans aucune pub disponible, l'épisode est débloqué quand même (voir CinemaAds).
 ///  - Impressions (une par personne), commentaires courts, progression envoyée régulièrement (vue comptée à 10 secondes).
 class CinemaPlayerPage extends StatefulWidget {
@@ -46,7 +48,8 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
   int? _midLeft;               // décompte « Une pub dans N s »
   Timer? _midTimer;
   bool _inAd = false;          // une pub est à l'écran : la lecture reste en pause
-  bool _full = false;          // vidéo verticale en plein écran (sans les détails dessous)
+  bool _full = false;
+  bool _promoShown = false;    // promo de fin d'épisode déjà montrée          // vidéo verticale en plein écran (sans les détails dessous)
   bool _voiceHintShown = false;
   List<VideoAudioTrack> _tracks = const [];
   Map<String, int> _reactions = {};
@@ -155,6 +158,15 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
     if (preview == null && mid > 0 && !_midDone && !_inAd && dur >= 60 && c.value.isPlaying && c.value.position.inSeconds >= dur ~/ 2 - 5 && c.value.position.inSeconds < dur - 10) {
       _midDone = true;
       _startMidWarning(mid);
+    }
+    // fin de l'épisode : la promo de notre formation, pour tout le monde (Gold compris), jouée en entier
+    final promo = _play?['end_promo'];
+    if (preview == null && promo is Map && !_promoShown && !_inAd && c.value.isCompleted && c.value.position.inSeconds > 0) {
+      _promoShown = true;
+      _sendProgress();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) showCinemaEndPromo(context, Map<String, dynamic>.from(promo));
+      });
     }
     if (!_voiceHintShown && c.value.isPlaying && c.value.position.inSeconds >= 1) {
       _voiceHintShown = true;

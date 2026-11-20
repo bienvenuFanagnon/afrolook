@@ -117,6 +117,22 @@ class CinemaApi {
 
   static Future<Map<String, dynamic>> stats({int days = 30}) async => _map(await _c.get('/admin/cinema/stats', query: {'days': days}));
 
+  /// Promo de fin d'épisode : `{video_url, link_url, label}`.
+  static Future<Map<String, dynamic>> promo() async => _map(await _c.get('/admin/cinema/promo'));
+
+  /// Envoie la vidéo de la promo (lue par morceaux sur téléphone) puis l'annonce au serveur.
+  static Future<Map<String, dynamic>> uploadPromo({Uint8List? bytes, String? path, required int size, required String contentType, void Function(double)? onProgress}) async {
+    final u = _map(await _c.post('/admin/cinema/promo/upload-url', body: {'content_type': contentType, 'size': size}));
+    await _put('${u['upload_url']}', contentType: contentType, bytes: bytes, path: path, size: size, onProgress: onProgress);
+    return _map(await _c.post('/admin/cinema/promo/uploaded', body: {'key': u['key']}));
+  }
+
+  /// Lien ouvert par le bouton (https) et texte du bouton.
+  static Future<Map<String, dynamic>> updatePromo({String? linkUrl, String? label}) async =>
+      _map(await _c.put('/admin/cinema/promo', body: {'link_url': linkUrl, 'label': label}));
+
+  static Future<Map<String, dynamic>> deletePromo() async => _map(await _c.delete('/admin/cinema/promo'));
+
   /// Pubs du cinéma : `{unlock_ads, mid_ads, unlock_hours, preview_seconds}` (lecture par l'équipe du cinéma).
   static Future<Map<String, dynamic>> adSettings() async => _map(await _c.get('/admin/cinema/ads'));
 

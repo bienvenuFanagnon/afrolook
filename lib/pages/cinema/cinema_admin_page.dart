@@ -141,6 +141,7 @@ class _CinemaAdminPageState extends State<CinemaAdminPage> {
                   onRefresh: _load,
                   child: ListView(padding: const EdgeInsets.fromLTRB(12, 12, 12, 90), children: [
                     if (r.any) _AdSettingsCard(rights: r),
+                    if (r.any) _PromoCard(rights: r),
                     if (_titles!.isEmpty) Padding(padding: const EdgeInsets.all(24), child: Text('Aucune série ni film pour l\'instant.', textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary))),
                     for (final t in _titles!) _titleCard(c, t),
                   ]),
@@ -685,3 +686,132 @@ class _AdSettingsCardState extends State<_AdSettingsCard> {
     );
   }
 }
+
+/// Promo de fin d'épisode : vidéo de notre formation (jouée en entier à la fin de chaque épisode, pour tout le monde) et lien du bouton.
+class _PromoCard extends StatefulWidget {
+  const _PromoCard({required this.rights});
+
+  final CinemaRights rights;
+
+  @override
+  State<_PromoCard> createState() => _PromoCardState();
+}
+
+class _PromoCardState extends State<_PromoCard> {
+  String? _video;
+  bool _loaded = false;
+  double? _progress;
+  bool _saving = false;
+  final _link = TextEditingController();
+  final _label = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    CinemaApi.promo().then(_apply).catchError((_) {
+      if (mounted) setState(() => _loaded = true);
+    });
+  }
+
+  void _apply(Map<String, dynamic> d) {
+    if (!mounted) return;
+    setState(() {
+      _video = d['video_url'] as String?;
+      _link.text = (d['link_url'] as String?) ?? '';
+      _label.text = (d['label'] as String?) ?? 'Découvrir la formation';
+      _loaded = true;
+    });
+  }
+
+  @override
+  void dispose() {
+    _link.dispose();
+    _label.dispose();
+    super.dispose();
+  }
+
+  void _error(Object e) {
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(CinemaApi.message(e))));
+  }
+
+  Future<void> _upload() async {
+    final pick = await FilePicker.platform.pickFiles(type: FileType.video, withData: kIsWeb);
+    final f = pick?.files.firstOrNull;
+    if (f == null || (f.bytes == null && f.path == null)) return;
+    final ext = (f.extension ?? '').toLowerCase();
+    final type = ext == 'mov' ? 'video/quicktime' : (ext == 'webm' ? 'video/webm' : 'video/mp4');
+    setState(() => _progress = 0);
+    try {
+      _apply(await CinemaApi.uploadPromo(bytes: f.bytes, path: kIsWeb ? null : f.path, size: f.size, contentType: type, onProgress: (p) => mounted ? setState(() => _progress = p) : null));
+    } catch (e) {
+      _error(e);
+    } finally {
+      if (mounted) setState(() => _progress = null);
+    }
+  }
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    try {
+      final link = _link.text.trim();
+      _apply(await CinemaApi.updatePromo(linkUrl: link.isEmpty ? null : link, label: _label.text.trim()));
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Promo enregistrée')));
+    } catch (e) {
+      _error(e);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _remove() async {
+    try {
+      _apply(await CinemaApi.deletePromo());
+    } catch (e) {
+      _error(e);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    final edit = widget.rights.edit;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(Icons.school_rounded, color: c.accentText),
+          const SizedBox(width: 8),
+          Expanded(child: Text("Promo de fin d'épisode", style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800))),
+        ]),
+        const SizedBox(height: 4),
+        Text("Jouée en entier à la fin de chaque épisode, pour tout le monde (Gold compris), avec un bouton qui ouvre le lien.",
+            style: TextStyle(color: c.textSecondary, fontSize: 12)),
+        const SizedBox(height: 8),
+        if (!_loaded)
+          const LinearProgressIndicator()
+        else ...[
+          if (_progress != null) ...[
+            LinearProgressIndicator(value: _progress, color: const Color(0xFFFFD400)),
+            Text('Envoi ${((_progress ?? 0) * 100).round()} %', style: TextStyle(color: c.textSecondary, fontSize: 11)),
+          ] else
+            Row(children: [
+              Icon(_video != null ? Icons.check_circle_rounded : Icons.info_outline_rounded, color: _video != null ? c.primary : c.textSecondary, size: 18),
+              const SizedBox(width: 6),
+              Expanded(child: Text(_video != null ? 'Vidéo de la promo en place' : "Aucune vidéo : pas de promo à la fin des épisodes", style: TextStyle(color: c.textPrimary, fontSize: 12.5))),
+              if (edit) TextButton(onPressed: _upload, child: Text(_video != null ? 'Remplacer' : 'Envoyer')),
+              if (_video != null && (edit || widget.rights.delete)) IconButton(tooltip: 'Retirer', icon: const Icon(Icons.close_rounded), onPressed: _remove),
+            ]),
+          const SizedBox(height: 8),
+          TextField(controller: _link, enabled: edit, keyboardType: TextInputType.url, decoration: const InputDecoration(labelText: 'Lien du bouton (https://…)', isDense: true)),
+          const SizedBox(height: 8),
+          TextField(controller: _label, enabled: edit, maxLength: 40, decoration: const InputDecoration(labelText: 'Texte du bouton', isDense: true)),
+          if (edit)
+            Align(alignment: Alignment.centerRight, child: FilledButton(onPressed: _saving ? null : _save, child: const Text('Enregistrer'))),
+        ],
+      ]),
+    );
+  }
+}
+
