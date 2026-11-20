@@ -9,7 +9,7 @@ import '../../theme/app_colors.dart';
 import 'cinema_widgets.dart';
 
 /// Gestion de Cartoon Cinéma par l'équipe (21/11/2026), dans l'application et dans la version web : séries et films, épisodes, vidéo sans voix,
-/// voix off et sous-titres par langue, accès (gratuit ou 10 s puis Gold), sortie programmée, mesures. Chaque bouton n'apparaît qu'avec le droit
+/// voix off et sous-titres par langue, accès (gratuit, ou 15 s puis pubs ou Gold), nombres de pubs, sortie programmée, mesures. Chaque bouton n'apparaît qu'avec le droit
 /// correspondant (créer, modifier, supprimer, mesures) ; le serveur vérifie de toute façon chaque action.
 class CinemaAdminPage extends StatefulWidget {
   const CinemaAdminPage({super.key, required this.rights});
@@ -140,7 +140,7 @@ class _CinemaAdminPageState extends State<CinemaAdminPage> {
               : RefreshIndicator(
                   onRefresh: _load,
                   child: ListView(padding: const EdgeInsets.fromLTRB(12, 12, 12, 90), children: [
-                    if (r.edit || r.delete) _AdVideoCard(rights: r),
+                    if (r.any) _AdSettingsCard(rights: r),
                     if (_titles!.isEmpty) Padding(padding: const EdgeInsets.all(24), child: Text('Aucune série ni film pour l\'instant.', textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary))),
                     for (final t in _titles!) _titleCard(c, t),
                   ]),
@@ -576,6 +576,9 @@ class _CinemaStatsPageState extends State<CinemaStatsPage> {
                       tile('${s['completed']}', 'REGARDÉS JUSQU\'AU BOUT'),
                       tile('${sources['feed'] ?? 0}', 'VISITES VENUES DU FIL'),
                       tile('${s['followers']}', 'NOTIFICATIONS ACTIVÉES'),
+                      tile('${s['unlocks'] ?? 0}', 'ÉPISODES DÉBLOQUÉS PAR PUBS'),
+                      tile('${s['unlock_ads'] ?? 0}', 'PUBS VUES POUR DÉBLOQUER'),
+                      tile('${s['unlocks_no_ad'] ?? 0}', 'DÉBLOQUÉS SANS PUB DISPONIBLE'),
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -586,7 +589,8 @@ class _CinemaStatsPageState extends State<CinemaStatsPage> {
                       title: Text('${e['title']} · S${e['season']} Ép. ${e['number']}', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w700)),
                       subtitle: Text(
                         '${e['views']} vues · ${e['completed']} jusqu\'au bout · ${e['comments']} commentaires'
-                        '${e['stopped_at_preview'] != null ? " · ${e['stopped_at_preview']} arrêtés à l'extrait gratuit" : ''}',
+                        '${e['stopped_at_preview'] != null ? " · ${e['stopped_at_preview']} arrêtés à l'extrait gratuit" : ''}'
+                        '${e['unlocks'] != null ? " · ${e['unlocks']} déblocages" : ''}',
                         style: TextStyle(color: c.textSecondary, fontSize: 12),
                       ),
                     ),
@@ -595,63 +599,65 @@ class _CinemaStatsPageState extends State<CinemaStatsPage> {
   }
 }
 
-/// Vidéo de pub du cinéma (10 s) : jouée après les 15 secondes gratuites d'un épisode Gold, et à la fin d'un épisode gratuit.
-class _AdVideoCard extends StatefulWidget {
-  const _AdVideoCard({required this.rights});
+/// Pubs du cinéma : nombre de pubs pour débloquer un épisode après les 15 secondes gratuites, et au milieu de l'épisode (sans Gold).
+/// Pub du réseau (AdMob / Appodeal) d'abord, annonce Afrolook Ads sinon. Modifiable avec le droit « tout gérer ».
+class _AdSettingsCard extends StatefulWidget {
+  const _AdSettingsCard({required this.rights});
 
   final CinemaRights rights;
 
   @override
-  State<_AdVideoCard> createState() => _AdVideoCardState();
+  State<_AdSettingsCard> createState() => _AdSettingsCardState();
 }
 
-class _AdVideoCardState extends State<_AdVideoCard> {
-  String? _url;
-  bool _loaded = false;
-  double? _progress;
+class _AdSettingsCardState extends State<_AdSettingsCard> {
+  int? _unlock;
+  int? _mid;
+  bool _saving = false;
 
   @override
   void initState() {
     super.initState();
-    CinemaApi.adVideo().then((d) {
+    CinemaApi.adSettings().then((d) {
       if (mounted) setState(() {
-        _url = d['url'] as String?;
-        _loaded = true;
+        _unlock = (d['unlock_ads'] as num?)?.toInt() ?? 2;
+        _mid = (d['mid_ads'] as num?)?.toInt() ?? 1;
       });
-    }).catchError((_) {
-      if (mounted) setState(() => _loaded = true);
-    });
+    }).catchError((_) {});
   }
 
-  Future<void> _upload() async {
-    final pick = await FilePicker.platform.pickFiles(type: FileType.video, withData: kIsWeb);
-    final f = pick?.files.firstOrNull;
-    if (f == null || (f.bytes == null && f.path == null)) return;
-    final ext = (f.extension ?? '').toLowerCase();
-    final type = ext == 'mov' ? 'video/quicktime' : (ext == 'webm' ? 'video/webm' : 'video/mp4');
-    setState(() => _progress = 0);
+  Future<void> _save(int unlock, int mid) async {
+    setState(() {
+      _unlock = unlock;
+      _mid = mid;
+      _saving = true;
+    });
     try {
-      final d = await CinemaApi.uploadAdVideo(bytes: f.bytes, path: kIsWeb ? null : f.path, size: f.size, contentType: type, onProgress: (p) => mounted ? setState(() => _progress = p) : null);
-      if (mounted) setState(() => _url = d['url'] as String?);
+      final d = await CinemaApi.updateAdSettings(unlockAds: unlock, midAds: mid);
+      if (mounted) setState(() {
+        _unlock = (d['unlock_ads'] as num?)?.toInt() ?? unlock;
+        _mid = (d['mid_ads'] as num?)?.toInt() ?? mid;
+      });
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(CinemaApi.message(e))));
     } finally {
-      if (mounted) setState(() => _progress = null);
-    }
-  }
-
-  Future<void> _remove() async {
-    try {
-      final d = await CinemaApi.deleteAdVideo();
-      if (mounted) setState(() => _url = d['url'] as String?);
-    } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(CinemaApi.message(e))));
+      if (mounted) setState(() => _saving = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final c = AppColors.of(context);
+    final unlock = _unlock;
+    final mid = _mid;
+    Widget stepper(String label, int value, void Function(int) set) => Row(children: [
+          Expanded(child: Text(label, style: TextStyle(color: c.textPrimary, fontSize: 13))),
+          if (widget.rights.manage)
+            IconButton(visualDensity: VisualDensity.compact, icon: const Icon(Icons.remove_circle_outline_rounded), onPressed: _saving || value <= 0 ? null : () => set(value - 1)),
+          SizedBox(width: 26, child: Text('$value', textAlign: TextAlign.center, style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800, fontSize: 16))),
+          if (widget.rights.manage)
+            IconButton(visualDensity: VisualDensity.compact, icon: const Icon(Icons.add_circle_outline_rounded), onPressed: _saving || value >= 5 ? null : () => set(value + 1)),
+        ]);
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -660,24 +666,21 @@ class _AdVideoCardState extends State<_AdVideoCard> {
         Row(children: [
           Icon(Icons.campaign_rounded, color: c.accentText),
           const SizedBox(width: 8),
-          Expanded(child: Text('Vidéo de pub du cinéma (10 s)', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800))),
+          Expanded(child: Text('Pubs du cinéma', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800))),
         ]),
         const SizedBox(height: 4),
-        Text("Jouée après les 15 secondes gratuites d'un épisode Gold, et à la fin d'un épisode gratuit.", style: TextStyle(color: c.textSecondary, fontSize: 12)),
-        const SizedBox(height: 8),
-        if (!_loaded)
+        Text("Sans Gold : 15 secondes gratuites, puis des pubs pour débloquer l'épisode (24 h), et des pubs au milieu de l'épisode. "
+            "Pub du réseau (AdMob, Appodeal) d'abord, annonce Afrolook Ads sinon ; sans aucune pub, l'épisode est débloqué quand même.",
+            style: TextStyle(color: c.textSecondary, fontSize: 12)),
+        const SizedBox(height: 6),
+        if (unlock == null || mid == null)
           const LinearProgressIndicator()
-        else if (_progress != null) ...[
-          LinearProgressIndicator(value: _progress, color: const Color(0xFFFFD400)),
-          Text('Envoi ${((_progress ?? 0) * 100).round()} %', style: TextStyle(color: c.textSecondary, fontSize: 11)),
-        ] else
-          Row(children: [
-            Icon(_url != null ? Icons.check_circle_rounded : Icons.info_outline_rounded, color: _url != null ? c.primary : c.textSecondary, size: 18),
-            const SizedBox(width: 6),
-            Expanded(child: Text(_url != null ? 'Vidéo de pub en place' : "Aucune vidéo de pub : rien n'est joué", style: TextStyle(color: c.textPrimary, fontSize: 12.5))),
-            if (widget.rights.edit) TextButton(onPressed: _upload, child: Text(_url != null ? 'Remplacer' : 'Envoyer')),
-            if (_url != null && (widget.rights.edit || widget.rights.delete)) IconButton(tooltip: 'Retirer', icon: const Icon(Icons.close_rounded), onPressed: _remove),
-          ]),
+        else ...[
+          stepper('Pubs pour débloquer un épisode', unlock, (v) => _save(v, mid)),
+          stepper("Pubs au milieu de l'épisode", mid, (v) => _save(unlock, v)),
+          if (!widget.rights.manage)
+            Text('Seul le droit « tout gérer » modifie ces nombres.', style: TextStyle(color: c.textSecondary, fontSize: 11)),
+        ],
       ]),
     );
   }

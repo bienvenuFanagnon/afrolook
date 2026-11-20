@@ -9,14 +9,17 @@ import '../../l10n/tr.dart';
 import '../../services/api/cinema_api.dart';
 import '../../theme/app_colors.dart';
 import '../user/userAbonnementPage.dart';
+import 'cinema_ads.dart';
 import 'cinema_widgets.dart';
 
 /// Lecture d'un épisode de Cartoon Cinéma (21/11/2026).
 ///  - Flux HLS adaptatif : la qualité suit la connexion, la lecture reprend où la personne s'était arrêtée.
 ///  - Voix off : français par défaut (ou la voix choisie la dernière fois), avec un message qui montre les autres langues ; le changement
 ///    se fait sur place, sans revenir au début. Sous-titres par langue (fichiers WebVTT affichés par l'application).
-///  - Sans Gold, un épisode Gold s'arrête à 15 secondes (le serveur ne donne pas la suite) : pub de 10 s, puis fenêtre « La suite avec Gold ».
-///  - À la fin d'un épisode gratuit : la pub de 10 s (jamais pour les abonnés Gold).
+///  - Sans Gold, un épisode à débloquer s'arrête à 15 secondes (le serveur ne donne pas la suite) : fenêtre « Débloquez l'épisode » avec
+///    2 pubs (réglable), ou Gold. Débloqué, l'épisode reprend là où il s'était arrêté et le reste 24 h.
+///  - Au milieu de l'épisode (gratuit compris), sans Gold : « Une pub dans 5 s », puis la pub (réseau, sinon Afrolook Ads), puis la suite.
+///  - Seules les pubs du réseau rapportent ; sans aucune pub disponible, l'épisode est débloqué quand même (voir CinemaAds).
 ///  - Impressions (une par personne), commentaires courts, progression envoyée régulièrement (vue comptée à 10 secondes).
 class CinemaPlayerPage extends StatefulWidget {
   const CinemaPlayerPage({super.key, required this.episodeId});
@@ -37,10 +40,12 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
   Timer? _progressTimer;
   String? _lang;
   String? _subLang;
-  bool _paywallShown = false;
-  bool _endAdShown = false;
-  VideoPlayerController? _ad;
-  bool _adPlaying = false;
+  bool _unlockShown = false;   // la fenêtre de déblocage a été proposée à la fin de l'extrait
+  bool _locked = false;        // extrait fini, épisode pas encore débloqué
+  bool _midDone = false;       // pub du milieu déjà passée (ou annoncée)
+  int? _midLeft;               // décompte « Une pub dans N s »
+  Timer? _midTimer;
+  bool _inAd = false;          // une pub est à l'écran : la lecture reste en pause
   bool _voiceHintShown = false;
   List<VideoAudioTrack> _tracks = const [];
   Map<String, int> _reactions = {};
@@ -65,14 +70,12 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
       _reactions = (Map<String, dynamic>.from((_ep!['reactions'] as Map?) ?? const {})).map((k, v) => MapEntry(k, (v as num).toInt()));
       _myReaction = _ep!['my_reaction'] as String?;
       _lang = (_play!['my_lang'] as String?) ?? (_play!['default_lang'] as String?) ?? 'fr';
-      final c = VideoPlayerController.networkUrl(Uri.parse('${_play!['master_url']}'), formatHint: VideoFormat.hls);
-      _video = c;
-      await c.initialize();
+      if (_play!['is_gold'] != true) CinemaAds.warmUp();
       final resume = (_play!['resume_sec'] as num?)?.toInt() ?? 0;
-      if (resume > 5) await c.seekTo(Duration(seconds: resume));
-      c.addListener(_onTick);
-      await _applyVoice();
-      await c.play();
+      final half = ((_play!['duration_sec'] as num?)?.toInt() ?? 0) ~/ 2;
+      // reprise après le milieu : la pub du milieu a déjà été proposée la fois précédente
+      if (half > 0 && resume > half + 5) _midDone = true;
+      await _openStream('${_play!['master_url']}', at: resume > 5 ? Duration(seconds: resume) : Duration.zero);
       _progressTimer = Timer.periodic(const Duration(seconds: 10), (_) => _sendProgress());
       _scheduleHide();
       if (mounted) setState(() {});
@@ -80,6 +83,22 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
     } catch (e) {
       if (mounted) setState(() => _error = CinemaApi.message(e, fallback: 'Lecture impossible. Vérifie ta connexion et réessaie.'));
     }
+  }
+
+  /// Ouvre (ou rouvre après le déblocage) le flux HLS à la position voulue, avec la voix et les sous-titres choisis.
+  Future<void> _openStream(String url, {Duration at = Duration.zero}) async {
+    final old = _video;
+    old?.removeListener(_onTick);
+    final c = VideoPlayerController.networkUrl(Uri.parse(url), formatHint: VideoFormat.hls);
+    await c.initialize();
+    if (at > Duration.zero) await c.seekTo(at);
+    _video = c;
+    c.addListener(_onTick);
+    await _applyVoice();
+    if (_subLang != null) await _setSubtitles(_subLang);
+    await c.play();
+    if (old != null) await old.dispose();
+    if (mounted) setState(() {});
   }
 
   /// Sélectionne la piste son de la langue voulue (français par défaut) parmi celles du flux.
@@ -121,19 +140,20 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
     final c = _video;
     if (c == null || !mounted) return;
     final preview = (_play?['preview_seconds'] as num?)?.toInt();
-    // sans Gold : à 10 secondes (ou à la fin du court extrait servi), pause et proposition de l'abonnement
-    if (preview != null && !_paywallShown && (c.value.position.inSeconds >= preview || (c.value.isCompleted && c.value.position.inSeconds > 0))) {
-      _paywallShown = true;
+    // extrait gratuit fini (15 s, ou fin du court extrait servi) : pause et fenêtre de déblocage (pubs ou Gold)
+    if (preview != null && !_unlockShown && (c.value.position.inSeconds >= preview || (c.value.isCompleted && c.value.position.inSeconds > 0))) {
+      _unlockShown = true;
+      _locked = true;
       c.pause();
       _sendProgress();
-      // pub de 10 s (si l'équipe en a mis une), puis la proposition de Gold
-      WidgetsBinding.instance.addPostFrameCallback((_) => _playAd(then: _showPaywall));
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showUnlock());
     }
-    // fin d'un épisode gratuit : la pub de 10 s, une seule fois (jamais pour les abonnés Gold : le serveur ne donne alors pas de pub)
-    if (preview == null && !_endAdShown && _ep?['access'] == 'free' && c.value.isCompleted && c.value.position.inSeconds > 0) {
-      _endAdShown = true;
-      _sendProgress();
-      WidgetsBinding.instance.addPostFrameCallback((_) => _playAd());
+    // milieu de l'épisode (sans Gold) : « Une pub dans 5 s », puis la pub
+    final mid = (_play?['mid_ads'] as num?)?.toInt() ?? 0;
+    final dur = c.value.duration.inSeconds;
+    if (preview == null && mid > 0 && !_midDone && !_inAd && dur >= 60 && c.value.isPlaying && c.value.position.inSeconds >= dur ~/ 2 - 5 && c.value.position.inSeconds < dur - 10) {
+      _midDone = true;
+      _startMidWarning(mid);
     }
     if (!_voiceHintShown && c.value.isPlaying && c.value.position.inSeconds >= 1) {
       _voiceHintShown = true;
@@ -154,40 +174,52 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
     ));
   }
 
-  /// Joue la vidéo de pub du cinéma (10 s, sans bouton pour passer), puis [then]. Sans pub configurée : [then] tout de suite.
-  Future<void> _playAd({VoidCallback? then}) async {
-    final url = _play?['ad_video_url'] as String?;
-    if (url == null || url.isEmpty || !mounted) {
-      then?.call();
-      return;
+  /// Prévient 5 secondes avant la pub du milieu, puis met l'épisode en pause le temps de [count] pubs.
+  void _startMidWarning(int count) {
+    _midTimer?.cancel();
+    setState(() => _midLeft = 5);
+    _midTimer = Timer.periodic(const Duration(seconds: 1), (t) async {
+      if (!mounted) return t.cancel();
+      final left = (_midLeft ?? 0) - 1;
+      if (left > 0) {
+        setState(() => _midLeft = left);
+        return;
+      }
+      t.cancel();
+      setState(() => _midLeft = null);
+      await _runMidAds(count);
+    });
+  }
+
+  Future<void> _runMidAds(int count) async {
+    final c = _video;
+    if (c == null || !mounted) return;
+    _inAd = true;
+    await c.pause();
+    _sendProgress();
+    for (var i = 0; i < count && mounted; i++) {
+      final r = await CinemaAds.interstitial(context);
+      if (r == CinemaAdResult.none) break;   // plus rien à montrer : on reprend tout de suite
     }
-    final ad = VideoPlayerController.networkUrl(Uri.parse(url));
-    _ad = ad;
-    var done = false;
-    void finish() {
-      if (done) return;
-      done = true;
-      ad.dispose();
-      if (mounted) setState(() {
-        _ad = null;
-        _adPlaying = false;
-      });
-      then?.call();
-    }
+    _inAd = false;
+    if (mounted && _video == c) await c.play();
+  }
+
+  /// Après les pubs (ou sans pub disponible) : l'API débloque l'épisode pour 24 h et renvoie la lecture complète, qui reprend où elle s'était arrêtée.
+  Future<bool> _unlock({required String via, required int ads}) async {
+    final c = _video;
+    final at = c != null && c.value.isInitialized ? c.value.position : Duration.zero;
     try {
-      await ad.initialize();
-      if (!mounted) return finish();
-      ad.addListener(() {
-        final d = ad.value.duration;
-        if (ad.value.isCompleted || (d > Duration.zero && ad.value.position >= d)) finish();
-        if (mounted && !done) setState(() {});
-      });
-      setState(() => _adPlaying = true);
-      await ad.play();
-      // garde-fou : jamais plus de 2 secondes au-delà de la durée annoncée de la pub
-      Future.delayed(Duration(seconds: ((_play?['ad_seconds'] as num?)?.toInt() ?? 10) + 2), finish);
-    } catch (_) {
-      finish();
+      final p = await CinemaApi.unlock(widget.episodeId, via: via, ads: ads);
+      if (p['entitled'] != true) return false;
+      _play = p;
+      _locked = false;
+      await _openStream('${p['master_url']}', at: at);
+      _scheduleHide();
+      return true;
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(CinemaApi.message(e))));
+      return false;
     }
   }
 
@@ -210,10 +242,10 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
   void dispose() {
     _hide?.cancel();
     _progressTimer?.cancel();
+    _midTimer?.cancel();
     _sendProgress();
     _video?.removeListener(_onTick);
     _video?.dispose();
-    _ad?.dispose();
     _commentCtrl.dispose();
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -222,52 +254,100 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
 
   // ── Fenêtres ──
 
-  Future<void> _showPaywall() async {
+  /// Fenêtre « Débloquez l'épisode » : N pubs (la jauge se remplit pub après pub), ou Gold pour ne plus jamais avoir de pub.
+  Future<void> _showUnlock() async {
     if (!mounted) return;
     final c = AppColors.of(context);
+    final need = (_play?['unlock_ads'] as num?)?.toInt() ?? 2;
+    if (need <= 0) {
+      await _unlock(via: 'ads', ads: 0);
+      return;
+    }
+    var watched = 0;
+    var busy = false;
+    String? note;
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: c.surface,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
-          child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: c.border, borderRadius: BorderRadius.circular(9)))),
-            const SizedBox(height: 12),
-            CinemaTag(ctx.tr('Afrolook Gold'), kind: 'gold', icon: Icons.workspace_premium_rounded),
-            const SizedBox(height: 10),
-            Text(ctx.tr('La suite avec Gold'), style: TextStyle(color: c.textPrimary, fontSize: 18, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 6),
-            Text(ctx.tr('Vous avez vu les {a} premières secondes. Abonnez-vous pour regarder l\'épisode en entier.', {'a': _play?['preview_seconds'] ?? 10}),
-                style: TextStyle(color: c.textSecondary, fontSize: 13)),
-            const SizedBox(height: 10),
-            for (final l in ['Tous les épisodes et films de Cartoon Cinéma', 'Les nouveaux épisodes dès leur sortie', 'Tous les avantages Gold d\'Afrolook'])
-              Padding(padding: const EdgeInsets.only(bottom: 6), child: Row(children: [
-                Icon(Icons.check_circle_rounded, color: c.primary, size: 18), const SizedBox(width: 8),
-                Expanded(child: Text(ctx.tr(l), style: TextStyle(color: c.textPrimary, fontSize: 13))),
-              ])),
-            const SizedBox(height: 8),
-            SizedBox(width: double.infinity, child: FilledButton(
-              style: FilledButton.styleFrom(backgroundColor: const Color(0xFFFFD400), foregroundColor: const Color(0xFF121212), padding: const EdgeInsets.symmetric(vertical: 13)),
-              onPressed: () {
-                Navigator.pop(ctx);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const AbonnementScreen()));
-              },
-              child: Text(ctx.tr('Devenir Gold'), style: const TextStyle(fontWeight: FontWeight.w800)),
-            )),
-            const SizedBox(height: 8),
-            SizedBox(width: double.infinity, child: OutlinedButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                Navigator.pop(context);
-              },
-              child: Text(ctx.tr('Revoir les épisodes gratuits')),
-            )),
-          ]),
-        ),
-      ),
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setSheet) {
+        Future<void> watchOne() async {
+          setSheet(() {
+            busy = true;
+            note = null;
+          });
+          final r = await CinemaAds.rewarded(context);
+          if (!mounted) return;
+          if (r.counted) watched++;
+          var ok = false;
+          if (r == CinemaAdResult.dismissed) {
+            note = context.tr('Regardez la pub jusqu\'au bout pour qu\'elle compte.');
+          } else if (r == CinemaAdResult.none) {
+            // plus aucune pub disponible : on ne bloque jamais la personne
+            ok = await _unlock(via: watched > 0 ? 'ads' : 'none', ads: watched);
+          } else if (watched >= need) {
+            ok = await _unlock(via: 'ads', ads: watched);
+          }
+          if (ok) {
+            if (ctx.mounted) Navigator.pop(ctx);
+            return;
+          }
+          if (ctx.mounted) setSheet(() => busy = false);
+        }
+
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
+            child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: c.border, borderRadius: BorderRadius.circular(9)))),
+              const SizedBox(height: 12),
+              Text(ctx.tr('Débloquez l\'épisode'), style: TextStyle(color: c.textPrimary, fontSize: 18, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 6),
+              Text(ctx.tr('Regardez {a} pubs pour voir l\'épisode en entier. Il reste débloqué 24 h.', {'a': need}), style: TextStyle(color: c.textSecondary, fontSize: 13)),
+              const SizedBox(height: 14),
+              Row(children: [
+                for (var i = 0; i < need; i++) ...[
+                  if (i > 0) const SizedBox(width: 6),
+                  Expanded(child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    height: 8,
+                    decoration: BoxDecoration(color: i < watched ? const Color(0xFFFFD400) : c.border, borderRadius: BorderRadius.circular(9)),
+                  )),
+                ],
+              ]),
+              const SizedBox(height: 6),
+              Text(ctx.tr('{a} sur {b}', {'a': watched, 'b': need}), style: TextStyle(color: c.textSecondary, fontSize: 12, fontWeight: FontWeight.w700)),
+              if (note != null) ...[
+                const SizedBox(height: 8),
+                Text(note!, style: TextStyle(color: c.textPrimary, fontSize: 12)),
+              ],
+              const SizedBox(height: 14),
+              SizedBox(width: double.infinity, child: FilledButton.icon(
+                style: FilledButton.styleFrom(backgroundColor: const Color(0xFFFFD400), foregroundColor: const Color(0xFF121212), padding: const EdgeInsets.symmetric(vertical: 13)),
+                onPressed: busy ? null : watchOne,
+                icon: busy
+                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.2, color: Color(0xFF121212)))
+                    : const Icon(Icons.play_circle_fill_rounded),
+                label: Text(ctx.tr('Regarder la pub ({a}/{b})', {'a': watched + 1, 'b': need}), style: const TextStyle(fontWeight: FontWeight.w800)),
+              )),
+              const SizedBox(height: 8),
+              SizedBox(width: double.infinity, child: OutlinedButton.icon(
+                onPressed: busy
+                    ? null
+                    : () {
+                        Navigator.pop(ctx);
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const AbonnementScreen()));
+                      },
+                icon: Icon(Icons.workspace_premium_rounded, color: c.accentText),
+                label: Text(ctx.tr('Passer à Gold : plus aucune pub')),
+              )),
+            ]),
+          ),
+        );
+      }),
     );
+    if (mounted) setState(() {});
   }
 
   Future<void> _openSettings() async {
@@ -437,20 +517,6 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
     final buffered = ready && v.value.buffered.isNotEmpty ? v.value.buffered.last.end : Duration.zero;
     double frac(Duration d) => dur.inMilliseconds > 0 ? (d.inMilliseconds / dur.inMilliseconds).clamp(0.0, 1.0) : 0.0;
     final voiceLabel = ((_play?['audio'] as List?) ?? const []).whereType<Map>().where((a) => a['lang'] == _lang).firstOrNull?['label'];
-    final ad = _ad;
-    if (_adPlaying && ad != null && ad.value.isInitialized) {
-      final left = (ad.value.duration - ad.value.position).inSeconds.clamp(0, 99);
-      return Container(
-        color: Colors.black,
-        child: AspectRatio(
-          aspectRatio: landscape ? ratio : 16 / 9,
-          child: Stack(fit: StackFit.expand, children: [
-            Center(child: AspectRatio(aspectRatio: ad.value.aspectRatio > 0 ? ad.value.aspectRatio : 16 / 9, child: VideoPlayer(ad))),
-            Positioned(top: 10, left: 10, child: CinemaTag(context.tr('Publicité · {a} s', {'a': left}))),
-          ]),
-        ),
-      );
-    }
     return GestureDetector(
       onTap: () {
         setState(() => _controls = !_controls);
@@ -464,7 +530,36 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
             if (ready) Center(child: AspectRatio(aspectRatio: ratio, child: VideoPlayer(v))) else const Center(child: CircularProgressIndicator(color: Color(0xFFFFD400))),
             if (ready && v.value.isBuffering) const Center(child: CircularProgressIndicator(color: Color(0xFFFFD400))),
             if (ready) Positioned(left: 16, right: 16, bottom: _controls ? 46 : 14, child: ClosedCaption(text: v.value.caption.text, textStyle: const TextStyle(fontSize: 15, color: Colors.white))),
-            if (_controls)
+            // pub du milieu annoncée 5 secondes à l'avance
+            if (_midLeft != null)
+              Positioned(top: 12, right: 12, child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(color: Colors.black.withValues(alpha: .72), borderRadius: BorderRadius.circular(8)),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.campaign_rounded, color: Color(0xFFFFD400), size: 16),
+                  const SizedBox(width: 6),
+                  Text(context.tr('Une pub dans {a} s', {'a': _midLeft}), style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700)),
+                ]),
+              )),
+            // extrait fini : rouvrir la fenêtre de déblocage
+            if (_locked)
+              Positioned(top: 4, left: 4, child: IconButton(icon: const Icon(Icons.arrow_back_rounded, color: Colors.white), onPressed: () => Navigator.pop(context))),
+            if (_locked)
+              Container(
+                color: Colors.black.withValues(alpha: .6),
+                alignment: Alignment.center,
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.lock_rounded, color: Colors.white, size: 30),
+                  const SizedBox(height: 10),
+                  FilledButton.icon(
+                    style: FilledButton.styleFrom(backgroundColor: const Color(0xFFFFD400), foregroundColor: const Color(0xFF121212)),
+                    onPressed: _showUnlock,
+                    icon: const Icon(Icons.lock_open_rounded),
+                    label: Text(context.tr('Débloquer l\'épisode'), style: const TextStyle(fontWeight: FontWeight.w800)),
+                  ),
+                ]),
+              ),
+            if (_controls && !_locked)
               Container(
                 decoration: const BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter,
                     colors: [Color(0x99000000), Color(0x00000000), Color(0x00000000), Color(0xB3000000)], stops: [0, .3, .62, 1])),

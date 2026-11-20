@@ -20,12 +20,15 @@ void main() {
     expect(const CinemaRights().any, isFalse);
     expect(const CinemaRights(stats: true).any, isTrue);
     expect(const CinemaRights(create: true).delete, isFalse);
+    expect(const CinemaRights(edit: true).manage, isFalse);   // seul « tout gérer » modifie les nombres de pubs
   });
 
   test('les six impressions et les textes principaux sont traduits', () {
     expect(kCinemaReactions.map((r) => r.$1).toList(), ['love', 'joy', 'laugh', 'wow', 'sad', 'angry']);
     expect(trFor('en', 'Regarder sur Cinéma'), 'Watch on Cinema');
-    expect(trFor('en', '{a} s gratuites · Gold', {'a': 15}), '15 s free · Gold');
+    expect(trFor('en', '{a} s gratuites', {'a': 15}), '15 s free');
+    expect(trFor('en', 'Regarder la pub ({a}/{b})', {'a': 1, 'b': 2}), 'Watch the ad (1/2)');
+    expect(trFor('pt', 'Une pub dans {a} s', {'a': 5}), 'Anúncio em 5 s');
     expect(trFor('es', 'Voix en {a} · Aussi disponible en {b}', {'a': 'Français', 'b': 'English'}), 'Audio en Français · También disponible en English');
   });
 }

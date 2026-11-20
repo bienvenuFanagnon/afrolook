@@ -49,6 +49,11 @@ class CinemaApi {
   /// Lecture : `master_url`, `entitled`, `preview_seconds`, `audio` [{lang,label}], `subtitles` [{lang,label,url}], `default_lang`, `my_lang`, `resume_sec`.
   static Future<Map<String, dynamic>> play(String id) async => _map(await _c.get('/cinema/episodes/$id/play'));
 
+  /// Débloque l'épisode pour 24 h après les pubs regardées (`via: 'ads'`), ou quand aucune pub n'était disponible (`via: 'none'`).
+  /// Renvoie la même réponse que [play], avec la lecture complète.
+  static Future<Map<String, dynamic>> unlock(String id, {required String via, int ads = 0}) async =>
+      _map(await _c.post('/cinema/episodes/$id/unlock', body: {'via': via, 'ads': ads}));
+
   static Future<Map<String, dynamic>> progress(String id, int positionSec, {int? durationSec, String? lang}) async =>
       _map(await _c.post('/cinema/episodes/$id/progress', body: {'position_sec': positionSec, if (durationSec != null) 'duration_sec': durationSec, if (lang != null) 'lang': lang}));
 
@@ -87,7 +92,8 @@ class CinemaApi {
       final perms = ((c['permissions'] as List?) ?? const []).map((e) => '$e').toSet();
       final all = c['type'] == 'super_admin' || perms.contains('cinema.manage') || perms.contains('content.moderate');
       bool has(String p) => all || perms.contains(p);
-      return CinemaRights(create: has('cinema.create'), edit: has('cinema.edit'), delete: has('cinema.delete'), stats: has('cinema.stats'));
+      return CinemaRights(create: has('cinema.create'), edit: has('cinema.edit'), delete: has('cinema.delete'), stats: has('cinema.stats'),
+          manage: c['type'] == 'super_admin' || perms.contains('cinema.manage'));
     } catch (_) {
       return const CinemaRights();
     }
@@ -111,17 +117,12 @@ class CinemaApi {
 
   static Future<Map<String, dynamic>> stats({int days = 30}) async => _map(await _c.get('/admin/cinema/stats', query: {'days': days}));
 
-  /// Vidéo de pub du cinéma (10 s) : jouée après l'extrait gratuit d'un épisode Gold et à la fin d'un épisode gratuit. `{url, seconds}`.
-  static Future<Map<String, dynamic>> adVideo() async => _map(await _c.get('/admin/cinema/ad'));
+  /// Pubs du cinéma : `{unlock_ads, mid_ads, unlock_hours, preview_seconds}` (lecture par l'équipe du cinéma).
+  static Future<Map<String, dynamic>> adSettings() async => _map(await _c.get('/admin/cinema/ads'));
 
-  static Future<Map<String, dynamic>> deleteAdVideo() async => _map(await _c.delete('/admin/cinema/ad'));
-
-  /// Envoie la vidéo de pub (lue par morceaux sur téléphone) puis l'annonce au serveur.
-  static Future<Map<String, dynamic>> uploadAdVideo({Uint8List? bytes, String? path, required int size, required String contentType, void Function(double)? onProgress}) async {
-    final u = _map(await _c.post('/admin/cinema/ad/upload-url', body: {'content_type': contentType, 'size': size}));
-    await _put('${u['upload_url']}', contentType: contentType, bytes: bytes, path: path, size: size, onProgress: onProgress);
-    return _map(await _c.post('/admin/cinema/ad/uploaded', body: {'key': u['key']}));
-  }
+  /// Modifie les nombres de pubs (droit « tout gérer »).
+  static Future<Map<String, dynamic>> updateAdSettings({required int unlockAds, required int midAds}) async =>
+      _map(await _c.put('/admin/cinema/ads', body: {'unlock_ads': unlockAds, 'mid_ads': midAds}));
 
   /// Envoi direct vers le stockage, par morceaux de 1 Mo (sur téléphone : lus depuis le fichier, jamais tout en mémoire).
   static Future<void> _put(String url, {required String contentType, Uint8List? bytes, String? path, required int size, void Function(double)? onProgress}) async {
@@ -159,9 +160,11 @@ class CinemaApi {
 
 /// Ce que la personne peut faire dans la gestion du cinéma.
 class CinemaRights {
-  const CinemaRights({this.create = false, this.edit = false, this.delete = false, this.stats = false});
+  const CinemaRights({this.create = false, this.edit = false, this.delete = false, this.stats = false, this.manage = false});
 
   final bool create;
+  /// « Tout gérer » : seul ce droit modifie les nombres de pubs.
+  final bool manage;
   final bool edit;
   final bool delete;
   final bool stats;

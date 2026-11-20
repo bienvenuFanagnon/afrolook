@@ -69,7 +69,8 @@ class CinemaTag extends StatelessWidget {
 /// Étiquette d'accès d'un épisode : Gratuit, ou « 10 s gratuites · Gold ».
 Widget cinemaAccessTag(BuildContext context, Map<String, dynamic> ep) {
   if (ep['access'] == 'free') return CinemaTag(context.tr('Gratuit'), kind: 'free');
-  return CinemaTag(context.tr('{a} s gratuites · Gold', {'a': ep['preview_seconds'] ?? 10}), kind: 'preview', icon: Icons.workspace_premium_rounded);
+  if (ep['my_unlocked'] == true) return CinemaTag(context.tr('Débloqué'), kind: 'free', icon: Icons.lock_open_rounded);
+  return CinemaTag(context.tr('{a} s gratuites', {'a': ep['preview_seconds'] ?? 15}), kind: 'preview', icon: Icons.lock_rounded);
 }
 
 /// Image réseau avec un fond neutre pendant le chargement et en cas d'erreur.
