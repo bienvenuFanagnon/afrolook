@@ -45,4 +45,14 @@ void main() {
     expect(AuthenticityWatcher.maxScansPerSession, 12);
     expect(AuthenticVideoCheck.scanMaxDuration, const Duration(seconds: 20));
   });
+
+  test('nom de réseau cité dans une phrase (20/11/2026) : ne compte pas ; posé comme un filigrane : refusé, même avec « Afrolook » écrit', () {
+    // vidéo faite avec une IA pour Afrolook : le guide affiché cite « TikTok » dans une phrase, la fin porte « Created on Afrolook »
+    expect(AuthenticVideoCheck.decide(['LOLA', 'Crée ta série animée avec une IA\nDe zéro à des épisodes prêts pour TikTok, Reels et YouTube Shorts', 'Created on Afrolook\nScanne & télécharge Afrolook']), isNull);
+    expect(AuthenticVideoCheck.decide(['prêts pour TikTok, Reels et']), isNull);   // phrase coupée par la lecture : toujours une citation
+    expect(AuthenticVideoCheck.decideImage('Retrouve-nous aussi sur Instagram et Facebook'), isNull);
+    // vraie vidéo TikTok sur laquelle on a écrit « Afrolook » : son filigrane reste détecté
+    expect(AuthenticVideoCheck.decide(['Afrolook\nTikTok\n@voleur', '']), 'tiktok');
+    expect(AuthenticVideoCheck.decide(['Regardez sur Afrolook', 'TikTok @gims.vibes']), 'tiktok');
+  });
 }

@@ -44,6 +44,23 @@ class AuthenticVideoCheck {
     ('other', ['likee', 'kwai', 'triller'], false),
   ];
 
+  /// Nom d'un réseau posé comme un FILIGRANE (20/11/2026) : sur une ligne presque seul (« TikTok », « TikTok @pseudo », « Instagram »), au plus un autre mot.
+  /// Cité dans une phrase (« prêts pour TikTok, Reels et YouTube Shorts », guide ou publicité d'une vidéo faite pour Afrolook), il ne compte pas :
+  /// ces vidéos étaient refusées à tort. Écrire « Afrolook » sur une vraie vidéo TikTok ne la fait pas passer (son filigrane reste détecté).
+  static bool watermarkLine(String text, List<String> words) {
+    for (final raw in text.split('\n')) {
+      final line = raw.toLowerCase();
+      if (!containsMark(line, words)) continue;
+      var rest = line.replaceAll(RegExp(r'@\S+'), ' ');   // un @pseudo à côté du nom du réseau fait partie du filigrane
+      for (final w in words) {
+        rest = rest.replaceAll(RegExp(w.split('').map(RegExp.escape).join(r'[\s_\-.]*')), ' ');
+      }
+      final others = rest.split(RegExp(r'[^a-zà-ÿ0-9]+')).where((t) => t.length >= 2).length;
+      if (others <= 1) return true;
+    }
+    return false;
+  }
+
   /// Vrai si les textes lus dans une image contiennent la marque.
   static bool containsMark(String text, List<String> words) {
     final t = text.toLowerCase().replaceAll(RegExp(r'[\s_\-.]'), '');
@@ -55,7 +72,7 @@ class AuthenticVideoCheck {
   /// de la personne, une boutique, un ami cité, un sous-titre (décision du propriétaire, 09/11/2026 : seuls les noms de plateformes sont bloqués).
   static String? decide(List<String> frameTexts) {
     for (final (mark, words, strong) in _marks) {
-      final hits = frameTexts.where((t) => containsMark(t, words)).length;
+      final hits = frameTexts.where((t) => watermarkLine(t, words)).length;
       if (hits >= (strong ? 1 : 2)) return mark;
     }
     return null;
@@ -64,7 +81,7 @@ class AuthenticVideoCheck {
   /// Marque trouvée dans UNE image isolée (photo de publication, couverture) : le nom d'un réseau seulement (un @pseudo ne bloque pas).
   static String? decideImage(String text) {
     for (final (mark, words, _) in _marks) {
-      if (containsMark(text, words)) return mark;
+      if (watermarkLine(text, words)) return mark;
     }
     return null;
   }
