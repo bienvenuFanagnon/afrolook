@@ -1,4 +1,5 @@
 import 'package:afrotok/widgets/post_menu_sheet.dart';
+import 'cinema/cinema_teaser_card.dart';
 import '../widgets/post_media_overlays.dart';
 import 'package:afrotok/services/api/canaux_api.dart';
 import 'package:afrotok/services/watch_tracker.dart';
@@ -1098,6 +1099,9 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
         adIdx++;
       }
 
+      // Cartoon Cinéma (21/11/2026) : extrait d'un épisode gratuit après la 5e vidéo, puis toutes les 15 vidéos
+      if (postCount == 5 || (postCount > 5 && (postCount - 5) % 15 == 0)) _feedItems.add(const _CinemaSentinel());
+
       // Promo AfroShop toutes les 7 vidéos
       if (postCount % 7 == 0 && _promoArticles.isNotEmpty && !kIsAppleStore) {
         _feedItems.add(const _ShopPromoSentinel());
@@ -1136,6 +1140,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       _feedItems.add(_videoPosts[videoIdx]);
       videoIdx++;
       if (videoIdx == 1 && _showTutoReminder) _feedItems.add(const _TutoReminderSentinel());
+      if (videoIdx == 5 || (videoIdx > 5 && (videoIdx - 5) % 15 == 0)) _feedItems.add(const _CinemaSentinel());   // Cartoon Cinéma (21/11/2026)
 
       // Toutes les 4 vidéos (gratuit uniquement)
       if (!skipAds && videoIdx % 4 == 0 && videoIdx < _videoPosts.length) {
@@ -3894,6 +3899,8 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
                 return _buildEndOfFeedPage();
               } else if (item is _CreatorsChannelsSentinel) {
                 return _buildCreatorsChannelsPage();
+              } else if (item is _CinemaSentinel) {
+                return const CinemaTeaserCard(vertical: true);
               } else if (item is _ShopPromoSentinel) {
                 return ShopPromoVideoItem(articles: _promoArticles);
               } else if (item is _TutoReminderSentinel) {
@@ -4026,6 +4033,11 @@ class _TutoReminderSentinel {
 /// Sentinel inséré dans _feedItems pour déclencher l'affichage de la promo AfroShop.
 class _ShopPromoSentinel {
   const _ShopPromoSentinel();
+}
+
+/// Page de l'extrait de Cartoon Cinéma dans le fil des vidéos.
+class _CinemaSentinel {
+  const _CinemaSentinel();
 }
 
 /// Sentinel inséré toutes les 10 vidéos : page « créateurs et canaux à suivre ».
