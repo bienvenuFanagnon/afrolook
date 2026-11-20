@@ -16,6 +16,8 @@ import '../postComments.dart';
 import 'coin_recharge_screen.dart';
 import '../../widgets/coin_balances_row.dart';
 import '../../l10n/tr.dart';
+import '../../providers/chroniqueProvider.dart';
+import '../chronique/chroniqueform.dart' show Chronique;
 
 class CoinGiftDialog extends StatefulWidget {
   final String receiverId;
@@ -24,6 +26,8 @@ class CoinGiftDialog extends StatefulWidget {
   final Post? post;
   final VoidCallback? onGiftSuccess;
   final bool isLive;
+  /// Cadeau sur une chronique (20/11/2026) : envoyé à son auteur, accompagné d'un commentaire public sur la chronique, comme sur un post.
+  final Chronique? chronique;
   final String? liveId;
 
   const CoinGiftDialog({
@@ -34,6 +38,7 @@ class CoinGiftDialog extends StatefulWidget {
     this.post,
     this.onGiftSuccess,
     this.isLive = false,
+    this.chronique,
     this.liveId,
   }) : super(key: key);
 
@@ -497,6 +502,8 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
     final nav = Navigator.of(context);
     // Lu AVANT de fermer la fenêtre (19/11/2026) : après la fermeture, son contexte ne trouve plus le compte et le commentaire du cadeau n'était jamais posté
     final sender = Provider.of<UserAuthProvider>(context, listen: false).loginUserData;
+    final chronique = widget.chronique;
+    final chroniqueProvider = chronique != null ? Provider.of<ChroniqueProvider>(context, listen: false) : null;
     if (mounted) {
       nav.pop();
       showGiftSentOverlay(context, pack, widget.receiverName,
@@ -507,12 +514,15 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
     // 2. Enregistrer dans les récents AVANT onGiftSuccess (pour que QuickGiftBar recharge le bon cadeau)
     await QuickGiftService.recordRecentGift(pack);
     final giftedPost = widget.post;
+    if (chronique != null) chronique.giftCoins += totalCost;   // total de pièces sous l'icône cadeau de la chronique
     if (giftedPost != null && !widget.isLive) giftedPost.totalGiftCoinsSentOnThisPost = (giftedPost.totalGiftCoinsSentOnThisPost ?? 0) + totalCost;   // total de pièces sous l'icône cadeau
     widget.onGiftSuccess?.call();
 
     // 3. Envoi réel à l'API en arrière-plan (fire-and-forget) : débit, parts et parrainages calculés par le serveur
     final senderId = _coinProvider.currentUser!.id!;
-    final sent = (widget.isLive && widget.liveId != null)
+    final sent = chronique != null
+        ? WalletApi.instance.giftChronicle(chronique.id!, coins: totalCost, icon: pack.icon, label: pack.label).then((_) => true)
+        : (widget.isLive && widget.liveId != null)
         ? WalletApi.instance.giftLive(widget.liveId!, coins: totalCost, icon: pack.icon, label: pack.label).then((_) => true)
         : _coinProvider.sendGift(
             senderId: senderId,
@@ -533,6 +543,17 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
         return;
       }
       _coinProvider.refreshBalance(senderId);
+      // Chronique : commentaire public automatique sur la chronique, une fois le cadeau confirmé par l'API (20/11/2026)
+      if (chronique != null && chroniqueProvider != null) {
+        final text = CoinGiftService.giftCommentText(pack, totalCost, _quantity);
+        try {
+          await chroniqueProvider.addMessage(chroniqueId: chronique.id!, userId: senderId, userPseudo: sender.pseudo ?? '', userImageUrl: sender.imageUrl ?? '', message: text);
+          chronique.commentCount++;
+          chronique.lastCommentPseudo = sender.pseudo;
+          chronique.lastCommentText = text;
+        } catch (_) {}
+        return;
+      }
       // Commentaire automatique posté seulement une fois le cadeau confirmé par l'API
       final giftedPost = widget.post;
       if (giftedPost != null) {
@@ -549,6 +570,7 @@ class _CoinGiftDialogState extends State<CoinGiftDialog> {
     }).catchError((e) {
       debugPrint('❌ Erreur lors de l\'envoi du cadeau : $e');
       _coinProvider.refreshBalance(senderId);
+      if (chronique != null) chronique.giftCoins = (chronique.giftCoins - totalCost).clamp(0, 1 << 40);   // envoi refusé : on retire ce qu'on avait ajouté
     }));
   }
   void _showInsufficientBalanceDialog() {

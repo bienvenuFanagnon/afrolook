@@ -58,6 +58,8 @@ class Chronique {
   int viewCount;
   int likeCount;
   int loveCount;
+  /// Pièces offertes en cadeau sur la chronique (montant payé par les donateurs), affichées à tous sous l'icône cadeau (20/11/2026).
+  int giftCoins;
   List<String> viewers;
   List<String> likers;
   List<String> lovers;
@@ -109,6 +111,7 @@ class Chronique {
     this.viewCount = 0,
     this.likeCount = 0,
     this.loveCount = 0,
+    this.giftCoins = 0,
     this.commentCount = 0,
     this.viewers = const [],
     this.likers = const [],

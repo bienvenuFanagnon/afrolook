@@ -221,6 +221,10 @@ class WalletApi {
   Future<Map<String, dynamic>> giftLive(String liveId, {required int coins, String? icon, String? label}) =>
       pay('gift:live:$liveId:$coins', '/lives/$liveId/gifts', body: {'coins': coins, if (icon != null) 'icon': icon, if (label != null) 'label': label});
 
+  /// Cadeau sur une chronique (20/11/2026) : même répartition que sur un post, calculée par l'API.
+  Future<Map<String, dynamic>> giftChronicle(String chroniqueId, {required int coins, String? icon, String? label}) =>
+      pay('gift:chronicle:$chroniqueId:$coins', '/chronicles/$chroniqueId/gifts', body: {'coins': coins, if (icon != null) 'icon': icon, if (label != null) 'label': label});
+
   Future<Map<String, dynamic>> giftComment(String commentId, {required int coins, String? icon, String? label}) =>
       pay('gift:comment:$commentId:$coins', '/comments/$commentId/gifts', body: {'coins': coins, if (icon != null) 'icon': icon, if (label != null) 'label': label});
 

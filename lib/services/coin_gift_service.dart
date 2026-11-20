@@ -124,6 +124,14 @@ class CoinGiftService {
     tr('🎁 Ce post vaut le détour, voilà mon soutien 🌟'),
   ];
 
+  /// Texte du commentaire qui accompagne un cadeau : une phrase tirée au hasard + le cadeau et son montant (posts et chroniques, 20/11/2026).
+  static String giftCommentText(CoinPack giftPack, int coinsAmount, int quantity) {
+    final qty = quantity > 1 ? quantity : (giftPack.coins > 0 ? (coinsAmount / giftPack.coins).round() : 1);
+    final qtyText = qty > 1 ? ' × $qty' : '';
+    final randomLine = _giftMessages[Random().nextInt(_giftMessages.length)];
+    return '$randomLine\n${giftPack.icon} ${giftPack.label}$qtyText · $coinsAmount 🪙';
+  }
+
   /// Poste le commentaire préparé qui accompagne un cadeau (une phrase tirée au hasard dans la liste + le cadeau et son montant). Le Future donne le commentaire posté
   /// (null s'il a échoué) : on peut l'attendre pour l'afficher en tête de la page des commentaires, ou l'ignorer.
   static Future<PostComment?> postGiftAutoComment({
@@ -136,14 +144,7 @@ class CoinGiftService {
   }) {
     return Future.microtask(() async {
       try {
-        final qty = quantity > 1
-            ? quantity
-            : (giftPack.coins > 0 ? (coinsAmount / giftPack.coins).round() : 1);
-        final qtyText = qty > 1 ? ' × $qty' : '';
-        final randomLine = _giftMessages[Random().nextInt(_giftMessages.length)];
-        final message =
-            '$randomLine\n'
-            '${giftPack.icon} ${giftPack.label}$qtyText · $coinsAmount 🪙';
+        final message = giftCommentText(giftPack, coinsAmount, quantity);
         final sent = await CommentsApi.send(postId, body: message);
         final comment = sent.comment..user = senderData;
         CommentsPrefetch.instance.addLocal(postId, comment);   // la page des commentaires, même déjà préparée, le montre tout de suite

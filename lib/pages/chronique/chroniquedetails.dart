@@ -33,6 +33,7 @@ import 'package:video_player/video_player.dart';
 import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/chroniqueProvider.dart';
+import '../coins/coin_gift_dialog.dart';
 import '../component/showUserDetails.dart';
 import '../user/detailsOtherUser.dart';
 import 'chroniqueform.dart';// pages/chronique/chronique_detail_page.dart
@@ -1983,6 +1984,8 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
           tile(chroniqueCount(c.likeCount), 'J\'AIME'),
           const SizedBox(width: 8),
           tile(chroniqueCount(c.commentCount), 'COMMENTAIRES', onTap: () => _openComments(c)),
+          const SizedBox(width: 8),
+          tile(chroniqueCount(c.giftCoins), 'PIÈCES'),   // pièces offertes en cadeau sur la chronique (20/11/2026)
         ]),
       );
     }
@@ -2021,6 +2024,9 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
         ),
         const SizedBox(width: 8),
         _roundAction(liked ? Icons.favorite_rounded : Icons.favorite_border_rounded, _likeCurrentChronique, color: liked ? const Color(0xFFFF4D6A) : Colors.white, badge: chroniqueCount(c.likeCount)),
+        const SizedBox(width: 8),
+        // cadeau à l'auteur (20/11/2026) : total des pièces offertes affiché à tous
+        _roundAction(Icons.card_giftcard_rounded, () => _openGift(c), color: const Color(0xFFFFC94D), badge: c.giftCoins > 0 ? chroniqueCount(c.giftCoins) : null),
         const SizedBox(width: 8),
         _roundAction(Icons.mail_outline_rounded, () => _openReply(c)),
       ]),
@@ -2084,6 +2090,17 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
       ));
 
   Future<void> _openReply(Chronique c) => _holdWhile(() => showChroniqueReply(context, c));
+
+  /// Cadeau à l'auteur de la chronique (20/11/2026) : même fenêtre que pour un post ; le cadeau est accompagné d'un commentaire public sur la chronique.
+  Future<void> _openGift(Chronique c) => _holdWhile(() async {
+        await showDialog<void>(
+          context: context,
+          builder: (_) => CoinGiftDialog(receiverId: c.userId ?? '', receiverName: c.userPseudo ?? '', receiverAvatar: c.userImageUrl ?? '', chronique: c, onGiftSuccess: () {
+            if (mounted) setState(() {});
+          }),
+        );
+        if (mounted) setState(() {});   // total et dernier commentaire à jour
+      });
 
   /// Un geste sur le texte long : le minuteur attend 2 secondes de calme avant de reprendre.
   void _pauseStoryBriefly() {

@@ -43,6 +43,7 @@ Chronique chroniqueFromApi(Map<String, dynamic> j, {String? myId}) {
     viewCount: (j['views_count'] as num?)?.toInt() ?? 0,
     likeCount: (j['likes_count'] as num?)?.toInt() ?? 0,
     loveCount: (j['loves_count'] as num?)?.toInt() ?? 0,
+    giftCoins: (j['gift_coins'] as num?)?.toInt() ?? 0,
     viewers: [if (j['is_mine'] == true && me.isNotEmpty) me],
     likers: [if (j['liked_by_me'] == true && me.isNotEmpty) me],
     lovers: [if (j['loved_by_me'] == true && me.isNotEmpty) me],
