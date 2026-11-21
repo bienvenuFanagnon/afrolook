@@ -10,6 +10,7 @@ import '../../models/chatmodels/message.dart';
 import '../../models/enums.dart';
 import '../../models/model_data.dart' show MessageState;
 import '../../theme/app_colors.dart';
+import 'chat_translation.dart';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -374,6 +375,8 @@ class TextBubble extends StatelessWidget {
                   height: 1.4,
                 ),
               ),
+              // « Voir la traduction » sous les messages reçus (21/11/2026)
+              if (!isMe) ChatMessageTranslation(text: message.message),
               const SizedBox(height: 3),
               Align(
                 alignment: Alignment.bottomRight,

@@ -1,4 +1,5 @@
 import 'package:afrotok/services/api/chat_api.dart';
+import '../../../widgets/chat/chat_translation.dart';
 import 'package:afrotok/pages/admin/group_block_dialog.dart';
 import 'package:afrotok/services/api/group_keys_api.dart';
 import 'package:afrotok/services/crypto/group_crypto_service.dart';
@@ -3330,6 +3331,9 @@ class _GroupChatPageState extends State<GroupChatPage> {
                           height: 1.35,
                         ),
                       ),
+
+                    // « Voir la traduction » sous les messages texte reçus (21/11/2026)
+                    if (!isMe && !isDeleted && type == 'text') ChatMessageTranslation(text: text, compact: true),
 
                     // Aperçu du lien joint (groupes officiels, messages Gold)
                     if (!isDeleted && type == 'text' && msg['link_preview'] is Map)
