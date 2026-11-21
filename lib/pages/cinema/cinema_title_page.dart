@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../ads/ad_slot.dart';
+import '../pub/afrolook_inline_ad.dart';
+
 import '../../l10n/tr.dart';
 import '../../services/api/cinema_api.dart';
 import '../../theme/app_colors.dart';
@@ -130,6 +133,7 @@ class _CinemaTitlePageState extends State<CinemaTitlePage> {
               ]),
             ),
           ),
+          SliverToBoxAdapter(child: AdSlot(key: const ValueKey('cinema_title_banner'), kind: AdSlotKind.detail, own: () => const AfrolookInlineAd(compact: true))),
           SliverList.builder(
             itemCount: shown.length,
             itemBuilder: (ctx, i) {
@@ -137,7 +141,8 @@ class _CinemaTitlePageState extends State<CinemaTitlePage> {
               final dur = (e['duration_sec'] as num?)?.toInt() ?? 0;
               final pos = (e['my_position_sec'] as num?)?.toInt() ?? 0;
               final locked = e['access'] != 'free';
-              return Padding(
+              final ad = i > 0 && i % 5 == 0;   // pub native tous les 5 épisodes
+              final row = Padding(
                 padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(14),
@@ -168,6 +173,9 @@ class _CinemaTitlePageState extends State<CinemaTitlePage> {
                   ),
                 ),
               );
+              return ad
+                  ? Column(children: [AdSlot(key: ValueKey('cinema_title_ad_$i'), kind: AdSlotKind.list, own: () => const AfrolookInlineAd(compact: true)), row])
+                  : row;
             },
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 24)),

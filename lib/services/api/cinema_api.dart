@@ -49,6 +49,9 @@ class CinemaApi {
   /// Lecture : `master_url`, `entitled`, `preview_seconds`, `audio` [{lang,label}], `subtitles` [{lang,label,url}], `default_lang`, `my_lang`, `resume_sec`.
   static Future<Map<String, dynamic>> play(String id) async => _map(await _c.get('/cinema/episodes/$id/play'));
 
+  /// Recherche : `{titles, episodes}` (titre, résumé, genre, nom d'épisode).
+  static Future<Map<String, dynamic>> search(String q) async => _map(await _c.get('/cinema/search', query: {'q': q}));
+
   /// Débloque l'épisode pour 24 h après les pubs regardées (`via: 'ads'`), ou quand aucune pub n'était disponible (`via: 'none'`).
   /// Renvoie la même réponse que [play], avec la lecture complète.
   static Future<Map<String, dynamic>> unlock(String id, {required String via, int ads = 0}) async =>

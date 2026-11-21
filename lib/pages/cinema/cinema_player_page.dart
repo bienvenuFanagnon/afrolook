@@ -5,6 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:video_player/video_player.dart';
 
+import '../../ads/ad_slot.dart';
+import '../pub/afrolook_inline_ad.dart';
+
 import '../../l10n/tr.dart';
 import '../../services/api/cinema_api.dart';
 import '../../theme/app_colors.dart';
@@ -760,11 +763,14 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
               ]),
             ),
         ]),
-        const SizedBox(height: 18),
+        const SizedBox(height: 14),
+        AdSlot(key: const ValueKey('cinema_player_banner'), kind: AdSlotKind.detail, own: () => const AfrolookInlineAd(compact: true)),
+        const SizedBox(height: 10),
         Text(context.tr('Commentaires · {a}', {'a': ep['comments_count'] ?? _comments.length}), style: TextStyle(color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.w800)),
         const SizedBox(height: 8),
         const SizedBox(height: 6),
-        for (final cm in _comments)
+        for (final (ci, cm) in _comments.indexed) ...[
+          if (ci > 0 && ci % 8 == 0) AdSlot(key: ValueKey('cinema_comments_ad_$ci'), kind: AdSlotKind.comments, own: () => const AfrolookInlineAd(compact: true)),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 7),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -788,6 +794,7 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
               IconButton(visualDensity: VisualDensity.compact, icon: Icon(Icons.more_vert_rounded, size: 18, color: c.textSecondary), onPressed: () => _commentMenu(cm)),
             ]),
           ),
+        ],
       ]),
     );
   }

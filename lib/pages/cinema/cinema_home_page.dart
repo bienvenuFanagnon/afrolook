@@ -3,12 +3,16 @@ import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
+import '../../ads/ad_slot.dart';
+import '../pub/afrolook_inline_ad.dart';
+
 import '../../l10n/tr.dart';
 import '../../services/api/cinema_api.dart';
 import '../../theme/app_colors.dart';
 import 'cinema_admin_page.dart';
 import 'cinema_player_page.dart';
 import 'cinema_title_page.dart';
+import 'cinema_search_page.dart';
 import 'cinema_widgets.dart';
 
 /// Accueil de Cartoon Cinéma (21/11/2026) : à la une (annonce en image), pas encore vus, à continuer, séries, films, gratuits.
@@ -158,6 +162,11 @@ class _CinemaHomePageState extends State<CinemaHomePage> {
         title: Row(children: [const CinemaLogo(size: 28), const SizedBox(width: 8), Text(context.tr('Cartoon Cinéma'), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17))]),
         actions: [
           IconButton(
+            tooltip: context.tr('Rechercher'),
+            icon: const Icon(Icons.search_rounded),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CinemaSearchPage())),
+          ),
+          IconButton(
             tooltip: context.tr('Notifications'),
             icon: Icon(_data?['notifications_on'] == true ? Icons.notifications_active_rounded : Icons.notifications_none_rounded),
             onPressed: () async {
@@ -235,7 +244,10 @@ class _CinemaHomePageState extends State<CinemaHomePage> {
             Text(context.tr('Les premiers épisodes arrivent bientôt.'), textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary)),
           ]),
         ),
+      if (empty) const CinemaCreatorsCard(),
       if (_filter == 'all' && featured.isNotEmpty) _hero(c, featured.first),
+      // pubs du Cinéma (Appodeal / AdMob, sinon Afrolook Ads ; jamais pour Gold) : bannière sous la une, pub native entre les rangées, grand format en bas
+      if (!empty) Padding(padding: const EdgeInsets.only(top: 8), child: AdSlot(key: const ValueKey('cinema_home_banner'), kind: AdSlotKind.detail, own: () => const AfrolookInlineAd(compact: true))),
       if (_filter == 'all' && unseen.isNotEmpty) ...[
         CinemaRowTitle(context.tr('Pas encore vus'), trailing: '${_data?['unseen_count'] ?? unseen.length}'),
         hRow([for (final e in unseen) CinemaEpisodeThumb(ep: e, onTap: () => _openEpisode(e))]),
@@ -244,6 +256,7 @@ class _CinemaHomePageState extends State<CinemaHomePage> {
         CinemaRowTitle(context.tr('Continuer à regarder')),
         hRow([for (final e in cont) CinemaEpisodeThumb(ep: e, onTap: () => _openEpisode(e))]),
       ],
+      if (!empty && (cont.isNotEmpty || unseen.isNotEmpty)) AdSlot(key: const ValueKey('cinema_home_native'), kind: AdSlotKind.list, own: () => const AfrolookInlineAd(compact: true)),
       if ((_filter == 'all' || _filter == 'series') && series.isNotEmpty) ...[
         CinemaRowTitle(context.tr('Séries')),
         hRow([for (final t in series) CinemaPoster(title: t, onTap: () => _openTitle(t))]),
@@ -256,6 +269,8 @@ class _CinemaHomePageState extends State<CinemaHomePage> {
         CinemaRowTitle(context.tr('Gratuits')),
         hRow([for (final e in free) CinemaEpisodeThumb(ep: e, onTap: () => _openEpisode(e))]),
       ],
+      if (!empty) Padding(padding: const EdgeInsets.only(top: 14), child: AdSlot(key: const ValueKey('cinema_home_mrec'), kind: AdSlotKind.detailMrec, own: () => const AfrolookInlineAd())),
+      if (!empty) const CinemaCreatorsCard(),
     ]);
   }
 

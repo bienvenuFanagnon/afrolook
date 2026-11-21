@@ -1,6 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
+import '../contact.dart';
+
 import '../../l10n/tr.dart';
 import '../../theme/app_colors.dart';
 
@@ -195,3 +197,40 @@ class CinemaLogo extends StatelessWidget {
         child: Icon(Icons.movie_filter_rounded, color: const Color(0xFFFFD400), size: size * .58),
       );
 }
+
+/// Appel aux créateurs (21/11/2026) : films, séries, cartoons mis en ligne et monétisés chez nous ; le bouton ouvre la page de contact.
+class CinemaCreatorsCard extends StatelessWidget {
+  const CinemaCreatorsCard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return Container(
+      margin: const EdgeInsets.fromLTRB(14, 18, 14, 4),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border)),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Container(
+            width: 38, height: 38,
+            decoration: const BoxDecoration(color: Color(0xFFFFD400), shape: BoxShape.circle),
+            child: const Icon(Icons.video_camera_front_rounded, color: Color(0xFF121212), size: 22),
+          ),
+          const SizedBox(width: 10),
+          Expanded(child: Text(context.tr('Vous créez des films, séries ou cartoons ?'), style: TextStyle(color: c.textPrimary, fontSize: 15, fontWeight: FontWeight.w900))),
+        ]),
+        const SizedBox(height: 8),
+        Text(context.tr('Mettez-les en ligne sur Cartoon Cinéma et gagnez de l\'argent avec vos vues. Contactez-nous pour en parler.'),
+            style: TextStyle(color: c.textSecondary, fontSize: 13)),
+        const SizedBox(height: 10),
+        SizedBox(width: double.infinity, child: FilledButton.icon(
+          style: FilledButton.styleFrom(backgroundColor: const Color(0xFFFFD400), foregroundColor: const Color(0xFF121212), padding: const EdgeInsets.symmetric(vertical: 12)),
+          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ContactPage())),
+          icon: const Icon(Icons.mail_outline_rounded),
+          label: Text(context.tr('Nous contacter'), style: const TextStyle(fontWeight: FontWeight.w800)),
+        )),
+      ]),
+    );
+  }
+}
+

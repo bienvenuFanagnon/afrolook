@@ -3625,8 +3625,8 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       if (i == 0 || (i > 5 && (i - 5) % 20 == 0)) {
         contentWidgets.add(OfferwallFeedCard(key: ValueKey('offerwall_card_home_$i'), slot: i == 0 ? 1 : 2 + (i - 5) ~/ 20));
       }
-      // Cartoon Cinéma (décision du propriétaire, 21/11/2026) : quelques secondes d'un épisode gratuit, après le 5e post puis tous les 15 posts
-      if (i == 4 || (i > 4 && (i - 4) % 15 == 0)) {
+      // Cartoon Cinéma (décision du propriétaire, 21/11/2026) : 30 secondes d'un épisode (gratuit ou à débloquer), après le 3e post puis tous les 8 posts
+      if (i == 2 || (i > 2 && (i - 2) % 8 == 0)) {
         contentWidgets.add(CinemaTeaserCard(key: ValueKey('cinema_teaser_home_$i')));
       }
       // Offre « Une journée sans pub » : après le 9e post (jamais collée à une pub), 1 fois par jour.

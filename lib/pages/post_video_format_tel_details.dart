@@ -1100,7 +1100,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       }
 
       // Cartoon Cinéma (21/11/2026) : extrait d'un épisode gratuit après la 5e vidéo, puis toutes les 15 vidéos
-      if (postCount == 5 || (postCount > 5 && (postCount - 5) % 15 == 0)) _feedItems.add(const _CinemaSentinel());
+      if (postCount == 3 || (postCount > 3 && (postCount - 3) % 8 == 0)) _feedItems.add(const _CinemaSentinel());   // Cartoon Cinéma : 3e vidéo, puis toutes les 8
 
       // Promo AfroShop toutes les 7 vidéos
       if (postCount % 7 == 0 && _promoArticles.isNotEmpty && !kIsAppleStore) {
@@ -1140,7 +1140,7 @@ class _PostDetailsVideoFormatTelState extends State<PostDetailsVideoFormatTel> w
       _feedItems.add(_videoPosts[videoIdx]);
       videoIdx++;
       if (videoIdx == 1 && _showTutoReminder) _feedItems.add(const _TutoReminderSentinel());
-      if (videoIdx == 5 || (videoIdx > 5 && (videoIdx - 5) % 15 == 0)) _feedItems.add(const _CinemaSentinel());   // Cartoon Cinéma (21/11/2026)
+      if (videoIdx == 3 || (videoIdx > 3 && (videoIdx - 3) % 8 == 0)) _feedItems.add(const _CinemaSentinel());   // Cartoon Cinéma (21/11/2026) : 3e vidéo, puis toutes les 8
 
       // Toutes les 4 vidéos (gratuit uniquement)
       if (!skipAds && videoIdx % 4 == 0 && videoIdx < _videoPosts.length) {

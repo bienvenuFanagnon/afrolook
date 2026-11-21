@@ -61,4 +61,13 @@ const Map<String, Map<String, String>> kTrCinema = {
   '{a} s gratuites': {'en': '{a} s free', 'es': '{a} s gratis', 'de': '{a} s gratis', 'ar': '{a} ث مجانًا', 'pt': '{a} s grátis'},
   'Découvrir la formation': {'en': 'Discover the course', 'es': 'Descubrir la formación', 'de': 'Kurs entdecken', 'ar': 'اكتشف التكوين', 'pt': 'Conhecer a formação'},
   'Tourner': {'en': 'Rotate', 'es': 'Girar', 'de': 'Drehen', 'ar': 'تدوير', 'pt': 'Girar'},
+  'Rechercher': {'en': 'Search', 'es': 'Buscar', 'de': 'Suchen', 'ar': 'بحث', 'pt': 'Pesquisar'},
+  'Série, film, épisode, genre…': {'en': 'Series, film, episode, genre…', 'es': 'Serie, película, episodio, género…', 'de': 'Serie, Film, Folge, Genre…', 'ar': 'مسلسل، فيلم، حلقة، نوع…', 'pt': 'Série, filme, episódio, gênero…'},
+  'Cherchez une série, un film, un épisode ou un genre.': {'en': 'Search for a series, a film, an episode or a genre.', 'es': 'Busca una serie, una película, un episodio o un género.', 'de': 'Suche nach einer Serie, einem Film, einer Folge oder einem Genre.', 'ar': 'ابحث عن مسلسل أو فيلم أو حلقة أو نوع.', 'pt': 'Procure uma série, um filme, um episódio ou um gênero.'},
+  'Aucun résultat pour « {a} ».': {'en': 'No results for “{a}”.', 'es': 'Sin resultados para «{a}».', 'de': 'Keine Ergebnisse für „{a}“.', 'ar': 'لا نتائج لـ «{a}».', 'pt': 'Nenhum resultado para “{a}”.'},
+  'Séries et films': {'en': 'Series and films', 'es': 'Series y películas', 'de': 'Serien und Filme', 'ar': 'مسلسلات وأفلام', 'pt': 'Séries e filmes'},
+  'Épisodes': {'en': 'Episodes', 'es': 'Episodios', 'de': 'Folgen', 'ar': 'الحلقات', 'pt': 'Episódios'},
+  'Vous créez des films, séries ou cartoons ?': {'en': 'Do you make films, series or cartoons?', 'es': '¿Creas películas, series o dibujos animados?', 'de': 'Machst du Filme, Serien oder Cartoons?', 'ar': 'هل تصنع أفلامًا أو مسلسلات أو رسومًا متحركة؟', 'pt': 'Você cria filmes, séries ou desenhos animados?'},
+  "Mettez-les en ligne sur Cartoon Cinéma et gagnez de l'argent avec vos vues. Contactez-nous pour en parler.": {'en': 'Publish them on Cartoon Cinema and earn money from your views. Contact us to talk about it.', 'es': 'Publícalos en Cartoon Cine y gana dinero con tus vistas. Contáctanos para hablarlo.', 'de': 'Veröffentliche sie im Cartoon Kino und verdiene Geld mit deinen Aufrufen. Kontaktiere uns.', 'ar': 'انشرها على سينما الكرتون واربح المال من مشاهداتك. تواصل معنا للحديث عن ذلك.', 'pt': 'Publique no Cartoon Cinema e ganhe dinheiro com suas visualizações. Fale conosco.'},
+  'Nous contacter': {'en': 'Contact us', 'es': 'Contáctanos', 'de': 'Kontaktiere uns', 'ar': 'تواصل معنا', 'pt': 'Fale conosco'},
 };

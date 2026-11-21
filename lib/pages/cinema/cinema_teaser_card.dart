@@ -18,26 +18,16 @@ class CinemaTeaserCard extends StatefulWidget {
   /// Version plein écran pour le fil des vidéos.
   final bool vertical;
 
-  /// Extrait partagé entre les cartes d'une même session (un seul appel à l'API).
-  static Future<Map<String, dynamic>?>? _teaser;
-
-  static DateTime? _loadedAt;
-
-  /// Le lien de lecture de l'extrait vaut 6 h : on en redemande un toutes les 5 h.
-  static Future<Map<String, dynamic>?> load() {
-    if (_teaser == null || _loadedAt == null || DateTime.now().difference(_loadedAt!) > const Duration(hours: 5)) {
-      _loadedAt = DateTime.now();
-      _teaser = CinemaApi.teaser().catchError((_) => null);
-    }
-    return _teaser!;
-  }
+  /// Chaque carte demande son propre extrait : un épisode au hasard (gratuit ou à débloquer), pour varier d'une carte à l'autre.
+  static Future<Map<String, dynamic>?> load() => CinemaApi.teaser().catchError((_) => null);
 
   @override
   State<CinemaTeaserCard> createState() => _CinemaTeaserCardState();
 }
 
 class _CinemaTeaserCardState extends State<CinemaTeaserCard> {
-  static const _clipSeconds = 8;
+  /// 30 secondes d'extrait (décision du 21/11/2026), durée donnée par l'API.
+  int get _clipSeconds => (_t?['teaser_seconds'] as num?)?.toInt() ?? 30;
   Map<String, dynamic>? _t;
   VideoPlayerController? _video;
   bool _visible = false;
@@ -57,7 +47,7 @@ class _CinemaTeaserCardState extends State<CinemaTeaserCard> {
     try {
       await c.initialize();
       c.addListener(() {
-        if (c.value.position.inSeconds >= _clipSeconds) c.seekTo(Duration.zero);
+        if (c.value.position.inSeconds >= _clipSeconds || c.value.isCompleted) c.seekTo(Duration.zero);
       });
       if (_visible) c.play();
       if (mounted) setState(() {});
