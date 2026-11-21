@@ -1,6 +1,7 @@
 // work_stats_page.dart — suivi de la page Travail et des missions de Partage pour l'administration (API : GET /admin/work/stats).
 // Fréquentation, temps passé, missions ou tâches (boutons réellement touchés), pubs plein écran montrées depuis ces pages et revenu estimé.
 import 'package:afrotok/layout/centered_content.dart';
+import 'package:afrotok/pages/admin/stats_periods.dart';
 import 'package:afrotok/services/api/regie_api.dart';
 import 'package:afrotok/theme/app_colors.dart';
 import 'package:flutter/material.dart';
@@ -17,7 +18,8 @@ class WorkStatsPage extends StatefulWidget {
 class _WorkStatsPageState extends State<WorkStatsPage> {
   static final NumberFormat _nf = NumberFormat.decimalPattern('fr');
 
-  int _days = 7;
+  /// Période : today, yesterday, 3, 7, 30 ou 90 (derniers jours, aujourd'hui compris).
+  String _period = '7';
   bool _loading = true;
   String? _error;
   Map<String, dynamic> _d = {};
@@ -34,7 +36,7 @@ class _WorkStatsPageState extends State<WorkStatsPage> {
       _error = null;
     });
     try {
-      final r = await RegieApi.getMap('/admin/work/stats', query: {'days': _days});
+      final r = await RegieApi.getMap('/admin/work/stats', query: {'period': _period});
       if (!mounted) return;
       setState(() {
         _d = r;
@@ -189,18 +191,18 @@ class _WorkStatsPageState extends State<WorkStatsPage> {
     final empty = _i(t['sessions']) == 0;
 
     return ListView(padding: const EdgeInsets.all(14), children: [
-      Wrap(spacing: 8, children: [
-        for (final d in const [7, 30, 90])
+      Wrap(spacing: 8, runSpacing: 8, children: [
+        for (final p in kStatsPeriods)
           ChoiceChip(
-            label: Text('$d jours'),
-            selected: _days == d,
+            label: Text(p.$2),
+            selected: _period == p.$1,
             onSelected: (_) {
-              setState(() => _days = d);
+              setState(() => _period = p.$1);
               _load();
             },
             selectedColor: c.primary.withOpacity(0.18),
-            labelStyle: TextStyle(color: _days == d ? c.primary : c.textPrimary, fontWeight: _days == d ? FontWeight.bold : FontWeight.normal),
-            side: BorderSide(color: _days == d ? c.primary : c.border),
+            labelStyle: TextStyle(color: _period == p.$1 ? c.primary : c.textPrimary, fontWeight: _period == p.$1 ? FontWeight.bold : FontWeight.normal),
+            side: BorderSide(color: _period == p.$1 ? c.primary : c.border),
           ),
       ]),
       const SizedBox(height: 12),
@@ -270,6 +272,8 @@ class _WorkStatsPageState extends State<WorkStatsPage> {
               ),
               const SizedBox(height: 4),
               if (daily.isNotEmpty) Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('${daily.first['day']}'.substring(5), style: TextStyle(fontSize: 10.5, color: c.textSecondary)), Text('${daily.last['day']}'.substring(5), style: TextStyle(fontSize: 10.5, color: c.textSecondary))]),
+              const SizedBox(height: 10),
+              StatsDailyList(daily: daily),
             ])),
         const SizedBox(height: 12),
         _card(c,

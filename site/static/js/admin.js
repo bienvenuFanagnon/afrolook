@@ -349,10 +349,10 @@ async function moneyPage() {
 
 /* ——— 7. Travail : page Travail et missions ——— */
 async function workPage() {
-  const r = (await apiGet(`@work/stats?days=${st.wdays}`)).data, t = r.totals, ac = r.actions, ad = r.ads, pg = r.pages;
+  const r = (await apiGet(`@work/stats?period=${encodeURIComponent(st.wdays)}`)).data, t = r.totals, ac = r.actions, ad = r.ads, pg = r.pages;
   const labels = r.daily.map((d) => d.day);
   const PGN = { work: 'Page Travail', missions: 'Page Missions' };
-  return `<div class="adm-page">${head('Travail', 'Les visites de la page Travail et des missions, et les pubs regardées.', seg('wdays', [['7', '7 jours'], ['30', '30 jours'], ['90', '90 jours']], st.wdays))}
+  return `<div class="adm-page">${head('Travail', 'Les visites de la page Travail et des missions, et les pubs regardées.', seg('wdays', [['today', 'Aujourd’hui'], ['yesterday', 'Hier'], ['3', '3 jours'], ['7', '7 jours'], ['30', '30 jours'], ['90', '90 jours']], st.wdays))}
   <section class="adm-kpis">${kpi('Visiteurs', fmt(t.visitors), `<div class="s">${fmt(t.returningVisitors)} reviennent</div>`)}${kpi('Visites', fmt(t.sessions), `<div class="s">${dur(t.avgSecondsPerSession)} en moyenne</div>`)}${kpi('Temps passé', dur(t.seconds), `<div class="s">${dur(t.avgSecondsPerVisitor)} par visiteur</div>`)}
     ${kpi('Pubs regardées', fmt(ad.total), `<div class="s">${String(ad.perVisitor).replace('.', ',')} par visiteur${ad.estimatedUsd != null ? ' · ≈ ' + String(ad.estimatedUsd).replace('.', ',') + ' $' : ''}</div>`)}</section>
   <section class="adm-card"><h3>Visiteurs et visites par jour</h3><div class="adm-legend"><span><i style="background:var(--c1)"></i>Visiteurs</span><span><i style="background:var(--c2)"></i>Visites</span><span><i style="background:var(--c3)"></i>Pubs</span></div>

@@ -118,7 +118,8 @@ class CinemaApi {
 
   static Future<void> deleteTrack(String episodeId, String kind, String lang) => _c.delete('/admin/cinema/episodes/$episodeId/$kind/$lang');
 
-  static Future<Map<String, dynamic>> stats({int days = 30}) async => _map(await _c.get('/admin/cinema/stats', query: {'days': days}));
+  /// [period] : today, yesterday, 3, 7, 30 ou 90 (derniers jours, aujourd'hui compris).
+  static Future<Map<String, dynamic>> stats({String period = '30'}) async => _map(await _c.get('/admin/cinema/stats', query: {'period': period}));
 
   /// Promo de fin d'épisode : `{video_url, link_url, label}`.
   static Future<Map<String, dynamic>> promo() async => _map(await _c.get('/admin/cinema/promo'));

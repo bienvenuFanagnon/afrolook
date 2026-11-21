@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/api/cinema_api.dart';
 import '../../theme/app_colors.dart';
+import '../admin/stats_periods.dart';
 import 'cinema_widgets.dart';
 
 /// Gestion de Cartoon Cinéma par l'équipe (21/11/2026), dans l'application et dans la version web : séries et films, épisodes, vidéo sans voix,
@@ -546,7 +547,7 @@ class CinemaStatsPage extends StatefulWidget {
 
 class _CinemaStatsPageState extends State<CinemaStatsPage> {
   Map<String, dynamic>? _s;
-  int _days = 30;
+  String _period = '30';
   String? _error;
 
   @override
@@ -557,7 +558,7 @@ class _CinemaStatsPageState extends State<CinemaStatsPage> {
 
   Future<void> _load() async {
     try {
-      final s = await CinemaApi.stats(days: _days);
+      final s = await CinemaApi.stats(period: _period);
       if (mounted) setState(() => _s = s);
     } catch (e) {
       if (mounted) setState(() => _error = CinemaApi.message(e));
@@ -586,10 +587,10 @@ class _CinemaStatsPageState extends State<CinemaStatsPage> {
           : s == null
               ? const Center(child: CircularProgressIndicator())
               : ListView(padding: const EdgeInsets.all(14), children: [
-                  Wrap(spacing: 6, children: [
-                    for (final d in [7, 30, 90])
-                      ChoiceChip(label: Text('$d jours'), selected: d == _days, showCheckmark: false, onSelected: (_) {
-                        setState(() => _days = d);
+                  Wrap(spacing: 6, runSpacing: 6, children: [
+                    for (final p in kStatsPeriods)
+                      ChoiceChip(label: Text(p.$2), selected: p.$1 == _period, showCheckmark: false, onSelected: (_) {
+                        setState(() => _period = p.$1);
                         _load();
                       }),
                   ]),
@@ -610,6 +611,10 @@ class _CinemaStatsPageState extends State<CinemaStatsPage> {
                       tile('${s['unlocks_no_ad'] ?? 0}', 'DÉBLOQUÉS SANS PUB DISPONIBLE'),
                     ],
                   ),
+                  const SizedBox(height: 14),
+                  Text('Personnes venues sur la page, par jour', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 6),
+                  StatsDailyList(daily: ((s['daily'] as List?) ?? const []).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList()),
                   const SizedBox(height: 14),
                   Text('Par épisode', style: TextStyle(color: c.textPrimary, fontWeight: FontWeight.w800)),
                   for (final e in ((s['episodes'] as List?) ?? const []).whereType<Map>())
