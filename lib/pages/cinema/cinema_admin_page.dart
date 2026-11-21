@@ -11,6 +11,34 @@ import 'cinema_widgets.dart';
 /// Gestion de Cartoon Cinéma par l'équipe (21/11/2026), dans l'application et dans la version web : séries et films, épisodes, vidéo sans voix,
 /// voix off et sous-titres par langue, accès (gratuit, ou 15 s puis pubs ou Gold), nombres de pubs, sortie programmée, mesures. Chaque bouton n'apparaît qu'avec le droit
 /// correspondant (créer, modifier, supprimer, mesures) ; le serveur vérifie de toute façon chaque action.
+/// Entrée depuis le tableau de bord d'administration : charge les droits de la personne, puis ouvre la gestion du Cinéma.
+class CinemaAdminEntry extends StatelessWidget {
+  const CinemaAdminEntry({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = AppColors.of(context);
+    return FutureBuilder<CinemaRights>(
+      future: CinemaApi.rights(),
+      builder: (context, snap) {
+        if (!snap.hasData) return Scaffold(backgroundColor: c.background, body: const Center(child: CircularProgressIndicator()));
+        final r = snap.data!;
+        if (!r.any) {
+          return Scaffold(
+            backgroundColor: c.background,
+            appBar: AppBar(title: const Text('Cartoon Cinéma')),
+            body: Center(child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text("Vous n'avez pas de droit sur Cartoon Cinéma (créer, modifier, supprimer ou mesures).", textAlign: TextAlign.center, style: TextStyle(color: c.textSecondary)),
+            )),
+          );
+        }
+        return CinemaAdminPage(rights: r);
+      },
+    );
+  }
+}
+
 class CinemaAdminPage extends StatefulWidget {
   const CinemaAdminPage({super.key, required this.rights});
 

@@ -510,15 +510,22 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
         child: Scaffold(backgroundColor: Colors.black, body: SafeArea(child: _buildPlayer(c, false, height: mq.size.height - mq.padding.vertical))),
       );
     }
+    // clavier ouvert (commentaire) : la vidéo se fait petite pour laisser voir ce qu'on écrit
+    final keyboard = mq.viewInsets.bottom > 0;
     final player = vertical
-        ? _buildPlayer(c, false, height: (mq.size.width / v.value.aspectRatio).clamp(0.0, (mq.size.height - mq.padding.vertical) * 0.62))
-        : _buildPlayer(c, false);
+        ? _buildPlayer(c, false, height: (mq.size.width / v.value.aspectRatio).clamp(0.0, (mq.size.height - mq.padding.vertical) * (keyboard ? 0.22 : 0.62)))
+        : keyboard
+            ? _buildPlayer(c, false, height: (mq.size.height - mq.padding.vertical) * 0.22)
+            : _buildPlayer(c, false);
     return Scaffold(
       backgroundColor: c.background,
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: Column(children: [
           player,
           Expanded(child: _error != null ? _errorView(c) : _details(c)),
+          // champ de commentaire fixé en bas : il remonte toujours au-dessus du clavier
+          if (_error == null && _ep != null) _commentBar(c),
         ]),
       ),
     );
@@ -600,6 +607,9 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
                         maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13))),
                     if (voiceLabel != null) _pill(Icons.record_voice_over_rounded, '$voiceLabel', _openSettings),
                     const SizedBox(width: 6),
+                    // tourner la vidéo en paysage (ou revenir en portrait) quand la personne le veut, épisode vertical compris
+                    _pill(Icons.screen_rotation_rounded, context.tr('Tourner'), () => _toggleRotation(landscape)),
+                    const SizedBox(width: 6),
                     _pill(Icons.tune_rounded, context.tr('Auto'), _openSettings),
                   ]),
                   const Spacer(),
@@ -657,6 +667,18 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
     );
   }
 
+  void _toggleRotation(bool landscape) {
+    setState(() => _full = false);
+    if (landscape) {
+      SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    } else {
+      SystemChrome.setPreferredOrientations([DeviceOrientation.landscapeLeft, DeviceOrientation.landscapeRight]);
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    }
+    _scheduleHide();
+  }
+
   Widget _frame({double? height, required double aspectRatio, required Widget child}) =>
       height != null ? SizedBox(width: double.infinity, height: height, child: child) : AspectRatio(aspectRatio: aspectRatio, child: child);
 
@@ -667,6 +689,32 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
           decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(6)),
           child: Row(mainAxisSize: MainAxisSize.min, children: [Icon(icon, color: Colors.white, size: 14), const SizedBox(width: 4), Text(text, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700))]),
         ),
+      );
+
+  Widget _commentBar(AppColors c) => Container(
+        padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
+        decoration: BoxDecoration(color: c.background, border: Border(top: BorderSide(color: c.border))),
+        child: Row(children: [
+          Expanded(child: TextField(
+            controller: _commentCtrl,
+            maxLength: 200,
+            minLines: 1,
+            maxLines: 3,
+            textInputAction: TextInputAction.send,
+            onSubmitted: (_) => _sending ? null : _sendComment(),
+            style: TextStyle(color: c.textPrimary, fontSize: 13),
+            decoration: InputDecoration(
+              counterText: '',
+              hintText: context.tr('Un commentaire court…'),
+              hintStyle: TextStyle(color: c.textSecondary),
+              filled: true, fillColor: c.surface,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(22), borderSide: BorderSide(color: c.border)),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(22), borderSide: BorderSide(color: c.border)),
+            ),
+          )),
+          IconButton(onPressed: _sending ? null : _sendComment, icon: Icon(Icons.send_rounded, color: c.primary)),
+        ]),
       );
 
   Widget _details(AppColors c) {
@@ -715,25 +763,6 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
         const SizedBox(height: 18),
         Text(context.tr('Commentaires · {a}', {'a': ep['comments_count'] ?? _comments.length}), style: TextStyle(color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.w800)),
         const SizedBox(height: 8),
-        Row(children: [
-          Expanded(child: TextField(
-            controller: _commentCtrl,
-            maxLength: 200,
-            minLines: 1,
-            maxLines: 3,
-            style: TextStyle(color: c.textPrimary, fontSize: 13),
-            decoration: InputDecoration(
-              counterText: '',
-              hintText: context.tr('Un commentaire court…'),
-              hintStyle: TextStyle(color: c.textSecondary),
-              filled: true, fillColor: c.surface,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(99), borderSide: BorderSide(color: c.border)),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(99), borderSide: BorderSide(color: c.border)),
-            ),
-          )),
-          IconButton(onPressed: _sending ? null : _sendComment, icon: Icon(Icons.send_rounded, color: c.primary)),
-        ]),
         const SizedBox(height: 6),
         for (final cm in _comments)
           Padding(

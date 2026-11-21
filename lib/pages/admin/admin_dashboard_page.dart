@@ -41,6 +41,7 @@ import 'stickers/admin_stickers_page.dart';
 import '../intro/tutos/tuto_scene_card.dart';
 import '../studio/artist_marketplace.dart';
 import 'community_templates_admin_page.dart';
+import '../cinema/cinema_admin_page.dart';
 
 /// Tableau de bord admin unique (fusion de l'ancien « Tableau de bord » et de l'« ADMIN HUB » / AppData).
 /// Les données se chargent à l'ouverture de la page et via le bouton « Actualiser » uniquement,
@@ -414,6 +415,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       _Module(Icons.quiz_rounded, 'Quiz', const Color(0xFFE0A100), 0, const QuizAdminPage()),
       _Module(Icons.school_rounded, 'Étude', const Color(0xFF1FAA59), 0, const EtudeAdminPage()),
       _Module(Icons.auto_stories_rounded, 'Contes', const Color(0xFFB07A1F), 0, const ContesAdminPage()),
+      _Module(Icons.movie_rounded, 'Cartoon Cinéma', const Color(0xFFE5484D), 0, const CinemaAdminEntry()),
       _Module(Icons.newspaper_rounded, 'Actualités', c.info, 0, const NewsAdminPage()),
       _Module(Icons.pie_chart_rounded, 'Commissions', c.primary, 0, const CommissionsAdminPage()),
       _Module(Icons.admin_panel_settings_rounded, 'Équipe', c.danger, 0, const TeamAdminPage()),
