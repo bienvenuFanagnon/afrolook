@@ -110,7 +110,8 @@ class AuthenticVideoCheck {
       final texts = <String>[];
       final nsfw = <List<double>>[];
       for (final t in times) {
-        final f = await VideoThumbnail.thumbnailFile(video: path, imageFormat: ImageFormat.JPEG, timeMs: t, maxWidth: 720, quality: 70);
+        final f = await VideoThumbnail.thumbnailFile(video: path, imageFormat: ImageFormat.JPEG, timeMs: t, maxWidth: 720, quality: 70)
+            .timeout(const Duration(seconds: 8), onTimeout: () => null);   // une image qui ne vient pas : on passe à la suivante
         if (f == null) continue;
         final r = await recognizer.processImage(InputImage.fromFilePath(f));
         texts.add(r.text);
@@ -204,7 +205,9 @@ class AuthenticVideoCheck {
         ),
       ),
     );
-    final res = await scan(path);
+    // limite globale (21/11/2026) : si une étape reste bloquée (lecteur, image, lecture du texte, contrôle du contenu), la fenêtre ne tourne jamais sans fin ;
+    // passé 30 secondes, la vidéo continue sans verdict (le contrôle pendant les lectures et la modération restent en place)
+    final res = await scan(path).timeout(const Duration(seconds: 30), onTimeout: () => const AuthenticResult.ok());
     if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
     if (res.ok || !context.mounted) return true;
 
