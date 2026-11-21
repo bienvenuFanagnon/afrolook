@@ -1,4 +1,5 @@
 import 'package:afrotok/widgets/feed/sections/post_call_card.dart';
+import '../cinema/cinema_teaser_card.dart';
 import 'package:afrotok/services/chronique_first_page.dart';
 import 'package:afrotok/services/api/startup_trace.dart';
 import 'package:afrotok/services/api/api_gateway.dart';
@@ -3623,6 +3624,10 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       // Tâches rémunérées (« Travaille et gagne de l'argent ») : DÈS LE 1er post (décision du propriétaire, 05/11/2026), puis tous les 20 posts à partir du 6e (26e, 46e…).
       if (i == 0 || (i > 5 && (i - 5) % 20 == 0)) {
         contentWidgets.add(OfferwallFeedCard(key: ValueKey('offerwall_card_home_$i'), slot: i == 0 ? 1 : 2 + (i - 5) ~/ 20));
+      }
+      // Cartoon Cinéma (décision du propriétaire, 21/11/2026) : 30 secondes d'un épisode (gratuit ou à débloquer), après le 3e post puis tous les 8 posts
+      if (i == 2 || (i > 2 && (i - 2) % 8 == 0)) {
+        contentWidgets.add(CinemaTeaserCard(key: ValueKey('cinema_teaser_home_$i')));
       }
       // Offre « Une journée sans pub » : après le 9e post (jamais collée à une pub), 1 fois par jour.
       if (i == 8) {

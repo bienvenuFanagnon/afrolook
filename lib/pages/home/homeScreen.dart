@@ -1,4 +1,5 @@
 import 'package:afrotok/pages/postComments.dart' show openCommentThread;
+import '../cinema/cinema_home_page.dart';
 import 'package:afrotok/pages/consultation/consultation_pages.dart';
 import 'package:afrotok/pages/create/create_menu_sheet.dart';
 import '../share/share_earn_page.dart';
@@ -664,6 +665,13 @@ class _MyHomePageState extends State<MyHomePage>
                       label: l10n.menuFavorites,
                       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => FavoritePostsPage()))),
 
+                  // ── Cartoon Cinéma (21/11/2026) ─────────
+                  _dItem(context, colors,
+                      icon: Icons.movie_filter_rounded,
+                      iconColor: colors.navInactive,
+                      label: context.tr('Cartoon Cinéma'),
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CinemaHomePage(source: 'menu')))),
+
                   // ── Business (contenus payants masqués sur iPhone) ─────────
                   if (!kIsAppleStore) ...[
                     _dSection(colors, 'Business'),
@@ -964,6 +972,7 @@ class _MyHomePageState extends State<MyHomePage>
   void initState() {
     // _changeColor();
     super.initState();
+    CinemaHomePage.refreshUnseen();   // pastille du bouton Cinéma (21/11/2026)
     // Achats App Store interrompus (iOS) : Apple les redonne à l'écoute, ils sont vérifiés puis crédités.
     AppleIapService.instance.start();
     // Achats Google Play (Android) interrompus : Google les redonne à l'écoute, ils sont vérifiés puis crédités.
@@ -1743,15 +1752,20 @@ class _MyHomePageState extends State<MyHomePage>
                             },
                           ),
                         ),
-                        if (!kIsAppleStore) GestureDetector(
-                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => DashboardContentScreen())),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.business_center_outlined, color: colors.navInactive, size: navIconSize),
-                              const SizedBox(height: 2),
-                              Text('Business', style: TextStyle(fontSize: 9, color: colors.textSecondary, fontWeight: FontWeight.w500)),
-                            ],
+                        // Cartoon Cinéma à la place de Business (décision du propriétaire, 21/11/2026 ; Business reste dans le menu) :
+                        // pastille rouge = épisodes sortis pas encore vus, pour tout le monde
+                        GestureDetector(
+                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CinemaHomePage(source: 'nav'))),
+                          child: ValueListenableBuilder<int>(
+                            valueListenable: CinemaHomePage.unseen,
+                            builder: (context, n, _) => _navItemWithLabel(
+                              icon: Icons.movie_filter_outlined,
+                              activeIcon: Icons.movie_filter_rounded,
+                              label: context.tr('Cinéma'),
+                              badge: n,
+                              colors: colors,
+                              size: navIconSize,
+                            ),
                           ),
                         ),
                         GestureDetector(
@@ -2794,6 +2808,7 @@ class _MyHomePageState extends State<MyHomePage>
 
                 // ── Découverte ───────────────────────────────────────
                 _rpSection(colors, 'Découverte'),
+                _rpItem(context, colors, icon: Icons.movie_filter_rounded, iconColor: const Color(0xFFFFD400), label: context.tr('Cartoon Cinéma'), onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CinemaHomePage(source: 'menu')))),
                 _rpItem(context, colors, icon: Entypo.trophy,                              label: l10n.menuTopStars,        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UserClassement()))),
                 _rpItem(context, colors, icon: FontAwesome.forumbee,                       label: l10n.menuCanaux,          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => CanalListPage(isUserCanals: false)))),
                 if (!kIsAppleStore) _rpItem(context, colors, icon: Icons.store_mall_directory,                 label: l10n.menuAfroshopMarket,  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HomeAfroshopPage(title: '')))),
