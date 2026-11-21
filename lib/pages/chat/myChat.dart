@@ -1531,6 +1531,8 @@ class _MyChatState extends State<MyChat> with WidgetsBindingObserver {
                   : 'text';
       // Le texte n'est jamais envoyé à l'API (messages chiffrés de bout en bout) : seulement le type de message
       await ChatApi.conversationSent(id, kind: kind);
+      // signal « nouveau message » (date seulement, jamais le texte) : la liste des discussions de l'autre personne se met à jour tout de suite
+      unawaited(_chatDoc?.set({..._chatDocParticipants, 'last_msg_at': FieldValue.serverTimestamp()}, SetOptions(merge: true)).catchError((_) {}));
     } catch (e) {
       printVm("Erreur mise à jour de la conversation: $e");
     }

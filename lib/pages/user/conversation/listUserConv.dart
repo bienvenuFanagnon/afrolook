@@ -196,6 +196,10 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         if (item['lastMsg'] is Map<String, dynamic>) {
           lastMsg = Message.fromJson(item['lastMsg'] as Map<String, dynamic>);
         }
+        if (lastMsg != null && chat.docId != null) {
+          _previews[chat.docId!] = lastMsg;
+          _previewApiAt[chat.docId!] = chat.updatedAt ?? 0;
+        }
         return ChatWithLastMessage(chat: chat, lastMessage: lastMsg);
       }).toList();
       if (!_firebaseLoaded && chats.isNotEmpty && mounted) {
@@ -580,9 +584,10 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         final chat = chatFromConversation(j, myId);
         // Demande refusée : disparaît de la liste de la personne qui l'a refusée (l'autre voit « refusée » dans la discussion)
         if (chat.requestStatus == 'refused' && chat.requestFrom != null && chat.requestFrom != myId) continue;
-        result.add(ChatWithLastMessage(chat: chat, lastMessage: null));
+        result.add(ChatWithLastMessage(chat: chat, lastMessage: _previews[chat.docId]));
       }
       result.sort((a, b) => (b.chat.updatedAt ?? 0).compareTo(a.chat.updatedAt ?? 0));
+      unawaited(_refreshPreviews(result));
       _firebaseLoaded = true;
       if (mounted) {
         setState(() {
@@ -2525,6 +2530,68 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
   final Map<String, StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>> _typingSubs = {};
   final Map<String, String> _typingStates = {};
 
+  // ── Aperçu du dernier message (21/11/2026) ──
+  // L'API ne garde jamais le texte des messages (chiffrés) : la liste lit elle-même le dernier message sur Firebase, seulement pour les
+  // conversations dont l'API signale un nouveau message (date du dernier message changée), et garde les aperçus déjà lus.
+  final Map<String, Message> _previews = {};          // conversation -> dernier message lu
+  final Map<String, int> _previewApiAt = {};          // conversation -> date du dernier message (API) au moment de la lecture
+  final Map<String, int> _lastSignal = {};            // conversation -> dernier signal « nouveau message » vu
+  Timer? _rtRefresh;
+
+  void _scheduleRealtimeRefresh() {
+    _rtRefresh?.cancel();
+    _rtRefresh = Timer(const Duration(milliseconds: 800), () {
+      if (mounted) _refreshChatsFromApi();
+    });
+  }
+
+  Future<void> _refreshPreviews(List<ChatWithLastMessage> chats) async {
+    final todo = chats.where((c) {
+      final id = c.chat.docId;
+      if (id == null || id.isEmpty) return false;
+      return !_previews.containsKey(id) || _previewApiAt[id] != (c.chat.updatedAt ?? 0);
+    }).take(50).toList();
+    if (todo.isEmpty) return;
+    var changed = false;
+    await Future.wait(todo.map((c) async {
+      final m = await _latestMessage(c.chat);
+      final id = c.chat.docId!;
+      _previewApiAt[id] = c.chat.updatedAt ?? 0;
+      if (m == null) return;
+      _previews[id] = m;
+      changed = true;
+    }));
+    if (!changed || !mounted) return;
+    setState(() {
+      for (final c in _chats) {
+        final p = _previews[c.chat.docId];
+        if (p != null) c.lastMessage = p;
+      }
+    });
+    _saveConvCache(_chats);
+  }
+
+  /// Dernier message valide de la conversation sur Firebase (tous ses identifiants : actuel et anciens), 1 lecture.
+  Future<Message?> _latestMessage(Chat chat) async {
+    final ids = <String>{
+      if (chat.docId?.isNotEmpty == true) chat.docId!,
+      ...chat.legacyChatIds.where((e) => e.isNotEmpty),
+      if (chat.id?.isNotEmpty == true) chat.id!,
+    }.take(10).toList();
+    if (ids.isEmpty) return null;
+    try {
+      final base = FirebaseFirestore.instance.collection('Messages');
+      final q = ids.length == 1 ? base.where('chat_id', isEqualTo: ids.first) : base.where('chat_id', whereIn: ids);
+      final snap = await q.where('is_valide', isEqualTo: true).orderBy('create_at_time_spam', descending: true).limit(1).get();
+      if (snap.docs.isEmpty) return null;
+      final m = Message.fromJson(snap.docs.first.data());
+      m.id = snap.docs.first.id;
+      return m;
+    } catch (_) {
+      return null;
+    }
+  }
+
   void _syncTypingListeners(List<ChatWithLastMessage> chats) {
     final myId = authProvider.loginUserData.id;
     if (myId == null) return;
@@ -2547,6 +2614,12 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
         if (at is Timestamp && DateTime.now().difference(at.toDate()).inMinutes >= 2) state = '';   // resté affiché : ignoré
         if (!state.startsWith('SENDING')) state = '';
         if ((_typingStates[id] ?? '') != state && mounted) setState(() => _typingStates[id] = state);
+        // nouveau message (signal écrit à l'envoi, sans le texte) : la première lecture sert de point de départ, les suivantes relisent la liste
+        final last = d?['last_msg_at'];
+        final lastMs = last is Timestamp ? last.millisecondsSinceEpoch : 0;
+        final seen = _lastSignal[id];
+        _lastSignal[id] = lastMs;
+        if (seen != null && lastMs > seen) _scheduleRealtimeRefresh();
       }, onError: (_) {});   // document pas encore créé (aucune discussion ouverte depuis) : rien à afficher
     });
   }
