@@ -42,6 +42,8 @@ class Chronique {
   String? id;
   /// Chronique business : carte de vente (produit, prix, lieu, WhatsApp, téléphone, lien), null = chronique ordinaire.
   Map<String, dynamic>? commerce;
+  /// Post partagé en chronique : {id, media_kind, excerpt, thumbnail_url, author{id, username, avatar_url}} (21/11/2026).
+  Map<String, dynamic>? linkedPost;
   /// Widgets vivants posés sur la chronique (sondage, question, lien…).
   List<PostWidget> widgets;
   String userId;
@@ -96,6 +98,7 @@ class Chronique {
   Chronique({
     this.id,
     this.commerce,
+    this.linkedPost,
     this.widgets = const [],
     required this.userId,
     required this.userPseudo,

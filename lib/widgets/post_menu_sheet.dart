@@ -2,6 +2,7 @@ import 'package:afrotok/services/api/posts_api.dart';
 import 'package:afrotok/utils/responsive_sheet.dart';
 import 'package:afrotok/widgets/post_diffusion_sheet.dart';
 import 'package:afrolook_api_client/afrolook_api_client.dart' show ApiException;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -9,6 +10,7 @@ import '../ads/gold_gate.dart';
 import '../l10n/tr.dart';
 import '../models/model_data.dart';
 import '../pages/cards/card_entry.dart';
+import '../pages/chronique/chronique_linked_post.dart';
 import '../pages/defi/defi_boost.dart';
 import '../pages/defi/defi_convert.dart';
 import '../pages/userPosts/reply_videos_page.dart';
@@ -181,6 +183,12 @@ class PostMenuSheetBody extends StatelessWidget {
                 _close();
                 showPostDiffusionSheet(pageContext, id);   // vagues de diffusion : visible par tous
               }, key: const ValueKey('menu_diffusion')),
+            // post partagé en chronique : extrait de 30 s au plus + « Voir le post complet » (21/11/2026) ; jamais depuis le web
+            if (id != null && !isAd && !kIsWeb)
+              _row(c, Icons.amp_stories_rounded, tr('Partager en chronique'), c.textPrimary, () {
+                _close();
+                shareAsChronique(pageContext, post);
+              }, key: const ValueKey('menu_share_chronicle')),
             if (PostDownload.canDownload(post))
               _row(c, Icons.download_rounded, _isOwner ? tr('Télécharger (gratuit)') : tr('Télécharger'), c.success, () {
                 _close();

@@ -104,6 +104,7 @@ import 'package:video_player/video_player.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'chronique_linked_post.dart';
 import 'chronique_commerce.dart';
 
 import '../../models/model_data.dart';
@@ -1679,7 +1680,10 @@ class _ChroniqueDetailPageState extends State<ChroniqueDetailPage> with TickerPr
                   mediaAspect: currentChronique.type == ChroniqueType.VIDEO && _isVideoInitialized && _videoController != null ? _videoController!.value.aspectRatio : (currentChronique.type == ChroniqueType.IMAGE ? _imageAspects[currentChronique.mediaUrl] : null),
                 )),
               if (currentChronique.commerce != null)
-                Positioned(left: 14, right: 14, bottom: 92, child: ChroniqueCommerceCard(commerce: currentChronique.commerce!)),
+                Positioned(left: 14, right: 14, bottom: 92, child: ChroniqueCommerceCard(commerce: currentChronique.commerce!))
+              // post partagé en chronique : « Voir le post complet » (21/11/2026)
+              else if (currentChronique.linkedPost != null)
+                Positioned(left: 14, right: 14, bottom: 92, child: ChroniqueLinkedPostCard(linked: currentChronique.linkedPost!, onOpen: () => _videoController?.pause())),
               _buildBottomRow(currentChronique),
               _buildHeartAnimation(),
             ] else if (_currentDisplayAd != null)

@@ -41,6 +41,10 @@
         android:name="android.hardware.camera"
         android:required="false"
         tools:targetApi="eclair" />
+    <!-- ACCESS_WIFI_STATE (et le module Agora) font croire au Play Store que le Wi-Fi est obligatoire : il est facultatif (21/11/2026) -->
+    <uses-feature
+        android:name="android.hardware.wifi"
+        android:required="false" />
 
     <queries>
         <intent>

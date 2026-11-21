@@ -1,5 +1,6 @@
 ﻿// providers/chronique_provider.dart
 
+import '../pages/chronique/chronique_linked_post.dart';
 import 'dart:io';
 
 import 'package:afrolook_api_client/afrolook_api_client.dart';
@@ -105,6 +106,7 @@ class ChroniqueProvider with ChangeNotifier {
       final hasText = (textContent ?? '').trim().isNotEmpty;
       final widgetsBody = PostWidgetsLink.take();   // widgets posés dans l'éditeur
       final commerceCard = ChroniqueCommerceLink.take();   // chronique business : carte de vente posée par le formulaire
+      final linkedPostId = ChroniqueLinkedPost.take();   // post partagé en chronique : bouton « Voir le post complet »
       final body = <String, dynamic>{
         'type': chroniqueTypeToApi(type),
         if (hasText) 'text': textContent!.trim(),
@@ -119,6 +121,7 @@ class ChroniqueProvider with ChangeNotifier {
         if ((type == ChroniqueType.IMAGE || type == ChroniqueType.VIDEO) && hasText && textX != null && textY != null) ...{'text_x': textX.clamp(0.0, 1.0), 'text_y': textY.clamp(0.0, 1.0)},
         if (musicBody != null) 'music': musicBody,
         if (commerceCard != null) 'commerce': commerceCard,
+        if (linkedPostId != null) 'linked_post_id': linkedPostId,
         if (widgetsBody != null) 'widgets': widgetsBody,
       };
 

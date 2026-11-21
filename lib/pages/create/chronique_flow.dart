@@ -13,6 +13,7 @@ import '../../models/model_data.dart';
 import '../../providers/authProvider.dart';
 import '../../providers/chroniqueProvider.dart';
 import '../../services/api/chroniques_api.dart';
+import '../../services/api/studio_trim_api.dart';
 import '../../services/new_content_bus.dart';
 import '../../theme/app_colors.dart';
 import '../../widgets/api_error_dialogs.dart' show showRechargeDialog;
@@ -23,6 +24,7 @@ import '../component/consoleWidget.dart';
 import '../studio/studio_models.dart';
 import 'create_hub_page.dart';
 import 'create_result.dart';
+import 'trim_sheet.dart';
 
 /// Les deux chroniques du parcours « Créer » : la chronique ordinaire (24 h) et la chronique business (carte de vente).
 enum ChroniqueKind { normal, business }
@@ -36,6 +38,43 @@ class ChroniqueFlow {
   static ChroniqueKind? active;
 
   static const int maxVideoSeconds = 30;
+
+  /// Vidéo trop longue pour une chronique : la personne choisit le passage gardé (30 s au plus), le serveur le découpe. Null si elle renonce
+  /// ou si la découpe échoue (message affiché).
+  static Future<File?> cutToMax(BuildContext context, File video, int totalMs) async {
+    final picked = await showTrimSheet(context, totalMs: totalMs, title: context.tr('Choisir le passage de la chronique'), maxMs: maxVideoSeconds * 1000);
+    if (picked == null || !context.mounted) return null;
+    final c = AppColors.of(context);
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => PopScope(
+        canPop: false,
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+            decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(18)),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.4, color: c.accent)),
+              const SizedBox(width: 14),
+              Material(color: Colors.transparent, child: Text(context.tr('Découpe du passage…'), style: TextStyle(color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.w600))),
+            ]),
+          ),
+        ),
+      ),
+    );
+    try {
+      final out = await StudioTrimApi.trim(video, isVideo: true, startMs: picked.start.round(), endMs: picked.end.round());
+      if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
+      return out;
+    } catch (_) {
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(context.tr('La découpe a échoué. Réessaie.'))));
+      }
+      return null;
+    }
+  }
 }
 
 /// Ouvre le parcours de création d'une chronique. Rend vrai si une chronique a été publiée.
@@ -113,11 +152,21 @@ Future<String> finishChronique(
       vc = null;
     }
     if (vc != null && vc.value.duration.inSeconds > ChroniqueFlow.maxVideoSeconds + 1) {
+      // vidéo trop longue (21/11/2026) : au lieu de la refuser, on choisit le passage de 30 secondes à garder
+      final totalMs = vc.value.duration.inMilliseconds;
       await vc.dispose();
-      if (context.mounted) {
-        ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(context.tr('La vidéo est trop longue : 30 secondes au maximum pour une chronique. Coupe-la avant de continuer.'))));
+      vc = null;
+      if (!context.mounted) return kCreateBack;
+      final cut = await ChroniqueFlow.cutToMax(context, media, totalMs);
+      if (cut == null) return kCreateBack;
+      media = cut;
+      vc = VideoPlayerController.file(media);
+      try {
+        await vc.initialize();
+      } catch (_) {
+        await vc.dispose();
+        vc = null;
       }
-      return kCreateBack;
     }
   }
   if (!context.mounted) {

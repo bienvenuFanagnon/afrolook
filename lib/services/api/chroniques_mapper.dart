@@ -28,6 +28,7 @@ Chronique chroniqueFromApi(Map<String, dynamic> j, {String? myId}) {
   return Chronique(
     id: j['id'] as String?,
     commerce: j['commerce'] is Map ? Map<String, dynamic>.from(j['commerce'] as Map) : null,
+    linkedPost: j['linked_post'] is Map ? Map<String, dynamic>.from(j['linked_post'] as Map) : null,
     widgets: PostWidget.listFromApi(j['widgets']),
     userId: '${author['id'] ?? ''}',
     userPseudo: '${author['username'] ?? ''}',
