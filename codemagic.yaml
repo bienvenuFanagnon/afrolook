@@ -255,6 +255,10 @@ workflows:
           fi
           echo "Patch pour la version iPhone : $RELEASE_VERSION"
           echo "RELEASE_VERSION=$RELEASE_VERSION" >> $CM_ENV
+          # Même numéro de build que la release (le projet grave CURRENT_PROJECT_VERSION dans le binaire : sinon « native changes »)
+          BUILD_NUMBER=${RELEASE_VERSION#*+}
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> $CM_ENV
+          cd ios && agvtool new-version -all $BUILD_NUMBER
       - name: Disable Flutter Swift Package Manager
         script: flutter config --no-enable-swift-package-manager
       - name: Get Flutter packages
@@ -279,9 +283,15 @@ workflows:
         script: xcode-project use-profiles
       - name: Shorebird patch iOS
         script: |
+          # Police d'icônes : acceptée seulement pour une release vérifiée à la main (toutes les icônes du code présentes dans sa police).
+          # 2.2.0+45 vérifiée le 22/11/2026 (police de la release extraite chez Shorebird, aucune icône nouvelle depuis b6933a60).
+          ALLOW=""
+          if [ "$RELEASE_VERSION" = "2.2.0+45" ]; then ALLOW="--allow-asset-diffs"; fi
           shorebird patch ios \
             --release-version=$RELEASE_VERSION \
-            --export-options-plist=/Users/builder/export_options.plist
+            --track=stable $ALLOW \
+            --export-options-plist=/Users/builder/export_options.plist \
+            -- --build-number=$BUILD_NUMBER
     publishing:
       email:
         recipients:
