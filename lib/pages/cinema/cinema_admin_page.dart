@@ -634,7 +634,7 @@ class _CinemaStatsPageState extends State<CinemaStatsPage> {
 }
 
 /// Pubs du cinéma : nombre de pubs pour débloquer un épisode après les 15 secondes gratuites, et au milieu de l'épisode (sans Gold).
-/// Pub du réseau (AdMob / Appodeal) d'abord, annonce Afrolook Ads sinon. Modifiable avec le droit « tout gérer ».
+/// Pubs Appodeal seulement (aucune pub sinon). Modifiable avec le droit « tout gérer ».
 class _AdSettingsCard extends StatefulWidget {
   const _AdSettingsCard({required this.rights});
 
@@ -704,7 +704,7 @@ class _AdSettingsCardState extends State<_AdSettingsCard> {
         ]),
         const SizedBox(height: 4),
         Text("Sans Gold : 15 secondes gratuites, puis des pubs pour débloquer l'épisode (24 h), et des pubs au milieu de l'épisode. "
-            "Pub du réseau (AdMob, Appodeal) d'abord, annonce Afrolook Ads sinon ; sans aucune pub, l'épisode est débloqué quand même.",
+            "Pubs Appodeal seulement ; quand Appodeal n'a aucune pub, l'épisode est débloqué quand même.",
             style: TextStyle(color: c.textSecondary, fontSize: 12)),
         const SizedBox(height: 6),
         if (unlock == null || mid == null)

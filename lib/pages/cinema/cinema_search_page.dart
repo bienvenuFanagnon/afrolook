@@ -6,7 +6,7 @@ import '../../ads/ad_slot.dart';
 import '../../l10n/tr.dart';
 import '../../services/api/cinema_api.dart';
 import '../../theme/app_colors.dart';
-import '../pub/afrolook_inline_ad.dart';
+import 'cinema_ads.dart';
 import 'cinema_player_page.dart';
 import 'cinema_title_page.dart';
 import 'cinema_widgets.dart';
@@ -121,8 +121,8 @@ class _CinemaSearchPageState extends State<CinemaSearchPage> {
                       ],
                       if (_episodes.isNotEmpty) CinemaRowTitle(context.tr('Épisodes')),
                       for (var i = 0; i < _episodes.length; i++) ...[
-                        // une pub (Appodeal / AdMob, sinon Afrolook Ads ; jamais pour Gold) après le 4e résultat puis tous les 8
-                        if (i == 4 || (i > 4 && (i - 4) % 8 == 0)) AdSlot(key: ValueKey('cinema_search_ad_$i'), kind: AdSlotKind.list, own: () => const AfrolookInlineAd(compact: true)),
+                        // une bannière Appodeal (rien sinon ; jamais pour Gold) après le 4e résultat puis tous les 8
+                        if (i == 4 || (i > 4 && (i - 4) % 8 == 0)) CinemaAdSlot(key: ValueKey('cinema_search_ad_$i'), kind: AdSlotKind.list),
                         _episodeTile(c, _episodes[i]),
                       ],
                     ]),

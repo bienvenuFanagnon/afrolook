@@ -150,11 +150,25 @@ class AppodealService {
     }
   }
   static bool _rewardEarned = false;
+  static bool _rewardShowFailed = false;
+
+  /// Prépare une pub récompensée à l'avance (ouverture du lecteur du Cinéma) : elle est prête quand la personne la demande.
+  static Future<void> warmUpRewarded() async {
+    try {
+      if (!supported || !ready.value) return;
+      if (await Appodeal.isLoaded(AppodealAdType.RewardedVideo)) return;
+      Appodeal.cache(AppodealAdType.RewardedVideo);
+    } catch (_) {}
+  }
 
   /// Pub récompensée Appodeal, en renfort quand AdMob n'a rien à montrer (voir RewardedAds) : charge à la demande, affiche, et retourne `true`
   /// si elle a été regardée en entier. `false` : Appodeal pas prêt, aucune pub disponible, ou abandon.
-  static Future<bool> watchRewarded() async {
-    if (!supported || !ready.value) return false;
+  static Future<bool> watchRewarded() async => await watchRewardedOutcome() == 'earned';
+
+  /// Comme [watchRewarded], en distinguant les trois issues : `earned` (regardée en entier), `dismissed` (fermée avant la fin),
+  /// `noAd` (Appodeal pas prêt ou aucune pub disponible).
+  static Future<String> watchRewardedOutcome() async {
+    if (!supported || !ready.value) return 'noAd';
     const type = AppodealAdType.RewardedVideo;
     try {
       if (!await Appodeal.isLoaded(type)) {
@@ -165,14 +179,17 @@ class AppodealService {
           if (await Appodeal.isLoaded(type) || _outcome[type] == 'ko') break;
         }
       }
-      if (!await Appodeal.isLoaded(type)) return false;
+      if (!await Appodeal.isLoaded(type)) return 'noAd';
       _rewardEarned = false;
+      _rewardShowFailed = false;
       _rewardWaiter = Completer<bool>();
-      if (!await Appodeal.show(type)) return false;
-      return await _rewardWaiter!.future.timeout(const Duration(minutes: 3), onTimeout: () => _rewardEarned);
+      if (!await Appodeal.show(type)) return 'noAd';
+      final earned = await _rewardWaiter!.future.timeout(const Duration(minutes: 3), onTimeout: () => _rewardEarned);
+      if (earned) return 'earned';
+      return _rewardShowFailed ? 'noAd' : 'dismissed';   // affichage refusé par le SDK : ce n'est pas un abandon
     } catch (e) {
       lastError = '$e';
-      return false;
+      return 'noAd';
     } finally {
       _rewardWaiter = null;
     }
@@ -267,6 +284,7 @@ class AppodealService {
       onRewardedVideoShown: () => _log('récompensée : affichée'),
       onRewardedVideoShowFailed: () {
         _log('récompensée : affichage impossible');
+        _rewardShowFailed = true;
         if (_rewardWaiter != null && !_rewardWaiter!.isCompleted) _rewardWaiter!.complete(false);
       },
       onRewardedVideoClicked: () => _log('récompensée : cliquée'),

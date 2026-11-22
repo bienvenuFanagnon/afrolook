@@ -4,7 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
 import '../../ads/ad_slot.dart';
-import '../pub/afrolook_inline_ad.dart';
+import 'cinema_ads.dart';
 
 import '../../l10n/tr.dart';
 import '../../services/api/cinema_api.dart';
@@ -246,8 +246,8 @@ class _CinemaHomePageState extends State<CinemaHomePage> {
         ),
       if (empty) const CinemaCreatorsCard(),
       if (_filter == 'all' && featured.isNotEmpty) _hero(c, featured.first),
-      // pubs du Cinéma (Appodeal / AdMob, sinon Afrolook Ads ; jamais pour Gold) : bannière sous la une, pub native entre les rangées, grand format en bas
-      if (!empty) Padding(padding: const EdgeInsets.only(top: 8), child: AdSlot(key: const ValueKey('cinema_home_banner'), kind: AdSlotKind.detail, own: () => const AfrolookInlineAd(compact: true))),
+      // pubs du Cinéma (Appodeal seulement, rien sinon ; jamais pour Gold) : bannière sous la une, bannière entre les rangées, grand format en bas
+      if (!empty) const Padding(padding: EdgeInsets.only(top: 8), child: CinemaAdSlot(key: ValueKey('cinema_home_banner'), kind: AdSlotKind.detail)),
       if (_filter == 'all' && unseen.isNotEmpty) ...[
         CinemaRowTitle(context.tr('Pas encore vus'), trailing: '${_data?['unseen_count'] ?? unseen.length}'),
         hRow([for (final e in unseen) CinemaEpisodeThumb(ep: e, onTap: () => _openEpisode(e))]),
@@ -256,7 +256,7 @@ class _CinemaHomePageState extends State<CinemaHomePage> {
         CinemaRowTitle(context.tr('Continuer à regarder')),
         hRow([for (final e in cont) CinemaEpisodeThumb(ep: e, onTap: () => _openEpisode(e))]),
       ],
-      if (!empty && (cont.isNotEmpty || unseen.isNotEmpty)) AdSlot(key: const ValueKey('cinema_home_native'), kind: AdSlotKind.list, own: () => const AfrolookInlineAd(compact: true)),
+      if (!empty && (cont.isNotEmpty || unseen.isNotEmpty)) const CinemaAdSlot(key: ValueKey('cinema_home_native'), kind: AdSlotKind.list),
       if ((_filter == 'all' || _filter == 'series') && series.isNotEmpty) ...[
         CinemaRowTitle(context.tr('Séries')),
         hRow([for (final t in series) CinemaPoster(title: t, onTap: () => _openTitle(t))]),
@@ -269,7 +269,7 @@ class _CinemaHomePageState extends State<CinemaHomePage> {
         CinemaRowTitle(context.tr('Gratuits')),
         hRow([for (final e in free) CinemaEpisodeThumb(ep: e, onTap: () => _openEpisode(e))]),
       ],
-      if (!empty) Padding(padding: const EdgeInsets.only(top: 14), child: AdSlot(key: const ValueKey('cinema_home_mrec'), kind: AdSlotKind.detailMrec, own: () => const AfrolookInlineAd())),
+      if (!empty) const Padding(padding: EdgeInsets.only(top: 14), child: CinemaAdSlot(key: ValueKey('cinema_home_mrec'), kind: AdSlotKind.detailMrec)),
       if (!empty) const CinemaCreatorsCard(),
     ]);
   }

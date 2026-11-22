@@ -9,6 +9,7 @@ import 'admob_service.dart';
 import 'admob_widgets.dart';
 import 'ad_banner.dart';
 import 'appodeal_service.dart';
+import 'appodeal_widgets.dart';
 import 'music_ads.dart';
 
 /// Emplacement publicitaire : pub Afrolook ou pub du réseau, jamais les deux.
@@ -44,8 +45,12 @@ enum AdSlotKind {
 }
 
 class AdSlot extends StatefulWidget {
-  const AdSlot({Key? key, required this.kind, required this.own, this.admobFirst = false, this.allowOwn = true}) : super(key: key);
+  const AdSlot({Key? key, required this.kind, required this.own, this.admobFirst = false, this.allowOwn = true, this.appodealOnly = false}) : super(key: key);
   final AdSlotKind kind;
+
+  /// Appodeal seulement (Cartoon Cinéma, décision du 22/11/2026) : bannière Appodeal, ou grand format pour [AdSlotKind.detailMrec], y compris
+  /// aux emplacements natifs (le paquet Appodeal n'affiche pas de natives). Ni AdMob en direct ni pub Afrolook ; rien si Appodeal n'a rien.
+  final bool appodealOnly;
 
   ///  : jamais de pub Afrolook sur cet emplacement, seulement AdMob / Appodeal (page des tâches rémunérées) ; rien si les réseaux n'ont rien.
   final bool allowOwn;
@@ -105,6 +110,10 @@ class _AdSlotState extends State<AdSlot> {
   _Mode _decide(UserAuthProvider auth) {
     final user = auth.loginUserData;
     if (!AdGate.userSeesAds(user)) return _Mode.none;
+    if (widget.appodealOnly) {
+      final ok = !_admobFailed && _kindEnabled() && AppodealService.supported && AppodealService.ready.value && AdGate.canShowAdmob(user);
+      return ok ? _Mode.admob : _Mode.none;
+    }
     final ownAvailable = widget.allowOwn && auth.advertisements.isNotEmpty;
     // Bannière Appodeal : mêmes règles d'accès que les autres pubs, mais pas d'identifiant AdMob requis ; tant qu'Appodeal n'est pas prêt, pub Afrolook
     final admobOk = !_admobFailed && _kindEnabled() &&
@@ -119,7 +128,7 @@ class _AdSlotState extends State<AdSlot> {
   void initState() {
     super.initState();
     // Une pub native de plus se prépare dès qu'un emplacement apparaît : le suivant s'affichera sans attente
-    if (_type == 'native') {
+    if (_type == 'native' && !widget.appodealOnly) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) AdmobNativePool.warmUpWhenReady(context, context.read<UserAuthProvider>().loginUserData, small: widget.kind != AdSlotKind.feed);
       });
@@ -147,6 +156,9 @@ class _AdSlotState extends State<AdSlot> {
           case _Mode.own:
             return widget.own();
           case _Mode.admob:
+            if (widget.appodealOnly) {
+              return AppodealBannerWidget(mrec: widget.kind == AdSlotKind.detailMrec, onFailed: _onAdmobFailed);
+            }
             switch (widget.kind) {
               case AdSlotKind.detail:
               case AdSlotKind.groupBanner:

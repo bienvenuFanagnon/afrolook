@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../ads/ad_slot.dart';
-import '../pub/afrolook_inline_ad.dart';
+import 'cinema_ads.dart';
 
 import '../../l10n/tr.dart';
 import '../../services/api/cinema_api.dart';
@@ -133,7 +133,7 @@ class _CinemaTitlePageState extends State<CinemaTitlePage> {
               ]),
             ),
           ),
-          SliverToBoxAdapter(child: AdSlot(key: const ValueKey('cinema_title_banner'), kind: AdSlotKind.detail, own: () => const AfrolookInlineAd(compact: true))),
+          const SliverToBoxAdapter(child: CinemaAdSlot(key: ValueKey('cinema_title_banner'), kind: AdSlotKind.detail)),
           SliverList.builder(
             itemCount: shown.length,
             itemBuilder: (ctx, i) {
@@ -174,7 +174,7 @@ class _CinemaTitlePageState extends State<CinemaTitlePage> {
                 ),
               );
               return ad
-                  ? Column(children: [AdSlot(key: ValueKey('cinema_title_ad_$i'), kind: AdSlotKind.list, own: () => const AfrolookInlineAd(compact: true)), row])
+                  ? Column(children: [CinemaAdSlot(key: ValueKey('cinema_title_ad_$i'), kind: AdSlotKind.list), row])
                   : row;
             },
           ),
