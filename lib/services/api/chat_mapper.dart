@@ -173,7 +173,9 @@ NotificationData notificationFromApi(Map<String, dynamic> j) {
   if (commentId.isNotEmpty) n.comment_id = commentId;
   if (subjectType == 'channel' || subjectType == 'canal') {
     n.canal_id = subjectId;
-  } else if (subjectType != 'conversation' && subjectType != 'group') {
+  } else if (subjectType == 'group') {
+    n.group_id = subjectId;
+  } else if (subjectType != 'conversation') {
     n.post_id = subjectId;
   }
   // Contenu de la publication liée (`post_data_type` : IMAGE, VIDEO, AUDIO ou TEXT ; `post_thumbnail` : miniature de la publication, sinon de la

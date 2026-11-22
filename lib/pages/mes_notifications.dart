@@ -9,6 +9,7 @@ import 'package:afrotok/pages/auth/authTest/constants.dart';
 import 'package:afrotok/pages/canaux/detailsCanal.dart';
 import 'package:afrotok/pages/component/consoleWidget.dart';
 import 'package:afrotok/pages/postComments.dart';
+import 'package:afrotok/pages/chat/group/group_chat_page.dart';
 import 'package:afrotok/pages/postDetails.dart';
 import 'package:afrotok/pages/postDetailsVideo.dart';
 import 'package:afrotok/pages/user/amis/mesAmis.dart';
@@ -571,8 +572,19 @@ class _MesNotificationState extends State<MesNotification> {
             await _showInfoDialog(notification);
           }
           break;
+        case 'GROUP_MESSAGE':
+          // message de groupe : ouvre le groupe (le texte n'est jamais dans la notification)
+          final gid = notification.group_id ?? '';
+          if (gid.isEmpty) {
+            await _showInfoDialog(notification);
+          } else {
+            _hideLoadingOverlay();
+            await _openPage(GroupChatPage(groupId: gid, groupName: notification.titre ?? 'Groupe'));
+          }
+          break;
         case 'GAIN':
         case 'WEEKLY_REWARD':
+        case 'DEFI_WIN':
           await _openPage(MonetisationPage());
           break;
         case 'ORDER_NEW':

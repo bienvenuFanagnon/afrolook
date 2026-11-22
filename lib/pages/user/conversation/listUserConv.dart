@@ -341,29 +341,18 @@ class _ListUserChatsOptimizedState extends State<ListUserChatsOptimized> {
     );
   }
 
-  /// Aperçu du dernier message de chaque groupe : les messages restent sur Firebase (GroupMessages). Seuls les groupes dont le dernier message est un
-  /// texte (ou inconnu) sont lus : pour une image, un audio, une vidéo ou un fichier, l'API fournit déjà le type.
+  /// Aperçu du dernier message de chaque groupe : l'API fournit seulement le TYPE (jamais de texte, les messages sont chiffrés) ; plus aucune
+  /// lecture de GroupMessages pour la liste.
   Future<void> _enrichGroupsWithLastMessage(List<Map<String, dynamic>> groups) async {
-    await Future.wait(groups.take(40).map((g) async {
+    for (final g in groups) {
       final kind = g['last_message_kind'] as String?;
-      if (kind != null && kind != 'text') return;
-      try {
-        final snap = await FirebaseFirestore.instance
-            .collection('GroupMessages')
-            .where('group_id', isEqualTo: g['id'])
-            .orderBy('create_at_time_spam', descending: true)
-            .limit(1)
-            .get();
-        if (snap.docs.isEmpty) return;
-        final m = snap.docs.first.data();
-        final type = m['message_type'] as String? ?? 'text';
-        // Texte : déchiffré si la clé du groupe est sur l'appareil, sinon « Message chiffré » (jamais de texte chiffré affiché)
-        final text = type == 'text' ? await groupCrypto.previewText('${g['id']}', authProvider.loginUserData.id ?? '', m) : '';
-        g['last_message'] = type == 'text' ? (text.startsWith('enc:v1:') ? '🔒 Message chiffré' : text) : (type == 'image' ? '📷 Image' : '🎤 Audio');
-        // La date du dernier message vient de l'API ; celle de Firebase ne sert que si l'API n'en a pas (groupe importé jamais utilisé depuis)
-        if (((g['last_message_at'] as int?) ?? 0) == 0) g['last_message_at'] = (m['create_at_time_spam'] as num?)?.toInt() ?? 0;
-      } catch (_) {}
-    }));
+      if (kind == null) continue;
+      if (kind == 'text') {
+        g['last_message'] = '💬 Message';
+      } else if ((g['last_message'] as String? ?? '').isEmpty) {
+        g['last_message'] = groupKindPreview(kind);
+      }
+    }
     if (mounted) _mergeAndSetGroups();
   }
 
