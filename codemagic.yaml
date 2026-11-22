@@ -239,16 +239,22 @@ workflows:
         distribution_type: app_store
         bundle_identifier: com.afrotok.afrotok
     scripts:
-      - name: Vérifier RELEASE_VERSION
-        script: |
-          if [ -z "$RELEASE_VERSION" ]; then
-            echo "Ajoute la variable RELEASE_VERSION (ex. 2.1.8+41) au lancement du build."
-            exit 1
-          fi
       - name: Installer Shorebird
         script: |
           curl --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/shorebirdtech/install/main/install.sh -sSf | bash
           echo PATH="$HOME/.shorebird/bin:$PATH" >> $CM_ENV
+      # RELEASE_VERSION saisie au lancement si besoin ; sinon la dernière version iPhone enregistrée chez Shorebird (shorebird releases list).
+      - name: Choisir RELEASE_VERSION
+        script: |
+          if [ -z "$RELEASE_VERSION" ]; then
+            RELEASE_VERSION=$($HOME/.shorebird/bin/shorebird releases list 2>/dev/null | grep -E '[0-9]+\.[0-9]+\.[0-9]+\+[0-9]+ +ios' | head -1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\+[0-9]+')
+          fi
+          if [ -z "$RELEASE_VERSION" ]; then
+            echo "Aucune version iPhone trouvée chez Shorebird : ajoute la variable RELEASE_VERSION (ex. 2.2.0+45) au lancement du build."
+            exit 1
+          fi
+          echo "Patch pour la version iPhone : $RELEASE_VERSION"
+          echo "RELEASE_VERSION=$RELEASE_VERSION" >> $CM_ENV
       - name: Disable Flutter Swift Package Manager
         script: flutter config --no-enable-swift-package-manager
       - name: Get Flutter packages
