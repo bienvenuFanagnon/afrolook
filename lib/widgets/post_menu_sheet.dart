@@ -185,7 +185,7 @@ class PostMenuSheetBody extends StatelessWidget {
               }, key: const ValueKey('menu_diffusion')),
             // post partagé en chronique : extrait de 30 s au plus + « Voir le post complet » (21/11/2026) ; jamais depuis le web
             if (id != null && !isAd && !kIsWeb)
-              _row(c, Icons.amp_stories_rounded, tr('Partager en chronique'), c.textPrimary, () {
+              _row(c, Icons.auto_stories_rounded, tr('Partager en chronique'), c.textPrimary, () {
                 _close();
                 shareAsChronique(pageContext, post);
               }, key: const ValueKey('menu_share_chronicle')),
