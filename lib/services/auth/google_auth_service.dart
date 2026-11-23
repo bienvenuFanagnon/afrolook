@@ -1,5 +1,6 @@
 import 'package:afrolook_api_client/afrolook_api_client.dart';
 import 'package:afrotok/services/api/users_api.dart';
+import 'package:afrotok/services/api/api_session.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -79,6 +80,7 @@ class GoogleAuthService {
     try {
       await _google.signOut();
     } catch (_) {}
+    await ApiSession.forget();
     try {
       await FirebaseAuth.instance.signOut();
     } catch (_) {}

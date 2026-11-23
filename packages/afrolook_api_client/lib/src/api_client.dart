@@ -23,6 +23,7 @@ class ApiClient {
     required this.token,
     this.appCheck,
     this.onEmailUnverified,
+    this.onUnauthorized,
     this.maxRetries = 3,
     this.retryBase = const Duration(milliseconds: 400),
     Dio? dio,
@@ -41,6 +42,10 @@ class ApiClient {
   /// renvoie true si l'e-mail est confirmé (la requête est alors rejouée, avec la même clé d'idempotence). Si la personne renonce (false),
   /// l'erreur est relancée avec `details.declined = true` pour que l'écran n'ouvre pas une seconde fenêtre.
   final Future<bool> Function()? onEmailUnverified;
+
+  /// Appelé à chaque réponse 401 avec son code (`session_invalid`, `unauthenticated`…), AVANT le nouvel essai : l'application oublie
+  /// par exemple une session Afrolook que l'API a annulée, pour que le nouvel essai parte avec un autre jeton.
+  final FutureOr<void> Function(String? code)? onUnauthorized;
   final int maxRetries;
   final Duration retryBase;
   final Dio _dio;
@@ -92,6 +97,11 @@ class ApiClient {
       if (status >= 200 && status < 300) return res.data;
       if (status == 401 && !refreshed) {
         refreshed = true; // jeton expiré : un seul nouvel essai avec un jeton rafraîchi
+        if (onUnauthorized != null) {
+          try {
+            await onUnauthorized!(res.data is Map ? (res.data as Map)['code'] as String? : null);
+          } catch (_) {}
+        }
         continue;
       }
       if (status == 403 && !emailAsked && onEmailUnverified != null && res.data is Map && (res.data as Map)['code'] == 'email_unverified') {

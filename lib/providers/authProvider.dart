@@ -1,6 +1,7 @@
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/services/afrolook_ads_pool.dart';
 import 'package:afrotok/services/api/api_identity.dart';
+import 'package:afrotok/services/api/api_session.dart';
 import '../services/follow_service.dart';
 import 'dart:async';
 import 'dart:developer';
@@ -185,6 +186,7 @@ Future<bool> changeStateUser({required UserData user, required String state, req
         return UsersApi.message(e, fallback: 'Suppression impossible pour le moment. Réessaie plus tard.');
       }
 
+      await ApiSession.forget();   // le serveur a déjà annulé les sessions du compte
       await FirebaseAuth.instance.signOut();
       ApiIdentity.clear();
       return null; // succès
@@ -225,6 +227,8 @@ Future<bool> changeStateUser({required UserData user, required String state, req
       if (uidPush != null) await PushService.unregisterForUser(uidPush).timeout(const Duration(seconds: 3), onTimeout: () {});
       // 3️⃣ Supprimer token local
       await storeToken('');
+      // Session Afrolook de ce téléphone fermée sur le serveur (au plus 3 s), AVANT Firebase
+      await ApiSession.close();
       // 4️⃣ FORCER la déconnexion Firebase (la plus importante)
       await FirebaseAuth.instance.signOut();
       ApiIdentity.clear();

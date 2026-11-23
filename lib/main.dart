@@ -1,6 +1,7 @@
 import 'package:afrotok/pages/create/create_hub_page.dart';
 import 'package:afrotok/services/read_meter.dart';
 import 'package:afrotok/services/api/api_gateway.dart';
+import 'package:afrotok/services/api/api_session.dart';
 import 'package:afrotok/services/api/startup_trace.dart';
 import 'package:afrotok/services/app_messaging.dart';
 import 'dart:async';
@@ -205,6 +206,8 @@ Future<void> main() async {
 
     // La première page du feed est demandée DÈS MAINTENANT (la personne est déjà connectée, les interrupteurs de modules sont chargés) :
     // elle voyage pendant que l'application finit de démarrer, au lieu d'attendre l'affichage de l'écran de lancement (~1,5 s gagnée).
+    // Session Afrolook du téléphone (23/11/2026) lue AVANT la première requête : la personne reste connectée même si Firebase a perdu sa session
+    await ApiSession.start();
     ApiGateway.instance.prefetchHome();
 
     await DeviceInfoService.initializeDeviceId();

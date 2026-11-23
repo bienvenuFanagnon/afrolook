@@ -48,6 +48,25 @@ void main() {
     expect(a.seen[1].headers['Authorization'], 'Bearer frais');
   });
 
+  test('401 session_invalid : le crochet reçoit le code AVANT le nouvel essai, qui part avec un autre jeton', () async {
+    final a = FakeAdapter([(401, {'code': 'session_invalid', 'message': 'x', 'details': {}}), (200, {'data': 1})]);
+    var session = 'afk_1';
+    final codes = <String?>[];
+    final c = ApiClient(
+      baseUrl: 'https://api.test/v1',
+      token: ({bool forceRefresh = false}) async => session,
+      onUnauthorized: (code) {
+        codes.add(code);
+        session = 'firebase';
+      },
+      retryBase: Duration.zero,
+      dio: Dio()..httpClientAdapter = a,
+    );
+    expect(ApiClient.data(await c.get('/x')), 1);
+    expect(codes, ['session_invalid']);
+    expect(a.seen.map((o) => o.headers['Authorization']), ['Bearer afk_1', 'Bearer firebase']);
+  });
+
   test('lecture : réessaie après 503 puis réussit', () async {
     final a = FakeAdapter([(503, {}), (503, {}), (200, {'data': 1})]);
     await make(a).get('/x');

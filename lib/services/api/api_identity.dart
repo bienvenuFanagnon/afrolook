@@ -1,5 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'api_session.dart';
+
 /// Identifiant de la personne connectée DANS L'API (pas celui de Firebase : les comptes créés par l'API ont un identifiant différent).
 /// Renseigné à chaque lecture de `/bootstrap` ; sert aux convertisseurs de publications pour rendre `liked_by_me` / `favorited_by_me`
 /// comparables à `loginUserData.id`, que tous les écrans utilisent. C'est aussi lui qui indexe les messages, la présence et les lives.
@@ -17,7 +19,8 @@ class ApiIdentity {
 
   static String? _defaultFirebaseUid() {
     try {
-      return FirebaseAuth.instance.currentUser?.uid;
+      // tant que Firebase n'a pas retrouvé sa session, l'uid du compte de la session Afrolook (23/11/2026)
+      return FirebaseAuth.instance.currentUser?.uid ?? ApiSession.firebaseUid;
     } catch (_) {
       return null;
     }

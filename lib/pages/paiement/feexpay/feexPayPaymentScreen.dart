@@ -10,6 +10,7 @@ import 'package:afrolook_api_client/afrolook_api_client.dart';
 import '../../../services/api/wallet_api.dart';
 import '../../../widgets/email_verification_gate.dart';
 
+import 'package:afrotok/services/api/api_session.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:url_launcher/url_launcher.dart';
@@ -218,6 +219,7 @@ class _FeexPayPaymentScreenState extends State<FeexPayPaymentScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
+              await ApiSession.close();
               await FirebaseAuth.instance.signOut();
               Get.offAllNamed('/login');
             },

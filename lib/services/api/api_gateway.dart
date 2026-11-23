@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../chronique_first_page.dart';
 import '../feed/feed_stock.dart';
 import 'api_identity.dart';
+import 'api_session.dart';
 
 import '../../widgets/email_verification_gate.dart';
 import '../nav_cache_service.dart';
@@ -53,7 +54,8 @@ class ApiGateway {
 
   String _baseUrl = _defaultBaseUrl;
 
-  bool useApi(String module) => FirebaseAuth.instance.currentUser != null && modules.useApi(module);
+  // Session Afrolook (23/11/2026) : la personne reste sur l'API même quand Firebase a perdu sa session (sinon tout repartait vers l'ancien système)
+  bool useApi(String module) => (FirebaseAuth.instance.currentUser != null || ApiSession.active) && modules.useApi(module);
 
   final Set<String> _viewed = {};
 
@@ -63,7 +65,7 @@ class ApiGateway {
   String? _stockUid;
 
   FeedStock get _feedStock {
-    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? ApiSession.firebaseUid ?? '';
     if (_stock == null || _stockUid != uid) {
       _stockUid = uid;
       _stock = FeedStock(
@@ -187,9 +189,44 @@ class ApiGateway {
     return _emailPrompt = f;
   }
 
+  static final DateTime _startedAt = DateTime.now();
+
+  /// Jeton de chaque requête (23/11/2026) : celui de Firebase quand il marche ; sinon la session Afrolook du téléphone (la personne reste
+  /// connectée), et Firebase est reconnecté en silence. Juste après le démarrage, Firebase relit sa session avec un léger retard : on l'attend
+  /// (au plus 4 s) au lieu d'envoyer la requête sans jeton (« Connexion requise »).
+  Future<String?> _token({bool forceRefresh = false}) async {
+    var user = FirebaseAuth.instance.currentUser;
+    final session = await ApiSession.token();
+    if (user == null && session == null && DateTime.now().difference(_startedAt) < const Duration(seconds: 20)) {
+      try {
+        user = await FirebaseAuth.instance.authStateChanges().firstWhere((u) => u != null).timeout(const Duration(seconds: 4));
+      } catch (_) {}
+    }
+    if (user != null) {
+      try {
+        final t = await user.getIdToken(forceRefresh).timeout(const Duration(seconds: 8));
+        if (t != null && t.isNotEmpty) {
+          if (session == null) unawaited(ApiSession.ensure());
+          return t;
+        }
+      } catch (_) {
+        // jeton Firebase impossible à renouveler (réseau, session refusée) : la session Afrolook prend le relais
+      }
+    }
+    if (session != null) {
+      if (FirebaseAuth.instance.currentUser == null) unawaited(ApiSession.restoreFirebase());
+      return session;
+    }
+    return null;
+  }
+
   ApiClient get client => _client ??= ApiClient(
         baseUrl: _baseUrl,
-        token: ({bool forceRefresh = false}) async => FirebaseAuth.instance.currentUser?.getIdToken(forceRefresh),
+        token: _token,
+        // 401 `session_invalid` : session Afrolook annulée ou expirée côté serveur, oubliée ; le nouvel essai part avec le jeton Firebase s'il existe
+        onUnauthorized: (code) async {
+          if (code == 'session_invalid') await ApiSession.forget();
+        },
         // 403 `email_unverified` sur n'importe quelle route d'argent (cadeaux, achats, pubs récompensées, boosts…) : fenêtre « Confirme ton
         // e-mail » ouverte ici, une seule à la fois ; une fois l'e-mail confirmé, la requête est rejouée sans que l'écran ait à le gérer.
         onEmailUnverified: _askEmailConfirmation,
