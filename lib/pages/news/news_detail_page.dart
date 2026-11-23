@@ -205,6 +205,9 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
   Widget _body(AppColors c, NewsArticle a) {
     final agent = a.agent;
     return ListView(padding: const EdgeInsets.fromLTRB(16, 12, 16, 32), children: [
+      // stats et actions dès l'ouverture (arrivée depuis une notification : on voit tout de suite les réactions)
+      _statsBar(c, a),
+      const SizedBox(height: 12),
       // en-tête « journal » : bandeau ACTUALITÉ puis photo, comme sur la carte du fil
       ClipRRect(
         borderRadius: BorderRadius.circular(10),
@@ -351,23 +354,29 @@ class _NewsDetailPageState extends State<NewsDetailPage> {
       // grand format sous les sources : l'endroit où la personne s'arrête de lire
       const Center(child: AdBanner(key: ValueKey('news_mrec'), mrec: true)),
       const SizedBox(height: 16),
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border)),
-        child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
-          _action(c, Icons.visibility_outlined, newsCount(_views), null, c.textSecondary),
-          _action(c, _liked ? Icons.favorite_rounded : Icons.favorite_border_rounded, newsCount(_loves), _like, _liked ? c.danger : c.textSecondary),
-          _action(c, Icons.chat_bubble_outline_rounded, newsCount(_comments), () async {
-            await NewsActions.comments(context, a);
-            final fresh = await NewsService.instance.article(a.id, fresh: true);
-            if (mounted && fresh != null) setState(() => _comments = fresh.comments);
-          }, c.textSecondary),
-          _action(c, Icons.card_giftcard_rounded, context.tr('Cadeau'), () => NewsActions.gift(context, a), c.warning),
-        ]),
-      ),
+      // et de nouveau en bas, après la lecture (aimer, commenter, offrir un cadeau)
+      _statsBar(c, a),
       const SizedBox(height: 12),
       const NewsMoreButton(),
     ]);
+  }
+
+  /// Stats et actions de l'article (vues, j'aime, commentaires, cadeau) : en haut de la page dès l'ouverture, et en bas après la lecture (23/11/2026).
+  Widget _statsBar(AppColors c, NewsArticle a) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: c.border)),
+      child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
+        _action(c, Icons.visibility_outlined, newsCount(_views), null, c.textSecondary),
+        _action(c, _liked ? Icons.favorite_rounded : Icons.favorite_border_rounded, newsCount(_loves), _like, _liked ? c.danger : c.textSecondary),
+        _action(c, Icons.chat_bubble_outline_rounded, newsCount(_comments), () async {
+          await NewsActions.comments(context, a);
+          final fresh = await NewsService.instance.article(a.id, fresh: true);
+          if (mounted && fresh != null) setState(() => _comments = fresh.comments);
+        }, c.textSecondary),
+        _action(c, Icons.card_giftcard_rounded, context.tr('Cadeau'), () => NewsActions.gift(context, a), c.warning),
+      ]),
+    );
   }
 
   /// Bouton Suivre / Abonné : change de couleur et d'icône en fondu, rebondit au toucher.
