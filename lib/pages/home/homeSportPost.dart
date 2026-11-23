@@ -171,6 +171,11 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
   final int _manualLoadLimit = 8;
 
   // === Pool de widgets rotatifs (1 widget par slot, intervalle 4 posts) ===
+  static bool _isWeeklyTopDay() {
+    final d = DateTime.now().weekday;
+    return d == DateTime.monday || d == DateTime.tuesday;
+  }
+
   static const List<String> _kPoolOrder = [
     'BoostedContent', 'WeeklyTopCreators', 'Canaux', 'VIPContent', 'Articles',
   ];
@@ -2788,6 +2793,11 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
         contentWidgets.add(const AdFreeDayCard(key: ValueKey('ad_free_day_sport')));
       }
 
+      // Top créateurs de la semaine passée : le lundi et le mardi, juste après le 1er post (demande du propriétaire, 23/11/2026) ; les autres jours,
+      // le widget ne s'affiche pas (il se masque aussi pour la journée après 8 secondes vues).
+      if (i == 0 && _isWeeklyTopDay()) {
+        contentWidgets.add(const WeeklyTopCreatorsWidget(key: ValueKey('weekly_top_creators_sport_first')));
+      }
       // Tâches rémunérées (« travaille dans Afrolook et gagne de l'argent ») : dès le 1er post (décision du propriétaire, 05/11/2026), puis un rappel plus loin (emplacements 4 à 6 : propres au fil Sport)
       if (i == 0) {
         contentWidgets.add(const OfferwallFeedCard(key: ValueKey('offerwall_card_sport_1'), slot: 4));
@@ -2899,7 +2909,9 @@ class _HomeSportPostPageState extends State<HomeSportPostPage>
       if (postNumber % 16 == 0 && (i - _lastInsertedAt) >= 5) {
         final poolCount = postNumber ~/ 16 - 1;
         final poolIdx = poolCount % _kPoolOrder.length;
-        contentWidgets.add(_buildPoolContent(_kPoolOrder[poolIdx], 'pool_slot_$poolCount'));
+        // le lundi et le mardi, le top des créateurs est déjà en haut du fil : son tour dans la rotation passe aux canaux
+        final poolName = _kPoolOrder[poolIdx] == 'WeeklyTopCreators' && _isWeeklyTopDay() ? 'Canaux' : _kPoolOrder[poolIdx];
+        contentWidgets.add(_buildPoolContent(poolName, 'pool_slot_$poolCount'));
         _lastInsertedAt = i;
       }
 

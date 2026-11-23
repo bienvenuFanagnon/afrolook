@@ -54,7 +54,7 @@ class _TopEntry {
 
 // ─── Widget principal ────────────────────────────────────────────────────────
 
-/// Affiché le lundi et mardi, après le 2e post du feed.
+/// Affiché le lundi et le mardi, juste après le 1er post du fil (23/11/2026).
 /// Chargement en parallèle via [preload]. Suivi du temps de vue :
 /// disparaît définitivement pour la journée une fois 8 secondes cumulées.
 class WeeklyTopCreatorsWidget extends StatefulWidget {

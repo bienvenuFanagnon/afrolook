@@ -234,6 +234,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
   bool _useBackgroundLoading = true;
 
   // === Pool de widgets rotatifs (1 widget par slot, intervalle 4 posts) ===
+  static bool _isWeeklyTopDay() {
+    final d = DateTime.now().weekday;
+    return d == DateTime.monday || d == DateTime.tuesday;
+  }
+
   static const List<String> _kPoolOrder = [
     'BoostedContent', 'WeeklyTopCreators', 'Canaux', 'VIPContent', 'Articles',
   ];
@@ -3621,6 +3626,11 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       if (i == 2 || (i > 2 && (i - 2) % 30 == 0)) {
         contentWidgets.add(QuizFeedCard(key: ValueKey('quiz_card_home_$i'), slot: i == 2 ? 1 : 2 + (i - 2) ~/ 30));
       }
+      // Top créateurs de la semaine passée : le lundi et le mardi, juste après le 1er post (demande du propriétaire, 23/11/2026) ; les autres jours,
+      // le widget ne s'affiche pas (il se masque aussi pour la journée après 8 secondes vues).
+      if (i == 0 && _isWeeklyTopDay()) {
+        contentWidgets.add(const WeeklyTopCreatorsWidget(key: ValueKey('weekly_top_creators_home_first')));
+      }
       // Tâches rémunérées (« Travaille et gagne de l'argent ») : DÈS LE 1er post (décision du propriétaire, 05/11/2026), puis tous les 20 posts à partir du 6e (26e, 46e…).
       if (i == 0 || (i > 5 && (i - 5) % 20 == 0)) {
         contentWidgets.add(OfferwallFeedCard(key: ValueKey('offerwall_card_home_$i'), slot: i == 0 ? 1 : 2 + (i - 5) ~/ 20));
@@ -3760,7 +3770,9 @@ class _HomeConstPostPageState extends State<HomeConstPostPage>
       if (postNumber % 16 == 0 && (i - _lastInsertedAt) >= 5) {
         final poolCount = postNumber ~/ 16 - 1;
         final poolIdx = poolCount % _kPoolOrder.length;
-        contentWidgets.add(_buildPoolContent(_kPoolOrder[poolIdx], 'pool_slot_$poolCount'));
+        // le lundi et le mardi, le top des créateurs est déjà en haut du fil : son tour dans la rotation passe aux canaux
+        final poolName = _kPoolOrder[poolIdx] == 'WeeklyTopCreators' && _isWeeklyTopDay() ? 'Canaux' : _kPoolOrder[poolIdx];
+        contentWidgets.add(_buildPoolContent(poolName, 'pool_slot_$poolCount'));
         _lastInsertedAt = i;
       }
 
