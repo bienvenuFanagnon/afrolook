@@ -49,6 +49,10 @@ class CinemaApi {
   /// Lecture : `master_url`, `entitled`, `preview_seconds`, `audio` [{lang,label}], `subtitles` [{lang,label,url}], `default_lang`, `my_lang`, `resume_sec`.
   static Future<Map<String, dynamic>> play(String id) async => _map(await _c.get('/cinema/episodes/$id/play'));
 
+  /// Sous le lecteur : `episodes` (la série, `current` = celui en cours), `next` (lancé seul à la fin ; `source` series ou recommendation),
+  /// `recommended` (autres titres classés pour la personne, avec `reason` et l'`episode` à regarder).
+  static Future<Map<String, dynamic>> upNext(String id) async => _map(await _c.get('/cinema/episodes/$id/next'));
+
   /// Recherche : `{titles, episodes}` (titre, résumé, genre, nom d'épisode).
   static Future<Map<String, dynamic>> search(String q) async => _map(await _c.get('/cinema/search', query: {'q': q}));
 

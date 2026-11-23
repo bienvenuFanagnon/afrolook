@@ -24,6 +24,9 @@ import 'cinema_widgets.dart';
 ///  - Au milieu de l'épisode (gratuit compris), sans Gold : « Une pub dans 5 s », puis la pub (réseau, sinon Afrolook Ads), puis la suite.
 ///  - À la fin de chaque épisode, pour tout le monde : la promo de notre formation (vidéo jouée en entier + bouton vers le lien).
 ///  - Seules les pubs du réseau rapportent ; sans aucune pub disponible, l'épisode est débloqué quand même (voir CinemaAds).
+///  - Sous la vidéo (23/11/2026) : les épisodes de la série en miniatures, puis les autres séries et films recommandés pour la personne ;
+///    un clic remplace la page par le nouvel épisode (pas d'empilement de pages). À la fin d'un épisode, le suivant se lance seul après 5 s
+///    (annulable) ; après le dernier, la première recommandation. Les épisodes à débloquer restent visibles, avec un cadenas.
 ///  - Impressions (une par personne), commentaires courts, progression envoyée régulièrement (vue comptée à 10 secondes).
 class CinemaPlayerPage extends StatefulWidget {
   const CinemaPlayerPage({super.key, required this.episodeId});
@@ -51,7 +54,11 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
   Timer? _midTimer;
   bool _inAd = false;          // une pub est à l'écran : la lecture reste en pause
   bool _full = false;
-  bool _promoShown = false;    // promo de fin d'épisode déjà montrée          // vidéo verticale en plein écran (sans les détails dessous)
+  bool _endHandled = false;    // fin de l'épisode traitée (promo puis épisode suivant)
+  Map<String, dynamic>? _next; // épisodes de la série, suivant, recommandations (CinemaApi.upNext)
+  int? _nextLeft;              // décompte « Épisode suivant dans N s »
+  Timer? _nextTimer;
+  ScrollController? _epScroll;          // vidéo verticale en plein écran (sans les détails dessous)
   bool _voiceHintShown = false;
   List<VideoAudioTrack> _tracks = const [];
   Map<String, int> _reactions = {};
@@ -86,6 +93,7 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
       _scheduleHide();
       if (mounted) setState(() {});
       _loadComments();
+      _loadNext();
     } catch (e) {
       if (mounted) setState(() => _error = CinemaApi.message(e, fallback: 'Lecture impossible. Vérifie ta connexion et réessaie.'));
     }
@@ -161,13 +169,14 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
       _midDone = true;
       _startMidWarning(mid);
     }
-    // fin de l'épisode : la promo de notre formation, pour tout le monde (Gold compris), jouée en entier
+    // fin de l'épisode : la promo de notre formation, pour tout le monde (Gold compris), jouée en entier ; puis l'épisode suivant dans 5 s
     final promo = _play?['end_promo'];
-    if (preview == null && promo is Map && !_promoShown && !_inAd && c.value.isCompleted && c.value.position.inSeconds > 0) {
-      _promoShown = true;
+    if (preview == null && !_endHandled && !_inAd && c.value.isCompleted && c.value.position.inSeconds > 0) {
+      _endHandled = true;
       _sendProgress();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) showCinemaEndPromo(context, Map<String, dynamic>.from(promo));
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (mounted && promo is Map) await showCinemaEndPromo(context, Map<String, dynamic>.from(promo));
+        if (mounted) _startNextCountdown();
       });
     }
     if (!_voiceHintShown && c.value.isPlaying && c.value.position.inSeconds >= 1) {
@@ -253,8 +262,49 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
     });
   }
 
+  Future<void> _loadNext() async {
+    try {
+      final r = await CinemaApi.upNext(widget.episodeId);
+      if (mounted) setState(() => _next = r);
+    } catch (_) {}   // sans la liste, la page reste utilisable
+  }
+
+  /// Remplace la page par un autre épisode : une seule page de lecture dans la pile, quel que soit le nombre d'épisodes enchaînés.
+  void _goTo(Map ep) {
+    final id = '${ep['id']}'.trim();
+    if (id.isEmpty || id == widget.episodeId.trim()) return;
+    _nextTimer?.cancel();
+    _video?.pause();
+    Navigator.of(context).pushReplacement(PageRouteBuilder(
+      transitionDuration: const Duration(milliseconds: 180),
+      pageBuilder: (_, __, ___) => CinemaPlayerPage(episodeId: id),
+      transitionsBuilder: (_, a, __, child) => FadeTransition(opacity: a, child: child),
+    ));
+  }
+
+  void _startNextCountdown() {
+    if (_next?['next'] is! Map) return;
+    _nextTimer?.cancel();
+    setState(() => _nextLeft = 5);
+    _nextTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted || _nextLeft == null) return t.cancel();
+      final left = _nextLeft! - 1;
+      if (left > 0) return setState(() => _nextLeft = left);
+      t.cancel();
+      setState(() => _nextLeft = null);
+      _goTo(Map<String, dynamic>.from(_next!['next'] as Map));
+    });
+  }
+
+  void _cancelNext() {
+    _nextTimer?.cancel();
+    setState(() => _nextLeft = null);
+  }
+
   @override
   void dispose() {
+    _nextTimer?.cancel();
+    _epScroll?.dispose();
     _hide?.cancel();
     _progressTimer?.cancel();
     _midTimer?.cancel();
@@ -597,7 +647,8 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
                   ),
                 ]),
               ),
-            if (_controls && !_locked)
+            if (_nextLeft != null && _next?['next'] is Map) _nextOverlay(c, Map<String, dynamic>.from(_next!['next'] as Map)),
+            if (_controls && !_locked && _nextLeft == null)
               Container(
                 decoration: const BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter,
                     colors: [Color(0x99000000), Color(0x00000000), Color(0x00000000), Color(0xB3000000)], stops: [0, .3, .62, 1])),
@@ -729,6 +780,7 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
         return false;
       },
       child: ListView(padding: const EdgeInsets.fromLTRB(14, 12, 14, 24), children: [
+        ..._upNextSection(c),
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('${title['title'] ?? ''} · ${context.tr('Ép. {a}', {'a': ep['number']})}', style: TextStyle(color: c.textPrimary, fontSize: 16, fontWeight: FontWeight.w800)),
@@ -795,6 +847,155 @@ class _CinemaPlayerPageState extends State<CinemaPlayerPage> {
           ),
         ],
       ]),
+    );
+  }
+
+  // ── À regarder ensuite ──
+
+  bool _isLocked(Map ep) => ep['access'] != 'free' && ep['my_unlocked'] != true && _play?['is_gold'] != true;
+
+  Widget _nextOverlay(AppColors c, Map<String, dynamic> ep) {
+    final fromSeries = ep['source'] == 'series';
+    return Container(
+      color: Colors.black.withValues(alpha: .78),
+      padding: const EdgeInsets.all(14),
+      alignment: Alignment.center,
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Text(context.tr(fromSeries ? 'Épisode suivant dans {a} s' : 'À voir ensuite dans {a} s', {'a': _nextLeft}),
+            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 10),
+        Row(mainAxisSize: MainAxisSize.min, children: [
+          SizedBox(width: 96, height: 54, child: Stack(fit: StackFit.expand, children: [
+            CinemaImage(ep['thumb_url'] as String? ?? ep['banner_url'] as String?, radius: 8),
+            if (_isLocked(ep)) const Center(child: Icon(Icons.lock_rounded, color: Colors.white, size: 20)),
+          ])),
+          const SizedBox(width: 10),
+          Flexible(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+            if (!fromSeries && ep['title_name'] != null)
+              Text('${ep['title_name']}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color(0xFFFFD400), fontSize: 11, fontWeight: FontWeight.w800)),
+            Text(context.tr('Ép. {a} · {b}', {'a': ep['number'], 'b': ep['name']}), maxLines: 2, overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700)),
+          ])),
+        ]),
+        const SizedBox(height: 12),
+        Row(mainAxisSize: MainAxisSize.min, children: [
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: const BorderSide(color: Colors.white54)),
+            onPressed: _cancelNext,
+            child: Text(context.tr('Annuler')),
+          ),
+          const SizedBox(width: 10),
+          FilledButton.icon(
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFFFFD400), foregroundColor: const Color(0xFF121212)),
+            onPressed: () => _goTo(ep),
+            icon: const Icon(Icons.play_arrow_rounded),
+            label: Text(context.tr('Regarder'), style: const TextStyle(fontWeight: FontWeight.w800)),
+          ),
+        ]),
+      ]),
+    );
+  }
+
+  List<Widget> _upNextSection(AppColors c) {
+    final n = _next;
+    if (n == null) return const [];
+    final eps = ((n['episodes'] as List?) ?? const []).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    final recos = ((n['recommended'] as List?) ?? const []).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    final cur = eps.indexWhere((e) => e['current'] == true);
+    Widget header(String t) => Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(t, style: TextStyle(color: c.textPrimary, fontSize: 14, fontWeight: FontWeight.w800)));
+    return [
+      if (eps.length > 1) ...[
+        header(context.tr('Épisodes')),
+        SizedBox(
+          height: 118,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            // l'épisode en cours est visible dès l'ouverture
+            controller: _epScroll ??= ScrollController(initialScrollOffset: cur > 0 ? (cur - .4) * 144 : 0),
+            itemCount: eps.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (_, i) => _episodeMini(c, eps[i]),
+          ),
+        ),
+        const SizedBox(height: 14),
+      ],
+      if (recos.isNotEmpty) ...[
+        header(context.tr('À voir ensuite')),
+        SizedBox(
+          height: 206,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: recos.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (_, i) => _titleMini(c, recos[i]),
+          ),
+        ),
+        const SizedBox(height: 14),
+      ],
+    ];
+  }
+
+  Widget _episodeMini(AppColors c, Map<String, dynamic> ep) {
+    final current = ep['current'] == true;
+    final dur = (ep['duration_sec'] as num?)?.toInt() ?? 0;
+    final pos = (ep['my_position_sec'] as num?)?.toInt() ?? 0;
+    final ratio = ep['my_completed'] == true ? 1.0 : (dur > 0 ? (pos / dur).clamp(0.0, 1.0) : 0.0);
+    return GestureDetector(
+      onTap: current ? null : () => _goTo(ep),
+      child: SizedBox(
+        width: 134,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Container(
+            height: 76,
+            decoration: BoxDecoration(borderRadius: BorderRadius.circular(10), border: Border.all(color: current ? c.primary : Colors.transparent, width: 2)),
+            child: Stack(fit: StackFit.expand, children: [
+              CinemaImage(ep['thumb_url'] as String? ?? ep['banner_url'] as String?, radius: 8),
+              if (current)
+                Positioned(top: 5, left: 5, child: CinemaTag(context.tr('En cours'), kind: 'free', icon: Icons.play_arrow_rounded))
+              else if (_isLocked(ep))
+                Positioned(top: 5, left: 5, child: CinemaTag(context.tr('{a} s gratuites', {'a': ep['preview_seconds'] ?? 15}), kind: 'preview', icon: Icons.lock_rounded)),
+              Positioned(right: 5, bottom: 7, child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                decoration: BoxDecoration(color: Colors.black.withValues(alpha: .7), borderRadius: BorderRadius.circular(4)),
+                child: Text(cinemaDuration(dur), style: const TextStyle(color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w700)),
+              )),
+              if (ratio > 0)
+                Positioned(left: 0, right: 0, bottom: 0, child: LinearProgressIndicator(value: ratio, minHeight: 3, backgroundColor: Colors.white24, color: const Color(0xFFFFD400))),
+            ]),
+          ),
+          const SizedBox(height: 4),
+          Text(context.tr('Ép. {a} · {b}', {'a': ep['number'], 'b': ep['name']}), maxLines: 2, overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: current ? c.textPrimary : c.textSecondary, fontSize: 11.5, fontWeight: current ? FontWeight.w800 : FontWeight.w600, height: 1.2)),
+        ]),
+      ),
+    );
+  }
+
+  Widget _titleMini(AppColors c, Map<String, dynamic> t) {
+    final ep = Map<String, dynamic>.from((t['episode'] as Map?) ?? const {});
+    final reason = switch (t['reason']) {
+      'continue' => 'Reprendre',
+      'also_watched' => 'Ils regardent aussi',
+      'same_genre' => 'Même genre',
+      'new' => 'Nouveau',
+      _ => 'Populaire',
+    };
+    return GestureDetector(
+      onTap: ep.isEmpty ? null : () => _goTo(ep),
+      child: SizedBox(
+        width: 108,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          SizedBox(height: 150, child: Stack(fit: StackFit.expand, children: [
+            CinemaImage(t['poster_url'] as String? ?? t['banner_url'] as String?),
+            Positioned(top: 6, left: 6, child: CinemaTag(context.tr(reason), kind: t['reason'] == 'new' ? 'new' : 'dark')),
+            if (ep.isNotEmpty && _isLocked(ep)) const Positioned(top: 6, right: 6, child: Icon(Icons.lock_rounded, color: Colors.white, size: 16)),
+          ])),
+          const SizedBox(height: 5),
+          Text('${t['title'] ?? ''}', maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textPrimary, fontSize: 12, fontWeight: FontWeight.w700, height: 1.2)),
+          if (ep.isNotEmpty)
+            Text(context.tr('Ép. {a}', {'a': ep['number']}), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: c.textSecondary, fontSize: 10.5)),
+        ]),
+      ),
     );
   }
 }

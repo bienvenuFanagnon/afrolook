@@ -81,4 +81,13 @@ const Map<String, Map<String, String>> kTrCinema = {
   'Choisir le passage de la chronique': {'en': 'Choose the part for the story', 'es': 'Elige el fragmento de la historia', 'de': 'Abschnitt für die Story wählen', 'ar': 'اختر المقطع للقصة', 'pt': 'Escolha o trecho do story'},
   'Choisis le passage à garder : {n} secondes au maximum.': {'en': 'Choose the part to keep: {n} seconds at most.', 'es': 'Elige el fragmento: {n} segundos como máximo.', 'de': 'Wähle den Abschnitt: höchstens {n} Sekunden.', 'ar': 'اختر المقطع: {n} ثانية كحد أقصى.', 'pt': 'Escolha o trecho: no máximo {n} segundos.'},
   'Découpe du passage…': {'en': 'Cutting the part…', 'es': 'Recortando el fragmento…', 'de': 'Abschnitt wird geschnitten…', 'ar': 'جارٍ قص المقطع…', 'pt': 'Cortando o trecho…'},
+  'À voir ensuite': {'en': 'Watch next', 'es': 'Para ver después', 'de': 'Als Nächstes ansehen', 'ar': 'شاهد بعد ذلك', 'pt': 'Para ver a seguir'},
+  'En cours': {'en': 'Playing', 'es': 'En curso', 'de': 'Läuft', 'ar': 'قيد التشغيل', 'pt': 'A reproduzir'},
+  'Reprendre': {'en': 'Resume', 'es': 'Reanudar', 'de': 'Fortsetzen', 'ar': 'استئناف', 'pt': 'Retomar'},
+  'Ils regardent aussi': {'en': 'Viewers also watch', 'es': 'También lo ven', 'de': 'Wird auch geschaut', 'ar': 'يشاهدونه أيضًا', 'pt': 'Também assistem'},
+  'Même genre': {'en': 'Same genre', 'es': 'Mismo género', 'de': 'Gleiches Genre', 'ar': 'النوع نفسه', 'pt': 'Mesmo gênero'},
+  'Populaire': {'en': 'Popular', 'es': 'Popular', 'de': 'Beliebt', 'ar': 'رائج', 'pt': 'Popular'},
+  'Épisode suivant dans {a} s': {'en': 'Next episode in {a} s', 'es': 'Siguiente episodio en {a} s', 'de': 'Nächste Folge in {a} s', 'ar': 'الحلقة التالية بعد {a} ث', 'pt': 'Próximo episódio em {a} s'},
+  'À voir ensuite dans {a} s': {'en': 'Up next in {a} s', 'es': 'A continuación en {a} s', 'de': 'Als Nächstes in {a} s', 'ar': 'التالي بعد {a} ث', 'pt': 'A seguir em {a} s'},
+  'Annuler': {'en': 'Cancel', 'es': 'Cancelar', 'de': 'Abbrechen', 'ar': 'إلغاء', 'pt': 'Cancelar'},
 };
