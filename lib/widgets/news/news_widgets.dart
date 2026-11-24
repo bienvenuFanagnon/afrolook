@@ -208,6 +208,14 @@ class NewsActions {
   static Post postOf(NewsArticle a) {
     final post = Post.fromJson(Map<String, dynamic>.from(a.raw));
     post.id ??= a.id;
+    // date, photo et titre de l'article (24/11/2026) : sans eux, la page des commentaires affichait « maintenant » et une miniature vide
+    post.createdAt ??= a.createdAtMs > 0 ? a.createdAtMs : null;
+    post.description ??= a.title;
+    if (a.image.isNotEmpty) {
+      post.url_media ??= a.image;
+      if (post.images == null || post.images!.isEmpty) post.images = [a.image];
+    }
+    post.dataType ??= a.image.isNotEmpty ? 'IMAGE' : 'TEXT';
     post.user = UserData()
       ..id = a.agent.userId
       ..pseudo = a.agent.pseudo;

@@ -220,7 +220,10 @@ class NewsService {
       ]);
       final d = JeuxApi.map(r[0]);
       if (d.isEmpty) return null;
-      final counts = (r[1] != null && JeuxApi.map(r[1])['counts'] is Map) ? Map<String, dynamic>.from(JeuxApi.map(r[1])['counts'] as Map) : const <String, dynamic>{};
+      final post = r[1] != null ? JeuxApi.map(r[1]) : const <String, dynamic>{};
+      final counts = post['counts'] is Map ? Map<String, dynamic>.from(post['counts'] as Map) : const <String, dynamic>{};
+      // déjà aimé par moi (24/11/2026) : le serveur le dit (liked_by_me) ; avant, la page montrait toujours le cœur vide en revenant sur l'article
+      final me = ApiIdentity.myId;
       final item = _itemOf(d);
       final a = NewsArticle(
         id: item.id,
@@ -241,7 +244,7 @@ class NewsService {
         views: JeuxApi.asInt(counts['views']),
         gifts: 0,
         expiresAt: item.exp,
-        lovedBy: const [],
+        lovedBy: (post['liked_by_me'] == true && me != null) ? [me] : const [],
         viewedBy: const [],
         raw: {'news': {'score': item.score}},
       );

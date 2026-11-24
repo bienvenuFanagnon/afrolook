@@ -5,6 +5,9 @@ import '../l10n/tr.dart';
 import 'package:afrotok/widgets/comment_gift_sheet.dart';
 import 'package:afrotok/widgets/feed/post_mini_preview.dart';
 import '../utils/post_time_ago.dart';
+import '../models/news_article.dart';
+import '../widgets/news/news_widgets.dart' show AgentAvatar;
+import 'news/news_detail_page.dart';
 import 'package:flutter/services.dart';
 import 'package:afrotok/widgets/name_tag.dart';
 import 'package:afrotok/widgets/pseudo_tag.dart';
@@ -774,6 +777,11 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
   /// Ouvre la page de détails du post (vidéo verticale, vidéo horizontale ou autre) : même destination pour « Voir le post » et pour l'aperçu.
   void _openPost() {
     final post = widget.post;
+    // article du journal (24/11/2026) : sa propre page, pas celle d'un post ordinaire
+    if ((post.id ?? '').startsWith('news_')) {
+      Navigator.push(context, MaterialPageRoute(builder: (_) => NewsDetailPage(postId: post.id!)));
+      return;
+    }
     final isVideo = post.dataType == 'VIDEO';
     final isPortrait = PostOrientation.of(post);
     Navigator.push(context, MaterialPageRoute(
@@ -781,6 +789,14 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
           ? (isPortrait ? PostDetailsVideoFormatTel(initialPost: post) : VideoYoutubePageDetails(initialPost: post))
           : DetailsPost(post: post),
     ));
+  }
+
+  /// Agent du journal auteur de la publication (compte news_agent_{clé}), sinon null.
+  NewsAgentInfo? _newsAgent(Post post) {
+    final uid = post.user?.id ?? '';
+    if (!uid.startsWith('news_agent_')) return null;
+    final key = uid.substring('news_agent_'.length);
+    return kNewsAgents.any((a) => a.key == key) ? newsAgentOf(key) : null;
   }
 
   Widget _buildPostHeader() {
@@ -811,13 +827,15 @@ class _PostCommentsState extends State<PostComments> with TickerProviderStateMix
                           );
                         }
                       },
-                      child: CircleAvatar(onBackgroundImageError: (_, __) {}, 
-                        radius: 19,
-                        backgroundColor: _colors.surfaceVariant,
-                        backgroundImage: NetworkImage(
-                          isCanal ? post.canal!.urlImage! : post.user!.imageUrl!,
-                        ),
-                      ),
+                      child: _newsAgent(post) != null
+                          ? AgentAvatar(agent: _newsAgent(post)!, size: 38)   // agent du journal : son icône, comme sur l'article
+                          : CircleAvatar(onBackgroundImageError: (_, __) {},
+                              radius: 19,
+                              backgroundColor: _colors.surfaceVariant,
+                              backgroundImage: NetworkImage(
+                                isCanal ? post.canal!.urlImage! : post.user!.imageUrl!,
+                              ),
+                            ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
