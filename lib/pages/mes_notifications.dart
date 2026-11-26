@@ -585,6 +585,14 @@ class _MesNotificationState extends State<MesNotification> {
         case 'GAIN':
         case 'WEEKLY_REWARD':
         case 'DEFI_WIN':
+        // argent (26/11/2026) : pièces créditées, recharge, paiement non validé, remboursement, retraits → le portefeuille
+        case 'PAY_COINS':
+        case 'PAY_DEPOSIT':
+        case 'PAY_FAILED':
+        case 'PAY_REFUND':
+        case 'WITHDRAW_SENT':
+        case 'WITHDRAW_PAID':
+        case 'WITHDRAW_REJECTED':
           await _openPage(MonetisationPage());
           break;
         case 'ORDER_NEW':

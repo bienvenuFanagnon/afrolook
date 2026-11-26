@@ -8,7 +8,11 @@ class NotificationText {
 
   /// Nouveaux types : mention, j'aime d'un commentaire, republication, soutien par pub, abonné à un canal,
   /// puis (lot « restes ») boost à valider (équipe), nomination comme administrateur d'un canal, intérêt pour un service.
-  static const newTypes = {'VIDEO_REPLY', 'MENTION', 'COMMENT_LIKE', 'REPOST', 'SUPPORT', 'FOLLOW_CANAL', 'BOOST_SOUMIS', 'CANAL_ADMIN', 'SERVICE', 'STAFF_VERIF', 'STAFF_FRAUD', 'STAFF_DISPUTE', 'STAFF_ADS', 'VIRAL'};
+  static const newTypes = {'VIDEO_REPLY', 'MENTION', 'COMMENT_LIKE', 'REPOST', 'SUPPORT', 'FOLLOW_CANAL', 'BOOST_SOUMIS', 'CANAL_ADMIN', 'SERVICE', 'STAFF_VERIF', 'STAFF_FRAUD', 'STAFF_DISPUTE', 'STAFF_ADS', 'VIRAL', 'STAFF_PAYMENT'};
+
+  /// Notifications d'argent (26/11/2026) : pièces créditées, recharge reçue, paiement non validé, achat remboursé, retrait reçu, payé ou refusé.
+  /// Le serveur compose le titre et le texte dans la langue de la personne ; le toucher ouvre le portefeuille.
+  static const paymentTypes = {'PAY_COINS', 'PAY_DEPOSIT', 'PAY_FAILED', 'PAY_REFUND', 'WITHDRAW_SENT', 'WITHDRAW_PAID', 'WITHDRAW_REJECTED'};
 
   /// Groupes de la page (clé = libellé français, traduit à l'affichage), types rangés dans chacun et filtre « par type » correspondant.
   static const Map<String, List<String>> groupTypes = {
@@ -22,8 +26,9 @@ class NotificationText {
     'Récompenses': ['WEEKLY_REWARD', 'DEFI_WIN'],
     'Commandes': ['ORDER_NEW', 'ORDER_VALIDATED', 'ORDER_FEE', 'ORDER_SHIPPED', 'ORDER_RECEIVED', 'ORDER_CANCELLED', 'ORDER_DISPUTE', 'ORDER_RESOLVED', 'OFFER_NEW', 'OFFER_REPLY'],
     'Gains & Parrainages': ['GAIN', 'PARRAINAGE', 'SUPPORT'],
+    'Paiements': ['PAY_COINS', 'PAY_DEPOSIT', 'PAY_FAILED', 'PAY_REFUND', 'WITHDRAW_SENT', 'WITHDRAW_PAID', 'WITHDRAW_REJECTED'],
     'Afrolook': ['MARKETING', 'COMPTE_OFFICIEL', 'USER', 'BOOST_SOUMIS'],
-    'À traiter (équipe)': ['STAFF_VERIF', 'STAFF_FRAUD', 'STAFF_DISPUTE', 'STAFF_ADS'],
+    'À traiter (équipe)': ['STAFF_VERIF', 'STAFF_FRAUD', 'STAFF_DISPUTE', 'STAFF_ADS', 'STAFF_PAYMENT'],
     // 16/11/2026 : les rappels entrent aussi dans la liste
     'Rappels': ['RAPPEL_ACTIVITE', 'RAPPEL_QUIZ', 'RAPPEL_ETUDE', 'RAPPEL_CONTE', 'RAPPEL_FEED', 'RAPPEL_STREAK', 'RAPPEL_RETOUR', 'RAPPEL_ABOUT', 'RAPPEL_PUB',
       'RAPPEL_CREATEUR', 'RAPPEL_JOURNAL', 'RAPPEL_PARTAGE', 'RAPPEL_TACHES', 'RAPPEL_WIDGET', 'NEWS'],
@@ -33,7 +38,7 @@ class NotificationText {
   /// ce titre puis le texte, au lieu de « pseudo + phrase » (16/11/2026).
   static bool composedByServer(String? type) {
     final t = (type ?? '').toUpperCase();
-    return const {'NEWPOST', 'REPOST_FEED', 'NEWPOST_GROUP', 'LIVE', 'NEWS'}.contains(t) || t.startsWith('RAPPEL_');
+    return const {'NEWPOST', 'REPOST_FEED', 'NEWPOST_GROUP', 'LIVE', 'NEWS'}.contains(t) || t.startsWith('RAPPEL_') || paymentTypes.contains(t);
   }
 
   /// Phrase affichée après le pseudo de l'auteur, ou null pour garder le texte envoyé par le serveur.
@@ -97,6 +102,9 @@ class NotificationText {
         return b.isEmpty ? tr('a envoyé un élément Afrolook Ads à valider') : '${tr('a envoyé un élément Afrolook Ads à valider')} : $b';
       case 'STAFF_DISPUTE':
         return b.isEmpty ? tr('a ouvert un litige sur une commande') : '${tr('a ouvert un litige sur une commande')} « $b »';
+      case 'STAFF_PAYMENT':
+        // body : « Google : raison » (magasin et erreur de vérification)
+        return b.isEmpty ? tr('a un achat de pièces qui n\'a pas pu être vérifié') : '${tr('a un achat de pièces qui n\'a pas pu être vérifié')} : $b';
       case 'CANAL_ADMIN':
         return b.isEmpty ? tr('vous a nommé administrateur de son canal') : '${tr('vous a nommé administrateur de son canal')} « $b »';
       case 'SERVICE':
@@ -125,6 +133,14 @@ class NotificationText {
         'STAFF_FRAUD' => tr('Gains bloqués (fraude)'),
         'STAFF_DISPUTE' => tr('Litiges de commande'),
         'STAFF_ADS' => tr('Éléments Afrolook Ads à valider'),
+        'STAFF_PAYMENT' => tr('Achats de pièces non vérifiés'),
+        'PAY_COINS' => tr('Pièces créditées'),
+        'PAY_DEPOSIT' => tr('Recharges reçues'),
+        'PAY_FAILED' => tr('Paiements non validés'),
+        'PAY_REFUND' => tr('Achats remboursés'),
+        'WITHDRAW_SENT' => tr('Demandes de retrait'),
+        'WITHDRAW_PAID' => tr('Retraits payés'),
+        'WITHDRAW_REJECTED' => tr('Retraits refusés'),
         'CANAL_ADMIN' => tr('Nominations de canal'),
         'SERVICE' => tr('Intérêt pour un service'),
         _ => type,
@@ -152,6 +168,14 @@ class NotificationText {
         'STAFF_FRAUD' => (icon: Icons.shield_outlined, tone: 0),
         'STAFF_DISPUTE' => (icon: Icons.gavel_rounded, tone: 0),
         'STAFF_ADS' => (icon: Icons.storefront_outlined, tone: 3),
+        'STAFF_PAYMENT' => (icon: Icons.report_problem_outlined, tone: 0),
+        'PAY_COINS' => (icon: Icons.account_balance_wallet_rounded, tone: 2),
+        'PAY_DEPOSIT' => (icon: Icons.account_balance_wallet_rounded, tone: 2),
+        'PAY_FAILED' => (icon: Icons.error_outline, tone: 0),
+        'PAY_REFUND' => (icon: Icons.undo_rounded, tone: 3),
+        'WITHDRAW_SENT' => (icon: Icons.north_east_rounded, tone: 1),
+        'WITHDRAW_PAID' => (icon: Icons.payments_outlined, tone: 2),
+        'WITHDRAW_REJECTED' => (icon: Icons.cancel_outlined, tone: 0),
         'CANAL_ADMIN' => (icon: Icons.admin_panel_settings_outlined, tone: 1),
         'SERVICE' => (icon: Icons.handyman, tone: 2),
         'LIKE' => (icon: Icons.favorite, tone: 0),

@@ -102,4 +102,15 @@ const Map<String, Map<String, String>> kTrExtra5 = {
   "Si vide, le numéro commun ci-dessus est utilisé. À monter seulement quand la version est en ligne sur l'App Store.": {'en': "If empty, the common number above is used. Raise it only when the version is live on the App Store."},
   "Débloquer la mission": {'en': "Unlock the mission"},
   "Une courte publicité va s'afficher pour débloquer la mission. Ce n'est pas la mission : ferme la publicité, puis tu verras les détails et le bouton Partager.": {'en': "A short ad will be shown to unlock the mission. It is not the mission: close the ad, then you will see the details and the Share button."},
+  // notifications d'argent (26/11/2026)
+  "Paiements": {'en': "Payments", 'es': "Pagos", 'de': "Zahlungen", 'ar': "المدفوعات", 'pt': "Pagamentos", 'zh': "付款", 'sw': "Malipo"},
+  "Pièces créditées": {'en': "Coins credited", 'es': "Monedas acreditadas", 'de': "Gutgeschriebene Münzen", 'ar': "عملات مضافة", 'pt': "Moedas creditadas", 'zh': "已入账金币", 'sw': "Sarafu zilizoongezwa"},
+  "Recharges reçues": {'en': "Top-ups received", 'es': "Recargas recibidas", 'de': "Erhaltene Aufladungen", 'ar': "عمليات الشحن المستلمة", 'pt': "Recargas recebidas", 'zh': "已到账充值", 'sw': "Kujaza salio kulikopokelewa"},
+  "Paiements non validés": {'en': "Payments not confirmed", 'es': "Pagos no validados", 'de': "Nicht bestätigte Zahlungen", 'ar': "مدفوعات غير مؤكدة", 'pt': "Pagamentos não validados", 'zh': "未确认的付款", 'sw': "Malipo yasiyothibitishwa"},
+  "Achats remboursés": {'en': "Refunded purchases", 'es': "Compras reembolsadas", 'de': "Erstattete Käufe", 'ar': "مشتريات مستردة", 'pt': "Compras reembolsadas", 'zh': "已退款的购买", 'sw': "Manunuzi yaliyorejeshwa"},
+  "Demandes de retrait": {'en': "Withdrawal requests", 'es': "Solicitudes de retiro", 'de': "Auszahlungsanträge", 'ar': "طلبات السحب", 'pt': "Pedidos de saque", 'zh': "提现申请", 'sw': "Maombi ya kutoa pesa"},
+  "Retraits payés": {'en': "Withdrawals paid", 'es': "Retiros pagados", 'de': "Ausgezahlte Beträge", 'ar': "عمليات سحب مدفوعة", 'pt': "Saques pagos", 'zh': "已支付的提现", 'sw': "Pesa zilizotolewa"},
+  "Retraits refusés": {'en': "Withdrawals declined", 'es': "Retiros rechazados", 'de': "Abgelehnte Auszahlungen", 'ar': "عمليات سحب مرفوضة", 'pt': "Saques recusados", 'zh': "被拒绝的提现", 'sw': "Maombi ya kutoa yaliyokataliwa"},
+  "Achats de pièces non vérifiés": {'en': "Unverified coin purchases"},
+  "a un achat de pièces qui n'a pas pu être vérifié": {'en': "has a coin purchase that could not be verified"},
 };
