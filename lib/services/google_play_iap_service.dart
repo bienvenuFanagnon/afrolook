@@ -106,8 +106,11 @@ class GooglePlayIapService extends ChangeNotifier {
     purchasingProductId = product.id;
     notifyListeners();
     try {
+      // autoConsume: false (26/11/2026) : le module consommait l'achat dès le paiement, AVANT la vérification du serveur ; si elle échouait,
+      // l'achat était perdu (consommé, jamais crédité, jamais rendu par Google). Il n'est maintenant consommé qu'une fois les pièces créditées.
       await _iap.buyConsumable(
         purchaseParam: PurchaseParam(productDetails: product, applicationUserName: accountToken(uid)),
+        autoConsume: false,
       );
     } on PlatformException catch (e) {
       debugPrint('GooglePlayIapService.buy: $e');
@@ -151,9 +154,8 @@ class GooglePlayIapService extends ChangeNotifier {
       // Le jeton d'achat est relu chez Google par l'API avant de créditer (jamais côté application).
       final result = await WalletApi.instance.verifyGoogle(purchase.productID, token);
       await _complete(purchase);
-      // achat repris après un redémarrage : la consommation automatique ne vaut que pour un achat lancé pendant la session ;
-      // sans elle, Google garde le pack « déjà acheté » et refuse de le revendre (itemAlreadyOwned)
-      if (purchase.status == PurchaseStatus.restored) await _consume(purchase);
+      // pièces créditées (ou déjà créditées) : on consomme l'achat pour pouvoir racheter le même pack (sinon itemAlreadyOwned)
+      await _consume(purchase);
       final coins = (result['coins'] as num?)?.toInt() ?? coinsFor(purchase.productID);
       if (silent && result['already_credited'] == true) return;   // déjà crédité : on termine seulement l'achat chez Google
       onCoinsCredited?.call();
@@ -163,6 +165,7 @@ class GooglePlayIapService extends ChangeNotifier {
       if (!definitive) PaymentReport.send(provider: 'google_play', step: 'verify', code: e.code, message: e.message);
       if (definitive) {
         await _complete(purchase);
+        await _consume(purchase);   // refus définitif (autre compte, remboursé…) : on libère le pack
         _finishUi(const PlayIapEvent(PlayIapEventType.error,
             message: "Cet achat n'a pas pu être validé. Contacte le support si tu as été débité."));
       } else if (silent) {
