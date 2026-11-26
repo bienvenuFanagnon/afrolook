@@ -191,6 +191,7 @@ dependencies:
   flutter_slidable: ^3.1.1
   video_player_web: ^2.4.0
   in_app_purchase: ^3.3.1
+  in_app_purchase_android: ^0.5.3   # consommation d'un achat repris au lancement (même version que celle déjà résolue)
   qr_flutter: ^4.1.0
   gal: ^2.3.3
   screen_protector: ^1.5.3

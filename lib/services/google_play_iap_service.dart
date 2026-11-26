@@ -6,9 +6,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/coin_pack.dart';
+import 'api/api_identity.dart';
 import 'api/wallet_api.dart';
 import '../utils/payment_region.dart';
 
@@ -23,9 +25,10 @@ class PlayIapEvent {
 
 /// Achats de pièces via Google Play Billing (Android uniquement) — pendant de AppleIapService.
 ///
-/// Chaque achat est vérifié par la Cloud Function verifyGooglePlayPurchase avant d'être terminé
-/// auprès de Google. Tant qu'il n'est pas terminé, Google le redonne à chaque lancement :
-/// un achat interrompu (coupure réseau, app fermée) finit toujours crédité.
+/// Chaque achat est vérifié par l'API (POST /coins/purchases/google, qui relit le jeton chez Google et le confirme) avant d'être terminé.
+/// Sur Android, Google NE renvoie PAS tout seul un achat non terminé au lancement : [start] le redemande (restorePurchases) à chaque
+/// lancement, pour qu'un achat interrompu (coupure réseau, API indisponible, app fermée) finisse toujours crédité (26/11/2026).
+/// Le serveur ne crédite jamais deux fois le même achat (« already_credited »).
 class GooglePlayIapService extends ChangeNotifier {
   GooglePlayIapService._();
   static final GooglePlayIapService instance = GooglePlayIapService._();
@@ -55,6 +58,22 @@ class GooglePlayIapService extends ChangeNotifier {
       _onPurchases,
       onError: (Object e) => debugPrint('GooglePlayIapService: $e'),
     );
+    // achats payés mais pas encore terminés (pièces pas encore créditées) : Google les renvoie seulement si on le demande
+    unawaited(_resumeOpenPurchases());
+  }
+
+  Future<void> _resumeOpenPurchases() async {
+    try {
+      if (!await _iap.isAvailable()) return;
+      await _iap.restorePurchases(applicationUserName: _myAccountToken());
+    } catch (e) {
+      debugPrint('GooglePlayIapService.restorePurchases: $e');
+    }
+  }
+
+  static String? _myAccountToken() {
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? ApiIdentity.myId;
+    return uid == null ? null : accountToken(uid);
   }
 
   Future<void> loadProducts() async {
@@ -123,14 +142,20 @@ class GooglePlayIapService extends ChangeNotifier {
   }
 
   Future<void> _deliver(PurchaseDetails purchase) async {
-    // Pas connecté : on ne termine pas l'achat, Google le redonnera au prochain lancement.
+    // Pas connecté (ni Firebase ni session de l'API) : on ne termine pas l'achat, il sera redemandé au prochain lancement.
     final token = purchase.verificationData.serverVerificationData;
-    if (FirebaseAuth.instance.currentUser == null || token.isEmpty) return;
+    if ((FirebaseAuth.instance.currentUser == null && ApiIdentity.myId == null) || token.isEmpty) return;
+    // achat repris au lancement (pas un achat en cours dans la boutique) : aucun message, sauf quand des pièces sont vraiment ajoutées
+    final silent = purchasingProductId == null;
     try {
       // Le jeton d'achat est relu chez Google par l'API avant de créditer (jamais côté application).
       final result = await WalletApi.instance.verifyGoogle(purchase.productID, token);
       await _complete(purchase);
+      // achat repris après un redémarrage : la consommation automatique ne vaut que pour un achat lancé pendant la session ;
+      // sans elle, Google garde le pack « déjà acheté » et refuse de le revendre (itemAlreadyOwned)
+      if (purchase.status == PurchaseStatus.restored) await _consume(purchase);
       final coins = (result['coins'] as num?)?.toInt() ?? coinsFor(purchase.productID);
+      if (silent && result['already_credited'] == true) return;   // déjà crédité : on termine seulement l'achat chez Google
       onCoinsCredited?.call();
       _finishUi(PlayIapEvent(PlayIapEventType.success, coins: coins));
     } on ApiException catch (e) {
@@ -140,6 +165,8 @@ class GooglePlayIapService extends ChangeNotifier {
         await _complete(purchase);
         _finishUi(const PlayIapEvent(PlayIapEventType.error,
             message: "Cet achat n'a pas pu être validé. Contacte le support si tu as été débité."));
+      } else if (silent) {
+        return;   // reprise au lancement : nouvel essai au prochain lancement, sans message
       } else {
         // Erreur temporaire : l'achat reste ouvert et sera crédité au prochain lancement.
         _finishUi(const PlayIapEvent(PlayIapEventType.error,
@@ -149,9 +176,18 @@ class GooglePlayIapService extends ChangeNotifier {
     } catch (e) {
       debugPrint('GooglePlayIapService._deliver: $e');
       PaymentReport.send(provider: 'google_play', step: 'verify', code: 'client', message: e);
+      if (silent) return;
       _finishUi(const PlayIapEvent(PlayIapEventType.error,
           message: 'Paiement reçu, mais la validation a échoué. Tes pièces seront créditées automatiquement '
               "au prochain lancement de l'app."));
+    }
+  }
+
+  Future<void> _consume(PurchaseDetails purchase) async {
+    try {
+      await _iap.getPlatformAddition<InAppPurchaseAndroidPlatformAddition>().consumePurchase(purchase);
+    } catch (e) {
+      debugPrint('GooglePlayIapService.consumePurchase: $e');
     }
   }
 
