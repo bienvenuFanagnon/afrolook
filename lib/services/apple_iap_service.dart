@@ -9,6 +9,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/coin_pack.dart';
+import 'api/api_identity.dart';
 import 'api/wallet_api.dart';
 import '../utils/platform_guard.dart';
 
@@ -125,13 +126,16 @@ class AppleIapService extends ChangeNotifier {
   }
 
   Future<void> _deliver(PurchaseDetails purchase) async {
-    // Pas connecté : on ne termine pas l'achat, Apple le redonnera au prochain lancement.
-    if (FirebaseAuth.instance.currentUser == null || purchase.purchaseID == null) return;
+    // Pas connecté (ni Firebase ni session de l'API) : on ne termine pas l'achat, Apple le redonnera au prochain lancement.
+    if ((FirebaseAuth.instance.currentUser == null && ApiIdentity.myId == null) || purchase.purchaseID == null) return;
+    // achat redonné par Apple au lancement (pas un achat en cours dans la boutique) : aucun message, sauf quand des pièces sont vraiment ajoutées
+    final silent = purchasingProductId == null;
     try {
       // Le reçu est relu chez Apple par l'API avant de créditer (jamais côté application).
       final result = await WalletApi.instance.verifyApple(purchase.purchaseID!);
       await _complete(purchase);
       final coins = (result['coins'] as num?)?.toInt() ?? coinsFor(purchase.productID);
+      if (silent && result['already_credited'] == true) return;   // déjà crédité : on termine seulement la transaction chez Apple
       onCoinsCredited?.call();
       _finishUi(AppleIapEvent(AppleIapEventType.success, coins: coins));
     } on ApiException catch (e) {
@@ -141,6 +145,8 @@ class AppleIapService extends ChangeNotifier {
         await _complete(purchase);
         _finishUi(const AppleIapEvent(AppleIapEventType.error,
             message: "Cet achat n'a pas pu être validé. Contacte le support si tu as été débité."));
+      } else if (silent) {
+        return;   // reprise au lancement : nouvel essai au prochain lancement, sans message
       } else {
         // Erreur temporaire : l'achat reste ouvert et sera crédité au prochain lancement.
         _finishUi(const AppleIapEvent(AppleIapEventType.error,
@@ -150,6 +156,7 @@ class AppleIapService extends ChangeNotifier {
     } catch (e) {
       debugPrint('AppleIapService._deliver: $e');
       PaymentReport.send(provider: 'apple', step: 'verify', code: 'client', message: e);
+      if (silent) return;
       _finishUi(const AppleIapEvent(AppleIapEventType.error,
           message: "Paiement reçu, mais la validation a échoué. Tes pièces seront créditées automatiquement "
               "au prochain lancement de l'app."));
